@@ -1,0 +1,41 @@
+services:
+  agent:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: locodoko-agent:latest
+    container_name: locodoko-agent
+    hostname: locodoko-agent
+
+    # Keep the container running even without an active terminal session
+    stdin_open: true
+    tty: true
+
+    # Mount the local workspace into the container so the agent can read/write
+    # files that are also accessible from the host (e.g., your IDE).
+    volumes:
+      - ./workspace:/home/agent/workspace
+      # Mount git config and SSH keys from the host so git operations work
+      # immediately without additional setup inside the container.
+      - ~/.gitconfig:/home/agent/.gitconfig:ro
+      - ~/.ssh:/home/agent/.ssh:ro
+
+    environment:
+      # Provide a GitHub token so gh CLI works without interactive auth.
+      # Copy .env.example to .env and fill in your token.
+      - GH_TOKEN=${GH_TOKEN:-}
+      # Chromium needs these flags inside Docker (set in Dockerfile as well,
+      # but repeated here for visibility and easy override).
+      - CHROMIUM_FLAGS=--no-sandbox --disable-dev-shm-usage
+
+    # SYS_ADMIN capability and a relaxed seccomp profile are required for
+    # Chromium's kernel namespace sandbox. Without these, headless Chrome
+    # crashes at startup even with --no-sandbox.
+    cap_add:
+      - SYS_ADMIN
+    security_opt:
+      - seccomp:unconfined
+
+    # Expose a port if the agent runs a local HTTP server or API.
+    # ports:
+    #   - "8080:8080"
