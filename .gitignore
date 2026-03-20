@@ -1,0 +1,27 @@
+# Environment (secrets)
+.env
+
+# Ralph temp files
+.ralph-context.tmp
+.ralph-iter.tmp
+ralph-*.log
+
+# IDE
+.idea/
+*.iml
+.vscode/
+
+# Java / Maven
+target/
+*.class
+*.jar
+*.war
+
+# Node
+node_modules/
+frontend/dist/
+frontend/node_modules/
+
+# OS
+.DS_Store
+Thumbs.db

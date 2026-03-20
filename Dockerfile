@@ -14,6 +14,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     chromium \
     # Useful extras for an agent environment
     procps less unzip zip jq \
+    # Code search (used by coding agents for codebase navigation)
+    ripgrep \
   && rm -rf /var/lib/apt/lists/*
 
 # Install Eclipse Temurin JDK 21 from Adoptium (official ARM64 support).
@@ -45,6 +47,9 @@ RUN curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg \
       | tee /etc/apt/sources.list.d/github-cli.list > /dev/null \
   && apt-get update && apt-get install -y --no-install-recommends gh \
   && rm -rf /var/lib/apt/lists/*
+
+# Install GitHub Copilot CLI (standalone agent for Ralph loop)
+RUN npm install -g @github/copilot
 
 # Create non-root user with passwordless sudo
 RUN groupadd --gid $USER_GID $USERNAME \
@@ -86,6 +91,8 @@ if [[ $- == *i* ]]; then\n\
   printf "  %-12s %s\n" "npm"      "$(npm --version)"\n\
   printf "  %-12s %s\n" "git"      "$(git --version)"\n\
   printf "  %-12s %s\n" "gh"       "$(gh --version 2>&1 | head -1)"\n\
+  printf "  %-12s %s\n" "copilot"  "$(copilot --version 2>/dev/null || echo not found)"\n\
+  printf "  %-12s %s\n" "rg"       "$(rg --version 2>/dev/null | head -1)"\n\
   printf "  %-12s %s\n" "chromium" "$(chromium --version 2>/dev/null | head -1)"\n\
   echo "  ─────────────────────────────────────────"\n\
   echo ""\n\

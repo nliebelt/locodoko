@@ -6,4 +6,4 @@ Nutze das Internet, um nach Best Practices für Doppelkopf-Regeln oder Programmi
 
 Stelle sicher, dass jede Spezifikation auch eine klare Definition of Done enthält, die festlegt, wann der jeweilige Aspekt als 'erledigt' gilt.
 
-Ziel ist es 
+Studiere auch bestehende Spezifikationen bei deiner Betrachtung.

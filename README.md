@@ -4,4 +4,5 @@ Das latent verrückte Doppelkopf Spiel.
 
 ## Links
 
-* [text](https://)
+
+[Ralph Tips](https://www.aihero.dev/tips-for-ai-coding-with-ralph-wiggum#10-pay-to-play)
