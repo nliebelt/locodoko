@@ -2,9 +2,13 @@ package de.locodoko.spiel.partie;
 
 import de.locodoko.spiel.karten.Karte;
 import de.locodoko.spiel.karten.Kartendeck;
+import de.locodoko.spiel.karten.Kartenwert;
 import de.locodoko.spiel.karten.SpielerPosition;
 import de.locodoko.spiel.karten.Spielregeln;
 import org.junit.jupiter.api.Test;
+
+import java.util.ArrayList;
+import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -91,5 +95,78 @@ class SpielTest {
         Spiel laufendesStichspiel = spiel;
         assertThrows(IllegalStateException.class, () -> laufendesStichspiel.werteAus(punkteRechner),
             "Eine Auswertung vor dem letzten Stich wuerde unvollstaendige Augenstaende in den Gesamtstand schleusen.");
+    }
+
+    @Test
+    void laesstAnsagenNurFuerDenAktuellenSpielerUndNurImRegelkonformenFensterZu() {
+        Spiel spiel = Spiel.neu(SpielerPosition.SUED, spielregeln, kartendeckMitKontrolliertenHaenden())
+            .teileKartenAus()
+            .meldeGesund(SpielerPosition.WEST)
+            .meldeGesund(SpielerPosition.NORD)
+            .meldeGesund(SpielerPosition.OST)
+            .meldeGesund(SpielerPosition.SUED)
+            .loeseVorbehalteAuf();
+
+        assertTrue(spiel.kannAnsagen(SpielerPosition.WEST, Ansage.RE),
+            "Vor dem ersten Ausspiel muss der aktuelle Re-Spieler seine Partei ansagen koennen, sonst fehlen die Kernereignisse der Stichphase.");
+        assertFalse(spiel.kannAnsagen(SpielerPosition.NORD, Ansage.KONTRA),
+            "Nur der aktuelle Spieler darf ansagen, damit Reihenfolge und Zeitfenster an den echten Spielzug gekoppelt bleiben.");
+
+        spiel = spiel.sageAn(SpielerPosition.WEST, Ansage.RE);
+        assertTrue(spiel.ansagen().offenbartParteiVon(SpielerPosition.WEST),
+            "Die Grundansage muss im Spielzustand festgehalten werden, damit UIs und Auswertung dieselbe Wahrheit sehen.");
+
+        Spiel spielMitGespielterKarte = spiel.spieleKarte(SpielerPosition.WEST, spiel.gueltigeKartenFuer(SpielerPosition.WEST).getFirst());
+        assertTrue(spielMitGespielterKarte.kannAnsagen(SpielerPosition.NORD, Ansage.KONTRA),
+            "Nach dem Ausspiel muss der naechste aktuelle Spieler regelkonform eigene Ansagen taetigen koennen.");
+    }
+
+    private Kartendeck kartendeckMitKontrolliertenHaenden() {
+        List<Karte> karten = new ArrayList<>();
+        for (int index = 1; index <= 12; index++) {
+            karten.add(karteFuerSpieler(index, SpielerPosition.SUED));
+            karten.add(karteFuerSpieler(index, SpielerPosition.WEST));
+            karten.add(karteFuerSpieler(index, SpielerPosition.NORD));
+            karten.add(karteFuerSpieler(index, SpielerPosition.OST));
+        }
+        return kartendeckAus(karten);
+    }
+
+    private Karte karteFuerSpieler(int index, SpielerPosition spielerPosition) {
+        return switch (spielerPosition) {
+            case SUED -> index == 1 ? new Karte(de.locodoko.spiel.karten.Farbe.KREUZ, Kartenwert.DAME, 1)
+                : neueKontrollkarte(index, spielerPosition, 1);
+            case WEST -> index == 1 ? new Karte(de.locodoko.spiel.karten.Farbe.KREUZ, Kartenwert.DAME, 2)
+                : neueKontrollkarte(index, spielerPosition, 2);
+            case NORD -> index == 1 ? new Karte(de.locodoko.spiel.karten.Farbe.HERZ, Kartenwert.AS, 1)
+                : neueKontrollkarte(index, spielerPosition, 1);
+            case OST -> index == 1 ? new Karte(de.locodoko.spiel.karten.Farbe.PIK, Kartenwert.AS, 1)
+                : neueKontrollkarte(index, spielerPosition, 2);
+        };
+    }
+
+    private Karte neueKontrollkarte(int index, SpielerPosition spielerPosition, int exemplarIndex) {
+        de.locodoko.spiel.karten.Farbe[] farben = de.locodoko.spiel.karten.Farbe.values();
+        Kartenwert[] werte = Kartenwert.values();
+        de.locodoko.spiel.karten.Farbe farbe = farben[(index + spielerPosition.ordinal()) % farben.length];
+        Kartenwert wert = werte[(index + spielerPosition.ordinal()) % werte.length];
+        if (farbe == de.locodoko.spiel.karten.Farbe.KREUZ && wert == Kartenwert.DAME) {
+            wert = Kartenwert.AS;
+        }
+        return new Karte(
+            farbe,
+            wert,
+            exemplarIndex
+        );
+    }
+
+    private Kartendeck kartendeckAus(List<Karte> karten) {
+        try {
+            java.lang.reflect.Constructor<Kartendeck> konstruktor = Kartendeck.class.getDeclaredConstructor(java.util.Collection.class);
+            konstruktor.setAccessible(true);
+            return konstruktor.newInstance(karten);
+        } catch (ReflectiveOperationException ausnahme) {
+            throw new IllegalStateException("Kontrolliertes Kartendeck konnte nicht erzeugt werden", ausnahme);
+        }
     }
 }

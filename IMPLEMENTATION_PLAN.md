@@ -20,6 +20,8 @@ Ausgangslage: Das Repository enthaelt jetzt ein baubares technisches Grundgerues
 - [x] Neue Backend-Tests sichern WARUM dieser Kern wichtig ist: Sie fixieren Deckgroesse und 240-Augen-Invariante, pruefen Trumpfhierarchie und Dullen-Sonderfall und erzwingen Bedienpflicht sowie Gewinnerermittlung als serverseitige Wahrheitsquelle fuer KI, UI und Wertung.
 - [x] Vertikaler Slice fuer ein Normalspiel ohne Sonderspiele liegt jetzt in `src/main/java/de/locodoko/spiel/partie`: Tisch, Partie, Spiel, Parteien, explizite Spielphasen, Geberrotation, erster Aufspieler, Grundauswertung und Gesamtstand fuer mehrere Spiele.
 - [x] Neue Backend-Tests sichern WARUM dieser Slice wichtig ist: Sie pruefen den kompletten Phasenlauf eines Normalspiels, verdeckte Parteiinformation, ungueltige Zustandsuebergaenge sowie Geberrotation und Nullsummen-Gesamtstand ueber mehrere Spiele.
+- [x] Ansagen, Punkteberechnung und Sonderpunkte fuer den Normalspiel-Slice liegen jetzt in `src/main/java/de/locodoko/spiel/partie`: Grundansagen und Absagen waehrend der Stichphase, konfigurierbare Ansagefenster in `Spielregeln`, Sonderpunktbewertung fuer Fuchs/Karlchen/Doppelkopf und eine Endauswertung, die Ansagen, Sonderpunkte und Nullsummen-Verteilung zusammenfuehrt.
+- [x] Neue Backend-Tests sichern WARUM dieser Ausbau wichtig ist: Sie fixieren Ansagereihenfolge und Zeitfenster, pruefen Sonderpunkte getrennt von der Stichlogik und belegen, dass die Spielwertung trotz Ansagen und Sonderpunkten stabil 240 Augen und eine Nullsumme fuer den Gesamtstand behaelt.
 
 ## Offen - Prioritaet 0: Projektgrundgeruest und Build-Pipeline
 
@@ -47,10 +49,10 @@ Ausgangslage: Das Repository enthaelt jetzt ein baubares technisches Grundgerues
 
 ## Offen - Prioritaet 3: Wertung, Ansagen und Sonderpunkte
 
-- [ ] Ansagen gemaess `specs/ansagen.md` implementieren: Re, Kontra, Keine 90, Keine 60, Keine 30, Schwarz inklusive erlaubter Zeitfenster.
-- [ ] Punkte- und Ergebnislogik gemaess `specs/punkteberechnung.md` implementieren: Augen zaehlen, Gewinner bestimmen, Spielpunkte ableiten, Nullsummenpruefung.
-- [ ] Sonderpunkte gemaess `specs/sonderpunkte.md` integrieren: Fuchs, Karlchen, Doppelkopf.
-- [ ] Fachliche Abhaengigkeiten zwischen Stichhistorie, Ansagen und Endauswertung in Integrationstests absichern.
+- [x] Ansagen gemaess `specs/ansagen.md` implementieren: Re, Kontra, Keine 90, Keine 60, Keine 30, Schwarz inklusive erlaubter Zeitfenster.
+- [x] Punkte- und Ergebnislogik gemaess `specs/punkteberechnung.md` implementieren: Augen zaehlen, Gewinner bestimmen, Spielpunkte ableiten, Nullsummenpruefung.
+- [x] Sonderpunkte gemaess `specs/sonderpunkte.md` integrieren: Fuchs, Karlchen, Doppelkopf.
+- [x] Fachliche Abhaengigkeiten zwischen Stichhistorie, Ansagen und Endauswertung in Integrationstests absichern.
 
 ## Offen - Prioritaet 4: Sonderspiele fuer MVP und danach
 

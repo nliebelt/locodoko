@@ -42,6 +42,10 @@ public final class Tisch {
         return mitAktuellemSpiel(partie.aktuellesSpiel().spieleKarte(spielerPosition, karte));
     }
 
+    public Tisch sageAn(SpielerPosition spielerPosition, Ansage ansage) {
+        return mitAktuellemSpiel(partie.aktuellesSpiel().sageAn(spielerPosition, ansage));
+    }
+
     public Tisch werteAktuellesSpielAus(PunkteRechner punkteRechner) {
         return mitAktuellemSpiel(partie.aktuellesSpiel().werteAus(punkteRechner));
     }
@@ -60,6 +64,10 @@ public final class Tisch {
 
     public List<Karte> gueltigeKartenFuer(SpielerPosition spielerPosition) {
         return partie.aktuellesSpiel().gueltigeKartenFuer(spielerPosition);
+    }
+
+    public boolean kannAnsagen(SpielerPosition spielerPosition, Ansage ansage) {
+        return partie.aktuellesSpiel().kannAnsagen(spielerPosition, ansage);
     }
 
     private Tisch mitAktuellemSpiel(Spiel spiel) {

@@ -28,6 +28,7 @@ public final class Spiel {
     private final Map<SpielerPosition, Hand> haende;
     private final List<SpielerPosition> gesundGemeldet;
     private final Parteien parteien;
+    private final Ansagen ansagen;
     private final List<Stich> abgeschlosseneStiche;
     private final Stich aktuellerStich;
     private final Spielergebnis ergebnis;
@@ -42,6 +43,7 @@ public final class Spiel {
         Map<SpielerPosition, Hand> haende,
         List<SpielerPosition> gesundGemeldet,
         Parteien parteien,
+        Ansagen ansagen,
         List<Stich> abgeschlosseneStiche,
         Stich aktuellerStich,
         Spielergebnis ergebnis
@@ -55,6 +57,7 @@ public final class Spiel {
         this.haende = Map.copyOf(haende);
         this.gesundGemeldet = List.copyOf(gesundGemeldet);
         this.parteien = parteien;
+        this.ansagen = Objects.requireNonNull(ansagen, "ansagen duerfen nicht null sein");
         this.abgeschlosseneStiche = List.copyOf(abgeschlosseneStiche);
         this.aktuellerStich = aktuellerStich;
         this.ergebnis = ergebnis;
@@ -72,6 +75,7 @@ public final class Spiel {
             Map.of(),
             List.of(),
             null,
+            Ansagen.leer(),
             List.of(),
             null,
             null
@@ -90,6 +94,7 @@ public final class Spiel {
             kartendeck.anVierSpielerAusteilen(),
             gesundGemeldet,
             null,
+            ansagen,
             abgeschlosseneStiche,
             null,
             null
@@ -127,6 +132,7 @@ public final class Spiel {
             haende,
             neueGesundMeldungen,
             parteien,
+            ansagen,
             abgeschlosseneStiche,
             aktuellerStich,
             ergebnis
@@ -147,6 +153,7 @@ public final class Spiel {
             haende,
             gesundGemeldet,
             neueParteien,
+            Ansagen.leer(),
             List.of(),
             ersterStich,
             null
@@ -192,6 +199,7 @@ public final class Spiel {
                 neueHaende,
                 gesundGemeldet,
                 parteien,
+                ansagen,
                 abgeschlosseneStiche,
                 gespielterStich,
                 ergebnis
@@ -211,6 +219,7 @@ public final class Spiel {
                 neueHaende,
                 gesundGemeldet,
                 parteien,
+                ansagen,
                 neueAbgeschlosseneStiche,
                 null,
                 ergebnis
@@ -228,8 +237,51 @@ public final class Spiel {
             neueHaende,
             gesundGemeldet,
             parteien,
+            ansagen,
             neueAbgeschlosseneStiche,
             naechsterStich,
+            ergebnis
+        );
+    }
+
+    public boolean kannAnsagen(SpielerPosition spielerPosition, Ansage ansage) {
+        Objects.requireNonNull(spielerPosition, "spielerPosition darf nicht null sein");
+        Objects.requireNonNull(ansage, "ansage darf nicht null sein");
+        if (phase != Spielphase.STICHPHASE || aktuellerStich == null || spielerPosition != aktuellerStich.erwarteterSpieler()) {
+            return false;
+        }
+        return ansagen.kannAnsagen(spielerPosition, ansage, parteien(), spielregeln, handVon(spielerPosition).karten().size());
+    }
+
+    public Spiel sageAn(SpielerPosition spielerPosition, Ansage ansage) {
+        pruefePhase(Spielphase.STICHPHASE, "Ansage taetigen");
+        Objects.requireNonNull(spielerPosition, "spielerPosition darf nicht null sein");
+        Objects.requireNonNull(ansage, "ansage darf nicht null sein");
+        SpielerPosition erwarteterSpieler = aktuellerSpieler()
+            .orElseThrow(() -> new IllegalStateException("Es gibt aktuell keinen erwarteten Spieler"));
+        if (spielerPosition != erwarteterSpieler) {
+            throw new IllegalStateException("Ansagen duerfen nur vom aktuellen Spieler kommen; erwartet: " + erwarteterSpieler);
+        }
+        Ansagen neueAnsagen = ansagen.fuegeHinzu(
+            spielerPosition,
+            ansage,
+            parteien(),
+            spielregeln,
+            handVon(spielerPosition).karten().size()
+        );
+        return new Spiel(
+            spielregeln,
+            kartendeck,
+            trumpfOrdnung,
+            spieltyp,
+            geber,
+            phase,
+            haende,
+            gesundGemeldet,
+            parteien,
+            neueAnsagen,
+            abgeschlosseneStiche,
+            aktuellerStich,
             ergebnis
         );
     }
@@ -237,7 +289,13 @@ public final class Spiel {
     public Spiel werteAus(PunkteRechner punkteRechner) {
         pruefePhase(Spielphase.AUSWERTUNG, "Spiel auswerten");
         Objects.requireNonNull(punkteRechner, "punkteRechner darf nicht null sein");
-        Spielergebnis neuesErgebnis = punkteRechner.berechneNormalspielErgebnis(abgeschlosseneStiche, parteien(), trumpfOrdnung);
+        Spielergebnis neuesErgebnis = punkteRechner.berechneNormalspielErgebnis(
+            abgeschlosseneStiche,
+            parteien(),
+            trumpfOrdnung,
+            ansagen,
+            spielregeln
+        );
         return new Spiel(
             spielregeln,
             kartendeck,
@@ -248,6 +306,7 @@ public final class Spiel {
             haende,
             gesundGemeldet,
             parteien,
+            ansagen,
             abgeschlosseneStiche,
             null,
             neuesErgebnis
@@ -296,6 +355,10 @@ public final class Spiel {
             throw new IllegalStateException("Die Parteien sind erst nach der Vorbehaltsaufloesung bekannt");
         }
         return parteien;
+    }
+
+    public Ansagen ansagen() {
+        return ansagen;
     }
 
     public Optional<Spielergebnis> ergebnis() {
