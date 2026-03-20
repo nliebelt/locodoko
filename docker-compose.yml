@@ -14,7 +14,7 @@ services:
     # Mount the local workspace into the container so the agent can read/write
     # files that are also accessible from the host (e.g., your IDE).
     volumes:
-      - ./workspace:/home/agent/workspace
+      - .:/home/agent/workspace
       # Mount git config and SSH keys from the host so git operations work
       # immediately without additional setup inside the container.
       - ~/.gitconfig:/home/agent/.gitconfig:ro

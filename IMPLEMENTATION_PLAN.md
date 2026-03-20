@@ -30,6 +30,10 @@ Ausgangslage: Das Repository enthaelt jetzt ein baubares technisches Grundgerues
 - [x] Neue Backend-Tests sichern WARUM dieser Ausbau wichtig ist: Sie fixieren die Armut-Erkennung, pruefen den validierten Kartentausch und die offene Re-Parteibildung nach Annahme und verhindern mit dem Einwurf-Szenario, dass eine abgelehnte Armut in einem inkonsistenten Spielzustand haengen bleibt.
 - [x] Die weiteren Solo-Varianten `Damensolo`, `Bubensolo` und `Fleischlos` sind jetzt in Vorbehalt, Trumpf-/Fehllogik und Parteibildung integriert: Alle Soli teilen dieselbe Prioritaet, werden bei Gleichstand ueber Sitzreihenfolge aufgeloest, lassen sich einzeln ueber `Spielregeln` deaktivieren und nutzen eigene TrumpfOrdnungen fuer nur Damen, nur Buben bzw. gar keinen Trumpf.
 - [x] Neue Backend-Tests sichern WARUM dieser Ausbau wichtig ist: Sie fixieren fuer die neuen Soli Trumpferkennung, Fehlrangfolge und Bedienpflicht, pruefen den Fleischlos-Stich ohne Stechen und verhindern, dass Vorbehalt-Aufloesung oder Tischkonfiguration spaeter inkonsistente Solo-Regeln erzeugen.
+- [x] Eine erste Persistenzgrundlage liegt jetzt in `src/main/java/de/locodoko/spielverwaltung/persistenz`: JPA-Entitaeten und Spring-Data-Repositories fuer Tisch, Tischkonfiguration, Spieler, Partie, Spiel, Hand, Stich und gespielte Karten bilden den Lobby-/Session-Kern sowie Spiel-Snapshots H2-tauglich ab; `application-dev.properties` erzeugt das Schema jetzt automatisch, waehrend `application-prod.properties` bei `validate` bleibt.
+- [x] Neue JPA-Tests sichern WARUM diese Persistenz wichtig ist: Sie pruefen das komplette Abspeichern und Wiedereinlesen eines Tisch-/Partie-/Stichgraphs, erzwingen eindeutige Session-IDs, validieren ungueltige Tischkonfigurationen frueh und belegen, dass das Loeschen eines Tisches die zugehoerigen Spielhistorien sauber entfernt, ohne Spieleridentitaeten zu verlieren.
+- [x] Die Session-basierte Spieleridentifikation liegt jetzt in `src/main/java/de/locodoko/spielverwaltung/session`: `POST/GET/PUT /api/spieler/session` registrieren und erkennen menschliche Spieler ueber `HttpSession`, validieren serverseitig unbekannte Sessions, setzen einen konfigurierbaren 60-Minuten-Timeout und erlauben Namensaenderungen nur ausserhalb eines Tisches; `KiSpielerFabrik` vergibt automatische KI-Namen ohne Cookie.
+- [x] Neue Session-/KI-Tests sichern WARUM dieser Schritt wichtig ist: Sie pruefen Session-Erstellung und Wiedererkennung, erzwingen die serverseitige Ablehnung verwaister Sessions, fixieren das 60-Minuten-Timeout und verhindern mit der KI-Namensvergabe und der Tischsperre bei Namensaenderungen, dass Lobby- und Session-Logik spaeter inkonsistente Spieleridentitaeten erzeugen.
 
 ## Offen - Prioritaet 0: Projektgrundgeruest und Build-Pipeline
 
@@ -72,8 +76,8 @@ Ausgangslage: Das Repository enthaelt jetzt ein baubares technisches Grundgerues
 
 ## Offen - Prioritaet 5: Persistenz, Session, Lobby und Schnittstellen
 
-- [ ] JPA-Entitaeten und Repositories gemaess `specs/datenbankmodell.md` anlegen, zunaechst H2-tauglich und spaeter PostgreSQL-kompatibel.
-- [ ] Session-basierte Spieleridentifikation gemaess `specs/spieler-session.md` umsetzen.
+- [x] JPA-Entitaeten und Repositories gemaess `specs/datenbankmodell.md` anlegen, zunaechst H2-tauglich und spaeter PostgreSQL-kompatibel.
+- [x] Session-basierte Spieleridentifikation gemaess `specs/spieler-session.md` umsetzen.
 - [ ] REST-API gemaess `specs/rest-api.md` bereitstellen: Tische listen/anlegen/beitreten, Konfiguration lesen/aendern, Spielstand abrufen.
 - [ ] Lobby-Domaene und Tischverwaltung gemaess `specs/lobby.md` implementieren, inklusive Begrenzung auf einen Tisch pro Spieler und KI-Auffuellen beim Start.
 - [ ] WebSocket/STOMP-Kommunikation gemaess `specs/websocket-kommunikation.md` anbinden, damit Lobby- und Spielzustand in Echtzeit publiziert werden.
@@ -110,5 +114,5 @@ Ausgangslage: Das Repository enthaelt jetzt ein baubares technisches Grundgerues
 ## Aktuelle Risiken / offene Architekturentscheidungen
 
 - [x] Fuer den aktuellen Slice ist entschieden, vorerst eine explizite immutable Zustandslogik statt Spring Statemachine zu verwenden; falls WebSocket-Orchestrierung spaeter echten Mehrwert bringt, kann darauf aufgesetzt werden.
-- [ ] Frueh entscheiden, welche Teile des Spielzustands persistiert und welche nur im Speicher gehalten werden, damit Lobby, Reconnect und Tests konsistent bleiben.
+- [x] Erste Persistenzentscheidung ist getroffen: Tisch, Konfiguration, Spieler sowie Partie-/Spiel-/Hand-/Stich-Snapshots werden relational gespeichert; Live-Orchestrierung fuer Session, Lobby-Workflows und Reconnect baut im naechsten Schritt darauf auf.
 - [ ] Karten-Assets, UI-Stil und Frontend-Testtiefe muessen beim Frontend-Setup frueh konkretisiert werden, sonst blockieren sie spaeter Tischansicht und Animationen.
