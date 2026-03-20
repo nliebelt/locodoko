@@ -1,5 +1,6 @@
 package de.locodoko.spiel.partie;
 
+import de.locodoko.spiel.karten.Farbe;
 import de.locodoko.spiel.karten.Karte;
 import de.locodoko.spiel.karten.Kartendeck;
 import de.locodoko.spiel.karten.Kartenwert;
@@ -9,7 +10,9 @@ import de.locodoko.spiel.karten.Spieltyp;
 import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
+import java.util.EnumMap;
 import java.util.List;
+import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -40,6 +43,170 @@ class SpielTest {
             "Die Solo-Parteien muessen von Beginn an offen sein, damit UI und Ansagelogik ohne verdeckte Information arbeiten koennen.");
         assertEquals(SpielerPosition.WEST, spiel.aktuellerStich().orElseThrow().aufspieler(),
             "Auch im Solo beginnt weiterhin der Spieler links vom Geber den ersten Stich.");
+    }
+
+    @Test
+    void loestHochzeitAufUndStartetMitOffenemHochzeitsSpieler() {
+        Spiel spiel = Spiel.neu(SpielerPosition.SUED, spielregeln, kartendeckMitVerteiltenHaenden(Map.of(
+                SpielerPosition.WEST, List.of(
+                    karte(Farbe.KREUZ, Kartenwert.DAME, 1),
+                    karte(Farbe.KREUZ, Kartenwert.DAME, 2)
+                )
+            )))
+            .teileKartenAus()
+            .meldeVorbehalt(SpielerPosition.WEST, VorbehaltAnsage.HOCHZEIT)
+            .meldeGesund(SpielerPosition.NORD)
+            .meldeGesund(SpielerPosition.OST)
+            .meldeGesund(SpielerPosition.SUED)
+            .loeseVorbehalteAuf();
+
+        assertEquals(Spieltyp.HOCHZEIT, spiel.spieltyp(),
+            "Die Hochzeit muss als eigener Spieltyp aufloesbar sein, damit Vorbehalt-Phase und Stichphase denselben Fachzustand sehen.");
+        assertEquals(List.of(SpielerPosition.WEST), spiel.parteien().spielerVon(Partei.RE),
+            "Zu Beginn der Hochzeit spielt der Melder allein, bis ein fremder Stichgewinner als Partner feststeht.");
+        assertTrue(spiel.parteien().sichtAufPartei(SpielerPosition.NORD, SpielerPosition.WEST).isPresent(),
+            "Die Hochzeit ist ein offener Vorbehalt; der Hochzeits-Spieler muss daher fuer alle sichtbar sein.");
+        assertTrue(spiel.parteien().sichtAufPartei(SpielerPosition.NORD, SpielerPosition.OST).isEmpty(),
+            "Die uebrigen Parteien bleiben bis zur Klaerung verdeckt, damit die Partnersuche fachlich korrekt startet.");
+        assertTrue(spiel.hochzeitStatus().orElseThrow().suchtPartner());
+    }
+
+    @Test
+    void findetBeimErstenFremdenStichDenPartnerUndOffenbartDanachAlleParteien() {
+        Spiel spiel = Spiel.neu(SpielerPosition.SUED, spielregeln, kartendeckMitVerteiltenHaenden(Map.of(
+                SpielerPosition.WEST, List.of(
+                    karte(Farbe.KREUZ, Kartenwert.DAME, 1),
+                    karte(Farbe.KREUZ, Kartenwert.DAME, 2),
+                    karte(Farbe.KREUZ, Kartenwert.KOENIG, 1)
+                ),
+                SpielerPosition.NORD, List.of(karte(Farbe.KREUZ, Kartenwert.AS, 1)),
+                SpielerPosition.OST, List.of(karte(Farbe.KREUZ, Kartenwert.ZEHN, 1)),
+                SpielerPosition.SUED, List.of(karte(Farbe.KREUZ, Kartenwert.NEUN, 1))
+            )))
+            .teileKartenAus()
+            .meldeVorbehalt(SpielerPosition.WEST, VorbehaltAnsage.HOCHZEIT)
+            .meldeGesund(SpielerPosition.NORD)
+            .meldeGesund(SpielerPosition.OST)
+            .meldeGesund(SpielerPosition.SUED)
+            .loeseVorbehalteAuf()
+            .spieleKarte(SpielerPosition.WEST, karte(Farbe.KREUZ, Kartenwert.KOENIG, 1))
+            .spieleKarte(SpielerPosition.NORD, karte(Farbe.KREUZ, Kartenwert.AS, 1))
+            .spieleKarte(SpielerPosition.OST, karte(Farbe.KREUZ, Kartenwert.ZEHN, 1))
+            .spieleKarte(SpielerPosition.SUED, karte(Farbe.KREUZ, Kartenwert.NEUN, 1));
+
+        assertEquals(List.of(SpielerPosition.WEST, SpielerPosition.NORD), spiel.parteien().spielerVon(Partei.RE),
+            "Der erste fremde Stichgewinner muss sofort Partner werden, damit Augen und Sonderpunkte der richtigen Partei zufallen.");
+        assertEquals(SpielerPosition.NORD, spiel.hochzeitStatus().orElseThrow().partner().orElseThrow());
+        for (SpielerPosition beobachter : SpielerPosition.standardReihenfolge()) {
+            for (SpielerPosition ziel : SpielerPosition.standardReihenfolge()) {
+                assertTrue(spiel.parteien().sichtAufPartei(beobachter, ziel).isPresent(),
+                    "Nach der Partnerfindung muessen alle Parteien offen liegen, damit keine verdeckte Restinformation zurueckbleibt.");
+            }
+        }
+        assertEquals(SpielerPosition.NORD, spiel.aktuellerStich().orElseThrow().aufspieler());
+    }
+
+    @Test
+    void wechseltNachDreiEigenenStichenInsStilleSoloUndOffenbartAlleParteien() {
+        Spiel spiel = Spiel.neu(SpielerPosition.SUED, spielregeln, kartendeckMitVerteiltenHaenden(Map.of(
+                SpielerPosition.WEST, List.of(
+                    karte(Farbe.KREUZ, Kartenwert.DAME, 1),
+                    karte(Farbe.KREUZ, Kartenwert.DAME, 2),
+                    karte(Farbe.KREUZ, Kartenwert.AS, 1),
+                    karte(Farbe.PIK, Kartenwert.AS, 1)
+                ),
+                SpielerPosition.NORD, List.of(
+                    karte(Farbe.KREUZ, Kartenwert.KOENIG, 1),
+                    karte(Farbe.PIK, Kartenwert.KOENIG, 1),
+                    karte(Farbe.KARO, Kartenwert.KOENIG, 1)
+                ),
+                SpielerPosition.OST, List.of(
+                    karte(Farbe.KREUZ, Kartenwert.ZEHN, 1),
+                    karte(Farbe.PIK, Kartenwert.ZEHN, 1),
+                    karte(Farbe.KARO, Kartenwert.ZEHN, 1)
+                ),
+                SpielerPosition.SUED, List.of(
+                    karte(Farbe.KREUZ, Kartenwert.NEUN, 1),
+                    karte(Farbe.PIK, Kartenwert.NEUN, 1),
+                    karte(Farbe.KARO, Kartenwert.NEUN, 1)
+                )
+            )))
+            .teileKartenAus()
+            .meldeVorbehalt(SpielerPosition.WEST, VorbehaltAnsage.HOCHZEIT)
+            .meldeGesund(SpielerPosition.NORD)
+            .meldeGesund(SpielerPosition.OST)
+            .meldeGesund(SpielerPosition.SUED)
+            .loeseVorbehalteAuf();
+
+        spiel = spieleStich(spiel,
+            karte(Farbe.KREUZ, Kartenwert.AS, 1),
+            karte(Farbe.KREUZ, Kartenwert.KOENIG, 1),
+            karte(Farbe.KREUZ, Kartenwert.ZEHN, 1),
+            karte(Farbe.KREUZ, Kartenwert.NEUN, 1));
+        spiel = spieleStich(spiel,
+            karte(Farbe.PIK, Kartenwert.AS, 1),
+            karte(Farbe.PIK, Kartenwert.KOENIG, 1),
+            karte(Farbe.PIK, Kartenwert.ZEHN, 1),
+            karte(Farbe.PIK, Kartenwert.NEUN, 1));
+        spiel = spieleStich(spiel,
+            karte(Farbe.KREUZ, Kartenwert.DAME, 1),
+            karte(Farbe.KARO, Kartenwert.KOENIG, 1),
+            karte(Farbe.KARO, Kartenwert.ZEHN, 1),
+            karte(Farbe.KARO, Kartenwert.NEUN, 1));
+
+        HochzeitStatus status = spiel.hochzeitStatus().orElseThrow();
+        assertTrue(status.stillesSolo(),
+            "Wenn drei Klaerungsstiche lang kein Partner gefunden wird, muss die Hochzeit in ein stilles Solo kippen.");
+        assertEquals(List.of(SpielerPosition.WEST), spiel.parteien().spielerVon(Partei.RE));
+        for (SpielerPosition ziel : SpielerPosition.standardReihenfolge()) {
+            assertTrue(spiel.parteien().sichtAufPartei(SpielerPosition.NORD, ziel).isPresent(),
+                "Nach dem stillen Solo muessen alle Parteien offen sein, weil die Partnerfrage endgueltig geklaert ist.");
+        }
+    }
+
+    @Test
+    void lehntHochzeitOhneBeideKreuzDamenOderBeiDeaktivierterRegelAb() {
+        Spiel spielMitNurEinerKreuzDame = Spiel.neu(SpielerPosition.SUED, spielregeln, kartendeckMitVerteiltenHaenden(Map.of(
+                SpielerPosition.WEST, List.of(karte(Farbe.KREUZ, Kartenwert.DAME, 1))
+            )))
+            .teileKartenAus();
+
+        assertThrows(IllegalStateException.class,
+            () -> spielMitNurEinerKreuzDame.meldeVorbehalt(SpielerPosition.WEST, VorbehaltAnsage.HOCHZEIT),
+            "Nur beide Kreuz-Damen rechtfertigen die Hochzeit; sonst wuerde ein normales Re/Kontra-Spiel faelschlich umetikettiert.");
+
+        Spielregeln hochzeitDeaktiviert = spielregeln.mitHochzeitAktiv(false);
+        Spiel deaktiviertesSpiel = Spiel.neu(SpielerPosition.SUED, hochzeitDeaktiviert, kartendeckMitVerteiltenHaenden(Map.of(
+                SpielerPosition.WEST, List.of(
+                    karte(Farbe.KREUZ, Kartenwert.DAME, 1),
+                    karte(Farbe.KREUZ, Kartenwert.DAME, 2)
+                )
+            )))
+            .teileKartenAus();
+
+        assertThrows(IllegalStateException.class,
+            () -> deaktiviertesSpiel.meldeVorbehalt(SpielerPosition.WEST, VorbehaltAnsage.HOCHZEIT),
+            "Die Tischkonfiguration muss Hochzeit serverseitig sperren koennen, damit Frontend und Backend dieselbe Regelbasis teilen.");
+    }
+
+    @Test
+    void priorisiertTrumpfsoloVorHochzeit() {
+        Spiel spiel = Spiel.neu(SpielerPosition.SUED, spielregeln, kartendeckMitVerteiltenHaenden(Map.of(
+                SpielerPosition.WEST, List.of(
+                    karte(Farbe.KREUZ, Kartenwert.DAME, 1),
+                    karte(Farbe.KREUZ, Kartenwert.DAME, 2)
+                )
+            )))
+            .teileKartenAus()
+            .meldeVorbehalt(SpielerPosition.WEST, VorbehaltAnsage.HOCHZEIT)
+            .meldeVorbehalt(SpielerPosition.NORD, VorbehaltAnsage.SOLO_TRUMPF)
+            .meldeGesund(SpielerPosition.OST)
+            .meldeGesund(SpielerPosition.SUED)
+            .loeseVorbehalteAuf();
+
+        assertEquals(Spieltyp.SOLO_TRUMPF, spiel.spieltyp(),
+            "Soli muessen in der Vorbehaltsaufloesung ueber der Hochzeit liegen, sonst stimmt die Prioritaetsregel nicht.");
+        assertEquals(List.of(SpielerPosition.NORD), spiel.parteien().spielerVon(Partei.RE));
     }
 
     @Test
@@ -154,6 +321,45 @@ class SpielTest {
             "Nach dem Ausspiel muss der naechste aktuelle Spieler regelkonform eigene Ansagen taetigen koennen.");
     }
 
+    private Spiel spieleStich(Spiel spiel, Karte ersteKarte, Karte zweiteKarte, Karte dritteKarte, Karte vierteKarte) {
+        Spiel aktuellesSpiel = spiel;
+        for (Karte karte : List.of(ersteKarte, zweiteKarte, dritteKarte, vierteKarte)) {
+            SpielerPosition spieler = aktuellesSpiel.aktuellerSpieler().orElseThrow();
+            aktuellesSpiel = aktuellesSpiel.spieleKarte(spieler, karte);
+        }
+        return aktuellesSpiel;
+    }
+
+    private Kartendeck kartendeckMitVerteiltenHaenden(Map<SpielerPosition, List<Karte>> vorgaben) {
+        EnumMap<SpielerPosition, List<Karte>> haende = new EnumMap<>(SpielerPosition.class);
+        for (SpielerPosition position : SpielerPosition.standardReihenfolge()) {
+            haende.put(position, new ArrayList<>(vorgaben.getOrDefault(position, List.of())));
+        }
+
+        List<Karte> restkarten = new ArrayList<>(Kartendeck.neu(spielregeln).karten());
+        for (List<Karte> karten : haende.values()) {
+            for (Karte karte : karten) {
+                if (!restkarten.remove(karte)) {
+                    throw new IllegalArgumentException("Vorgegebene Karte ist nicht verfuegbar: " + karte);
+                }
+            }
+        }
+
+        for (SpielerPosition position : SpielerPosition.standardReihenfolge()) {
+            while (haende.get(position).size() < 12) {
+                haende.get(position).add(restkarten.removeFirst());
+            }
+        }
+
+        List<Karte> deckkarten = new ArrayList<>();
+        for (int index = 0; index < 12; index++) {
+            for (SpielerPosition position : SpielerPosition.standardReihenfolge()) {
+                deckkarten.add(haende.get(position).get(index));
+            }
+        }
+        return kartendeckAus(deckkarten);
+    }
+
     private Kartendeck kartendeckMitKontrolliertenHaenden() {
         List<Karte> karten = new ArrayList<>();
         for (int index = 1; index <= 12; index++) {
@@ -167,30 +373,30 @@ class SpielTest {
 
     private Karte karteFuerSpieler(int index, SpielerPosition spielerPosition) {
         return switch (spielerPosition) {
-            case SUED -> index == 1 ? new Karte(de.locodoko.spiel.karten.Farbe.KREUZ, Kartenwert.DAME, 1)
+            case SUED -> index == 1 ? new Karte(Farbe.KREUZ, Kartenwert.DAME, 1)
                 : neueKontrollkarte(index, spielerPosition, 1);
-            case WEST -> index == 1 ? new Karte(de.locodoko.spiel.karten.Farbe.KREUZ, Kartenwert.DAME, 2)
+            case WEST -> index == 1 ? new Karte(Farbe.KREUZ, Kartenwert.DAME, 2)
                 : neueKontrollkarte(index, spielerPosition, 2);
-            case NORD -> index == 1 ? new Karte(de.locodoko.spiel.karten.Farbe.HERZ, Kartenwert.AS, 1)
+            case NORD -> index == 1 ? new Karte(Farbe.HERZ, Kartenwert.AS, 1)
                 : neueKontrollkarte(index, spielerPosition, 1);
-            case OST -> index == 1 ? new Karte(de.locodoko.spiel.karten.Farbe.PIK, Kartenwert.AS, 1)
+            case OST -> index == 1 ? new Karte(Farbe.PIK, Kartenwert.AS, 1)
                 : neueKontrollkarte(index, spielerPosition, 2);
         };
     }
 
     private Karte neueKontrollkarte(int index, SpielerPosition spielerPosition, int exemplarIndex) {
-        de.locodoko.spiel.karten.Farbe[] farben = de.locodoko.spiel.karten.Farbe.values();
+        Farbe[] farben = Farbe.values();
         Kartenwert[] werte = Kartenwert.values();
-        de.locodoko.spiel.karten.Farbe farbe = farben[(index + spielerPosition.ordinal()) % farben.length];
+        Farbe farbe = farben[(index + spielerPosition.ordinal()) % farben.length];
         Kartenwert wert = werte[(index + spielerPosition.ordinal()) % werte.length];
-        if (farbe == de.locodoko.spiel.karten.Farbe.KREUZ && wert == Kartenwert.DAME) {
+        if (farbe == Farbe.KREUZ && wert == Kartenwert.DAME) {
             wert = Kartenwert.AS;
         }
-        return new Karte(
-            farbe,
-            wert,
-            exemplarIndex
-        );
+        return new Karte(farbe, wert, exemplarIndex);
+    }
+
+    private Karte karte(Farbe farbe, Kartenwert wert, int exemplarIndex) {
+        return new Karte(farbe, wert, exemplarIndex);
     }
 
     private Kartendeck kartendeckAus(List<Karte> karten) {

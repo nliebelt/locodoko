@@ -11,7 +11,8 @@ public record Spielregeln(
     boolean fuchsAktiv,
     boolean karlchenAktiv,
     boolean doppelkopfAktiv,
-    boolean soloTrumpfAktiv
+    boolean soloTrumpfAktiv,
+    boolean hochzeitAktiv
 ) {
 
     public Spielregeln {
@@ -29,11 +30,11 @@ public record Spielregeln(
     }
 
     public static Spielregeln standardRegeln() {
-        return new Spielregeln(false, true, 11, 10, 9, 8, 7, true, true, true, true);
+        return new Spielregeln(false, true, 11, 10, 9, 8, 7, true, true, true, true, true);
     }
 
     public static Spielregeln ohneNeunenRegeln() {
-        return new Spielregeln(true, true, 9, 8, 7, 6, 5, true, true, true, true);
+        return new Spielregeln(true, true, 9, 8, 7, 6, 5, true, true, true, true, true);
     }
 
     public Spielregeln mitAnsagegrenzen(
@@ -54,7 +55,8 @@ public record Spielregeln(
             fuchsAktiv,
             karlchenAktiv,
             doppelkopfAktiv,
-            soloTrumpfAktiv
+            soloTrumpfAktiv,
+            hochzeitAktiv
         );
     }
 
@@ -70,7 +72,8 @@ public record Spielregeln(
             fuchsAktiv,
             karlchenAktiv,
             doppelkopfAktiv,
-            soloTrumpfAktiv
+            soloTrumpfAktiv,
+            hochzeitAktiv
         );
     }
 
@@ -86,7 +89,25 @@ public record Spielregeln(
             fuchsAktiv,
             karlchenAktiv,
             doppelkopfAktiv,
-            soloTrumpfAktiv
+            soloTrumpfAktiv,
+            hochzeitAktiv
+        );
+    }
+
+    public Spielregeln mitHochzeitAktiv(boolean hochzeitAktiv) {
+        return new Spielregeln(
+            ohneNeunen,
+            zweiteDulleSticht,
+            mindestkartenReKontra,
+            mindestkartenKeine90,
+            mindestkartenKeine60,
+            mindestkartenKeine30,
+            mindestkartenSchwarz,
+            fuchsAktiv,
+            karlchenAktiv,
+            doppelkopfAktiv,
+            soloTrumpfAktiv,
+            hochzeitAktiv
         );
     }
 

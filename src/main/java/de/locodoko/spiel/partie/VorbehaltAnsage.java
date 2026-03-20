@@ -1,6 +1,8 @@
 package de.locodoko.spiel.partie;
 
+import de.locodoko.spiel.karten.Farbe;
 import de.locodoko.spiel.karten.Hand;
+import de.locodoko.spiel.karten.Kartenwert;
 import de.locodoko.spiel.karten.Spielregeln;
 import de.locodoko.spiel.karten.Spieltyp;
 
@@ -22,6 +24,17 @@ public enum VorbehaltAnsage {
             Objects.requireNonNull(hand, "hand darf nicht null sein");
             Objects.requireNonNull(spielregeln, "spielregeln duerfen nicht null sein");
             return spielregeln.soloTrumpfAktiv();
+        }
+    },
+    HOCHZEIT(Spieltyp.HOCHZEIT, 2) {
+        @Override
+        public boolean istZulaessig(Hand hand, Spielregeln spielregeln) {
+            Objects.requireNonNull(hand, "hand darf nicht null sein");
+            Objects.requireNonNull(spielregeln, "spielregeln duerfen nicht null sein");
+            long anzahlKreuzDamen = hand.karten().stream()
+                .filter(karte -> karte.farbe() == Farbe.KREUZ && karte.wert() == Kartenwert.DAME)
+                .count();
+            return spielregeln.hochzeitAktiv() && anzahlKreuzDamen == 2;
         }
     };
 

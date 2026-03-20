@@ -32,6 +32,7 @@ public final class Spiel {
     private final List<Stich> abgeschlosseneStiche;
     private final Stich aktuellerStich;
     private final Spielergebnis ergebnis;
+    private final HochzeitStatus hochzeitStatus;
 
     private Spiel(
         Spielregeln spielregeln,
@@ -46,7 +47,8 @@ public final class Spiel {
         Ansagen ansagen,
         List<Stich> abgeschlosseneStiche,
         Stich aktuellerStich,
-        Spielergebnis ergebnis
+        Spielergebnis ergebnis,
+        HochzeitStatus hochzeitStatus
     ) {
         this.spielregeln = Objects.requireNonNull(spielregeln, "spielregeln duerfen nicht null sein");
         this.kartendeck = Objects.requireNonNull(kartendeck, "kartendeck darf nicht null sein");
@@ -61,6 +63,7 @@ public final class Spiel {
         this.abgeschlosseneStiche = List.copyOf(abgeschlosseneStiche);
         this.aktuellerStich = aktuellerStich;
         this.ergebnis = ergebnis;
+        this.hochzeitStatus = hochzeitStatus;
     }
 
     public static Spiel neu(SpielerPosition geber, Spielregeln spielregeln, Kartendeck kartendeck) {
@@ -77,6 +80,7 @@ public final class Spiel {
             null,
             Ansagen.leer(),
             List.of(),
+            null,
             null,
             null
         );
@@ -96,6 +100,7 @@ public final class Spiel {
             null,
             ansagen,
             abgeschlosseneStiche,
+            null,
             null,
             null
         );
@@ -143,7 +148,8 @@ public final class Spiel {
             ansagen,
             abgeschlosseneStiche,
             aktuellerStich,
-            ergebnis
+            ergebnis,
+            hochzeitStatus
         );
     }
 
@@ -153,6 +159,9 @@ public final class Spiel {
         Parteien neueParteien = hoechsterVorbehalt == null
             ? Parteien.ausNormalspielHaenden(haende)
             : parteienFuer(hoechsterVorbehalt);
+        HochzeitStatus neuerHochzeitStatus = hoechsterVorbehalt != null && hoechsterVorbehalt.ansage() == VorbehaltAnsage.HOCHZEIT
+            ? HochzeitStatus.gestartet(hoechsterVorbehalt.spielerPosition())
+            : null;
         Stich ersterStich = Stich.neu(geber.naechsteImUhrzeigersinn());
         return new Spiel(
             spielregeln,
@@ -167,7 +176,8 @@ public final class Spiel {
             Ansagen.leer(),
             List.of(),
             ersterStich,
-            null
+            null,
+            neuerHochzeitStatus
         );
     }
 
@@ -200,58 +210,31 @@ public final class Spiel {
         neueHaende.put(spielerPosition, hand.ohne(karte));
 
         if (!gespielterStich.istVollstaendig()) {
-            return new Spiel(
-                spielregeln,
-                kartendeck,
-                trumpfOrdnung,
-                spieltyp,
-                geber,
-                phase,
-                neueHaende,
-                vorbehalte,
-                parteien,
-                ansagen,
-                abgeschlosseneStiche,
-                gespielterStich,
-                ergebnis
-            );
+            return neuesSpielMitStichfortschritt(neueHaende, abgeschlosseneStiche, gespielterStich, phase, parteien, hochzeitStatus);
         }
 
         List<Stich> neueAbgeschlosseneStiche = new ArrayList<>(abgeschlosseneStiche);
         neueAbgeschlosseneStiche.add(gespielterStich);
+        HochzeitFortschritt hochzeitFortschritt = fortschrittNachVollstaendigemStich(gespielterStich);
         if (neueAbgeschlosseneStiche.size() == kartenProSpieler()) {
-            return new Spiel(
-                spielregeln,
-                kartendeck,
-                trumpfOrdnung,
-                spieltyp,
-                geber,
-                Spielphase.AUSWERTUNG,
+            return neuesSpielMitStichfortschritt(
                 neueHaende,
-                vorbehalte,
-                parteien,
-                ansagen,
                 neueAbgeschlosseneStiche,
                 null,
-                ergebnis
+                Spielphase.AUSWERTUNG,
+                hochzeitFortschritt.parteien(),
+                hochzeitFortschritt.status()
             );
         }
 
         Stich naechsterStich = Stich.neu(gespielterStich.naechsterAufspieler(trumpfOrdnung));
-        return new Spiel(
-            spielregeln,
-            kartendeck,
-            trumpfOrdnung,
-            spieltyp,
-            geber,
-            Spielphase.STICHPHASE,
+        return neuesSpielMitStichfortschritt(
             neueHaende,
-            vorbehalte,
-            parteien,
-            ansagen,
             neueAbgeschlosseneStiche,
             naechsterStich,
-            ergebnis
+            Spielphase.STICHPHASE,
+            hochzeitFortschritt.parteien(),
+            hochzeitFortschritt.status()
         );
     }
 
@@ -259,6 +242,9 @@ public final class Spiel {
         Objects.requireNonNull(spielerPosition, "spielerPosition darf nicht null sein");
         Objects.requireNonNull(ansage, "ansage darf nicht null sein");
         if (phase != Spielphase.STICHPHASE || aktuellerStich == null || spielerPosition != aktuellerStich.erwarteterSpieler()) {
+            return false;
+        }
+        if (hochzeitStatus != null && hochzeitStatus.suchtPartner() && spielerPosition != hochzeitStatus.hochzeitSpieler()) {
             return false;
         }
         return ansagen.kannAnsagen(spielerPosition, ansage, parteien(), spielregeln, handVon(spielerPosition).karten().size());
@@ -272,6 +258,9 @@ public final class Spiel {
             .orElseThrow(() -> new IllegalStateException("Es gibt aktuell keinen erwarteten Spieler"));
         if (spielerPosition != erwarteterSpieler) {
             throw new IllegalStateException("Ansagen duerfen nur vom aktuellen Spieler kommen; erwartet: " + erwarteterSpieler);
+        }
+        if (hochzeitStatus != null && hochzeitStatus.suchtPartner() && spielerPosition != hochzeitStatus.hochzeitSpieler()) {
+            throw new IllegalStateException("Vor der Klaerung der Hochzeit darf nur der Hochzeits-Spieler Ansagen taetigen");
         }
         Ansagen neueAnsagen = ansagen.fuegeHinzu(
             spielerPosition,
@@ -293,7 +282,8 @@ public final class Spiel {
             neueAnsagen,
             abgeschlosseneStiche,
             aktuellerStich,
-            ergebnis
+            ergebnis,
+            hochzeitStatus
         );
     }
 
@@ -320,7 +310,8 @@ public final class Spiel {
             ansagen,
             abgeschlosseneStiche,
             null,
-            neuesErgebnis
+            neuesErgebnis,
+            hochzeitStatus
         );
     }
 
@@ -380,6 +371,10 @@ public final class Spiel {
         return Optional.ofNullable(ergebnis);
     }
 
+    public Optional<HochzeitStatus> hochzeitStatus() {
+        return Optional.ofNullable(hochzeitStatus);
+    }
+
     private Map<SpielerPosition, Hand> kopiereHaende() {
         EnumMap<SpielerPosition, Hand> kopie = new EnumMap<>(SpielerPosition.class);
         kopie.putAll(haende);
@@ -408,7 +403,7 @@ public final class Spiel {
 
     private TrumpfOrdnung trumpfOrdnungFuer(VorbehaltMeldung hoechsterVorbehalt) {
         return hoechsterVorbehalt == null ? trumpfOrdnung : switch (hoechsterVorbehalt.ansage()) {
-            case SOLO_TRUMPF -> new NormaleTrumpfOrdnung(spielregeln);
+            case SOLO_TRUMPF, HOCHZEIT -> new NormaleTrumpfOrdnung(spielregeln);
             case GESUND -> throw new IllegalStateException("GESUND ist kein aufloesbarer Vorbehalt");
         };
     }
@@ -416,6 +411,7 @@ public final class Spiel {
     private Parteien parteienFuer(VorbehaltMeldung hoechsterVorbehalt) {
         return switch (hoechsterVorbehalt.ansage()) {
             case SOLO_TRUMPF -> Parteien.ausSolo(hoechsterVorbehalt.spielerPosition());
+            case HOCHZEIT -> Parteien.ausHochzeit(hoechsterVorbehalt.spielerPosition());
             case GESUND -> throw new IllegalStateException("GESUND ist kein aufloesbarer Vorbehalt");
         };
     }
@@ -428,5 +424,51 @@ public final class Spiel {
         if (phase != erwartetePhase) {
             throw new IllegalStateException(aktion + " ist nur in Phase " + erwartetePhase + " erlaubt, war aber " + phase);
         }
+    }
+
+    private Spiel neuesSpielMitStichfortschritt(
+        Map<SpielerPosition, Hand> neueHaende,
+        List<Stich> neueAbgeschlosseneStiche,
+        Stich neuerAktuellerStich,
+        Spielphase neuePhase,
+        Parteien neueParteien,
+        HochzeitStatus neuerHochzeitStatus
+    ) {
+        return new Spiel(
+            spielregeln,
+            kartendeck,
+            trumpfOrdnung,
+            spieltyp,
+            geber,
+            neuePhase,
+            neueHaende,
+            vorbehalte,
+            neueParteien,
+            ansagen,
+            neueAbgeschlosseneStiche,
+            neuerAktuellerStich,
+            ergebnis,
+            neuerHochzeitStatus
+        );
+    }
+
+    private HochzeitFortschritt fortschrittNachVollstaendigemStich(Stich gespielterStich) {
+        if (hochzeitStatus == null || !hochzeitStatus.suchtPartner()) {
+            return new HochzeitFortschritt(parteien, hochzeitStatus);
+        }
+        HochzeitStatus neuerStatus = hochzeitStatus.mitGeklaertemStich(gespielterStich.gewinner(trumpfOrdnung).spieler());
+        if (neuerStatus.partner().isPresent()) {
+            Parteien neueParteien = parteien
+                .mitPartei(neuerStatus.partner().orElseThrow(), Partei.RE)
+                .mitOffenenParteienFuerAlle(SpielerPosition.standardReihenfolge());
+            return new HochzeitFortschritt(neueParteien, neuerStatus);
+        }
+        if (neuerStatus.stillesSolo()) {
+            return new HochzeitFortschritt(Parteien.ausSolo(neuerStatus.hochzeitSpieler()), neuerStatus);
+        }
+        return new HochzeitFortschritt(parteien, neuerStatus);
+    }
+
+    private record HochzeitFortschritt(Parteien parteien, HochzeitStatus status) {
     }
 }

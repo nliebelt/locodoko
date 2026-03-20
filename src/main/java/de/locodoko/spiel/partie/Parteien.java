@@ -49,6 +49,15 @@ public final class Parteien {
         return new Parteien(parteien, EnumSet.allOf(SpielerPosition.class));
     }
 
+    public static Parteien ausHochzeit(SpielerPosition hochzeitSpieler) {
+        Objects.requireNonNull(hochzeitSpieler, "hochzeitSpieler darf nicht null sein");
+        EnumMap<SpielerPosition, Partei> parteien = new EnumMap<>(SpielerPosition.class);
+        for (SpielerPosition position : SpielerPosition.standardReihenfolge()) {
+            parteien.put(position, position == hochzeitSpieler ? Partei.RE : Partei.KONTRA);
+        }
+        return new Parteien(parteien, EnumSet.of(hochzeitSpieler));
+    }
+
     public Partei parteiVon(SpielerPosition spielerPosition) {
         Objects.requireNonNull(spielerPosition, "spielerPosition darf nicht null sein");
         Partei partei = parteienNachSpieler.get(spielerPosition);
@@ -77,6 +86,24 @@ public final class Parteien {
 
     public Map<SpielerPosition, Partei> alsMap() {
         return parteienNachSpieler;
+    }
+
+    public Parteien mitPartei(SpielerPosition spielerPosition, Partei partei) {
+        Objects.requireNonNull(spielerPosition, "spielerPosition darf nicht null sein");
+        Objects.requireNonNull(partei, "partei darf nicht null sein");
+        EnumMap<SpielerPosition, Partei> neueParteien = new EnumMap<>(SpielerPosition.class);
+        neueParteien.putAll(parteienNachSpieler);
+        neueParteien.put(spielerPosition, partei);
+        return new Parteien(neueParteien, offenFuerAlle);
+    }
+
+    public Parteien mitOffenenParteienFuerAlle(Collection<SpielerPosition> spielerPositionen) {
+        Objects.requireNonNull(spielerPositionen, "spielerPositionen duerfen nicht null sein");
+        EnumSet<SpielerPosition> neuesOffenFuerAlle = offenFuerAlle.isEmpty()
+            ? EnumSet.noneOf(SpielerPosition.class)
+            : EnumSet.copyOf(offenFuerAlle);
+        neuesOffenFuerAlle.addAll(spielerPositionen);
+        return new Parteien(parteienNachSpieler, neuesOffenFuerAlle);
     }
 
     private static boolean hatKreuzDame(Hand hand) {
