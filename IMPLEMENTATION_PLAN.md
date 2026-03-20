@@ -43,6 +43,8 @@ Ausgangslage: Das Repository enthaelt jetzt ein baubares technisches Grundgerues
 - [x] Beim Tischstart wird jetzt in `src/main/java/de/locodoko/spielverwaltung/tisch` sofort ein echtes erstes Spiel mit ausgeteilten Haenden angelegt; `PartieStandAntwort` liefert fuer REST/WebSocket einen laufenden Spiel-Snapshot mit Geber, Phase, Sitzpositionen, Kartenanzahl, eigener sichtbarer Hand und spielerspezifischen Vorbehalts-/Aktionsoptionen.
 - [x] Neue Tests sichern WARUM dieser Ausbau wichtig ist: Der Backend-Test erzwingt, dass der Tischstart nicht bei einer leeren Partie stehenbleibt, sondern sofort vier Haende fuer die erste Vorbehaltsrunde persistiert; der Frontend-Test fixiert, dass die Tischansicht echte Snapshot-Daten nutzt und nur die eigene Hand offen anzeigt, damit weitere UI-Logik spaeter auf einem belastbaren serverseitigen Wahrheitsstand aufsetzt.
 - [x] Die Tischansicht in `frontend/src/szenen/TischSzene.ts` rendert jetzt einen echten Spielstart-Zustand statt eines Platzhalters: Spielerpositionen stammen aus dem Backend-Snapshot, die eigene Hand ist offen, Gegnerhaende bleiben verdeckt, der aktuelle Spieler/Phase wird sichtbar hervorgehoben und moegliche Vorbehalte werden angezeigt.
+- [x] Die Tischansicht wurde weiter vervollstaendigt: Das Frontend sortiert sichtbare Haende regelkonform fuer die Anzeige, zeigt Geber-/Partei-/Stichstatus deutlicher, rendert Backend-Optionen im HUD und besitzt jetzt einen echten Debug-Modus, der per benutzerbezogenem WebSocket-Debug-Snapshot alle Haende nur fuer den anfragenden Entwickler offenlegt.
+- [x] Neue Tests sichern WARUM dieser Ausbau wichtig ist: Der WebSocket-Test verhindert, dass der Debug-Modus versehentlich broadcastet statt nur benutzerbezogen alle Haende zu liefern; die Frontend-Tests fixieren Handsortierung und Debug-Durchreichung, damit spaetere Tisch- oder Replay-Ansichten keine widerspruechliche Kartenreihenfolge oder Entwickler-Sicht erzeugen.
 
 ## Offen - Prioritaet 0: Projektgrundgeruest und Build-Pipeline
 
@@ -95,7 +97,7 @@ Ausgangslage: Das Repository enthaelt jetzt ein baubares technisches Grundgerues
 
  - [x] Frontend-Grundgeruest mit Routing/Scene-Struktur, Asset-Loading und Verbindung zum Backend aufbauen.
  - [x] Lobby-Ansicht zum Erstellen, Beitreten und Starten von Tischen implementieren.
- - [ ] Tischansicht gemaess `specs/frontend-tischansicht.md` weiter vervollstaendigen: laufende Stichmitte mit ausgespielten Karten, Ansage-/Partei-Symbole, Debug-Modus, responsive Feinschliffe und echte Karten-Sprites.
+ - [ ] Tischansicht gemaess `specs/frontend-tischansicht.md` weiter vervollstaendigen: laufende Stichmitte mit ausgespielten Karten und echte Karten-Sprites fehlen noch; Ansage-/Partei-Symbole, Debug-Modus und responsive HUD-Feinschliffe sind umgesetzt.
 - [ ] UI-Logik gemaess `specs/frontend-ui-logik.md` umsetzen: nur gueltige Karten anklickbar, Ansage-Buttons phasenabhaengig, Vorbehalt-Dialoge, Punktestand, Debug-Modus.
 - [ ] Frontend an REST/WebSocket-Ereignisse anbinden, sodass ein menschlicher Spieler gegen drei KI-Spieler ein komplettes Spiel durchspielen kann.
 
@@ -125,3 +127,4 @@ Ausgangslage: Das Repository enthaelt jetzt ein baubares technisches Grundgerues
 - [x] Fuer den aktuellen Slice ist entschieden, vorerst eine explizite immutable Zustandslogik statt Spring Statemachine zu verwenden; falls WebSocket-Orchestrierung spaeter echten Mehrwert bringt, kann darauf aufgesetzt werden.
 - [x] Erste Persistenzentscheidung ist getroffen: Tisch, Konfiguration, Spieler sowie Partie-/Spiel-/Hand-/Stich-Snapshots werden relational gespeichert; Live-Orchestrierung fuer Session, Lobby-Workflows und Reconnect baut im naechsten Schritt darauf auf.
 - [ ] Reale Karten-Sprites, Feinschliff fuer UI-Stil und tiefere Frontend-Integrationstests muessen nach dem jetzt stehenden Fallback-Setup konkretisiert werden, sonst blockieren sie spaeter Tischansicht und Animationen.
+- [ ] Fuer echte Spielinteraktion fehlen noch serverseitige Spielaktions-Endpunkte und Folge-Snapshots fuer Kartenlegen/Ansagen; ohne diese kann das Frontend zwar jetzt Debug-Sicht und Status sauber darstellen, aber noch kein komplettes Spiel durchsteuern.

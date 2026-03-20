@@ -103,6 +103,34 @@ class WebSocketPublikationIntegrationTest {
         assertNotNull(snapshot.timestamp(), "Snapshots brauchen einen Timestamp, damit Reconnects deterministisch einsortiert werden koennen.");
     }
 
+    @Test
+    void sendetImDebugSnapshotAlleHandkartenNurAnDenAnfragendenBenutzer() {
+        String sessionCookie = registriereSpieler("Ada");
+        String sessionId = extrahiereSessionId(sessionCookie);
+
+        TischAntwort tisch = erstelleTisch(sessionCookie, "Debug-Tisch");
+        starteTisch(sessionCookie, tisch.id());
+
+        UUID partieId = findePartieIdFuerTisch(tisch.id());
+        nachrichtenSpeicher.leeren();
+
+        webSocketController.sendePartieDebugSnapshot(partieId, (Principal) () -> sessionId);
+
+        WebSocketNachrichtGesendet partieSnapshot = findeBenutzerNachricht(
+            nachrichtenSpeicher.nachrichten(),
+            sessionId,
+            "/queue/partie/" + partieId,
+            PartieEreignisAntwort.class
+        );
+        PartieEreignisAntwort ereignis = (PartieEreignisAntwort) partieSnapshot.payload();
+        assertNotNull(ereignis.partieStand().laufendesSpiel());
+        assertTrue(
+            ereignis.partieStand().laufendesSpiel().spieler().stream()
+                .allMatch(spieler -> spieler.sichtbareHandkarten() != null && spieler.sichtbareHandkarten().size() == 12),
+            "Der Debug-Snapshot soll fuer Entwicklungszwecke alle Haende nur benutzerbezogen offenlegen."
+        );
+    }
+
     private WebSocketNachrichtGesendet findeNachricht(
         List<WebSocketNachrichtGesendet> nachrichten,
         String ziel,
@@ -171,6 +199,19 @@ class WebSocketPublikationIntegrationTest {
 
     private String url(String pfad) {
         return "http://localhost:" + port + pfad;
+    }
+
+    private UUID findePartieIdFuerTisch(UUID tischId) {
+        return nachrichtenSpeicher.nachrichten().stream()
+            .filter(nachricht -> ("/topic/tisch/" + tischId).equals(nachricht.ziel()))
+            .map(WebSocketNachrichtGesendet::payload)
+            .filter(TischEreignisAntwort.class::isInstance)
+            .map(TischEreignisAntwort.class::cast)
+            .map(TischEreignisAntwort::partieStand)
+            .filter(Objects::nonNull)
+            .map(partieStand -> partieStand.partieId())
+            .findFirst()
+            .orElseThrow(() -> new AssertionError("Es wurde keine Partie-ID fuer den gestarteten Tisch publiziert."));
     }
 
     private String extrahiereSessionId(String sessionCookie) {

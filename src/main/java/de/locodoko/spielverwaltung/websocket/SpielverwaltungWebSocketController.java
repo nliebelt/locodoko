@@ -73,6 +73,17 @@ public class SpielverwaltungWebSocketController {
         );
     }
 
+    @MessageMapping("/partie/{partieId}/debug-snapshot")
+    public void sendePartieDebugSnapshot(@DestinationVariable UUID partieId, Principal principal) {
+        SpielerEntity spieler = ladeAktivenSpieler(principal);
+        LOGGER.info("Spieler {} fordert Debug-Partie-Snapshot {} per WebSocket an", spieler.id(), partieId);
+        tischEchtzeitService.sendeAnBenutzer(
+            principal.getName(),
+            "/queue/partie/" + partieId,
+            PartieEreignisAntwort.snapshot(tischService.ladePartieStand(partieId, spieler, true))
+        );
+    }
+
     @MessageExceptionHandler({
         SpielerSessionUngueltigException.class,
         SpielverwaltungNichtGefundenException.class,

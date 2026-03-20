@@ -49,6 +49,8 @@ export class TischSzene extends Phaser.Scene {
 
   private spielerListe?: HTMLUListElement;
 
+  private toastStack?: HTMLDivElement;
+
   constructor() {
     super('TischSzene');
   }
@@ -87,6 +89,13 @@ export class TischSzene extends Phaser.Scene {
         <button class="ui-button ui-button--secondary" type="button">Zur Lobby</button>
         <button class="ui-button ui-button--danger" type="button">Tisch verlassen</button>
         <button class="ui-button" type="button">Spiel starten</button>
+        <button class="ui-button ui-button--secondary" type="button">Debug aus</button>
+      </div>
+      <div class="ui-grid">
+        <div class="ui-stat-card"><span class="ui-hint">Spieltyp</span><strong data-spieltyp>-</strong></div>
+        <div class="ui-stat-card"><span class="ui-hint">Phase</span><strong data-phase>-</strong></div>
+        <div class="ui-stat-card"><span class="ui-hint">Aktiv</span><strong data-aktiv>-</strong></div>
+        <div class="ui-stat-card"><span class="ui-hint">Optionen</span><strong data-optionen>-</strong></div>
       </div>
       <h3>Spieler am Tisch</h3>
       <ul class="ui-list"></ul>
@@ -98,7 +107,13 @@ export class TischSzene extends Phaser.Scene {
     const lobbyButton = buttons.item(0);
     const leaveButton = buttons.item(1);
     const startButton = buttons.item(2);
-    if (!(statusElement instanceof HTMLParagraphElement) || !(spielerListe instanceof HTMLUListElement) || !(lobbyButton instanceof HTMLButtonElement) || !(leaveButton instanceof HTMLButtonElement) || !(startButton instanceof HTMLButtonElement)) {
+    const debugButton = buttons.item(3);
+    if (!(statusElement instanceof HTMLParagraphElement)
+      || !(spielerListe instanceof HTMLUListElement)
+      || !(lobbyButton instanceof HTMLButtonElement)
+      || !(leaveButton instanceof HTMLButtonElement)
+      || !(startButton instanceof HTMLButtonElement)
+      || !(debugButton instanceof HTMLButtonElement)) {
       throw new Error('Tisch-UI konnte nicht aufgebaut werden.');
     }
 
@@ -111,6 +126,9 @@ export class TischSzene extends Phaser.Scene {
     startButton.addEventListener('click', () => {
       void appStore.starteAktuellenTisch();
     });
+    debugButton.addEventListener('click', () => {
+      appStore.toggleDebugModus();
+    });
 
     const toastStack = document.createElement('div');
     toastStack.className = 'ui-toast-stack';
@@ -118,6 +136,7 @@ export class TischSzene extends Phaser.Scene {
     this.panel = links;
     this.statusElement = statusElement;
     this.spielerListe = spielerListe;
+    this.toastStack = toastStack;
     uiRoot.append(links, toastStack);
   }
 
@@ -127,15 +146,27 @@ export class TischSzene extends Phaser.Scene {
       return;
     }
 
+    const modell = erstelleTischAnsichtAusStatus(
+      zustand.spieler?.spielerId ?? null,
+      zustand.aktuellerTisch,
+      zustand.partieStand,
+      zustand.debugModus
+    );
+
     const buttons = this.panel.querySelectorAll('button');
     const leaveButton = buttons.item(1);
     const startButton = buttons.item(2);
+    const debugButton = buttons.item(3);
     if (leaveButton instanceof HTMLButtonElement) {
       leaveButton.disabled = zustand.wirdGeladen || tisch.status !== 'WARTEND';
     }
     if (startButton instanceof HTMLButtonElement) {
       const darfStarten = zustand.spieler?.spielerId === tisch.erstelltVonSpielerId && tisch.status === 'WARTEND';
       startButton.disabled = zustand.wirdGeladen || !darfStarten;
+    }
+    if (debugButton instanceof HTMLButtonElement) {
+      debugButton.textContent = zustand.debugModus ? 'Debug an' : 'Debug aus';
+      debugButton.disabled = zustand.wirdGeladen || !zustand.partieStand;
     }
 
     const statusZeile = [
@@ -153,19 +184,24 @@ export class TischSzene extends Phaser.Scene {
       statusZeile.push(`Fehler: ${zustand.meldung.text}`);
     }
     this.statusElement.textContent = statusZeile.join(' · ');
+    this.aktualisiereStatistiken(modell);
+    this.aktualisiereToasts(zustand);
 
     this.spielerListe.innerHTML = '';
-    tisch.spieler.forEach((spieler) => {
+    modell.spieler.forEach((spieler) => {
       const eintrag = document.createElement('li');
       eintrag.className = 'ui-list-item';
-      const istEigenerSpieler = spieler.spielerId === zustand.spieler?.spielerId;
+      const badge = spieler.position === 'SUED' ? 'Du' : spieler.istMensch ? 'Mensch' : 'KI';
+      const parteiBadge = spieler.partei ? `<span class="ui-badge ui-badge--partei">${spieler.partei}</span>` : '';
       eintrag.innerHTML = `
         <div class="ui-list-item__headline">
           <strong>${spieler.name}</strong>
-          <span class="ui-badge ${istEigenerSpieler ? 'ui-badge--highlight' : ''}">${istEigenerSpieler ? 'Du' : spieler.istKi ? 'KI' : 'Mensch'}</span>
+          <span class="ui-badge ${spieler.position === 'SUED' ? 'ui-badge--highlight' : ''}">${badge}</span>
         </div>
         <div class="ui-list-item__meta">
-          <span>${spieler.spielerId === tisch.erstelltVonSpielerId ? 'Ersteller' : 'Mitspieler'}</span>
+          <span>${spieler.istErsteller ? 'Ersteller' : spieler.statusText}</span>
+          <span>${spieler.istGeber ? 'Geber' : `${spieler.stiche} Stiche`}</span>
+          ${parteiBadge}
         </div>
       `;
       this.spielerListe?.append(eintrag);
@@ -174,7 +210,12 @@ export class TischSzene extends Phaser.Scene {
 
   private renderTisch(zustand: AppZustand): void {
     this.tischEbene?.destroy(true);
-    const modell = erstelleTischAnsichtAusStatus(zustand.spieler?.spielerId ?? null, zustand.aktuellerTisch, zustand.partieStand);
+    const modell = erstelleTischAnsichtAusStatus(
+      zustand.spieler?.spielerId ?? null,
+      zustand.aktuellerTisch,
+      zustand.partieStand,
+      zustand.debugModus
+    );
     const ebene = this.add.container(0, 0);
 
     ebene.add(this.add.rectangle(640, 360, 980, 530, 0x1d6b43, 0.96).setStrokeStyle(8, 0xd8f3dc, 0.42));
@@ -188,13 +229,19 @@ export class TischSzene extends Phaser.Scene {
       fontSize: '16px'
     }).setOrigin(0.5));
     const mitteText = modell.aktuellerSpieler
-      ? `Stichmitte\nAm Zug: ${modell.aktuellerSpieler}`
+      ? `Stichmitte\nAm Zug: ${modell.aktuellerSpieler}\n${modell.spieltyp ?? 'WARTEND'}`
       : 'Stichmitte';
     ebene.add(this.add.text(640, 360, mitteText, {
       color: '#f8f9fa',
       fontSize: '22px',
       align: 'center'
     }).setOrigin(0.5));
+    if (modell.moeglicheAnsagen.length > 0) {
+      ebene.add(this.add.text(640, 304, `Ansagen moeglich: ${modell.moeglicheAnsagen.join(', ')}`, {
+        color: '#a5d6a7',
+        fontSize: '16px'
+      }).setOrigin(0.5));
+    }
     if (modell.moeglicheVorbehalte.length > 0) {
       ebene.add(this.add.text(640, 420, `Vorbehalt moeglich: ${modell.moeglicheVorbehalte.join(', ')}`, {
         color: '#ffe082',
@@ -219,10 +266,25 @@ export class TischSzene extends Phaser.Scene {
         color: '#14361f',
         fontSize: '13px'
       }).setOrigin(0.5));
+      if (spieler.partei) {
+        ebene.add(this.add.text(position.x, position.y - 46, spieler.partei, {
+          color: spieler.partei === 'RE' ? '#ffd166' : '#90caf9',
+          fontSize: '14px',
+          fontStyle: 'bold'
+        }).setOrigin(0.5));
+      }
+      if (spieler.istGeber) {
+        ebene.add(this.add.text(position.x + 44, position.y - 48, 'G', {
+          color: '#f8f9fa',
+          fontSize: '14px',
+          fontStyle: 'bold',
+          backgroundColor: '#14361f'
+        }).setOrigin(0.5));
+      }
       this.renderKartenFaecher(
         ebene,
         spieler.position,
-        spieler.position === 'SUED' || modell.debugModus,
+        spieler.position === 'SUED' || (modell.debugModus && spieler.sichtbareHandkarten.length > 0),
         spieler.sichtbareHandkarten.length > 0 ? spieler.sichtbareHandkarten : undefined,
         spieler.verbleibendeKarten > 0 ? spieler.verbleibendeKarten : 4,
         modell.spielbareKarten
@@ -238,6 +300,41 @@ export class TischSzene extends Phaser.Scene {
     }
 
     this.tischEbene = ebene;
+  }
+
+  private aktualisiereStatistiken(modell: ReturnType<typeof erstelleTischAnsichtAusStatus>): void {
+    if (!this.panel) {
+      return;
+    }
+    this.setzeStatText('spieltyp', modell.spieltyp ?? 'Noch offen');
+    this.setzeStatText('phase', modell.phase ?? 'Warten');
+    this.setzeStatText('aktiv', modell.aktuellerSpieler ?? 'Niemand');
+    const optionen = [...modell.moeglicheAnsagen, ...modell.moeglicheVorbehalte];
+    this.setzeStatText('optionen', optionen.length > 0 ? optionen.join(', ') : 'Keine');
+  }
+
+  private setzeStatText(name: string, text: string): void {
+    const element = this.panel?.querySelector(`[data-${name}]`);
+    if (element) {
+      element.textContent = text;
+    }
+  }
+
+  private aktualisiereToasts(zustand: AppZustand): void {
+    if (!this.toastStack) {
+      return;
+    }
+    this.toastStack.innerHTML = '';
+    if (!zustand.meldung) {
+      return;
+    }
+    const toast = document.createElement('div');
+    toast.className = `ui-toast ${zustand.meldung.typ === 'fehler' ? 'ui-toast--error' : ''}`;
+    toast.innerHTML = `
+      <strong>${zustand.meldung.typ === 'fehler' ? 'Fehler' : 'Info'}</strong>
+      <div>${zustand.meldung.text}</div>
+    `;
+    this.toastStack.append(toast);
   }
 
   private renderKartenFaecher(
@@ -287,5 +384,6 @@ export class TischSzene extends Phaser.Scene {
       this.panel.parentElement.innerHTML = '';
     }
     this.panel = undefined;
+    this.toastStack = undefined;
   }
 }

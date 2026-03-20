@@ -167,7 +167,11 @@ describe('AppStore', () => {
     });
     expect(echtzeit.sendungen).toContain('/app/partie/partie-1/snapshot');
 
+    store.toggleDebugModus();
+    expect(store.snapshot().debugModus).toBe(true);
+    expect(echtzeit.sendungen).toContain('/app/partie/partie-1/debug-snapshot');
+
     await store.verlasseAktuellenTisch();
-    expect(store.snapshot()).toMatchObject({ bereich: 'LOBBY', aktuellerTisch: null, partieStand: null });
+    expect(store.snapshot()).toMatchObject({ bereich: 'LOBBY', aktuellerTisch: null, partieStand: null, debugModus: true });
   });
 });

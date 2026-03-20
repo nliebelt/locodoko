@@ -29,10 +29,14 @@ public record PartieStandAntwort(
 ) {
 
     public static PartieStandAntwort aus(PartieEntity partie) {
-        return aus(partie, null);
+        return aus(partie, null, false);
     }
 
     public static PartieStandAntwort aus(PartieEntity partie, UUID sichtbarerSpielerId) {
+        return aus(partie, sichtbarerSpielerId, false);
+    }
+
+    public static PartieStandAntwort aus(PartieEntity partie, UUID sichtbarerSpielerId, boolean debugModus) {
         SpielEntity laufendesSpiel = partie.spiele().stream()
             .filter(spiel -> spiel.ergebnis() == null)
             .reduce((erstes, zweites) -> zweites)
@@ -43,7 +47,7 @@ public record PartieStandAntwort(
             partie.anzahlSpiele(),
             partie.spiele().stream().filter(spiel -> spiel.ergebnis() != null).toList().size(),
             partie.gesamtpunktestand(),
-            LaufendesSpielAntwort.aus(partie, laufendesSpiel, sichtbarerSpielerId)
+            LaufendesSpielAntwort.aus(partie, laufendesSpiel, sichtbarerSpielerId, debugModus)
         );
     }
 
@@ -59,7 +63,7 @@ public record PartieStandAntwort(
         List<VorbehaltAnsage> moeglicheVorbehalte
     ) {
 
-        static LaufendesSpielAntwort aus(PartieEntity partie, SpielEntity laufendesSpiel, UUID sichtbarerSpielerId) {
+        static LaufendesSpielAntwort aus(PartieEntity partie, SpielEntity laufendesSpiel, UUID sichtbarerSpielerId, boolean debugModus) {
             if (laufendesSpiel == null) {
                 return null;
             }
@@ -67,6 +71,7 @@ public record PartieStandAntwort(
             Map<SpielerPosition, SpielerEntity> spielerNachPosition = spielerNachPosition(partie);
             SpielerPosition sichtbarePosition = positionVonSpieler(spielerNachPosition, sichtbarerSpielerId);
             SpielerPosition aktuellerSpieler = aktuellerSpieler(laufendesSpiel);
+            boolean zeigeAlleHaende = debugModus && sichtbarePosition != null;
 
             List<SpielerImSpielAntwort> spieler = new ArrayList<>();
             for (SpielerPosition position : SpielerPosition.standardReihenfolge()) {
@@ -77,7 +82,8 @@ public record PartieStandAntwort(
                     hand,
                     sichtbarePosition,
                     aktuellerSpieler,
-                    laufendesSpiel.geberPosition()
+                    laufendesSpiel.geberPosition(),
+                    zeigeAlleHaende
                 ));
             }
 
@@ -185,9 +191,10 @@ public record PartieStandAntwort(
             HandEntity hand,
             SpielerPosition sichtbarePosition,
             SpielerPosition aktuellerSpieler,
-            SpielerPosition geberPosition
+            SpielerPosition geberPosition,
+            boolean zeigeAlleHaende
         ) {
-            List<KarteAntwort> sichtbareHandkarten = position == sichtbarePosition && hand != null
+            List<KarteAntwort> sichtbareHandkarten = hand != null && (zeigeAlleHaende || position == sichtbarePosition)
                 ? hand.karten().stream()
                     .map(karte -> new Karte(karte.farbe(), karte.wert(), karte.exemplarIndex()))
                     .map(KarteAntwort::aus)

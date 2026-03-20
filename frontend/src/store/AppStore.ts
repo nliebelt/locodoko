@@ -24,6 +24,7 @@ export interface AppZustand {
   wirdGeladen: boolean;
   bereich: 'LOBBY' | 'TISCH';
   verbindung: 'offline' | 'verbinde' | 'verbunden' | 'fehler';
+  debugModus: boolean;
   spieler: SpielerSessionAntwort | null;
   tische: TischListenEintragAntwort[];
   aktuellerTisch: TischAntwort | null;
@@ -39,6 +40,7 @@ function erzeugeAnfangszustand(): AppZustand {
     wirdGeladen: false,
     bereich: 'LOBBY',
     verbindung: 'offline',
+    debugModus: false,
     spieler: null,
     tische: [],
     aktuellerTisch: null,
@@ -156,6 +158,12 @@ export class AppStore {
     this.patch({ meldung: null });
   }
 
+  toggleDebugModus(): void {
+    const debugModus = !this.zustand.debugModus;
+    this.patch({ debugModus });
+    this.fordereAktuellenPartieSnapshotAn(debugModus);
+  }
+
   trennen(): void {
     this.setzeTischAbosZurueck();
     this.gemeinsameAbos.splice(0).forEach((abmelden) => abmelden());
@@ -210,9 +218,7 @@ export class AppStore {
     }
 
     this.echtzeit.senden(`/app/tisch/${tischId}/snapshot`);
-    if (partieId) {
-      this.echtzeit.senden(`/app/partie/${partieId}/snapshot`);
-    }
+    this.forderePartieSnapshotAn(partieId, this.zustand.debugModus);
   }
 
   private registrierePartieAbos(partieId: Uuid): void {
@@ -224,6 +230,17 @@ export class AppStore {
         this.patch({ partieStand: ereignis.partieStand });
       })
     );
+  }
+
+  private fordereAktuellenPartieSnapshotAn(debugModus: boolean): void {
+    this.forderePartieSnapshotAn(this.zustand.aktuellerTisch?.partieId ?? this.zustand.partieStand?.partieId ?? null, debugModus);
+  }
+
+  private forderePartieSnapshotAn(partieId: Uuid | null, debugModus: boolean): void {
+    if (!partieId) {
+      return;
+    }
+    this.echtzeit.senden(debugModus ? `/app/partie/${partieId}/debug-snapshot` : `/app/partie/${partieId}/snapshot`);
   }
 
   private verarbeiteTischEreignis(ereignis: TischEreignisAntwort): void {

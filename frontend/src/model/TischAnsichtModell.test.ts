@@ -168,8 +168,128 @@ describe('erstelleTischAnsichtAusStatus', () => {
     expect(modell.untertitel).toContain('NORMALSPIEL');
     expect(modell.aktuellerSpieler).toBe('WEST');
     expect(modell.moeglicheVorbehalte).toEqual(['GESUND', 'SOLO_TRUMPF']);
+    expect(modell.moeglicheAnsagen).toEqual([]);
     expect(modell.spieler[0].sichtbareHandkarten).toHaveLength(1);
     expect(modell.spieler[1].sichtbareHandkarten).toEqual([]);
     expect(modell.spieler[1].statusText).toBe('Am Zug');
+  });
+
+  it('sortiert sichtbare Handkarten nach Trumpf- und Fehlrang und reicht den Debug-Modus durch', () => {
+    const modell = erstelleTischAnsichtAusStatus('spieler-1', {
+      id: 'tisch-1',
+      name: 'Abendrunde',
+      status: 'IM_SPIEL',
+      erstelltVonSpielerId: 'spieler-1',
+      partieId: 'partie-1',
+      konfiguration: {
+        ohneNeunen: false,
+        anzahlSpiele: 8,
+        hochzeitErlaubt: true,
+        armutErlaubt: true,
+        damensoloErlaubt: true,
+        bubensoloErlaubt: true,
+        fleischlosErlaubt: true,
+        trumpfsoloErlaubt: true,
+        zweiteDulleSticht: true,
+        fuchsGefangenAktiv: true,
+        karlchenAktiv: true,
+        doppelkopfAktiv: true,
+        mindestkartenReKontra: 11,
+        mindestkartenKeine90: 10,
+        mindestkartenKeine60: 9,
+        mindestkartenKeine30: 8,
+        mindestkartenSchwarz: 7
+      },
+      spieler: [
+        { spielerId: 'spieler-1', name: 'Anna', istKi: false },
+        { spielerId: 'spieler-2', name: 'Ben', istKi: true },
+        { spielerId: 'spieler-3', name: 'Clara', istKi: true },
+        { spielerId: 'spieler-4', name: 'Dirk', istKi: true }
+      ]
+    }, {
+      partieId: 'partie-1',
+      status: 'LAUFEND',
+      anzahlSpiele: 8,
+      gespielteSpiele: 0,
+      gesamtpunktestand: { SUED: 0, WEST: 0, NORD: 0, OST: 0 },
+      laufendesSpiel: {
+        spielNummer: 1,
+        spieltyp: 'NORMALSPIEL',
+        phase: 'STICHPHASE',
+        geber: 'SUED',
+        aktuellerSpieler: 'SUED',
+        spielbareKarten: [{ id: 'HERZ-ZEHN-1', farbe: 'HERZ', wert: 'ZEHN', exemplarIndex: 1 }],
+        moeglicheAnsagen: ['RE'],
+        moeglicheVorbehalte: [],
+        spieler: [
+          {
+            position: 'SUED',
+            spielerId: 'spieler-1',
+            name: 'Anna',
+            istKi: false,
+            istSelbst: true,
+            istGeber: true,
+            istAmZug: true,
+            verbleibendeKarten: 3,
+            gewonneneStiche: 1,
+            partei: 'RE',
+            sichtbareHandkarten: [
+              { id: 'KREUZ-AS-1', farbe: 'KREUZ', wert: 'AS', exemplarIndex: 1 },
+              { id: 'HERZ-ZEHN-1', farbe: 'HERZ', wert: 'ZEHN', exemplarIndex: 1 },
+              { id: 'KARO-KOENIG-1', farbe: 'KARO', wert: 'KOENIG', exemplarIndex: 1 }
+            ]
+          },
+          {
+            position: 'WEST',
+            spielerId: 'spieler-2',
+            name: 'Ben',
+            istKi: true,
+            istSelbst: false,
+            istGeber: false,
+            istAmZug: false,
+            verbleibendeKarten: 3,
+            gewonneneStiche: 0,
+            partei: 'KONTRA',
+            sichtbareHandkarten: null
+          },
+          {
+            position: 'NORD',
+            spielerId: 'spieler-3',
+            name: 'Clara',
+            istKi: true,
+            istSelbst: false,
+            istGeber: false,
+            istAmZug: false,
+            verbleibendeKarten: 3,
+            gewonneneStiche: 0,
+            partei: null,
+            sichtbareHandkarten: null
+          },
+          {
+            position: 'OST',
+            spielerId: 'spieler-4',
+            name: 'Dirk',
+            istKi: true,
+            istSelbst: false,
+            istGeber: false,
+            istAmZug: false,
+            verbleibendeKarten: 3,
+            gewonneneStiche: 0,
+            partei: null,
+            sichtbareHandkarten: null
+          }
+        ]
+      }
+    }, true);
+
+    expect(modell.debugModus).toBe(true);
+    expect(modell.moeglicheAnsagen).toEqual(['RE']);
+    expect(modell.spieler[0].partei).toBe('RE');
+    expect(modell.spieler[0].istGeber).toBe(true);
+    expect(modell.spieler[0].sichtbareHandkarten.map((karte) => karte.id)).toEqual([
+      'HERZ-ZEHN-1',
+      'KARO-KOENIG-1',
+      'KREUZ-AS-1'
+    ]);
   });
 });

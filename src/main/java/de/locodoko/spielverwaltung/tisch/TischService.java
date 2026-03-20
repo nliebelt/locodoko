@@ -211,6 +211,11 @@ public class TischService {
         return PartieStandAntwort.aus(ladePartieEntity(partieId), spieler.id());
     }
 
+    @Transactional(readOnly = true)
+    public PartieStandAntwort ladePartieStand(UUID partieId, SpielerEntity spieler, boolean debugModus) {
+        return PartieStandAntwort.aus(ladePartieEntity(partieId), spieler.id(), debugModus);
+    }
+
     private PartieEntity ladePartieEntity(UUID partieId) {
         PartieEntity partie = partieRepository.findById(partieId)
             .orElseThrow(() -> new SpielverwaltungNichtGefundenException(
