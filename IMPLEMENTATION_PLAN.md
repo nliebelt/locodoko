@@ -16,6 +16,8 @@ Ausgangslage: Das Repository enthaelt jetzt ein baubares technisches Grundgerues
 - [x] Qualitaetssicherung laeuft fuer Grundgeruest: `mvn test`, `cd frontend && npm test`, `cd frontend && npm run lint`, `cd frontend && npm run build`, `mvn clean verify`.
 - [x] Entwicklungsprofil mit H2 und vorbereitetes Produktionsprofil fuer PostgreSQL sind konfiguriert.
 - [x] Basis-Tests sichern WARUM das Grundgeruest wichtig ist: Backend-Test prueft Startfaehigkeit und API-Erreichbarkeit frueh, Frontend-Test fixiert die Sitzordnung/Normalspiel-Handgroesse als Fundament fuer die spaetere Tischansicht.
+- [x] Domainenkern fuer Karten und Regeln liegt jetzt in `src/main/java/de/locodoko/spiel/karten`: Farben, Werte, Karten, Spieltypen, Spielerpositionen, Haende, Deck-Erzeugung mit/ohne Neunen, austauschbare Trumpfstrategie und Stichlogik inklusive Spielzug-Validierung.
+- [x] Neue Backend-Tests sichern WARUM dieser Kern wichtig ist: Sie fixieren Deckgroesse und 240-Augen-Invariante, pruefen Trumpfhierarchie und Dullen-Sonderfall und erzwingen Bedienpflicht sowie Gewinnerermittlung als serverseitige Wahrheitsquelle fuer KI, UI und Wertung.
 
 ## Offen - Prioritaet 0: Projektgrundgeruest und Build-Pipeline
 
@@ -27,11 +29,11 @@ Ausgangslage: Das Repository enthaelt jetzt ein baubares technisches Grundgerues
 
 ## Offen - Prioritaet 1: Domainenkern fuer Karten und Regeln
 
-- [ ] Domainenmodell fuer Karten, Farben, Werte, Trumpf, Spieltypen, Spielerpositionen und Haende anlegen gemaess `specs/kartendeck.md` und `specs/trumpfhierarchie.md`.
-- [ ] Kartenstapel mit Mischen und Austeilen fuer 48 Karten sowie die Variante ohne Neunen implementieren.
-- [ ] Trumpf- und Ranglogik fuer Normalspiel sowie Solo-Varianten kapseln, damit dieselbe Bewertungslogik spaeter in Stichlogik, UI-Sortierung und KI wiederverwendet werden kann.
-- [ ] Stichmodell und Spielzug-Validierung gemaess `specs/stichlogik.md` implementieren: angefragte Farbe, Bedienpflicht, gueltige Karten, Gewinnerermittlung, Augenberechnung, Reihenfolge im Uhrzeigersinn.
-- [ ] Unit-Tests fuer Kartenverteilung, Trumpfordnung, Bedienpflicht und Stichgewinner vorziehen; das ist die kritische Grundlage fuer alle weiteren Pakete.
+- [x] Domainenmodell fuer Karten, Farben, Werte, Trumpf, Spieltypen, Spielerpositionen und Haende anlegen gemaess `specs/kartendeck.md` und `specs/trumpfhierarchie.md`.
+- [x] Kartenstapel mit Mischen und Austeilen fuer 48 Karten sowie die Variante ohne Neunen implementieren.
+- [x] Trumpf- und Ranglogik fuer Normalspiel sowie Solo-Varianten kapseln, damit dieselbe Bewertungslogik spaeter in Stichlogik, UI-Sortierung und KI wiederverwendet werden kann.
+- [x] Stichmodell und Spielzug-Validierung gemaess `specs/stichlogik.md` implementieren: angefragte Farbe, Bedienpflicht, gueltige Karten, Gewinnerermittlung, Augenberechnung, Reihenfolge im Uhrzeigersinn.
+- [x] Unit-Tests fuer Kartenverteilung, Trumpfordnung, Bedienpflicht und Stichgewinner vorziehen; das ist die kritische Grundlage fuer alle weiteren Pakete.
 
 ## Offen - Prioritaet 2: Spielablauf, Zustandsmaschine und Parteien
 
@@ -88,7 +90,7 @@ Ausgangslage: Das Repository enthaelt jetzt ein baubares technisches Grundgerues
 ## Empfohlene Umsetzungsreihenfolge fuer den ersten spielbaren End-to-End-Vertical-Slice
 
 - [x] Zuerst Projektgrundgeruest, Build und Test-Setup herstellen.
-- [ ] Dann Kartenmodell, Trumpfordnung und Stichlogik inklusive Tests fertigstellen.
+- [x] Dann Kartenmodell, Trumpfordnung und Stichlogik inklusive Tests fertigstellen.
 - [ ] Danach Spielablauf fuer ein Normalspiel ohne Sonderspiele vertikal bis zur Auswertung durchziehen.
 - [ ] Anschliessend KI fuer regelkonformes Spielen und ein minimales Frontend fuer Lobby + Tischansicht anbinden.
 - [ ] Erst danach Ansagen, Sonderpunkte, Hochzeit, Armut und Solo-Varianten schrittweise ergaenzen.
