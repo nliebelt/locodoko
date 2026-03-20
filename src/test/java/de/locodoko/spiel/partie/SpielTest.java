@@ -210,6 +210,132 @@ class SpielTest {
     }
 
     @Test
+    void loestArmutMitKartentauschAufUndMachtDenAnnehmendenSpielerZumRePartner() {
+        Karte ersteArmutskarte = karte(Farbe.KREUZ, Kartenwert.DAME, 1);
+        Karte zweiteArmutskarte = karte(Farbe.KREUZ, Kartenwert.BUBE, 1);
+        Karte dritteArmutskarte = karte(Farbe.KARO, Kartenwert.AS, 1);
+        Karte rueckgabeEins = karte(Farbe.KREUZ, Kartenwert.AS, 2);
+        Karte rueckgabeZwei = karte(Farbe.PIK, Kartenwert.AS, 2);
+        Karte rueckgabeDrei = karte(Farbe.HERZ, Kartenwert.AS, 1);
+        Spiel spiel = Spiel.neu(SpielerPosition.SUED, spielregeln, kartendeckMitVerteiltenHaenden(Map.of(
+                SpielerPosition.WEST, handMitDreiTruepfen(ersteArmutskarte, zweiteArmutskarte, dritteArmutskarte),
+                SpielerPosition.OST, gegenhandFuerArmutAnnahme(rueckgabeEins, rueckgabeZwei, rueckgabeDrei)
+            )))
+            .teileKartenAus()
+            .meldeVorbehalt(SpielerPosition.WEST, VorbehaltAnsage.ARMUT)
+            .meldeGesund(SpielerPosition.NORD)
+            .meldeGesund(SpielerPosition.OST)
+            .meldeGesund(SpielerPosition.SUED)
+            .loeseVorbehalteAuf();
+
+        assertEquals(Spielphase.ARMUT_TAUSCH, spiel.phase(),
+            "Armut braucht eine eigene Tauschphase vor dem ersten Stich, damit Angebot und Annahme serverseitig validiert werden.");
+        assertEquals(Spieltyp.ARMUT, spiel.spieltyp());
+
+        spiel = spiel.legeArmutTrumpfkarten(SpielerPosition.WEST, List.of(ersteArmutskarte, zweiteArmutskarte, dritteArmutskarte));
+        assertEquals(SpielerPosition.NORD, spiel.armutStatus().orElseThrow().aktuellerAntwortspieler().orElseThrow(),
+            "Nach dem verdeckten Angebot muss die Annahme links vom Armut-Spieler beginnen und im Uhrzeigersinn weiterlaufen.");
+
+        spiel = spiel.lehneArmutAb(SpielerPosition.NORD)
+            .nimmArmutAn(SpielerPosition.OST, List.of(rueckgabeEins, rueckgabeZwei, rueckgabeDrei));
+
+        assertEquals(Spielphase.STICHPHASE, spiel.phase());
+        assertEquals(List.of(SpielerPosition.WEST, SpielerPosition.OST), spiel.parteien().spielerVon(Partei.RE),
+            "Armut-Spieler und annehmender Spieler muessen danach gemeinsam Re bilden, sonst stimmen Ansagen und Wertung nicht.");
+        assertEquals(12, spiel.handVon(SpielerPosition.WEST).karten().size());
+        assertEquals(12, spiel.handVon(SpielerPosition.OST).karten().size(),
+            "Nach dem Tausch muessen beide beteiligten Haende wieder die normale Kartenzahl haben, damit die Stichphase korrekt startet.");
+        assertTrue(spiel.handVon(SpielerPosition.WEST).enthaelt(rueckgabeEins));
+        assertTrue(spiel.handVon(SpielerPosition.WEST).enthaelt(rueckgabeZwei));
+        assertTrue(spiel.handVon(SpielerPosition.WEST).enthaelt(rueckgabeDrei));
+        assertTrue(spiel.handVon(SpielerPosition.OST).enthaelt(ersteArmutskarte));
+        assertTrue(spiel.handVon(SpielerPosition.OST).enthaelt(zweiteArmutskarte));
+        assertTrue(spiel.handVon(SpielerPosition.OST).enthaelt(dritteArmutskarte));
+        assertFalse(spiel.handVon(SpielerPosition.WEST).enthaelt(ersteArmutskarte));
+        assertFalse(spiel.handVon(SpielerPosition.OST).enthaelt(rueckgabeEins));
+        assertEquals(SpielerPosition.WEST, spiel.aktuellerStich().orElseThrow().aufspieler());
+        for (SpielerPosition ziel : SpielerPosition.standardReihenfolge()) {
+            assertTrue(spiel.parteien().sichtAufPartei(SpielerPosition.NORD, ziel).isPresent(),
+                "Nach einem angenommenen Armut-Tausch muessen die festen Parteien offenliegen, damit keine verdeckte Partnerinformation uebrig bleibt.");
+        }
+    }
+
+    @Test
+    void lehntArmutMitMehrAlsDreiTrumpfenOderBeiDeaktivierterRegelAb() {
+        Spiel spielMitVierTruepfen = Spiel.neu(SpielerPosition.SUED, spielregeln, kartendeckMitVerteiltenHaenden(Map.of(
+                SpielerPosition.WEST, List.of(
+                    karte(Farbe.KREUZ, Kartenwert.DAME, 1),
+                    karte(Farbe.KREUZ, Kartenwert.BUBE, 1),
+                    karte(Farbe.KARO, Kartenwert.AS, 1),
+                    karte(Farbe.KARO, Kartenwert.KOENIG, 1),
+                    karte(Farbe.KREUZ, Kartenwert.AS, 1),
+                    karte(Farbe.KREUZ, Kartenwert.KOENIG, 1),
+                    karte(Farbe.KREUZ, Kartenwert.ZEHN, 1),
+                    karte(Farbe.KREUZ, Kartenwert.NEUN, 1),
+                    karte(Farbe.PIK, Kartenwert.AS, 1),
+                    karte(Farbe.PIK, Kartenwert.KOENIG, 1),
+                    karte(Farbe.PIK, Kartenwert.ZEHN, 1),
+                    karte(Farbe.PIK, Kartenwert.NEUN, 1)
+                )
+            )))
+            .teileKartenAus();
+
+        assertThrows(IllegalStateException.class,
+            () -> spielMitVierTruepfen.meldeVorbehalt(SpielerPosition.WEST, VorbehaltAnsage.ARMUT),
+            "Armut darf nur mit hoechstens drei Truepfen angemeldet werden, damit das Sonderspiel auf echte Mangellagen beschraenkt bleibt.");
+
+        Spielregeln armutDeaktiviert = spielregeln.mitArmutAktiv(false);
+        Spiel deaktiviertesSpiel = Spiel.neu(SpielerPosition.SUED, armutDeaktiviert, kartendeckMitVerteiltenHaenden(Map.of(
+                SpielerPosition.WEST, handMitDreiTruepfen(
+                    karte(Farbe.KREUZ, Kartenwert.DAME, 1),
+                    karte(Farbe.KREUZ, Kartenwert.BUBE, 1),
+                    karte(Farbe.KARO, Kartenwert.AS, 1)
+                )
+            )))
+            .teileKartenAus();
+
+        assertThrows(IllegalStateException.class,
+            () -> deaktiviertesSpiel.meldeVorbehalt(SpielerPosition.WEST, VorbehaltAnsage.ARMUT),
+            "Die Tischkonfiguration muss Armut serverseitig sperren koennen, damit Frontend und Backend dieselben Sonderspiel-Regeln teilen.");
+    }
+
+    @Test
+    void wirftNeuEinWennNiemandDieArmutAnnimmt() {
+        Spiel spiel = Spiel.neu(SpielerPosition.SUED, spielregeln, kartendeckMitVerteiltenHaenden(Map.of(
+                SpielerPosition.WEST, handMitDreiTruepfen(
+                    karte(Farbe.KREUZ, Kartenwert.DAME, 1),
+                    karte(Farbe.KREUZ, Kartenwert.BUBE, 1),
+                    karte(Farbe.KARO, Kartenwert.AS, 1)
+                )
+            )))
+            .teileKartenAus()
+            .meldeVorbehalt(SpielerPosition.WEST, VorbehaltAnsage.ARMUT)
+            .meldeGesund(SpielerPosition.NORD)
+            .meldeGesund(SpielerPosition.OST)
+            .meldeGesund(SpielerPosition.SUED)
+            .loeseVorbehalteAuf()
+            .legeArmutTrumpfkarten(SpielerPosition.WEST, List.of(
+                karte(Farbe.KREUZ, Kartenwert.DAME, 1),
+                karte(Farbe.KREUZ, Kartenwert.BUBE, 1),
+                karte(Farbe.KARO, Kartenwert.AS, 1)
+            ))
+            .lehneArmutAb(SpielerPosition.NORD)
+            .lehneArmutAb(SpielerPosition.OST)
+            .lehneArmutAb(SpielerPosition.SUED);
+
+        assertEquals(Spielphase.VORBEHALT_ANSAGE, spiel.phase(),
+            "Wenn niemand die Armut annimmt, muss sofort neu gemischt und wieder mit einer frischen Vorbehaltsrunde gestartet werden.");
+        assertEquals(Spieltyp.NORMALSPIEL, spiel.spieltyp());
+        assertTrue(spiel.armutStatus().isEmpty());
+        assertTrue(spiel.vorbehalte().isEmpty());
+        assertEquals(SpielerPosition.WEST, spiel.naechsterVorbehaltSpieler().orElseThrow());
+        for (SpielerPosition position : SpielerPosition.standardReihenfolge()) {
+            assertEquals(12, spiel.handVon(position).karten().size(),
+                "Auch nach einem Einwurf muessen alle Spieler wieder vollstaendige Haende erhalten, damit die neue Runde sauber beginnt.");
+        }
+    }
+
+    @Test
     void lehntTrumpfsoloAbWennEsPerRegelnDeaktiviertIst() {
         Spielregeln soloDeaktiviert = spielregeln.mitSoloTrumpfAktiv(false);
         Spiel spiel = Spiel.neu(SpielerPosition.SUED, soloDeaktiviert, kartendeckMitKontrolliertenHaenden())
@@ -369,6 +495,40 @@ class SpielTest {
             karten.add(karteFuerSpieler(index, SpielerPosition.OST));
         }
         return kartendeckAus(karten);
+    }
+
+    private List<Karte> handMitDreiTruepfen(Karte ersteTrumpfkarte, Karte zweiteTrumpfkarte, Karte dritteTrumpfkarte) {
+        return List.of(
+            ersteTrumpfkarte,
+            zweiteTrumpfkarte,
+            dritteTrumpfkarte,
+            karte(Farbe.KREUZ, Kartenwert.AS, 1),
+            karte(Farbe.KREUZ, Kartenwert.KOENIG, 1),
+            karte(Farbe.KREUZ, Kartenwert.ZEHN, 1),
+            karte(Farbe.KREUZ, Kartenwert.NEUN, 1),
+            karte(Farbe.PIK, Kartenwert.AS, 1),
+            karte(Farbe.PIK, Kartenwert.KOENIG, 1),
+            karte(Farbe.PIK, Kartenwert.ZEHN, 1),
+            karte(Farbe.PIK, Kartenwert.NEUN, 1),
+            karte(Farbe.HERZ, Kartenwert.KOENIG, 1)
+        );
+    }
+
+    private List<Karte> gegenhandFuerArmutAnnahme(Karte rueckgabeEins, Karte rueckgabeZwei, Karte rueckgabeDrei) {
+        return List.of(
+            rueckgabeEins,
+            rueckgabeZwei,
+            rueckgabeDrei,
+            karte(Farbe.KREUZ, Kartenwert.KOENIG, 2),
+            karte(Farbe.KREUZ, Kartenwert.ZEHN, 2),
+            karte(Farbe.KREUZ, Kartenwert.NEUN, 2),
+            karte(Farbe.PIK, Kartenwert.KOENIG, 2),
+            karte(Farbe.PIK, Kartenwert.ZEHN, 2),
+            karte(Farbe.PIK, Kartenwert.NEUN, 2),
+            karte(Farbe.HERZ, Kartenwert.KOENIG, 2),
+            karte(Farbe.HERZ, Kartenwert.NEUN, 1),
+            karte(Farbe.HERZ, Kartenwert.NEUN, 2)
+        );
     }
 
     private Karte karteFuerSpieler(int index, SpielerPosition spielerPosition) {

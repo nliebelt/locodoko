@@ -48,4 +48,20 @@ public final class Hand {
         verbleibendeKarten.remove(karte);
         return new Hand(verbleibendeKarten);
     }
+
+    public Hand ohneAlle(Collection<Karte> zuEntfernendeKarten) {
+        Objects.requireNonNull(zuEntfernendeKarten, "zuEntfernendeKarten duerfen nicht null sein");
+        Hand aktuelleHand = this;
+        for (Karte karte : zuEntfernendeKarten) {
+            aktuelleHand = aktuelleHand.ohne(karte);
+        }
+        return aktuelleHand;
+    }
+
+    public Hand mitAllen(Collection<Karte> neueKarten) {
+        Objects.requireNonNull(neueKarten, "neueKarten duerfen nicht null sein");
+        List<Karte> erweiterteKarten = new ArrayList<>(karten);
+        erweiterteKarten.addAll(neueKarten);
+        return new Hand(erweiterteKarten);
+    }
 }

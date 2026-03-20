@@ -33,6 +33,7 @@ public final class Spiel {
     private final Stich aktuellerStich;
     private final Spielergebnis ergebnis;
     private final HochzeitStatus hochzeitStatus;
+    private final ArmutStatus armutStatus;
 
     private Spiel(
         Spielregeln spielregeln,
@@ -48,7 +49,8 @@ public final class Spiel {
         List<Stich> abgeschlosseneStiche,
         Stich aktuellerStich,
         Spielergebnis ergebnis,
-        HochzeitStatus hochzeitStatus
+        HochzeitStatus hochzeitStatus,
+        ArmutStatus armutStatus
     ) {
         this.spielregeln = Objects.requireNonNull(spielregeln, "spielregeln duerfen nicht null sein");
         this.kartendeck = Objects.requireNonNull(kartendeck, "kartendeck darf nicht null sein");
@@ -64,6 +66,7 @@ public final class Spiel {
         this.aktuellerStich = aktuellerStich;
         this.ergebnis = ergebnis;
         this.hochzeitStatus = hochzeitStatus;
+        this.armutStatus = armutStatus;
     }
 
     public static Spiel neu(SpielerPosition geber, Spielregeln spielregeln, Kartendeck kartendeck) {
@@ -80,6 +83,7 @@ public final class Spiel {
             null,
             Ansagen.leer(),
             List.of(),
+            null,
             null,
             null,
             null
@@ -100,6 +104,7 @@ public final class Spiel {
             null,
             ansagen,
             abgeschlosseneStiche,
+            null,
             null,
             null,
             null
@@ -149,7 +154,8 @@ public final class Spiel {
             abgeschlosseneStiche,
             aktuellerStich,
             ergebnis,
-            hochzeitStatus
+            hochzeitStatus,
+            armutStatus
         );
     }
 
@@ -162,14 +168,18 @@ public final class Spiel {
         HochzeitStatus neuerHochzeitStatus = hoechsterVorbehalt != null && hoechsterVorbehalt.ansage() == VorbehaltAnsage.HOCHZEIT
             ? HochzeitStatus.gestartet(hoechsterVorbehalt.spielerPosition())
             : null;
-        Stich ersterStich = Stich.neu(geber.naechsteImUhrzeigersinn());
+        ArmutStatus neuerArmutStatus = hoechsterVorbehalt != null && hoechsterVorbehalt.ansage() == VorbehaltAnsage.ARMUT
+            ? ArmutStatus.gestartet(hoechsterVorbehalt.spielerPosition())
+            : null;
+        Spielphase naechstePhase = neuerArmutStatus == null ? Spielphase.STICHPHASE : Spielphase.ARMUT_TAUSCH;
+        Stich ersterStich = naechstePhase == Spielphase.STICHPHASE ? Stich.neu(geber.naechsteImUhrzeigersinn()) : null;
         return new Spiel(
             spielregeln,
             kartendeck,
             trumpfOrdnungFuer(hoechsterVorbehalt),
             spieltypFuer(hoechsterVorbehalt),
             geber,
-            Spielphase.STICHPHASE,
+            naechstePhase,
             haende,
             vorbehalte,
             neueParteien,
@@ -177,7 +187,133 @@ public final class Spiel {
             List.of(),
             ersterStich,
             null,
-            neuerHochzeitStatus
+            neuerHochzeitStatus,
+            neuerArmutStatus
+        );
+    }
+
+    public Spiel legeArmutTrumpfkarten(SpielerPosition spielerPosition, List<Karte> angeboteneTrumpfkarten) {
+        pruefePhase(Spielphase.ARMUT_TAUSCH, "Armut-Karten anbieten");
+        Objects.requireNonNull(spielerPosition, "spielerPosition darf nicht null sein");
+        Objects.requireNonNull(angeboteneTrumpfkarten, "angeboteneTrumpfkarten duerfen nicht null sein");
+        ArmutStatus status = armutStatus()
+            .orElseThrow(() -> new IllegalStateException("Es gibt keinen aktiven Armut-Status"));
+        if (spielerPosition != status.armutSpieler()) {
+            throw new IllegalStateException("Nur der Armut-Spieler darf Trumpfkarten anbieten");
+        }
+        if (status.angebotLiegtVor()) {
+            throw new IllegalStateException("Die Trumpfkarten fuer die Armut wurden bereits angeboten");
+        }
+        Hand armutHand = handVon(spielerPosition);
+        long anzahlTruepfe = anzahlTruepfe(armutHand);
+        if (angeboteneTrumpfkarten.size() != anzahlTruepfe) {
+            throw new IllegalStateException("Die Armut muss genau alle eigenen Trumpfkarten anbieten; erwartet: " + anzahlTruepfe);
+        }
+        for (Karte karte : angeboteneTrumpfkarten) {
+            if (!armutHand.enthaelt(karte)) {
+                throw new IllegalStateException("Angebotene Karte ist nicht auf der Hand des Armut-Spielers: " + karte);
+            }
+            if (!trumpfOrdnung.istTrumpf(karte)) {
+                throw new IllegalStateException("In der Armut duerfen nur Trumpfkarten angeboten werden: " + karte);
+            }
+        }
+        Map<SpielerPosition, Hand> neueHaende = kopiereHaende();
+        neueHaende.put(spielerPosition, armutHand.ohneAlle(angeboteneTrumpfkarten));
+        return new Spiel(
+            spielregeln,
+            kartendeck,
+            trumpfOrdnung,
+            spieltyp,
+            geber,
+            phase,
+            neueHaende,
+            vorbehalte,
+            parteien,
+            ansagen,
+            abgeschlosseneStiche,
+            aktuellerStich,
+            ergebnis,
+            hochzeitStatus,
+            status.mitAngebot(angeboteneTrumpfkarten)
+        );
+    }
+
+    public Spiel lehneArmutAb(SpielerPosition spielerPosition) {
+        pruefePhase(Spielphase.ARMUT_TAUSCH, "Armut ablehnen");
+        Objects.requireNonNull(spielerPosition, "spielerPosition darf nicht null sein");
+        ArmutStatus status = armutStatus()
+            .orElseThrow(() -> new IllegalStateException("Es gibt keinen aktiven Armut-Status"));
+        if (!status.angebotLiegtVor()) {
+            throw new IllegalStateException("Die Armut kann erst nach dem Trumpf-Angebot abgelehnt werden");
+        }
+        ArmutStatus neuerStatus = status.mitAblehnung(spielerPosition);
+        if (neuerStatus.alleAntwortenErschoepft()) {
+            return eingeworfenesSpiel();
+        }
+        return new Spiel(
+            spielregeln,
+            kartendeck,
+            trumpfOrdnung,
+            spieltyp,
+            geber,
+            phase,
+            haende,
+            vorbehalte,
+            parteien,
+            ansagen,
+            abgeschlosseneStiche,
+            aktuellerStich,
+            ergebnis,
+            hochzeitStatus,
+            neuerStatus
+        );
+    }
+
+    public Spiel nimmArmutAn(SpielerPosition spielerPosition, List<Karte> rueckgabekarten) {
+        pruefePhase(Spielphase.ARMUT_TAUSCH, "Armut annehmen");
+        Objects.requireNonNull(spielerPosition, "spielerPosition darf nicht null sein");
+        Objects.requireNonNull(rueckgabekarten, "rueckgabekarten duerfen nicht null sein");
+        ArmutStatus status = armutStatus()
+            .orElseThrow(() -> new IllegalStateException("Es gibt keinen aktiven Armut-Status"));
+        if (!status.angebotLiegtVor()) {
+            throw new IllegalStateException("Die Armut kann erst nach dem Trumpf-Angebot angenommen werden");
+        }
+        SpielerPosition erwarteterSpieler = status.aktuellerAntwortspieler()
+            .orElseThrow(() -> new IllegalStateException("Es gibt aktuell keinen moeglichen Armut-Partner"));
+        if (spielerPosition != erwarteterSpieler) {
+            throw new IllegalStateException("Die Armut muss reihum beantwortet werden; erwartet: " + erwarteterSpieler);
+        }
+        if (rueckgabekarten.size() != status.angeboteneTrumpfkarten().size()) {
+            throw new IllegalStateException("Es muessen genau " + status.angeboteneTrumpfkarten().size() + " Karten zurueckgegeben werden");
+        }
+        Hand partnerHand = handVon(spielerPosition);
+        for (Karte karte : rueckgabekarten) {
+            if (!partnerHand.enthaelt(karte)) {
+                throw new IllegalStateException("Zurueckgegebene Karte ist nicht auf der Hand des annehmenden Spielers: " + karte);
+            }
+        }
+        Map<SpielerPosition, Hand> neueHaende = kopiereHaende();
+        neueHaende.put(spielerPosition, partnerHand.ohneAlle(rueckgabekarten).mitAllen(status.angeboteneTrumpfkarten()));
+        neueHaende.put(status.armutSpieler(), handVon(status.armutSpieler()).mitAllen(rueckgabekarten));
+        Parteien neueParteien = parteien
+            .mitPartei(spielerPosition, Partei.RE)
+            .mitOffenenParteienFuerAlle(SpielerPosition.standardReihenfolge());
+        return new Spiel(
+            spielregeln,
+            kartendeck,
+            trumpfOrdnung,
+            spieltyp,
+            geber,
+            Spielphase.STICHPHASE,
+            neueHaende,
+            vorbehalte,
+            neueParteien,
+            Ansagen.leer(),
+            List.of(),
+            Stich.neu(geber.naechsteImUhrzeigersinn()),
+            null,
+            hochzeitStatus,
+            status.mitPartner(spielerPosition)
         );
     }
 
@@ -283,7 +419,8 @@ public final class Spiel {
             abgeschlosseneStiche,
             aktuellerStich,
             ergebnis,
-            hochzeitStatus
+            hochzeitStatus,
+            armutStatus
         );
     }
 
@@ -311,7 +448,8 @@ public final class Spiel {
             abgeschlosseneStiche,
             null,
             neuesErgebnis,
-            hochzeitStatus
+            hochzeitStatus,
+            armutStatus
         );
     }
 
@@ -375,6 +513,10 @@ public final class Spiel {
         return Optional.ofNullable(hochzeitStatus);
     }
 
+    public Optional<ArmutStatus> armutStatus() {
+        return Optional.ofNullable(armutStatus);
+    }
+
     private Map<SpielerPosition, Hand> kopiereHaende() {
         EnumMap<SpielerPosition, Hand> kopie = new EnumMap<>(SpielerPosition.class);
         kopie.putAll(haende);
@@ -403,7 +545,7 @@ public final class Spiel {
 
     private TrumpfOrdnung trumpfOrdnungFuer(VorbehaltMeldung hoechsterVorbehalt) {
         return hoechsterVorbehalt == null ? trumpfOrdnung : switch (hoechsterVorbehalt.ansage()) {
-            case SOLO_TRUMPF, HOCHZEIT -> new NormaleTrumpfOrdnung(spielregeln);
+            case SOLO_TRUMPF, HOCHZEIT, ARMUT -> new NormaleTrumpfOrdnung(spielregeln);
             case GESUND -> throw new IllegalStateException("GESUND ist kein aufloesbarer Vorbehalt");
         };
     }
@@ -412,6 +554,7 @@ public final class Spiel {
         return switch (hoechsterVorbehalt.ansage()) {
             case SOLO_TRUMPF -> Parteien.ausSolo(hoechsterVorbehalt.spielerPosition());
             case HOCHZEIT -> Parteien.ausHochzeit(hoechsterVorbehalt.spielerPosition());
+            case ARMUT -> Parteien.ausArmut(hoechsterVorbehalt.spielerPosition());
             case GESUND -> throw new IllegalStateException("GESUND ist kein aufloesbarer Vorbehalt");
         };
     }
@@ -448,7 +591,8 @@ public final class Spiel {
             neueAbgeschlosseneStiche,
             neuerAktuellerStich,
             ergebnis,
-            neuerHochzeitStatus
+            neuerHochzeitStatus,
+            armutStatus
         );
     }
 
@@ -467,6 +611,31 @@ public final class Spiel {
             return new HochzeitFortschritt(Parteien.ausSolo(neuerStatus.hochzeitSpieler()), neuerStatus);
         }
         return new HochzeitFortschritt(parteien, neuerStatus);
+    }
+
+    private long anzahlTruepfe(Hand hand) {
+        return hand.karten().stream().filter(trumpfOrdnung::istTrumpf).count();
+    }
+
+    private Spiel eingeworfenesSpiel() {
+        Kartendeck neuesDeck = kartendeck.gemischt();
+        return new Spiel(
+            spielregeln,
+            neuesDeck,
+            new NormaleTrumpfOrdnung(spielregeln),
+            Spieltyp.NORMALSPIEL,
+            geber,
+            Spielphase.VORBEHALT_ANSAGE,
+            neuesDeck.anVierSpielerAusteilen(),
+            List.of(),
+            null,
+            Ansagen.leer(),
+            List.of(),
+            null,
+            null,
+            null,
+            null
+        );
     }
 
     private record HochzeitFortschritt(Parteien parteien, HochzeitStatus status) {

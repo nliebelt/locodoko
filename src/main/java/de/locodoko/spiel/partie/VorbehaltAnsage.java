@@ -3,6 +3,7 @@ package de.locodoko.spiel.partie;
 import de.locodoko.spiel.karten.Farbe;
 import de.locodoko.spiel.karten.Hand;
 import de.locodoko.spiel.karten.Kartenwert;
+import de.locodoko.spiel.karten.NormaleTrumpfOrdnung;
 import de.locodoko.spiel.karten.Spielregeln;
 import de.locodoko.spiel.karten.Spieltyp;
 
@@ -35,6 +36,16 @@ public enum VorbehaltAnsage {
                 .filter(karte -> karte.farbe() == Farbe.KREUZ && karte.wert() == Kartenwert.DAME)
                 .count();
             return spielregeln.hochzeitAktiv() && anzahlKreuzDamen == 2;
+        }
+    },
+    ARMUT(Spieltyp.ARMUT, 1) {
+        @Override
+        public boolean istZulaessig(Hand hand, Spielregeln spielregeln) {
+            Objects.requireNonNull(hand, "hand darf nicht null sein");
+            Objects.requireNonNull(spielregeln, "spielregeln duerfen nicht null sein");
+            NormaleTrumpfOrdnung trumpfOrdnung = new NormaleTrumpfOrdnung(spielregeln);
+            long anzahlTruepfe = hand.karten().stream().filter(trumpfOrdnung::istTrumpf).count();
+            return spielregeln.armutAktiv() && anzahlTruepfe <= 3;
         }
     };
 

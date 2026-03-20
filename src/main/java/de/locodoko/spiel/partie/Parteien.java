@@ -58,6 +58,15 @@ public final class Parteien {
         return new Parteien(parteien, EnumSet.of(hochzeitSpieler));
     }
 
+    public static Parteien ausArmut(SpielerPosition armutSpieler) {
+        Objects.requireNonNull(armutSpieler, "armutSpieler darf nicht null sein");
+        EnumMap<SpielerPosition, Partei> parteien = new EnumMap<>(SpielerPosition.class);
+        for (SpielerPosition position : SpielerPosition.standardReihenfolge()) {
+            parteien.put(position, position == armutSpieler ? Partei.RE : Partei.KONTRA);
+        }
+        return new Parteien(parteien, EnumSet.of(armutSpieler));
+    }
+
     public Partei parteiVon(SpielerPosition spielerPosition) {
         Objects.requireNonNull(spielerPosition, "spielerPosition darf nicht null sein");
         Partei partei = parteienNachSpieler.get(spielerPosition);
