@@ -18,6 +18,8 @@ Ausgangslage: Das Repository enthaelt jetzt ein baubares technisches Grundgerues
 - [x] Basis-Tests sichern WARUM das Grundgeruest wichtig ist: Backend-Test prueft Startfaehigkeit und API-Erreichbarkeit frueh, Frontend-Test fixiert die Sitzordnung/Normalspiel-Handgroesse als Fundament fuer die spaetere Tischansicht.
 - [x] Domainenkern fuer Karten und Regeln liegt jetzt in `src/main/java/de/locodoko/spiel/karten`: Farben, Werte, Karten, Spieltypen, Spielerpositionen, Haende, Deck-Erzeugung mit/ohne Neunen, austauschbare Trumpfstrategie und Stichlogik inklusive Spielzug-Validierung.
 - [x] Neue Backend-Tests sichern WARUM dieser Kern wichtig ist: Sie fixieren Deckgroesse und 240-Augen-Invariante, pruefen Trumpfhierarchie und Dullen-Sonderfall und erzwingen Bedienpflicht sowie Gewinnerermittlung als serverseitige Wahrheitsquelle fuer KI, UI und Wertung.
+- [x] Vertikaler Slice fuer ein Normalspiel ohne Sonderspiele liegt jetzt in `src/main/java/de/locodoko/spiel/partie`: Tisch, Partie, Spiel, Parteien, explizite Spielphasen, Geberrotation, erster Aufspieler, Grundauswertung und Gesamtstand fuer mehrere Spiele.
+- [x] Neue Backend-Tests sichern WARUM dieser Slice wichtig ist: Sie pruefen den kompletten Phasenlauf eines Normalspiels, verdeckte Parteiinformation, ungueltige Zustandsuebergaenge sowie Geberrotation und Nullsummen-Gesamtstand ueber mehrere Spiele.
 
 ## Offen - Prioritaet 0: Projektgrundgeruest und Build-Pipeline
 
@@ -37,11 +39,11 @@ Ausgangslage: Das Repository enthaelt jetzt ein baubares technisches Grundgerues
 
 ## Offen - Prioritaet 2: Spielablauf, Zustandsmaschine und Parteien
 
-- [ ] Aggregates und Services fuer Tisch, Partie, Spiel und Stichfolge modellieren.
-- [ ] Spielphasen aus `specs/spielablauf.md` als belastbare Zustandsmaschine umsetzen: Austeilen, Vorbehalt-Ansage, Vorbehalt-Aufloesung, optional Armut-Tausch, Stichphase, Auswertung, Gesamtstand.
-- [ ] Geberrotation, erster Aufspieler, Spielanzahl pro Partie und Gesamtpunktestand implementieren.
-- [ ] Parteibildung fuer Normalspiel (Kreuz-Damen -> Re) inklusive anfangs verdeckter Information abbilden.
-- [ ] Fehlerfaelle fuer ungueltige Zustandsuebergaenge und ungueltige Aktionen sauber modellieren und testen.
+- [x] Aggregates und Services fuer Tisch, Partie, Spiel und Stichfolge fuer den Normalspiel-Slice modellieren.
+- [x] Spielphasen aus `specs/spielablauf.md` fuer den Normalspiel-Pfad als explizite Zustandslogik umsetzen: Austeilen, Vorbehalt-Ansage, Vorbehalt-Aufloesung, Stichphase, Auswertung, Gesamtstand; optionale Sonderpfade bleiben in Prioritaet 4.
+- [x] Geberrotation, erster Aufspieler, Spielanzahl pro Partie und Gesamtpunktestand implementieren.
+- [x] Parteibildung fuer Normalspiel (Kreuz-Damen -> Re) inklusive anfangs verdeckter Information abbilden.
+- [x] Fehlerfaelle fuer ungueltige Zustandsuebergaenge und ungueltige Aktionen sauber modellieren und testen.
 
 ## Offen - Prioritaet 3: Wertung, Ansagen und Sonderpunkte
 
@@ -91,12 +93,12 @@ Ausgangslage: Das Repository enthaelt jetzt ein baubares technisches Grundgerues
 
 - [x] Zuerst Projektgrundgeruest, Build und Test-Setup herstellen.
 - [x] Dann Kartenmodell, Trumpfordnung und Stichlogik inklusive Tests fertigstellen.
-- [ ] Danach Spielablauf fuer ein Normalspiel ohne Sonderspiele vertikal bis zur Auswertung durchziehen.
+- [x] Danach Spielablauf fuer ein Normalspiel ohne Sonderspiele vertikal bis zur Auswertung durchziehen.
 - [ ] Anschliessend KI fuer regelkonformes Spielen und ein minimales Frontend fuer Lobby + Tischansicht anbinden.
 - [ ] Erst danach Ansagen, Sonderpunkte, Hochzeit, Armut und Solo-Varianten schrittweise ergaenzen.
 
 ## Aktuelle Risiken / offene Architekturentscheidungen
 
-- [ ] Festlegen, wie strikt Spring Statemachine gegenueber einer leichteren, expliziten Zustandslogik eingesetzt werden soll; die Specs nennen Statemachine, das Grundgeruest existiert aber noch nicht.
+- [x] Fuer den aktuellen Slice ist entschieden, vorerst eine explizite immutable Zustandslogik statt Spring Statemachine zu verwenden; falls WebSocket-Orchestrierung spaeter echten Mehrwert bringt, kann darauf aufgesetzt werden.
 - [ ] Frueh entscheiden, welche Teile des Spielzustands persistiert und welche nur im Speicher gehalten werden, damit Lobby, Reconnect und Tests konsistent bleiben.
 - [ ] Karten-Assets, UI-Stil und Frontend-Testtiefe muessen beim Frontend-Setup frueh konkretisiert werden, sonst blockieren sie spaeter Tischansicht und Animationen.

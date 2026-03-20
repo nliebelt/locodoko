@@ -38,4 +38,14 @@ public final class Hand {
         }
         return List.copyOf(passendeKarten);
     }
+
+    public Hand ohne(Karte karte) {
+        Objects.requireNonNull(karte, "karte darf nicht null sein");
+        if (!enthaelt(karte)) {
+            throw new IllegalArgumentException("Die Karte " + karte + " ist nicht auf der Hand");
+        }
+        List<Karte> verbleibendeKarten = new ArrayList<>(karten);
+        verbleibendeKarten.remove(karte);
+        return new Hand(verbleibendeKarten);
+    }
 }
