@@ -78,10 +78,32 @@ public class TischEntity extends AbstraktePersistenzEntity {
         if (spieler.size() >= 4) {
             throw new IllegalStateException("Ein Tisch darf hoechstens vier Spieler enthalten");
         }
-        if (spieler.contains(spielerEntity)) {
+        if (enthaeltSpieler(spielerEntity)) {
             return;
         }
         spieler.add(spielerEntity);
+    }
+
+    public void entferneSpieler(SpielerEntity spielerEntity) {
+        Objects.requireNonNull(spielerEntity, "spieler darf nicht null sein");
+        spieler.removeIf(vorhandenerSpieler -> gleicherSpieler(vorhandenerSpieler, spielerEntity));
+    }
+
+    public boolean enthaeltSpieler(SpielerEntity spielerEntity) {
+        Objects.requireNonNull(spielerEntity, "spieler darf nicht null sein");
+        return spieler.stream().anyMatch(vorhandenerSpieler -> gleicherSpieler(vorhandenerSpieler, spielerEntity));
+    }
+
+    public boolean istVoll() {
+        return spieler.size() >= 4;
+    }
+
+    public void aktualisiereKonfiguration(TischkonfigurationEmbeddable konfiguration) {
+        this.konfiguration = Objects.requireNonNull(konfiguration, "konfiguration darf nicht null sein");
+    }
+
+    public void setzeErstelltVon(SpielerEntity erstelltVon) {
+        this.erstelltVon = Objects.requireNonNull(erstelltVon, "erstelltVon darf nicht null sein");
     }
 
     public void setzePartie(PartieEntity partie) {
@@ -112,5 +134,15 @@ public class TischEntity extends AbstraktePersistenzEntity {
 
     public PartieEntity partie() {
         return partie;
+    }
+
+    private boolean gleicherSpieler(SpielerEntity links, SpielerEntity rechts) {
+        if (links.id() != null && rechts.id() != null) {
+            return links.id().equals(rechts.id());
+        }
+        if (links.sessionId() != null && rechts.sessionId() != null) {
+            return links.sessionId().equals(rechts.sessionId());
+        }
+        return links == rechts;
     }
 }

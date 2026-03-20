@@ -34,6 +34,8 @@ Ausgangslage: Das Repository enthaelt jetzt ein baubares technisches Grundgerues
 - [x] Neue JPA-Tests sichern WARUM diese Persistenz wichtig ist: Sie pruefen das komplette Abspeichern und Wiedereinlesen eines Tisch-/Partie-/Stichgraphs, erzwingen eindeutige Session-IDs, validieren ungueltige Tischkonfigurationen frueh und belegen, dass das Loeschen eines Tisches die zugehoerigen Spielhistorien sauber entfernt, ohne Spieleridentitaeten zu verlieren.
 - [x] Die Session-basierte Spieleridentifikation liegt jetzt in `src/main/java/de/locodoko/spielverwaltung/session`: `POST/GET/PUT /api/spieler/session` registrieren und erkennen menschliche Spieler ueber `HttpSession`, validieren serverseitig unbekannte Sessions, setzen einen konfigurierbaren 60-Minuten-Timeout und erlauben Namensaenderungen nur ausserhalb eines Tisches; `KiSpielerFabrik` vergibt automatische KI-Namen ohne Cookie.
 - [x] Neue Session-/KI-Tests sichern WARUM dieser Schritt wichtig ist: Sie pruefen Session-Erstellung und Wiedererkennung, erzwingen die serverseitige Ablehnung verwaister Sessions, fixieren das 60-Minuten-Timeout und verhindern mit der KI-Namensvergabe und der Tischsperre bei Namensaenderungen, dass Lobby- und Session-Logik spaeter inkonsistente Spieleridentitaeten erzeugen.
+- [x] REST-API und serverseitige Lobby-Grundlage liegen jetzt in `src/main/java/de/locodoko/spielverwaltung/tisch`: `GET/POST /api/tische`, Beitreten/Verlassen/Starten, Konfiguration lesen/aendern sowie `GET /api/partien/{id}/stand` sind als JSON-Endpunkte mit DTOs, strukturierter Fehlerantwort, Logging und Session-/Konfliktvalidierung umgesetzt; beim Start wird ein wartender Tisch auf vier Spieler mit KI aufgefuellt und mit einer ersten `PartieEntity` in den laufenden Zustand ueberfuehrt.
+- [x] Neue MockMvc-Tests sichern WARUM dieser Ausbau wichtig ist: Sie pruefen offene Tischlisten, Tisch-Erstellung und -Beitritt, Erstellerwechsel beim Verlassen, KI-Auffuellen beim Start, Konfigurations-Update, strukturierte 400/404/409-Fehler und den abrufbaren Partie-Stand, damit Frontend und spaetere WebSocket-Orchestrierung auf eine stabile HTTP-Vertragsbasis bauen koennen.
 
 ## Offen - Prioritaet 0: Projektgrundgeruest und Build-Pipeline
 
@@ -78,8 +80,8 @@ Ausgangslage: Das Repository enthaelt jetzt ein baubares technisches Grundgerues
 
 - [x] JPA-Entitaeten und Repositories gemaess `specs/datenbankmodell.md` anlegen, zunaechst H2-tauglich und spaeter PostgreSQL-kompatibel.
 - [x] Session-basierte Spieleridentifikation gemaess `specs/spieler-session.md` umsetzen.
-- [ ] REST-API gemaess `specs/rest-api.md` bereitstellen: Tische listen/anlegen/beitreten, Konfiguration lesen/aendern, Spielstand abrufen.
-- [ ] Lobby-Domaene und Tischverwaltung gemaess `specs/lobby.md` implementieren, inklusive Begrenzung auf einen Tisch pro Spieler und KI-Auffuellen beim Start.
+- [x] REST-API gemaess `specs/rest-api.md` bereitstellen: Tische listen/anlegen/beitreten, Konfiguration lesen/aendern, Spielstand abrufen.
+- [x] Lobby-Domaene und Tischverwaltung gemaess `specs/lobby.md` implementieren, inklusive Begrenzung auf einen Tisch pro Spieler und KI-Auffuellen beim Start.
 - [ ] WebSocket/STOMP-Kommunikation gemaess `specs/websocket-kommunikation.md` anbinden, damit Lobby- und Spielzustand in Echtzeit publiziert werden.
 
 ## Offen - Prioritaet 6: Spielbares Frontend

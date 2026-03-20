@@ -1,0 +1,89 @@
+package de.locodoko.spielverwaltung.tisch;
+
+import de.locodoko.spiel.karten.Spielregeln;
+import de.locodoko.spielverwaltung.persistenz.TischkonfigurationEmbeddable;
+import jakarta.validation.constraints.AssertTrue;
+import jakarta.validation.constraints.Min;
+
+public record TischKonfigurationDto(
+    boolean ohneNeunen,
+    @Min(value = 1, message = "Die Anzahl der Spiele muss mindestens 1 sein.")
+    int anzahlSpiele,
+    boolean hochzeitErlaubt,
+    boolean armutErlaubt,
+    boolean damensoloErlaubt,
+    boolean bubensoloErlaubt,
+    boolean fleischlosErlaubt,
+    boolean trumpfsoloErlaubt,
+    boolean zweiteDulleSticht,
+    boolean fuchsGefangenAktiv,
+    boolean karlchenAktiv,
+    boolean doppelkopfAktiv,
+    @Min(value = 1, message = "Die Re-/Kontra-Grenze muss mindestens 1 sein.")
+    int mindestkartenReKontra,
+    @Min(value = 1, message = "Die Keine-90-Grenze muss mindestens 1 sein.")
+    int mindestkartenKeine90,
+    @Min(value = 1, message = "Die Keine-60-Grenze muss mindestens 1 sein.")
+    int mindestkartenKeine60,
+    @Min(value = 1, message = "Die Keine-30-Grenze muss mindestens 1 sein.")
+    int mindestkartenKeine30,
+    @Min(value = 1, message = "Die Schwarz-Grenze muss mindestens 1 sein.")
+    int mindestkartenSchwarz
+) {
+
+    public static TischKonfigurationDto aus(TischkonfigurationEmbeddable konfiguration) {
+        return new TischKonfigurationDto(
+            konfiguration.ohneNeunen(),
+            konfiguration.anzahlSpiele(),
+            konfiguration.hochzeitErlaubt(),
+            konfiguration.armutErlaubt(),
+            konfiguration.damensoloErlaubt(),
+            konfiguration.bubensoloErlaubt(),
+            konfiguration.fleischlosErlaubt(),
+            konfiguration.trumpfsoloErlaubt(),
+            konfiguration.zweiteDulleSticht(),
+            konfiguration.fuchsGefangenAktiv(),
+            konfiguration.karlchenAktiv(),
+            konfiguration.doppelkopfAktiv(),
+            konfiguration.mindestkartenReKontra(),
+            konfiguration.mindestkartenKeine90(),
+            konfiguration.mindestkartenKeine60(),
+            konfiguration.mindestkartenKeine30(),
+            konfiguration.mindestkartenSchwarz()
+        );
+    }
+
+    public TischkonfigurationEmbeddable alsEmbeddable() {
+        return TischkonfigurationEmbeddable.ausSpielregeln(
+            new Spielregeln(
+                ohneNeunen,
+                zweiteDulleSticht,
+                mindestkartenReKontra,
+                mindestkartenKeine90,
+                mindestkartenKeine60,
+                mindestkartenKeine30,
+                mindestkartenSchwarz,
+                fuchsGefangenAktiv,
+                karlchenAktiv,
+                doppelkopfAktiv,
+                armutErlaubt,
+                damensoloErlaubt,
+                bubensoloErlaubt,
+                trumpfsoloErlaubt,
+                fleischlosErlaubt,
+                hochzeitErlaubt
+            ),
+            anzahlSpiele
+        );
+    }
+
+    @AssertTrue(message = "Die Ansagegrenzen muessen ein gueltiges Regelwerk bilden.")
+    public boolean sindAnsagegrenzenGueltig() {
+        try {
+            alsEmbeddable().alsSpielregeln();
+            return true;
+        } catch (IllegalArgumentException ausnahme) {
+            return false;
+        }
+    }
+}
