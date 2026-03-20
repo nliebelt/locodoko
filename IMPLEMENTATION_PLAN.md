@@ -38,6 +38,8 @@ Ausgangslage: Das Repository enthaelt jetzt ein baubares technisches Grundgerues
 - [x] Neue MockMvc-Tests sichern WARUM dieser Ausbau wichtig ist: Sie pruefen offene Tischlisten, Tisch-Erstellung und -Beitritt, Erstellerwechsel beim Verlassen, KI-Auffuellen beim Start, Konfigurations-Update, strukturierte 400/404/409-Fehler und den abrufbaren Partie-Stand, damit Frontend und spaetere WebSocket-Orchestrierung auf eine stabile HTTP-Vertragsbasis bauen koennen.
 - [x] WebSocket/STOMP liegt fuer den aktuellen Lobby-/Partie-Slice jetzt in `src/main/java/de/locodoko/spielverwaltung/websocket`: Ein session-validierter STOMP-Endpunkt `/ws`, Snapshot-Anfragen ueber `/app/.../snapshot` sowie Broadcasts auf `/topic/tische`, `/topic/tisch/{id}` und `/topic/partie/{id}` publizieren Tischliste, Tischzustand und Partiestand nach Tisch-Erstellung, Beitritt, Verlassen, Konfigurationsaenderung und Spielstart in Echtzeit; ausgehende Nachrichten tragen Timestamps und benutzerbezogene Antworten laufen ueber `/user/queue/...`.
 - [x] Neue WebSocket-Tests sichern WARUM dieser Schritt wichtig ist: Sie pruefen den Handshake gegen bekannte HTTP-Sessions und verankern, dass Lobby-Updates, Spielstart-Events, Partiestand-Snapshots und benutzerbezogene Snapshot-Antworten wirklich publiziert werden, damit Frontend und spaetere Spielzug-Handler nicht auf Polling oder implizite Seiteneffekte angewiesen sind.
+- [x] Das Frontend hat jetzt einen ersten echten Vertical Slice in `frontend/src`: Boot-, Lobby- und Tisch-Szenen, HTML-Overlay ueber dem Phaser-Canvas, generierte Fallback-Assets fuer Filz/Karten, Session-Initialisierung, REST-Client, STOMP-Client und ein zentraler `AppStore` verbinden das Frontend mit den vorhandenen Lobby-/Tisch-/Partie-Snapshots des Backends.
+- [x] Neue Frontend-Tests sichern WARUM dieser Schritt wichtig ist: Sie fixieren die Sitzordnung relativ zum aktuellen Spieler und pruefen den `AppStore` fuer Session-Initialisierung, Tisch-Snapshot-Handling und die Rueckkehr in die Lobby, damit weitere UI-Logik spaeter nicht auf impliziten Zustand oder manuelle Browser-Checks angewiesen ist.
 
 ## Offen - Prioritaet 0: Projektgrundgeruest und Build-Pipeline
 
@@ -88,8 +90,8 @@ Ausgangslage: Das Repository enthaelt jetzt ein baubares technisches Grundgerues
 
 ## Offen - Prioritaet 6: Spielbares Frontend
 
-- [ ] Frontend-Grundgeruest mit Routing/Scene-Struktur, Asset-Loading und Verbindung zum Backend aufbauen.
-- [ ] Lobby-Ansicht zum Erstellen, Beitreten und Starten von Tischen implementieren.
+ - [x] Frontend-Grundgeruest mit Routing/Scene-Struktur, Asset-Loading und Verbindung zum Backend aufbauen.
+ - [x] Lobby-Ansicht zum Erstellen, Beitreten und Starten von Tischen implementieren.
 - [ ] Tischansicht gemaess `specs/frontend-tischansicht.md` umsetzen: Top-Down-Tisch, Spielerpositionen, eigene/offene Karten, gegnerische/verdeckte Karten, Stichmitte, Statusanzeigen.
 - [ ] UI-Logik gemaess `specs/frontend-ui-logik.md` umsetzen: nur gueltige Karten anklickbar, Ansage-Buttons phasenabhaengig, Vorbehalt-Dialoge, Punktestand, Debug-Modus.
 - [ ] Frontend an REST/WebSocket-Ereignisse anbinden, sodass ein menschlicher Spieler gegen drei KI-Spieler ein komplettes Spiel durchspielen kann.
@@ -119,4 +121,4 @@ Ausgangslage: Das Repository enthaelt jetzt ein baubares technisches Grundgerues
 
 - [x] Fuer den aktuellen Slice ist entschieden, vorerst eine explizite immutable Zustandslogik statt Spring Statemachine zu verwenden; falls WebSocket-Orchestrierung spaeter echten Mehrwert bringt, kann darauf aufgesetzt werden.
 - [x] Erste Persistenzentscheidung ist getroffen: Tisch, Konfiguration, Spieler sowie Partie-/Spiel-/Hand-/Stich-Snapshots werden relational gespeichert; Live-Orchestrierung fuer Session, Lobby-Workflows und Reconnect baut im naechsten Schritt darauf auf.
-- [ ] Karten-Assets, UI-Stil und Frontend-Testtiefe muessen beim Frontend-Setup frueh konkretisiert werden, sonst blockieren sie spaeter Tischansicht und Animationen.
+- [ ] Reale Karten-Sprites, Feinschliff fuer UI-Stil und tiefere Frontend-Integrationstests muessen nach dem jetzt stehenden Fallback-Setup konkretisiert werden, sonst blockieren sie spaeter Tischansicht und Animationen.

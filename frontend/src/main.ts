@@ -1,5 +1,8 @@
 import Phaser from 'phaser';
 import './styles.css';
+import { appStore } from './anwendung';
+import { BootSzene } from './szenen/BootSzene';
+import { LobbySzene } from './szenen/LobbySzene';
 import { TischSzene } from './szenen/TischSzene';
 
 const spiel = new Phaser.Game({
@@ -12,9 +15,10 @@ const spiel = new Phaser.Game({
     width: 1280,
     height: 720
   },
-  scene: [TischSzene]
+  scene: [BootSzene, LobbySzene, TischSzene]
 });
 
 window.addEventListener('beforeunload', () => {
+  appStore.trennen();
   spiel.destroy(true);
 });
