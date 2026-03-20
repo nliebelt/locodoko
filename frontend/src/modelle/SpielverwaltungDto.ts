@@ -68,6 +68,65 @@ export interface TischAntwort {
 
 export type SpielerPosition = 'NORD' | 'OST' | 'SUED' | 'WEST';
 export type PartieStatus = 'LAUFEND' | 'BEENDET';
+export type Spieltyp =
+  | 'NORMALSPIEL'
+  | 'HOCHZEIT'
+  | 'ARMUT'
+  | 'SOLO_DAME'
+  | 'SOLO_BUBE'
+  | 'SOLO_TRUMPF'
+  | 'SOLO_FLEISCHLOS';
+export type Spielphase =
+  | 'KARTEN_AUSTEILEN'
+  | 'VORBEHALT_ANSAGE'
+  | 'VORBEHALT_AUFLOESUNG'
+  | 'ARMUT_TAUSCH'
+  | 'STICHPHASE'
+  | 'AUSWERTUNG'
+  | 'GESAMTSTAND_AKTUALISIEREN';
+export type Partei = 'RE' | 'KONTRA';
+export type Ansage = 'RE' | 'KONTRA' | 'KEINE_90' | 'KEINE_60' | 'KEINE_30' | 'SCHWARZ';
+export type VorbehaltAnsage =
+  | 'GESUND'
+  | 'SOLO_DAME'
+  | 'SOLO_BUBE'
+  | 'SOLO_TRUMPF'
+  | 'SOLO_FLEISCHLOS'
+  | 'HOCHZEIT'
+  | 'ARMUT';
+
+export interface KarteAntwort {
+  id: string;
+  farbe: string;
+  wert: string;
+  exemplarIndex: number;
+}
+
+export interface SpielerImSpielAntwort {
+  position: SpielerPosition;
+  spielerId: Uuid | null;
+  name: string;
+  istKi: boolean;
+  istSelbst: boolean;
+  istGeber: boolean;
+  istAmZug: boolean;
+  verbleibendeKarten: number | null;
+  gewonneneStiche: number;
+  partei: Partei | null;
+  sichtbareHandkarten: KarteAntwort[] | null;
+}
+
+export interface LaufendesSpielAntwort {
+  spielNummer: number;
+  spieltyp: Spieltyp;
+  phase: Spielphase;
+  geber: SpielerPosition;
+  aktuellerSpieler: SpielerPosition | null;
+  spieler: SpielerImSpielAntwort[];
+  spielbareKarten: KarteAntwort[];
+  moeglicheAnsagen: Ansage[];
+  moeglicheVorbehalte: VorbehaltAnsage[];
+}
 
 export interface PartieStandAntwort {
   partieId: Uuid;
@@ -75,6 +134,7 @@ export interface PartieStandAntwort {
   anzahlSpiele: number;
   gespielteSpiele: number;
   gesamtpunktestand: Partial<Record<SpielerPosition, number>>;
+  laufendesSpiel: LaufendesSpielAntwort | null;
 }
 
 export type TischlisteEreignisTyp = 'SNAPSHOT' | 'AKTUALISIERT';

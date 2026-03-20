@@ -2,6 +2,7 @@ import Phaser from 'phaser';
 import { TEXTUR_FILZ, TEXTUR_KARTE_OFFEN, TEXTUR_KARTE_VERDECKT } from '../assets/AssetLoader';
 import { appStore } from '../anwendung';
 import { erstelleTischAnsichtAusStatus, type SpielerPosition } from '../model/TischAnsichtModell';
+import type { KarteAntwort } from '../modelle/SpielverwaltungDto';
 import type { AppZustand } from '../store/AppStore';
 
 const POSITIONEN: Record<SpielerPosition, { x: number; y: number; kartenX: number; kartenY: number; kartenWinkel: number }> = {
@@ -10,6 +11,24 @@ const POSITIONEN: Record<SpielerPosition, { x: number; y: number; kartenX: numbe
   NORD: { x: 640, y: 110, kartenX: 390, kartenY: 86, kartenWinkel: 0 },
   OST: { x: 1108, y: 360, kartenX: 1138, kartenY: 310, kartenWinkel: 90 }
 };
+
+function kuerzelFuerKarte(karte: KarteAntwort): string {
+  const wert = ({
+    AS: 'A',
+    ZEHN: '10',
+    KOENIG: 'K',
+    DAME: 'D',
+    BUBE: 'B',
+    NEUN: '9'
+  } as Record<string, string>)[karte.wert] ?? karte.wert.slice(0, 2);
+  const farbe = ({
+    KREUZ: 'K',
+    PIK: 'P',
+    HERZ: 'H',
+    KARO: 'D'
+  } as Record<string, string>)[karte.farbe] ?? karte.farbe.slice(0, 1);
+  return `${farbe}${wert}`;
+}
 
 function holeUiRoot(): HTMLElement {
   const wurzel = document.getElementById('ui-root');
@@ -126,6 +145,9 @@ export class TischSzene extends Phaser.Scene {
     ];
     if (zustand.partieStand) {
       statusZeile.push(`Gesamtstand ${zustand.partieStand.gespielteSpiele}/${zustand.partieStand.anzahlSpiele}`);
+      if (zustand.partieStand.laufendesSpiel) {
+        statusZeile.push(`Phase ${zustand.partieStand.laufendesSpiel.phase}`);
+      }
     }
     if (zustand.meldung?.typ === 'fehler') {
       statusZeile.push(`Fehler: ${zustand.meldung.text}`);
@@ -165,11 +187,20 @@ export class TischSzene extends Phaser.Scene {
       color: '#d8f3dc',
       fontSize: '16px'
     }).setOrigin(0.5));
-    ebene.add(this.add.text(640, 360, 'Stichmitte\n(Live-Spielzustand folgt im naechsten Slice)', {
+    const mitteText = modell.aktuellerSpieler
+      ? `Stichmitte\nAm Zug: ${modell.aktuellerSpieler}`
+      : 'Stichmitte';
+    ebene.add(this.add.text(640, 360, mitteText, {
       color: '#f8f9fa',
       fontSize: '22px',
       align: 'center'
     }).setOrigin(0.5));
+    if (modell.moeglicheVorbehalte.length > 0) {
+      ebene.add(this.add.text(640, 420, `Vorbehalt moeglich: ${modell.moeglicheVorbehalte.join(', ')}`, {
+        color: '#ffe082',
+        fontSize: '16px'
+      }).setOrigin(0.5));
+    }
 
     modell.spieler.forEach((spieler) => {
       const position = POSITIONEN[spieler.position];
@@ -188,7 +219,14 @@ export class TischSzene extends Phaser.Scene {
         color: '#14361f',
         fontSize: '13px'
       }).setOrigin(0.5));
-      this.renderKartenFaecher(ebene, spieler.position, spieler.position === 'SUED' || modell.debugModus, spieler.verbleibendeKarten > 0 ? 8 : 4);
+      this.renderKartenFaecher(
+        ebene,
+        spieler.position,
+        spieler.position === 'SUED' || modell.debugModus,
+        spieler.sichtbareHandkarten.length > 0 ? spieler.sichtbareHandkarten : undefined,
+        spieler.verbleibendeKarten > 0 ? spieler.verbleibendeKarten : 4,
+        modell.spielbareKarten
+      );
     });
 
     const stand = zustand.partieStand?.gesamtpunktestand;
@@ -206,12 +244,15 @@ export class TischSzene extends Phaser.Scene {
     ebene: Phaser.GameObjects.Container,
     spielerPosition: SpielerPosition,
     offen: boolean,
-    anzahl: number
+    sichtbareHandkarten: KarteAntwort[] | undefined,
+    anzahl: number,
+    spielbareKarten: string[]
   ): void {
     const position = POSITIONEN[spielerPosition];
     const textur = offen ? TEXTUR_KARTE_OFFEN : TEXTUR_KARTE_VERDECKT;
+    const kartenAnzahl = sichtbareHandkarten?.length ?? anzahl;
 
-    for (let index = 0; index < anzahl; index += 1) {
+    for (let index = 0; index < kartenAnzahl; index += 1) {
       const abstand = spielerPosition === 'SUED' || spielerPosition === 'NORD' ? index * 28 : index * 16;
       const x = (spielerPosition === 'SUED' || spielerPosition === 'NORD') ? position.kartenX + abstand : position.kartenX;
       const y = (spielerPosition === 'SUED' || spielerPosition === 'NORD') ? position.kartenY : position.kartenY + abstand;
@@ -220,7 +261,20 @@ export class TischSzene extends Phaser.Scene {
         : spielerPosition === 'NORD'
           ? 12 - index * 3
           : position.kartenWinkel;
-      ebene.add(this.add.image(x, y, textur).setDisplaySize(82, 124).setAngle(winkel).setAlpha(offen ? 1 : 0.92));
+      const karte = sichtbareHandkarten?.[index];
+      const istSpielbar = karte ? spielbareKarten.includes(karte.id) : false;
+      const bild = this.add.image(x, y, textur)
+        .setDisplaySize(82, 124)
+        .setAngle(winkel)
+        .setAlpha(offen ? (karte && !istSpielbar && spielbareKarten.length > 0 ? 0.6 : 1) : 0.92);
+      ebene.add(bild);
+      if (offen && karte) {
+        ebene.add(this.add.text(x, y, kuerzelFuerKarte(karte), {
+          color: istSpielbar || spielbareKarten.length === 0 ? '#14361f' : '#6c757d',
+          fontSize: '18px',
+          fontStyle: 'bold'
+        }).setOrigin(0.5).setAngle(winkel));
+      }
     }
   }
 

@@ -3,6 +3,7 @@ package de.locodoko.spielverwaltung.tisch;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import de.locodoko.spiel.karten.SpielerPosition;
 import de.locodoko.spielverwaltung.persistenz.PartieEntity;
+import de.locodoko.spielverwaltung.persistenz.SpielEntity;
 import de.locodoko.spielverwaltung.persistenz.SpielerEntity;
 import de.locodoko.spielverwaltung.persistenz.SpielerRepository;
 import de.locodoko.spielverwaltung.persistenz.TischEntity;
@@ -154,6 +155,13 @@ class TischControllerTest {
             "Mindestens ein KI-Spieler muss erzeugt werden, wenn weniger als vier Menschen am Tisch sitzen.");
         assertNotNull(geladen.partie());
         assertEquals(24, geladen.partie().anzahlSpiele());
+        assertEquals(1, geladen.partie().spiele().size(),
+            "Beim Start muss bereits ein echtes erstes Spiel angelegt werden, damit die Tischansicht sofort Handkarten und Phase aus einem stabilen Snapshot lesen kann.");
+        SpielEntity erstesSpiel = geladen.partie().spiele().getFirst();
+        assertEquals(4, erstesSpiel.haende().size(),
+            "Das erste Spiel muss alle vier Haende enthalten, weil die spielbare Tischansicht ohne nachgelagerten Platzhalter direkt mit echten Karten startet.");
+        assertEquals(12, erstesSpiel.haende().getFirst().karten().size(),
+            "Jeder Spieler braucht direkt nach dem Start eine vollstaendige Hand, damit Vorbehalt-Phase und Kartendarstellung denselben serverseitigen Wahrheitsstand sehen.");
     }
 
     @Test

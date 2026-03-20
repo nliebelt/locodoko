@@ -156,7 +156,8 @@ describe('AppStore', () => {
         status: 'LAUFEND',
         anzahlSpiele: 8,
         gespielteSpiele: 0,
-        gesamtpunktestand: { SUED: 0 }
+        gesamtpunktestand: { SUED: 0 },
+        laufendesSpiel: null
       }
     });
 

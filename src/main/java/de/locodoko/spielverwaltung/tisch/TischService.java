@@ -1,9 +1,14 @@
 package de.locodoko.spielverwaltung.tisch;
 
+import de.locodoko.spiel.karten.Kartendeck;
+import de.locodoko.spiel.karten.SpielerPosition;
+import de.locodoko.spiel.partie.Spiel;
 import de.locodoko.spielverwaltung.persistenz.PartieEntity;
 import de.locodoko.spielverwaltung.persistenz.PartieRepository;
+import de.locodoko.spielverwaltung.persistenz.HandEntity;
 import de.locodoko.spielverwaltung.persistenz.SpielerEntity;
 import de.locodoko.spielverwaltung.persistenz.SpielerRepository;
+import de.locodoko.spielverwaltung.persistenz.SpielEntity;
 import de.locodoko.spielverwaltung.persistenz.TischEntity;
 import de.locodoko.spielverwaltung.persistenz.TischRepository;
 import de.locodoko.spielverwaltung.persistenz.TischStatus;
@@ -146,7 +151,9 @@ public class TischService {
         while (!tisch.istVoll()) {
             tisch.fuegeSpielerHinzu(kiSpielerFabrik.erzeugeNaechstenSpieler());
         }
-        tisch.setzePartie(PartieEntity.neu(tisch.konfiguration().anzahlSpiele()));
+        PartieEntity partie = PartieEntity.neu(tisch.konfiguration().anzahlSpiele());
+        partie.fuegeSpielHinzu(erzeugeErstesSpiel(tisch));
+        tisch.setzePartie(partie);
         TischEntity gespeicherterTisch = tischRepository.saveAndFlush(tisch);
         TischAntwort antwort = TischAntwort.aus(gespeicherterTisch);
         PartieStandAntwort partieStand = PartieStandAntwort.aus(gespeicherterTisch.partie());
@@ -196,12 +203,21 @@ public class TischService {
 
     @Transactional(readOnly = true)
     public PartieStandAntwort ladePartieStand(UUID partieId) {
+        return PartieStandAntwort.aus(ladePartieEntity(partieId));
+    }
+
+    @Transactional(readOnly = true)
+    public PartieStandAntwort ladePartieStand(UUID partieId, SpielerEntity spieler) {
+        return PartieStandAntwort.aus(ladePartieEntity(partieId), spieler.id());
+    }
+
+    private PartieEntity ladePartieEntity(UUID partieId) {
         PartieEntity partie = partieRepository.findById(partieId)
             .orElseThrow(() -> new SpielverwaltungNichtGefundenException(
                 "PARTIE_NICHT_GEFUNDEN",
                 "Es wurde keine Partie mit der ID " + partieId + " gefunden."
             ));
-        return PartieStandAntwort.aus(partie);
+        return partie;
     }
 
     @Transactional(readOnly = true)
@@ -246,5 +262,15 @@ public class TischService {
         if (tisch.status() != TischStatus.WARTEND) {
             throw new SpielverwaltungKonfliktException(fehlerCode, nachricht);
         }
+    }
+
+    private SpielEntity erzeugeErstesSpiel(TischEntity tisch) {
+        Kartendeck kartendeck = Kartendeck.neu(tisch.konfiguration().alsSpielregeln()).gemischt();
+        Spiel spiel = Spiel.neu(SpielerPosition.SUED, tisch.konfiguration().alsSpielregeln(), kartendeck).teileKartenAus();
+        SpielEntity spielEntity = SpielEntity.neu(1, spiel.geber(), spiel.spieltyp(), spiel.phase());
+        for (SpielerPosition position : SpielerPosition.standardReihenfolge()) {
+            spielEntity.fuegeHandHinzu(HandEntity.neu(position, spiel.handVon(position).karten()));
+        }
+        return spielEntity;
     }
 }

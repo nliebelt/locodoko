@@ -53,7 +53,7 @@ public class SpielverwaltungWebSocketController {
     public void sendeTischSnapshot(@DestinationVariable UUID tischId, Principal principal) {
         SpielerEntity spieler = ladeAktivenSpieler(principal);
         TischAntwort tisch = tischService.ladeTisch(tischId);
-        PartieStandAntwort partieStand = tisch.partieId() == null ? null : tischService.ladePartieStand(tisch.partieId());
+        PartieStandAntwort partieStand = tisch.partieId() == null ? null : tischService.ladePartieStand(tisch.partieId(), spieler);
         LOGGER.info("Spieler {} fordert Tisch-Snapshot {} per WebSocket an", spieler.id(), tischId);
         tischEchtzeitService.sendeAnBenutzer(
             principal.getName(),
@@ -69,7 +69,7 @@ public class SpielverwaltungWebSocketController {
         tischEchtzeitService.sendeAnBenutzer(
             principal.getName(),
             "/queue/partie/" + partieId,
-            PartieEreignisAntwort.snapshot(tischService.ladePartieStand(partieId))
+            PartieEreignisAntwort.snapshot(tischService.ladePartieStand(partieId, spieler))
         );
     }
 
