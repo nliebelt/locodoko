@@ -1,5 +1,8 @@
 package de.locodoko.spiel.partie;
 
+import de.locodoko.spiel.karten.BubensoloTrumpfOrdnung;
+import de.locodoko.spiel.karten.DamensoloTrumpfOrdnung;
+import de.locodoko.spiel.karten.FleischlosTrumpfOrdnung;
 import de.locodoko.spiel.karten.Hand;
 import de.locodoko.spiel.karten.Karte;
 import de.locodoko.spiel.karten.Kartendeck;
@@ -517,6 +520,10 @@ public final class Spiel {
         return Optional.ofNullable(armutStatus);
     }
 
+    TrumpfOrdnung trumpfOrdnung() {
+        return trumpfOrdnung;
+    }
+
     private Map<SpielerPosition, Hand> kopiereHaende() {
         EnumMap<SpielerPosition, Hand> kopie = new EnumMap<>(SpielerPosition.class);
         kopie.putAll(haende);
@@ -545,14 +552,17 @@ public final class Spiel {
 
     private TrumpfOrdnung trumpfOrdnungFuer(VorbehaltMeldung hoechsterVorbehalt) {
         return hoechsterVorbehalt == null ? trumpfOrdnung : switch (hoechsterVorbehalt.ansage()) {
+            case SOLO_DAME -> new DamensoloTrumpfOrdnung();
+            case SOLO_BUBE -> new BubensoloTrumpfOrdnung();
             case SOLO_TRUMPF, HOCHZEIT, ARMUT -> new NormaleTrumpfOrdnung(spielregeln);
+            case SOLO_FLEISCHLOS -> new FleischlosTrumpfOrdnung();
             case GESUND -> throw new IllegalStateException("GESUND ist kein aufloesbarer Vorbehalt");
         };
     }
 
     private Parteien parteienFuer(VorbehaltMeldung hoechsterVorbehalt) {
         return switch (hoechsterVorbehalt.ansage()) {
-            case SOLO_TRUMPF -> Parteien.ausSolo(hoechsterVorbehalt.spielerPosition());
+            case SOLO_DAME, SOLO_BUBE, SOLO_TRUMPF, SOLO_FLEISCHLOS -> Parteien.ausSolo(hoechsterVorbehalt.spielerPosition());
             case HOCHZEIT -> Parteien.ausHochzeit(hoechsterVorbehalt.spielerPosition());
             case ARMUT -> Parteien.ausArmut(hoechsterVorbehalt.spielerPosition());
             case GESUND -> throw new IllegalStateException("GESUND ist kein aufloesbarer Vorbehalt");

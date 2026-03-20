@@ -12,7 +12,10 @@ public record Spielregeln(
     boolean karlchenAktiv,
     boolean doppelkopfAktiv,
     boolean armutAktiv,
+    boolean soloDameAktiv,
+    boolean soloBubeAktiv,
     boolean soloTrumpfAktiv,
+    boolean soloFleischlosAktiv,
     boolean hochzeitAktiv
 ) {
 
@@ -31,11 +34,11 @@ public record Spielregeln(
     }
 
     public static Spielregeln standardRegeln() {
-        return new Spielregeln(false, true, 11, 10, 9, 8, 7, true, true, true, true, true, true);
+        return new Spielregeln(false, true, 11, 10, 9, 8, 7, true, true, true, true, true, true, true, true, true);
     }
 
     public static Spielregeln ohneNeunenRegeln() {
-        return new Spielregeln(true, true, 9, 8, 7, 6, 5, true, true, true, true, true, true);
+        return new Spielregeln(true, true, 9, 8, 7, 6, 5, true, true, true, true, true, true, true, true, true);
     }
 
     public Spielregeln mitAnsagegrenzen(
@@ -57,7 +60,10 @@ public record Spielregeln(
             karlchenAktiv,
             doppelkopfAktiv,
             armutAktiv,
+            soloDameAktiv,
+            soloBubeAktiv,
             soloTrumpfAktiv,
+            soloFleischlosAktiv,
             hochzeitAktiv
         );
     }
@@ -75,7 +81,10 @@ public record Spielregeln(
             karlchenAktiv,
             doppelkopfAktiv,
             armutAktiv,
+            soloDameAktiv,
+            soloBubeAktiv,
             soloTrumpfAktiv,
+            soloFleischlosAktiv,
             hochzeitAktiv
         );
     }
@@ -93,7 +102,52 @@ public record Spielregeln(
             karlchenAktiv,
             doppelkopfAktiv,
             armutAktiv,
+            soloDameAktiv,
+            soloBubeAktiv,
             soloTrumpfAktiv,
+            soloFleischlosAktiv,
+            hochzeitAktiv
+        );
+    }
+
+    public Spielregeln mitSoloDameAktiv(boolean soloDameAktiv) {
+        return new Spielregeln(
+            ohneNeunen,
+            zweiteDulleSticht,
+            mindestkartenReKontra,
+            mindestkartenKeine90,
+            mindestkartenKeine60,
+            mindestkartenKeine30,
+            mindestkartenSchwarz,
+            fuchsAktiv,
+            karlchenAktiv,
+            doppelkopfAktiv,
+            armutAktiv,
+            soloDameAktiv,
+            soloBubeAktiv,
+            soloTrumpfAktiv,
+            soloFleischlosAktiv,
+            hochzeitAktiv
+        );
+    }
+
+    public Spielregeln mitSoloBubeAktiv(boolean soloBubeAktiv) {
+        return new Spielregeln(
+            ohneNeunen,
+            zweiteDulleSticht,
+            mindestkartenReKontra,
+            mindestkartenKeine90,
+            mindestkartenKeine60,
+            mindestkartenKeine30,
+            mindestkartenSchwarz,
+            fuchsAktiv,
+            karlchenAktiv,
+            doppelkopfAktiv,
+            armutAktiv,
+            soloDameAktiv,
+            soloBubeAktiv,
+            soloTrumpfAktiv,
+            soloFleischlosAktiv,
             hochzeitAktiv
         );
     }
@@ -111,7 +165,31 @@ public record Spielregeln(
             karlchenAktiv,
             doppelkopfAktiv,
             armutAktiv,
+            soloDameAktiv,
+            soloBubeAktiv,
             soloTrumpfAktiv,
+            soloFleischlosAktiv,
+            hochzeitAktiv
+        );
+    }
+
+    public Spielregeln mitSoloFleischlosAktiv(boolean soloFleischlosAktiv) {
+        return new Spielregeln(
+            ohneNeunen,
+            zweiteDulleSticht,
+            mindestkartenReKontra,
+            mindestkartenKeine90,
+            mindestkartenKeine60,
+            mindestkartenKeine30,
+            mindestkartenSchwarz,
+            fuchsAktiv,
+            karlchenAktiv,
+            doppelkopfAktiv,
+            armutAktiv,
+            soloDameAktiv,
+            soloBubeAktiv,
+            soloTrumpfAktiv,
+            soloFleischlosAktiv,
             hochzeitAktiv
         );
     }
@@ -129,7 +207,10 @@ public record Spielregeln(
             karlchenAktiv,
             doppelkopfAktiv,
             armutAktiv,
+            soloDameAktiv,
+            soloBubeAktiv,
             soloTrumpfAktiv,
+            soloFleischlosAktiv,
             hochzeitAktiv
         );
     }

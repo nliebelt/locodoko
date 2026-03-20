@@ -28,6 +28,8 @@ Ausgangslage: Das Repository enthaelt jetzt ein baubares technisches Grundgerues
 - [x] Neue Backend-Tests sichern WARUM dieser Ausbau wichtig ist: Sie pruefen die Zulaessigkeit der Hochzeit, die Prioritaet Solo > Hochzeit, die Partnerfindung ueber den ersten fremden Stich und den Umschlag ins stille Solo, damit die Parteiwahrheit trotz dynamischer Klaerung serverseitig stabil bleibt.
 - [x] Die Vorbehaltsphase kann jetzt auch `Armut` aufloesen: ein Spieler mit hoechstens drei Truempfen darf regelkonform Armut melden, bietet genau seine Trumpfkarten in einer eigenen `ARMUT_TAUSCH`-Phase an, die Antwort laeuft reihum links vom Armut-Spieler, der annehmende Spieler tauscht dieselbe Kartenzahl zurueck und wird offener Re-Partner; wenn niemand annimmt, wird das Spiel neu eingeworfen und wieder in die Vorbehaltsrunde versetzt.
 - [x] Neue Backend-Tests sichern WARUM dieser Ausbau wichtig ist: Sie fixieren die Armut-Erkennung, pruefen den validierten Kartentausch und die offene Re-Parteibildung nach Annahme und verhindern mit dem Einwurf-Szenario, dass eine abgelehnte Armut in einem inkonsistenten Spielzustand haengen bleibt.
+- [x] Die weiteren Solo-Varianten `Damensolo`, `Bubensolo` und `Fleischlos` sind jetzt in Vorbehalt, Trumpf-/Fehllogik und Parteibildung integriert: Alle Soli teilen dieselbe Prioritaet, werden bei Gleichstand ueber Sitzreihenfolge aufgeloest, lassen sich einzeln ueber `Spielregeln` deaktivieren und nutzen eigene TrumpfOrdnungen fuer nur Damen, nur Buben bzw. gar keinen Trumpf.
+- [x] Neue Backend-Tests sichern WARUM dieser Ausbau wichtig ist: Sie fixieren fuer die neuen Soli Trumpferkennung, Fehlrangfolge und Bedienpflicht, pruefen den Fleischlos-Stich ohne Stechen und verhindern, dass Vorbehalt-Aufloesung oder Tischkonfiguration spaeter inkonsistente Solo-Regeln erzeugen.
 
 ## Offen - Prioritaet 0: Projektgrundgeruest und Build-Pipeline
 
@@ -65,8 +67,8 @@ Ausgangslage: Das Repository enthaelt jetzt ein baubares technisches Grundgerues
 - [x] Vorbehalt-Logik mit Priorisierung Solo > Hochzeit > Armut fertigstellen; `Trumpfsolo`, `Hochzeit` und `Armut` sind umgesetzt.
 - [x] Hochzeit gemaess `specs/hochzeit.md` implementieren, inklusive Partnerfindung ueber den ersten gewonnenen Stich.
 - [x] Armut gemaess `specs/armut.md` implementieren, inklusive Angebot, Annahme, validiertem Kartentausch und Einwurf bei kompletter Ablehnung.
-- [ ] Solo-Varianten in sinnvoller Reihenfolge umsetzen: `solo-dame.md` und `solo-bube.md` nachziehen, danach `solo-fleischlos.md`; `solo-trumpf.md` ist umgesetzt.
-- [ ] Pro weiterem Sonderspiel gezielte Unit- und Integrationsfaelle aufbauen; fuer `Trumpfsolo`, `Hochzeit` und `Armut` liegen diese Absicherungen jetzt vor, weil diese Regeln tief in Trumpf- und Parteilogik eingreifen.
+- [x] Solo-Varianten in sinnvoller Reihenfolge umsetzen: `solo-dame.md`, `solo-bube.md` und `solo-fleischlos.md` sind jetzt zusaetzlich zu `solo-trumpf.md` umgesetzt.
+- [x] Pro weiterem Sonderspiel gezielte Unit- und Integrationsfaelle aufbauen; fuer `Trumpfsolo`, `Hochzeit`, `Armut`, `Damensolo`, `Bubensolo` und `Fleischlos` liegen diese Absicherungen jetzt vor, weil diese Regeln tief in Trumpf- und Parteilogik eingreifen.
 
 ## Offen - Prioritaet 5: Persistenz, Session, Lobby und Schnittstellen
 
@@ -103,7 +105,7 @@ Ausgangslage: Das Repository enthaelt jetzt ein baubares technisches Grundgerues
 - [x] Dann Kartenmodell, Trumpfordnung und Stichlogik inklusive Tests fertigstellen.
 - [x] Danach Spielablauf fuer ein Normalspiel ohne Sonderspiele vertikal bis zur Auswertung durchziehen.
 - [ ] Anschliessend KI fuer regelkonformes Spielen und ein minimales Frontend fuer Lobby + Tischansicht anbinden.
-- [ ] Erst danach Armut und die weiteren Solo-Varianten schrittweise ergaenzen.
+- [x] Danach die Vorbehalts-Sonderspiele fuer den aktuellen Backend-Slice vervollstaendigen (`Trumpfsolo`, `Hochzeit`, `Armut`, `Damensolo`, `Bubensolo`, `Fleischlos`).
 
 ## Aktuelle Risiken / offene Architekturentscheidungen
 

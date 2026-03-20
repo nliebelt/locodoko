@@ -19,12 +19,36 @@ public enum VorbehaltAnsage {
             return true;
         }
     },
+    SOLO_DAME(Spieltyp.SOLO_DAME, 3) {
+        @Override
+        public boolean istZulaessig(Hand hand, Spielregeln spielregeln) {
+            Objects.requireNonNull(hand, "hand darf nicht null sein");
+            Objects.requireNonNull(spielregeln, "spielregeln duerfen nicht null sein");
+            return spielregeln.soloDameAktiv();
+        }
+    },
+    SOLO_BUBE(Spieltyp.SOLO_BUBE, 3) {
+        @Override
+        public boolean istZulaessig(Hand hand, Spielregeln spielregeln) {
+            Objects.requireNonNull(hand, "hand darf nicht null sein");
+            Objects.requireNonNull(spielregeln, "spielregeln duerfen nicht null sein");
+            return spielregeln.soloBubeAktiv();
+        }
+    },
     SOLO_TRUMPF(Spieltyp.SOLO_TRUMPF, 3) {
         @Override
         public boolean istZulaessig(Hand hand, Spielregeln spielregeln) {
             Objects.requireNonNull(hand, "hand darf nicht null sein");
             Objects.requireNonNull(spielregeln, "spielregeln duerfen nicht null sein");
             return spielregeln.soloTrumpfAktiv();
+        }
+    },
+    SOLO_FLEISCHLOS(Spieltyp.SOLO_FLEISCHLOS, 3) {
+        @Override
+        public boolean istZulaessig(Hand hand, Spielregeln spielregeln) {
+            Objects.requireNonNull(hand, "hand darf nicht null sein");
+            Objects.requireNonNull(spielregeln, "spielregeln duerfen nicht null sein");
+            return spielregeln.soloFleischlosAktiv();
         }
     },
     HOCHZEIT(Spieltyp.HOCHZEIT, 2) {

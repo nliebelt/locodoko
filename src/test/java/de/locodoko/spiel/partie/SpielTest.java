@@ -46,6 +46,74 @@ class SpielTest {
     }
 
     @Test
+    void loestDamensoloAufUndErzwingtFehlbedienungStattTrumpfAusweichen() {
+        Karte ausgespieltesKaro = karte(Farbe.KARO, Kartenwert.KOENIG, 1);
+        Karte karoZumBedienen = karte(Farbe.KARO, Kartenwert.AS, 1);
+        Karte damenTrumpf = karte(Farbe.KREUZ, Kartenwert.DAME, 1);
+        Spiel spiel = Spiel.neu(SpielerPosition.SUED, spielregeln, kartendeckMitVerteiltenHaenden(Map.of(
+                SpielerPosition.WEST, List.of(ausgespieltesKaro),
+                SpielerPosition.NORD, List.of(karoZumBedienen, damenTrumpf)
+            )))
+            .teileKartenAus()
+            .meldeVorbehalt(SpielerPosition.WEST, VorbehaltAnsage.SOLO_DAME)
+            .meldeGesund(SpielerPosition.NORD)
+            .meldeGesund(SpielerPosition.OST)
+            .meldeGesund(SpielerPosition.SUED)
+            .loeseVorbehalteAuf()
+            .spieleKarte(SpielerPosition.WEST, ausgespieltesKaro);
+
+        assertEquals(Spieltyp.SOLO_DAME, spiel.spieltyp(),
+            "Damensolo muss als eigener Spieltyp aufgeloest werden, damit Stichlogik und Parteibildung dasselbe Regelprofil sehen.");
+        assertEquals(List.of(SpielerPosition.WEST), spiel.parteien().spielerVon(Partei.RE));
+        assertEquals(List.of(karoZumBedienen), spiel.gueltigeKartenFuer(SpielerPosition.NORD),
+            "Im Damensolo bleibt Karo eine Fehlfarbe; vorhandenes Karo muss deshalb bedient werden, auch wenn eine Dame als Trumpf bereitliegt.");
+        assertTrue(spiel.parteien().sichtAufPartei(SpielerPosition.NORD, SpielerPosition.WEST).isPresent());
+    }
+
+    @Test
+    void entscheidetBeiVerschiedenenSoloTypenNachSitzreihenfolge() {
+        Spiel spiel = Spiel.neu(SpielerPosition.SUED, spielregeln, kartendeckMitKontrolliertenHaenden())
+            .teileKartenAus()
+            .meldeVorbehalt(SpielerPosition.WEST, VorbehaltAnsage.SOLO_BUBE)
+            .meldeVorbehalt(SpielerPosition.NORD, VorbehaltAnsage.SOLO_DAME)
+            .meldeVorbehalt(SpielerPosition.OST, VorbehaltAnsage.SOLO_FLEISCHLOS)
+            .meldeGesund(SpielerPosition.SUED)
+            .loeseVorbehalteAuf();
+
+        assertEquals(Spieltyp.SOLO_BUBE, spiel.spieltyp(),
+            "Zwischen verschiedenen Soli gibt es keine Zusatzrangfolge; bei gleicher Prioritaet muss die fruehere Sitzposition gewinnen.");
+        assertEquals(List.of(SpielerPosition.WEST), spiel.parteien().spielerVon(Partei.RE));
+    }
+
+    @Test
+    void loestFleischlosAufUndLaesstAbwerfenNichtStechen() {
+        Karte ersterHerzstich = karte(Farbe.HERZ, Kartenwert.KOENIG, 1);
+        Karte hoehereHerzkarte = karte(Farbe.HERZ, Kartenwert.AS, 1);
+        Karte karoAbwurf = karte(Farbe.KARO, Kartenwert.AS, 1);
+        Karte kreuzAbwurf = karte(Farbe.KREUZ, Kartenwert.AS, 1);
+        Spiel spiel = Spiel.neu(SpielerPosition.SUED, spielregeln, kartendeckMitVerteiltenHaenden(Map.of(
+                SpielerPosition.WEST, List.of(ersterHerzstich),
+                SpielerPosition.NORD, List.of(hoehereHerzkarte),
+                SpielerPosition.OST, List.of(karoAbwurf),
+                SpielerPosition.SUED, List.of(kreuzAbwurf)
+            )))
+            .teileKartenAus()
+            .meldeVorbehalt(SpielerPosition.WEST, VorbehaltAnsage.SOLO_FLEISCHLOS)
+            .meldeGesund(SpielerPosition.NORD)
+            .meldeGesund(SpielerPosition.OST)
+            .meldeGesund(SpielerPosition.SUED)
+            .loeseVorbehalteAuf();
+
+        spiel = spieleStich(spiel, ersterHerzstich, hoehereHerzkarte, karoAbwurf, kreuzAbwurf);
+
+        assertEquals(Spieltyp.SOLO_FLEISCHLOS, spiel.spieltyp(),
+            "Fleischlos braucht einen eigenen Spieltyp, damit die Stichlogik vollstaendig ohne Trumpf arbeitet.");
+        assertEquals(SpielerPosition.NORD, spiel.abgeschlosseneStiche().getFirst().gewinner(spiel.trumpfOrdnung()).spieler(),
+            "Im Fleischlos darf ein Abwurf niemals stechen; der Stich bleibt immer bei der hoechsten Karte der angefragten Farbe.");
+        assertEquals(SpielerPosition.NORD, spiel.aktuellerStich().orElseThrow().aufspieler());
+    }
+
+    @Test
     void loestHochzeitAufUndStartetMitOffenemHochzeitsSpieler() {
         Spiel spiel = Spiel.neu(SpielerPosition.SUED, spielregeln, kartendeckMitVerteiltenHaenden(Map.of(
                 SpielerPosition.WEST, List.of(
@@ -344,6 +412,26 @@ class SpielTest {
         assertThrows(IllegalStateException.class,
             () -> spiel.meldeVorbehalt(SpielerPosition.WEST, VorbehaltAnsage.SOLO_TRUMPF),
             "Deaktivierte Sonderspiele muessen serverseitig geblockt werden, damit Tischkonfigurationen spaeter verbindlich bleiben.");
+    }
+
+    @Test
+    void lehntDamensoloBubensoloUndFleischlosBeiDeaktivierterRegelAb() {
+        Spiel damensoloDeaktiviert = Spiel.neu(SpielerPosition.SUED, spielregeln.mitSoloDameAktiv(false), kartendeckMitKontrolliertenHaenden())
+            .teileKartenAus();
+        Spiel bubensoloDeaktiviert = Spiel.neu(SpielerPosition.SUED, spielregeln.mitSoloBubeAktiv(false), kartendeckMitKontrolliertenHaenden())
+            .teileKartenAus();
+        Spiel fleischlosDeaktiviert = Spiel.neu(SpielerPosition.SUED, spielregeln.mitSoloFleischlosAktiv(false), kartendeckMitKontrolliertenHaenden())
+            .teileKartenAus();
+
+        assertThrows(IllegalStateException.class,
+            () -> damensoloDeaktiviert.meldeVorbehalt(SpielerPosition.WEST, VorbehaltAnsage.SOLO_DAME),
+            "Die Tischkonfiguration muss auch Damensoli serverseitig sperren koennen, damit keine UI einen verbotenen Vorbehalt durchdrueckt.");
+        assertThrows(IllegalStateException.class,
+            () -> bubensoloDeaktiviert.meldeVorbehalt(SpielerPosition.WEST, VorbehaltAnsage.SOLO_BUBE),
+            "Bubensoli brauchen dieselbe serverseitige Regelhoheit wie andere Vorbehalte, damit Vorbehalt-Phase und Konfiguration konsistent bleiben.");
+        assertThrows(IllegalStateException.class,
+            () -> fleischlosDeaktiviert.meldeVorbehalt(SpielerPosition.WEST, VorbehaltAnsage.SOLO_FLEISCHLOS),
+            "Fleischlos muss ebenfalls deaktivierbar sein, sonst waere die Tischkonfiguration fuer Soli nicht vollstaendig.");
     }
 
     @Test
