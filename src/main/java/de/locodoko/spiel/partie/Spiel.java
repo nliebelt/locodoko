@@ -26,7 +26,7 @@ public final class Spiel {
     private final SpielerPosition geber;
     private final Spielphase phase;
     private final Map<SpielerPosition, Hand> haende;
-    private final List<SpielerPosition> gesundGemeldet;
+    private final List<VorbehaltMeldung> vorbehalte;
     private final Parteien parteien;
     private final Ansagen ansagen;
     private final List<Stich> abgeschlosseneStiche;
@@ -41,7 +41,7 @@ public final class Spiel {
         SpielerPosition geber,
         Spielphase phase,
         Map<SpielerPosition, Hand> haende,
-        List<SpielerPosition> gesundGemeldet,
+        List<VorbehaltMeldung> vorbehalte,
         Parteien parteien,
         Ansagen ansagen,
         List<Stich> abgeschlosseneStiche,
@@ -55,7 +55,7 @@ public final class Spiel {
         this.geber = Objects.requireNonNull(geber, "geber darf nicht null sein");
         this.phase = Objects.requireNonNull(phase, "phase darf nicht null sein");
         this.haende = Map.copyOf(haende);
-        this.gesundGemeldet = List.copyOf(gesundGemeldet);
+        this.vorbehalte = List.copyOf(vorbehalte);
         this.parteien = parteien;
         this.ansagen = Objects.requireNonNull(ansagen, "ansagen duerfen nicht null sein");
         this.abgeschlosseneStiche = List.copyOf(abgeschlosseneStiche);
@@ -92,7 +92,7 @@ public final class Spiel {
             geber,
             Spielphase.VORBEHALT_ANSAGE,
             kartendeck.anVierSpielerAusteilen(),
-            gesundGemeldet,
+            List.of(),
             null,
             ansagen,
             abgeschlosseneStiche,
@@ -102,24 +102,32 @@ public final class Spiel {
     }
 
     public Optional<SpielerPosition> naechsterVorbehaltSpieler() {
-        if (phase != Spielphase.VORBEHALT_ANSAGE || gesundGemeldet.size() >= SpielerPosition.standardReihenfolge().size()) {
+        if (phase != Spielphase.VORBEHALT_ANSAGE || vorbehalte.size() >= SpielerPosition.standardReihenfolge().size()) {
             return Optional.empty();
         }
         List<SpielerPosition> reihenfolge = SpielerPosition.imUhrzeigersinnAb(geber.naechsteImUhrzeigersinn());
-        return Optional.of(reihenfolge.get(gesundGemeldet.size()));
+        return Optional.of(reihenfolge.get(vorbehalte.size()));
     }
 
     public Spiel meldeGesund(SpielerPosition spielerPosition) {
+        return meldeVorbehalt(spielerPosition, VorbehaltAnsage.GESUND);
+    }
+
+    public Spiel meldeVorbehalt(SpielerPosition spielerPosition, VorbehaltAnsage vorbehaltAnsage) {
         pruefePhase(Spielphase.VORBEHALT_ANSAGE, "Gesund melden");
         Objects.requireNonNull(spielerPosition, "spielerPosition darf nicht null sein");
+        Objects.requireNonNull(vorbehaltAnsage, "vorbehaltAnsage darf nicht null sein");
         SpielerPosition erwarteterSpieler = naechsterVorbehaltSpieler()
             .orElseThrow(() -> new IllegalStateException("Es werden keine Vorbehalte mehr erwartet"));
         if (spielerPosition != erwarteterSpieler) {
             throw new IllegalStateException("Vorbehalte muessen in Sitzreihenfolge gemeldet werden; erwartet: " + erwarteterSpieler);
         }
-        List<SpielerPosition> neueGesundMeldungen = new ArrayList<>(gesundGemeldet);
-        neueGesundMeldungen.add(spielerPosition);
-        Spielphase naechstePhase = neueGesundMeldungen.size() == SpielerPosition.standardReihenfolge().size()
+        if (!vorbehaltAnsage.istZulaessig(handVon(spielerPosition), spielregeln)) {
+            throw new IllegalStateException("Vorbehalt " + vorbehaltAnsage + " ist fuer " + spielerPosition + " nach den Spielregeln nicht zulaessig");
+        }
+        List<VorbehaltMeldung> neueVorbehalte = new ArrayList<>(vorbehalte);
+        neueVorbehalte.add(new VorbehaltMeldung(spielerPosition, vorbehaltAnsage));
+        Spielphase naechstePhase = neueVorbehalte.size() == SpielerPosition.standardReihenfolge().size()
             ? Spielphase.VORBEHALT_AUFLOESUNG
             : Spielphase.VORBEHALT_ANSAGE;
         return new Spiel(
@@ -130,7 +138,7 @@ public final class Spiel {
             geber,
             naechstePhase,
             haende,
-            neueGesundMeldungen,
+            neueVorbehalte,
             parteien,
             ansagen,
             abgeschlosseneStiche,
@@ -141,17 +149,20 @@ public final class Spiel {
 
     public Spiel loeseVorbehalteAuf() {
         pruefePhase(Spielphase.VORBEHALT_AUFLOESUNG, "Vorbehalte aufloesen");
-        Parteien neueParteien = Parteien.ausNormalspielHaenden(haende);
+        VorbehaltMeldung hoechsterVorbehalt = hoechsterVorbehalt().orElse(null);
+        Parteien neueParteien = hoechsterVorbehalt == null
+            ? Parteien.ausNormalspielHaenden(haende)
+            : parteienFuer(hoechsterVorbehalt);
         Stich ersterStich = Stich.neu(geber.naechsteImUhrzeigersinn());
         return new Spiel(
             spielregeln,
             kartendeck,
-            trumpfOrdnung,
-            Spieltyp.NORMALSPIEL,
+            trumpfOrdnungFuer(hoechsterVorbehalt),
+            spieltypFuer(hoechsterVorbehalt),
             geber,
             Spielphase.STICHPHASE,
             haende,
-            gesundGemeldet,
+            vorbehalte,
             neueParteien,
             Ansagen.leer(),
             List.of(),
@@ -197,7 +208,7 @@ public final class Spiel {
                 geber,
                 phase,
                 neueHaende,
-                gesundGemeldet,
+                vorbehalte,
                 parteien,
                 ansagen,
                 abgeschlosseneStiche,
@@ -217,7 +228,7 @@ public final class Spiel {
                 geber,
                 Spielphase.AUSWERTUNG,
                 neueHaende,
-                gesundGemeldet,
+                vorbehalte,
                 parteien,
                 ansagen,
                 neueAbgeschlosseneStiche,
@@ -235,7 +246,7 @@ public final class Spiel {
             geber,
             Spielphase.STICHPHASE,
             neueHaende,
-            gesundGemeldet,
+            vorbehalte,
             parteien,
             ansagen,
             neueAbgeschlosseneStiche,
@@ -277,7 +288,7 @@ public final class Spiel {
             geber,
             phase,
             haende,
-            gesundGemeldet,
+            vorbehalte,
             parteien,
             neueAnsagen,
             abgeschlosseneStiche,
@@ -304,7 +315,7 @@ public final class Spiel {
             geber,
             Spielphase.GESAMTSTAND_AKTUALISIEREN,
             haende,
-            gesundGemeldet,
+            vorbehalte,
             parteien,
             ansagen,
             abgeschlosseneStiche,
@@ -327,6 +338,10 @@ public final class Spiel {
 
     public Spielphase phase() {
         return phase;
+    }
+
+    public List<VorbehaltMeldung> vorbehalte() {
+        return vorbehalte;
     }
 
     public Map<SpielerPosition, Hand> haende() {
@@ -369,6 +384,40 @@ public final class Spiel {
         EnumMap<SpielerPosition, Hand> kopie = new EnumMap<>(SpielerPosition.class);
         kopie.putAll(haende);
         return kopie;
+    }
+
+    private Optional<VorbehaltMeldung> hoechsterVorbehalt() {
+        VorbehaltMeldung hoechsterVorbehalt = null;
+        for (VorbehaltMeldung meldung : vorbehalte) {
+            if (!meldung.istVorbehalt()) {
+                continue;
+            }
+            if (hoechsterVorbehalt == null || meldung.ansage().prioritaet() > hoechsterVorbehalt.ansage().prioritaet()) {
+                hoechsterVorbehalt = meldung;
+            }
+        }
+        return Optional.ofNullable(hoechsterVorbehalt);
+    }
+
+    private Spieltyp spieltypFuer(VorbehaltMeldung hoechsterVorbehalt) {
+        return hoechsterVorbehalt == null
+            ? Spieltyp.NORMALSPIEL
+            : hoechsterVorbehalt.ansage().spieltyp()
+                .orElseThrow(() -> new IllegalStateException("Vorbehalt ohne Spieltyp kann nicht aufgeloest werden"));
+    }
+
+    private TrumpfOrdnung trumpfOrdnungFuer(VorbehaltMeldung hoechsterVorbehalt) {
+        return hoechsterVorbehalt == null ? trumpfOrdnung : switch (hoechsterVorbehalt.ansage()) {
+            case SOLO_TRUMPF -> new NormaleTrumpfOrdnung(spielregeln);
+            case GESUND -> throw new IllegalStateException("GESUND ist kein aufloesbarer Vorbehalt");
+        };
+    }
+
+    private Parteien parteienFuer(VorbehaltMeldung hoechsterVorbehalt) {
+        return switch (hoechsterVorbehalt.ansage()) {
+            case SOLO_TRUMPF -> Parteien.ausSolo(hoechsterVorbehalt.spielerPosition());
+            case GESUND -> throw new IllegalStateException("GESUND ist kein aufloesbarer Vorbehalt");
+        };
     }
 
     private int kartenProSpieler() {

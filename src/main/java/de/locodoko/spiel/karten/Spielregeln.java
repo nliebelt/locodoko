@@ -10,7 +10,8 @@ public record Spielregeln(
     int mindestkartenSchwarz,
     boolean fuchsAktiv,
     boolean karlchenAktiv,
-    boolean doppelkopfAktiv
+    boolean doppelkopfAktiv,
+    boolean soloTrumpfAktiv
 ) {
 
     public Spielregeln {
@@ -28,11 +29,11 @@ public record Spielregeln(
     }
 
     public static Spielregeln standardRegeln() {
-        return new Spielregeln(false, true, 11, 10, 9, 8, 7, true, true, true);
+        return new Spielregeln(false, true, 11, 10, 9, 8, 7, true, true, true, true);
     }
 
     public static Spielregeln ohneNeunenRegeln() {
-        return new Spielregeln(true, true, 9, 8, 7, 6, 5, true, true, true);
+        return new Spielregeln(true, true, 9, 8, 7, 6, 5, true, true, true, true);
     }
 
     public Spielregeln mitAnsagegrenzen(
@@ -52,7 +53,8 @@ public record Spielregeln(
             mindestkartenSchwarz,
             fuchsAktiv,
             karlchenAktiv,
-            doppelkopfAktiv
+            doppelkopfAktiv,
+            soloTrumpfAktiv
         );
     }
 
@@ -67,7 +69,24 @@ public record Spielregeln(
             mindestkartenSchwarz,
             fuchsAktiv,
             karlchenAktiv,
-            doppelkopfAktiv
+            doppelkopfAktiv,
+            soloTrumpfAktiv
+        );
+    }
+
+    public Spielregeln mitSoloTrumpfAktiv(boolean soloTrumpfAktiv) {
+        return new Spielregeln(
+            ohneNeunen,
+            zweiteDulleSticht,
+            mindestkartenReKontra,
+            mindestkartenKeine90,
+            mindestkartenKeine60,
+            mindestkartenKeine30,
+            mindestkartenSchwarz,
+            fuchsAktiv,
+            karlchenAktiv,
+            doppelkopfAktiv,
+            soloTrumpfAktiv
         );
     }
 

@@ -8,18 +8,22 @@ import de.locodoko.spiel.karten.SpielerPosition;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.EnumSet;
 import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 
 public final class Parteien {
 
     private final Map<SpielerPosition, Partei> parteienNachSpieler;
+    private final Set<SpielerPosition> offenFuerAlle;
 
-    private Parteien(Map<SpielerPosition, Partei> parteienNachSpieler) {
+    private Parteien(Map<SpielerPosition, Partei> parteienNachSpieler, Set<SpielerPosition> offenFuerAlle) {
         this.parteienNachSpieler = Map.copyOf(parteienNachSpieler);
+        this.offenFuerAlle = Set.copyOf(offenFuerAlle);
     }
 
     public static Parteien ausNormalspielHaenden(Map<SpielerPosition, Hand> haende) {
@@ -33,7 +37,16 @@ public final class Parteien {
         if (anzahlReSpieler != 2) {
             throw new IllegalStateException("Ein Normalspiel braucht genau zwei Re-Spieler, gefunden: " + anzahlReSpieler);
         }
-        return new Parteien(parteien);
+        return new Parteien(parteien, EnumSet.noneOf(SpielerPosition.class));
+    }
+
+    public static Parteien ausSolo(SpielerPosition soloSpieler) {
+        Objects.requireNonNull(soloSpieler, "soloSpieler darf nicht null sein");
+        EnumMap<SpielerPosition, Partei> parteien = new EnumMap<>(SpielerPosition.class);
+        for (SpielerPosition position : SpielerPosition.standardReihenfolge()) {
+            parteien.put(position, position == soloSpieler ? Partei.RE : Partei.KONTRA);
+        }
+        return new Parteien(parteien, EnumSet.allOf(SpielerPosition.class));
     }
 
     public Partei parteiVon(SpielerPosition spielerPosition) {
@@ -59,7 +72,7 @@ public final class Parteien {
     public Optional<Partei> sichtAufPartei(SpielerPosition beobachter, SpielerPosition ziel) {
         Objects.requireNonNull(beobachter, "beobachter darf nicht null sein");
         Objects.requireNonNull(ziel, "ziel darf nicht null sein");
-        return beobachter == ziel ? Optional.of(parteiVon(ziel)) : Optional.empty();
+        return beobachter == ziel || offenFuerAlle.contains(ziel) ? Optional.of(parteiVon(ziel)) : Optional.empty();
     }
 
     public Map<SpielerPosition, Partei> alsMap() {

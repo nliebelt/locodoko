@@ -22,6 +22,8 @@ Ausgangslage: Das Repository enthaelt jetzt ein baubares technisches Grundgerues
 - [x] Neue Backend-Tests sichern WARUM dieser Slice wichtig ist: Sie pruefen den kompletten Phasenlauf eines Normalspiels, verdeckte Parteiinformation, ungueltige Zustandsuebergaenge sowie Geberrotation und Nullsummen-Gesamtstand ueber mehrere Spiele.
 - [x] Ansagen, Punkteberechnung und Sonderpunkte fuer den Normalspiel-Slice liegen jetzt in `src/main/java/de/locodoko/spiel/partie`: Grundansagen und Absagen waehrend der Stichphase, konfigurierbare Ansagefenster in `Spielregeln`, Sonderpunktbewertung fuer Fuchs/Karlchen/Doppelkopf und eine Endauswertung, die Ansagen, Sonderpunkte und Nullsummen-Verteilung zusammenfuehrt.
 - [x] Neue Backend-Tests sichern WARUM dieser Ausbau wichtig ist: Sie fixieren Ansagereihenfolge und Zeitfenster, pruefen Sonderpunkte getrennt von der Stichlogik und belegen, dass die Spielwertung trotz Ansagen und Sonderpunkten stabil 240 Augen und eine Nullsumme fuer den Gesamtstand behaelt.
+- [x] Die Vorbehaltsphase kann jetzt neben `gesund` auch `Trumpfsolo` verarbeiten: Vorbehaltsmeldungen werden in Sitzreihenfolge gespeichert, deaktivierbare Trumpfsoli serverseitig validiert, bei mehreren Soli entscheidet die fruehere Sitzposition, und die Solo-Parteien sind von Beginn an offen.
+- [x] Neue Backend-Tests sichern WARUM dieser Schritt wichtig ist: Sie fixieren die Vorbehaltsaufloesung fuer `Trumpfsolo`, pruefen die offene 1-gegen-3-Parteibildung und verhindern, dass deaktivierte Sonderspiele spaeter durch UI oder API versehentlich doch gestartet werden.
 
 ## Offen - Prioritaet 0: Projektgrundgeruest und Build-Pipeline
 
@@ -56,10 +58,10 @@ Ausgangslage: Das Repository enthaelt jetzt ein baubares technisches Grundgerues
 
 ## Offen - Prioritaet 4: Sonderspiele fuer MVP und danach
 
-- [ ] Vorbehalt-Logik mit Priorisierung Solo > Hochzeit > Armut fertigstellen.
+- [ ] Vorbehalt-Logik mit Priorisierung Solo > Hochzeit > Armut fertigstellen; die Infrastruktur fuer echte Vorbehaltsmeldungen und `Trumpfsolo` liegt jetzt, Hochzeit und Armut fehlen noch.
 - [ ] Hochzeit gemaess `specs/hochzeit.md` implementieren, inklusive Partnerfindung ueber den ersten gewonnenen Stich.
 - [ ] Armut gemaess `specs/armut.md` implementieren, inklusive Angebot, Annahme und Kartentausch.
-- [ ] Solo-Varianten in sinnvoller Reihenfolge umsetzen: zuerst haeufige/regelnahe Varianten (`solo-dame.md`, `solo-bube.md`, `solo-trumpf.md`), danach `solo-fleischlos.md`.
+- [ ] Solo-Varianten in sinnvoller Reihenfolge umsetzen: `solo-dame.md` und `solo-bube.md` nachziehen, danach `solo-fleischlos.md`; `solo-trumpf.md` ist umgesetzt.
 - [ ] Pro Sonderspiel gezielte Unit- und Integrationsfaelle aufbauen, weil diese Regeln tief in Trumpf- und Parteilogik eingreifen.
 
 ## Offen - Prioritaet 5: Persistenz, Session, Lobby und Schnittstellen

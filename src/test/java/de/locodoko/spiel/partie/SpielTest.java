@@ -5,6 +5,7 @@ import de.locodoko.spiel.karten.Kartendeck;
 import de.locodoko.spiel.karten.Kartenwert;
 import de.locodoko.spiel.karten.SpielerPosition;
 import de.locodoko.spiel.karten.Spielregeln;
+import de.locodoko.spiel.karten.Spieltyp;
 import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
@@ -19,6 +20,38 @@ class SpielTest {
 
     private final Spielregeln spielregeln = Spielregeln.standardRegeln();
     private final PunkteRechner punkteRechner = new PunkteRechner();
+
+    @Test
+    void loestTrumpfsoloMitSitzreihenfolgeAufUndOffenbartParteienVonBeginnAn() {
+        Spiel spiel = Spiel.neu(SpielerPosition.SUED, spielregeln, kartendeckMitKontrolliertenHaenden())
+            .teileKartenAus()
+            .meldeGesund(SpielerPosition.WEST)
+            .meldeVorbehalt(SpielerPosition.NORD, VorbehaltAnsage.SOLO_TRUMPF)
+            .meldeVorbehalt(SpielerPosition.OST, VorbehaltAnsage.SOLO_TRUMPF)
+            .meldeGesund(SpielerPosition.SUED)
+            .loeseVorbehalteAuf();
+
+        assertEquals(Spieltyp.SOLO_TRUMPF, spiel.spieltyp(),
+            "Das hoechste Solo muss in der Vorbehaltsaufloesung wirksam werden, damit Sonderspiele regelkonform vor dem ersten Stich starten.");
+        assertEquals(Partei.RE, spiel.parteien().parteiVon(SpielerPosition.NORD));
+        assertEquals(List.of(SpielerPosition.NORD), spiel.parteien().spielerVon(Partei.RE),
+            "Im Trumpfsolo spielt genau ein Spieler alleine gegen drei Gegner; diese Parteibildung ist die Grundlage fuer Wertung und Ansagen.");
+        assertTrue(spiel.parteien().sichtAufPartei(SpielerPosition.WEST, SpielerPosition.NORD).isPresent(),
+            "Die Solo-Parteien muessen von Beginn an offen sein, damit UI und Ansagelogik ohne verdeckte Information arbeiten koennen.");
+        assertEquals(SpielerPosition.WEST, spiel.aktuellerStich().orElseThrow().aufspieler(),
+            "Auch im Solo beginnt weiterhin der Spieler links vom Geber den ersten Stich.");
+    }
+
+    @Test
+    void lehntTrumpfsoloAbWennEsPerRegelnDeaktiviertIst() {
+        Spielregeln soloDeaktiviert = spielregeln.mitSoloTrumpfAktiv(false);
+        Spiel spiel = Spiel.neu(SpielerPosition.SUED, soloDeaktiviert, kartendeckMitKontrolliertenHaenden())
+            .teileKartenAus();
+
+        assertThrows(IllegalStateException.class,
+            () -> spiel.meldeVorbehalt(SpielerPosition.WEST, VorbehaltAnsage.SOLO_TRUMPF),
+            "Deaktivierte Sonderspiele muessen serverseitig geblockt werden, damit Tischkonfigurationen spaeter verbindlich bleiben.");
+    }
 
     @Test
     void durchlaeuftEinNormalspielVonDerAusteilungBisZurAuswertung() {

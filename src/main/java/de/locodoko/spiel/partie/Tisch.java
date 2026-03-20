@@ -34,6 +34,10 @@ public final class Tisch {
         return mitAktuellemSpiel(partie.aktuellesSpiel().meldeGesund(spielerPosition));
     }
 
+    public Tisch meldeVorbehalt(SpielerPosition spielerPosition, VorbehaltAnsage vorbehaltAnsage) {
+        return mitAktuellemSpiel(partie.aktuellesSpiel().meldeVorbehalt(spielerPosition, vorbehaltAnsage));
+    }
+
     public Tisch loeseVorbehalteAuf() {
         return mitAktuellemSpiel(partie.aktuellesSpiel().loeseVorbehalteAuf());
     }
