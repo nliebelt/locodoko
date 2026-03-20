@@ -1,0 +1,121 @@
+package de.locodoko.spielverwaltung.websocket;
+
+import de.locodoko.spielverwaltung.persistenz.SpielerEntity;
+import de.locodoko.spielverwaltung.session.SpielerSessionService;
+import de.locodoko.spielverwaltung.session.SpielerSessionUngueltigException;
+import de.locodoko.spielverwaltung.session.SpielverwaltungKonfliktException;
+import de.locodoko.spielverwaltung.session.SpielverwaltungNichtGefundenException;
+import de.locodoko.spielverwaltung.tisch.PartieStandAntwort;
+import de.locodoko.spielverwaltung.tisch.TischAntwort;
+import de.locodoko.spielverwaltung.tisch.TischService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.messaging.handler.annotation.DestinationVariable;
+import org.springframework.messaging.handler.annotation.MessageExceptionHandler;
+import org.springframework.messaging.handler.annotation.MessageMapping;
+import org.springframework.messaging.simp.annotation.SendToUser;
+import org.springframework.stereotype.Controller;
+
+import java.security.Principal;
+import java.util.UUID;
+
+@Controller
+public class SpielverwaltungWebSocketController {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(SpielverwaltungWebSocketController.class);
+
+    private final TischService tischService;
+    private final SpielerSessionService spielerSessionService;
+    private final TischEchtzeitService tischEchtzeitService;
+
+    public SpielverwaltungWebSocketController(
+        TischService tischService,
+        SpielerSessionService spielerSessionService,
+        TischEchtzeitService tischEchtzeitService
+    ) {
+        this.tischService = tischService;
+        this.spielerSessionService = spielerSessionService;
+        this.tischEchtzeitService = tischEchtzeitService;
+    }
+
+    @MessageMapping("/tische/snapshot")
+    public void sendeTischlisteSnapshot(Principal principal) {
+        SpielerEntity spieler = ladeAktivenSpieler(principal);
+        LOGGER.info("Spieler {} fordert Tischlisten-Snapshot per WebSocket an", spieler.id());
+        tischEchtzeitService.sendeAnBenutzer(
+            principal.getName(),
+            "/queue/tische",
+            TischlisteEreignisAntwort.snapshot(tischService.listeOffeneTische())
+        );
+    }
+
+    @MessageMapping("/tisch/{tischId}/snapshot")
+    public void sendeTischSnapshot(@DestinationVariable UUID tischId, Principal principal) {
+        SpielerEntity spieler = ladeAktivenSpieler(principal);
+        TischAntwort tisch = tischService.ladeTisch(tischId);
+        PartieStandAntwort partieStand = tisch.partieId() == null ? null : tischService.ladePartieStand(tisch.partieId());
+        LOGGER.info("Spieler {} fordert Tisch-Snapshot {} per WebSocket an", spieler.id(), tischId);
+        tischEchtzeitService.sendeAnBenutzer(
+            principal.getName(),
+            "/queue/tisch/" + tischId,
+            TischEreignisAntwort.snapshot(tisch, partieStand)
+        );
+    }
+
+    @MessageMapping("/partie/{partieId}/snapshot")
+    public void sendePartieSnapshot(@DestinationVariable UUID partieId, Principal principal) {
+        SpielerEntity spieler = ladeAktivenSpieler(principal);
+        LOGGER.info("Spieler {} fordert Partie-Snapshot {} per WebSocket an", spieler.id(), partieId);
+        tischEchtzeitService.sendeAnBenutzer(
+            principal.getName(),
+            "/queue/partie/" + partieId,
+            PartieEreignisAntwort.snapshot(tischService.ladePartieStand(partieId))
+        );
+    }
+
+    @MessageExceptionHandler({
+        SpielerSessionUngueltigException.class,
+        SpielverwaltungNichtGefundenException.class,
+        SpielverwaltungKonfliktException.class,
+        IllegalArgumentException.class
+    })
+    @SendToUser(value = "/queue/fehler", broadcast = false)
+    public SpielverwaltungWebSocketFehlerAntwort behandleFachlichenFehler(RuntimeException exception) {
+        if (exception instanceof SpielverwaltungNichtGefundenException nichtGefundenException) {
+            return SpielverwaltungWebSocketFehlerAntwort.fachlicherFehler(
+                nichtGefundenException.fehlerCode(),
+                nichtGefundenException.getMessage()
+            );
+        }
+        if (exception instanceof SpielverwaltungKonfliktException konfliktException) {
+            return SpielverwaltungWebSocketFehlerAntwort.fachlicherFehler(
+                konfliktException.fehlerCode(),
+                konfliktException.getMessage()
+            );
+        }
+        if (exception instanceof SpielerSessionUngueltigException) {
+            return SpielverwaltungWebSocketFehlerAntwort.fachlicherFehler(
+                "SPIELER_SESSION_UNGUELTIG",
+                exception.getMessage()
+            );
+        }
+        return SpielverwaltungWebSocketFehlerAntwort.fachlicherFehler("ANFRAGE_UNGUELTIG", exception.getMessage());
+    }
+
+    @MessageExceptionHandler(Exception.class)
+    @SendToUser(value = "/queue/fehler", broadcast = false)
+    public SpielverwaltungWebSocketFehlerAntwort behandleServerfehler(Exception exception) {
+        LOGGER.error("Unerwarteter WebSocket-Fehler", exception);
+        return SpielverwaltungWebSocketFehlerAntwort.fachlicherFehler(
+            "SERVERFEHLER",
+            "Es ist ein unerwarteter Serverfehler aufgetreten."
+        );
+    }
+
+    private SpielerEntity ladeAktivenSpieler(Principal principal) {
+        if (principal == null || principal.getName() == null || principal.getName().isBlank()) {
+            throw new SpielerSessionUngueltigException("Es ist keine aktive Spieler-Session vorhanden.");
+        }
+        return spielerSessionService.ladeAktivenSpieler(principal.getName());
+    }
+}
