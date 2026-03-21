@@ -31,12 +31,31 @@ interface TischLayoutEintrag {
 
 type TischLayout = Record<SpielerPosition, TischLayoutEintrag>;
 
-function stichSlotPositionen(mitteX: number, mitteY: number): Record<SpielerPosition, { x: number; y: number }> {
+// Stich-Slot-Positionen relativ zur Spielgrösse (früher hardcodiert 108/132px)
+function stichSlotPositionen(
+  mitteX: number, mitteY: number, breite: number, hoehe: number
+): Record<SpielerPosition, { x: number; y: number }> {
+  const versatzY = Math.round(hoehe * 0.15);   // ≈ 108 bei 720px
+  const versatzX = Math.round(breite * 0.103);  // ≈ 132 bei 1280px
   return {
-    SUED: { x: mitteX, y: mitteY + 108 },
-    WEST: { x: mitteX - 132, y: mitteY },
-    NORD: { x: mitteX, y: mitteY - 108 },
-    OST: { x: mitteX + 132, y: mitteY }
+    SUED: { x: mitteX, y: mitteY + versatzY },
+    WEST: { x: mitteX - versatzX, y: mitteY },
+    NORD: { x: mitteX, y: mitteY - versatzY },
+    OST: { x: mitteX + versatzX, y: mitteY }
+  };
+}
+
+// Kartengrösse skaliert mit der Spielbreite; Seitenverhältnis 82:124 bleibt erhalten
+function berechneKartenGroesse(breite: number): { w: number; h: number } {
+  const w = Math.round(Math.min(82, breite * 0.064));
+  return { w, h: Math.round(w * (124 / 82)) };
+}
+
+// Kartenabstand im Fächer skaliert mit der Spielgrösse
+function berechneKartenAbstand(breite: number, hoehe: number): { horizontal: number; vertikal: number } {
+  return {
+    horizontal: Math.max(22, Math.round(breite * 0.022)),  // ≈ 28 bei 1280px
+    vertikal: Math.max(12, Math.round(hoehe * 0.022))      // ≈ 16 bei 720px
   };
 }
 
@@ -168,6 +187,12 @@ export class TischSzene extends Phaser.Scene {
 
   // Wird waehrend der Austeilen-Animation auf true gesetzt; Karten werden dann unsichtbar gerendert
   private austeilenAktiv = false;
+
+  // Handler fuer Escape-Taste am Rundenende-Modal (wird bei Schliessen entfernt)
+  private escapeHandler?: (e: KeyboardEvent) => void;
+
+  // Handler fuer Backdrop-Klick am Rundenende-Modal (wird bei Schliessen entfernt)
+  private backdropClickHandler?: (e: MouseEvent) => void;
 
   constructor() {
     super('TischSzene');
@@ -458,7 +483,7 @@ export class TischSzene extends Phaser.Scene {
       fontSize: `${Math.round(Math.max(14, breite * 0.013))}px`
     }).setOrigin(0.5));
 
-    this.renderStichmitte(ebene, modell, mitteX, mitteY);
+    this.renderStichmitte(ebene, modell, mitteX, mitteY, breite, hoehe);
 
     modell.spieler.forEach((spieler) => {
       const position = layout[spieler.position];
@@ -512,20 +537,23 @@ export class TischSzene extends Phaser.Scene {
     ebene: Phaser.GameObjects.Container,
     modell: TischAnsichtModell,
     mitteX: number,
-    mitteY: number
+    mitteY: number,
+    breite: number,
+    hoehe: number
   ): void {
-    const slotPositionen = stichSlotPositionen(mitteX, mitteY);
+    const slotPositionen = stichSlotPositionen(mitteX, mitteY, breite, hoehe);
+    const kgroesse = berechneKartenGroesse(breite);
 
-    ebene.add(this.add.text(mitteX, mitteY - 160, modell.aktuellerSpieler ? `Am Zug: ${this.nameFuerPosition(modell, modell.aktuellerSpieler)}` : 'Warte auf den naechsten Zug', {
+    ebene.add(this.add.text(mitteX, mitteY - Math.round(hoehe * 0.222), modell.aktuellerSpieler ? `Am Zug: ${this.nameFuerPosition(modell, modell.aktuellerSpieler)}` : 'Warte auf den naechsten Zug', {
       color: '#f8f9fa',
-      fontSize: '20px',
+      fontSize: `${Math.round(Math.max(16, breite * 0.016))}px`,
       fontStyle: 'bold'
     }).setOrigin(0.5));
 
     if (modell.aktuelleStichmitte.length === 0) {
       ebene.add(this.add.text(mitteX, mitteY, 'Noch keine Karte im laufenden Stich', {
         color: '#d8f3dc',
-        fontSize: '18px',
+        fontSize: `${Math.round(Math.max(14, breite * 0.014))}px`,
         align: 'center'
       }).setOrigin(0.5));
       return;
@@ -533,10 +561,10 @@ export class TischSzene extends Phaser.Scene {
 
     modell.aktuelleStichmitte.forEach((eintrag) => {
       const slot = slotPositionen[eintrag.position];
-      ebene.add(this.add.image(slot.x, slot.y, texturSchluesselFuerKarte(eintrag.karte.farbe, eintrag.karte.wert)).setDisplaySize(82, 124));
-      ebene.add(this.add.text(slot.x, slot.y + 78, eintrag.name, {
+      ebene.add(this.add.image(slot.x, slot.y, texturSchluesselFuerKarte(eintrag.karte.farbe, eintrag.karte.wert)).setDisplaySize(kgroesse.w, kgroesse.h));
+      ebene.add(this.add.text(slot.x, slot.y + Math.round(kgroesse.h * 0.63), eintrag.name, {
         color: '#d8f3dc',
-        fontSize: '13px'
+        fontSize: `${Math.round(Math.max(11, breite * 0.011))}px`
       }).setOrigin(0.5));
     });
   }
@@ -760,8 +788,15 @@ export class TischSzene extends Phaser.Scene {
     const armutKarten = spieler.istSelbst ? this.ermittleArmutAuswahl(modell, sichtbareHandkarten ?? []) : null;
     const hatInteraktion = spieler.istSelbst && (modell.spielbareKarten.length > 0 || armutKarten !== null);
 
+    const { width: szBreite, height: szHoehe } = this.scale.gameSize;
+    const kgroesse = berechneKartenGroesse(szBreite);
+    const kartenAbstand = berechneKartenAbstand(szBreite, szHoehe);
+    const auswahlVersatz = Math.round(kgroesse.h * 0.19);  // ≈ 24 bei Kartenhöhe 124
+
     for (let index = 0; index < kartenAnzahl; index += 1) {
-      const abstand = spieler.position === 'SUED' || spieler.position === 'NORD' ? index * 28 : index * 16;
+      const abstand = spieler.position === 'SUED' || spieler.position === 'NORD'
+        ? index * kartenAbstand.horizontal
+        : index * kartenAbstand.vertikal;
       const x = (spieler.position === 'SUED' || spieler.position === 'NORD') ? position.kartenX + abstand : position.kartenX;
       const y = (spieler.position === 'SUED' || spieler.position === 'NORD') ? position.kartenY : position.kartenY + abstand;
       const winkel = spieler.position === 'SUED'
@@ -778,14 +813,14 @@ export class TischSzene extends Phaser.Scene {
       const textur = (offen && karte)
         ? texturSchluesselFuerKarte(karte.farbe, karte.wert)
         : offen ? TEXTUR_KARTE_OFFEN : TEXTUR_KARTE_VERDECKT;
-      const basisVersatz = istAusgewaehlt ? -24 : 0;
+      const basisVersatz = istAusgewaehlt ? -auswahlVersatz : 0;
 
       // Waehrend der Austeilen-Animation werden Karten unsichtbar gerendert (die Animation zeigt sie)
       const alphaWert = this.austeilenAktiv
         ? 0
         : (offen ? (hatInteraktion && karte && !istInteraktiv ? 0.5 : 1) : 0.92);
       const bild = this.add.image(x, y + basisVersatz, textur)
-        .setDisplaySize(82, 124)
+        .setDisplaySize(kgroesse.w, kgroesse.h)
         .setAngle(winkel)
         .setAlpha(alphaWert);
       if (istAusgewaehlt) {
@@ -802,7 +837,9 @@ export class TischSzene extends Phaser.Scene {
           bild.setY(y + basisVersatz + zusatz);
         };
         bild.setInteractive({ useHandCursor: true });
-        bild.on('pointerover', () => setzeOffset(-10));
+        // Hover-Versatz skaliert mit Kartengrösse
+        const hoverVersatz = Math.round(kgroesse.h * 0.08);  // ≈ 10 bei Kartenhöhe 124
+        bild.on('pointerover', () => setzeOffset(-hoverVersatz));
         bild.on('pointerout', () => setzeOffset(0));
         bild.on('pointerdown', () => {
           if (istSpielbar) {
@@ -1016,7 +1053,7 @@ export class TischSzene extends Phaser.Scene {
 
     const breite = this.scale.gameSize.width;
     const hoehe = this.scale.gameSize.height;
-    const ziel = stichSlotPositionen(breite / 2, hoehe / 2).SUED;
+    const ziel = stichSlotPositionen(breite / 2, hoehe / 2, breite, hoehe).SUED;
     this.spielzugAnimationAktiv = true;
     this.wartendeKartenId = karteId;
     this.aktualisiereAktionsbereich(modell, this.letzterZustand ?? appStore.snapshot());
@@ -1032,12 +1069,13 @@ export class TischSzene extends Phaser.Scene {
 
     const breite = this.scale.gameSize.width;
     const hoehe = this.scale.gameSize.height;
-    const slotPositionen = stichSlotPositionen(breite / 2, hoehe / 2);
+    const slotPositionen = stichSlotPositionen(breite / 2, hoehe / 2, breite, hoehe);
     const layout = berechneLayout(breite, hoehe);
     const ziel = layout[abgeschlossenerStich.gewinnerPosition];
+    const kgroesse = berechneKartenGroesse(breite);
     const animierteKarten = abgeschlossenerStich.gespielteKarten.map((karte) => {
       const slot = slotPositionen[karte.position];
-      const bild = this.add.image(slot.x, slot.y, texturSchluesselFuerKarte(karte.karte.farbe, karte.karte.wert)).setDisplaySize(82, 124);
+      const bild = this.add.image(slot.x, slot.y, texturSchluesselFuerKarte(karte.karte.farbe, karte.karte.wert)).setDisplaySize(kgroesse.w, kgroesse.h);
       return { bild };
     });
 
@@ -1077,8 +1115,13 @@ export class TischSzene extends Phaser.Scene {
       const sichtbareHandkarten = spieler.sichtbareHandkarten.length > 0 ? spieler.sichtbareHandkarten : undefined;
       const kartenAnzahl = sichtbareHandkarten?.length ?? Math.max(spieler.verbleibendeKarten, 0);
 
+      const kgroesse = berechneKartenGroesse(breite);
+      const kartenAbstand = berechneKartenAbstand(breite, hoehe);
+
       for (let index = 0; index < kartenAnzahl; index += 1) {
-        const abstand = (spieler.position === 'SUED' || spieler.position === 'NORD') ? index * 28 : index * 16;
+        const abstand = (spieler.position === 'SUED' || spieler.position === 'NORD')
+          ? index * kartenAbstand.horizontal
+          : index * kartenAbstand.vertikal;
         const zielX = (spieler.position === 'SUED' || spieler.position === 'NORD') ? pos.kartenX + abstand : pos.kartenX;
         const zielY = (spieler.position === 'SUED' || spieler.position === 'NORD') ? pos.kartenY : pos.kartenY + abstand;
         const winkel = spieler.position === 'SUED'
@@ -1094,7 +1137,7 @@ export class TischSzene extends Phaser.Scene {
           : TEXTUR_KARTE_VERDECKT;
 
         const bild = this.add.image(start.x, start.y, textur)
-          .setDisplaySize(82, 124)
+          .setDisplaySize(kgroesse.w, kgroesse.h)
           .setAngle(winkel);
         pakete.push({ kartenobjekte: { bild }, ziel: { x: zielX, y: zielY } });
       }
@@ -1267,15 +1310,40 @@ export class TischSzene extends Phaser.Scene {
     this.rundenEndeModal.innerHTML = '';
     this.rundenEndeModal.append(dialog);
     this.rundenEndeModal.hidden = false;
+
+    // Backdrop-Klick schliesst Modal (Klick auf Dialog-Inhalt selbst schliesst nicht)
+    this.backdropClickHandler = (event: MouseEvent) => {
+      if (event.target === this.rundenEndeModal) {
+        this.schliesseRundenEndeModal();
+      }
+    };
+    this.rundenEndeModal.addEventListener('click', this.backdropClickHandler);
+
+    // Escape-Taste schliesst Modal; Handler wird beim Schliessen entfernt
+    this.escapeHandler = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        this.schliesseRundenEndeModal();
+      }
+    };
+    document.addEventListener('keydown', this.escapeHandler);
   }
 
-  // Schliesst das Rundenende-Modal (Spieler hat bestätigt)
+  // Schliesst das Rundenende-Modal (OK-Button, Escape-Taste oder Backdrop-Klick)
   private schliesseRundenEndeModal(): void {
     if (!this.rundenEndeModal) {
       return;
     }
     this.rundenEndeModal.hidden = true;
     this.rundenEndeModal.innerHTML = '';
+    // Listener entfernen, damit sie nicht mehrfach ausgeloest werden koennen
+    if (this.escapeHandler) {
+      document.removeEventListener('keydown', this.escapeHandler);
+      this.escapeHandler = undefined;
+    }
+    if (this.backdropClickHandler && this.rundenEndeModal) {
+      this.rundenEndeModal.removeEventListener('click', this.backdropClickHandler);
+      this.backdropClickHandler = undefined;
+    }
   }
 
   private erstelleSektion(titel: string, beschreibung: string): HTMLDivElement {
@@ -1350,6 +1418,14 @@ export class TischSzene extends Phaser.Scene {
 
   private aufraeumen(): void {
     this.scale.off(Phaser.Scale.Events.RESIZE, this.handleResize, this);
+    if (this.escapeHandler) {
+      document.removeEventListener('keydown', this.escapeHandler);
+      this.escapeHandler = undefined;
+    }
+    if (this.backdropClickHandler && this.rundenEndeModal) {
+      this.rundenEndeModal.removeEventListener('click', this.backdropClickHandler);
+      this.backdropClickHandler = undefined;
+    }
     this.abmeldenStore?.();
     this.abmeldenStore = undefined;
     this.animationen?.abbrechen();

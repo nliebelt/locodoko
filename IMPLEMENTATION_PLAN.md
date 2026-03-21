@@ -4,9 +4,9 @@ Stand: 2026-03-21
 
 ## Notiz
 
-**Letzte Iteration (2026-03-21):** Rundenende-Modal als modaler Dialog implementiert. `.ui-modal-backdrop`/`.ui-modal` in `styles.css` erzeugen Vollbild-Abdunkelung mit zentriertem Dialog. `TischSzene.erkennteNeuesSpielErgebnis()` vergleicht `spielNummer` zwischen vorherigem und aktuellem Modell; bei neuer spielNummer oeffnet `zeigeRundenEndeModal()` den Dialog mit Spieltyp, Sieger, Spielwert, Augen Re/Kontra, Sonderpunkten und Spielpunkten pro Spieler. "OK · Weiter"-Button schliesst per `schliesseRundenEndeModal()`. 3 neue Tests: Modal erscheint bei neuem Ergebnis, schliesst per OK-Klick, erscheint nicht erneut bei gleichem spielNummer.
+**Letzte Iteration (2026-03-21):** Responsive Verhalten und visuelle Plausibilitaet der Tischansicht verbessert. Drei neue Hilfsfunktionen in `TischSzene.ts`: `berechneKartenGroesse(breite)` skaliert Karten relativ zur Spielbreite (max 82x124px), `berechneKartenAbstand(breite, hoehe)` skaliert Faecherabstaende, `stichSlotPositionen` verwendet jetzt relative Versaetze (15% Hoehe, 10.3% Breite). `renderStichmitte`, `renderKartenFaecher`, `starteFolgeanimationen` und `starteAusteilen` nutzen durchgehend diese Hilfsfunktionen statt hardcodierter Pixel. Rundenende-Modal schliesst jetzt auch per Escape-Taste (Document-Listener) und Backdrop-Klick (prüft event.target === Backdrop); Listener werden in `schliesseRundenEndeModal` und `aufraeumen` sauber entfernt. 2 neue Tests: Escape schliesst Modal, Backdrop-Klick schliesst Modal aber Dialog-Inhalt-Klick nicht.
 
-**Naechster logischer Schritt:** Responsive Verhalten und visuelle Plausibilitaet der Tischansicht verbessern (Priority 9, zweiter offener Punkt).
+**Naechster logischer Schritt:** Backend-Haertung: Verbindungsabbruch-Handling, Session-Cleanup, Concurrency-Absicherung (Prioritaet 10).
 
 **Offene Fragen:** jsdom kann Canvas 2D nicht rendern (daher stderr-Warnings in Tests); Texturen werden im Browser korrekt erzeugt. Ein `canvas`-npm-Package koennte die Warnings eliminieren, ist aber nicht kritisch.
 
@@ -142,7 +142,7 @@ Ausgangslage: Backend und Frontend sind funktional weitgehend vollstaendig: Kart
 - [x] Ansage-Banner-Animation ergaenzt: Bei Re/Kontra/Absage ein Pop-up-Banner mit Spielername und Fade-In/Out (1,5s sichtbar); `AnimationenService.animiereAnsageBanner()` per `tweenAlpha` und `warte`; `TischSzene` erkennt neue Ansagen per `ermittleNeueAnsagen()` und zeigt das Banner sequenziell.
 - [x] Sonderpunkt-Feedback-Animation ergaenzt: Bei Fuchs/Karlchen/Doppelkopf goldenes Fade-In/Out-Banner (1s sichtbar); `AnimationenService.animiereSonderpunktFeedback()` und `TischSzene.ermittleNeueSonderpunkte()` erkennen neues Spielergebnis und zeigen Sonderpunkte sequenziell an.
 - [x] Rundenende-Overlay als modalen Dialog umsetzen: Augen, Spielpunkte, Sonderpunkte, bleibt bis Spieler schliesst; aktuell nur als Sektion im rechten UI-Panel, geht leicht unter.
-- [ ] Responsive Verhalten, visuelle Plausibilitaet und Bedienbarkeit der Tischansicht verbessern; innerHTML-basiertes Rendering ist funktional, aber bei Layout-Aenderungen fragil.
+- [x] Responsive Verhalten, visuelle Plausibilitaet und Bedienbarkeit der Tischansicht verbessert: Karten skalieren relativ zur Spielbreite, Stich-Slot-Positionen und Faecherabstaende sind relativ; Modal schliesst per Escape-Taste und Backdrop-Klick.
 
 ## Offen - Prioritaet 10: Robustheit und Backend-Haertung
 

@@ -880,6 +880,70 @@ describe('TischSzene', () => {
     expect(modal.hidden).toBe(true);
   });
 
+  // WARUM: Escape-Taste ist die erwartete Tastaturkuerzung um Dialoge zu schliessen;
+  // ohne diese Absicherung koennte ein fehlerhafter removeEventListener-Aufruf
+  // den Handler am naechsten Modal doppelt ausloesen oder Memory-Leaks verursachen.
+  it('schliesst das Rundenende-Modal wenn die Escape-Taste gedrueckt wird', () => {
+    baueSzene(baueZustand({ partieStand: bauePartieStand(null) }));
+
+    appStoreHarness.setZustand(baueZustand({
+      partieStand: {
+        ...bauePartieStand(null),
+        letztesSpielergebnis: {
+          spielNummer: 1,
+          spieltyp: 'NORMALSPIEL',
+          siegerPartei: 'RE',
+          spielwert: 1,
+          augenProPartei: { RE: 130, KONTRA: 110 },
+          spielpunkteProSpieler: { SUED: 1, WEST: -1, NORD: 1, OST: -1 },
+          sonderpunkteProPartei: { RE: [], KONTRA: [] }
+        }
+      }
+    }));
+    appStoreHarness.sendeZustand();
+
+    const modal = document.querySelector('.ui-modal-backdrop') as HTMLElement;
+    expect(modal.hidden).toBe(false);
+
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }));
+
+    expect(modal.hidden).toBe(true);
+  });
+
+  // WARUM: Backdrop-Klick ist ein gaengiges UX-Muster fuer modale Dialoge;
+  // Klick auf den Dialog-Inhalt selbst darf das Modal dagegen nicht schliessen.
+  it('schliesst das Rundenende-Modal bei Klick auf den Backdrop aber nicht auf den Inhalt', () => {
+    baueSzene(baueZustand({ partieStand: bauePartieStand(null) }));
+
+    appStoreHarness.setZustand(baueZustand({
+      partieStand: {
+        ...bauePartieStand(null),
+        letztesSpielergebnis: {
+          spielNummer: 2,
+          spieltyp: 'NORMALSPIEL',
+          siegerPartei: 'KONTRA',
+          spielwert: 1,
+          augenProPartei: { RE: 110, KONTRA: 130 },
+          spielpunkteProSpieler: { SUED: -1, WEST: 1, NORD: -1, OST: 1 },
+          sonderpunkteProPartei: { RE: [], KONTRA: [] }
+        }
+      }
+    }));
+    appStoreHarness.sendeZustand();
+
+    const modal = document.querySelector('.ui-modal-backdrop') as HTMLElement;
+    expect(modal.hidden).toBe(false);
+
+    // Klick auf Dialog-Inhalt: Modal bleibt offen
+    const dialogInhalt = modal.querySelector('.ui-modal') as HTMLElement;
+    dialogInhalt.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    expect(modal.hidden).toBe(false);
+
+    // Klick direkt auf Backdrop: Modal schliesst
+    modal.dispatchEvent(new MouseEvent('click', { bubbles: false }));
+    expect(modal.hidden).toBe(true);
+  });
+
   // WARUM: Das Modal darf nicht erneut erscheinen wenn derselbe Spielstand nochmal eintrifft
   // (z.B. durch Snapshot-Refresh); nur ein neues spielNummer darf es ausloesen.
   it('zeigt das Rundenende-Modal nicht erneut fuer dasselbe Spielergebnis', () => {
