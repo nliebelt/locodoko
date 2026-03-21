@@ -126,14 +126,16 @@ while true; do
 
     # Run Claude Code iteration.
     # CLAUDE.md wird von Claude Code automatisch als System-Kontext geladen.
-    # Der Prompt enthält nur die Aufgaben-Anweisungen; IMPLEMENTATION_PLAN.md
-    # und Specs liest Claude selbst via Tools (Read/Agent) — kein pre-Concatenieren nötig.
+    # --output-format stream-json: erzwingt Echtzeit-Streaming auch in Pipes (kein Buffering).
+    # jq extrahiert den lesbaren Text aus den stream-json Chunks für die Terminalausgabe.
+    # tee schreibt parallel das rohe JSON nach ITER_OUTPUT (für COMPLETE/BLOCKED-Erkennung).
     # --dangerously-skip-permissions: für sandboxed Docker-Umgebungen geeignet —
     # der Container ist die Security-Grenze; alle Tools inkl. Agent laufen ohne Rückfragen.
     claude -p "$(cat "$PROMPT_FILE")" \
         --model "$EFFECTIVE_MODEL" \
+        --output-format stream-json \
         --dangerously-skip-permissions \
-        2>&1 | tee "$ITER_OUTPUT" || true
+        2>&1 | tee "$ITER_OUTPUT" | jq -rj 'select(.type == "content_block_delta") | .delta.text // empty' 2>/dev/null || true
 
     # Append iteration output to log
     echo "--- Iteration $ITERATION ($MODE) $(date) ---" >> "$LOG_FILE"
