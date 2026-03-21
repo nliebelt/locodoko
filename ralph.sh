@@ -134,6 +134,7 @@ while true; do
     claude -p "$(cat "$PROMPT_FILE")" \
         --model "$EFFECTIVE_MODEL" \
         --output-format stream-json \
+        --verbose \
         --dangerously-skip-permissions \
         2>&1 | tee "$ITER_OUTPUT" | jq -rj 'select(.type == "content_block_delta") | .delta.text // empty' 2>/dev/null || true
 
