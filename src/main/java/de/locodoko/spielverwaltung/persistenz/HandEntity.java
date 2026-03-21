@@ -52,6 +52,13 @@ public class HandEntity extends AbstraktePersistenzEntity {
         );
     }
 
+    public void ersetzeKarten(List<Karte> neueKarten) {
+        Objects.requireNonNull(neueKarten, "neueKarten duerfen nicht null sein");
+        this.karten = neueKarten.stream()
+            .map(HandKarteEmbeddable::aus)
+            .toList();
+    }
+
     void setzeSpiel(SpielEntity spiel) {
         this.spiel = spiel;
     }

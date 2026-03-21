@@ -67,6 +67,11 @@ public final class Parteien {
         return new Parteien(parteien, EnumSet.of(armutSpieler));
     }
 
+    public static Parteien ausParteiMap(Map<SpielerPosition, Partei> parteienNachSpieler) {
+        Objects.requireNonNull(parteienNachSpieler, "parteienNachSpieler duerfen nicht null sein");
+        return new Parteien(parteienNachSpieler, EnumSet.noneOf(SpielerPosition.class));
+    }
+
     public Partei parteiVon(SpielerPosition spielerPosition) {
         Objects.requireNonNull(spielerPosition, "spielerPosition darf nicht null sein");
         Partei partei = parteienNachSpieler.get(spielerPosition);

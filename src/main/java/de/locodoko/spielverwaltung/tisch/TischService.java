@@ -1,8 +1,12 @@
 package de.locodoko.spielverwaltung.tisch;
 
 import de.locodoko.spiel.karten.Kartendeck;
+import de.locodoko.spiel.karten.Karte;
+import de.locodoko.spiel.karten.UngueltigerSpielzugException;
 import de.locodoko.spiel.karten.SpielerPosition;
+import de.locodoko.spiel.partie.Ansage;
 import de.locodoko.spiel.partie.Spiel;
+import de.locodoko.spiel.partie.VorbehaltAnsage;
 import de.locodoko.spielverwaltung.persistenz.PartieEntity;
 import de.locodoko.spielverwaltung.persistenz.PartieRepository;
 import de.locodoko.spielverwaltung.persistenz.HandEntity;
@@ -35,6 +39,7 @@ public class TischService {
     private final PartieRepository partieRepository;
     private final SpielerRepository spielerRepository;
     private final KiSpielerFabrik kiSpielerFabrik;
+    private final KiOrchestrierungService kiOrchestrierungService;
     private final TischEchtzeitService tischEchtzeitService;
 
     public TischService(
@@ -42,12 +47,14 @@ public class TischService {
         PartieRepository partieRepository,
         SpielerRepository spielerRepository,
         KiSpielerFabrik kiSpielerFabrik,
+        KiOrchestrierungService kiOrchestrierungService,
         TischEchtzeitService tischEchtzeitService
     ) {
         this.tischRepository = tischRepository;
         this.partieRepository = partieRepository;
         this.spielerRepository = spielerRepository;
         this.kiSpielerFabrik = kiSpielerFabrik;
+        this.kiOrchestrierungService = kiOrchestrierungService;
         this.tischEchtzeitService = tischEchtzeitService;
     }
 
@@ -155,13 +162,15 @@ public class TischService {
         partie.fuegeSpielHinzu(erzeugeErstesSpiel(tisch));
         tisch.setzePartie(partie);
         TischEntity gespeicherterTisch = tischRepository.saveAndFlush(tisch);
+        kiOrchestrierungService.automatisiereTisch(gespeicherterTisch);
+        gespeicherterTisch = tischRepository.saveAndFlush(gespeicherterTisch);
         TischAntwort antwort = TischAntwort.aus(gespeicherterTisch);
         PartieStandAntwort partieStand = PartieStandAntwort.aus(gespeicherterTisch.partie());
         veroeffentlicheTischAktualisierung(
             TischlisteEreignisAntwort.aktualisiert(listeOffeneTische()),
             TischEreignisAntwort.spielGestartet(antwort, partieStand)
         );
-        tischEchtzeitService.planePartieEreignis(PartieEreignisAntwort.aktualisiert(PartieEreignisTyp.PARTIE_AKTUALISIERT, partieStand));
+        veroeffentlichePartieAktualisierung(gespeicherterTisch);
         return antwort;
     }
 
@@ -216,6 +225,98 @@ public class TischService {
         return PartieStandAntwort.aus(ladePartieEntity(partieId), spieler.id(), debugModus);
     }
 
+    @Transactional
+    public PartieStandAntwort meldeVorbehalt(UUID tischId, SpielerEntity spieler, VorbehaltAnsage vorbehalt) {
+        if (vorbehalt == null) {
+            throw new IllegalArgumentException("Ein Vorbehalt muss angegeben werden.");
+        }
+        SpielerEntity verwalteterSpieler = ladeSpieler(spieler.id());
+        TischEntity tisch = ladeAktivenTischMitSpieler(tischId, verwalteterSpieler);
+        SpielEntity laufendesSpielEntity = ladeLaufendesSpiel(tisch.partie());
+        SpielerPosition position = spielerPositionVon(tisch.partie(), verwalteterSpieler);
+        Spiel laufendesSpiel = SpielPersistenzAdapter.zuDomainSpiel(laufendesSpielEntity);
+        try {
+            Spiel aktualisiertesSpiel = laufendesSpiel.meldeVorbehalt(position, vorbehalt);
+            if (aktualisiertesSpiel.phase() == de.locodoko.spiel.partie.Spielphase.VORBEHALT_AUFLOESUNG) {
+                aktualisiertesSpiel = aktualisiertesSpiel.loeseVorbehalteAuf();
+            }
+            SpielPersistenzAdapter.uebernehmeDomainSpiel(laufendesSpielEntity, aktualisiertesSpiel);
+            kiOrchestrierungService.automatisiereTisch(tisch);
+        } catch (IllegalStateException exception) {
+            throw new SpielverwaltungKonfliktException("VORBEHALT_UNGUELTIG", exception.getMessage());
+        }
+        partieRepository.saveAndFlush(tisch.partie());
+        veroeffentlichePartieAktualisierung(tisch);
+        return PartieStandAntwort.aus(tisch.partie(), verwalteterSpieler.id());
+    }
+
+    @Transactional
+    public PartieStandAntwort verarbeiteArmutAntwort(UUID tischId, SpielerEntity spieler, List<String> kartenIds, boolean angenommen) {
+        SpielerEntity verwalteterSpieler = ladeSpieler(spieler.id());
+        TischEntity tisch = ladeAktivenTischMitSpieler(tischId, verwalteterSpieler);
+        SpielEntity laufendesSpielEntity = ladeLaufendesSpiel(tisch.partie());
+        SpielerPosition position = spielerPositionVon(tisch.partie(), verwalteterSpieler);
+        Spiel laufendesSpiel = SpielPersistenzAdapter.zuDomainSpiel(laufendesSpielEntity);
+        List<Karte> karten = parseKarten(kartenIds);
+        try {
+            Spiel aktualisiertesSpiel = laufendesSpiel.armutStatus()
+                .filter(status -> position == status.armutSpieler() && !status.angebotLiegtVor())
+                .map(status -> laufendesSpiel.legeArmutTrumpfkarten(position, karten))
+                .orElseGet(() -> angenommen
+                    ? laufendesSpiel.nimmArmutAn(position, karten)
+                    : laufendesSpiel.lehneArmutAb(position)
+                );
+            SpielPersistenzAdapter.uebernehmeDomainSpiel(laufendesSpielEntity, aktualisiertesSpiel);
+            kiOrchestrierungService.automatisiereTisch(tisch);
+        } catch (IllegalStateException exception) {
+            throw new SpielverwaltungKonfliktException("ARMUT_ANTWORT_UNGUELTIG", exception.getMessage());
+        }
+        partieRepository.saveAndFlush(tisch.partie());
+        veroeffentlichePartieAktualisierung(tisch);
+        return PartieStandAntwort.aus(tisch.partie(), verwalteterSpieler.id());
+    }
+
+    @Transactional
+    public PartieStandAntwort spieleKarte(UUID tischId, SpielerEntity spieler, String karteId) {
+        SpielerEntity verwalteterSpieler = ladeSpieler(spieler.id());
+        TischEntity tisch = ladeAktivenTischMitSpieler(tischId, verwalteterSpieler);
+        SpielEntity laufendesSpielEntity = ladeLaufendesSpiel(tisch.partie());
+        SpielerPosition position = spielerPositionVon(tisch.partie(), verwalteterSpieler);
+        Spiel laufendesSpiel = SpielPersistenzAdapter.zuDomainSpiel(laufendesSpielEntity);
+        try {
+            Spiel aktualisiertesSpiel = laufendesSpiel.spieleKarte(position, parseKarte(karteId));
+            SpielPersistenzAdapter.uebernehmeDomainSpiel(laufendesSpielEntity, aktualisiertesSpiel);
+            kiOrchestrierungService.automatisiereTisch(tisch);
+        } catch (IllegalStateException | UngueltigerSpielzugException exception) {
+            throw new SpielverwaltungKonfliktException("KARTE_UNGUELTIG", exception.getMessage());
+        }
+        partieRepository.saveAndFlush(tisch.partie());
+        veroeffentlichePartieAktualisierung(tisch);
+        return PartieStandAntwort.aus(tisch.partie(), verwalteterSpieler.id());
+    }
+
+    @Transactional
+    public PartieStandAntwort sageAn(UUID tischId, SpielerEntity spieler, Ansage ansage) {
+        if (ansage == null) {
+            throw new IllegalArgumentException("Eine Ansage muss angegeben werden.");
+        }
+        SpielerEntity verwalteterSpieler = ladeSpieler(spieler.id());
+        TischEntity tisch = ladeAktivenTischMitSpieler(tischId, verwalteterSpieler);
+        SpielEntity laufendesSpielEntity = ladeLaufendesSpiel(tisch.partie());
+        SpielerPosition position = spielerPositionVon(tisch.partie(), verwalteterSpieler);
+        Spiel laufendesSpiel = SpielPersistenzAdapter.zuDomainSpiel(laufendesSpielEntity);
+        try {
+            Spiel aktualisiertesSpiel = laufendesSpiel.sageAn(position, ansage);
+            SpielPersistenzAdapter.uebernehmeDomainSpiel(laufendesSpielEntity, aktualisiertesSpiel);
+            kiOrchestrierungService.automatisiereTisch(tisch);
+        } catch (IllegalStateException exception) {
+            throw new SpielverwaltungKonfliktException("ANSAGE_UNGUELTIG", exception.getMessage());
+        }
+        partieRepository.saveAndFlush(tisch.partie());
+        veroeffentlichePartieAktualisierung(tisch);
+        return PartieStandAntwort.aus(tisch.partie(), verwalteterSpieler.id());
+    }
+
     private PartieEntity ladePartieEntity(UUID partieId) {
         PartieEntity partie = partieRepository.findById(partieId)
             .orElseThrow(() -> new SpielverwaltungNichtGefundenException(
@@ -236,6 +337,18 @@ public class TischService {
     ) {
         tischEchtzeitService.planeTischliste(tischlisteEreignis);
         tischEchtzeitService.planeTischEreignis(tischEreignis);
+    }
+
+    private void veroeffentlichePartieAktualisierung(TischEntity tisch) {
+        PartieStandAntwort broadcastStand = PartieStandAntwort.aus(tisch.partie());
+        tischEchtzeitService.planePartieEreignis(PartieEreignisAntwort.aktualisiert(PartieEreignisTyp.PARTIE_AKTUALISIERT, broadcastStand));
+        tisch.spieler().stream()
+            .filter(spieler -> !spieler.istKi() && spieler.sessionId() != null)
+            .forEach(spieler -> tischEchtzeitService.planeAnBenutzer(
+                spieler.sessionId(),
+                "/queue/partie/" + tisch.partie().id(),
+                PartieEreignisAntwort.snapshot(PartieStandAntwort.aus(tisch.partie(), spieler.id()))
+            ));
     }
 
     private TischEntity ladeTischEntity(UUID tischId) {
@@ -267,6 +380,60 @@ public class TischService {
         if (tisch.status() != TischStatus.WARTEND) {
             throw new SpielverwaltungKonfliktException(fehlerCode, nachricht);
         }
+    }
+
+    private TischEntity ladeAktivenTischMitSpieler(UUID tischId, SpielerEntity spieler) {
+        TischEntity tisch = ladeTischEntity(tischId);
+        if (!tisch.enthaeltSpieler(spieler)) {
+            throw new SpielverwaltungKonfliktException("SPIELER_NICHT_AM_TISCH", "Der Spieler sitzt nicht an diesem Tisch.");
+        }
+        if (tisch.status() != TischStatus.IM_SPIEL || tisch.partie() == null) {
+            throw new SpielverwaltungKonfliktException("PARTIE_NICHT_AKTIV", "An diesem Tisch laeuft aktuell keine Partie.");
+        }
+        return tisch;
+    }
+
+    private SpielEntity ladeLaufendesSpiel(PartieEntity partie) {
+        return partie.spiele().stream()
+            .filter(spiel -> spiel.ergebnis() == null)
+            .reduce((erstes, zweites) -> zweites)
+            .orElseThrow(() -> new SpielverwaltungKonfliktException(
+                "SPIEL_NICHT_AKTIV",
+                "Die Partie besitzt aktuell kein laufendes Spiel."
+            ));
+    }
+
+    private SpielerPosition spielerPositionVon(PartieEntity partie, SpielerEntity spieler) {
+        List<SpielerEntity> spielerAmTisch = partie.tisch().spieler();
+        List<SpielerPosition> positionen = SpielerPosition.standardReihenfolge();
+        for (int index = 0; index < spielerAmTisch.size() && index < positionen.size(); index++) {
+            if (spielerAmTisch.get(index).id().equals(spieler.id())) {
+                return positionen.get(index);
+            }
+        }
+        throw new SpielverwaltungKonfliktException("SPIELER_NICHT_AM_TISCH", "Der Spieler sitzt nicht an diesem Tisch.");
+    }
+
+    private List<Karte> parseKarten(List<String> kartenIds) {
+        if (kartenIds == null) {
+            return List.of();
+        }
+        return kartenIds.stream().map(this::parseKarte).toList();
+    }
+
+    private Karte parseKarte(String karteId) {
+        if (karteId == null || karteId.isBlank()) {
+            throw new IllegalArgumentException("Karten-IDs duerfen nicht leer sein.");
+        }
+        String[] teile = karteId.split("-");
+        if (teile.length != 3) {
+            throw new IllegalArgumentException("Ungueltige Karten-ID: " + karteId);
+        }
+        return new Karte(
+            de.locodoko.spiel.karten.Farbe.valueOf(teile[0]),
+            de.locodoko.spiel.karten.Kartenwert.valueOf(teile[1]),
+            Integer.parseInt(teile[2])
+        );
     }
 
     private SpielEntity erzeugeErstesSpiel(TischEntity tisch) {

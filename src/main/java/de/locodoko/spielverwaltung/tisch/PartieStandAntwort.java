@@ -4,13 +4,17 @@ import de.locodoko.spiel.karten.Karte;
 import de.locodoko.spiel.karten.SpielerPosition;
 import de.locodoko.spiel.karten.Spieltyp;
 import de.locodoko.spiel.partie.Ansage;
+import de.locodoko.spiel.partie.AnsageEreignis;
 import de.locodoko.spiel.partie.Partei;
+import de.locodoko.spiel.partie.Spiel;
 import de.locodoko.spiel.partie.Spielphase;
+import de.locodoko.spiel.partie.Sonderpunkt;
 import de.locodoko.spiel.partie.VorbehaltAnsage;
 import de.locodoko.spielverwaltung.persistenz.HandEntity;
 import de.locodoko.spielverwaltung.persistenz.PartieEntity;
 import de.locodoko.spielverwaltung.persistenz.PartieStatus;
 import de.locodoko.spielverwaltung.persistenz.SpielEntity;
+import de.locodoko.spielverwaltung.persistenz.SpielErgebnisEmbeddable;
 import de.locodoko.spielverwaltung.persistenz.SpielerEntity;
 
 import java.util.ArrayList;
@@ -25,6 +29,8 @@ public record PartieStandAntwort(
     int anzahlSpiele,
     int gespielteSpiele,
     Map<SpielerPosition, Integer> gesamtpunktestand,
+    LetztesSpielergebnisAntwort letztesSpielergebnis,
+    List<AbgeschlossenerStichAntwort> letzteAbgeschlosseneStiche,
     LaufendesSpielAntwort laufendesSpiel
 ) {
 
@@ -41,12 +47,18 @@ public record PartieStandAntwort(
             .filter(spiel -> spiel.ergebnis() == null)
             .reduce((erstes, zweites) -> zweites)
             .orElse(null);
+        SpielEntity letztesAbgeschlossenesSpiel = partie.spiele().stream()
+            .filter(spiel -> spiel.ergebnis() != null)
+            .reduce((erstes, zweites) -> zweites)
+            .orElse(null);
         return new PartieStandAntwort(
             partie.id(),
             partie.status(),
             partie.anzahlSpiele(),
             partie.spiele().stream().filter(spiel -> spiel.ergebnis() != null).toList().size(),
             partie.gesamtpunktestand(),
+            LetztesSpielergebnisAntwort.aus(letztesAbgeschlossenesSpiel),
+            AbgeschlossenerStichAntwort.aus(laufendesSpiel != null ? laufendesSpiel : letztesAbgeschlossenesSpiel),
             LaufendesSpielAntwort.aus(partie, laufendesSpiel, sichtbarerSpielerId, debugModus)
         );
     }
@@ -59,6 +71,8 @@ public record PartieStandAntwort(
         SpielerPosition aktuellerSpieler,
         List<SpielerImSpielAntwort> spieler,
         List<KarteAntwort> spielbareKarten,
+        List<GespielteKarteAntwort> aktuelleStichmitte,
+        List<AnsageEreignisAntwort> ansageHistorie,
         List<Ansage> moeglicheAnsagen,
         List<VorbehaltAnsage> moeglicheVorbehalte
     ) {
@@ -70,8 +84,10 @@ public record PartieStandAntwort(
 
             Map<SpielerPosition, SpielerEntity> spielerNachPosition = spielerNachPosition(partie);
             SpielerPosition sichtbarePosition = positionVonSpieler(spielerNachPosition, sichtbarerSpielerId);
-            SpielerPosition aktuellerSpieler = aktuellerSpieler(laufendesSpiel);
+            Spiel fachlichesSpiel = SpielPersistenzAdapter.zuDomainSpiel(laufendesSpiel);
+            SpielerPosition aktuellerSpieler = aktuellerSpieler(fachlichesSpiel);
             boolean zeigeAlleHaende = debugModus && sichtbarePosition != null;
+            Map<SpielerPosition, Integer> gewonneneStiche = SpielPersistenzAdapter.gewonneneStiche(laufendesSpiel);
 
             List<SpielerImSpielAntwort> spieler = new ArrayList<>();
             for (SpielerPosition position : SpielerPosition.standardReihenfolge()) {
@@ -83,7 +99,9 @@ public record PartieStandAntwort(
                     sichtbarePosition,
                     aktuellerSpieler,
                     laufendesSpiel.geberPosition(),
-                    zeigeAlleHaende
+                    zeigeAlleHaende,
+                    gewonneneStiche.getOrDefault(position, 0),
+                    parteiSicht(fachlichesSpiel, sichtbarePosition, position)
                 ));
             }
 
@@ -94,52 +112,60 @@ public record PartieStandAntwort(
                 laufendesSpiel.geberPosition(),
                 aktuellerSpieler,
                 spieler,
-                sichtbarePosition != null && sichtbarePosition == aktuellerSpieler
-                    ? sichtbareHandkarten(laufendesSpiel, sichtbarePosition)
+                sichtbarePosition != null && sichtbarePosition == aktuellerSpieler && fachlichesSpiel.phase() == Spielphase.STICHPHASE
+                    ? fachlichesSpiel.gueltigeKartenFuer(sichtbarePosition).stream().map(KarteAntwort::aus).toList()
                     : List.of(),
-                List.of(),
-                bestimmeMoeglicheVorbehalte(laufendesSpiel, sichtbarePosition, aktuellerSpieler)
+                fachlichesSpiel.aktuellerStich()
+                    .map(stich -> stich.gespielteKarten().stream().map(GespielteKarteAntwort::aus).toList())
+                    .orElse(List.of()),
+                fachlichesSpiel.ansagen().ereignisse().stream().map(AnsageEreignisAntwort::aus).toList(),
+                bestimmeMoeglicheAnsagen(fachlichesSpiel, sichtbarePosition, aktuellerSpieler),
+                bestimmeMoeglicheVorbehalte(fachlichesSpiel, sichtbarePosition, aktuellerSpieler)
             );
         }
 
         private static List<VorbehaltAnsage> bestimmeMoeglicheVorbehalte(
-            SpielEntity laufendesSpiel,
+            Spiel laufendesSpiel,
             SpielerPosition sichtbarePosition,
             SpielerPosition aktuellerSpieler
         ) {
             if (sichtbarePosition == null || sichtbarePosition != aktuellerSpieler || laufendesSpiel.phase() != Spielphase.VORBEHALT_ANSAGE) {
                 return List.of();
             }
-            HandEntity hand = handVon(laufendesSpiel, sichtbarePosition);
-            if (hand == null) {
-                return List.of();
-            }
-            de.locodoko.spiel.karten.Hand fachlicheHand = new de.locodoko.spiel.karten.Hand(
-                hand.karten().stream()
-                    .map(karte -> new Karte(karte.farbe(), karte.wert(), karte.exemplarIndex()))
-                    .toList()
-            );
             return List.of(VorbehaltAnsage.values()).stream()
-                .filter(ansage -> ansage.istZulaessig(fachlicheHand, laufendesSpiel.partie().tisch().konfiguration().alsSpielregeln()))
+                .filter(ansage -> ansage.istZulaessig(laufendesSpiel.handVon(sichtbarePosition), laufendesSpiel.spielregeln()))
                 .toList();
         }
 
-        private static List<KarteAntwort> sichtbareHandkarten(SpielEntity laufendesSpiel, SpielerPosition sichtbarePosition) {
-            HandEntity hand = handVon(laufendesSpiel, sichtbarePosition);
-            if (hand == null) {
+        private static List<Ansage> bestimmeMoeglicheAnsagen(
+            Spiel laufendesSpiel,
+            SpielerPosition sichtbarePosition,
+            SpielerPosition aktuellerSpieler
+        ) {
+            if (sichtbarePosition == null || sichtbarePosition != aktuellerSpieler || laufendesSpiel.phase() != Spielphase.STICHPHASE) {
                 return List.of();
             }
-            return hand.karten().stream()
-                .map(karte -> new Karte(karte.farbe(), karte.wert(), karte.exemplarIndex()))
-                .map(KarteAntwort::aus)
+            return List.of(Ansage.values()).stream()
+                .filter(ansage -> laufendesSpiel.kannAnsagen(sichtbarePosition, ansage))
                 .toList();
         }
 
-        private static SpielerPosition aktuellerSpieler(SpielEntity laufendesSpiel) {
-            return switch (laufendesSpiel.phase()) {
-                case VORBEHALT_ANSAGE -> laufendesSpiel.geberPosition().naechsteImUhrzeigersinn();
-                default -> null;
-            };
+        private static Partei parteiSicht(Spiel laufendesSpiel, SpielerPosition sichtbarePosition, SpielerPosition zielPosition) {
+            if (sichtbarePosition == null) {
+                return null;
+            }
+            try {
+                return laufendesSpiel.parteien().sichtAufPartei(sichtbarePosition, zielPosition)
+                    .orElseGet(() -> laufendesSpiel.ansagen().offenbartParteiVon(zielPosition)
+                        ? laufendesSpiel.parteien().parteiVon(zielPosition)
+                        : null);
+            } catch (IllegalStateException ignored) {
+                return null;
+            }
+        }
+
+        private static SpielerPosition aktuellerSpieler(Spiel laufendesSpiel) {
+            return laufendesSpiel.erwarteterSpieler().orElse(null);
         }
 
         private static Map<SpielerPosition, SpielerEntity> spielerNachPosition(PartieEntity partie) {
@@ -192,7 +218,9 @@ public record PartieStandAntwort(
             SpielerPosition sichtbarePosition,
             SpielerPosition aktuellerSpieler,
             SpielerPosition geberPosition,
-            boolean zeigeAlleHaende
+            boolean zeigeAlleHaende,
+            int gewonneneStiche,
+            Partei partei
         ) {
             List<KarteAntwort> sichtbareHandkarten = hand != null && (zeigeAlleHaende || position == sichtbarePosition)
                 ? hand.karten().stream()
@@ -209,8 +237,8 @@ public record PartieStandAntwort(
                 position == geberPosition,
                 position == aktuellerSpieler,
                 hand == null ? null : hand.karten().size(),
-                0,
-                null,
+                gewonneneStiche,
+                partei,
                 sichtbareHandkarten
             );
         }
@@ -224,6 +252,112 @@ public record PartieStandAntwort(
                 karte.farbe().name(),
                 karte.wert().name(),
                 karte.exemplarIndex()
+            );
+        }
+    }
+
+    public record GespielteKarteAntwort(SpielerPosition spielerPosition, KarteAntwort karte, int reihenfolge) {
+
+        static GespielteKarteAntwort aus(de.locodoko.spiel.karten.GespielteKarte gespielteKarte) {
+            return new GespielteKarteAntwort(
+                gespielteKarte.spieler(),
+                KarteAntwort.aus(gespielteKarte.karte()),
+                gespielteKarte.reihenfolge()
+            );
+        }
+
+        static GespielteKarteAntwort aus(de.locodoko.spielverwaltung.persistenz.GespielteKarteEntity gespielteKarte) {
+            return new GespielteKarteAntwort(
+                gespielteKarte.spielerPosition(),
+                new KarteAntwort(
+                    "%s-%s-%d".formatted(gespielteKarte.farbe().name(), gespielteKarte.wert().name(), gespielteKarte.exemplarIndex()),
+                    gespielteKarte.farbe().name(),
+                    gespielteKarte.wert().name(),
+                    gespielteKarte.exemplarIndex()
+                ),
+                gespielteKarte.reihenfolge()
+            );
+        }
+    }
+
+    public record AnsageEreignisAntwort(SpielerPosition spielerPosition, Ansage ansage) {
+
+        static AnsageEreignisAntwort aus(AnsageEreignis ereignis) {
+            return new AnsageEreignisAntwort(ereignis.spieler(), ereignis.ansage());
+        }
+    }
+
+    public record AbgeschlossenerStichAntwort(
+        int spielNummer,
+        int stichNummer,
+        SpielerPosition aufspielerPosition,
+        SpielerPosition gewinnerPosition,
+        int augen,
+        List<GespielteKarteAntwort> gespielteKarten
+    ) {
+
+        static List<AbgeschlossenerStichAntwort> aus(SpielEntity spiel) {
+            if (spiel == null) {
+                return List.of();
+            }
+            return spiel.stiche().stream()
+                .map(stich -> new AbgeschlossenerStichAntwort(
+                    spiel.spielNummer(),
+                    stich.stichNummer(),
+                    stich.aufspielerPosition(),
+                    stich.gewinnerPosition(),
+                    stich.augen(),
+                    stich.gespielteKarten().stream().map(GespielteKarteAntwort::aus).toList()
+                ))
+                .toList();
+        }
+    }
+
+    public record LetztesSpielergebnisAntwort(
+        int spielNummer,
+        Spieltyp spieltyp,
+        Partei siegerPartei,
+        int spielwert,
+        Map<Partei, Integer> augenProPartei,
+        Map<SpielerPosition, Integer> spielpunkteProSpieler,
+        Map<Partei, List<Sonderpunkt>> sonderpunkteProPartei
+    ) {
+
+        static LetztesSpielergebnisAntwort aus(SpielEntity spiel) {
+            if (spiel == null || spiel.ergebnis() == null) {
+                return null;
+            }
+
+            SpielErgebnisEmbeddable ergebnis = spiel.ergebnis();
+            EnumMap<Partei, Integer> augenProPartei = new EnumMap<>(Partei.class);
+            augenProPartei.put(Partei.RE, ergebnis.reAugen());
+            augenProPartei.put(Partei.KONTRA, ergebnis.kontraAugen());
+
+            EnumMap<SpielerPosition, Integer> spielpunkteProSpieler = new EnumMap<>(SpielerPosition.class);
+            spielpunkteProSpieler.put(SpielerPosition.SUED, ergebnis.spielpunkteSued());
+            spielpunkteProSpieler.put(SpielerPosition.WEST, ergebnis.spielpunkteWest());
+            spielpunkteProSpieler.put(SpielerPosition.NORD, ergebnis.spielpunkteNord());
+            spielpunkteProSpieler.put(SpielerPosition.OST, ergebnis.spielpunkteOst());
+
+            EnumMap<Partei, List<Sonderpunkt>> sonderpunkteProPartei = new EnumMap<>(Partei.class);
+            for (Partei partei : Partei.values()) {
+                sonderpunkteProPartei.put(
+                    partei,
+                    spiel.sonderpunkte().stream()
+                        .filter(sonderpunkt -> sonderpunkt.partei() == partei)
+                        .map(sonderpunkt -> sonderpunkt.sonderpunkt())
+                        .toList()
+                );
+            }
+
+            return new LetztesSpielergebnisAntwort(
+                spiel.spielNummer(),
+                spiel.spieltyp(),
+                ergebnis.siegerPartei(),
+                ergebnis.spielwert(),
+                Map.copyOf(augenProPartei),
+                Map.copyOf(spielpunkteProSpieler),
+                Map.copyOf(sonderpunkteProPartei)
             );
         }
     }

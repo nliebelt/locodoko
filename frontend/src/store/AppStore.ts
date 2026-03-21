@@ -1,13 +1,17 @@
 import type {
+  Ansage,
   PartieEreignisAntwort,
   PartieStandAntwort,
   SpielverwaltungWebSocketFehlerAntwort,
   SpielerSessionAntwort,
+  TischKonfigurationDto,
+  Tischhintergrund,
   TischAntwort,
   TischEreignisAntwort,
   TischListenEintragAntwort,
   TischlisteEreignisAntwort,
-  Uuid
+  Uuid,
+  VorbehaltAnsage
 } from '../modelle/SpielverwaltungDto';
 import type { SpielverwaltungApi } from '../services/SpielverwaltungApi';
 import { SpielverwaltungFehler } from '../services/SpielverwaltungApi';
@@ -154,6 +158,67 @@ export class AppStore {
     });
   }
 
+  async aktualisiereAktuellenTischhintergrund(tischhintergrund: Tischhintergrund): Promise<void> {
+    const tisch = this.zustand.aktuellerTisch;
+    if (!tisch) {
+      this.aktuellerTischIdOderFehler();
+      return;
+    }
+    if (tisch.konfiguration.tischhintergrund === tischhintergrund) {
+      return;
+    }
+
+    await this.fuehreMitStatus(async () => {
+      const konfiguration = await this.api.aktualisiereTischKonfiguration(
+        tisch.id,
+        this.aktualisierteKonfiguration(tisch.konfiguration, tischhintergrund)
+      );
+      this.patch({
+        aktuellerTisch: {
+          ...tisch,
+          konfiguration
+        },
+        meldung: null
+      });
+    });
+  }
+
+  spieleKarte(karteId: string): void {
+    if (!karteId.trim()) {
+      this.patch({ meldung: { typ: 'fehler', text: 'Es wurde keine gueltige Karte ausgewaehlt.', fehlerCode: 'KARTE_UNGUELTIG' } });
+      return;
+    }
+    const tischId = this.aktuellerTischIdOderFehler();
+    if (!tischId) {
+      return;
+    }
+    this.sendeSpielaktion(`/app/tisch/${tischId}/karte`, { karteId });
+  }
+
+  sageAnsageAn(ansage: Ansage): void {
+    const tischId = this.aktuellerTischIdOderFehler();
+    if (!tischId) {
+      return;
+    }
+    this.sendeSpielaktion(`/app/tisch/${tischId}/ansage`, { ansage });
+  }
+
+  meldeVorbehalt(vorbehalt: VorbehaltAnsage): void {
+    const tischId = this.aktuellerTischIdOderFehler();
+    if (!tischId) {
+      return;
+    }
+    this.sendeSpielaktion(`/app/tisch/${tischId}/vorbehalt`, { vorbehalt });
+  }
+
+  beantworteArmut(angenommen: boolean, kartenIds: string[]): void {
+    const tischId = this.aktuellerTischIdOderFehler();
+    if (!tischId) {
+      return;
+    }
+    this.sendeSpielaktion(`/app/tisch/${tischId}/armut-antwort`, { angenommen, kartenIds });
+  }
+
   quittiereMeldung(): void {
     this.patch({ meldung: null });
   }
@@ -264,9 +329,43 @@ export class AppStore {
     this.aktuellePartieAbo = null;
   }
 
+  private sendeSpielaktion(ziel: string, payload: unknown): void {
+    try {
+      this.patch({ meldung: null });
+      this.echtzeit.senden(ziel, payload);
+    } catch (fehler) {
+      this.patch({ meldung: this.formatiereMeldung(fehler) });
+    }
+  }
+
+  private aktuellerTischIdOderFehler(): Uuid | null {
+    const tischId = this.zustand.aktuellerTisch?.id ?? null;
+    if (!tischId) {
+      this.patch({
+        meldung: {
+          typ: 'fehler',
+          text: 'Es ist aktuell kein Tisch geoeffnet.',
+          fehlerCode: 'TISCH_NICHT_AUSGEWAEHLT'
+        }
+      });
+      return null;
+    }
+    return tischId;
+  }
+
   private patch(aenderungen: Partial<AppZustand>): void {
     this.zustand = { ...this.zustand, ...aenderungen };
     this.veroeffentliche();
+  }
+
+  private aktualisierteKonfiguration(
+    konfiguration: TischKonfigurationDto,
+    tischhintergrund: Tischhintergrund
+  ): TischKonfigurationDto {
+    return {
+      ...konfiguration,
+      tischhintergrund
+    };
   }
 
   private veroeffentliche(): void {

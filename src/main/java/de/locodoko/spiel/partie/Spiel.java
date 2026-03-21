@@ -93,6 +93,41 @@ public final class Spiel {
         );
     }
 
+    public static Spiel ausPersistiertemStand(
+        Spielregeln spielregeln,
+        Kartendeck kartendeck,
+        Spieltyp spieltyp,
+        SpielerPosition geber,
+        Spielphase phase,
+        Map<SpielerPosition, Hand> haende,
+        List<VorbehaltMeldung> vorbehalte,
+        Parteien parteien,
+        Ansagen ansagen,
+        List<Stich> abgeschlosseneStiche,
+        Stich aktuellerStich,
+        Spielergebnis ergebnis,
+        HochzeitStatus hochzeitStatus,
+        ArmutStatus armutStatus
+    ) {
+        return new Spiel(
+            spielregeln,
+            kartendeck,
+            trumpfOrdnungFuerPersistiertenStand(spielregeln, spieltyp),
+            spieltyp,
+            geber,
+            phase,
+            haende,
+            vorbehalte,
+            parteien,
+            ansagen,
+            abgeschlosseneStiche,
+            aktuellerStich,
+            ergebnis,
+            hochzeitStatus,
+            armutStatus
+        );
+    }
+
     public Spiel teileKartenAus() {
         pruefePhase(Spielphase.KARTEN_AUSTEILEN, "Karten austeilen");
         return new Spiel(
@@ -327,6 +362,18 @@ public final class Spiel {
         return Optional.of(aktuellerStich.erwarteterSpieler());
     }
 
+    public Optional<SpielerPosition> erwarteterSpieler() {
+        return switch (phase) {
+            case VORBEHALT_ANSAGE -> naechsterVorbehaltSpieler();
+            case ARMUT_TAUSCH -> armutStatus()
+                .map(status -> status.angebotLiegtVor()
+                    ? status.aktuellerAntwortspieler().orElse(null)
+                    : status.armutSpieler());
+            case STICHPHASE -> aktuellerSpieler();
+            default -> Optional.empty();
+        };
+    }
+
     public List<Karte> gueltigeKartenFuer(SpielerPosition spielerPosition) {
         pruefePhase(Spielphase.STICHPHASE, "gueltige Karten abfragen");
         Objects.requireNonNull(spielerPosition, "spielerPosition darf nicht null sein");
@@ -520,7 +567,7 @@ public final class Spiel {
         return Optional.ofNullable(armutStatus);
     }
 
-    TrumpfOrdnung trumpfOrdnung() {
+    public TrumpfOrdnung trumpfOrdnung() {
         return trumpfOrdnung;
     }
 
@@ -649,5 +696,14 @@ public final class Spiel {
     }
 
     private record HochzeitFortschritt(Parteien parteien, HochzeitStatus status) {
+    }
+
+    private static TrumpfOrdnung trumpfOrdnungFuerPersistiertenStand(Spielregeln spielregeln, Spieltyp spieltyp) {
+        return switch (Objects.requireNonNull(spieltyp, "spieltyp darf nicht null sein")) {
+            case NORMALSPIEL, HOCHZEIT, ARMUT, SOLO_TRUMPF -> new NormaleTrumpfOrdnung(spielregeln);
+            case SOLO_DAME -> new DamensoloTrumpfOrdnung();
+            case SOLO_BUBE -> new BubensoloTrumpfOrdnung();
+            case SOLO_FLEISCHLOS -> new FleischlosTrumpfOrdnung();
+        };
     }
 }

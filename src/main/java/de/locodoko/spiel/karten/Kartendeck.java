@@ -32,6 +32,10 @@ public final class Kartendeck {
         return new Kartendeck(karten);
     }
 
+    public static Kartendeck ausKarten(Collection<Karte> karten) {
+        return new Kartendeck(karten);
+    }
+
     public Kartendeck gemischt() {
         return gemischt(new SecureRandom());
     }

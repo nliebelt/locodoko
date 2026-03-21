@@ -2,6 +2,7 @@ import type {
   ApiFehlerAntwort,
   BestaetigungAntwort,
   SpielerSessionAntwort,
+  TischKonfigurationDto,
   TischAntwort,
   TischListenEintragAntwort,
   Uuid
@@ -119,5 +120,12 @@ export class SpielverwaltungApi {
 
   async starteTisch(tischId: Uuid): Promise<BestaetigungAntwort> {
     return holeJson<BestaetigungAntwort>(`/api/tische/${tischId}/starten`, { method: 'POST' });
+  }
+
+  async aktualisiereTischKonfiguration(tischId: Uuid, konfiguration: TischKonfigurationDto): Promise<TischKonfigurationDto> {
+    return holeJson<TischKonfigurationDto>(`/api/tische/${tischId}/konfiguration`, {
+      method: 'PUT',
+      body: JSON.stringify(konfiguration)
+    });
   }
 }

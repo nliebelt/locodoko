@@ -33,6 +33,7 @@ export interface TischListenEintragAntwort {
 export interface TischKonfigurationDto {
   ohneNeunen: boolean;
   anzahlSpiele: number;
+  tischhintergrund: Tischhintergrund;
   hochzeitErlaubt: boolean;
   armutErlaubt: boolean;
   damensoloErlaubt: boolean;
@@ -67,6 +68,7 @@ export interface TischAntwort {
 }
 
 export type SpielerPosition = 'NORD' | 'OST' | 'SUED' | 'WEST';
+export type Tischhintergrund = 'FILZ_GRUEN' | 'HOLZ_DUNKEL' | 'BLAU_GRAFIK';
 export type PartieStatus = 'LAUFEND' | 'BEENDET';
 export type Spieltyp =
   | 'NORMALSPIEL'
@@ -86,6 +88,7 @@ export type Spielphase =
   | 'GESAMTSTAND_AKTUALISIEREN';
 export type Partei = 'RE' | 'KONTRA';
 export type Ansage = 'RE' | 'KONTRA' | 'KEINE_90' | 'KEINE_60' | 'KEINE_30' | 'SCHWARZ';
+export type Sonderpunkt = 'FUCHS_GEFANGEN' | 'KARLCHEN' | 'DOPPELKOPF';
 export type VorbehaltAnsage =
   | 'GESUND'
   | 'SOLO_DAME'
@@ -116,6 +119,17 @@ export interface SpielerImSpielAntwort {
   sichtbareHandkarten: KarteAntwort[] | null;
 }
 
+export interface GespielteKarteAntwort {
+  spielerPosition: SpielerPosition;
+  karte: KarteAntwort;
+  reihenfolge: number;
+}
+
+export interface AnsageEreignisAntwort {
+  spielerPosition: SpielerPosition;
+  ansage: Ansage;
+}
+
 export interface LaufendesSpielAntwort {
   spielNummer: number;
   spieltyp: Spieltyp;
@@ -124,8 +138,29 @@ export interface LaufendesSpielAntwort {
   aktuellerSpieler: SpielerPosition | null;
   spieler: SpielerImSpielAntwort[];
   spielbareKarten: KarteAntwort[];
+  aktuelleStichmitte: GespielteKarteAntwort[];
+  ansageHistorie: AnsageEreignisAntwort[];
   moeglicheAnsagen: Ansage[];
   moeglicheVorbehalte: VorbehaltAnsage[];
+}
+
+export interface AbgeschlossenerStichAntwort {
+  spielNummer: number;
+  stichNummer: number;
+  aufspielerPosition: SpielerPosition;
+  gewinnerPosition: SpielerPosition;
+  augen: number;
+  gespielteKarten: GespielteKarteAntwort[];
+}
+
+export interface LetztesSpielergebnisAntwort {
+  spielNummer: number;
+  spieltyp: Spieltyp;
+  siegerPartei: Partei;
+  spielwert: number;
+  augenProPartei: Record<Partei, number>;
+  spielpunkteProSpieler: Record<SpielerPosition, number>;
+  sonderpunkteProPartei: Record<Partei, Sonderpunkt[]>;
 }
 
 export interface PartieStandAntwort {
@@ -134,6 +169,8 @@ export interface PartieStandAntwort {
   anzahlSpiele: number;
   gespielteSpiele: number;
   gesamtpunktestand: Partial<Record<SpielerPosition, number>>;
+  letztesSpielergebnis?: LetztesSpielergebnisAntwort | null;
+  letzteAbgeschlosseneStiche?: AbgeschlossenerStichAntwort[];
   laufendesSpiel: LaufendesSpielAntwort | null;
 }
 

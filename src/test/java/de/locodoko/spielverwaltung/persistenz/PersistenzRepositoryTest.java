@@ -1,11 +1,13 @@
 package de.locodoko.spielverwaltung.persistenz;
 
 import de.locodoko.spiel.karten.Farbe;
+import de.locodoko.spiel.karten.GespielteKarte;
 import de.locodoko.spiel.karten.Karte;
 import de.locodoko.spiel.karten.Kartenwert;
 import de.locodoko.spiel.karten.SpielerPosition;
 import de.locodoko.spiel.karten.Spielregeln;
 import de.locodoko.spiel.karten.Spieltyp;
+import de.locodoko.spiel.partie.Ansage;
 import de.locodoko.spiel.partie.Partei;
 import de.locodoko.spiel.partie.Spielergebnis;
 import de.locodoko.spiel.partie.Spielphase;
@@ -195,6 +197,44 @@ class PersistenzRepositoryTest {
     void liefertLeeresErgebnisFuerUnbekannteSessionIds() {
         assertTrue(spielerRepository.findBySessionId("unbekannt").isEmpty(),
             "Unbekannte Sessions duerfen keinen Phantom-Spieler liefern, damit neue Besuche sauber von bestehenden Spielern getrennt bleiben.");
+    }
+
+    @Test
+    void persistiertAnsagehistorieAktuelleStichmitteUndHochzeitstatusImLaufendenSpiel() {
+        SpielerEntity erstelltVon = SpielerEntity.menschlich("Ada", "session-laufend");
+        SpielerEntity gast = SpielerEntity.menschlich("Bert", "session-laufend-2");
+
+        TischEntity tisch = TischEntity.neu("Laufender Tisch", erstelltVon, TischkonfigurationEmbeddable.standard());
+        tisch.fuegeSpielerHinzu(erstelltVon);
+        tisch.fuegeSpielerHinzu(gast);
+
+        PartieEntity partie = PartieEntity.neu(1);
+        SpielEntity spiel = SpielEntity.neu(1, SpielerPosition.SUED, Spieltyp.HOCHZEIT, Spielphase.STICHPHASE);
+        spiel.fuegeHandHinzu(HandEntity.neu(SpielerPosition.WEST, List.of(new Karte(Farbe.KREUZ, Kartenwert.DAME, 1))));
+        spiel.ersetzeAnsagen(List.of(AnsageEreignisEmbeddable.neu(SpielerPosition.WEST, Ansage.RE)));
+        spiel.setzeAktuellenStich(
+            SpielerPosition.WEST,
+            List.of(AktuellerStichKarteEmbeddable.aus(
+                new GespielteKarte(SpielerPosition.WEST, new Karte(Farbe.KREUZ, Kartenwert.AS, 1), 0)
+            ))
+        );
+        spiel.setzeHochzeitStatus(SpielerPosition.WEST, 2, SpielerPosition.NORD, false);
+        partie.fuegeSpielHinzu(spiel);
+        tisch.setzePartie(partie);
+
+        TischEntity gespeichert = tischRepository.saveAndFlush(tisch);
+        entityManager.clear();
+
+        SpielEntity geladenesSpiel = spielRepository.findAllByPartie_IdOrderBySpielNummerAsc(gespeichert.partie().id()).getFirst();
+        assertEquals(1, geladenesSpiel.ansagen().size(),
+            "Die Ansagehistorie muss im laufenden Spiel persistiert bleiben, damit Snapshots und Reconnects denselben oeffentlichen Ansagezustand wiederherstellen koennen.");
+        assertEquals(Ansage.RE, geladenesSpiel.ansagen().getFirst().ansage());
+        assertEquals(SpielerPosition.WEST, geladenesSpiel.aktuellerStichAufspielerPosition());
+        assertEquals(1, geladenesSpiel.aktuellerStichKarten().size(),
+            "Die laufende Stichmitte muss gespeichert werden, damit nach einem Broadcast oder Reload keine bereits ausgespielten Karten verschwinden.");
+        assertEquals(SpielerPosition.WEST, geladenesSpiel.hochzeitSpielerPosition());
+        assertEquals(2, geladenesSpiel.hochzeitGeklaerteStiche());
+        assertEquals(SpielerPosition.NORD, geladenesSpiel.hochzeitPartnerSpielerPosition());
     }
 
     private Spielergebnis beispielErgebnis() {

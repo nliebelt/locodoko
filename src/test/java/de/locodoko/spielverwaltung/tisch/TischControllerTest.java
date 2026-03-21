@@ -84,6 +84,7 @@ class TischControllerTest {
             .andExpect(jsonPath("$.status").value(TischStatus.WARTEND.name()))
             .andExpect(jsonPath("$.spieler.length()").value(1))
             .andExpect(jsonPath("$.konfiguration.anzahlSpiele").value(24))
+            .andExpect(jsonPath("$.konfiguration.tischhintergrund").value(Tischhintergrund.FILZ_GRUEN.name()))
             .andReturn();
 
         TischAntwort antwort = objectMapper.readValue(ergebnis.getResponse().getContentAsByteArray(), TischAntwort.class);
@@ -172,11 +173,13 @@ class TischControllerTest {
         mockMvc.perform(get("/api/tische/{id}/konfiguration", tischId))
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.ohneNeunen").value(false))
-            .andExpect(jsonPath("$.anzahlSpiele").value(24));
+            .andExpect(jsonPath("$.anzahlSpiele").value(24))
+            .andExpect(jsonPath("$.tischhintergrund").value(Tischhintergrund.FILZ_GRUEN.name()));
 
         TischKonfigurationDto neueKonfiguration = new TischKonfigurationDto(
             true,
             12,
+            Tischhintergrund.HOLZ_DUNKEL,
             true,
             false,
             true,
@@ -201,6 +204,7 @@ class TischControllerTest {
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.ohneNeunen").value(true))
             .andExpect(jsonPath("$.anzahlSpiele").value(12))
+            .andExpect(jsonPath("$.tischhintergrund").value(Tischhintergrund.HOLZ_DUNKEL.name()))
             .andExpect(jsonPath("$.armutErlaubt").value(false))
             .andExpect(jsonPath("$.karlchenAktiv").value(false));
     }
@@ -213,6 +217,7 @@ class TischControllerTest {
         TischKonfigurationDto ungueltig = new TischKonfigurationDto(
             false,
             0,
+            Tischhintergrund.FILZ_GRUEN,
             true,
             true,
             true,

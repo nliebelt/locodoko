@@ -42,6 +42,10 @@ public class TischEchtzeitService {
         veroeffentlicheBeobachtung(WebSocketNachrichtGesendet.benutzerbezogen(benutzer, ziel, payload));
     }
 
+    public void planeAnBenutzer(String benutzer, String ziel, Object payload) {
+        planeNachCommit(() -> sendeAnBenutzer(benutzer, ziel, payload));
+    }
+
     private void planeNachCommit(Runnable aktion) {
         if (TransactionSynchronizationManager.isSynchronizationActive()) {
             TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {

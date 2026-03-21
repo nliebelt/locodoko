@@ -13,7 +13,7 @@ import type { SpielverwaltungApi } from '../services/SpielverwaltungApi';
 import type { EchtzeitPort, NachrichtenHandler } from '../services/SpielverwaltungEchtzeit';
 import { AppStore } from './AppStore';
 
-class FakeApi implements Pick<SpielverwaltungApi, 'initialisiereSpielerSession' | 'listeTische' | 'erstelleTisch' | 'betreteTisch' | 'verlasseTisch' | 'starteTisch'> {
+class FakeApi implements Pick<SpielverwaltungApi, 'initialisiereSpielerSession' | 'listeTische' | 'erstelleTisch' | 'betreteTisch' | 'verlasseTisch' | 'starteTisch' | 'aktualisiereTischKonfiguration'> {
   constructor(
     private readonly spieler: SpielerSessionAntwort,
     private readonly tische: TischListenEintragAntwort[],
@@ -43,12 +43,16 @@ class FakeApi implements Pick<SpielverwaltungApi, 'initialisiereSpielerSession' 
   async starteTisch(): Promise<{ nachricht: string }> {
     return { nachricht: 'ok' };
   }
+
+  async aktualisiereTischKonfiguration(_tischId: Uuid, konfiguration: TischAntwort['konfiguration']): Promise<TischAntwort['konfiguration']> {
+    return konfiguration;
+  }
 }
 
 class FakeEchtzeit implements EchtzeitPort {
   private readonly handler = new Map<string, Array<NachrichtenHandler<unknown>>>();
 
-  readonly sendungen: string[] = [];
+  readonly sendungen: Array<{ ziel: string; payload: unknown }> = [];
 
   async verbinde(): Promise<void> {
     return Promise.resolve();
@@ -64,8 +68,8 @@ class FakeEchtzeit implements EchtzeitPort {
     };
   }
 
-  senden(ziel: string): void {
-    this.sendungen.push(ziel);
+  senden(ziel: string, payload: unknown = {}): void {
+    this.sendungen.push({ ziel, payload });
   }
 
   trennen(): void {}
@@ -85,6 +89,7 @@ function baueTisch(tischId: Uuid = 'tisch-1'): TischAntwort {
     konfiguration: {
       ohneNeunen: false,
       anzahlSpiele: 8,
+      tischhintergrund: 'FILZ_GRUEN',
       hochzeitErlaubt: true,
       armutErlaubt: true,
       damensoloErlaubt: true,
@@ -125,7 +130,9 @@ describe('AppStore', () => {
       spieler: { name: 'Nora' },
       tische: [{ name: 'Testtisch' }]
     });
-    expect(echtzeit.sendungen).toContain('/app/tische/snapshot');
+    expect(echtzeit.sendungen).toEqual(expect.arrayContaining([
+      expect.objectContaining({ ziel: '/app/tische/snapshot' })
+    ]));
   });
 
   it('oeffnet einen Tisch, verarbeitet Snapshot-Events und kehrt nach dem Verlassen in die Lobby zurueck', async () => {
@@ -144,7 +151,9 @@ describe('AppStore', () => {
     await store.betreteTisch(tisch.id);
 
     expect(store.snapshot()).toMatchObject({ bereich: 'TISCH', aktuellerTisch: { id: 'tisch-42' } });
-    expect(echtzeit.sendungen).toContain('/app/tisch/tisch-42/snapshot');
+    expect(echtzeit.sendungen).toEqual(expect.arrayContaining([
+      expect.objectContaining({ ziel: '/app/tisch/tisch-42/snapshot' })
+    ]));
 
     echtzeit.emit('/user/queue/tisch/tisch-42', {
       timestamp: new Date().toISOString(),
@@ -165,13 +174,64 @@ describe('AppStore', () => {
       aktuellerTisch: { status: 'IM_SPIEL', partieId: 'partie-1' },
       partieStand: { partieId: 'partie-1' }
     });
-    expect(echtzeit.sendungen).toContain('/app/partie/partie-1/snapshot');
+    expect(echtzeit.sendungen).toEqual(expect.arrayContaining([
+      expect.objectContaining({ ziel: '/app/partie/partie-1/snapshot' })
+    ]));
 
     store.toggleDebugModus();
     expect(store.snapshot().debugModus).toBe(true);
-    expect(echtzeit.sendungen).toContain('/app/partie/partie-1/debug-snapshot');
+    expect(echtzeit.sendungen).toEqual(expect.arrayContaining([
+      expect.objectContaining({ ziel: '/app/partie/partie-1/debug-snapshot' })
+    ]));
 
     await store.verlasseAktuellenTisch();
     expect(store.snapshot()).toMatchObject({ bereich: 'LOBBY', aktuellerTisch: null, partieStand: null, debugModus: true });
+  });
+
+  it('sendet Karten-, Ansage-, Vorbehalt- und Armut-Aktionen an die passenden Kanaele', async () => {
+    const echtzeit = new FakeEchtzeit();
+    const tisch = baueTisch('tisch-84');
+    const store = new AppStore(
+      new FakeApi(
+        { spielerId: 'spieler-1', name: 'Nora', istKi: false },
+        [],
+        tisch
+      ) as SpielverwaltungApi,
+      echtzeit
+    );
+
+    await store.initialisieren();
+    await store.betreteTisch(tisch.id);
+
+    store.spieleKarte('HERZ-ZEHN-1');
+    store.sageAnsageAn('RE');
+    store.meldeVorbehalt('GESUND');
+    store.beantworteArmut(true, ['KARO-BUBE-1', 'HERZ-BUBE-1']);
+
+    expect(echtzeit.sendungen).toEqual(expect.arrayContaining([
+      expect.objectContaining({ ziel: '/app/tisch/tisch-84/karte', payload: { karteId: 'HERZ-ZEHN-1' } }),
+      expect.objectContaining({ ziel: '/app/tisch/tisch-84/ansage', payload: { ansage: 'RE' } }),
+      expect.objectContaining({ ziel: '/app/tisch/tisch-84/vorbehalt', payload: { vorbehalt: 'GESUND' } }),
+      expect.objectContaining({ ziel: '/app/tisch/tisch-84/armut-antwort', payload: { angenommen: true, kartenIds: ['KARO-BUBE-1', 'HERZ-BUBE-1'] } })
+    ]));
+  });
+
+  it('aktualisiert den konfigurierten Tischhintergrund fuer den aktuellen Tisch', async () => {
+    const echtzeit = new FakeEchtzeit();
+    const tisch = baueTisch('tisch-99');
+    const store = new AppStore(
+      new FakeApi(
+        { spielerId: 'spieler-1', name: 'Nora', istKi: false },
+        [],
+        tisch
+      ) as SpielverwaltungApi,
+      echtzeit
+    );
+
+    await store.initialisieren();
+    await store.betreteTisch(tisch.id);
+    await store.aktualisiereAktuellenTischhintergrund('HOLZ_DUNKEL');
+
+    expect(store.snapshot().aktuellerTisch?.konfiguration.tischhintergrund).toBe('HOLZ_DUNKEL');
   });
 });

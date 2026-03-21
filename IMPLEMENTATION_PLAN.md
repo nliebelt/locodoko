@@ -1,14 +1,16 @@
 # IMPLEMENTATION_PLAN
 
-Stand: 2026-03-20
+Stand: 2026-03-21
 
-Ausgangslage: Das Repository enthaelt jetzt ein baubares technisches Grundgeruest fuer Backend und Frontend. Das Backend laeuft als Spring-Boot-Anwendung mit H2-Entwicklungsprofil und vorbereitetem Produktionsprofil; das Frontend liegt als TypeScript-/Phaser-/Vite-Projekt vor und wird fuer Packaging nach `src/main/resources/static/app` eingebettet. Der naechste Schwerpunkt ist damit klar der fachliche Domainenkern fuer Karten, Trumpf und Stichlogik.
+Ausgangslage: Das Repository enthaelt inzwischen nicht mehr nur ein technisches Grundgeruest, sondern einen grossen Teil des fachlichen Backend-Kerns fuer Doppelkopf: Karten-/Trumpf-/Stichlogik, Spielphasen, Ansagen, Sonderpunkte, Vorbehalte, Persistenz, Session, Lobby, REST-Endpunkte, spielrelevante WebSocket-Aktionen sowie erweiterte Partie-Snapshots sind vorhanden. Der naechste Schwerpunkt ist damit nicht mehr der Domainenkern, sondern die letzte Luecke zum spielbaren Browser-Spiel: Das Frontend muss die vorhandenen Echtzeitdaten und Aktionskanaele interaktiv nutzbar machen, und anschliessend braucht es regelkonforme KI samt Turn-Orchestrierung fuer ein wirklich durchspielbares Match.
 
 ## Erledigt / vorhanden
 
+- [] Refactoring auf Spring Boot 4.x, Spring JDBC und Liquibase, Toten Code prüfen, pom.xml aktualisieren
+- [] vollständige Code Dokumentation (Javadoc), Einen präzise Definition für jede Klasse
 - [x] Produktziel und MVP-Rahmen in `PRD.md` beschrieben.
 - [x] Fachspezifikationen in `specs/` liegen fuer die Kernbereiche vor: Kartendeck, Trumpfhierarchie, Stichlogik, Spielablauf, Ansagen, Punkteberechnung, Sonderpunkte, Lobby, REST-API, WebSocket-Kommunikation, Session, KI, Tischkonfiguration, Frontend-Tischansicht, Frontend-UI-Logik, Animationen, Sonderspiele.
-- [x] Lokale Arbeitsumgebung fuer Java 21, Maven, Node.js und Chromium ist ueber `Dockerfile` und `docker-compose.yml` beschrieben.
+- [x] Lokale Arbeitsumgebung fuer Java 25, Maven, Node.js und Chromium ist ueber `Dockerfile` und `docker-compose.yml` beschrieben.
 - [x] Planungsgrundlage ist vollstaendig genug, um mit der Implementierung zu beginnen; zusaetzliche Spezifikationsdateien sind nach heutigem Stand nicht noetig.
 - [x] Maven-Spring-Boot-Projekt mit `pom.xml`, `src/main/java`, `src/test/java`, `src/main/resources` und erstem Systemstatus-Endpunkt angelegt.
 - [x] Frontend-Projekt unter `frontend/` mit TypeScript, Phaser, Vite, Vitest und ESLint angelegt.
@@ -45,6 +47,16 @@ Ausgangslage: Das Repository enthaelt jetzt ein baubares technisches Grundgerues
 - [x] Die Tischansicht in `frontend/src/szenen/TischSzene.ts` rendert jetzt einen echten Spielstart-Zustand statt eines Platzhalters: Spielerpositionen stammen aus dem Backend-Snapshot, die eigene Hand ist offen, Gegnerhaende bleiben verdeckt, der aktuelle Spieler/Phase wird sichtbar hervorgehoben und moegliche Vorbehalte werden angezeigt.
 - [x] Die Tischansicht wurde weiter vervollstaendigt: Das Frontend sortiert sichtbare Haende regelkonform fuer die Anzeige, zeigt Geber-/Partei-/Stichstatus deutlicher, rendert Backend-Optionen im HUD und besitzt jetzt einen echten Debug-Modus, der per benutzerbezogenem WebSocket-Debug-Snapshot alle Haende nur fuer den anfragenden Entwickler offenlegt.
 - [x] Neue Tests sichern WARUM dieser Ausbau wichtig ist: Der WebSocket-Test verhindert, dass der Debug-Modus versehentlich broadcastet statt nur benutzerbezogen alle Haende zu liefern; die Frontend-Tests fixieren Handsortierung und Debug-Durchreichung, damit spaetere Tisch- oder Replay-Ansichten keine widerspruechliche Kartenreihenfolge oder Entwickler-Sicht erzeugen.
+- [x] Ein erster echter Spielaktions-Slice der Prioritaet 6 ist jetzt serverseitig geschlossen: `/app/tisch/{id}/vorbehalt` und `/app/tisch/{id}/armut-antwort` sind als WebSocket-Handler mit DTOs, serverseitiger Reihenfolgen-/Regelvalidierung, persistiertem Vorbehalt-/Armut-Status und automatischen Broadcasts plus benutzerbezogenen Partie-Snapshots umgesetzt.
+- [x] Neue WebSocket-Integrationstests sichern WARUM dieser Slice wichtig ist: Sie pruefen gueltige/ungueltige Vorbehalte sowie den kompletten Armut-Fluss aus Angebot, Ablehnung und Annahme und verhindern damit, dass das Frontend spaeter wieder auf manuelle Snapshot-Requests oder implizite Zustandsaenderungen angewiesen ist.
+- [x] Bei der aktuellen Code-Suche fanden sich keine offensichtlichen `TODO`-/`FIXME`-Marker und keine deaktivierten oder uebersprungenen Tests in `src/` oder `frontend/`; die Restluecken sind echte fehlende Features und keine bereits markierten Baustellen.
+- [x] Der zweite Spielaktions-Slice der Prioritaet 6 ist jetzt ebenfalls serverseitig geschlossen: `/app/tisch/{id}/karte` und `/app/tisch/{id}/ansage` sind als WebSocket-Handler mit DTOs, serverseitiger Karten-/Ansagevalidierung, automatischen Partie-Broadcasts und benutzerbezogenen Folge-Snapshots umgesetzt; dafuer wurde die Persistenz um laufende Stichmitte, Ansagehistorie sowie dynamischen Hochzeit-Fortschritt erweitert.
+- [x] `PartieStandAntwort` liefert fuer REST/WebSocket jetzt den fehlenden laufenden Aktionszustand: aktuelle Stichmitte mit Spielerzuordnung und Reihenfolge, oeffentliche Ansagehistorie sowie aus Ansagen abgeleitete Parteisicht sind im Snapshot enthalten, damit Frontend und spaetere KI denselben serverseitigen Wahrheitsstand erhalten.
+- [x] Neue Backend-Tests sichern WARUM dieser Ausbau wichtig ist: Die WebSocket-Integrationstests pruefen gueltige/ungueltige Karten und Ansagen einschliesslich Broadcast-/Benutzersnapshot-Folgen, und der Persistenztest verankert, dass Ansagehistorie, laufende Stichmitte und Hochzeit-Fortschritt ueber Datenbank-Roundtrips stabil bleiben; genau diese Zustandswahrheit braucht der Echtzeitfluss ohne Polling oder implizite Client-Logik.
+- [x] Der erste echte Frontend-Interaktionsslice fuer Prioritaet 7 ist jetzt umgesetzt: `frontend/src/modelle/SpielverwaltungDto.ts`, `frontend/src/model/TischAnsichtModell.ts`, `frontend/src/store/AppStore.ts` und `frontend/src/szenen/TischSzene.ts` verarbeiten laufende Stichmitte und Ansagehistorie, drehen die Sitzordnung relativ zum eigenen Spieler, senden Karten-/Ansage-/Vorbehalt-/Armut-Aktionen an die vorhandenen WebSocket-Kanaele und bieten dafuer sichtbare Ansage-, Vorbehalt- und Armut-Dialoge an.
+- [x] Neue Frontend-Tests sichern WARUM dieser Ausbau wichtig ist: Die Modelltests fixieren jetzt Rotationslogik, aktuelle Stichmitte, Ansagehistorie und die aus Snapshot-Daten abgeleitete Armut-Interaktion; die Store-Tests verankern ausgehende Spielaktionen ueber alle vier WebSocket-Kanaele, damit der Browser-Spielfluss nicht wieder auf eine rein lesende Snapshot-Ansicht zurueckfaellt.
+- [x] Ein erster Prioritaet-9-Animationsslice ist jetzt umgesetzt: `frontend/src/services/AnimationenService.ts` kapselt Phaser-Tweens fuer Kartenbewegungen, `frontend/src/szenen/TischSzene.ts` animiert das Ausspielen eigener Karten in die Stichmitte und zieht einen neu abgeschlossenen Stich nach kurzer Sichtpause gesammelt zum Gewinner ein; dadurch bleibt die Kausalitaet im Echtzeitfluss sichtbar, statt dass Karten nur sprunghaft zwischen Snapshots wechseln.
+- [x] Neue Frontend-Tests sichern WARUM dieser Slice wichtig ist: `frontend/src/services/AnimationenService.test.ts` verankert Dauer und Wartefenster fuer Ausspiel-/Stichanimationen, und `frontend/src/szenen/TischSzene.test.ts` prueft, dass Kartenklicks wirklich zuerst animiert und neu abgeschlossene Stiche nach dem Snapshotwechsel als gebuendelter Einzug dargestellt werden.
 
 ## Offen - Prioritaet 0: Projektgrundgeruest und Build-Pipeline
 
@@ -93,38 +105,56 @@ Ausgangslage: Das Repository enthaelt jetzt ein baubares technisches Grundgerues
 - [x] Lobby-Domaene und Tischverwaltung gemaess `specs/lobby.md` implementieren, inklusive Begrenzung auf einen Tisch pro Spieler und KI-Auffuellen beim Start.
 - [x] WebSocket/STOMP-Kommunikation gemaess `specs/websocket-kommunikation.md` anbinden, damit Lobby- und Spielzustand in Echtzeit publiziert werden.
 
-## Offen - Prioritaet 6: Spielbares Frontend
+## Offen - Prioritaet 6: Echte Spielinteraktion und Echtzeit-Orchestrierung
 
- - [x] Frontend-Grundgeruest mit Routing/Scene-Struktur, Asset-Loading und Verbindung zum Backend aufbauen.
- - [x] Lobby-Ansicht zum Erstellen, Beitreten und Starten von Tischen implementieren.
- - [ ] Tischansicht gemaess `specs/frontend-tischansicht.md` weiter vervollstaendigen: laufende Stichmitte mit ausgespielten Karten und echte Karten-Sprites fehlen noch; Ansage-/Partei-Symbole, Debug-Modus und responsive HUD-Feinschliffe sind umgesetzt.
-- [ ] UI-Logik gemaess `specs/frontend-ui-logik.md` umsetzen: nur gueltige Karten anklickbar, Ansage-Buttons phasenabhaengig, Vorbehalt-Dialoge, Punktestand, Debug-Modus.
-- [ ] Frontend an REST/WebSocket-Ereignisse anbinden, sodass ein menschlicher Spieler gegen drei KI-Spieler ein komplettes Spiel durchspielen kann.
+- [x] Die bisher nur teilweise umgesetzte WebSocket-Spec `specs/websocket-kommunikation.md` ist fuer die aktuell fehlenden spielrelevanten Aktionen vervollstaendigt: `/app/tisch/{id}/karte` und `/app/tisch/{id}/ansage` sind jetzt inklusive DTOs, serverseitiger Validierung und benutzerbezogener Snapshot-Folgeevents umgesetzt; `/app/tisch/{id}/vorbehalt` und `/app/tisch/{id}/armut-antwort` waren bereits vorhanden.
+- [x] Der serverseitige Partie-Snapshot ist fuer den laufenden Aktionsfluss erweitert: `moeglicheAnsagen`, aktuelle Spielerreihenfolge in Vorbehalt/Armut, aktuelle Stichmitte mit gespielten Karten und oeffentliche Ansagehistorie sind jetzt vorhanden; dadurch koennen Frontend und spaetere KI denselben unmittelbaren Wahrheitsstand lesen.
+- [x] Nach jeder spielrelevanten Mutation dieses Slices werden automatische Folgeereignisse an die Partie publiziert, damit Frontend und KI nicht auf manuelle Snapshot-Anfragen angewiesen bleiben und der Echtzeitfluss Start -> Aktion -> Broadcast -> naechster Zustand fuer Vorbehalt, Armut, Kartenlegen und Ansagen wirklich entsteht.
+- [x] Fuer diese Orchestrierung sind gezielte Backend-Tests vorhanden: WebSocket-Validierung fuer gueltige/ungueltige Karten und Ansagen ist jetzt ebenso abgesichert wie die bereits vorhandenen Broadcastfaelle fuer Vorbehalte und Armut-Antworten.
 
-## Offen - Prioritaet 7: KI und Spielbarkeit im Einzelspielermodus
+## Offen - Prioritaet 7: Spielbares Frontend
 
-- [ ] Regelkonforme KI-Zuglogik auf Basis gueltiger Karten aufbauen; keine zufaellige oder illegale Kartenwahl.
-- [ ] Einfache, nachvollziehbare Heuristiken aus `specs/ki-strategie.md` implementieren: Trumpfmanagement, Partnerunterstuetzung, Ansagen, Sonderpunkt-Bewusstsein.
-- [ ] Entscheidungen fuer Vorbehalte, Armut-Annahme und Soli in die KI integrieren.
-- [ ] End-to-End-Szenarien "1 Mensch + 3 KI" und "4 KI" automatisiert pruefen.
+- [x] Frontend-Grundgeruest mit Routing/Scene-Struktur, Asset-Loading und Verbindung zum Backend aufbauen.
+- [x] Lobby-Ansicht zum Erstellen, Beitreten und Starten von Tischen implementieren.
+- [x] Tischansicht gemaess `specs/frontend-tischansicht.md` weiter vervollstaendigen: Der bisher noch offene konfigurierbare Tischhintergrund ist jetzt End-to-End umgesetzt. `TischKonfigurationDto`/Persistenz tragen mit `Tischhintergrund` einen expliziten Vertragswert, `TischSzene` rendert dafuer mehrere Hintergrundtexturen mit Filz-Fallback und bietet im wartenden Tisch eine direkte Auswahl fuer den Ersteller an, und neue Backend-/Frontend-Tests sichern WARUM dieser Slice wichtig ist: Ohne den serverseitigen Konfigurationswert wuerde die Tischansicht trotz vorhandener Interaktion visuell auf einem einzigen Fallback stehen bleiben und die Spec-Luecke unbemerkt wieder aufreissen.
+- [x] UI-Logik gemaess `specs/frontend-ui-logik.md` vervollstaendigen: `TischSzene` nutzt jetzt interaktive Karten mit Hover/Klick, zeigt phasenabhaengige Ansagebereiche sowie sichtbare Vorbehalt- und Armut-Dialoge und leitet die Auswahl konsequent aus serverseitigen Optionen ab.
+- [x] `AppStore`, Echtzeit-Port und `TischSzene` um einen echten Aktionsfluss erweitern: Fuer die vorhandenen Backend-Kanaele `/app/tisch/{id}/karte`, `/ansage`, `/vorbehalt` und `/armut-antwort` existieren jetzt Frontend-DTOS, Store-Methoden, UI-Ausloeser und ein durchgehender Zustandsfluss fuer Vorbehaltwahl, Armut-Annahme/Ablehnung und Kartenauswahl fuer Angebot bzw. Rueckgabe.
+- [x] Frontend-Ergaenzungen fuer Armut-/Vorbehalt-/Ansage-Dialoge, ein nutzbares Punktestand-/Ergebnis-Overlay und eine Letzte-Stiche-Ansicht sind jetzt End-to-End umgesetzt: `PartieStandAntwort` liefert dafuer explizit `letztesSpielergebnis` und `letzteAbgeschlosseneStiche`, `SpielverwaltungDto`/`TischAnsichtModell` verdrahten diese Daten fuer relative Sitzsicht, und `TischSzene` zeigt daraus die letzte Auswertung samt Spielwert/Augen/Sonderpunkten sowie eine umschaltbare Letzte-Stiche-Ansicht.
+- [x] Frontend-Tests deutlich verbreitern: Zusaetzlich zu Modell- und Store-Tests deckt `frontend/src/szenen/TischSzene.test.ts` jetzt echte Pointer/Hover/Klick-Interaktionen, serverseitig abgeleitete Vorbehalt-/Ansage-/Armut-UI, Resize-Neurendering und einen klaren DOM-Fehlerfall fuer `#ui-root` ab; diese Absicherung ist wichtig, weil die spielbare Tischansicht sonst trotz gruener Modell-/Store-Tests im Phaser-/DOM-Zusammenspiel unbemerkt regressieren koennte.
 
-## Offen - Prioritaet 8: Robustheit und UI-Politur
+## Offen - Prioritaet 8: KI und Spielbarkeit im Einzelspielermodus
+
+- [x] Eine echte KI-Strategie gemaess `specs/ki-strategie.md` ist jetzt eingezogen statt nur KI-Spieler anzulegen: Unter `src/main/java/de/locodoko/spiel/ki` kapseln `KiStrategie`, `KiSpielzustand`, `KiArmutAntwort` und `StandardKiStrategie` eine deterministische Karten-, Vorbehalt-, Armut- und Ansagewahl, die ausschliesslich auf gueltigen serverseitigen Optionen aufsetzt und keine illegalen oder rein zufaelligen Zuege erzeugt.
+- [x] Nachvollziehbare Heuristiken fuer Trumpfmanagement, Partnerunterstuetzung, Ansagen und Sonderpunkt-Bewusstsein sind jetzt vorhanden: Die Standard-KI spielt niedrige Gewinnkarten bevorzugt zum Stechen, schmiert sichtbare Partnerstiche, schuetzt teure Karten wie Fuchs/Karlchen beim Abwurf, bewertet Handstaerke fuer Re/Kontra und Solo-Entscheidungen und bietet bei Armut exakt alle Truempfe an bzw. gibt nach Annahme deterministisch schwache Karten zurueck.
+- [x] Entscheidungen fuer Vorbehalte, Armut-Annahme, Hochzeit/Solo-Situationen und spaetere Ansagen sind in die KI integriert, damit der komplette Phasenfluss ohne menschliche Eingriffe durchlaufen werden kann; zugleich behebt `SpielPersistenzAdapter` einen dabei aufgedeckten Koppelfehler in der Rekonstruktion laufender Normalspiele, indem Parteien und Ergebnisse jetzt auch nach bereits gespielten Kreuz-Damen bzw. nach persistierten Resultaten korrekt wiederhergestellt werden.
+- [x] KI-Orchestrierung ist jetzt in den Spielfluss eingebaut: `KiOrchestrierungService` haengt direkt in `TischService` am Tischstart sowie an menschlichen Vorbehalt-/Armut-/Karten-/Ansageaktionen, triggert anschliessende KI-Zuege, wertet Spiele automatisch aus, aktualisiert den Gesamtstand, startet Folge-Spiele derselben Partie und stoppt erst wieder bei einem menschlichen Zug oder am Partieende; damit funktionieren sowohl 1 Mensch + 3 KI als auch 4 KI ohne Polling oder manuelle Backend-Eingriffe.
+- [x] End-to-End-Szenarien "1 Mensch + 3 KI" und "4 KI" sind jetzt automatisiert geprueft: `StandardKiStrategieTest` sichert WARUM die heuristische Auswahl wichtig ist (Solo-/Armut-/Ansage-/Schmierverhalten), und `KiOrchestrierungServiceIntegrationTest` beweist WARUM die neue Backend-Orchestrierung kritisch ist, indem ein Mensch-gegen-3-KI-Stich bis zum naechsten menschlichen Zug sowie eine komplette 4-KI-Partie bis zum Partieende serverseitig durchlaufen.
+
+## Offen - Prioritaet 9: Robustheit und UI-Politur
 
 - [ ] Verbindungsabbruch-Handling gemaess `specs/verbindungsabbruch.md` nachziehen; fuer das erste Singleplayer-MVP nachrangig.
 - [ ] Animationen gemaess `specs/frontend-animationen.md` ergaenzen: Austeilen, Ausspielen, Stich einziehen, Ansage-Banner, Sonderpunkt-Hinweise, Rundenende.
 - [ ] Responsive Verhalten, visuelle Plausibilitaet und Bedienbarkeit der Tischansicht verbessern.
+- [ ] Reale Karten-Sprites und konfigurierbare Tisch-/UI-Assets auf das bestehende Fallback-Setup aufsetzen, sobald der interaktive Spielfluss stabil ist.
 
 ## Empfohlene Umsetzungsreihenfolge fuer den ersten spielbaren End-to-End-Vertical-Slice
 
 - [x] Zuerst Projektgrundgeruest, Build und Test-Setup herstellen.
 - [x] Dann Kartenmodell, Trumpfordnung und Stichlogik inklusive Tests fertigstellen.
 - [x] Danach Spielablauf fuer ein Normalspiel ohne Sonderspiele vertikal bis zur Auswertung durchziehen.
-- [ ] Anschliessend KI fuer regelkonformes Spielen und ein minimales Frontend fuer Lobby + Tischansicht anbinden.
+- [x] Anschliessend die noch fehlenden serverseitigen Spielaktionskanaele, Folge-Broadcasts und vollstaendigen Partie-Snapshots fuer echte Interaktion umsetzen.
+- [x] Danach das Frontend von der lesenden Snapshot-Ansicht zur interaktiven Tisch-UI mit Kartenklick, Vorbehalts-/Ansage-Dialogen und Stichmitte ausbauen.
+- [x] Erst dann die KI fuer regelkonformes Spielen, Vorbehalte und Ansagen anbinden, damit 1 Mensch + 3 KI wirklich durchspielbar wird.
 - [x] Danach die Vorbehalts-Sonderspiele fuer den aktuellen Backend-Slice vervollstaendigen (`Trumpfsolo`, `Hochzeit`, `Armut`, `Damensolo`, `Bubensolo`, `Fleischlos`).
+- [ ] Zum Schluss Reconnect, Animationen, responsive Feinschliffe und echte Karten-Assets ergaenzen.
 
 ## Aktuelle Risiken / offene Architekturentscheidungen
 
 - [x] Fuer den aktuellen Slice ist entschieden, vorerst eine explizite immutable Zustandslogik statt Spring Statemachine zu verwenden; falls WebSocket-Orchestrierung spaeter echten Mehrwert bringt, kann darauf aufgesetzt werden.
 - [x] Erste Persistenzentscheidung ist getroffen: Tisch, Konfiguration, Spieler sowie Partie-/Spiel-/Hand-/Stich-Snapshots werden relational gespeichert; Live-Orchestrierung fuer Session, Lobby-Workflows und Reconnect baut im naechsten Schritt darauf auf.
-- [ ] Reale Karten-Sprites, Feinschliff fuer UI-Stil und tiefere Frontend-Integrationstests muessen nach dem jetzt stehenden Fallback-Setup konkretisiert werden, sonst blockieren sie spaeter Tischansicht und Animationen.
-- [ ] Fuer echte Spielinteraktion fehlen noch serverseitige Spielaktions-Endpunkte und Folge-Snapshots fuer Kartenlegen/Ansagen; ohne diese kann das Frontend zwar jetzt Debug-Sicht und Status sauber darstellen, aber noch kein komplettes Spiel durchsteuern.
+- [x] Die WebSocket-Spec ist fuer den aktuellen Spielaktions-Slice nicht mehr nur lesend: Snapshot-Anfragen, Lobby-Broadcasts, Debug-Sicht sowie die spielrelevanten Client->Server-Aktionen fuer Vorbehalt, Armut, Kartenlegen und Ansagen inklusive automatischer Folgeevents sind jetzt vorhanden.
+- [x] `PartieStandAntwort` bildet den Spielzustand jetzt auch fuer Ergebnis-/Replay-UI explizit ab: Neben `moeglicheAnsagen`, `aktuelleStichmitte`, `ansageHistorie` und Parteisicht liefern die Snapshots jetzt auch `letztesSpielergebnis` sowie `letzteAbgeschlosseneStiche`, und diese Felder sind im Frontend bis in `TischSzene` verdrahtet.
+- [x] Das Frontend ist nicht mehr nur lesend: Karten koennen serverseitig regelkonform per Hover/Klick gespielt werden, `AppStore` sendet neben Snapshot/Debug jetzt auch die spielrelevanten Aktionen, und fuer Vorbehalt sowie Armut existiert ein eigener Auswahlzustand; damit werden die vorhandenen Backend-Broadcasts erstmals zu echter Interaktion.
+- [x] Fuer die in `specs/frontend-ui-logik.md` geforderte Letzte-Stiche- und Ergebnisdarstellung existiert jetzt ein passender End-to-End-Vertrag: `PartieStandAntwort` liefert eine explizite abgeschlossene Stichhistorie plus Ergebnisobjekt, und das Frontend rendert daraus Letzte-Stiche- und Ergebnis-Overlay ohne lokale Nachberechnung.
+- [x] Die KI ist nicht mehr nur Spielererzeugung/Namensvergabe: Neben einer echten Entscheidungslogik fuer Vorbehalt, Armut, Ansage und Kartenwahl existiert jetzt eine serverseitige Orchestrierung, die nach menschlichen oder KI-Aktionen automatisch weitere KI-Zuege ausloest und Spiele/Partien bis zum naechsten menschlichen Eingriff oder bis zum Ende fortschreibt.
+- [ ] Reale Karten-Sprites, Reconnect/KI-Uebernahme und tiefere Frontend-Integrationstests sollten erst nach einem stabilen End-to-End-Spielfluss umgesetzt werden, sonst verteilt sich die Komplexitaet zu frueh ueber zu viele Baustellen.

@@ -1,8 +1,11 @@
 package de.locodoko.spielverwaltung.persistenz;
 
 import de.locodoko.spiel.karten.Spielregeln;
+import de.locodoko.spielverwaltung.tisch.Tischhintergrund;
 import jakarta.persistence.Column;
 import jakarta.persistence.Embeddable;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.validation.constraints.AssertTrue;
 import jakarta.validation.constraints.Min;
 
@@ -15,6 +18,10 @@ public class TischkonfigurationEmbeddable {
     @Min(1)
     @Column(nullable = false)
     private int anzahlSpiele = 24;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private Tischhintergrund tischhintergrund = Tischhintergrund.FILZ_GRUEN;
 
     @Column(nullable = false)
     private boolean hochzeitErlaubt = true;
@@ -72,6 +79,7 @@ public class TischkonfigurationEmbeddable {
     private TischkonfigurationEmbeddable(
         boolean ohneNeunen,
         int anzahlSpiele,
+        Tischhintergrund tischhintergrund,
         boolean hochzeitErlaubt,
         boolean armutErlaubt,
         boolean damensoloErlaubt,
@@ -90,6 +98,7 @@ public class TischkonfigurationEmbeddable {
     ) {
         this.ohneNeunen = ohneNeunen;
         this.anzahlSpiele = anzahlSpiele;
+        this.tischhintergrund = tischhintergrund;
         this.hochzeitErlaubt = hochzeitErlaubt;
         this.armutErlaubt = armutErlaubt;
         this.damensoloErlaubt = damensoloErlaubt;
@@ -112,9 +121,18 @@ public class TischkonfigurationEmbeddable {
     }
 
     public static TischkonfigurationEmbeddable ausSpielregeln(Spielregeln spielregeln, int anzahlSpiele) {
+        return ausSpielregeln(spielregeln, anzahlSpiele, Tischhintergrund.FILZ_GRUEN);
+    }
+
+    public static TischkonfigurationEmbeddable ausSpielregeln(
+        Spielregeln spielregeln,
+        int anzahlSpiele,
+        Tischhintergrund tischhintergrund
+    ) {
         return new TischkonfigurationEmbeddable(
             spielregeln.ohneNeunen(),
             anzahlSpiele,
+            tischhintergrund,
             spielregeln.hochzeitAktiv(),
             spielregeln.armutAktiv(),
             spielregeln.soloDameAktiv(),
@@ -170,6 +188,10 @@ public class TischkonfigurationEmbeddable {
 
     public int anzahlSpiele() {
         return anzahlSpiele;
+    }
+
+    public Tischhintergrund tischhintergrund() {
+        return tischhintergrund;
     }
 
     public boolean hochzeitErlaubt() {

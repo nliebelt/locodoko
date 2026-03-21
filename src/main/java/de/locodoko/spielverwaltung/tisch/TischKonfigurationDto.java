@@ -9,6 +9,7 @@ public record TischKonfigurationDto(
     boolean ohneNeunen,
     @Min(value = 1, message = "Die Anzahl der Spiele muss mindestens 1 sein.")
     int anzahlSpiele,
+    Tischhintergrund tischhintergrund,
     boolean hochzeitErlaubt,
     boolean armutErlaubt,
     boolean damensoloErlaubt,
@@ -35,6 +36,7 @@ public record TischKonfigurationDto(
         return new TischKonfigurationDto(
             konfiguration.ohneNeunen(),
             konfiguration.anzahlSpiele(),
+            konfiguration.tischhintergrund(),
             konfiguration.hochzeitErlaubt(),
             konfiguration.armutErlaubt(),
             konfiguration.damensoloErlaubt(),
@@ -73,7 +75,8 @@ public record TischKonfigurationDto(
                 fleischlosErlaubt,
                 hochzeitErlaubt
             ),
-            anzahlSpiele
+            anzahlSpiele,
+            tischhintergrund
         );
     }
 

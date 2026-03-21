@@ -1,6 +1,6 @@
 ## Build & Run
 
-### Backend (Java 21 / Spring Boot / Maven)
+### Backend (Java 25 / Spring Boot 4.x / Maven)
 
 - Build: `mvn clean compile`
 - Tests: `mvn test`
@@ -56,7 +56,7 @@ locodoko/
 Die Domäne ist auf Deutsch (Ubiquitous Language nach DDD):
 
 - Klassen, Methoden, Variablen: Deutsch (z.B. `Stich`, `Trumpf`, `Spieler`, `Karte`)
-- Code-Kommentare: Deutsch
+- Der Code muss exessiv auf Deutsch kommentiert werden: Klassen, Methoden, Variablen
 - Specs und Dokumentation: Deutsch
 - Fachbegriffe: Stich, Trumpf, Dulle, Fuchs, Karlchen, Re, Kontra, Armut, Hochzeit
 
@@ -64,6 +64,17 @@ Die Domäne ist auf Deutsch (Ubiquitous Language nach DDD):
 
 - Domain-Driven Design (DDD) mit Bounded Contexts
 - Test-Driven Development (TDD) — Tests zuerst schreiben
+- **Domain Model = Persistence Model** (pragmatisches DDD, Option A)
+  - Aggregate Roots (mutable): `Tisch`, `Partie`, `Spieler`
+  - Value Objects (immutable): `Karte`, `Stich`, `Spielregeln`, IDs
+  - Lombok für Boilerplate-Reduktion (`@Getter`, `@RequiredArgsConstructor`, `@Value` für VOs)
+- **Package-Struktur nach Bounded Contexts** (flach):
+  - `de.locodoko.lobby` — Tisch erstellen, beitreten
+  - `de.locodoko.partie` — Partie, Spiel (Domain+Persistence)
+  - `de.locodoko.karten` — Kartendeck, Stich (Value Objects)
+  - `de.locodoko.session` — Spieler, WebSocket
+- **Aggregate Boundaries**: Jeder Bounded Context hat eigene Aggregate Root(s) mit Foreign Keys untereinander
+- **Persistence**: Spring Data JDBC (kein JPA/Hibernate) + Liquibase für Schema-Migration
 - Backend ist einzige Wahrheitsquelle — jeder Spielzug wird serverseitig validiert
 - WebSocket (STOMP) für Echtzeit-Kommunikation
 - REST-API für Lobby und Konfiguration
@@ -71,5 +82,10 @@ Die Domäne ist auf Deutsch (Ubiquitous Language nach DDD):
 - Auslieferung als einzelnes JAR (Frontend-Assets eingebettet)
 
 ## Codebase Patterns
+
+**Wichtige Specs für Architektur-Refactoring**:
+- `specs/architektur-ddd.md` — DDD-Prinzipien, Package-Struktur, Aggregate Boundaries
+- `specs/tech-migration.md` — Migration auf Java 25, Spring Boot 4.x, Spring Data JDBC, Liquibase
+- `specs/datenbankmodell.md` — Tabellenstruktur, Aggregate Roots vs. Value Objects
 
 (Wird von Ralph aktualisiert, wenn Patterns entdeckt werden)

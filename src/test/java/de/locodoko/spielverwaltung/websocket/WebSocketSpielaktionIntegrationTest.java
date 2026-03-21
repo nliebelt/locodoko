@@ -1,0 +1,538 @@
+package de.locodoko.spielverwaltung.websocket;
+
+import de.locodoko.spiel.karten.Farbe;
+import de.locodoko.spiel.karten.Karte;
+import de.locodoko.spiel.karten.Kartenwert;
+import de.locodoko.spiel.karten.Kartendeck;
+import de.locodoko.spiel.karten.SpielerPosition;
+import de.locodoko.spiel.karten.Spielregeln;
+import de.locodoko.spiel.partie.Ansage;
+import de.locodoko.spiel.partie.Partei;
+import de.locodoko.spiel.partie.Spielphase;
+import de.locodoko.spiel.partie.VorbehaltAnsage;
+import de.locodoko.spielverwaltung.persistenz.HandEntity;
+import de.locodoko.spielverwaltung.persistenz.PartieRepository;
+import de.locodoko.spielverwaltung.persistenz.SpielEntity;
+import de.locodoko.spielverwaltung.persistenz.SpielRepository;
+import de.locodoko.spielverwaltung.persistenz.TischEntity;
+import de.locodoko.spielverwaltung.persistenz.TischRepository;
+import de.locodoko.spielverwaltung.session.SpielerNameAnfrage;
+import de.locodoko.spielverwaltung.session.SpielverwaltungKonfliktException;
+import de.locodoko.spielverwaltung.tisch.PartieStandAntwort;
+import de.locodoko.spielverwaltung.tisch.TischAntwort;
+import de.locodoko.spielverwaltung.tisch.TischErstellenAnfrage;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
+import org.springframework.boot.test.web.client.TestRestTemplate;
+import org.springframework.context.annotation.Import;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
+import org.springframework.http.ResponseEntity;
+import org.springframework.transaction.support.TransactionTemplate;
+
+import java.security.Principal;
+import java.util.ArrayList;
+import java.util.EnumMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.UUID;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+@SpringBootTest(webEnvironment = WebEnvironment.RANDOM_PORT)
+@Import(WebSocketPublikationIntegrationTest.TestKonfiguration.class)
+class WebSocketSpielaktionIntegrationTest {
+
+    @Autowired
+    private TestRestTemplate restTemplate;
+
+    @Autowired
+    private WebSocketPublikationIntegrationTest.TestWebSocketNachrichtenSpeicher nachrichtenSpeicher;
+
+    @Autowired
+    private SpielverwaltungWebSocketController webSocketController;
+
+    @Autowired
+    private TischRepository tischRepository;
+
+    @Autowired
+    private SpielRepository spielRepository;
+
+    @Autowired
+    private TransactionTemplate transactionTemplate;
+
+    @BeforeEach
+    void setUp() {
+        nachrichtenSpeicher.leeren();
+    }
+
+    @Test
+    void verarbeitetVorbehaltePerWebSocketUndPubliziertBroadcastsSowieBenutzersnapshots() {
+        SpielSetup setup = starteVierSpielerTisch("Vorbehaltstisch");
+        nachrichtenSpeicher.leeren();
+
+        webSocketController.meldeVorbehalt(setup.tischId(), new VorbehaltAnfrage(VorbehaltAnsage.GESUND), principal(setup.sessionIds().get(SpielerPosition.WEST)));
+        webSocketController.meldeVorbehalt(setup.tischId(), new VorbehaltAnfrage(VorbehaltAnsage.SOLO_TRUMPF), principal(setup.sessionIds().get(SpielerPosition.NORD)));
+        webSocketController.meldeVorbehalt(setup.tischId(), new VorbehaltAnfrage(VorbehaltAnsage.GESUND), principal(setup.sessionIds().get(SpielerPosition.OST)));
+        webSocketController.meldeVorbehalt(setup.tischId(), new VorbehaltAnfrage(VorbehaltAnsage.GESUND), principal(setup.sessionIds().get(SpielerPosition.SUED)));
+
+        List<WebSocketNachrichtGesendet> nachrichten = nachrichtenSpeicher.nachrichten();
+        WebSocketNachrichtGesendet broadcastNachricht = findeLetzteNachricht(
+            nachrichten,
+            "/topic/partie/" + setup.partieId(),
+            PartieEreignisAntwort.class
+        );
+        PartieEreignisAntwort broadcast = (PartieEreignisAntwort) broadcastNachricht.payload();
+        assertEquals(Spielphase.STICHPHASE, broadcast.partieStand().laufendesSpiel().phase(),
+            "Nach vier WebSocket-Vorbehalten muss das Spiel automatisch aufgeloest und in die Stichphase ueberfuehrt werden.");
+        assertEquals("SOLO_TRUMPF", broadcast.partieStand().laufendesSpiel().spieltyp().name());
+
+        WebSocketNachrichtGesendet nordSnapshot = findeBenutzerNachricht(
+            nachrichten,
+            setup.sessionIds().get(SpielerPosition.NORD),
+            "/queue/partie/" + setup.partieId(),
+            PartieEreignisAntwort.class
+        );
+        PartieEreignisAntwort snapshot = (PartieEreignisAntwort) nordSnapshot.payload();
+        assertNotNull(snapshot.partieStand().laufendesSpiel());
+        assertTrue(snapshot.partieStand().laufendesSpiel().spieler().stream()
+                .filter(spieler -> SpielerPosition.NORD == spieler.position())
+                .findFirst()
+                .orElseThrow()
+                .sichtbareHandkarten()
+                .size() == 12,
+            "Nach einer Spielaktion braucht jeder menschliche Spieler erneut einen benutzerbezogenen Snapshot mit eigener Hand statt eines leeren Broadcast-Stands.");
+    }
+
+    @Test
+    void lehntVorbehaltAusserhalbDerReihenfolgeAb() {
+        SpielSetup setup = starteVierSpielerTisch("Ungueltiger Vorbehalt");
+        nachrichtenSpeicher.leeren();
+
+        SpielverwaltungKonfliktException exception = assertThrows(
+            SpielverwaltungKonfliktException.class,
+            () -> webSocketController.meldeVorbehalt(
+                setup.tischId(),
+                new VorbehaltAnfrage(VorbehaltAnsage.GESUND),
+                principal(setup.sessionIds().get(SpielerPosition.SUED))
+            )
+        );
+
+        assertEquals("VORBEHALT_UNGUELTIG", exception.fehlerCode());
+        assertTrue(nachrichtenSpeicher.nachrichten().isEmpty(),
+            "Ein ungueltiger Vorbehalt darf keinen Broadcast ausloesen, damit alle Clients denselben unveraenderten Spielstand behalten.");
+    }
+
+    @Test
+    void verarbeitetArmutAngebotAblehnungUndAnnahmePerWebSocket() {
+        SpielSetup setup = starteVierSpielerTisch("Armutstisch");
+        setzeKontrollierteArmutshaende(setup.partieId());
+        nachrichtenSpeicher.leeren();
+
+        webSocketController.meldeVorbehalt(setup.tischId(), new VorbehaltAnfrage(VorbehaltAnsage.ARMUT), principal(setup.sessionIds().get(SpielerPosition.WEST)));
+        webSocketController.meldeVorbehalt(setup.tischId(), new VorbehaltAnfrage(VorbehaltAnsage.GESUND), principal(setup.sessionIds().get(SpielerPosition.NORD)));
+        webSocketController.meldeVorbehalt(setup.tischId(), new VorbehaltAnfrage(VorbehaltAnsage.GESUND), principal(setup.sessionIds().get(SpielerPosition.OST)));
+        webSocketController.meldeVorbehalt(setup.tischId(), new VorbehaltAnfrage(VorbehaltAnsage.GESUND), principal(setup.sessionIds().get(SpielerPosition.SUED)));
+        webSocketController.verarbeiteArmutAntwort(
+            setup.tischId(),
+            new ArmutAntwortAnfrage(false, List.of("KREUZ-DAME-1", "KREUZ-BUBE-1", "KARO-AS-1")),
+            principal(setup.sessionIds().get(SpielerPosition.WEST))
+        );
+        webSocketController.verarbeiteArmutAntwort(
+            setup.tischId(),
+            new ArmutAntwortAnfrage(false, List.of()),
+            principal(setup.sessionIds().get(SpielerPosition.NORD))
+        );
+        webSocketController.verarbeiteArmutAntwort(
+            setup.tischId(),
+            new ArmutAntwortAnfrage(true, List.of("KREUZ-AS-2", "PIK-AS-2", "HERZ-AS-1")),
+            principal(setup.sessionIds().get(SpielerPosition.OST))
+        );
+
+        List<WebSocketNachrichtGesendet> nachrichten = nachrichtenSpeicher.nachrichten();
+        WebSocketNachrichtGesendet broadcastNachricht = findeLetzteNachricht(
+            nachrichten,
+            "/topic/partie/" + setup.partieId(),
+            PartieEreignisAntwort.class
+        );
+        PartieEreignisAntwort broadcast = (PartieEreignisAntwort) broadcastNachricht.payload();
+        assertEquals(Spielphase.STICHPHASE, broadcast.partieStand().laufendesSpiel().phase(),
+            "Nach Angebot, Ablehnung und Annahme muss der WebSocket-Armutfluss die Stichphase erreichen, damit das Spiel ohne manuelle Eingriffe weiterlaufen kann.");
+
+        WebSocketNachrichtGesendet ostSnapshot = findeBenutzerNachricht(
+            nachrichten,
+            setup.sessionIds().get(SpielerPosition.OST),
+            "/queue/partie/" + setup.partieId(),
+            PartieEreignisAntwort.class
+        );
+        PartieEreignisAntwort snapshot = (PartieEreignisAntwort) ostSnapshot.payload();
+        PartieStandAntwort.SpielerImSpielAntwort ost = snapshot.partieStand().laufendesSpiel().spieler().stream()
+            .filter(spieler -> spieler.position() == SpielerPosition.OST)
+            .findFirst()
+            .orElseThrow();
+        assertTrue(ost.sichtbareHandkarten().stream().anyMatch(karte -> "KREUZ-DAME-1".equals(karte.id())),
+            "Der annehmende Spieler muss die angebotenen Trumpfkarten im benutzerbezogenen Snapshot sehen, damit der Kartentausch im UI nachvollziehbar bleibt.");
+    }
+
+    @Test
+    void verarbeitetKartePerWebSocketUndPubliziertStichmitteSowieSpielbareFolgekarten() {
+        SpielSetup setup = starteVierSpielerTisch("Kartentisch");
+        setzeKontrollierteStandardhaende(setup.partieId());
+        meldeGesundesSpiel(setup);
+        nachrichtenSpeicher.leeren();
+
+        webSocketController.spieleKarte(
+            setup.tischId(),
+            new KarteSpielenAnfrage("KREUZ-AS-1"),
+            principal(setup.sessionIds().get(SpielerPosition.WEST))
+        );
+
+        List<WebSocketNachrichtGesendet> nachrichten = nachrichtenSpeicher.nachrichten();
+        WebSocketNachrichtGesendet broadcastNachricht = findeLetzteNachricht(
+            nachrichten,
+            "/topic/partie/" + setup.partieId(),
+            PartieEreignisAntwort.class
+        );
+        PartieEreignisAntwort broadcast = (PartieEreignisAntwort) broadcastNachricht.payload();
+        assertEquals(1, broadcast.partieStand().laufendesSpiel().aktuelleStichmitte().size(),
+            "Nach einer gueltigen Kartenaktion muss die Broadcast-Stichmitte die bereits ausgespielten Karten enthalten, damit alle Clients denselben Tischzustand sehen.");
+        assertEquals("KREUZ-AS-1", broadcast.partieStand().laufendesSpiel().aktuelleStichmitte().getFirst().karte().id());
+
+        WebSocketNachrichtGesendet nordSnapshotNachricht = findeBenutzerNachricht(
+            nachrichten,
+            setup.sessionIds().get(SpielerPosition.NORD),
+            "/queue/partie/" + setup.partieId(),
+            PartieEreignisAntwort.class
+        );
+        PartieEreignisAntwort nordSnapshot = (PartieEreignisAntwort) nordSnapshotNachricht.payload();
+        assertTrue(nordSnapshot.partieStand().laufendesSpiel().spielbareKarten().stream()
+                .allMatch(karte -> "KREUZ".equals(karte.farbe())),
+            "Der naechste Spieler muss im benutzerbezogenen Snapshot nur regelkonforme Folgekarten sehen, damit das Frontend keine ungueltigen Zuege anbietet.");
+    }
+
+    @Test
+    void lehntUngueltigeKartePerWebSocketBeiBedienpflichtAb() {
+        SpielSetup setup = starteVierSpielerTisch("Ungueltige Karte");
+        setzeKontrollierteStandardhaende(setup.partieId());
+        meldeGesundesSpiel(setup);
+        webSocketController.spieleKarte(
+            setup.tischId(),
+            new KarteSpielenAnfrage("KREUZ-AS-1"),
+            principal(setup.sessionIds().get(SpielerPosition.WEST))
+        );
+        nachrichtenSpeicher.leeren();
+
+        SpielverwaltungKonfliktException exception = assertThrows(
+            SpielverwaltungKonfliktException.class,
+            () -> webSocketController.spieleKarte(
+                setup.tischId(),
+                new KarteSpielenAnfrage("PIK-AS-1"),
+                principal(setup.sessionIds().get(SpielerPosition.NORD))
+            )
+        );
+
+        assertEquals("KARTE_UNGUELTIG", exception.fehlerCode());
+        assertTrue(nachrichtenSpeicher.nachrichten().isEmpty(),
+            "Ein bedienpflichtwidriger Zug darf keine WebSocket-Folgeevents ausloesen, damit alle Clients auf demselben unveraenderten Stichstand bleiben.");
+    }
+
+    @Test
+    void verarbeitetAnsagePerWebSocketUndOffenbartDieParteiImBenutzersnapshot() {
+        SpielSetup setup = starteVierSpielerTisch("Ansagentisch");
+        setzeKontrollierteStandardhaende(setup.partieId());
+        meldeGesundesSpiel(setup);
+        nachrichtenSpeicher.leeren();
+
+        webSocketController.sageAn(
+            setup.tischId(),
+            new AnsageAnfrage(Ansage.RE),
+            principal(setup.sessionIds().get(SpielerPosition.WEST))
+        );
+
+        List<WebSocketNachrichtGesendet> nachrichten = nachrichtenSpeicher.nachrichten();
+        WebSocketNachrichtGesendet broadcastNachricht = findeLetzteNachricht(
+            nachrichten,
+            "/topic/partie/" + setup.partieId(),
+            PartieEreignisAntwort.class
+        );
+        PartieEreignisAntwort broadcast = (PartieEreignisAntwort) broadcastNachricht.payload();
+        assertEquals(1, broadcast.partieStand().laufendesSpiel().ansageHistorie().size(),
+            "Nach einer gueltigen Ansage muss die Broadcast-Historie wachsen, damit Frontend und spaetere KI denselben Ansagezustand kennen.");
+        assertEquals(Ansage.RE, broadcast.partieStand().laufendesSpiel().ansageHistorie().getFirst().ansage());
+        assertEquals(SpielerPosition.WEST, broadcast.partieStand().laufendesSpiel().ansageHistorie().getFirst().spielerPosition());
+
+        WebSocketNachrichtGesendet nordSnapshotNachricht = findeBenutzerNachricht(
+            nachrichten,
+            setup.sessionIds().get(SpielerPosition.NORD),
+            "/queue/partie/" + setup.partieId(),
+            PartieEreignisAntwort.class
+        );
+        PartieEreignisAntwort nordSnapshot = (PartieEreignisAntwort) nordSnapshotNachricht.payload();
+        PartieStandAntwort.SpielerImSpielAntwort westAusNordSicht = nordSnapshot.partieStand().laufendesSpiel().spieler().stream()
+            .filter(spieler -> spieler.position() == SpielerPosition.WEST)
+            .findFirst()
+            .orElseThrow();
+        assertEquals(Partei.RE, westAusNordSicht.partei(),
+            "Eine Re-Ansage muss die Partei des ansagenden Spielers im benutzerbezogenen Snapshot offenbaren, damit Mitspieler den Zustand korrekt sehen.");
+    }
+
+    @Test
+    void lehntUngueltigeAnsagePerWebSocketAb() {
+        SpielSetup setup = starteVierSpielerTisch("Ungueltige Ansage");
+        setzeKontrollierteStandardhaende(setup.partieId());
+        meldeGesundesSpiel(setup);
+        nachrichtenSpeicher.leeren();
+
+        SpielverwaltungKonfliktException exception = assertThrows(
+            SpielverwaltungKonfliktException.class,
+            () -> webSocketController.sageAn(
+                setup.tischId(),
+                new AnsageAnfrage(Ansage.KONTRA),
+                principal(setup.sessionIds().get(SpielerPosition.WEST))
+            )
+        );
+
+        assertEquals("ANSAGE_UNGUELTIG", exception.fehlerCode());
+        assertTrue(nachrichtenSpeicher.nachrichten().isEmpty(),
+            "Eine ungueltige Ansage darf keinen Broadcast ausloesen, damit der serverseitige Ansagezustand fuer alle Clients unveraendert bleibt.");
+    }
+
+    private SpielSetup starteVierSpielerTisch(String tischName) {
+        String suedCookie = registriereSpieler("Ada");
+        String westCookie = registriereSpieler("Bert");
+        String nordCookie = registriereSpieler("Clara");
+        String ostCookie = registriereSpieler("Dora");
+
+        TischAntwort tisch = erstelleTisch(suedCookie, tischName);
+        betreteTisch(westCookie, tisch.id());
+        betreteTisch(nordCookie, tisch.id());
+        betreteTisch(ostCookie, tisch.id());
+        starteTisch(suedCookie, tisch.id());
+        UUID partieId = nachrichtenSpeicher.nachrichten().stream()
+            .filter(nachricht -> ("/topic/tisch/" + tisch.id()).equals(nachricht.ziel()))
+            .map(WebSocketNachrichtGesendet::payload)
+            .filter(TischEreignisAntwort.class::isInstance)
+            .map(TischEreignisAntwort.class::cast)
+            .map(TischEreignisAntwort::partieStand)
+            .filter(Objects::nonNull)
+            .map(partieStand -> partieStand.partieId())
+            .findFirst()
+            .orElseThrow(() -> new AssertionError("Es wurde keine Partie-ID fuer den gestarteten Tisch publiziert."));
+        Map<SpielerPosition, String> sessionIds = Map.of(
+            SpielerPosition.SUED, extrahiereSessionId(suedCookie),
+            SpielerPosition.WEST, extrahiereSessionId(westCookie),
+            SpielerPosition.NORD, extrahiereSessionId(nordCookie),
+            SpielerPosition.OST, extrahiereSessionId(ostCookie)
+        );
+        return new SpielSetup(tisch.id(), partieId, sessionIds);
+    }
+
+    private void setzeKontrollierteArmutshaende(UUID partieId) {
+        setzeKontrollierteHaende(partieId, Map.of(
+            SpielerPosition.WEST, handMitDreiTruepfen(
+                karte(Farbe.KREUZ, Kartenwert.DAME, 1),
+                karte(Farbe.KREUZ, Kartenwert.BUBE, 1),
+                karte(Farbe.KARO, Kartenwert.AS, 1)
+            ),
+            SpielerPosition.OST, gegenhandFuerArmutAnnahme(
+                karte(Farbe.KREUZ, Kartenwert.AS, 2),
+                karte(Farbe.PIK, Kartenwert.AS, 2),
+                karte(Farbe.HERZ, Kartenwert.AS, 1)
+            )
+        ));
+    }
+
+    private void setzeKontrollierteStandardhaende(UUID partieId) {
+        setzeKontrollierteHaende(partieId, Map.of(
+            SpielerPosition.WEST, List.of(
+                karte(Farbe.KREUZ, Kartenwert.AS, 1),
+                karte(Farbe.KREUZ, Kartenwert.DAME, 1),
+                karte(Farbe.PIK, Kartenwert.ZEHN, 1)
+            ),
+            SpielerPosition.NORD, List.of(
+                karte(Farbe.KREUZ, Kartenwert.ZEHN, 1),
+                karte(Farbe.KREUZ, Kartenwert.AS, 2),
+                karte(Farbe.PIK, Kartenwert.AS, 1)
+            ),
+            SpielerPosition.OST, List.of(
+                karte(Farbe.KREUZ, Kartenwert.KOENIG, 1),
+                karte(Farbe.KREUZ, Kartenwert.DAME, 2),
+                karte(Farbe.HERZ, Kartenwert.KOENIG, 1)
+            ),
+            SpielerPosition.SUED, List.of(
+                karte(Farbe.KREUZ, Kartenwert.NEUN, 1),
+                karte(Farbe.HERZ, Kartenwert.AS, 1),
+                karte(Farbe.PIK, Kartenwert.KOENIG, 1)
+            )
+        ));
+    }
+
+    private void setzeKontrollierteHaende(UUID partieId, Map<SpielerPosition, List<Karte>> vorgaben) {
+        transactionTemplate.executeWithoutResult(status -> {
+            SpielEntity spiel = spielRepository.findAllByPartie_IdOrderBySpielNummerAsc(partieId).getFirst();
+            Map<SpielerPosition, List<Karte>> verteilung = verteilungMitVorgaben(vorgaben);
+            for (HandEntity hand : spiel.haende()) {
+                hand.ersetzeKarten(verteilung.get(hand.spielerPosition()));
+            }
+            spielRepository.flush();
+        });
+    }
+
+    private void meldeGesundesSpiel(SpielSetup setup) {
+        webSocketController.meldeVorbehalt(setup.tischId(), new VorbehaltAnfrage(VorbehaltAnsage.GESUND), principal(setup.sessionIds().get(SpielerPosition.WEST)));
+        webSocketController.meldeVorbehalt(setup.tischId(), new VorbehaltAnfrage(VorbehaltAnsage.GESUND), principal(setup.sessionIds().get(SpielerPosition.NORD)));
+        webSocketController.meldeVorbehalt(setup.tischId(), new VorbehaltAnfrage(VorbehaltAnsage.GESUND), principal(setup.sessionIds().get(SpielerPosition.OST)));
+        webSocketController.meldeVorbehalt(setup.tischId(), new VorbehaltAnfrage(VorbehaltAnsage.GESUND), principal(setup.sessionIds().get(SpielerPosition.SUED)));
+    }
+
+    private Map<SpielerPosition, List<Karte>> verteilungMitVorgaben(Map<SpielerPosition, List<Karte>> vorgaben) {
+        List<Karte> restkarten = new ArrayList<>(Kartendeck.neu(Spielregeln.standardRegeln()).karten());
+        EnumMap<SpielerPosition, List<Karte>> haende = new EnumMap<>(SpielerPosition.class);
+        for (SpielerPosition position : SpielerPosition.standardReihenfolge()) {
+            List<Karte> karten = new ArrayList<>(vorgaben.getOrDefault(position, List.of()));
+            karten.forEach(restkarten::remove);
+            haende.put(position, karten);
+        }
+        for (SpielerPosition position : SpielerPosition.standardReihenfolge()) {
+            while (haende.get(position).size() < 12) {
+                haende.get(position).add(restkarten.removeFirst());
+            }
+        }
+        return Map.copyOf(haende);
+    }
+
+    private List<Karte> handMitDreiTruepfen(Karte ersteTrumpfkarte, Karte zweiteTrumpfkarte, Karte dritteTrumpfkarte) {
+        return List.of(
+            ersteTrumpfkarte,
+            zweiteTrumpfkarte,
+            dritteTrumpfkarte,
+            karte(Farbe.KREUZ, Kartenwert.AS, 1),
+            karte(Farbe.KREUZ, Kartenwert.KOENIG, 1),
+            karte(Farbe.KREUZ, Kartenwert.ZEHN, 1),
+            karte(Farbe.KREUZ, Kartenwert.NEUN, 1),
+            karte(Farbe.PIK, Kartenwert.AS, 1),
+            karte(Farbe.PIK, Kartenwert.KOENIG, 1),
+            karte(Farbe.PIK, Kartenwert.ZEHN, 1),
+            karte(Farbe.PIK, Kartenwert.NEUN, 1),
+            karte(Farbe.HERZ, Kartenwert.KOENIG, 1)
+        );
+    }
+
+    private List<Karte> gegenhandFuerArmutAnnahme(Karte rueckgabeEins, Karte rueckgabeZwei, Karte rueckgabeDrei) {
+        return List.of(
+            rueckgabeEins,
+            rueckgabeZwei,
+            rueckgabeDrei,
+            karte(Farbe.KREUZ, Kartenwert.KOENIG, 2),
+            karte(Farbe.KREUZ, Kartenwert.ZEHN, 2),
+            karte(Farbe.KREUZ, Kartenwert.NEUN, 2),
+            karte(Farbe.PIK, Kartenwert.KOENIG, 2),
+            karte(Farbe.PIK, Kartenwert.ZEHN, 2),
+            karte(Farbe.PIK, Kartenwert.NEUN, 2),
+            karte(Farbe.HERZ, Kartenwert.KOENIG, 2),
+            karte(Farbe.HERZ, Kartenwert.NEUN, 1),
+            karte(Farbe.HERZ, Kartenwert.NEUN, 2)
+        );
+    }
+
+    private Karte karte(Farbe farbe, Kartenwert wert, int exemplarIndex) {
+        return new Karte(farbe, wert, exemplarIndex);
+    }
+
+    private WebSocketNachrichtGesendet findeLetzteNachricht(
+        List<WebSocketNachrichtGesendet> nachrichten,
+        String ziel,
+        Class<?> payloadTyp
+    ) {
+        return nachrichten.stream()
+            .filter(nachricht -> ziel.equals(nachricht.ziel()) && payloadTyp.isInstance(nachricht.payload()))
+            .reduce((erstes, zweites) -> zweites)
+            .orElseThrow(() -> new AssertionError("Es wurde keine passende WebSocket-Nachricht fuer " + ziel + " gefunden."));
+    }
+
+    private WebSocketNachrichtGesendet findeBenutzerNachricht(
+        List<WebSocketNachrichtGesendet> nachrichten,
+        String benutzer,
+        String ziel,
+        Class<?> payloadTyp
+    ) {
+        return nachrichten.stream()
+            .filter(nachricht -> ziel.equals(nachricht.ziel())
+                && benutzer.equals(nachricht.benutzer())
+                && payloadTyp.isInstance(nachricht.payload()))
+            .reduce((erstes, zweites) -> zweites)
+            .orElseThrow(() -> new AssertionError("Es wurde keine benutzerbezogene Snapshot-Nachricht publiziert."));
+    }
+
+    private String registriereSpieler(String name) {
+        ResponseEntity<String> antwort = restTemplate.postForEntity(
+            "/api/spieler/session",
+            new SpielerNameAnfrage(name),
+            String.class
+        );
+        String setCookie = antwort.getHeaders().getFirst(HttpHeaders.SET_COOKIE);
+        if (setCookie == null || setCookie.isBlank()) {
+            throw new IllegalStateException("Spielerregistrierung hat kein Session-Cookie geliefert.");
+        }
+        return setCookie;
+    }
+
+    private TischAntwort erstelleTisch(String sessionCookie, String name) {
+        HttpHeaders headers = new HttpHeaders();
+        headers.add(HttpHeaders.COOKIE, sessionCookie);
+        ResponseEntity<TischAntwort> antwort = restTemplate.exchange(
+            "/api/tische",
+            HttpMethod.POST,
+            new HttpEntity<>(new TischErstellenAnfrage(name, null), headers),
+            TischAntwort.class
+        );
+        return Objects.requireNonNull(antwort.getBody());
+    }
+
+    private void betreteTisch(String sessionCookie, UUID tischId) {
+        HttpHeaders headers = new HttpHeaders();
+        headers.add(HttpHeaders.COOKIE, sessionCookie);
+        restTemplate.exchange(
+            "/api/tische/" + tischId + "/beitreten",
+            HttpMethod.POST,
+            new HttpEntity<>(headers),
+            String.class
+        );
+    }
+
+    private void starteTisch(String sessionCookie, UUID tischId) {
+        HttpHeaders headers = new HttpHeaders();
+        headers.add(HttpHeaders.COOKIE, sessionCookie);
+        restTemplate.exchange(
+            "/api/tische/" + tischId + "/starten",
+            HttpMethod.POST,
+            new HttpEntity<>(headers),
+            String.class
+        );
+    }
+
+    private Principal principal(String sessionId) {
+        return () -> sessionId;
+    }
+
+    private String extrahiereSessionId(String sessionCookie) {
+        int start = sessionCookie.indexOf("JSESSIONID=");
+        if (start < 0) {
+            throw new IllegalArgumentException("Kein JSESSIONID-Cookie vorhanden.");
+        }
+        int wertStart = start + "JSESSIONID=".length();
+        int ende = sessionCookie.indexOf(';', wertStart);
+        return ende < 0 ? sessionCookie.substring(wertStart) : sessionCookie.substring(wertStart, ende);
+    }
+
+    private record SpielSetup(UUID tischId, UUID partieId, Map<SpielerPosition, String> sessionIds) {
+    }
+}

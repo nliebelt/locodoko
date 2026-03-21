@@ -22,6 +22,10 @@ public final class Stich {
         return new Stich(aufspieler, List.of());
     }
 
+    public static Stich ausPersistiertemStand(SpielerPosition aufspieler, List<GespielteKarte> gespielteKarten) {
+        return new Stich(aufspieler, gespielteKarten);
+    }
+
     public SpielerPosition aufspieler() {
         return aufspieler;
     }

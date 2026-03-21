@@ -1,20 +1,30 @@
 import type {
+  AbgeschlossenerStichAntwort,
   Ansage,
+  AnsageEreignisAntwort,
+  GespielteKarteAntwort,
   KarteAntwort,
   LaufendesSpielAntwort,
+  LetztesSpielergebnisAntwort,
   Partei,
   PartieStandAntwort,
+  Sonderpunkt,
   SpielerAmTischAntwort,
   SpielerImSpielAntwort,
-  TischAntwort
+  SpielerPosition as BackendSpielerPosition,
+  Tischhintergrund,
+  TischAntwort,
+  VorbehaltAnsage
 } from '../modelle/SpielverwaltungDto';
 
 export type SpielerPosition = 'SUED' | 'WEST' | 'NORD' | 'OST';
 
 export interface SpielerAnsicht {
   position: SpielerPosition;
+  absolutePosition: BackendSpielerPosition | null;
   name: string;
   istMensch: boolean;
+  istSelbst: boolean;
   istErsteller: boolean;
   istGeber: boolean;
   verbleibendeKarten: number;
@@ -25,21 +35,77 @@ export interface SpielerAnsicht {
   sichtbareHandkarten: KarteAntwort[];
 }
 
+export interface GespielteKarteAnsicht {
+  position: SpielerPosition;
+  name: string;
+  karte: KarteAntwort;
+  reihenfolge: number;
+}
+
+export interface AnsageAnsicht {
+  position: SpielerPosition;
+  name: string;
+  ansage: Ansage;
+}
+
+export interface PunktestandEintrag {
+  position: SpielerPosition;
+  name: string;
+  punkte: number;
+}
+
+export interface AbgeschlossenerStichAnsicht {
+  spielNummer: number;
+  stichNummer: number;
+  aufspielerPosition: SpielerPosition;
+  gewinnerPosition: SpielerPosition;
+  gewinnerName: string;
+  augen: number;
+  gespielteKarten: GespielteKarteAnsicht[];
+}
+
+export interface LetztesSpielergebnisAnsicht {
+  spielNummer: number;
+  spieltyp: LaufendesSpielAntwort['spieltyp'];
+  siegerPartei: Partei;
+  spielwert: number;
+  augenRe: number;
+  augenKontra: number;
+  spielpunkte: PunktestandEintrag[];
+  sonderpunkteRe: Sonderpunkt[];
+  sonderpunkteKontra: Sonderpunkt[];
+}
+
+export interface ArmutAktionAnsicht {
+  modus: 'ANBIETEN' | 'ANTWORTEN';
+  kartenAnzahl: number;
+  armutSpielerPosition: SpielerPosition;
+  armutSpielerName: string;
+}
+
 export interface TischAnsichtModell {
   titel: string;
   untertitel: string;
   statusText: string;
   debugModus: boolean;
+  tischhintergrund: Tischhintergrund;
   spieltyp: LaufendesSpielAntwort['spieltyp'] | null;
   phase: LaufendesSpielAntwort['phase'] | null;
   aktuellerSpieler: SpielerPosition | null;
   spielbareKarten: string[];
   moeglicheAnsagen: Ansage[];
-  moeglicheVorbehalte: string[];
+  moeglicheVorbehalte: VorbehaltAnsage[];
   spieler: SpielerAnsicht[];
+  aktuelleStichmitte: GespielteKarteAnsicht[];
+  ansageHistorie: AnsageAnsicht[];
+  gesamtpunktestand: PunktestandEintrag[];
+  letzteAbgeschlosseneStiche: AbgeschlossenerStichAnsicht[];
+  letztesSpielergebnis: LetztesSpielergebnisAnsicht | null;
+  armutAktion: ArmutAktionAnsicht | null;
 }
 
 const POSITIONEN: SpielerPosition[] = ['SUED', 'WEST', 'NORD', 'OST'];
+const ABSOLUTE_POSITIONEN: BackendSpielerPosition[] = ['SUED', 'WEST', 'NORD', 'OST'];
 
 export function erstelleStandardTischAnsicht(spielerName: string): TischAnsichtModell {
   return {
@@ -47,6 +113,7 @@ export function erstelleStandardTischAnsicht(spielerName: string): TischAnsichtM
     untertitel: 'Bereit fuer das erste Spiel',
     statusText: 'Warten auf weitere Spieler',
     debugModus: false,
+    tischhintergrund: 'FILZ_GRUEN',
     spieltyp: null,
     phase: null,
     aktuellerSpieler: null,
@@ -56,8 +123,10 @@ export function erstelleStandardTischAnsicht(spielerName: string): TischAnsichtM
     spieler: [
       {
         position: 'SUED',
+        absolutePosition: 'SUED',
         name: spielerName,
         istMensch: true,
+        istSelbst: true,
         istErsteller: true,
         istGeber: false,
         verbleibendeKarten: 12,
@@ -69,8 +138,10 @@ export function erstelleStandardTischAnsicht(spielerName: string): TischAnsichtM
       },
       {
         position: 'WEST',
+        absolutePosition: 'WEST',
         name: 'KI West',
         istMensch: false,
+        istSelbst: false,
         istErsteller: false,
         istGeber: false,
         verbleibendeKarten: 12,
@@ -82,8 +153,10 @@ export function erstelleStandardTischAnsicht(spielerName: string): TischAnsichtM
       },
       {
         position: 'NORD',
+        absolutePosition: 'NORD',
         name: 'KI Nord',
         istMensch: false,
+        istSelbst: false,
         istErsteller: false,
         istGeber: false,
         verbleibendeKarten: 12,
@@ -95,8 +168,10 @@ export function erstelleStandardTischAnsicht(spielerName: string): TischAnsichtM
       },
       {
         position: 'OST',
+        absolutePosition: 'OST',
         name: 'KI Ost',
         istMensch: false,
+        istSelbst: false,
         istErsteller: false,
         istGeber: false,
         verbleibendeKarten: 12,
@@ -106,7 +181,13 @@ export function erstelleStandardTischAnsicht(spielerName: string): TischAnsichtM
         partei: null,
         sichtbareHandkarten: []
       }
-    ]
+    ],
+    aktuelleStichmitte: [],
+    ansageHistorie: [],
+    gesamtpunktestand: [],
+    letzteAbgeschlosseneStiche: [],
+    letztesSpielergebnis: null,
+    armutAktion: null
   };
 }
 
@@ -120,59 +201,128 @@ export function erstelleTischAnsichtAusStatus(
     return {
       titel: 'Loco Doko',
       untertitel: 'Noch kein Tisch geoeffnet',
-      statusText: 'Bitte waehle in der Lobby einen Tisch aus.',
-      debugModus,
-      spieltyp: null,
+       statusText: 'Bitte waehle in der Lobby einen Tisch aus.',
+       debugModus,
+       tischhintergrund: 'FILZ_GRUEN',
+       spieltyp: null,
       phase: null,
       aktuellerSpieler: null,
       spielbareKarten: [],
       moeglicheAnsagen: [],
       moeglicheVorbehalte: [],
-      spieler: []
+      spieler: [],
+      aktuelleStichmitte: [],
+      ansageHistorie: [],
+      gesamtpunktestand: [],
+      letzteAbgeschlosseneStiche: [],
+      letztesSpielergebnis: null,
+      armutAktion: null
     };
   }
 
   const laufendesSpiel = partieStand?.laufendesSpiel;
+  const bezugPosition = laufendesSpiel
+    ? bestimmeBezugsPositionAusPartie(laufendesSpiel, spielerId, tisch)
+    : bestimmeBezugsPositionAusTisch(spielerId, tisch);
   const spielerAnsichten = laufendesSpiel
-    ? mappeSpielerAusPartie(laufendesSpiel.spieler, tisch, laufendesSpiel.spieltyp)
-    : mappeSpielerAusTisch(spielerId, tisch);
+    ? mappeSpielerAusPartie(laufendesSpiel.spieler, tisch, laufendesSpiel.spieltyp, bezugPosition)
+    : mappeSpielerAusTisch(spielerId, tisch, bezugPosition);
 
   const statusText = laufendesSpiel
     ? `${lesbarerPhasenText(laufendesSpiel.phase)} · Spiel ${laufendesSpiel.spielNummer}/${partieStand?.anzahlSpiele ?? tisch.konfiguration.anzahlSpiele}`
+    : partieStand?.letztesSpielergebnis
+      ? `Letzte Auswertung abgeschlossen · Spiel ${partieStand.gespielteSpiele}/${partieStand.anzahlSpiele}`
     : tisch.status === 'IM_SPIEL'
       ? `Partie laeuft${partieStand ? ` · Spiel ${partieStand.gespielteSpiele + 1}/${partieStand.anzahlSpiele}` : ''}`
       : 'Warte auf Start oder weitere Spieler';
 
   return {
     titel: tisch.name,
-    untertitel: laufendesSpiel ? `Spieltyp ${laufendesSpiel.spieltyp}` : tisch.status === 'IM_SPIEL' ? 'Top-Down-Tischansicht' : 'Tisch in der Lobby',
+    untertitel: laufendesSpiel
+      ? `Spieltyp ${laufendesSpiel.spieltyp}`
+      : partieStand?.letztesSpielergebnis
+        ? `Letzte Auswertung · ${partieStand.letztesSpielergebnis.spieltyp}`
+        : tisch.status === 'IM_SPIEL'
+          ? 'Top-Down-Tischansicht'
+          : 'Tisch in der Lobby',
     statusText,
     debugModus,
+    tischhintergrund: tisch.konfiguration.tischhintergrund,
     spieltyp: laufendesSpiel?.spieltyp ?? null,
     phase: laufendesSpiel?.phase ?? null,
-    aktuellerSpieler: laufendesSpiel?.aktuellerSpieler ?? null,
+    aktuellerSpieler: mappeRelativePosition(laufendesSpiel?.aktuellerSpieler ?? null, bezugPosition),
     spielbareKarten: laufendesSpiel?.spielbareKarten.map((karte) => karte.id) ?? [],
     moeglicheAnsagen: laufendesSpiel?.moeglicheAnsagen ?? [],
     moeglicheVorbehalte: laufendesSpiel?.moeglicheVorbehalte ?? [],
-    spieler: spielerAnsichten
+    spieler: spielerAnsichten,
+    aktuelleStichmitte: laufendesSpiel ? mappeAktuelleStichmitte(laufendesSpiel.aktuelleStichmitte, laufendesSpiel.spieler, bezugPosition) : [],
+    ansageHistorie: laufendesSpiel ? mappeAnsageHistorie(laufendesSpiel.ansageHistorie, laufendesSpiel.spieler, bezugPosition) : [],
+    gesamtpunktestand: mappeGesamtpunktestand(spielerAnsichten, partieStand?.gesamtpunktestand ?? {}),
+    letzteAbgeschlosseneStiche: mappeLetzteAbgeschlosseneStiche(
+      partieStand?.letzteAbgeschlosseneStiche ?? [],
+      spielerAnsichten,
+      bezugPosition
+    ),
+    letztesSpielergebnis: mappeLetztesSpielergebnis(
+      partieStand?.letztesSpielergebnis ?? null,
+      spielerAnsichten
+    ),
+    armutAktion: laufendesSpiel ? bestimmeArmutAktion(laufendesSpiel, spielerAnsichten, bezugPosition) : null
   };
+}
+
+export function istTrumpfFuerSpieltyp(
+  karte: KarteAntwort,
+  spieltyp: LaufendesSpielAntwort['spieltyp'] | null
+): boolean {
+  switch (spieltyp) {
+    case 'SOLO_DAME':
+      return karte.wert === 'DAME';
+    case 'SOLO_BUBE':
+      return karte.wert === 'BUBE';
+    case 'SOLO_FLEISCHLOS':
+      return false;
+    case 'SOLO_TRUMPF':
+    case 'NORMALSPIEL':
+    case 'HOCHZEIT':
+    case 'ARMUT':
+    default:
+      return karte.wert === 'DAME'
+        || karte.wert === 'BUBE'
+        || karte.farbe === 'KARO'
+        || (karte.farbe === 'HERZ' && karte.wert === 'ZEHN');
+  }
+}
+
+function bestimmeBezugsPositionAusPartie(
+  laufendesSpiel: LaufendesSpielAntwort,
+  spielerId: string | null,
+  tisch: TischAntwort
+): BackendSpielerPosition {
+  const ausSpiel = laufendesSpiel.spieler.find((spieler) => spieler.istSelbst || (spielerId !== null && spieler.spielerId === spielerId))?.position;
+  return ausSpiel ?? bestimmeBezugsPositionAusTisch(spielerId, tisch);
+}
+
+function bestimmeBezugsPositionAusTisch(spielerId: string | null, tisch: TischAntwort): BackendSpielerPosition {
+  const eigenerIndex = spielerId ? tisch.spieler.findIndex((spieler) => spieler.spielerId === spielerId) : -1;
+  return ABSOLUTE_POSITIONEN[eigenerIndex] ?? 'SUED';
 }
 
 function mappeSpielerAusPartie(
   spieler: SpielerImSpielAntwort[],
   tisch: TischAntwort,
-  spieltyp: LaufendesSpielAntwort['spieltyp']
+  spieltyp: LaufendesSpielAntwort['spieltyp'],
+  bezugPosition: BackendSpielerPosition
 ): SpielerAnsicht[] {
-  const nachPosition = new Map(spieler.map((eintrag) => [eintrag.position, eintrag] as const));
-  return POSITIONEN.map((position) => {
-    const eintrag = nachPosition.get(position);
-    if (!eintrag) {
-      return leererPlatz(position);
-    }
-    return {
+  const nachPosition = new Map<SpielerPosition, SpielerAnsicht>();
+  spieler.forEach((eintrag) => {
+    const position = mappeRelativePositionOhneNull(eintrag.position, bezugPosition);
+    nachPosition.set(position, {
       position,
+      absolutePosition: eintrag.position,
       name: eintrag.name,
       istMensch: !eintrag.istKi,
+      istSelbst: eintrag.istSelbst,
       istErsteller: eintrag.spielerId === tisch.erstelltVonSpielerId,
       istGeber: eintrag.istGeber,
       verbleibendeKarten: eintrag.verbleibendeKarten ?? 0,
@@ -181,24 +331,203 @@ function mappeSpielerAusPartie(
       istAktivHervorgehoben: eintrag.istAmZug || eintrag.istSelbst,
       partei: eintrag.partei,
       sichtbareHandkarten: sortiereSichtbareHandkarten(eintrag.sichtbareHandkarten ?? [], spieltyp)
-    };
+    });
   });
+  return POSITIONEN.map((position) => nachPosition.get(position) ?? leererPlatz(position));
 }
 
-function mappeSpielerAusTisch(spielerId: string | null, tisch: TischAntwort): SpielerAnsicht[] {
-  const eigenerIndex = spielerId ? tisch.spieler.findIndex((spieler) => spieler.spielerId === spielerId) : -1;
-  const spielerInReihenfolge = ordneSpielerUm(tisch.spieler, eigenerIndex < 0 ? 0 : eigenerIndex);
-  return POSITIONEN.map((position, index) => {
-    const spieler = spielerInReihenfolge[index];
-    return spieler ? mappeLobbySpieler(position, spieler, tisch, spielerId) : leererPlatz(position);
+function mappeSpielerAusTisch(
+  spielerId: string | null,
+  tisch: TischAntwort,
+  bezugPosition: BackendSpielerPosition
+): SpielerAnsicht[] {
+  const nachPosition = new Map<SpielerPosition, SpielerAnsicht>();
+  tisch.spieler.forEach((spieler, index) => {
+    const absolutePosition = ABSOLUTE_POSITIONEN[index] ?? 'SUED';
+    const position = mappeRelativePositionOhneNull(absolutePosition, bezugPosition);
+    nachPosition.set(position, mappeLobbySpieler(position, absolutePosition, spieler, tisch, spielerId));
   });
+  return POSITIONEN.map((position) => nachPosition.get(position) ?? leererPlatz(position));
+}
+
+function mappeAktuelleStichmitte(
+  aktuelleStichmitte: GespielteKarteAntwort[],
+  spieler: SpielerImSpielAntwort[],
+  bezugPosition: BackendSpielerPosition
+): GespielteKarteAnsicht[] {
+  const nameNachPosition = new Map(spieler.map((eintrag) => [eintrag.position, eintrag.name] as const));
+  return [...aktuelleStichmitte]
+    .sort((links, rechts) => links.reihenfolge - rechts.reihenfolge)
+    .map((eintrag) => ({
+      position: mappeRelativePositionOhneNull(eintrag.spielerPosition, bezugPosition),
+      name: nameNachPosition.get(eintrag.spielerPosition) ?? eintrag.spielerPosition,
+      karte: eintrag.karte,
+      reihenfolge: eintrag.reihenfolge
+    }));
+}
+
+function mappeAnsageHistorie(
+  ansageHistorie: AnsageEreignisAntwort[],
+  spieler: SpielerImSpielAntwort[],
+  bezugPosition: BackendSpielerPosition
+): AnsageAnsicht[] {
+  const nameNachPosition = new Map(spieler.map((eintrag) => [eintrag.position, eintrag.name] as const));
+  return ansageHistorie.map((eintrag) => ({
+    position: mappeRelativePositionOhneNull(eintrag.spielerPosition, bezugPosition),
+    name: nameNachPosition.get(eintrag.spielerPosition) ?? eintrag.spielerPosition,
+    ansage: eintrag.ansage
+  }));
+}
+
+function mappeGesamtpunktestand(
+  spielerAnsichten: SpielerAnsicht[],
+  gesamtpunktestand: Partial<Record<BackendSpielerPosition, number>>
+): PunktestandEintrag[] {
+  return spielerAnsichten
+    .filter((spieler) => spieler.absolutePosition !== null)
+    .map((spieler) => ({
+      position: spieler.position,
+      name: spieler.name,
+      punkte: gesamtpunktestand[spieler.absolutePosition ?? 'SUED'] ?? 0
+    }));
+}
+
+function mappeLetzteAbgeschlosseneStiche(
+  stiche: AbgeschlossenerStichAntwort[],
+  spielerAnsichten: SpielerAnsicht[],
+  bezugPosition: BackendSpielerPosition
+): AbgeschlossenerStichAnsicht[] {
+  const nameNachPosition = new Map(
+    spielerAnsichten
+      .filter((spieler) => spieler.absolutePosition !== null)
+      .map((spieler) => [spieler.absolutePosition ?? 'SUED', spieler.name] as const)
+  );
+  return stiche.map((stich) => ({
+    spielNummer: stich.spielNummer,
+    stichNummer: stich.stichNummer,
+    aufspielerPosition: mappeRelativePositionOhneNull(stich.aufspielerPosition, bezugPosition),
+    gewinnerPosition: mappeRelativePositionOhneNull(stich.gewinnerPosition, bezugPosition),
+    gewinnerName: nameNachPosition.get(stich.gewinnerPosition) ?? stich.gewinnerPosition,
+    augen: stich.augen,
+    gespielteKarten: stich.gespielteKarten
+      .slice()
+      .sort((links, rechts) => links.reihenfolge - rechts.reihenfolge)
+      .map((karte) => ({
+        position: mappeRelativePositionOhneNull(karte.spielerPosition, bezugPosition),
+        name: nameNachPosition.get(karte.spielerPosition) ?? karte.spielerPosition,
+        karte: karte.karte,
+        reihenfolge: karte.reihenfolge
+      }))
+  }));
+}
+
+function mappeLetztesSpielergebnis(
+  ergebnis: LetztesSpielergebnisAntwort | null,
+  spielerAnsichten: SpielerAnsicht[]
+): LetztesSpielergebnisAnsicht | null {
+  if (!ergebnis) {
+    return null;
+  }
+  return {
+    spielNummer: ergebnis.spielNummer,
+    spieltyp: ergebnis.spieltyp,
+    siegerPartei: ergebnis.siegerPartei,
+    spielwert: ergebnis.spielwert,
+    augenRe: ergebnis.augenProPartei.RE ?? 0,
+    augenKontra: ergebnis.augenProPartei.KONTRA ?? 0,
+    spielpunkte: mappeSpielpunkte(spielerAnsichten, ergebnis.spielpunkteProSpieler),
+    sonderpunkteRe: ergebnis.sonderpunkteProPartei.RE ?? [],
+    sonderpunkteKontra: ergebnis.sonderpunkteProPartei.KONTRA ?? []
+  };
+}
+
+function mappeSpielpunkte(
+  spielerAnsichten: SpielerAnsicht[],
+  spielpunkte: Partial<Record<BackendSpielerPosition, number>>
+): PunktestandEintrag[] {
+  return spielerAnsichten
+    .filter((spieler) => spieler.absolutePosition !== null)
+    .map((spieler) => ({
+      position: spieler.position,
+      name: spieler.name,
+      punkte: spielpunkte[spieler.absolutePosition ?? 'SUED'] ?? 0
+    }));
+}
+
+function bestimmeArmutAktion(
+  laufendesSpiel: LaufendesSpielAntwort,
+  spielerAnsichten: SpielerAnsicht[],
+  bezugPosition: BackendSpielerPosition
+): ArmutAktionAnsicht | null {
+  if (laufendesSpiel.phase !== 'ARMUT_TAUSCH' || mappeRelativePosition(laufendesSpiel.aktuellerSpieler, bezugPosition) !== 'SUED') {
+    return null;
+  }
+
+  const eigenerSpieler = spielerAnsichten.find((spieler) => spieler.istSelbst) ?? spielerAnsichten.find((spieler) => spieler.position === 'SUED');
+  if (!eigenerSpieler) {
+    return null;
+  }
+
+  const armutSpieler = spielerAnsichten
+    .filter((spieler) => spieler.absolutePosition !== null)
+    .reduce<SpielerAnsicht | null>((kleinsteHand, spieler) => {
+      if (!kleinsteHand || spieler.verbleibendeKarten < kleinsteHand.verbleibendeKarten) {
+        return spieler;
+      }
+      return kleinsteHand;
+    }, null);
+
+  if (!armutSpieler) {
+    return null;
+  }
+
+  const kartenDifferenz = Math.max(0, eigenerSpieler.verbleibendeKarten - armutSpieler.verbleibendeKarten);
+  if (kartenDifferenz > 0) {
+    return {
+      modus: 'ANTWORTEN',
+      kartenAnzahl: kartenDifferenz,
+      armutSpielerPosition: armutSpieler.position,
+      armutSpielerName: armutSpieler.name
+    };
+  }
+
+  return {
+    modus: 'ANBIETEN',
+    kartenAnzahl: eigenerSpieler.sichtbareHandkarten.filter((karte) => istTrumpfFuerSpieltyp(karte, laufendesSpiel.spieltyp)).length,
+    armutSpielerPosition: eigenerSpieler.position,
+    armutSpielerName: eigenerSpieler.name
+  };
+}
+
+function mappeRelativePositionOhneNull(
+  position: BackendSpielerPosition,
+  bezugPosition: BackendSpielerPosition
+): SpielerPosition {
+  return mappeRelativePosition(position, bezugPosition) ?? 'SUED';
+}
+
+function mappeRelativePosition(
+  position: BackendSpielerPosition | null,
+  bezugPosition: BackendSpielerPosition
+): SpielerPosition | null {
+  if (position === null) {
+    return null;
+  }
+  const positionsIndex = ABSOLUTE_POSITIONEN.indexOf(position);
+  const bezugsIndex = ABSOLUTE_POSITIONEN.indexOf(bezugPosition);
+  if (positionsIndex < 0 || bezugsIndex < 0) {
+    return position as SpielerPosition;
+  }
+  return POSITIONEN[(positionsIndex - bezugsIndex + POSITIONEN.length) % POSITIONEN.length];
 }
 
 function leererPlatz(position: SpielerPosition): SpielerAnsicht {
   return {
     position,
+    absolutePosition: null,
     name: 'Freier Platz',
     istMensch: false,
+    istSelbst: false,
     istErsteller: false,
     istGeber: false,
     verbleibendeKarten: 0,
@@ -230,17 +559,9 @@ function lesbarerPhasenText(phase: LaufendesSpielAntwort['phase']): string {
   }
 }
 
-function ordneSpielerUm(spieler: SpielerAmTischAntwort[], startIndex: number): SpielerAmTischAntwort[] {
-  if (spieler.length === 0) {
-    return [];
-  }
-
-  const offset = ((startIndex % spieler.length) + spieler.length) % spieler.length;
-  return [...spieler.slice(offset), ...spieler.slice(0, offset)];
-}
-
 function mappeLobbySpieler(
   position: SpielerPosition,
+  absolutePosition: BackendSpielerPosition,
   spieler: SpielerAmTischAntwort,
   tisch: TischAntwort,
   eigenerSpielerId: string | null
@@ -249,8 +570,10 @@ function mappeLobbySpieler(
   const istImSpiel = tisch.status === 'IM_SPIEL';
   return {
     position,
+    absolutePosition,
     name: spieler.name,
     istMensch: !spieler.istKi,
+    istSelbst: istEigenerSpieler,
     istErsteller: spieler.spielerId === tisch.erstelltVonSpielerId,
     istGeber: false,
     verbleibendeKarten: istImSpiel ? 12 : 0,
@@ -287,8 +610,8 @@ function vergleicheKarten(
   rechts: KarteAntwort,
   spieltyp: LaufendesSpielAntwort['spieltyp'] | null
 ): number {
-  const linksTrumpf = istTrumpf(links, spieltyp);
-  const rechtsTrumpf = istTrumpf(rechts, spieltyp);
+  const linksTrumpf = istTrumpfFuerSpieltyp(links, spieltyp);
+  const rechtsTrumpf = istTrumpfFuerSpieltyp(rechts, spieltyp);
   if (linksTrumpf !== rechtsTrumpf) {
     return linksTrumpf ? -1 : 1;
   }
@@ -304,26 +627,6 @@ function vergleicheKarten(
   }
   const wertDifferenz = fehlWertRang(rechts.wert) - fehlWertRang(links.wert);
   return wertDifferenz !== 0 ? wertDifferenz : links.id.localeCompare(rechts.id);
-}
-
-function istTrumpf(karte: KarteAntwort, spieltyp: LaufendesSpielAntwort['spieltyp'] | null): boolean {
-  switch (spieltyp) {
-    case 'SOLO_DAME':
-      return karte.wert === 'DAME';
-    case 'SOLO_BUBE':
-      return karte.wert === 'BUBE';
-    case 'SOLO_FLEISCHLOS':
-      return false;
-    case 'SOLO_TRUMPF':
-    case 'NORMALSPIEL':
-    case 'HOCHZEIT':
-    case 'ARMUT':
-    default:
-      return karte.wert === 'DAME'
-        || karte.wert === 'BUBE'
-        || karte.farbe === 'KARO'
-        || (karte.farbe === 'HERZ' && karte.wert === 'ZEHN');
-  }
 }
 
 function trumpfRang(karte: KarteAntwort, spieltyp: LaufendesSpielAntwort['spieltyp'] | null): number {

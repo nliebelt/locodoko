@@ -19,6 +19,11 @@ public final class Ansagen {
         return new Ansagen(List.of());
     }
 
+    public static Ansagen ausEreignissen(List<AnsageEreignis> ereignisse) {
+        Objects.requireNonNull(ereignisse, "ereignisse duerfen nicht null sein");
+        return new Ansagen(ereignisse);
+    }
+
     public List<AnsageEreignis> ereignisse() {
         return ereignisse;
     }

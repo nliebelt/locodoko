@@ -84,6 +84,34 @@ public class SpielverwaltungWebSocketController {
         );
     }
 
+    @MessageMapping("/tisch/{tischId}/vorbehalt")
+    public void meldeVorbehalt(@DestinationVariable UUID tischId, VorbehaltAnfrage anfrage, Principal principal) {
+        SpielerEntity spieler = ladeAktivenSpieler(principal);
+        LOGGER.info("Spieler {} meldet Vorbehalt {} per WebSocket an Tisch {}", spieler.id(), anfrage.vorbehalt(), tischId);
+        tischService.meldeVorbehalt(tischId, spieler, anfrage.vorbehalt());
+    }
+
+    @MessageMapping("/tisch/{tischId}/armut-antwort")
+    public void verarbeiteArmutAntwort(@DestinationVariable UUID tischId, ArmutAntwortAnfrage anfrage, Principal principal) {
+        SpielerEntity spieler = ladeAktivenSpieler(principal);
+        LOGGER.info("Spieler {} beantwortet Armut per WebSocket an Tisch {}", spieler.id(), tischId);
+        tischService.verarbeiteArmutAntwort(tischId, spieler, anfrage.kartenIds(), anfrage.angenommen());
+    }
+
+    @MessageMapping("/tisch/{tischId}/karte")
+    public void spieleKarte(@DestinationVariable UUID tischId, KarteSpielenAnfrage anfrage, Principal principal) {
+        SpielerEntity spieler = ladeAktivenSpieler(principal);
+        LOGGER.info("Spieler {} spielt Karte {} per WebSocket an Tisch {}", spieler.id(), anfrage.karteId(), tischId);
+        tischService.spieleKarte(tischId, spieler, anfrage.karteId());
+    }
+
+    @MessageMapping("/tisch/{tischId}/ansage")
+    public void sageAn(@DestinationVariable UUID tischId, AnsageAnfrage anfrage, Principal principal) {
+        SpielerEntity spieler = ladeAktivenSpieler(principal);
+        LOGGER.info("Spieler {} taetigt Ansage {} per WebSocket an Tisch {}", spieler.id(), anfrage.ansage(), tischId);
+        tischService.sageAn(tischId, spieler, anfrage.ansage());
+    }
+
     @MessageExceptionHandler({
         SpielerSessionUngueltigException.class,
         SpielverwaltungNichtGefundenException.class,
