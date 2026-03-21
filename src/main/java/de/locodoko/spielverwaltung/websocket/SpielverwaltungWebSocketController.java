@@ -120,6 +120,7 @@ public class SpielverwaltungWebSocketController {
     })
     @SendToUser(value = "/queue/fehler", broadcast = false)
     public SpielverwaltungWebSocketFehlerAntwort behandleFachlichenFehler(RuntimeException exception) {
+        // Alle fachlichen Exceptions liefern fehlerCode() direkt; nur IllegalArgumentException faellt durch.
         if (exception instanceof SpielverwaltungNichtGefundenException nichtGefundenException) {
             return SpielverwaltungWebSocketFehlerAntwort.fachlicherFehler(
                 nichtGefundenException.fehlerCode(),
@@ -132,10 +133,10 @@ public class SpielverwaltungWebSocketController {
                 konfliktException.getMessage()
             );
         }
-        if (exception instanceof SpielerSessionUngueltigException) {
+        if (exception instanceof SpielerSessionUngueltigException sessionException) {
             return SpielverwaltungWebSocketFehlerAntwort.fachlicherFehler(
-                "SPIELER_SESSION_UNGUELTIG",
-                exception.getMessage()
+                sessionException.fehlerCode(),
+                sessionException.getMessage()
             );
         }
         return SpielverwaltungWebSocketFehlerAntwort.fachlicherFehler("ANFRAGE_UNGUELTIG", exception.getMessage());

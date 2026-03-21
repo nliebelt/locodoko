@@ -20,7 +20,7 @@ public class SpielverwaltungExceptionHandler {
     public ResponseEntity<ApiFehlerAntwort> behandleUngueltigeSession(SpielerSessionUngueltigException exception) {
         LOGGER.warn("Ungueltige Spieler-Session: {}", exception.getMessage());
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-            .body(new ApiFehlerAntwort("SPIELER_SESSION_UNGUELTIG", exception.getMessage()));
+            .body(new ApiFehlerAntwort(exception.fehlerCode(), exception.getMessage()));
     }
 
     @ExceptionHandler(SpielerNameAenderungNichtErlaubtException.class)
@@ -29,7 +29,7 @@ public class SpielverwaltungExceptionHandler {
     ) {
         LOGGER.warn("Nicht erlaubte Namensaenderung: {}", exception.getMessage());
         return ResponseEntity.status(HttpStatus.CONFLICT)
-            .body(new ApiFehlerAntwort("SPIELER_NAME_AENDERUNG_NICHT_ERLAUBT", exception.getMessage()));
+            .body(new ApiFehlerAntwort(exception.fehlerCode(), exception.getMessage()));
     }
 
     @ExceptionHandler(SpielverwaltungNichtGefundenException.class)

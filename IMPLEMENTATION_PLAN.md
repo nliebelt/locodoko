@@ -4,9 +4,9 @@ Stand: 2026-03-21
 
 ## Notiz
 
-**Letzte Iteration (2026-03-21):** Concurrency-Absicherung in TischService implementiert (Prioritaet 10). `TischRepository` bekommt `findByIdWithLock(@Lock PESSIMISTIC_WRITE)` via JPQL-Query. `TischService` nutzt diesen Lock fuer alle schreibenden Tischoperationen: `betreteTisch`, `starteTisch`, `verlasseTisch`, `aktualisiereKonfiguration`. Neue Tests schliessen die Luecken `TISCH_VOLL` (409) und `TISCH_BEREITS_GESTARTET` (409). 100 Tests gruen.
+**Letzte Iteration (2026-03-21):** Exception-Hierarchie konsistent gemacht (Prioritaet 10). `SpielerSessionUngueltigException` und `SpielerNameAenderungNichtErlaubtException` haben jetzt eine `fehlerCode()`-Methode (konstanter Wert). `SpielverwaltungExceptionHandler` und `SpielverwaltungWebSocketController` lesen den Code direkt aus der Exception statt ihn hartzukodieren. 100 Tests gruen.
 
-**Naechster logischer Schritt:** Exception-Hierarchie konsistent machen (Prioritaet 10): `SpielerSessionUngueltigException` hat keinen `fehlerCode`, alle anderen Exceptions schon.
+**Naechster logischer Schritt:** `PartieController` mit Session-Validierung schuetzen (Prioritaet 10): `GET /api/partien/{id}/stand` prueft aktuell keine Session; jeder kann jeden Partie-Stand abrufen.
 
 **Offene Fragen:** jsdom kann Canvas 2D nicht rendern (daher stderr-Warnings in Tests); Texturen werden im Browser korrekt erzeugt. Ein `canvas`-npm-Package koennte die Warnings eliminieren, ist aber nicht kritisch.
 
@@ -149,7 +149,7 @@ Ausgangslage: Backend und Frontend sind funktional weitgehend vollstaendig: Kart
 - [x] Verbindungsabbruch-Handling gemaess `specs/verbindungsabbruch.md`: `VerbindungsSessionEreignisListener` lauscht auf `SessionConnectedEvent`/`SessionDisconnectEvent` und leitet an `VerbindungsabbruchService` weiter; dieser trackt getrennte Sessions in-memory, sendet GETRENNT-/VERBUNDEN-/KI_UEBERNOMMEN-Ereignisse an `/topic/tisch/{id}`, stellt dem reconnectenden Spieler den aktuellen Spielzustand zu, und ein `@Scheduled`-Task prueft alle 10 Sekunden auf abgelaufene Timeouts (Standard: 120 s) und setzt `SpielerEntity.kiUebernommen = true`, bevor die KI-Orchestrierung fuer diesen Spieler ausgeloest wird; beim Spielwechsel wird `kiUebernommen` automatisch zurueckgesetzt damit reconnectete Spieler ihr naechstes Spiel wieder selbst steuern.
 - [x] Session-Cleanup bei Timeout: `SpielerSessionCleanupService` + `SpielerSessionCleanupKonfiguration` (HttpSessionListener via ServletListenerRegistrationBean). Wartende Tische: Spieler entfernt, leere Tische geloescht, Broadcasts; aktive Tische: Session-ID geleert, KI spielt weiter.
 - [x] Concurrency-Absicherung in TischService: Pessimistisches Write-Lock (PESSIMISTIC_WRITE) via `TischRepository.findByIdWithLock()` fuer alle schreibenden Operationen (betreteTisch, starteTisch, verlasseTisch, aktualisiereKonfiguration). Neue Tests sichern TISCH_VOLL-409 und TISCH_BEREITS_GESTARTET-409 ab.
-- [ ] Exception-Hierarchie konsistent machen: `SpielerSessionUngueltigException` hat keinen `fehlerCode`, andere Exceptions schon; alle Exceptions sollten einheitlich Fehler-Codes tragen.
+- [x] Exception-Hierarchie konsistent machen: `SpielerSessionUngueltigException` und `SpielerNameAenderungNichtErlaubtException` haben jetzt `fehlerCode()`-Methoden; Handler rufen `fehlerCode()` statt hartkodierten Strings auf.
 - [ ] PartieController mit Session-Validierung schuetzen: `GET /api/partien/{id}/stand` prueft aktuell keine Session; jeder kann jeden Partie-Stand abrufen.
 - [ ] KiOrchestrierungService: Fehlerbehandlung fuer KI-Strategie-Exceptions ergaenzen, damit Partie bei KI-Fehler nicht in inkonsistentem Zustand haengt.
 - [ ] Test-Luecken schliessen: Fehlerszenarien fuer Tisch-Beitritt bei vollem Tisch (409), deaktivierte Sonderspiele in der Spiellogik (armutErlaubt=false → Vorbehalt ablehnen), wiederholte Armut-Einwuerfe.
