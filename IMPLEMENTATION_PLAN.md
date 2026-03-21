@@ -4,9 +4,9 @@ Stand: 2026-03-21
 
 ## Notiz
 
-**Letzte Iteration (2026-03-21):** Responsive Verhalten und visuelle Plausibilitaet der Tischansicht verbessert. Drei neue Hilfsfunktionen in `TischSzene.ts`: `berechneKartenGroesse(breite)` skaliert Karten relativ zur Spielbreite (max 82x124px), `berechneKartenAbstand(breite, hoehe)` skaliert Faecherabstaende, `stichSlotPositionen` verwendet jetzt relative Versaetze (15% Hoehe, 10.3% Breite). `renderStichmitte`, `renderKartenFaecher`, `starteFolgeanimationen` und `starteAusteilen` nutzen durchgehend diese Hilfsfunktionen statt hardcodierter Pixel. Rundenende-Modal schliesst jetzt auch per Escape-Taste (Document-Listener) und Backdrop-Klick (prüft event.target === Backdrop); Listener werden in `schliesseRundenEndeModal` und `aufraeumen` sauber entfernt. 2 neue Tests: Escape schliesst Modal, Backdrop-Klick schliesst Modal aber Dialog-Inhalt-Klick nicht.
+**Letzte Iteration (2026-03-21):** Verbindungsabbruch-Handling vollstaendig implementiert (Prioritaet 10, erste Aufgabe). Neue Klassen: `VerbindungsstatusTyp` (Enum: VERBUNDEN/GETRENNT/KI_UEBERNOMMEN), `VerbindungStatusEreignisAntwort` (DTO), `VerbindungsabbruchService` (Disconnect-Tracking, Reconnect-Wiederherstellung, @Scheduled Timeout-Check), `VerbindungsSessionEreignisListener` (SessionConnectedEvent/SessionDisconnectEvent). `SpielerEntity` bekommt `kiUebernommen`-Flag mit `markiereAlsKiUebernommen()`/`hebeKiUebernahmeAuf()`. `KiOrchestrierungService` orchestriert auch Spieler mit `kiUebernommen=true` und setzt das Flag beim Spielwechsel zurueck. `TischEchtzeitService` bekommt `planeTischVerbindungsStatus()`. `@EnableScheduling` in `LocodokoAnwendung`. Reconnect-Timeout (Standard: 120s) und Pruefreconnect-Intervall (Standard: 10s) konfigurierbar. 6 neue Tests in `VerbindungsabbruchServiceTest`. 91 Tests gruen.
 
-**Naechster logischer Schritt:** Backend-Haertung: Verbindungsabbruch-Handling, Session-Cleanup, Concurrency-Absicherung (Prioritaet 10).
+**Naechster logischer Schritt:** Session-Cleanup bei Timeout (Prioritaet 10, naechste Aufgabe): Automatisches Entfernen von Spielern aus aktiven Tischen nach Session-Ablauf.
 
 **Offene Fragen:** jsdom kann Canvas 2D nicht rendern (daher stderr-Warnings in Tests); Texturen werden im Browser korrekt erzeugt. Ein `canvas`-npm-Package koennte die Warnings eliminieren, ist aber nicht kritisch.
 
@@ -146,7 +146,7 @@ Ausgangslage: Backend und Frontend sind funktional weitgehend vollstaendig: Kart
 
 ## Offen - Prioritaet 10: Robustheit und Backend-Haertung
 
-- [ ] Verbindungsabbruch-Handling gemaess `specs/verbindungsabbruch.md`: SessionDisconnectEvent-Listener, Reconnect-Timeout (120s), KI-Uebernahme nach Timeout, Spielzustand-Wiederherstellung bei Reconnect, Status-Meldungen an andere Spieler; aktuell komplett nicht implementiert.
+- [x] Verbindungsabbruch-Handling gemaess `specs/verbindungsabbruch.md`: `VerbindungsSessionEreignisListener` lauscht auf `SessionConnectedEvent`/`SessionDisconnectEvent` und leitet an `VerbindungsabbruchService` weiter; dieser trackt getrennte Sessions in-memory, sendet GETRENNT-/VERBUNDEN-/KI_UEBERNOMMEN-Ereignisse an `/topic/tisch/{id}`, stellt dem reconnectenden Spieler den aktuellen Spielzustand zu, und ein `@Scheduled`-Task prueft alle 10 Sekunden auf abgelaufene Timeouts (Standard: 120 s) und setzt `SpielerEntity.kiUebernommen = true`, bevor die KI-Orchestrierung fuer diesen Spieler ausgeloest wird; beim Spielwechsel wird `kiUebernommen` automatisch zurueckgesetzt damit reconnectete Spieler ihr naechstes Spiel wieder selbst steuern.
 - [ ] Session-Cleanup bei Timeout: Automatisches Entfernen von Spielern aus aktiven Tischen nach Session-Ablauf; aktuell wird nur der HttpSession-Timeout gesetzt, aber kein Cleanup-Mechanismus ausgeloest.
 - [ ] Concurrency-Absicherung in TischService: Optimistic Locking oder Synchronisation fuer gleichzeitige Spielstart-/Beitritts-Requests; aktuell nur @Transactional ohne Lock.
 - [ ] Exception-Hierarchie konsistent machen: `SpielerSessionUngueltigException` hat keinen `fehlerCode`, andere Exceptions schon; alle Exceptions sollten einheitlich Fehler-Codes tragen.

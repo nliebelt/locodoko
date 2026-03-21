@@ -16,6 +16,7 @@ import de.locodoko.spielverwaltung.persistenz.PartieEntity;
 import de.locodoko.spielverwaltung.persistenz.PartieStatus;
 import de.locodoko.spielverwaltung.persistenz.SpielEntity;
 import de.locodoko.spielverwaltung.persistenz.SpielerEntity;
+import de.locodoko.spielverwaltung.persistenz.SpielerRepository;
 import de.locodoko.spielverwaltung.persistenz.TischEntity;
 import org.springframework.stereotype.Service;
 
@@ -29,10 +30,12 @@ public class KiOrchestrierungService {
     private static final int MAXIMALE_KI_AKTIONEN = 512;
 
     private final KiStrategie kiStrategie;
+    private final SpielerRepository spielerRepository;
     private final PunkteRechner punkteRechner = new PunkteRechner();
 
-    public KiOrchestrierungService(KiStrategie kiStrategie) {
+    public KiOrchestrierungService(KiStrategie kiStrategie, SpielerRepository spielerRepository) {
         this.kiStrategie = kiStrategie;
+        this.spielerRepository = spielerRepository;
     }
 
     public void automatisiereTisch(TischEntity tisch) {
@@ -63,7 +66,9 @@ public class KiOrchestrierungService {
                 return;
             }
             SpielerEntity spielerEntity = spielerNachPosition(tisch).get(erwarteterSpieler);
-            if (spielerEntity == null || !spielerEntity.istKi()) {
+            // Normale KI-Spieler oder menschliche Spieler, deren Steuerung nach einem
+            // Verbindungsabbruch an die KI übergeben wurde, werden weiter orchestriert
+            if (spielerEntity == null || (!spielerEntity.istKi() && !spielerEntity.istKiUebernommen())) {
                 return;
             }
             Spiel naechsterStand = fuehreKiAktionAus(laufendesSpiel, erwarteterSpieler);
@@ -117,6 +122,14 @@ public class KiOrchestrierungService {
             partie.markiereAlsBeendet();
             return;
         }
+        // Beim Start eines neuen Spiels: KI-Übernahme für alle Spieler aufheben,
+        // damit reconnectete Spieler wieder selbst spielen können
+        tisch.spieler().stream()
+            .filter(s -> !s.istKi() && s.istKiUebernommen())
+            .forEach(s -> {
+                s.hebeKiUebernahmeAuf();
+                spielerRepository.save(s);
+            });
         Spiel neuesSpiel = Spiel.neu(
             laufendesSpiel.geber().naechsteImUhrzeigersinn(),
             tisch.konfiguration().alsSpielregeln(),

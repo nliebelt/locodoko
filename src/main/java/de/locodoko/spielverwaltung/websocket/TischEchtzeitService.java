@@ -7,6 +7,7 @@ import org.springframework.transaction.support.TransactionSynchronization;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import java.util.List;
+import java.util.UUID;
 
 @Service
 public class TischEchtzeitService {
@@ -35,6 +36,14 @@ public class TischEchtzeitService {
 
     public void planePartieEreignis(PartieEreignisAntwort antwort) {
         planeNachCommit(() -> sendeBroadcast("/topic/partie/" + antwort.partieStand().partieId(), antwort));
+    }
+
+    /**
+     * Sendet einen Verbindungsstatus-Wechsel eines Spielers an alle Abonnenten des Tisch-Topics.
+     * Wird nach Commit gesendet, damit der Datenbankzustand konsistent ist.
+     */
+    public void planeTischVerbindungsStatus(UUID tischId, VerbindungStatusEreignisAntwort ereignis) {
+        planeNachCommit(() -> sendeBroadcast("/topic/tisch/" + tischId, ereignis));
     }
 
     public void sendeAnBenutzer(String benutzer, String ziel, Object payload) {

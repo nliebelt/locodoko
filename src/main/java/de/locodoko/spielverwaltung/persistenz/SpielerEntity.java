@@ -19,6 +19,13 @@ public class SpielerEntity extends AbstraktePersistenzEntity {
     @Column(nullable = false)
     private boolean ki;
 
+    /**
+     * Zeigt an, ob die KI diesen menschlichen Spieler nach einem Verbindungsabbruch übernommen hat.
+     * Wird beim nächsten Spielstart zurückgesetzt.
+     */
+    @Column(nullable = false)
+    private boolean kiUebernommen;
+
     protected SpielerEntity() {
     }
 
@@ -26,6 +33,7 @@ public class SpielerEntity extends AbstraktePersistenzEntity {
         this.name = bereinigeName(name);
         this.sessionId = pruefeSessionId(sessionId, ki);
         this.ki = ki;
+        this.kiUebernommen = false;
     }
 
     public static SpielerEntity menschlich(String name, String sessionId) {
@@ -50,6 +58,21 @@ public class SpielerEntity extends AbstraktePersistenzEntity {
 
     public boolean istKi() {
         return ki;
+    }
+
+    /** Gibt zurück, ob die KI diesen Spieler nach einem Verbindungsabbruch steuert. */
+    public boolean istKiUebernommen() {
+        return kiUebernommen;
+    }
+
+    /** Markiert diesen Spieler als KI-übernommen (nach Reconnect-Timeout). */
+    public void markiereAlsKiUebernommen() {
+        this.kiUebernommen = true;
+    }
+
+    /** Hebt die KI-Übernahme auf — wird beim Spielstart des nächsten Spiels aufgerufen. */
+    public void hebeKiUebernahmeAuf() {
+        this.kiUebernommen = false;
     }
 
     private static String bereinigeName(String name) {
