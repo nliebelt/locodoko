@@ -161,6 +161,9 @@ export class TischSzene extends Phaser.Scene {
 
   private wartendeKartenId: string | null = null;
 
+  // Wird waehrend der Austeilen-Animation auf true gesetzt; Karten werden dann unsichtbar gerendert
+  private austeilenAktiv = false;
+
   constructor() {
     super('TischSzene');
   }
@@ -189,12 +192,18 @@ export class TischSzene extends Phaser.Scene {
     this.abmeldenStore = appStore.abonnieren((zustand) => {
       const modell = this.erstelleModell(zustand);
       const vorherigesModell = this.letztesModell;
+      const vorherigerZustand = this.letzterZustand;
       this.synchronisiereAnimationszustand(modell, zustand);
       this.letzterZustand = zustand;
       this.aktualisiereUi(zustand, modell);
       if (zustand.bereich === 'LOBBY') {
         this.scene.start('LobbySzene');
         return;
+      }
+      // Neues Spiel erkannt: Karten werden unsichtbar gerendert und dann animiert ausgeteilt
+      if (this.ermittleNeuesSpiel(vorherigerZustand, zustand)) {
+        this.austeilenAktiv = true;
+        void this.starteAusteilen(modell, zustand);
       }
       this.renderTisch(zustand, modell);
       void this.starteFolgeanimationen(vorherigesModell, modell);
@@ -754,10 +763,14 @@ export class TischSzene extends Phaser.Scene {
         : offen ? TEXTUR_KARTE_OFFEN : TEXTUR_KARTE_VERDECKT;
       const basisVersatz = istAusgewaehlt ? -24 : 0;
 
+      // Waehrend der Austeilen-Animation werden Karten unsichtbar gerendert (die Animation zeigt sie)
+      const alphaWert = this.austeilenAktiv
+        ? 0
+        : (offen ? (hatInteraktion && karte && !istInteraktiv ? 0.5 : 1) : 0.92);
       const bild = this.add.image(x, y + basisVersatz, textur)
         .setDisplaySize(82, 124)
         .setAngle(winkel)
-        .setAlpha(offen ? (hatInteraktion && karte && !istInteraktiv ? 0.5 : 1) : 0.92);
+        .setAlpha(alphaWert);
       if (istAusgewaehlt) {
         bild.setTint(0xffe082);
       }
@@ -1017,6 +1030,66 @@ export class TischSzene extends Phaser.Scene {
       animierteKarten.forEach((karte) => {
         karte.bild.destroy();
       });
+    }
+  }
+
+  // Erkennt ob ein neues Spiel begonnen hat (andere spielNummer als zuvor)
+  private ermittleNeuesSpiel(vorherigerZustand: AppZustand | undefined, aktuellerZustand: AppZustand): boolean {
+    if (!vorherigerZustand) {
+      return false;
+    }
+    const aktuelleNummer = aktuellerZustand.partieStand?.laufendesSpiel?.spielNummer;
+    if (!aktuelleNummer) {
+      return false;
+    }
+    const vorherigeNummer = vorherigerZustand.partieStand?.laufendesSpiel?.spielNummer;
+    return vorherigeNummer !== aktuelleNummer;
+  }
+
+  // Animiert das Austeilen der Karten: temporaere Bilder gleiten von der Tischmitte zu den Haenden
+  private async starteAusteilen(modell: TischAnsichtModell, zustand: AppZustand): Promise<void> {
+    const breite = this.scale.gameSize.width;
+    const hoehe = this.scale.gameSize.height;
+    const layout = berechneLayout(breite, hoehe);
+    const start = { x: breite / 2, y: hoehe / 2 };
+
+    // Karten-Pakete fuer alle Spieler aufbauen: Startposition (Mitte) und Zielposition (Hand)
+    const pakete: Array<{ kartenobjekte: AnimierbareKartenobjekte; ziel: { x: number; y: number } }> = [];
+    for (const spieler of modell.spieler) {
+      const pos = layout[spieler.position];
+      const sichtbareHandkarten = spieler.sichtbareHandkarten.length > 0 ? spieler.sichtbareHandkarten : undefined;
+      const kartenAnzahl = sichtbareHandkarten?.length ?? Math.max(spieler.verbleibendeKarten, 0);
+
+      for (let index = 0; index < kartenAnzahl; index += 1) {
+        const abstand = (spieler.position === 'SUED' || spieler.position === 'NORD') ? index * 28 : index * 16;
+        const zielX = (spieler.position === 'SUED' || spieler.position === 'NORD') ? pos.kartenX + abstand : pos.kartenX;
+        const zielY = (spieler.position === 'SUED' || spieler.position === 'NORD') ? pos.kartenY : pos.kartenY + abstand;
+        const winkel = spieler.position === 'SUED'
+          ? -12 + index * 3
+          : spieler.position === 'NORD'
+            ? 12 - index * 3
+            : pos.kartenWinkel;
+
+        // Eigene Karten offen austeilen, gegnerische Karten verdeckt
+        const karte = sichtbareHandkarten?.[index];
+        const textur = (spieler.istSelbst && karte)
+          ? texturSchluesselFuerKarte(karte.farbe, karte.wert)
+          : TEXTUR_KARTE_VERDECKT;
+
+        const bild = this.add.image(start.x, start.y, textur)
+          .setDisplaySize(82, 124)
+          .setAngle(winkel);
+        pakete.push({ kartenobjekte: { bild }, ziel: { x: zielX, y: zielY } });
+      }
+    }
+
+    try {
+      await this.animationen?.animiereKartenAusteilen(pakete);
+    } finally {
+      // Temporaere Bilder entfernen und echte Karten sichtbar rendern
+      pakete.forEach((paket) => paket.kartenobjekte.bild.destroy());
+      this.austeilenAktiv = false;
+      this.renderTisch(this.letzterZustand ?? zustand);
     }
   }
 

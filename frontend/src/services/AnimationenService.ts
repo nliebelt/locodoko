@@ -32,6 +32,26 @@ export class AnimationenService {
     await this.tweenZu([kartenobjekte.bild, kartenobjekte.beschriftung].filter(istVorhanden), ziel, dauer);
   }
 
+  async animiereKartenAusteilen(
+    pakete: Array<{ kartenobjekte: AnimierbareKartenobjekte; ziel: Punkt }>,
+    verzoegerungProKarte = 75,
+    dauerProKarte = 75
+  ): Promise<void> {
+    if (pakete.length === 0) {
+      return;
+    }
+    // Karten gestaffelt animieren: jede Karte startet mit leichter Verzoegerung nach der vorherigen
+    const animationen = pakete.map(async (paket, index) => {
+      await this.warte(index * verzoegerungProKarte);
+      await this.tweenZu(
+        [paket.kartenobjekte.bild, paket.kartenobjekte.beschriftung].filter(istVorhanden),
+        paket.ziel,
+        dauerProKarte
+      );
+    });
+    await Promise.all(animationen);
+  }
+
   async animiereStichEinziehen(
     kartenobjekte: AnimierbareKartenobjekte[],
     ziel: Punkt,

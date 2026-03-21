@@ -649,6 +649,51 @@ describe('TischSzene', () => {
     expect(erstesBildNachher.x).toBeGreaterThan(erstesBildVorher.x);
   });
 
+  it('animiert das Kartenausteilen wenn ein neues Spiel beginnt', async () => {
+    // WARUM: Ohne diese Absicherung koennte die Austeilen-Animation heimlich wegbrechen oder
+    // doppelt feuern, weil das Spielstart-Signal (neue spielNummer) subtil und asynchron ist.
+    vi.useFakeTimers();
+    // Szene startet ohne laufendes Spiel
+    const zustandOhneSpiel = baueZustand({ partieStand: bauePartieStand(null) });
+    const { tweens } = baueSzene(zustandOhneSpiel);
+
+    // Neues Spiel mit 2 Karten pro Spieler (4 Spieler = 8 Karten gesamt)
+    const neuesSpiel = baueLaufendesSpiel({
+      spielNummer: 1,
+      phase: 'VORBEHALT_ANSAGE',
+      spieler: [
+        baueSpieler('SUED', 'Anna', {
+          spielerId: 'spieler-1',
+          istKi: false,
+          istSelbst: true,
+          verbleibendeKarten: 2,
+          sichtbareHandkarten: [
+            karte('HERZ-ZEHN-1', 'HERZ', 'ZEHN'),
+            karte('KREUZ-AS-1', 'KREUZ', 'AS')
+          ]
+        }),
+        baueSpieler('WEST', 'Ben', { verbleibendeKarten: 2, sichtbareHandkarten: null }),
+        baueSpieler('NORD', 'Clara', { verbleibendeKarten: 2, sichtbareHandkarten: null }),
+        baueSpieler('OST', 'Dirk', { verbleibendeKarten: 2, sichtbareHandkarten: null })
+      ],
+      spielbareKarten: []
+    });
+    appStoreHarness.setZustand(baueZustand({ partieStand: bauePartieStand(neuesSpiel) }));
+    appStoreHarness.sendeZustand();
+
+    // Animationen laufen asynchron – noch kein Tween synchron ausgeloest
+    expect(tweens.add).toHaveBeenCalledTimes(0);
+
+    await vi.runAllTimersAsync();
+
+    // 4 Spieler * 2 Karten = 8 Tweens; jeder Tween bewegt eine Karte von der Mitte zur Hand
+    expect(tweens.add).toHaveBeenCalledTimes(8);
+    tweens.aufrufe.forEach((aufruf) => {
+      expect(aufruf.duration).toBe(75);
+    });
+    vi.useRealTimers();
+  });
+
   it('animiert einen abgeschlossenen Stich gesammelt zum Gewinner', async () => {
     vi.useFakeTimers();
     const laufendesSpielVorher = baueLaufendesSpiel({
