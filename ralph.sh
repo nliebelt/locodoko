@@ -55,7 +55,6 @@ elif [[ "${1:-}" =~ ^[0-9]+$ ]]; then
 fi
 
 ITERATION=0
-CONTEXT_FILE=".ralph-context.tmp"
 ITER_OUTPUT=".ralph-iter.tmp"
 LOG_FILE="ralph-$(date +%Y%m%d-%H%M%S).log"
 
@@ -88,7 +87,7 @@ if ! command -v claude &>/dev/null; then
     exit 1
 fi
 
-for f in "$PROMPT_FILE" "AGENTS.md"; do
+for f in "$PROMPT_FILE" "CLAUDE.md"; do
     if [ ! -f "$f" ]; then
         echo "FEHLER: $f nicht gefunden"
         exit 1
@@ -106,37 +105,9 @@ if [ ! -d ".git" ]; then
     git commit -m "Initial commit" --allow-empty
 fi
 
-# --- Build context file ---
-# Combines all context into a single prompt for Claude Code.
-# This keeps the primary context deterministic: same files every iteration.
-build_context() {
-    : > "$CONTEXT_FILE"
-
-    echo "=== AGENTS.md ===" >> "$CONTEXT_FILE"
-    cat AGENTS.md >> "$CONTEXT_FILE"
-    echo "" >> "$CONTEXT_FILE"
-
-    echo "=== ANWEISUNGEN ($MODE-Modus) ===" >> "$CONTEXT_FILE"
-    cat "$PROMPT_FILE" >> "$CONTEXT_FILE"
-    echo "" >> "$CONTEXT_FILE"
-
-    if [ -f "IMPLEMENTATION_PLAN.md" ]; then
-        echo "=== IMPLEMENTATION_PLAN.md ===" >> "$CONTEXT_FILE"
-        cat IMPLEMENTATION_PLAN.md >> "$CONTEXT_FILE"
-        echo "" >> "$CONTEXT_FILE"
-    fi
-
-    # List available specs for orientation (not their content — let the agent read them)
-    if [ -d "specs" ] && [ "$(ls -A specs/ 2>/dev/null)" ]; then
-        echo "=== Verfuegbare Spezifikationen ===" >> "$CONTEXT_FILE"
-        ls specs/*.md 2>/dev/null >> "$CONTEXT_FILE" || true
-        echo "" >> "$CONTEXT_FILE"
-    fi
-}
-
 # --- Cleanup on exit ---
 cleanup() {
-    rm -f "$CONTEXT_FILE" "$ITER_OUTPUT"
+    rm -f "$ITER_OUTPUT"
 }
 trap cleanup EXIT
 
@@ -153,16 +124,13 @@ while true; do
     echo "======================== ITERATION $ITERATION / $MAX_ITERATIONS ========================"
     echo ""
 
-    # Fresh context each iteration
-    build_context
-
-    # Run Claude Code iteration
-    # --dangerouslySkipPermissions: appropriate for sandboxed Docker environments —
-    # the container is the security boundary, so pre-approving all tool use is safe.
-    # Output is shown in real-time via tee and captured for signal detection.
-    claude -p "$(cat "$CONTEXT_FILE")
-
-Folge den Anweisungen im angehängten Kontext." \
+    # Run Claude Code iteration.
+    # CLAUDE.md wird von Claude Code automatisch als System-Kontext geladen.
+    # Der Prompt enthält nur die Aufgaben-Anweisungen; IMPLEMENTATION_PLAN.md
+    # und Specs liest Claude selbst via Tools (Read/Agent) — kein pre-Concatenieren nötig.
+    # --dangerously-skip-permissions: für sandboxed Docker-Umgebungen geeignet —
+    # der Container ist die Security-Grenze; alle Tools inkl. Agent laufen ohne Rückfragen.
+    claude -p "$(cat "$PROMPT_FILE")" \
         --model "$EFFECTIVE_MODEL" \
         --dangerously-skip-permissions \
         2>&1 | tee "$ITER_OUTPUT" || true
