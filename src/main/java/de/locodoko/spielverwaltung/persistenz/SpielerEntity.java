@@ -75,6 +75,14 @@ public class SpielerEntity extends AbstraktePersistenzEntity {
         this.kiUebernommen = false;
     }
 
+    /**
+     * Setzt die Session-ID auf null, nachdem die HTTP-Session abgelaufen ist.
+     * Der Spieler kann sich danach mit einer neuen Session neu registrieren.
+     */
+    public void nullifiziereSessionId() {
+        this.sessionId = null;
+    }
+
     private static String bereinigeName(String name) {
         if (name == null) {
             throw new IllegalArgumentException("name darf nicht null sein");

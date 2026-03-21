@@ -202,6 +202,17 @@ public class VerbindungsabbruchService {
         return getrennteSessionen.containsKey(httpSessionId);
     }
 
+    /**
+     * Entfernt eine Session aus dem Disconnect-Tracking.
+     * Wird aufgerufen wenn die HTTP-Session vollständig abgelaufen ist — ein Reconnect ist dann
+     * nicht mehr möglich und der Timer muss nicht weiter laufen.
+     *
+     * @param httpSessionId HTTP-Session-ID der abgelaufenen Session
+     */
+    public void entferneAusTracking(String httpSessionId) {
+        getrennteSessionen.remove(httpSessionId);
+    }
+
     /** Sichtbar für Tests: gibt die konfigurierte Reconnect-Timeout-Dauer in Sekunden zurück. */
     int reconnectTimeoutSekunden() {
         return reconnectTimeoutSekunden;
