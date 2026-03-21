@@ -13,6 +13,7 @@ import {
   erstelleTischAnsichtAusStatus,
   istTrumpfFuerSpieltyp,
   type AnsageAnsicht,
+  type LetztesSpielergebnisAnsicht,
   type TischAnsichtModell,
   type SpielerPosition
 } from '../model/TischAnsichtModell';
@@ -146,6 +147,9 @@ export class TischSzene extends Phaser.Scene {
 
   private toastStack?: HTMLDivElement;
 
+  // Modaler Dialog am Rundenende (bleibt bis Spieler ihn schliesst)
+  private rundenEndeModal?: HTMLDivElement;
+
   private ausgewaehlteArmutKarten = new Set<string>();
 
   private armutAnnahmeAktiv = false;
@@ -210,6 +214,10 @@ export class TischSzene extends Phaser.Scene {
       void this.starteFolgeanimationen(vorherigesModell, modell);
       void this.starteAnsageBannerAnimationen(this.ermittleNeueAnsagen(vorherigesModell, modell));
       void this.starteSonderpunktFeedbackAnimationen(this.ermittleNeueSonderpunkte(vorherigesModell, modell));
+      // Neues Spielergebnis → Rundenende-Modal als modalen Dialog einblenden
+      if (this.erkennteNeuesSpielErgebnis(vorherigesModell, modell) && modell.letztesSpielergebnis) {
+        this.zeigeRundenEndeModal(modell.letztesSpielergebnis);
+      }
       this.letztesModell = modell;
     });
   }
@@ -330,6 +338,11 @@ export class TischSzene extends Phaser.Scene {
     const toastStack = document.createElement('div');
     toastStack.className = 'ui-toast-stack';
 
+    // Rundenende-Modal: initial versteckt, wird bei neuem Spielergebnis eingeblendet
+    const rundenEndeModal = document.createElement('div');
+    rundenEndeModal.className = 'ui-modal-backdrop';
+    rundenEndeModal.hidden = true;
+
     this.panel = links;
     this.statusElement = statusElement;
     this.spielerListe = spielerListe;
@@ -342,7 +355,8 @@ export class TischSzene extends Phaser.Scene {
     this.punktestandListe = punktestandListe;
     this.tischhintergrundSelect = tischhintergrundSelect;
     this.toastStack = toastStack;
-    uiRoot.append(links, rechts, toastStack);
+    this.rundenEndeModal = rundenEndeModal;
+    uiRoot.append(links, rechts, toastStack, rundenEndeModal);
   }
 
   private aktualisiereUi(zustand: AppZustand, modell = this.erstelleModell(zustand)): void {
@@ -1181,6 +1195,87 @@ export class TischSzene extends Phaser.Scene {
         { x: breite / 2, y: hoehe / 2 }
       );
     }
+  }
+
+  // Erkennt ob ein neues Spielergebnis eingetroffen ist (andere spielNummer als zuvor)
+  private erkennteNeuesSpielErgebnis(
+    vorherigesModell: TischAnsichtModell | null,
+    aktuellesModell: TischAnsichtModell
+  ): boolean {
+    const neues = aktuellesModell.letztesSpielergebnis;
+    if (!neues) {
+      return false;
+    }
+    return vorherigesModell?.letztesSpielergebnis?.spielNummer !== neues.spielNummer;
+  }
+
+  // Zeigt das Rundenende-Modal mit Augen, Sonderpunkten und Spielpunkten pro Spieler
+  private zeigeRundenEndeModal(ergebnis: LetztesSpielergebnisAnsicht): void {
+    if (!this.rundenEndeModal) {
+      return;
+    }
+    const dialog = document.createElement('div');
+    dialog.className = 'ui-modal';
+
+    const titel = document.createElement('h2');
+    titel.textContent = `Spiel ${ergebnis.spielNummer} · ${ergebnis.spieltyp}`;
+
+    const untertitel = document.createElement('span');
+    untertitel.className = 'ui-hint';
+    untertitel.textContent = `Sieger: ${ergebnis.siegerPartei} · Spielwert ${ergebnis.spielwert}`;
+
+    const augen = document.createElement('div');
+    augen.className = 'ui-grid ui-grid--two';
+    augen.innerHTML = `
+      <div class="ui-stat-card"><span class="ui-hint">Re</span><strong>${ergebnis.augenRe} Augen</strong></div>
+      <div class="ui-stat-card"><span class="ui-hint">Kontra</span><strong>${ergebnis.augenKontra} Augen</strong></div>
+    `;
+
+    const sonderpunkte = document.createElement('div');
+    sonderpunkte.className = 'ui-list-item ui-list-item--dense';
+    sonderpunkte.innerHTML = `
+      <div class="ui-list-item__headline">
+        <strong>Sonderpunkte</strong>
+        <span class="ui-badge">${ergebnis.siegerPartei}</span>
+      </div>
+      <div class="ui-list-item__meta">
+        <span>Re: ${ergebnis.sonderpunkteRe.length > 0 ? ergebnis.sonderpunkteRe.map(formatiereSonderpunkt).join(', ') : 'Keine'}</span>
+        <span>Kontra: ${ergebnis.sonderpunkteKontra.length > 0 ? ergebnis.sonderpunkteKontra.map(formatiereSonderpunkt).join(', ') : 'Keine'}</span>
+      </div>
+    `;
+
+    const punkteListe = document.createElement('ul');
+    punkteListe.className = 'ui-list ui-list--dense';
+    ergebnis.spielpunkte.forEach((eintrag) => {
+      const li = document.createElement('li');
+      li.className = 'ui-list-item ui-list-item--dense';
+      li.innerHTML = `
+        <div class="ui-list-item__headline">
+          <strong>${eintrag.name}</strong>
+          <span class="ui-badge ${eintrag.position === 'SUED' ? 'ui-badge--highlight' : ''}">${eintrag.position}</span>
+        </div>
+        <div class="ui-list-item__meta">
+          <span>${eintrag.punkte >= 0 ? '+' : ''}${eintrag.punkte} Spielpunkte</span>
+        </div>
+      `;
+      punkteListe.append(li);
+    });
+
+    const schliessenButton = this.erstelleButton('OK · Weiter', () => this.schliesseRundenEndeModal(), false);
+
+    dialog.append(titel, untertitel, augen, sonderpunkte, punkteListe, schliessenButton);
+    this.rundenEndeModal.innerHTML = '';
+    this.rundenEndeModal.append(dialog);
+    this.rundenEndeModal.hidden = false;
+  }
+
+  // Schliesst das Rundenende-Modal (Spieler hat bestätigt)
+  private schliesseRundenEndeModal(): void {
+    if (!this.rundenEndeModal) {
+      return;
+    }
+    this.rundenEndeModal.hidden = true;
+    this.rundenEndeModal.innerHTML = '';
   }
 
   private erstelleSektion(titel: string, beschreibung: string): HTMLDivElement {

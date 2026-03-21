@@ -814,4 +814,99 @@ describe('TischSzene', () => {
     expect(tweens.aufrufe[1].alpha).toBe(0);
     vi.useRealTimers();
   });
+
+  // WARUM: Das Rundenende-Modal ist der primäre Mechanismus um Spielergebnisse nach Rundenende
+  // prominent darzustellen; ohne diese Absicherung koennte das Modal bei State-Updates
+  // heimlich wegfallen und der Spieler das Ergebnis nicht sehen.
+  it('zeigt das Rundenende-Modal wenn ein neues Spielergebnis eintrifft', () => {
+    const zustandOhneErgebnis = baueZustand({
+      partieStand: bauePartieStand(null)
+    });
+    baueSzene(zustandOhneErgebnis);
+
+    const modal = document.querySelector('.ui-modal-backdrop') as HTMLElement;
+    expect(modal).toBeTruthy();
+    expect(modal.hidden).toBe(true);
+
+    appStoreHarness.setZustand(baueZustand({
+      partieStand: {
+        ...bauePartieStand(null),
+        letztesSpielergebnis: {
+          spielNummer: 1,
+          spieltyp: 'NORMALSPIEL',
+          siegerPartei: 'RE',
+          spielwert: 1,
+          augenProPartei: { RE: 130, KONTRA: 110 },
+          spielpunkteProSpieler: { SUED: 1, WEST: -1, NORD: 1, OST: -1 },
+          sonderpunkteProPartei: { RE: ['FUCHS_GEFANGEN'], KONTRA: [] }
+        }
+      }
+    }));
+    appStoreHarness.sendeZustand();
+
+    expect(modal.hidden).toBe(false);
+    expect(modal.querySelector('h2')?.textContent).toBe('Spiel 1 · NORMALSPIEL');
+    expect(modal.querySelector('.ui-modal-backdrop .ui-hint')?.textContent).toBe('Sieger: RE · Spielwert 1');
+  });
+
+  // WARUM: Der Schliessen-Button ist das einzige Mittel fuer den Spieler, das Modal zu
+  // schliessen und weiterzuspielen; faellt er weg, blockiert das Modal den Spielfluss dauerhaft.
+  it('schliesst das Rundenende-Modal wenn OK geklickt wird', () => {
+    const zustandOhneErgebnis = baueZustand({ partieStand: bauePartieStand(null) });
+    baueSzene(zustandOhneErgebnis);
+
+    appStoreHarness.setZustand(baueZustand({
+      partieStand: {
+        ...bauePartieStand(null),
+        letztesSpielergebnis: {
+          spielNummer: 1,
+          spieltyp: 'NORMALSPIEL',
+          siegerPartei: 'KONTRA',
+          spielwert: 2,
+          augenProPartei: { RE: 100, KONTRA: 140 },
+          spielpunkteProSpieler: { SUED: -2, WEST: 2, NORD: -2, OST: 2 },
+          sonderpunkteProPartei: { RE: [], KONTRA: ['KARLCHEN'] }
+        }
+      }
+    }));
+    appStoreHarness.sendeZustand();
+
+    const modal = document.querySelector('.ui-modal-backdrop') as HTMLElement;
+    expect(modal.hidden).toBe(false);
+
+    const okButton = modal.querySelector('button') as HTMLButtonElement;
+    okButton.click();
+
+    expect(modal.hidden).toBe(true);
+  });
+
+  // WARUM: Das Modal darf nicht erneut erscheinen wenn derselbe Spielstand nochmal eintrifft
+  // (z.B. durch Snapshot-Refresh); nur ein neues spielNummer darf es ausloesen.
+  it('zeigt das Rundenende-Modal nicht erneut fuer dasselbe Spielergebnis', () => {
+    const spielergebnis = {
+      spielNummer: 1,
+      spieltyp: 'NORMALSPIEL' as const,
+      siegerPartei: 'RE' as const,
+      spielwert: 1,
+      augenProPartei: { RE: 130, KONTRA: 110 },
+      spielpunkteProSpieler: { SUED: 1, WEST: -1, NORD: 1, OST: -1 },
+      sonderpunkteProPartei: { RE: [], KONTRA: [] }
+    };
+    const zustandMitErgebnis = baueZustand({
+      partieStand: { ...bauePartieStand(null), letztesSpielergebnis: spielergebnis }
+    });
+    baueSzene(zustandMitErgebnis);
+
+    const modal = document.querySelector('.ui-modal-backdrop') as HTMLElement;
+    // Modal beim ersten Update sichtbar
+    expect(modal.hidden).toBe(false);
+    // Schliessen
+    const okButton = modal.querySelector('button') as HTMLButtonElement;
+    okButton.click();
+    expect(modal.hidden).toBe(true);
+
+    // Nochmal denselben Zustand senden — kein erneutes Modal
+    appStoreHarness.sendeZustand();
+    expect(modal.hidden).toBe(true);
+  });
 });
