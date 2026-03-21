@@ -12,12 +12,12 @@ import de.locodoko.spiel.partie.Partei;
 import de.locodoko.spiel.partie.Spielergebnis;
 import de.locodoko.spiel.partie.Spielphase;
 import de.locodoko.spiel.partie.Sonderpunkt;
-import jakarta.persistence.EntityManager;
 import jakarta.validation.ConstraintViolationException;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
+import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.EnumMap;
 import java.util.List;
@@ -28,7 +28,13 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-@DataJpaTest
+/**
+ * Integrationstests fuer die Spring Data JDBC Persistenzschicht.
+ * Prueft, dass Aggregates korrekt gespeichert und wiedergeladen werden.
+ * @Transactional sorgt fuer automatischen Rollback nach jedem Test (Testdaten-Isolation).
+ */
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.NONE)
+@Transactional
 class PersistenzRepositoryTest {
 
     @Autowired
@@ -52,14 +58,12 @@ class PersistenzRepositoryTest {
     @Autowired
     private GespielteKarteRepository gespielteKarteRepository;
 
-    @Autowired
-    private EntityManager entityManager;
-
     @Test
     void persistiertTischMitKonfigurationSpielernPartieUndStichhistorie() {
-        SpielerEntity erstelltVon = SpielerEntity.menschlich("Ada", "session-ada");
-        SpielerEntity gast = SpielerEntity.menschlich("Bert", "session-bert");
-        SpielerEntity ki = SpielerEntity.ki("KI Clara");
+        // Spieler muessen vor dem Tisch gespeichert werden (FK-Constraint: tisch.erstellt_von_spieler_id)
+        SpielerEntity erstelltVon = spielerRepository.saveAndFlush(SpielerEntity.menschlich("Ada", "session-ada"));
+        SpielerEntity gast = spielerRepository.saveAndFlush(SpielerEntity.menschlich("Bert", "session-bert"));
+        SpielerEntity ki = spielerRepository.saveAndFlush(SpielerEntity.ki("KI Clara"));
 
         TischEntity tisch = TischEntity.neu(
             "Abendtisch",
@@ -95,8 +99,8 @@ class PersistenzRepositoryTest {
         tisch.setzePartie(partie);
 
         TischEntity gespeichert = tischRepository.saveAndFlush(tisch);
-        entityManager.clear();
 
+        // Spring Data JDBC liest immer direkt aus der Datenbank — kein Cache-Clear noetig
         TischEntity geladen = tischRepository.findById(gespeichert.id()).orElseThrow();
         assertEquals(TischStatus.IM_SPIEL, geladen.status(),
             "Die Tisch-Persistenz muss den laufenden Status tragen, damit Lobby und Startlogik denselben Wahrheitsstand sehen.");
@@ -154,8 +158,6 @@ class PersistenzRepositoryTest {
         TischEntity gespeichert = tischRepository.saveAndFlush(tisch);
 
         tischRepository.deleteById(gespeichert.id());
-        tischRepository.flush();
-        entityManager.clear();
 
         assertEquals(0, tischRepository.count(),
             "Wenn ein Tisch geloescht wird, darf kein verwaistes Lobby-Aggregat in der Datenbank bleiben.");
@@ -188,9 +190,21 @@ class PersistenzRepositoryTest {
         spielerRepository.saveAndFlush(SpielerEntity.menschlich("Bert", "session-doppelt"));
         spielerRepository.saveAndFlush(SpielerEntity.ki("KI Berta"));
 
-        assertThrows(DataIntegrityViolationException.class,
+        // Spring Data JDBC wirft DbActionExecutionException, die DataIntegrityViolationException kapselt.
+        // Wir pruefen, dass irgendeine RuntimeException mit der richtigen Ursache geworfen wird.
+        RuntimeException ex = assertThrows(RuntimeException.class,
             () -> spielerRepository.saveAndFlush(SpielerEntity.menschlich("Clara", "session-doppelt")),
             "Session-IDs muessen eindeutig bleiben, weil sie die einzige serverseitige Identifikation menschlicher Spieler bilden.");
+        Throwable ursache = ex;
+        boolean hatIntegritaetsverletzung = false;
+        while (ursache != null) {
+            if (ursache instanceof DataIntegrityViolationException) {
+                hatIntegritaetsverletzung = true;
+                break;
+            }
+            ursache = ursache.getCause();
+        }
+        assertTrue(hatIntegritaetsverletzung, "Die Exception muss eine DataIntegrityViolationException kapseln.");
     }
 
     @Test
@@ -201,8 +215,9 @@ class PersistenzRepositoryTest {
 
     @Test
     void persistiertAnsagehistorieAktuelleStichmitteUndHochzeitstatusImLaufendenSpiel() {
-        SpielerEntity erstelltVon = SpielerEntity.menschlich("Ada", "session-laufend");
-        SpielerEntity gast = SpielerEntity.menschlich("Bert", "session-laufend-2");
+        // Spieler muessen vor dem Tisch gespeichert werden (FK-Constraint)
+        SpielerEntity erstelltVon = spielerRepository.saveAndFlush(SpielerEntity.menschlich("Ada", "session-laufend"));
+        SpielerEntity gast = spielerRepository.saveAndFlush(SpielerEntity.menschlich("Bert", "session-laufend-2"));
 
         TischEntity tisch = TischEntity.neu("Laufender Tisch", erstelltVon, TischkonfigurationEmbeddable.standard());
         tisch.fuegeSpielerHinzu(erstelltVon);
@@ -223,8 +238,8 @@ class PersistenzRepositoryTest {
         tisch.setzePartie(partie);
 
         TischEntity gespeichert = tischRepository.saveAndFlush(tisch);
-        entityManager.clear();
 
+        // Spring Data JDBC liest immer direkt aus der DB — kein Cache-Clear noetig
         SpielEntity geladenesSpiel = spielRepository.findAllByPartie_IdOrderBySpielNummerAsc(gespeichert.partie().id()).getFirst();
         assertEquals(1, geladenesSpiel.ansagen().size(),
             "Die Ansagehistorie muss im laufenden Spiel persistiert bleiben, damit Snapshots und Reconnects denselben oeffentlichen Ansagezustand wiederherstellen koennen.");

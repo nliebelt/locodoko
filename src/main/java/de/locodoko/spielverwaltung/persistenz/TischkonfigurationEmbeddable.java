@@ -2,75 +2,49 @@ package de.locodoko.spielverwaltung.persistenz;
 
 import de.locodoko.spiel.karten.Spielregeln;
 import de.locodoko.spielverwaltung.tisch.Tischhintergrund;
-import jakarta.persistence.Column;
-import jakarta.persistence.Embeddable;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
 import jakarta.validation.constraints.AssertTrue;
 import jakarta.validation.constraints.Min;
 
-@Embeddable
+/**
+ * Eingebettete Tischkonfiguration.
+ * Die Felder werden direkt als Spalten in der 'tisch'-Tabelle gespeichert.
+ * Spring Data JDBC unterstuetzt @Embedded nativ ueber das @Embedded-Paket,
+ * hier wird die Konfiguration direkt als Felder in TischEntity eingebettet.
+ * Kein JPA mehr — alle Persistenz-Annotationen entfernt.
+ */
 public class TischkonfigurationEmbeddable {
 
-    @Column(nullable = false)
-    private boolean ohneNeunen = false;
-
     @Min(1)
-    @Column(nullable = false)
     private int anzahlSpiele = 24;
 
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
+    private boolean ohneNeunen = false;
+
     private Tischhintergrund tischhintergrund = Tischhintergrund.FILZ_GRUEN;
 
-    @Column(nullable = false)
     private boolean hochzeitErlaubt = true;
-
-    @Column(nullable = false)
     private boolean armutErlaubt = true;
-
-    @Column(nullable = false)
     private boolean damensoloErlaubt = true;
-
-    @Column(nullable = false)
     private boolean bubensoloErlaubt = true;
-
-    @Column(nullable = false)
     private boolean fleischlosErlaubt = true;
-
-    @Column(nullable = false)
     private boolean trumpfsoloErlaubt = true;
-
-    @Column(nullable = false)
     private boolean zweiteDulleSticht = true;
-
-    @Column(nullable = false)
     private boolean fuchsGefangenAktiv = true;
-
-    @Column(nullable = false)
     private boolean karlchenAktiv = true;
-
-    @Column(nullable = false)
     private boolean doppelkopfAktiv = true;
 
     @Min(1)
-    @Column(nullable = false)
     private int mindestkartenReKontra = 11;
 
     @Min(1)
-    @Column(nullable = false)
     private int mindestkartenKeine90 = 10;
 
     @Min(1)
-    @Column(nullable = false)
     private int mindestkartenKeine60 = 9;
 
     @Min(1)
-    @Column(nullable = false)
     private int mindestkartenKeine30 = 8;
 
     @Min(1)
-    @Column(nullable = false)
     private int mindestkartenSchwarz = 7;
 
     protected TischkonfigurationEmbeddable() {

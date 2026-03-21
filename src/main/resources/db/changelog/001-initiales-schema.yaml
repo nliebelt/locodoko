@@ -1,0 +1,671 @@
+databaseChangeLog:
+  - changeSet:
+      id: 001-spieler
+      author: locodoko
+      changes:
+        - createTable:
+            tableName: spieler
+            columns:
+              - column:
+                  name: id
+                  type: UUID
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: name
+                  type: VARCHAR(255)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: session_id
+                  type: VARCHAR(255)
+                  constraints:
+                    unique: true
+                    nullable: true
+              - column:
+                  name: ki
+                  type: BOOLEAN
+                  defaultValueBoolean: false
+                  constraints:
+                    nullable: false
+              - column:
+                  name: ki_uebernommen
+                  type: BOOLEAN
+                  defaultValueBoolean: false
+                  constraints:
+                    nullable: false
+              - column:
+                  name: erstellt_am
+                  type: TIMESTAMP
+                  constraints:
+                    nullable: false
+              - column:
+                  name: aktualisiert_am
+                  type: TIMESTAMP
+                  constraints:
+                    nullable: false
+
+  - changeSet:
+      id: 001-partie
+      author: locodoko
+      changes:
+        - createTable:
+            tableName: partie
+            columns:
+              - column:
+                  name: id
+                  type: UUID
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: anzahl_spiele
+                  type: INT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: aktuelles_spiel_nummer
+                  type: INT
+                  defaultValueNumeric: 0
+                  constraints:
+                    nullable: false
+              - column:
+                  name: status
+                  type: VARCHAR(50)
+                  constraints:
+                    nullable: false
+              # Gesamtpunktestand direkt als Spalten gespeichert
+              - column:
+                  name: punkte_sued
+                  type: INT
+                  defaultValueNumeric: 0
+                  constraints:
+                    nullable: false
+              - column:
+                  name: punkte_west
+                  type: INT
+                  defaultValueNumeric: 0
+                  constraints:
+                    nullable: false
+              - column:
+                  name: punkte_nord
+                  type: INT
+                  defaultValueNumeric: 0
+                  constraints:
+                    nullable: false
+              - column:
+                  name: punkte_ost
+                  type: INT
+                  defaultValueNumeric: 0
+                  constraints:
+                    nullable: false
+              - column:
+                  name: erstellt_am
+                  type: TIMESTAMP
+                  constraints:
+                    nullable: false
+              - column:
+                  name: aktualisiert_am
+                  type: TIMESTAMP
+                  constraints:
+                    nullable: false
+
+  - changeSet:
+      id: 001-tisch
+      author: locodoko
+      changes:
+        - createTable:
+            tableName: tisch
+            columns:
+              - column:
+                  name: id
+                  type: UUID
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: name
+                  type: VARCHAR(255)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: status
+                  type: VARCHAR(50)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: erstellt_von_spieler_id
+                  type: UUID
+                  constraints:
+                    nullable: false
+                    foreignKeyName: fk_tisch_erstellt_von
+                    references: spieler(id)
+              # Referenz auf die Partie (nullable, kein FK-Constraint wegen zirkulaerer Abhaengigkeit)
+              - column:
+                  name: partie_id
+                  type: UUID
+                  constraints:
+                    nullable: true
+              # Konfiguration (Embedded, direkt als Spalten)
+              - column:
+                  name: ohne_neunen
+                  type: BOOLEAN
+                  defaultValueBoolean: false
+                  constraints:
+                    nullable: false
+              - column:
+                  name: anzahl_spiele
+                  type: INT
+                  defaultValueNumeric: 24
+                  constraints:
+                    nullable: false
+              - column:
+                  name: tischhintergrund
+                  type: VARCHAR(50)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: hochzeit_erlaubt
+                  type: BOOLEAN
+                  defaultValueBoolean: true
+                  constraints:
+                    nullable: false
+              - column:
+                  name: armut_erlaubt
+                  type: BOOLEAN
+                  defaultValueBoolean: true
+                  constraints:
+                    nullable: false
+              - column:
+                  name: damensolo_erlaubt
+                  type: BOOLEAN
+                  defaultValueBoolean: true
+                  constraints:
+                    nullable: false
+              - column:
+                  name: bubensolo_erlaubt
+                  type: BOOLEAN
+                  defaultValueBoolean: true
+                  constraints:
+                    nullable: false
+              - column:
+                  name: fleischlos_erlaubt
+                  type: BOOLEAN
+                  defaultValueBoolean: true
+                  constraints:
+                    nullable: false
+              - column:
+                  name: trumpfsolo_erlaubt
+                  type: BOOLEAN
+                  defaultValueBoolean: true
+                  constraints:
+                    nullable: false
+              - column:
+                  name: zweite_dulle_sticht
+                  type: BOOLEAN
+                  defaultValueBoolean: true
+                  constraints:
+                    nullable: false
+              - column:
+                  name: fuchs_gefangen_aktiv
+                  type: BOOLEAN
+                  defaultValueBoolean: true
+                  constraints:
+                    nullable: false
+              - column:
+                  name: karlchen_aktiv
+                  type: BOOLEAN
+                  defaultValueBoolean: true
+                  constraints:
+                    nullable: false
+              - column:
+                  name: doppelkopf_aktiv
+                  type: BOOLEAN
+                  defaultValueBoolean: true
+                  constraints:
+                    nullable: false
+              - column:
+                  name: mindestkarten_re_kontra
+                  type: INT
+                  defaultValueNumeric: 11
+                  constraints:
+                    nullable: false
+              - column:
+                  name: mindestkarten_keine90
+                  type: INT
+                  defaultValueNumeric: 10
+                  constraints:
+                    nullable: false
+              - column:
+                  name: mindestkarten_keine60
+                  type: INT
+                  defaultValueNumeric: 9
+                  constraints:
+                    nullable: false
+              - column:
+                  name: mindestkarten_keine30
+                  type: INT
+                  defaultValueNumeric: 8
+                  constraints:
+                    nullable: false
+              - column:
+                  name: mindestkarten_schwarz
+                  type: INT
+                  defaultValueNumeric: 7
+                  constraints:
+                    nullable: false
+              - column:
+                  name: erstellt_am
+                  type: TIMESTAMP
+                  constraints:
+                    nullable: false
+              - column:
+                  name: aktualisiert_am
+                  type: TIMESTAMP
+                  constraints:
+                    nullable: false
+
+  - changeSet:
+      id: 001-tisch-spieler
+      author: locodoko
+      changes:
+        - createTable:
+            tableName: tisch_spieler
+            columns:
+              - column:
+                  name: tisch_id
+                  type: UUID
+                  constraints:
+                    nullable: false
+                    foreignKeyName: fk_tisch_spieler_tisch
+                    references: tisch(id)
+                    deleteCascade: true
+              - column:
+                  name: spieler_id
+                  type: UUID
+                  constraints:
+                    nullable: false
+                    foreignKeyName: fk_tisch_spieler_spieler
+                    references: spieler(id)
+              - column:
+                  name: tisch_spieler_key
+                  type: INT
+                  constraints:
+                    nullable: false
+        - addPrimaryKey:
+            tableName: tisch_spieler
+            columnNames: tisch_id, spieler_id
+
+  - changeSet:
+      id: 001-spiel
+      author: locodoko
+      changes:
+        - createTable:
+            tableName: spiel
+            columns:
+              - column:
+                  name: id
+                  type: UUID
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: partie_id
+                  type: UUID
+                  constraints:
+                    nullable: false
+                    foreignKeyName: fk_spiel_partie
+                    references: partie(id)
+                    deleteCascade: true
+              - column:
+                  name: spiel_nummer
+                  type: INT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: geber_position
+                  type: VARCHAR(50)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: spieltyp
+                  type: VARCHAR(50)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: phase
+                  type: VARCHAR(50)
+                  constraints:
+                    nullable: false
+              # JSON-Felder fuer komplexe Listen
+              - column:
+                  name: vorbehalte
+                  type: TEXT
+                  constraints:
+                    nullable: true
+              - column:
+                  name: ansagen
+                  type: TEXT
+                  constraints:
+                    nullable: true
+              - column:
+                  name: aktueller_stich_karten
+                  type: TEXT
+                  constraints:
+                    nullable: true
+              - column:
+                  name: aktueller_stich_aufspieler_position
+                  type: VARCHAR(50)
+                  constraints:
+                    nullable: true
+              # Armut-Status
+              - column:
+                  name: armut_spieler_position
+                  type: VARCHAR(50)
+                  constraints:
+                    nullable: true
+              - column:
+                  name: armut_aktueller_antwort_index
+                  type: INT
+                  defaultValueNumeric: 0
+                  constraints:
+                    nullable: false
+              - column:
+                  name: armut_angebot_abgegeben
+                  type: BOOLEAN
+                  defaultValueBoolean: false
+                  constraints:
+                    nullable: false
+              - column:
+                  name: armut_partner_spieler_position
+                  type: VARCHAR(50)
+                  constraints:
+                    nullable: true
+              - column:
+                  name: armut_angebotene_karten
+                  type: TEXT
+                  constraints:
+                    nullable: true
+              # Hochzeit-Status
+              - column:
+                  name: hochzeit_spieler_position
+                  type: VARCHAR(50)
+                  constraints:
+                    nullable: true
+              - column:
+                  name: hochzeit_geklaerte_stiche
+                  type: INT
+                  defaultValueNumeric: 0
+                  constraints:
+                    nullable: false
+              - column:
+                  name: hochzeit_partner_spieler_position
+                  type: VARCHAR(50)
+                  constraints:
+                    nullable: true
+              - column:
+                  name: hochzeit_stilles_solo
+                  type: BOOLEAN
+                  defaultValueBoolean: false
+                  constraints:
+                    nullable: false
+              # Ergebnis (Embedded als separate Spalten, alle nullable)
+              - column:
+                  name: re_augen
+                  type: INT
+                  constraints:
+                    nullable: true
+              - column:
+                  name: kontra_augen
+                  type: INT
+                  constraints:
+                    nullable: true
+              - column:
+                  name: sieger_partei
+                  type: VARCHAR(50)
+                  constraints:
+                    nullable: true
+              - column:
+                  name: spielwert
+                  type: INT
+                  constraints:
+                    nullable: true
+              - column:
+                  name: spielpunkte_sued
+                  type: INT
+                  constraints:
+                    nullable: true
+              - column:
+                  name: spielpunkte_west
+                  type: INT
+                  constraints:
+                    nullable: true
+              - column:
+                  name: spielpunkte_nord
+                  type: INT
+                  constraints:
+                    nullable: true
+              - column:
+                  name: spielpunkte_ost
+                  type: INT
+                  constraints:
+                    nullable: true
+              - column:
+                  name: erstellt_am
+                  type: TIMESTAMP
+                  constraints:
+                    nullable: false
+              - column:
+                  name: aktualisiert_am
+                  type: TIMESTAMP
+                  constraints:
+                    nullable: false
+
+  - changeSet:
+      id: 001-hand
+      author: locodoko
+      changes:
+        - createTable:
+            tableName: hand
+            columns:
+              - column:
+                  name: id
+                  type: UUID
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: spiel_id
+                  type: UUID
+                  constraints:
+                    nullable: false
+                    foreignKeyName: fk_hand_spiel
+                    references: spiel(id)
+                    deleteCascade: true
+              - column:
+                  name: spieler_position
+                  type: VARCHAR(50)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: karten
+                  type: TEXT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: erstellt_am
+                  type: TIMESTAMP
+                  constraints:
+                    nullable: false
+              - column:
+                  name: aktualisiert_am
+                  type: TIMESTAMP
+                  constraints:
+                    nullable: false
+
+  - changeSet:
+      id: 001-stich
+      author: locodoko
+      changes:
+        - createTable:
+            tableName: stich
+            columns:
+              - column:
+                  name: id
+                  type: UUID
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: spiel_id
+                  type: UUID
+                  constraints:
+                    nullable: false
+                    foreignKeyName: fk_stich_spiel
+                    references: spiel(id)
+                    deleteCascade: true
+              - column:
+                  name: stich_nummer
+                  type: INT
+                  constraints:
+                    nullable: false
+              # Schluessel fuer @MappedCollection (Spring Data JDBC interne Sortierung)
+              - column:
+                  name: stich_key
+                  type: INT
+                  defaultValueNumeric: 0
+                  constraints:
+                    nullable: false
+              - column:
+                  name: aufspieler_position
+                  type: VARCHAR(50)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: gewinner_position
+                  type: VARCHAR(50)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: augen
+                  type: INT
+                  defaultValueNumeric: 0
+                  constraints:
+                    nullable: false
+              - column:
+                  name: erstellt_am
+                  type: TIMESTAMP
+                  constraints:
+                    nullable: false
+              - column:
+                  name: aktualisiert_am
+                  type: TIMESTAMP
+                  constraints:
+                    nullable: false
+
+  - changeSet:
+      id: 001-gespielte-karte
+      author: locodoko
+      changes:
+        - createTable:
+            tableName: gespielte_karte
+            columns:
+              - column:
+                  name: id
+                  type: UUID
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: stich_id
+                  type: UUID
+                  constraints:
+                    nullable: false
+                    foreignKeyName: fk_gespielte_karte_stich
+                    references: stich(id)
+                    deleteCascade: true
+              - column:
+                  name: spieler_position
+                  type: VARCHAR(50)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: farbe
+                  type: VARCHAR(50)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: wert
+                  type: VARCHAR(50)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: exemplar_index
+                  type: INT
+                  defaultValueNumeric: 0
+                  constraints:
+                    nullable: false
+              - column:
+                  name: reihenfolge
+                  type: INT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: erstellt_am
+                  type: TIMESTAMP
+                  constraints:
+                    nullable: false
+              - column:
+                  name: aktualisiert_am
+                  type: TIMESTAMP
+                  constraints:
+                    nullable: false
+
+  - changeSet:
+      id: 001-spiel-sonderpunkt
+      author: locodoko
+      changes:
+        - createTable:
+            tableName: spiel_sonderpunkt
+            columns:
+              - column:
+                  name: id
+                  type: UUID
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: spiel_id
+                  type: UUID
+                  constraints:
+                    nullable: false
+                    foreignKeyName: fk_sonderpunkt_spiel
+                    references: spiel(id)
+                    deleteCascade: true
+              - column:
+                  name: partei
+                  type: VARCHAR(50)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: sonderpunkt
+                  type: VARCHAR(50)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: spiel_key
+                  type: INT
+                  defaultValueNumeric: 0
+                  constraints:
+                    nullable: false
+              - column:
+                  name: erstellt_am
+                  type: TIMESTAMP
+                  constraints:
+                    nullable: false
+              - column:
+                  name: aktualisiert_am
+                  type: TIMESTAMP
+                  constraints:
+                    nullable: false

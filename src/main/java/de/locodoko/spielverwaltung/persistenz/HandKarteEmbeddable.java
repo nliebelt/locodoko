@@ -1,31 +1,28 @@
 package de.locodoko.spielverwaltung.persistenz;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import de.locodoko.spiel.karten.Farbe;
 import de.locodoko.spiel.karten.Karte;
 import de.locodoko.spiel.karten.Kartenwert;
-import jakarta.persistence.Column;
-import jakarta.persistence.Embeddable;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
 
-@Embeddable
+/**
+ * Repraesentiert eine Karte in einer Spielerhand.
+ * Wird als Teil einer JSON-Liste in der Spalte 'karten' von HandEntity gespeichert.
+ * Keine JPA-Annotationen — wird per Jackson serialisiert/deserialisiert.
+ */
 public class HandKarteEmbeddable {
 
-    @Enumerated(EnumType.STRING)
-    @Column(name = "farbe", nullable = false)
-    private Farbe farbe;
+    private final Farbe farbe;
+    private final Kartenwert wert;
+    private final int exemplarIndex;
 
-    @Enumerated(EnumType.STRING)
-    @Column(name = "wert", nullable = false)
-    private Kartenwert wert;
-
-    @Column(name = "exemplar_index", nullable = false)
-    private int exemplarIndex;
-
-    protected HandKarteEmbeddable() {
-    }
-
-    private HandKarteEmbeddable(Farbe farbe, Kartenwert wert, int exemplarIndex) {
+    @JsonCreator
+    public HandKarteEmbeddable(
+        @JsonProperty("farbe") Farbe farbe,
+        @JsonProperty("wert") Kartenwert wert,
+        @JsonProperty("exemplarIndex") int exemplarIndex
+    ) {
         this.farbe = farbe;
         this.wert = wert;
         this.exemplarIndex = exemplarIndex;
@@ -35,14 +32,17 @@ public class HandKarteEmbeddable {
         return new HandKarteEmbeddable(karte.farbe(), karte.wert(), karte.exemplarIndex());
     }
 
+    @JsonProperty("farbe")
     public Farbe farbe() {
         return farbe;
     }
 
+    @JsonProperty("wert")
     public Kartenwert wert() {
         return wert;
     }
 
+    @JsonProperty("exemplarIndex")
     public int exemplarIndex() {
         return exemplarIndex;
     }

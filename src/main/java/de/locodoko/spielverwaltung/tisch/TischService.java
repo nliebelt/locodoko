@@ -318,12 +318,16 @@ public class TischService {
     }
 
     private PartieEntity ladePartieEntity(UUID partieId) {
-        PartieEntity partie = partieRepository.findById(partieId)
-            .orElseThrow(() -> new SpielverwaltungNichtGefundenException(
-                "PARTIE_NICHT_GEFUNDEN",
-                "Es wurde keine Partie mit der ID " + partieId + " gefunden."
-            ));
-        return partie;
+        // Ueber TischRepository laden, damit befuelleTransienteFelder() ausgefuehrt wird
+        // und PartieEntity.tisch() das transiente Tisch-Objekt mit Spielerliste enthaelt.
+        // Das ist notwendig fuer PartieStandAntwort, die tisch.spieler() aufruft.
+        return tischRepository.findByPartieId(partieId)
+            .map(TischEntity::partie)
+            .orElseGet(() -> partieRepository.findById(partieId)
+                .orElseThrow(() -> new SpielverwaltungNichtGefundenException(
+                    "PARTIE_NICHT_GEFUNDEN",
+                    "Es wurde keine Partie mit der ID " + partieId + " gefunden."
+                )));
     }
 
     @Transactional(readOnly = true)

@@ -1,62 +1,63 @@
 package de.locodoko.spielverwaltung.persistenz;
 
-import jakarta.persistence.CascadeType;
-import jakarta.persistence.Column;
-import jakarta.persistence.Embedded;
-import jakarta.persistence.Entity;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
-import jakarta.persistence.FetchType;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.JoinTable;
-import jakarta.persistence.ManyToOne;
-import jakarta.persistence.OneToMany;
-import jakarta.persistence.OneToOne;
-import jakarta.persistence.OrderColumn;
-import jakarta.persistence.Table;
+import de.locodoko.spielverwaltung.tisch.Tischhintergrund;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.Size;
+import org.springframework.data.annotation.Transient;
+import org.springframework.data.relational.core.mapping.Column;
+import org.springframework.data.relational.core.mapping.Embedded;
+import org.springframework.data.relational.core.mapping.MappedCollection;
+import org.springframework.data.relational.core.mapping.Table;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import java.util.UUID;
 
-@Entity
-@Table(name = "tisch")
+/**
+ * Persistenz-Entity fuer einen Spieltisch.
+ * Standalone Aggregate Root.
+ * Referenziert SpielerEntity via Join-Tabelle (TischSpielerRelation).
+ * Referenziert PartieEntity via UUID (partieId).
+ * Konfiguration wird direkt als Spalten eingebettet.
+ */
+@Table("tisch")
 public class TischEntity extends AbstraktePersistenzEntity {
 
     @NotBlank
-    @Column(nullable = false)
+    @Column("name")
     private String name;
 
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
-    private TischStatus status;
+    @Column("status")
+    private String status;
 
+    /** Konfiguration direkt als Spalten eingebettet. Bean-Validierung kaskadiert via @Valid. */
     @Valid
-    @Embedded
+    @Embedded.Nullable
     private TischkonfigurationEmbeddable konfiguration;
 
-    @Valid
-    @ManyToOne(fetch = FetchType.LAZY, cascade = {CascadeType.PERSIST, CascadeType.MERGE})
-    @JoinColumn(name = "erstellt_von_spieler_id", nullable = false)
+    /** Fremdschluessel auf den erstellenden Spieler. */
+    @Column("erstellt_von_spieler_id")
+    private UUID erstelltVonSpielerId;
+
+    /** Fremdschluessel auf die Partie (nullable, solange kein Spiel laeuft). */
+    @Column("partie_id")
+    private UUID partieId;
+
+    /** Join-Tabellen-Eintraege fuer die Spieler am Tisch. */
+    @MappedCollection(idColumn = "tisch_id", keyColumn = "tisch_spieler_key")
+    private List<TischSpielerRelation> spielerRelationen = new ArrayList<>();
+
+    /** Transiente Rueckreferenz: erstellender Spieler (wird in-memory gesetzt). */
+    @Transient
     private SpielerEntity erstelltVon;
 
-    @Valid
-    @Size(max = 4)
-    @OneToMany(cascade = {CascadeType.PERSIST, CascadeType.MERGE}, fetch = FetchType.LAZY)
-    @JoinTable(
-        name = "tisch_spieler",
-        joinColumns = @JoinColumn(name = "tisch_id"),
-        inverseJoinColumns = @JoinColumn(name = "spieler_id", unique = true)
-    )
-    @OrderColumn(name = "sitz_reihenfolge")
+    /** Transiente Liste der Spieler-Objekte (wird nach dem Laden befuellt). */
+    @Transient
     private List<SpielerEntity> spieler = new ArrayList<>();
 
-    @Valid
-    @OneToOne(cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
-    @JoinColumn(name = "partie_id")
+    /** Transiente Partie-Referenz (wird in-memory gesetzt). */
+    @Transient
     private PartieEntity partie;
 
     protected TischEntity() {
@@ -65,8 +66,9 @@ public class TischEntity extends AbstraktePersistenzEntity {
     private TischEntity(String name, SpielerEntity erstelltVon, TischkonfigurationEmbeddable konfiguration) {
         this.name = Objects.requireNonNull(name, "name darf nicht null sein");
         this.erstelltVon = Objects.requireNonNull(erstelltVon, "erstelltVon darf nicht null sein");
+        this.erstelltVonSpielerId = erstelltVon.id();
         this.konfiguration = Objects.requireNonNull(konfiguration, "konfiguration darf nicht null sein");
-        this.status = TischStatus.WARTEND;
+        this.status = TischStatus.WARTEND.name();
     }
 
     public static TischEntity neu(String name, SpielerEntity erstelltVon, TischkonfigurationEmbeddable konfiguration) {
@@ -82,11 +84,13 @@ public class TischEntity extends AbstraktePersistenzEntity {
             return;
         }
         spieler.add(spielerEntity);
+        spielerRelationen.add(new TischSpielerRelation(spielerEntity.id()));
     }
 
     public void entferneSpieler(SpielerEntity spielerEntity) {
         Objects.requireNonNull(spielerEntity, "spieler darf nicht null sein");
         spieler.removeIf(vorhandenerSpieler -> gleicherSpieler(vorhandenerSpieler, spielerEntity));
+        spielerRelationen.removeIf(relation -> Objects.equals(relation.spielerId(), spielerEntity.id()));
     }
 
     public boolean enthaeltSpieler(SpielerEntity spielerEntity) {
@@ -104,12 +108,54 @@ public class TischEntity extends AbstraktePersistenzEntity {
 
     public void setzeErstelltVon(SpielerEntity erstelltVon) {
         this.erstelltVon = Objects.requireNonNull(erstelltVon, "erstelltVon darf nicht null sein");
+        this.erstelltVonSpielerId = erstelltVon.id();
     }
 
     public void setzePartie(PartieEntity partie) {
         this.partie = Objects.requireNonNull(partie, "partie darf nicht null sein");
+        this.partieId = partie.id();
         partie.setzeTisch(this);
-        this.status = TischStatus.IM_SPIEL;
+        this.status = TischStatus.IM_SPIEL.name();
+    }
+
+    /**
+     * Setzt die transiente Partie-Referenz ohne den Status zu aendern
+     * (wird beim Laden aus der Datenbank verwendet).
+     */
+    void setzePartieTransient(PartieEntity partie) {
+        this.partie = partie;
+        if (partie != null) {
+            this.partieId = partie.id();
+            partie.setzeTisch(this);
+        }
+    }
+
+    /**
+     * Befuellt die transiente Spielerliste aus den geladenen Spieler-Objekten.
+     * Wird nach dem Laden aus der Datenbank aufgerufen.
+     */
+    void setzeSpielerListe(List<SpielerEntity> spielerListe) {
+        this.spieler = new ArrayList<>(spielerListe);
+    }
+
+    /**
+     * Befuellt die transiente erstelltVon-Referenz.
+     * Wird nach dem Laden aus der Datenbank aufgerufen.
+     */
+    void setzeErstelltVonTransient(SpielerEntity erstelltVon) {
+        this.erstelltVon = erstelltVon;
+    }
+
+    public UUID erstelltVonSpielerId() {
+        return erstelltVonSpielerId;
+    }
+
+    public UUID partieId() {
+        return partieId;
+    }
+
+    public List<TischSpielerRelation> spielerRelationen() {
+        return List.copyOf(spielerRelationen);
     }
 
     public String name() {
@@ -117,7 +163,7 @@ public class TischEntity extends AbstraktePersistenzEntity {
     }
 
     public TischStatus status() {
-        return status;
+        return TischStatus.valueOf(status);
     }
 
     public TischkonfigurationEmbeddable konfiguration() {

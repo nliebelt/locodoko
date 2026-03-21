@@ -1,60 +1,55 @@
 package de.locodoko.spielverwaltung.persistenz;
 
 import de.locodoko.spiel.karten.SpielerPosition;
-import jakarta.persistence.CascadeType;
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
-import jakarta.persistence.FetchType;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.ManyToOne;
-import jakarta.persistence.OneToMany;
-import jakarta.persistence.OrderBy;
-import jakarta.persistence.Table;
-import jakarta.validation.Valid;
-import jakarta.validation.constraints.Min;
+import org.springframework.data.annotation.Transient;
+import org.springframework.data.relational.core.mapping.Column;
+import org.springframework.data.relational.core.mapping.MappedCollection;
+import org.springframework.data.relational.core.mapping.Table;
 
-import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 
-@Entity
-@Table(name = "stich")
+/**
+ * Persistenz-Entity fuer einen abgeschlossenen Stich.
+ * Owned by SpielEntity via @MappedCollection.
+ * Besitzt GespielteKarteEntity-Eintraege via @MappedCollection (Map nach reihenfolge).
+ */
+@Table("stich")
 public class StichEntity extends AbstraktePersistenzEntity {
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "spiel_id", nullable = false)
-    private SpielEntity spiel;
+    @Column("aufspieler_position")
+    private String aufspielerPosition;
 
-    @Min(1)
-    @Column(nullable = false)
-    private int stichNummer;
+    @Column("gewinner_position")
+    private String gewinnerPosition;
 
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
-    private SpielerPosition aufspielerPosition;
-
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
-    private SpielerPosition gewinnerPosition;
-
-    @Min(0)
-    @Column(nullable = false)
+    @Column("augen")
     private int augen;
 
-    @Valid
-    @OneToMany(mappedBy = "stich", cascade = CascadeType.ALL, orphanRemoval = true)
-    @OrderBy("reihenfolge ASC")
-    private List<GespielteKarteEntity> gespielteKarten = new ArrayList<>();
+    @Column("stich_nummer")
+    private int stichNummer;
+
+    /**
+     * Gespielte Karten: Owned by diesem Stich.
+     * Map-Key = reihenfolge (0-basiert), wird in der reihenfolge-Spalte gespeichert.
+     * Das reihenfolge-Feld wird NICHT in GespielteKarteEntity gespeichert (keyColumn uebernimmt das).
+     */
+    @MappedCollection(idColumn = "stich_id", keyColumn = "reihenfolge")
+    private Map<Integer, GespielteKarteEntity> gespielteKartenMap = new LinkedHashMap<>();
+
+    /** Rueckreferenz auf das Spiel (transient, wird in-memory gesetzt). */
+    @Transient
+    private SpielEntity spiel;
 
     protected StichEntity() {
     }
 
     private StichEntity(int stichNummer, SpielerPosition aufspielerPosition, SpielerPosition gewinnerPosition, int augen) {
         this.stichNummer = stichNummer;
-        this.aufspielerPosition = Objects.requireNonNull(aufspielerPosition, "aufspielerPosition darf nicht null sein");
-        this.gewinnerPosition = Objects.requireNonNull(gewinnerPosition, "gewinnerPosition darf nicht null sein");
+        this.aufspielerPosition = Objects.requireNonNull(aufspielerPosition, "aufspielerPosition darf nicht null sein").name();
+        this.gewinnerPosition = Objects.requireNonNull(gewinnerPosition, "gewinnerPosition darf nicht null sein").name();
         this.augen = augen;
     }
 
@@ -68,8 +63,8 @@ public class StichEntity extends AbstraktePersistenzEntity {
 
     public void fuegeGespielteKarteHinzu(GespielteKarteEntity karte) {
         Objects.requireNonNull(karte, "karte darf nicht null sein");
-        gespielteKarten.add(karte);
-        karte.setzeStich(this);
+        // Map-Key = reihenfolge der Karte
+        gespielteKartenMap.put(karte.reihenfolge(), karte);
     }
 
     public SpielEntity spiel() {
@@ -81,11 +76,11 @@ public class StichEntity extends AbstraktePersistenzEntity {
     }
 
     public SpielerPosition aufspielerPosition() {
-        return aufspielerPosition;
+        return SpielerPosition.valueOf(aufspielerPosition);
     }
 
     public SpielerPosition gewinnerPosition() {
-        return gewinnerPosition;
+        return SpielerPosition.valueOf(gewinnerPosition);
     }
 
     public int augen() {
@@ -93,6 +88,11 @@ public class StichEntity extends AbstraktePersistenzEntity {
     }
 
     public List<GespielteKarteEntity> gespielteKarten() {
-        return List.copyOf(gespielteKarten);
+        // Sortiert nach reihenfolge (Map-Key), transientes Reihenfolge-Feld aus Map-Key setzen
+        return gespielteKartenMap.entrySet().stream()
+            .sorted(Map.Entry.comparingByKey())
+            .peek(eintrag -> eintrag.getValue().setzeReihenfolge(eintrag.getKey()))
+            .map(Map.Entry::getValue)
+            .toList();
     }
 }

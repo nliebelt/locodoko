@@ -1,142 +1,156 @@
 package de.locodoko.spielverwaltung.persistenz;
 
+import com.fasterxml.jackson.core.type.TypeReference;
 import de.locodoko.spiel.karten.SpielerPosition;
 import de.locodoko.spiel.karten.Spieltyp;
-import de.locodoko.spiel.partie.VorbehaltAnsage;
 import de.locodoko.spiel.partie.Partei;
 import de.locodoko.spiel.partie.Spielergebnis;
 import de.locodoko.spiel.partie.Spielphase;
 import de.locodoko.spiel.partie.Sonderpunkt;
-import jakarta.persistence.CascadeType;
-import jakarta.persistence.Column;
-import jakarta.persistence.CollectionTable;
-import jakarta.persistence.ElementCollection;
-import jakarta.persistence.Embedded;
-import jakarta.persistence.Entity;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
-import jakarta.persistence.FetchType;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.OrderColumn;
-import jakarta.persistence.ManyToOne;
-import jakarta.persistence.OneToMany;
-import jakarta.persistence.OrderBy;
-import jakarta.persistence.Table;
-import jakarta.validation.Valid;
-import jakarta.validation.constraints.Min;
+import org.springframework.data.annotation.Transient;
+import org.springframework.data.relational.core.mapping.Column;
+import org.springframework.data.relational.core.mapping.MappedCollection;
+import org.springframework.data.relational.core.mapping.Table;
 
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
-@Entity
-@Table(name = "spiel")
+/**
+ * Persistenz-Entity fuer ein einzelnes Doppelkopfspiel.
+ * Owned by PartieEntity via @MappedCollection.
+ * Besitzt HandEntity (Map nach spieler_position), StichEntity (Map nach stich_nummer)
+ * und SpielSonderpunktEntity via @MappedCollection.
+ * Komplexe Listen (vorbehalte, ansagen, etc.) werden als JSON-Text gespeichert.
+ */
+@Table("spiel")
 public class SpielEntity extends AbstraktePersistenzEntity {
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "partie_id", nullable = false)
-    private PartieEntity partie;
-
-    @Min(1)
-    @Column(nullable = false)
+    /**
+     * Spielnummer (transient).
+     * Wird vom @MappedCollection keyColumn in PartieEntity verwaltet.
+     * Wird nach dem Laden durch PartieEntity.spiele() aus dem Map-Key gesetzt.
+     */
+    @Transient
     private int spielNummer;
 
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
-    private SpielerPosition geberPosition;
+    @Column("geber_position")
+    private String geberPosition;
 
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
-    private Spieltyp spieltyp;
+    @Column("spieltyp")
+    private String spieltyp;
 
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
-    private Spielphase phase;
+    @Column("phase")
+    private String phase;
 
-    @Valid
-    @ElementCollection(fetch = FetchType.LAZY)
-    @CollectionTable(name = "spiel_vorbehalt", joinColumns = @JoinColumn(name = "spiel_id"))
-    @OrderColumn(name = "vorbehalt_index")
-    private List<VorbehaltMeldungEmbeddable> vorbehalte = new ArrayList<>();
+    /** Vorbehalt-Meldungen als JSON-Array. */
+    @Column("vorbehalte")
+    private String vorbehalteJson;
 
-    @Valid
-    @ElementCollection(fetch = FetchType.LAZY)
-    @CollectionTable(name = "spiel_ansage", joinColumns = @JoinColumn(name = "spiel_id"))
-    @OrderColumn(name = "ansage_index")
-    private List<AnsageEreignisEmbeddable> ansagen = new ArrayList<>();
+    /** Ansage-Ereignisse als JSON-Array. */
+    @Column("ansagen")
+    private String ansagenJson;
 
-    @Valid
-    @Embedded
-    private SpielErgebnisEmbeddable ergebnis;
+    /** Armut-Status */
+    @Column("armut_spieler_position")
+    private String armutSpielerPosition;
 
-    @Enumerated(EnumType.STRING)
-    @Column
-    private SpielerPosition armutSpielerPosition;
-
-    @Column(nullable = false)
+    @Column("armut_aktueller_antwort_index")
     private int armutAktuellerAntwortIndex;
 
-    @Column(nullable = false)
+    @Column("armut_angebot_abgegeben")
     private boolean armutAngebotAbgegeben;
 
-    @Enumerated(EnumType.STRING)
-    @Column
-    private SpielerPosition armutPartnerSpielerPosition;
+    @Column("armut_partner_spieler_position")
+    private String armutPartnerSpielerPosition;
 
-    @Valid
-    @ElementCollection(fetch = FetchType.LAZY)
-    @CollectionTable(name = "spiel_armut_angebot", joinColumns = @JoinColumn(name = "spiel_id"))
-    @OrderColumn(name = "angebot_index")
-    private List<HandKarteEmbeddable> armutAngeboteneKarten = new ArrayList<>();
+    /** Angebotene Armut-Karten als JSON-Array. */
+    @Column("armut_angebotene_karten")
+    private String armutAngeboteneKartenJson;
 
-    @Enumerated(EnumType.STRING)
-    @Column
-    private SpielerPosition hochzeitSpielerPosition;
+    /** Hochzeit-Status */
+    @Column("hochzeit_spieler_position")
+    private String hochzeitSpielerPosition;
 
-    @Column(nullable = false)
+    @Column("hochzeit_geklaerte_stiche")
     private int hochzeitGeklaerteStiche;
 
-    @Enumerated(EnumType.STRING)
-    @Column
-    private SpielerPosition hochzeitPartnerSpielerPosition;
+    @Column("hochzeit_partner_spieler_position")
+    private String hochzeitPartnerSpielerPosition;
 
-    @Column(nullable = false)
+    @Column("hochzeit_stilles_solo")
     private boolean hochzeitStillesSolo;
 
-    @Valid
-    @OneToMany(mappedBy = "spiel", cascade = CascadeType.ALL, orphanRemoval = true)
-    @OrderBy("spielerPosition ASC")
-    private List<HandEntity> haende = new ArrayList<>();
+    /** Aktueller Stich */
+    @Column("aktueller_stich_aufspieler_position")
+    private String aktuellerStichAufspielerPosition;
 
-    @Enumerated(EnumType.STRING)
-    @Column
-    private SpielerPosition aktuellerStichAufspielerPosition;
+    /** Karten des aktuellen Stichs als JSON-Array. */
+    @Column("aktueller_stich_karten")
+    private String aktuellerStichKartenJson;
 
-    @Valid
-    @ElementCollection(fetch = FetchType.LAZY)
-    @CollectionTable(name = "spiel_aktueller_stich_karte", joinColumns = @JoinColumn(name = "spiel_id"))
-    @OrderColumn(name = "karte_index")
-    private List<AktuellerStichKarteEmbeddable> aktuellerStichKarten = new ArrayList<>();
+    /** Spielergebnis (eingebettet als Spalten, nullable). */
+    @Column("re_augen")
+    private Integer reAugen;
 
-    @Valid
-    @OneToMany(mappedBy = "spiel", cascade = CascadeType.ALL, orphanRemoval = true)
-    @OrderBy("stichNummer ASC")
-    private List<StichEntity> stiche = new ArrayList<>();
+    @Column("kontra_augen")
+    private Integer kontraAugen;
 
-    @Valid
-    @OneToMany(mappedBy = "spiel", cascade = CascadeType.ALL, orphanRemoval = true)
-    @OrderBy("partei ASC, sonderpunkt ASC")
+    @Column("sieger_partei")
+    private String siegerPartei;
+
+    @Column("spielwert")
+    private Integer spielwert;
+
+    @Column("spielpunkte_sued")
+    private Integer spielpunkteSued;
+
+    @Column("spielpunkte_west")
+    private Integer spielpunkteWest;
+
+    @Column("spielpunkte_nord")
+    private Integer spielpunkteNord;
+
+    @Column("spielpunkte_ost")
+    private Integer spielpunkteOst;
+
+    /**
+     * Haende der Spieler: Owned by diesem Spiel.
+     * Schluessel = spieler_position (String) — passt zum String-Typ der Spalte.
+     */
+    @MappedCollection(idColumn = "spiel_id", keyColumn = "spieler_position")
+    private Map<String, HandEntity> haendeMap = new LinkedHashMap<>();
+
+    /**
+     * Abgeschlossene Stiche: Owned by diesem Spiel.
+     * Schluessel = stich_key (Integer, 0-basierter Index fuer Spring Data JDBC).
+     * Die fachliche Stichnummer ist in StichEntity.stichNummer gespeichert.
+     */
+    @MappedCollection(idColumn = "spiel_id", keyColumn = "stich_key")
+    private Map<Integer, StichEntity> sticheMap = new LinkedHashMap<>();
+
+    /**
+     * Sonderpunkte: Owned by diesem Spiel.
+     * spiel_key ist der 0-basierte Listenindex, den Spring Data JDBC verwaltet.
+     */
+    @MappedCollection(idColumn = "spiel_id", keyColumn = "spiel_key")
     private List<SpielSonderpunktEntity> sonderpunkte = new ArrayList<>();
+
+    /** Rueckreferenz auf die Partie (transient, wird in-memory gesetzt). */
+    @Transient
+    private PartieEntity partie;
 
     protected SpielEntity() {
     }
 
     private SpielEntity(int spielNummer, SpielerPosition geberPosition, Spieltyp spieltyp, Spielphase phase) {
+        // spielNummer ist @Transient — wird in PartieEntity.fuegeSpielHinzu als Map-Key gesetzt
         this.spielNummer = spielNummer;
-        this.geberPosition = Objects.requireNonNull(geberPosition, "geberPosition darf nicht null sein");
-        this.spieltyp = Objects.requireNonNull(spieltyp, "spieltyp darf nicht null sein");
-        this.phase = Objects.requireNonNull(phase, "phase darf nicht null sein");
+        this.geberPosition = Objects.requireNonNull(geberPosition, "geberPosition darf nicht null sein").name();
+        this.spieltyp = Objects.requireNonNull(spieltyp, "spieltyp darf nicht null sein").name();
+        this.phase = Objects.requireNonNull(phase, "phase darf nicht null sein").name();
     }
 
     public static SpielEntity neu(int spielNummer, SpielerPosition geberPosition, Spieltyp spieltyp, Spielphase phase) {
@@ -147,64 +161,87 @@ public class SpielEntity extends AbstraktePersistenzEntity {
         this.partie = partie;
     }
 
+    /** Setzt die Spielnummer (wird nach dem Laden aus dem Map-Key gesetzt). */
+    void setzeSpielNummer(int spielNummer) {
+        this.spielNummer = spielNummer;
+    }
+
     public void fuegeHandHinzu(HandEntity hand) {
         Objects.requireNonNull(hand, "hand darf nicht null sein");
-        haende.add(hand);
+        String posName = hand.spielerPosition().name();
+        haendeMap.put(posName, hand);
+        hand.setzeSpielerPosition(posName);
         hand.setzeSpiel(this);
     }
 
     public void ersetzeHaende(List<HandEntity> neueHaende) {
         Objects.requireNonNull(neueHaende, "neueHaende duerfen nicht null sein");
-        haende.clear();
+        haendeMap.clear();
         neueHaende.forEach(this::fuegeHandHinzu);
     }
 
     public void fuegeStichHinzu(StichEntity stich) {
         Objects.requireNonNull(stich, "stich darf nicht null sein");
-        stiche.add(stich);
+        // Naechster Index (0-basiert fuer @MappedCollection keyColumn)
+        sticheMap.put(sticheMap.size(), stich);
         stich.setzeSpiel(this);
     }
 
     public void ersetzeStiche(List<StichEntity> neueStiche) {
         Objects.requireNonNull(neueStiche, "neueStiche duerfen nicht null sein");
-        stiche.clear();
+        sticheMap.clear();
         neueStiche.forEach(this::fuegeStichHinzu);
     }
 
     public void uebernehmeErgebnis(Spielergebnis spielergebnis) {
         Objects.requireNonNull(spielergebnis, "spielergebnis darf nicht null sein");
-        ergebnis = SpielErgebnisEmbeddable.aus(spielergebnis);
+        SpielErgebnisEmbeddable ergebnis = SpielErgebnisEmbeddable.aus(spielergebnis);
+        this.reAugen = ergebnis.reAugen();
+        this.kontraAugen = ergebnis.kontraAugen();
+        this.siegerPartei = ergebnis.siegerPartei() != null ? ergebnis.siegerPartei().name() : null;
+        this.spielwert = ergebnis.spielwert();
+        this.spielpunkteSued = ergebnis.spielpunkteSued();
+        this.spielpunkteWest = ergebnis.spielpunkteWest();
+        this.spielpunkteNord = ergebnis.spielpunkteNord();
+        this.spielpunkteOst = ergebnis.spielpunkteOst();
         sonderpunkte.clear();
         for (Map.Entry<Partei, List<Sonderpunkt>> eintrag : spielergebnis.sonderpunkteProPartei().entrySet()) {
             for (Sonderpunkt sonderpunkt : eintrag.getValue()) {
-                SpielSonderpunktEntity spielSonderpunktEntity = SpielSonderpunktEntity.neu(eintrag.getKey(), sonderpunkt);
-                spielSonderpunktEntity.setzeSpiel(this);
-                sonderpunkte.add(spielSonderpunktEntity);
+                SpielSonderpunktEntity sonderpunktEntity = SpielSonderpunktEntity.neu(eintrag.getKey(), sonderpunkt);
+                sonderpunktEntity.setzeSpiel(this);
+                sonderpunkte.add(sonderpunktEntity);
             }
         }
     }
 
     public void leereErgebnis() {
-        ergebnis = null;
+        this.reAugen = null;
+        this.kontraAugen = null;
+        this.siegerPartei = null;
+        this.spielwert = null;
+        this.spielpunkteSued = null;
+        this.spielpunkteWest = null;
+        this.spielpunkteNord = null;
+        this.spielpunkteOst = null;
         sonderpunkte.clear();
     }
 
     public void setzeSpieltyp(Spieltyp spieltyp) {
-        this.spieltyp = Objects.requireNonNull(spieltyp, "spieltyp darf nicht null sein");
+        this.spieltyp = Objects.requireNonNull(spieltyp, "spieltyp darf nicht null sein").name();
     }
 
     public void setzePhase(Spielphase phase) {
-        this.phase = Objects.requireNonNull(phase, "phase darf nicht null sein");
+        this.phase = Objects.requireNonNull(phase, "phase darf nicht null sein").name();
     }
 
     public void ersetzeVorbehalte(List<VorbehaltMeldungEmbeddable> neueVorbehalte) {
         Objects.requireNonNull(neueVorbehalte, "neueVorbehalte duerfen nicht null sein");
-        this.vorbehalte = new ArrayList<>(neueVorbehalte);
+        this.vorbehalteJson = JsonKonverter.schreibeAlsJson(neueVorbehalte);
     }
 
     public void ersetzeAnsagen(List<AnsageEreignisEmbeddable> neueAnsagen) {
         Objects.requireNonNull(neueAnsagen, "neueAnsagen duerfen nicht null sein");
-        this.ansagen = new ArrayList<>(neueAnsagen);
+        this.ansagenJson = JsonKonverter.schreibeAlsJson(neueAnsagen);
     }
 
     public void setzeArmutStatus(
@@ -214,11 +251,13 @@ public class SpielEntity extends AbstraktePersistenzEntity {
         SpielerPosition armutPartnerSpielerPosition,
         List<HandKarteEmbeddable> armutAngeboteneKarten
     ) {
-        this.armutSpielerPosition = armutSpielerPosition;
+        this.armutSpielerPosition = armutSpielerPosition != null ? armutSpielerPosition.name() : null;
         this.armutAktuellerAntwortIndex = armutAktuellerAntwortIndex;
         this.armutAngebotAbgegeben = armutAngebotAbgegeben;
-        this.armutPartnerSpielerPosition = armutPartnerSpielerPosition;
-        this.armutAngeboteneKarten = new ArrayList<>(Objects.requireNonNull(armutAngeboteneKarten, "armutAngeboteneKarten duerfen nicht null sein"));
+        this.armutPartnerSpielerPosition = armutPartnerSpielerPosition != null ? armutPartnerSpielerPosition.name() : null;
+        this.armutAngeboteneKartenJson = JsonKonverter.schreibeAlsJson(
+            Objects.requireNonNull(armutAngeboteneKarten, "armutAngeboteneKarten duerfen nicht null sein")
+        );
     }
 
     public void leereArmutStatus() {
@@ -231,9 +270,9 @@ public class SpielEntity extends AbstraktePersistenzEntity {
         SpielerPosition hochzeitPartnerSpielerPosition,
         boolean hochzeitStillesSolo
     ) {
-        this.hochzeitSpielerPosition = hochzeitSpielerPosition;
+        this.hochzeitSpielerPosition = hochzeitSpielerPosition != null ? hochzeitSpielerPosition.name() : null;
         this.hochzeitGeklaerteStiche = hochzeitGeklaerteStiche;
-        this.hochzeitPartnerSpielerPosition = hochzeitPartnerSpielerPosition;
+        this.hochzeitPartnerSpielerPosition = hochzeitPartnerSpielerPosition != null ? hochzeitPartnerSpielerPosition.name() : null;
         this.hochzeitStillesSolo = hochzeitStillesSolo;
     }
 
@@ -245,12 +284,31 @@ public class SpielEntity extends AbstraktePersistenzEntity {
         SpielerPosition aufspielerPosition,
         List<AktuellerStichKarteEmbeddable> neueKarten
     ) {
-        this.aktuellerStichAufspielerPosition = aufspielerPosition;
-        this.aktuellerStichKarten = new ArrayList<>(Objects.requireNonNull(neueKarten, "neueKarten duerfen nicht null sein"));
+        this.aktuellerStichAufspielerPosition = aufspielerPosition != null ? aufspielerPosition.name() : null;
+        this.aktuellerStichKartenJson = JsonKonverter.schreibeAlsJson(
+            Objects.requireNonNull(neueKarten, "neueKarten duerfen nicht null sein")
+        );
     }
 
     public void leereAktuellenStich() {
         setzeAktuellenStich(null, List.of());
+    }
+
+    /** Gibt das Ergebnis als SpielErgebnisEmbeddable zurueck, oder null wenn kein Ergebnis vorhanden. */
+    public SpielErgebnisEmbeddable ergebnis() {
+        if (reAugen == null && kontraAugen == null && siegerPartei == null) {
+            return null;
+        }
+        SpielErgebnisEmbeddable ergebnis = new SpielErgebnisEmbeddable();
+        ergebnis.setReAugen(reAugen);
+        ergebnis.setKontraAugen(kontraAugen);
+        ergebnis.setSiegerPartei(siegerPartei);
+        ergebnis.setSpielwert(spielwert);
+        ergebnis.setSpielpunkteSued(spielpunkteSued);
+        ergebnis.setSpielpunkteWest(spielpunkteWest);
+        ergebnis.setSpielpunkteNord(spielpunkteNord);
+        ergebnis.setSpielpunkteOst(spielpunkteOst);
+        return ergebnis;
     }
 
     public PartieEntity partie() {
@@ -262,31 +320,27 @@ public class SpielEntity extends AbstraktePersistenzEntity {
     }
 
     public SpielerPosition geberPosition() {
-        return geberPosition;
+        return SpielerPosition.valueOf(geberPosition);
     }
 
     public Spieltyp spieltyp() {
-        return spieltyp;
+        return Spieltyp.valueOf(spieltyp);
     }
 
     public Spielphase phase() {
-        return phase;
+        return Spielphase.valueOf(phase);
     }
 
     public List<VorbehaltMeldungEmbeddable> vorbehalte() {
-        return List.copyOf(vorbehalte);
+        return JsonKonverter.liesList(vorbehalteJson, new TypeReference<List<VorbehaltMeldungEmbeddable>>() {});
     }
 
     public List<AnsageEreignisEmbeddable> ansagen() {
-        return List.copyOf(ansagen);
-    }
-
-    public SpielErgebnisEmbeddable ergebnis() {
-        return ergebnis;
+        return JsonKonverter.liesList(ansagenJson, new TypeReference<List<AnsageEreignisEmbeddable>>() {});
     }
 
     public SpielerPosition armutSpielerPosition() {
-        return armutSpielerPosition;
+        return armutSpielerPosition != null ? SpielerPosition.valueOf(armutSpielerPosition) : null;
     }
 
     public int armutAktuellerAntwortIndex() {
@@ -298,15 +352,15 @@ public class SpielEntity extends AbstraktePersistenzEntity {
     }
 
     public SpielerPosition armutPartnerSpielerPosition() {
-        return armutPartnerSpielerPosition;
+        return armutPartnerSpielerPosition != null ? SpielerPosition.valueOf(armutPartnerSpielerPosition) : null;
     }
 
     public List<HandKarteEmbeddable> armutAngeboteneKarten() {
-        return List.copyOf(armutAngeboteneKarten);
+        return JsonKonverter.liesList(armutAngeboteneKartenJson, new TypeReference<List<HandKarteEmbeddable>>() {});
     }
 
     public SpielerPosition hochzeitSpielerPosition() {
-        return hochzeitSpielerPosition;
+        return hochzeitSpielerPosition != null ? SpielerPosition.valueOf(hochzeitSpielerPosition) : null;
     }
 
     public int hochzeitGeklaerteStiche() {
@@ -314,7 +368,7 @@ public class SpielEntity extends AbstraktePersistenzEntity {
     }
 
     public SpielerPosition hochzeitPartnerSpielerPosition() {
-        return hochzeitPartnerSpielerPosition;
+        return hochzeitPartnerSpielerPosition != null ? SpielerPosition.valueOf(hochzeitPartnerSpielerPosition) : null;
     }
 
     public boolean hochzeitStillesSolo() {
@@ -322,22 +376,39 @@ public class SpielEntity extends AbstraktePersistenzEntity {
     }
 
     public List<HandEntity> haende() {
-        return List.copyOf(haende);
+        // Aus der Map eine geordnete Liste erstellen (Reihenfolge der SpielerPosition)
+        // Transiente Felder (spielerPositionStr, spiel) aus Map-Key und this setzen
+        return haendeMap.entrySet().stream()
+            .peek(eintrag -> {
+                eintrag.getValue().setzeSpielerPosition(eintrag.getKey());
+                eintrag.getValue().setzeSpiel(this);
+            })
+            .map(Map.Entry::getValue)
+            .toList();
     }
 
     public SpielerPosition aktuellerStichAufspielerPosition() {
-        return aktuellerStichAufspielerPosition;
+        return aktuellerStichAufspielerPosition != null ? SpielerPosition.valueOf(aktuellerStichAufspielerPosition) : null;
     }
 
     public List<AktuellerStichKarteEmbeddable> aktuellerStichKarten() {
-        return List.copyOf(aktuellerStichKarten);
+        return JsonKonverter.liesList(aktuellerStichKartenJson, new TypeReference<List<AktuellerStichKarteEmbeddable>>() {});
     }
 
     public List<StichEntity> stiche() {
-        return List.copyOf(stiche);
+        // Stiche in Einfuegereihenfolge (stich_key) sortiert zurueckgeben
+        List<StichEntity> result = sticheMap.entrySet().stream()
+            .sorted(Map.Entry.comparingByKey())
+            .map(Map.Entry::getValue)
+            .toList();
+        // Transiente Rueckreferenz setzen
+        result.forEach(stich -> stich.setzeSpiel(this));
+        return List.copyOf(result);
     }
 
     public List<SpielSonderpunktEntity> sonderpunkte() {
+        // Transiente Rueckreferenz setzen
+        sonderpunkte.forEach(sp -> sp.setzeSpiel(this));
         return List.copyOf(sonderpunkte);
     }
 }

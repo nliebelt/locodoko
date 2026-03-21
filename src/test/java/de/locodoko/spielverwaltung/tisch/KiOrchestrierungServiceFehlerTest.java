@@ -199,14 +199,26 @@ class KiOrchestrierungServiceFehlerTest {
     /**
      * Erstellt ein Spiel in der STICHPHASE: Alle Vorbehalte als gesund gemeldet und
      * Vorbehalte aufgeloest, ohne die KI-Strategie zu benutzen (direkte Domain-Aufrufe).
+     *
+     * Nutzt einen deterministischen Zufallsgenerator mit fester Startzahl, um sicherzustellen,
+     * dass beide Kreuz-Damen auf unterschiedliche Spieler verteilt werden (Normalspiel).
+     * Bei ungueltig zufaelliger Verteilung wird mit naechster Startzahl neu gemischt.
      */
     private Spiel gesundesStichspiel(Spielregeln spielregeln) {
-        Spiel spiel = Spiel.neu(SpielerPosition.SUED, spielregeln, Kartendeck.neu(spielregeln).gemischt())
-            .teileKartenAus();
-        for (SpielerPosition position : SpielerPosition.imUhrzeigersinnAb(SpielerPosition.WEST)) {
-            spiel = spiel.meldeVorbehalt(position, VorbehaltAnsage.GESUND);
+        for (long startzahl = 0; startzahl < 100; startzahl++) {
+            try {
+                Spiel spiel = Spiel.neu(SpielerPosition.SUED, spielregeln,
+                        Kartendeck.neu(spielregeln).gemischt(new java.util.Random(startzahl)))
+                    .teileKartenAus();
+                for (SpielerPosition position : SpielerPosition.imUhrzeigersinnAb(SpielerPosition.WEST)) {
+                    spiel = spiel.meldeVorbehalt(position, VorbehaltAnsage.GESUND);
+                }
+                return spiel.loeseVorbehalteAuf();
+            } catch (IllegalStateException e) {
+                // Ungueltige Kartenverteilung (z.B. beide Kreuz-Damen in einer Hand) — neue Startzahl
+            }
         }
-        return spiel.loeseVorbehalteAuf();
+        throw new IllegalStateException("Kein gueltiges Normalspiel nach 100 Versuchen gefunden");
     }
 
     /** Verpackt ein Domain-Spiel in eine PartieEntity. */

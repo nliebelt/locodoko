@@ -4,51 +4,49 @@ import de.locodoko.spiel.karten.Farbe;
 import de.locodoko.spiel.karten.Karte;
 import de.locodoko.spiel.karten.Kartenwert;
 import de.locodoko.spiel.karten.SpielerPosition;
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
-import jakarta.persistence.FetchType;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.ManyToOne;
-import jakarta.persistence.Table;
+import org.springframework.data.annotation.Transient;
+import org.springframework.data.relational.core.mapping.Column;
+import org.springframework.data.relational.core.mapping.Table;
 
 import java.util.Objects;
 
-@Entity
-@Table(name = "gespielte_karte")
+/**
+ * Persistenz-Entity fuer eine gespielte Karte innerhalb eines Stichs.
+ * Owned by StichEntity via @MappedCollection (Map mit reihenfolge als Key).
+ * Das Feld 'reihenfolge' ist @Transient, da es vom @MappedCollection keyColumn verwaltet wird.
+ * Es wird nach dem Laden manuell gesetzt (durch den Map-Key aus StichEntity).
+ */
+@Table("gespielte_karte")
 public class GespielteKarteEntity extends AbstraktePersistenzEntity {
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "stich_id", nullable = false)
-    private StichEntity stich;
+    @Column("spieler_position")
+    private String spielerPosition;
 
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
-    private SpielerPosition spielerPosition;
+    @Column("farbe")
+    private String farbe;
 
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
-    private Farbe farbe;
+    @Column("wert")
+    private String wert;
 
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
-    private Kartenwert wert;
-
-    @Column(nullable = false)
+    @Column("exemplar_index")
     private int exemplarIndex;
 
-    @Column(nullable = false)
+    /**
+     * Reihenfolge der Karte im Stich (0-basiert).
+     * Transient — wird vom @MappedCollection keyColumn in StichEntity verwaltet.
+     * Wird nach dem Laden aus dem Map-Key gesetzt.
+     */
+    @Transient
     private int reihenfolge;
 
     protected GespielteKarteEntity() {
     }
 
     private GespielteKarteEntity(SpielerPosition spielerPosition, Karte karte, int reihenfolge) {
-        this.spielerPosition = Objects.requireNonNull(spielerPosition, "spielerPosition darf nicht null sein");
+        this.spielerPosition = Objects.requireNonNull(spielerPosition, "spielerPosition darf nicht null sein").name();
         Objects.requireNonNull(karte, "karte darf nicht null sein");
-        this.farbe = karte.farbe();
-        this.wert = karte.wert();
+        this.farbe = karte.farbe().name();
+        this.wert = karte.wert().name();
         this.exemplarIndex = karte.exemplarIndex();
         this.reihenfolge = reihenfolge;
     }
@@ -57,24 +55,21 @@ public class GespielteKarteEntity extends AbstraktePersistenzEntity {
         return new GespielteKarteEntity(spielerPosition, karte, reihenfolge);
     }
 
-    void setzeStich(StichEntity stich) {
-        this.stich = stich;
-    }
-
-    public StichEntity stich() {
-        return stich;
+    /** Setzt die Reihenfolge (wird nach dem Laden aus dem Map-Key des uebergeordneten Stichs gesetzt). */
+    void setzeReihenfolge(int reihenfolge) {
+        this.reihenfolge = reihenfolge;
     }
 
     public SpielerPosition spielerPosition() {
-        return spielerPosition;
+        return SpielerPosition.valueOf(spielerPosition);
     }
 
     public Farbe farbe() {
-        return farbe;
+        return Farbe.valueOf(farbe);
     }
 
     public Kartenwert wert() {
-        return wert;
+        return Kartenwert.valueOf(wert);
     }
 
     public int exemplarIndex() {

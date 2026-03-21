@@ -460,7 +460,9 @@ class WebSocketSpielaktionIntegrationTest {
             for (HandEntity hand : spiel.haende()) {
                 hand.ersetzeKarten(verteilung.get(hand.spielerPosition()));
             }
-            spielRepository.flush();
+            // In Spring Data JDBC gibt es kein Flush-Konzept — Aenderungen muessen explizit gespeichert werden.
+            // spielRepository.save() persistiert SpielEntity inkl. aller @MappedCollection-Kinder (haendeMap).
+            spielRepository.save(spiel);
         });
     }
 

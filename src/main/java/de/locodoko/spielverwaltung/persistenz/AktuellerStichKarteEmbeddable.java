@@ -1,47 +1,35 @@
 package de.locodoko.spielverwaltung.persistenz;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import de.locodoko.spiel.karten.Farbe;
 import de.locodoko.spiel.karten.GespielteKarte;
 import de.locodoko.spiel.karten.Karte;
 import de.locodoko.spiel.karten.Kartenwert;
 import de.locodoko.spiel.karten.SpielerPosition;
-import jakarta.persistence.Column;
-import jakarta.persistence.Embeddable;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
 
 import java.util.Objects;
 
-@Embeddable
+/**
+ * Repraesentiert eine Karte im aktuell laufenden Stich.
+ * Wird als Teil einer JSON-Liste in der Spalte 'aktueller_stich_karten' von SpielEntity gespeichert.
+ * Keine JPA-Annotationen — wird per Jackson serialisiert/deserialisiert.
+ */
 public class AktuellerStichKarteEmbeddable {
 
-    @Enumerated(EnumType.STRING)
-    @Column(name = "spieler_position", nullable = false)
-    private SpielerPosition spielerPosition;
+    private final SpielerPosition spielerPosition;
+    private final Farbe farbe;
+    private final Kartenwert wert;
+    private final int exemplarIndex;
+    private final int reihenfolge;
 
-    @Enumerated(EnumType.STRING)
-    @Column(name = "farbe", nullable = false)
-    private Farbe farbe;
-
-    @Enumerated(EnumType.STRING)
-    @Column(name = "wert", nullable = false)
-    private Kartenwert wert;
-
-    @Column(name = "exemplar_index", nullable = false)
-    private int exemplarIndex;
-
-    @Column(name = "reihenfolge", nullable = false)
-    private int reihenfolge;
-
-    protected AktuellerStichKarteEmbeddable() {
-    }
-
-    private AktuellerStichKarteEmbeddable(
-        SpielerPosition spielerPosition,
-        Farbe farbe,
-        Kartenwert wert,
-        int exemplarIndex,
-        int reihenfolge
+    @JsonCreator
+    public AktuellerStichKarteEmbeddable(
+        @JsonProperty("spielerPosition") SpielerPosition spielerPosition,
+        @JsonProperty("farbe") Farbe farbe,
+        @JsonProperty("wert") Kartenwert wert,
+        @JsonProperty("exemplarIndex") int exemplarIndex,
+        @JsonProperty("reihenfolge") int reihenfolge
     ) {
         this.spielerPosition = Objects.requireNonNull(spielerPosition, "spielerPosition darf nicht null sein");
         this.farbe = Objects.requireNonNull(farbe, "farbe darf nicht null sein");
@@ -62,22 +50,27 @@ public class AktuellerStichKarteEmbeddable {
         );
     }
 
+    @JsonProperty("spielerPosition")
     public SpielerPosition spielerPosition() {
         return spielerPosition;
     }
 
+    @JsonProperty("farbe")
     public Farbe farbe() {
         return farbe;
     }
 
+    @JsonProperty("wert")
     public Kartenwert wert() {
         return wert;
     }
 
+    @JsonProperty("exemplarIndex")
     public int exemplarIndex() {
         return exemplarIndex;
     }
 
+    @JsonProperty("reihenfolge")
     public int reihenfolge() {
         return reihenfolge;
     }

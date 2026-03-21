@@ -3,37 +3,21 @@ package de.locodoko.spielverwaltung.persistenz;
 import de.locodoko.spiel.karten.SpielerPosition;
 import de.locodoko.spiel.partie.Partei;
 import de.locodoko.spiel.partie.Spielergebnis;
-import jakarta.persistence.Column;
-import jakarta.persistence.Embeddable;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
 
-@Embeddable
+/**
+ * Eingebettetes Ergebnis eines Spiels.
+ * Die Felder werden direkt als Spalten in der 'spiel'-Tabelle gespeichert.
+ * Spring Data JDBC unterstuetzt @Embedded nativ — kein JPA noetig.
+ */
 public class SpielErgebnisEmbeddable {
 
-    @Column(name = "re_augen")
     private Integer reAugen;
-
-    @Column(name = "kontra_augen")
     private Integer kontraAugen;
-
-    @Enumerated(EnumType.STRING)
-    @Column(name = "sieger_partei")
-    private Partei siegerPartei;
-
-    @Column(name = "spielwert")
+    private String siegerPartei;
     private Integer spielwert;
-
-    @Column(name = "spielpunkte_sued")
     private Integer spielpunkteSued;
-
-    @Column(name = "spielpunkte_west")
     private Integer spielpunkteWest;
-
-    @Column(name = "spielpunkte_nord")
     private Integer spielpunkteNord;
-
-    @Column(name = "spielpunkte_ost")
     private Integer spielpunkteOst;
 
     protected SpielErgebnisEmbeddable() {
@@ -42,7 +26,7 @@ public class SpielErgebnisEmbeddable {
     private SpielErgebnisEmbeddable(Spielergebnis spielergebnis) {
         this.reAugen = spielergebnis.augenVon(Partei.RE);
         this.kontraAugen = spielergebnis.augenVon(Partei.KONTRA);
-        this.siegerPartei = spielergebnis.siegerPartei();
+        this.siegerPartei = spielergebnis.siegerPartei().name();
         this.spielwert = spielergebnis.spielwert();
         this.spielpunkteSued = spielergebnis.spielpunkteVon(SpielerPosition.SUED);
         this.spielpunkteWest = spielergebnis.spielpunkteVon(SpielerPosition.WEST);
@@ -63,7 +47,7 @@ public class SpielErgebnisEmbeddable {
     }
 
     public Partei siegerPartei() {
-        return siegerPartei;
+        return siegerPartei != null ? Partei.valueOf(siegerPartei) : null;
     }
 
     public Integer spielwert() {
@@ -85,4 +69,14 @@ public class SpielErgebnisEmbeddable {
     public Integer spielpunkteOst() {
         return spielpunkteOst;
     }
+
+    // Getter/Setter fuer Spring Data JDBC (ohne @Embedded brauchen wir flache Felder direkt in SpielEntity)
+    void setReAugen(Integer reAugen) { this.reAugen = reAugen; }
+    void setKontraAugen(Integer kontraAugen) { this.kontraAugen = kontraAugen; }
+    void setSiegerPartei(String siegerPartei) { this.siegerPartei = siegerPartei; }
+    void setSpielwert(Integer spielwert) { this.spielwert = spielwert; }
+    void setSpielpunkteSued(Integer spielpunkteSued) { this.spielpunkteSued = spielpunkteSued; }
+    void setSpielpunkteWest(Integer spielpunkteWest) { this.spielpunkteWest = spielpunkteWest; }
+    void setSpielpunkteNord(Integer spielpunkteNord) { this.spielpunkteNord = spielpunkteNord; }
+    void setSpielpunkteOst(Integer spielpunkteOst) { this.spielpunkteOst = spielpunkteOst; }
 }

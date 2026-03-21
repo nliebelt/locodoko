@@ -1,29 +1,31 @@
 package de.locodoko.spielverwaltung.persistenz;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.Table;
 import jakarta.validation.constraints.NotBlank;
+import org.springframework.data.relational.core.mapping.Column;
+import org.springframework.data.relational.core.mapping.Table;
 
-@Entity
-@Table(name = "spieler")
+/**
+ * Persistenz-Entity fuer einen Spieler (menschlich oder KI).
+ * Aggregate Root: Spieler werden unabhaengig von Tischen und Partien gespeichert.
+ */
+@Table("spieler")
 public class SpielerEntity extends AbstraktePersistenzEntity {
 
     @NotBlank
-    @Column(nullable = false)
+    @Column("name")
     private String name;
 
-    @Column(unique = true)
+    @Column("session_id")
     private String sessionId;
 
-    @Column(nullable = false)
+    @Column("ki")
     private boolean ki;
 
     /**
-     * Zeigt an, ob die KI diesen menschlichen Spieler nach einem Verbindungsabbruch übernommen hat.
-     * Wird beim nächsten Spielstart zurückgesetzt.
+     * Zeigt an, ob die KI diesen menschlichen Spieler nach einem Verbindungsabbruch uebernommen hat.
+     * Wird beim naechsten Spielstart zurueckgesetzt.
      */
-    @Column(nullable = false)
+    @Column("ki_uebernommen")
     private boolean kiUebernommen;
 
     protected SpielerEntity() {
@@ -60,17 +62,17 @@ public class SpielerEntity extends AbstraktePersistenzEntity {
         return ki;
     }
 
-    /** Gibt zurück, ob die KI diesen Spieler nach einem Verbindungsabbruch steuert. */
+    /** Gibt zurueck, ob die KI diesen Spieler nach einem Verbindungsabbruch steuert. */
     public boolean istKiUebernommen() {
         return kiUebernommen;
     }
 
-    /** Markiert diesen Spieler als KI-übernommen (nach Reconnect-Timeout). */
+    /** Markiert diesen Spieler als KI-uebernommen (nach Reconnect-Timeout). */
     public void markiereAlsKiUebernommen() {
         this.kiUebernommen = true;
     }
 
-    /** Hebt die KI-Übernahme auf — wird beim Spielstart des nächsten Spiels aufgerufen. */
+    /** Hebt die KI-Uebernahme auf — wird beim Spielstart des naechsten Spiels aufgerufen. */
     public void hebeKiUebernahmeAuf() {
         this.kiUebernommen = false;
     }

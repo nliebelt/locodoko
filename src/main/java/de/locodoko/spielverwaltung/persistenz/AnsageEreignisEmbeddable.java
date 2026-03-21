@@ -1,29 +1,27 @@
 package de.locodoko.spielverwaltung.persistenz;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import de.locodoko.spiel.karten.SpielerPosition;
 import de.locodoko.spiel.partie.Ansage;
-import jakarta.persistence.Column;
-import jakarta.persistence.Embeddable;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
 
 import java.util.Objects;
 
-@Embeddable
+/**
+ * Repraesentiert ein Ansage-Ereignis waehrend eines Spiels.
+ * Wird als Teil einer JSON-Liste in der Spalte 'ansagen' von SpielEntity gespeichert.
+ * Keine JPA-Annotationen — wird per Jackson serialisiert/deserialisiert.
+ */
 public class AnsageEreignisEmbeddable {
 
-    @Enumerated(EnumType.STRING)
-    @Column(name = "spieler_position", nullable = false)
-    private SpielerPosition spielerPosition;
+    private final SpielerPosition spielerPosition;
+    private final Ansage ansage;
 
-    @Enumerated(EnumType.STRING)
-    @Column(name = "ansage", nullable = false)
-    private Ansage ansage;
-
-    protected AnsageEreignisEmbeddable() {
-    }
-
-    private AnsageEreignisEmbeddable(SpielerPosition spielerPosition, Ansage ansage) {
+    @JsonCreator
+    public AnsageEreignisEmbeddable(
+        @JsonProperty("spielerPosition") SpielerPosition spielerPosition,
+        @JsonProperty("ansage") Ansage ansage
+    ) {
         this.spielerPosition = Objects.requireNonNull(spielerPosition, "spielerPosition darf nicht null sein");
         this.ansage = Objects.requireNonNull(ansage, "ansage darf nicht null sein");
     }
@@ -32,10 +30,12 @@ public class AnsageEreignisEmbeddable {
         return new AnsageEreignisEmbeddable(spielerPosition, ansage);
     }
 
+    @JsonProperty("spielerPosition")
     public SpielerPosition spielerPosition() {
         return spielerPosition;
     }
 
+    @JsonProperty("ansage")
     public Ansage ansage() {
         return ansage;
     }
