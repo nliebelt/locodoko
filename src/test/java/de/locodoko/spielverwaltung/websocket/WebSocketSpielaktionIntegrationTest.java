@@ -305,6 +305,84 @@ class WebSocketSpielaktionIntegrationTest {
             "Eine ungueltige Ansage darf keinen Broadcast ausloesen, damit der serverseitige Ansagezustand fuer alle Clients unveraendert bleibt.");
     }
 
+    @Test
+    void wirftSpielEinWennNiemandDieArmutPerWebSocketAnnimmt() {
+        // Wichtig: Wenn niemand die Armut annimmt, muss das Backend das Spiel einwerfen
+        // und einen WebSocket-Broadcast mit der neuen Vorbehaltsrunde senden, damit das
+        // Frontend den erzwungenen Neustart ohne Polling erkennen kann.
+        SpielSetup setup = starteVierSpielerTisch("Einwurftisch");
+        setzeKontrollierteArmutshaende(setup.partieId());
+        nachrichtenSpeicher.leeren();
+
+        webSocketController.meldeVorbehalt(setup.tischId(), new VorbehaltAnfrage(VorbehaltAnsage.ARMUT), principal(setup.sessionIds().get(SpielerPosition.WEST)));
+        webSocketController.meldeVorbehalt(setup.tischId(), new VorbehaltAnfrage(VorbehaltAnsage.GESUND), principal(setup.sessionIds().get(SpielerPosition.NORD)));
+        webSocketController.meldeVorbehalt(setup.tischId(), new VorbehaltAnfrage(VorbehaltAnsage.GESUND), principal(setup.sessionIds().get(SpielerPosition.OST)));
+        webSocketController.meldeVorbehalt(setup.tischId(), new VorbehaltAnfrage(VorbehaltAnsage.GESUND), principal(setup.sessionIds().get(SpielerPosition.SUED)));
+
+        // WEST legt Trumpfkarten an (Armut-Angebot)
+        webSocketController.verarbeiteArmutAntwort(
+            setup.tischId(),
+            new ArmutAntwortAnfrage(false, List.of("KREUZ-DAME-1", "KREUZ-BUBE-1", "KARO-AS-1")),
+            principal(setup.sessionIds().get(SpielerPosition.WEST))
+        );
+        // Alle drei Mitspieler lehnen ab
+        webSocketController.verarbeiteArmutAntwort(setup.tischId(), new ArmutAntwortAnfrage(false, List.of()), principal(setup.sessionIds().get(SpielerPosition.NORD)));
+        webSocketController.verarbeiteArmutAntwort(setup.tischId(), new ArmutAntwortAnfrage(false, List.of()), principal(setup.sessionIds().get(SpielerPosition.OST)));
+        webSocketController.verarbeiteArmutAntwort(setup.tischId(), new ArmutAntwortAnfrage(false, List.of()), principal(setup.sessionIds().get(SpielerPosition.SUED)));
+
+        List<WebSocketNachrichtGesendet> nachrichten = nachrichtenSpeicher.nachrichten();
+        WebSocketNachrichtGesendet broadcast = findeLetzteNachricht(nachrichten, "/topic/partie/" + setup.partieId(), PartieEreignisAntwort.class);
+        PartieEreignisAntwort ereignis = (PartieEreignisAntwort) broadcast.payload();
+
+        assertEquals(Spielphase.VORBEHALT_ANSAGE, ereignis.partieStand().laufendesSpiel().phase(),
+            "Wenn niemand die Armut annimmt, muss das Spiel eingeworfen und ein Broadcast mit der neuen Vorbehaltsphase gesendet werden.");
+        ereignis.partieStand().laufendesSpiel().spieler().forEach(spieler ->
+            assertEquals(12, spieler.verbleibendeKarten(),
+                "Nach einem Armut-Einwurf muss jeder Spieler wieder 12 Karten erhalten, damit die neue Vorbehaltsrunde auf einem vollstaendigen Deck basiert."));
+    }
+
+    @Test
+    void unterstuetztWiederholteArmutEinwuerfe() {
+        // Wichtig: Laut Spec gibt es keine Begrenzung fuer die Anzahl der Einwuerfe.
+        // Dieser Test beweist, dass zwei aufeinanderfolgende Armut-Einwuerfe korrekt
+        // verarbeitet werden und das Spiel nach jedem Einwurf wieder in VORBEHALT_ANSAGE
+        // landet, ohne kuenstliche Grenzen oder Zustandsfehler.
+        SpielSetup setup = starteVierSpielerTisch("WiederholterEinwurftisch");
+
+        // --- Erster Einwurf ---
+        setzeKontrollierteArmutshaende(setup.partieId());
+        webSocketController.meldeVorbehalt(setup.tischId(), new VorbehaltAnfrage(VorbehaltAnsage.ARMUT), principal(setup.sessionIds().get(SpielerPosition.WEST)));
+        webSocketController.meldeVorbehalt(setup.tischId(), new VorbehaltAnfrage(VorbehaltAnsage.GESUND), principal(setup.sessionIds().get(SpielerPosition.NORD)));
+        webSocketController.meldeVorbehalt(setup.tischId(), new VorbehaltAnfrage(VorbehaltAnsage.GESUND), principal(setup.sessionIds().get(SpielerPosition.OST)));
+        webSocketController.meldeVorbehalt(setup.tischId(), new VorbehaltAnfrage(VorbehaltAnsage.GESUND), principal(setup.sessionIds().get(SpielerPosition.SUED)));
+        webSocketController.verarbeiteArmutAntwort(setup.tischId(), new ArmutAntwortAnfrage(false, List.of("KREUZ-DAME-1", "KREUZ-BUBE-1", "KARO-AS-1")), principal(setup.sessionIds().get(SpielerPosition.WEST)));
+        webSocketController.verarbeiteArmutAntwort(setup.tischId(), new ArmutAntwortAnfrage(false, List.of()), principal(setup.sessionIds().get(SpielerPosition.NORD)));
+        webSocketController.verarbeiteArmutAntwort(setup.tischId(), new ArmutAntwortAnfrage(false, List.of()), principal(setup.sessionIds().get(SpielerPosition.OST)));
+        webSocketController.verarbeiteArmutAntwort(setup.tischId(), new ArmutAntwortAnfrage(false, List.of()), principal(setup.sessionIds().get(SpielerPosition.SUED)));
+
+        // --- Zweiter Einwurf ---
+        // Nach dem ersten Einwurf kontrollierte Haende erneut setzen (dieselbe SpielEntity,
+        // da uebernehmeDomainSpiel in-place aktualisiert und keine neue Entitaet anlegt).
+        setzeKontrollierteArmutshaende(setup.partieId());
+        nachrichtenSpeicher.leeren();
+
+        webSocketController.meldeVorbehalt(setup.tischId(), new VorbehaltAnfrage(VorbehaltAnsage.ARMUT), principal(setup.sessionIds().get(SpielerPosition.WEST)));
+        webSocketController.meldeVorbehalt(setup.tischId(), new VorbehaltAnfrage(VorbehaltAnsage.GESUND), principal(setup.sessionIds().get(SpielerPosition.NORD)));
+        webSocketController.meldeVorbehalt(setup.tischId(), new VorbehaltAnfrage(VorbehaltAnsage.GESUND), principal(setup.sessionIds().get(SpielerPosition.OST)));
+        webSocketController.meldeVorbehalt(setup.tischId(), new VorbehaltAnfrage(VorbehaltAnsage.GESUND), principal(setup.sessionIds().get(SpielerPosition.SUED)));
+        webSocketController.verarbeiteArmutAntwort(setup.tischId(), new ArmutAntwortAnfrage(false, List.of("KREUZ-DAME-1", "KREUZ-BUBE-1", "KARO-AS-1")), principal(setup.sessionIds().get(SpielerPosition.WEST)));
+        webSocketController.verarbeiteArmutAntwort(setup.tischId(), new ArmutAntwortAnfrage(false, List.of()), principal(setup.sessionIds().get(SpielerPosition.NORD)));
+        webSocketController.verarbeiteArmutAntwort(setup.tischId(), new ArmutAntwortAnfrage(false, List.of()), principal(setup.sessionIds().get(SpielerPosition.OST)));
+        webSocketController.verarbeiteArmutAntwort(setup.tischId(), new ArmutAntwortAnfrage(false, List.of()), principal(setup.sessionIds().get(SpielerPosition.SUED)));
+
+        List<WebSocketNachrichtGesendet> nachrichten = nachrichtenSpeicher.nachrichten();
+        WebSocketNachrichtGesendet broadcast = findeLetzteNachricht(nachrichten, "/topic/partie/" + setup.partieId(), PartieEreignisAntwort.class);
+        PartieEreignisAntwort ereignis = (PartieEreignisAntwort) broadcast.payload();
+
+        assertEquals(Spielphase.VORBEHALT_ANSAGE, ereignis.partieStand().laufendesSpiel().phase(),
+            "Wiederholte Armut-Einwuerfe muessen unbegrenzt moeglich sein; auch nach dem zweiten Einwurf muss das Spiel wieder in der Vorbehaltsphase sein.");
+    }
+
     private SpielSetup starteVierSpielerTisch(String tischName) {
         String suedCookie = registriereSpieler("Ada");
         String westCookie = registriereSpieler("Bert");

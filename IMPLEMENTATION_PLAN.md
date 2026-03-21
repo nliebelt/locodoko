@@ -4,9 +4,9 @@ Stand: 2026-03-21
 
 ## Notiz
 
-**Letzte Iteration (2026-03-21):** `KiOrchestrierungService` Fehlerbehandlung fuer KI-Strategie-Exceptions ergaenzt (Prioritaet 10). `fuehreKiAktionAus()`-Aufruf ist jetzt in `automatisiereTisch()` mit try-catch umhuellt: eine Exception wird mit ERROR geloggt (Spielerposition, Spielphase, Tisch-ID) und der Aufruf kehrt zurueck, ohne `uebernehmeDomainSpiel()` aufzurufen — Persistenz-Datenbankstand bleibt konsistent. Logger hinzugefuegt; Sicherheitslimit-Erreichen wird jetzt ebenfalls geloggt bevor die Exception geworfen wird. `KiOrchestrierungServiceFehlerTest` mit zwei neuen Integrationstests: KI-Exception in STICHPHASE und in VORBEHALT_ANSAGE; beide pruefen `assertDoesNotThrow` und unveraenderte Spielphase nach der Exception. Statt Mockito (im Projekt nicht vorhanden) wird eine innere `WirftImmerKiStrategie`-Klasse mit `@TestConfiguration @Primary` verwendet. 103 Backend-Tests gruen.
+**Letzte Iteration (2026-03-21):** Test-Luecken Prioritaet 10 geschlossen. Tisch-voll-409 und armutErlaubt=false waren bereits abgedeckt. Zwei neue WebSocket-Integrationstests in `WebSocketSpielaktionIntegrationTest`: `wirftSpielEinWennNiemandDieArmutPerWebSocketAnnimmt` prueft Einwurf-Broadcast (VORBEHALT_ANSAGE, 12 Karten/Spieler); `unterstuetztWiederholteArmutEinwuerfe` beweist zwei aufeinanderfolgende Einwuerfe via `setzeKontrollierteArmutshaende` + WebSocket-Aufrufsequenz. 105 Backend-Tests gruen.
 
-**Naechster logischer Schritt:** Test-Luecken schliessen: Fehlerszenarien fuer Tisch-Beitritt bei vollem Tisch (409), deaktivierte Sonderspiele in der Spiellogik (armutErlaubt=false → Vorbehalt ablehnen), wiederholte Armut-Einwuerfe.
+**Naechster logischer Schritt:** Architektur-Refactoring (Prioritaet 11): JPA → Spring Data JDBC, Liquibase, Package-Struktur nach Bounded Contexts, Javadoc, toter Code.
 
 **Offene Fragen:** jsdom kann Canvas 2D nicht rendern (daher stderr-Warnings in Tests); Texturen werden im Browser korrekt erzeugt. Ein `canvas`-npm-Package koennte die Warnings eliminieren, ist aber nicht kritisch.
 
@@ -152,7 +152,7 @@ Ausgangslage: Backend und Frontend sind funktional weitgehend vollstaendig: Kart
 - [x] Exception-Hierarchie konsistent machen: `SpielerSessionUngueltigException` und `SpielerNameAenderungNichtErlaubtException` haben jetzt `fehlerCode()`-Methoden; Handler rufen `fehlerCode()` statt hartkodierten Strings auf.
 - [x] PartieController mit Session-Validierung schuetzen: `GET /api/partien/{id}/stand` prueft aktuell keine Session; jeder kann jeden Partie-Stand abrufen.
 - [x] KiOrchestrierungService: Fehlerbehandlung fuer KI-Strategie-Exceptions ergaenzen, damit Partie bei KI-Fehler nicht in inkonsistentem Zustand haengt. `fuehreKiAktionAus()`-Aufruf mit try-catch abgesichert; Exception wird geloggt, Methode kehrt zurueck ohne Persistenzupdate — DB-Stand bleibt konsistent. Zwei neue Integrationstests in `KiOrchestrierungServiceFehlerTest` (Stichphase + Vorbehaltphase).
-- [ ] Test-Luecken schliessen: Fehlerszenarien fuer Tisch-Beitritt bei vollem Tisch (409), deaktivierte Sonderspiele in der Spiellogik (armutErlaubt=false → Vorbehalt ablehnen), wiederholte Armut-Einwuerfe.
+- [x] Test-Luecken schliessen: Tisch-voll-409 und armutErlaubt=false-Ablehnung waren bereits durch bestehende Tests abgedeckt (`TischControllerTest.verhindertBeitrittWennTischVollIst`, `SpielTest.lehntArmutMitMehrAlsDreiTrumpfenOderBeiDeaktivierterRegelAb`). Fehlende WebSocket-Tests fuer wiederholte Armut-Einwuerfe hinzugefuegt: `wirftSpielEinWennNiemandDieArmutPerWebSocketAnnimmt` prueft Broadcast mit VORBEHALT_ANSAGE und 12 Karten pro Spieler; `unterstuetztWiederholteArmutEinwuerfe` beweist zwei aufeinanderfolgende Einwuerfe ohne kuenstliche Grenze. 105 Backend-Tests gruen.
 
 ## Offen - Prioritaet 11: Architektur-Refactoring
 
