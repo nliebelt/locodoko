@@ -209,6 +209,7 @@ export class TischSzene extends Phaser.Scene {
       this.renderTisch(zustand, modell);
       void this.starteFolgeanimationen(vorherigesModell, modell);
       void this.starteAnsageBannerAnimationen(this.ermittleNeueAnsagen(vorherigesModell, modell));
+      void this.starteSonderpunktFeedbackAnimationen(this.ermittleNeueSonderpunkte(vorherigesModell, modell));
       this.letztesModell = modell;
     });
   }
@@ -1142,6 +1143,41 @@ export class TischSzene extends Phaser.Scene {
       const bannerText = `${ansage.name}\n${formatiereAnsage(ansage.ansage)}`;
       await this.animationen?.animiereAnsageBanner(
         bannerText,
+        { x: breite / 2, y: hoehe / 2 }
+      );
+    }
+  }
+
+  // Erkennt neue Sonderpunkte (Fuchs gefangen, Karlchen, Doppelkopf) anhand eines neuen Spielergebnisses
+  private ermittleNeueSonderpunkte(
+    vorherigesModell: TischAnsichtModell | null,
+    aktuellesModell: TischAnsichtModell
+  ): string[] {
+    const neuesErgebnis = aktuellesModell.letztesSpielergebnis;
+    if (!neuesErgebnis) {
+      return [];
+    }
+    const vorherigeNummer = vorherigesModell?.letztesSpielergebnis?.spielNummer;
+    if (vorherigeNummer === neuesErgebnis.spielNummer) {
+      return [];
+    }
+    const sonderpunkte: string[] = [];
+    for (const sp of neuesErgebnis.sonderpunkteRe) {
+      sonderpunkte.push(`Re: ${formatiereSonderpunkt(sp)}`);
+    }
+    for (const sp of neuesErgebnis.sonderpunkteKontra) {
+      sonderpunkte.push(`Kontra: ${formatiereSonderpunkt(sp)}`);
+    }
+    return sonderpunkte;
+  }
+
+  // Zeigt fuer jeden neuen Sonderpunkt kurzes goldenes Feedback-Banner (Fade-In/Out, nicht blockierend)
+  private async starteSonderpunktFeedbackAnimationen(sonderpunkte: string[]): Promise<void> {
+    for (const sonderpunkt of sonderpunkte) {
+      const breite = this.scale.gameSize.width;
+      const hoehe = this.scale.gameSize.height;
+      await this.animationen?.animiereSonderpunktFeedback(
+        sonderpunkt,
         { x: breite / 2, y: hoehe / 2 }
       );
     }

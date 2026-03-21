@@ -79,6 +79,33 @@ export class AnimationenService {
     }
   }
 
+  // Zeigt kurzes visuelles Feedback (1-2s) bei einem Sonderpunkt (Fuchs gefangen, Karlchen, Doppelkopf);
+  // goldener Text mit Fade-In/Out, nicht blockierend — setzt keine Spielaktion aus.
+  async animiereSonderpunktFeedback(
+    text: string,
+    position: Punkt,
+    sichtbarkeitsdauer = 1000
+  ): Promise<void> {
+    const feedbackobjekt = this.szene.add
+      .text(position.x, position.y, text, {
+        fontSize: '32px',
+        color: '#ffd700',
+        stroke: '#000000',
+        strokeThickness: 5,
+        align: 'center'
+      })
+      .setOrigin(0.5, 0.5)
+      .setDepth(100)
+      .setAlpha(0);
+    try {
+      await this.tweenAlpha(feedbackobjekt, 1, 200);
+      await this.warte(sichtbarkeitsdauer);
+      await this.tweenAlpha(feedbackobjekt, 0, 200);
+    } finally {
+      feedbackobjekt.destroy();
+    }
+  }
+
   async animiereStichEinziehen(
     kartenobjekte: AnimierbareKartenobjekte[],
     ziel: Punkt,

@@ -746,6 +746,45 @@ describe('TischSzene', () => {
     vi.useRealTimers();
   });
 
+  // WARUM: Das Sonderpunkt-Feedback ist der einzige sofortige visuelle Hinweis auf Fuchs/Karlchen/Doppelkopf
+  // im Spielfluss; ohne diese Absicherung koennte das Feedback bei State-Updates heimlich wegfallen.
+  it('zeigt ein Alpha-Tween-Feedback wenn ein neuer Sonderpunkt eintrifft', async () => {
+    vi.useFakeTimers();
+    const zustandOhneSonderpunkt = baueZustand({
+      partieStand: bauePartieStand(null)
+    });
+    const { tweens } = baueSzene(zustandOhneSonderpunkt);
+
+    // Neuer Zustand: Spielergebnis mit Fuchs-Gefangen-Sonderpunkt fuer Re
+    appStoreHarness.setZustand(baueZustand({
+      partieStand: {
+        ...bauePartieStand(null),
+        letztesSpielergebnis: {
+          spielNummer: 1,
+          spieltyp: 'NORMALSPIEL',
+          siegerPartei: 'RE',
+          spielwert: 1,
+          augenProPartei: { RE: 130, KONTRA: 110 },
+          spielpunkteProSpieler: { SUED: 1, WEST: -1, NORD: 1, OST: -1 },
+          sonderpunkteProPartei: { RE: ['FUCHS_GEFANGEN'], KONTRA: [] }
+        }
+      }
+    }));
+    appStoreHarness.sendeZustand();
+
+    // Fade-In Tween (alpha → 1) wurde synchron ausgeloest
+    expect(tweens.add).toHaveBeenCalledTimes(1);
+    expect(tweens.aufrufe[0].alpha).toBe(1);
+    expect(tweens.aufrufe[0].duration).toBe(200);
+
+    // Nach Ablauf der Sichtbarkeitszeit: Fade-Out Tween (alpha → 0)
+    await vi.runAllTimersAsync();
+
+    expect(tweens.add).toHaveBeenCalledTimes(2);
+    expect(tweens.aufrufe[1].alpha).toBe(0);
+    vi.useRealTimers();
+  });
+
   // WARUM: Das Ansage-Banner ist der einzige sofortige visuelle Hinweis auf Re/Kontra;
   // ohne diese Absicherung koennte das Banner bei State-Updates heimlich wegfallen.
   it('zeigt ein Alpha-Tween-Banner wenn eine neue Ansage eintrifft', async () => {

@@ -130,6 +130,40 @@ describe('AnimationenService', () => {
     vi.useRealTimers();
   });
 
+  // WARUM: Das Sonderpunkt-Feedback ist der einzige sofortige visuelle Hinweis auf Fuchs/Karlchen/Doppelkopf;
+  // ohne diese Absicherung koennte das Feedback bei State-Updates heimlich wegfallen oder dauerhaft sichtbar bleiben.
+  it('blendet ein Sonderpunkt-Feedback ein, haelt es sichtbar und blendet es wieder aus', async () => {
+    vi.useFakeTimers();
+    const { szene, aufrufe, textobjekte } = baueTweenSzene();
+    const service = new AnimationenService(szene as never);
+
+    const animation = service.animiereSonderpunktFeedback('Re: Fuchs gefangen', { x: 640, y: 360 });
+
+    // Fade-In Tween (alpha → 1) wird sofort ausgefuehrt
+    expect(aufrufe).toHaveLength(1);
+    expect(aufrufe[0].alpha).toBe(1);
+    expect(aufrufe[0].duration).toBe(200);
+
+    // Sichtbarkeitsfenster noch nicht abgelaufen: kein Fade-Out
+    await vi.advanceTimersByTimeAsync(999);
+    expect(aufrufe).toHaveLength(1);
+
+    // Nach 1000ms: Fade-Out Tween (alpha → 0)
+    await vi.advanceTimersByTimeAsync(1);
+    await animation;
+
+    expect(aufrufe).toHaveLength(2);
+    expect(aufrufe[1].alpha).toBe(0);
+    expect(aufrufe[1].duration).toBe(200);
+
+    // Feedback-Objekt wurde nach der Animation zerstoert
+    expect(textobjekte).toHaveLength(1);
+    expect(textobjekte[0].zerstort).toBe(true);
+    expect(textobjekte[0].text).toBe('Re: Fuchs gefangen');
+
+    vi.useRealTimers();
+  });
+
   it('wartet vor dem Stich-Einziehen und nutzt die konfigurierte Dauer', async () => {
     vi.useFakeTimers();
     const { szene, aufrufe } = baueTweenSzene();
