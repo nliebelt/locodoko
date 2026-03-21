@@ -140,6 +140,10 @@ class FakeGameObject {
     return this;
   }
 
+  setDepth(): this {
+    return this;
+  }
+
   setStrokeStyle(): this {
     return this;
   }
@@ -392,6 +396,7 @@ function erstelleTweenApi() {
         : [konfiguration.targets as FakeGameObject];
       const zielX = typeof konfiguration.x === 'number' ? konfiguration.x : undefined;
       const zielY = typeof konfiguration.y === 'number' ? konfiguration.y : undefined;
+      const zielAlpha = typeof konfiguration.alpha === 'number' ? konfiguration.alpha : undefined;
       if (zielX !== undefined) {
         ziele.forEach((ziel) => {
           ziel.x = zielX;
@@ -400,6 +405,11 @@ function erstelleTweenApi() {
       if (zielY !== undefined) {
         ziele.forEach((ziel) => {
           ziel.y = zielY;
+        });
+      }
+      if (zielAlpha !== undefined) {
+        ziele.forEach((ziel) => {
+          (ziel as FakeGameObject).alpha = zielAlpha;
         });
       }
       const onComplete = konfiguration.onComplete;
@@ -733,6 +743,36 @@ describe('TischSzene', () => {
 
     expect(tweens.add).toHaveBeenCalledTimes(1);
     expect(tweens.aufrufe[0].duration).toBe(600);
+    vi.useRealTimers();
+  });
+
+  // WARUM: Das Ansage-Banner ist der einzige sofortige visuelle Hinweis auf Re/Kontra;
+  // ohne diese Absicherung koennte das Banner bei State-Updates heimlich wegfallen.
+  it('zeigt ein Alpha-Tween-Banner wenn eine neue Ansage eintrifft', async () => {
+    vi.useFakeTimers();
+    const zustandOhneAnsage = baueZustand({
+      partieStand: bauePartieStand(baueLaufendesSpiel({ ansageHistorie: [] }))
+    });
+    const { tweens } = baueSzene(zustandOhneAnsage);
+
+    // Neuer Zustand: erste Ansage "Re" von Spieler SUED (Anna)
+    appStoreHarness.setZustand(baueZustand({
+      partieStand: bauePartieStand(baueLaufendesSpiel({
+        ansageHistorie: [{ spielerPosition: 'SUED', ansage: 'RE' }]
+      }))
+    }));
+    appStoreHarness.sendeZustand();
+
+    // Fade-In Tween (alpha → 1) wurde synchron ausgeloest
+    expect(tweens.add).toHaveBeenCalledTimes(1);
+    expect(tweens.aufrufe[0].alpha).toBe(1);
+    expect(tweens.aufrufe[0].duration).toBe(300);
+
+    // Nach Ablauf der Sichtbarkeitszeit: Fade-Out Tween (alpha → 0)
+    await vi.runAllTimersAsync();
+
+    expect(tweens.add).toHaveBeenCalledTimes(2);
+    expect(tweens.aufrufe[1].alpha).toBe(0);
     vi.useRealTimers();
   });
 });

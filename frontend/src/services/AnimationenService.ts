@@ -52,6 +52,33 @@ export class AnimationenService {
     await Promise.all(animationen);
   }
 
+  // Blendet ein Banner mit Spielername und Ansagetext in der Mitte der Szene ein (Fade-In),
+  // haelt es 1,5 Sekunden sichtbar und blendet es wieder aus (Fade-Out).
+  async animiereAnsageBanner(
+    text: string,
+    position: Punkt,
+    sichtbarkeitsdauer = 1500
+  ): Promise<void> {
+    const bannerobjekt = this.szene.add
+      .text(position.x, position.y, text, {
+        fontSize: '40px',
+        color: '#ffffff',
+        stroke: '#000000',
+        strokeThickness: 6,
+        align: 'center'
+      })
+      .setOrigin(0.5, 0.5)
+      .setDepth(100)
+      .setAlpha(0);
+    try {
+      await this.tweenAlpha(bannerobjekt, 1, 300);
+      await this.warte(sichtbarkeitsdauer);
+      await this.tweenAlpha(bannerobjekt, 0, 300);
+    } finally {
+      bannerobjekt.destroy();
+    }
+  }
+
   async animiereStichEinziehen(
     kartenobjekte: AnimierbareKartenobjekte[],
     ziel: Punkt,
@@ -74,6 +101,35 @@ export class AnimationenService {
     this.laufendeTweens.clear();
     this.laufendenTimer.forEach((timer) => window.clearTimeout(timer));
     this.laufendenTimer.clear();
+  }
+
+  // Animiert die Transparenz eines Phaser-Objekts auf einen Zielwert (0=unsichtbar, 1=sichtbar)
+  private tweenAlpha(
+    ziel: Phaser.GameObjects.GameObject,
+    alpha: number,
+    dauer: number
+  ): Promise<void> {
+    return new Promise((resolve) => {
+      const tweenReferenz: { wert?: Phaser.Tweens.Tween } = {};
+      let abgeschlossen = false;
+      const tween = this.szene.tweens.add({
+        targets: [ziel],
+        alpha,
+        duration: this.skalierteDauer(dauer),
+        ease: 'Linear',
+        onComplete: () => {
+          abgeschlossen = true;
+          if (tweenReferenz.wert) {
+            this.laufendeTweens.delete(tweenReferenz.wert);
+          }
+          resolve();
+        }
+      });
+      tweenReferenz.wert = tween;
+      if (!abgeschlossen) {
+        this.laufendeTweens.add(tween);
+      }
+    });
   }
 
   private tweenZu(

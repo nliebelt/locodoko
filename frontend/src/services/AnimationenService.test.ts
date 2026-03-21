@@ -8,19 +8,34 @@ interface AnimierbaresZiel {
   y: number;
 }
 
+interface FakeTextObjekt {
+  x: number;
+  y: number;
+  text: string;
+  alpha: number;
+  zerstort: boolean;
+  setOrigin: () => FakeTextObjekt;
+  setDepth: () => FakeTextObjekt;
+  setAlpha: (a: number) => FakeTextObjekt;
+  destroy: () => void;
+}
+
 function baueTweenSzene() {
   const aufrufe: Array<Record<string, unknown>> = [];
+  const textobjekte: FakeTextObjekt[] = [];
   return {
     aufrufe,
+    textobjekte,
     szene: {
       tweens: {
         add: vi.fn((konfiguration: Record<string, unknown>) => {
           aufrufe.push(konfiguration);
           const ziele = Array.isArray(konfiguration.targets)
-            ? konfiguration.targets as AnimierbaresZiel[]
-            : [konfiguration.targets as AnimierbaresZiel];
+            ? konfiguration.targets as (AnimierbaresZiel & { alpha?: number })[]
+            : [konfiguration.targets as AnimierbaresZiel & { alpha?: number }];
           const zielX = konfiguration.x as number | undefined;
           const zielY = konfiguration.y as number | undefined;
+          const zielAlpha = typeof konfiguration.alpha === 'number' ? konfiguration.alpha : undefined;
           if (zielX !== undefined) {
             ziele.forEach((ziel) => {
               ziel.x = zielX;
@@ -31,6 +46,11 @@ function baueTweenSzene() {
               ziel.y = zielY;
             });
           }
+          if (zielAlpha !== undefined) {
+            ziele.forEach((ziel) => {
+              ziel.alpha = zielAlpha;
+            });
+          }
           const onComplete = konfiguration.onComplete;
           if (typeof onComplete === 'function') {
             onComplete();
@@ -38,6 +58,23 @@ function baueTweenSzene() {
           return {
             stop: vi.fn()
           };
+        })
+      },
+      add: {
+        text: vi.fn((x: number, y: number, text: string) => {
+          const objekt: FakeTextObjekt = {
+            x,
+            y,
+            text,
+            alpha: 0,
+            zerstort: false,
+            setOrigin() { return this; },
+            setDepth() { return this; },
+            setAlpha(a: number) { this.alpha = a; return this; },
+            destroy() { this.zerstort = true; }
+          };
+          textobjekte.push(objekt);
+          return objekt;
         })
       }
     }
@@ -57,6 +94,40 @@ describe('AnimationenService', () => {
     expect(aufrufe[0].duration).toBe(400);
     expect(bild).toMatchObject({ x: 100, y: 200 });
     expect(beschriftung).toMatchObject({ x: 100, y: 200 });
+  });
+
+  // WARUM: Das Ansage-Banner ist die einzige Echtzeitrueckmeldung bei Re/Kontra/Absagen;
+  // ohne diese Absicherung koennte die Animation heimlich wegfallen oder dauerhaft sichtbar bleiben.
+  it('blendet ein Ansage-Banner ein, haelt es sichtbar und blendet es wieder aus', async () => {
+    vi.useFakeTimers();
+    const { szene, aufrufe, textobjekte } = baueTweenSzene();
+    const service = new AnimationenService(szene as never);
+
+    const animation = service.animiereAnsageBanner('Anna\nRe', { x: 640, y: 360 });
+
+    // Fade-In Tween (alpha → 1) wird sofort ausgefuehrt
+    expect(aufrufe).toHaveLength(1);
+    expect(aufrufe[0].alpha).toBe(1);
+    expect(aufrufe[0].duration).toBe(300);
+
+    // Sichtbarkeitsfenster noch nicht abgelaufen: kein Fade-Out
+    await vi.advanceTimersByTimeAsync(1499);
+    expect(aufrufe).toHaveLength(1);
+
+    // Nach 1500ms: Fade-Out Tween (alpha → 0)
+    await vi.advanceTimersByTimeAsync(1);
+    await animation;
+
+    expect(aufrufe).toHaveLength(2);
+    expect(aufrufe[1].alpha).toBe(0);
+    expect(aufrufe[1].duration).toBe(300);
+
+    // Banner-Objekt wurde nach der Animation zerstört
+    expect(textobjekte).toHaveLength(1);
+    expect(textobjekte[0].zerstort).toBe(true);
+    expect(textobjekte[0].text).toBe('Anna\nRe');
+
+    vi.useRealTimers();
   });
 
   it('wartet vor dem Stich-Einziehen und nutzt die konfigurierte Dauer', async () => {

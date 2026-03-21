@@ -4,9 +4,9 @@ Stand: 2026-03-21
 
 ## Notiz
 
-**Letzte Iteration (2026-03-21):** Karten-Austeilen-Animation implementiert. `AnimationenService.animiereKartenAusteilen()` animiert ein Array von Karten gestaffelt (75ms Verzoegerung pro Karte, 75ms Animationsdauer) von der Tischmitte zu den jeweiligen Handpositionen. `TischSzene` erkennt ein neues Spiel ueber eine aendernde `spielNummer`, setzt `austeilenAktiv = true`, rendert Karten unsichtbar (alpha=0), startet die asynchrone Austeilen-Animation mit temporaeren Bildobjekten, und rendert am Ende die echten Karten wieder sichtbar. Eigene Karten werden offen ausgeteilt, gegnerische verdeckt. Neuer Test fixiert: 8 Tweens (4 Spieler * 2 Karten) mit je 75ms Dauer beim Uebergang von kein Spiel zu Spiel #1.
+**Letzte Iteration (2026-03-21):** Ansage-Banner-Animation implementiert. `AnimationenService.animiereAnsageBanner()` erstellt ein Phaser-Textobjekt, blendet es via `tweenAlpha` (alpha 0→1, 300ms), haelt es 1,5s sichtbar und blendet es wieder aus (alpha 1→0, 300ms), dann `destroy()`. `TischSzene.ermittleNeueAnsagen()` vergleicht `ansageHistorie.length` zwischen vorherigem und aktuellem Modell; neue Ansagen werden sequenziell als Banner angezeigt. Tests: `AnimationenService.test.ts` prueft Fade-In/Warten/Fade-Out-Timing; `TischSzene.test.ts` prueft dass ein alpha-Tween ausgeloest wird wenn eine neue Ansage eintrifft.
 
-**Naechster logischer Schritt:** Ansage-Banner-Animation (`specs/frontend-animationen.md`): Bei Re/Kontra/Absage ein Pop-up-Banner mit Spielername und Fade-In/Out (1,5s sichtbar). Danach: Sonderpunkt-Feedback-Animation (Fuchs/Karlchen/Doppelkopf, 1-2s).
+**Naechster logischer Schritt:** Sonderpunkt-Feedback-Animation (Fuchs/Karlchen/Doppelkopf, 1-2s kurzes Icon/Text-Feedback bei Sonderpunkten).
 
 **Offene Fragen:** jsdom kann Canvas 2D nicht rendern (daher stderr-Warnings in Tests); Texturen werden im Browser korrekt erzeugt. Ein `canvas`-npm-Package koennte die Warnings eliminieren, ist aber nicht kritisch.
 
@@ -139,7 +139,7 @@ Ausgangslage: Backend und Frontend sind funktional weitgehend vollstaendig: Kart
 
 - [x] Reale Karten-Sprites mit franzoesischem Blatt (48 Karten + Rueckseite) auf das bestehende Fallback-Setup aufsetzen; jetzt per HTML Canvas 2D generiert: Farbsymbol, Wertkuerzel in den Ecken, grosses Symbol in der Mitte, Schwarz/Rot-Faerbung.
 - [x] Karten-Austeilen-Animation gemaess `specs/frontend-animationen.md` ergaenzt: `AnimationenService.animiereKartenAusteilen()` animiert Karten gestaffelt (75ms/Karte) von der Tischmitte zu den Handpositionen; eigene offen, gegnerische verdeckt; `TischSzene` erkennt neues Spiel ueber spielNummer-Aenderung und blendet echte Karten waehrend der Animation aus.
-- [ ] Ansage-Banner-Animation ergaenzen: Bei Re/Kontra/Absage ein Pop-up-Banner mit Spielername und Fade-In/Out (1,5s sichtbar); aktuell nur kleine statische Eintrage in der Ansagehistorie-Liste.
+- [x] Ansage-Banner-Animation ergaenzt: Bei Re/Kontra/Absage ein Pop-up-Banner mit Spielername und Fade-In/Out (1,5s sichtbar); `AnimationenService.animiereAnsageBanner()` per `tweenAlpha` und `warte`; `TischSzene` erkennt neue Ansagen per `ermittleNeueAnsagen()` und zeigt das Banner sequenziell.
 - [ ] Sonderpunkt-Feedback-Animation ergaenzen: Bei Fuchs/Karlchen/Doppelkopf kurzes visuelles Icon-/Text-Feedback (1-2s); aktuell nur in der statischen Auswertung sichtbar.
 - [ ] Rundenende-Overlay als modalen Dialog umsetzen: Augen, Spielpunkte, Sonderpunkte, bleibt bis Spieler schliesst; aktuell nur als Sektion im rechten UI-Panel, geht leicht unter.
 - [ ] Responsive Verhalten, visuelle Plausibilitaet und Bedienbarkeit der Tischansicht verbessern; innerHTML-basiertes Rendering ist funktional, aber bei Layout-Aenderungen fragil.

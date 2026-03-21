@@ -12,6 +12,7 @@ import { appStore } from '../anwendung';
 import {
   erstelleTischAnsichtAusStatus,
   istTrumpfFuerSpieltyp,
+  type AnsageAnsicht,
   type TischAnsichtModell,
   type SpielerPosition
 } from '../model/TischAnsichtModell';
@@ -207,6 +208,7 @@ export class TischSzene extends Phaser.Scene {
       }
       this.renderTisch(zustand, modell);
       void this.starteFolgeanimationen(vorherigesModell, modell);
+      void this.starteAnsageBannerAnimationen(this.ermittleNeueAnsagen(vorherigesModell, modell));
       this.letztesModell = modell;
     });
   }
@@ -1115,6 +1117,34 @@ export class TischSzene extends Phaser.Scene {
 
   private nameFuerPosition(modell: TischAnsichtModell, position: SpielerPosition): string {
     return modell.spieler.find((spieler) => spieler.position === position)?.name ?? position;
+  }
+
+  // Erkennt neue Ansagen im Vergleich zum vorherigen Modell-Snapshot
+  private ermittleNeueAnsagen(
+    vorherigesModell: TischAnsichtModell | null,
+    aktuellesModell: TischAnsichtModell
+  ): AnsageAnsicht[] {
+    if (!vorherigesModell) {
+      return [];
+    }
+    const anzahlVorher = vorherigesModell.ansageHistorie.length;
+    if (aktuellesModell.ansageHistorie.length <= anzahlVorher) {
+      return [];
+    }
+    return aktuellesModell.ansageHistorie.slice(anzahlVorher);
+  }
+
+  // Zeigt fuer jede neue Ansage ein Pop-up-Banner mit Spielername und Ansagetext (Fade-In/Out)
+  private async starteAnsageBannerAnimationen(neueAnsagen: AnsageAnsicht[]): Promise<void> {
+    for (const ansage of neueAnsagen) {
+      const breite = this.scale.gameSize.width;
+      const hoehe = this.scale.gameSize.height;
+      const bannerText = `${ansage.name}\n${formatiereAnsage(ansage.ansage)}`;
+      await this.animationen?.animiereAnsageBanner(
+        bannerText,
+        { x: breite / 2, y: hoehe / 2 }
+      );
+    }
   }
 
   private erstelleSektion(titel: string, beschreibung: string): HTMLDivElement {
