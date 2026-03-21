@@ -1,14 +1,26 @@
 # Ralph Planning Mode — Locodoko
 
-0a. Studiere `specs/*` um die Spezifikationen des Doppelkopf-Spiels zu verstehen.
-0b. Studiere @IMPLEMENTATION_PLAN.md (falls vorhanden), um den bisherigen Plan zu verstehen.
-0c. Der Quellcode der Anwendung liegt in `src/`.
-0d. Das Frontend liegt in `frontend/` (falls vorhanden).
+## Vorbereitung
 
-1. Studiere @IMPLEMENTATION_PLAN.md (er kann fehlerhaft sein) und untersuche den bestehenden Quellcode in `src/` und `frontend/`. Vergleiche ihn mit den Spezifikationen in `specs/*`. Erstelle oder aktualisiere @IMPLEMENTATION_PLAN.md als priorisierte Aufgabenliste (Bullet Points), sortiert nach Priorität der noch umzusetzenden Punkte. Denke gründlich nach. Suche nach TODO, minimalen Implementierungen, Platzhaltern, übersprungenen oder instabilen Tests und inkonsistenten Patterns. Halte @IMPLEMENTATION_PLAN.md aktuell mit Einträgen, die als erledigt oder offen gelten.
+0a. Studiere @IMPLEMENTATION_PLAN.md (falls vorhanden), um den bisherigen Plan zu verstehen.
+0b. Starte 5 PARALLELE Subagenten, jeder analysiert einen Bounded Context:
+    - Subagent 1 — Lobby/Tisch: `src/main/java/de/locodoko/lobby/` + specs/lobby.md, specs/tischkonfiguration.md
+    - Subagent 2 — Partie/Regeln: `src/main/java/de/locodoko/partie/` + specs/spielablauf.md, specs/stichlogik.md, specs/trumpfhierarchie.md, specs/punkteberechnung.md, specs/ansagen.md, specs/sonderpunkte.md
+    - Subagent 3 — Session/API: `src/main/java/de/locodoko/session/` + specs/spieler-session.md, specs/websocket-kommunikation.md, specs/rest-api.md
+    - Subagent 4 — Frontend: `frontend/src/` + specs/frontend-tischansicht.md, specs/frontend-ui-logik.md, specs/frontend-animationen.md
+    - Subagent 5 — Sonderspiele/KI: specs/hochzeit.md, specs/armut.md, specs/solo-*.md, specs/ki-strategie.md, specs/verbindungsabbruch.md + betroffener Code
+    Jeder Subagent gibt zurück: was implementiert ist, was fehlt, was inkonsistent oder instabil ist (TODOs, Platzhalter, übersprungene Tests, Patterns-Brüche).
+    Warte auf alle 5 Ergebnisse.
 
-WICHTIG: Nur planen. NICHTS implementieren. NICHT annehmen, dass Funktionalität fehlt — zuerst per Code-Suche bestätigen.
+## Planung
 
-ZIEL: Wir wollen ein spielbares Doppelkopf-Spiel im Browser erreichen (Spring Boot Backend + Phaser Frontend, auslieferbar als einzelnes JAR). Berücksichtige fehlende Elemente und plane entsprechend. Falls ein Element fehlt, suche zuerst, ob es nicht doch existiert. Falls es wirklich fehlt, erstelle die Spezifikation unter specs/DATEINAME.md.
+1. Erstelle oder aktualisiere @IMPLEMENTATION_PLAN.md als priorisierte Aufgabenliste aus den Subagenten-Ergebnissen.
+   - Sortiert nach Priorität (blockierende Abhängigkeiten zuerst)
+   - Erledigte Einträge als Referenz behalten
+   - Jeden `[BLOCKED: ...]`-Eintrag aus der letzten Iteration neu bewerten
 
-Wenn alle Planungsaufgaben erledigt sind und @IMPLEMENTATION_PLAN.md vollständig ist, gib <promise>COMPLETE</promise> aus.
+WICHTIG: Nur planen. NICHTS implementieren. Die Subagenten haben den Code bereits geprüft — nicht nochmal annehmen, dass etwas fehlt, ohne es bestätigt zu haben.
+
+ZIEL: Spielbares Doppelkopf-Spiel im Browser (Spring Boot Backend + Phaser Frontend, auslieferbar als einzelnes JAR).
+
+Wenn @IMPLEMENTATION_PLAN.md vollständig und aktuell ist, gib <promise>COMPLETE</promise> aus.

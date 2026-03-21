@@ -44,7 +44,8 @@ locodoko/
 ├── frontend/                          # TypeScript/Phaser (npm-Projekt)
 ├── specs/                             # Spezifikationen (eine Datei pro Thema)
 ├── PRD.md                             # Product Requirements Document
-├── ralph.sh                           # Ralph Loop Script
+├── ralph.sh                           # Ralph Loop Script (Claude Code)
+├── ralph-copilot.sh                   # Ralph Loop Script (GitHub Copilot)
 ├── PROMPT_plan.md                     # Planning-Modus Prompt
 ├── PROMPT_build.md                    # Build-Modus Prompt
 ├── AGENTS.md                          # Diese Datei (operativ, kurz halten!)

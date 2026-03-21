@@ -2,7 +2,7 @@
 set -euo pipefail
 
 # ============================================================
-# ralph.sh — Autonomous coding loop for Claude Code
+# ralph.sh — Autonomous coding loop for GitHub Copilot CLI
 #
 # Usage:
 #   ./ralph.sh plan [max_iterations]    # Planning mode
@@ -18,16 +18,10 @@ set -euo pipefail
 #   ./ralph.sh 15            # Build mode, 15 iterations
 #
 # Environment:
-#   MODEL=claude-opus-4-6 ./ralph.sh build 10     # Override model
-#
-# Model defaults:
-#   plan  → claude-sonnet-4-6   (needs reasoning, fewer tokens)
-#   build → claude-sonnet-4-6   (default for Pro account)
-#
-# With Pro account: authenticate via `claude login` (no API key needed).
-# With API key: set ANTHROPIC_API_KEY and use claude-haiku-4-5-20251001
-#               for cheap testing of the loop approach.
+#   MODEL=gpt-5 ./ralph.sh build 10   # Override model
 # ============================================================
+
+# --- Parse arguments ---
 
 # --- Check for uncommitted changes in Git worktree ---
 if git rev-parse --is-inside-work-tree &>/dev/null; then
@@ -60,31 +54,25 @@ ITER_OUTPUT=".ralph-iter.tmp"
 LOG_FILE="ralph-$(date +%Y%m%d-%H%M%S).log"
 
 # --- Model selection ---
-# Default: sonnet for both modes (works with Pro account via `claude login`)
-# Override: MODEL=claude-haiku-4-5-20251001 for cheap API-key testing
-#           MODEL=claude-opus-4-6 for maximum quality
+MODEL_FLAG=""
 if [ -n "${MODEL:-}" ]; then
-    EFFECTIVE_MODEL="$MODEL"
-elif [ "$MODE" = "plan" ]; then
-    EFFECTIVE_MODEL="claude-opus-4-6"
-else
-    EFFECTIVE_MODEL="claude-sonnet-4-6"
+    MODEL_FLAG="--model $MODEL"
 fi
 
 # --- Header ---
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-echo "  Ralph Loop - Locodoko (Claude Code)"
+echo "  Ralph Loop - Locodoko"
 echo "  Modus:      $MODE"
 echo "  Prompt:     $PROMPT_FILE"
 echo "  Max:        $MAX_ITERATIONS Iterationen"
-echo "  Modell:     $EFFECTIVE_MODEL"
+echo "  Modell:     ${MODEL:-default}"
 echo "  Log:        $LOG_FILE"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 
 # --- Verify prerequisites ---
-if ! command -v claude &>/dev/null; then
-    echo "FEHLER: 'claude' CLI nicht gefunden."
-    echo "Installiere mit: npm install -g @anthropic-ai/claude-code"
+if ! command -v copilot &>/dev/null; then
+    echo "FEHLER: 'copilot' CLI nicht gefunden."
+    echo "Installiere mit: npm install -g @github/copilot"
     exit 1
 fi
 
@@ -107,7 +95,7 @@ if [ ! -d ".git" ]; then
 fi
 
 # --- Build context file ---
-# Combines all context into a single prompt for Claude Code.
+# Combines all context into a single file for Copilot CLI's @file attachment.
 # This keeps the primary context deterministic: same files every iteration.
 build_context() {
     : > "$CONTEXT_FILE"
@@ -156,15 +144,48 @@ while true; do
     # Fresh context each iteration
     build_context
 
-    # Run Claude Code iteration
-    # --dangerouslySkipPermissions: appropriate for sandboxed Docker environments —
-    # the container is the security boundary, so pre-approving all tool use is safe.
-    # Output is shown in real-time via tee and captured for signal detection.
-    claude -p "$(cat "$CONTEXT_FILE")
-
-Folge den Anweisungen im angehängten Kontext." \
-        --model "$EFFECTIVE_MODEL" \
-        --dangerouslySkipPermissions \
+    # Run Copilot CLI iteration
+    # Output is shown in real-time via tee and captured for COMPLETE detection
+    # shellcheck disable=SC2086
+    copilot -p "@${CONTEXT_FILE} Folge den Anweisungen im angehängten Kontext." \
+        $MODEL_FLAG \
+        --allow-tool write \
+        --allow-tool 'shell(mvn:*)' \
+        --allow-tool 'shell(npm:*)' \
+        --allow-tool 'shell(npx:*)' \
+        --allow-tool 'shell(node:*)' \
+        --allow-tool 'shell(git:*)' \
+        --allow-tool 'shell(java:*)' \
+        --allow-tool 'shell(javac:*)' \
+        --allow-tool 'shell(cat:*)' \
+        --allow-tool 'shell(find:*)' \
+        --allow-tool 'shell(grep:*)' \
+        --allow-tool 'shell(rg:*)' \
+        --allow-tool 'shell(ls:*)' \
+        --allow-tool 'shell(mkdir:*)' \
+        --allow-tool 'shell(cp:*)' \
+        --allow-tool 'shell(mv:*)' \
+        --allow-tool 'shell(rm:*)' \
+        --allow-tool 'shell(echo:*)' \
+        --allow-tool 'shell(chmod:*)' \
+        --allow-tool 'shell(sed:*)' \
+        --allow-tool 'shell(awk:*)' \
+        --allow-tool 'shell(curl:*)' \
+        --allow-tool 'shell(head:*)' \
+        --allow-tool 'shell(tail:*)' \
+        --allow-tool 'shell(wc:*)' \
+        --allow-tool 'shell(sort:*)' \
+        --allow-tool 'shell(diff:*)' \
+        --allow-tool 'shell(touch:*)' \
+        --allow-tool 'shell(tee:*)' \
+        --allow-tool 'shell(tr:*)' \
+        --allow-tool 'shell(xargs:*)' \
+        --allow-tool 'shell(bash:*)' \
+        --allow-tool 'shell(sh:*)' \
+        --allow-tool 'shell(test:*)' \
+        --allow-tool 'shell(pwd:*)' \
+        --allow-tool 'shell(env:*)' \
+        --allow-tool 'shell(which:*)' \
         2>&1 | tee "$ITER_OUTPUT" || true
 
     # Append iteration output to log
@@ -176,16 +197,6 @@ Folge den Anweisungen im angehängten Kontext." \
     if grep -q '<promise>COMPLETE</promise>' "$ITER_OUTPUT" 2>/dev/null; then
         echo ""
         echo "━━━ Ralph meldet: COMPLETE ━━━"
-        break
-    fi
-
-    # Check for blocked signal — ALL remaining tasks are blocked, no progress possible
-    # (Single blocked tasks are handled by the agent internally: marked in IMPLEMENTATION_PLAN.md,
-    #  agent moves to next task. BLOCKED is only emitted when truly stuck on everything.)
-    if grep -q '<promise>BLOCKED</promise>' "$ITER_OUTPUT" 2>/dev/null; then
-        echo ""
-        echo "━━━ Ralph meldet: BLOCKED — Alle Aufgaben blockiert, manuelle Intervention nötig ━━━"
-        echo "    Siehe IMPLEMENTATION_PLAN.md für Details."
         break
     fi
 

@@ -1,38 +1,43 @@
 # Ralph Build Mode — Locodoko
 
-0a. Studiere `specs/*` um die Spezifikationen des Doppelkopf-Spiels zu verstehen.
-0b. Studiere @IMPLEMENTATION_PLAN.md.
-0c. Der Quellcode der Anwendung liegt in `src/`.
-0d. Das Frontend liegt in `frontend/` (falls vorhanden).
+## Vorbereitung
 
-1. Deine Aufgabe ist es, Funktionalität gemäß den Spezifikationen zu implementieren. Folge @IMPLEMENTATION_PLAN.md und wähle die wichtigste Aufgabe. Bevor du Änderungen machst, durchsuche die Codebasis (nimm nicht an, dass etwas nicht implementiert ist). Denke gründlich nach.
+0a. Studiere @IMPLEMENTATION_PLAN.md. Lies die `## Notiz`-Sektion (falls vorhanden) — sie enthält den Stand der letzten Iteration.
+0b. Wähle die EINE wichtigste offene Aufgabe aus @IMPLEMENTATION_PLAN.md. Nicht mehrere.
+0c. Starte PARALLEL zwei Subagenten:
+    - Subagent A: Lies die für diese Aufgabe relevanten Specs aus `specs/` und gib eine Zusammenfassung zurück.
+    - Subagent B: Analysiere den bestehenden Code in `src/` und `frontend/` für die betroffenen Bereiche. Prüfe, was bereits implementiert ist — NICHT annehmen, dass etwas fehlt, zuerst Code-Suche.
+    Warte auf beide Ergebnisse, bevor du weitermachst.
 
-2. Nach dem Implementieren oder Beheben von Problemen, führe die Tests für den geänderten Code aus. Wenn Funktionalität fehlt, ist es deine Aufgabe, sie gemäß den Spezifikationen hinzuzufügen. Prüfe auch die Logs auf Plausibilität und unerwartete Fehler.
+## Implementierung
 
-3. Wenn du Probleme entdeckst, aktualisiere sofort @IMPLEMENTATION_PLAN.md mit deinen Erkenntnissen. Wenn das Problem gelöst ist, aktualisiere den Eintrag und entferne ihn.
+1. Implementiere AUSSCHLIESSLICH diese eine Aufgabe — vollständig, keine Platzhalter, keine Stubs. Wenn Funktionalität bereits existiert, baue darauf auf statt sie neu zu schreiben.
 
-4. Wenn die Tests bestehen, aktualisiere @IMPLEMENTATION_PLAN.md, dann `git add -A`, dann `git commit` mit einer Nachricht, die die Änderungen beschreibt.
+2. Führe nach der Implementierung die Tests für den geänderten Code aus.
+   - Tests grün → weiter zu Schritt 3.
+   - Tests rot → einmal debuggen und beheben. Wenn nach dem zweiten Versuch immer noch rot: markiere die Aufgabe in @IMPLEMENTATION_PLAN.md als `[BLOCKED: <Grund>]` und wechsle zur nächsten offenen Aufgabe. Falls ALLE verbleibenden Aufgaben blockiert sind: gib `<promise>BLOCKED</promise>` aus.
 
-999. Wichtig: Wenn du Dokumentation oder Tests schreibst, halte fest WARUM Tests und die Implementierung wichtig sind.
+3. Bei grünen Tests:
+   - Aktualisiere @IMPLEMENTATION_PLAN.md (Aufgabe als erledigt markieren).
+   - `git add src/ frontend/ specs/ IMPLEMENTATION_PLAN.md AGENTS.md`
+   - `git commit -m "<präzise Beschreibung der Änderung>"`
 
-9999. Wichtig: Wir wollen Single Sources of Truth, keine Migrationen/Adapter. Wenn Tests, die nicht mit deiner Arbeit zusammenhängen, fehlschlagen, ist es deine Aufgabe, sie als Teil der Änderung zu beheben.
+4. Schreibe am Ende der Iteration eine "Notiz an den nächsten Ralph" unter `## Notiz` in @IMPLEMENTATION_PLAN.md (direkt nach der Überschrift, vor allen anderen Sektionen). Überschreibe die Notiz der letzten Iteration. Inhalt:
+   - Was wurde implementiert?
+   - Was ist der nächste logische Schritt?
+   - Bekannte offene Fragen oder Probleme?
 
-99999. Du darfst zusätzliches Logging hinzufügen, um Probleme zu debuggen. Prüfe die Logs auf Plausibilität.
+---
 
-999999. Halte @IMPLEMENTATION_PLAN.md IMMER aktuell mit deinen Erkenntnissen. Besonders nach Abschluss deiner Arbeit.
-
-9999999. Wenn du etwas Neues über den Build-Prozess oder das Projektsetup lernst, aktualisiere @AGENTS.md — aber halte es kurz. Zum Beispiel wenn du Befehle mehrfach ausführst, bevor du den richtigen findest.
-
-99999999. Für alle Bugs die du bemerkst: behebe sie oder dokumentiere sie in @IMPLEMENTATION_PLAN.md, auch wenn sie nichts mit der aktuellen Aufgabe zu tun haben.
-
-999999999. Implementiere Funktionalität vollständig. Platzhalter und Stubs verschwenden Zeit, weil die gleiche Arbeit wiederholt werden muss.
-
-9999999999. Wenn @IMPLEMENTATION_PLAN.md zu groß wird, räume erledigte Einträge regelmäßig auf.
-
+999. Wenn du Tests schreibst, halte fest WARUM sie wichtig sind.
+9999. Single Sources of Truth — keine Migrationen/Adapter. Wenn fremde Tests fehlschlagen, behebe sie als Teil der Änderung.
+99999. Du darfst Logging hinzufügen. Prüfe Logs auf Plausibilität.
+999999. Halte @IMPLEMENTATION_PLAN.md IMMER aktuell.
+9999999. Wenn du etwas Neues über den Build-Prozess lernst, aktualisiere @AGENTS.md — aber halte es kurz.
+99999999. Für alle entdeckten Bugs: behebe sie oder dokumentiere sie in @IMPLEMENTATION_PLAN.md.
+999999999. Implementiere Funktionalität vollständig. Platzhalter verschwenden Zeit.
+9999999999. Wenn @IMPLEMENTATION_PLAN.md zu groß wird, räume erledigte Einträge auf.
 99999999999. Wenn du Inkonsistenzen in specs/* findest, aktualisiere die Specs.
-
-999999999999. WICHTIG: Halte @AGENTS.md rein operativ — Statusupdates und Fortschrittsnotizen gehören in IMPLEMENTATION_PLAN.md. Ein aufgeblähtes AGENTS.md verschmutzt den Context jeder zukünftigen Iteration.
-
-9999999999999. KEINE PLATZHALTER ODER MINIMALE IMPLEMENTIERUNGEN. VOLLSTÄNDIGE IMPLEMENTIERUNGEN.
+999999999999. WICHTIG: @AGENTS.md bleibt rein operativ — Statusupdates gehören in IMPLEMENTATION_PLAN.md.
 
 Wenn alle Aufgaben in @IMPLEMENTATION_PLAN.md erledigt sind, gib <promise>COMPLETE</promise> aus.

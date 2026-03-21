@@ -16,7 +16,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 # 2. Install Dev Tools (Java, Maven, Node, GH CLI)
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    temurin-21-jdk \
+    temurin-25-jdk \
     maven \
     nodejs \
     gh \
@@ -24,6 +24,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 # 3. Global NPM Tools
 RUN npm install -g \
+    @anthropic-ai/claude-code \
     @github/copilot \
     typescript \
     vite \
@@ -58,6 +59,7 @@ if [[ $- == *i* ]]; then\n\
   printf "  %-12s %s\n" "vite"     "$(vite --version 2>&1)"\n\
   printf "  %-12s %s\n" "vitest"   "$(vitest --version 2>&1 | head -1)"\n\
   printf "  %-12s %s\n" "eslint"   "$(eslint --version)"\n\
+  printf "  %-12s %s\n" "claude"   "$(claude --version 2>&1 | head -1)"\n\
   printf "  %-12s %s\n" "gh"       "$(gh --version 2>&1 | head -1)"\n\
   echo "  ─────────────────────────────────────────"\n\
   echo ""\n\
