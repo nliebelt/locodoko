@@ -4,9 +4,9 @@ Stand: 2026-03-21
 
 ## Notiz
 
-**Letzte Iteration (2026-03-21):** `PartieController` mit Session-Validierung geschuetzt (Prioritaet 10). `GET /api/partien/{id}/stand` prueft jetzt eine gueltige HTTP-Session, laedt den zugehoerigen Spieler und gibt bei fehlender/abgelaufener Session 401 zurueck. `TischControllerTest` aktualisiert (15 → 13 Tests; 2 neue: Partiestand mit Session 200 und ohne Session 401). 101 Backend-Tests gruen.
+**Letzte Iteration (2026-03-21):** `KiOrchestrierungService` Fehlerbehandlung fuer KI-Strategie-Exceptions ergaenzt (Prioritaet 10). `fuehreKiAktionAus()`-Aufruf ist jetzt in `automatisiereTisch()` mit try-catch umhuellt: eine Exception wird mit ERROR geloggt (Spielerposition, Spielphase, Tisch-ID) und der Aufruf kehrt zurueck, ohne `uebernehmeDomainSpiel()` aufzurufen — Persistenz-Datenbankstand bleibt konsistent. Logger hinzugefuegt; Sicherheitslimit-Erreichen wird jetzt ebenfalls geloggt bevor die Exception geworfen wird. `KiOrchestrierungServiceFehlerTest` mit zwei neuen Integrationstests: KI-Exception in STICHPHASE und in VORBEHALT_ANSAGE; beide pruefen `assertDoesNotThrow` und unveraenderte Spielphase nach der Exception. Statt Mockito (im Projekt nicht vorhanden) wird eine innere `WirftImmerKiStrategie`-Klasse mit `@TestConfiguration @Primary` verwendet. 103 Backend-Tests gruen.
 
-**Naechster logischer Schritt:** `KiOrchestrierungService` Fehlerbehandlung fuer KI-Strategie-Exceptions ergaenzen (Prioritaet 10), damit die Partie bei einem KI-Fehler nicht in inkonsistentem Zustand haengt.
+**Naechster logischer Schritt:** Test-Luecken schliessen: Fehlerszenarien fuer Tisch-Beitritt bei vollem Tisch (409), deaktivierte Sonderspiele in der Spiellogik (armutErlaubt=false → Vorbehalt ablehnen), wiederholte Armut-Einwuerfe.
 
 **Offene Fragen:** jsdom kann Canvas 2D nicht rendern (daher stderr-Warnings in Tests); Texturen werden im Browser korrekt erzeugt. Ein `canvas`-npm-Package koennte die Warnings eliminieren, ist aber nicht kritisch.
 
@@ -151,7 +151,7 @@ Ausgangslage: Backend und Frontend sind funktional weitgehend vollstaendig: Kart
 - [x] Concurrency-Absicherung in TischService: Pessimistisches Write-Lock (PESSIMISTIC_WRITE) via `TischRepository.findByIdWithLock()` fuer alle schreibenden Operationen (betreteTisch, starteTisch, verlasseTisch, aktualisiereKonfiguration). Neue Tests sichern TISCH_VOLL-409 und TISCH_BEREITS_GESTARTET-409 ab.
 - [x] Exception-Hierarchie konsistent machen: `SpielerSessionUngueltigException` und `SpielerNameAenderungNichtErlaubtException` haben jetzt `fehlerCode()`-Methoden; Handler rufen `fehlerCode()` statt hartkodierten Strings auf.
 - [x] PartieController mit Session-Validierung schuetzen: `GET /api/partien/{id}/stand` prueft aktuell keine Session; jeder kann jeden Partie-Stand abrufen.
-- [ ] KiOrchestrierungService: Fehlerbehandlung fuer KI-Strategie-Exceptions ergaenzen, damit Partie bei KI-Fehler nicht in inkonsistentem Zustand haengt.
+- [x] KiOrchestrierungService: Fehlerbehandlung fuer KI-Strategie-Exceptions ergaenzen, damit Partie bei KI-Fehler nicht in inkonsistentem Zustand haengt. `fuehreKiAktionAus()`-Aufruf mit try-catch abgesichert; Exception wird geloggt, Methode kehrt zurueck ohne Persistenzupdate — DB-Stand bleibt konsistent. Zwei neue Integrationstests in `KiOrchestrierungServiceFehlerTest` (Stichphase + Vorbehaltphase).
 - [ ] Test-Luecken schliessen: Fehlerszenarien fuer Tisch-Beitritt bei vollem Tisch (409), deaktivierte Sonderspiele in der Spiellogik (armutErlaubt=false → Vorbehalt ablehnen), wiederholte Armut-Einwuerfe.
 
 ## Offen - Prioritaet 11: Architektur-Refactoring

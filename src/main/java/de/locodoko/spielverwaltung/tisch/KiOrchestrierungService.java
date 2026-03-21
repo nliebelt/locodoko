@@ -18,6 +18,8 @@ import de.locodoko.spielverwaltung.persistenz.SpielEntity;
 import de.locodoko.spielverwaltung.persistenz.SpielerEntity;
 import de.locodoko.spielverwaltung.persistenz.SpielerRepository;
 import de.locodoko.spielverwaltung.persistenz.TischEntity;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 import java.util.EnumMap;
@@ -26,6 +28,9 @@ import java.util.Objects;
 
 @Service
 public class KiOrchestrierungService {
+
+    // Logger fuer Fehler und Sicherheitslimit-Warnungen
+    private static final Logger LOGGER = LoggerFactory.getLogger(KiOrchestrierungService.class);
 
     private static final int MAXIMALE_KI_AKTIONEN = 512;
 
@@ -71,9 +76,23 @@ public class KiOrchestrierungService {
             if (spielerEntity == null || (!spielerEntity.istKi() && !spielerEntity.istKiUebernommen())) {
                 return;
             }
-            Spiel naechsterStand = fuehreKiAktionAus(laufendesSpiel, erwarteterSpieler);
-            SpielPersistenzAdapter.uebernehmeDomainSpiel(laufendesSpielEntity, naechsterStand);
+            // KI-Strategie-Exceptions abfangen: Die Partie bleibt im letzten konsistenten
+            // Datenbankstand, weil uebernehmeDomainSpiel erst nach dem KI-Aufruf aufgerufen wird.
+            // Ohne diesen Schutz haengt die Partie permanent, weil jeder folgende Aufruf
+            // dieselbe Exception erzeugen wuerde.
+            try {
+                Spiel naechsterStand = fuehreKiAktionAus(laufendesSpiel, erwarteterSpieler);
+                SpielPersistenzAdapter.uebernehmeDomainSpiel(laufendesSpielEntity, naechsterStand);
+            } catch (Exception e) {
+                LOGGER.error(
+                    "KI-Strategie-Fehler fuer Spieler {} in Phase {} an Tisch {} – Partie bleibt im letzten konsistenten Stand: {}",
+                    erwarteterSpieler, laufendesSpiel.phase(), tisch.id(), e.getMessage(), e
+                );
+                return;
+            }
         }
+        LOGGER.error("KI-Orchestrierung hat das Sicherheitslimit von {} Aktionen an Tisch {} erreicht – moegliche Endlosschleife.",
+            MAXIMALE_KI_AKTIONEN, tisch.id());
         throw new IllegalStateException("Die KI-Orchestrierung hat das Sicherheitslimit erreicht.");
     }
 
