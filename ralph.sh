@@ -164,7 +164,7 @@ while true; do
 
 Folge den Anweisungen im angehängten Kontext." \
         --model "$EFFECTIVE_MODEL" \
-        --dangerouslySkipPermissions \
+        --dangerously-skip-permissions \
         2>&1 | tee "$ITER_OUTPUT" || true
 
     # Append iteration output to log
