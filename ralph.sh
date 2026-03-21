@@ -139,7 +139,13 @@ while true; do
         2>&1 \
         | grep --line-buffered '^{' \
         | tee "$ITER_OUTPUT" \
-        | jq --unbuffered -rj 'select(.type == "assistant") | .message.content[]? | select(.type == "text") | .text // empty' 2>/dev/null \
+        | jq --unbuffered -rj '
+            select(.type == "assistant") | .message.content[]? |
+            if .type == "text" then .text
+            elif .type == "tool_use" then "[→ \(.name): \(.input | to_entries | map("\(.key)=\(.value | tostring | .[0:60])") | join(", "))]\n"
+            else empty
+            end
+          ' 2>/dev/null \
         || true
 
     # Append iteration output to log
