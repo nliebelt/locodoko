@@ -4,9 +4,15 @@ Stand: 2026-03-21
 
 ## Notiz
 
-**Letzte Iteration (2026-03-21):** Test-Luecken Prioritaet 10 geschlossen. Tisch-voll-409 und armutErlaubt=false waren bereits abgedeckt. Zwei neue WebSocket-Integrationstests in `WebSocketSpielaktionIntegrationTest`: `wirftSpielEinWennNiemandDieArmutPerWebSocketAnnimmt` prueft Einwurf-Broadcast (VORBEHALT_ANSAGE, 12 Karten/Spieler); `unterstuetztWiederholteArmutEinwuerfe` beweist zwei aufeinanderfolgende Einwuerfe via `setzeKontrollierteArmutshaende` + WebSocket-Aufrufsequenz. 105 Backend-Tests gruen.
+**Letzte Iteration (2026-03-21):** Architektur-Refactoring Prioritaet 11 (JPA→JDBC) abgeschlossen. Vollstaendige Migration aller Entities und Repositories von JPA/Hibernate auf Spring Data JDBC; Liquibase-Changelogs fuer das gesamte Schema; Persistable<UUID>-Pattern fuer korrekte INSERT/UPDATE-Entscheidung; JsonKonverter fuer komplexe JSON-Felder; TischRepositoryImpl mit expliziter transienter Feldbefuellung; Test-Isolation via ${random.value} in H2-URL. 105 Backend-Tests gruen. Commit: 6d3d66c.
 
-**Naechster logischer Schritt:** Architektur-Refactoring (Prioritaet 11): JPA → Spring Data JDBC, Liquibase, Package-Struktur nach Bounded Contexts, Javadoc, toter Code.
+**Notiz an den naechsten Ralph:** Prioritaet 11 ist zu ~80% erledigt. Noch ausstehend:
+1. Package-Struktur nach Bounded Contexts: `spielverwaltung/` aufloesen in `lobby/`, `partie/`, `session/` gemaess specs/architektur-ddd.md.
+2. Vollstaendige Javadoc: Jede Klasse mit praeziser deutscher Definition.
+3. Toten Code pruefen: `TischEreignisTyp`-Enum-Werte (TISCH_ERSTELLT etc.), duplizierte Session-Validierung.
+Empfehlung: Zuerst Package-Struktur, dann Javadoc, dann toter Code — als separater Commit.
+
+**Naechster logischer Schritt:** Restliche Prioritaet-11-Punkte (Package-Struktur, Javadoc, toter Code) oder Prioritaet 9 (Frontend-Politur: Kartengrafiken, Animationen).
 
 **Offene Fragen:** jsdom kann Canvas 2D nicht rendern (daher stderr-Warnings in Tests); Texturen werden im Browser korrekt erzeugt. Ein `canvas`-npm-Package koennte die Warnings eliminieren, ist aber nicht kritisch.
 
@@ -154,10 +160,10 @@ Ausgangslage: Backend und Frontend sind funktional weitgehend vollstaendig: Kart
 - [x] KiOrchestrierungService: Fehlerbehandlung fuer KI-Strategie-Exceptions ergaenzen, damit Partie bei KI-Fehler nicht in inkonsistentem Zustand haengt. `fuehreKiAktionAus()`-Aufruf mit try-catch abgesichert; Exception wird geloggt, Methode kehrt zurueck ohne Persistenzupdate — DB-Stand bleibt konsistent. Zwei neue Integrationstests in `KiOrchestrierungServiceFehlerTest` (Stichphase + Vorbehaltphase).
 - [x] Test-Luecken schliessen: Tisch-voll-409 und armutErlaubt=false-Ablehnung waren bereits durch bestehende Tests abgedeckt (`TischControllerTest.verhindertBeitrittWennTischVollIst`, `SpielTest.lehntArmutMitMehrAlsDreiTrumpfenOderBeiDeaktivierterRegelAb`). Fehlende WebSocket-Tests fuer wiederholte Armut-Einwuerfe hinzugefuegt: `wirftSpielEinWennNiemandDieArmutPerWebSocketAnnimmt` prueft Broadcast mit VORBEHALT_ANSAGE und 12 Karten pro Spieler; `unterstuetztWiederholteArmutEinwuerfe` beweist zwei aufeinanderfolgende Einwuerfe ohne kuenstliche Grenze. 105 Backend-Tests gruen.
 
-## Offen - Prioritaet 11: Architektur-Refactoring
+## Offen - Prioritaet 11: Architektur-Refactoring (teilweise erledigt)
 
-- [ ] Migration von JPA/Hibernate auf Spring Data JDBC gemaess `specs/architektur-ddd.md` und `specs/tech-migration.md`: `@Entity`/`@OneToMany`/`JpaRepository` durch `@Table`/`CrudRepository` ersetzen; betrifft alle Entities in `spielverwaltung/persistenz`.
-- [ ] Liquibase-Schema-Migration einrichten anstelle von `spring.jpa.hibernate.ddl-auto=create-drop`; SQL-Changelogs fuer alle Tabellen.
+- [x] Migration von JPA/Hibernate auf Spring Data JDBC gemaess `specs/architektur-ddd.md` und `specs/tech-migration.md`: `@Entity`/`@OneToMany`/`JpaRepository` durch `@Table`/`CrudRepository` ersetzen; betrifft alle Entities in `spielverwaltung/persistenz`.
+- [x] Liquibase-Schema-Migration einrichten anstelle von `spring.jpa.hibernate.ddl-auto=create-drop`; YAML-Changelogs fuer alle Tabellen in `src/main/resources/db/changelog/`.
 - [ ] Package-Struktur nach Bounded Contexts aufloesen gemaess `specs/architektur-ddd.md`: aktuell alles unter `spielverwaltung/` statt `lobby/`, `partie/`, `session/`, `karten/`.
 - [ ] Vollstaendige Code-Dokumentation (Javadoc): Jede Klasse mit praeziser deutscher Definition und Zweck.
 - [ ] Toten Code pruefen und entfernen: `TischEreignisTyp`-Enum hat definierte aber nie gesendete Werte (TISCH_ERSTELLT, SPIELER_BEIGETRETEN etc.); Session-Validierungslogik ist zwischen Interceptor und Controllern dupliziert.
