@@ -265,6 +265,48 @@ class TischControllerTest {
     }
 
     @Test
+    void verhindertBeitrittWennTischVollIst() throws Exception {
+        // Wichtig: Die TISCH_VOLL-Pruefung muss nach dem pessimistischen Lock erfolgen,
+        // damit zwei gleichzeitige Beitrittsanfragen nicht beide die Pruefung passieren
+        // und den Tisch auf 5 Spieler aufblasen koennen. Dieser Test sichert den
+        // 409-Fehlerfall als Vertragsbasis fuer den Concurrency-Schutz ab.
+        MockHttpSession adaSession = registriereSpieler("Ada");
+        MockHttpSession bertSession = registriereSpieler("Bert");
+        MockHttpSession claraSession = registriereSpieler("Clara");
+        MockHttpSession davidSession = registriereSpieler("David");
+        MockHttpSession evaSession = registriereSpieler("Eva");
+
+        UUID tischId = erstelleTisch(adaSession, "Voller Tisch");
+        mockMvc.perform(post("/api/tische/{id}/beitreten", tischId).session(bertSession))
+            .andExpect(status().isOk());
+        mockMvc.perform(post("/api/tische/{id}/beitreten", tischId).session(claraSession))
+            .andExpect(status().isOk());
+        mockMvc.perform(post("/api/tische/{id}/beitreten", tischId).session(davidSession))
+            .andExpect(status().isOk());
+
+        mockMvc.perform(post("/api/tische/{id}/beitreten", tischId).session(evaSession))
+            .andExpect(status().isConflict())
+            .andExpect(jsonPath("$.fehlerCode").value("TISCH_VOLL"));
+    }
+
+    @Test
+    void verhindertZweitenStartDesselbenTisches() throws Exception {
+        // Wichtig: Die TISCH_BEREITS_GESTARTET-Pruefung muss nach dem pessimistischen
+        // Lock erfolgen, damit zwei gleichzeitige Startanfragen nicht beide den Status
+        // WARTEND sehen und doppelte Partien anlegen. Dieser Test sichert den
+        // 409-Fehlerfall fuer einen bereits gestarteten Tisch ab.
+        MockHttpSession adaSession = registriereSpieler("AdaStart");
+        UUID tischId = erstelleTisch(adaSession, "Einmal-Start-Tisch");
+
+        mockMvc.perform(post("/api/tische/{id}/starten", tischId).session(adaSession))
+            .andExpect(status().isOk());
+
+        mockMvc.perform(post("/api/tische/{id}/starten", tischId).session(adaSession))
+            .andExpect(status().isConflict())
+            .andExpect(jsonPath("$.fehlerCode").value("TISCH_BEREITS_GESTARTET"));
+    }
+
+    @Test
     void liefertNichtGefundenFuerUnbekanntenTisch() throws Exception {
         mockMvc.perform(get("/api/tische/{id}/konfiguration", UUID.randomUUID()))
             .andExpect(status().isNotFound())

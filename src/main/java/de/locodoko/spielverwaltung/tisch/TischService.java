@@ -88,7 +88,7 @@ public class TischService {
     public TischAntwort betreteTisch(UUID tischId, SpielerEntity spieler) {
         SpielerEntity verwalteterSpieler = ladeSpieler(spieler.id());
         pruefeDassSpielerAnKeinemTischSitzt(verwalteterSpieler);
-        TischEntity tisch = ladeTischEntity(tischId);
+        TischEntity tisch = ladeTischEntityMitSperre(tischId);
         pruefeWartendenTisch(tisch, "TISCH_BEREITS_GESTARTET", "Ein gestarteter Tisch kann nicht mehr betreten werden.");
         if (tisch.istVoll()) {
             throw new SpielverwaltungKonfliktException("TISCH_VOLL", "Der Tisch ist bereits voll belegt.");
@@ -106,7 +106,7 @@ public class TischService {
     @Transactional
     public BestaetigungAntwort verlasseTisch(UUID tischId, SpielerEntity spieler) {
         SpielerEntity verwalteterSpieler = ladeSpieler(spieler.id());
-        TischEntity tisch = ladeTischEntity(tischId);
+        TischEntity tisch = ladeTischEntityMitSperre(tischId);
         pruefeWartendenTisch(
             tisch,
             "TISCH_VERLASSEN_NICHT_ERLAUBT",
@@ -141,7 +141,7 @@ public class TischService {
     @Transactional
     public TischAntwort starteTisch(UUID tischId, SpielerEntity spieler) {
         SpielerEntity verwalteterSpieler = ladeSpieler(spieler.id());
-        TischEntity tisch = ladeTischEntity(tischId);
+        TischEntity tisch = ladeTischEntityMitSperre(tischId);
         pruefeWartendenTisch(tisch, "TISCH_BEREITS_GESTARTET", "Der Tisch wurde bereits gestartet.");
         if (!tisch.erstelltVon().id().equals(verwalteterSpieler.id())) {
             throw new SpielverwaltungKonfliktException(
@@ -186,7 +186,7 @@ public class TischService {
         TischKonfigurationDto konfiguration
     ) {
         SpielerEntity verwalteterSpieler = ladeSpieler(spieler.id());
-        TischEntity tisch = ladeTischEntity(tischId);
+        TischEntity tisch = ladeTischEntityMitSperre(tischId);
         pruefeWartendenTisch(
             tisch,
             "TISCH_KONFIGURATION_GESPERRT",
@@ -353,6 +353,21 @@ public class TischService {
 
     private TischEntity ladeTischEntity(UUID tischId) {
         return tischRepository.findById(tischId)
+            .orElseThrow(() -> new SpielverwaltungNichtGefundenException(
+                "TISCH_NICHT_GEFUNDEN",
+                "Es wurde kein Tisch mit der ID " + tischId + " gefunden."
+            ));
+    }
+
+    /**
+     * Laedt einen Tisch mit exklusiver Datenbanksperre (PESSIMISTIC_WRITE).
+     * Muss fuer alle schreibenden Operationen verwendet werden, die zuerst den
+     * Tischzustand pruefen (z.B. istVoll, Status WARTEND) und dann mutieren —
+     * sonst koennen zwei gleichzeitige Requests beide die Pruefung bestehen und
+     * den Tisch in einen inkonsistenten Zustand bringen.
+     */
+    private TischEntity ladeTischEntityMitSperre(UUID tischId) {
+        return tischRepository.findByIdWithLock(tischId)
             .orElseThrow(() -> new SpielverwaltungNichtGefundenException(
                 "TISCH_NICHT_GEFUNDEN",
                 "Es wurde kein Tisch mit der ID " + tischId + " gefunden."
