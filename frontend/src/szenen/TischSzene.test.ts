@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { TEXTUR_FILZ, TEXTUR_HOLZ_DUNKEL, TEXTUR_KARTE_OFFEN } from '../assets/AssetLoader';
+import { TEXTUR_FILZ, TEXTUR_HOLZ_DUNKEL } from '../assets/AssetLoader';
 import type {
   AppZustand
 } from '../store/AppStore';
@@ -436,7 +436,11 @@ function baueSzene(zustand: AppZustand, groesse = { width: 1280, height: 720 }):
     add: erstelleAddApi(),
     scale: skalierung,
     scene: szenenManager,
-    tweens
+    tweens,
+    textures: {
+      exists: vi.fn(() => false),
+      addCanvas: vi.fn()
+    }
   });
 
   szene.create();
@@ -444,10 +448,12 @@ function baueSzene(zustand: AppZustand, groesse = { width: 1280, height: 720 }):
   return { szene, skalierung, szenenManager, tweens };
 }
 
+// Liefert die Handkarten-Bilder des eigenen Spielers (SUED) aus der Tischebene.
+// Erkennungsmerkmale: Image-Typ, kartenspezifische Textur (karte-offen-*), Y-Position > 500.
 function handkartenBilder(szene: TischSzeneInstanz): FakeGameObject[] {
   const ebene = szene['tischEbene'] as FakeContainer | undefined;
   return (ebene?.kinder ?? [])
-    .filter((kind) => kind.typ === 'image' && kind.textur === TEXTUR_KARTE_OFFEN && kind.y > 500)
+    .filter((kind) => kind.typ === 'image' && (kind.textur?.startsWith('karte-offen-') ?? false) && kind.y > 500)
     .sort((links, rechts) => links.x - rechts.x);
 }
 

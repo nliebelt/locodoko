@@ -4,7 +4,9 @@ import {
   TEXTUR_FILZ,
   TEXTUR_HOLZ_DUNKEL,
   TEXTUR_KARTE_OFFEN,
-  TEXTUR_KARTE_VERDECKT
+  TEXTUR_KARTE_VERDECKT,
+  texturSchluesselFuerKarte,
+  registriereKartenSpriteTexturen
 } from '../assets/AssetLoader';
 import { appStore } from '../anwendung';
 import {
@@ -181,6 +183,8 @@ export class TischSzene extends Phaser.Scene {
     );
     this.animationen = new AnimationenService(this);
     this.baueUi();
+    // Individuelle Kartentexturen fuer das franzoesische Blatt laden (idempotent)
+    registriereKartenSpriteTexturen(this);
     this.scale.on(Phaser.Scale.Events.RESIZE, this.handleResize, this);
     this.abmeldenStore = appStore.abonnieren((zustand) => {
       const modell = this.erstelleModell(zustand);
@@ -503,12 +507,7 @@ export class TischSzene extends Phaser.Scene {
 
     modell.aktuelleStichmitte.forEach((eintrag) => {
       const slot = slotPositionen[eintrag.position];
-      ebene.add(this.add.image(slot.x, slot.y, TEXTUR_KARTE_OFFEN).setDisplaySize(82, 124));
-      ebene.add(this.add.text(slot.x, slot.y, kuerzelFuerKarte(eintrag.karte), {
-        color: '#14361f',
-        fontSize: '19px',
-        fontStyle: 'bold'
-      }).setOrigin(0.5));
+      ebene.add(this.add.image(slot.x, slot.y, texturSchluesselFuerKarte(eintrag.karte.farbe, eintrag.karte.wert)).setDisplaySize(82, 124));
       ebene.add(this.add.text(slot.x, slot.y + 78, eintrag.name, {
         color: '#d8f3dc',
         fontSize: '13px'
@@ -749,7 +748,10 @@ export class TischSzene extends Phaser.Scene {
       const istArmutauswahl = karte ? (armutKarten?.has(karte.id) ?? false) : false;
       const istInteraktiv = !this.spielzugAnimationAktiv && (istSpielbar || istArmutauswahl);
       const istAusgewaehlt = karte ? this.ausgewaehlteArmutKarten.has(karte.id) : false;
-      const textur = offen ? TEXTUR_KARTE_OFFEN : TEXTUR_KARTE_VERDECKT;
+      // Kartenspezifische Textur fuer aufgedeckte Karten, Rueckseite fuer verdeckte
+      const textur = (offen && karte)
+        ? texturSchluesselFuerKarte(karte.farbe, karte.wert)
+        : offen ? TEXTUR_KARTE_OFFEN : TEXTUR_KARTE_VERDECKT;
       const basisVersatz = istAusgewaehlt ? -24 : 0;
 
       const bild = this.add.image(x, y + basisVersatz, textur)
@@ -761,23 +763,13 @@ export class TischSzene extends Phaser.Scene {
       }
       ebene.add(bild);
 
-      let beschriftung: Phaser.GameObjects.Text | undefined;
-      if (offen && karte) {
-        beschriftung = this.add.text(x, y + basisVersatz, kuerzelFuerKarte(karte), {
-          color: istInteraktiv || !hatInteraktion ? '#14361f' : '#6c757d',
-          fontSize: '18px',
-          fontStyle: 'bold'
-        }).setOrigin(0.5).setAngle(winkel);
-        ebene.add(beschriftung);
-      }
       if (karte) {
-        this.handKartenobjekte.set(karte.id, { bild, beschriftung });
+        this.handKartenobjekte.set(karte.id, { bild });
       }
 
       if (offen && karte && istInteraktiv) {
         const setzeOffset = (zusatz: number): void => {
           bild.setY(y + basisVersatz + zusatz);
-          beschriftung?.setY(y + basisVersatz + zusatz);
         };
         bild.setInteractive({ useHandCursor: true });
         bild.on('pointerover', () => setzeOffset(-10));
@@ -1015,13 +1007,8 @@ export class TischSzene extends Phaser.Scene {
     const ziel = layout[abgeschlossenerStich.gewinnerPosition];
     const animierteKarten = abgeschlossenerStich.gespielteKarten.map((karte) => {
       const slot = slotPositionen[karte.position];
-      const bild = this.add.image(slot.x, slot.y, TEXTUR_KARTE_OFFEN).setDisplaySize(82, 124);
-      const beschriftung = this.add.text(slot.x, slot.y, kuerzelFuerKarte(karte.karte), {
-        color: '#14361f',
-        fontSize: '19px',
-        fontStyle: 'bold'
-      }).setOrigin(0.5);
-      return { bild, beschriftung };
+      const bild = this.add.image(slot.x, slot.y, texturSchluesselFuerKarte(karte.karte.farbe, karte.karte.wert)).setDisplaySize(82, 124);
+      return { bild };
     });
 
     try {
@@ -1029,7 +1016,6 @@ export class TischSzene extends Phaser.Scene {
     } finally {
       animierteKarten.forEach((karte) => {
         karte.bild.destroy();
-        karte.beschriftung?.destroy();
       });
     }
   }

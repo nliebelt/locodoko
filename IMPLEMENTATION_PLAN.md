@@ -2,12 +2,17 @@
 
 Stand: 2026-03-21
 
-Ausgangslage: Das Repository enthaelt inzwischen nicht mehr nur ein technisches Grundgeruest, sondern einen grossen Teil des fachlichen Backend-Kerns fuer Doppelkopf: Karten-/Trumpf-/Stichlogik, Spielphasen, Ansagen, Sonderpunkte, Vorbehalte, Persistenz, Session, Lobby, REST-Endpunkte, spielrelevante WebSocket-Aktionen sowie erweiterte Partie-Snapshots sind vorhanden. Der naechste Schwerpunkt ist damit nicht mehr der Domainenkern, sondern die letzte Luecke zum spielbaren Browser-Spiel: Das Frontend muss die vorhandenen Echtzeitdaten und Aktionskanaele interaktiv nutzbar machen, und anschliessend braucht es regelkonforme KI samt Turn-Orchestrierung fuer ein wirklich durchspielbares Match.
+## Notiz
+
+**Letzte Iteration (2026-03-21):** Reale Karten-Sprites implementiert. `AssetLoader.ts` erzeugt per HTML Canvas 2D fuer alle 24 Doppelkopf-Karten individuelle Texturen im Stil eines franzoesischen Blattes: weisser Untergrund, Farbsymbol (♣ ♠ ♥ ♦) und Wertkuerzel (A/10/K/D/B/9) in den Ecken sowie grosses Symbol in der Mitte, Schwarz fuer Kreuz/Pik und Rot fuer Herz/Karo. `TischSzene` verwendet diese Texturen statt der alten Textlabel-Platzhalter (Hand, Stichmitte, Sticheinzieh-Animation). Tests angepasst: `textures`-Mock in `baueSzene`, `handkartenBilder`-Filter auf `startsWith('karte-offen-')` umgestellt.
+
+**Naechster logischer Schritt:** Karten-Austeilen-Animation (`specs/frontend-animationen.md`): Karten sequenziell aus Tischmitte zu Spielerpositionen animieren (50-100ms/Karte), eigene offen, gegnerische verdeckt. Danach: Ansage-Banner-Animation.
+
+**Offene Fragen:** jsdom kann Canvas 2D nicht rendern (daher stderr-Warnings in Tests); Texturen werden im Browser korrekt erzeugt. Ein `canvas`-npm-Package koennte die Warnings eliminieren, ist aber nicht kritisch.
+
+Ausgangslage: Backend und Frontend sind funktional weitgehend vollstaendig: Karten-/Trumpf-/Stichlogik, alle Spielphasen, Ansagen, Sonderpunkte, alle Vorbehalte (Soli, Hochzeit, Armut), Persistenz, Session, Lobby, REST-API, WebSocket-Aktionen, Partie-Snapshots, KI-Strategie und KI-Orchestrierung sind implementiert und getestet. Das Frontend bietet eine interaktive Tischansicht mit Kartenklick, Vorbehalt-/Ansage-/Armut-Dialogen, Stichmitte, Ergebnis-Overlay und erste Animationen. Ein Spiel 1 Mensch + 3 KI ist End-to-End durchspielbar. Der naechste Schwerpunkt liegt auf visueller Politur (Kartengrafiken, fehlende Animationen), Robustheit (Verbindungsabbruch, Session-Cleanup) und dem geplanten Architektur-Refactoring (JPA → Spring Data JDBC, Package-Struktur nach Bounded Contexts).
 
 ## Erledigt / vorhanden
-
-- [] Refactoring auf Spring Boot 4.x, Spring JDBC und Liquibase, Toten Code prüfen, pom.xml aktualisieren
-- [] vollständige Code Dokumentation (Javadoc), Einen präzise Definition für jede Klasse
 - [x] Produktziel und MVP-Rahmen in `PRD.md` beschrieben.
 - [x] Fachspezifikationen in `specs/` liegen fuer die Kernbereiche vor: Kartendeck, Trumpfhierarchie, Stichlogik, Spielablauf, Ansagen, Punkteberechnung, Sonderpunkte, Lobby, REST-API, WebSocket-Kommunikation, Session, KI, Tischkonfiguration, Frontend-Tischansicht, Frontend-UI-Logik, Animationen, Sonderspiele.
 - [x] Lokale Arbeitsumgebung fuer Java 25, Maven, Node.js und Chromium ist ueber `Dockerfile` und `docker-compose.yml` beschrieben.
@@ -130,12 +135,32 @@ Ausgangslage: Das Repository enthaelt inzwischen nicht mehr nur ein technisches 
 - [x] KI-Orchestrierung ist jetzt in den Spielfluss eingebaut: `KiOrchestrierungService` haengt direkt in `TischService` am Tischstart sowie an menschlichen Vorbehalt-/Armut-/Karten-/Ansageaktionen, triggert anschliessende KI-Zuege, wertet Spiele automatisch aus, aktualisiert den Gesamtstand, startet Folge-Spiele derselben Partie und stoppt erst wieder bei einem menschlichen Zug oder am Partieende; damit funktionieren sowohl 1 Mensch + 3 KI als auch 4 KI ohne Polling oder manuelle Backend-Eingriffe.
 - [x] End-to-End-Szenarien "1 Mensch + 3 KI" und "4 KI" sind jetzt automatisiert geprueft: `StandardKiStrategieTest` sichert WARUM die heuristische Auswahl wichtig ist (Solo-/Armut-/Ansage-/Schmierverhalten), und `KiOrchestrierungServiceIntegrationTest` beweist WARUM die neue Backend-Orchestrierung kritisch ist, indem ein Mensch-gegen-3-KI-Stich bis zum naechsten menschlichen Zug sowie eine komplette 4-KI-Partie bis zum Partieende serverseitig durchlaufen.
 
-## Offen - Prioritaet 9: Robustheit und UI-Politur
+## Offen - Prioritaet 9: Frontend-Politur und Animationen
 
-- [ ] Verbindungsabbruch-Handling gemaess `specs/verbindungsabbruch.md` nachziehen; fuer das erste Singleplayer-MVP nachrangig.
-- [ ] Animationen gemaess `specs/frontend-animationen.md` ergaenzen: Austeilen, Ausspielen, Stich einziehen, Ansage-Banner, Sonderpunkt-Hinweise, Rundenende.
-- [ ] Responsive Verhalten, visuelle Plausibilitaet und Bedienbarkeit der Tischansicht verbessern.
-- [ ] Reale Karten-Sprites und konfigurierbare Tisch-/UI-Assets auf das bestehende Fallback-Setup aufsetzen, sobald der interaktive Spielfluss stabil ist.
+- [x] Reale Karten-Sprites mit franzoesischem Blatt (48 Karten + Rueckseite) auf das bestehende Fallback-Setup aufsetzen; jetzt per HTML Canvas 2D generiert: Farbsymbol, Wertkuerzel in den Ecken, grosses Symbol in der Mitte, Schwarz/Rot-Faerbung.
+- [ ] Karten-Austeilen-Animation gemaess `specs/frontend-animationen.md` ergaenzen: Karten nacheinander aus Tischmitte zu Spielerpositionen (50-100ms pro Karte), eigene offen, gegnerische verdeckt; aktuell rendert TischSzene statisch beim Spielstart.
+- [ ] Ansage-Banner-Animation ergaenzen: Bei Re/Kontra/Absage ein Pop-up-Banner mit Spielername und Fade-In/Out (1,5s sichtbar); aktuell nur kleine statische Eintrage in der Ansagehistorie-Liste.
+- [ ] Sonderpunkt-Feedback-Animation ergaenzen: Bei Fuchs/Karlchen/Doppelkopf kurzes visuelles Icon-/Text-Feedback (1-2s); aktuell nur in der statischen Auswertung sichtbar.
+- [ ] Rundenende-Overlay als modalen Dialog umsetzen: Augen, Spielpunkte, Sonderpunkte, bleibt bis Spieler schliesst; aktuell nur als Sektion im rechten UI-Panel, geht leicht unter.
+- [ ] Responsive Verhalten, visuelle Plausibilitaet und Bedienbarkeit der Tischansicht verbessern; innerHTML-basiertes Rendering ist funktional, aber bei Layout-Aenderungen fragil.
+
+## Offen - Prioritaet 10: Robustheit und Backend-Haertung
+
+- [ ] Verbindungsabbruch-Handling gemaess `specs/verbindungsabbruch.md`: SessionDisconnectEvent-Listener, Reconnect-Timeout (120s), KI-Uebernahme nach Timeout, Spielzustand-Wiederherstellung bei Reconnect, Status-Meldungen an andere Spieler; aktuell komplett nicht implementiert.
+- [ ] Session-Cleanup bei Timeout: Automatisches Entfernen von Spielern aus aktiven Tischen nach Session-Ablauf; aktuell wird nur der HttpSession-Timeout gesetzt, aber kein Cleanup-Mechanismus ausgeloest.
+- [ ] Concurrency-Absicherung in TischService: Optimistic Locking oder Synchronisation fuer gleichzeitige Spielstart-/Beitritts-Requests; aktuell nur @Transactional ohne Lock.
+- [ ] Exception-Hierarchie konsistent machen: `SpielerSessionUngueltigException` hat keinen `fehlerCode`, andere Exceptions schon; alle Exceptions sollten einheitlich Fehler-Codes tragen.
+- [ ] PartieController mit Session-Validierung schuetzen: `GET /api/partien/{id}/stand` prueft aktuell keine Session; jeder kann jeden Partie-Stand abrufen.
+- [ ] KiOrchestrierungService: Fehlerbehandlung fuer KI-Strategie-Exceptions ergaenzen, damit Partie bei KI-Fehler nicht in inkonsistentem Zustand haengt.
+- [ ] Test-Luecken schliessen: Fehlerszenarien fuer Tisch-Beitritt bei vollem Tisch (409), deaktivierte Sonderspiele in der Spiellogik (armutErlaubt=false → Vorbehalt ablehnen), wiederholte Armut-Einwuerfe.
+
+## Offen - Prioritaet 11: Architektur-Refactoring
+
+- [ ] Migration von JPA/Hibernate auf Spring Data JDBC gemaess `specs/architektur-ddd.md` und `specs/tech-migration.md`: `@Entity`/`@OneToMany`/`JpaRepository` durch `@Table`/`CrudRepository` ersetzen; betrifft alle Entities in `spielverwaltung/persistenz`.
+- [ ] Liquibase-Schema-Migration einrichten anstelle von `spring.jpa.hibernate.ddl-auto=create-drop`; SQL-Changelogs fuer alle Tabellen.
+- [ ] Package-Struktur nach Bounded Contexts aufloesen gemaess `specs/architektur-ddd.md`: aktuell alles unter `spielverwaltung/` statt `lobby/`, `partie/`, `session/`, `karten/`.
+- [ ] Vollstaendige Code-Dokumentation (Javadoc): Jede Klasse mit praeziser deutscher Definition und Zweck.
+- [ ] Toten Code pruefen und entfernen: `TischEreignisTyp`-Enum hat definierte aber nie gesendete Werte (TISCH_ERSTELLT, SPIELER_BEIGETRETEN etc.); Session-Validierungslogik ist zwischen Interceptor und Controllern dupliziert.
 
 ## Empfohlene Umsetzungsreihenfolge fuer den ersten spielbaren End-to-End-Vertical-Slice
 
@@ -146,7 +171,9 @@ Ausgangslage: Das Repository enthaelt inzwischen nicht mehr nur ein technisches 
 - [x] Danach das Frontend von der lesenden Snapshot-Ansicht zur interaktiven Tisch-UI mit Kartenklick, Vorbehalts-/Ansage-Dialogen und Stichmitte ausbauen.
 - [x] Erst dann die KI fuer regelkonformes Spielen, Vorbehalte und Ansagen anbinden, damit 1 Mensch + 3 KI wirklich durchspielbar wird.
 - [x] Danach die Vorbehalts-Sonderspiele fuer den aktuellen Backend-Slice vervollstaendigen (`Trumpfsolo`, `Hochzeit`, `Armut`, `Damensolo`, `Bubensolo`, `Fleischlos`).
-- [ ] Zum Schluss Reconnect, Animationen, responsive Feinschliffe und echte Karten-Assets ergaenzen.
+- [ ] Frontend-Politur: Kartengrafiken, Austeilen-/Ansage-/Sonderpunkt-Animationen, Rundenende-Overlay (Prioritaet 9).
+- [ ] Backend-Haertung: Verbindungsabbruch, Session-Cleanup, Concurrency, Test-Luecken (Prioritaet 10).
+- [ ] Architektur-Refactoring: JPA→JDBC, Liquibase, Package-Struktur, Javadoc, toter Code (Prioritaet 11).
 
 ## Aktuelle Risiken / offene Architekturentscheidungen
 
@@ -157,4 +184,6 @@ Ausgangslage: Das Repository enthaelt inzwischen nicht mehr nur ein technisches 
 - [x] Das Frontend ist nicht mehr nur lesend: Karten koennen serverseitig regelkonform per Hover/Klick gespielt werden, `AppStore` sendet neben Snapshot/Debug jetzt auch die spielrelevanten Aktionen, und fuer Vorbehalt sowie Armut existiert ein eigener Auswahlzustand; damit werden die vorhandenen Backend-Broadcasts erstmals zu echter Interaktion.
 - [x] Fuer die in `specs/frontend-ui-logik.md` geforderte Letzte-Stiche- und Ergebnisdarstellung existiert jetzt ein passender End-to-End-Vertrag: `PartieStandAntwort` liefert eine explizite abgeschlossene Stichhistorie plus Ergebnisobjekt, und das Frontend rendert daraus Letzte-Stiche- und Ergebnis-Overlay ohne lokale Nachberechnung.
 - [x] Die KI ist nicht mehr nur Spielererzeugung/Namensvergabe: Neben einer echten Entscheidungslogik fuer Vorbehalt, Armut, Ansage und Kartenwahl existiert jetzt eine serverseitige Orchestrierung, die nach menschlichen oder KI-Aktionen automatisch weitere KI-Zuege ausloest und Spiele/Partien bis zum naechsten menschlichen Eingriff oder bis zum Ende fortschreibt.
-- [ ] Reale Karten-Sprites, Reconnect/KI-Uebernahme und tiefere Frontend-Integrationstests sollten erst nach einem stabilen End-to-End-Spielfluss umgesetzt werden, sonst verteilt sich die Komplexitaet zu frueh ueber zu viele Baustellen.
+- [ ] WebSocket-Event-Architektur weicht von Spec ab: Spec verlangt separate Events (StichGewonnen, AnsageErfolgt, SpielBeendet etc.), Implementierung nutzt Snapshot-basierte Broadcasts ueber `PartieEreignisAntwort`; funktional aequivalent, aber nicht inkrementell — Entscheidung ob Spec angepasst oder Events nachgezogen werden muss noch fallen.
+- [ ] KI-Heuristiken (Vorbehalt-Schwellwerte, Kosten-Berechnung) enthalten magische Zahlen ohne Dokumentation oder Kalibrierung; funktioniert fuer MVP, sollte aber vor Schwierigkeitsgrad-Erweiterung dokumentiert werden.
+- [ ] Frontend-Rendering basiert auf innerHTML-Strings statt einem reaktiven Framework; skaliert fuer den aktuellen Umfang, wird aber bei weiterer UI-Komplexitaet fragil.

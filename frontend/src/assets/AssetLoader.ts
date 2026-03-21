@@ -6,12 +6,32 @@ export const TEXTUR_BLAU_GRAFIK = 'blau-grafik-hintergrund';
 export const TEXTUR_KARTE_OFFEN = 'karte-offen';
 export const TEXTUR_KARTE_VERDECKT = 'karte-verdeckt';
 
+// Liefert den eindeutigen Texturschluessel fuer eine aufgedeckte Karte.
+export function texturSchluesselFuerKarte(farbe: string, wert: string): string {
+  return `karte-offen-${farbe}-${wert}`;
+}
+
 export function registriereBasisTexturen(szene: Phaser.Scene): void {
   registriereFilz(szene);
   registriereHolzDunkel(szene);
   registriereBlauGrafik(szene);
   registriereKarteOffen(szene);
   registriereKarteVerdeckt(szene);
+}
+
+/**
+ * Erzeugt fuer alle 24 Karten des Doppelkopf-Decks je eine individuelle Textur
+ * mit Farbsymbol und Wertkuerzel im Stil eines franzoesischen Blattes.
+ * Wird idempotent aufgerufen (existierende Texturen werden uebersprungen).
+ */
+export function registriereKartenSpriteTexturen(szene: Phaser.Scene): void {
+  const farben = ['KREUZ', 'PIK', 'HERZ', 'KARO'];
+  const werte = ['AS', 'ZEHN', 'KOENIG', 'DAME', 'BUBE', 'NEUN'];
+  for (const farbe of farben) {
+    for (const wert of werte) {
+      erzeugeKartenTextur(szene, farbe, wert);
+    }
+  }
 }
 
 function registriereFilz(szene: Phaser.Scene): void {
@@ -106,4 +126,94 @@ function registriereKarteVerdeckt(szene: Phaser.Scene): void {
   }
   grafik.generateTexture(TEXTUR_KARTE_VERDECKT, 96, 144);
   grafik.destroy();
+}
+
+/**
+ * Erzeugt eine realistische Spielkarten-Textur mit HTML Canvas 2D.
+ * Das Ergebnis zeigt Farbsymbol (♣ ♠ ♥ ♦) und Wertkuerzel (A/10/K/D/B/9)
+ * in den Ecken sowie ein grosses Symbol in der Mitte — wie ein franzoesisches Blatt.
+ */
+function erzeugeKartenTextur(szene: Phaser.Scene, farbe: string, wert: string): void {
+  const schluessel = texturSchluesselFuerKarte(farbe, wert);
+  if (szene.textures.exists(schluessel)) {
+    return;
+  }
+
+  const BREITE = 96;
+  const HOEHE = 144;
+  const canvas = document.createElement('canvas');
+  canvas.width = BREITE;
+  canvas.height = HOEHE;
+  const ctx = canvas.getContext('2d');
+  if (!ctx) {
+    return;
+  }
+
+  const istRot = farbe === 'HERZ' || farbe === 'KARO';
+  // Schwarz fuer Kreuz/Pik, Rot fuer Herz/Karo
+  const farbwert = istRot ? '#c0392b' : '#1a1a1a';
+  const symbole: Record<string, string> = { KREUZ: '\u2663', PIK: '\u2660', HERZ: '\u2665', KARO: '\u2666' };
+  const kuerzel: Record<string, string> = { AS: 'A', ZEHN: '10', KOENIG: 'K', DAME: 'D', BUBE: 'B', NEUN: '9' };
+  const symbol = symbole[farbe] ?? '?';
+  const wertText = kuerzel[wert] ?? wert.slice(0, 2);
+
+  // Weißer Kartenuntergrund mit abgerundeten Ecken
+  ctx.fillStyle = 'white';
+  kartenRundRect(ctx, 0, 0, BREITE, HOEHE, 8);
+  ctx.fill();
+
+  // Grauer Rahmen
+  ctx.strokeStyle = '#cccccc';
+  ctx.lineWidth = 1.5;
+  kartenRundRect(ctx, 0.75, 0.75, BREITE - 1.5, HOEHE - 1.5, 7.5);
+  ctx.stroke();
+
+  ctx.fillStyle = farbwert;
+
+  // Wert oben links
+  ctx.font = 'bold 15px Arial, sans-serif';
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'top';
+  ctx.fillText(wertText, 6, 5);
+
+  // Farbsymbol unter dem Wert oben links
+  ctx.font = '14px Arial, sans-serif';
+  ctx.fillText(symbol, 6, 22);
+
+  // Grosses Farbsymbol in der Kartenmitte
+  ctx.font = '44px Arial, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(symbol, BREITE / 2, HOEHE / 2);
+
+  // Wert und Symbol unten rechts (um 180 Grad gedreht — klassisches Blatt)
+  ctx.save();
+  ctx.translate(BREITE, HOEHE);
+  ctx.rotate(Math.PI);
+  ctx.fillStyle = farbwert;
+  ctx.font = 'bold 15px Arial, sans-serif';
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'top';
+  ctx.fillText(wertText, 6, 5);
+  ctx.font = '14px Arial, sans-serif';
+  ctx.fillText(symbol, 6, 22);
+  ctx.restore();
+
+  // Canvas als Phaser-Textur registrieren
+  szene.textures.addCanvas(schluessel, canvas);
+}
+
+// Zeichnet ein abgerundetes Rechteck auf den 2D-Kontext (Pfad, nicht gestrichen/gefuellt).
+function kartenRundRect(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, r: number): void {
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.lineTo(x + w - r, y);
+  ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+  ctx.lineTo(x + w, y + h - r);
+  ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+  ctx.lineTo(x + r, y + h);
+  ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+  ctx.lineTo(x, y + r);
+  ctx.quadraticCurveTo(x, y, x + r, y);
+  ctx.closePath();
 }
