@@ -136,7 +136,11 @@ while true; do
         --output-format stream-json \
         --verbose \
         --dangerously-skip-permissions \
-        2>&1 | tee "$ITER_OUTPUT" | jq -rj 'select(.type == "content_block_delta") | .delta.text // empty' 2>/dev/null || true
+        2>&1 \
+        | grep --line-buffered '^{' \
+        | tee "$ITER_OUTPUT" \
+        | jq --unbuffered -rj 'select(.type == "assistant") | .message.content[]? | select(.type == "text") | .text // empty' 2>/dev/null \
+        || true
 
     # Append iteration output to log
     echo "--- Iteration $ITERATION ($MODE) $(date) ---" >> "$LOG_FILE"
