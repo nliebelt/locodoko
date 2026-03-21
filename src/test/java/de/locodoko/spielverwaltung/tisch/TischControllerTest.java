@@ -245,7 +245,11 @@ class TischControllerTest {
 
     @Test
     void liefertPartieStandMitGesamtpunktestandUndSpielanzahl() throws Exception {
-        SpielerEntity ada = spielerRepository.saveAndFlush(SpielerEntity.menschlich("Ada", "session-stand-ada"));
+        // Wichtig: Seit der Session-Validierung braucht GET /api/partien/{id}/stand eine gueltige
+        // Session, damit sensible Spielstandsdaten (Handkarten, Ansagen) nicht anonym abrufbar sind.
+        MockHttpSession adaSession = registriereSpieler("AdaStand");
+        SpielerEntity ada = spielerRepository.findBySessionId(adaSession.getId()).orElseThrow();
+
         TischEntity tisch = TischEntity.neu("Standtisch", ada, TischkonfigurationEmbeddable.standard());
         tisch.fuegeSpielerHinzu(ada);
         PartieEntity partie = PartieEntity.neu(16);
@@ -256,12 +260,27 @@ class TischControllerTest {
         tisch.setzePartie(partie);
         TischEntity gespeichert = tischRepository.saveAndFlush(tisch);
 
-        mockMvc.perform(get("/api/partien/{id}/stand", gespeichert.partie().id()))
+        mockMvc.perform(get("/api/partien/{id}/stand", gespeichert.partie().id()).session(adaSession))
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.anzahlSpiele").value(16))
             .andExpect(jsonPath("$.gespielteSpiele").value(0))
             .andExpect(jsonPath("$.gesamtpunktestand.SUED").value(4))
             .andExpect(jsonPath("$.gesamtpunktestand.WEST").value(-2));
+    }
+
+    @Test
+    void lehntPartieStandOhneSessionMit401Ab() throws Exception {
+        // Wichtig: Ohne Session-Validierung koennte jeder fremde Partie-Stand abrufen —
+        // das verletzt die Informationstrennung zwischen Spielern (verdeckte Haende, Ansagen).
+        SpielerEntity ada = spielerRepository.saveAndFlush(SpielerEntity.menschlich("Ada401", "session-401-ada"));
+        TischEntity tisch = TischEntity.neu("Tisch401", ada, TischkonfigurationEmbeddable.standard());
+        tisch.fuegeSpielerHinzu(ada);
+        tisch.setzePartie(PartieEntity.neu(8));
+        TischEntity gespeichert = tischRepository.saveAndFlush(tisch);
+
+        mockMvc.perform(get("/api/partien/{id}/stand", gespeichert.partie().id()))
+            .andExpect(status().isUnauthorized())
+            .andExpect(jsonPath("$.fehlerCode").value("SPIELER_SESSION_UNGUELTIG"));
     }
 
     @Test
