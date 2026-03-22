@@ -8,6 +8,8 @@ import jakarta.servlet.http.HttpSession;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+/** Kapselt die gesamte Spieler-Session-Logik: Registrierung, Laden, Timeout und Namensaenderung. */
+
 @Service
 public class SpielerSessionService {
 
@@ -41,6 +43,22 @@ public class SpielerSessionService {
         uebernehmeTimeout(session);
         SpielerEntity spieler = spielerRepository.saveAndFlush(SpielerEntity.menschlich(name, session.getId()));
         return new SpielerRegistrierung(spieler, true);
+    }
+
+    /**
+     * Laedt den aktiven Spieler aus einer HTTP-Anfrage: prueft auf vorhandene Session,
+     * uebernimmt den Timeout und wirft bei fehlender oder unbekannter Session eine
+     * {@link SpielerSessionUngueltigException}. Zentralisiert die in allen REST-Controllern
+     * benoetigt Session-Validierung an einem einzigen Ort.
+     */
+    @Transactional(readOnly = true)
+    public SpielerEntity ladeAktivenSpieler(HttpServletRequest request) {
+        HttpSession session = request.getSession(false);
+        if (session == null) {
+            throw new SpielerSessionUngueltigException("Es ist keine aktive Spieler-Session vorhanden.");
+        }
+        uebernehmeTimeout(session);
+        return ladeAktivenSpieler(session.getId());
     }
 
     @Transactional(readOnly = true)

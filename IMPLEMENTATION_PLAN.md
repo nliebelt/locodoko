@@ -4,9 +4,9 @@ Stand: 2026-03-21
 
 ## Notiz
 
-**Letzte Iteration (2026-03-22):** Package-Struktur nach Bounded Contexts abgeschlossen (Prioritaet 11). Alle Klassen aus `spielverwaltung/` und `spiel/` in `lobby/`, `partie/`, `session/`, `karten/` reorganisiert. Cross-Package-Imports manuell aufgeloest; @EnableJdbcRepositories auf alle 3 Bounded-Context-Packages erweitert; package-private Methoden setzeTisch/setzePartie auf public gehoben. 105 Tests gruen. Commit: 0075b83.
+**Letzte Iteration (2026-03-22):** Toter-Code-Pruefung und Duplikat-Entfernung (Prioritaet 11). Analyse ergab: TischEreignisTyp-Enum hatte entgegen der Annahme im Plan KEINE ungenutzten Werte — alle 7 Werte werden tatsaechlich gesendet. Dafuer echtes Duplikat gefunden und behoben: `ladeAktivenSpieler(HttpServletRequest)` war identisch in TischController und PartieController (je 7 Zeilen). Logik nach `SpielerSessionService` extrahiert; beide Controller delegieren jetzt dorthin. 105 Tests gruen. Commit folgt.
 
-**Naechster logischer Schritt:** Restliche Prioritaet-11-Punkte: Javadoc (jede Klasse mit praeziser deutscher Definition) und Toter-Code-Pruefung (TischEreignisTyp-Enum-Werte, duplizierte Session-Validierung).
+**Naechster logischer Schritt:** Letzte offene Prioritaet-11-Aufgabe: Vollstaendige Code-Dokumentation (Javadoc) — jede Klasse mit praeziser deutscher Definition. Beginnen mit zentralen Domain-Klassen (Karte, Stich, Partie, Spieler) und Services (TischService, KiStrategie).
 
 **Offene Fragen:** jsdom kann Canvas 2D nicht rendern (daher stderr-Warnings in Tests); unkritisch.
 
@@ -160,7 +160,7 @@ Ausgangslage: Backend und Frontend sind funktional weitgehend vollstaendig: Kart
 - [x] Liquibase-Schema-Migration einrichten anstelle von `spring.jpa.hibernate.ddl-auto=create-drop`; YAML-Changelogs fuer alle Tabellen in `src/main/resources/db/changelog/`.
 - [x] Package-Struktur nach Bounded Contexts aufgeloest gemaess `specs/architektur-ddd.md`: alle Klassen aus `spielverwaltung/` und `spiel/` in `lobby/`, `partie/`, `session/`, `karten/` reorganisiert; @EnableJdbcRepositories auf alle 3 Context-Packages erweitert; Cross-Package-Imports aufgeloest; 105 Tests gruen.
 - [ ] Vollstaendige Code-Dokumentation (Javadoc): Jede Klasse mit praeziser deutscher Definition und Zweck.
-- [ ] Toten Code pruefen und entfernen: `TischEreignisTyp`-Enum hat definierte aber nie gesendete Werte (TISCH_ERSTELLT, SPIELER_BEIGETRETEN etc.); Session-Validierungslogik ist zwischen Interceptor und Controllern dupliziert.
+- [x] Toten Code pruefen und entfernen: `TischEreignisTyp`-Enum hatte entgegen Annahme keine ungenutzten Werte (alle 7 werden gesendet); identische `ladeAktivenSpieler(HttpServletRequest)`-Methode aus TischController und PartieController nach SpielerSessionService extrahiert.
 
 ## Empfohlene Umsetzungsreihenfolge fuer den ersten spielbaren End-to-End-Vertical-Slice
 

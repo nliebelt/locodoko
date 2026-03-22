@@ -2,9 +2,7 @@ package de.locodoko.lobby;
 
 import de.locodoko.session.SpielerEntity;
 import de.locodoko.session.SpielerSessionService;
-import de.locodoko.session.SpielerSessionUngueltigException;
 import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpSession;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -40,13 +38,7 @@ public class PartieController {
         return tischService.ladePartieStand(id, spieler);
     }
 
-    /** Validiert die HTTP-Session und laedt den zugehoerigen Spieler — wirft 401 bei fehlender oder abgelaufener Session. */
     private SpielerEntity ladeAktivenSpieler(HttpServletRequest request) {
-        HttpSession session = request.getSession(false);
-        if (session == null) {
-            throw new SpielerSessionUngueltigException("Es ist keine aktive Spieler-Session vorhanden.");
-        }
-        spielerSessionService.uebernehmeTimeout(session);
-        return spielerSessionService.ladeAktivenSpieler(session.getId());
+        return spielerSessionService.ladeAktivenSpieler(request);
     }
 }
