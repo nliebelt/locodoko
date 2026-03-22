@@ -22,6 +22,13 @@
 - Tests: `cd frontend && npm test`
 - Lint: `cd frontend && npm run lint`
 
+### E2E-Tests (Playwright) — separat
+
+- Setup: `cd e2e && npm install && npx playwright install chromium`
+- Tests: `cd e2e && npx playwright test` (setzt laufendes Backend voraus: `mvn spring-boot:run`)
+- Gegen Testsystem: `BASE_URL=https://... cd e2e && npx playwright test`
+- Wird **nicht** von `mvn verify` ausgeführt — separater Schritt
+
 ## Validation
 
 Führe diese Befehle nach dem Implementieren aus, um sofortiges Feedback zu bekommen:

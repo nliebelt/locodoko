@@ -5,15 +5,17 @@
 
 ## Notiz
 
-Implementiert: 4.5 JSDoc-Dokumentation. Alle 5 Dateien vollständig dokumentiert auf Deutsch:
-- `SpielverwaltungEchtzeit.ts`: NachrichtenHandler, EchtzeitPort (Interface inkl. Methoden), SpielverwaltungEchtzeit-Klasse + alle 4 öffentlichen Methoden
-- `AnimationenService.ts`: AnimierbareKartenobjekte, Punkt, AnimationenService-Klasse + alle 7 öffentlichen Methoden (inkl. Konvertierung bestehender //-Kommentare zu JSDoc)
-- `AppStore.ts`: UiMeldung, AppZustand (alle Properties), AppStore-Klasse + alle 15 öffentlichen Methoden
-- `TischAnsichtModell.ts`: Alle 7 Interfaces + 3 exportierte Funktionen
-- `TischSzene.ts`: TischSzene-Klasse + create/shutdown/destroy
-48 Frontend-Tests grün, Lint fehlerfrei.
+Implementiert: 4.6 E2E-Tests (Playwright). Eigenständiges `e2e/`-npm-Projekt angelegt:
+- `e2e/package.json` + `e2e/playwright.config.ts` (Viewport 1280×720, BASE_URL via ENV)
+- `e2e/tests/partie-gegen-ki.spec.ts`: 7-schrittiger Test — Session→Lobby→Tisch erstellen→Spiel starten→Vorbehalt→Karte spielen→Stich-Zähler
+- Karten-Click über relative Canvas-Position (32%/89% der Canvas-Größe für SUED-Spieler Slot 0)
+- Phasen-Assertions via `[data-phase]`-DOM-Element, Aktions-Hints via `[data-aktions-hinweis]`
+- JS-Fehler-Abfang per `page.on('console', ...)` + `page.on('pageerror', ...)`
+- `e2e/.gitignore` schließt node_modules/, test-results/, playwright-report/ aus
+- CLAUDE.md / AGENTS.md um E2E-Ausführungshinweis ergänzt
+Test läuft nicht ohne laufendes Backend — Playwright-Syntax via `--list` verifiziert.
 
-Nächster logischer Schritt: 4.6 E2E-Tests (Playwright) oder 4.7 Swagger/OpenAPI. Beide sind unabhängig voneinander.
+Nächster logischer Schritt: 4.7 Swagger/OpenAPI oder 4.8 KI-Schwierigkeitsstufen (beide unabhängig).
 
 Bekannte offene Fragen: rest-api.md hat noch eine offene Checkbox (Swagger/OpenAPI — Aufgabe 4.7). Die architektur-ddd.md, tech-migration.md und frontend-logging.md stehen noch auf "Neue Vorgabe" — könnten als erledigt markiert werden, wurden aber bewusst ausgelassen.
 
@@ -206,7 +208,7 @@ Bekannte offene Fragen: rest-api.md hat noch eine offene Checkbox (Swagger/OpenA
   - JSDoc für AppStore.ts, TischSzene.ts, SpielverwaltungEchtzeit.ts, TischAnsichtModell.ts, AnimationenService.ts
   - Abhängigkeit: keine
 
-- [ ] **4.6 E2E-Tests (e2e-tests.md)**
+- [x] **4.6 E2E-Tests (e2e-tests.md)**
   - Playwright-Setup in `e2e/` Verzeichnis
   - Test: Partie gegen KI (Session → Tisch erstellen → Starten → Partie durchspielen)
   - Abhängigkeit: 4.1 (Session-Recovery hilfreich für stabile Tests)
