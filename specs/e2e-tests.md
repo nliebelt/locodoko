@@ -2,7 +2,7 @@
 
 | Feld           | Wert                                               |
 |----------------|----------------------------------------------------|
-| Status         | Neue Vorgabe                                       |
+| Status         | Vollständig implementiert                          |
 | Priorität      | Hoch                                               |
 | Abhängigkeiten | spieler-session.md, lobby.md, spielablauf.md, ki-strategie.md |
 
@@ -142,12 +142,12 @@ export default defineConfig({
 
 ## Definition of Done
 
-- [ ] `e2e/` Verzeichnis mit `package.json` und `playwright.config.ts` angelegt
-- [ ] `tests/partie-gegen-ki.spec.ts` implementiert alle 6 Schritte
+- [x] `e2e/` Verzeichnis mit `package.json` und `playwright.config.ts` angelegt
+- [x] `tests/partie-gegen-ki.spec.ts` implementiert alle 6 Schritte
 - [ ] Test läuft lokal grün gegen `mvn spring-boot:run`
-- [ ] `BASE_URL`-Unterstützung funktioniert
-- [ ] `e2e/.gitignore` schließt `node_modules/`, `test-results/`, `playwright-report/` aus
-- [ ] README oder CLAUDE.md Hinweis zur separaten Ausführung ergänzt
+- [x] `BASE_URL`-Unterstützung funktioniert
+- [x] `e2e/.gitignore` schließt `node_modules/`, `test-results/`, `playwright-report/` aus
+- [x] README oder CLAUDE.md Hinweis zur separaten Ausführung ergänzt
 
 ## Technische Hinweise
 
