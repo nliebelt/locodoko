@@ -1,3 +1,11 @@
+/* Sicherstellen, dass das HTML-hidden-Attribut korrekt greift — auch wenn eine CSS-Klasse
+   display oder pointer-events setzt. Verhindert, dass z.B. versteckte Modal-Kulissen
+   Klicks auf darunterliegende Elemente blockieren. */
+[hidden] {
+  display: none !important;
+  pointer-events: none !important;
+}
+
 html,
 body,
 #app-shell,

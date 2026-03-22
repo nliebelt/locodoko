@@ -32,3 +32,8 @@ window.addEventListener('beforeunload', () => {
   appStore.trennen();
   spiel.destroy(true);
 });
+
+// Test-Hook: appStore global zugaenglich machen fuer E2E-Tests.
+// Ermoeglicht zuverlässigen Karten-Zugriff ohne Phaser-Canvas-Hit-Testing,
+// das in headless Chromium (Playwright) nicht funktioniert.
+(window as unknown as Record<string, unknown>)['__locodoko'] = { appStore };

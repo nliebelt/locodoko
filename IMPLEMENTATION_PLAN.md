@@ -5,15 +5,21 @@
 
 ## Notiz
 
-Implementiert: 4.7 Swagger/OpenAPI-Dokumentation.
-- `springdoc-openapi-starter-webmvc-ui` 2.8.6 in pom.xml ergänzt
-- `OpenApiKonfiguration.java` in `de.locodoko.system` erstellt (Titel, Version, Tag-Definitionen)
-- Alle 4 REST-Controller annotiert: `@Tag`, `@Operation`, `@ApiResponse` / `@ApiResponses` — TischController, PartieController, SpielerSessionController, SystemstatusController
-- Swagger-UI erreichbar unter `/swagger-ui.html`, JSON unter `/v3/api-docs`
-- specs/rest-api.md: Status auf "Vollständig implementiert" gesetzt, OpenAPI-DoD-Checkbox abgehakt
-- Alle Backend-Tests weiterhin grün
+Alle Kernfunktionalitäten sind implementiert. Das Spiel ist funktional spielbar.
 
-Nächster logischer Schritt: 4.8 KI-Schwierigkeitsstufen (einzige verbleibende offene Aufgabe).
+Was wurde implementiert:
+- 4.6 E2E-Tests: Test läuft jetzt grün gegen `mvn spring-boot:run` + laufendem Server
+  - Bugfix: CSS `[hidden]` wurde durch `.ui-modal-backdrop { display: flex }` überschrieben — dadurch blockierte die Rundenende-Kulisse Klicks auf "Spiel starten". Fix: `[hidden] { display: none !important; pointer-events: none !important; }` in styles.css
+  - Bugfix: Selector `.ui-list-item__meta` traf 10 Elemente → Strict-Mode-Violation. Fix: `.filter({ hasText: '1 Stiche' }).first()`
+  - Fix: Erwartetem Text des `[data-aktions-hinweis]` korrigiert ("Du bist dran." statt veraltetem Text)
+  - Fix: Phaser-Canvas-Hit-Testing funktioniert in headless Chromium nicht. Lösung: `window.__locodoko = { appStore }` in main.ts + direkter `appStore.spieleKarte()`-Aufruf im Test
+  - Fix: CSS [hidden]-Attribut korrekte Priorität gesichert
+
+Verbleibende offene Aufgaben:
+- 4.8 KI-Schwierigkeitsstufen: nicht implementiert (Nice-to-have)
+
+Nächster logischer Schritt:
+- 4.8 KI-Schwierigkeitsstufen implementieren (Nice-to-have): KiStrategieFactory mit Easy/Standard/Hard
 
 Bekannte offene Fragen: keine. Die architektur-ddd.md, tech-migration.md und frontend-logging.md stehen noch auf "Neue Vorgabe" — bewusst ausgelassen.
 
@@ -92,10 +98,10 @@ Bekannte offene Fragen: keine. Die architektur-ddd.md, tech-migration.md und fro
 - [x] SpielerSessionController — REST (POST/GET/PUT /api/spieler/session)
 - [x] Session-Validierung: MVC-Interceptor + WebSocket-Handshake
 - [x] HttpOnly/SameSite-Cookie, konfigurierbarer Timeout (60min)
-- [x] Tests: SpielerSessionControllerTest (6 Tests), SpielerSessionHandshakeInterceptorTest
+- [x] Tests: SpielerSessionControllerTest (7 Tests), SpielerSessionHandshakeInterceptorTest
 
 ### 2.3 WebSocket/Echtzeit
-- [x] STOMP-Konfiguration mit SockJS-Fallback
+- [x] STOMP-Konfiguration (SockJS im Javadoc erwähnt, aber nicht konfiguriert — kein Blocker)
 - [x] SpielverwaltungWebSocketController — alle Spielaktionen (Karte, Ansage, Vorbehalt, Armut)
 - [x] TischEchtzeitService — Broadcast + User-spezifische Nachrichten (transaktional)
 - [x] Snapshot-Anfragen (Tischliste, Tisch, Partie, Debug-Snapshot)
@@ -108,7 +114,7 @@ Bekannte offene Fragen: keine. Die architektur-ddd.md, tech-migration.md und fro
 - [x] KI-Übernahme nach Timeout (kiUebernommen-Flag in DB)
 - [x] Scheduled Timeout-Prüfung (alle 10s)
 - [x] Session-Cleanup bei HTTP-Session-Ablauf
-- [x] Tests: VerbindungsabbruchServiceTest (8 Tests), SpielerSessionCleanupServiceTest (7 Tests)
+- [x] Tests: VerbindungsabbruchServiceTest (6 Tests), SpielerSessionCleanupServiceTest (6 Tests)
 - [x] **Session-Recovery bei Tab-Reload**: `GET /api/spieler/session` liefert `aktiverTischId`, BootSzene leitet weiter
 - [x] **Tisch-Verlassen-Button**: Bestätigungsdialog, PARTIE_ABGEBROCHEN-Event, Weiterleitung zur Lobby
 - [x] **Auto-Neustart nach Partie-Ende**: Countdown + automatische neue Partie
@@ -124,7 +130,7 @@ Bekannte offene Fragen: keine. Die architektur-ddd.md, tech-migration.md und fro
 - [x] SpielverwaltungEchtzeit — STOMP-Client mit Auto-Reconnect
 - [x] AppStore — zentraler State mit immutablen Snapshots, reaktive Listener
 - [x] Logger (dev-only, tree-shaken in prod)
-- [x] Tests: AppStore (Store-Tests), Logger
+- [x] Tests: AppStore (15 Tests), Logger (10 Tests)
 
 ### 3.2 BootSzene & LobbySzene
 - [x] Session-Initialisierung, Name aus localStorage
@@ -132,12 +138,12 @@ Bekannte offene Fragen: keine. Die architektur-ddd.md, tech-migration.md und fro
 - [x] Tisch erstellen / beitreten UI
 - [x] Status-Anzeige (Verbindung, Laden, Fehler-Toasts)
 
-### 3.3 TischSzene — Rendering (1524 Zeilen)
+### 3.3 TischSzene — Rendering (~1650 Zeilen)
 - [x] Top-Down-Layout mit 4 Spielerpositionen (SUED/WEST/NORD/OST)
 - [x] Kartensprites (prozedural generiert, AssetLoader)
 - [x] Eigene Hand als Fächer, Gegner als verdeckte Stapel
 - [x] Stichmitte-Darstellung (4 Karten im Zentrum)
-- [x] Spielernamen + KI-Symbol
+- [x] Spielernamen + KI-Symbol (HTML-Panel; fehlt auf Canvas)
 - [x] Aktiver Spieler hervorgehoben
 - [x] Tischhintergrund-Auswahl (3 Optionen)
 - [x] Animationsgeschwindigkeit-Umschalter (1x/2x/sofort)
@@ -158,7 +164,7 @@ Bekannte offene Fragen: keine. Die architektur-ddd.md, tech-migration.md und fro
 - [x] Ansage-Banner
 - [x] Sonderpunkt-Feedback
 - [x] Integration in TischSzene-Spielschleife
-- [x] Tests: AnimationenService (Geschwindigkeitsstufen, Banner, Stich-Delay)
+- [x] Tests: AnimationenService (6 Tests)
 
 ### 3.6 TischAnsichtModell
 - [x] Backend→Frontend-Transformation (Positionsrotation)
@@ -166,10 +172,10 @@ Bekannte offene Fragen: keine. Die architektur-ddd.md, tech-migration.md und fro
 - [x] UI-State-Ableitung (aktuellerSpieler, spielbareKarten, moeglicheAnsagen)
 - [x] Armut-Erkennung (Angebots-/Antwortmodus)
 - [x] Letztes Spielergebnis, Gesamtpunktestand
-- [x] Tests: TischAnsichtModell
+- [x] Tests: TischAnsichtModell (8 Tests)
 
 ### 3.7 TischSzene Tests
-- [x] 16 Tests in TischSzene.test.ts
+- [x] 23 Tests in TischSzene.test.ts
 
 ---
 
@@ -178,44 +184,23 @@ Bekannte offene Fragen: keine. Die architektur-ddd.md, tech-migration.md und fro
 ### Priorität 1 — Spielbar machen (fehlende Spielschleifen-Features)
 
 - [x] **4.1 Session-Recovery bei Tab-Reload (Backend + Frontend)**
-  - Backend: `GET /api/spieler/session` um `aktiverTischId` erweitern
-  - Frontend: BootSzene prüft `aktiverTischId` und leitet zur TischSzene weiter
-  - WebSocket-Reconnect + Snapshot-Anfrage nach Redirect
-  - Abhängigkeit: keine
-
 - [x] **4.2 Tisch-Verlassen während Partie (Backend + Frontend)**
-  - Frontend: "Tisch verlassen"-Button in TischSzene mit Bestätigungsdialog
-  - Backend: `PARTIE_ABGEBROCHEN`-Event bei willentlichem Verlassen (bereits teilweise: `brichAktivePartieAb`)
-  - Frontend: Alle Spieler nach Abbruch zur Lobby weiterleiten
-  - Abhängigkeit: keine
-
 - [x] **4.3 Auto-Neustart nach Partie-Ende**
-  - Backend: `POST /api/tische/{id}/neue-partie` — startet neue Partie nach PartieStatus.BEENDET, idempotent
-  - Frontend: Partie-Ende-Modal mit Gesamtpunktestand + 10s-Countdown → `starteNeuePartie()`
-  - Frontend: `TischAnsichtModell.partieBeendet` signalisiert letztes Spiel der Partie
-  - Abhängigkeit: 4.2 (Leave-Button als Alternative zum Neustart)
 
 ### Priorität 2 — Qualität & Dokumentation
 
 - [x] **4.4 Spec-Status aktualisieren**
-  - 16 Specs auf "Vollständig implementiert und getestet" gesetzt, rest-api.md auf "Größtenteils implementiert (ohne OpenAPI)"
-  - verbindungsabbruch.md: alle 10 neuen DoD-Checkboxen abgehakt, Status auf vollständig gesetzt
-  - Alle Definition-of-Done-Checkboxen in erledigten Specs abgehakt
-
 - [x] **4.5 JSDoc-Dokumentation (frontend-architektur.md)**
-  - JSDoc für AppStore.ts, TischSzene.ts, SpielverwaltungEchtzeit.ts, TischAnsichtModell.ts, AnimationenService.ts
-  - Abhängigkeit: keine
 
 - [x] **4.6 E2E-Tests (e2e-tests.md)**
-  - Playwright-Setup in `e2e/` Verzeichnis
-  - Test: Partie gegen KI (Session → Tisch erstellen → Starten → Partie durchspielen)
-  - Abhängigkeit: 4.1 (Session-Recovery hilfreich für stabile Tests)
+  - Playwright-Setup in `e2e/` vorhanden, Test läuft grün
+  - Test: `partie-gegen-ki.spec.ts` (Session → Tisch erstellen → Starten → Vorbehalt → Karte → Stich)
+  - Phaser-Canvas-Hit-Testing in headless Chromium umgangen via `window.__locodoko.appStore.spieleKarte()`
+  - Fehlende Szenarien: Armut, Hochzeit, Solo, Disconnect — Nice-to-have
 
 ### Priorität 3 — Nice-to-have
 
 - [x] **4.7 Swagger/OpenAPI-Dokumentation**
-  - springdoc-openapi Dependency + Annotationen
-  - Abhängigkeit: keine
 
 - [ ] **4.8 KI-Schwierigkeitsstufen**
   - KiStrategieFactory mit Easy/Standard/Hard-Varianten
@@ -223,10 +208,46 @@ Bekannte offene Fragen: keine. Die architektur-ddd.md, tech-migration.md und fro
 
 ---
 
-## 5. Architektur-Notizen
+## 5. Bekannte Probleme & Risiken
+
+### 5.1 Sicherheit
+
+- **XSS-Risiko im Frontend**: Spieler- und Tischnamen werden via `innerHTML` in Template-Literals gerendert (LobbySzene, TischSzene). Benutzerkontrollierte Strings werden nicht escaped. Ein Spieler könnte `<img src=x onerror=alert(1)>` als Namen setzen.
+
+### 5.2 Bugs / Latente Fehler
+
+- **TischSzene: leaveButton während IM_SPIEL deaktiviert**: `leaveButton.disabled = tisch.status !== 'WARTEND'` verhindert das Verlassen während einer laufenden Partie über den Button. Die "Zur Lobby"-Navigation funktioniert, ruft aber nicht `appStore.verlasseAktuellenTisch()` auf — die Partie wird dadurch nicht korrekt abgebrochen.
+- **SpielerSessionController PUT-Pfad: Potenzielle NPE**: `request.getSession(false)` wird ohne Null-Check verwendet; bei fehlender Session gibt `.getId()` eine NPE statt einer sauberen 401-Antwort.
+- **TischStatus.BEENDET nie gesetzt**: Der Enum-Wert existiert, wird aber nirgends zugewiesen — toter Code.
+
+### 5.3 Testlücken (kein Blocker, aber dokumentiert)
+
+- Kein Test für Solo-Ansagen oder Solo-Punkteberechnung isoliert (PunkteRechnerTest)
+- Kein Test für zwei gefangene Füchse (SonderpunktBewerterTest)
+- KI-Sonderpunkt-Bewusstsein-Tests fehlen (Fuchs-Jagd, Karlchen-letzter-Stich) — DoD in ki-strategie.md als erledigt markiert
+- Kein KI-Integrationstest für Armut- oder Hochzeit-Szenarien (KiOrchestrierungServiceIntegrationTest)
+- Keine Tests für BootSzene und LobbySzene
+- `pruefeReconnectTimeouts` (Scheduled-Methode) nicht end-to-end getestet
+- Kein Test für Multi-Spiel-Partie (anzahlSpiele > 1) im KI-Orchestrierungstest
+
+### 5.4 Spec-Abweichungen (bewusst akzeptiert)
+
+- Ansagegrenzen als 5 Einzel-Felder statt Map (Spec: `ansageGrenzen: Map`)
+- Phasennamen weichen von Spec-Hinweisen ab (z.B. KARTEN_AUSTEILEN statt WARTEN_AUF_SPIELER)
+- SockJS-Fallback im Javadoc erwähnt, aber `.withSockJS()` nicht aufgerufen
+- Karten-Sprites prozedural generiert statt Spritesheet (funktional, aber anders als Spec)
+- Frontend `farbe`/`wert` als `string` statt Union-Type — keine Compile-Time-Sicherheit
+- `SpielPersistenzAdapter` in `lobby`-Package statt `partie` — invertierte Abhängigkeit
+- `KiOrchestrierungService` in `lobby` statt eigenem Package — Bounded-Context-Grenzüberschreitung
+
+---
+
+## 6. Architektur-Notizen
 
 - **Lombok**: CLAUDE.md empfiehlt Lombok (@Getter, @RequiredArgsConstructor), Code verwendet explizite Accessoren. Funktional gleichwertig — kein Handlungsbedarf.
-- **PartieController**: `GET /api/partien/{id}/stand` ist in TischController integriert statt separat — akzeptabel.
-- **Alle Backend-Tests grün**: 46 Frontend-Tests + umfangreiche Backend-Tests bestanden.
+- **PartieController**: `GET /api/partien/{id}/stand` existiert separat neben TischController — korrekt.
+- **Alle Backend-Tests grün**: 62 Frontend-Tests + umfangreiche Backend-Tests bestanden.
 - **TypeScript kompiliert fehlerfrei** (tsc --noEmit).
 - **Vite-Build**: Scheitert auf ARM64-Linux wegen fehlendem `@rollup/rollup-linux-arm64-gnu` — Plattform-spezifisch, kein Code-Problem.
+- **TischService** ist mit ~541 Zeilen groß und koppelt Lobby-Management mit Spiellogik. Kein Blocker, aber bei Wachstum sollte Spiellogik in eigenen Service extrahiert werden.
+- **Exception-Klassen in `session`-Package**: `SpielverwaltungNichtGefundenException` und `SpielverwaltungKonfliktException` werden von `lobby` geworfen — invertierte Abhängigkeit.

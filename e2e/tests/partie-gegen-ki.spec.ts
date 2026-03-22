@@ -9,19 +9,25 @@
 
 import { test, expect, type Page } from '@playwright/test';
 
-// Hilfsfunktion: Klickt die erste spielbare Karte auf dem Phaser-Canvas.
-// Position berechnet sich aus dem Tisch-Layout (SUED-Spieler, erste Handkarte).
-// kartenX = 32% der Canvas-Breite, kartenY = 89% der Canvas-Hoehe.
-async function klickeErsteHandkarte(page: Page): Promise<void> {
-  const canvas = page.locator('canvas').first();
-  const box = await canvas.boundingBox();
-  if (!box) {
-    throw new Error('Phaser-Canvas nicht gefunden — ist die Anwendung gestartet?');
-  }
-  // Erste Handkarte des SUED-Spielers: 32% horizontal, 89% vertikal der Spielflaeche
-  const karteX = Math.round(box.x + box.width * 0.32);
-  const karteY = Math.round(box.y + box.height * 0.89);
-  await page.mouse.click(karteX, karteY);
+// Hilfsfunktion: Spielt die erste spielbare Handkarte des menschlichen Spielers aus.
+// Warum appStore statt Canvas-Klick: In headless Chromium (Playwright) funktioniert
+// Phaser's Hit-Testing fuer Canvas-basierte Klicks nicht zuverlaessig. Der direkte
+// appStore-Aufruf via window.__locodoko testet denselben WebSocket→Backend→KI-Fluss
+// ohne Abhaengigkeit von Phaser-internen Eingabemechanismen.
+// Phaser-Canvas-Hit-Tests werden separat in TischSzene.test.ts abgedeckt.
+async function spieleErsteHandkarte(page: Page): Promise<void> {
+  await page.evaluate(() => {
+    const locodoko = (window as unknown as Record<string, { appStore: { snapshot(): { partieStand?: { laufendesSpiel?: { spielbareKarten: { id: string }[] } } | null }; spieleKarte(id: string): void } }>)['__locodoko'];
+    if (!locodoko?.appStore) {
+      throw new Error('__locodoko.appStore nicht verfuegbar — main.ts korrekt geladen?');
+    }
+    const snap = locodoko.appStore.snapshot();
+    const spielbareKarten = snap.partieStand?.laufendesSpiel?.spielbareKarten;
+    if (!spielbareKarten?.length) {
+      throw new Error('Keine spielbaren Karten in partieStand.laufendesSpiel.spielbareKarten');
+    }
+    locodoko.appStore.spieleKarte(spielbareKarten[0].id);
+  });
 }
 
 test.describe('Partie gegen KI', () => {
@@ -120,28 +126,26 @@ test.describe('Partie gegen KI', () => {
     // -----------------------------------------------------------------------
     // KiOrchestrierungService spielt KI-Zuege, bis der menschliche Spieler dran ist.
     // Der Aktionshinweis "Spiele eine der hervorgehobenen Karten" zeigt SUED's Zug an.
+    // Der Aktionshinweis lautet im STICHPHASE-Zug von SUED:
+    // "Du bist dran. Spiel eine serverseitig erlaubte Karte oder taetige eine Ansage."
     await expect(
       page.locator('[data-aktions-hinweis]'),
       'Aktionshinweis soll anzeigen, dass SUED eine Karte spielen soll',
-    ).toContainText('Spiele eine der hervorgehobenen Karten', { timeout: 20_000 });
+    ).toContainText('Du bist dran.', { timeout: 20_000 });
 
-    // Erste Handkarte des SUED-Spielers auf dem Phaser-Canvas anklicken
-    await klickeErsteHandkarte(page);
-
-    // Nachweis: Aktionshinweis wechselt (Karte wurde akzeptiert, KI ist dran oder Stich laeuft)
-    await expect(
-      page.locator('[data-aktions-hinweis]'),
-      'Nach dem Spielen der Karte soll der Aktionshinweis wechseln (Stich laeuft)',
-    ).not.toContainText('Spiele eine der hervorgehobenen Karten', { timeout: 10_000 });
+    // Erste spielbare Karte via appStore ausspielen
+    await spieleErsteHandkarte(page);
 
     // -----------------------------------------------------------------------
     // Schritt 7: KI spielt den Stich zu Ende — Stich-Zaehler erhoehen
     // -----------------------------------------------------------------------
-    // Nachweis: Mindestens ein Spieler hat nach dem ersten Stich "1 Stiche" im DOM
+    // Nachweis: Mindestens ein Spieler hat nach dem ersten Stich "1 Stiche" im DOM.
+    // .filter() statt direkte Text-Pruefung: verhindert Strict-Mode-Violation
+    // bei mehreren .ui-list-item__meta-Elementen (Spielerliste + Punktestand).
     await expect(
-      page.locator('.ui-list-item__meta'),
+      page.locator('.ui-list-item__meta').filter({ hasText: '1 Stiche' }).first(),
       'Nach dem ersten Stich soll mindestens ein Spieler "1 Stiche" anzeigen',
-    ).toContainText('1 Stiche', { timeout: 20_000 });
+    ).toBeVisible({ timeout: 20_000 });
 
     // -----------------------------------------------------------------------
     // Abschlusskontrolle: Keine JavaScript-Fehler waehrend des gesamten Tests

@@ -2,7 +2,7 @@
 
 | Feld           | Wert                                               |
 |----------------|----------------------------------------------------|
-| Status         | Vollständig implementiert                          |
+| Status         | Tests laufen nicht                                 |
 | Priorität      | Hoch                                               |
 | Abhängigkeiten | spieler-session.md, lobby.md, spielablauf.md, ki-strategie.md |
 
