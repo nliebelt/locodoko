@@ -198,6 +198,12 @@ export class TischSzene extends Phaser.Scene {
   // Modaler Dialog am Rundenende (bleibt bis Spieler ihn schliesst)
   private rundenEndeModal?: HTMLDivElement;
 
+  // Modaler Dialog am Partie-Ende mit Gesamtpunktestand + Countdown fuer Neustart
+  private partieEndeModal?: HTMLDivElement;
+
+  // Countdown-Intervall fuer den Partie-Ende-Neustart (Referenz fuer Cleanup)
+  private countdownTimerId?: ReturnType<typeof setInterval>;
+
   private ausgewaehlteArmutKarten = new Set<string>();
 
   private armutAnnahmeAktiv = false;
@@ -283,7 +289,9 @@ export class TischSzene extends Phaser.Scene {
         return;
       }
       // Neues Spiel erkannt: Karten werden unsichtbar gerendert und dann animiert ausgeteilt
+      // Partie-Ende-Modal schliessen, da neue Partie gestartet wurde
       if (this.ermittleNeuesSpiel(vorherigerZustand, zustand)) {
+        this.schliessePartieEndeModal();
         this.austeilenAktiv = true;
         void this.starteAusteilen(modell, zustand);
       }
@@ -291,9 +299,13 @@ export class TischSzene extends Phaser.Scene {
       void this.starteFolgeanimationen(vorherigesModell, modell);
       void this.starteAnsageBannerAnimationen(this.ermittleNeueAnsagen(vorherigesModell, modell));
       void this.starteSonderpunktFeedbackAnimationen(this.ermittleNeueSonderpunkte(vorherigesModell, modell));
-      // Neues Spielergebnis → Rundenende-Modal als modalen Dialog einblenden
+      // Neues Spielergebnis → Rundenende- oder Partie-Ende-Modal einblenden
       if (this.erkennteNeuesSpielErgebnis(vorherigesModell, modell) && modell.letztesSpielergebnis) {
-        this.zeigeRundenEndeModal(modell.letztesSpielergebnis);
+        if (modell.partieBeendet) {
+          this.zeigePartieEndeModal(modell);
+        } else {
+          this.zeigeRundenEndeModal(modell.letztesSpielergebnis);
+        }
       }
       this.letztesModell = modell;
     });
@@ -436,6 +448,11 @@ export class TischSzene extends Phaser.Scene {
     rundenEndeModal.className = 'ui-modal-backdrop';
     rundenEndeModal.hidden = true;
 
+    // Partie-Ende-Modal: initial versteckt, wird nach dem letzten Spiel einer Partie eingeblendet
+    const partieEndeModal = document.createElement('div');
+    partieEndeModal.className = 'ui-modal-backdrop';
+    partieEndeModal.hidden = true;
+
     this.panel = links;
     this.statusElement = statusElement;
     this.spielerListe = spielerListe;
@@ -450,7 +467,8 @@ export class TischSzene extends Phaser.Scene {
     this.geschwindigkeitsButton = geschwindigkeitsButton;
     this.toastStack = toastStack;
     this.rundenEndeModal = rundenEndeModal;
-    uiRoot.append(links, rechts, toastStack, rundenEndeModal);
+    this.partieEndeModal = partieEndeModal;
+    uiRoot.append(links, rechts, toastStack, rundenEndeModal, partieEndeModal);
   }
 
   private aktualisiereUi(zustand: AppZustand, modell = this.erstelleModell(zustand)): void {
@@ -1416,6 +1434,89 @@ export class TischSzene extends Phaser.Scene {
     }
   }
 
+  // Zeigt das Partie-Ende-Modal mit Gesamtpunktestand und Countdown fuer automatischen Neustart
+  private zeigePartieEndeModal(modell: TischAnsichtModell): void {
+    if (!this.partieEndeModal) {
+      return;
+    }
+    const COUNTDOWN_SEKUNDEN = 10;
+    const dialog = document.createElement('div');
+    dialog.className = 'ui-modal';
+
+    const titel = document.createElement('h2');
+    titel.textContent = 'Partie beendet!';
+
+    const gesamtstandTitel = document.createElement('strong');
+    gesamtstandTitel.textContent = 'Gesamtpunktestand';
+
+    const gesamtstandListe = document.createElement('ul');
+    gesamtstandListe.className = 'ui-list ui-list--dense';
+    const sortiertePunkte = [...modell.gesamtpunktestand].sort((a, b) => b.punkte - a.punkte);
+    sortiertePunkte.forEach((eintrag) => {
+      const li = document.createElement('li');
+      li.className = 'ui-list-item ui-list-item--dense';
+      li.innerHTML = `
+        <div class="ui-list-item__headline">
+          <strong>${eintrag.name}</strong>
+          <span class="ui-badge ${eintrag.position === 'SUED' ? 'ui-badge--highlight' : ''}">${eintrag.position}</span>
+        </div>
+        <div class="ui-list-item__meta">
+          <span>${eintrag.punkte >= 0 ? '+' : ''}${eintrag.punkte} Punkte</span>
+        </div>
+      `;
+      gesamtstandListe.append(li);
+    });
+
+    const countdownSpan = document.createElement('span');
+    countdownSpan.className = 'ui-hint';
+    countdownSpan.textContent = `Neue Partie startet in ${COUNTDOWN_SEKUNDEN} Sekunden ...`;
+
+    const aktionenReihe = document.createElement('div');
+    aktionenReihe.className = 'ui-action-row';
+
+    const neuePartieButton = this.erstelleButton('Jetzt starten', () => {
+      this.schliessePartieEndeModal();
+      void appStore.starteNeuePartie();
+    }, false);
+
+    const verlassenButton = this.erstelleButton('Tisch verlassen', () => {
+      this.schliessePartieEndeModal();
+      void appStore.verlasseAktuellenTisch();
+    }, true);
+    verlassenButton.classList.add('ui-button--secondary');
+
+    aktionenReihe.append(neuePartieButton, verlassenButton);
+    dialog.append(titel, gesamtstandTitel, gesamtstandListe, countdownSpan, aktionenReihe);
+    this.partieEndeModal.innerHTML = '';
+    this.partieEndeModal.append(dialog);
+    this.partieEndeModal.hidden = false;
+
+    // Countdown: aktualisiert den Text jede Sekunde und startet neue Partie nach Ablauf
+    let verbleibendeZeit = COUNTDOWN_SEKUNDEN;
+    this.countdownTimerId = setInterval(() => {
+      verbleibendeZeit -= 1;
+      if (verbleibendeZeit <= 0) {
+        this.schliessePartieEndeModal();
+        void appStore.starteNeuePartie();
+      } else {
+        countdownSpan.textContent = `Neue Partie startet in ${verbleibendeZeit} Sekunden ...`;
+      }
+    }, 1000);
+  }
+
+  // Schliesst das Partie-Ende-Modal und bricht den Countdown ab
+  private schliessePartieEndeModal(): void {
+    if (this.countdownTimerId !== undefined) {
+      clearInterval(this.countdownTimerId);
+      this.countdownTimerId = undefined;
+    }
+    if (!this.partieEndeModal) {
+      return;
+    }
+    this.partieEndeModal.hidden = true;
+    this.partieEndeModal.innerHTML = '';
+  }
+
   private erstelleSektion(titel: string, beschreibung: string): HTMLDivElement {
     const sektion = document.createElement('div');
     sektion.className = 'ui-section';
@@ -1520,5 +1621,7 @@ export class TischSzene extends Phaser.Scene {
     this.letzteSticheListe = undefined;
     this.letzteSticheButton = undefined;
     this.toastStack = undefined;
+    this.schliessePartieEndeModal();
+    this.partieEndeModal = undefined;
   }
 }

@@ -126,6 +126,10 @@ export class SpielverwaltungApi {
     return holeJson<BestaetigungAntwort>(`/api/tische/${tischId}/starten`, { method: 'POST' });
   }
 
+  async starteNeuePartie(tischId: Uuid): Promise<BestaetigungAntwort> {
+    return holeJson<BestaetigungAntwort>(`/api/tische/${tischId}/neue-partie`, { method: 'POST' });
+  }
+
   async aktualisiereTischKonfiguration(tischId: Uuid, konfiguration: TischKonfigurationDto): Promise<TischKonfigurationDto> {
     return holeJson<TischKonfigurationDto>(`/api/tische/${tischId}/konfiguration`, {
       method: 'PUT',

@@ -173,6 +173,20 @@ export class AppStore {
     });
   }
 
+  /**
+   * Startet eine neue Partie am aktuellen Tisch nach Ende der vorherigen Partie.
+   * Idempotent: Wenn die Partie bereits laeuft, wird nichts getan.
+   */
+  async starteNeuePartie(): Promise<void> {
+    const tisch = this.zustand.aktuellerTisch;
+    if (!tisch) {
+      return;
+    }
+    await this.fuehreMitStatus(async () => {
+      await this.api.starteNeuePartie(tisch.id);
+    });
+  }
+
   async aktualisiereAktuellenTischhintergrund(tischhintergrund: Tischhintergrund): Promise<void> {
     const tisch = this.zustand.aktuellerTisch;
     if (!tisch) {

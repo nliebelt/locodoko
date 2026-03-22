@@ -358,6 +358,57 @@ class TischControllerTest {
             .andExpect(jsonPath("$.fehlerCode").value("TISCH_NICHT_GEFUNDEN"));
     }
 
+    @Test
+    void startetNeuePartieNachBeendetterPartie() throws Exception {
+        // WARUM: Wenn alle Spiele einer Partie abgeschlossen sind, muss POST /neue-partie
+        // eine frische Partie anlegen und alle Clients per Event benachrichtigen.
+        // Ohne diesen Endpunkt koennen Spieler nach Partie-Ende nicht weiterspielen.
+        MockHttpSession adaSession = registriereSpieler("AdaNeuePartie");
+        SpielerEntity ada = spielerRepository.findBySessionId(adaSession.getId()).orElseThrow();
+
+        TischEntity tisch = TischEntity.neu("NeuePartieTisch", ada, TischkonfigurationEmbeddable.standard());
+        tisch.fuegeSpielerHinzu(ada);
+        PartieEntity beendetePartie = PartieEntity.neu(8);
+        beendetePartie.markiereAlsBeendet();
+        tisch.setzePartie(beendetePartie);
+        TischEntity gespeichert = tischRepository.saveAndFlush(tisch);
+        UUID tischId = gespeichert.id();
+        UUID altePartieId = gespeichert.partie().id();
+
+        mockMvc.perform(post("/api/tische/{id}/neue-partie", tischId).session(adaSession))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.nachricht").value("Neue Partie gestartet."));
+
+        TischEntity geladen = tischRepository.findById(tischId).orElseThrow();
+        assertNotNull(geladen.partie(),
+            "Nach neue-partie muss eine Partie vorhanden sein, damit der PartieStand abrufbar ist.");
+        assertTrue(!geladen.partie().id().equals(altePartieId),
+            "Die neue Partie muss eine andere UUID haben als die abgeschlossene Partie.");
+        assertEquals("LAUFEND", geladen.partie().status().name(),
+            "Die neue Partie muss sofort in den Status LAUFEND wechseln, damit das Spiel direkt beginnt.");
+        assertEquals(TischStatus.IM_SPIEL, geladen.status(),
+            "Der Tischstatus muss IM_SPIEL bleiben, damit die Tischansicht keine Szene wechselt.");
+    }
+
+    @Test
+    void lehntNeuePartieAbWennPartieLaeuft() throws Exception {
+        // WARUM: Wenn die Partie noch laeuft (nicht BEENDET), soll neue-partie idempotent
+        // "Partie laeuft bereits" zurueckgeben statt einen Fehler zu werfen.
+        // Das schuetzt vor Doppelstarts bei gleichzeitigen Anfragen mehrerer Clients.
+        MockHttpSession adaSession = registriereSpieler("AdaLaufend");
+        SpielerEntity ada = spielerRepository.findBySessionId(adaSession.getId()).orElseThrow();
+
+        TischEntity tisch = TischEntity.neu("LaufendTisch", ada, TischkonfigurationEmbeddable.standard());
+        tisch.fuegeSpielerHinzu(ada);
+        PartieEntity laufendePartie = PartieEntity.neu(8);
+        tisch.setzePartie(laufendePartie);
+        TischEntity gespeichert = tischRepository.saveAndFlush(tisch);
+
+        mockMvc.perform(post("/api/tische/{id}/neue-partie", gespeichert.id()).session(adaSession))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.nachricht").value("Partie laeuft bereits."));
+    }
+
     private MockHttpSession registriereSpieler(String name) throws Exception {
         MvcResult ergebnis = mockMvc.perform(post("/api/spieler/session")
                 .contentType(APPLICATION_JSON)

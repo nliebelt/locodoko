@@ -9,6 +9,7 @@ import de.locodoko.partie.Spiel;
 import de.locodoko.partie.VorbehaltAnsage;
 import de.locodoko.partie.PartieEntity;
 import de.locodoko.partie.PartieRepository;
+import de.locodoko.partie.PartieStatus;
 import de.locodoko.partie.HandEntity;
 import de.locodoko.session.SpielerEntity;
 import de.locodoko.session.SpielerRepository;
@@ -195,6 +196,56 @@ public class TischService {
         );
         veroeffentlichePartieAktualisierung(gespeicherterTisch);
         return antwort;
+    }
+
+    /**
+     * Startet eine neue Partie an einem laufenden Tisch, nachdem die vorherige Partie beendet wurde.
+     *
+     * <p>Idempotent: Wenn die aktuelle Partie noch laeuft, wird die Anfrage ignoriert.
+     * Nur zulassig wenn TischStatus IM_SPIEL und PartieStatus BEENDET.
+     * Die neuen Partie-Events werden an alle Spieler am Tisch gesendet.</p>
+     */
+    @Transactional
+    public BestaetigungAntwort starteNeuePartie(UUID tischId, SpielerEntity spieler) {
+        ladeSpieler(spieler.id()); // Session validieren
+        TischEntity tisch = ladeTischEntityMitSperre(tischId);
+        if (tisch.status() != TischStatus.IM_SPIEL) {
+            throw new SpielverwaltungKonfliktException(
+                "TISCH_NICHT_IM_SPIEL",
+                "Neue Partie kann nur an einem laufenden Tisch gestartet werden."
+            );
+        }
+        // Idempotent: Wenn Partie noch laeuft, nichts tun (z.B. mehrere Clients senden gleichzeitig)
+        if (tisch.partie() != null && tisch.partie().status() == PartieStatus.LAUFEND) {
+            return new BestaetigungAntwort("Partie laeuft bereits.");
+        }
+        if (tisch.partie() == null || tisch.partie().status() != PartieStatus.BEENDET) {
+            throw new SpielverwaltungKonfliktException(
+                "PARTIE_NICHT_BEENDET",
+                "Neue Partie kann nur nach vollstaendigem Abschluss der aktuellen Partie gestartet werden."
+            );
+        }
+        // KI-Uebernahmen zuruecksetzen, damit reconnectete Spieler wieder selbst spielen
+        tisch.spieler().stream()
+            .filter(s -> !s.istKi() && s.istKiUebernommen())
+            .forEach(s -> {
+                s.hebeKiUebernahmeAuf();
+                spielerRepository.save(s);
+            });
+        PartieEntity neuePartie = PartieEntity.neu(tisch.konfiguration().anzahlSpiele());
+        neuePartie.fuegeSpielHinzu(erzeugeErstesSpiel(tisch));
+        tisch.setzePartie(neuePartie);
+        TischEntity gespeicherterTisch = tischRepository.saveAndFlush(tisch);
+        kiOrchestrierungService.automatisiereTisch(gespeicherterTisch);
+        gespeicherterTisch = tischRepository.saveAndFlush(gespeicherterTisch);
+        TischAntwort tischAntwort = TischAntwort.aus(gespeicherterTisch);
+        PartieStandAntwort partieStand = PartieStandAntwort.aus(gespeicherterTisch.partie());
+        veroeffentlicheTischAktualisierung(
+            TischlisteEreignisAntwort.aktualisiert(listeOffeneTische()),
+            TischEreignisAntwort.spielGestartet(tischAntwort, partieStand)
+        );
+        veroeffentlichePartieAktualisierung(gespeicherterTisch);
+        return new BestaetigungAntwort("Neue Partie gestartet.");
     }
 
     @Transactional(readOnly = true)

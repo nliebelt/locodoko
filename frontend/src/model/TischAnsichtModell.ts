@@ -101,6 +101,8 @@ export interface TischAnsichtModell {
   gesamtpunktestand: PunktestandEintrag[];
   letzteAbgeschlosseneStiche: AbgeschlossenerStichAnsicht[];
   letztesSpielergebnis: LetztesSpielergebnisAnsicht | null;
+  /** true, wenn die gesamte Partie (alle Spiele) beendet ist — loest Partie-Ende-Modal aus. */
+  partieBeendet: boolean;
   armutAktion: ArmutAktionAnsicht | null;
 }
 
@@ -187,6 +189,7 @@ export function erstelleStandardTischAnsicht(spielerName: string): TischAnsichtM
     gesamtpunktestand: [],
     letzteAbgeschlosseneStiche: [],
     letztesSpielergebnis: null,
+    partieBeendet: false,
     armutAktion: null
   };
 }
@@ -216,6 +219,7 @@ export function erstelleTischAnsichtAusStatus(
       gesamtpunktestand: [],
       letzteAbgeschlosseneStiche: [],
       letztesSpielergebnis: null,
+      partieBeendet: false,
       armutAktion: null
     };
   }
@@ -267,6 +271,7 @@ export function erstelleTischAnsichtAusStatus(
       partieStand?.letztesSpielergebnis ?? null,
       spielerAnsichten
     ),
+    partieBeendet: partieStand?.status === 'BEENDET',
     armutAktion: laufendesSpiel ? bestimmeArmutAktion(laufendesSpiel, spielerAnsichten, bezugPosition) : null
   };
 }

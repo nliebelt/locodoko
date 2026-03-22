@@ -79,6 +79,13 @@ public class TischController {
         return new BestaetigungAntwort("Tisch " + antwort.id() + " wurde gestartet.");
     }
 
+    @PostMapping("/{id}/neue-partie")
+    public BestaetigungAntwort starteNeuePartie(@PathVariable UUID id, HttpServletRequest request) {
+        SpielerEntity spieler = ladeAktivenSpieler(request);
+        LOGGER.info("Spieler {} startet neue Partie an Tisch {}", spieler.id(), id);
+        return tischService.starteNeuePartie(id, spieler);
+    }
+
     @GetMapping("/{id}/konfiguration")
     public TischKonfigurationDto gibKonfiguration(@PathVariable UUID id) {
         LOGGER.info("Konfiguration fuer Tisch {} abgefragt", id);

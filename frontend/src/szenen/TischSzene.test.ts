@@ -42,7 +42,8 @@ const appStoreHarness = vi.hoisted(() => {
       aktualisiereAktuellenTischhintergrund: vi.fn(),
       toggleDebugModus: vi.fn(),
       verlasseAktuellenTisch: vi.fn(),
-      starteAktuellenTisch: vi.fn()
+      starteAktuellenTisch: vi.fn(),
+      starteNeuePartie: vi.fn()
     }
   };
 });
@@ -942,6 +943,83 @@ describe('TischSzene', () => {
     // Klick direkt auf Backdrop: Modal schliesst
     modal.dispatchEvent(new MouseEvent('click', { bubbles: false }));
     expect(modal.hidden).toBe(true);
+  });
+
+  // WARUM: Das Partie-Ende-Modal ist der einzige Hinweis fuer den Spieler, dass die gesamte
+  // Partie abgeschlossen ist; ohne diese Absicherung koennte das Modal wegfallen und Spieler
+  // wuerdten nach dem letzten Spiel vor einem leeren Tisch sitzen ohne Feedback oder Neustart.
+  it('zeigt das Partie-Ende-Modal statt des Rundenende-Modals wenn partieBeendet true ist', () => {
+    const zustandOhneErgebnis = baueZustand({
+      partieStand: bauePartieStand(null)
+    });
+    baueSzene(zustandOhneErgebnis);
+
+    const modals = document.querySelectorAll('.ui-modal-backdrop');
+    expect(modals.length).toBe(2);
+    const rundenEndeModal = modals[0] as HTMLElement;
+    const partieEndeModal = modals[1] as HTMLElement;
+    expect(rundenEndeModal.hidden).toBe(true);
+    expect(partieEndeModal.hidden).toBe(true);
+
+    appStoreHarness.setZustand(baueZustand({
+      partieStand: {
+        ...bauePartieStand(null),
+        status: 'BEENDET',
+        gespielteSpiele: 8,
+        letztesSpielergebnis: {
+          spielNummer: 8,
+          spieltyp: 'NORMALSPIEL',
+          siegerPartei: 'RE',
+          spielwert: 1,
+          augenProPartei: { RE: 130, KONTRA: 110 },
+          spielpunkteProSpieler: { SUED: 1, WEST: -1, NORD: 1, OST: -1 },
+          sonderpunkteProPartei: { RE: [], KONTRA: [] }
+        }
+      }
+    }));
+    appStoreHarness.sendeZustand();
+
+    expect(rundenEndeModal.hidden).toBe(true);
+    expect(partieEndeModal.hidden).toBe(false);
+    expect(partieEndeModal.querySelector('h2')?.textContent).toBe('Partie beendet!');
+    expect(partieEndeModal.querySelector('.ui-hint')?.textContent).toContain('Neue Partie startet in');
+  });
+
+  // WARUM: Der Countdown-Mechanismus stellt sicher, dass das Spiel automatisch neustartet,
+  // ohne dass alle Spieler manuell klicken muessen. Der Test sichert ab, dass starteNeuePartie()
+  // nach Ablauf des Countdowns aufgerufen wird — sonst haengt das Spiel nach jeder Partie.
+  it('ruft starteNeuePartie nach Countdown-Ablauf auf', async () => {
+    vi.useFakeTimers();
+    try {
+      const zustandOhneErgebnis = baueZustand({ partieStand: bauePartieStand(null) });
+      baueSzene(zustandOhneErgebnis);
+
+      appStoreHarness.setZustand(baueZustand({
+        partieStand: {
+          ...bauePartieStand(null),
+          status: 'BEENDET',
+          letztesSpielergebnis: {
+            spielNummer: 8,
+            spieltyp: 'NORMALSPIEL',
+            siegerPartei: 'KONTRA',
+            spielwert: 2,
+            augenProPartei: { RE: 100, KONTRA: 140 },
+            spielpunkteProSpieler: { SUED: -2, WEST: 2, NORD: -2, OST: 2 },
+            sonderpunkteProPartei: { RE: [], KONTRA: [] }
+          }
+        }
+      }));
+      appStoreHarness.sendeZustand();
+
+      expect(appStoreHarness.store.starteNeuePartie).not.toHaveBeenCalled();
+
+      // Countdown-Intervall 10x à 1 Sekunde ablaufen lassen
+      await vi.advanceTimersByTimeAsync(10_000);
+
+      expect(appStoreHarness.store.starteNeuePartie).toHaveBeenCalledOnce();
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   // WARUM: Das Modal darf nicht erneut erscheinen wenn derselbe Spielstand nochmal eintrifft
