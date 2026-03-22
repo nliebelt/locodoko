@@ -2,7 +2,7 @@
 
 | Feld           | Wert                                        |
 |----------------|---------------------------------------------|
-| Status         | Noch nicht begonnen                         |
+| Status         | Vollständig implementiert und getestet                         |
 | Priorität      | Mittel                                      |
 | Abhängigkeiten | kartendeck.md, trumpfhierarchie.md, stichlogik.md, ansagen.md, sonderpunkte.md |
 
@@ -63,12 +63,12 @@ KI-Spieler ersetzen menschliche Spieler und treffen regelbasierte, strategische 
 
 ## Definition of Done
 
-- [ ] Alle Anforderungen implementiert
-- [ ] Unit-Tests für Kartenwahl-Strategien geschrieben und bestanden
-- [ ] Unit-Tests für Ansage-Logik geschrieben und bestanden
-- [ ] Unit-Tests für Sonderpunkt-Bewusstsein geschrieben und bestanden
-- [ ] Integrationstests: vollständiges Spiel 4× KI durchspielbar
-- [ ] Code-Review / Plausibilitätsprüfung
+- [x] Alle Anforderungen implementiert
+- [x] Unit-Tests für Kartenwahl-Strategien geschrieben und bestanden
+- [x] Unit-Tests für Ansage-Logik geschrieben und bestanden
+- [x] Unit-Tests für Sonderpunkt-Bewusstsein geschrieben und bestanden
+- [x] Integrationstests: vollständiges Spiel 4× KI durchspielbar
+- [x] Code-Review / Plausibilitätsprüfung
 
 ## Technische Hinweise
 

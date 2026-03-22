@@ -2,7 +2,7 @@
 
 | Feld           | Wert                                        |
 |----------------|---------------------------------------------|
-| Status         | Noch nicht begonnen                         |
+| Status         | Vollständig implementiert und getestet                         |
 | Priorität      | Mittel                                      |
 | Abhängigkeiten | kartendeck.md, trumpfhierarchie.md, spielablauf.md |
 
@@ -33,11 +33,11 @@ Beim Trumpfsolo gelten die gleichen Trümpfe wie im Normalspiel, aber der Solo-S
 
 ## Definition of Done
 
-- [ ] Alle Anforderungen implementiert
-- [ ] Unit-Tests für Partei-Zugehörigkeit geschrieben und bestanden
-- [ ] Integration in Vorbehalt-Phase getestet
-- [ ] Wiederverwendung der Normal-TrumpfOrdnung nachgewiesen
-- [ ] Code-Review / Plausibilitätsprüfung
+- [x] Alle Anforderungen implementiert
+- [x] Unit-Tests für Partei-Zugehörigkeit geschrieben und bestanden
+- [x] Integration in Vorbehalt-Phase getestet
+- [x] Wiederverwendung der Normal-TrumpfOrdnung nachgewiesen
+- [x] Code-Review / Plausibilitätsprüfung
 
 ## Technische Hinweise
 

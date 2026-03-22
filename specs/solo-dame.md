@@ -2,7 +2,7 @@
 
 | Feld           | Wert                                        |
 |----------------|---------------------------------------------|
-| Status         | Noch nicht begonnen                         |
+| Status         | Vollständig implementiert und getestet                         |
 | Priorität      | Mittel                                      |
 | Abhängigkeiten | kartendeck.md, trumpfhierarchie.md, spielablauf.md |
 
@@ -41,11 +41,11 @@ Beim Damensolo sind ausschließlich die Damen Trumpf. Alle anderen Karten (einsc
 
 ## Definition of Done
 
-- [ ] Alle Anforderungen implementiert
-- [ ] Eigene TrumpfOrdnung für Damensolo implementiert und getestet
-- [ ] Unit-Tests für Trumpferkennung und Rangfolge geschrieben und bestanden
-- [ ] Integration in Vorbehalt-Phase getestet
-- [ ] Code-Review / Plausibilitätsprüfung
+- [x] Alle Anforderungen implementiert
+- [x] Eigene TrumpfOrdnung für Damensolo implementiert und getestet
+- [x] Unit-Tests für Trumpferkennung und Rangfolge geschrieben und bestanden
+- [x] Integration in Vorbehalt-Phase getestet
+- [x] Code-Review / Plausibilitätsprüfung
 
 ## Technische Hinweise
 

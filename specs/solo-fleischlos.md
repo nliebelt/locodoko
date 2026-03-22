@@ -2,7 +2,7 @@
 
 | Feld           | Wert                                        |
 |----------------|---------------------------------------------|
-| Status         | Noch nicht begonnen                         |
+| Status         | Vollständig implementiert und getestet                         |
 | Priorität      | Mittel                                      |
 | Abhängigkeiten | kartendeck.md, spielablauf.md               |
 
@@ -35,12 +35,12 @@ Beim Fleischlos-Solo gibt es keinen Trumpf. Alle Karten gehören zu ihrer jeweil
 
 ## Definition of Done
 
-- [ ] Alle Anforderungen implementiert
-- [ ] Eigene TrumpfOrdnung für Fleischlos implementiert und getestet
-- [ ] Unit-Tests für Stichgewinner bei reinem Farbstich geschrieben und bestanden
-- [ ] Szenario „Abwerfen ohne Stechen" getestet
-- [ ] Integration in Vorbehalt-Phase getestet
-- [ ] Code-Review / Plausibilitätsprüfung
+- [x] Alle Anforderungen implementiert
+- [x] Eigene TrumpfOrdnung für Fleischlos implementiert und getestet
+- [x] Unit-Tests für Stichgewinner bei reinem Farbstich geschrieben und bestanden
+- [x] Szenario „Abwerfen ohne Stechen" getestet
+- [x] Integration in Vorbehalt-Phase getestet
+- [x] Code-Review / Plausibilitätsprüfung
 
 ## Technische Hinweise
 

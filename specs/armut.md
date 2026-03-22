@@ -2,7 +2,7 @@
 
 | Feld           | Wert                                        |
 |----------------|---------------------------------------------|
-| Status         | Noch nicht begonnen                         |
+| Status         | Vollständig implementiert und getestet                         |
 | Priorität      | Mittel                                      |
 | Abhängigkeiten | kartendeck.md, trumpfhierarchie.md, spielablauf.md |
 
@@ -41,12 +41,12 @@ Die Armut (auch „Trumpfarmut") ist ein Sonderspiel, bei dem ein Spieler mit se
 
 ## Definition of Done
 
-- [ ] Alle Anforderungen implementiert
-- [ ] Unit-Tests für Armut-Erkennung geschrieben und bestanden
-- [ ] Unit-Tests für Kartentausch geschrieben und bestanden
-- [ ] Szenario „Armut abgelehnt → Einwurf" getestet
-- [ ] Integration in Vorbehalt-Phase getestet
-- [ ] Code-Review / Plausibilitätsprüfung
+- [x] Alle Anforderungen implementiert
+- [x] Unit-Tests für Armut-Erkennung geschrieben und bestanden
+- [x] Unit-Tests für Kartentausch geschrieben und bestanden
+- [x] Szenario „Armut abgelehnt → Einwurf" getestet
+- [x] Integration in Vorbehalt-Phase getestet
+- [x] Code-Review / Plausibilitätsprüfung
 
 ## Technische Hinweise
 

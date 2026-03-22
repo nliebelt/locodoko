@@ -75,9 +75,14 @@ public class StandardKiStrategie implements KiStrategie {
             return KiArmutAntwort.ablehnen();
         }
         long eigeneTruepfe = anzahlTruepfe(zustand.eigeneHand().karten(), zustand.trumpfOrdnung());
+        // Angebotswert: Basiswert 8 je Karte (jeder Trumpf ist wertvoller als eine Fehlkarte)
+        // plus gewinnKosten (Rang der Karte in der Trumpfordnung — starke Trümpfe zählen mehr).
         int angebotWert = zustand.armutStatus().angeboteneTrumpfkarten().stream()
             .mapToInt(karte -> 8 + gewinnKosten(karte, zustand.trumpfOrdnung()))
             .sum();
+        // Ablehnen, wenn die KI selbst stark ist (> 5 Trümpfe = mindestens durchschnittliche Hand)
+        // UND das Angebot schwach ist (< 55 Punkte ≈ 3 niedrige Trümpfe).
+        // Annahme lohnt sich nur bei eigener Trumpfschwäche oder wertvollem Angebot.
         if (eigeneTruepfe > 5 && angebotWert < 55) {
             return KiArmutAntwort.ablehnen();
         }
@@ -120,6 +125,8 @@ public class StandardKiStrategie implements KiStrategie {
 
     private Karte waehleAnspielKarte(KiSpielzustand zustand) {
         long eigeneTruepfe = anzahlTruepfe(zustand.eigeneHand().karten(), zustand.trumpfOrdnung());
+        // Ab 6 Trümpfen besitzt die KI genug Trumpfübergewicht (Mehrheit des 26-Trumpf-Stapels),
+        // um gezielt mit kleinen Trümpfen zu ziehen — Gegner werden zur Abgabe guter Trümpfe gezwungen.
         if (eigeneTruepfe >= 6) {
             Optional<Karte> kleinerTrumpf = zustand.gueltigeKarten().stream()
                 .filter(zustand.trumpfOrdnung()::istTrumpf)
@@ -182,6 +189,24 @@ public class StandardKiStrategie implements KiStrategie {
         return List.copyOf(gewinnendeKarten);
     }
 
+    /**
+     * Berechnet einen Handstärke-Score für Ansage-Entscheidungen.
+     *
+     * <p>Kalibrierungsgrundlage: Eine durchschnittliche Hand (6 Trümpfe, 0 Asse, 0 Dullen, 1 Kreuz-Dame)
+     * ergibt 6*3 + 0 + 0 + 1*4 = 22. Eine sehr starke Hand (8 Trümpfe, 2 Asse, 1 Dulle, 2 Kreuz-Damen)
+     * ergibt 8*3 + 2*3 + 1*5 + 2*4 = 43. Ansagen werden ab 28 (RE) bis 54 (SCHWARZ) ausgelöst.
+     *
+     * <p>Gewichtungslogik:
+     * <ul>
+     *   <li>Trümpfe × 3: Jeder Trumpf trägt zur Stichkontrolle bei; 3 Punkte bilanzieren den
+     *       Durchschnitt zwischen billigem Neuntrumpf und kostbarer Dulle.</li>
+     *   <li>Asse × 3: Fehl-Asse gewinnen nach Trumpf-Auszug garantiert, daher gleichwertig zu Trümpfen.</li>
+     *   <li>Dullen (Herz-10) × 5: Höchste Trümpfe im Normalspiel; Übergewicht gegenüber normalen
+     *       Trümpfen wegen Doppel-Stechwert und 10 Augen.</li>
+     *   <li>Kreuz-Damen × 4: Zweit- und dritthöchste Trümpfe, die zusätzlich die Re-Partei definieren;
+     *       1 Punkt Bonus gegenüber gewöhnlichem Trumpf.</li>
+     * </ul>
+     */
     private int handstaerke(KiSpielzustand zustand) {
         int trumpfAnzahl = (int) anzahlTruepfe(zustand.eigeneHand().karten(), zustand.trumpfOrdnung());
         int asse = (int) zustand.eigeneHand().karten().stream().filter(karte -> karte.wert() == Kartenwert.AS).count();
@@ -194,6 +219,22 @@ public class StandardKiStrategie implements KiStrategie {
         return trumpfAnzahl * 3 + asse * 3 + dullen * 5 + kreuzDamen * 4;
     }
 
+    /**
+     * Mindest-Handstärke für eine Ansage.
+     *
+     * <p>Kalibrierungsgrundlage (basiert auf {@link #handstaerke}):
+     * <ul>
+     *   <li>RE/KONTRA ab 28: entspricht ~7 Trümpfen + 1 Ass oder 8 Trümpfen allein — eine überdurchschnittliche
+     *       Hand, mit der man realistisch 121+ Augen holen kann.</li>
+     *   <li>KONTRA-Partei bekommt 2 Punkte Rabatt (Schwelle 26): Kontra-Spieler kennen sich nicht
+     *       (keine Kreuz-Dame als Signal) und profitieren von frühzeitiger Parteideklaration.</li>
+     *   <li>KONTRA als Re-Partei (Schwelle 30): Ungewöhnliche Konstellation — höhere Sicherheit
+     *       nötig, um nicht aus einer bereits führenden Position unnötig zu riskieren.</li>
+     *   <li>Jede Verschärfung (KEINE_90 → KEINE_60 → KEINE_30 → SCHWARZ) erfordert +6 Punkte:
+     *       entspricht ~2 weiteren Trümpfen oder einem zusätzlichen Ass, die nötig sind, um
+     *       das strengere Ziel (≤ 90 / 60 / 30 / 0 Gegneaugen) glaubwürdig zu erfüllen.</li>
+     * </ul>
+     */
     private int ansageSchwelle(Ansage ansage, Partei eigenePartei) {
         return switch (ansage) {
             case RE -> 28;
@@ -205,6 +246,26 @@ public class StandardKiStrategie implements KiStrategie {
         };
     }
 
+    /**
+     * Berechnet einen Stärkescore für einen bestimmten Solo-Typ.
+     *
+     * <p>Gewichtungslogik pro Solo-Typ:
+     * <ul>
+     *   <li><b>SOLO_TRUMPF:</b> Trümpfe × 4 (wichtigste Ressource — mehr Trumpf = sicherer Sieg),
+     *       Asse/Damen/Buben × 2 (jede dieser Karten ist entweder Trumpf oder Fehl-Ass;
+     *       geringeres Gewicht weil sie bereits in trumpfAnzahl enthalten sind oder als
+     *       Fehlfarben-Gewinner wirken). Schwelle: 34 (≈ 8 Trümpfe + 1 Ass).</li>
+     *   <li><b>SOLO_DAME:</b> Damen × 8 (einzige Trümpfe — alle 4 Damen = klare Mehrheit),
+     *       Asse × 2 (sichern Fehlstiche), hoheFehlkarten × 1 (Zehn gewinnt nach Ass-Zug).
+     *       Schwelle: 28 (≈ 3 Damen + 2 Asse).</li>
+     *   <li><b>SOLO_BUBE:</b> analog Dame-Solo; Buben ersetzen Damen als einzige Trümpfe.
+     *       Schwelle: 28.</li>
+     *   <li><b>SOLO_FLEISCHLOS:</b> Asse × 6 (Hauptstichquelle ohne Trumpf), hoheFehlkarten × 2
+     *       (Zehnen gewinnen nach Ass-Kontrolle), trumpfAnzahl × -1 (Trümpfe sind in diesem
+     *       Spieltyp nutzlos und verengen die handlungsfähige Fehlfarbenstruktur).
+     *       Schwelle: 30 (≈ 4 Asse + 2 hohe Fehlkarten).</li>
+     * </ul>
+     */
     private int soloWert(VorbehaltAnsage vorbehaltAnsage, KiSpielzustand zustand) {
         int trumpfAnzahl = (int) anzahlTruepfe(zustand.eigeneHand().karten(), zustand.trumpfOrdnung());
         int asse = (int) zustand.eigeneHand().karten().stream().filter(karte -> karte.wert() == Kartenwert.AS).count();
@@ -223,6 +284,19 @@ public class StandardKiStrategie implements KiStrategie {
         };
     }
 
+    /**
+     * Mindestscore aus {@link #soloWert}, ab dem ein Solo angemeldet wird.
+     *
+     * <p>Kalibrierungsgrundlage:
+     * <ul>
+     *   <li>SOLO_TRUMPF 34: entspricht ~8 Trümpfen (8×4=32) + 1 Ass (2) — klassische starke
+     *       Solohand mit Trumpfmehrheit.</li>
+     *   <li>SOLO_DAME/SOLO_BUBE 28: entspricht ~3 Damen/Buben (3×8=24) + 2 Asse (4) —
+     *       Mindest-Trumpfkontrolle für ein realistisch gewinnbares Spezialsolo.</li>
+     *   <li>SOLO_FLEISCHLOS 30: entspricht ~4 Asse (4×6=24) + 3 hohe Fehlkarten (3×2=6) —
+     *       ohne Trümpfe braucht man mehr Fehlstich-Garantien als in einem Trumpfsolo.</li>
+     * </ul>
+     */
     private int soloSchwelle(VorbehaltAnsage vorbehaltAnsage) {
         return switch (vorbehaltAnsage) {
             case SOLO_TRUMPF -> 34;
@@ -255,6 +329,11 @@ public class StandardKiStrategie implements KiStrategie {
             .thenComparingInt(Karte::exemplarIndex);
     }
 
+    /**
+     * Stärke einer Karte zum Gewinnen eines Stichs (niedrigerer Wert = billiger zu gewinnen).
+     * Wird als Sortierschlüssel genutzt, um die schwächste gewinnende Karte zu finden (Prinzip:
+     * "mit möglichst wenig Trumpf gewinnen").
+     */
     private int gewinnKosten(Karte karte, TrumpfOrdnung trumpfOrdnung) {
         if (trumpfOrdnung.istTrumpf(karte)) {
             return trumpfOrdnung.trumpfRang(karte);
@@ -262,9 +341,26 @@ public class StandardKiStrategie implements KiStrategie {
         return trumpfOrdnung.fehlRang(karte);
     }
 
+    /**
+     * Kosten des Abwerfens einer Karte (höherer Wert = ungünstiger abzuwerfen).
+     * Wird als Sortierschlüssel genutzt, um die am wenigsten wertvolle Karte zum Abwerfen zu finden.
+     *
+     * <p>Aufbau:
+     * <ul>
+     *   <li>{@code karte.augen()}: Augenverlust ist direkt spielwertrelevant.</li>
+     *   <li>Trümpfe: +30 Basis-Offset sichert, dass jeder Trumpf teurer ist als jede Fehlkarte
+     *       (Fehlrang maximal ~13), dazu +trumpfRang für interne Trumpfdifferenzierung.</li>
+     *   <li>Fuchs (Karo-As) +40: Gegner erhält Sonderpunkt beim Fangen; Mehrkosten modellieren
+     *       diesen zusätzlichen Verlust.</li>
+     *   <li>Karlchen (Kreuz-Bube) +20: Sonderpunkt nur im letzten Stich; geringere Risikogewichtung
+     *       als Fuchs, weil das Risiko erst im letzten Stich relevant wird.</li>
+     * </ul>
+     */
     private int abwurfKosten(Karte karte, TrumpfOrdnung trumpfOrdnung) {
         int kosten = karte.augen();
         if (trumpfOrdnung.istTrumpf(karte)) {
+            // 30 = Mindestabstand zwischen dem teuersten Fehl-Rang und dem billigsten Trumpf-Rang,
+            // damit Trümpfe in der Abwurf-Sortierung immer nach Fehlkarten kommen.
             kosten += 30 + trumpfOrdnung.trumpfRang(karte);
         } else {
             kosten += trumpfOrdnung.fehlRang(karte);

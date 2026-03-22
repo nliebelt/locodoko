@@ -2,7 +2,7 @@
 
 | Feld           | Wert                                        |
 |----------------|---------------------------------------------|
-| Status         | Noch nicht begonnen                         |
+| Status         | Vollständig implementiert und getestet                         |
 | Priorität      | Mittel                                      |
 | Abhängigkeiten | kartendeck.md, trumpfhierarchie.md, stichlogik.md, spielablauf.md |
 
@@ -35,12 +35,12 @@ Die Hochzeit ist ein Sonderspiel im Doppelkopf. Ein Spieler, der beide Kreuz-Dam
 
 ## Definition of Done
 
-- [ ] Alle Anforderungen implementiert
-- [ ] Unit-Tests für Hochzeit-Erkennung geschrieben und bestanden
-- [ ] Unit-Tests für Partnerfindung geschrieben und bestanden
-- [ ] Szenario „kein Partner gefunden → stilles Solo" getestet
-- [ ] Integration in Vorbehalt-Phase getestet
-- [ ] Code-Review / Plausibilitätsprüfung
+- [x] Alle Anforderungen implementiert
+- [x] Unit-Tests für Hochzeit-Erkennung geschrieben und bestanden
+- [x] Unit-Tests für Partnerfindung geschrieben und bestanden
+- [x] Szenario „kein Partner gefunden → stilles Solo" getestet
+- [x] Integration in Vorbehalt-Phase getestet
+- [x] Code-Review / Plausibilitätsprüfung
 
 ## Technische Hinweise
 

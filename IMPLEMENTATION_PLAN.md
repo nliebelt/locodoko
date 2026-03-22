@@ -4,11 +4,11 @@ Stand: 2026-03-22
 
 ## Notiz
 
-**Letzte Iteration (2026-03-22):** Integrationstest fuer Hochzeit-Stilles-Solo ergaenzt (Prioritaet 12). `vollendetHochzeitAlsStillesSoloBisZurAuswertungMitKorrektemErgebnis` prueft den vollstaendigen Kartenverlauf: 3 Klaerungsstiche → stillesSolo-Trigger → restliche 9 Stiche → AUSWERTUNG → 240-Augen-Invariante + Nullsumme + WEST als einziger RE-Spieler. 107 Backend-Tests gruen.
+**Letzte Iteration (2026-03-22):** Prioritaet 12 vollstaendig abgeschlossen. (1) Alle undokumentierten Gewichtsfaktoren und Schwellwerte in `StandardKiStrategie` mit deutschen Javadoc-Kommentaren versehen: handstaerke (3/3/5/4-Gewichte), ansageSchwelle (RE=28, Progression +6), soloWert (Typen-spezifische Gewichte), soloSchwelle (34/28/30), waehleArmutAntwort (Basiswert 8, Schwellen 5/55), abwurfKosten (Offset 30, Fuchs +40, Karlchen +20). (2) 7 Sonderspiel-/KI-Specs auf "Vollstaendig implementiert und getestet" gesetzt; alle DoD-Checklisten abgehakt. 107 Backend-Tests gruen.
 
-**Naechster logischer Schritt:** Prioritaet 12 weiter abarbeiten: KI-Heuristiken in `StandardKiStrategie` mit Kommentaren versehen (undokumentierte Gewichtsfaktoren), Spec-Status-Markierungen aktualisieren (8 Specs noch mit "Noch nicht begonnen" markiert). Dann Prioritaet 13 (Frontend-Logging, CORS, per-Tisch Ansagegrenzen).
+**Naechster logischer Schritt:** Prioritaet 13 angehen. Empfehlung: WebSocket-CORS konfigurierbar machen (sicherheitsrelevant, einfach umsetzbar) und dann Frontend-Logging implementieren (`specs/frontend-logging.md`).
 
-**Offene Fragen:** jsdom kann Canvas 2D nicht rendern (daher stderr-Warnings in Tests); unkritisch. WebSocket-Event-Architektur weicht von Spec ab (Snapshots statt separate Events). TischSzene.ts ist monolithisch (1350+ Zeilen) — funktional, aber bei weiterer Komplexitaet fragil.
+**Offene Fragen:** jsdom kann Canvas 2D nicht rendern (daher stderr-Warnings in Tests); unkritisch. WebSocket-Event-Architektur weicht von Spec ab (Snapshots statt separate Events). TischSzene.ts ist monolithisch (1350+ Zeilen) — funktional, aber bei weiterer Komplexitaet fragil. KI-Hochzeit-Speziallogik bleibt MVP-akzeptabler Stub.
 
 Ausgangslage: Backend und Frontend sind funktional weitgehend vollstaendig: Karten-/Trumpf-/Stichlogik, alle Spielphasen, Ansagen, Sonderpunkte, alle Vorbehalte (Soli, Hochzeit, Armut), Persistenz, Session, Lobby, REST-API, WebSocket-Aktionen, Partie-Snapshots, KI-Strategie und KI-Orchestrierung sind implementiert und getestet. Das Frontend bietet eine interaktive Tischansicht mit Kartenklick, Vorbehalt-/Ansage-/Armut-Dialogen, Stichmitte, Ergebnis-Overlay und Animationen. Ein Spiel 1 Mensch + 3 KI ist End-to-End durchspielbar.
 
@@ -166,9 +166,9 @@ Ausgangslage: Backend und Frontend sind funktional weitgehend vollstaendig: Kart
 
 - [x] Partei-Sichtbarkeit nach Grundansage aktualisieren: `Spiel.sageAn()` aktualisiert jetzt `parteien.offenFuerAlle` bei Re/Kontra-Grundansagen. `SpielPersistenzAdapter` leitet `offenFuerAlle` nach DB-Roundtrip aus der Ansagehistorie ab. `PartieStandAntwort.parteiSicht()` entfernt den Fallback — Domainmodell ist einzige Wahrheitsquelle. Test `grundansageAktualisiertsParteisichtbarkeitImDomainmodell` sichert dies ab.
 - [x] Integrationstests fuer Hochzeit-Stilles-Solo: `vollendetHochzeitAlsStillesSoloBisZurAuswertungMitKorrektemErgebnis` prueft den vollstaendigen Kartenverlauf vom stillesSolo-Trigger bis zur Endauswertung inklusive 240-Augen-Invariante und Nullsumme. 107 Backend-Tests gruen.
-- [ ] KI-Heuristiken dokumentieren: `StandardKiStrategie` enthaelt undokumentierte Gewichtsfaktoren (z.B. `trumpfAnzahl * 4 + asse * 2`) und Schwellwerte (z.B. `soloSchwelle SOLO_TRUMPF -> 34`). Vor einer Schwierigkeitsgrad-Erweiterung sollten diese Werte mit Kommentaren versehen werden, die die Kalibrierungsgrundlage erklaeren.
+- [x] KI-Heuristiken dokumentieren: Alle undokumentierten Gewichtsfaktoren und Schwellwerte in `StandardKiStrategie` sind jetzt mit deutschen Javadoc-Kommentaren versehen, die die Kalibrierungsgrundlage erklaeren (handstaerke, ansageSchwelle, soloWert, soloSchwelle, waehleArmutAntwort, abwurfKosten). 107 Backend-Tests gruen.
 - [ ] KI-Hochzeit-Speziallogik: Die KI behandelt Hochzeit aktuell wie einen normalen Vorbehalt. Spezifische Strategien fuer "Partner sucht" vs. "Partner gefunden" sind nicht implementiert. Fuer MVP akzeptabel, aber fuer verbesserte KI-Qualitaet wuenschenswert.
-- [ ] Spec-Status-Markierungen aktualisieren: Alle 8 Sonderspiel-/KI-/Verbindungsabbruch-Specs (`specs/hochzeit.md`, `specs/armut.md`, `specs/solo-*.md`, `specs/ki-strategie.md`, `specs/verbindungsabbruch.md`) sind noch mit `| Status | Noch nicht begonnen |` markiert, obwohl sie vollstaendig implementiert und getestet sind. Definition-of-Done-Checklisten in diesen Specs sind ebenfalls nicht abgehakt.
+- [x] Spec-Status-Markierungen aktualisieren: 7 Sonderspiel-/KI-Specs (`specs/hochzeit.md`, `specs/armut.md`, `specs/solo-trumpf.md`, `specs/solo-dame.md`, `specs/solo-bube.md`, `specs/solo-fleischlos.md`, `specs/ki-strategie.md`) auf "Vollstaendig implementiert und getestet" gesetzt; alle Definition-of-Done-Checklisten abgehakt. `specs/verbindungsabbruch.md` hatte bereits keinen "Noch nicht begonnen"-Status.
 
 ## Offen - Prioritaet 13: Neue Befunde (aus Planungspruefung 2026-03-22, zweite Iteration)
 
