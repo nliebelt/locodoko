@@ -5,6 +5,7 @@
 .ralph-context.tmp
 .ralph-iter.tmp
 ralph-*.log
+.claude
 
 # IDE
 .idea/
@@ -21,9 +22,6 @@ target/
 node_modules/
 frontend/dist/
 frontend/node_modules/
-
-# Eingebettete Frontend-Assets
-src/main/resources/static/app/
 
 # OS
 .DS_Store

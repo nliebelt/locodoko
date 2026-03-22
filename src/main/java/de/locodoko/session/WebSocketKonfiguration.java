@@ -35,6 +35,9 @@ public class WebSocketKonfiguration implements WebSocketMessageBrokerConfigurer 
     public void registerStompEndpoints(StompEndpointRegistry registry) {
         registry.addEndpoint("/ws")
             .setHandshakeHandler(new SpielerSessionHandshakeHandler())
-            .addInterceptors(spielerSessionHandshakeInterceptor);
+            .addInterceptors(spielerSessionHandshakeInterceptor)
+			//TODO: Muss über die Properties konfigurierbar sein, damit 
+			//wir im Development Modus alles zulassen können, und für die Produktion auf die eigene Domain beschränken können
+            .setAllowedOriginPatterns("*");
     }
 }

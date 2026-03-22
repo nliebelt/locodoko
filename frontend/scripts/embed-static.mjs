@@ -5,7 +5,7 @@ import { fileURLToPath } from 'node:url';
 const aktuellesVerzeichnis = dirname(fileURLToPath(import.meta.url));
 const frontendWurzel = resolve(aktuellesVerzeichnis, '..');
 const quellVerzeichnis = resolve(frontendWurzel, 'dist');
-const zielVerzeichnis = resolve(frontendWurzel, '../src/main/resources/static/app');
+const zielVerzeichnis = resolve(frontendWurzel, '../src/main/resources/static');
 
 await mkdir(zielVerzeichnis, { recursive: true });
 
