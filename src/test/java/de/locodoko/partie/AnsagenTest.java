@@ -50,6 +50,25 @@ class AnsagenTest {
     }
 
     @Test
+    void berücksichtigtPerTischKonfigurierteAnsagegrenzen() {
+        // WARUM: Die Mindestkartenanzahlen sind Teil der Tischkonfiguration und muessen pro Tisch
+        // konfigurierbar sein. Dieser Test beweist, dass Ansagen.kannAnsagen() die konkreten
+        // Spielregelwerte des Tisches nutzt und nicht hartcodierte Defaults — sonst koennte eine
+        // veraenderte Tischkonfiguration niemals wirksam werden.
+        Spielregeln lockereSpieltregeln = Spielregeln.standardRegeln().mitAnsagegrenzen(5, 4, 3, 2, 1);
+        Ansagen ansagen = Ansagen.leer();
+
+        // Mit gelockerten Grenzen: 5 Karten genuegen fuer Re/Kontra
+        assertTrue(ansagen.kannAnsagen(SpielerPosition.SUED, Ansage.RE, parteien, lockereSpieltregeln, 5),
+            "Per-Tisch reduzierte Ansagegrenzen muessen tatsaechlich verwendet werden, damit die Konfiguration wirksam ist.");
+        assertTrue(ansagen.kannAnsagen(SpielerPosition.NORD, Ansage.KONTRA, parteien, lockereSpieltregeln, 5),
+            "Die gelockerte Kontra-Grenze muss auch fuer die Gegenpartei gelten.");
+        // Mit Standardgrenzen: 5 Karten reichen nicht mehr fuer Re (11 erforderlich)
+        assertFalse(ansagen.kannAnsagen(SpielerPosition.SUED, Ansage.RE, parteien, Spielregeln.standardRegeln(), 5),
+            "Standardregeln erfordern 11 Karten fuer Re — dieser Kontrast beweist, dass die Tischkonfiguration den Unterschied macht.");
+    }
+
+    @Test
     void verschiebtZeitfensterOhneNeunenUmZweiKartenNachUnten() {
         Spielregeln spielregeln = Spielregeln.ohneNeunenRegeln();
         Ansagen ansagen = Ansagen.leer()
