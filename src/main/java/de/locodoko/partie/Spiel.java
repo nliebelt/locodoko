@@ -468,6 +468,11 @@ public final class Spiel {
             spielregeln,
             handVon(spielerPosition).karten().size()
         );
+        // Grundansagen (Re/Kontra) offenbaren die Parteizugehoerigkeit serverseitig — das Backend
+        // ist einzige Wahrheitsquelle, daher wird offenFuerAlle im Domainmodell aktualisiert.
+        Parteien aktualisierteParteien = ansage.istGrundansage()
+            ? parteien.mitOffenenParteienFuerAlle(List.of(spielerPosition))
+            : parteien;
         return new Spiel(
             spielregeln,
             kartendeck,
@@ -477,7 +482,7 @@ public final class Spiel {
             phase,
             haende,
             vorbehalte,
-            parteien,
+            aktualisierteParteien,
             neueAnsagen,
             abgeschlosseneStiche,
             aktuellerStich,

@@ -165,10 +165,10 @@ public record PartieStandAntwort(
                 return null;
             }
             try {
+                // Parteisichtbarkeit kommt ausschliesslich aus dem Domainmodell (parteien.offenFuerAlle),
+                // das bei Grundansagen, Solo, Hochzeit und Armut serverseitig aktualisiert wird.
                 return laufendesSpiel.parteien().sichtAufPartei(sichtbarePosition, zielPosition)
-                    .orElseGet(() -> laufendesSpiel.ansagen().offenbartParteiVon(zielPosition)
-                        ? laufendesSpiel.parteien().parteiVon(zielPosition)
-                        : null);
+                    .orElse(null);
             } catch (IllegalStateException ignored) {
                 return null;
             }

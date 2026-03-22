@@ -64,7 +64,7 @@ final class SpielPersistenzAdapter {
             spielEntity.phase(),
             haende,
             vorbehalte,
-            parteien(spielEntity, haende, vorbehalte).orElse(null),
+            parteien(spielEntity, haende, vorbehalte, ansagen).orElse(null),
             ansagen,
             abgeschlosseneStiche,
             aktuellerStich(spielEntity),
@@ -156,22 +156,39 @@ final class SpielPersistenzAdapter {
     private static Optional<Parteien> parteien(
         SpielEntity spielEntity,
         Map<SpielerPosition, Hand> haende,
-        List<VorbehaltMeldung> vorbehalte
+        List<VorbehaltMeldung> vorbehalte,
+        Ansagen ansagen
     ) {
         if (!istAufgeloest(spielEntity.phase())) {
             return Optional.empty();
         }
         VorbehaltMeldung hoechsterVorbehalt = hoechsterVorbehalt(vorbehalte).orElse(null);
+        Parteien basisParteien;
         if (hoechsterVorbehalt == null) {
-            return Optional.of(parteienFuerNormalspiel(spielEntity, haende));
+            basisParteien = parteienFuerNormalspiel(spielEntity, haende);
+        } else {
+            Optional<Parteien> parteienAusSonderspiel = switch (hoechsterVorbehalt.ansage()) {
+                case SOLO_DAME, SOLO_BUBE, SOLO_TRUMPF, SOLO_FLEISCHLOS ->
+                    Optional.of(Parteien.ausSolo(hoechsterVorbehalt.spielerPosition()));
+                case HOCHZEIT -> Optional.of(parteienFuerHochzeit(spielEntity, hoechsterVorbehalt.spielerPosition()));
+                case ARMUT -> Optional.of(parteienFuerArmut(spielEntity, hoechsterVorbehalt.spielerPosition()));
+                case GESUND -> Optional.empty();
+            };
+            if (parteienAusSonderspiel.isEmpty()) {
+                return Optional.empty();
+            }
+            basisParteien = parteienAusSonderspiel.get();
         }
-        return switch (hoechsterVorbehalt.ansage()) {
-            case SOLO_DAME, SOLO_BUBE, SOLO_TRUMPF, SOLO_FLEISCHLOS ->
-                Optional.of(Parteien.ausSolo(hoechsterVorbehalt.spielerPosition()));
-            case HOCHZEIT -> Optional.of(parteienFuerHochzeit(spielEntity, hoechsterVorbehalt.spielerPosition()));
-            case ARMUT -> Optional.of(parteienFuerArmut(spielEntity, hoechsterVorbehalt.spielerPosition()));
-            case GESUND -> Optional.empty();
-        };
+        // Grundansagen (Re/Kontra) offenbaren die Parteizugehoerigkeit — aus Ansagehistorie rekonstruieren,
+        // damit nach einem DB-Roundtrip dieselbe offenFuerAlle-Menge vorliegt wie nach sageAn().
+        List<SpielerPosition> durchGrundansageOffenbart = ansagen.ereignisse().stream()
+            .filter(e -> e.ansage().istGrundansage())
+            .map(AnsageEreignis::spieler)
+            .toList();
+        if (!durchGrundansageOffenbart.isEmpty()) {
+            basisParteien = basisParteien.mitOffenenParteienFuerAlle(durchGrundansageOffenbart);
+        }
+        return Optional.of(basisParteien);
     }
 
     private static Parteien parteienFuerHochzeit(SpielEntity spielEntity, SpielerPosition hochzeitSpieler) {

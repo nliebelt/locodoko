@@ -535,6 +535,31 @@ class SpielTest {
             "Nach dem Ausspiel muss der naechste aktuelle Spieler regelkonform eigene Ansagen taetigen koennen.");
     }
 
+    @Test
+    void grundansageAktualisiertsParteisichtbarkeitImDomainmodell() {
+        // Warum wichtig: Das Backend ist einzige Wahrheitsquelle. Nach einer Re/Kontra-Ansage muss
+        // die Parteizugehoerigkeit direkt in parteien.offenFuerAlle reflektiert sein, nicht nur
+        // in der Ansagehistorie — sonst muss die Praesentationsschicht Domaenenlogik duplizieren.
+        Spiel spiel = Spiel.neu(SpielerPosition.SUED, spielregeln, kartendeckMitKontrolliertenHaenden())
+            .teileKartenAus()
+            .meldeGesund(SpielerPosition.WEST)
+            .meldeGesund(SpielerPosition.NORD)
+            .meldeGesund(SpielerPosition.OST)
+            .meldeGesund(SpielerPosition.SUED)
+            .loeseVorbehalteAuf();
+
+        assertTrue(spiel.parteien().sichtAufPartei(SpielerPosition.NORD, SpielerPosition.WEST).isEmpty(),
+            "Im Normalspiel sind Parteien anfangs verdeckt — nur die eigene Position ist sicher bekannt.");
+
+        Spiel spielNachReAnsage = spiel.sageAn(SpielerPosition.WEST, Ansage.RE);
+
+        assertTrue(spielNachReAnsage.parteien().sichtAufPartei(SpielerPosition.NORD, SpielerPosition.WEST).isPresent(),
+            "Nach einer Grundansage muss die Parteizugehoerigkeit im Domainmodell sichtbar sein.");
+        assertEquals(Partei.RE,
+            spielNachReAnsage.parteien().sichtAufPartei(SpielerPosition.NORD, SpielerPosition.WEST).orElseThrow(),
+            "Der ansagende Re-Spieler muss fuer alle als RE erkennbar sein.");
+    }
+
     private Spiel spieleStich(Spiel spiel, Karte ersteKarte, Karte zweiteKarte, Karte dritteKarte, Karte vierteKarte) {
         Spiel aktuellesSpiel = spiel;
         for (Karte karte : List.of(ersteKarte, zweiteKarte, dritteKarte, vierteKarte)) {
