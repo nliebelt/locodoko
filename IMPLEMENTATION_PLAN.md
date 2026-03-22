@@ -4,9 +4,9 @@ Stand: 2026-03-22
 
 ## Notiz
 
-**Letzte Iteration (2026-03-22):** Frontend-Logging vollstaendig implementiert (Prioritaet 13). `logger.ts` mit Dev-Mode-Switch, globaler Error-Handler in `main.ts`, Logging-Punkte in allen 4 Frontendservices/-szenen, KI-Orchestrierung mit strukturiertem Logging, 10 Logger-Tests. Ausserdem WebSocket-CORS ueber `locodoko.websocket.allowed-origins` konfigurierbar gemacht. 42 Frontend-Tests gruen, 107 Backend-Tests gruen.
+**Letzte Iteration (2026-03-22):** Solo-Tiebreaker-Dokumentation ergaenzt (Prioritaet 13). `Spiel.hoechsterVorbehalt()` hat jetzt vollstaendigen Javadoc-Kommentar: erklaert strikten `>`-Vergleich als Sitzreihenfolge-Tiebreaker, verweist auf Regelgrundlage in spielablauf.md. 107 Backend-Tests gruen.
 
-**Naechster logischer Schritt:** Solo-Tiebreaker dokumentieren oder refactoren (einfach, geringe Ueberraschung) oder Verbindungsabbruch-Erweiterungen angehen (Session-Recovery bei Tab-Reload, PARTIE_ABGEBROCHEN-Event).
+**Naechster logischer Schritt:** Verbindungsabbruch-Erweiterungen (Session-Recovery bei Tab-Reload — `aktiverTischId` in GET /api/spieler/session + Redirect in BootSzene; PARTIE_ABGEBROCHEN-Event) oder Per-Tisch konfigurierbare Ansagegrenzen.
 
 **Offene Fragen:** jsdom kann Canvas 2D nicht rendern (daher stderr-Warnings in Tests); unkritisch. WebSocket-Event-Architektur weicht von Spec ab (Snapshots statt separate Events). TischSzene.ts ist monolithisch (1350+ Zeilen) — funktional, aber bei weiterer Komplexitaet fragil. KI-Hochzeit-Speziallogik bleibt MVP-akzeptabler Stub.
 
@@ -177,7 +177,7 @@ Ausgangslage: Backend und Frontend sind funktional weitgehend vollstaendig: Kart
 - [x] WebSocket-CORS konfigurierbar machen: `WebSocketEigenschaften` mit `@ConfigurationProperties(prefix = "locodoko.websocket")` angelegt; `WebSocketKonfiguration` injiziert und nutzt `allowedOrigins` statt hartkodierten `"*"`; `application-dev.properties` setzt `locodoko.websocket.allowed-origins=*`, `application-prod.properties` liest `${LOCODOKO_WEBSOCKET_ALLOWED_ORIGINS:https://locodoko.de}`; ebenfalls `application-dev.properties` um KI-Orchestrierungs-DEBUG-Level ergaenzt (Vorbereitung fuer Frontend-Logging-Spec). 107 Backend-Tests gruen.
 - [ ] Per-Tisch konfigurierbare Ansagegrenzen: `specs/ansagen.md` fordert, dass Mindestkartenanzahlen pro Tisch konfigurierbar sind. Aktuell liest `Ansage.mindestkarten(Spielregeln)` aus globalen `Spielregeln`-Defaults. Die Werte muessen aus `TischkonfigurationEmbeddable` kommen und ueber die REST-API/UI aenderbar sein.
 - [ ] Animations-Geschwindigkeitskontrolle im Frontend: `AnimationenService` hat einen privaten `geschwindigkeitsfaktor` im Konstruktor, aber keine UI zum Aendern (kein 1x/2x/sofort-Umschalter). Spec `frontend-animationen.md` impliziert eine Steuerungsmoeglichkeit.
-- [ ] Solo-Tiebreaker explizit dokumentieren oder refactoren: `Spiel.hoechsterVorbehalt()` loest Gleichstand bei gleicher Solo-Prioritaet implizit ueber die Iterationsreihenfolge der Vorbehaltsliste (= Sitzreihenfolge). Das ist korrekt, aber fragil und undokumentiert. Ein expliziter Kommentar oder eine Sitzpositions-Vergleichslogik wuerde die Spec-Konformitaet absichern.
+- [x] Solo-Tiebreaker explizit dokumentieren: `Spiel.hoechsterVorbehalt()` hat jetzt einen vollstaendigen Javadoc-Kommentar, der erklaert, WARUM `>` statt `>=` genutzt wird (Sitzreihenfolge-Tiebreaker), und welche Regelgrundlage gilt (specs/spielablauf.md). Zwei bestehende Tests sichern dieses Verhalten bereits ab.
 
 ## Empfohlene Umsetzungsreihenfolge fuer den ersten spielbaren End-to-End-Vertical-Slice
 

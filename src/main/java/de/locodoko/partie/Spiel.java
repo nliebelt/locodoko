@@ -595,12 +595,28 @@ public final class Spiel {
         return kopie;
     }
 
+    /**
+     * Ermittelt den Vorbehalt mit der hoechsten Prioritaet aus der Vorbehaltsliste.
+     *
+     * <p>Tiebreaker bei gleicher Prioritaet (z.B. zwei verschiedene Soli): Die {@code vorbehalte}-Liste
+     * ist in Sitzreihenfolge aufgebaut (links vom Geber beginnend, im Uhrzeigersinn). Der strikte
+     * Groesser-als-Vergleich ({@code >} statt {@code >=}) stellt sicher, dass bei Gleichstand
+     * der fruehste Spieler in der Sitzreihenfolge gewinnt — d.h. die erste Meldung mit dieser
+     * Prioritaet bleibt unveraendert in {@code hoechsterVorbehalt} stehen.
+     *
+     * <p>Regelgrundlage: specs/spielablauf.md — "Bei mehreren Soli entscheidet die Sitzreihenfolge;
+     * es gibt keine Rangfolge zwischen den Solo-Typen."
+     *
+     * @return den Vorbehalt mit hoechster Prioritaet, oder leer wenn alle Spieler gesund sind
+     */
     private Optional<VorbehaltMeldung> hoechsterVorbehalt() {
         VorbehaltMeldung hoechsterVorbehalt = null;
         for (VorbehaltMeldung meldung : vorbehalte) {
             if (!meldung.istVorbehalt()) {
                 continue;
             }
+            // Strikter Vergleich (>): Bei gleicher Prioritaet bleibt der erste Eintrag
+            // (= fruehere Sitzposition) erhalten — das ist der Sitzreihenfolge-Tiebreaker.
             if (hoechsterVorbehalt == null || meldung.ansage().prioritaet() > hoechsterVorbehalt.ansage().prioritaet()) {
                 hoechsterVorbehalt = meldung;
             }
