@@ -6,7 +6,6 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc --noEmit && vite build",
-    "build:embed": "npm run build && node scripts/embed-static.mjs",
     "test": "vitest run",
     "lint": "eslint . --max-warnings=0",
     "preview": "vite preview"

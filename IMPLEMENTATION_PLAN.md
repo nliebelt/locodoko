@@ -1,14 +1,14 @@
 # IMPLEMENTATION_PLAN
 
-Stand: 2026-03-21
+Stand: 2026-03-22
 
 ## Notiz
 
-**Letzte Iteration (2026-03-22):** Vollstaendige Javadoc-Dokumentation (Prioritaet 11). Alle 79 zuvor undokumentierten Java-Klassen in den Packages karten, partie, lobby und session haben jetzt class-level Javadoc auf Deutsch. Schwerpunkt: Domain-Value-Objects (Karte, Stich, Hand, Spielregeln, alle TrumpfOrdnungen), Aggregate Roots (Spiel, Partie, Tisch), Enums (Spielphase, Ansage, Partei, VorbehaltAnsage etc.), DTOs und WebSocket-Typen. 105 Tests gruen.
+**Letzte Iteration (2026-03-22):** Vollstaendige Planungspruefung aller 5 Bounded Contexts (Lobby, Partie, Session, Frontend, Sonderspiele/KI) durch parallele Subagenten-Analyse. Alle Prioritaeten 0-11 sind abgeschlossen. 105 Backend-Tests und 32 Frontend-Tests gruen. Neue Befunde: Partei-Sichtbarkeit nach Grundansage nicht aktualisiert (Spec-Abweichung), fehlende Integrationstests fuer Hochzeit-Stilles-Solo, KI-Heuristiken undokumentiert.
 
-**Naechster logischer Schritt:** Alle Aufgaben in Prioritaet 11 sind abgeschlossen. Alle anderen Prioritaeten (0-10) sind ebenfalls vollstaendig erledigt. Das Projekt ist funktional vollstaendig — naechste Schritte waeren Produktions-Deployment (PostgreSQL-Konfiguration, echtes JAR) oder weitere Feature-Erweiterungen.
+**Naechster logischer Schritt:** Die verbliebenen Aufgaben in Prioritaet 12 (Korrekturen und Politur) adressieren die bei der Planungspruefung gefundenen Spec-Abweichungen, Test-Luecken und Dokumentationsmaengel. Danach waere das Projekt bereit fuer Produktions-Deployment (PostgreSQL-Konfiguration, echtes JAR) oder weitere Feature-Erweiterungen.
 
-**Offene Fragen:** jsdom kann Canvas 2D nicht rendern (daher stderr-Warnings in Tests); unkritisch. KI-Heuristiken haben magische Zahlen ohne Kalibrierungsdokumentation. WebSocket-Event-Architektur weicht von Spec ab (Snapshots statt separate Events).
+**Offene Fragen:** jsdom kann Canvas 2D nicht rendern (daher stderr-Warnings in Tests); unkritisch. WebSocket-Event-Architektur weicht von Spec ab (Snapshots statt separate Events). Frontend-Rendering basiert auf innerHTML-Strings statt einem reaktiven Framework; skaliert fuer den aktuellen Umfang.
 
 Ausgangslage: Backend und Frontend sind funktional weitgehend vollstaendig: Karten-/Trumpf-/Stichlogik, alle Spielphasen, Ansagen, Sonderpunkte, alle Vorbehalte (Soli, Hochzeit, Armut), Persistenz, Session, Lobby, REST-API, WebSocket-Aktionen, Partie-Snapshots, KI-Strategie und KI-Orchestrierung sind implementiert und getestet. Das Frontend bietet eine interaktive Tischansicht mit Kartenklick, Vorbehalt-/Ansage-/Armut-Dialogen, Stichmitte, Ergebnis-Overlay und erste Animationen. Ein Spiel 1 Mensch + 3 KI ist End-to-End durchspielbar. Der naechste Schwerpunkt liegt auf visueller Politur (Kartengrafiken, fehlende Animationen), Robustheit (Verbindungsabbruch, Session-Cleanup) und dem geplanten Architektur-Refactoring (JPA → Spring Data JDBC, Package-Struktur nach Bounded Contexts).
 
@@ -162,6 +162,14 @@ Ausgangslage: Backend und Frontend sind funktional weitgehend vollstaendig: Kart
 - [x] Vollstaendige Code-Dokumentation (Javadoc): Jede Klasse mit praeziser deutscher Definition und Zweck.
 - [x] Toten Code pruefen und entfernen: `TischEreignisTyp`-Enum hatte entgegen Annahme keine ungenutzten Werte (alle 7 werden gesendet); identische `ladeAktivenSpieler(HttpServletRequest)`-Methode aus TischController und PartieController nach SpielerSessionService extrahiert.
 
+## Offen - Prioritaet 12: Korrekturen und Politur (aus Planungspruefung 2026-03-22)
+
+- [ ] Partei-Sichtbarkeit nach Grundansage aktualisieren: `Spiel.sageAn()` aktualisiert die Parteien-Sichtbarkeit nicht bei Re/Kontra-Grundansagen. Laut `specs/ansagen.md` offenbart ein Spieler durch eine Grundansage seine Parteizugehoerigkeit — das muss serverseitig in `Parteien` reflektiert werden, damit das Backend als einzige Wahrheitsquelle fungiert. Aktuell leitet das Frontend die Partei implizit aus der Ansagehistorie ab, was funktional aequivalent ist, aber gegen das Architekturprinzip verstoesst.
+- [ ] Integrationstests fuer Hochzeit-Stilles-Solo: Kein Test prueft aktuell den konkreten Kartenverlauf, bei dem der Hochzeitsspieler alle 3 Klaerungsstiche selbst gewinnt und das Spiel in ein stilles Solo umschlaegt. Die Logik in `Spiel.fortschrittNachVollstaendigemStich()` ist implementiert aber nur indirekt getestet.
+- [ ] KI-Heuristiken dokumentieren: `StandardKiStrategie` enthaelt undokumentierte Gewichtsfaktoren (z.B. `trumpfAnzahl * 4 + asse * 2`) und Schwellwerte (z.B. `soloSchwelle SOLO_TRUMPF -> 34`). Vor einer Schwierigkeitsgrad-Erweiterung sollten diese Werte mit Kommentaren versehen werden, die die Kalibrierungsgrundlage erklaeren.
+- [ ] KI-Hochzeit-Speziallogik: Die KI behandelt Hochzeit aktuell wie einen normalen Vorbehalt. Spezifische Strategien fuer "Partner sucht" vs. "Partner gefunden" sind nicht implementiert. Fuer MVP akzeptabel, aber fuer verbesserte KI-Qualitaet wuenschenswert.
+- [ ] Spec-Status-Markierungen aktualisieren: Alle 8 Sonderspiel-/KI-/Verbindungsabbruch-Specs (`specs/hochzeit.md`, `specs/armut.md`, `specs/solo-*.md`, `specs/ki-strategie.md`, `specs/verbindungsabbruch.md`) sind noch mit `| Status | Noch nicht begonnen |` markiert, obwohl sie vollstaendig implementiert und getestet sind. Definition-of-Done-Checklisten in diesen Specs sind ebenfalls nicht abgehakt.
+
 ## Empfohlene Umsetzungsreihenfolge fuer den ersten spielbaren End-to-End-Vertical-Slice
 
 - [x] Zuerst Projektgrundgeruest, Build und Test-Setup herstellen.
@@ -171,9 +179,9 @@ Ausgangslage: Backend und Frontend sind funktional weitgehend vollstaendig: Kart
 - [x] Danach das Frontend von der lesenden Snapshot-Ansicht zur interaktiven Tisch-UI mit Kartenklick, Vorbehalts-/Ansage-Dialogen und Stichmitte ausbauen.
 - [x] Erst dann die KI fuer regelkonformes Spielen, Vorbehalte und Ansagen anbinden, damit 1 Mensch + 3 KI wirklich durchspielbar wird.
 - [x] Danach die Vorbehalts-Sonderspiele fuer den aktuellen Backend-Slice vervollstaendigen (`Trumpfsolo`, `Hochzeit`, `Armut`, `Damensolo`, `Bubensolo`, `Fleischlos`).
-- [ ] Frontend-Politur: Kartengrafiken, Austeilen-/Ansage-/Sonderpunkt-Animationen, Rundenende-Overlay (Prioritaet 9).
-- [ ] Backend-Haertung: Verbindungsabbruch, Session-Cleanup, Concurrency, Test-Luecken (Prioritaet 10).
-- [ ] Architektur-Refactoring: JPA→JDBC, Liquibase, Package-Struktur, Javadoc, toter Code (Prioritaet 11).
+- [x] Frontend-Politur: Kartengrafiken, Austeilen-/Ansage-/Sonderpunkt-Animationen, Rundenende-Overlay (Prioritaet 9).
+- [x] Backend-Haertung: Verbindungsabbruch, Session-Cleanup, Concurrency, Test-Luecken (Prioritaet 10).
+- [x] Architektur-Refactoring: JPA→JDBC, Liquibase, Package-Struktur, Javadoc, toter Code (Prioritaet 11).
 
 ## Aktuelle Risiken / offene Architekturentscheidungen
 
@@ -185,5 +193,6 @@ Ausgangslage: Backend und Frontend sind funktional weitgehend vollstaendig: Kart
 - [x] Fuer die in `specs/frontend-ui-logik.md` geforderte Letzte-Stiche- und Ergebnisdarstellung existiert jetzt ein passender End-to-End-Vertrag: `PartieStandAntwort` liefert eine explizite abgeschlossene Stichhistorie plus Ergebnisobjekt, und das Frontend rendert daraus Letzte-Stiche- und Ergebnis-Overlay ohne lokale Nachberechnung.
 - [x] Die KI ist nicht mehr nur Spielererzeugung/Namensvergabe: Neben einer echten Entscheidungslogik fuer Vorbehalt, Armut, Ansage und Kartenwahl existiert jetzt eine serverseitige Orchestrierung, die nach menschlichen oder KI-Aktionen automatisch weitere KI-Zuege ausloest und Spiele/Partien bis zum naechsten menschlichen Eingriff oder bis zum Ende fortschreibt.
 - [ ] WebSocket-Event-Architektur weicht von Spec ab: Spec verlangt separate Events (StichGewonnen, AnsageErfolgt, SpielBeendet etc.), Implementierung nutzt Snapshot-basierte Broadcasts ueber `PartieEreignisAntwort`; funktional aequivalent, aber nicht inkrementell — Entscheidung ob Spec angepasst oder Events nachgezogen werden muss noch fallen.
-- [ ] KI-Heuristiken (Vorbehalt-Schwellwerte, Kosten-Berechnung) enthalten magische Zahlen ohne Dokumentation oder Kalibrierung; funktioniert fuer MVP, sollte aber vor Schwierigkeitsgrad-Erweiterung dokumentiert werden.
+- [ ] KI-Heuristiken (Vorbehalt-Schwellwerte, Kosten-Berechnung) enthalten magische Zahlen ohne Dokumentation oder Kalibrierung; funktioniert fuer MVP, sollte aber vor Schwierigkeitsgrad-Erweiterung dokumentiert werden. Aufgabe in Prioritaet 12 erfasst.
 - [ ] Frontend-Rendering basiert auf innerHTML-Strings statt einem reaktiven Framework; skaliert fuer den aktuellen Umfang, wird aber bei weiterer UI-Komplexitaet fragil.
+- [ ] Partei-Sichtbarkeit nach Grundansage: `Spiel.sageAn()` aktualisiert `Parteien` nicht bei Re/Kontra — Backend spiegelt die Partei-Offenbarung nicht serverseitig wider. Aufgabe in Prioritaet 12 erfasst.

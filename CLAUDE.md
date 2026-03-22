@@ -12,13 +12,12 @@
 - Run: `mvn spring-boot:run`
 - Vollständiger Build mit Tests: `mvn clean verify`
 - Profil: H2 In-Memory-Datenbank für Entwicklung
-- `mvn clean package` / `mvn clean verify` betten das Frontend automatisch nach `src/main/resources/static/app` ein.
+- `mvn clean package` / `mvn clean verify` betten das Frontend automatisch nach `target/classes/static` ein.
 
 ### Frontend (TypeScript / Phaser)
 
 - Install: `cd frontend && npm install`
 - Build: `cd frontend && npm run build`
-- Build + Backend-Einbettung: `cd frontend && npm run build:embed`
 - Dev-Server: `cd frontend && npm run dev`
 - Tests: `cd frontend && npm test`
 - Lint: `cd frontend && npm run lint`
@@ -43,7 +42,7 @@ locodoko/
 ├── src/main/resources/
 │   ├── application.properties         # Haupt-Konfiguration
 │   ├── application-dev.properties     # Dev-Profil (H2)
-│   └── static/                        # Frontend-Assets (nach Build)
+│   └── static/                        # (nicht im Repo — wird zur Laufzeit aus frontend/dist/ gelesen bzw. beim Build nach target/classes/static/ kopiert)
 ├── src/test/java/...                  # Backend-Tests
 ├── frontend/                          # TypeScript/Phaser (npm-Projekt)
 ├── specs/                             # Spezifikationen (eine Datei pro Thema)
