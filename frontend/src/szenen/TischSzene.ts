@@ -134,6 +134,34 @@ function texturFuerTischhintergrund(tischhintergrund: Tischhintergrund): string 
   } as Record<Tischhintergrund, string>)[tischhintergrund];
 }
 
+// Moegliche Animations-Geschwindigkeitsstufen: normal (1x), doppelt (2x), sofort (Infinity)
+type AnimationsGeschwindigkeit = 1 | 2 | typeof Infinity;
+
+function naechsteGeschwindigkeit(aktuelle: AnimationsGeschwindigkeit): AnimationsGeschwindigkeit {
+  if (aktuelle === 1) return 2;
+  if (aktuelle === 2) return Infinity;
+  return 1;
+}
+
+function geschwindigkeitsLabel(faktor: AnimationsGeschwindigkeit): string {
+  if (faktor === Infinity) return 'Geschw.: sofort';
+  return `Geschw.: ${faktor}x`;
+}
+
+const LS_GESCHWINDIGKEIT = 'locodoko.animationsgeschwindigkeit';
+
+function ladeGeschwindigkeit(): AnimationsGeschwindigkeit {
+  const wert = localStorage.getItem(LS_GESCHWINDIGKEIT);
+  if (wert === '2') return 2;
+  if (wert === 'sofort') return Infinity;
+  return 1;
+}
+
+function speichereGeschwindigkeit(faktor: AnimationsGeschwindigkeit): string {
+  if (faktor === Infinity) return 'sofort';
+  return String(faktor);
+}
+
 export class TischSzene extends Phaser.Scene {
   private abmeldenStore?: () => void;
 
@@ -195,6 +223,12 @@ export class TischSzene extends Phaser.Scene {
   // Handler fuer Backdrop-Klick am Rundenende-Modal (wird bei Schliessen entfernt)
   private backdropClickHandler?: (e: MouseEvent) => void;
 
+  // Aktuell gewaehlte Animations-Geschwindigkeit (wird in localStorage persistiert)
+  private animationsGeschwindigkeit: AnimationsGeschwindigkeit = 1;
+
+  // Referenz auf den Geschwindigkeits-Toggle-Button fuer Label-Aktualisierungen
+  private geschwindigkeitsButton?: HTMLButtonElement;
+
   constructor() {
     super('TischSzene');
   }
@@ -219,6 +253,15 @@ export class TischSzene extends Phaser.Scene {
     );
     this.animationen = new AnimationenService(this);
     this.baueUi();
+    // Gespeicherte Animations-Geschwindigkeit wiederherstellen
+    const initialGeschwindigkeit = ladeGeschwindigkeit();
+    if (initialGeschwindigkeit !== 1) {
+      this.animationsGeschwindigkeit = initialGeschwindigkeit;
+      this.animationen.setzeGeschwindigkeitsfaktor(initialGeschwindigkeit);
+      if (this.geschwindigkeitsButton) {
+        this.geschwindigkeitsButton.textContent = geschwindigkeitsLabel(initialGeschwindigkeit);
+      }
+    }
     // Individuelle Kartentexturen fuer das franzoesische Blatt laden (idempotent)
     registriereKartenSpriteTexturen(this);
     this.scale.on(Phaser.Scale.Events.RESIZE, this.handleResize, this);
@@ -227,8 +270,8 @@ export class TischSzene extends Phaser.Scene {
       const vorherigesModell = this.letztesModell;
       const vorherigerZustand = this.letzterZustand;
       // Phasenübergang loggen (nicht pro Frame, nur bei Änderung)
-      const vorherigePhase = vorherigerZustand?.partieStand?.spielphase;
-      const aktuellePhase = zustand.partieStand?.spielphase;
+      const vorherigePhase = vorherigerZustand?.partieStand?.laufendesSpiel?.phase;
+      const aktuellePhase = zustand.partieStand?.laufendesSpiel?.phase;
       if (aktuellePhase && aktuellePhase !== vorherigePhase) {
         Logger.szene('Spielphase', { vorher: vorherigePhase ?? null, nachher: aktuellePhase });
       }
@@ -278,6 +321,7 @@ export class TischSzene extends Phaser.Scene {
         <button class="ui-button ui-button--danger" type="button">Tisch verlassen</button>
         <button class="ui-button" type="button">Spiel starten</button>
         <button class="ui-button ui-button--secondary" type="button">Debug aus</button>
+        <button class="ui-button ui-button--secondary" type="button" data-animationsgeschwindigkeit>Geschw.: 1x</button>
       </div>
       <div class="ui-grid">
         <div class="ui-stat-card"><span class="ui-hint">Spieltyp</span><strong data-spieltyp>-</strong></div>
@@ -325,6 +369,7 @@ export class TischSzene extends Phaser.Scene {
     const ansageListe = rechts.querySelector('[data-ansagen]');
     const punktestandListe = rechts.querySelector('[data-punktestand]');
     const tischhintergrundSelect = links.querySelector('[data-tischhintergrund]');
+    const geschwindigkeitsButton = links.querySelector('[data-animationsgeschwindigkeit]');
     const buttons = links.querySelectorAll('button');
     const lobbyButton = buttons.item(0);
     const leaveButton = buttons.item(1);
@@ -343,7 +388,8 @@ export class TischSzene extends Phaser.Scene {
       || !(lobbyButton instanceof HTMLButtonElement)
       || !(leaveButton instanceof HTMLButtonElement)
       || !(startButton instanceof HTMLButtonElement)
-      || !(debugButton instanceof HTMLButtonElement)) {
+      || !(debugButton instanceof HTMLButtonElement)
+      || !(geschwindigkeitsButton instanceof HTMLButtonElement)) {
       throw new Error('Tisch-UI konnte nicht aufgebaut werden.');
     }
 
@@ -375,6 +421,12 @@ export class TischSzene extends Phaser.Scene {
         this.aktualisiereUi(this.letzterZustand);
       }
     });
+    geschwindigkeitsButton.addEventListener('click', () => {
+      this.animationsGeschwindigkeit = naechsteGeschwindigkeit(this.animationsGeschwindigkeit);
+      geschwindigkeitsButton.textContent = geschwindigkeitsLabel(this.animationsGeschwindigkeit);
+      this.animationen?.setzeGeschwindigkeitsfaktor(this.animationsGeschwindigkeit);
+      localStorage.setItem(LS_GESCHWINDIGKEIT, speichereGeschwindigkeit(this.animationsGeschwindigkeit));
+    });
 
     const toastStack = document.createElement('div');
     toastStack.className = 'ui-toast-stack';
@@ -395,6 +447,7 @@ export class TischSzene extends Phaser.Scene {
     this.ansageListe = ansageListe;
     this.punktestandListe = punktestandListe;
     this.tischhintergrundSelect = tischhintergrundSelect;
+    this.geschwindigkeitsButton = geschwindigkeitsButton;
     this.toastStack = toastStack;
     this.rundenEndeModal = rundenEndeModal;
     uiRoot.append(links, rechts, toastStack, rundenEndeModal);

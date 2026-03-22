@@ -184,4 +184,39 @@ describe('AnimationenService', () => {
     expect(bild).toMatchObject({ x: 50, y: 75 });
     vi.useRealTimers();
   });
+
+  // WARUM: setzeGeschwindigkeitsfaktor ist der einzige Weg, die Animations-Geschwindigkeit zur Laufzeit
+  // zu aendern; ohne diesen Test koennte ein Refactoring die Skalierung leise brechen und der
+  // 1x/2x/sofort-Umschalter haette keine Auswirkung mehr.
+  it('skaliert Animationsdauern entsprechend dem gesetzten Geschwindigkeitsfaktor', async () => {
+    const { szene, aufrufe } = baueTweenSzene();
+    const service = new AnimationenService(szene as never);
+    const bild = { x: 0, y: 0 } as never;
+
+    // Faktor 2: Dauern werden halbiert
+    service.setzeGeschwindigkeitsfaktor(2);
+    await service.animiereKarteAusspielen({ bild }, { x: 100, y: 100 });
+    expect(aufrufe[0].duration).toBe(200); // 400ms / 2
+
+    // Faktor Infinity (sofort): Dauern werden 0
+    service.setzeGeschwindigkeitsfaktor(Infinity);
+    await service.animiereKarteAusspielen({ bild }, { x: 200, y: 200 });
+    expect(aufrufe[1].duration).toBe(0);
+  });
+
+  it('loest bei Geschwindigkeitsfaktor Infinity alle Animationen sofort auf', async () => {
+    vi.useFakeTimers();
+    const { szene, aufrufe } = baueTweenSzene();
+    const service = new AnimationenService(szene as never, Infinity);
+
+    // animiereStichEinziehen wartet normalerweise 1000ms — bei Infinity sofort fertig
+    const bild = { x: 0, y: 0 } as never;
+    const animation = service.animiereStichEinziehen([{ bild }], { x: 50, y: 75 });
+    // Kein Tick noetig: warte(0) kehrt sofort zurueck, Tween mit duration=0 loest sofort auf
+    await animation;
+
+    expect(aufrufe).toHaveLength(1);
+    expect(aufrufe[0].duration).toBe(0);
+    vi.useRealTimers();
+  });
 });

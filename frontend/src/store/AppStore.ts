@@ -92,7 +92,7 @@ export class AppStore {
     await this.fuehreMitStatus(async () => {
       this.patch({ verbindung: 'verbinde' });
       const spieler = await this.api.initialisiereSpielerSession();
-      Logger.store('Session initialisiert', { spielerId: spieler.id });
+      Logger.store('Session initialisiert', { spielerId: spieler.spielerId });
       await this.echtzeit.verbinde();
       this.registriereGemeinsameAbos();
       const tische = await this.api.listeTische();

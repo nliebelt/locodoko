@@ -19,10 +19,21 @@ export class AnimationenService {
 
   private readonly laufendenTimer = new Set<number>();
 
+  // Globaler Multiplikator fuer alle Animationsdauern: 1 = normal, 2 = doppelt, Infinity = sofort
+  private geschwindigkeitsfaktor: number;
+
   constructor(
     private readonly szene: Phaser.Scene,
-    private readonly geschwindigkeitsfaktor = 1
-  ) {}
+    geschwindigkeitsfaktor = 1
+  ) {
+    this.geschwindigkeitsfaktor = geschwindigkeitsfaktor;
+  }
+
+  // Setzt den globalen Geschwindigkeitsmultiplikator; wirkt auf alle nachfolgenden Animationen.
+  // 1 = normal, 2 = doppelt schnell, Infinity = sofort (kein Tween, kein Warten).
+  setzeGeschwindigkeitsfaktor(faktor: number): void {
+    this.geschwindigkeitsfaktor = faktor;
+  }
 
   async animiereKarteAusspielen(
     kartenobjekte: AnimierbareKartenobjekte,
