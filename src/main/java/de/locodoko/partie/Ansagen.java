@@ -7,6 +7,14 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
+/**
+ * Gesamte Ansage-Historie eines Spiels.
+ *
+ * <p>Verwaltet die chronologisch geordnete Liste aller {@link AnsageEreignis}-Eintraege und
+ * prueft bei {@link #kannAnsagen}, ob eine neue Ansage unter Beachtung von Zeitfenster,
+ * Stufenreihenfolge und Partei-Zugehoerigkeit erlaubt ist. Ansagen-Objekte sind unveraenderlich —
+ * eine neue Ansage erzeugt eine neue Instanz.</p>
+ */
 public final class Ansagen {
 
     private final List<AnsageEreignis> ereignisse;

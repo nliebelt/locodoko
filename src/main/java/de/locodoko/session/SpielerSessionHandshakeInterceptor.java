@@ -13,6 +13,13 @@ import org.springframework.web.socket.server.HandshakeInterceptor;
 
 import java.util.Map;
 
+/**
+ * Validiert die Spieler-Session beim WebSocket-Handshake und leitet die Session-ID weiter.
+ *
+ * <p>Liest beim STOMP-Handshake die HTTP-Session aus, prueft ob eine gueltige Spieler-Session
+ * vorliegt und schreibt die Session-ID als Attribut in die WebSocket-Session-Map. Fehlt eine
+ * gueltige Session, wird der Handshake mit HTTP 401 abgelehnt.</p>
+ */
 @Component
 public class SpielerSessionHandshakeInterceptor implements HandshakeInterceptor {
 

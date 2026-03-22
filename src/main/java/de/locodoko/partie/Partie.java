@@ -11,6 +11,17 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 
+/**
+ * Eine Partie Doppelkopf — eine geordnete Folge von Einzelspielen.
+ *
+ * <p>Eine Partie besteht aus einer festen Anzahl von {@link Spiel}-Instanzen. Sie verwaltet
+ * die Geberrotation (jeder Spieler gibt einmal pro Runde), den kumulierten Gesamtpunktestand
+ * aller Spieler sowie die gemeinsamen {@link Spielregeln}. Jedes abgeschlossene Spiel wird
+ * in der Historienliste archiviert; das laufende Spiel ist separat zugreifbar.</p>
+ *
+ * <p>Aggregate Root des {@code partie}-Bounded-Context. Unveraenderlich: jede Mutation
+ * (neues Spiel starten, Spiel abschliessen) liefert eine neue Instanz.</p>
+ */
 public final class Partie {
 
     private final int anzahlSpiele;

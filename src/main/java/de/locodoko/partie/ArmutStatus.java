@@ -7,6 +7,21 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 
+/**
+ * Zustand des laufenden Armut-Tauschs.
+ *
+ * <p>Ein Spieler mit hoechstens drei Truempfen darf Armut melden. Dann bietet er alle
+ * seine Truempfe an; die anderen Spieler werden der Reihe nach links von ihm gefragt,
+ * ob sie annehmen moechten. Der annehmende Spieler gibt gleich viele Karten zurueck
+ * und wird Re-Partner. Nimmt niemand an, wird das Spiel neu eingeworfen.</p>
+ *
+ * @param armutSpieler          Spieler, der Armut gemeldet hat
+ * @param abfrageReihenfolge    die drei potentiellen Antwortspieler, links im Uhrzeigersinn
+ * @param aktuellerIndex        Index des aktuell befragten Spielers in abfrageReihenfolge
+ * @param angeboteneTrumpfkarten die vom Armut-Spieler angebotenen Trumpfkarten
+ * @param angebotAbgegeben      ob das Angebot bereits abgegeben wurde
+ * @param partnerSpieler        der annehmende Spieler, oder {@code null} waehrend der Suche
+ */
 public record ArmutStatus(
     SpielerPosition armutSpieler,
     List<SpielerPosition> abfrageReihenfolge,

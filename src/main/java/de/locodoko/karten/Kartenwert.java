@@ -1,5 +1,12 @@
 package de.locodoko.karten;
 
+/**
+ * Kartenwert im Doppelkopf-Deck.
+ *
+ * <p>Jeder Wert traegt eine bestimmte Augenzahl (Punkte) und einen Fehlrang, der die
+ * Rangfolge bei Fehlkarten bestimmt (hoehere Zahl = hoehere Karte). Die Gesamtzahl
+ * aller Augen in einem vollstaendigen Deck betraegt stets 240.</p>
+ */
 public enum Kartenwert {
     NEUN(0, 1),
     BUBE(2, 2),

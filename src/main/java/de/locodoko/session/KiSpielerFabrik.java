@@ -9,6 +9,13 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+/**
+ * Erzeugt persistierte KI-Spieler-Instanzen mit eindeutigen Namen.
+ *
+ * <p>Wird beim Tischstart verwendet, um fehlende menschliche Spieler durch KI-Spieler
+ * aufzufuellen. KI-Namen werden aus einer festen Basisliste gewaehlt und bei Bedarf
+ * mit einem numerischen Suffix eindeutig gemacht. KI-Spieler haben keine HTTP-Session.</p>
+ */
 @Component
 public class KiSpielerFabrik {
 

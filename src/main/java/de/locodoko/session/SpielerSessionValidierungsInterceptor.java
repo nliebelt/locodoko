@@ -6,6 +6,13 @@ import jakarta.servlet.http.HttpSession;
 import org.springframework.stereotype.Component;
 import org.springframework.web.servlet.HandlerInterceptor;
 
+/**
+ * MVC-Interceptor zum Schutz des Session-Endpunkts vor unbekannten Sessions.
+ *
+ * <p>Fuer {@code POST /api/spieler/session} wird keine Validierung durchgefuehrt
+ * (Session wird erst erstellt). Fuer alle anderen Methoden wird geprueft,
+ * ob eine gueltige Spieler-Session in der HTTP-Session vorliegt.</p>
+ */
 @Component
 public class SpielerSessionValidierungsInterceptor implements HandlerInterceptor {
 

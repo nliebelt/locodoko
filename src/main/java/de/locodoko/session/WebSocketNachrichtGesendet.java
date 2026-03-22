@@ -2,6 +2,13 @@ package de.locodoko.session;
 
 import java.time.Instant;
 
+/**
+ * Ereignis-Record fuer eine gesendete WebSocket-Nachricht.
+ *
+ * <p>Wird von {@link TischEchtzeitService} nach jedem Broadcast oder benutzerbezogenen
+ * Send erzeugt und ueber {@link WebSocketNachrichtenBeobachter} an Tests weitergegeben,
+ * damit gesendete Nachrichten in Tests verifiziert werden koennen.</p>
+ */
 public record WebSocketNachrichtGesendet(
     Instant timestamp,
     String ziel,

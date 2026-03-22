@@ -8,6 +8,14 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
+/**
+ * Unveraenderliches Ergebnis eines abgeschlossenen Doppelkopf-Spiels.
+ *
+ * <p>Enthaelt Augen pro Partei (Summe immer 240), die Sieger-Partei, den Spielwert,
+ * die als Nullsumme verteilten Spielpunkte je Spieler sowie aufgetretene Sonderpunkte
+ * pro Partei (Fuchs, Karlchen, Doppelkopf). Wird von {@link PunkteRechner} erzeugt
+ * und direkt in den Partie-Snapshot uebernommen.</p>
+ */
 public record Spielergebnis(
     Map<Partei, Integer> augenProPartei,
     Partei siegerPartei,

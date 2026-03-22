@@ -16,6 +16,17 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 
+/**
+ * Parteizuordnung aller vier Spieler fuer ein laufendes Spiel.
+ *
+ * <p>Kapselt, welcher Spieler zu {@link Partei#RE} bzw. {@link Partei#KONTRA} gehoert,
+ * und ob diese Zuordnung oeffentlich sichtbar ist (z.B. bei Soli, Hochzeit oder nach
+ * einer Ansage). Im Normalspiel ist die Parteizugehoerigkeit anfangs verdeckt;
+ * nur der eigene Eintrag ist sicher bekannt.</p>
+ *
+ * <p>Unveraenderlich: Zuordnungsaenderungen (z.B. Hochzeit-Partnerfindung) erzeugen
+ * eine neue Instanz.</p>
+ */
 public final class Parteien {
 
     private final Map<SpielerPosition, Partei> parteienNachSpieler;

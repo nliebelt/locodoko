@@ -8,6 +8,17 @@ import de.locodoko.karten.Spielregeln;
 import java.util.List;
 import java.util.Objects;
 
+/**
+ * Domain-Objekt fuer einen laufenden Spieltisch.
+ *
+ * <p>Verbindet eine eindeutige Tisch-ID mit der zugehoerigen {@link Partie} und bietet
+ * eine duenne Fassade, die alle Spielaktionen (Karten austeilen, Vorbehalte melden,
+ * Karte spielen, Ansagen usw.) an das aktuelle Spiel innerhalb der Partie delegiert.
+ * Unveraenderlich: jede Aktion liefert einen neuen {@code Tisch}.</p>
+ *
+ * <p>Dient als Einstiegspunkt fuer den {@code TischService}, der den persistierten
+ * {@code TischEntity}-Zustand und dieses Domain-Objekt miteinander synchronisiert.</p>
+ */
 public final class Tisch {
 
     private final String tischId;

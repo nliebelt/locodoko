@@ -19,6 +19,16 @@ import org.springframework.stereotype.Controller;
 import java.security.Principal;
 import java.util.UUID;
 
+/**
+ * WebSocket-Controller fuer alle Spielaktionen (STOMP-Nachrichtenhandler).
+ *
+ * <p>Empfaengt Spielaktionen von Clients ({@code /app/tisch/{id}/karte},
+ * {@code /vorbehalt}, {@code /ansage}, {@code /armut-antwort}, {@code /snapshot},
+ * {@code /debug-snapshot}) und delegiert an {@link de.locodoko.lobby.TischService}.
+ * Nach jeder Aktion werden automatische Broadcasts und ggf. benutzerbezogene Antworten
+ * ueber {@link de.locodoko.session.TischEchtzeitService} versandt. Fehler werden als
+ * {@link SpielverwaltungWebSocketFehlerAntwort} an den Verursacher zurueckgesendet.</p>
+ */
 @Controller
 public class SpielverwaltungWebSocketController {
 

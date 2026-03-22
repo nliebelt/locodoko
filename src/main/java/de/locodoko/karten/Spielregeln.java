@@ -1,5 +1,17 @@
 package de.locodoko.karten;
 
+/**
+ * Konfigurierbare Spielregeln fuer eine Doppelkopf-Partie.
+ *
+ * <p>Kapselt alle regelbaren Parameter: Deckgroesse (mit/ohne Neunen), Dulle-Regel,
+ * Ansagegrenzen (Mindestanzahl Handkarten fuer Re/Kontra/Keine90 usw.), aktive
+ * Sonderpunkte (Fuchs, Karlchen, Doppelkopf) und aktivierte Sonderspiele
+ * (Armut, Soli, Hochzeit). Alle Felder sind unveraenderlich (Value Object).</p>
+ *
+ * <p>Standardkonfiguration liefert {@link #standardRegeln()}, die "Ohne Neunen"-Variante
+ * liefert {@link #ohneNeunenRegeln()}. Einzelne Parameter koennen per {@code mit*}-Methoden
+ * unveraendernd ueberschrieben werden (Builder-Stil).</p>
+ */
 public record Spielregeln(
     boolean ohneNeunen,
     boolean zweiteDulleSticht,

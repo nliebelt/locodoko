@@ -5,6 +5,19 @@ import de.locodoko.karten.SpielerPosition;
 import java.util.Objects;
 import java.util.Optional;
 
+/**
+ * Zustand der laufenden Hochzeit-Aufklaerung.
+ *
+ * <p>Bei einer Hochzeit hat der Hochzeit-Spieler beide Kreuz-Damen und sucht einen Partner.
+ * In den ersten drei Klaerungsstichen wird der erste fremde Stichgewinner als Re-Partner
+ * aufgenommen. Gewinnt niemand anderes die ersten drei Stiche, wird die Hochzeit ein
+ * stilles Solo (Hochzeit-Spieler allein gegen drei).</p>
+ *
+ * @param hochzeitSpieler  der Spieler mit beiden Kreuz-Damen
+ * @param geklaerteStiche  Anzahl der bisherigen Klaerungsstiche (0–3)
+ * @param partnerSpieler   der gefundene Partner, oder {@code null} waehrend der Suche
+ * @param stillesSolo      {@code true}, wenn die Hochzeit in ein stilles Solo umgewandelt wurde
+ */
 public record HochzeitStatus(
     SpielerPosition hochzeitSpieler,
     int geklaerteStiche,

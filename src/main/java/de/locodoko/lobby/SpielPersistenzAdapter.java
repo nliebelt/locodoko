@@ -36,6 +36,15 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 
+/**
+ * Adapter zwischen dem Domain-Spiel-Objekt und der JDBC-Persistenzschicht.
+ *
+ * <p>Konvertiert das unveraenderliche {@link de.locodoko.partie.Spiel}-Domain-Objekt
+ * in persistierbare {@link de.locodoko.partie.SpielEntity}-Instanzen und umgekehrt.
+ * Kapselt die Serialisierung von Haenden, Stichen, Ansagen, Vorbehaltmeldungen,
+ * Hochzeit-/Armut-Status und Spielergebnis in die flache Embeddable-Struktur der
+ * JDBC-Persistenz.</p>
+ */
 final class SpielPersistenzAdapter {
 
     private SpielPersistenzAdapter() {

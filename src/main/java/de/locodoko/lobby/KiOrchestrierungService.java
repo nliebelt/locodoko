@@ -26,6 +26,16 @@ import java.util.EnumMap;
 import java.util.Map;
 import java.util.Objects;
 
+/**
+ * Orchestriert KI-Zuege nach jeder menschlichen oder KI-Aktion.
+ *
+ * <p>Haengt in {@link TischService} nach Tischstart und nach jeder spielrelevanten Aktion
+ * (Vorbehalt, Armut, Karte, Ansage). Gibt solange KI-Zuege aus, bis ein menschlicher Spieler
+ * am Zug ist oder das Spiel endet. Wertet abgeschlossene Spiele aus, startet Folge-Spiele
+ * innerhalb der Partie und markiert beendete Partien. Bei KI-Strategie-Exceptions wird
+ * die Aktion geloggt und abgebrochen, ohne die Datenbank in einem inkonsistenten Zustand
+ * zu hinterlassen.</p>
+ */
 @Service
 public class KiOrchestrierungService {
 

@@ -2,6 +2,13 @@ package de.locodoko.karten;
 
 import java.util.Objects;
 
+/**
+ * Abstrakte Basisklasse fuer Solo-Varianten, bei denen exakt ein Kartenwert Trumpf ist.
+ *
+ * <p>Konkreter Einsatz: {@link DamensoloTrumpfOrdnung} (nur Damen sind Trumpf) und
+ * {@link BubensoloTrumpfOrdnung} (nur Buben sind Trumpf). Innerhalb des Trumpfs wird
+ * nach Farbe geordnet: Karo (niedrigster) < Herz < Pik < Kreuz (hoechster).</p>
+ */
 abstract class WertSoloTrumpfOrdnung implements TrumpfOrdnung {
 
     private final Kartenwert trumpfWert;

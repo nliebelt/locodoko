@@ -4,6 +4,13 @@ import de.locodoko.lobby.PartieStandAntwort;
 
 import java.time.Instant;
 
+/**
+ * WebSocket-Ereignis-Wrapper fuer Partie-Updates.
+ *
+ * <p>Wird nach jeder Spielaktion an {@code /topic/partie/{id}} gesendet und enthaelt
+ * den aktuellen {@link PartieStandAntwort}-Snapshot. Der {@code ereignisTyp} unterscheidet
+ * zwischen einem vollstaendigen Snapshot (auf Anfrage) und einer Aktualisierung (nach Aktion).</p>
+ */
 public record PartieEreignisAntwort(
     Instant timestamp,
     PartieEreignisTyp ereignisTyp,

@@ -6,6 +6,13 @@ import de.locodoko.lobby.TischAntwort;
 import java.time.Instant;
 import java.util.UUID;
 
+/**
+ * WebSocket-Ereignis-Wrapper fuer Tisch-Updates auf {@code /topic/tisch/{id}}.
+ *
+ * <p>Wird bei allen tischrelevanten Aktionen (Beitreten, Verlassen, Konfiguration, Spielstart)
+ * gesendet und enthaelt den aktuellen {@link TischAntwort}-Snapshot sowie optional einen
+ * {@link PartieStandAntwort} nach dem Spielstart.</p>
+ */
 public record TischEreignisAntwort(
     Instant timestamp,
     TischEreignisTyp ereignisTyp,

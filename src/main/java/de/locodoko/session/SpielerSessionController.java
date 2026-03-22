@@ -13,6 +13,13 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+/**
+ * REST-Controller fuer Spieler-Session-Verwaltung ({@code /api/spieler/session}).
+ *
+ * <p>Stellt Endpunkte zum Erstellen (POST), Abrufen (GET) und Aktualisieren (PUT, Namensaenderung)
+ * einer Spieler-Session bereit. Die Session wird ueber einen HTTP-Session-Cookie identifiziert.
+ * Unbekannte Sessions werden mit 401 Unauthorized abgewiesen.</p>
+ */
 @RestController
 @RequestMapping("/api/spieler/session")
 public class SpielerSessionController {

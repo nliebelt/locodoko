@@ -2,6 +2,17 @@ package de.locodoko.karten;
 
 import java.util.Map;
 
+/**
+ * Trumpfordnung fuer das Normalspiel und Trumpfsolo.
+ *
+ * <p>Im Normalspiel sind alle Damen, alle Buben, alle Karo-Karten sowie die Herz-Zehn
+ * (die Dulle, hoechster Trumpf) Trumpf. Die Trumpfhierarchie von unten nach oben lautet:
+ * Karo-Neun, Karo-Koenig, Karo-Zehn, Karo-As, Karo-Bube, Herz-Bube, Pik-Bube,
+ * Kreuz-Bube, Karo-Dame, Herz-Dame, Pik-Dame, Kreuz-Dame, Herz-Zehn (Dulle).</p>
+ *
+ * <p>Ob die zweite Dulle die erste sticht, wird durch {@link Spielregeln#zweiteDulleSticht()}
+ * gesteuert. Karo-Neunen werden bei aktiviertem "Ohne Neunen"-Modus nicht als Trumpf gewertet.</p>
+ */
 public final class NormaleTrumpfOrdnung implements TrumpfOrdnung {
 
     private static final Map<Karte, Integer> TRUMPF_RANG = Map.ofEntries(

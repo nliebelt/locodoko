@@ -20,6 +20,19 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 
+/**
+ * Ein einzelnes Doppelkopf-Spiel innerhalb einer Partie.
+ *
+ * <p>Kapselt den vollstaendigen Spielzustand: aktive {@link Spielphase}, Haende aller Spieler,
+ * bisherige Vorbehalte, Parteizuordnung, Ansage-Historie, abgeschlossene und laufende Stiche
+ * sowie das Ergebnis nach der Auswertung. Sonderzustaende fuer Hochzeit und Armut werden
+ * in eigenen Status-Value-Objects ({@link HochzeitStatus}, {@link ArmutStatus}) verwaltet.</p>
+ *
+ * <p>Zentraler Domain-Kern: Die gesamte Spiellogik (Stichvalidierung, Vorbehalt-Aufloesung,
+ * Ansage-Zeitfenster, Auswertung) liegt hier, damit Backend, KI und Snapshot-Antworten
+ * dieselbe serverseitige Wahrheitsquelle nutzen. Unveraenderlich — jede Aktion liefert eine
+ * neue Spiel-Instanz.</p>
+ */
 public final class Spiel {
 
     private final Spielregeln spielregeln;

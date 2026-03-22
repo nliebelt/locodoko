@@ -10,6 +10,15 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Random;
 
+/**
+ * Das vollstaendige Kartendeck fuer ein Doppelkopf-Spiel.
+ *
+ * <p>Ein Standard-Doppelkopf-Deck enthaelt 48 Karten (je 2 Exemplare der 24 Karten
+ * aus Farbe x Wert ohne Neunen) bzw. 40 Karten in der "Ohne Neunen"-Variante.
+ * Das Deck ist unveraenderlich; Mischen und Austeilen erzeugen jeweils neue Instanzen.
+ * {@link #anVierSpielerAusteilen()} verteilt die Karten gleichmaessig in Sitz-Reihenfolge
+ * im Uhrzeigersinn (Sued, West, Nord, Ost).</p>
+ */
 public final class Kartendeck {
 
     private final List<Karte> karten;

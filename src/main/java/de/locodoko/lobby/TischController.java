@@ -19,6 +19,13 @@ import org.springframework.web.bind.annotation.RestController;
 import java.util.List;
 import java.util.UUID;
 
+/**
+ * REST-Controller fuer die Lobby-Tischverwaltung ({@code /api/tische}).
+ *
+ * <p>Stellt Endpunkte zum Auflisten, Erstellen, Beitreten, Verlassen und Starten von Tischen
+ * sowie zum Lesen und Aktualisieren der Tischkonfiguration bereit. Alle schreibenden Aktionen
+ * validieren die HTTP-Session des Spielers ueber {@link SpielerSessionService}.</p>
+ */
 @RestController
 @RequestMapping("/api/tische")
 public class TischController {

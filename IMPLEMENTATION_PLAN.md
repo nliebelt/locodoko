@@ -4,11 +4,11 @@ Stand: 2026-03-21
 
 ## Notiz
 
-**Letzte Iteration (2026-03-22):** Toter-Code-Pruefung und Duplikat-Entfernung (Prioritaet 11). Analyse ergab: TischEreignisTyp-Enum hatte entgegen der Annahme im Plan KEINE ungenutzten Werte — alle 7 Werte werden tatsaechlich gesendet. Dafuer echtes Duplikat gefunden und behoben: `ladeAktivenSpieler(HttpServletRequest)` war identisch in TischController und PartieController (je 7 Zeilen). Logik nach `SpielerSessionService` extrahiert; beide Controller delegieren jetzt dorthin. 105 Tests gruen. Commit folgt.
+**Letzte Iteration (2026-03-22):** Vollstaendige Javadoc-Dokumentation (Prioritaet 11). Alle 79 zuvor undokumentierten Java-Klassen in den Packages karten, partie, lobby und session haben jetzt class-level Javadoc auf Deutsch. Schwerpunkt: Domain-Value-Objects (Karte, Stich, Hand, Spielregeln, alle TrumpfOrdnungen), Aggregate Roots (Spiel, Partie, Tisch), Enums (Spielphase, Ansage, Partei, VorbehaltAnsage etc.), DTOs und WebSocket-Typen. 105 Tests gruen.
 
-**Naechster logischer Schritt:** Letzte offene Prioritaet-11-Aufgabe: Vollstaendige Code-Dokumentation (Javadoc) — jede Klasse mit praeziser deutscher Definition. Beginnen mit zentralen Domain-Klassen (Karte, Stich, Partie, Spieler) und Services (TischService, KiStrategie).
+**Naechster logischer Schritt:** Alle Aufgaben in Prioritaet 11 sind abgeschlossen. Alle anderen Prioritaeten (0-10) sind ebenfalls vollstaendig erledigt. Das Projekt ist funktional vollstaendig — naechste Schritte waeren Produktions-Deployment (PostgreSQL-Konfiguration, echtes JAR) oder weitere Feature-Erweiterungen.
 
-**Offene Fragen:** jsdom kann Canvas 2D nicht rendern (daher stderr-Warnings in Tests); unkritisch.
+**Offene Fragen:** jsdom kann Canvas 2D nicht rendern (daher stderr-Warnings in Tests); unkritisch. KI-Heuristiken haben magische Zahlen ohne Kalibrierungsdokumentation. WebSocket-Event-Architektur weicht von Spec ab (Snapshots statt separate Events).
 
 Ausgangslage: Backend und Frontend sind funktional weitgehend vollstaendig: Karten-/Trumpf-/Stichlogik, alle Spielphasen, Ansagen, Sonderpunkte, alle Vorbehalte (Soli, Hochzeit, Armut), Persistenz, Session, Lobby, REST-API, WebSocket-Aktionen, Partie-Snapshots, KI-Strategie und KI-Orchestrierung sind implementiert und getestet. Das Frontend bietet eine interaktive Tischansicht mit Kartenklick, Vorbehalt-/Ansage-/Armut-Dialogen, Stichmitte, Ergebnis-Overlay und erste Animationen. Ein Spiel 1 Mensch + 3 KI ist End-to-End durchspielbar. Der naechste Schwerpunkt liegt auf visueller Politur (Kartengrafiken, fehlende Animationen), Robustheit (Verbindungsabbruch, Session-Cleanup) und dem geplanten Architektur-Refactoring (JPA → Spring Data JDBC, Package-Struktur nach Bounded Contexts).
 
@@ -159,7 +159,7 @@ Ausgangslage: Backend und Frontend sind funktional weitgehend vollstaendig: Kart
 - [x] Migration von JPA/Hibernate auf Spring Data JDBC gemaess `specs/architektur-ddd.md` und `specs/tech-migration.md`: `@Entity`/`@OneToMany`/`JpaRepository` durch `@Table`/`CrudRepository` ersetzen; betrifft alle Entities in `spielverwaltung/persistenz`.
 - [x] Liquibase-Schema-Migration einrichten anstelle von `spring.jpa.hibernate.ddl-auto=create-drop`; YAML-Changelogs fuer alle Tabellen in `src/main/resources/db/changelog/`.
 - [x] Package-Struktur nach Bounded Contexts aufgeloest gemaess `specs/architektur-ddd.md`: alle Klassen aus `spielverwaltung/` und `spiel/` in `lobby/`, `partie/`, `session/`, `karten/` reorganisiert; @EnableJdbcRepositories auf alle 3 Context-Packages erweitert; Cross-Package-Imports aufgeloest; 105 Tests gruen.
-- [ ] Vollstaendige Code-Dokumentation (Javadoc): Jede Klasse mit praeziser deutscher Definition und Zweck.
+- [x] Vollstaendige Code-Dokumentation (Javadoc): Jede Klasse mit praeziser deutscher Definition und Zweck.
 - [x] Toten Code pruefen und entfernen: `TischEreignisTyp`-Enum hatte entgegen Annahme keine ungenutzten Werte (alle 7 werden gesendet); identische `ladeAktivenSpieler(HttpServletRequest)`-Methode aus TischController und PartieController nach SpielerSessionService extrahiert.
 
 ## Empfohlene Umsetzungsreihenfolge fuer den ersten spielbaren End-to-End-Vertical-Slice

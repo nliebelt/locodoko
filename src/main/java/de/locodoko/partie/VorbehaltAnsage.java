@@ -10,6 +10,15 @@ import de.locodoko.karten.Spieltyp;
 import java.util.Objects;
 import java.util.Optional;
 
+/**
+ * Moegliche Vorbehalte, die ein Spieler in der Vorbehalt-Ansage-Phase melden kann.
+ *
+ * <p>Jeder Spieler meldet entweder {@code GESUND} (kein Vorbehalt) oder einen Vorbehalt
+ * (Soli, Hochzeit, Armut). Prioritaeten: Soli (3) > Hochzeit (2) > Armut (1) > Gesund (0).
+ * Bei mehreren Soli entscheidet die fruehere Sitzposition. Die Methode
+ * {@link #istZulaessig(Hand, Spielregeln)} prueft, ob der Vorbehalt mit der aktuellen Hand
+ * und Tischkonfiguration erlaubt ist.</p>
+ */
 public enum VorbehaltAnsage {
     GESUND(null, 0) {
         @Override

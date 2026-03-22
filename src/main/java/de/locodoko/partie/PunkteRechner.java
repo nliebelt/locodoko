@@ -10,6 +10,14 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
+/**
+ * Berechnet das Spielergebnis nach Abschluss aller Stiche.
+ *
+ * <p>Zaehlt die Augen pro Partei, bestimmt die Sieger-Partei (ggf. unter Beruecksichtigung
+ * von Ansagen/Absagen), leitet den Spielwert ab und verteilt Spielpunkte als Nullsumme
+ * auf alle Spieler. Sonderpunkte werden ueber {@link SonderpunktBewerter} ermittelt und
+ * in das Ergebnis eingerechnet.</p>
+ */
 public final class PunkteRechner {
 
     private final SonderpunktBewerter sonderpunktBewerter;

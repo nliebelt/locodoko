@@ -8,6 +8,14 @@ import java.security.Principal;
 import java.util.Map;
 import java.util.UUID;
 
+/**
+ * Setzt den WebSocket-Principal auf die Spieler-Session-ID.
+ *
+ * <p>Ordnet jedem WebSocket-Principal eine stabile ID zu: die Spieler-Session-ID aus dem
+ * HTTP-Session-Attribut (gesetzt durch {@link SpielerSessionHandshakeInterceptor}), oder
+ * bei fehlendem Wert eine zufaellige UUID. Der Principal wird benoetigt, um benutzerbezogene
+ * Nachrichten ({@code /user/queue/...}) korrekt zuzustellen.</p>
+ */
 public class SpielerSessionHandshakeHandler extends DefaultHandshakeHandler {
 
     @Override

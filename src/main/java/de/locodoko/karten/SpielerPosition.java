@@ -2,6 +2,13 @@ package de.locodoko.karten;
 
 import java.util.List;
 
+/**
+ * Sitzposition eines Spielers am Doppelkopf-Tisch.
+ *
+ * <p>Die vier Positionen am Tisch sind im Uhrzeigersinn angeordnet: Sued, West, Nord, Ost.
+ * Die Position entscheidet ueber Ausspiel-Reihenfolge, Geberrotation und die relative
+ * Darstellung in der Tischansicht (der menschliche Spieler sitzt immer unten/Sued).</p>
+ */
 public enum SpielerPosition {
     SUED,
     WEST,

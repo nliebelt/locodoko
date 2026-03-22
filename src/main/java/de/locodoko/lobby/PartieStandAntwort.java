@@ -23,6 +23,16 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
+/**
+ * REST- und WebSocket-Snapshot des aktuellen Partiestands.
+ *
+ * <p>Wird nach jeder spielrelevanten Aktion sowohl per REST ({@code GET /api/partien/{id}/stand})
+ * als auch per WebSocket-Broadcast an alle Partie-Teilnehmer gesendet. Der Snapshot ist
+ * spieler-spezifisch: Die eigene Hand ist vollstaendig sichtbar, Gegnerhaende werden nur
+ * als Anzahl angegeben. Liefert alle Informationen, die Frontend und KI benoetigen:
+ * aktuelle Phase, moegliche Aktionen, Stichmitte, Ansage-Historie, letztes Spielergebnis
+ * und die abgeschlossenen Stiche des letzten Spiels.</p>
+ */
 public record PartieStandAntwort(
     UUID partieId,
     PartieStatus status,

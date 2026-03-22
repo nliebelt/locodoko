@@ -5,6 +5,14 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
 
+/**
+ * Handkarten eines Spielers.
+ *
+ * <p>Eine Hand ist eine unveraenderliche, geordnete Menge von Karten. Sie kapselt die
+ * Bedienpflicht-Logik: {@link #gueltigeKarten(Bedienfarbe, TrumpfOrdnung)} liefert
+ * ausschliesslich die laut Spielregeln erlaubten Karten fuer den naechsten Zug.
+ * Alle Mutationen (Karte spielen oder tauschen) erzeugen eine neue Hand-Instanz.</p>
+ */
 public final class Hand {
 
     private final List<Karte> karten;

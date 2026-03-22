@@ -6,6 +6,14 @@ import de.locodoko.lobby.TischStatus;
 import java.util.List;
 import java.util.UUID;
 
+/**
+ * Vollstaendige REST-Antwort fuer einen einzelnen Tisch.
+ *
+ * <p>Wird bei {@code GET /api/tische/{id}} und nach spielrelevanten Aktionen
+ * (Beitreten, Verlassen, Konfiguration aendern) zurueckgegeben. Enthaelt ID, Name,
+ * Status, Ersteller, alle Spieler am Tisch, vollstaendige Konfiguration und — falls
+ * eine Partie laeuft — deren ID.</p>
+ */
 public record TischAntwort(
     UUID id,
     String name,

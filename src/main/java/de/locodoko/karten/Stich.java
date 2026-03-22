@@ -5,6 +5,17 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 
+/**
+ * Ein einzelner Stich im Doppelkopf-Spiel.
+ *
+ * <p>Ein Stich besteht aus bis zu vier gespielten Karten. Er kennt seinen Aufspieler,
+ * die bisher gespielten Karten in Ausspiel-Reihenfolge sowie die Spielvalidierungs-Logik
+ * (Bedienpflicht, Reihenfolge im Uhrzeigersinn, Gewinnerermittlung). Stich-Objekte sind
+ * unveraenderlich — jede Kartenaktion erzeugt eine neue Instanz.</p>
+ *
+ * <p>Zentrale Klasse der Stichlogik; alle Regeln zu gueltigen Karten und Stichgewinner
+ * sind hier konzentriert, damit Backend, KI und Snapshot-Antworten dieselbe Wahrheitsquelle nutzen.</p>
+ */
 public final class Stich {
 
     private final SpielerPosition aufspieler;

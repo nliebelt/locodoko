@@ -12,6 +12,14 @@ import java.util.EnumMap;
 import java.util.List;
 import java.util.Objects;
 
+/**
+ * Bewertet Sonderpunkte aus der abgeschlossenen Stichhistorie eines Spiels.
+ *
+ * <p>Ermittelt fuer jede Partei, welche {@link Sonderpunkt}-Ereignisse (Fuchs gefangen,
+ * Karlchen, Doppelkopf) aufgetreten sind. Sonderpunkte erhoehen den Spielwert auf
+ * Seiten der begueenstigten Partei. Ob ein Sonderpunkt aktiv ist, steuert
+ * {@link de.locodoko.karten.Spielregeln}.</p>
+ */
 public final class SonderpunktBewerter {
 
     public EnumMap<Partei, List<Sonderpunkt>> bewerte(

@@ -2,6 +2,15 @@ package de.locodoko.karten;
 
 import java.util.Objects;
 
+/**
+ * Angefragte Farbe eines Stichs — entscheidet ueber die Bedienpflicht.
+ *
+ * <p>Ein Stich kann entweder Trumpf (wenn die erste Karte Trumpf ist) oder eine der
+ * vier Fehlfarben (Kreuz, Pik, Herz, Karo) anfragen. Alle Spieler muessen bedienen,
+ * sofern sie eine passende Karte auf der Hand haben. Die Methode
+ * {@link #passtZu(Karte, TrumpfOrdnung)} prueft, ob eine bestimmte Karte die angefragte
+ * Bedienfarbe erfuellt.</p>
+ */
 public record Bedienfarbe(boolean trumpf, Farbe farbe) {
 
     public Bedienfarbe {

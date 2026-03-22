@@ -6,6 +6,14 @@ import org.springframework.web.socket.config.annotation.EnableWebSocketMessageBr
 import org.springframework.web.socket.config.annotation.StompEndpointRegistry;
 import org.springframework.web.socket.config.annotation.WebSocketMessageBrokerConfigurer;
 
+/**
+ * Konfiguriert den WebSocket/STOMP-Message-Broker.
+ *
+ * <p>Registriert den STOMP-Endpunkt {@code /ws} mit SockJS-Fallback,
+ * konfiguriert {@code /app} als Client-zu-Server-Prefix und {@code /topic} sowie
+ * {@code /user} als Broker-Prefixe fuer Broadcasts und benutzerbezogene Nachrichten.
+ * Der {@link SpielerSessionHandshakeInterceptor} validiert die HTTP-Session beim Verbindungsaufbau.</p>
+ */
 @Configuration
 @EnableWebSocketMessageBroker
 public class WebSocketKonfiguration implements WebSocketMessageBrokerConfigurer {

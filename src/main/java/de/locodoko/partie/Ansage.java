@@ -2,6 +2,16 @@ package de.locodoko.partie;
 
 import de.locodoko.karten.Spielregeln;
 
+/**
+ * Moegliche Ansagen und Absagen im Doppelkopf-Spiel.
+ *
+ * <p>Grundansagen sind {@code RE} und {@code KONTRA}; sie duerfen als erste Ansage einer Partei
+ * gemacht werden, solange genug Handkarten vorhanden sind. Absagen ({@code KEINE_90},
+ * {@code KEINE_60}, {@code KEINE_30}, {@code SCHWARZ}) versprechen, der Gegenseite
+ * noch weniger Augen zu lassen; sie setzen eine bereits getaetigte Grundansage voraus und
+ * verkuerzern das erlaubte Zeitfenster mit jeder Stufe. Das erlaubte Zeitfenster wird
+ * durch {@link Spielregeln} konfiguriert.</p>
+ */
 public enum Ansage {
     RE(0),
     KONTRA(0),

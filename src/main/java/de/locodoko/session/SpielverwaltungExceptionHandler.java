@@ -11,6 +11,14 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 import java.util.stream.Collectors;
 
+/**
+ * Zentraler Exception-Handler fuer alle REST-Controller der Spielverwaltung.
+ *
+ * <p>Wandelt fachliche Exceptions ({@link SpielerSessionUngueltigException},
+ * {@link SpielerNameAenderungNichtErlaubtException}, {@link SpielverwaltungNichtGefundenException},
+ * {@link SpielverwaltungKonfliktException}) in strukturierte {@link ApiFehlerAntwort}-JSON-Antworten
+ * mit passenden HTTP-Statuscodes (401, 403, 404, 409) um und logt Fehler-Details.</p>
+ */
 @RestControllerAdvice
 public class SpielverwaltungExceptionHandler {
 

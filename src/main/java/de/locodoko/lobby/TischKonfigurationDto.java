@@ -5,6 +5,14 @@ import de.locodoko.lobby.TischkonfigurationEmbeddable;
 import jakarta.validation.constraints.AssertTrue;
 import jakarta.validation.constraints.Min;
 
+/**
+ * Datentransferobjekt fuer die vollstaendige Tischkonfiguration (REST-API).
+ *
+ * <p>Wird sowohl beim Lesen ({@code GET /api/tische/{id}}) als auch beim Aktualisieren
+ * ({@code PUT /api/tische/{id}/konfiguration}) verwendet. Validierungsannotationen
+ * sichern Mindestgrenzen fuer Spielanzahl und Ansagegrenzen; {@link #sindAnsagegrenzenGueltig()}
+ * prueft zusaetzlich die logische Stufenreihenfolge der Ansagegrenzen.</p>
+ */
 public record TischKonfigurationDto(
     boolean ohneNeunen,
     @Min(value = 1, message = "Die Anzahl der Spiele muss mindestens 1 sein.")

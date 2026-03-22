@@ -1,5 +1,11 @@
 package de.locodoko.session;
 
+/**
+ * Typ eines WebSocket-Tisch-Ereignisses auf {@code /topic/tisch/{id}}.
+ *
+ * <p>Unterscheidet zwischen vollstaendigem Snapshot, Lobby-Aenderungen (Beitreten, Verlassen,
+ * Konfigurationsaenderung), Spielstart und Tisch-Entfernung.</p>
+ */
 public enum TischEreignisTyp {
     TISCH_SNAPSHOT,
     TISCH_ERSTELLT,

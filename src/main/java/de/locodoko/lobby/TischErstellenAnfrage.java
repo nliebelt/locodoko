@@ -4,6 +4,13 @@ import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 
+/**
+ * Anfrage-DTO zum Erstellen eines neuen Tisches ({@code POST /api/tische}).
+ *
+ * <p>Enthaelt den gewuenschten Tischnamen (nicht leer, max. 100 Zeichen) und die
+ * vollstaendige Konfiguration. Wird nach erfolgreicher Validierung an {@link TischService}
+ * weitergeleitet, der den Tisch anlegt und den Ersteller automatisch beisetzt.</p>
+ */
 public record TischErstellenAnfrage(
     @NotBlank(message = "Der Tischname darf nicht leer sein.")
     @Size(max = 100, message = "Der Tischname darf hoechstens 100 Zeichen enthalten.")
