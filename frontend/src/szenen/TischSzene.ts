@@ -351,6 +351,13 @@ export class TischSzene extends Phaser.Scene {
       this.scene.start('LobbySzene');
     });
     leaveButton.addEventListener('click', () => {
+      const zustand = appStore.snapshot();
+      const istImSpiel = zustand.aktuellerTisch?.status === 'IM_SPIEL';
+      if (istImSpiel) {
+        // Bestaetigungsdialog: Verlassen wuerde die laufende Partie abbrechen
+        const bestaetigt = window.confirm('Tisch wirklich verlassen? Die laufende Partie wird fuer alle Spieler abgebrochen.');
+        if (!bestaetigt) return;
+      }
       void appStore.verlasseAktuellenTisch();
     });
     startButton.addEventListener('click', () => {

@@ -135,6 +135,19 @@ export class AppStore {
     });
   }
 
+  /**
+   * Session-Recovery nach Tab-Reload: Abonniert den Tisch direkt anhand seiner ID
+   * und fordert einen Snapshot an, ohne erneut beizutreten.
+   * Der Snapshot kommt asynchron via WebSocket und befuellt den Zustand.
+   */
+  reconnecteTisch(tischId: Uuid): void {
+    Logger.store('Session-Recovery: Reconnect zu Tisch', { tischId });
+    this.setzeTischAbosZurueck();
+    this.registriereTischAbos(tischId, null);
+    this.patch({ bereich: 'TISCH' });
+    this.echtzeit.senden(`/app/tisch/${tischId}/snapshot`);
+  }
+
   async verlasseAktuellenTisch(): Promise<void> {
     const tisch = this.zustand.aktuellerTisch;
     if (!tisch) {
@@ -291,11 +304,11 @@ export class AppStore {
   private registrierePartieAbos(partieId: Uuid): void {
     this.tischAbos.push(
       this.echtzeit.abonnieren<PartieEreignisAntwort>(`/topic/partie/${partieId}`, (ereignis) => {
-        Logger.store('Partie-Snapshot', { spielphase: ereignis.partieStand?.spielphase, aktuellerSpieler: ereignis.partieStand?.aktuellerSpieler });
+        Logger.store('Partie-Snapshot', { status: ereignis.partieStand?.status });
         this.patch({ partieStand: ereignis.partieStand });
       }),
       this.echtzeit.abonnieren<PartieEreignisAntwort>(`/user/queue/partie/${partieId}`, (ereignis) => {
-        Logger.store('Partie-Snapshot', { spielphase: ereignis.partieStand?.spielphase, aktuellerSpieler: ereignis.partieStand?.aktuellerSpieler });
+        Logger.store('Partie-Snapshot', { status: ereignis.partieStand?.status });
         this.patch({ partieStand: ereignis.partieStand });
       })
     );
@@ -313,6 +326,17 @@ export class AppStore {
   }
 
   private verarbeiteTischEreignis(ereignis: TischEreignisAntwort): void {
+    if (ereignis.ereignisTyp === 'PARTIE_ABGEBROCHEN') {
+      Logger.store('Partie abgebrochen – Zurueck zur Lobby');
+      this.setzeTischAbosZurueck();
+      this.patch({
+        aktuellerTisch: null,
+        partieStand: null,
+        bereich: 'LOBBY',
+        meldung: { typ: 'info', text: 'Die Partie wurde abgebrochen, weil ein Spieler den Tisch verlassen hat.', fehlerCode: 'PARTIE_ABGEBROCHEN' }
+      });
+      return;
+    }
     if (ereignis.ereignisTyp === 'TISCH_ENTFERNT' || !ereignis.tisch) {
       Logger.store('Zurueck zur Lobby');
       this.setzeTischAbosZurueck();
@@ -322,7 +346,7 @@ export class AppStore {
 
     const bekanntePartieId = this.aktuellePartieAbo;
     const partiestand = ereignis.partieStand ?? this.zustand.partieStand;
-    Logger.store('Tisch-Snapshot', { tischId: ereignis.tisch.id, phase: ereignis.tisch.phase });
+    Logger.store('Tisch-Snapshot', { tischId: ereignis.tisch.id, status: ereignis.tisch.status });
     this.patch({ aktuellerTisch: ereignis.tisch, partieStand: partiestand, bereich: 'TISCH' });
 
     if (ereignis.tisch.partieId && ereignis.tisch.partieId !== bekanntePartieId) {

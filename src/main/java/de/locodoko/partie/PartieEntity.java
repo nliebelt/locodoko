@@ -100,6 +100,11 @@ public class PartieEntity extends AbstraktePersistenzEntity {
         this.status = PartieStatus.BEENDET.name();
     }
 
+    /** Markiert diese Partie als abgebrochen (Spieler hat Tisch verlassen). */
+    public void markiereAlsAbgebrochen() {
+        this.status = PartieStatus.ABGEBROCHEN.name();
+    }
+
     public int anzahlSpiele() {
         return anzahlSpiele;
     }

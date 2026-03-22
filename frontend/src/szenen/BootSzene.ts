@@ -28,7 +28,15 @@ export class BootSzene extends Phaser.Scene {
   private async initialisieren(): Promise<void> {
     try {
       await appStore.initialisieren();
-      this.scene.start('LobbySzene');
+      // Session-Recovery: Falls der Spieler bereits an einem Tisch sitzt (z.B. nach Tab-Reload),
+      // direkt zur Tischansicht weiterleiten statt zur Lobby.
+      const aktiverTischId = appStore.snapshot().spieler?.aktiverTischId ?? null;
+      if (aktiverTischId) {
+        appStore.reconnecteTisch(aktiverTischId);
+        this.scene.start('TischSzene');
+      } else {
+        this.scene.start('LobbySzene');
+      }
     } catch {
       this.statusText?.setText('Initialisierung fehlgeschlagen. Bitte pruefe Backend/Verbindung und lade neu.');
     }

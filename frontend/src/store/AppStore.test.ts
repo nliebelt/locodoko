@@ -115,7 +115,7 @@ describe('AppStore', () => {
     const echtzeit = new FakeEchtzeit();
     const store = new AppStore(
       new FakeApi(
-        { spielerId: 'spieler-1', name: 'Nora', istKi: false },
+        { spielerId: 'spieler-1', name: 'Nora', istKi: false, aktiverTischId: null },
         [{ id: 'tisch-1', name: 'Testtisch', spielerAnzahl: 1, status: 'WARTEND', kurzKonfiguration: { ohneNeunen: false, anzahlSpiele: 8 } }],
         baueTisch()
       ) as SpielverwaltungApi,
@@ -140,7 +140,7 @@ describe('AppStore', () => {
     const tisch = baueTisch('tisch-42');
     const store = new AppStore(
       new FakeApi(
-        { spielerId: 'spieler-1', name: 'Nora', istKi: false },
+        { spielerId: 'spieler-1', name: 'Nora', istKi: false, aktiverTischId: null },
         [],
         tisch
       ) as SpielverwaltungApi,
@@ -193,7 +193,7 @@ describe('AppStore', () => {
     const tisch = baueTisch('tisch-84');
     const store = new AppStore(
       new FakeApi(
-        { spielerId: 'spieler-1', name: 'Nora', istKi: false },
+        { spielerId: 'spieler-1', name: 'Nora', istKi: false, aktiverTischId: null },
         [],
         tisch
       ) as SpielverwaltungApi,
@@ -221,7 +221,7 @@ describe('AppStore', () => {
     const tisch = baueTisch('tisch-99');
     const store = new AppStore(
       new FakeApi(
-        { spielerId: 'spieler-1', name: 'Nora', istKi: false },
+        { spielerId: 'spieler-1', name: 'Nora', istKi: false, aktiverTischId: null },
         [],
         tisch
       ) as SpielverwaltungApi,
@@ -233,5 +233,62 @@ describe('AppStore', () => {
     await store.aktualisiereAktuellenTischhintergrund('HOLZ_DUNKEL');
 
     expect(store.snapshot().aktuellerTisch?.konfiguration.tischhintergrund).toBe('HOLZ_DUNKEL');
+  });
+
+  it('reconnecteTisch abonniert Tisch-Topic und fordert Snapshot an ohne API-Aufruf', async () => {
+    // Wichtig: Session-Recovery nach Tab-Reload darf NICHT erneut POST /api/tische/{id}/beitreten aufrufen —
+    // der Spieler sitzt bereits am Tisch. reconnecteTisch() muss direkt Abos registrieren
+    // und einen WS-Snapshot anfordern, damit der Zustand wiederhergestellt wird.
+    const echtzeit = new FakeEchtzeit();
+    const store = new AppStore(
+      new FakeApi(
+        { spielerId: 'spieler-1', name: 'Nora', istKi: false, aktiverTischId: null },
+        [],
+        baueTisch('tisch-reconnect')
+      ) as SpielverwaltungApi,
+      echtzeit
+    );
+    await store.initialisieren();
+
+    store.reconnecteTisch('tisch-reconnect');
+
+    expect(store.snapshot().bereich).toBe('TISCH');
+    expect(echtzeit.sendungen).toEqual(expect.arrayContaining([
+      expect.objectContaining({ ziel: '/app/tisch/tisch-reconnect/snapshot' })
+    ]));
+  });
+
+  it('behandelt PARTIE_ABGEBROCHEN-Event: wechselt zur Lobby und setzt Info-Meldung', async () => {
+    // Wichtig: Wenn ein Spieler waehrend einer aktiven Partie den Tisch verlaesst,
+    // erhalten alle anderen Spieler ein PARTIE_ABGEBROCHEN-Event. Das Frontend muss
+    // daraufhin zur Lobby wechseln und eine verstaendliche Meldung anzeigen — kein
+    // stiller Fehler, keine unbemerkte Zustandsinkonsistenz.
+    const echtzeit = new FakeEchtzeit();
+    const tisch = baueTisch('tisch-abbruch');
+    const store = new AppStore(
+      new FakeApi(
+        { spielerId: 'spieler-1', name: 'Nora', istKi: false, aktiverTischId: null },
+        [],
+        tisch
+      ) as SpielverwaltungApi,
+      echtzeit
+    );
+    await store.initialisieren();
+    await store.betreteTisch(tisch.id);
+
+    echtzeit.emit(`/topic/tisch/tisch-abbruch`, {
+      timestamp: new Date().toISOString(),
+      ereignisTyp: 'PARTIE_ABGEBROCHEN',
+      tischId: 'tisch-abbruch',
+      tisch: null,
+      partieStand: null
+    });
+
+    expect(store.snapshot()).toMatchObject({
+      bereich: 'LOBBY',
+      aktuellerTisch: null,
+      partieStand: null,
+      meldung: { typ: 'info', fehlerCode: 'PARTIE_ABGEBROCHEN' }
+    });
   });
 });

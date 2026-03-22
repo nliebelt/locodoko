@@ -107,17 +107,20 @@ public class TischService {
     public BestaetigungAntwort verlasseTisch(UUID tischId, SpielerEntity spieler) {
         SpielerEntity verwalteterSpieler = ladeSpieler(spieler.id());
         TischEntity tisch = ladeTischEntityMitSperre(tischId);
-        pruefeWartendenTisch(
-            tisch,
-            "TISCH_VERLASSEN_NICHT_ERLAUBT",
-            "Ein Tisch kann nach Spielbeginn nicht mehr ueber die Lobby verlassen werden."
-        );
+
         if (!tisch.enthaeltSpieler(verwalteterSpieler)) {
             throw new SpielverwaltungKonfliktException(
                 "SPIELER_NICHT_AM_TISCH",
                 "Der Spieler sitzt nicht an diesem Tisch."
             );
         }
+
+        // Aktive Partie: Partie abbrechen und alle Spieler per Event zurueck zur Lobby schicken
+        if (tisch.status() == TischStatus.IM_SPIEL) {
+            return brichAktivePartieAb(tisch, verwalteterSpieler);
+        }
+
+        // Wartender Tisch: Spieler einfach entfernen (bisherige Logik)
         tisch.entferneSpieler(verwalteterSpieler);
         if (tisch.spieler().isEmpty()) {
             UUID geloeschterTischId = tisch.id();
@@ -136,6 +139,26 @@ public class TischService {
             TischEreignisAntwort.aktualisiert(TischEreignisTyp.SPIELER_VERLASSEN, TischAntwort.aus(gespeicherterTisch))
         );
         return new BestaetigungAntwort("Tisch erfolgreich verlassen.");
+    }
+
+    /**
+     * Bricht eine laufende Partie ab, weil ein Spieler den Tisch willentlich verlassen hat.
+     *
+     * <p>Die Partie wird als {@code ABGEBROCHEN} persistiert, alle Spieler am Tisch erhalten
+     * ein {@code PARTIE_ABGEBROCHEN}-WebSocket-Event und werden dadurch zur Lobby zurueckgeleitet.
+     * Danach wird der Tisch geloescht.</p>
+     */
+    private BestaetigungAntwort brichAktivePartieAb(TischEntity tisch, SpielerEntity verlassenderSpieler) {
+        UUID tischId = tisch.id();
+        if (tisch.partie() != null) {
+            tisch.partie().markiereAlsAbgebrochen();
+            partieRepository.saveAndFlush(tisch.partie());
+        }
+        tischRepository.delete(tisch);
+        tischRepository.flush();
+        tischEchtzeitService.planeTischliste(TischlisteEreignisAntwort.aktualisiert(listeOffeneTische()));
+        tischEchtzeitService.planeTischEreignis(TischEreignisAntwort.partieAbgebrochen(tischId));
+        return new BestaetigungAntwort("Partie abgebrochen. Alle Spieler wurden zur Lobby zurueckgeleitet.");
     }
 
     @Transactional

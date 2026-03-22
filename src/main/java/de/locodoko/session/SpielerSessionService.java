@@ -82,6 +82,20 @@ public class SpielerSessionService {
         return spielerRepository.saveAndFlush(spieler);
     }
 
+    /**
+     * Gibt die ID des Tisches zurueck, an dem der Spieler aktuell sitzt.
+     * Wird fuer Session-Recovery im Frontend benoetigt ({@code GET /api/spieler/session}).
+     *
+     * @param spielerId Spieler-ID
+     * @return Tisch-ID oder {@code null}, wenn der Spieler an keinem Tisch sitzt
+     */
+    @Transactional(readOnly = true)
+    public java.util.UUID ladeAktiveTischId(java.util.UUID spielerId) {
+        return tischRepository.findBySpieler_Id(spielerId)
+            .map(tisch -> tisch.id())
+            .orElse(null);
+    }
+
     public void uebernehmeTimeout(HttpSession session) {
         session.setMaxInactiveInterval((int) eigenschaften.getTimeout().toSeconds());
     }

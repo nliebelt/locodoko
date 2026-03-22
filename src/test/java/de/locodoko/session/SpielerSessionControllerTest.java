@@ -102,6 +102,45 @@ class SpielerSessionControllerTest {
     }
 
     @Test
+    void liefertNullAktiveTischIdWennSpielerAnKeinemTischSitzt() throws Exception {
+        // Wichtig: Das Frontend braucht aktiverTischId um nach Tab-Reload eine Session-Recovery
+        // durchfuehren zu koennen. Ohne diese Info wuerde der Spieler bei jedem Reload zurueck
+        // in die Lobby geschickt, obwohl er bereits in einem laufenden Spiel sitzt.
+        MvcResult anlage = mockMvc.perform(post("/api/spieler/session")
+                .contentType(APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(new SpielerNameAnfrage("SitzungsTest"))))
+            .andExpect(status().isCreated())
+            .andReturn();
+        MockHttpSession session = (MockHttpSession) anlage.getRequest().getSession(false);
+
+        mockMvc.perform(get("/api/spieler/session").session(session))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.aktiverTischId").isEmpty());
+    }
+
+    @Test
+    @Transactional
+    void liefertAktiveTischIdWennSpielerAnEinemTischSitzt() throws Exception {
+        // Wichtig: Wenn aktiverTischId gesetzt ist, leitet das Frontend nach Tab-Reload
+        // direkt zur Tischansicht weiter statt zur Lobby — das ist die Session-Recovery-Grundlage.
+        MvcResult anlage = mockMvc.perform(post("/api/spieler/session")
+                .contentType(APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(new SpielerNameAnfrage("TischSpieler"))))
+            .andExpect(status().isCreated())
+            .andReturn();
+        MockHttpSession session = (MockHttpSession) anlage.getRequest().getSession(false);
+        SpielerEntity spieler = spielerRepository.findBySessionId(session.getId()).orElseThrow();
+
+        TischEntity tisch = TischEntity.neu("SessionRecoveryTisch", spieler, TischkonfigurationEmbeddable.standard());
+        tisch.fuegeSpielerHinzu(spieler);
+        TischEntity gespeichert = tischRepository.saveAndFlush(tisch);
+
+        mockMvc.perform(get("/api/spieler/session").session(session))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.aktiverTischId").value(gespeichert.id().toString()));
+    }
+
+    @Test
     @Transactional
     void verbietetNamensaenderungSobaldDerSpielerAnEinemTischSitzt() throws Exception {
         MvcResult anlage = mockMvc.perform(post("/api/spieler/session")

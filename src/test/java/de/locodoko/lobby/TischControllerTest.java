@@ -326,6 +326,32 @@ class TischControllerTest {
     }
 
     @Test
+    void erlaubtVerlassenEinesAktivenTischesUndBrichtPartieAb() throws Exception {
+        // Wichtig: Bisher war verlasseTisch() auf wartende Tische beschraenkt.
+        // Jetzt muss ein Spieler auch einen laufenden Tisch verlassen koennen —
+        // das loest ein PARTIE_ABGEBROCHEN-Event aus, statt einen 409-Fehler.
+        // Das ist die Grundlage fuer den "Tisch verlassen"-Button in der Tischansicht.
+        MockHttpSession adaSession = registriereSpieler("AdaAbbruch");
+        SpielerEntity ada = spielerRepository.findBySessionId(adaSession.getId()).orElseThrow();
+
+        TischEntity tisch = TischEntity.neu("AbbruchTisch", ada, TischkonfigurationEmbeddable.standard());
+        tisch.fuegeSpielerHinzu(ada);
+        PartieEntity partie = PartieEntity.neu(8);
+        tisch.setzePartie(partie);
+        TischEntity gespeichert = tischRepository.saveAndFlush(tisch);
+        UUID tischId = gespeichert.id();
+
+        assertEquals(TischStatus.IM_SPIEL, gespeichert.status(),
+            "Nach setzePartie() muss der Tisch den Status IM_SPIEL haben, damit die neue Logik greift.");
+
+        mockMvc.perform(post("/api/tische/{id}/verlassen", tischId).session(adaSession))
+            .andExpect(status().isOk());
+
+        assertTrue(tischRepository.findById(tischId).isEmpty(),
+            "Nach Abbruch einer laufenden Partie wird der Tisch geloescht, damit kein verwaister Tischzustand entsteht.");
+    }
+
+    @Test
     void liefertNichtGefundenFuerUnbekanntenTisch() throws Exception {
         mockMvc.perform(get("/api/tische/{id}/konfiguration", UUID.randomUUID()))
             .andExpect(status().isNotFound())

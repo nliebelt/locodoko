@@ -13,6 +13,8 @@ export interface SpielerSessionAntwort {
   spielerId: Uuid;
   name: string;
   istKi: boolean;
+  /** ID des Tisches, an dem der Spieler aktuell sitzt; null falls keiner. Fuer Session-Recovery. */
+  aktiverTischId?: Uuid | null;
 }
 
 export interface TischKurzKonfigurationAntwort {
@@ -182,7 +184,9 @@ export type TischEreignisTyp =
   | 'SPIELER_VERLASSEN'
   | 'TISCH_KONFIGURATION_AKTUALISIERT'
   | 'SPIEL_GESTARTET'
-  | 'TISCH_ENTFERNT';
+  | 'TISCH_ENTFERNT'
+  /** Partie abgebrochen, weil ein Spieler den Tisch willentlich verlassen hat. */
+  | 'PARTIE_ABGEBROCHEN';
 export type PartieEreignisTyp = 'PARTIE_SNAPSHOT' | 'PARTIE_AKTUALISIERT';
 
 export interface TischlisteEreignisAntwort {

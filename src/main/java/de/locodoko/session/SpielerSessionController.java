@@ -39,12 +39,16 @@ public class SpielerSessionController {
     ) {
         SpielerRegistrierung registrierung = spielerSessionService.registriereSpieler(request, anfrage.name());
         HttpStatus status = registrierung.neuAngelegt() ? HttpStatus.CREATED : HttpStatus.OK;
-        return ResponseEntity.status(status).body(SpielerSessionAntwort.aus(registrierung.spieler()));
+        SpielerEntity spieler = registrierung.spieler();
+        return ResponseEntity.status(status).body(
+            SpielerSessionAntwort.aus(spieler, spielerSessionService.ladeAktiveTischId(spieler.id()))
+        );
     }
 
     @GetMapping
     public SpielerSessionAntwort gibAktuellenSpieler(HttpServletRequest request) {
-        return SpielerSessionAntwort.aus(aktuellerSpieler(request));
+        SpielerEntity spieler = aktuellerSpieler(request);
+        return SpielerSessionAntwort.aus(spieler, spielerSessionService.ladeAktiveTischId(spieler.id()));
     }
 
     @PutMapping
@@ -55,7 +59,7 @@ public class SpielerSessionController {
         HttpSession session = request.getSession(false);
         SpielerEntity spieler = spielerSessionService.aendereNamen(session.getId(), anfrage.name());
         request.setAttribute(AKTUELLER_SPIELER_ATTRIBUT, spieler);
-        return SpielerSessionAntwort.aus(spieler);
+        return SpielerSessionAntwort.aus(spieler, spielerSessionService.ladeAktiveTischId(spieler.id()));
     }
 
     private SpielerEntity aktuellerSpieler(HttpServletRequest request) {

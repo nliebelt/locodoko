@@ -36,4 +36,12 @@ public record TischEreignisAntwort(
     public static TischEreignisAntwort tischEntfernt(UUID tischId) {
         return new TischEreignisAntwort(Instant.now(), TischEreignisTyp.TISCH_ENTFERNT, tischId, null, null);
     }
+
+    /**
+     * Ereignis: Partie wurde abgebrochen, weil ein Spieler den Tisch verlassen hat.
+     * Kein Tisch-Snapshot noetig — alle Spieler werden zur Lobby weitergeleitet.
+     */
+    public static TischEreignisAntwort partieAbgebrochen(UUID tischId) {
+        return new TischEreignisAntwort(Instant.now(), TischEreignisTyp.PARTIE_ABGEBROCHEN, tischId, null, null);
+    }
 }
