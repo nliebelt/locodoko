@@ -10,6 +10,7 @@ import de.locodoko.karten.Spieltyp;
 import de.locodoko.partie.Ansage;
 import de.locodoko.partie.Ansagen;
 import de.locodoko.partie.ArmutStatus;
+import de.locodoko.partie.HochzeitStatus;
 import de.locodoko.partie.Partei;
 import de.locodoko.partie.Parteien;
 import de.locodoko.partie.Spiel;
@@ -32,6 +33,7 @@ public record KiSpielzustand(
     List<Stich> abgeschlosseneStiche,
     Stich aktuellerStich,
     ArmutStatus armutStatus,
+    HochzeitStatus hochzeitStatus,
     List<Karte> gueltigeKarten,
     List<Ansage> moeglicheAnsagen,
     List<VorbehaltAnsage> moeglicheVorbehalte
@@ -66,6 +68,7 @@ public record KiSpielzustand(
             spiel.abgeschlosseneStiche(),
             spiel.aktuellerStich().orElse(null),
             spiel.armutStatus().orElse(null),
+            spiel.hochzeitStatus().orElse(null),
             spiel.erwarteterSpieler().filter(spielerPosition::equals).isPresent() && spiel.phase() == Spielphase.STICHPHASE
                 ? spiel.gueltigeKartenFuer(spielerPosition)
                 : List.of(),

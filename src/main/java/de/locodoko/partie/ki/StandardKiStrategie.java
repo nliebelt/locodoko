@@ -124,6 +124,19 @@ public class StandardKiStrategie implements KiStrategie {
     }
 
     private Karte waehleAnspielKarte(KiSpielzustand zustand) {
+        // Hochzeit-Phase "sucht Partner": Der Hochzeit-Spieler spielt offensiv mit dem stärksten
+        // Trumpf, um Klärungsstiche aktiv zu gewinnen. So behält er die Kontrolle darüber, ob er
+        // einen schwachen oder starken Partner bekommt — oder das stille Solo erzwingt.
+        if (zustand.hochzeitStatus() != null && zustand.hochzeitStatus().suchtPartner()
+                && zustand.hochzeitStatus().hochzeitSpieler() == zustand.spielerPosition()) {
+            Optional<Karte> staerksterTrumpf = zustand.gueltigeKarten().stream()
+                .filter(zustand.trumpfOrdnung()::istTrumpf)
+                .max(vergleicheGewinnKosten(zustand.trumpfOrdnung()));
+            if (staerksterTrumpf.isPresent()) {
+                return staerksterTrumpf.orElseThrow();
+            }
+        }
+
         long eigeneTruepfe = anzahlTruepfe(zustand.eigeneHand().karten(), zustand.trumpfOrdnung());
         // Ab 6 Trümpfen besitzt die KI genug Trumpfübergewicht (Mehrheit des 26-Trumpf-Stapels),
         // um gezielt mit kleinen Trümpfen zu ziehen — Gegner werden zur Abgabe guter Trümpfe gezwungen.
@@ -167,6 +180,25 @@ public class StandardKiStrategie implements KiStrategie {
         }
 
         if (!gewinnendeKarten.isEmpty()) {
+            // Hochzeit-Phase "sucht Partner": Als Hochzeit-Spieler gewinne ich Stiche mit der
+            // stärksten Karte, damit ich die Klärung sicher kontrolliere und nicht durch
+            // eine knapp schlechtere Karte übertrumpft werde.
+            if (zustand.hochzeitStatus() != null && zustand.hochzeitStatus().suchtPartner()
+                    && zustand.hochzeitStatus().hochzeitSpieler() == zustand.spielerPosition()) {
+                return gewinnendeKarten.stream()
+                    .max(vergleicheGewinnKosten(zustand.trumpfOrdnung()))
+                    .orElseThrow();
+            }
+            // Hochzeit-Phase "sucht Partner": Als Nicht-Hochzeit-Spieler versuche ich, den
+            // aktuellen Stich zu gewinnen, wenn der Hochzeit-Spieler ihn gerade führt — so werde
+            // ich der Re-Partner, bevor jemand anderes diese Chance bekommt.
+            if (zustand.hochzeitStatus() != null && zustand.hochzeitStatus().suchtPartner()
+                    && zustand.hochzeitStatus().hochzeitSpieler() != zustand.spielerPosition()
+                    && aktuellerGewinner == zustand.hochzeitStatus().hochzeitSpieler()) {
+                return gewinnendeKarten.stream()
+                    .min(vergleicheGewinnKosten(zustand.trumpfOrdnung()))
+                    .orElseThrow();
+            }
             return gewinnendeKarten.stream()
                 .min(vergleicheGewinnKosten(zustand.trumpfOrdnung()))
                 .orElseThrow();

@@ -4,9 +4,9 @@ Stand: 2026-03-22
 
 ## Notiz
 
-**Letzte Iteration (2026-03-22):** Animations-Geschwindigkeitskontrolle (Prioritaet 13) implementiert: `AnimationenService.setzeGeschwindigkeitsfaktor()` hinzugefuegt, TischSzene hat jetzt Button 'Geschw.: 1x/2x/sofort' der zyklisch umschaltet und Einstellung in localStorage persistiert. Pre-existierende TS-Fehler (`spielphase` -> `laufendesSpiel.phase`, `spieler.id` -> `spieler.spielerId`) als Teil der Aenderung behoben. 3 neue AnimationenService-Tests. 46 Frontend-Tests gruen.
+**Letzte Iteration (2026-03-22):** KI-Hochzeit-Speziallogik implementiert (Prioritaet 12): `KiSpielzustand` hat neues Feld `hochzeitStatus`; `StandardKiStrategie` unterscheidet jetzt in `waehleAnspielKarte()` und `waehleFolgeKarte()` zwischen den Phasen "Partner sucht" und "Partner gefunden". Der Hochzeit-Spieler spielt offensiv mit dem staerksten Trumpf; Nicht-Hochzeit-Spieler greifen den Stich an, wenn der Hochzeit-Spieler fuehrt. 2 neue Tests. 110 Backend-Tests gruen.
 
-**Naechster logischer Schritt:** KI-Hochzeit-Speziallogik — einzige verbleibende offene Aufgabe. Die KI behandelt Hochzeit aktuell wie einen normalen Vorbehalt ohne spezifische Strategien fuer "Partner sucht" vs. "Partner gefunden".
+**Naechster logischer Schritt:** Alle Aufgaben in IMPLEMENTATION_PLAN.md sind erledigt. Das Projekt ist funktional vollstaendig fuer den MVP (1 Mensch + 3 KI, alle Vorbehalte, Persistenz, WebSocket, Animationen, KI-Strategie inkl. Hochzeit).
 
 **Offene Fragen:** jsdom kann Canvas 2D nicht rendern (daher stderr-Warnings in Tests); unkritisch. WebSocket-Event-Architektur weicht von Spec ab (Snapshots statt separate Events). TischSzene.ts ist monolithisch (1400+ Zeilen) — funktional, aber bei weiterer Komplexitaet fragil.
 
@@ -167,7 +167,7 @@ Ausgangslage: Backend und Frontend sind funktional weitgehend vollstaendig: Kart
 - [x] Partei-Sichtbarkeit nach Grundansage aktualisieren: `Spiel.sageAn()` aktualisiert jetzt `parteien.offenFuerAlle` bei Re/Kontra-Grundansagen. `SpielPersistenzAdapter` leitet `offenFuerAlle` nach DB-Roundtrip aus der Ansagehistorie ab. `PartieStandAntwort.parteiSicht()` entfernt den Fallback — Domainmodell ist einzige Wahrheitsquelle. Test `grundansageAktualisiertsParteisichtbarkeitImDomainmodell` sichert dies ab.
 - [x] Integrationstests fuer Hochzeit-Stilles-Solo: `vollendetHochzeitAlsStillesSoloBisZurAuswertungMitKorrektemErgebnis` prueft den vollstaendigen Kartenverlauf vom stillesSolo-Trigger bis zur Endauswertung inklusive 240-Augen-Invariante und Nullsumme. 107 Backend-Tests gruen.
 - [x] KI-Heuristiken dokumentieren: Alle undokumentierten Gewichtsfaktoren und Schwellwerte in `StandardKiStrategie` sind jetzt mit deutschen Javadoc-Kommentaren versehen, die die Kalibrierungsgrundlage erklaeren (handstaerke, ansageSchwelle, soloWert, soloSchwelle, waehleArmutAntwort, abwurfKosten). 107 Backend-Tests gruen.
-- [ ] KI-Hochzeit-Speziallogik: Die KI behandelt Hochzeit aktuell wie einen normalen Vorbehalt. Spezifische Strategien fuer "Partner sucht" vs. "Partner gefunden" sind nicht implementiert. Fuer MVP akzeptabel, aber fuer verbesserte KI-Qualitaet wuenschenswert.
+- [x] KI-Hochzeit-Speziallogik: `KiSpielzustand` traegt jetzt `hochzeitStatus` (aus `Spiel.hochzeitStatus()`); `StandardKiStrategie` hat phasenabhaengige Hochzeit-Heuristiken: Der Hochzeit-Spieler spielt in "sucht Partner" den staerksten Trumpf als Anspieler und gewinnt Stiche bewusst mit der staerksten gewinnenden Karte; Nicht-Hochzeit-Spieler versuchen den Klaerungsstich zu gewinnen, wenn der Hochzeit-Spieler fuehrt. "Partner gefunden"-Phase funktioniert bereits korrekt ueber `parteien`.
 - [x] Spec-Status-Markierungen aktualisieren: 7 Sonderspiel-/KI-Specs (`specs/hochzeit.md`, `specs/armut.md`, `specs/solo-trumpf.md`, `specs/solo-dame.md`, `specs/solo-bube.md`, `specs/solo-fleischlos.md`, `specs/ki-strategie.md`) auf "Vollstaendig implementiert und getestet" gesetzt; alle Definition-of-Done-Checklisten abgehakt. `specs/verbindungsabbruch.md` hatte bereits keinen "Noch nicht begonnen"-Status.
 
 ## Offen - Prioritaet 13: Neue Befunde (aus Planungspruefung 2026-03-22, zweite Iteration)

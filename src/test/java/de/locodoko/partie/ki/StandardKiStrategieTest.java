@@ -11,6 +11,7 @@ import de.locodoko.karten.Spieltyp;
 import de.locodoko.karten.Stich;
 import de.locodoko.partie.Ansage;
 import de.locodoko.partie.Ansagen;
+import de.locodoko.partie.HochzeitStatus;
 import de.locodoko.partie.Partei;
 import de.locodoko.partie.Parteien;
 import de.locodoko.partie.Spielphase;
@@ -55,6 +56,7 @@ class StandardKiStrategieTest {
             List.of(),
             null,
             null,
+            null,
             List.of(),
             List.of(),
             List.of(VorbehaltAnsage.GESUND, VorbehaltAnsage.SOLO_TRUMPF)
@@ -82,6 +84,7 @@ class StandardKiStrategieTest {
             Parteien.ausArmut(SpielerPosition.WEST),
             Ansagen.leer(),
             List.of(),
+            null,
             null,
             null,
             List.of(),
@@ -118,6 +121,7 @@ class StandardKiStrategieTest {
             List.of(),
             stich,
             null,
+            null,
             List.of(
                 karte(Farbe.KREUZ, Kartenwert.ZEHN, 1),
                 karte(Farbe.KREUZ, Kartenwert.NEUN, 1)
@@ -153,6 +157,7 @@ class StandardKiStrategieTest {
             List.of(),
             Stich.neu(SpielerPosition.WEST),
             null,
+            null,
             List.of(
                 karte(Farbe.HERZ, Kartenwert.ZEHN, 1),
                 karte(Farbe.HERZ, Kartenwert.ZEHN, 2)
@@ -163,6 +168,74 @@ class StandardKiStrategieTest {
 
         assertEquals(Ansage.RE, strategie.waehleAnsage(zustand).orElseThrow(),
             "Die KI soll mit einer sehr starken Hand eine Grundansage taetigen, damit Einzelspieler-Partien nicht ohne nachvollziehbare Ansageentscheidungen bleiben.");
+    }
+
+    @Test
+    void hochzeitSpielerSpieltStaerkstenTrumpfAlsAnspielKarteBeimPartnerSuchen() {
+        // Der Hochzeit-Spieler (WEST) sucht noch einen Partner — kein Klärungsstich bisher.
+        // Er soll den stärksten Trumpf ausspielen, um den Klärungsstich sicher zu gewinnen
+        // und die Partnerfindung aktiv zu steuern.
+        // Ohne diesen Test könnte die KI schwache Trümpfe spielen und die Klärung dem Zufall überlassen.
+        HochzeitStatus hochzeitStatus = HochzeitStatus.gestartet(SpielerPosition.WEST);
+        Karte kreuzDame = karte(Farbe.KREUZ, Kartenwert.DAME, 1);
+        Karte karoNeun = karte(Farbe.KARO, Kartenwert.NEUN, 1);
+        KiSpielzustand zustand = new KiSpielzustand(
+            SpielerPosition.WEST,
+            Spieltyp.HOCHZEIT,
+            Spielphase.STICHPHASE,
+            spielregeln,
+            trumpfOrdnung,
+            new Hand(List.of(kreuzDame, karoNeun)),
+            Parteien.ausHochzeit(SpielerPosition.WEST),
+            Ansagen.leer(),
+            List.of(),
+            null,
+            null,
+            hochzeitStatus,
+            List.of(kreuzDame, karoNeun),
+            List.of(),
+            List.of()
+        );
+
+        Karte gewaehlteKarte = strategie.waehleKarte(zustand);
+        assertEquals(kreuzDame, gewaehlteKarte,
+            "Der Hochzeit-Spieler beim Anspiel soll den staerksten Trumpf spielen, um Klaerungsstiche aktiv zu gewinnen und die Partnerfindung zu steuern.");
+    }
+
+    @Test
+    void nichtHochzeitSpielerVersuchtKlaerungsStichZuGewinnenUmPartnerZuWerden() {
+        // NORD ist NICHT der Hochzeit-Spieler (Hochzeit liegt bei WEST).
+        // WEST führt gerade den Stich — NORD soll versuchen, den Stich zu übernehmen,
+        // um Re-Partner zu werden.
+        // Ohne diesen Test würde die KI ggf. passiv abwerfen statt die Partnerrolle zu übernehmen.
+        HochzeitStatus hochzeitStatus = HochzeitStatus.gestartet(SpielerPosition.WEST);
+        Karte westKreuzDame = karte(Farbe.KREUZ, Kartenwert.DAME, 1);
+        Stich stich = Stich.neu(SpielerPosition.WEST)
+            .spieleKarte(SpielerPosition.WEST, westKreuzDame, new Hand(List.of(westKreuzDame)), trumpfOrdnung);
+        // NORD hat eine Herz-10 (höchste Karte im Normalspiel) und eine Karo-9 (schwächer)
+        Karte herzZehn = karte(Farbe.HERZ, Kartenwert.ZEHN, 1);
+        Karte karoNeun = karte(Farbe.KARO, Kartenwert.NEUN, 1);
+        KiSpielzustand zustand = new KiSpielzustand(
+            SpielerPosition.NORD,
+            Spieltyp.HOCHZEIT,
+            Spielphase.STICHPHASE,
+            spielregeln,
+            trumpfOrdnung,
+            new Hand(List.of(herzZehn, karoNeun)),
+            Parteien.ausHochzeit(SpielerPosition.WEST),
+            Ansagen.leer(),
+            List.of(),
+            stich,
+            null,
+            hochzeitStatus,
+            List.of(herzZehn, karoNeun),
+            List.of(),
+            List.of()
+        );
+
+        Karte gewaehlteKarte = strategie.waehleKarte(zustand);
+        assertEquals(herzZehn, gewaehlteKarte,
+            "Ein Nicht-Hochzeit-Spieler soll den Klaerungsstich gewinnen wollen, wenn der Hochzeit-Spieler fuehrt, um die Re-Partnerrolle zu uebernehmen.");
     }
 
     private Karte karte(Farbe farbe, Kartenwert wert, int exemplarIndex) {
