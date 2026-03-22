@@ -4,17 +4,11 @@ Stand: 2026-03-21
 
 ## Notiz
 
-**Letzte Iteration (2026-03-21):** Architektur-Refactoring Prioritaet 11 (JPA→JDBC) abgeschlossen. Vollstaendige Migration aller Entities und Repositories von JPA/Hibernate auf Spring Data JDBC; Liquibase-Changelogs fuer das gesamte Schema; Persistable<UUID>-Pattern fuer korrekte INSERT/UPDATE-Entscheidung; JsonKonverter fuer komplexe JSON-Felder; TischRepositoryImpl mit expliziter transienter Feldbefuellung; Test-Isolation via ${random.value} in H2-URL. 105 Backend-Tests gruen. Commit: 6d3d66c.
+**Letzte Iteration (2026-03-22):** Package-Struktur nach Bounded Contexts abgeschlossen (Prioritaet 11). Alle Klassen aus `spielverwaltung/` und `spiel/` in `lobby/`, `partie/`, `session/`, `karten/` reorganisiert. Cross-Package-Imports manuell aufgeloest; @EnableJdbcRepositories auf alle 3 Bounded-Context-Packages erweitert; package-private Methoden setzeTisch/setzePartie auf public gehoben. 105 Tests gruen. Commit: 0075b83.
 
-**Notiz an den naechsten Ralph:** Prioritaet 11 ist zu ~80% erledigt. Noch ausstehend:
-1. Package-Struktur nach Bounded Contexts: `spielverwaltung/` aufloesen in `lobby/`, `partie/`, `session/` gemaess specs/architektur-ddd.md.
-2. Vollstaendige Javadoc: Jede Klasse mit praeziser deutscher Definition.
-3. Toten Code pruefen: `TischEreignisTyp`-Enum-Werte (TISCH_ERSTELLT etc.), duplizierte Session-Validierung.
-Empfehlung: Zuerst Package-Struktur, dann Javadoc, dann toter Code — als separater Commit.
+**Naechster logischer Schritt:** Restliche Prioritaet-11-Punkte: Javadoc (jede Klasse mit praeziser deutscher Definition) und Toter-Code-Pruefung (TischEreignisTyp-Enum-Werte, duplizierte Session-Validierung).
 
-**Naechster logischer Schritt:** Restliche Prioritaet-11-Punkte (Package-Struktur, Javadoc, toter Code) oder Prioritaet 9 (Frontend-Politur: Kartengrafiken, Animationen).
-
-**Offene Fragen:** jsdom kann Canvas 2D nicht rendern (daher stderr-Warnings in Tests); Texturen werden im Browser korrekt erzeugt. Ein `canvas`-npm-Package koennte die Warnings eliminieren, ist aber nicht kritisch.
+**Offene Fragen:** jsdom kann Canvas 2D nicht rendern (daher stderr-Warnings in Tests); unkritisch.
 
 Ausgangslage: Backend und Frontend sind funktional weitgehend vollstaendig: Karten-/Trumpf-/Stichlogik, alle Spielphasen, Ansagen, Sonderpunkte, alle Vorbehalte (Soli, Hochzeit, Armut), Persistenz, Session, Lobby, REST-API, WebSocket-Aktionen, Partie-Snapshots, KI-Strategie und KI-Orchestrierung sind implementiert und getestet. Das Frontend bietet eine interaktive Tischansicht mit Kartenklick, Vorbehalt-/Ansage-/Armut-Dialogen, Stichmitte, Ergebnis-Overlay und erste Animationen. Ein Spiel 1 Mensch + 3 KI ist End-to-End durchspielbar. Der naechste Schwerpunkt liegt auf visueller Politur (Kartengrafiken, fehlende Animationen), Robustheit (Verbindungsabbruch, Session-Cleanup) und dem geplanten Architektur-Refactoring (JPA → Spring Data JDBC, Package-Struktur nach Bounded Contexts).
 
@@ -164,7 +158,7 @@ Ausgangslage: Backend und Frontend sind funktional weitgehend vollstaendig: Kart
 
 - [x] Migration von JPA/Hibernate auf Spring Data JDBC gemaess `specs/architektur-ddd.md` und `specs/tech-migration.md`: `@Entity`/`@OneToMany`/`JpaRepository` durch `@Table`/`CrudRepository` ersetzen; betrifft alle Entities in `spielverwaltung/persistenz`.
 - [x] Liquibase-Schema-Migration einrichten anstelle von `spring.jpa.hibernate.ddl-auto=create-drop`; YAML-Changelogs fuer alle Tabellen in `src/main/resources/db/changelog/`.
-- [ ] Package-Struktur nach Bounded Contexts aufloesen gemaess `specs/architektur-ddd.md`: aktuell alles unter `spielverwaltung/` statt `lobby/`, `partie/`, `session/`, `karten/`.
+- [x] Package-Struktur nach Bounded Contexts aufgeloest gemaess `specs/architektur-ddd.md`: alle Klassen aus `spielverwaltung/` und `spiel/` in `lobby/`, `partie/`, `session/`, `karten/` reorganisiert; @EnableJdbcRepositories auf alle 3 Context-Packages erweitert; Cross-Package-Imports aufgeloest; 105 Tests gruen.
 - [ ] Vollstaendige Code-Dokumentation (Javadoc): Jede Klasse mit praeziser deutscher Definition und Zweck.
 - [ ] Toten Code pruefen und entfernen: `TischEreignisTyp`-Enum hat definierte aber nie gesendete Werte (TISCH_ERSTELLT, SPIELER_BEIGETRETEN etc.); Session-Validierungslogik ist zwischen Interceptor und Controllern dupliziert.
 
