@@ -2,7 +2,7 @@
 
 | Feld           | Wert                                        |
 |----------------|---------------------------------------------|
-| Status         | Größtenteils implementiert (ohne OpenAPI)   |
+| Status         | Vollständig implementiert                   |
 | Priorität      | Hoch                                        |
 | Abhängigkeiten | lobby.md, tischkonfiguration.md, spieler-session.md, punkteberechnung.md |
 
@@ -80,7 +80,7 @@ Die REST-API stellt Endpunkte für nicht-echtzeit-kritische Operationen bereit: 
 - [x] Validierung implementiert
 - [x] Unit-Tests für Controller geschrieben und bestanden
 - [x] Integrationstests (MockMvc) geschrieben und bestanden
-- [ ] API-Dokumentation erstellt (z.B. via Swagger/OpenAPI)
+- [x] API-Dokumentation erstellt (z.B. via Swagger/OpenAPI)
 - [x] Code-Review / Plausibilitätsprüfung
 
 ## Technische Hinweise

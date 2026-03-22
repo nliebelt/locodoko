@@ -5,19 +5,17 @@
 
 ## Notiz
 
-Implementiert: 4.6 E2E-Tests (Playwright). Eigenständiges `e2e/`-npm-Projekt angelegt:
-- `e2e/package.json` + `e2e/playwright.config.ts` (Viewport 1280×720, BASE_URL via ENV)
-- `e2e/tests/partie-gegen-ki.spec.ts`: 7-schrittiger Test — Session→Lobby→Tisch erstellen→Spiel starten→Vorbehalt→Karte spielen→Stich-Zähler
-- Karten-Click über relative Canvas-Position (32%/89% der Canvas-Größe für SUED-Spieler Slot 0)
-- Phasen-Assertions via `[data-phase]`-DOM-Element, Aktions-Hints via `[data-aktions-hinweis]`
-- JS-Fehler-Abfang per `page.on('console', ...)` + `page.on('pageerror', ...)`
-- `e2e/.gitignore` schließt node_modules/, test-results/, playwright-report/ aus
-- CLAUDE.md / AGENTS.md um E2E-Ausführungshinweis ergänzt
-Test läuft nicht ohne laufendes Backend — Playwright-Syntax via `--list` verifiziert.
+Implementiert: 4.7 Swagger/OpenAPI-Dokumentation.
+- `springdoc-openapi-starter-webmvc-ui` 2.8.6 in pom.xml ergänzt
+- `OpenApiKonfiguration.java` in `de.locodoko.system` erstellt (Titel, Version, Tag-Definitionen)
+- Alle 4 REST-Controller annotiert: `@Tag`, `@Operation`, `@ApiResponse` / `@ApiResponses` — TischController, PartieController, SpielerSessionController, SystemstatusController
+- Swagger-UI erreichbar unter `/swagger-ui.html`, JSON unter `/v3/api-docs`
+- specs/rest-api.md: Status auf "Vollständig implementiert" gesetzt, OpenAPI-DoD-Checkbox abgehakt
+- Alle Backend-Tests weiterhin grün
 
-Nächster logischer Schritt: 4.7 Swagger/OpenAPI oder 4.8 KI-Schwierigkeitsstufen (beide unabhängig).
+Nächster logischer Schritt: 4.8 KI-Schwierigkeitsstufen (einzige verbleibende offene Aufgabe).
 
-Bekannte offene Fragen: rest-api.md hat noch eine offene Checkbox (Swagger/OpenAPI — Aufgabe 4.7). Die architektur-ddd.md, tech-migration.md und frontend-logging.md stehen noch auf "Neue Vorgabe" — könnten als erledigt markiert werden, wurden aber bewusst ausgelassen.
+Bekannte offene Fragen: keine. Die architektur-ddd.md, tech-migration.md und frontend-logging.md stehen noch auf "Neue Vorgabe" — bewusst ausgelassen.
 
 ---
 
@@ -215,7 +213,7 @@ Bekannte offene Fragen: rest-api.md hat noch eine offene Checkbox (Swagger/OpenA
 
 ### Priorität 3 — Nice-to-have
 
-- [ ] **4.7 Swagger/OpenAPI-Dokumentation**
+- [x] **4.7 Swagger/OpenAPI-Dokumentation**
   - springdoc-openapi Dependency + Annotationen
   - Abhängigkeit: keine
 

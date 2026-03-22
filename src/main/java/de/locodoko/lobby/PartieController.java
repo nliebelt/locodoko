@@ -2,6 +2,11 @@ package de.locodoko.lobby;
 
 import de.locodoko.session.SpielerEntity;
 import de.locodoko.session.SpielerSessionService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -13,6 +18,7 @@ import org.springframework.web.bind.annotation.RestController;
 import java.util.UUID;
 
 /** REST-Controller fuer Partie-bezogene Endpunkte. Alle Anfragen erfordern eine gueltige Spieler-Session. */
+@Tag(name = "Partien", description = "Aktuellen Partiestand abrufen")
 @RestController
 @RequestMapping("/api/partien")
 public class PartieController {
@@ -31,8 +37,14 @@ public class PartieController {
      * Gibt den aktuellen Partiestand zurueck. Nur fuer Spieler mit gueliger Session zugaenglich,
      * damit keine sensiblen Spielstandsdaten (z.B. Handkarten, Ansagen) anonym abrufbar sind.
      */
+    @Operation(summary = "Partiestand abrufen", description = "Gibt einen spielerspezifischen Snapshot des aktuellen Partiestands zurueck. Die Handkarten anderer Spieler werden geredaktiert. Erfordert eine gueltige Session.")
+    @ApiResponses({
+        @ApiResponse(responseCode = "200", description = "Partiestand erfolgreich abgerufen"),
+        @ApiResponse(responseCode = "401", description = "Keine gueltige Spieler-Session"),
+        @ApiResponse(responseCode = "404", description = "Partie nicht gefunden")
+    })
     @GetMapping("/{id}/stand")
-    public PartieStandAntwort gibPartieStand(@PathVariable UUID id, HttpServletRequest request) {
+    public PartieStandAntwort gibPartieStand(@Parameter(description = "Partie-ID") @PathVariable UUID id, HttpServletRequest request) {
         SpielerEntity spieler = ladeAktivenSpieler(request);
         LOGGER.info("Partiestand fuer Partie {} von Spieler {} abgefragt", id, spieler.id());
         return tischService.ladePartieStand(id, spieler);

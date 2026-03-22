@@ -1,6 +1,10 @@
 package de.locodoko.session;
 
 import de.locodoko.session.SpielerEntity;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;
 import jakarta.validation.Valid;
@@ -20,6 +24,7 @@ import org.springframework.web.bind.annotation.RestController;
  * einer Spieler-Session bereit. Die Session wird ueber einen HTTP-Session-Cookie identifiziert.
  * Unbekannte Sessions werden mit 401 Unauthorized abgewiesen.</p>
  */
+@Tag(name = "Session", description = "Spieler-Session registrieren, abrufen und Namen aendern")
 @RestController
 @RequestMapping("/api/spieler/session")
 public class SpielerSessionController {
@@ -32,6 +37,12 @@ public class SpielerSessionController {
         this.spielerSessionService = spielerSessionService;
     }
 
+    @Operation(summary = "Spieler registrieren oder Session erneuern", description = "Erstellt eine neue Spieler-Session oder erneuert eine bestehende. Setzt einen HttpOnly-Session-Cookie. Gibt 201 zurueck wenn neu angelegt, 200 wenn bereits vorhanden.")
+    @ApiResponses({
+        @ApiResponse(responseCode = "200", description = "Bestehende Session erneuert"),
+        @ApiResponse(responseCode = "201", description = "Neue Session angelegt"),
+        @ApiResponse(responseCode = "400", description = "Ungueliger Name (leer oder zu lang)")
+    })
     @PostMapping
     public ResponseEntity<SpielerSessionAntwort> registriereSpieler(
         @Valid @RequestBody SpielerNameAnfrage anfrage,
@@ -45,12 +56,24 @@ public class SpielerSessionController {
         );
     }
 
+    @Operation(summary = "Aktuelle Session abrufen", description = "Gibt die aktuelle Spieler-Session zurueck, inklusive aktiver Tisch-ID fuer Session-Recovery nach Tab-Reload.")
+    @ApiResponses({
+        @ApiResponse(responseCode = "200", description = "Session erfolgreich abgerufen"),
+        @ApiResponse(responseCode = "401", description = "Keine gueltige Session")
+    })
     @GetMapping
     public SpielerSessionAntwort gibAktuellenSpieler(HttpServletRequest request) {
         SpielerEntity spieler = aktuellerSpieler(request);
         return SpielerSessionAntwort.aus(spieler, spielerSessionService.ladeAktiveTischId(spieler.id()));
     }
 
+    @Operation(summary = "Spielernamen aendern", description = "Aendert den Anzeigenamen des angemeldeten Spielers. Nur ausserhalb einer laufenden Partie erlaubt.")
+    @ApiResponses({
+        @ApiResponse(responseCode = "200", description = "Name erfolgreich geaendert"),
+        @ApiResponse(responseCode = "400", description = "Ungueliger Name"),
+        @ApiResponse(responseCode = "401", description = "Keine gueltige Session"),
+        @ApiResponse(responseCode = "409", description = "Namensaenderung waehrend Partie nicht erlaubt")
+    })
     @PutMapping
     public SpielerSessionAntwort aendereNamen(
         @Valid @RequestBody SpielerNameAnfrage anfrage,
