@@ -196,3 +196,64 @@ Ausgangslage: Backend und Frontend sind funktional weitgehend vollstaendig: Kart
 - [ ] KI-Heuristiken (Vorbehalt-Schwellwerte, Kosten-Berechnung) enthalten magische Zahlen ohne Dokumentation oder Kalibrierung; funktioniert fuer MVP, sollte aber vor Schwierigkeitsgrad-Erweiterung dokumentiert werden. Aufgabe in Prioritaet 12 erfasst.
 - [ ] Frontend-Rendering basiert auf innerHTML-Strings statt einem reaktiven Framework; skaliert fuer den aktuellen Umfang, wird aber bei weiterer UI-Komplexitaet fragil.
 - [ ] Partei-Sichtbarkeit nach Grundansage: `Spiel.sageAn()` aktualisiert `Parteien` nicht bei Re/Kontra — Backend spiegelt die Partei-Offenbarung nicht serverseitig wider. Aufgabe in Prioritaet 12 erfasst.
+
+## Offen - Prioritaet 13: Session-Recovery und Tisch-Lebenszyklus
+
+Ziel: "Erste spielbare Version" — Spieler koennen einen Tisch erstellen, eine Partie gegen KI starten, und der Tab-Reload oder ein versehentliches Verlassen bricht das Erlebnis nicht irreparabel ab. Loest den bekannten "Blur"-Folgefehler (Session haengt nach Fehler am Tisch fest).
+
+- [ ] `GET /api/spieler/session` liefert `aktiverTischId` falls Spieler einem Tisch zugeordnet ist (gemaess `specs/verbindungsabbruch.md`, Abschnitt Session-Recovery).
+- [ ] `BootSzene` prueft beim Start `aktiverTischId` und leitet direkt zur `TischSzene` weiter — kein manuelles Suchen in der Lobby nach Tab-Reload.
+- [ ] WebSocket-Reconnect nach Redirect: `TischSzene` abonniert Topics neu und fordert Snapshot an; falls Tisch nicht mehr existiert, Weiterleitung zur Lobby.
+- [ ] "Tisch verlassen"-Button in der Tischansicht (HUD) mit Bestaaetigungsdialog; loest `POST /api/tische/{id}/verlassen` aus.
+- [ ] Backend: Verlassen waehrend laufender Partie setzt Partie auf `ABGEBROCHEN`, sendet `PARTIE_ABGEBROCHEN`-Event an alle Spieler am Tisch.
+- [ ] Frontend: Nach `PARTIE_ABGEBROCHEN`-Event Weiterleitung aller Spieler zur Lobby mit Hinweis.
+- [ ] Neue Partie nach Partie-Ende: Backend startet automatisch neue Partie mit denselben Spielern; Frontend zeigt 10-Sekunden-Countdown im Ergebnis-Overlay.
+- [ ] Tests: Session-Recovery (Tab-Reload), Tisch-Verlassen-Abbruch, Neustart nach Partie-Ende.
+
+## Offen - Prioritaet 14: Frontend-Logging und globaler Error-Handler
+
+Ziel: Jeder Fehler im Frontend — ob Exception, stummer Absturz oder ausbleibende WebSocket-Nachricht — ist in der Browser-Konsole nachvollziehbar. Der "Blur"-Bug wird damit beim naechsten Auftreten sofort diagnostizierbar.
+
+- [ ] `frontend/src/logger.ts` anlegen: Dev-Mode-Switch per `import.meta.env.DEV`, Kategorien WS/STORE/SZENE/API/ERROR (gemaess `specs/frontend-logging.md`).
+- [ ] Globaler Error-Handler in `main.ts`: `window.onerror` und `unhandledrejection` — immer aktiv, auch im Prod-Build.
+- [ ] Logging-Punkte in `SpielverwaltungEchtzeit.ts`: Verbindungsaufbau, Disconnect, jede eingehende/ausgehende Nachricht.
+- [ ] Logging-Punkte in `AppStore.ts`: Session-Init, Tisch-/Partie-Snapshot, alle ausgehenden Aktionen.
+- [ ] Logging-Punkte in `TischSzene.ts`: Scene-Start, Phasenwechsel (nicht pro Frame), Karten-Klick.
+- [ ] Logging-Punkte in `SpielverwaltungApi.ts`: Jeder REST-Call mit Status, Fehler-Responses.
+- [ ] Backend `KiOrchestrierungService`: strukturiertes Logging auf allen Orchestrierungsschritten (Start, KI-Zug, Stich, Spiel-Ende, Fehler) mit `tischId` und `spielphase`.
+- [ ] `application-dev.properties`: Log-Level DEBUG fuer `KiOrchestrierungService` und `TischEchtzeitService`.
+- [ ] Frontend-Test: Logger produziert im Prod-Build keinen Output.
+
+## Offen - Prioritaet 15: E2E-Tests mit Playwright
+
+Ziel: Automatisierter Regressionsschutz fuer den kritischen Pfad "Tisch erstellen → Partie gegen KI → erster Stich". Faengt den "Blur"-Bug und zukuenftige Regressionen reproduzierbar ab.
+
+- [ ] `e2e/`-Verzeichnis als eigenstaendiges npm-Projekt anlegen (gemaess `specs/e2e-tests.md`).
+- [ ] `e2e/playwright.config.ts` mit `baseURL` via `BASE_URL`-Umgebungsvariable (Standard: `http://localhost:8080`).
+- [ ] `e2e/tests/partie-gegen-ki.spec.ts` implementiert alle 6 Schritte: App laden, Tisch erstellen, Partie startet, Vorbehaltsphase, erste Karte spielen, erster Stich abgeschlossen.
+- [ ] Assertions: kein Blur-Zustand nach Tisch-Erstellen, Hand mit 12 Karten, Karte in Stichmitte, Stich wird Gewinner zugeschlagen, kein JS-Fehler in Konsole.
+- [ ] `e2e/.gitignore` schliesst `node_modules/`, `test-results/`, `playwright-report/` aus.
+- [ ] Hinweis in CLAUDE.md: E2E-Tests sind separat (`cd e2e && npx playwright test`), nicht Teil von `mvn verify`.
+- [ ] Test laeuft lokal gruen gegen `mvn spring-boot:run`.
+
+## Offen - Prioritaet 16: Java 25 / Spring Boot 4.x Upgrade
+
+Ziel: `pom.xml` auf den in `specs/tech-migration.md` definierten Zielstand bringen — Java 25 und Spring Boot 4.x. JDBC/Liquibase-Migration ist bereits abgeschlossen (Prioritaet 11), nur das Versions-Upgrade steht noch aus.
+
+- [ ] Spring Boot Parent auf `4.x` (latest stable) hochziehen.
+- [ ] `java.version` in `pom.xml` auf `25` setzen.
+- [ ] Compile-Fehler durch API-Aenderungen in Spring Boot 4.x beheben (Breaking Changes pruefen).
+- [ ] `mvn clean verify` gruen: alle 105 Backend-Tests und 32 Frontend-Tests bestehen.
+- [ ] `.java-version`-Datei auf `25` aktualisieren.
+- [ ] `specs/tech-migration.md` Definition-of-Done abhaken.
+
+## Offen - Prioritaet 17: Frontend-Dokumentation (JSDoc)
+
+Ziel: Kritische Frontend-Klassen sind so dokumentiert, dass ein neuer Entwickler (oder Ralph in einem neuen Kontext) die Architektur ohne Codebase-Analyse versteht.
+
+- [ ] JSDoc fuer `AppStore.ts`: Klasse und alle oeffentlichen Methoden (gemaess `specs/frontend-architektur.md`).
+- [ ] JSDoc fuer `TischSzene.ts`: Klasse, `create`, Render-Methoden, Dialoge, Karten-Klick-Handler.
+- [ ] JSDoc fuer `SpielverwaltungEchtzeit.ts`: Klasse und alle oeffentlichen Methoden.
+- [ ] JSDoc fuer `TischAnsichtModell.ts`: Klasse und alle oeffentlichen Methoden.
+- [ ] JSDoc fuer `AnimationenService.ts`: Klasse und alle oeffentlichen Methoden.
+- [ ] `specs/frontend-architektur.md` auf aktuellem Stand (Dateistruktur, Datenfluss-Diagramm).
