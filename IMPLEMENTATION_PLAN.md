@@ -4,9 +4,9 @@ Stand: 2026-03-22
 
 ## Notiz
 
-**Letzte Iteration (2026-03-22):** Partei-Sichtbarkeit nach Grundansage im Domainmodell verankert (Prioritaet 12). `Spiel.sageAn()` aktualisiert jetzt `parteien.offenFuerAlle` bei Re/Kontra-Ansagen. `SpielPersistenzAdapter` leitet `offenFuerAlle` nach DB-Roundtrip aus der Ansagehistorie ab. `PartieStandAntwort.parteiSicht()` entfernt den Fallback ueber `ansagen.offenbartParteiVon()` — Domainmodell ist einzige Wahrheitsquelle. 106 Backend-Tests gruen.
+**Letzte Iteration (2026-03-22):** Integrationstest fuer Hochzeit-Stilles-Solo ergaenzt (Prioritaet 12). `vollendetHochzeitAlsStillesSoloBisZurAuswertungMitKorrektemErgebnis` prueft den vollstaendigen Kartenverlauf: 3 Klaerungsstiche → stillesSolo-Trigger → restliche 9 Stiche → AUSWERTUNG → 240-Augen-Invariante + Nullsumme + WEST als einziger RE-Spieler. 107 Backend-Tests gruen.
 
-**Naechster logischer Schritt:** Prioritaet 12 weiter abarbeiten: Integrationstests fuer Hochzeit-Stilles-Solo, KI-Heuristiken dokumentieren, Spec-Status-Markierungen aktualisieren. Dann Prioritaet 13 (Frontend-Logging, CORS, per-Tisch Ansagegrenzen).
+**Naechster logischer Schritt:** Prioritaet 12 weiter abarbeiten: KI-Heuristiken in `StandardKiStrategie` mit Kommentaren versehen (undokumentierte Gewichtsfaktoren), Spec-Status-Markierungen aktualisieren (8 Specs noch mit "Noch nicht begonnen" markiert). Dann Prioritaet 13 (Frontend-Logging, CORS, per-Tisch Ansagegrenzen).
 
 **Offene Fragen:** jsdom kann Canvas 2D nicht rendern (daher stderr-Warnings in Tests); unkritisch. WebSocket-Event-Architektur weicht von Spec ab (Snapshots statt separate Events). TischSzene.ts ist monolithisch (1350+ Zeilen) — funktional, aber bei weiterer Komplexitaet fragil.
 
@@ -165,7 +165,7 @@ Ausgangslage: Backend und Frontend sind funktional weitgehend vollstaendig: Kart
 ## Offen - Prioritaet 12: Korrekturen und Politur (aus Planungspruefung 2026-03-22)
 
 - [x] Partei-Sichtbarkeit nach Grundansage aktualisieren: `Spiel.sageAn()` aktualisiert jetzt `parteien.offenFuerAlle` bei Re/Kontra-Grundansagen. `SpielPersistenzAdapter` leitet `offenFuerAlle` nach DB-Roundtrip aus der Ansagehistorie ab. `PartieStandAntwort.parteiSicht()` entfernt den Fallback — Domainmodell ist einzige Wahrheitsquelle. Test `grundansageAktualisiertsParteisichtbarkeitImDomainmodell` sichert dies ab.
-- [ ] Integrationstests fuer Hochzeit-Stilles-Solo: Kein Test prueft aktuell den konkreten Kartenverlauf, bei dem der Hochzeitsspieler alle 3 Klaerungsstiche selbst gewinnt und das Spiel in ein stilles Solo umschlaegt. Die Logik in `Spiel.fortschrittNachVollstaendigemStich()` ist implementiert aber nur indirekt getestet.
+- [x] Integrationstests fuer Hochzeit-Stilles-Solo: `vollendetHochzeitAlsStillesSoloBisZurAuswertungMitKorrektemErgebnis` prueft den vollstaendigen Kartenverlauf vom stillesSolo-Trigger bis zur Endauswertung inklusive 240-Augen-Invariante und Nullsumme. 107 Backend-Tests gruen.
 - [ ] KI-Heuristiken dokumentieren: `StandardKiStrategie` enthaelt undokumentierte Gewichtsfaktoren (z.B. `trumpfAnzahl * 4 + asse * 2`) und Schwellwerte (z.B. `soloSchwelle SOLO_TRUMPF -> 34`). Vor einer Schwierigkeitsgrad-Erweiterung sollten diese Werte mit Kommentaren versehen werden, die die Kalibrierungsgrundlage erklaeren.
 - [ ] KI-Hochzeit-Speziallogik: Die KI behandelt Hochzeit aktuell wie einen normalen Vorbehalt. Spezifische Strategien fuer "Partner sucht" vs. "Partner gefunden" sind nicht implementiert. Fuer MVP akzeptabel, aber fuer verbesserte KI-Qualitaet wuenschenswert.
 - [ ] Spec-Status-Markierungen aktualisieren: Alle 8 Sonderspiel-/KI-/Verbindungsabbruch-Specs (`specs/hochzeit.md`, `specs/armut.md`, `specs/solo-*.md`, `specs/ki-strategie.md`, `specs/verbindungsabbruch.md`) sind noch mit `| Status | Noch nicht begonnen |` markiert, obwohl sie vollstaendig implementiert und getestet sind. Definition-of-Done-Checklisten in diesen Specs sind ebenfalls nicht abgehakt.

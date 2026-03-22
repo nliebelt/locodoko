@@ -233,6 +233,100 @@ class SpielTest {
     }
 
     @Test
+    void vollendetHochzeitAlsStillesSoloBisZurAuswertungMitKorrektemErgebnis() {
+        // Warum wichtig: Der vorhandene Unit-Test prueft nur den Zustand nach den 3 Klaerungsstichen.
+        // Dieser Integrationstest stellt sicher, dass nach dem Umschlag ins stille Solo
+        // (1) die restlichen 9 Stiche regelkonform spielbar bleiben,
+        // (2) AUSWERTUNG erreicht wird,
+        // (3) WEST als einziger RE-Spieler im Ergebnis ausgewiesen ist und
+        // (4) die 240-Augen-Invariante und die Nullsumme gelten —
+        // diese Kausalitaetskette von stillesSolo-Trigger bis Endauswertung war bisher ungeprueft.
+        Spiel spiel = Spiel.neu(SpielerPosition.SUED, spielregeln, kartendeckMitVerteiltenHaenden(Map.of(
+                SpielerPosition.WEST, List.of(
+                    karte(Farbe.KREUZ, Kartenwert.DAME, 1),
+                    karte(Farbe.KREUZ, Kartenwert.DAME, 2),
+                    karte(Farbe.KREUZ, Kartenwert.AS, 1),
+                    karte(Farbe.PIK, Kartenwert.AS, 1)
+                ),
+                SpielerPosition.NORD, List.of(
+                    karte(Farbe.KREUZ, Kartenwert.KOENIG, 1),
+                    karte(Farbe.PIK, Kartenwert.KOENIG, 1),
+                    karte(Farbe.KARO, Kartenwert.KOENIG, 1)
+                ),
+                SpielerPosition.OST, List.of(
+                    karte(Farbe.KREUZ, Kartenwert.ZEHN, 1),
+                    karte(Farbe.PIK, Kartenwert.ZEHN, 1),
+                    karte(Farbe.KARO, Kartenwert.ZEHN, 1)
+                ),
+                SpielerPosition.SUED, List.of(
+                    karte(Farbe.KREUZ, Kartenwert.NEUN, 1),
+                    karte(Farbe.PIK, Kartenwert.NEUN, 1),
+                    karte(Farbe.KARO, Kartenwert.NEUN, 1)
+                )
+            )))
+            .teileKartenAus()
+            .meldeVorbehalt(SpielerPosition.WEST, VorbehaltAnsage.HOCHZEIT)
+            .meldeGesund(SpielerPosition.NORD)
+            .meldeGesund(SpielerPosition.OST)
+            .meldeGesund(SpielerPosition.SUED)
+            .loeseVorbehalteAuf();
+
+        // Stich 1: WEST gewinnt mit Kreuz-AS (hoechste Kreuz-Fehlfarbe)
+        spiel = spieleStich(spiel,
+            karte(Farbe.KREUZ, Kartenwert.AS, 1),
+            karte(Farbe.KREUZ, Kartenwert.KOENIG, 1),
+            karte(Farbe.KREUZ, Kartenwert.ZEHN, 1),
+            karte(Farbe.KREUZ, Kartenwert.NEUN, 1));
+        // Stich 2: WEST gewinnt mit Pik-AS
+        spiel = spieleStich(spiel,
+            karte(Farbe.PIK, Kartenwert.AS, 1),
+            karte(Farbe.PIK, Kartenwert.KOENIG, 1),
+            karte(Farbe.PIK, Kartenwert.ZEHN, 1),
+            karte(Farbe.PIK, Kartenwert.NEUN, 1));
+        // Stich 3: WEST gewinnt mit Kreuz-DAME (Trump) — loest stilles Solo aus
+        spiel = spieleStich(spiel,
+            karte(Farbe.KREUZ, Kartenwert.DAME, 1),
+            karte(Farbe.KARO, Kartenwert.KOENIG, 1),
+            karte(Farbe.KARO, Kartenwert.ZEHN, 1),
+            karte(Farbe.KARO, Kartenwert.NEUN, 1));
+
+        assertTrue(spiel.hochzeitStatus().orElseThrow().stillesSolo(),
+            "Stilles Solo muss nach 3 eigenen Klaerungsstichen aktiv sein, bevor das restliche Spiel korrekt ausgewertet werden kann.");
+        assertEquals(List.of(SpielerPosition.WEST), spiel.parteien().spielerVon(Partei.RE),
+            "Im stillen Solo spielt WEST als einziger RE-Spieler; Parteikonsistenz ist Voraussetzung fuer korrekte Auswertung.");
+        assertEquals(Spielphase.STICHPHASE, spiel.phase(),
+            "Das Spiel muss trotz stillem Solo in der Stichphase bleiben, bis alle 12 Stiche gespielt sind.");
+
+        // Restliche 9 Stiche automatisch zu Ende spielen
+        while (spiel.phase() == Spielphase.STICHPHASE) {
+            SpielerPosition aktuellerSpieler = spiel.aktuellerSpieler().orElseThrow();
+            Karte naechsteKarte = spiel.gueltigeKartenFuer(aktuellerSpieler).getFirst();
+            spiel = spiel.spieleKarte(aktuellerSpieler, naechsteKarte);
+        }
+
+        assertEquals(12, spiel.abgeschlosseneStiche().size(),
+            "Ein vollstaendiges Hochzeit-Stilles-Solo braucht dieselben 12 Stiche wie jedes andere Normalspiel.");
+        assertEquals(Spielphase.AUSWERTUNG, spiel.phase(),
+            "Nach 12 Stichen muss AUSWERTUNG erreicht sein, auch wenn stillesSolo mitten in der Stichphase getriggert wurde.");
+        assertEquals(List.of(SpielerPosition.WEST), spiel.parteien().spielerVon(Partei.RE),
+            "Die RE-Partei muss am Ende des stillen Solos unveraendert nur WEST enthalten, damit die Punkteberechnung korrekt arbeitet.");
+
+        // Auswertung ausfuehren und Invarianten pruefen
+        spiel = spiel.werteAus(punkteRechner);
+
+        assertEquals(Spielphase.GESAMTSTAND_AKTUALISIEREN, spiel.phase());
+        Spielergebnis ergebnis = spiel.ergebnis().orElseThrow();
+        assertEquals(240, ergebnis.augenVon(Partei.RE) + ergebnis.augenVon(Partei.KONTRA),
+            "Die 240-Augen-Invariante muss auch im stillen Solo gelten, weil immer alle Karten gespielt werden.");
+        assertEquals(0,
+            ergebnis.spielpunkteVon(SpielerPosition.WEST)
+                + ergebnis.spielpunkteVon(SpielerPosition.NORD)
+                + ergebnis.spielpunkteVon(SpielerPosition.OST)
+                + ergebnis.spielpunkteVon(SpielerPosition.SUED),
+            "Die Nullsumme muss auch nach dem stillen Solo gelten, damit der Gesamtstand konsistent bleibt.");
+    }
+
+    @Test
     void lehntHochzeitOhneBeideKreuzDamenOderBeiDeaktivierterRegelAb() {
         Spiel spielMitNurEinerKreuzDame = Spiel.neu(SpielerPosition.SUED, spielregeln, kartendeckMitVerteiltenHaenden(Map.of(
                 SpielerPosition.WEST, List.of(karte(Farbe.KREUZ, Kartenwert.DAME, 1))
