@@ -17,8 +17,14 @@ import type {
   VorbehaltAnsage
 } from '../modelle/SpielverwaltungDto';
 
+/** Relative Sitzposition eines Spielers aus Sicht des eigenen Spielers (SUED = ich). */
 export type SpielerPosition = 'SUED' | 'WEST' | 'NORD' | 'OST';
 
+/**
+ * View-Repraesentation eines einzelnen Spielers am Tisch.
+ * Enthaelt alle Daten, die die TischSzene fuer die Darstellung benoetigt,
+ * inklusive relativer Sitzposition und sichtbarer Handkarten (nur im Debug-Modus).
+ */
 export interface SpielerAnsicht {
   position: SpielerPosition;
   absolutePosition: BackendSpielerPosition | null;
@@ -35,6 +41,7 @@ export interface SpielerAnsicht {
   sichtbareHandkarten: KarteAntwort[];
 }
 
+/** Eine gespielte Karte in der Stichmitte, mit relativer Spielerposition und Reihenfolge. */
 export interface GespielteKarteAnsicht {
   position: SpielerPosition;
   name: string;
@@ -42,18 +49,21 @@ export interface GespielteKarteAnsicht {
   reihenfolge: number;
 }
 
+/** Ein Eintrag in der Ansagehistorie (Re, Kontra oder Absagen) mit Spielerposition. */
 export interface AnsageAnsicht {
   position: SpielerPosition;
   name: string;
   ansage: Ansage;
 }
 
+/** Einzelner Eintrag im Gesamtpunktestand einer Partie. */
 export interface PunktestandEintrag {
   position: SpielerPosition;
   name: string;
   punkte: number;
 }
 
+/** Abgeschlossener Stich fuer die "Letzte Stiche"-Anzeige. */
 export interface AbgeschlossenerStichAnsicht {
   spielNummer: number;
   stichNummer: number;
@@ -64,6 +74,10 @@ export interface AbgeschlossenerStichAnsicht {
   gespielteKarten: GespielteKarteAnsicht[];
 }
 
+/**
+ * Auswertungsergebnis des zuletzt abgeschlossenen Spiels.
+ * Enthaelt Siegerpartei, Spielwert, Augenstand und Sonderpunkte beider Parteien.
+ */
 export interface LetztesSpielergebnisAnsicht {
   spielNummer: number;
   spieltyp: LaufendesSpielAntwort['spieltyp'];
@@ -76,6 +90,10 @@ export interface LetztesSpielergebnisAnsicht {
   sonderpunkteKontra: Sonderpunkt[];
 }
 
+/**
+ * Beschreibt die aktuelle Armut-Interaktion des eigenen Spielers:
+ * entweder das Anbieten der Armut-Karten oder die Antwort auf ein Armut-Angebot.
+ */
 export interface ArmutAktionAnsicht {
   modus: 'ANBIETEN' | 'ANTWORTEN';
   kartenAnzahl: number;
@@ -83,6 +101,15 @@ export interface ArmutAktionAnsicht {
   armutSpielerName: string;
 }
 
+/**
+ * Vollstaendiges View-Modell fuer die TischSzene.
+ *
+ * Transformiert den Backend-Snapshot (absolute Spielerpositionen) in eine relative
+ * Sichtweise aus Perspektive des eigenen Spielers (SUED = ich). Enthaelt alle Daten,
+ * die die TischSzene ohne weitere Logik direkt darstellen kann.
+ *
+ * Erstellt per `erstelleTischAnsichtAusStatus()` aus AppZustand.
+ */
 export interface TischAnsichtModell {
   titel: string;
   untertitel: string;
@@ -109,6 +136,12 @@ export interface TischAnsichtModell {
 const POSITIONEN: SpielerPosition[] = ['SUED', 'WEST', 'NORD', 'OST'];
 const ABSOLUTE_POSITIONEN: BackendSpielerPosition[] = ['SUED', 'WEST', 'NORD', 'OST'];
 
+/**
+ * Erzeugt ein Platzhalter-TischAnsichtModell fuer die Wartezeit vor dem ersten Spiel.
+ * Wird in der TischSzene als Anfangszustand verwendet, bis der erste Backend-Snapshot eintrifft.
+ * @param spielerName - Name des eigenen Spielers fuer den SUED-Platz
+ * @returns Standardmodell mit 4 Spielerplaetzen (1 Mensch + 3 KI-Platzhalter)
+ */
 export function erstelleStandardTischAnsicht(spielerName: string): TischAnsichtModell {
   return {
     titel: 'Loco Doko',
@@ -194,6 +227,19 @@ export function erstelleStandardTischAnsicht(spielerName: string): TischAnsichtM
   };
 }
 
+/**
+ * Transformiert den AppZustand in ein TischAnsichtModell fuer die TischSzene.
+ *
+ * Rotiert die absoluten Backend-Spielerpositionen so, dass der eigene Spieler immer
+ * auf SUED sitzt. Berechnet spielbare Karten, moegliche Ansagen/Vorbehalte und
+ * die aktuelle Armut-Interaktion aus dem Partie-Stand.
+ *
+ * @param spielerId - ID des eigenen Spielers (null vor Initialisierung)
+ * @param tisch - Aktueller Tisch-Snapshot; null wenn kein Tisch geoeffnet
+ * @param partieStand - Aktueller Partie-Stand; null wenn keine Partie laeuft
+ * @param debugModus - true wenn alle Handkarten sichtbar sein sollen
+ * @returns Vollstaendiges View-Modell aus Sicht des eigenen Spielers
+ */
 export function erstelleTischAnsichtAusStatus(
   spielerId: string | null,
   tisch: TischAntwort | null,
@@ -276,6 +322,13 @@ export function erstelleTischAnsichtAusStatus(
   };
 }
 
+/**
+ * Prueft ob eine Karte im angegebenen Spieltyp als Trumpf gilt.
+ * Wird fuer die visuelle Hervorhebung von Trumpfkarten in der Hand verwendet.
+ * @param karte - Zu pruefende Karte
+ * @param spieltyp - Aktueller Spieltyp (null = kein laufendes Spiel, Standard-Trumpf-Logik)
+ * @returns true wenn die Karte Trumpf ist
+ */
 export function istTrumpfFuerSpieltyp(
   karte: KarteAntwort,
   spieltyp: LaufendesSpielAntwort['spieltyp'] | null

@@ -5,11 +5,17 @@
 
 ## Notiz
 
-Implementiert: 4.4 Spec-Status aktualisieren. 16 Specs wurden von "Noch nicht begonnen" auf "Vollständig implementiert und getestet" gesetzt. rest-api.md auf "Größtenteils implementiert (ohne OpenAPI)" gesetzt (Swagger fehlt noch — das ist Aufgabe 4.7). verbindungsabbruch.md vollständig abgehakt. Alle DoD-Checkboxen aktualisiert.
+Implementiert: 4.5 JSDoc-Dokumentation. Alle 5 Dateien vollständig dokumentiert auf Deutsch:
+- `SpielverwaltungEchtzeit.ts`: NachrichtenHandler, EchtzeitPort (Interface inkl. Methoden), SpielverwaltungEchtzeit-Klasse + alle 4 öffentlichen Methoden
+- `AnimationenService.ts`: AnimierbareKartenobjekte, Punkt, AnimationenService-Klasse + alle 7 öffentlichen Methoden (inkl. Konvertierung bestehender //-Kommentare zu JSDoc)
+- `AppStore.ts`: UiMeldung, AppZustand (alle Properties), AppStore-Klasse + alle 15 öffentlichen Methoden
+- `TischAnsichtModell.ts`: Alle 7 Interfaces + 3 exportierte Funktionen
+- `TischSzene.ts`: TischSzene-Klasse + create/shutdown/destroy
+48 Frontend-Tests grün, Lint fehlerfrei.
 
-Nächster logischer Schritt: 4.5 JSDoc-Dokumentation (AppStore.ts, TischSzene.ts, SpielverwaltungEchtzeit.ts, TischAnsichtModell.ts, AnimationenService.ts). Oder 4.6 E2E-Tests (Playwright). Beide sind unabhängig voneinander.
+Nächster logischer Schritt: 4.6 E2E-Tests (Playwright) oder 4.7 Swagger/OpenAPI. Beide sind unabhängig voneinander.
 
-Bekannte offene Fragen: rest-api.md hat noch eine offene Checkbox (Swagger/OpenAPI — Aufgabe 4.7). Die architektur-ddd.md, tech-migration.md und frontend-logging.md stehen noch auf "Neue Vorgabe" — diese könnten ebenfalls als erledigt markiert werden, wurden aber in dieser Iteration bewusst ausgelassen (die Migration ist schon lange fertig).
+Bekannte offene Fragen: rest-api.md hat noch eine offene Checkbox (Swagger/OpenAPI — Aufgabe 4.7). Die architektur-ddd.md, tech-migration.md und frontend-logging.md stehen noch auf "Neue Vorgabe" — könnten als erledigt markiert werden, wurden aber bewusst ausgelassen.
 
 ---
 
@@ -196,7 +202,7 @@ Bekannte offene Fragen: rest-api.md hat noch eine offene Checkbox (Swagger/OpenA
   - verbindungsabbruch.md: alle 10 neuen DoD-Checkboxen abgehakt, Status auf vollständig gesetzt
   - Alle Definition-of-Done-Checkboxen in erledigten Specs abgehakt
 
-- [ ] **4.5 JSDoc-Dokumentation (frontend-architektur.md)**
+- [x] **4.5 JSDoc-Dokumentation (frontend-architektur.md)**
   - JSDoc für AppStore.ts, TischSzene.ts, SpielverwaltungEchtzeit.ts, TischAnsichtModell.ts, AnimationenService.ts
   - Abhängigkeit: keine
 

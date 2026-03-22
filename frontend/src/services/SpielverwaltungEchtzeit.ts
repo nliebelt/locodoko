@@ -1,12 +1,40 @@
 import { Client, type IFrame, type IMessage, type StompSubscription } from '@stomp/stompjs';
 import { Logger } from '../logger';
 
+/** Callback-Typ fuer eingehende WebSocket-Nachrichten eines bestimmten Typs. */
 export type NachrichtenHandler<T> = (nachricht: T) => void;
 
+/**
+ * Port fuer die Echtzeit-Kommunikation per WebSocket/STOMP.
+ *
+ * Abstrahiert den konkreten STOMP-Client und ermoeglicht Testbarkeit durch Ersatz mit
+ * einem Mock. Der AppStore verwendet diesen Port, um Spielereignisse zu empfangen und
+ * Spielaktionen zu senden.
+ */
 export interface EchtzeitPort {
+  /**
+   * Baut die STOMP-Verbindung ueber WebSocket auf.
+   * Idempotent: Bei bestehender oder laufender Verbindung wird das Promise sofort aufgeloest.
+   */
   verbinde(): Promise<void>;
+
+  /**
+   * Abonniert ein STOMP-Ziel und ruft den Handler bei jeder Nachricht auf.
+   * @param ziel - STOMP-Topic oder Queue (z.B. `/topic/tische`)
+   * @param handler - Callback fuer eingehende Nachrichten
+   * @returns Abmelde-Funktion, die das Abonnement beendet
+   */
   abonnieren<T>(ziel: string, handler: NachrichtenHandler<T>): () => void;
+
+  /**
+   * Sendet eine Aktion an ein STOMP-Ziel.
+   * @param ziel - STOMP-Destination (z.B. `/app/tisch/{id}/karte`)
+   * @param payload - Optionaler JSON-Payload (wird serialisiert)
+   * @throws Error wenn keine aktive Verbindung besteht
+   */
   senden(ziel: string, payload?: unknown): void;
+
+  /** Trennt die WebSocket-Verbindung und gibt alle Ressourcen frei. */
   trennen(): void;
 }
 
@@ -19,11 +47,23 @@ function parseNachricht<T>(nachricht: IMessage): T {
   return JSON.parse(nachricht.body) as T;
 }
 
+/**
+ * Konkrete STOMP-Implementierung des EchtzeitPort.
+ *
+ * Verwaltet einen einzelnen STOMP-Client mit automatischem Reconnect (5s-Verzoegerung)
+ * und Heartbeat-Ueberwachung (10s). Verbindungsaufbau und -trennung sind idempotent.
+ * Alle Abonnements und gesendeten Aktionen erfordern eine aktive Verbindung.
+ */
 export class SpielverwaltungEchtzeit implements EchtzeitPort {
   private client: Client | null = null;
 
   private verbindungsPromise: Promise<void> | null = null;
 
+  /**
+   * Baut die STOMP-Verbindung auf und wartet auf erfolgreiche Verbindung.
+   * Bei laufendem Verbindungsversuch wird das bestehende Promise zurueckgegeben.
+   * @throws Error wenn die WebSocket-Verbindung fehlschlaegt
+   */
   async verbinde(): Promise<void> {
     if (this.client?.connected) {
       return;
@@ -82,6 +122,14 @@ export class SpielverwaltungEchtzeit implements EchtzeitPort {
     return this.verbindungsPromise;
   }
 
+  /**
+   * Abonniert ein STOMP-Ziel und ruft den Handler bei jeder Nachricht auf.
+   * Die Nachricht wird automatisch aus JSON deserialisiert.
+   * @param ziel - STOMP-Topic oder Queue (z.B. `/topic/tische`)
+   * @param handler - Callback mit dem deserialisierten Nachrichtenobjekt
+   * @returns Abmelde-Funktion fuer dieses Abonnement
+   * @throws Error wenn keine aktive STOMP-Verbindung besteht
+   */
   abonnieren<T>(ziel: string, handler: NachrichtenHandler<T>): () => void {
     const client = this.client;
     if (!client?.connected) {
@@ -97,6 +145,12 @@ export class SpielverwaltungEchtzeit implements EchtzeitPort {
     return () => subscription.unsubscribe();
   }
 
+  /**
+   * Serialisiert den Payload als JSON und sendet ihn an das STOMP-Ziel.
+   * @param ziel - STOMP-Destination (z.B. `/app/tisch/{id}/karte`)
+   * @param payload - Zu sendende Daten (Standard: leeres Objekt)
+   * @throws Error wenn keine aktive STOMP-Verbindung besteht
+   */
   senden(ziel: string, payload: unknown = {}): void {
     const client = this.client;
     if (!client?.connected) {
@@ -110,6 +164,7 @@ export class SpielverwaltungEchtzeit implements EchtzeitPort {
     });
   }
 
+  /** Deaktiviert den STOMP-Client und setzt alle Verbindungsreferenzen zurueck. */
   trennen(): void {
     this.client?.deactivate();
     this.client = null;

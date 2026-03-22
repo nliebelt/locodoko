@@ -162,6 +162,22 @@ function speichereGeschwindigkeit(faktor: AnimationsGeschwindigkeit): string {
   return String(faktor);
 }
 
+/**
+ * Hauptspielszene — rendert den Doppelkopf-Tisch und verwaltet alle Spielinteraktionen.
+ *
+ * Lebenszyklus: `create()` → AppStore-Subscription → reaktives `aktualisiereUi()` + `renderTisch()`
+ * bei jedem State-Update → `shutdown()`/`destroy()` beim Szenenwechsel.
+ *
+ * Verantwortlichkeiten:
+ * - Top-Down-Tisch-Rendering mit Phaser (Karten, Spieler, Stichmitte, Hintergrund)
+ * - HTML-UI-Panels (Tischsteuerung links, Spielaktionen rechts)
+ * - Kartenklick-Handling mit Validierung gegen spielbareKarten
+ * - Modale Dialoge fuer Vorbehalt, Armut, Rundenende und Partie-Ende
+ * - Animationen ueber AnimationenService (Ausspielen, Austeilen, Stich-Einziehen, Banner)
+ *
+ * Abhaengigkeiten: AppStore (reaktiver Zustand), TischAnsichtModell (Transformation),
+ * AnimationenService (Tweens), SpielverwaltungApi/EchtzeitPort (via AppStore).
+ */
 export class TischSzene extends Phaser.Scene {
   private abmeldenStore?: () => void;
 
@@ -239,6 +255,13 @@ export class TischSzene extends Phaser.Scene {
     super('TischSzene');
   }
 
+  /**
+   * Phaser-Lifecycle: Initialisiert die TischSzene.
+   *
+   * Erstellt Hintergrund, AnimationenService und HTML-UI, laedt die gespeicherte
+   * Animationsgeschwindigkeit, registriert Kartentexturen und abonniert den AppStore.
+   * Der AppStore-Listener reagiert auf jeden State-Update mit Animations- und UI-Aktualisierungen.
+   */
   create(): void {
     const snapshot = appStore.snapshot();
     Logger.szene('TischSzene create', { tischId: snapshot.aktuellerTisch?.id });
@@ -311,10 +334,12 @@ export class TischSzene extends Phaser.Scene {
     });
   }
 
+  /** Phaser-Lifecycle: Raeumt Ressourcen auf wenn die Szene gestoppt wird (z.B. Wechsel zur LobbySzene). */
   shutdown(): void {
     this.aufraeumen();
   }
 
+  /** Phaser-Lifecycle: Raeumt Ressourcen auf wenn die Szene zerstoert wird. */
   destroy(): void {
     this.aufraeumen();
   }

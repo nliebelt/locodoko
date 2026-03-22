@@ -18,22 +18,42 @@ import { SpielverwaltungFehler } from '../services/SpielverwaltungApi';
 import type { EchtzeitPort } from '../services/SpielverwaltungEchtzeit';
 import { Logger } from '../logger';
 
+/** Anzeige-Meldung fuer den Nutzer (Fehler oder Hinweis). */
 export interface UiMeldung {
+  /** Art der Meldung: Fehler (rot) oder Information (blau). */
   typ: 'fehler' | 'info';
+  /** Anzeigetext der Meldung. */
   text: string;
+  /** Maschinenlesbarer Fehlercode fuer spezifische Behandlung (z.B. 'PARTIE_ABGEBROCHEN'). */
   fehlerCode?: string;
 }
 
+/**
+ * Gesamter Anwendungszustand — einzige Quelle der Wahrheit im Frontend.
+ *
+ * Wird immutabel per `structuredClone` aus dem AppStore herausgegeben.
+ * Alle UI-Komponenten lesen ausschliesslich aus diesem Zustand.
+ */
 export interface AppZustand {
+  /** true nach erfolgreicher Session-Initialisierung und WebSocket-Verbindung. */
   initialisiert: boolean;
+  /** true waehrend einer laufenden HTTP-Anfrage (Lade-Indikator). */
   wirdGeladen: boolean;
+  /** Aktuell angezeigter Bereich der Anwendung. */
   bereich: 'LOBBY' | 'TISCH';
+  /** WebSocket-Verbindungsstatus. */
   verbindung: 'offline' | 'verbinde' | 'verbunden' | 'fehler';
+  /** true wenn der Debug-Modus aktiv ist (alle Haende sichtbar). */
   debugModus: boolean;
+  /** Session des eingeloggten Spielers; null bis zur Initialisierung. */
   spieler: SpielerSessionAntwort | null;
+  /** Aktuelle Tischliste aus dem letzten Snapshot. */
   tische: TischListenEintragAntwort[];
+  /** Aktuell geoeffneter Tisch; null in der Lobby. */
   aktuellerTisch: TischAntwort | null;
+  /** Aktueller Partie-Stand; null wenn keine Partie laeuft. */
   partieStand: PartieStandAntwort | null;
+  /** Letzte Nutzer-Meldung (Fehler oder Hinweis); null wenn keine Meldung aktiv. */
   meldung: UiMeldung | null;
 }
 
@@ -58,6 +78,17 @@ function istBekannterFehler(fehler: unknown): fehler is { message: string } {
   return Boolean(fehler && typeof fehler === 'object' && 'message' in fehler && typeof fehler.message === 'string');
 }
 
+/**
+ * Zentraler Zustandsspeicher der Locodoko-Anwendung.
+ *
+ * Verwaltet den gesamten AppZustand reaktiv und stellt ihn allen UI-Szenen
+ * als immutablen Snapshot bereit. Koordiniert REST-API-Aufrufe (SpielverwaltungApi)
+ * und WebSocket-Abonnements (EchtzeitPort) und leitet alle eingehenden Ereignisse
+ * als State-Updates weiter.
+ *
+ * Verwendung: `appStore.abonnieren(listener)` — der Listener wird sofort mit dem
+ * aktuellen Zustand aufgerufen und danach bei jeder Zustandsaenderung.
+ */
 export class AppStore {
   private zustand: AppZustand = erzeugeAnfangszustand();
 
@@ -74,16 +105,31 @@ export class AppStore {
     private readonly echtzeit: EchtzeitPort
   ) {}
 
+  /**
+   * Registriert einen Listener und ruft ihn sofort mit dem aktuellen Zustand auf.
+   * @param listener - Callback, der bei jeder Zustandsaenderung aufgerufen wird
+   * @returns Abmelde-Funktion zum Entfernen des Listeners
+   */
   abonnieren(listener: Listener): () => void {
     this.listener.add(listener);
     listener(this.snapshot());
     return () => this.listener.delete(listener);
   }
 
+  /**
+   * Gibt einen tiefen Klon des aktuellen Zustands zurueck.
+   * Alle Listener erhalten ebenfalls tiefe Klone — Mutationen haben keinen Effekt.
+   */
   snapshot(): AppZustand {
     return structuredClone(this.zustand);
   }
 
+  /**
+   * Initialisiert die Anwendung: Spieler-Session anlegen, WebSocket verbinden,
+   * gemeinsame Abonnements registrieren und initiale Tischliste laden.
+   * Idempotent: bei bereits initialisiertem Zustand wird nichts getan.
+   * @throws Error bei Verbindungs- oder Session-Fehler (wird als UiMeldung gesetzt)
+   */
   async initialisieren(): Promise<void> {
     if (this.zustand.initialisiert) {
       return;
@@ -107,6 +153,7 @@ export class AppStore {
     });
   }
 
+  /** Laedt die Tischliste per REST neu und fordert einen WebSocket-Snapshot an. */
   async aktualisiereTischliste(): Promise<void> {
     await this.fuehreMitStatus(async () => {
       const tische = await this.api.listeTische();
@@ -115,6 +162,10 @@ export class AppStore {
     });
   }
 
+  /**
+   * Erstellt einen neuen Tisch mit dem angegebenen Namen und wechselt zur TischSzene.
+   * @param name - Tischname (wird getrimmt; leer → Fehlermeldung ohne HTTP-Aufruf)
+   */
   async erstelleTisch(name: string): Promise<void> {
     const tischName = name.trim();
     if (!tischName) {
@@ -128,6 +179,10 @@ export class AppStore {
     });
   }
 
+  /**
+   * Tritt einem bestehenden Tisch bei und wechselt zur TischSzene.
+   * @param tischId - ID des beizutretenden Tisches
+   */
   async betreteTisch(tischId: Uuid): Promise<void> {
     await this.fuehreMitStatus(async () => {
       const tisch = await this.api.betreteTisch(tischId);
@@ -148,6 +203,10 @@ export class AppStore {
     this.echtzeit.senden(`/app/tisch/${tischId}/snapshot`);
   }
 
+  /**
+   * Verlaesst den aktuellen Tisch und kehrt zur Lobby zurueck.
+   * Bei laufender Partie wird diese fuer alle Spieler abgebrochen.
+   */
   async verlasseAktuellenTisch(): Promise<void> {
     const tisch = this.zustand.aktuellerTisch;
     if (!tisch) {
@@ -162,6 +221,7 @@ export class AppStore {
     });
   }
 
+  /** Startet die Partie am aktuellen Tisch (nur fuer den Tisch-Ersteller moeglich). */
   async starteAktuellenTisch(): Promise<void> {
     const tisch = this.zustand.aktuellerTisch;
     if (!tisch) {
@@ -187,6 +247,11 @@ export class AppStore {
     });
   }
 
+  /**
+   * Aendert den Tischhintergrund per REST-API und aktualisiert den lokalen Zustand.
+   * Bei bereits gesetztem Hintergrund wird kein HTTP-Aufruf gemacht.
+   * @param tischhintergrund - Neuer Tischhintergrund (FILZ_GRUEN | HOLZ_DUNKEL | BLAU_GRAFIK)
+   */
   async aktualisiereAktuellenTischhintergrund(tischhintergrund: Tischhintergrund): Promise<void> {
     const tisch = this.zustand.aktuellerTisch;
     if (!tisch) {
@@ -212,6 +277,10 @@ export class AppStore {
     });
   }
 
+  /**
+   * Sendet die Spielaktion "Karte ausspielen" per WebSocket.
+   * @param karteId - ID der auszuspielenden Karte
+   */
   spieleKarte(karteId: string): void {
     if (!karteId.trim()) {
       this.patch({ meldung: { typ: 'fehler', text: 'Es wurde keine gueltige Karte ausgewaehlt.', fehlerCode: 'KARTE_UNGUELTIG' } });
@@ -224,6 +293,10 @@ export class AppStore {
     this.sendeSpielaktion(`/app/tisch/${tischId}/karte`, { karteId });
   }
 
+  /**
+   * Sendet die Spielaktion "Ansage machen" per WebSocket.
+   * @param ansage - Typ der Ansage (RE, KONTRA, KEINE_90, …)
+   */
   sageAnsageAn(ansage: Ansage): void {
     const tischId = this.aktuellerTischIdOderFehler();
     if (!tischId) {
@@ -232,6 +305,10 @@ export class AppStore {
     this.sendeSpielaktion(`/app/tisch/${tischId}/ansage`, { ansage });
   }
 
+  /**
+   * Sendet die Vorbehalt-Ansage per WebSocket.
+   * @param vorbehalt - Vorbehalt-Typ (GESUND, SOLO_*, HOCHZEIT, ARMUT)
+   */
   meldeVorbehalt(vorbehalt: VorbehaltAnsage): void {
     const tischId = this.aktuellerTischIdOderFehler();
     if (!tischId) {
@@ -240,6 +317,11 @@ export class AppStore {
     this.sendeSpielaktion(`/app/tisch/${tischId}/vorbehalt`, { vorbehalt });
   }
 
+  /**
+   * Sendet die Antwort auf ein Armut-Angebot per WebSocket.
+   * @param angenommen - true wenn der Spieler die Armut annimmt
+   * @param kartenIds - IDs der zurueckzugebenden Karten (bei Annahme)
+   */
   beantworteArmut(angenommen: boolean, kartenIds: string[]): void {
     const tischId = this.aktuellerTischIdOderFehler();
     if (!tischId) {
@@ -248,16 +330,25 @@ export class AppStore {
     this.sendeSpielaktion(`/app/tisch/${tischId}/armut-antwort`, { angenommen, kartenIds });
   }
 
+  /** Blendet die aktuelle Fehlermeldung oder Hinweismeldung aus. */
   quittiereMeldung(): void {
     this.patch({ meldung: null });
   }
 
+  /**
+   * Schaltet den Debug-Modus um und fordert einen neuen Partie-Snapshot an.
+   * Im Debug-Modus sind alle Handkarten aller Spieler sichtbar.
+   */
   toggleDebugModus(): void {
     const debugModus = !this.zustand.debugModus;
     this.patch({ debugModus });
     this.fordereAktuellenPartieSnapshotAn(debugModus);
   }
 
+  /**
+   * Trennt alle WebSocket-Abonnements und die Verbindung, setzt den Zustand zurueck.
+   * Wird beim App-Teardown oder bei explizitem Logout aufgerufen.
+   */
   trennen(): void {
     this.setzeTischAbosZurueck();
     this.gemeinsameAbos.splice(0).forEach((abmelden) => abmelden());

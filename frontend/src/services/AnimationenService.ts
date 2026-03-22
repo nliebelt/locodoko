@@ -1,10 +1,15 @@
 import type Phaser from 'phaser';
 
+/**
+ * Phaser-Spielobjekte, die gemeinsam als Karte animiert werden koennen:
+ * ein Bild-Sprite und eine optionale Beschriftung.
+ */
 export interface AnimierbareKartenobjekte {
   bild: Phaser.GameObjects.Image;
   beschriftung?: Phaser.GameObjects.Text;
 }
 
+/** Zweidimensionaler Punkt mit x- und y-Koordinate (in Spielpixeln). */
 export interface Punkt {
   x: number;
   y: number;
@@ -14,6 +19,16 @@ function istVorhanden<T>(wert: T | undefined): wert is T {
   return wert !== undefined;
 }
 
+/**
+ * Verwaltet alle Phaser-Tweens und Timer fuer Kartenanimationen in der TischSzene.
+ *
+ * Bietet Promise-basierte Animationen fuer Kartenausspielen, Austeilen, Sticheinziehen
+ * sowie visuelle Feedback-Banner fuer Ansagen und Sonderpunkte. Alle Animationen
+ * beruecksichtigen den konfigurierbaren Geschwindigkeitsfaktor (1x / 2x / sofort).
+ *
+ * Laufende Tweens und Timer werden intern verwaltet und koennen per `abbrechen()`
+ * sofort gestoppt werden (z.B. beim Schliessen der Szene).
+ */
 export class AnimationenService {
   private readonly laufendeTweens = new Set<Phaser.Tweens.Tween>();
 
@@ -29,12 +44,20 @@ export class AnimationenService {
     this.geschwindigkeitsfaktor = geschwindigkeitsfaktor;
   }
 
-  // Setzt den globalen Geschwindigkeitsmultiplikator; wirkt auf alle nachfolgenden Animationen.
-  // 1 = normal, 2 = doppelt schnell, Infinity = sofort (kein Tween, kein Warten).
+  /**
+   * Setzt den globalen Geschwindigkeitsmultiplikator; wirkt auf alle nachfolgenden Animationen.
+   * @param faktor - 1 = normal, 2 = doppelt schnell, Infinity = sofort (kein Tween, kein Warten)
+   */
   setzeGeschwindigkeitsfaktor(faktor: number): void {
     this.geschwindigkeitsfaktor = faktor;
   }
 
+  /**
+   * Bewegt Karte (Bild + optionale Beschriftung) per Tween zur Zielpositon.
+   * @param kartenobjekte - Zu animierende Spielobjekte der Karte
+   * @param ziel - Zielposition in Spielpixeln
+   * @param dauer - Animationsdauer in Millisekunden (Standard: 400ms)
+   */
   async animiereKarteAusspielen(
     kartenobjekte: AnimierbareKartenobjekte,
     ziel: Punkt,
@@ -43,6 +66,13 @@ export class AnimationenService {
     await this.tweenZu([kartenobjekte.bild, kartenobjekte.beschriftung].filter(istVorhanden), ziel, dauer);
   }
 
+  /**
+   * Teilt Karten gestaffelt aus, indem jede Karte mit leichter Verzoegerung nach der vorherigen animiert wird.
+   * Alle Karten-Tweens laufen parallel (Promise.all), aber gestaffelt gestartet.
+   * @param pakete - Liste von Karte+Zielposition-Paaren
+   * @param verzoegerungProKarte - Startverzoegerung zwischen je zwei Karten in ms (Standard: 75ms)
+   * @param dauerProKarte - Tween-Dauer pro Karte in ms (Standard: 75ms)
+   */
   async animiereKartenAusteilen(
     pakete: Array<{ kartenobjekte: AnimierbareKartenobjekte; ziel: Punkt }>,
     verzoegerungProKarte = 75,
@@ -63,8 +93,13 @@ export class AnimationenService {
     await Promise.all(animationen);
   }
 
-  // Blendet ein Banner mit Spielername und Ansagetext in der Mitte der Szene ein (Fade-In),
-  // haelt es 1,5 Sekunden sichtbar und blendet es wieder aus (Fade-Out).
+  /**
+   * Blendet ein Banner mit weissem Text in der Mitte der Szene ein (Fade-In),
+   * haelt es sichtbar und blendet es wieder aus (Fade-Out). Wird fuer Ansagen verwendet.
+   * @param text - Anzeigetext des Banners (z.B. "Re" oder "Kontra")
+   * @param position - Anzeigeposition in Spielpixeln
+   * @param sichtbarkeitsdauer - Haltezeit in ms nach Fade-In (Standard: 1500ms)
+   */
   async animiereAnsageBanner(
     text: string,
     position: Punkt,
@@ -90,8 +125,13 @@ export class AnimationenService {
     }
   }
 
-  // Zeigt kurzes visuelles Feedback (1-2s) bei einem Sonderpunkt (Fuchs gefangen, Karlchen, Doppelkopf);
-  // goldener Text mit Fade-In/Out, nicht blockierend — setzt keine Spielaktion aus.
+  /**
+   * Zeigt kurzes visuelles Feedback (goldener Text) bei einem Sonderpunkt
+   * (Fuchs gefangen, Karlchen, Doppelkopf). Nicht blockierend — setzt keine Spielaktion aus.
+   * @param text - Anzeige-Label des Sonderpunkts (z.B. "Fuchs gefangen")
+   * @param position - Anzeigeposition in Spielpixeln
+   * @param sichtbarkeitsdauer - Haltezeit in ms (Standard: 1000ms)
+   */
   async animiereSonderpunktFeedback(
     text: string,
     position: Punkt,
@@ -117,6 +157,14 @@ export class AnimationenService {
     }
   }
 
+  /**
+   * Zieht alle Karten eines abgeschlossenen Stichs zur Gewinner-Position ein.
+   * Wartet zuerst eine konfigurierbare Zeit, damit Spieler den Stich sehen koennen.
+   * @param kartenobjekte - Alle vier Kartenobjekte des Stichs
+   * @param ziel - Zielposition des Stichwinklers (Spielerposition)
+   * @param wartezeit - Wartezeit vor dem Einziehen in ms (Standard: 1000ms)
+   * @param dauer - Tween-Dauer in ms (Standard: 600ms)
+   */
   async animiereStichEinziehen(
     kartenobjekte: AnimierbareKartenobjekte[],
     ziel: Punkt,
@@ -134,6 +182,10 @@ export class AnimationenService {
     );
   }
 
+  /**
+   * Stoppt alle laufenden Tweens und Timer sofort.
+   * Wird beim Herunterfahren der Szene aufgerufen, um Memory-Leaks zu verhindern.
+   */
   abbrechen(): void {
     this.laufendeTweens.forEach((tween) => tween.stop());
     this.laufendeTweens.clear();
