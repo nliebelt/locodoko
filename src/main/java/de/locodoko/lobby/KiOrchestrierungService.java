@@ -58,6 +58,9 @@ public class KiOrchestrierungService {
         if (tisch.partie() == null || tisch.partie().status() == PartieStatus.BEENDET) {
             return;
         }
+        SpielEntity startSpiel = findeLaufendesSpiel(tisch.partie());
+        Spielphase startPhase = startSpiel != null ? startSpiel.phase() : null;
+        LOGGER.info("KI-Orchestrierung gestartet [tischId={}, spielphase={}]", tisch.id(), startPhase);
         int anzahlAktionen = 0;
         while (anzahlAktionen++ < MAXIMALE_KI_AKTIONEN) {
             if (tisch.partie().status() == PartieStatus.BEENDET) {
@@ -69,6 +72,7 @@ public class KiOrchestrierungService {
             }
             Spiel laufendesSpiel = SpielPersistenzAdapter.zuDomainSpiel(laufendesSpielEntity);
             if (laufendesSpiel.phase() == Spielphase.AUSWERTUNG) {
+                LOGGER.info("Spiel beendet [spielNr={}, tischId={}]", laufendesSpielEntity.spielNummer(), tisch.id());
                 SpielPersistenzAdapter.uebernehmeDomainSpiel(laufendesSpielEntity, laufendesSpiel.werteAus(punkteRechner));
                 continue;
             }
@@ -86,6 +90,7 @@ public class KiOrchestrierungService {
             if (spielerEntity == null || (!spielerEntity.istKi() && !spielerEntity.istKiUebernommen())) {
                 return;
             }
+            LOGGER.info("KI-Spielzug [spielerId={}, phase={}]", erwarteterSpieler, laufendesSpiel.phase());
             // KI-Strategie-Exceptions abfangen: Die Partie bleibt im letzten konsistenten
             // Datenbankstand, weil uebernehmeDomainSpiel erst nach dem KI-Aufruf aufgerufen wird.
             // Ohne diesen Schutz haengt die Partie permanent, weil jeder folgende Aufruf
@@ -131,6 +136,7 @@ public class KiOrchestrierungService {
                     yield laufendesSpiel.sageAn(spielerPosition, ansage);
                 }
                 Karte karte = kiStrategie.waehleKarte(zustand);
+                LOGGER.debug("KI spielt Karte [karte={}, spielerId={}]", karte, spielerPosition);
                 yield laufendesSpiel.spieleKarte(spielerPosition, karte);
             }
             default -> laufendesSpiel;
@@ -172,6 +178,7 @@ public class KiOrchestrierungService {
         );
         SpielPersistenzAdapter.uebernehmeDomainSpiel(neuesSpielEntity, neuesSpiel);
         partie.fuegeSpielHinzu(neuesSpielEntity);
+        LOGGER.info("Neue Partie gestartet [tischId={}, spielNr={}]", tisch.id(), neuesSpielEntity.spielNummer());
     }
 
     private SpielEntity findeLaufendesSpiel(PartieEntity partie) {

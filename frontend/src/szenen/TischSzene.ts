@@ -9,6 +9,7 @@ import {
   registriereKartenSpriteTexturen
 } from '../assets/AssetLoader';
 import { appStore } from '../anwendung';
+import { Logger } from '../logger';
 import {
   erstelleTischAnsichtAusStatus,
   istTrumpfFuerSpieltyp,
@@ -199,13 +200,15 @@ export class TischSzene extends Phaser.Scene {
   }
 
   create(): void {
+    const snapshot = appStore.snapshot();
+    Logger.szene('TischSzene create', { tischId: snapshot.aktuellerTisch?.id });
     const breite = this.scale.gameSize.width;
     const hoehe = this.scale.gameSize.height;
     const anfangsModell = erstelleTischAnsichtAusStatus(
-      appStore.snapshot().spieler?.spielerId ?? null,
-      appStore.snapshot().aktuellerTisch,
-      appStore.snapshot().partieStand,
-      appStore.snapshot().debugModus
+      snapshot.spieler?.spielerId ?? null,
+      snapshot.aktuellerTisch,
+      snapshot.partieStand,
+      snapshot.debugModus
     );
     this.hintergrund = this.add.tileSprite(
       breite / 2,
@@ -223,6 +226,12 @@ export class TischSzene extends Phaser.Scene {
       const modell = this.erstelleModell(zustand);
       const vorherigesModell = this.letztesModell;
       const vorherigerZustand = this.letzterZustand;
+      // Phasenübergang loggen (nicht pro Frame, nur bei Änderung)
+      const vorherigePhase = vorherigerZustand?.partieStand?.spielphase;
+      const aktuellePhase = zustand.partieStand?.spielphase;
+      if (aktuellePhase && aktuellePhase !== vorherigePhase) {
+        Logger.szene('Spielphase', { vorher: vorherigePhase ?? null, nachher: aktuellePhase });
+      }
       this.synchronisiereAnimationszustand(modell, zustand);
       this.letzterZustand = zustand;
       this.aktualisiereUi(zustand, modell);
@@ -1042,6 +1051,7 @@ export class TischSzene extends Phaser.Scene {
   }
 
   private async spieleKarteMitAnimation(karteId: string, modell: TischAnsichtModell): Promise<void> {
+    Logger.szene('Karte angeklickt', { karte: karteId });
     if (this.spielzugAnimationAktiv) {
       return;
     }

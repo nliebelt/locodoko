@@ -1,4 +1,5 @@
 import { Client, type IFrame, type IMessage, type StompSubscription } from '@stomp/stompjs';
+import { Logger } from '../logger';
 
 export type NachrichtenHandler<T> = (nachricht: T) => void;
 
@@ -63,12 +64,14 @@ export class SpielverwaltungEchtzeit implements EchtzeitPort {
       };
 
       client.onConnect = () => {
+        Logger.websocket('STOMP verbunden');
         this.verbindungsPromise = null;
         resolve();
       };
       client.onStompError = behebeVerbindungsfehler;
       client.onWebSocketError = behebeVerbindungsfehler;
       client.onWebSocketClose = (event) => {
+        Logger.websocket('STOMP getrennt', { wasClean: event.wasClean, code: event.code });
         if (!event.wasClean && this.verbindungsPromise) {
           behebeVerbindungsfehler(event);
         }
@@ -85,7 +88,9 @@ export class SpielverwaltungEchtzeit implements EchtzeitPort {
       throw new Error(`Die WebSocket-Verbindung ist fuer ${ziel} noch nicht bereit.`);
     }
 
+    Logger.websocket('Subscribed', { topic: ziel });
     const subscription: StompSubscription = client.subscribe(ziel, (nachricht) => {
+      Logger.websocket('Nachricht empfangen', { topic: ziel, body: nachricht.body });
       handler(parseNachricht<T>(nachricht));
     });
 
@@ -98,6 +103,7 @@ export class SpielverwaltungEchtzeit implements EchtzeitPort {
       throw new Error(`Die WebSocket-Verbindung ist fuer ${ziel} nicht aktiv.`);
     }
 
+    Logger.websocket('Aktion gesendet', { destination: ziel, body: payload });
     client.publish({
       destination: ziel,
       body: JSON.stringify(payload)

@@ -16,6 +16,7 @@ import type {
 import type { SpielverwaltungApi } from '../services/SpielverwaltungApi';
 import { SpielverwaltungFehler } from '../services/SpielverwaltungApi';
 import type { EchtzeitPort } from '../services/SpielverwaltungEchtzeit';
+import { Logger } from '../logger';
 
 export interface UiMeldung {
   typ: 'fehler' | 'info';
@@ -91,6 +92,7 @@ export class AppStore {
     await this.fuehreMitStatus(async () => {
       this.patch({ verbindung: 'verbinde' });
       const spieler = await this.api.initialisiereSpielerSession();
+      Logger.store('Session initialisiert', { spielerId: spieler.id });
       await this.echtzeit.verbinde();
       this.registriereGemeinsameAbos();
       const tische = await this.api.listeTische();
@@ -289,9 +291,11 @@ export class AppStore {
   private registrierePartieAbos(partieId: Uuid): void {
     this.tischAbos.push(
       this.echtzeit.abonnieren<PartieEreignisAntwort>(`/topic/partie/${partieId}`, (ereignis) => {
+        Logger.store('Partie-Snapshot', { spielphase: ereignis.partieStand?.spielphase, aktuellerSpieler: ereignis.partieStand?.aktuellerSpieler });
         this.patch({ partieStand: ereignis.partieStand });
       }),
       this.echtzeit.abonnieren<PartieEreignisAntwort>(`/user/queue/partie/${partieId}`, (ereignis) => {
+        Logger.store('Partie-Snapshot', { spielphase: ereignis.partieStand?.spielphase, aktuellerSpieler: ereignis.partieStand?.aktuellerSpieler });
         this.patch({ partieStand: ereignis.partieStand });
       })
     );
@@ -310,6 +314,7 @@ export class AppStore {
 
   private verarbeiteTischEreignis(ereignis: TischEreignisAntwort): void {
     if (ereignis.ereignisTyp === 'TISCH_ENTFERNT' || !ereignis.tisch) {
+      Logger.store('Zurueck zur Lobby');
       this.setzeTischAbosZurueck();
       this.patch({ aktuellerTisch: null, partieStand: null, bereich: 'LOBBY' });
       return;
@@ -317,6 +322,7 @@ export class AppStore {
 
     const bekanntePartieId = this.aktuellePartieAbo;
     const partiestand = ereignis.partieStand ?? this.zustand.partieStand;
+    Logger.store('Tisch-Snapshot', { tischId: ereignis.tisch.id, phase: ereignis.tisch.phase });
     this.patch({ aktuellerTisch: ereignis.tisch, partieStand: partiestand, bereich: 'TISCH' });
 
     if (ereignis.tisch.partieId && ereignis.tisch.partieId !== bekanntePartieId) {
@@ -330,6 +336,7 @@ export class AppStore {
   }
 
   private sendeSpielaktion(ziel: string, payload: unknown): void {
+    Logger.store('Aktion ausgeloest', { typ: ziel });
     try {
       this.patch({ meldung: null });
       this.echtzeit.senden(ziel, payload);

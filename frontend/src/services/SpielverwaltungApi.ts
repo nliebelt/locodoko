@@ -7,6 +7,7 @@ import type {
   TischListenEintragAntwort,
   Uuid
 } from '../modelle/SpielverwaltungDto';
+import { Logger } from '../logger';
 
 const STANDARD_SPIELERNAME_PREFIX = 'Spieler';
 const SPIELERNAME_SPEICHER_SCHLUESSEL = 'locodoko-spielername';
@@ -67,6 +68,7 @@ async function leseAntwort<T>(antwort: Response): Promise<T | null> {
 }
 
 async function holeJson<T>(pfad: string, init?: RequestInit): Promise<T> {
+  const methode = init?.method ?? 'GET';
   const antwort = await fetch(pfad, {
     credentials: 'include',
     headers: {
@@ -76,8 +78,10 @@ async function holeJson<T>(pfad: string, init?: RequestInit): Promise<T> {
     ...init
   });
 
+  Logger.api(`${methode} ${pfad}`, { status: antwort.status });
   const daten = await leseAntwort<unknown>(antwort);
   if (!antwort.ok) {
+    Logger.api('Fehler', { url: pfad, status: antwort.status, body: daten });
     if (istApiFehlerAntwort(daten)) {
       throw new SpielverwaltungFehler(daten.fehlerCode, daten.nachricht);
     }
