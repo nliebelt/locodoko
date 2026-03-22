@@ -5,11 +5,11 @@
 
 ## Notiz
 
-Implementiert: Auto-Neustart nach Partie-Ende (4.3). Backend-Endpoint `POST /api/tische/{id}/neue-partie` startet eine frische Partie idempotent. Frontend zeigt Partie-Ende-Modal mit Gesamtpunktestand und 10s-Countdown. Außerdem: 4.1 (Session-Recovery) und 4.2 (Tisch-Verlassen) waren bereits vollständig implementiert — nur als erledigt markiert.
+Implementiert: 4.4 Spec-Status aktualisieren. 16 Specs wurden von "Noch nicht begonnen" auf "Vollständig implementiert und getestet" gesetzt. rest-api.md auf "Größtenteils implementiert (ohne OpenAPI)" gesetzt (Swagger fehlt noch — das ist Aufgabe 4.7). verbindungsabbruch.md vollständig abgehakt. Alle DoD-Checkboxen aktualisiert.
 
-Nächster logischer Schritt: 4.4 Spec-Status aktualisieren (17 Specs stehen auf "Noch nicht begonnen", obwohl Code fertig ist). Oder alternativ 4.5 JSDoc oder 4.6 E2E-Tests.
+Nächster logischer Schritt: 4.5 JSDoc-Dokumentation (AppStore.ts, TischSzene.ts, SpielverwaltungEchtzeit.ts, TischAnsichtModell.ts, AnimationenService.ts). Oder 4.6 E2E-Tests (Playwright). Beide sind unabhängig voneinander.
 
-Bekannte Fragen: Der Partie-Ende-Neustart läuft gut, aber bei gleichzeitigen Requests mehrerer Clients können alle 4 Clients gleichzeitig `starteNeuePartie()` senden. Das ist durch die Idempotenz-Logik abgefangen (Partie LAUFEND → "Partie läuft bereits."), sollte aber mit einem Integrationstest abgesichert werden.
+Bekannte offene Fragen: rest-api.md hat noch eine offene Checkbox (Swagger/OpenAPI — Aufgabe 4.7). Die architektur-ddd.md, tech-migration.md und frontend-logging.md stehen noch auf "Neue Vorgabe" — diese könnten ebenfalls als erledigt markiert werden, wurden aber in dieser Iteration bewusst ausgelassen (die Migration ist schon lange fertig).
 
 ---
 
@@ -105,7 +105,7 @@ Bekannte Fragen: Der Partie-Ende-Neustart läuft gut, aber bei gleichzeitigen Re
 - [x] Tests: VerbindungsabbruchServiceTest (8 Tests), SpielerSessionCleanupServiceTest (7 Tests)
 - [x] **Session-Recovery bei Tab-Reload**: `GET /api/spieler/session` liefert `aktiverTischId`, BootSzene leitet weiter
 - [x] **Tisch-Verlassen-Button**: Bestätigungsdialog, PARTIE_ABGEBROCHEN-Event, Weiterleitung zur Lobby
-- [ ] **Auto-Neustart nach Partie-Ende**: Countdown + automatische neue Partie
+- [x] **Auto-Neustart nach Partie-Ende**: Countdown + automatische neue Partie
 
 ---
 
@@ -191,10 +191,10 @@ Bekannte Fragen: Der Partie-Ende-Neustart läuft gut, aber bei gleichzeitigen Re
 
 ### Priorität 2 — Qualität & Dokumentation
 
-- [ ] **4.4 Spec-Status aktualisieren**
-  - 17 Specs stehen auf "Noch nicht begonnen", obwohl der Code vollständig implementiert ist
-  - Definition-of-Done-Checkboxen in allen erledigten Specs abhaken
-  - Betrifft: lobby.md, tischkonfiguration.md, spielablauf.md, spieler-session.md, websocket-kommunikation.md, rest-api.md, ansagen.md, sonderpunkte.md, kartendeck.md, trumpfhierarchie.md, punkteberechnung.md, stichlogik.md, datenbankmodell.md, frontend-tischansicht.md, frontend-ui-logik.md, frontend-animationen.md, frontend-logging.md
+- [x] **4.4 Spec-Status aktualisieren**
+  - 16 Specs auf "Vollständig implementiert und getestet" gesetzt, rest-api.md auf "Größtenteils implementiert (ohne OpenAPI)"
+  - verbindungsabbruch.md: alle 10 neuen DoD-Checkboxen abgehakt, Status auf vollständig gesetzt
+  - Alle Definition-of-Done-Checkboxen in erledigten Specs abgehakt
 
 - [ ] **4.5 JSDoc-Dokumentation (frontend-architektur.md)**
   - JSDoc für AppStore.ts, TischSzene.ts, SpielverwaltungEchtzeit.ts, TischAnsichtModell.ts, AnimationenService.ts

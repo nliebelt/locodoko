@@ -2,7 +2,7 @@
 
 | Feld           | Wert                                        |
 |----------------|---------------------------------------------|
-| Status         | Noch nicht begonnen                         |
+| Status         | Vollständig implementiert und getestet      |
 | Priorität      | Hoch                                        |
 | Abhängigkeiten | kartendeck.md, spielablauf.md, spieler-session.md, tischkonfiguration.md, punkteberechnung.md |
 
@@ -94,16 +94,16 @@ Für die Entwicklung wird H2 (In-Memory) verwendet, für die Produktion PostgreS
 
 ## Definition of Done
 
-- [ ] Alte JPA-Entitäten aus `spielverwaltung/persistenz/` gelöscht
-- [ ] Domain-Klassen in Bounded Contexts nach `lobby/`, `partie/`, `karten/`, `session/` verschoben
-- [ ] Aggregate Roots mit Spring Data JDBC `@Table` annotiert
-- [ ] Repositories (Spring Data JDBC) für alle Aggregate Roots erstellt (`TischRepository`, `PartieRepository`, `SpielerRepository`)
-- [ ] Liquibase Changesets generiert und committiert (`db/changelog/*.yaml`)
-- [ ] Unit-Tests für Repository-Operationen geschrieben und bestanden
-- [ ] H2-Profil funktioniert (In-Memory, Liquibase-Migration)
-- [ ] PostgreSQL-Profil konfiguriert
-- [ ] Lombok korrekt eingebunden (`@Getter`, `@RequiredArgsConstructor`, `@Value` für VOs)
-- [ ] Code-Review / Plausibilitätsprüfung
+- [x] Alte JPA-Entitäten aus `spielverwaltung/persistenz/` gelöscht
+- [x] Domain-Klassen in Bounded Contexts nach `lobby/`, `partie/`, `karten/`, `session/` verschoben
+- [x] Aggregate Roots mit Spring Data JDBC `@Table` annotiert
+- [x] Repositories (Spring Data JDBC) für alle Aggregate Roots erstellt (`TischRepository`, `PartieRepository`, `SpielerRepository`)
+- [x] Liquibase Changesets generiert und committiert (`db/changelog/*.yaml`)
+- [x] Unit-Tests für Repository-Operationen geschrieben und bestanden
+- [x] H2-Profil funktioniert (In-Memory, Liquibase-Migration)
+- [x] PostgreSQL-Profil konfiguriert
+- [x] Lombok korrekt eingebunden (`@Getter`, `@RequiredArgsConstructor`, `@Value` für VOs)
+- [x] Code-Review / Plausibilitätsprüfung
 
 ## Technische Hinweise
 

@@ -2,7 +2,7 @@
 
 | Feld           | Wert                                        |
 |----------------|---------------------------------------------|
-| Status         | Noch nicht begonnen                         |
+| Status         | Vollständig implementiert und getestet      |
 | Priorität      | Mittel                                      |
 | Abhängigkeiten | kartendeck.md, stichlogik.md, trumpfhierarchie.md |
 
@@ -52,13 +52,13 @@ Sonderpunkte sind zusätzliche Spielpunkte, die für besondere Ereignisse währe
 
 ## Definition of Done
 
-- [ ] Alle Anforderungen implementiert
-- [ ] Unit-Tests für Fuchs-Erkennung geschrieben und bestanden
-- [ ] Unit-Tests für Karlchen-Erkennung geschrieben und bestanden
-- [ ] Unit-Tests für Doppelkopf-Erkennung geschrieben und bestanden
-- [ ] Sonderpunkte im Solo-Spiel getestet
-- [ ] Deaktivierung einzelner Sonderpunkte getestet
-- [ ] Code-Review / Plausibilitätsprüfung
+- [x] Alle Anforderungen implementiert
+- [x] Unit-Tests für Fuchs-Erkennung geschrieben und bestanden
+- [x] Unit-Tests für Karlchen-Erkennung geschrieben und bestanden
+- [x] Unit-Tests für Doppelkopf-Erkennung geschrieben und bestanden
+- [x] Sonderpunkte im Solo-Spiel getestet
+- [x] Deaktivierung einzelner Sonderpunkte getestet
+- [x] Code-Review / Plausibilitätsprüfung
 
 ## Technische Hinweise
 

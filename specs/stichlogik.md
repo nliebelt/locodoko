@@ -2,7 +2,7 @@
 
 | Feld           | Wert                                        |
 |----------------|---------------------------------------------|
-| Status         | Noch nicht begonnen                         |
+| Status         | Vollständig implementiert und getestet      |
 | Priorität      | Hoch                                        |
 | Abhängigkeiten | kartendeck.md, trumpfhierarchie.md          |
 
@@ -41,13 +41,13 @@ Definition der Regeln, die bestimmen, wer einen Stich gewinnt, sowie der Bedienp
 
 ## Definition of Done
 
-- [ ] Alle Anforderungen implementiert
-- [ ] Unit-Tests für alle Stich-Szenarien geschrieben und bestanden
-- [ ] Bedienpflicht-Logik getestet (kann bedienen / kann nicht bedienen)
-- [ ] Stichgewinner-Ermittlung für Trumpf- und Fehlstiche getestet
-- [ ] Sonderfall gleiche Karten getestet
-- [ ] Augen-Zuweisung getestet
-- [ ] Code-Review / Plausibilitätsprüfung
+- [x] Alle Anforderungen implementiert
+- [x] Unit-Tests für alle Stich-Szenarien geschrieben und bestanden
+- [x] Bedienpflicht-Logik getestet (kann bedienen / kann nicht bedienen)
+- [x] Stichgewinner-Ermittlung für Trumpf- und Fehlstiche getestet
+- [x] Sonderfall gleiche Karten getestet
+- [x] Augen-Zuweisung getestet
+- [x] Code-Review / Plausibilitätsprüfung
 
 ## Technische Hinweise
 

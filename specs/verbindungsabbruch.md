@@ -2,7 +2,7 @@
 
 | Feld           | Wert                                                                      |
 |----------------|---------------------------------------------------------------------------|
-| Status         | Teilweise implementiert (Disconnect/Reconnect), erweitert 2026-03-22      |
+| Status         | Vollständig implementiert und getestet                                    |
 | Priorität      | Hoch                                                                      |
 | Abhängigkeiten | spieler-session.md, ki-strategie.md, websocket-kommunikation.md, lobby.md |
 
@@ -37,12 +37,12 @@ Wenn ein menschlicher Spieler während eines laufenden Spiels die Verbindung ver
 
 ## Definition of Done
 
-- [ ] Alle Anforderungen implementiert
-- [ ] Unit-Tests für Disconnect-Erkennung geschrieben und bestanden
-- [ ] Unit-Tests für Reconnect-Logik geschrieben und bestanden
-- [ ] Unit-Tests für KI-Übernahme geschrieben und bestanden
-- [ ] Integrationstests für Disconnect/Reconnect-Szenario bestanden
-- [ ] Code-Review / Plausibilitätsprüfung
+- [x] Alle Anforderungen implementiert
+- [x] Unit-Tests für Disconnect-Erkennung geschrieben und bestanden
+- [x] Unit-Tests für Reconnect-Logik geschrieben und bestanden
+- [x] Unit-Tests für KI-Übernahme geschrieben und bestanden
+- [x] Integrationstests für Disconnect/Reconnect-Szenario bestanden
+- [x] Code-Review / Plausibilitätsprüfung
 
 ## Technische Hinweise (Verbindungsabbruch)
 
@@ -130,13 +130,13 @@ Nach dem Ende einer Partie (alle Spiele gespielt) startet der Tisch automatisch 
 
 ## Aktualisiertes Definition of Done
 
-- [ ] `GET /api/spieler/session` liefert `aktiverTischId`
-- [ ] `BootSzene` leitet bei `aktiverTischId` direkt zur `TischSzene` weiter
-- [ ] WebSocket-Reconnect und Snapshot-Anfrage nach Tab-Reload funktionieren
-- [ ] "Tisch verlassen"-Button in Tischansicht vorhanden
-- [ ] Bestätigungsdialog vor Verlassen implementiert
-- [ ] Backend: `PARTIE_ABGEBROCHEN`-Event bei willentlichem Verlassen
-- [ ] Alle Spieler werden nach Abbruch zur Lobby weitergeleitet
-- [ ] Nach Partie-Ende startet automatisch neue Partie mit Countdown
-- [ ] Alle bestehenden Disconnect/Reconnect-Tests bleiben grün
-- [ ] Neue Tests für Session-Recovery, Tisch-Verlassen und Neustart
+- [x] `GET /api/spieler/session` liefert `aktiverTischId`
+- [x] `BootSzene` leitet bei `aktiverTischId` direkt zur `TischSzene` weiter
+- [x] WebSocket-Reconnect und Snapshot-Anfrage nach Tab-Reload funktionieren
+- [x] "Tisch verlassen"-Button in Tischansicht vorhanden
+- [x] Bestätigungsdialog vor Verlassen implementiert
+- [x] Backend: `PARTIE_ABGEBROCHEN`-Event bei willentlichem Verlassen
+- [x] Alle Spieler werden nach Abbruch zur Lobby weitergeleitet
+- [x] Nach Partie-Ende startet automatisch neue Partie mit Countdown
+- [x] Alle bestehenden Disconnect/Reconnect-Tests bleiben grün
+- [x] Neue Tests für Session-Recovery, Tisch-Verlassen und Neustart

@@ -2,7 +2,7 @@
 
 | Feld           | Wert                                        |
 |----------------|---------------------------------------------|
-| Status         | Noch nicht begonnen                         |
+| Status         | Vollständig implementiert und getestet      |
 | Priorität      | Hoch                                        |
 | Abhängigkeiten | kartendeck.md, stichlogik.md, ansagen.md, sonderpunkte.md |
 
@@ -71,14 +71,14 @@ Die Punkteberechnung bestimmt am Ende eines Spiels, welche Partei gewonnen hat u
 
 ## Definition of Done
 
-- [ ] Alle Anforderungen implementiert
-- [ ] Unit-Tests für Grundbewertung geschrieben und bestanden
-- [ ] Unit-Tests für Ansage-Bewertung geschrieben und bestanden
-- [ ] Unit-Tests für Verschärfungen geschrieben und bestanden
-- [ ] Unit-Tests für Solo-Bewertung geschrieben und bestanden
-- [ ] Unit-Tests für Nullsumme geschrieben und bestanden
-- [ ] Gesamtstand-Akkumulation getestet
-- [ ] Code-Review / Plausibilitätsprüfung
+- [x] Alle Anforderungen implementiert
+- [x] Unit-Tests für Grundbewertung geschrieben und bestanden
+- [x] Unit-Tests für Ansage-Bewertung geschrieben und bestanden
+- [x] Unit-Tests für Verschärfungen geschrieben und bestanden
+- [x] Unit-Tests für Solo-Bewertung geschrieben und bestanden
+- [x] Unit-Tests für Nullsumme geschrieben und bestanden
+- [x] Gesamtstand-Akkumulation getestet
+- [x] Code-Review / Plausibilitätsprüfung
 
 ## Technische Hinweise
 

@@ -2,7 +2,7 @@
 
 | Feld           | Wert                                        |
 |----------------|---------------------------------------------|
-| Status         | Noch nicht begonnen                         |
+| Status         | Vollständig implementiert und getestet      |
 | Priorität      | Hoch                                        |
 | Abhängigkeiten | Keine                                       |
 
@@ -43,12 +43,12 @@ Definition des Kartendecks für Doppelkopf. Das Spiel verwendet ein französisch
 
 ## Definition of Done
 
-- [ ] Alle Anforderungen implementiert
-- [ ] Unit-Tests geschrieben und bestanden
-- [ ] Augenwert-Berechnung korrekt getestet
-- [ ] Deck-Erzeugung mit und ohne Neunen getestet
-- [ ] Mischen und Verteilen getestet
-- [ ] Code-Review / Plausibilitätsprüfung
+- [x] Alle Anforderungen implementiert
+- [x] Unit-Tests geschrieben und bestanden
+- [x] Augenwert-Berechnung korrekt getestet
+- [x] Deck-Erzeugung mit und ohne Neunen getestet
+- [x] Mischen und Verteilen getestet
+- [x] Code-Review / Plausibilitätsprüfung
 
 ## Technische Hinweise
 

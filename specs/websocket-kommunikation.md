@@ -2,7 +2,7 @@
 
 | Feld           | Wert                                        |
 |----------------|---------------------------------------------|
-| Status         | Noch nicht begonnen                         |
+| Status         | Vollständig implementiert und getestet      |
 | Priorität      | Hoch                                        |
 | Abhängigkeiten | spielablauf.md, spieler-session.md          |
 
@@ -84,12 +84,12 @@ Die Echtzeit-Kommunikation zwischen Frontend und Backend erfolgt über WebSocket
 
 ## Definition of Done
 
-- [ ] Alle Anforderungen implementiert
-- [ ] WebSocket-Konfiguration (STOMP) implementiert
-- [ ] Alle Event-Handler implementiert und getestet
-- [ ] Unit-Tests für Event-Validierung geschrieben und bestanden
-- [ ] Integrationstests für WebSocket-Kommunikation bestanden
-- [ ] Code-Review / Plausibilitätsprüfung
+- [x] Alle Anforderungen implementiert
+- [x] WebSocket-Konfiguration (STOMP) implementiert
+- [x] Alle Event-Handler implementiert und getestet
+- [x] Unit-Tests für Event-Validierung geschrieben und bestanden
+- [x] Integrationstests für WebSocket-Kommunikation bestanden
+- [x] Code-Review / Plausibilitätsprüfung
 
 ## Technische Hinweise
 

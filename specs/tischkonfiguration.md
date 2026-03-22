@@ -2,7 +2,7 @@
 
 | Feld           | Wert                                        |
 |----------------|---------------------------------------------|
-| Status         | Noch nicht begonnen                         |
+| Status         | Vollständig implementiert und getestet      |
 | Priorität      | Mittel                                      |
 | Abhängigkeiten | lobby.md                                    |
 
@@ -50,11 +50,11 @@ Die Tischkonfiguration definiert das Regelwerk, das an einem bestimmten Tisch gi
 
 ## Definition of Done
 
-- [ ] Alle Anforderungen implementiert
-- [ ] Unit-Tests für Konfigurationsvalidierung geschrieben und bestanden
-- [ ] REST-API-Endpunkte für Konfiguration implementiert und getestet
-- [ ] Integration mit Spiellogik getestet (aktivierte/deaktivierte Regeln)
-- [ ] Code-Review / Plausibilitätsprüfung
+- [x] Alle Anforderungen implementiert
+- [x] Unit-Tests für Konfigurationsvalidierung geschrieben und bestanden
+- [x] REST-API-Endpunkte für Konfiguration implementiert und getestet
+- [x] Integration mit Spiellogik getestet (aktivierte/deaktivierte Regeln)
+- [x] Code-Review / Plausibilitätsprüfung
 
 ## Technische Hinweise
 

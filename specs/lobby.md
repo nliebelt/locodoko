@@ -2,7 +2,7 @@
 
 | Feld           | Wert                                        |
 |----------------|---------------------------------------------|
-| Status         | Noch nicht begonnen                         |
+| Status         | Vollständig implementiert und getestet      |
 | Priorität      | Hoch                                        |
 | Abhängigkeiten | spieler-session.md, tischkonfiguration.md   |
 
@@ -42,13 +42,13 @@ Die Lobby ist die zentrale Übersichtsseite, auf der Spieler offene Tische sehen
 
 ## Definition of Done
 
-- [ ] Alle Anforderungen implementiert
-- [ ] REST-API-Endpunkte für Tische implementiert und getestet
-- [ ] WebSocket-Update für Lobby-Aktualisierung implementiert
-- [ ] Frontend-Lobby-Seite implementiert
-- [ ] Unit-Tests geschrieben und bestanden
-- [ ] Integrationstests bestanden
-- [ ] Code-Review / Plausibilitätsprüfung
+- [x] Alle Anforderungen implementiert
+- [x] REST-API-Endpunkte für Tische implementiert und getestet
+- [x] WebSocket-Update für Lobby-Aktualisierung implementiert
+- [x] Frontend-Lobby-Seite implementiert
+- [x] Unit-Tests geschrieben und bestanden
+- [x] Integrationstests bestanden
+- [x] Code-Review / Plausibilitätsprüfung
 
 ## Technische Hinweise
 

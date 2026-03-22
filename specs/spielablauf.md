@@ -2,7 +2,7 @@
 
 | Feld           | Wert                                        |
 |----------------|---------------------------------------------|
-| Status         | Noch nicht begonnen                         |
+| Status         | Vollständig implementiert und getestet      |
 | Priorität      | Hoch                                        |
 | Abhängigkeiten | kartendeck.md, stichlogik.md, trumpfhierarchie.md |
 
@@ -71,13 +71,13 @@ Definition des gesamten Spielablaufs einer Doppelkopf-Partie. Eine Partie besteh
 
 ## Definition of Done
 
-- [ ] Alle Anforderungen implementiert
-- [ ] Unit-Tests für Phasenablauf geschrieben und bestanden
-- [ ] Geberrotation getestet
-- [ ] Vorbehalt-Priorisierung getestet
-- [ ] Zustandsmaschine getestet (gültige und ungültige Übergänge)
-- [ ] Integrationstests für vollständiges Spiel bestanden
-- [ ] Code-Review / Plausibilitätsprüfung
+- [x] Alle Anforderungen implementiert
+- [x] Unit-Tests für Phasenablauf geschrieben und bestanden
+- [x] Geberrotation getestet
+- [x] Vorbehalt-Priorisierung getestet
+- [x] Zustandsmaschine getestet (gültige und ungültige Übergänge)
+- [x] Integrationstests für vollständiges Spiel bestanden
+- [x] Code-Review / Plausibilitätsprüfung
 
 ## Technische Hinweise
 

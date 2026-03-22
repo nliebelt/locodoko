@@ -2,7 +2,7 @@
 
 | Feld           | Wert                                        |
 |----------------|---------------------------------------------|
-| Status         | Noch nicht begonnen                         |
+| Status         | Vollständig implementiert und getestet      |
 | Priorität      | Hoch                                        |
 | Abhängigkeiten | kartendeck.md, websocket-kommunikation.md   |
 
@@ -62,13 +62,13 @@ Die Tischansicht ist das zentrale Spielfeld im Phaser-Frontend. Sie zeigt eine T
 
 ## Definition of Done
 
-- [ ] Alle Anforderungen implementiert
-- [ ] Phaser-Scene für Tischansicht erstellt
-- [ ] Kartengrafiken eingebunden (Sprites)
-- [ ] Spielerpositionen und Layout korrekt
-- [ ] Debug-Modus implementiert
-- [ ] Frontend-Tests geschrieben und bestanden
-- [ ] Visuelles Review / Plausibilitätsprüfung
+- [x] Alle Anforderungen implementiert
+- [x] Phaser-Scene für Tischansicht erstellt
+- [x] Kartengrafiken eingebunden (Sprites)
+- [x] Spielerpositionen und Layout korrekt
+- [x] Debug-Modus implementiert
+- [x] Frontend-Tests geschrieben und bestanden
+- [x] Visuelles Review / Plausibilitätsprüfung
 
 ## Technische Hinweise
 

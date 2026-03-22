@@ -2,7 +2,7 @@
 
 | Feld           | Wert                                        |
 |----------------|---------------------------------------------|
-| Status         | Noch nicht begonnen                         |
+| Status         | Vollständig implementiert und getestet      |
 | Priorität      | Hoch                                        |
 | Abhängigkeiten | kartendeck.md                               |
 
@@ -52,12 +52,12 @@ Definition der Trumpfreihenfolge im Standard-Doppelkopfspiel (Normalspiel). Die 
 
 ## Definition of Done
 
-- [ ] Alle Anforderungen implementiert
-- [ ] Unit-Tests für Trumpferkennung geschrieben und bestanden
-- [ ] Unit-Tests für Rangvergleich geschrieben und bestanden
-- [ ] Fehlfarben-Erkennung getestet
-- [ ] Austauschbarkeit der Hierarchie nachgewiesen (z.B. Interface/Strategie-Pattern)
-- [ ] Code-Review / Plausibilitätsprüfung
+- [x] Alle Anforderungen implementiert
+- [x] Unit-Tests für Trumpferkennung geschrieben und bestanden
+- [x] Unit-Tests für Rangvergleich geschrieben und bestanden
+- [x] Fehlfarben-Erkennung getestet
+- [x] Austauschbarkeit der Hierarchie nachgewiesen (z.B. Interface/Strategie-Pattern)
+- [x] Code-Review / Plausibilitätsprüfung
 
 ## Technische Hinweise
 

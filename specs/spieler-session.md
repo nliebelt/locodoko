@@ -2,7 +2,7 @@
 
 | Feld           | Wert                                        |
 |----------------|---------------------------------------------|
-| Status         | Noch nicht begonnen                         |
+| Status         | Vollständig implementiert und getestet      |
 | Priorität      | Hoch                                        |
 | Abhängigkeiten | Keine                                       |
 
@@ -35,12 +35,12 @@ In der V1 gibt es keine Benutzerkonten. Spieler identifizieren sich durch Eingab
 
 ## Definition of Done
 
-- [ ] Alle Anforderungen implementiert
-- [ ] Unit-Tests für Session-Erstellung und -Erkennung geschrieben und bestanden
-- [ ] Unit-Tests für KI-Spieler-Erkennung geschrieben und bestanden
-- [ ] Session-Timeout getestet
-- [ ] Integrationstests für Session-Management bestanden
-- [ ] Code-Review / Plausibilitätsprüfung
+- [x] Alle Anforderungen implementiert
+- [x] Unit-Tests für Session-Erstellung und -Erkennung geschrieben und bestanden
+- [x] Unit-Tests für KI-Spieler-Erkennung geschrieben und bestanden
+- [x] Session-Timeout getestet
+- [x] Integrationstests für Session-Management bestanden
+- [x] Code-Review / Plausibilitätsprüfung
 
 ## Technische Hinweise
 

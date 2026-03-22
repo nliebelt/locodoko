@@ -2,7 +2,7 @@
 
 | Feld           | Wert                                        |
 |----------------|---------------------------------------------|
-| Status         | Noch nicht begonnen                         |
+| Status         | Vollständig implementiert und getestet      |
 | Priorität      | Hoch                                        |
 | Abhängigkeiten | frontend-tischansicht.md, websocket-kommunikation.md, stichlogik.md, ansagen.md |
 
@@ -63,14 +63,14 @@ Die UI-Logik bestimmt, welche Interaktionen dem Spieler wann zur Verfügung steh
 
 ## Definition of Done
 
-- [ ] Alle Anforderungen implementiert
-- [ ] Karten-Interaktion (Hover, Klick, Grayout) implementiert und getestet
-- [ ] Ansage-Buttons implementiert und getestet
-- [ ] Vorbehalt-Dialog implementiert und getestet
-- [ ] Armut-Dialog implementiert und getestet
-- [ ] Punktestand-Overlay implementiert
-- [ ] Frontend-Tests geschrieben und bestanden
-- [ ] Visuelles Review / Plausibilitätsprüfung
+- [x] Alle Anforderungen implementiert
+- [x] Karten-Interaktion (Hover, Klick, Grayout) implementiert und getestet
+- [x] Ansage-Buttons implementiert und getestet
+- [x] Vorbehalt-Dialog implementiert und getestet
+- [x] Armut-Dialog implementiert und getestet
+- [x] Punktestand-Overlay implementiert
+- [x] Frontend-Tests geschrieben und bestanden
+- [x] Visuelles Review / Plausibilitätsprüfung
 
 ## Technische Hinweise
 

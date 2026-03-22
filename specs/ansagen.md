@@ -2,7 +2,7 @@
 
 | Feld           | Wert                                        |
 |----------------|---------------------------------------------|
-| Status         | Noch nicht begonnen                         |
+| Status         | Vollständig implementiert und getestet      |
 | Priorität      | Hoch                                        |
 | Abhängigkeiten | kartendeck.md, spielablauf.md, stichlogik.md |
 
@@ -70,12 +70,12 @@ Ansagen sind aktive Deklarationen während der ersten Stiche, mit denen ein Spie
 
 ## Definition of Done
 
-- [ ] Alle Anforderungen implementiert
-- [ ] Unit-Tests für alle Ansagetypen geschrieben und bestanden
-- [ ] Unit-Tests für zeitliche Beschränkung geschrieben und bestanden
-- [ ] Unit-Tests für ungültige Ansagen (falsche Partei, falsche Reihenfolge) geschrieben und bestanden
-- [ ] Integration mit Punkteberechnung vorbereitet
-- [ ] Code-Review / Plausibilitätsprüfung
+- [x] Alle Anforderungen implementiert
+- [x] Unit-Tests für alle Ansagetypen geschrieben und bestanden
+- [x] Unit-Tests für zeitliche Beschränkung geschrieben und bestanden
+- [x] Unit-Tests für ungültige Ansagen (falsche Partei, falsche Reihenfolge) geschrieben und bestanden
+- [x] Integration mit Punkteberechnung vorbereitet
+- [x] Code-Review / Plausibilitätsprüfung
 
 ## Technische Hinweise
 

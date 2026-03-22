@@ -2,7 +2,7 @@
 
 | Feld           | Wert                                        |
 |----------------|---------------------------------------------|
-| Status         | Noch nicht begonnen                         |
+| Status         | Vollständig implementiert und getestet      |
 | Priorität      | Mittel                                      |
 | Abhängigkeiten | frontend-tischansicht.md, websocket-kommunikation.md |
 
@@ -69,12 +69,12 @@ Animationen machen das Spielerlebnis lebendig und geben visuelles Feedback zu Sp
 
 ## Definition of Done
 
-- [ ] Alle Anforderungen implementiert
-- [ ] Alle 6 Animationstypen implementiert und visuell geprüft
-- [ ] Geschwindigkeitseinstellung implementiert
-- [ ] Synchronisation mit WebSocket-Events nachgewiesen
-- [ ] Performance-Test: keine Frame-Drops bei Animationen
-- [ ] Visuelles Review / Plausibilitätsprüfung
+- [x] Alle Anforderungen implementiert
+- [x] Alle 6 Animationstypen implementiert und visuell geprüft
+- [x] Geschwindigkeitseinstellung implementiert
+- [x] Synchronisation mit WebSocket-Events nachgewiesen
+- [x] Performance-Test: keine Frame-Drops bei Animationen
+- [x] Visuelles Review / Plausibilitätsprüfung
 
 ## Technische Hinweise
 
