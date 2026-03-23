@@ -2,6 +2,7 @@ package de.locodoko.lobby;
 
 import de.locodoko.karten.Spielregeln;
 import de.locodoko.lobby.TischkonfigurationEmbeddable;
+import de.locodoko.partie.ki.KiSchwierigkeit;
 import jakarta.validation.constraints.AssertTrue;
 import jakarta.validation.constraints.Min;
 
@@ -37,7 +38,9 @@ public record TischKonfigurationDto(
     @Min(value = 1, message = "Die Keine-30-Grenze muss mindestens 1 sein.")
     int mindestkartenKeine30,
     @Min(value = 1, message = "Die Schwarz-Grenze muss mindestens 1 sein.")
-    int mindestkartenSchwarz
+    int mindestkartenSchwarz,
+    /** Schwierigkeitsstufe der KI-Gegner. Standard: STANDARD. */
+    KiSchwierigkeit kiSchwierigkeit
 ) {
 
     public static TischKonfigurationDto aus(TischkonfigurationEmbeddable konfiguration) {
@@ -59,7 +62,8 @@ public record TischKonfigurationDto(
             konfiguration.mindestkartenKeine90(),
             konfiguration.mindestkartenKeine60(),
             konfiguration.mindestkartenKeine30(),
-            konfiguration.mindestkartenSchwarz()
+            konfiguration.mindestkartenSchwarz(),
+            konfiguration.kiSchwierigkeit()
         );
     }
 
@@ -84,7 +88,8 @@ public record TischKonfigurationDto(
                 hochzeitErlaubt
             ),
             anzahlSpiele,
-            tischhintergrund
+            tischhintergrund,
+            kiSchwierigkeit != null ? kiSchwierigkeit : de.locodoko.partie.ki.KiSchwierigkeit.STANDARD
         );
     }
 

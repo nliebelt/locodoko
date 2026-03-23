@@ -51,6 +51,8 @@ export interface TischKonfigurationDto {
   mindestkartenKeine60: number;
   mindestkartenKeine30: number;
   mindestkartenSchwarz: number;
+  /** Schwierigkeitsstufe der KI-Gegner. Standard: STANDARD. */
+  kiSchwierigkeit: KiSchwierigkeit;
 }
 
 export interface SpielerAmTischAntwort {
@@ -71,6 +73,7 @@ export interface TischAntwort {
 
 export type SpielerPosition = 'NORD' | 'OST' | 'SUED' | 'WEST';
 export type Tischhintergrund = 'FILZ_GRUEN' | 'HOLZ_DUNKEL' | 'BLAU_GRAFIK';
+export type KiSchwierigkeit = 'LEICHT' | 'STANDARD' | 'SCHWER';
 export type PartieStatus = 'LAUFEND' | 'BEENDET';
 export type Spieltyp =
   | 'NORMALSPIEL'

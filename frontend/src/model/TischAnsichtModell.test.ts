@@ -20,7 +20,8 @@ const standardKonfiguration: TischKonfigurationDto = {
   mindestkartenKeine90: 10,
   mindestkartenKeine60: 9,
   mindestkartenKeine30: 8,
-  mindestkartenSchwarz: 7
+  mindestkartenSchwarz: 7,
+  kiSchwierigkeit: 'STANDARD' as const
 };
 
 describe('erstelleStandardTischAnsicht', () => {

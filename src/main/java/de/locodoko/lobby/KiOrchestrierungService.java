@@ -3,6 +3,7 @@ package de.locodoko.lobby;
 import de.locodoko.partie.ki.KiArmutAntwort;
 import de.locodoko.partie.ki.KiSpielzustand;
 import de.locodoko.partie.ki.KiStrategie;
+import de.locodoko.partie.ki.KiStrategieFactory;
 import de.locodoko.karten.Kartendeck;
 import de.locodoko.karten.Karte;
 import de.locodoko.karten.SpielerPosition;
@@ -44,12 +45,12 @@ public class KiOrchestrierungService {
 
     private static final int MAXIMALE_KI_AKTIONEN = 512;
 
-    private final KiStrategie kiStrategie;
+    private final KiStrategieFactory kiStrategieFactory;
     private final SpielerRepository spielerRepository;
     private final PunkteRechner punkteRechner = new PunkteRechner();
 
-    public KiOrchestrierungService(KiStrategie kiStrategie, SpielerRepository spielerRepository) {
-        this.kiStrategie = kiStrategie;
+    public KiOrchestrierungService(KiStrategieFactory kiStrategieFactory, SpielerRepository spielerRepository) {
+        this.kiStrategieFactory = kiStrategieFactory;
         this.spielerRepository = spielerRepository;
     }
 
@@ -96,7 +97,8 @@ public class KiOrchestrierungService {
             // Ohne diesen Schutz haengt die Partie permanent, weil jeder folgende Aufruf
             // dieselbe Exception erzeugen wuerde.
             try {
-                Spiel naechsterStand = fuehreKiAktionAus(laufendesSpiel, erwarteterSpieler);
+                KiStrategie strategie = kiStrategieFactory.erzeuge(tisch.konfiguration().kiSchwierigkeit());
+                Spiel naechsterStand = fuehreKiAktionAus(laufendesSpiel, erwarteterSpieler, strategie);
                 SpielPersistenzAdapter.uebernehmeDomainSpiel(laufendesSpielEntity, naechsterStand);
             } catch (Exception e) {
                 LOGGER.error(
@@ -111,11 +113,11 @@ public class KiOrchestrierungService {
         throw new IllegalStateException("Die KI-Orchestrierung hat das Sicherheitslimit erreicht.");
     }
 
-    private Spiel fuehreKiAktionAus(Spiel laufendesSpiel, SpielerPosition spielerPosition) {
+    private Spiel fuehreKiAktionAus(Spiel laufendesSpiel, SpielerPosition spielerPosition, KiStrategie strategie) {
         KiSpielzustand zustand = KiSpielzustand.aus(laufendesSpiel, spielerPosition);
         return switch (laufendesSpiel.phase()) {
             case VORBEHALT_ANSAGE -> {
-                VorbehaltAnsage vorbehalt = kiStrategie.waehleVorbehalt(zustand);
+                VorbehaltAnsage vorbehalt = strategie.waehleVorbehalt(zustand);
                 Spiel spielNachVorbehalt = laufendesSpiel.meldeVorbehalt(spielerPosition, vorbehalt);
                 yield spielNachVorbehalt.phase() == Spielphase.VORBEHALT_AUFLOESUNG
                     ? spielNachVorbehalt.loeseVorbehalteAuf()
@@ -123,19 +125,19 @@ public class KiOrchestrierungService {
             }
             case ARMUT_TAUSCH -> {
                 if (laufendesSpiel.armutStatus().filter(status -> status.armutSpieler() == spielerPosition && !status.angebotLiegtVor()).isPresent()) {
-                    yield laufendesSpiel.legeArmutTrumpfkarten(spielerPosition, kiStrategie.waehleArmutAngebot(zustand));
+                    yield laufendesSpiel.legeArmutTrumpfkarten(spielerPosition, strategie.waehleArmutAngebot(zustand));
                 }
-                KiArmutAntwort armutAntwort = kiStrategie.waehleArmutAntwort(zustand);
+                KiArmutAntwort armutAntwort = strategie.waehleArmutAntwort(zustand);
                 yield armutAntwort.angenommen()
                     ? laufendesSpiel.nimmArmutAn(spielerPosition, armutAntwort.rueckgabekarten())
                     : laufendesSpiel.lehneArmutAb(spielerPosition);
             }
             case STICHPHASE -> {
-                Ansage ansage = kiStrategie.waehleAnsage(zustand).orElse(null);
+                Ansage ansage = strategie.waehleAnsage(zustand).orElse(null);
                 if (ansage != null) {
                     yield laufendesSpiel.sageAn(spielerPosition, ansage);
                 }
-                Karte karte = kiStrategie.waehleKarte(zustand);
+                Karte karte = strategie.waehleKarte(zustand);
                 LOGGER.debug("KI spielt Karte [karte={}, spielerId={}]", karte, spielerPosition);
                 yield laufendesSpiel.spieleKarte(spielerPosition, karte);
             }

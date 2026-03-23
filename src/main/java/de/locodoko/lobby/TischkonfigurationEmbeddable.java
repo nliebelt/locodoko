@@ -2,6 +2,7 @@ package de.locodoko.lobby;
 
 import de.locodoko.karten.Spielregeln;
 import de.locodoko.lobby.Tischhintergrund;
+import de.locodoko.partie.ki.KiSchwierigkeit;
 import jakarta.validation.constraints.AssertTrue;
 import jakarta.validation.constraints.Min;
 
@@ -47,6 +48,9 @@ public class TischkonfigurationEmbeddable {
     @Min(1)
     private int mindestkartenSchwarz = 7;
 
+    /** Schwierigkeitsstufe der KI-Gegner. Standard ist STANDARD. */
+    private KiSchwierigkeit kiSchwierigkeit = KiSchwierigkeit.STANDARD;
+
     protected TischkonfigurationEmbeddable() {
     }
 
@@ -68,7 +72,8 @@ public class TischkonfigurationEmbeddable {
         int mindestkartenKeine90,
         int mindestkartenKeine60,
         int mindestkartenKeine30,
-        int mindestkartenSchwarz
+        int mindestkartenSchwarz,
+        KiSchwierigkeit kiSchwierigkeit
     ) {
         this.ohneNeunen = ohneNeunen;
         this.anzahlSpiele = anzahlSpiele;
@@ -88,6 +93,7 @@ public class TischkonfigurationEmbeddable {
         this.mindestkartenKeine60 = mindestkartenKeine60;
         this.mindestkartenKeine30 = mindestkartenKeine30;
         this.mindestkartenSchwarz = mindestkartenSchwarz;
+        this.kiSchwierigkeit = kiSchwierigkeit;
     }
 
     public static TischkonfigurationEmbeddable standard() {
@@ -102,6 +108,15 @@ public class TischkonfigurationEmbeddable {
         Spielregeln spielregeln,
         int anzahlSpiele,
         Tischhintergrund tischhintergrund
+    ) {
+        return ausSpielregeln(spielregeln, anzahlSpiele, tischhintergrund, KiSchwierigkeit.STANDARD);
+    }
+
+    public static TischkonfigurationEmbeddable ausSpielregeln(
+        Spielregeln spielregeln,
+        int anzahlSpiele,
+        Tischhintergrund tischhintergrund,
+        KiSchwierigkeit kiSchwierigkeit
     ) {
         return new TischkonfigurationEmbeddable(
             spielregeln.ohneNeunen(),
@@ -121,7 +136,8 @@ public class TischkonfigurationEmbeddable {
             spielregeln.mindestkartenKeine90(),
             spielregeln.mindestkartenKeine60(),
             spielregeln.mindestkartenKeine30(),
-            spielregeln.mindestkartenSchwarz()
+            spielregeln.mindestkartenSchwarz(),
+            kiSchwierigkeit
         );
     }
 
@@ -226,5 +242,9 @@ public class TischkonfigurationEmbeddable {
 
     public int mindestkartenSchwarz() {
         return mindestkartenSchwarz;
+    }
+
+    public KiSchwierigkeit kiSchwierigkeit() {
+        return kiSchwierigkeit;
     }
 }

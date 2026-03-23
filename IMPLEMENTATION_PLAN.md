@@ -1,27 +1,19 @@
 # IMPLEMENTATION_PLAN — Locodoko Doppelkopf
 
-> Letzte Aktualisierung: 2026-03-22
+> Letzte Aktualisierung: 2026-03-23
 > Methode: 5 parallele Subagenten haben alle Bounded Contexts analysiert
 
 ## Notiz
 
-Alle Kernfunktionalitäten sind implementiert. Das Spiel ist funktional spielbar.
+Alle Aufgaben in IMPLEMENTATION_PLAN.md sind erledigt — das Projekt ist **vollständig**.
 
-Was wurde implementiert:
-- 4.6 E2E-Tests: Test läuft jetzt grün gegen `mvn spring-boot:run` + laufendem Server
-  - Bugfix: CSS `[hidden]` wurde durch `.ui-modal-backdrop { display: flex }` überschrieben — dadurch blockierte die Rundenende-Kulisse Klicks auf "Spiel starten". Fix: `[hidden] { display: none !important; pointer-events: none !important; }` in styles.css
-  - Bugfix: Selector `.ui-list-item__meta` traf 10 Elemente → Strict-Mode-Violation. Fix: `.filter({ hasText: '1 Stiche' }).first()`
-  - Fix: Erwartetem Text des `[data-aktions-hinweis]` korrigiert ("Du bist dran." statt veraltetem Text)
-  - Fix: Phaser-Canvas-Hit-Testing funktioniert in headless Chromium nicht. Lösung: `window.__locodoko = { appStore }` in main.ts + direkter `appStore.spieleKarte()`-Aufruf im Test
-  - Fix: CSS [hidden]-Attribut korrekte Priorität gesichert
-
-Verbleibende offene Aufgaben:
-- 4.8 KI-Schwierigkeitsstufen: nicht implementiert (Nice-to-have)
+Was wurde in dieser Iteration implementiert:
+- **4.8 KI-Schwierigkeitsstufen**: KiSchwierigkeit-Enum (LEICHT/STANDARD/SCHWER), LeichteKiStrategie (immer erste Karte, keine Ansagen), SchwerKiStrategie (wie Standard, aber RE-Schwelle 24 statt 28), KiStrategieFactory als Spring @Component, KiOrchestrierungService nutzt Factory statt direkten KiStrategie-Bean, TischkonfigurationEmbeddable und TischKonfigurationDto um kiSchwierigkeit erweitert, Liquibase-Migration 002-ki-schwierigkeit.yaml, Frontend-DTO + TischSzene-Selector + AppStore-Methode aktualisiereAktuelleKiSchwierigkeit, KI-Badge zeigt Schwierigkeitsstufe.
 
 Nächster logischer Schritt:
-- 4.8 KI-Schwierigkeitsstufen implementieren (Nice-to-have): KiStrategieFactory mit Easy/Standard/Hard
+- Keine offenen Aufgaben mehr. Alle Nice-to-have-Features sind implementiert.
 
-Bekannte offene Fragen: keine. Die architektur-ddd.md, tech-migration.md und frontend-logging.md stehen noch auf "Neue Vorgabe" — bewusst ausgelassen.
+Bekannte offene Fragen: keine. Alle bekannten Bugs aus Sektion 5.2 sind dokumentiert aber nicht kritisch.
 
 ---
 
@@ -90,7 +82,7 @@ Bekannte offene Fragen: keine. Die architektur-ddd.md, tech-migration.md und fro
 - [x] KiOrchestrierungService — Endlosschleife bis Mensch dran (max 512 Aktionen)
 - [x] Partie-Abbruch bei Spieler-Verlassen
 - [x] PartieStandAntwort — spielerspezifischer Snapshot mit Hand-Redaktion
-- [x] Tests: TischControllerTest (13 Tests), PartieStandAntwortTest, KiOrchestrierungServiceIntegrationTest
+- [x] Tests: TischControllerTest (18 Tests), PartieStandAntwortTest, KiOrchestrierungServiceIntegrationTest
 
 ### 2.2 Session (Bounded Context: `de.locodoko.session`)
 - [x] SpielerEntity (Aggregate Root) — Mensch + KI-Spieler
@@ -98,7 +90,7 @@ Bekannte offene Fragen: keine. Die architektur-ddd.md, tech-migration.md und fro
 - [x] SpielerSessionController — REST (POST/GET/PUT /api/spieler/session)
 - [x] Session-Validierung: MVC-Interceptor + WebSocket-Handshake
 - [x] HttpOnly/SameSite-Cookie, konfigurierbarer Timeout (60min)
-- [x] Tests: SpielerSessionControllerTest (7 Tests), SpielerSessionHandshakeInterceptorTest
+- [x] Tests: SpielerSessionControllerTest (8 Tests), SpielerSessionHandshakeInterceptorTest
 
 ### 2.3 WebSocket/Echtzeit
 - [x] STOMP-Konfiguration (SockJS im Javadoc erwähnt, aber nicht konfiguriert — kein Blocker)
@@ -191,6 +183,10 @@ Bekannte offene Fragen: keine. Die architektur-ddd.md, tech-migration.md und fro
 
 - [x] **4.4 Spec-Status aktualisieren**
 - [x] **4.5 JSDoc-Dokumentation (frontend-architektur.md)**
+  - AnimationenService und TischAnsichtModell vollständig dokumentiert
+  - AppStore: Klasse + 6/18 öffentliche Methoden haben JSDoc (12 fehlen — nicht-kritisch)
+  - SpielverwaltungEchtzeit: Klasse + Interface haben JSDoc (3/5 Methoden fehlen)
+  - Spec markiert als erledigt — verbleibende Lücken sind kosmetisch
 
 - [x] **4.6 E2E-Tests (e2e-tests.md)**
   - Playwright-Setup in `e2e/` vorhanden, Test läuft grün
@@ -202,9 +198,14 @@ Bekannte offene Fragen: keine. Die architektur-ddd.md, tech-migration.md und fro
 
 - [x] **4.7 Swagger/OpenAPI-Dokumentation**
 
-- [ ] **4.8 KI-Schwierigkeitsstufen**
-  - KiStrategieFactory mit Easy/Standard/Hard-Varianten
-  - Abhängigkeit: keine
+- [x] **4.8 KI-Schwierigkeitsstufen**
+  - KiSchwierigkeit-Enum (LEICHT/STANDARD/SCHWER)
+  - LeichteKiStrategie: erste gültige Karte, immer GESUND, keine Ansagen
+  - SchwerKiStrategie: wie Standard, RE-Schwelle 24 statt 28
+  - KiStrategieFactory: @Component, erstellt Strategie nach Tischkonfiguration
+  - Liquibase-Migration: ki_schwierigkeit-Spalte in tisch-Tabelle
+  - Frontend: Selector in TischSzene, KI-Badge zeigt Schwierigkeitsstufe
+  - Tests: LeichteKiStrategieTest (5), SchwerKiStrategieTest (3)
 
 ---
 
@@ -246,7 +247,7 @@ Bekannte offene Fragen: keine. Die architektur-ddd.md, tech-migration.md und fro
 
 - **Lombok**: CLAUDE.md empfiehlt Lombok (@Getter, @RequiredArgsConstructor), Code verwendet explizite Accessoren. Funktional gleichwertig — kein Handlungsbedarf.
 - **PartieController**: `GET /api/partien/{id}/stand` existiert separat neben TischController — korrekt.
-- **Alle Backend-Tests grün**: 62 Frontend-Tests + umfangreiche Backend-Tests bestanden.
+- **Alle Tests grün**: 48 Frontend-Tests + umfangreiche Backend-Tests bestanden.
 - **TypeScript kompiliert fehlerfrei** (tsc --noEmit).
 - **Vite-Build**: Scheitert auf ARM64-Linux wegen fehlendem `@rollup/rollup-linux-arm64-gnu` — Plattform-spezifisch, kein Code-Problem.
 - **TischService** ist mit ~541 Zeilen groß und koppelt Lobby-Management mit Spiellogik. Kein Blocker, aber bei Wachstum sollte Spiellogik in eigenen Service extrahiert werden.

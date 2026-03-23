@@ -1,5 +1,6 @@
 import type {
   Ansage,
+  KiSchwierigkeit,
   PartieEreignisAntwort,
   PartieStandAntwort,
   SpielverwaltungWebSocketFehlerAntwort,
@@ -266,6 +267,32 @@ export class AppStore {
       const konfiguration = await this.api.aktualisiereTischKonfiguration(
         tisch.id,
         this.aktualisierteKonfiguration(tisch.konfiguration, tischhintergrund)
+      );
+      this.patch({
+        aktuellerTisch: {
+          ...tisch,
+          konfiguration
+        },
+        meldung: null
+      });
+    });
+  }
+
+  /** Aktualisiert die KI-Schwierigkeitsstufe des aktuellen Tisches. */
+  async aktualisiereAktuelleKiSchwierigkeit(kiSchwierigkeit: KiSchwierigkeit): Promise<void> {
+    const tisch = this.zustand.aktuellerTisch;
+    if (!tisch) {
+      this.aktuellerTischIdOderFehler();
+      return;
+    }
+    if (tisch.konfiguration.kiSchwierigkeit === kiSchwierigkeit) {
+      return;
+    }
+
+    await this.fuehreMitStatus(async () => {
+      const konfiguration = await this.api.aktualisiereTischKonfiguration(
+        tisch.id,
+        { ...tisch.konfiguration, kiSchwierigkeit }
       );
       this.patch({
         aktuellerTisch: {

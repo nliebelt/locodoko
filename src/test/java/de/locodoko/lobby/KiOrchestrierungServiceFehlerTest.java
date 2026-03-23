@@ -5,8 +5,10 @@ import de.locodoko.karten.Kartendeck;
 import de.locodoko.karten.SpielerPosition;
 import de.locodoko.karten.Spielregeln;
 import de.locodoko.partie.ki.KiArmutAntwort;
+import de.locodoko.partie.ki.KiSchwierigkeit;
 import de.locodoko.partie.ki.KiSpielzustand;
 import de.locodoko.partie.ki.KiStrategie;
+import de.locodoko.partie.ki.KiStrategieFactory;
 import de.locodoko.partie.Ansage;
 import de.locodoko.partie.Spiel;
 import de.locodoko.partie.Spielphase;
@@ -46,17 +48,22 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 class KiOrchestrierungServiceFehlerTest {
 
     /**
-     * Test-Konfiguration: Ersetzt die echte KiStrategie durch eine, die bei jedem
-     * Aufruf sofort wirft. Damit koennen wir testen, dass der Orchestrierungsdienst
-     * robust auf Strategie-Fehler reagiert.
+     * Test-Konfiguration: Ersetzt die echte KiStrategieFactory durch eine, die fuer jede
+     * Schwierigkeitsstufe die {@link WirftImmerKiStrategie} zurueckgibt. So koennen wir
+     * pruefen, dass der Orchestrierungsdienst robust auf Strategie-Fehler reagiert.
      */
     @TestConfiguration
     static class WirftImmerKiStrategieKonfiguration {
 
         @Bean
         @Primary
-        KiStrategie wirftImmerKiStrategie() {
-            return new WirftImmerKiStrategie();
+        KiStrategieFactory wirftImmerKiStrategieFactory() {
+            return new KiStrategieFactory() {
+                @Override
+                public KiStrategie erzeuge(KiSchwierigkeit schwierigkeit) {
+                    return new WirftImmerKiStrategie();
+                }
+            };
         }
     }
 

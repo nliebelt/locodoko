@@ -10,6 +10,7 @@ import de.locodoko.lobby.TischEntity;
 import de.locodoko.lobby.TischRepository;
 import de.locodoko.lobby.TischStatus;
 import de.locodoko.lobby.TischkonfigurationEmbeddable;
+import de.locodoko.partie.ki.KiSchwierigkeit;
 import de.locodoko.session.SpielerNameAnfrage;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -194,7 +195,8 @@ class TischControllerTest {
             10,
             9,
             8,
-            7
+            7,
+            KiSchwierigkeit.STANDARD
         );
 
         mockMvc.perform(put("/api/tische/{id}/konfiguration", tischId)
@@ -232,7 +234,8 @@ class TischControllerTest {
             10,
             9,
             8,
-            7
+            7,
+            KiSchwierigkeit.STANDARD
         );
 
         mockMvc.perform(put("/api/tische/{id}/konfiguration", tischId)

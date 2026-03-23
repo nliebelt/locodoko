@@ -9,14 +9,11 @@ import de.locodoko.karten.TrumpfOrdnung;
 import de.locodoko.partie.Ansage;
 import de.locodoko.partie.Partei;
 import de.locodoko.partie.VorbehaltAnsage;
-import org.springframework.stereotype.Component;
-
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 
-@Component
 public class StandardKiStrategie implements KiStrategie {
 
     private static final Comparator<Ansage> ANSAGEN_ABSTEIGEND = Comparator.comparingInt(Ansage::stufe).reversed();
@@ -239,7 +236,7 @@ public class StandardKiStrategie implements KiStrategie {
      *       1 Punkt Bonus gegenüber gewöhnlichem Trumpf.</li>
      * </ul>
      */
-    private int handstaerke(KiSpielzustand zustand) {
+    protected int handstaerke(KiSpielzustand zustand) {
         int trumpfAnzahl = (int) anzahlTruepfe(zustand.eigeneHand().karten(), zustand.trumpfOrdnung());
         int asse = (int) zustand.eigeneHand().karten().stream().filter(karte -> karte.wert() == Kartenwert.AS).count();
         int dullen = (int) zustand.eigeneHand().karten().stream()
@@ -267,7 +264,7 @@ public class StandardKiStrategie implements KiStrategie {
      *       das strengere Ziel (≤ 90 / 60 / 30 / 0 Gegneaugen) glaubwürdig zu erfüllen.</li>
      * </ul>
      */
-    private int ansageSchwelle(Ansage ansage, Partei eigenePartei) {
+    protected int ansageSchwelle(Ansage ansage, Partei eigenePartei) {
         return switch (ansage) {
             case RE -> 28;
             case KONTRA -> eigenePartei == Partei.KONTRA ? 26 : 30;

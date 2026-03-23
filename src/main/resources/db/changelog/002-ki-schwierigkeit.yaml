@@ -1,0 +1,15 @@
+databaseChangeLog:
+  - changeSet:
+      id: 002-ki-schwierigkeit
+      author: locodoko
+      comment: "KI-Schwierigkeitsstufe als konfigurierbare Tischoption (LEICHT/STANDARD/SCHWER)"
+      changes:
+        - addColumn:
+            tableName: tisch
+            columns:
+              - column:
+                  name: ki_schwierigkeit
+                  type: varchar(20)
+                  constraints:
+                    nullable: false
+                  defaultValue: STANDARD

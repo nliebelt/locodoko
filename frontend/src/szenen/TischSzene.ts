@@ -18,7 +18,7 @@ import {
   type TischAnsichtModell,
   type SpielerPosition
 } from '../model/TischAnsichtModell';
-import type { Ansage, KarteAntwort, Sonderpunkt, Tischhintergrund, VorbehaltAnsage } from '../modelle/SpielverwaltungDto';
+import type { Ansage, KarteAntwort, KiSchwierigkeit, Sonderpunkt, Tischhintergrund, VorbehaltAnsage } from '../modelle/SpielverwaltungDto';
 import { AnimationenService, type AnimierbareKartenobjekte } from '../services/AnimationenService';
 import type { AppZustand } from '../store/AppStore';
 
@@ -134,6 +134,11 @@ function texturFuerTischhintergrund(tischhintergrund: Tischhintergrund): string 
   } as Record<Tischhintergrund, string>)[tischhintergrund];
 }
 
+/** Lesbares Label fuer die KI-Schwierigkeitsstufe (fuer Badges und Anzeige). */
+function kiSchwierigkeitLabel(schwierigkeit: KiSchwierigkeit): string {
+  return ({ LEICHT: 'Leicht', STANDARD: 'Standard', SCHWER: 'Schwer' } as Record<KiSchwierigkeit, string>)[schwierigkeit] ?? 'Standard';
+}
+
 // Moegliche Animations-Geschwindigkeitsstufen: normal (1x), doppelt (2x), sofort (Infinity)
 type AnimationsGeschwindigkeit = 1 | 2 | typeof Infinity;
 
@@ -204,6 +209,8 @@ export class TischSzene extends Phaser.Scene {
   private ergebnisInhalt?: HTMLDivElement;
 
   private tischhintergrundSelect?: HTMLSelectElement;
+
+  private kiSchwierigkeitSelect?: HTMLSelectElement;
 
   private letzteSticheListe?: HTMLUListElement;
 
@@ -374,6 +381,14 @@ export class TischSzene extends Phaser.Scene {
           <option value="BLAU_GRAFIK">Blaue Grafik</option>
         </select>
       </div>
+      <div class="ui-section">
+        <span class="ui-hint">KI-Schwierigkeit</span>
+        <select class="ui-input ui-input--select" data-ki-schwierigkeit>
+          <option value="LEICHT">Leicht</option>
+          <option value="STANDARD">Standard</option>
+          <option value="SCHWER">Schwer</option>
+        </select>
+      </div>
       <h3>Spieler am Tisch</h3>
       <ul class="ui-list"></ul>
     `;
@@ -406,6 +421,7 @@ export class TischSzene extends Phaser.Scene {
     const ansageListe = rechts.querySelector('[data-ansagen]');
     const punktestandListe = rechts.querySelector('[data-punktestand]');
     const tischhintergrundSelect = links.querySelector('[data-tischhintergrund]');
+    const kiSchwierigkeitSelect = links.querySelector('[data-ki-schwierigkeit]');
     const geschwindigkeitsButton = links.querySelector('[data-animationsgeschwindigkeit]');
     const buttons = links.querySelectorAll('button');
     const lobbyButton = buttons.item(0);
@@ -422,6 +438,7 @@ export class TischSzene extends Phaser.Scene {
       || !(ansageListe instanceof HTMLUListElement)
       || !(punktestandListe instanceof HTMLUListElement)
       || !(tischhintergrundSelect instanceof HTMLSelectElement)
+      || !(kiSchwierigkeitSelect instanceof HTMLSelectElement)
       || !(lobbyButton instanceof HTMLButtonElement)
       || !(leaveButton instanceof HTMLButtonElement)
       || !(startButton instanceof HTMLButtonElement)
@@ -451,6 +468,9 @@ export class TischSzene extends Phaser.Scene {
     });
     tischhintergrundSelect.addEventListener('change', () => {
       void appStore.aktualisiereAktuellenTischhintergrund(tischhintergrundSelect.value as Tischhintergrund);
+    });
+    kiSchwierigkeitSelect.addEventListener('change', () => {
+      void appStore.aktualisiereAktuelleKiSchwierigkeit(kiSchwierigkeitSelect.value as KiSchwierigkeit);
     });
     letzteSticheButton.addEventListener('click', () => {
       this.letzteSticheOffen = !this.letzteSticheOffen;
@@ -489,6 +509,7 @@ export class TischSzene extends Phaser.Scene {
     this.ansageListe = ansageListe;
     this.punktestandListe = punktestandListe;
     this.tischhintergrundSelect = tischhintergrundSelect;
+    this.kiSchwierigkeitSelect = kiSchwierigkeitSelect;
     this.geschwindigkeitsButton = geschwindigkeitsButton;
     this.toastStack = toastStack;
     this.rundenEndeModal = rundenEndeModal;
@@ -518,10 +539,14 @@ export class TischSzene extends Phaser.Scene {
       debugButton.textContent = zustand.debugModus ? 'Debug an' : 'Debug aus';
       debugButton.disabled = zustand.wirdGeladen || !zustand.partieStand;
     }
+    const darfKonfigurieren = zustand.spieler?.spielerId === tisch.erstelltVonSpielerId && tisch.status === 'WARTEND';
     if (this.tischhintergrundSelect) {
-      const darfKonfigurieren = zustand.spieler?.spielerId === tisch.erstelltVonSpielerId && tisch.status === 'WARTEND';
       this.tischhintergrundSelect.value = modell.tischhintergrund;
       this.tischhintergrundSelect.disabled = zustand.wirdGeladen || !darfKonfigurieren;
+    }
+    if (this.kiSchwierigkeitSelect) {
+      this.kiSchwierigkeitSelect.value = tisch.konfiguration.kiSchwierigkeit ?? 'STANDARD';
+      this.kiSchwierigkeitSelect.disabled = zustand.wirdGeladen || !darfKonfigurieren;
     }
 
     const statusZeile = [
@@ -548,10 +573,11 @@ export class TischSzene extends Phaser.Scene {
     this.aktualisiereToasts(zustand);
 
     this.spielerListe.innerHTML = '';
+    const kiLabel = kiSchwierigkeitLabel(tisch.konfiguration.kiSchwierigkeit ?? 'STANDARD');
     modell.spieler.forEach((spieler) => {
       const eintrag = document.createElement('li');
       eintrag.className = 'ui-list-item';
-      const badge = spieler.istSelbst ? 'Du' : spieler.istMensch ? 'Mensch' : 'KI';
+      const badge = spieler.istSelbst ? 'Du' : spieler.istMensch ? 'Mensch' : `KI (${kiLabel})`;
       const parteiBadge = spieler.partei ? `<span class="ui-badge ui-badge--partei">${spieler.partei}</span>` : '';
       eintrag.innerHTML = `
         <div class="ui-list-item__headline">
