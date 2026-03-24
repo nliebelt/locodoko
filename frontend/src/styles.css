@@ -518,6 +518,50 @@ canvas {
   backdrop-filter: blur(4px);
 }
 
+/* ============================================================
+   Floating Action Bar (Ansage-Buttons zwischen Stichmitte und Hand)
+   Erscheint nur wenn Ansagen moeglich sind; verschwindet per :empty.
+   ============================================================ */
+.floating-action-bar {
+  position: absolute;
+  bottom: 210px;
+  left: 50%;
+  transform: translateX(-50%);
+  pointer-events: auto;
+  display: flex;
+  flex-direction: row;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: center;
+  z-index: 9;
+}
+
+.floating-action-bar:empty {
+  display: none;
+}
+
+/* ============================================================
+   Vorbehalt-Modal-Backdrop
+   Blockierendes Vollbild-Overlay fuer die Vorbehalt-Phase;
+   kann nicht per Escape geschlossen werden (Entscheidung zwingend).
+   ============================================================ */
+.vorbehalt-modal-backdrop {
+  position: absolute;
+  inset: 0;
+  z-index: 100;
+  pointer-events: auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.75);
+  backdrop-filter: blur(6px);
+}
+
+.vorbehalt-modal-backdrop .ui-modal {
+  min-width: 340px;
+  max-width: 500px;
+}
+
 /* Toast-Stack: oben rechts, unterhalb der Top-Bar */
 .ui-toast-stack {
   position: absolute;

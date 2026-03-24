@@ -1,22 +1,22 @@
 # IMPLEMENTATION_PLAN — Locodoko Doppelkopf
 
-> Letzte Aktualisierung: 2026-03-24 (Re-Validierung)
-> Methode: 5 parallele Subagenten haben alle Bounded Contexts analysiert
+> Letzte Aktualisierung: 2026-03-24 (4.11 implementiert)
 
 ## Notiz
 
-**4.10 HUD Top-Bar + Layout-Umbau: implementiert.** 40px Top-Bar (Stichzähler links, Spieltyp+Nummer Mitte,
-Icons rechts: Seitenlade/Einstellungen/Debug), rechteckige Spieler-Nameplates statt Kreise (Name · KI/Mensch ·
-RE/KONTRA · Stiche · G), Kartengröße auf 110×165px erhöht, seitliche HTML-Panels entfernt und durch
-HUD-Overlay-Architektur ersetzt (Seitenlade toggle, Einstellungs-Modal, Spielaktionen-Overlay).
-Bug-Fix: leaveButton jetzt auch während IM_SPIEL klickbar (mit Bestätigungsdialog).
-Alle 48 Frontend-Tests grün, Lint clean, Build clean.
+**2026-03-24:** 4.11 Floating Action Bar + Seitenlade abgeschlossen.
 
-Nächster logischer Schritt:
-- **4.11 Floating Action Bar + Seitenlade** (frontend-ui-logik.md) — Ansage-Buttons als Floating Bar,
-  Vorbehalt als modales Vollbild-Overlay, Seitenlade weiter ausbauen, Einstellungs-Modal verfeinern.
+**Was wurde implementiert:**
+- Ansage-Buttons aus `spielaktionen-overlay` herausgelöst → neue `.floating-action-bar` (zwischen Stichmitte und Hand)
+- Vorbehalt-Buttons aus `spielaktionen-overlay` herausgelöst → neues `.vorbehalt-modal-backdrop` (blockierendes Vollbild-Overlay, kann nicht per Escape geschlossen werden)
+- CSS für beide neuen Elemente in `styles.css`
+- 4 neue Tests in `TischSzene.test.ts` (FAB-Inhalt, FAB-leer, Vorbehalt-Modal sichtbar, Vorbehalt-Modal versteckt)
+- 52 Tests grün, Lint clean
 
-Bekannte offene Fragen: keine. Bekannte Bugs aus Sektion 5.2 sind dokumentiert aber nicht kritisch.
+**Nächster logischer Schritt:**
+- **4.12 Tastatursteuerung** (frontend-tastatursteuerung.md) — Karten-Navigation (ArrowLeft/Right, Enter/Space), Ansage-Shortcuts (R/K/1-5), Vorbehalt-Navigation (Ziffern), Focus-Trap in Modals. Abhängigkeit 4.11 erfüllt.
+
+**Bekannte offene Fragen:** keine neuen.
 
 ---
 
@@ -133,7 +133,7 @@ Bekannte offene Fragen: keine. Bekannte Bugs aus Sektion 5.2 sind dokumentiert a
 - [x] Tisch erstellen / beitreten UI
 - [x] Status-Anzeige (Verbindung, Laden, Fehler-Toasts)
 
-### 3.3 TischSzene — Rendering (~1650 Zeilen)
+### 3.3 TischSzene — Rendering (~1850 Zeilen)
 - [x] Top-Down-Layout mit 4 Spielerpositionen (SUED/WEST/NORD/OST)
 - [x] Kartensprites (prozedural generiert, AssetLoader)
 - [x] Eigene Hand als Fächer, Gegner als verdeckte Stapel
@@ -237,12 +237,12 @@ Bekannte offene Fragen: keine. Bekannte Bugs aus Sektion 5.2 sind dokumentiert a
   - Debug-Modus mit aufgedeckten Karten (weiterhin funktional)
   - Bug-Fix: leaveButton während IM_SPIEL klickbar (mit Bestätigungsdialog)
 
-- [ ] **4.11 Floating Action Bar + Seitenlade (frontend-ui-logik.md)** — 0/10 DoD
+- [x] **4.11 Floating Action Bar + Seitenlade (frontend-ui-logik.md)**
   - Floating Action Bar: Ansage-Buttons zwischen Stichmitte und Hand, kontextabhängig
   - Vorbehalt als modales Vollbild-Overlay (statt inline Panel-Buttons)
-  - Seitenlade: Toggle-Panel von links (Spieler, Punkte, Ansagehistorie, letzte Stiche)
-  - Einstellungs-Modal (Hintergrund, Animation, Debug)
-  - Toast-Notifications (bereits implementiert, ggf. Styling anpassen)
+  - Seitenlade: Toggle-Panel von links (Spieler, Punkte, Ansagehistorie, letzte Stiche) — bereits vorhanden
+  - Einstellungs-Modal (Hintergrund, Animation, Debug) — bereits vorhanden
+  - Toast-Notifications — bereits implementiert
   - Abhängigkeit: 4.10 (Layout-Umbau)
 
 - [ ] **4.12 Tastatursteuerung (frontend-tastatursteuerung.md)** — 0/9 DoD
@@ -282,8 +282,8 @@ Bekannte offene Fragen: keine. Bekannte Bugs aus Sektion 5.2 sind dokumentiert a
 
 ### 5.2 Bugs / Latente Fehler
 
-- **TischSzene: leaveButton während IM_SPIEL deaktiviert**: `leaveButton.disabled = tisch.status !== 'WARTEND'` verhindert das Verlassen während einer laufenden Partie über den Button. Die "Zur Lobby"-Navigation funktioniert, ruft aber nicht `appStore.verlasseAktuellenTisch()` auf — die Partie wird dadurch nicht korrekt abgebrochen.
-- **SpielerSessionController PUT-Pfad: Potenzielle NPE**: `request.getSession(false)` wird ohne Null-Check verwendet; bei fehlender Session gibt `.getId()` eine NPE statt einer sauberen 401-Antwort.
+- ~~**TischSzene: leaveButton während IM_SPIEL deaktiviert**~~: Behoben in 4.10 — leaveButton jetzt während IM_SPIEL klickbar mit Bestätigungsdialog.
+- **SpielerSessionController PUT-Pfad: Potenzielle NPE**: `request.getSession(false)` wird ohne Null-Check verwendet; bei fehlender Session gibt `.getId()` eine NPE statt einer sauberen 401-Antwort. Risiko gering: MVC-Interceptor validiert vorher, aber defensiver Null-Check wäre sauberer.
 - **TischStatus.BEENDET nie gesetzt**: Der Enum-Wert existiert, wird aber nirgends zugewiesen — toter Code.
 
 ### 5.3 Testlücken (kein Blocker, aber dokumentiert)
@@ -306,13 +306,12 @@ Bekannte offene Fragen: keine. Bekannte Bugs aus Sektion 5.2 sind dokumentiert a
 - `KiOrchestrierungService` in `lobby` statt eigenem Package — Bounded-Context-Grenzüberschreitung
 - KI-Strategie-Interface-Signaturen weichen von Spec-Hinweisen ab (verbessert: einzelner KiSpielzustand-Parameter)
 
-### 5.5 Frontend-Redesign-Specs (neu identifiziert)
+### 5.5 Frontend-Redesign-Specs (Fortschritt)
 
-- 6 Frontend-Specs mit 0/58 abgehakten DoD-Items definieren eine umfassende visuelle Neugestaltung
-- Betroffene Specs: frontend-tischansicht.md (Überarbeitung), frontend-ui-logik.md (Überarbeitung), frontend-visuelles-design.md (Neu), frontend-startscreen.md (Neu), frontend-tastatursteuerung.md (Neu), frontend-rundenauswertung.md (Neu)
-- Die bestehende Frontend-Funktionalität ist vollständig (Spielschleife läuft, alle Aktionen funktionieren)
-- Die UI-Architektur (seitliche Panels) soll durch HUD + Overlays + Floating Action Bar ersetzt werden
-- Karten-Sprites (prozedural generiert) sollen durch vectorized-playing-cards (PNG) ersetzt werden
+- 6 Frontend-Specs: 3 abgeschlossen (4.9, 4.10, 4.11), 3 offen (28 DoD-Items)
+- Betroffene offene Specs: frontend-tastatursteuerung.md (0/9), frontend-startscreen.md (0/8), frontend-rundenauswertung.md (0/11)
+- HUD-Overlay-Architektur steht, seitliche Panels entfernt, vectorized-playing-cards integriert
+- Nächste Schritte: Floating Action Bar, Vorbehalt-Modal, Seitenlade-Ausbau (4.11)
 
 ---
 

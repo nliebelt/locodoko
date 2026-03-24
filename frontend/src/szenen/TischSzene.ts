@@ -219,6 +219,12 @@ export class TischSzene extends Phaser.Scene {
   // Einstellungs-Modal
   private einstellungsModalEl?: HTMLDivElement;
 
+  // Floating Action Bar (Ansage-Buttons zwischen Stichmitte und eigener Hand)
+  private floatingActionBarEl?: HTMLDivElement;
+
+  // Vorbehalt-Modal (blockierendes Vollbild-Overlay fuer die Vorbehalt-Phase)
+  private vorbehaltModalEl?: HTMLDivElement;
+
   // Spielaktionen-Overlay (unten Mitte)
   private aktionsHinweis?: HTMLParagraphElement;
 
@@ -453,6 +459,15 @@ export class TischSzene extends Phaser.Scene {
     `;
     einstellungsModal.append(einstellungsDialog);
 
+    // ── Floating Action Bar (Ansage-Buttons zwischen Stichmitte und Hand) ────
+    const floatingActionBar = document.createElement('div');
+    floatingActionBar.className = 'floating-action-bar';
+
+    // ── Vorbehalt-Modal (blockierendes Vollbild-Overlay) ─────────────────────
+    const vorbehaltModal = document.createElement('div');
+    vorbehaltModal.className = 'vorbehalt-modal-backdrop';
+    vorbehaltModal.hidden = true;
+
     // ── Spielaktionen-Overlay (unten Mitte, über den Karten) ─────────────────
     const spielaktioneOverlay = document.createElement('div');
     spielaktioneOverlay.className = 'spielaktionen-overlay';
@@ -615,6 +630,8 @@ export class TischSzene extends Phaser.Scene {
     this.seitenladeLetzteSticheListe = seitenladeLetzteSticheListe;
     this.seitenladeLetzteStichButton = seitenladeLetzteStichButton;
     this.einstellungsModalEl = einstellungsModal;
+    this.floatingActionBarEl = floatingActionBar;
+    this.vorbehaltModalEl = vorbehaltModal;
     this.aktionsHinweis = aktionsHinweis;
     this.aktionsInhalt = aktionsInhalt;
     this.ergebnisInhalt = ergebnisInhalt;
@@ -625,7 +642,7 @@ export class TischSzene extends Phaser.Scene {
     this.rundenEndeModal = rundenEndeModal;
     this.partieEndeModal = partieEndeModal;
 
-    uiRoot.append(topBar, seitenlade, einstellungsModal, spielaktioneOverlay, toastStack, rundenEndeModal, partieEndeModal);
+    uiRoot.append(topBar, seitenlade, einstellungsModal, floatingActionBar, vorbehaltModal, spielaktioneOverlay, toastStack, rundenEndeModal, partieEndeModal);
   }
 
   private aktualisiereUi(zustand: AppZustand, modell = this.erstelleModell(zustand)): void {
@@ -640,6 +657,12 @@ export class TischSzene extends Phaser.Scene {
 
     // ── Seitenlade aktualisieren ──────────────────────────────────────────────
     this.aktualisiereSeitenlade(modell, zustand);
+
+    // ── Floating Action Bar (Ansage-Buttons) ─────────────────────────────────
+    this.aktualisiereFloatingActionBar(modell, zustand);
+
+    // ── Vorbehalt-Modal (blockierendes Overlay) ───────────────────────────────
+    this.aktualisiereVorbehaltModal(modell, zustand);
 
     // ── Spielaktionen-Overlay aktualisieren ──────────────────────────────────
     this.aktualisiereAktionsbereich(modell, zustand);
@@ -889,13 +912,6 @@ export class TischSzene extends Phaser.Scene {
     }
 
     const istEigenerZug = modell.aktuellerSpieler === 'SUED';
-    if (istEigenerZug && modell.moeglicheVorbehalte.length > 0) {
-      this.aktionsInhalt.append(this.erstelleVorbehaltSektion(modell.moeglicheVorbehalte, aktionenDeaktiviert));
-    }
-
-    if (istEigenerZug && modell.moeglicheAnsagen.length > 0) {
-      this.aktionsInhalt.append(this.erstelleAnsageSektion(modell.moeglicheAnsagen, aktionenDeaktiviert));
-    }
 
     if (istEigenerZug && modell.armutAktion) {
       this.aktionsInhalt.append(this.erstelleArmutSektion(modell, aktionenDeaktiviert));
@@ -907,6 +923,73 @@ export class TischSzene extends Phaser.Scene {
         : 'Aktuell wartet das Spiel auf andere Spieler oder auf den naechsten serverseitigen Statuswechsel.';
       this.aktionsInhalt.append(this.erstelleInfoSektion(text));
     }
+  }
+
+  /**
+   * Aktualisiert die Floating Action Bar mit den moeglichen Ansage-Buttons.
+   * Die Bar erscheint nur wenn eigene Ansagen moeglich sind und verschwindet sonst per CSS :empty.
+   * Ansagen werden vom Backend serverseitig geprueft — nur erlaubte Ansagen werden angezeigt.
+   */
+  private aktualisiereFloatingActionBar(modell: TischAnsichtModell, zustand: AppZustand): void {
+    if (!this.floatingActionBarEl) {
+      return;
+    }
+    this.floatingActionBarEl.innerHTML = '';
+
+    const istEigenerZug = modell.aktuellerSpieler === 'SUED';
+    if (!istEigenerZug || modell.moeglicheAnsagen.length === 0) {
+      return;
+    }
+
+    const deaktiviert = zustand.wirdGeladen || this.spielzugAnimationAktiv;
+    modell.moeglicheAnsagen.forEach((ansage) => {
+      this.floatingActionBarEl?.append(
+        this.erstelleButton(formatiereAnsage(ansage), () => appStore.sageAnsageAn(ansage), deaktiviert)
+      );
+    });
+  }
+
+  /**
+   * Aktualisiert das Vorbehalt-Modal: zeigt ein blockierendes Vollbild-Overlay wenn der eigene
+   * Spieler in der VORBEHALT_ANSAGE-Phase eine Wahl treffen muss.
+   * Das Modal kann nicht per Escape geschlossen werden — eine Entscheidung ist zwingend.
+   */
+  private aktualisiereVorbehaltModal(modell: TischAnsichtModell, zustand: AppZustand): void {
+    if (!this.vorbehaltModalEl) {
+      return;
+    }
+
+    const istEigenerZug = modell.aktuellerSpieler === 'SUED';
+    if (!istEigenerZug || modell.moeglicheVorbehalte.length === 0) {
+      this.vorbehaltModalEl.hidden = true;
+      this.vorbehaltModalEl.innerHTML = '';
+      return;
+    }
+
+    // Modal aufbauen — wird bei jedem Update neu gebaut (idempotent)
+    this.vorbehaltModalEl.hidden = false;
+    this.vorbehaltModalEl.innerHTML = '';
+
+    const dialog = document.createElement('div');
+    dialog.className = 'ui-modal';
+
+    const titel = document.createElement('h2');
+    titel.textContent = 'Vorbehalt ansagen';
+    const hinweis = document.createElement('span');
+    hinweis.className = 'ui-hint';
+    hinweis.textContent = 'Nur serverseitig erlaubte Optionen werden angezeigt. Eine Auswahl ist zwingend.';
+
+    const deaktiviert = zustand.wirdGeladen || this.spielzugAnimationAktiv;
+    const buttonReihe = document.createElement('div');
+    buttonReihe.className = 'ui-action-row';
+    modell.moeglicheVorbehalte.forEach((vorbehalt) => {
+      buttonReihe.append(
+        this.erstelleButton(formatiereVorbehalt(vorbehalt), () => appStore.meldeVorbehalt(vorbehalt), deaktiviert)
+      );
+    });
+
+    dialog.append(titel, hinweis, buttonReihe);
+    this.vorbehaltModalEl.append(dialog);
   }
 
   private aktualisiereAnsageHistorie(modell: TischAnsichtModell): void {

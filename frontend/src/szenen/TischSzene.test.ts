@@ -1056,4 +1056,83 @@ describe('TischSzene', () => {
     appStoreHarness.sendeZustand();
     expect(modal.hidden).toBe(true);
   });
+
+  // WARUM: Die Floating Action Bar ist der einzige Ort wo Ansage-Buttons erscheinen;
+  // fehlt sie, koennen Spieler keine Ansagen machen und verlieren dadurch Punkte.
+  it('zeigt Ansage-Buttons in der Floating Action Bar wenn Ansagen moeglich sind', () => {
+    const zustand = baueZustand({
+      partieStand: bauePartieStand(baueLaufendesSpiel({
+        moeglicheAnsagen: ['RE', 'KEINE_90']
+      }))
+    });
+
+    baueSzene(zustand);
+
+    const fab = document.querySelector('.floating-action-bar') as HTMLElement;
+    expect(fab).toBeTruthy();
+    const buttons = fab.querySelectorAll('button');
+    expect(buttons).toHaveLength(2);
+    expect(buttons[0].textContent).toBe('Re');
+    expect(buttons[1].textContent).toBe('Keine 90');
+
+    buttons[0].click();
+    expect(appStoreHarness.store.sageAnsageAn).toHaveBeenCalledWith('RE');
+  });
+
+  // WARUM: Die FAB darf nicht als leeres Element im DOM stehen wenn keine Ansagen moeglich sind,
+  // da sie sonst Klicks im Spielbereich abfangen wuerde (pointer-events).
+  it('hat eine leere Floating Action Bar wenn keine Ansagen moeglich sind', () => {
+    const zustand = baueZustand({
+      partieStand: bauePartieStand(baueLaufendesSpiel({
+        moeglicheAnsagen: []
+      }))
+    });
+
+    baueSzene(zustand);
+
+    const fab = document.querySelector('.floating-action-bar') as HTMLElement;
+    expect(fab).toBeTruthy();
+    expect(fab.children).toHaveLength(0);
+  });
+
+  // WARUM: Das Vorbehalt-Modal muss das Spiel blockieren und alle Optionen zeigen;
+  // fehlt es, koennen Spieler ihren Vorbehalt nicht melden und das Spiel haengt.
+  it('zeigt das Vorbehalt-Modal als Vollbild-Overlay wenn eigene Vorbehalte moeglich sind', () => {
+    const zustand = baueZustand({
+      partieStand: bauePartieStand(baueLaufendesSpiel({
+        phase: 'VORBEHALT_ANSAGE',
+        spielbareKarten: [],
+        moeglicheVorbehalte: ['GESUND', 'HOCHZEIT', 'ARMUT']
+      }))
+    });
+
+    baueSzene(zustand);
+
+    const modal = document.querySelector('.vorbehalt-modal-backdrop') as HTMLElement;
+    expect(modal).toBeTruthy();
+    expect(modal.hidden).toBe(false);
+    const buttons = modal.querySelectorAll('button');
+    expect(buttons).toHaveLength(3);
+    expect(buttons[0].textContent).toBe('Gesund');
+    expect(buttons[1].textContent).toBe('Hochzeit');
+    expect(buttons[2].textContent).toBe('Armut');
+  });
+
+  // WARUM: Das Vorbehalt-Modal darf nur fuer den eigenen Spieler erscheinen; zeigt es sich
+  // auch wenn ein anderer Spieler am Zug ist, blockiert es die Sicht unnoetig.
+  it('versteckt das Vorbehalt-Modal wenn ein anderer Spieler am Zug ist', () => {
+    const zustand = baueZustand({
+      partieStand: bauePartieStand(baueLaufendesSpiel({
+        phase: 'VORBEHALT_ANSAGE',
+        aktuellerSpieler: 'WEST',
+        spielbareKarten: [],
+        moeglicheVorbehalte: []
+      }))
+    });
+
+    baueSzene(zustand);
+
+    const modal = document.querySelector('.vorbehalt-modal-backdrop') as HTMLElement;
+    expect(modal.hidden).toBe(true);
+  });
 });
