@@ -140,11 +140,15 @@ while true; do
         | grep --line-buffered '^{' \
         | tee "$ITER_OUTPUT" \
         | jq --unbuffered -rj '
-            select(.type == "assistant") | .message.content[]? |
-            if .type == "text" then .text
-            elif .type == "tool_use" then "[→ \(.name): \(.input | to_entries | map("\(.key)=\(.value | tostring | .[0:60])") | join(", "))]\n"
-            else empty
-            end
+            if .type == "assistant" then
+              .message.content[]? |
+              if .type == "text" then .text
+              elif .type == "thinking" then "\u001b[2m🧠 " + .thinking + "\u001b[0m\n"
+              elif .type == "tool_use" then "\u001b[36m[→ \(.name): \(.input | to_entries | map("\(.key)=\(.value | tostring | .[0:60])") | join(", "))]\u001b[0m\n"
+              else empty end
+            elif .type == "result" then
+              "\nTokens: \(.usage.input_tokens) in / \(.usage.output_tokens) out\n"
+            else empty end
           ' 2>/dev/null \
         || true
 
@@ -152,6 +156,22 @@ while true; do
     echo "--- Iteration $ITERATION ($MODE) $(date) ---" >> "$LOG_FILE"
     cat "$ITER_OUTPUT" >> "$LOG_FILE"
     echo "" >> "$LOG_FILE"
+
+    # Check for rate limit — schlafe bis zum Reset und wiederhole die Iteration
+    resets_at=$(grep '"overageStatus":"rejected"' "$ITER_OUTPUT" 2>/dev/null \
+        | jq -r '.rate_limit_info.resetsAt // empty' 2>/dev/null | tail -1)
+    if [ -n "$resets_at" ]; then
+        now=$(date +%s)
+        sleep_secs=$(( resets_at - now + 30 ))  # +30s Puffer
+        reset_human=$(date -d "@$resets_at" 2>/dev/null || date -r "$resets_at" 2>/dev/null)
+        echo ""
+        echo "━━━ Rate Limit — Reset um $reset_human (in ${sleep_secs}s) ━━━"
+        ITERATION=$((ITERATION - 1))
+        sleep "$(( sleep_secs > 0 ? sleep_secs : 60 ))"
+        echo "━━━ Quota reset — weiter ━━━"
+        echo ""
+        continue
+    fi
 
     # Check for completion signal
     if grep -q '<promise>COMPLETE</promise>' "$ITER_OUTPUT" 2>/dev/null; then
