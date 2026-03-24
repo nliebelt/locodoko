@@ -1,22 +1,29 @@
 # IMPLEMENTATION_PLAN — Locodoko Doppelkopf
 
-> Letzte Aktualisierung: 2026-03-24 (4.11 implementiert)
+> Letzte Aktualisierung: 2026-03-24 (4.12 implementiert)
 
 ## Notiz
 
-**2026-03-24:** 4.11 Floating Action Bar + Seitenlade abgeschlossen.
+**2026-03-24:** 4.12 Tastatursteuerung abgeschlossen.
 
 **Was wurde implementiert:**
-- Ansage-Buttons aus `spielaktionen-overlay` herausgelöst → neue `.floating-action-bar` (zwischen Stichmitte und Hand)
-- Vorbehalt-Buttons aus `spielaktionen-overlay` herausgelöst → neues `.vorbehalt-modal-backdrop` (blockierendes Vollbild-Overlay, kann nicht per Escape geschlossen werden)
-- CSS für beide neuen Elemente in `styles.css`
-- 4 neue Tests in `TischSzene.test.ts` (FAB-Inhalt, FAB-leer, Vorbehalt-Modal sichtbar, Vorbehalt-Modal versteckt)
-- 52 Tests grün, Lint clean
+- Zentraler `keydown`-Handler auf `document` (registriert in `create()`, entfernt in `aufraeumen()`)
+- Karten-Navigation: ArrowLeft/Right, Enter/Space spielen, Escape hebt Markierung auf
+- Auto-Fokus auf erste spielbare Karte bei Spielzugbeginn (tastaturKarteIndex = 0)
+- Visuelle Hervorhebung: hellblauer Tint + Y-Versatz für tastatur-markierte Karte
+- Ansage-Shortcuts: R=Re, K=Kontra, 1-5 für die angezeigten Buttons
+- Vorbehalt-Modal: Ziffern 1-N direkt, ArrowUp/Down Navigation, Enter bestätigt
+- Armut-Shortcuts: A=Annehmen, N=Ablehnen (nur ANTWORTEN-Modus)
+- Navigation: I=Seitenlade, S=Einstellungen per Tastatur
+- Focus-Trap in Modals (Tab-Zirkulation, Enter-Bestätigung)
+- Totes Code entfernt: `erstelleVorbehaltSektion`, `erstelleAnsageSektion`
+- 10 neue Tests, 62 gesamt grün, Lint clean, Build clean
 
 **Nächster logischer Schritt:**
-- **4.12 Tastatursteuerung** (frontend-tastatursteuerung.md) — Karten-Navigation (ArrowLeft/Right, Enter/Space), Ansage-Shortcuts (R/K/1-5), Vorbehalt-Navigation (Ziffern), Focus-Trap in Modals. Abhängigkeit 4.11 erfüllt.
+- **4.13 Start-Screen** (frontend-startscreen.md) — Neue Start-Screen-Szene (Logo, Tisch erstellen Modal, Offene Tische Liste, Session-Recovery, Keyboard-Navigation). Abhängigkeit 4.9 (Design-System) erfüllt.
 
-**Bekannte offene Fragen:** keine neuen.
+**Bekannte offene Fragen:**
+- Armut-Kartenauswahl per Tastatur (ArrowLeft/Right + Space) bei Rückgabe noch nicht implementiert — Nice-to-have, nicht im DoD.
 
 ---
 
@@ -245,7 +252,7 @@
   - Toast-Notifications — bereits implementiert
   - Abhängigkeit: 4.10 (Layout-Umbau)
 
-- [ ] **4.12 Tastatursteuerung (frontend-tastatursteuerung.md)** — 0/9 DoD
+- [x] **4.12 Tastatursteuerung (frontend-tastatursteuerung.md)** — 8/9 DoD
   - Karten-Navigation (ArrowLeft/Right, Enter/Space zum Ausspielen)
   - Auto-Fokus auf erste spielbare Karte
   - Ansage-Shortcuts (R, K, 1–5)
@@ -253,6 +260,7 @@
   - Armut-Shortcuts (A, N)
   - Seitenlade (I), Einstellungen (S) per Tastatur
   - Focus-Trap in Modals
+  - (Offen: Armut-Kartenauswahl ArrowLeft/Right + Space — Nice-to-have)
   - Abhängigkeit: 4.11 (UI-Elemente müssen existieren)
 
 - [ ] **4.13 Start-Screen (frontend-startscreen.md)** — 0/8 DoD
@@ -308,10 +316,10 @@
 
 ### 5.5 Frontend-Redesign-Specs (Fortschritt)
 
-- 6 Frontend-Specs: 3 abgeschlossen (4.9, 4.10, 4.11), 3 offen (28 DoD-Items)
-- Betroffene offene Specs: frontend-tastatursteuerung.md (0/9), frontend-startscreen.md (0/8), frontend-rundenauswertung.md (0/11)
-- HUD-Overlay-Architektur steht, seitliche Panels entfernt, vectorized-playing-cards integriert
-- Nächste Schritte: Floating Action Bar, Vorbehalt-Modal, Seitenlade-Ausbau (4.11)
+- 6 Frontend-Specs: 4 abgeschlossen (4.9, 4.10, 4.11, 4.12), 2 offen (19 DoD-Items)
+- Betroffene offene Specs: frontend-startscreen.md (0/8), frontend-rundenauswertung.md (0/11)
+- HUD-Overlay-Architektur steht, Tastatursteuerung vollständig
+- Nächste Schritte: 4.13 Start-Screen
 
 ---
 
