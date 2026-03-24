@@ -2,7 +2,7 @@
 
 | Feld           | Wert                                                                    |
 |----------------|-------------------------------------------------------------------------|
-| Status         | Überarbeitung erforderlich — Layout-Neukonzeption                       |
+| Status         | Überarbeitung erforderlich — Showstopper-Fixes + Stich-Visualisierung   |
 | Priorität      | Hoch                                                                    |
 | Abhängigkeiten | kartendeck.md, websocket-kommunikation.md, frontend-visuelles-design.md |
 
@@ -51,12 +51,18 @@ Die Tischansicht ist das zentrale Spielfeld. Sie nutzt die **volle Canvas-Fläch
    - `[RE]` / `[KONTRA]` erscheint sobald die Partei bekannt ist (nach Vorbehalt oder nach erster Ansage).
    - `[G]` (Geber-Marker) ist immer sichtbar wenn der Spieler Geber ist.
    - Stichzähler ist **für alle vier Spieler gleich** sichtbar, einschließlich Süd.
-3. Der **aktive Spieler** (aktuell am Zug) wird visuell hervorgehoben — Nameplate leuchtet auf (Akzentfarbe, siehe `frontend-visuelles-design.md`).
-4. Spielerpositionen als feste Koordinaten relativ zur Canvas-Größe:
+3. Der **aktive Spieler** (aktuell am Zug) wird visuell hervorgehoben — Nameplate leuchtet auf (Akzentfarbe, siehe `frontend-visuelles-design.md`). **Kein separater "Am Zug: X"-Text im Canvas** — das Nameplate-Highlight ist die einzige Anzeige.
+4. **Nameplate-Position relativ zu den Karten** (nicht darunter/darüber):
+   - **SUED**: Nameplate **rechts** neben dem Kartenfächer
+   - **NORD**: Nameplate **rechts** neben dem Kartenfächer
+   - **WEST**: Nameplate **unterhalb** des Kartenstapels
+   - **OST**: Nameplate **oberhalb** des Kartenstapels
+5. Spielerpositionen als feste Koordinaten relativ zur Canvas-Größe:
    - **SUED**: unten, `y: 85%`, Karten bei `y: 89%`
    - **NORD**: oben, `y: 15%`, Karten bei `y: 11%`
    - **WEST**: links, `x: 14%`, Karten bei `x: 10%`
    - **OST**: rechts, `x: 86%`, Karten bei `x: 90%`
+6. Die seitlichen Spieler (OST/WEST) müssen vollständig **innerhalb des Canvas** bleiben — Kartenabstände und Nameplates dürfen nicht überlappen oder abgeschnitten werden.
 
 ### Kartendarstellung
 
@@ -64,14 +70,25 @@ Die Tischansicht ist das zentrale Spielfeld. Sie nutzt die **volle Canvas-Fläch
 2. Eigene Karten (Süd): aufgefächert, alle sichtbar, sortiert (Trümpfe links, Fehlfarben rechts).
 3. Gegnerische Karten: **Kartenrücken-Fächer** — kein Kreis, kein Avatar, nur die Karten selbst.
 4. Karten verwenden das **vectorized-playing-cards**-Set von Chris Aguilar (Public Domain). Kein programmatisches Zeichnen mehr für Kartenvorderseiten.
-5. Kartenrücken: einheitliches Design gemäß `frontend-visuelles-design.md`.
-6. Im **Debug-Modus** werden alle gegnerischen Karten aufgedeckt (vectorized-playing-cards).
+5. **Karten-Hintergrund**: Jede Karte hat einen weißen Hintergrund — die PNG-Assets sind transparent und müssen auf dem dunklen Tisch lesbar sein.
+6. Kartenrücken: einheitliches Design gemäß `frontend-visuelles-design.md`.
+7. Im **Debug-Modus** werden alle gegnerischen Karten aufgedeckt (vectorized-playing-cards).
+8. **Duplikat-Texte entfernen**: Kein großer Titeltext (`„von Spieler X · Spieltyp · Phase"`) im Canvas-Bereich — diese Infos stehen bereits in der HUD Top-Bar. Kein „Noch keine Karte im laufenden Stich"-Placeholder — leerer Canvas ist korrekt.
 
 ### Stichmitte
 
 1. Die vier Stich-Slots sind **proportional zur Spielgröße** positioniert (relativ zur Mitte).
-2. Gespielte Karten sind klar dem Spieler zugeordnet (Position im Slot entspricht Spielerposition).
-3. Wenn kein Stich läuft: leerer Bereich, kein Platzhaltertext.
+2. Gespielte Karten sind klar dem Spieler zugeordnet (Position im Slot entspricht Spielerposition): SUED-Karte unten, NORD-Karte oben, WEST-Karte links, OST-Karte rechts.
+3. Die Karten liegen **leicht überlappend und minimal rotiert** (je nach Position) — wie auf einem echten Tisch, nicht exakt ausgerichtet.
+4. **Keine Spielernamen** an den Stich-Karten — die Position im Slot macht die Zuordnung deutlich.
+5. Wenn kein Stich läuft: leerer Bereich, kein Platzhaltertext.
+
+### Stich-Stapel beim Gewinner
+
+1. Gewonnene Stiche werden als **kleiner gestapelter Fächer rechts neben dem Kartenfächer** des Gewinners angezeigt.
+2. Bei SUED: Stapel rechts neben der eigenen Hand. Bei den Gegnern: analog zu ihrer Kartenposition.
+3. Der Stapel wächst mit jedem gewonnenen Stich — sichtbarer Fortschritt.
+4. **Letzten Stich umdrehen**: Klick auf den eigenen Stapel (oder dedizierte Taste) deckt die 4 Karten des letzten gewonnenen Stichs kurz auf — wie im echten Doppelkopf erlaubt. Nur der eigene Stapel ist umklappbar.
 
 ### Floating Action Bar
 
@@ -105,8 +122,15 @@ Die Tischansicht ist das zentrale Spielfeld. Sie nutzt die **volle Canvas-Fläch
 
 - [ ] HUD Top-Bar implementiert (Stichzähler links, Spieltyp Mitte, Icons rechts)
 - [ ] Spieler-Nameplates statt Kreise implementiert
+- [ ] Nameplate-Position: SUED/NORD rechts neben Karten, WEST unterhalb, OST oberhalb
 - [ ] vectorized-playing-cards integriert (Laden, Mapping auf Doppelkopf-Karten)
+- [ ] Weißer Karten-Hintergrund hinter jedem Karten-Sprite
 - [ ] Kartengröße auf 110×165px erhöht
+- [ ] Duplikat-Texte und Placeholder-Texte entfernt (kein „Am Zug", kein „Noch keine Karte", kein Titeltext)
+- [ ] OST/WEST vollständig innerhalb des Canvas (kein Overflow)
+- [ ] Stich-Karten gestampelt in Stichmitte (Position nach Spielerrichtung, keine Namen)
+- [ ] Stich-Stapel beim Gewinner sichtbar
+- [ ] Letzten Stich umdrehen funktioniert
 - [ ] Floating Action Bar implementiert
 - [ ] Seitenlade implementiert
 - [ ] Einstellungs-Modal implementiert

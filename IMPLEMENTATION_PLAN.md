@@ -1,6 +1,6 @@
 # IMPLEMENTATION_PLAN — Locodoko Doppelkopf
 
-> Letzte Aktualisierung: 2026-03-24 (4.12 implementiert)
+> Letzte Aktualisierung: 2026-03-24 (4.15–4.18 geplant)
 
 ## Notiz
 
@@ -20,8 +20,11 @@
 - 10 neue Tests, 62 gesamt grün, Lint clean, Build clean
 
 **Nächster logischer Schritt:**
-- **0.1 Tech-Upgrade** (tech-migration.md) — Spring Boot 4.0.4 + Java 25 in pom.xml. Höchste Priorität, da CLAUDE.md bereits Java 25 / Spring Boot 4.x als Ziel nennt und SB 4.0.4 am 19.03.2026 released wurde.
-- **4.13 Start-Screen** (frontend-startscreen.md) — Neue Start-Screen-Szene (Logo, Tisch erstellen Modal, Offene Tische Liste, Session-Recovery, Keyboard-Navigation). Abhängigkeit 4.9 (Design-System) erfüllt.
+
+- **4.15 Showstopper-Fixes** — UI-Bugs die das Spiel unspielbar machen. Höchste Priorität.
+- **4.16 Stich-Visualisierung** — Gestampelte Stiche, Stapel beim Gewinner, Stich umdrehen.
+- **4.17 Phaser-Migration UI** — Alle Spielaktions-Overlays raus aus HTML, rein in Phaser.
+- **4.18 Single-Player UX** — Quick Game, Timeout deaktivieren, Reconnect verbessern.
 
 **Bekannte offene Fragen:**
 - Armut-Kartenauswahl per Tastatur (ArrowLeft/Right + Space) bei Rückgabe noch nicht implementiert — Nice-to-have, nicht im DoD.
@@ -275,14 +278,15 @@
   - (Offen: Armut-Kartenauswahl ArrowLeft/Right + Space — Nice-to-have)
   - Abhängigkeit: 4.11 (UI-Elemente müssen existieren)
 
-- [ ] **4.13 Start-Screen (frontend-startscreen.md)** — 0/8 DoD
-  - Neue Start-Screen-Szene (ersetzt/ergänzt LobbySzene)
+- [ ] **4.13 Spielverwaltungs-Szene (frontend-startscreen.md)** — 0/9 DoD
+  - Dritte Szene zwischen BootSzene und TischSzene (ersetzt LobbySzene)
   - Logo + Slogan
-  - „Neuen Tisch erstellen" Modal mit Konfiguration
-  - „Offene Tische" Liste mit Polling
-  - Session-Recovery-Button
+  - **„Quick Game"-Button** — startet sofort einen Einzelspieler-Tisch gegen KI
+  - „Neuen Tisch erstellen" Modal mit vollständiger Konfiguration (Regeln, Rundenanzahl, Sichtbarkeit, KI-Schwierigkeit)
+  - „Offene Tische" Liste mit Polling — WARTEND-Tische joinbar, laufende Tische mit „Zurückkehren"-Button
+  - Session-Recovery-Button (falls aktiver Tisch vorhanden)
   - Keyboard-Navigation (Tab, Enter)
-  - Abhängigkeit: 4.9 (Design-System)
+  - Abhängigkeit: 4.9 (Design-System), 4.15 (Showstopper-Fixes)
 
 - [ ] **4.14 Rundenauswertung-Overlay (frontend-rundenauswertung.md)** — 0/11 DoD
   - Rundenende-Overlay (bereits funktional, Styling-Anpassung an Design-System)
@@ -291,6 +295,38 @@
   - Partie-Ende-Overlay mit Gesamtauswertung + Countdown
   - Keyboard-Support (Enter zum Schließen)
   - Abhängigkeit: 4.9 (Design-System)
+
+- [ ] **4.15 Showstopper-Fixes (UI spielbar machen)** — 0/8 DoD
+  - **Karten-Hintergrund**: Weißes Phaser-`Graphics`-Rechteck hinter jedem Karten-Sprite (PNG-Assets sind transparent, auf dunklem Tisch unlesbar)
+  - **"Am Zug"-Text entfernen**: Riesiger Phaser-Canvas-Text in Spielmitte (und dessen HTML-Overlay-Pendant unten) komplett entfernen — aktiver Spieler ist via Nameplate-Highlight erkennbar
+  - **Duplikat-Titeltext entfernen**: Großer weißer `„von Spieler X · Spieltyp · Phase · Spiel N/M"`-Text im Canvas ist Duplikat der HUD Top-Bar — weg
+  - **„Noch keine Karte im laufenden Stich"-Placeholder entfernen**: Leerer Canvas ist besser als dieser Text
+  - **Tischname aus Top-Bar entfernen** (Mitte der HUD zeigt bereits Spieltyp + Spielnummer)
+  - **Lobby-Bug**: Nach Tisch verlassen kann kein neuer Tisch erstellt werden — `wirdGeladen`-State wird nicht korrekt zurückgesetzt
+  - **OST/WEST-Layout-Overflow**: Seitliche Spieler ragen aus dem Canvas — Positionen und Kartenabstände korrigieren
+  - **Render-Bug**: Karten anderer Spieler werden nach KI-Zug manchmal nicht im Canvas aktualisiert — fehlendes `renderTisch()` nach bestimmten State-Updates
+
+- [ ] **4.16 Stich-Visualisierung** — 0/6 DoD
+  - **Gestampelte Stich-Karten**: Die 4 Karten im laufenden Stich werden leicht überlappend/rotiert nach Spielerposition abgelegt (SUED unten, NORD oben, WEST links, OST rechts) — keine Spielernamen an den Karten
+  - **Stich-Stapel beim Gewinner**: Gewonnene Stiche als kleiner gestapelter Fächer rechts neben den eigenen Karten (bei SUED), analoger Stapel bei Gegnern
+  - **Stich-Einzieh-Animation**: Karten fliegen nach Stich-Ende zum Gewinner, kurzes Punkte-Popup (z.B. „+1 Stich")
+  - **Letzten Stich umdrehen**: Klick/Taste auf eigenen Stapel deckt die zuletzt gewonnenen 4 Karten kurz auf (wie im echten Spiel erlaubt)
+  - **Stich-Gewinn deutlich machen**: Visuelle Hervorhebung (kurzer Glow/Flash am Gewinner-Nameplate) sodass klar ist wer den Stich gemacht hat
+  - Abhängigkeit: 4.15
+
+- [ ] **4.17 Phaser-Migration UI-Overlays** — 0/6 DoD
+  - **Architektur-Entscheidung**: Spielaktions-UI = Phaser-GameObjects; Meta-UI (Seitenlade, Einstellungen) = HTML bleibt
+  - **Vorbehalt-Auswahl**: Vollbild-Phaser-Overlay statt HTML-Modal — Karten bleiben im Hintergrund sichtbar
+  - **Ansage-Buttons**: Floating Action Bar als Phaser-Container statt HTML-Element
+  - **Armut-Dialog**: Phaser-Overlay statt HTML
+  - **Spieler-Nameplates neu positionieren**: NORD und SUED → Nameplate rechts neben Kartenfächer; WEST → Nameplate unterhalb des Kartenstapels; OST → Nameplate oberhalb des Kartenstapels
+  - Abhängigkeit: 4.15
+
+- [ ] **4.18 Single-Player UX** — 0/4 DoD
+  - **KI-Übernahme-Timeout deaktivieren** für Tische mit nur einem menschlichen Spieler (Backend: `TischService` / `VerbindungsabbruchService` prüfen ob alle anderen Spieler KI sind)
+  - **Laufende Tische in Lobby-Liste** anzeigen: Tische mit Status `IM_SPIEL` erscheinen in der Liste mit „Zurückkehren"-Button statt „Beitreten" (nur für den eigenen Spieler sichtbar)
+  - **Kartenrückseiten-Asset** (Nice-to-have): LGPL/Public-Domain Kartenrücken-Design als Ersatz für prozeduralen Rücken
+  - Abhängigkeit: 4.13 (Quick Game), 4.15
 
 ---
 
@@ -305,6 +341,9 @@
 - ~~**TischSzene: leaveButton während IM_SPIEL deaktiviert**~~: Behoben in 4.10 — leaveButton jetzt während IM_SPIEL klickbar mit Bestätigungsdialog.
 - **SpielerSessionController PUT-Pfad: Potenzielle NPE**: `request.getSession(false)` wird ohne Null-Check verwendet; bei fehlender Session gibt `.getId()` eine NPE statt einer sauberen 401-Antwort. Risiko gering: MVC-Interceptor validiert vorher, aber defensiver Null-Check wäre sauberer.
 - **TischStatus.BEENDET nie gesetzt**: Der Enum-Wert existiert, wird aber nirgends zugewiesen — toter Code.
+- **Lobby: Tisch erstellen nach Verlassen nicht möglich** (→ 4.15): `wirdGeladen`-State wird nach Tisch-Verlassen nicht zurückgesetzt, Erstellen-Button bleibt dauerhaft disabled.
+- **TischSzene: Karten-Render-Bug nach KI-Zug** (→ 4.15): Karten anderer Spieler werden nach KI-Aktionen manchmal nicht im Canvas aktualisiert — fehlendes `renderTisch()` nach bestimmten State-Updates.
+- **TischSzene: OST/WEST-Spieler ragen aus Canvas** (→ 4.15/4.17): Seitliche Spielerpositionen und Kartenabstände overflow-en den sichtbaren Bereich.
 
 ### 5.3 Testlücken (kein Blocker, aber dokumentiert)
 

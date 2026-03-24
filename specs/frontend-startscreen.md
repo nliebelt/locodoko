@@ -1,4 +1,4 @@
-# Frontend: Start-Screen
+# Frontend: Spielverwaltungs-Szene
 
 | Feld           | Wert                              |
 |----------------|-----------------------------------|
@@ -8,25 +8,31 @@
 
 ## Beschreibung
 
-Der Start-Screen ist die erste Seite die ein Spieler sieht. Er ersetzt die bisherige technisch anmutende Lobby-Szene. Die Seite vermittelt sofort die Energie des Spiels: fett, klar, einladend. Von hier aus gelangt man entweder an einen neuen Tisch oder setzt sich an einen bereits offenen.
+Die Spielverwaltungs-Szene ist die **dritte Phaser-Szene** (nach BootSzene, vor TischSzene) und ersetzt die bisherige LobbySzene. Sie ist die erste Seite die ein Spieler aktiv sieht. Die Seite vermittelt sofort die Energie des Spiels: fett, klar, einladend. Von hier aus gelangt man entweder schnell in ein Einzelspieler-Spiel (Quick Game), erstellt einen konfigurierten Tisch, oder tritt einem offenen Tisch bei.
 
 ## Layout-Übersicht
 
 ```text
 ┌──────────────────────────────────────────────────────────────────┐
 │                                                                  │
-│                                                                  │
 │                    L O C O   D O K O                             │  ← großes Logo
 │              Dullen. Füchse. Wahnsinn.                           │  ← Slogan
 │                                                                  │
 │              ┌─────────────────────────────┐                    │
-│              │   + Neuen Tisch erstellen   │                    │  ← Primary Button
+│              │   ↩ Zurück zu [Tischname]   │                    │  ← Session-Recovery (nur wenn aktiv)
+│              └─────────────────────────────┘                    │
+│                                                                  │
+│              ┌─────────────────────────────┐                    │
+│              │   ▶  Quick Game             │                    │  ← Primary Button
+│              └─────────────────────────────┘                    │
+│                                                                  │
+│              ┌─────────────────────────────┐                    │
+│              │   + Neuen Tisch erstellen   │                    │  ← Secondary Button
 │              └─────────────────────────────┘                    │
 │                                                                  │
 │              ┌─────────────────────────────┐                    │
 │              │   ⊞  Offene Tische          │                    │  ← Secondary Button
 │              └─────────────────────────────┘                    │
-│                                                                  │
 │                                                                  │
 └──────────────────────────────────────────────────────────────────┘
 ```
@@ -49,11 +55,12 @@ Der Start-Screen ist die erste Seite die ein Spieler sieht. Er ersetzt die bishe
 
 ### Haupt-Buttons
 
-1. **„+ Neuen Tisch erstellen"** (Primary Button): öffnet das Tisch-Konfigurations-Modal.
-2. **„⊞ Offene Tische"** (Secondary Button): zeigt die Liste offener Tische.
-3. Buttons sind breit, klar beschriftet, Neo-Brutalism-Stil (`border: 2px solid #f8f9fa`, `box-shadow: 4px 4px 0 #000`).
-4. Hover-Effekt: Offset-Schatten verschwindet, Button verschiebt sich um `4px 4px` (pressed-Feeling).
-5. Beide Buttons sind **per Tastatur fokussierbar** (Tab-Reihenfolge, Enter zum Auslösen).
+1. **„▶ Quick Game"** (Primary Button): Startet sofort einen Einzelspieler-Tisch gegen 3 KI-Spieler (Standardkonfiguration, kein Modal). Nach erfolgreichem Erstellen wechselt die Szene direkt zur TischSzene.
+2. **„+ Neuen Tisch erstellen"** (Secondary Button): öffnet das Tisch-Konfigurations-Modal für vollständige Konfiguration.
+3. **„⊞ Offene Tische"** (Secondary Button): zeigt die Liste offener und laufender Tische.
+4. Buttons sind breit, klar beschriftet, Neo-Brutalism-Stil (`border: 2px solid #f8f9fa`, `box-shadow: 4px 4px 0 #000`).
+5. Hover-Effekt: Offset-Schatten verschwindet, Button verschiebt sich um `4px 4px` (pressed-Feeling).
+6. Alle Buttons sind **per Tastatur fokussierbar** (Tab-Reihenfolge, Enter zum Auslösen).
 
 ### Tisch-Konfigurations-Modal
 
@@ -72,10 +79,12 @@ Der Start-Screen ist die erste Seite die ein Spieler sieht. Er ersetzt die bishe
 ### Offene-Tische-Liste
 
 1. Klappt als **Bereich unterhalb der Buttons** aus (kein Modal — bleibt auf dem Start-Screen).
-2. Zeigt alle offenen Tische mit Status WARTEND als Liste.
+2. Zeigt alle Tische in zwei Gruppen:
+   - **Offene Tische** (Status WARTEND): Button „Beitreten" pro Eintrag.
+   - **Laufende Tische** (Status IM_SPIEL): Button „Zurückkehren" pro Eintrag — nur für Spieler die diesem Tisch bereits zugeordnet sind. Für fremde Spieler nicht sichtbar.
 3. Jeder Listeneintrag zeigt: Tischname, Anzahl Spieler (z.B. `2/4`), KI-Schwierigkeit.
-4. Button „Beitreten" pro Eintrag — wechselt direkt zur TischSzene.
-5. Wenn keine offenen Tische vorhanden: Hinweistext „Keine offenen Tische. Erstelle einen neuen!".
+4. „Beitreten" / „Zurückkehren" wechselt direkt zur TischSzene.
+5. Wenn keine Tische vorhanden: Hinweistext „Keine offenen Tische. Starte ein Quick Game!".
 6. Die Liste **aktualisiert sich automatisch** alle 5 Sekunden (Polling via REST-API).
 7. Erneuter Klick auf „⊞ Offene Tische" klappt die Liste wieder ein.
 
@@ -95,18 +104,22 @@ Der Start-Screen ist die erste Seite die ein Spieler sieht. Er ersetzt die bishe
 
 ## Definition of Done
 
-- [ ] Start-Screen Szene/Ansicht implementiert (ersetzt bisherige LobbySzene oder wird neue Phaser-Szene)
+- [ ] Spielverwaltungs-Szene als neue Phaser-Szene implementiert (ersetzt LobbySzene)
 - [ ] Logo und Slogan korrekt dargestellt
-- [ ] „Neuen Tisch erstellen" Modal implementiert (Pflichtfelder: Name, Rundenanzahl)
+- [ ] „▶ Quick Game"-Button: startet sofort Einzelspieler-Tisch gegen 3 KI, wechselt zur TischSzene
+- [ ] „Neuen Tisch erstellen" Modal implementiert (Pflichtfelder: Name, Rundenanzahl, KI-Schwierigkeit)
 - [ ] Tisch-Erstellung schließt Modal und wechselt zur TischSzene
-- [ ] „Offene Tische" Liste implementiert mit Polling
-- [ ] Session-Recovery-Button implementiert
+- [ ] „Offene Tische" Liste implementiert mit Polling (WARTEND + eigene IM_SPIEL-Tische)
+- [ ] „Zurückkehren"-Button für laufende eigene Tische
+- [ ] Session-Recovery-Button implementiert (erscheint wenn aktiverTischId vorhanden)
 - [ ] Keyboard-Navigation (Tab, Enter)
 - [ ] Visuelles Review
 
 ## Technische Hinweise
 
-- Die bisherige `LobbySzene` wird **zu einem Start-Screen** umgebaut — kein separates HTML-Template nötig.
+- Die bisherige `LobbySzene` wird durch eine neue `SpielVerwaltungsSzene` ersetzt.
 - Tisch-Konfigurations-Modal als HTML-Overlay über der Phaser-Canvas (`#ui-root`).
-- REST-Polling für offene Tische: `GET /api/tische` alle 5 Sekunden, nur wenn Liste offen ist.
+- REST-Polling für Tische: `GET /api/tische` alle 5 Sekunden, nur wenn Liste offen ist.
+- Quick Game erstellt einen Tisch mit Standardkonfiguration ohne Modal und startet sofort.
+- Die Tischliste zeigt laufende Tische nur dem Spieler der ihnen bereits zugeordnet ist.
 - Sonderregeln-Konfiguration folgt in einer eigenen Spec-Iteration.

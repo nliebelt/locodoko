@@ -2,7 +2,7 @@
 
 | Feld           | Wert                                        |
 |----------------|---------------------------------------------|
-| Status         | Vollständig implementiert und getestet      |
+| Status         | Erweiterung erforderlich — Stich-Visualisierung (4.16) |
 | Priorität      | Mittel                                      |
 | Abhängigkeiten | frontend-tischansicht.md, websocket-kommunikation.md |
 
@@ -23,7 +23,14 @@ Animationen machen das Spielerlebnis lebendig und geben visuelles Feedback zu Sp
 
 5. Wenn ein Stich abgeschlossen ist (4 Karten liegen), werden alle 4 Karten **gebündelt zum Stichgewinner** geschoben.
 6. Die Animation dauert ca. **500–700ms** (nach einer kurzen Pause von ca. 1 Sekunde, damit alle Karten sichtbar sind).
-7. Die Karten verschwinden beim Stichgewinner und der **Stichzähler** wird erhöht.
+7. Die Karten landen auf dem **Stich-Stapel** des Gewinners (rechts neben seinen Karten) und vergrößern den sichtbaren Stapel.
+8. Beim Stichgewinner erscheint kurz ein **Gewinn-Flash** (Nameplate leuchtet kurz in der Akzentfarbe auf, ca. 400ms) — macht den Stichgewinn unmissverständlich erkennbar.
+
+### Stich-Stapel und letzter Stich umdrehen
+
+9. Der **Stich-Stapel** jedes Spielers ist als kleiner Kartenfächer sichtbar und wächst mit jedem gewonnenen Stich.
+10. **Letzter Stich umdrehen**: Klick auf den eigenen Stapel deckt die 4 Karten des zuletzt gewonnenen Stichs kurz auf — wie im echten Doppelkopf erlaubt. Nach kurzer Zeit oder erneutem Klick werden sie wieder verdeckt.
+11. Nur der eigene Stapel ist umklappbar — Gegner-Stapel bleiben verdeckt.
 
 ### Karten austeilen
 
@@ -69,12 +76,18 @@ Animationen machen das Spielerlebnis lebendig und geben visuelles Feedback zu Sp
 
 ## Definition of Done
 
-- [x] Alle Anforderungen implementiert
-- [x] Alle 6 Animationstypen implementiert und visuell geprüft
+- [x] Karte ausspielen (Gleiten zur Stichmitte)
+- [x] Stich einziehen (Karten fliegen zum Gewinner)
+- [x] Karten austeilen
+- [x] Ansage-Banner
+- [x] Sonderpunkt-Feedback
 - [x] Geschwindigkeitseinstellung implementiert
 - [x] Synchronisation mit WebSocket-Events nachgewiesen
 - [x] Performance-Test: keine Frame-Drops bei Animationen
-- [x] Visuelles Review / Plausibilitätsprüfung
+- [ ] Gewinn-Flash: Nameplate des Stichgewinners leuchtet kurz auf (4.16)
+- [ ] Stich-Stapel: Karten landen sichtbar auf Stapel beim Gewinner (4.16)
+- [ ] Letzter Stich umdrehen: Flip-Animation auf eigenem Stapel (4.16)
+- [ ] Visuelles Review nach 4.16
 
 ## Technische Hinweise
 

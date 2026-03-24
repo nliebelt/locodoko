@@ -2,13 +2,21 @@
 
 | Feld           | Wert                                                                                    |
 |----------------|-----------------------------------------------------------------------------------------|
-| Status         | Überarbeitung erforderlich — Panel-Architektur wird durch HUD + Overlays ersetzt        |
+| Status         | Überarbeitung erforderlich — Spielaktions-UI vollständig in Phaser migrieren            |
 | Priorität      | Hoch                                                                                    |
 | Abhängigkeiten | frontend-tischansicht.md, websocket-kommunikation.md, stichlogik.md, ansagen.md, frontend-tastatursteuerung.md |
 
 ## Beschreibung
 
 Die UI-Logik bestimmt, welche Interaktionen dem Spieler wann zur Verfügung stehen. Die bisherigen seitlichen HTML-Panels entfallen vollständig. Alle Spielaktionen erscheinen kontextuell als Overlays oder Floating-Elemente, ohne das Spielfeld dauerhaft zu verdecken.
+
+### Grundsatz: Spielaktions-UI vs. Meta-UI
+
+**Spielaktions-UI** (Vorbehalt, Ansage, Armut, Stich-Feedback): Alle Elemente die direkt ins Spielgeschehen eingreifen, werden **auf der Spielfläche** dargestellt — sie dürfen die Karten nicht verdecken und gehören visuell zum Tisch.
+
+**Meta-UI** (Seitenlade `[≡]`, Einstellungs-Modal `[⚙]`): Informations- und Konfigurationselemente die das Spiel nicht blockieren.
+
+Hinweise die lediglich den Spielzug des Spielers ankündigen (z.B. „Du bist dran") **entfallen ersatzlos** — der aktive Spieler ist durch Nameplate-Hervorhebung erkennbar.
 
 ## Anforderungen
 
@@ -34,18 +42,19 @@ Die UI-Logik bestimmt, welche Interaktionen dem Spieler wann zur Verfügung steh
 
 ### Vorbehalt-Phase
 
-1. In der Vorbehalt-Phase erscheint ein **modales Vollbild-Overlay** — das Spiel wartet auf die Entscheidung des Spielers.
-2. Das Overlay zeigt alle verfügbaren Optionen:
+1. In der Vorbehalt-Phase erscheint ein **Overlay auf der Spielfläche** — das Spiel wartet auf die Entscheidung des Spielers.
+2. Das Overlay ist **nicht fullscreen** — die eigenen Karten bleiben im Hintergrund sichtbar. Das Overlay erscheint als kompakter zentrierter Bereich zwischen Stichmitte und Kartenfächer.
+3. Das Overlay zeigt alle verfügbaren Optionen:
    - „Gesund" (kein Vorbehalt)
    - Verfügbare Sonderspiele (Solo-Typen, Hochzeit, Armut) — nur wenn regelkonform und Tischkonfiguration erlaubt.
-3. Jede Option ist ein großer, klar beschrifteter Button.
-4. Der Spieler kann eine Option **per Klick oder Tastatur** auswählen (Pfeiltasten + Enter, oder Zifferntasten 1–N für die N Optionen).
-5. Nach der Auswahl schließt das Overlay automatisch und das `SonderspielAngemeldet`-Event wird gesendet.
-6. Das Overlay kann **nicht per Escape geschlossen** werden — eine Entscheidung ist zwingend.
+4. Jede Option ist ein großer, klar beschrifteter Phaser-Button (Rectangle + Text).
+5. Der Spieler kann eine Option **per Klick oder Tastatur** auswählen (Pfeiltasten + Enter, oder Zifferntasten 1–N für die N Optionen).
+6. Nach der Auswahl verschwindet das Overlay automatisch und das `SonderspielAngemeldet`-Event wird gesendet.
+7. Das Overlay kann **nicht per Escape geschlossen** werden — eine Entscheidung ist zwingend.
 
 ### Armut-Interaktion
 
-1. Wenn eine Armut angeboten wird, erscheint ein **modales Overlay** mit „Annehmen" / „Ablehnen".
+1. Wenn eine Armut angeboten wird, erscheint ein **Overlay auf der Spielfläche** mit „Annehmen" / „Ablehnen".
 2. Der Dialog zeigt die Anzahl der Tauschkarten an.
 3. Bei „Annehmen" erscheint eine **Kartenauswahl**: Der Spieler wählt die zurückzugebenden Karten aus (klickbar oder Tastatur).
 4. Bestätigung per Button oder Enter sendet das `ArmutAngenommen`-Event.
@@ -98,9 +107,10 @@ Die UI-Logik bestimmt, welche Interaktionen dem Spieler wann zur Verfügung steh
 ## Definition of Done
 
 - [ ] Seitliche HTML-Panels entfernt
-- [ ] Floating Action Bar für Ansagen implementiert
-- [ ] Vorbehalt-Overlay implementiert (alle Optionen, Tastatur-Support)
-- [ ] Armut-Dialog implementiert
+- [ ] „Du bist dran"-Hinweis und alle spielblockenden Overlays entfernt
+- [ ] Floating Action Bar für Ansagen implementiert (auf Spielfläche, nicht blockierend)
+- [ ] Vorbehalt-Overlay implementiert (alle Optionen, Tastatur-Support, Karten bleiben sichtbar)
+- [ ] Armut-Dialog implementiert (auf Spielfläche)
 - [ ] Seitenlade implementiert
 - [ ] Einstellungs-Modal implementiert
 - [ ] Toast-Notifications implementiert

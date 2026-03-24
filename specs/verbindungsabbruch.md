@@ -140,3 +140,24 @@ Nach dem Ende einer Partie (alle Spiele gespielt) startet der Tisch automatisch 
 - [x] Nach Partie-Ende startet automatisch neue Partie mit Countdown
 - [x] Alle bestehenden Disconnect/Reconnect-Tests bleiben grün
 - [x] Neue Tests für Session-Recovery, Tisch-Verlassen und Neustart
+- [ ] KI-Übernahme-Timeout deaktiviert für Einzelspieler-Tische (4.18)
+- [ ] Laufende eigene Tische in Spielverwaltungs-Szene mit „Zurückkehren"-Button (4.18)
+
+---
+
+## Single-Player UX: Timeout-Verhalten (4.18)
+
+Wenn ein Spieler **alleine** (gegen ausschließlich KI-Spieler) spielt, macht ein Inaktivitäts-Timeout keinen Sinn — der Spieler kann so lange nachdenken wie er will, ohne andere zu blockieren.
+
+### Single-Player Timeout: Anforderungen
+
+1. Wenn alle Mitspieler am Tisch KI-Spieler sind, wird der **Inaktivitäts-Timeout deaktiviert** — die KI übernimmt nie automatisch.
+2. Der Spieler kann so lange nachdenken wie er will, ohne seinen Platz zu verlieren.
+3. Das Verhalten bei willentlichem Tisch-Verlassen bleibt unverändert (sofortiger Abbruch).
+4. Tab-Reload funktioniert weiterhin via Session-Recovery.
+
+### Single-Player Timeout: Akzeptanzkriterien
+
+- Einzelspieler-Tisch: KI übernimmt nie automatisch, egal wie lange der Spieler inaktiv ist.
+- Mehrspieler-Tisch: Timeout-Verhalten bleibt wie bisher (120s Standard).
+- Session-Recovery nach Tab-Reload bleibt für beide Fälle funktionsfähig.
