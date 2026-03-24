@@ -39,29 +39,8 @@ Führe diese Befehle nach dem Implementieren aus, um sofortiges Feedback zu beko
 - Frontend-Lint: `cd frontend && npm run lint`
 - Vollständiger Build: `mvn clean verify`
 - Log-Prüfung: Prüfe die Ausgabe auf Warnungen, Fehler und Plausibilität
-
-## Projektstruktur
-
-```
-locodoko/
-├── pom.xml                            # Maven Root
-├── src/main/java/...                  # Spring Boot Backend
-├── src/main/resources/
-│   ├── application.properties         # Haupt-Konfiguration
-│   ├── application-dev.properties     # Dev-Profil (H2)
-│   └── static/                        # (nicht im Repo — wird zur Laufzeit aus frontend/dist/ gelesen bzw. beim Build nach target/classes/static/ kopiert)
-├── src/test/java/...                  # Backend-Tests
-├── frontend/                          # TypeScript/Phaser (npm-Projekt)
-├── specs/                             # Spezifikationen (eine Datei pro Thema)
-├── PRD.md                             # Product Requirements Document
-├── ralph.sh                           # Ralph Loop Script (Claude Code)
-├── ralph-copilot.sh                   # Ralph Loop Script (GitHub Copilot)
-├── PROMPT_plan.md                     # Planning-Modus Prompt
-├── PROMPT_build.md                    # Build-Modus Prompt
-├── CLAUDE.md                          # Diese Datei (auto-gelesen von Claude Code)
-├── AGENTS.md                          # Kopie für GitHub Copilot
-└── IMPLEMENTATION_PLAN.md             # Aufgabenplan (generiert/aktualisiert von Ralph)
-```
+- E2E Tests (Playwright) müssen erfolgreich durchgelaufen sein: `cd e2e && npm run test`
+Dafür muss der Server aber laufen. `mvn spring-boot:run`
 
 ## Domänensprache
 
@@ -76,7 +55,7 @@ Die Domäne ist auf Deutsch (Ubiquitous Language nach DDD):
 
 - Domain-Driven Design (DDD) mit Bounded Contexts
 - Test-Driven Development (TDD) — Tests zuerst schreiben
-- **Domain Model = Persistence Model** (pragmatisches DDD, Option A)
+- **Domain Model = Persistence Model** (pragmatisches DDD)
   - Aggregate Roots (mutable): `Tisch`, `Partie`, `Spieler`
   - Value Objects (immutable): `Karte`, `Stich`, `Spielregeln`, IDs
   - Lombok für Boilerplate-Reduktion (`@Getter`, `@RequiredArgsConstructor`, `@Value` für VOs)
@@ -92,12 +71,5 @@ Die Domäne ist auf Deutsch (Ubiquitous Language nach DDD):
 - REST-API für Lobby und Konfiguration
 - H2 In-Memory DB für Entwicklung (PostgreSQL für Produktion)
 - Auslieferung als einzelnes JAR (Frontend-Assets eingebettet)
-
-## Codebase Patterns
-
-**Wichtige Specs für Architektur-Refactoring**:
-- `specs/architektur-ddd.md` — DDD-Prinzipien, Package-Struktur, Aggregate Boundaries
-- `specs/tech-migration.md` — Migration auf Java 25, Spring Boot 4.x, Spring Data JDBC, Liquibase
-- `specs/datenbankmodell.md` — Tabellenstruktur, Aggregate Roots vs. Value Objects
 
 (Wird von Ralph aktualisiert, wenn Patterns entdeckt werden)

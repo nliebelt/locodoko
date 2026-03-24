@@ -2,23 +2,58 @@
 
 | Feld           | Wert                                               |
 |----------------|----------------------------------------------------|
-| Status         | Tests laufen nicht                                 |
+| Status         | Testfall 1 grün; Selektoren müssen nach UI-Umbau aktualisiert werden |
 | Priorität      | Hoch                                               |
-| Abhängigkeiten | spieler-session.md, lobby.md, spielablauf.md, ki-strategie.md |
+| Abhängigkeiten | spieler-session.md, lobby.md, spielablauf.md, ki-strategie.md, frontend-tischansicht.md, frontend-tastatursteuerung.md |
 
 ## Beschreibung
 
-End-to-End-Tests mit Playwright sichern den kritischen Pfad "Tisch erstellen → Partie gegen KI spielen bis zum ersten abgeschlossenen Stich" ab. Die Tests laufen separat vom Maven-Build gegen eine laufende Anwendung und können sowohl lokal als auch gegen ein Testsystem ausgeführt werden.
+End-to-End-Tests mit Playwright sichern den kritischen Spielpfad ab. Die Tests laufen separat vom Maven-Build gegen eine laufende Anwendung und können lokal sowie gegen ein Testsystem ausgeführt werden.
+
+## Teststrategie
+
+### Tastatur als primäre Eingabe
+
+Playwright kann keine zuverlässigen Klicks auf Phaser-Canvas-Elemente senden (headless Chromium, Hit-Testing). Deshalb gilt:
+
+- **Spielkarten werden per Tastatur** gespielt: `ArrowLeft`/`ArrowRight` + `Enter` (siehe `frontend-tastatursteuerung.md`)
+- **Kein `window.__locodoko.appStore`-Hack mehr** — direkte Tastatureingaben sind sauberer und testen den echten Input-Pfad
+- **Modals und Overlays** (Vorbehalt, Rundenauswertung) sind HTML-DOM und per Tastatur/Text-Selektor prüfbar
+
+### `data-testid`-Attribute
+
+Stabile Tests brauchen stabile Selektoren. Alle testbaren UI-Elemente bekommen ein `data-testid`-Attribut. Das sind **Implementierungsanforderungen** — Ralph muss diese Attribute beim Umbau der UI setzen:
+
+| `data-testid`              | Element                                             | Szene        |
+|----------------------------|-----------------------------------------------------|--------------|
+| `startscreen`              | Start-Screen Wurzel-Container                       | Start-Screen |
+| `btn-neuer-tisch`          | „+ Neuen Tisch erstellen"-Button                    | Start-Screen |
+| `btn-offene-tische`        | „⊞ Offene Tische"-Button                           | Start-Screen |
+| `btn-session-recovery`     | „↩ Zurück zu [Tischname]"-Button (wenn vorhanden)  | Start-Screen |
+| `tisch-config-modal`       | Tisch-Konfigurations-Modal                          | Start-Screen |
+| `input-tischname`          | Tischname-Eingabefeld im Modal                      | Start-Screen |
+| `btn-tisch-erstellen`      | „Tisch erstellen"-Button im Modal                   | Start-Screen |
+| `tischszene`               | TischSzene Wurzel-Container                         | Tischansicht |
+| `hud-stichzaehler`         | Stich X/12 in der Top-Bar                           | Tischansicht |
+| `hud-spieltyp`             | Spieltyp-Anzeige in der Top-Bar                     | Tischansicht |
+| `hud-btn-einstellungen`    | `[⚙]`-Button in der Top-Bar                        | Tischansicht |
+| `einstellungen-modal`      | Einstellungs-Modal                                  | Tischansicht |
+| `btn-spiel-starten`        | „Spiel starten"-Button im Einstellungs-Modal        | Tischansicht |
+| `vorbehalt-overlay`        | Vorbehalt-Overlay                                   | Tischansicht |
+| `floating-action-bar`      | Floating Action Bar (Ansagen / Aktionshinweis)      | Tischansicht |
+| `rundenauswertung-overlay` | Rundenauswertungs-Overlay                           | Tischansicht |
+| `btn-rundenauswertung-weiter` | „Weiter →"-Button im Rundenauswertungs-Overlay   | Tischansicht |
 
 ## Projektstruktur
 
-```
+```text
 locodoko/
 ├── e2e/
 │   ├── package.json               # eigenes npm-Projekt
 │   ├── playwright.config.ts       # baseURL via ENV konfigurierbar
 │   └── tests/
-│       └── partie-gegen-ki.spec.ts
+│       ├── partie-gegen-ki.spec.ts      # Testfall 1: Kritischer Pfad
+│       └── rundenauswertung.spec.ts     # Testfall 2: Rundenauswertung
 ```
 
 Das `e2e/`-Verzeichnis ist ein eigenständiges npm-Projekt und **nicht** Teil des `frontend/`-Projekts. Es wird **nicht** von `mvn verify` ausgeführt.
@@ -36,65 +71,89 @@ BASE_URL=https://test.locodoko.example.com cd e2e && npx playwright test
 cd e2e && npx playwright test --ui
 ```
 
-## Abhängigkeiten
+---
 
-- **Backend muss laufen**: `mvn spring-boot:run` (oder Testsystem)
-- **`BASE_URL`**: Umgebungsvariable, Standard `http://localhost:8080`
-- Playwright installiert Chromium als Standard-Browser
-
-## Testfall: Erste Partie gegen KI bis zum ersten Stich
+## Testfall 1: Kritischer Pfad — erste Partie bis zum ersten Stich
 
 ### Vorbedingungen
 
 - Anwendung läuft und ist erreichbar
-- Keine Session-Cookies aus vorherigen Tests vorhanden (jeder Test startet frisch)
+- Keine Session-Cookies aus vorherigen Tests (jeder Test startet frisch)
 
 ### Schritte und Assertions
 
-#### 1. Anwendung laden
+#### 1. Start-Screen laden
 
 - Navigiere zu `BASE_URL`
-- Assert: Lobby-Ansicht ist sichtbar (z.B. "Tisch erstellen"-Button vorhanden)
-- Assert: Session-Cookie wurde gesetzt (HTTP-Response `Set-Cookie`)
+- Assert: `[data-testid="startscreen"]` ist sichtbar
+- Assert: `[data-testid="btn-neuer-tisch"]` ist sichtbar
+- Assert: Session-Cookie wurde gesetzt
 
 #### 2. Tisch erstellen
 
-- Klicke "Tisch erstellen"
-- Assert: Tischansicht lädt (URL oder DOM-Element für Tischszene sichtbar)
-- Assert: Eigene Spielerposition ist sichtbar
-- Assert: Mindestens 3 KI-Spieler erscheinen am Tisch
-- Assert: **Kein "Blur"-Zustand** — UI ist interaktierbar, kein reiner Overlay ohne Inhalt
+- Klicke `[data-testid="btn-neuer-tisch"]`
+- Assert: `[data-testid="tisch-config-modal"]` ist sichtbar
+- Fülle `[data-testid="input-tischname"]` mit `E2E-Test-Tisch`
+- Klicke `[data-testid="btn-tisch-erstellen"]`
+- Assert: `[data-testid="tischszene"]` ist sichtbar
+- Assert: `[data-testid="hud-btn-einstellungen"]` ist sichtbar
 
-#### 3. Partie startet
+#### 3. Spiel starten
 
-- Assert: Spielphase wechselt zu `VORBEHALT_ANSAGE` (sichtbar im HUD oder via DOM)
-- Assert: Eigene Hand enthält 12 Karten (Elemente für Karten vorhanden)
-- Assert: KI-Spieler haben verdeckte Karten (Rückseitenelemente sichtbar)
+- Klicke `[data-testid="hud-btn-einstellungen"]`
+- Assert: `[data-testid="einstellungen-modal"]` ist sichtbar
+- Klicke `[data-testid="btn-spiel-starten"]`
+- Assert: `[data-testid="einstellungen-modal"]` ist nicht mehr sichtbar
 
-#### 4. Vorbehaltsphase durchlaufen
+#### 4. Vorbehalt-Phase
 
-- Wähle "Gesund" (kein Sonderspiel)
-- Assert: Vorbehalt-Dialog verschwindet
-- Assert: KI-Spieler spielen ihre Vorbehalte automatisch durch (Polling oder WebSocket-Event)
-- Assert: Spielphase wechselt zu `STICH` (sichtbar im HUD)
+- Assert: `[data-testid="vorbehalt-overlay"]` wird sichtbar (timeout: 15s)
+- Assert: Overlay enthält Button mit Text „Gesund"
+- Drücke `1` (Zifferntaste für „Gesund") oder klicke den „Gesund"-Button
+- Assert: `[data-testid="vorbehalt-overlay"]` verschwindet
+- Assert: `[data-testid="hud-spieltyp"]` zeigt einen Spieltyp an (timeout: 15s)
 
-#### 5. Erste Karte spielen
+#### 5. Erste Karte per Tastatur spielen
 
-- Wähle eine spielbare Karte aus der eigenen Hand (erste klickbare Karte)
-- Klicke die Karte
-- Assert: Karte erscheint in der Stichmitte
-- Assert: Hand hat jetzt 11 Karten
+- Assert: `[data-testid="floating-action-bar"]` enthält Hinweis dass Spieler dran ist (timeout: 20s)
+- Drücke `Enter` (spielt die automatisch vorausgewählte erste spielbare Karte)
+- Assert: `[data-testid="hud-stichzaehler"]` zeigt `Stich 1/12`
 
 #### 6. KI spielt den Stich zu Ende
 
-- Assert: Alle 4 Karten erscheinen in der Stichmitte (3 KI-Karten folgen automatisch)
-- Assert: Stich wird dem Gewinner zugeschlagen (Stichmitte leert sich)
-- Assert: Stich-Zähler erhöht sich (z.B. "Stiche: 1")
-- Assert: **Kein JavaScript-Fehler** in der Browser-Konsole während des gesamten Tests
+- Assert: `[data-testid="hud-stichzaehler"]` zeigt `Stich 2/12` (timeout: 20s) — Stich wurde abgeschlossen, nächster beginnt
+- Assert: Kein JavaScript-Fehler in der Browser-Konsole während des gesamten Tests
 
-### Erfolgskriterium
+---
 
-Der Test gilt als bestanden, wenn alle Assertions ohne Fehler durchlaufen und kein unerwarteter UI-Zustand (Blur, leerer Screen, Fehlermeldung) auftritt.
+## Testfall 2: Rundenauswertung erscheint nach Spielende
+
+> **Hinweis**: Dieser Test läuft gegen eine KI die alle 12 Stiche bis zum Ende spielt. Er ist langsamer als Testfall 1 (ca. 60–90s Timeout).
+
+### Testablauf
+
+#### 1–4. Wie Testfall 1 (Tisch erstellen, Spiel starten, Vorbehalt)
+
+#### 5. Alle eigenen Karten spielen
+
+- Wiederhole für jede Karte: warte auf Zug (`floating-action-bar`), drücke `Enter`
+- Assert nach jeder gespielten Karte: `hud-stichzaehler` erhöht sich korrekt
+
+#### 6. Rundenauswertung erscheint
+
+- Assert: `[data-testid="rundenauswertung-overlay"]` wird sichtbar (timeout: 30s)
+- Assert: Overlay enthält Spieltyp-Text (z.B. „Normales Spiel" oder „Trumpfsolo")
+- Assert: Overlay enthält Text „RE" oder „KONTRA" (Gewinner sichtbar)
+- Assert: Overlay enthält `[data-testid="btn-rundenauswertung-weiter"]`
+
+#### 7. Weiter zur nächsten Runde
+
+- Drücke `Enter` oder klicke `[data-testid="btn-rundenauswertung-weiter"]`
+- Assert: `[data-testid="rundenauswertung-overlay"]` verschwindet
+- Assert: `[data-testid="hud-spieltyp"]` zeigt neuen Spieltyp / `Vorbehalt läuft…`
+- Assert: Kein JavaScript-Fehler
+
+---
 
 ## Konfiguration: `playwright.config.ts`
 
@@ -114,44 +173,31 @@ export default defineConfig({
 });
 ```
 
-## `e2e/package.json`
-
-```json
-{
-  "name": "locodoko-e2e",
-  "version": "1.0.0",
-  "private": true,
-  "scripts": {
-    "test": "playwright test",
-    "test:ui": "playwright test --ui",
-    "install:browsers": "playwright install chromium"
-  },
-  "devDependencies": {
-    "@playwright/test": "^1.x"
-  }
-}
-```
-
 ## Akzeptanzkriterien
 
 - `cd e2e && npx playwright test` läuft lokal durch ohne manuellen Eingriff
 - `BASE_URL=https://... npx playwright test` läuft gegen ein Testsystem
-- Test scheitert reproduzierbar, wenn der "Blur"-Zustand nach Tisch-Erstellen auftritt
-- Kein JavaScript-Fehler in der Browser-Konsole während des Testlaufs
-- Screenshots und Videos bei Fehler werden in `e2e/test-results/` gespeichert
+- Testfall 1 schlägt reproduzierbar fehl wenn UI einfriert oder Karte nicht gespielt werden kann
+- Testfall 2 schlägt fehl wenn Rundenauswertung nicht erscheint
+- Kein JavaScript-Fehler in der Browser-Konsole
+- Screenshots und Videos bei Fehler in `e2e/test-results/`
 
 ## Definition of Done
 
-- [x] `e2e/` Verzeichnis mit `package.json` und `playwright.config.ts` angelegt
-- [x] `tests/partie-gegen-ki.spec.ts` implementiert alle 6 Schritte
-- [ ] Test läuft lokal grün gegen `mvn spring-boot:run`
-- [x] `BASE_URL`-Unterstützung funktioniert
-- [x] `e2e/.gitignore` schließt `node_modules/`, `test-results/`, `playwright-report/` aus
-- [x] README oder CLAUDE.md Hinweis zur separaten Ausführung ergänzt
+- [x] `e2e/`-Verzeichnis mit `package.json` und `playwright.config.ts` angelegt
+- [x] `BASE_URL`-Unterstützung implementiert
+- [x] `e2e/.gitignore` korrekt
+- [ ] `data-testid`-Attribute in allen relevanten UI-Elementen gesetzt (nach UI-Umbau)
+- [ ] `partie-gegen-ki.spec.ts` auf neue Selektoren und Tastatursteuerung umgestellt
+- [ ] `rundenauswertung.spec.ts` implementiert
+- [ ] Testfall 1 läuft lokal grün gegen `mvn spring-boot:run`
+- [ ] Testfall 2 läuft lokal grün gegen `mvn spring-boot:run`
 
 ## Technische Hinweise
 
-- Wartezeiten für KI-Aktionen: `waitForSelector` statt fester `sleep`-Delays
-- WebSocket-Nachrichten sind asynchron — Assertions mit `expect.poll()` oder `waitFor` absichern
-- Jeder Test beginnt mit frischer Session (kein `storageState`)
-- Browser-Konsolen-Fehler per `page.on('console', ...)` abfangen und als Test-Fehler werten
+- Wartezeiten für KI-Aktionen: `waitForSelector` statt fester `sleep`-Delays.
+- WebSocket-Nachrichten sind asynchron — Assertions mit `expect.poll()` oder `waitFor` absichern.
+- Jeder Test beginnt mit frischer Session (kein `storageState`).
+- Browser-Konsolen-Fehler per `page.on('console', ...)` und `page.on('pageerror', ...)` abfangen.
+- `window.__locodoko.appStore` bleibt als Notfall-Fallback verfügbar, wird aber nicht mehr als primärer Spielmechanismus genutzt.
+- Testfall 2 benötigt `timeout: 90_000` auf Test-Ebene (überschreibt globale 30s).

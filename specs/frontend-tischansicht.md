@@ -1,81 +1,122 @@
 # Frontend: Tischansicht
 
-| Feld           | Wert                                        |
-|----------------|---------------------------------------------|
-| Status         | Vollständig implementiert und getestet      |
-| Priorität      | Hoch                                        |
-| Abhängigkeiten | kartendeck.md, websocket-kommunikation.md   |
+| Feld           | Wert                                                                    |
+|----------------|-------------------------------------------------------------------------|
+| Status         | Überarbeitung erforderlich — Layout-Neukonzeption                       |
+| Priorität      | Hoch                                                                    |
+| Abhängigkeiten | kartendeck.md, websocket-kommunikation.md, frontend-visuelles-design.md |
 
 ## Beschreibung
 
-Die Tischansicht ist das zentrale Spielfeld im Phaser-Frontend. Sie zeigt eine Top-Down-Perspektive eines Doppelkopf-Tisches, an dem der menschliche Spieler unten (Süd) sitzt und die drei KI-Spieler (oder perspektivisch andere menschliche Spieler) an den anderen Positionen (West, Nord, Ost).
+Die Tischansicht ist das zentrale Spielfeld. Sie nutzt die **volle Canvas-Fläche** (1280×720px) ohne seitliche Panels. Alle dauerhaften UI-Elemente sind als kompaktes HUD integriert. Der menschliche Spieler sitzt unten (Süd), die anderen Spieler an West, Nord und Ost.
+
+## Layout-Übersicht
+
+```text
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ Stich 4/12          Trumpfsolo · Spiel 3/12              [≡]  [⚙]  [🐛]   │ ← HUD Top-Bar (40px)
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                             │
+│              [🂠][🂠][🂠][🂠][🂠][🂠][🂠]                                 │
+│              Friedhelm · KI · RE · 2 Stiche · [G]                          │  ← Nord
+│                                                                             │
+│  [🂠][🂠][🂠]                                    [🂠][🂠][🂠]              │
+│  Berta · KI · KONTRA · 1 Stich             Carlo · KI · RE · 3 Stiche     │  ← West / Ost
+│                                                                             │
+│                      ┌─────────────────┐                                   │
+│                      │  K♦  D♥         │                                   │
+│                      │     10♣  A♠     │                                   │
+│                      └─────────────────┘                                   │
+│                                                                             │
+│                   [ Re ansagen ]  [ Keine 90 ]                             │  ← Floating Actions
+├─────────────────────────────────────── Du · RE · 4 Stiche ─────────────────┤
+│   [K♦] [D♥] [B♣] [10♠] [A♦] [9♣] [K♥] [D♠] [B♦] [10♣] [K♣] [9♦]     │  ← Eigene Karten
+└─────────────────────────────────────────────────────────────────────────────┘
+```
 
 ## Anforderungen
 
-### Layout
+### HUD Top-Bar
 
-1. Die Ansicht zeigt den **Tisch von oben** (Top-Down-Perspektive).
-2. Der menschliche Spieler sitzt an der **Süd-Position** (unten).
-3. Die anderen Spieler sitzen an **West** (links), **Nord** (oben) und **Ost** (rechts).
-4. In der **Tischmitte** wird der aktuelle Stich angezeigt (gespielten Karten).
-5. Jede Position zeigt:
-   - Spielername
-   - Kartenfächer (eigene Karten sichtbar, gegnerische Karten verdeckt)
-   - Anzahl verbleibender Karten
-   - Aktuelle Ansagen (Re/Kontra-Symbol)
+1. Die Top-Bar ist **40px hoch** und überspannt die volle Breite.
+2. **Links**: Stichzähler im Format `Stich X/12`.
+3. **Mitte**: Spieltyp (z.B. `Trumpfsolo`, `Hochzeit`, `Normales Spiel`) und Partie-Fortschritt (`Spiel 3/12`). Spieltyp wird angezeigt sobald bekannt (nach Vorbehalt-Phase), davor `Vorbehalt läuft…`.
+4. **Rechts**: Icon-Buttons — `[≡]` öffnet Seitenlade, `[⚙]` öffnet Einstellungs-Modal, `[🐛]` togglet Debug-Modus.
+5. Die Top-Bar ist **immer sichtbar** und überlagert nie Spielinhalte.
+
+### Spielerpositionen
+
+1. Jeder Spieler wird als **Nameplate** direkt bei seinen Kartenrücken dargestellt — **keine Kreise oder Avatare**.
+2. Das Nameplate zeigt in einer Zeile: `Name · [KI/Mensch] · [RE/KONTRA] · X Stiche · [G]`
+   - `[RE]` / `[KONTRA]` erscheint sobald die Partei bekannt ist (nach Vorbehalt oder nach erster Ansage).
+   - `[G]` (Geber-Marker) ist immer sichtbar wenn der Spieler Geber ist.
+   - Stichzähler ist **für alle vier Spieler gleich** sichtbar, einschließlich Süd.
+3. Der **aktive Spieler** (aktuell am Zug) wird visuell hervorgehoben — Nameplate leuchtet auf (Akzentfarbe, siehe `frontend-visuelles-design.md`).
+4. Spielerpositionen als feste Koordinaten relativ zur Canvas-Größe:
+   - **SUED**: unten, `y: 85%`, Karten bei `y: 89%`
+   - **NORD**: oben, `y: 15%`, Karten bei `y: 11%`
+   - **WEST**: links, `x: 14%`, Karten bei `x: 10%`
+   - **OST**: rechts, `x: 86%`, Karten bei `x: 90%`
 
 ### Kartendarstellung
 
-6. Die eigenen Karten (Süd) werden als **aufgefächerter Kartenfächer** angezeigt — alle Karten sichtbar.
-7. Gegnerische Karten werden als **verdeckte Kartenfächer** angezeigt (Kartenrücken).
-8. Karten im Stich (Tischmitte) werden **offen** angezeigt mit Zuordnung zum Spieler.
-9. Karten verwenden das **französische Blatt** (Kreuz, Pik, Herz, Karo) als Grafiken.
-10. Die eigenen Karten sind **sortiert**: Trümpfe links, Fehlfarben rechts, innerhalb der Gruppen nach Rang.
+1. Kartengröße: **110×165px** (vorher 82×124px). Skaliert proportional bei kleineren Viewports.
+2. Eigene Karten (Süd): aufgefächert, alle sichtbar, sortiert (Trümpfe links, Fehlfarben rechts).
+3. Gegnerische Karten: **Kartenrücken-Fächer** — kein Kreis, kein Avatar, nur die Karten selbst.
+4. Karten verwenden das **vectorized-playing-cards**-Set von Chris Aguilar (Public Domain). Kein programmatisches Zeichnen mehr für Kartenvorderseiten.
+5. Kartenrücken: einheitliches Design gemäß `frontend-visuelles-design.md`.
+6. Im **Debug-Modus** werden alle gegnerischen Karten aufgedeckt (vectorized-playing-cards).
 
-### Hintergrund
+### Stichmitte
 
-11. Der Tischhintergrund ist ein **konfigurierbares Bild** (über Tischeinstellungen wählbar).
-12. Standard-Fallback: **Grüner Filz** (einfache Textur oder Farbfläche).
+1. Die vier Stich-Slots sind **proportional zur Spielgröße** positioniert (relativ zur Mitte).
+2. Gespielte Karten sind klar dem Spieler zugeordnet (Position im Slot entspricht Spielerposition).
+3. Wenn kein Stich läuft: leerer Bereich, kein Platzhaltertext.
 
-### Spielerinformationen
+### Floating Action Bar
 
-13. Jede Position zeigt den **Spielernamen** an.
-14. Bei KI-Spielern wird ein **KI-Symbol** neben dem Namen angezeigt.
-15. Die **Stichanzahl** (gewonnene Stiche) wird pro Spieler angezeigt.
-16. Der aktuelle **Aufspieler** wird visuell hervorgehoben.
+1. Ansage-Buttons (Re, Kontra, Keine 90 etc.) erscheinen als **kompakte Floating-Bar** zwischen Stichmitte und eigenen Karten.
+2. Die Bar ist **nur sichtbar wenn eine Aktion möglich ist** — sie erscheint und verschwindet kontextuell.
+3. Vorbehalt-Optionen erscheinen **nicht** als Floating-Bar, sondern als **modales Overlay** (siehe `frontend-ui-logik.md`).
 
-### Debug-Modus
+### Seitenlade `[≡]`
 
-17. Im **Debug-Modus** können gegnerische Karten aufgedeckt werden (für Entwicklung/Test).
-18. Der Debug-Modus ist standardmäßig **deaktiviert**.
+1. Öffnet sich von links als Overlay-Panel (nicht verdrängend).
+2. Inhalt: Spieler am Tisch (mit Partei-Info), Gesamtpunktestand, Ansagehistorie der laufenden Runde, Letzte-Stiche-Liste.
+3. Klick außerhalb oder erneuter `[≡]`-Klick schließt die Lade.
+
+### Einstellungs-Modal `[⚙]`
+
+1. Öffnet zentriertes Modal.
+2. Inhalt: Tischhintergrund (Auswahl), KI-Schwierigkeit (Auswahl), Animationsgeschwindigkeit (1x/2x/sofort), Button „Tisch verlassen", Button „Zur Lobby".
+3. Tischkonfiguration nur veränderbar wenn Tischersteller und Status WARTEND.
 
 ## Akzeptanzkriterien
 
-- Der Tisch wird aus der Top-Down-Perspektive korrekt gerendert.
-- Der Spieler sieht seine eigenen Karten aufgefächert und sichtbar.
-- Gegnerische Karten sind verdeckt.
-- Der aktuelle Stich wird in der Tischmitte angezeigt.
-- Spielernamen und Informationen sind sichtbar.
-- Der Hintergrund ist konfigurierbar.
-- Im Debug-Modus sind gegnerische Karten sichtbar.
-- Die Ansicht skaliert bei verschiedenen Fenstergrößen korrekt.
+- Keine HTML-Panels blockieren die Spielfläche (West, Ost, Stichmitte, Karten).
+- Alle vier Spieler sind gleichzeitig ohne Überlappung sichtbar.
+- Re/Kontra-Zuordnung ist bei allen Spielern lesbar sobald bekannt.
+- Stich X/12 steht oben links, Spieltyp oben Mitte.
+- Karten sind mit vectorized-playing-cards dargestellt und deutlich größer als bisher.
+- Floating Action Bar erscheint nur wenn eine Aktion möglich ist.
+- Seitenlade und Einstellungs-Modal öffnen korrekt und blockieren nicht dauerhaft das Spielfeld.
 
 ## Definition of Done
 
-- [x] Alle Anforderungen implementiert
-- [x] Phaser-Scene für Tischansicht erstellt
-- [x] Kartengrafiken eingebunden (Sprites)
-- [x] Spielerpositionen und Layout korrekt
-- [x] Debug-Modus implementiert
-- [x] Frontend-Tests geschrieben und bestanden
-- [x] Visuelles Review / Plausibilitätsprüfung
+- [ ] HUD Top-Bar implementiert (Stichzähler links, Spieltyp Mitte, Icons rechts)
+- [ ] Spieler-Nameplates statt Kreise implementiert
+- [ ] vectorized-playing-cards integriert (Laden, Mapping auf Doppelkopf-Karten)
+- [ ] Kartengröße auf 110×165px erhöht
+- [ ] Floating Action Bar implementiert
+- [ ] Seitenlade implementiert
+- [ ] Einstellungs-Modal implementiert
+- [ ] Alle vier Spieler ohne Panel-Überlappung sichtbar
+- [ ] Debug-Modus mit aufgedeckten Karten funktioniert
+- [ ] Visuelles Review / Plausibilitätsprüfung
 
 ## Technische Hinweise
 
-- **Technologie**: TypeScript + Phaser 3
-- Phaser `Scene` für die Tischansicht
-- Karten als Sprites aus einem **Spritesheet** laden (alle 48 Karten + Kartenrücken)
-- Spielerpositionen als feste Koordinaten relativ zur Canvas-Größe
-- Responsive: Canvas skaliert mit `Phaser.Scale.FIT` oder ähnlich
-- Kartensortierung im Frontend basierend auf den vom Backend erhaltenen Karten + Trumpfordnung
-- WebSocket-Events lösen UI-Updates aus (Stich anzeigen, Karten aktualisieren)
+- **vectorized-playing-cards**: PNGs als Einzeldateien in `frontend/public/assets/cards/`. Mapping-Konvention: `{farbe}_{wert}.png` → z.B. `kreuz_dame.png`, `herz_10.png`.
+- Canvas skaliert mit `Phaser.Scale.FIT`, Koordinaten bleiben relativ zur Spielgröße.
+- Seitenlade und Modals als HTML-Overlay über dem Canvas (`#ui-root`), `pointer-events: none` auf Root, `pointer-events: auto` nur auf den Elementen selbst.
+- Floating Action Bar als HTML-Element mit `position: absolute`, an untere Kanten des Canvas gebunden.

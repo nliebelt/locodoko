@@ -1,13 +1,17 @@
 # IMPLEMENTATION_PLAN — Locodoko Doppelkopf
 
-> Letzte Aktualisierung: 2026-03-23
+> Letzte Aktualisierung: 2026-03-23 (Re-Validierung)
 > Methode: 5 parallele Subagenten haben alle Bounded Contexts analysiert
 
 ## Notiz
 
 Alle Aufgaben in IMPLEMENTATION_PLAN.md sind erledigt — das Projekt ist **vollständig**.
 
-Was wurde in dieser Iteration implementiert:
+Re-Validierung am 2026-03-23: 5 parallele Subagenten haben alle Bounded Contexts erneut geprüft.
+Ergebnis: Alle Features implementiert, alle Specs als erledigt markiert, alle Tests aktiv (keine @Disabled/@Skip).
+Keine neuen blockierenden Probleme gefunden. Bekannte Bugs/Testlücken (Sektion 5) bestätigt, keine Verschlechterung.
+
+Was wurde in der letzten Iteration implementiert:
 - **4.8 KI-Schwierigkeitsstufen**: KiSchwierigkeit-Enum (LEICHT/STANDARD/SCHWER), LeichteKiStrategie (immer erste Karte, keine Ansagen), SchwerKiStrategie (wie Standard, aber RE-Schwelle 24 statt 28), KiStrategieFactory als Spring @Component, KiOrchestrierungService nutzt Factory statt direkten KiStrategie-Bean, TischkonfigurationEmbeddable und TischKonfigurationDto um kiSchwierigkeit erweitert, Liquibase-Migration 002-ki-schwierigkeit.yaml, Frontend-DTO + TischSzene-Selector + AppStore-Methode aktualisiereAktuelleKiSchwierigkeit, KI-Badge zeigt Schwierigkeitsstufe.
 
 Nächster logischer Schritt:
