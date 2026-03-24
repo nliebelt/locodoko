@@ -6,7 +6,8 @@ import {
   TEXTUR_KARTE_OFFEN,
   TEXTUR_KARTE_VERDECKT,
   texturSchluesselFuerKarte,
-  registriereKartenSpriteTexturen
+  registriereKartenSpriteTexturen,
+  ladeKartenBilderVorab
 } from '../assets/AssetLoader';
 import { appStore } from '../anwendung';
 import { Logger } from '../logger';
@@ -260,6 +261,18 @@ export class TischSzene extends Phaser.Scene {
 
   constructor() {
     super('TischSzene');
+  }
+
+  /**
+   * Phaser-Lifecycle: Laedt Karten-PNG-Assets vorab.
+   *
+   * Wird von Phaser vor create() aufgerufen. Queued alle 24 Karten-PNGs
+   * aus /assets/cards/ in den Phaser-Loader. Falls eine PNG-Datei fehlt,
+   * faellt registriereKartenSpriteTexturen() in create() automatisch auf
+   * prozedurale Canvas-Generierung zurueck.
+   */
+  preload(): void {
+    ladeKartenBilderVorab(this);
   }
 
   /**
@@ -1337,9 +1350,15 @@ export class TischSzene extends Phaser.Scene {
       const breite = this.scale.gameSize.width;
       const hoehe = this.scale.gameSize.height;
       const bannerText = `${ansage.name}\n${formatiereAnsage(ansage.ansage)}`;
+      // Re-Ansagen in Gold, Kontra in Blau (Design-System: --farbe-gold / --farbe-blau)
+      const textFarbe = ansage.ansage === 'RE' ? '#ffd166'
+        : ansage.ansage === 'KONTRA' ? '#90caf9'
+        : '#ffffff';
       await this.animationen?.animiereAnsageBanner(
         bannerText,
-        { x: breite / 2, y: hoehe / 2 }
+        { x: breite / 2, y: hoehe / 2 },
+        undefined,
+        textFarbe
       );
     }
   }

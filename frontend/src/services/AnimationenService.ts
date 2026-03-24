@@ -94,21 +94,25 @@ export class AnimationenService {
   }
 
   /**
-   * Blendet ein Banner mit weissem Text in der Mitte der Szene ein (Fade-In),
-   * haelt es sichtbar und blendet es wieder aus (Fade-Out). Wird fuer Ansagen verwendet.
-   * @param text - Anzeigetext des Banners (z.B. "Re" oder "Kontra")
+   * Blendet ein Ansage-Banner in der Szene ein (Fade-In), haelt es sichtbar und
+   * blendet es wieder aus (Fade-Out).
+   * Re-Ansagen erscheinen in Gold (#ffd166), Kontra in Blau (#90caf9), sonst Weiss.
+   * @param text - Anzeigetext (z.B. "Re" oder "Kontra")
    * @param position - Anzeigeposition in Spielpixeln
    * @param sichtbarkeitsdauer - Haltezeit in ms nach Fade-In (Standard: 1500ms)
+   * @param textFarbe - CSS-Farbe des Textes (Standard: '#ffffff')
    */
   async animiereAnsageBanner(
     text: string,
     position: Punkt,
-    sichtbarkeitsdauer = 1500
+    sichtbarkeitsdauer = 1500,
+    textFarbe = '#ffffff'
   ): Promise<void> {
     const bannerobjekt = this.szene.add
       .text(position.x, position.y, text, {
-        fontSize: '40px',
-        color: '#ffffff',
+        // 3vw bei 1280px Breite ≈ 38px; auf 40px gerundet fuer scharfe Darstellung
+        font: "900 40px 'Space Grotesk', system-ui, sans-serif",
+        color: textFarbe,
         stroke: '#000000',
         strokeThickness: 6,
         align: 'center'
@@ -120,6 +124,50 @@ export class AnimationenService {
       await this.tweenAlpha(bannerobjekt, 1, 300);
       await this.warte(sichtbarkeitsdauer);
       await this.tweenAlpha(bannerobjekt, 0, 300);
+    } finally {
+      bannerobjekt.destroy();
+    }
+  }
+
+  /**
+   * Zeigt eine dramatische Solo-Ankuendigung: Text faehrt von oben ein,
+   * verweilt kurz und faehrt wieder heraus (Balatro-Stil).
+   * Wird beim Start eines Solo-Spiels aufgerufen.
+   * @param text - Anzeigetext der Ankuendigung (z.B. "Damensolo!")
+   * @param position - Zielposition in der Szene (z.B. Bildmitte)
+   * @param sichtbarkeitsdauer - Haltezeit in ms (Standard: 1500ms)
+   */
+  async animiereSoloAnkuendigung(
+    text: string,
+    position: Punkt,
+    sichtbarkeitsdauer = 1500
+  ): Promise<void> {
+    // Startposition: ausserhalb des sichtbaren Bereichs (oberhalb)
+    const startY = position.y - 160;
+    const bannerobjekt = this.szene.add
+      .text(position.x, startY, text, {
+        // 4vw bei 1280px Breite ≈ 51px
+        font: "900 51px 'Space Grotesk', system-ui, sans-serif",
+        color: '#f8f9fa',
+        stroke: '#000000',
+        strokeThickness: 8,
+        align: 'center'
+      })
+      .setOrigin(0.5, 0.5)
+      .setDepth(110)
+      .setAlpha(0);
+    try {
+      // Einfahren und Fade-In gleichzeitig
+      await Promise.all([
+        this.tweenZu([bannerobjekt], position, 400),
+        this.tweenAlpha(bannerobjekt, 1, 300)
+      ]);
+      await this.warte(sichtbarkeitsdauer);
+      // Ausfahren nach oben und Fade-Out gleichzeitig
+      await Promise.all([
+        this.tweenZu([bannerobjekt], { x: position.x, y: startY }, 400),
+        this.tweenAlpha(bannerobjekt, 0, 300)
+      ]);
     } finally {
       bannerobjekt.destroy();
     }

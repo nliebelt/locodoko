@@ -1,23 +1,25 @@
 # IMPLEMENTATION_PLAN — Locodoko Doppelkopf
 
-> Letzte Aktualisierung: 2026-03-23 (Re-Validierung)
+> Letzte Aktualisierung: 2026-03-24 (Re-Validierung)
 > Methode: 5 parallele Subagenten haben alle Bounded Contexts analysiert
 
 ## Notiz
 
-Alle Aufgaben in IMPLEMENTATION_PLAN.md sind erledigt — das Projekt ist **vollständig**.
+**Backend vollständig.** Alle 4 Backend-Bounded-Contexts (Karten, Partie, Lobby, Session) sind feature-complete,
+getestet und produktionsreif. Keine TODOs, FIXMEs oder @Disabled Tests.
 
-Re-Validierung am 2026-03-23: 5 parallele Subagenten haben alle Bounded Contexts erneut geprüft.
-Ergebnis: Alle Features implementiert, alle Specs als erledigt markiert, alle Tests aktiv (keine @Disabled/@Skip).
-Keine neuen blockierenden Probleme gefunden. Bekannte Bugs/Testlücken (Sektion 5) bestätigt, keine Verschlechterung.
-
-Was wurde in der letzten Iteration implementiert:
-- **4.8 KI-Schwierigkeitsstufen**: KiSchwierigkeit-Enum (LEICHT/STANDARD/SCHWER), LeichteKiStrategie (immer erste Karte, keine Ansagen), SchwerKiStrategie (wie Standard, aber RE-Schwelle 24 statt 28), KiStrategieFactory als Spring @Component, KiOrchestrierungService nutzt Factory statt direkten KiStrategie-Bean, TischkonfigurationEmbeddable und TischKonfigurationDto um kiSchwierigkeit erweitert, Liquibase-Migration 002-ki-schwierigkeit.yaml, Frontend-DTO + TischSzene-Selector + AppStore-Methode aktualisiereAktuelleKiSchwierigkeit, KI-Badge zeigt Schwierigkeitsstufe.
+**4.9 Visuelles Design-System: implementiert (10/10 DoD).** Space Grotesk (Google Fonts) eingebunden,
+CSS Custom Properties (--farbe-gold, --farbe-blau, etc.) in styles.css, Neo-Brutalism-Schatten auf Buttons
+und Karten, Focus-Styles für Keyboard-Navigation, vectorized-playing-cards (24 PNGs) in
+`frontend/public/assets/cards/`, Karten-Mapping in AssetLoader mit automatischem Fallback auf prozedurale
+Generierung, animiereAnsageBanner mit gold/blau-Farben für Re/Kontra, animiereSoloAnkuendigung neu
+hinzugefügt. Alle 48 Frontend-Tests grün, Lint clean, tsc --noEmit sauber.
 
 Nächster logischer Schritt:
-- Keine offenen Aufgaben mehr. Alle Nice-to-have-Features sind implementiert.
+- **4.10 HUD Top-Bar + Layout-Umbau** (frontend-tischansicht.md) — 40px Top-Bar, Spieler-Nameplates,
+  Kartengröße 110×165px, seitliche Panels durch Canvas + Overlays ersetzen.
 
-Bekannte offene Fragen: keine. Alle bekannten Bugs aus Sektion 5.2 sind dokumentiert aber nicht kritisch.
+Bekannte offene Fragen: keine. Bekannte Bugs aus Sektion 5.2 sind dokumentiert aber nicht kritisch.
 
 ---
 
@@ -211,6 +213,68 @@ Bekannte offene Fragen: keine. Alle bekannten Bugs aus Sektion 5.2 sind dokument
   - Frontend: Selector in TischSzene, KI-Badge zeigt Schwierigkeitsstufe
   - Tests: LeichteKiStrategieTest (5), SchwerKiStrategieTest (3)
 
+### Priorität 4 — Frontend-Redesign (neue/überarbeitete Specs)
+
+> Diese Aufgaben ergeben sich aus 6 Frontend-Specs, die eine visuelle Neugestaltung definieren.
+> Die bestehende Funktionalität (Spielschleife, Animationen, State) bleibt erhalten —
+> die UI-Architektur wird von seitlichen Panels auf HUD + Overlays umgestellt.
+> Specs: frontend-tischansicht.md, frontend-ui-logik.md, frontend-visuelles-design.md,
+> frontend-startscreen.md, frontend-tastatursteuerung.md, frontend-rundenauswertung.md
+
+- [x] **4.9 Visuelles Design-System (frontend-visuelles-design.md)** — 10/10 DoD
+  - Space Grotesk via Google Fonts in index.html (400/600/700/900)
+  - CSS Custom Properties: --farbe-gold, --farbe-blau, --farbe-rot, --farbe-gruen, --farbe-hintergrund etc.
+  - Neo-Brutalism: --schatten-button (4px 4px 0 #000), --rahmen-neo (2px solid #f8f9fa)
+  - Focus-Styles: :focus-visible { outline: 2px solid var(--farbe-gold) }
+  - vectorized-playing-cards (24 PNGs) aus hayeah/playing-cards-assets in frontend/public/assets/cards/
+  - Karten-Mapping: karteZuDateiname() + ladeKartenBilderVorab() in AssetLoader.ts
+  - TischSzene.preload() für PNG-Vorladen mit prozeduralem Fallback
+  - animiereAnsageBanner: goldener Re-Banner, blauer Kontra-Banner
+  - animiereSoloAnkuendigung: Einfahren von oben, verweilen, Ausfahren
+
+- [ ] **4.10 HUD Top-Bar + Layout-Umbau (frontend-tischansicht.md)** — 0/10 DoD
+  - 40px Top-Bar (Links: Stichzähler, Mitte: Spieltyp + Spielnummer, Rechts: Icons)
+  - Spieler-Nameplates statt Kreise (Name · KI/Mensch · Partei · Stiche · Geber)
+  - Kartengröße auf 110×165px mit vectorized-playing-cards
+  - Seitliche Panels entfernen, Layout auf Canvas + Overlays umstellen
+  - Debug-Modus mit aufgedeckten Karten
+  - Abhängigkeit: 4.9 (Design-System + Karten-Assets)
+
+- [ ] **4.11 Floating Action Bar + Seitenlade (frontend-ui-logik.md)** — 0/10 DoD
+  - Floating Action Bar: Ansage-Buttons zwischen Stichmitte und Hand, kontextabhängig
+  - Vorbehalt als modales Vollbild-Overlay (statt inline Panel-Buttons)
+  - Seitenlade: Toggle-Panel von links (Spieler, Punkte, Ansagehistorie, letzte Stiche)
+  - Einstellungs-Modal (Hintergrund, Animation, Debug)
+  - Toast-Notifications (bereits implementiert, ggf. Styling anpassen)
+  - Abhängigkeit: 4.10 (Layout-Umbau)
+
+- [ ] **4.12 Tastatursteuerung (frontend-tastatursteuerung.md)** — 0/9 DoD
+  - Karten-Navigation (ArrowLeft/Right, Enter/Space zum Ausspielen)
+  - Auto-Fokus auf erste spielbare Karte
+  - Ansage-Shortcuts (R, K, 1–5)
+  - Vorbehalt-Navigation (Ziffern, ArrowUp/Down, Enter)
+  - Armut-Shortcuts (A, N)
+  - Seitenlade (I), Einstellungen (S) per Tastatur
+  - Focus-Trap in Modals
+  - Abhängigkeit: 4.11 (UI-Elemente müssen existieren)
+
+- [ ] **4.13 Start-Screen (frontend-startscreen.md)** — 0/8 DoD
+  - Neue Start-Screen-Szene (ersetzt/ergänzt LobbySzene)
+  - Logo + Slogan
+  - „Neuen Tisch erstellen" Modal mit Konfiguration
+  - „Offene Tische" Liste mit Polling
+  - Session-Recovery-Button
+  - Keyboard-Navigation (Tab, Enter)
+  - Abhängigkeit: 4.9 (Design-System)
+
+- [ ] **4.14 Rundenauswertung-Overlay (frontend-rundenauswertung.md)** — 0/11 DoD
+  - Rundenende-Overlay (bereits funktional, Styling-Anpassung an Design-System)
+  - Kopfzeile, Ergebnis-Zeile, Parteien-Übersicht, Punkte-Berechnung
+  - Sonderpunkte-Sektion
+  - Partie-Ende-Overlay mit Gesamtauswertung + Countdown
+  - Keyboard-Support (Enter zum Schließen)
+  - Abhängigkeit: 4.9 (Design-System)
+
 ---
 
 ## 5. Bekannte Probleme & Risiken
@@ -235,15 +299,23 @@ Bekannte offene Fragen: keine. Alle bekannten Bugs aus Sektion 5.2 sind dokument
 - `pruefeReconnectTimeouts` (Scheduled-Methode) nicht end-to-end getestet
 - Kein Test für Multi-Spiel-Partie (anzahlSpiele > 1) im KI-Orchestrierungstest
 
-### 5.4 Spec-Abweichungen (bewusst akzeptiert)
+### 5.4 Spec-Abweichungen (bewusst akzeptiert, Backend)
 
 - Ansagegrenzen als 5 Einzel-Felder statt Map (Spec: `ansageGrenzen: Map`)
 - Phasennamen weichen von Spec-Hinweisen ab (z.B. KARTEN_AUSTEILEN statt WARTEN_AUF_SPIELER)
 - SockJS-Fallback im Javadoc erwähnt, aber `.withSockJS()` nicht aufgerufen
-- Karten-Sprites prozedural generiert statt Spritesheet (funktional, aber anders als Spec)
 - Frontend `farbe`/`wert` als `string` statt Union-Type — keine Compile-Time-Sicherheit
 - `SpielPersistenzAdapter` in `lobby`-Package statt `partie` — invertierte Abhängigkeit
 - `KiOrchestrierungService` in `lobby` statt eigenem Package — Bounded-Context-Grenzüberschreitung
+- KI-Strategie-Interface-Signaturen weichen von Spec-Hinweisen ab (verbessert: einzelner KiSpielzustand-Parameter)
+
+### 5.5 Frontend-Redesign-Specs (neu identifiziert)
+
+- 6 Frontend-Specs mit 0/58 abgehakten DoD-Items definieren eine umfassende visuelle Neugestaltung
+- Betroffene Specs: frontend-tischansicht.md (Überarbeitung), frontend-ui-logik.md (Überarbeitung), frontend-visuelles-design.md (Neu), frontend-startscreen.md (Neu), frontend-tastatursteuerung.md (Neu), frontend-rundenauswertung.md (Neu)
+- Die bestehende Frontend-Funktionalität ist vollständig (Spielschleife läuft, alle Aktionen funktionieren)
+- Die UI-Architektur (seitliche Panels) soll durch HUD + Overlays + Floating Action Bar ersetzt werden
+- Karten-Sprites (prozedural generiert) sollen durch vectorized-playing-cards (PNG) ersetzt werden
 
 ---
 

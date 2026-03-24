@@ -6,9 +6,61 @@ export const TEXTUR_BLAU_GRAFIK = 'blau-grafik-hintergrund';
 export const TEXTUR_KARTE_OFFEN = 'karte-offen';
 export const TEXTUR_KARTE_VERDECKT = 'karte-verdeckt';
 
+/**
+ * Mapping von Doppelkopf-Farbbezeichnungen auf englische PNG-Dateinamen-Bestandteile.
+ * Entspricht den heruntergeladenen vectorized-playing-cards in /public/assets/cards/.
+ */
+const FARBEN_MAPPING: Record<string, string> = {
+  KREUZ: 'clubs',
+  PIK: 'spades',
+  HERZ: 'hearts',
+  KARO: 'diamonds'
+};
+
+/** Mapping von Doppelkopf-Wertbezeichnungen auf englische PNG-Dateinamen-Bestandteile. */
+const WERT_MAPPING: Record<string, string> = {
+  AS: 'ace',
+  ZEHN: '10',
+  KOENIG: 'king',
+  DAME: 'queen',
+  BUBE: 'jack',
+  NEUN: '9'
+};
+
+/**
+ * Erzeugt den Dateinamen fuer eine Karte gemaess der Konvention {wert}_{farbe}.png.
+ * Beispiel: karteZuDateiname('KREUZ', 'AS') → 'ace_clubs.png'
+ */
+export function karteZuDateiname(farbe: string, wert: string): string {
+  const englischFarbe = FARBEN_MAPPING[farbe] ?? farbe.toLowerCase();
+  const englischWert = WERT_MAPPING[wert] ?? wert.toLowerCase();
+  return `${englischWert}_${englischFarbe}.png`;
+}
+
 // Liefert den eindeutigen Texturschluessel fuer eine aufgedeckte Karte.
 export function texturSchluesselFuerKarte(farbe: string, wert: string): string {
   return `karte-offen-${farbe}-${wert}`;
+}
+
+/**
+ * Laedt alle 24 Karten-PNG-Dateien in den Phaser-Preloader.
+ * Muss in der preload()-Methode der Szene aufgerufen werden, bevor create() laeuft.
+ * Wenn eine PNG-Datei nicht gefunden wird, faellt registriereKartenSpriteTexturen() auf
+ * prozedurale Generierung zurueck (idempotent durch textures.exists()-Pruefung).
+ * PNG-Pfad: /assets/cards/{wert}_{farbe}.png (aus /public/assets/cards/).
+ */
+export function ladeKartenBilderVorab(szene: Phaser.Scene): void {
+  const farben = ['KREUZ', 'PIK', 'HERZ', 'KARO'];
+  const werte = ['AS', 'ZEHN', 'KOENIG', 'DAME', 'BUBE', 'NEUN'];
+  for (const farbe of farben) {
+    for (const wert of werte) {
+      const schluessel = texturSchluesselFuerKarte(farbe, wert);
+      if (!szene.textures.exists(schluessel)) {
+        const dateiname = karteZuDateiname(farbe, wert);
+        szene.load.image(schluessel, `/assets/cards/${dateiname}`);
+      }
+    }
+  }
 }
 
 export function registriereBasisTexturen(szene: Phaser.Scene): void {

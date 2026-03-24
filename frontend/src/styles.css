@@ -1,3 +1,29 @@
+/* ============================================================
+   Design-System — CSS Custom Properties (Neo-Brutalism Theme)
+   Alle Farben, Schatten und Typografie-Tokens zentral definiert.
+   ============================================================ */
+:root {
+  /* Farbpalette */
+  --farbe-hintergrund: #0d1f12;
+  --farbe-surface: #1a3a24;
+  --farbe-grenze: #2d5a3d;
+  --farbe-grenze-akzent: #f8f9fa;
+  --farbe-text-primaer: #f8f9fa;
+  --farbe-text-sekundaer: #a3c4a8;
+  --farbe-gold: #ffd166;
+  --farbe-blau: #90caf9;
+  --farbe-rot: #ef4444;
+  --farbe-gruen: #4ade80;
+
+  /* Typografie */
+  --schrift-familie: 'Space Grotesk', system-ui, sans-serif;
+
+  /* Neo-Brutalism: harte Schatten, scharfe Kanten */
+  --schatten-karte: 4px 4px 0 rgba(0, 0, 0, 0.8);
+  --schatten-button: 4px 4px 0 #000;
+  --rahmen-neo: 2px solid var(--farbe-grenze-akzent);
+}
+
 /* Sicherstellen, dass das HTML-hidden-Attribut korrekt greift — auch wenn eine CSS-Klasse
    display oder pointer-events setzt. Verhindert, dass z.B. versteckte Modal-Kulissen
    Klicks auf darunterliegende Elemente blockieren. */
@@ -18,9 +44,9 @@ body,
 
 body {
   overflow: hidden;
-  font-family: Arial, sans-serif;
-  background: #0b3d24;
-  color: #f8f9fa;
+  font-family: var(--schrift-familie);
+  background: var(--farbe-hintergrund);
+  color: var(--farbe-text-primaer);
 }
 
 #app-shell {
@@ -104,8 +130,9 @@ canvas {
 
 .ui-input,
 .ui-button {
-  border-radius: 12px;
-  border: 1px solid rgba(248, 249, 250, 0.18);
+  /* Neo-Brutalism: scharfe Ecken, weisser Rahmen */
+  border-radius: 4px;
+  border: var(--rahmen-neo);
   font: inherit;
 }
 
@@ -126,11 +153,13 @@ canvas {
 }
 
 .ui-button {
+  /* Neo-Brutalism: harter Offset-Schatten, fette Schrift */
   cursor: pointer;
   padding: 10px 14px;
   background: #d8f3dc;
   color: #14361f;
   font-weight: 700;
+  box-shadow: var(--schatten-button);
 }
 
 .ui-button--secondary {
@@ -324,4 +353,22 @@ canvas {
 
 .ui-modal h2 {
   margin: 0;
+}
+
+/* ============================================================
+   Focus-Styles — Keyboard-Navigation (Accessibility)
+   Alle interaktiven Elemente haben sichtbaren Gold-Fokusring.
+   Gilt fuer Buttons, Inputs, Links und Select-Felder.
+   ============================================================ */
+:focus-visible {
+  outline: 2px solid var(--farbe-gold);
+  outline-offset: 2px;
+}
+
+/* Buttons erhalten keinen Standard-Browser-Fokusring — nur den Gold-Ring */
+.ui-button:focus-visible,
+.ui-input:focus-visible {
+  outline: 2px solid var(--farbe-gold);
+  outline-offset: 2px;
+  box-shadow: var(--schatten-button), 0 0 0 4px rgba(255, 209, 102, 0.25);
 }
