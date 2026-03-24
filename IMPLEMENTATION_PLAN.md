@@ -20,6 +20,7 @@
 - 10 neue Tests, 62 gesamt grün, Lint clean, Build clean
 
 **Nächster logischer Schritt:**
+- **0.1 Tech-Upgrade** (tech-migration.md) — Spring Boot 4.0.4 + Java 25 in pom.xml. Höchste Priorität, da CLAUDE.md bereits Java 25 / Spring Boot 4.x als Ziel nennt und SB 4.0.4 am 19.03.2026 released wurde.
 - **4.13 Start-Screen** (frontend-startscreen.md) — Neue Start-Screen-Szene (Logo, Tisch erstellen Modal, Offene Tische Liste, Session-Recovery, Keyboard-Navigation). Abhängigkeit 4.9 (Design-System) erfüllt.
 
 **Bekannte offene Fragen:**
@@ -32,6 +33,17 @@
 - [x] Erledigt (Code + Tests vorhanden und grün)
 - [ ] Offen
 - [~] Teilweise implementiert
+
+---
+
+## 0. Infrastruktur & Tech-Upgrade
+
+### 0.1 Spring Boot 4.0.4 + Java 25 (tech-migration.md)
+
+- [ ] `pom.xml`: Spring Boot Parent auf `4.0.4` hochziehen
+- [ ] `pom.xml`: `<java.version>25</java.version>`
+- [ ] Prüfen ob Breaking Changes aus SB 4.x Migration Guide relevant sind
+- [ ] `mvn clean verify` grün
 
 ---
 

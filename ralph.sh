@@ -21,8 +21,8 @@ set -euo pipefail
 #   MODEL=claude-opus-4-6 ./ralph.sh build 10     # Override model
 #
 # Model defaults:
-#   plan  → claude-sonnet-4-6   (needs reasoning, fewer tokens)
-#   build → claude-sonnet-4-6   (default for Pro account)
+#   plan  → claude-sonnet-4-6   (default)
+#   build → claude-sonnet-4-6   (default)
 #
 # With Pro account: authenticate via `claude login` (no API key needed).
 # With API key: set ANTHROPIC_API_KEY and use claude-haiku-4-5-20251001
@@ -59,13 +59,10 @@ ITER_OUTPUT=".ralph-iter.tmp"
 LOG_FILE="ralph-$(date +%Y%m%d-%H%M%S).log"
 
 # --- Model selection ---
-# Default: sonnet for both modes (works with Pro account via `claude login`)
-# Override: MODEL=claude-haiku-4-5-20251001 for cheap API-key testing
-#           MODEL=claude-opus-4-6 for maximum quality
+# Default: sonnet für beide Modi (Pro account via `claude login`)
+# Override: MODEL=claude-opus-4-6 für maximale Qualität bei komplexen Planungsaufgaben
 if [ -n "${MODEL:-}" ]; then
     EFFECTIVE_MODEL="$MODEL"
-elif [ "$MODE" = "plan" ]; then
-    EFFECTIVE_MODEL="claude-opus-4-6"
 else
     EFFECTIVE_MODEL="claude-sonnet-4-6"
 fi
