@@ -122,9 +122,9 @@ function holeUiRoot(): HTMLElement {
 function berechneLayout(breite: number, hoehe: number): TischLayout {
   return {
     SUED: { x: breite * 0.5, y: hoehe * 0.82, kartenX: breite * 0.28, kartenY: hoehe * 0.87, kartenWinkel: 0 },
-    WEST: { x: breite * 0.12, y: hoehe * 0.5, kartenX: breite * 0.06, kartenY: hoehe * 0.37, kartenWinkel: 90 },
+    WEST: { x: breite * 0.12, y: hoehe * 0.5, kartenX: breite * 0.10, kartenY: hoehe * 0.37, kartenWinkel: 90 },
     NORD: { x: breite * 0.5, y: hoehe * 0.18, kartenX: breite * 0.28, kartenY: hoehe * 0.08, kartenWinkel: 0 },
-    OST: { x: breite * 0.88, y: hoehe * 0.5, kartenX: breite * 0.94, kartenY: hoehe * 0.37, kartenWinkel: 90 }
+    OST: { x: breite * 0.88, y: hoehe * 0.5, kartenX: breite * 0.90, kartenY: hoehe * 0.37, kartenWinkel: 90 }
   };
 }
 
@@ -718,9 +718,9 @@ export class TischSzene extends Phaser.Scene {
     if (this.hudSpieleInfo) {
       const spiel = zustand.partieStand?.laufendesSpiel;
       if (spiel) {
-        this.hudSpieleInfo.textContent = `${tisch.name} · Spiel ${spiel.spielNummer}/${zustand.partieStand?.anzahlSpiele ?? '?'} · ${modell.spieltyp ?? spiel.spieltyp}`;
+        this.hudSpieleInfo.textContent = `Spiel ${spiel.spielNummer}/${zustand.partieStand?.anzahlSpiele ?? '?'} · ${modell.spieltyp ?? spiel.spieltyp}`;
       } else {
-        this.hudSpieleInfo.textContent = `${tisch.name} · ${tisch.status}`;
+        this.hudSpieleInfo.textContent = tisch.status;
       }
     }
     // Start-Button
@@ -803,16 +803,6 @@ export class TischSzene extends Phaser.Scene {
 
     const ebene = this.add.container(0, 0);
     ebene.add(this.add.ellipse(mitteX, mitteY, tischBreite, tischHoehe, 0x081c15, 0.32).setStrokeStyle(8, 0xd8f3dc, 0.42));
-    ebene.add(this.add.text(mitteX, hoehe * 0.06, modell.titel, {
-      color: '#f8f9fa',
-      fontSize: `${Math.round(Math.max(24, breite * 0.024))}px`,
-      fontStyle: 'bold'
-    }).setOrigin(0.5));
-    ebene.add(this.add.text(mitteX, hoehe * 0.1, `${modell.untertitel} · ${modell.statusText}`, {
-      color: '#d8f3dc',
-      fontSize: `${Math.round(Math.max(14, breite * 0.013))}px`
-    }).setOrigin(0.5));
-
     this.renderStichmitte(ebene, modell, mitteX, mitteY, breite, hoehe);
 
     modell.spieler.forEach((spieler) => {
@@ -883,23 +873,13 @@ export class TischSzene extends Phaser.Scene {
     const slotPositionen = stichSlotPositionen(mitteX, mitteY, breite, hoehe);
     const kgroesse = berechneKartenGroesse(breite);
 
-    ebene.add(this.add.text(mitteX, mitteY - Math.round(hoehe * 0.222), modell.aktuellerSpieler ? `Am Zug: ${this.nameFuerPosition(modell, modell.aktuellerSpieler)}` : 'Warte auf den naechsten Zug', {
-      color: '#f8f9fa',
-      fontSize: `${Math.round(Math.max(16, breite * 0.016))}px`,
-      fontStyle: 'bold'
-    }).setOrigin(0.5));
-
     if (modell.aktuelleStichmitte.length === 0) {
-      ebene.add(this.add.text(mitteX, mitteY, 'Noch keine Karte im laufenden Stich', {
-        color: '#d8f3dc',
-        fontSize: `${Math.round(Math.max(14, breite * 0.014))}px`,
-        align: 'center'
-      }).setOrigin(0.5));
       return;
     }
 
     modell.aktuelleStichmitte.forEach((eintrag) => {
       const slot = slotPositionen[eintrag.position];
+      ebene.add(this.add.rectangle(slot.x, slot.y, kgroesse.w, kgroesse.h, 0xffffff));
       ebene.add(this.add.image(slot.x, slot.y, texturSchluesselFuerKarte(eintrag.karte.farbe, eintrag.karte.wert)).setDisplaySize(kgroesse.w, kgroesse.h));
       ebene.add(this.add.text(slot.x, slot.y + Math.round(kgroesse.h * 0.63), eintrag.name, {
         color: '#d8f3dc',
@@ -1217,6 +1197,11 @@ export class TischSzene extends Phaser.Scene {
       const alphaWert = this.austeilenAktiv
         ? 0
         : (offen ? (hatInteraktion && karte && !istInteraktiv ? 0.5 : 1) : 0.92);
+      // Weisser Hintergrund hinter dem Karten-PNG (PNG-Assets sind transparent)
+      const hintergrundKarte = this.add.rectangle(x, y + basisVersatz, kgroesse.w, kgroesse.h, 0xffffff)
+        .setAngle(winkel)
+        .setAlpha(alphaWert);
+      ebene.add(hintergrundKarte);
       const bild = this.add.image(x, y + basisVersatz, textur)
         .setDisplaySize(kgroesse.w, kgroesse.h)
         .setAngle(winkel)
@@ -1464,6 +1449,11 @@ export class TischSzene extends Phaser.Scene {
       animierteKarten.forEach((karte) => {
         karte.bild.destroy();
       });
+      // Nach der Animation den letzten bekannten Zustand neu rendern, damit
+      // KI-Zuege die waehrend der Animation ankamen korrekt sichtbar sind.
+      if (this.letzterZustand) {
+        this.renderTisch(this.letzterZustand);
+      }
     }
   }
 

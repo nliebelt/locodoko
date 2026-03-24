@@ -218,8 +218,10 @@ export class AppStore {
       await this.api.verlasseTisch(tisch.id);
       this.setzeTischAbosZurueck();
       this.patch({ aktuellerTisch: null, partieStand: null, bereich: 'LOBBY' });
-      await this.aktualisiereTischliste();
     });
+    // Tischliste separat aktualisieren — wirdGeladen ist hier bereits false,
+    // damit der Erstellen-Button in der LobbySzene sofort aktiv ist.
+    void this.aktualisiereTischliste();
   }
 
   /** Startet die Partie am aktuellen Tisch (nur fuer den Tisch-Ersteller moeglich). */

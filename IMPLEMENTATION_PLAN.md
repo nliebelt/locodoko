@@ -1,33 +1,30 @@
 # IMPLEMENTATION_PLAN — Locodoko Doppelkopf
 
-> Letzte Aktualisierung: 2026-03-24 (4.15–4.18 geplant)
+> Letzte Aktualisierung: 2026-03-24 (4.15 abgeschlossen)
 
 ## Notiz
 
-**2026-03-24:** 4.12 Tastatursteuerung abgeschlossen.
+**2026-03-24:** 4.15 Showstopper-Fixes abgeschlossen — alle 8 UI-Bugs behoben.
 
 **Was wurde implementiert:**
-- Zentraler `keydown`-Handler auf `document` (registriert in `create()`, entfernt in `aufraeumen()`)
-- Karten-Navigation: ArrowLeft/Right, Enter/Space spielen, Escape hebt Markierung auf
-- Auto-Fokus auf erste spielbare Karte bei Spielzugbeginn (tastaturKarteIndex = 0)
-- Visuelle Hervorhebung: hellblauer Tint + Y-Versatz für tastatur-markierte Karte
-- Ansage-Shortcuts: R=Re, K=Kontra, 1-5 für die angezeigten Buttons
-- Vorbehalt-Modal: Ziffern 1-N direkt, ArrowUp/Down Navigation, Enter bestätigt
-- Armut-Shortcuts: A=Annehmen, N=Ablehnen (nur ANTWORTEN-Modus)
-- Navigation: I=Seitenlade, S=Einstellungen per Tastatur
-- Focus-Trap in Modals (Tab-Zirkulation, Enter-Bestätigung)
-- Totes Code entfernt: `erstelleVorbehaltSektion`, `erstelleAnsageSektion`
-- 10 neue Tests, 62 gesamt grün, Lint clean, Build clean
+- **Karten-Hintergrund**: Weißes `Graphics.rectangle` (0xffffff) vor jedem Karten-Sprite in `renderKartenFaecher` und `renderStichmitte` — PNG-Assets sind auf hellem Hintergrund lesbar.
+- **"Am Zug"-Text entfernt**: Canvas-Text (`Am Zug: ...` / `Warte auf den naechsten Zug`) komplett aus `renderStichmitte` entfernt — Nameplate-Highlight ist ausreichend.
+- **Duplikat-Titeltext entfernt**: Großer Canvas-Text (`modell.titel`, `modell.untertitel · statusText`) aus `renderTisch` entfernt — HUD Top-Bar zeigt diese Infos bereits.
+- **"Noch keine Karte"-Placeholder entfernt**: Leerer Canvas bei leerer Stichmitte statt Hinweistext.
+- **Tischname aus HUD entfernt**: `hudSpieleInfo` zeigt jetzt `Spiel N/M · Spieltyp` statt `Tischname · Spiel N/M · Spieltyp`.
+- **Lobby-Bug (wirdGeladen)**: `aktualisiereTischliste()` aus dem `fuehreMitStatus`-Wrapper in `verlasseAktuellenTisch` herausgelöst — LobbySzene sieht `wirdGeladen: false` wenn sie startet.
+- **OST/WEST-Layout-Overflow**: `kartenX` für WEST von `0.06` auf `0.10` und für OST von `0.94` auf `0.90` korrigiert — rotierte Karten (165px breit) bleiben innerhalb des Canvas.
+- **Render-Bug nach KI-Zug**: `renderTisch(letzterZustand)` am Ende von `starteFolgeanimationen.finally` — stellt sicher dass KI-Züge die während der Stich-Einzieh-Animation ankamen sichtbar werden.
+- 62 Tests grün, Lint clean, Build clean.
 
 **Nächster logischer Schritt:**
-
-- **4.15 Showstopper-Fixes** — UI-Bugs die das Spiel unspielbar machen. Höchste Priorität.
 - **4.16 Stich-Visualisierung** — Gestampelte Stiche, Stapel beim Gewinner, Stich umdrehen.
-- **4.17 Phaser-Migration UI** — Alle Spielaktions-Overlays raus aus HTML, rein in Phaser.
-- **4.18 Single-Player UX** — Quick Game, Timeout deaktivieren, Reconnect verbessern.
+- **4.13 Spielverwaltungs-Szene** — Start-Screen mit Quick Game, Tisch erstellen, offene Tische.
+- **4.17 Phaser-Migration UI** — Spielaktions-Overlays in Phaser.
+- **4.18 Single-Player UX** — Timeout deaktivieren, laufende Tische in Lobby.
 
 **Bekannte offene Fragen:**
-- Armut-Kartenauswahl per Tastatur (ArrowLeft/Right + Space) bei Rückgabe noch nicht implementiert — Nice-to-have, nicht im DoD.
+- Armut-Kartenauswahl per Tastatur (ArrowLeft/Right + Space) noch nicht implementiert — Nice-to-have.
 
 ---
 
@@ -296,15 +293,15 @@
   - Keyboard-Support (Enter zum Schließen)
   - Abhängigkeit: 4.9 (Design-System)
 
-- [ ] **4.15 Showstopper-Fixes (UI spielbar machen)** — 0/8 DoD
-  - **Karten-Hintergrund**: Weißes Phaser-`Graphics`-Rechteck hinter jedem Karten-Sprite (PNG-Assets sind transparent, auf dunklem Tisch unlesbar)
-  - **"Am Zug"-Text entfernen**: Riesiger Phaser-Canvas-Text in Spielmitte (und dessen HTML-Overlay-Pendant unten) komplett entfernen — aktiver Spieler ist via Nameplate-Highlight erkennbar
-  - **Duplikat-Titeltext entfernen**: Großer weißer `„von Spieler X · Spieltyp · Phase · Spiel N/M"`-Text im Canvas ist Duplikat der HUD Top-Bar — weg
-  - **„Noch keine Karte im laufenden Stich"-Placeholder entfernen**: Leerer Canvas ist besser als dieser Text
-  - **Tischname aus Top-Bar entfernen** (Mitte der HUD zeigt bereits Spieltyp + Spielnummer)
-  - **Lobby-Bug**: Nach Tisch verlassen kann kein neuer Tisch erstellt werden — `wirdGeladen`-State wird nicht korrekt zurückgesetzt
-  - **OST/WEST-Layout-Overflow**: Seitliche Spieler ragen aus dem Canvas — Positionen und Kartenabstände korrigieren
-  - **Render-Bug**: Karten anderer Spieler werden nach KI-Zug manchmal nicht im Canvas aktualisiert — fehlendes `renderTisch()` nach bestimmten State-Updates
+- [x] **4.15 Showstopper-Fixes (UI spielbar machen)** — 8/8 DoD
+  - [x] Karten-Hintergrund: weißes Rechteck vor jedem Karten-Sprite
+  - [x] "Am Zug"-Text entfernt
+  - [x] Duplikat-Titeltext entfernt
+  - [x] "Noch keine Karte"-Placeholder entfernt
+  - [x] Tischname aus HUD Top-Bar entfernt
+  - [x] Lobby-Bug: wirdGeladen-State korrekt zurückgesetzt nach Tisch verlassen
+  - [x] OST/WEST-Layout: kartenX von 0.06/0.94 auf 0.10/0.90 korrigiert
+  - [x] Render-Bug: renderTisch() in starteFolgeanimationen.finally ergänzt
 
 - [ ] **4.16 Stich-Visualisierung** — 0/6 DoD
   - **Gestampelte Stich-Karten**: Die 4 Karten im laufenden Stich werden leicht überlappend/rotiert nach Spielerposition abgelegt (SUED unten, NORD oben, WEST links, OST rechts) — keine Spielernamen an den Karten
@@ -341,9 +338,9 @@
 - ~~**TischSzene: leaveButton während IM_SPIEL deaktiviert**~~: Behoben in 4.10 — leaveButton jetzt während IM_SPIEL klickbar mit Bestätigungsdialog.
 - **SpielerSessionController PUT-Pfad: Potenzielle NPE**: `request.getSession(false)` wird ohne Null-Check verwendet; bei fehlender Session gibt `.getId()` eine NPE statt einer sauberen 401-Antwort. Risiko gering: MVC-Interceptor validiert vorher, aber defensiver Null-Check wäre sauberer.
 - **TischStatus.BEENDET nie gesetzt**: Der Enum-Wert existiert, wird aber nirgends zugewiesen — toter Code.
-- **Lobby: Tisch erstellen nach Verlassen nicht möglich** (→ 4.15): `wirdGeladen`-State wird nach Tisch-Verlassen nicht zurückgesetzt, Erstellen-Button bleibt dauerhaft disabled.
-- **TischSzene: Karten-Render-Bug nach KI-Zug** (→ 4.15): Karten anderer Spieler werden nach KI-Aktionen manchmal nicht im Canvas aktualisiert — fehlendes `renderTisch()` nach bestimmten State-Updates.
-- **TischSzene: OST/WEST-Spieler ragen aus Canvas** (→ 4.15/4.17): Seitliche Spielerpositionen und Kartenabstände overflow-en den sichtbaren Bereich.
+- ~~**Lobby: Tisch erstellen nach Verlassen nicht möglich**~~: Behoben in 4.15 — `aktualisiereTischliste()` aus `fuehreMitStatus` herausgelöst.
+- ~~**TischSzene: Karten-Render-Bug nach KI-Zug**~~: Behoben in 4.15 — `renderTisch()` in `starteFolgeanimationen.finally` ergänzt.
+- ~~**TischSzene: OST/WEST-Spieler ragen aus Canvas**~~: Behoben in 4.15 — `kartenX` auf 0.10/0.90 korrigiert.
 
 ### 5.3 Testlücken (kein Blocker, aber dokumentiert)
 
@@ -369,8 +366,8 @@
 
 - 6 Frontend-Specs: 4 abgeschlossen (4.9, 4.10, 4.11, 4.12), 2 offen (19 DoD-Items)
 - Betroffene offene Specs: frontend-startscreen.md (0/8), frontend-rundenauswertung.md (0/11)
-- HUD-Overlay-Architektur steht, Tastatursteuerung vollständig
-- Nächste Schritte: 4.13 Start-Screen
+- HUD-Overlay-Architektur steht, Tastatursteuerung vollständig, Showstopper-Fixes erledigt
+- Nächste Schritte: 4.16 Stich-Visualisierung oder 4.13 Start-Screen
 
 ---
 
