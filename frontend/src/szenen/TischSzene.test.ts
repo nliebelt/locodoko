@@ -1135,4 +1135,196 @@ describe('TischSzene', () => {
     const modal = document.querySelector('.vorbehalt-modal-backdrop') as HTMLElement;
     expect(modal.hidden).toBe(true);
   });
+
+  // ── Tastatursteuerung ───────────────────────────────────────────────────────
+
+  function feuereTaste(taste: string, optionen: KeyboardEventInit = {}): void {
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: taste, bubbles: true, ...optionen }));
+  }
+
+  // WARUM: Die Vorbehalt-Ziffer-Auswahl ist der einzige Weg, ohne Maus eine Entscheidung
+  // in der Vorbehalt-Phase zu treffen; fehlt sie, blockiert das Modal den Spielverlauf.
+  it('waehlt Vorbehalt per Ziffer 1 aus', () => {
+    const zustand = baueZustand({
+      partieStand: bauePartieStand(baueLaufendesSpiel({
+        phase: 'VORBEHALT_ANSAGE',
+        spielbareKarten: [],
+        moeglicheVorbehalte: ['GESUND', 'HOCHZEIT']
+      }))
+    });
+    baueSzene(zustand);
+
+    feuereTaste('1');
+
+    expect(appStoreHarness.store.meldeVorbehalt).toHaveBeenCalledWith('GESUND');
+  });
+
+  // WARUM: Direktauswahl per Ziffer spart Zeit; Ziffer 2 muss die zweite Option treffen,
+  // sonst ist die Nummerierung inkonsistent.
+  it('waehlt Vorbehalt per Ziffer 2 aus', () => {
+    const zustand = baueZustand({
+      partieStand: bauePartieStand(baueLaufendesSpiel({
+        phase: 'VORBEHALT_ANSAGE',
+        spielbareKarten: [],
+        moeglicheVorbehalte: ['GESUND', 'HOCHZEIT', 'ARMUT']
+      }))
+    });
+    baueSzene(zustand);
+
+    feuereTaste('2');
+
+    expect(appStoreHarness.store.meldeVorbehalt).toHaveBeenCalledWith('HOCHZEIT');
+  });
+
+  // WARUM: Enter bestaetigt die aktuell markierte Vorbehalt-Option; ohne Enter-Unterstuetzung
+  // koennte die Vorbehalt-Phase nicht vollstaendig per Tastatur gespielt werden.
+  it('bestaetigt Vorbehalt per Enter', () => {
+    const zustand = baueZustand({
+      partieStand: bauePartieStand(baueLaufendesSpiel({
+        phase: 'VORBEHALT_ANSAGE',
+        spielbareKarten: [],
+        moeglicheVorbehalte: ['GESUND', 'HOCHZEIT']
+      }))
+    });
+    baueSzene(zustand);
+
+    // ArrowDown navigiert zur zweiten Option, Enter bestaetigt sie
+    feuereTaste('ArrowDown');
+    feuereTaste('Enter');
+
+    expect(appStoreHarness.store.meldeVorbehalt).toHaveBeenCalledWith('HOCHZEIT');
+  });
+
+  // WARUM: R- und K-Kuerzel sind die schnellsten Eingaben fuer Re/Kontra-Ansagen;
+  // fehlen sie, muessen Spieler mit der Maus auf Buttons klicken.
+  it('sagt Re per R-Taste an', () => {
+    const zustand = baueZustand({
+      partieStand: bauePartieStand(baueLaufendesSpiel({
+        moeglicheAnsagen: ['RE', 'KEINE_90']
+      }))
+    });
+    baueSzene(zustand);
+
+    feuereTaste('r');
+
+    expect(appStoreHarness.store.sageAnsageAn).toHaveBeenCalledWith('RE');
+  });
+
+  // WARUM: Ziffer-Kuerzel fuer Ansagen ermoeglicht erfahrenen Spielern blinde Bedienung;
+  // stellt sicher dass 1=Re, 2=Keine90 korrekt verknuepft ist.
+  it('sagt Ansage per Ziffer 2 an', () => {
+    const zustand = baueZustand({
+      partieStand: bauePartieStand(baueLaufendesSpiel({
+        moeglicheAnsagen: ['RE', 'KEINE_90']
+      }))
+    });
+    baueSzene(zustand);
+
+    feuereTaste('2');
+
+    expect(appStoreHarness.store.sageAnsageAn).toHaveBeenCalledWith('KEINE_90');
+  });
+
+  // WARUM: ArrowRight + Enter ist das Kernszenario der Karten-Tastaturnavigation;
+  // sichert ab dass spieleKarte mit der naechsten spielbaren Karte aufgerufen wird.
+  it('spielt Karte per ArrowRight und Enter', async () => {
+    const spiel = baueLaufendesSpiel({
+      spielbareKarten: [
+        karte('HERZ-ZEHN-1', 'HERZ', 'ZEHN'),
+        karte('KREUZ-AS-1', 'KREUZ', 'AS')
+      ]
+    });
+    const zustand = baueZustand({
+      partieStand: bauePartieStand(spiel)
+    });
+    baueSzene(zustand);
+
+    // ArrowRight bewegt Auswahl von Index 0 auf Index 1
+    feuereTaste('ArrowRight');
+    feuereTaste('Enter');
+
+    // spieleKarteMitAnimation ist async (zwei Promise-Ebenen: tweenZu + spieleKarte-Aufruf)
+    await Promise.resolve();
+    await Promise.resolve();
+
+    expect(appStoreHarness.store.spieleKarte).toHaveBeenCalledWith('KREUZ-AS-1');
+  });
+
+  // WARUM: Die erste spielbare Karte soll beim Spielzugbeginn automatisch markiert sein;
+  // fehlt der Auto-Fokus, muessen Spieler erst ArrowRight druecken bevor Enter hilft.
+  it('markiert die erste spielbare Karte automatisch bei Spielzugbeginn', async () => {
+    // Beginne ohne eigenen Spielzug
+    const zustandOhneZug = baueZustand({
+      partieStand: bauePartieStand(baueLaufendesSpiel({
+        aktuellerSpieler: 'WEST',
+        spielbareKarten: []
+      }))
+    });
+    baueSzene(zustandOhneZug);
+
+    // Jetzt eigener Spielzug beginnt
+    appStoreHarness.setZustand(baueZustand({
+      partieStand: bauePartieStand(baueLaufendesSpiel({
+        aktuellerSpieler: 'SUED',
+        spielbareKarten: [
+          karte('HERZ-ZEHN-1', 'HERZ', 'ZEHN'),
+          karte('KREUZ-AS-1', 'KREUZ', 'AS')
+        ]
+      }))
+    }));
+    appStoreHarness.sendeZustand();
+
+    // Enter direkt → erste Karte wird gespielt (Index 0 auto-gesetzt)
+    feuereTaste('Enter');
+
+    // spieleKarteMitAnimation ist async (zwei Promise-Ebenen: tweenZu + spieleKarte-Aufruf)
+    await Promise.resolve();
+    await Promise.resolve();
+
+    expect(appStoreHarness.store.spieleKarte).toHaveBeenCalledWith('HERZ-ZEHN-1');
+  });
+
+  // WARUM: Escape soll die Kartenmarkierung aufheben ohne die Karte zu spielen;
+  // ohne Escape-Unterstuetzung gibt es keinen Weg, eine versehentliche Auswahl rueckgaengig zu machen.
+  it('hebt Kartenmarkierung per Escape auf', () => {
+    const spiel = baueLaufendesSpiel({
+      spielbareKarten: [karte('HERZ-ZEHN-1', 'HERZ', 'ZEHN')]
+    });
+    const zustand = baueZustand({
+      partieStand: bauePartieStand(spiel)
+    });
+    baueSzene(zustand);
+
+    // Escape setzt Index auf -1: danach kein spieleKarte-Aufruf bei Enter
+    feuereTaste('Escape');
+    feuereTaste('Enter');
+
+    expect(appStoreHarness.store.spieleKarte).not.toHaveBeenCalled();
+  });
+
+  // WARUM: I-Kuerzel oeffnet die Seitenlade; ohne Tastaturzugang zur Seitenlade
+  // sind Spielerliste, Punktestand und Ansagehistorie nur per Maus erreichbar.
+  it('oeffnet die Seitenlade per I-Taste', () => {
+    baueSzene(baueZustand());
+
+    const seitenlade = document.querySelector('.seitenlade') as HTMLElement;
+    expect(seitenlade.classList.contains('seitenlade--offen')).toBe(false);
+
+    feuereTaste('i');
+
+    expect(seitenlade.classList.contains('seitenlade--offen')).toBe(true);
+  });
+
+  // WARUM: S-Kuerzel oeffnet das Einstellungs-Modal; ohne Tastaturzugang koennen Spieler
+  // Tischhintergrund und Animationsgeschwindigkeit nur per Maus aendern.
+  it('oeffnet das Einstellungs-Modal per S-Taste', () => {
+    baueSzene(baueZustand());
+
+    const modal = document.querySelector('.einstellungen-backdrop') as HTMLElement;
+    expect(modal.hidden).toBe(true);
+
+    feuereTaste('s');
+
+    expect(modal.hidden).toBe(false);
+  });
 });
