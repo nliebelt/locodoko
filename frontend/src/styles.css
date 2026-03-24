@@ -60,14 +60,10 @@ body {
 }
 
 #ui-root {
+  /* ACHTUNG: Layout geaendert — kein Flex-Layout mehr fuer seitliche Panels */
   position: absolute;
   inset: 0;
   pointer-events: none;
-  display: flex;
-  align-items: stretch;
-  justify-content: space-between;
-  gap: 16px;
-  padding: 16px;
   box-sizing: border-box;
 }
 
@@ -246,13 +242,7 @@ canvas {
   background: rgba(255, 255, 255, 0.12);
 }
 
-.ui-toast-stack {
-  margin-left: auto;
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  align-self: flex-start;
-}
+/* .ui-toast-stack ist weiter unten als absolute-positioned Element definiert (Task 4.10) */
 
 .ui-toast {
   max-width: 320px;
@@ -269,11 +259,6 @@ canvas {
 }
 
 @media (max-width: 980px) {
-  #ui-root {
-    flex-direction: column;
-    justify-content: flex-start;
-  }
-
   .ui-panel,
   .ui-panel--compact,
   .ui-panel--right {
@@ -283,11 +268,14 @@ canvas {
 
   .ui-toast-stack {
     width: 100%;
-    margin-left: 0;
   }
 
   .ui-toast {
     max-width: none;
+  }
+
+  .seitenlade {
+    width: 100%;
   }
 }
 
@@ -371,4 +359,173 @@ canvas {
   outline: 2px solid var(--farbe-gold);
   outline-offset: 2px;
   box-shadow: var(--schatten-button), 0 0 0 4px rgba(255, 209, 102, 0.25);
+}
+
+/* ============================================================
+   HUD Top-Bar (Task 4.10)
+   Fest oben positioniert; Stichzaehler links, Spielinfo Mitte, Icons rechts.
+   ============================================================ */
+.hud-topbar {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 40px;
+  pointer-events: auto;
+  background: rgba(11, 61, 36, 0.88);
+  border-bottom: 1px solid rgba(216, 243, 220, 0.3);
+  backdrop-filter: blur(8px);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 12px;
+  gap: 8px;
+  z-index: 10;
+  box-sizing: border-box;
+}
+
+.hud-topbar__left,
+.hud-topbar__right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 0 0 auto;
+}
+
+.hud-topbar__center {
+  flex: 1;
+  text-align: center;
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: var(--farbe-text-primaer);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.hud-topbar__stichzaehler {
+  font-size: 0.82rem;
+  color: var(--farbe-text-sekundaer);
+  white-space: nowrap;
+}
+
+/* Icon-Buttons in der Top-Bar */
+.hud-icon-btn {
+  pointer-events: auto;
+  cursor: pointer;
+  width: 30px;
+  height: 30px;
+  border-radius: 6px;
+  border: 1px solid rgba(216, 243, 220, 0.35);
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--farbe-text-primaer);
+  font-size: 1rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  font-family: inherit;
+}
+
+.hud-icon-btn:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.hud-icon-btn--aktiv {
+  background: rgba(255, 209, 102, 0.25);
+  border-color: var(--farbe-gold);
+  color: var(--farbe-gold);
+}
+
+/* ============================================================
+   Seitenlade (von links, toggle)
+   Gleitet per Transform von links herein; immer hinter der Top-Bar.
+   ============================================================ */
+.seitenlade {
+  position: absolute;
+  top: 40px;
+  left: 0;
+  bottom: 0;
+  width: 300px;
+  pointer-events: auto;
+  background: rgba(11, 61, 36, 0.94);
+  border-right: 1px solid rgba(216, 243, 220, 0.3);
+  backdrop-filter: blur(8px);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 14px;
+  overflow-y: auto;
+  box-sizing: border-box;
+  transform: translateX(-100%);
+  transition: transform 0.2s ease;
+  z-index: 9;
+}
+
+.seitenlade--offen {
+  transform: translateX(0);
+}
+
+.seitenlade h3 {
+  margin: 0;
+  font-size: 0.82rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--farbe-text-sekundaer);
+}
+
+/* ============================================================
+   Spielaktionen-Overlay (unten Mitte, ueber den Karten)
+   Zentriert horizontal; zeigt sich nur wenn Inhalt vorhanden.
+   ============================================================ */
+.spielaktionen-overlay {
+  position: absolute;
+  bottom: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+  pointer-events: auto;
+  background: rgba(11, 61, 36, 0.92);
+  border: 1px solid rgba(216, 243, 220, 0.35);
+  border-radius: 16px;
+  backdrop-filter: blur(8px);
+  padding: 12px 16px;
+  min-width: 320px;
+  max-width: 560px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  box-sizing: border-box;
+  z-index: 8;
+}
+
+.spielaktionen-overlay:empty {
+  display: none;
+}
+
+/* ============================================================
+   Einstellungs-Modal-Backdrop
+   Vollbild-Abdunkelung mit zentriertem Einstellungs-Dialog.
+   ============================================================ */
+.einstellungen-backdrop {
+  position: absolute;
+  inset: 0;
+  z-index: 100;
+  pointer-events: auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(4px);
+}
+
+/* Toast-Stack: oben rechts, unterhalb der Top-Bar */
+.ui-toast-stack {
+  position: absolute;
+  top: 52px;
+  right: 12px;
+  pointer-events: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  z-index: 11;
 }

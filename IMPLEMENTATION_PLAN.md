@@ -5,19 +5,16 @@
 
 ## Notiz
 
-**Backend vollständig.** Alle 4 Backend-Bounded-Contexts (Karten, Partie, Lobby, Session) sind feature-complete,
-getestet und produktionsreif. Keine TODOs, FIXMEs oder @Disabled Tests.
-
-**4.9 Visuelles Design-System: implementiert (10/10 DoD).** Space Grotesk (Google Fonts) eingebunden,
-CSS Custom Properties (--farbe-gold, --farbe-blau, etc.) in styles.css, Neo-Brutalism-Schatten auf Buttons
-und Karten, Focus-Styles für Keyboard-Navigation, vectorized-playing-cards (24 PNGs) in
-`frontend/public/assets/cards/`, Karten-Mapping in AssetLoader mit automatischem Fallback auf prozedurale
-Generierung, animiereAnsageBanner mit gold/blau-Farben für Re/Kontra, animiereSoloAnkuendigung neu
-hinzugefügt. Alle 48 Frontend-Tests grün, Lint clean, tsc --noEmit sauber.
+**4.10 HUD Top-Bar + Layout-Umbau: implementiert.** 40px Top-Bar (Stichzähler links, Spieltyp+Nummer Mitte,
+Icons rechts: Seitenlade/Einstellungen/Debug), rechteckige Spieler-Nameplates statt Kreise (Name · KI/Mensch ·
+RE/KONTRA · Stiche · G), Kartengröße auf 110×165px erhöht, seitliche HTML-Panels entfernt und durch
+HUD-Overlay-Architektur ersetzt (Seitenlade toggle, Einstellungs-Modal, Spielaktionen-Overlay).
+Bug-Fix: leaveButton jetzt auch während IM_SPIEL klickbar (mit Bestätigungsdialog).
+Alle 48 Frontend-Tests grün, Lint clean, Build clean.
 
 Nächster logischer Schritt:
-- **4.10 HUD Top-Bar + Layout-Umbau** (frontend-tischansicht.md) — 40px Top-Bar, Spieler-Nameplates,
-  Kartengröße 110×165px, seitliche Panels durch Canvas + Overlays ersetzen.
+- **4.11 Floating Action Bar + Seitenlade** (frontend-ui-logik.md) — Ansage-Buttons als Floating Bar,
+  Vorbehalt als modales Vollbild-Overlay, Seitenlade weiter ausbauen, Einstellungs-Modal verfeinern.
 
 Bekannte offene Fragen: keine. Bekannte Bugs aus Sektion 5.2 sind dokumentiert aber nicht kritisch.
 
@@ -232,13 +229,13 @@ Bekannte offene Fragen: keine. Bekannte Bugs aus Sektion 5.2 sind dokumentiert a
   - animiereAnsageBanner: goldener Re-Banner, blauer Kontra-Banner
   - animiereSoloAnkuendigung: Einfahren von oben, verweilen, Ausfahren
 
-- [ ] **4.10 HUD Top-Bar + Layout-Umbau (frontend-tischansicht.md)** — 0/10 DoD
-  - 40px Top-Bar (Links: Stichzähler, Mitte: Spieltyp + Spielnummer, Rechts: Icons)
-  - Spieler-Nameplates statt Kreise (Name · KI/Mensch · Partei · Stiche · Geber)
-  - Kartengröße auf 110×165px mit vectorized-playing-cards
-  - Seitliche Panels entfernen, Layout auf Canvas + Overlays umstellen
-  - Debug-Modus mit aufgedeckten Karten
-  - Abhängigkeit: 4.9 (Design-System + Karten-Assets)
+- [x] **4.10 HUD Top-Bar + Layout-Umbau (frontend-tischansicht.md)**
+  - 40px Top-Bar (Links: Stichzähler, Mitte: Spieltyp + Spielnummer, Rechts: Icons [≡][⚙][🐛])
+  - Spieler-Nameplates statt Kreise (Name · KI/Mensch · Partei · Stiche · Geber) mit Rechteck-Shape
+  - Kartengröße auf 110×165px erhöht (berechneKartenGroesse angepasst)
+  - Seitliche Panels entfernt, Layout auf Canvas + Overlays umgestellt (Seitenlade, Einstellungs-Modal, Spielaktionen-Overlay)
+  - Debug-Modus mit aufgedeckten Karten (weiterhin funktional)
+  - Bug-Fix: leaveButton während IM_SPIEL klickbar (mit Bestätigungsdialog)
 
 - [ ] **4.11 Floating Action Bar + Seitenlade (frontend-ui-logik.md)** — 0/10 DoD
   - Floating Action Bar: Ansage-Buttons zwischen Stichmitte und Hand, kontextabhängig

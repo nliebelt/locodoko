@@ -381,6 +381,9 @@ function erstelleAddApi() {
     circle(x: number, y: number): FakeGameObject {
       return new FakeGameObject('circle', { x, y });
     },
+    rectangle(x: number, y: number): FakeGameObject {
+      return new FakeGameObject('rectangle', { x, y });
+    },
     image(x: number, y: number, textur: string): FakeGameObject {
       return new FakeGameObject('image', { x, y, textur });
     }
@@ -519,7 +522,8 @@ describe('TischSzene', () => {
 
     const startY = bilder[0].y;
     bilder[0].emit('pointerover');
-    expect(bilder[0].y).toBe(startY - 10);
+    // Hover-Versatz: round(kgroesse.h * 0.08); bei 110x165px Zielgroesse: round(165 * 0.08) = 13
+    expect(bilder[0].y).toBe(startY - 13);
     bilder[0].emit('pointerout');
     expect(bilder[0].y).toBe(startY);
 

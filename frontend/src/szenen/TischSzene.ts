@@ -47,10 +47,11 @@ function stichSlotPositionen(
   };
 }
 
-// Kartengrösse skaliert mit der Spielbreite; Seitenverhältnis 82:124 bleibt erhalten
+// Kartengrösse skaliert mit der Spielbreite; 110x165px Zielgrösse; Seitenverhältnis 110:165
 function berechneKartenGroesse(breite: number): { w: number; h: number } {
-  const w = Math.round(Math.min(82, breite * 0.064));
-  return { w, h: Math.round(w * (124 / 82)) };
+  // 110x165px Zielgrösse; skaliert proportional mit der Spielbreite
+  const w = Math.round(Math.min(110, breite * 0.086));
+  return { w, h: Math.round(w * (165 / 110)) };
 }
 
 // Kartenabstand im Fächer skaliert mit der Spielgrösse
@@ -120,10 +121,10 @@ function holeUiRoot(): HTMLElement {
 
 function berechneLayout(breite: number, hoehe: number): TischLayout {
   return {
-    SUED: { x: breite * 0.5, y: hoehe * 0.85, kartenX: breite * 0.32, kartenY: hoehe * 0.89, kartenWinkel: 0 },
-    WEST: { x: breite * 0.14, y: hoehe * 0.5, kartenX: breite * 0.1, kartenY: hoehe * 0.41, kartenWinkel: 90 },
-    NORD: { x: breite * 0.5, y: hoehe * 0.15, kartenX: breite * 0.32, kartenY: hoehe * 0.11, kartenWinkel: 0 },
-    OST: { x: breite * 0.86, y: hoehe * 0.5, kartenX: breite * 0.9, kartenY: hoehe * 0.41, kartenWinkel: 90 }
+    SUED: { x: breite * 0.5, y: hoehe * 0.82, kartenX: breite * 0.28, kartenY: hoehe * 0.87, kartenWinkel: 0 },
+    WEST: { x: breite * 0.12, y: hoehe * 0.5, kartenX: breite * 0.06, kartenY: hoehe * 0.37, kartenWinkel: 90 },
+    NORD: { x: breite * 0.5, y: hoehe * 0.18, kartenX: breite * 0.28, kartenY: hoehe * 0.08, kartenWinkel: 0 },
+    OST: { x: breite * 0.88, y: hoehe * 0.5, kartenX: breite * 0.94, kartenY: hoehe * 0.37, kartenWinkel: 90 }
   };
 }
 
@@ -193,29 +194,41 @@ export class TischSzene extends Phaser.Scene {
 
   private tischEbene?: Phaser.GameObjects.Container;
 
-  private panel?: HTMLDivElement;
+  // Top-Bar
+  private hudStichzaehlerEl?: HTMLSpanElement;
 
-  private statusElement?: HTMLParagraphElement;
+  private hudSpieleInfo?: HTMLSpanElement;
 
-  private spielerListe?: HTMLUListElement;
+  private hudDebugBtn?: HTMLButtonElement;
 
+  // Seitenlade (von links, toggle)
+  private seitenladeEl?: HTMLDivElement;
+
+  private seitenladeSpielerListe?: HTMLUListElement;
+
+  private seitenladePunktestandListe?: HTMLUListElement;
+
+  private seitenladeAnsageHistorie?: HTMLUListElement;
+
+  private seitenladeLetzteSticheListe?: HTMLUListElement;
+
+  private seitenladeLetzteStichButton?: HTMLButtonElement;
+
+  private seitenladeOffen = false;
+
+  // Einstellungs-Modal
+  private einstellungsModalEl?: HTMLDivElement;
+
+  // Spielaktionen-Overlay (unten Mitte)
   private aktionsHinweis?: HTMLParagraphElement;
 
   private aktionsInhalt?: HTMLDivElement;
-
-  private ansageListe?: HTMLUListElement;
-
-  private punktestandListe?: HTMLUListElement;
 
   private ergebnisInhalt?: HTMLDivElement;
 
   private tischhintergrundSelect?: HTMLSelectElement;
 
   private kiSchwierigkeitSelect?: HTMLSelectElement;
-
-  private letzteSticheListe?: HTMLUListElement;
-
-  private letzteSticheButton?: HTMLButtonElement;
 
   private toastStack?: HTMLDivElement;
 
@@ -368,24 +381,56 @@ export class TischSzene extends Phaser.Scene {
     const uiRoot = holeUiRoot();
     uiRoot.innerHTML = '';
 
-    const links = document.createElement('div');
-    links.className = 'ui-panel ui-panel--compact';
-    links.innerHTML = `
-      <h2>Tischsteuerung</h2>
-      <p class="ui-panel__muted"></p>
+    // ── Top-Bar (40px, oben) ─────────────────────────────────────────────────
+    const topBar = document.createElement('div');
+    topBar.className = 'hud-topbar';
+    topBar.innerHTML = `
+      <div class="hud-topbar__left">
+        <button class="hud-icon-btn" type="button" title="Seitenlade öffnen/schließen" data-seitenlade-toggle>☰</button>
+        <span class="hud-topbar__stichzaehler" data-stichzaehler></span>
+      </div>
+      <div class="hud-topbar__center">
+        <span data-spiele-info></span>
+      </div>
+      <div class="hud-topbar__right">
+        <button class="ui-button" type="button" data-start-button>Spiel starten</button>
+        <button class="hud-icon-btn" type="button" title="Einstellungen" data-einstellungen-toggle>⚙</button>
+        <button class="hud-icon-btn" type="button" title="Debug" data-debug-button>🐛</button>
+      </div>
+    `;
+
+    // ── Seitenlade (von links, toggle) ───────────────────────────────────────
+    const seitenlade = document.createElement('div');
+    seitenlade.className = 'seitenlade';
+    seitenlade.innerHTML = `
+      <h3>Spieler am Tisch</h3>
+      <ul class="ui-list" data-sl-spieler></ul>
+      <h3>Punktestand</h3>
+      <ul class="ui-list ui-list--dense" data-sl-punktestand></ul>
+      <h3>Ansagehistorie</h3>
+      <ul class="ui-list ui-list--dense" data-sl-ansagen></ul>
+      <h3>Letzte Stiche</h3>
       <div class="ui-action-row">
-        <button class="ui-button ui-button--secondary" type="button">Zur Lobby</button>
-        <button class="ui-button ui-button--danger" type="button">Tisch verlassen</button>
-        <button class="ui-button" type="button">Spiel starten</button>
-        <button class="ui-button ui-button--secondary" type="button">Debug aus</button>
+        <button class="ui-button ui-button--secondary" type="button" data-sl-letzte-stiche-toggle>Letzte Stiche anzeigen</button>
+      </div>
+      <ul class="ui-list ui-list--dense" data-sl-letzte-stiche hidden></ul>
+      <h3>Letzte Auswertung</h3>
+      <div class="ui-action-stack" data-ergebnis></div>
+      <div class="ui-action-row" style="margin-top:auto;padding-top:12px;border-top:1px solid rgba(216,243,220,0.2)">
+        <button class="ui-button ui-button--secondary" type="button" data-lobby-button>Zur Lobby</button>
+        <button class="ui-button ui-button--danger" type="button" data-leave-button>Tisch verlassen</button>
         <button class="ui-button ui-button--secondary" type="button" data-animationsgeschwindigkeit>Geschw.: 1x</button>
       </div>
-      <div class="ui-grid">
-        <div class="ui-stat-card"><span class="ui-hint">Spieltyp</span><strong data-spieltyp>-</strong></div>
-        <div class="ui-stat-card"><span class="ui-hint">Phase</span><strong data-phase>-</strong></div>
-        <div class="ui-stat-card"><span class="ui-hint">Aktiv</span><strong data-aktiv>-</strong></div>
-        <div class="ui-stat-card"><span class="ui-hint">Optionen</span><strong data-optionen>-</strong></div>
-       </div>
+    `;
+
+    // ── Einstellungs-Modal ────────────────────────────────────────────────────
+    const einstellungsModal = document.createElement('div');
+    einstellungsModal.className = 'einstellungen-backdrop';
+    einstellungsModal.hidden = true;
+    const einstellungsDialog = document.createElement('div');
+    einstellungsDialog.className = 'ui-modal';
+    einstellungsDialog.innerHTML = `
+      <h2>Einstellungen</h2>
       <div class="ui-section">
         <span class="ui-hint">Tischhintergrund</span>
         <select class="ui-input ui-input--select" data-tischhintergrund>
@@ -402,67 +447,116 @@ export class TischSzene extends Phaser.Scene {
           <option value="SCHWER">Schwer</option>
         </select>
       </div>
-      <h3>Spieler am Tisch</h3>
-      <ul class="ui-list"></ul>
+      <div class="ui-action-row">
+        <button class="ui-button" type="button" data-einstellungen-schliessen>Schließen</button>
+      </div>
     `;
+    einstellungsModal.append(einstellungsDialog);
 
-    const rechts = document.createElement('div');
-    rechts.className = 'ui-panel ui-panel--compact ui-panel--right';
-    rechts.innerHTML = `
-      <h2>Spielaktionen</h2>
+    // ── Spielaktionen-Overlay (unten Mitte, über den Karten) ─────────────────
+    const spielaktioneOverlay = document.createElement('div');
+    spielaktioneOverlay.className = 'spielaktionen-overlay';
+    spielaktioneOverlay.innerHTML = `
       <p class="ui-panel__muted" data-aktions-hinweis></p>
       <div class="ui-action-stack" data-aktions-inhalt></div>
-      <h3>Letzte Auswertung</h3>
-      <div class="ui-action-stack" data-ergebnis></div>
-      <div class="ui-action-row">
-        <button class="ui-button ui-button--secondary" type="button" data-letzte-stiche-toggle>Letzte Stiche anzeigen</button>
-      </div>
-      <ul class="ui-list ui-list--dense" data-letzte-stiche hidden></ul>
-      <h3>Ansagehistorie</h3>
-      <ul class="ui-list ui-list--dense" data-ansagen></ul>
-      <h3>Punktestand</h3>
-      <ul class="ui-list ui-list--dense" data-punktestand></ul>
     `;
 
-    const statusElement = links.querySelector('p');
-    const spielerListe = links.querySelector('ul');
-    const aktionsHinweis = rechts.querySelector('[data-aktions-hinweis]');
-    const aktionsInhalt = rechts.querySelector('[data-aktions-inhalt]');
-    const ergebnisInhalt = rechts.querySelector('[data-ergebnis]');
-    const letzteSticheListe = rechts.querySelector('[data-letzte-stiche]');
-    const letzteSticheButton = rechts.querySelector('[data-letzte-stiche-toggle]');
-    const ansageListe = rechts.querySelector('[data-ansagen]');
-    const punktestandListe = rechts.querySelector('[data-punktestand]');
-    const tischhintergrundSelect = links.querySelector('[data-tischhintergrund]');
-    const kiSchwierigkeitSelect = links.querySelector('[data-ki-schwierigkeit]');
-    const geschwindigkeitsButton = links.querySelector('[data-animationsgeschwindigkeit]');
-    const buttons = links.querySelectorAll('button');
-    const lobbyButton = buttons.item(0);
-    const leaveButton = buttons.item(1);
-    const startButton = buttons.item(2);
-    const debugButton = buttons.item(3);
-    if (!(statusElement instanceof HTMLParagraphElement)
-      || !(spielerListe instanceof HTMLUListElement)
+    // ── Toast-Stack (oben rechts) ─────────────────────────────────────────────
+    const toastStack = document.createElement('div');
+    toastStack.className = 'ui-toast-stack';
+
+    // ── Rundenende-Modal: initial versteckt ────────────────────────────────
+    const rundenEndeModal = document.createElement('div');
+    rundenEndeModal.className = 'ui-modal-backdrop';
+    rundenEndeModal.hidden = true;
+
+    // ── Partie-Ende-Modal: initial versteckt ────────────────────────────────
+    const partieEndeModal = document.createElement('div');
+    partieEndeModal.className = 'ui-modal-backdrop';
+    partieEndeModal.hidden = true;
+
+    // ── Referenzen auf DOM-Elemente sichern ───────────────────────────────────
+    const hudStichzaehlerEl = topBar.querySelector('[data-stichzaehler]');
+    const hudSpieleInfo = topBar.querySelector('[data-spiele-info]');
+    const hudDebugBtn = topBar.querySelector('[data-debug-button]');
+    const seitenladeSpielerListe = seitenlade.querySelector('[data-sl-spieler]');
+    const seitenladePunktestandListe = seitenlade.querySelector('[data-sl-punktestand]');
+    const seitenladeAnsageHistorie = seitenlade.querySelector('[data-sl-ansagen]');
+    const seitenladeLetzteSticheListe = seitenlade.querySelector('[data-sl-letzte-stiche]');
+    const seitenladeLetzteStichButton = seitenlade.querySelector('[data-sl-letzte-stiche-toggle]');
+    const tischhintergrundSelect = einstellungsDialog.querySelector('[data-tischhintergrund]');
+    const kiSchwierigkeitSelect = einstellungsDialog.querySelector('[data-ki-schwierigkeit]');
+    const geschwindigkeitsButton = seitenlade.querySelector('[data-animationsgeschwindigkeit]');
+    const aktionsHinweis = spielaktioneOverlay.querySelector('[data-aktions-hinweis]');
+    const aktionsInhalt = spielaktioneOverlay.querySelector('[data-aktions-inhalt]');
+    const ergebnisInhalt = seitenlade.querySelector('[data-ergebnis]');
+    const lobbyButton = seitenlade.querySelector('[data-lobby-button]');
+    const leaveButton = seitenlade.querySelector('[data-leave-button]');
+    const startButton = topBar.querySelector('[data-start-button]');
+    const seitenladeToggleBtn = topBar.querySelector('[data-seitenlade-toggle]');
+    const einstellungenToggleBtn = topBar.querySelector('[data-einstellungen-toggle]');
+    const einstellungenSchliessenBtn = einstellungsDialog.querySelector('[data-einstellungen-schliessen]');
+
+    if (!(hudStichzaehlerEl instanceof HTMLSpanElement)
+      || !(hudSpieleInfo instanceof HTMLSpanElement)
+      || !(hudDebugBtn instanceof HTMLButtonElement)
+      || !(seitenladeSpielerListe instanceof HTMLUListElement)
+      || !(seitenladePunktestandListe instanceof HTMLUListElement)
+      || !(seitenladeAnsageHistorie instanceof HTMLUListElement)
+      || !(seitenladeLetzteSticheListe instanceof HTMLUListElement)
+      || !(seitenladeLetzteStichButton instanceof HTMLButtonElement)
+      || !(tischhintergrundSelect instanceof HTMLSelectElement)
+      || !(kiSchwierigkeitSelect instanceof HTMLSelectElement)
+      || !(geschwindigkeitsButton instanceof HTMLButtonElement)
       || !(aktionsHinweis instanceof HTMLParagraphElement)
       || !(aktionsInhalt instanceof HTMLDivElement)
       || !(ergebnisInhalt instanceof HTMLDivElement)
-      || !(letzteSticheListe instanceof HTMLUListElement)
-      || !(letzteSticheButton instanceof HTMLButtonElement)
-      || !(ansageListe instanceof HTMLUListElement)
-      || !(punktestandListe instanceof HTMLUListElement)
-      || !(tischhintergrundSelect instanceof HTMLSelectElement)
-      || !(kiSchwierigkeitSelect instanceof HTMLSelectElement)
       || !(lobbyButton instanceof HTMLButtonElement)
       || !(leaveButton instanceof HTMLButtonElement)
       || !(startButton instanceof HTMLButtonElement)
-      || !(debugButton instanceof HTMLButtonElement)
-      || !(geschwindigkeitsButton instanceof HTMLButtonElement)) {
+      || !(seitenladeToggleBtn instanceof HTMLButtonElement)
+      || !(einstellungenToggleBtn instanceof HTMLButtonElement)
+      || !(einstellungenSchliessenBtn instanceof HTMLButtonElement)) {
       throw new Error('Tisch-UI konnte nicht aufgebaut werden.');
     }
 
+    // ── Event-Handler ─────────────────────────────────────────────────────────
+
+    // Seitenlade togglen — verwendet this.seitenladeEl fuer saubere Closure-Unabhaengigkeit
+    seitenladeToggleBtn.addEventListener('click', () => {
+      this.seitenladeOffen = !this.seitenladeOffen;
+      if (this.seitenladeEl) {
+        if (this.seitenladeOffen) {
+          this.seitenladeEl.classList.add('seitenlade--offen');
+        } else {
+          this.seitenladeEl.classList.remove('seitenlade--offen');
+        }
+      }
+    });
+
+    // Einstellungs-Modal oeffnen/schliessen
+    einstellungenToggleBtn.addEventListener('click', () => {
+      if (this.einstellungsModalEl) {
+        this.einstellungsModalEl.hidden = !this.einstellungsModalEl.hidden;
+      }
+    });
+    einstellungenSchliessenBtn.addEventListener('click', () => {
+      if (this.einstellungsModalEl) {
+        this.einstellungsModalEl.hidden = true;
+      }
+    });
+    einstellungsModal.addEventListener('click', (event) => {
+      if (event.target === einstellungsModal && this.einstellungsModalEl) {
+        this.einstellungsModalEl.hidden = true;
+      }
+    });
+
+    // Zur Lobby
     lobbyButton.addEventListener('click', () => {
       this.scene.start('LobbySzene');
     });
+
+    // Tisch verlassen (mit Bestätigungsdialog bei laufendem Spiel)
     leaveButton.addEventListener('click', () => {
       const zustand = appStore.snapshot();
       const istImSpiel = zustand.aktuellerTisch?.status === 'IM_SPIEL';
@@ -473,24 +567,36 @@ export class TischSzene extends Phaser.Scene {
       }
       void appStore.verlasseAktuellenTisch();
     });
+
+    // Spiel starten
     startButton.addEventListener('click', () => {
       void appStore.starteAktuellenTisch();
     });
-    debugButton.addEventListener('click', () => {
+
+    // Debug-Toggle
+    hudDebugBtn.addEventListener('click', () => {
       appStore.toggleDebugModus();
     });
+
+    // Tischhintergrund aendern
     tischhintergrundSelect.addEventListener('change', () => {
       void appStore.aktualisiereAktuellenTischhintergrund(tischhintergrundSelect.value as Tischhintergrund);
     });
+
+    // KI-Schwierigkeit aendern
     kiSchwierigkeitSelect.addEventListener('change', () => {
       void appStore.aktualisiereAktuelleKiSchwierigkeit(kiSchwierigkeitSelect.value as KiSchwierigkeit);
     });
-    letzteSticheButton.addEventListener('click', () => {
+
+    // Letzte Stiche in der Seitenlade togglen
+    seitenladeLetzteStichButton.addEventListener('click', () => {
       this.letzteSticheOffen = !this.letzteSticheOffen;
       if (this.letzterZustand) {
         this.aktualisiereUi(this.letzterZustand);
       }
     });
+
+    // Animationsgeschwindigkeit wechseln
     geschwindigkeitsButton.addEventListener('click', () => {
       this.animationsGeschwindigkeit = naechsteGeschwindigkeit(this.animationsGeschwindigkeit);
       geschwindigkeitsButton.textContent = geschwindigkeitsLabel(this.animationsGeschwindigkeit);
@@ -498,60 +604,47 @@ export class TischSzene extends Phaser.Scene {
       localStorage.setItem(LS_GESCHWINDIGKEIT, speichereGeschwindigkeit(this.animationsGeschwindigkeit));
     });
 
-    const toastStack = document.createElement('div');
-    toastStack.className = 'ui-toast-stack';
-
-    // Rundenende-Modal: initial versteckt, wird bei neuem Spielergebnis eingeblendet
-    const rundenEndeModal = document.createElement('div');
-    rundenEndeModal.className = 'ui-modal-backdrop';
-    rundenEndeModal.hidden = true;
-
-    // Partie-Ende-Modal: initial versteckt, wird nach dem letzten Spiel einer Partie eingeblendet
-    const partieEndeModal = document.createElement('div');
-    partieEndeModal.className = 'ui-modal-backdrop';
-    partieEndeModal.hidden = true;
-
-    this.panel = links;
-    this.statusElement = statusElement;
-    this.spielerListe = spielerListe;
+    // ── Felder setzen ─────────────────────────────────────────────────────────
+    this.hudStichzaehlerEl = hudStichzaehlerEl;
+    this.hudSpieleInfo = hudSpieleInfo;
+    this.hudDebugBtn = hudDebugBtn;
+    this.seitenladeEl = seitenlade;
+    this.seitenladeSpielerListe = seitenladeSpielerListe;
+    this.seitenladePunktestandListe = seitenladePunktestandListe;
+    this.seitenladeAnsageHistorie = seitenladeAnsageHistorie;
+    this.seitenladeLetzteSticheListe = seitenladeLetzteSticheListe;
+    this.seitenladeLetzteStichButton = seitenladeLetzteStichButton;
+    this.einstellungsModalEl = einstellungsModal;
     this.aktionsHinweis = aktionsHinweis;
     this.aktionsInhalt = aktionsInhalt;
     this.ergebnisInhalt = ergebnisInhalt;
-    this.letzteSticheListe = letzteSticheListe;
-    this.letzteSticheButton = letzteSticheButton;
-    this.ansageListe = ansageListe;
-    this.punktestandListe = punktestandListe;
     this.tischhintergrundSelect = tischhintergrundSelect;
     this.kiSchwierigkeitSelect = kiSchwierigkeitSelect;
     this.geschwindigkeitsButton = geschwindigkeitsButton;
     this.toastStack = toastStack;
     this.rundenEndeModal = rundenEndeModal;
     this.partieEndeModal = partieEndeModal;
-    uiRoot.append(links, rechts, toastStack, rundenEndeModal, partieEndeModal);
+
+    uiRoot.append(topBar, seitenlade, einstellungsModal, spielaktioneOverlay, toastStack, rundenEndeModal, partieEndeModal);
   }
 
   private aktualisiereUi(zustand: AppZustand, modell = this.erstelleModell(zustand)): void {
     const tisch = zustand.aktuellerTisch;
-    if (!tisch || !this.statusElement || !this.spielerListe || !this.panel) {
+    if (!tisch) {
       return;
     }
     this.synchronisiereAktionZustand(modell);
 
-    const buttons = this.panel.querySelectorAll('button');
-    const leaveButton = buttons.item(1);
-    const startButton = buttons.item(2);
-    const debugButton = buttons.item(3);
-    if (leaveButton instanceof HTMLButtonElement) {
-      leaveButton.disabled = zustand.wirdGeladen || tisch.status !== 'WARTEND';
-    }
-    if (startButton instanceof HTMLButtonElement) {
-      const darfStarten = zustand.spieler?.spielerId === tisch.erstelltVonSpielerId && tisch.status === 'WARTEND';
-      startButton.disabled = zustand.wirdGeladen || !darfStarten;
-    }
-    if (debugButton instanceof HTMLButtonElement) {
-      debugButton.textContent = zustand.debugModus ? 'Debug an' : 'Debug aus';
-      debugButton.disabled = zustand.wirdGeladen || !zustand.partieStand;
-    }
+    // ── Top-Bar aktualisieren ─────────────────────────────────────────────────
+    this.aktualisiereTopBar(modell, zustand);
+
+    // ── Seitenlade aktualisieren ──────────────────────────────────────────────
+    this.aktualisiereSeitenlade(modell, zustand);
+
+    // ── Spielaktionen-Overlay aktualisieren ──────────────────────────────────
+    this.aktualisiereAktionsbereich(modell, zustand);
+
+    // ── Einstellungs-Selects aktualisieren ────────────────────────────────────
     const darfKonfigurieren = zustand.spieler?.spielerId === tisch.erstelltVonSpielerId && tisch.status === 'WARTEND';
     if (this.tischhintergrundSelect) {
       this.tischhintergrundSelect.value = modell.tischhintergrund;
@@ -562,49 +655,100 @@ export class TischSzene extends Phaser.Scene {
       this.kiSchwierigkeitSelect.disabled = zustand.wirdGeladen || !darfKonfigurieren;
     }
 
-    const statusZeile = [
-      `${tisch.name} · ${tisch.status}`,
-      `${tisch.spieler.length}/4 Spieler`,
-      tisch.partieId ? `Partie ${tisch.partieId}` : 'Noch keine Partie gestartet'
-    ];
-    if (zustand.partieStand) {
-      statusZeile.push(`Gesamtstand ${zustand.partieStand.gespielteSpiele}/${zustand.partieStand.anzahlSpiele}`);
-      if (zustand.partieStand.laufendesSpiel) {
-        statusZeile.push(`Phase ${zustand.partieStand.laufendesSpiel.phase}`);
-      }
-    }
-    if (zustand.meldung?.typ === 'fehler') {
-      statusZeile.push(`Fehler: ${zustand.meldung.text}`);
-    }
-    this.statusElement.textContent = statusZeile.join(' · ');
-    this.aktualisiereStatistiken(modell);
-    this.aktualisiereAktionsbereich(modell, zustand);
+    // ── Ergebnis + Stiche in der Seitenlade ──────────────────────────────────
     this.aktualisiereErgebnis(modell);
     this.aktualisiereLetzteStiche(modell);
-    this.aktualisiereAnsageHistorie(modell);
-    this.aktualisierePunktestand(modell);
-    this.aktualisiereToasts(zustand);
 
-    this.spielerListe.innerHTML = '';
+    // ── Toasts ────────────────────────────────────────────────────────────────
+    this.aktualisiereToasts(zustand);
+  }
+
+  /** Aktualisiert die Top-Bar (Stichzaehler, Spieltyp/Nummer, Buttons). */
+  private aktualisiereTopBar(modell: TischAnsichtModell, zustand: AppZustand): void {
+    const tisch = zustand.aktuellerTisch;
+    if (!tisch) {
+      return;
+    }
+    // Stichzaehler links
+    if (this.hudStichzaehlerEl) {
+      const spiel = zustand.partieStand?.laufendesSpiel;
+      if (spiel) {
+        const gesamtStiche = modell.spieler.reduce((summe, s) => summe + s.stiche, 0);
+        this.hudStichzaehlerEl.textContent = `${gesamtStiche} Stiche`;
+      } else {
+        this.hudStichzaehlerEl.textContent = '';
+      }
+    }
+    // Spieltyp + Spielnummer in der Mitte
+    if (this.hudSpieleInfo) {
+      const spiel = zustand.partieStand?.laufendesSpiel;
+      if (spiel) {
+        this.hudSpieleInfo.textContent = `${tisch.name} · Spiel ${spiel.spielNummer}/${zustand.partieStand?.anzahlSpiele ?? '?'} · ${modell.spieltyp ?? spiel.spieltyp}`;
+      } else {
+        this.hudSpieleInfo.textContent = `${tisch.name} · ${tisch.status}`;
+      }
+    }
+    // Start-Button
+    const startButtonEl = document.querySelector<HTMLButtonElement>('[data-start-button]');
+    if (startButtonEl) {
+      const darfStarten = zustand.spieler?.spielerId === tisch.erstelltVonSpielerId && tisch.status === 'WARTEND';
+      startButtonEl.disabled = zustand.wirdGeladen || !darfStarten;
+      startButtonEl.hidden = tisch.status !== 'WARTEND';
+    }
+    // Debug-Button
+    if (this.hudDebugBtn) {
+      this.hudDebugBtn.textContent = zustand.debugModus ? '🐛 AN' : '🐛';
+      this.hudDebugBtn.disabled = zustand.wirdGeladen || !zustand.partieStand;
+      if (zustand.debugModus) {
+        this.hudDebugBtn.classList.add('hud-icon-btn--aktiv');
+      } else {
+        this.hudDebugBtn.classList.remove('hud-icon-btn--aktiv');
+      }
+    }
+  }
+
+  /** Aktualisiert die Seitenlade: Spielerliste, Punktestand, Ansagehistorie, Letzte Stiche. */
+  private aktualisiereSeitenlade(modell: TischAnsichtModell, zustand: AppZustand): void {
+    const tisch = zustand.aktuellerTisch;
+    if (!tisch) {
+      return;
+    }
     const kiLabel = kiSchwierigkeitLabel(tisch.konfiguration.kiSchwierigkeit ?? 'STANDARD');
-    modell.spieler.forEach((spieler) => {
-      const eintrag = document.createElement('li');
-      eintrag.className = 'ui-list-item';
-      const badge = spieler.istSelbst ? 'Du' : spieler.istMensch ? 'Mensch' : `KI (${kiLabel})`;
-      const parteiBadge = spieler.partei ? `<span class="ui-badge ui-badge--partei">${spieler.partei}</span>` : '';
-      eintrag.innerHTML = `
-        <div class="ui-list-item__headline">
-          <strong>${spieler.name}</strong>
-          <span class="ui-badge ${spieler.istSelbst ? 'ui-badge--highlight' : ''}">${badge}</span>
-        </div>
-        <div class="ui-list-item__meta">
-          <span>${spieler.istErsteller ? 'Ersteller' : spieler.statusText}</span>
-          <span>${spieler.istGeber ? 'Geber' : `${spieler.stiche} Stiche`}</span>
-          ${parteiBadge}
-        </div>
-      `;
-      this.spielerListe?.append(eintrag);
-    });
+
+    // Spielerliste
+    if (this.seitenladeSpielerListe) {
+      this.seitenladeSpielerListe.innerHTML = '';
+      modell.spieler.forEach((spieler) => {
+        const eintrag = document.createElement('li');
+        eintrag.className = 'ui-list-item';
+        const badge = spieler.istSelbst ? 'Du' : spieler.istMensch ? 'Mensch' : `KI (${kiLabel})`;
+        const parteiBadge = spieler.partei ? `<span class="ui-badge ui-badge--partei">${spieler.partei}</span>` : '';
+        eintrag.innerHTML = `
+          <div class="ui-list-item__headline">
+            <strong>${spieler.name}</strong>
+            <span class="ui-badge ${spieler.istSelbst ? 'ui-badge--highlight' : ''}">${badge}</span>
+          </div>
+          <div class="ui-list-item__meta">
+            <span>${spieler.istErsteller ? 'Ersteller' : spieler.statusText}</span>
+            <span>${spieler.istGeber ? 'Geber' : `${spieler.stiche} Stiche`}</span>
+            ${parteiBadge}
+          </div>
+        `;
+        this.seitenladeSpielerListe?.append(eintrag);
+      });
+    }
+
+    // Punktestand
+    this.aktualisierePunktestand(modell);
+
+    // Ansagehistorie
+    this.aktualisiereAnsageHistorie(modell);
+
+    // Leave-Button: auch im IM_SPIEL klickbar (mit Bestätigung)
+    const leaveButtonEl = document.querySelector<HTMLButtonElement>('[data-leave-button]');
+    if (leaveButtonEl) {
+      leaveButtonEl.disabled = zustand.wirdGeladen;
+    }
   }
 
   private renderTisch(zustand: AppZustand, modell = this.erstelleModell(zustand)): void {
@@ -638,34 +782,43 @@ export class TischSzene extends Phaser.Scene {
 
     modell.spieler.forEach((spieler) => {
       const position = layout[spieler.position];
-      const farbe = spieler.istAktivHervorgehoben ? 0xffe082 : 0xcfe6d6;
-      ebene.add(this.add.circle(position.x, position.y, Math.max(48, breite * 0.045), farbe, 0.94).setStrokeStyle(4, 0x14361f, 0.35));
-      ebene.add(this.add.text(position.x, position.y - 18, spieler.name, {
-        color: '#14361f',
-        fontSize: `${Math.round(Math.max(15, breite * 0.014))}px`,
+      // Nameplate: rechteckig; SUED/NORD horizontal (breit, flach), WEST/OST vertikal (schmal, hoeher)
+      const istHorizontal = spieler.position === 'SUED' || spieler.position === 'NORD';
+      const nameplateBreite = istHorizontal ? Math.max(120, breite * 0.11) : Math.max(80, breite * 0.07);
+      const nameplateHoehe = istHorizontal ? Math.max(54, hoehe * 0.075) : Math.max(80, hoehe * 0.11);
+      // Aktiv-Hervorhebung: goldene Umrandung; sonst halbtransparentes Dunkelgruen
+      const rahmenFarbe = spieler.istAktivHervorgehoben ? 0xffe082 : 0xd8f3dc;
+      const rahmenStaerke = spieler.istAktivHervorgehoben ? 3 : 1;
+      ebene.add(
+        this.add.rectangle(position.x, position.y, nameplateBreite, nameplateHoehe, 0x0d3d1e, 0.92)
+          .setStrokeStyle(rahmenStaerke, rahmenFarbe, 0.85)
+      );
+      // Name (fett, oben)
+      const nameSchriftGroesse = Math.round(Math.max(13, breite * 0.012));
+      ebene.add(this.add.text(position.x, position.y - Math.round(nameplateHoehe * 0.28), spieler.name, {
+        color: '#f8f9fa',
+        fontSize: `${nameSchriftGroesse}px`,
         fontStyle: 'bold'
       }).setOrigin(0.5));
-      ebene.add(this.add.text(position.x, position.y + 8, spieler.statusText, {
-        color: '#14361f',
-        fontSize: `${Math.round(Math.max(13, breite * 0.012))}px`
+      // Typ-Badge: [Du] / [KI] / [Mensch]
+      const typLabel = spieler.istSelbst ? '[Du]' : spieler.istMensch ? '[Mensch]' : '[KI]';
+      const kleinSchrift = Math.round(Math.max(10, breite * 0.009));
+      ebene.add(this.add.text(position.x, position.y, typLabel, {
+        color: spieler.istSelbst ? '#ffd166' : '#a3c4a8',
+        fontSize: `${kleinSchrift}px`
       }).setOrigin(0.5));
-      ebene.add(this.add.text(position.x, position.y + 28, spieler.istErsteller ? 'Ersteller' : spieler.verbleibendeKarten > 0 ? `${spieler.verbleibendeKarten} Karten` : 'Wartet', {
-        color: '#14361f',
-        fontSize: `${Math.round(Math.max(11, breite * 0.01))}px`
+      // Stiche-Zahl + Geber-Badge
+      const sticheText = spieler.istGeber ? `${spieler.stiche} Stiche [G]` : `${spieler.stiche} Stiche`;
+      ebene.add(this.add.text(position.x, position.y + Math.round(nameplateHoehe * 0.28), sticheText, {
+        color: spieler.istGeber ? '#ffd166' : '#d8f3dc',
+        fontSize: `${kleinSchrift}px`
       }).setOrigin(0.5));
+      // Partei-Badge: [RE] (gold) / [KONTRA] (blau) wenn bekannt
       if (spieler.partei) {
-        ebene.add(this.add.text(position.x, position.y - 46, spieler.partei, {
+        ebene.add(this.add.text(position.x, position.y - Math.round(nameplateHoehe * 0.58), `[${spieler.partei}]`, {
           color: spieler.partei === 'RE' ? '#ffd166' : '#90caf9',
-          fontSize: `${Math.round(Math.max(12, breite * 0.011))}px`,
+          fontSize: `${kleinSchrift}px`,
           fontStyle: 'bold'
-        }).setOrigin(0.5));
-      }
-      if (spieler.istGeber) {
-        ebene.add(this.add.text(position.x + 44, position.y - 48, 'G', {
-          color: '#f8f9fa',
-          fontSize: `${Math.round(Math.max(12, breite * 0.01))}px`,
-          fontStyle: 'bold',
-          backgroundColor: '#14361f'
         }).setOrigin(0.5));
       }
       this.renderKartenFaecher(ebene, layout, spieler, modell);
@@ -720,16 +873,6 @@ export class TischSzene extends Phaser.Scene {
     });
   }
 
-  private aktualisiereStatistiken(modell: TischAnsichtModell): void {
-    if (!this.panel) {
-      return;
-    }
-    this.setzeStatText('spieltyp', modell.spieltyp ?? 'Noch offen');
-    this.setzeStatText('phase', modell.phase ?? 'Warten');
-    this.setzeStatText('aktiv', modell.aktuellerSpieler ? this.nameFuerPosition(modell, modell.aktuellerSpieler) : 'Niemand');
-    const optionen = [...modell.moeglicheAnsagen.map(formatiereAnsage), ...modell.moeglicheVorbehalte.map(formatiereVorbehalt)];
-    this.setzeStatText('optionen', optionen.length > 0 ? optionen.join(', ') : 'Keine');
-  }
 
   private aktualisiereAktionsbereich(modell: TischAnsichtModell, zustand: AppZustand): void {
     if (!this.aktionsHinweis || !this.aktionsInhalt) {
@@ -767,13 +910,13 @@ export class TischSzene extends Phaser.Scene {
   }
 
   private aktualisiereAnsageHistorie(modell: TischAnsichtModell): void {
-    if (!this.ansageListe) {
+    if (!this.seitenladeAnsageHistorie) {
       return;
     }
-    this.ansageListe.innerHTML = '';
+    this.seitenladeAnsageHistorie.innerHTML = '';
     const eintraege = modell.ansageHistorie.slice(-6).reverse();
     if (eintraege.length === 0) {
-      this.ansageListe.append(this.erstelleListenHinweis('Noch keine oeffentliche Ansage.'));
+      this.seitenladeAnsageHistorie.append(this.erstelleListenHinweis('Noch keine oeffentliche Ansage.'));
       return;
     }
     eintraege.forEach((eintrag) => {
@@ -788,17 +931,17 @@ export class TischSzene extends Phaser.Scene {
           <span>${formatiereAnsage(eintrag.ansage)}</span>
         </div>
       `;
-      this.ansageListe?.append(li);
+      this.seitenladeAnsageHistorie?.append(li);
     });
   }
 
   private aktualisierePunktestand(modell: TischAnsichtModell): void {
-    if (!this.punktestandListe) {
+    if (!this.seitenladePunktestandListe) {
       return;
     }
-    this.punktestandListe.innerHTML = '';
+    this.seitenladePunktestandListe.innerHTML = '';
     if (modell.gesamtpunktestand.length === 0) {
-      this.punktestandListe.append(this.erstelleListenHinweis('Sobald ein Spiel gewertet wurde, erscheint hier der Stand.'));
+      this.seitenladePunktestandListe.append(this.erstelleListenHinweis('Sobald ein Spiel gewertet wurde, erscheint hier der Stand.'));
       return;
     }
     modell.gesamtpunktestand.forEach((eintrag) => {
@@ -813,7 +956,7 @@ export class TischSzene extends Phaser.Scene {
           <span>${eintrag.punkte} Punkte</span>
         </div>
       `;
-      this.punktestandListe?.append(li);
+      this.seitenladePunktestandListe?.append(li);
     });
   }
 
@@ -873,25 +1016,25 @@ export class TischSzene extends Phaser.Scene {
   }
 
   private aktualisiereLetzteStiche(modell: TischAnsichtModell): void {
-    if (!this.letzteSticheListe || !this.letzteSticheButton) {
+    if (!this.seitenladeLetzteSticheListe || !this.seitenladeLetzteStichButton) {
       return;
     }
     const stiche = modell.letzteAbgeschlosseneStiche.slice(-3).reverse();
     if (stiche.length === 0) {
       this.letzteSticheOffen = false;
-      this.letzteSticheButton.disabled = true;
-      this.letzteSticheButton.textContent = 'Keine letzten Stiche';
-      this.letzteSticheListe.hidden = true;
-      this.letzteSticheListe.innerHTML = '';
+      this.seitenladeLetzteStichButton.disabled = true;
+      this.seitenladeLetzteStichButton.textContent = 'Keine letzten Stiche';
+      this.seitenladeLetzteSticheListe.hidden = true;
+      this.seitenladeLetzteSticheListe.innerHTML = '';
       return;
     }
 
-    this.letzteSticheButton.disabled = false;
-    this.letzteSticheButton.textContent = this.letzteSticheOffen
+    this.seitenladeLetzteStichButton.disabled = false;
+    this.seitenladeLetzteStichButton.textContent = this.letzteSticheOffen
       ? 'Letzte Stiche ausblenden'
       : 'Letzte Stiche anzeigen';
-    this.letzteSticheListe.hidden = !this.letzteSticheOffen;
-    this.letzteSticheListe.innerHTML = '';
+    this.seitenladeLetzteSticheListe.hidden = !this.letzteSticheOffen;
+    this.seitenladeLetzteSticheListe.innerHTML = '';
     stiche.forEach((stich) => {
       const li = document.createElement('li');
       li.className = 'ui-list-item ui-list-item--dense';
@@ -905,7 +1048,7 @@ export class TischSzene extends Phaser.Scene {
           <span>${stich.gespielteKarten.map((karte) => `${karte.name}: ${kuerzelFuerKarte(karte.karte)}`).join(' · ')}</span>
         </div>
       `;
-      this.letzteSticheListe?.append(li);
+      this.seitenladeLetzteSticheListe?.append(li);
     });
   }
 
@@ -1641,12 +1784,6 @@ export class TischSzene extends Phaser.Scene {
     return li;
   }
 
-  private setzeStatText(name: string, text: string): void {
-    const element = this.panel?.querySelector(`[data-${name}]`);
-    if (element) {
-      element.textContent = text;
-    }
-  }
 
   private handleResize(): void {
     const breite = this.scale.gameSize.width;
@@ -1683,15 +1820,31 @@ export class TischSzene extends Phaser.Scene {
     this.ausgewaehlteArmutKarten.clear();
     this.armutAnnahmeAktiv = false;
     this.letzteSticheOffen = false;
-    if (this.panel?.parentElement) {
-      this.panel.parentElement.innerHTML = '';
+    this.seitenladeOffen = false;
+    // UI-Root leeren (entfernt Top-Bar, Seitenlade, Overlay, Modals)
+    const uiRoot = document.getElementById('ui-root');
+    if (uiRoot) {
+      uiRoot.innerHTML = '';
     }
-    this.panel = undefined;
+    this.hudStichzaehlerEl = undefined;
+    this.hudSpieleInfo = undefined;
+    this.hudDebugBtn = undefined;
+    this.seitenladeEl = undefined;
+    this.seitenladeSpielerListe = undefined;
+    this.seitenladePunktestandListe = undefined;
+    this.seitenladeAnsageHistorie = undefined;
+    this.seitenladeLetzteSticheListe = undefined;
+    this.seitenladeLetzteStichButton = undefined;
+    this.einstellungsModalEl = undefined;
+    this.aktionsHinweis = undefined;
+    this.aktionsInhalt = undefined;
     this.ergebnisInhalt = undefined;
-    this.letzteSticheListe = undefined;
-    this.letzteSticheButton = undefined;
+    this.tischhintergrundSelect = undefined;
+    this.kiSchwierigkeitSelect = undefined;
+    this.geschwindigkeitsButton = undefined;
     this.toastStack = undefined;
     this.schliessePartieEndeModal();
     this.partieEndeModal = undefined;
+    this.rundenEndeModal = undefined;
   }
 }
