@@ -188,7 +188,16 @@
 
 ---
 
+
 ## 4. Offene Aufgaben (priorisiert)
+
+### Priorität 0 — E2E-Tests müssen laufen (Build-Blocker)
+
+- [ ] **E2E-Tests (Playwright, e2e/)**
+  - E2E-Tests müssen nach jedem Commit grün laufen 
+  - Backend (Spring Boot) muss für E2E-Tests laufen: `mvn spring-boot:run`
+  - E2E-Tests starten: `cd e2e && npx playwright test`
+  - Fehler im E2E-Test = höchste Priorität, Blocker für alle anderen Aufgaben
 
 ### Priorität 1 — Spielbar machen (fehlende Spielschleifen-Features)
 

@@ -19,7 +19,7 @@ set -euo pipefail
 #
 # Environment:
 #   MODEL=gemini-2.5-pro ./ralph-gemini.sh build 10     # Override model
-#
+#   gemini-3.1-pro-preview-0326, gemini-3-flash, gemini-3-deep-think-v1
 # Model defaults:
 #   plan  → gemini-2.5-pro          (default for better planning)
 #   build → gemini-2.0-flash        (default for fast/cheap building)
