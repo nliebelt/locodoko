@@ -53,6 +53,12 @@ test.describe('Partie gegen KI', () => {
       'Tisch-erstellen-Button soll nach dem Laden sichtbar sein',
     ).toBeVisible({ timeout: 10_000 });
 
+    // Überprüfe auf JS-Fehler, die das Rendering der Lobby-Ansicht verhindern könnten
+    expect(
+      jsFehler,
+      `JavaScript-Fehler sind aufgetreten nach dem Laden der Lobby-Ansicht:\n${jsFehler.join('\n')}`,
+    ).toHaveLength(0);
+
     // -----------------------------------------------------------------------
     // Schritt 2: Tisch erstellen
     // -----------------------------------------------------------------------

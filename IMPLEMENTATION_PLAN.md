@@ -14,6 +14,7 @@
 - **Tests**: `AnimationenService.test.ts` und `TischSzene.test.ts` aktualisiert. 62 Tests grün.
 
 **Nächster logischer Schritt:**
+- **BLOCKER** npm/vite build läuft nicht. E2E Tests laufen nicht 
 - **4.13 Spielverwaltungs-Szene** — Start-Screen mit Quick Game, Tisch erstellen, offene Tische.
 - **4.17 Phaser-Migration UI** — Spielaktions-Overlays in Phaser.
 - **4.14 Rundenauswertung-Overlay** — Styling-Anpassung.
@@ -279,14 +280,12 @@
   - (Offen: Armut-Kartenauswahl ArrowLeft/Right + Space — Nice-to-have)
   - Abhängigkeit: 4.11 (UI-Elemente müssen existieren)
 
-- [x] **4.13 Spielverwaltungs-Szene (frontend-startscreen.md)** — 9/9 DoD
-    - Logo + Slogan (LOCO DOKO)
-    - **„Quick Game"-Button** — startet sofort einen Einzelspieler-Tisch gegen KI
-    - „Neuen Tisch erstellen" Modal mit vollständiger Konfiguration (Regeln, Rundenanzahl, Sichtbarkeit, KI-Schwierigkeit)
-    - „Offene Tische" Liste mit Polling — WARTEND-Tische joinbar, laufende Tische mit „Zurückkehren"-Button
-    - Session-Recovery-Button (falls aktiver Tisch vorhanden)
-    - Keyboard-Navigation (Tab, Enter)
-    - Abhängigkeit: 4.9 (Design-System), 4.15 (Showstopper-Fixes)
+- [~] **4.13 Spielverwaltungs-Szene (frontend-startscreen.md)** — UI-Elemente vorhanden, Backend-Integration + Keyboard-Nav + Tests fehlen
+  - Sicherstellen, dass Backend-API-Aufrufe (`appStore.erstelleQuickGame`, `appStore.erstelleKonfiguriertenTisch`, `appStore.betreteTisch`, `appStore.reconnecteTisch`, `appStore.aktualisiereTischliste`) funktional sind.
+  - Implementieren der vollständigen Keyboard-Navigation für die Spielverwaltungs-Szene (Fokus-Management, Shortcuts) - Grundlegende Navigation hinzugefügt.
+  - Schreiben von Unit-/Integrationstests für die Spielverwaltungs-Szene und ihre Interaktion mit dem AppStore.
+  - Überprüfen und ggf. anpassen der Transition von BootSzene zu SpielverwaltungsSzene.
+  - Abhängigkeit: 4.9 (Design-System), 4.15 (Showstopper-Fixes)
 
 - [ ] **4.14 Rundenauswertung-Overlay (frontend-rundenauswertung.md)** — 0/11 DoD
   - Rundenende-Overlay (bereits funktional, Styling-Anpassung an Design-System)

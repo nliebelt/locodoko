@@ -37,7 +37,6 @@ export class SpielverwaltungsSzene extends Phaser.Scene {
     this.add.text(640, 120, 'LOCO DOKO', {
       fontFamily: '"Space Grotesk", sans-serif',
       fontSize: '80px',
-      fontWeight: '900',
       color: '#f8f9fa'
     }).setOrigin(0.5).setShadow(3, 3, '#000', 0);
 

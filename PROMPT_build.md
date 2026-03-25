@@ -11,7 +11,7 @@
 
 ## Implementierung
 
-1. Implementiere AUSSCHLIESSLICH diese eine Aufgabe — vollständig, keine Platzhalter, keine Stubs. Wenn Funktionalität bereits existiert, baue darauf auf statt sie neu zu schreiben.
+1. Implementiere AUSSCHLIESSLICH diese eine Aufgabe — vollständig, keine Platzhalter, keine Stubs, keine Mocks. Wenn Funktionalität bereits existiert, baue darauf auf statt sie neu zu schreiben.
 
 2. Führe nach der Implementierung die Tests für den geänderten Code aus.
    - Tests grün → weiter zu Schritt 3.

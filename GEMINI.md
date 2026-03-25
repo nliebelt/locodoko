@@ -11,7 +11,8 @@ Vollständiges Paket: `mvn clean package` (baut Frontend ein, erzeugt JAR)
 
 1. `mvn test` — Backend-Tests
 2. `cd frontend && npm test && npm run build && npm run lint` — Frontend komplett
-3. Logs auf Warnungen und Fehler prüfen
+3. `cd e2e && npm run test` - e2e Test müssen laufen
+4. Logs auf Warnungen und Fehler prüfen
 
 ## Domänensprache
 
