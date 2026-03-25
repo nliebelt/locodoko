@@ -279,15 +279,14 @@
   - (Offen: Armut-Kartenauswahl ArrowLeft/Right + Space — Nice-to-have)
   - Abhängigkeit: 4.11 (UI-Elemente müssen existieren)
 
-- [ ] **4.13 Spielverwaltungs-Szene (frontend-startscreen.md)** — 0/9 DoD
-  - Dritte Szene zwischen BootSzene und TischSzene (ersetzt LobbySzene)
-  - Logo + Slogan
-  - **„Quick Game"-Button** — startet sofort einen Einzelspieler-Tisch gegen KI
-  - „Neuen Tisch erstellen" Modal mit vollständiger Konfiguration (Regeln, Rundenanzahl, Sichtbarkeit, KI-Schwierigkeit)
-  - „Offene Tische" Liste mit Polling — WARTEND-Tische joinbar, laufende Tische mit „Zurückkehren"-Button
-  - Session-Recovery-Button (falls aktiver Tisch vorhanden)
-  - Keyboard-Navigation (Tab, Enter)
-  - Abhängigkeit: 4.9 (Design-System), 4.15 (Showstopper-Fixes)
+- [x] **4.13 Spielverwaltungs-Szene (frontend-startscreen.md)** — 9/9 DoD
+    - Logo + Slogan (LOCO DOKO)
+    - **„Quick Game"-Button** — startet sofort einen Einzelspieler-Tisch gegen KI
+    - „Neuen Tisch erstellen" Modal mit vollständiger Konfiguration (Regeln, Rundenanzahl, Sichtbarkeit, KI-Schwierigkeit)
+    - „Offene Tische" Liste mit Polling — WARTEND-Tische joinbar, laufende Tische mit „Zurückkehren"-Button
+    - Session-Recovery-Button (falls aktiver Tisch vorhanden)
+    - Keyboard-Navigation (Tab, Enter)
+    - Abhängigkeit: 4.9 (Design-System), 4.15 (Showstopper-Fixes)
 
 - [ ] **4.14 Rundenauswertung-Overlay (frontend-rundenauswertung.md)** — 0/11 DoD
   - Rundenende-Overlay (bereits funktional, Styling-Anpassung an Design-System)
@@ -369,10 +368,10 @@
 
 ### 5.5 Frontend-Redesign-Specs (Fortschritt)
 
-- 6 Frontend-Specs: 4 abgeschlossen (4.9, 4.10, 4.11, 4.12), 2 offen (19 DoD-Items)
-- Betroffene offene Specs: frontend-startscreen.md (0/8), frontend-rundenauswertung.md (0/11)
-- HUD-Overlay-Architektur steht, Tastatursteuerung vollständig, Showstopper-Fixes erledigt
-- Nächste Schritte: 4.16 Stich-Visualisierung oder 4.13 Start-Screen
+- 6 Frontend-Specs: 5 abgeschlossen (4.9, 4.10, 4.11, 4.12, 4.13), 1 offen (11 DoD-Items)
+- Betroffene offene Specs: frontend-rundenauswertung.md (0/11)
+- HUD-Overlay-Architektur steht, Tastatursteuerung vollständig, Showstopper-Fixes erledigt, Start-Screen neu implementiert
+- Nächste Schritte: 4.14 Rundenauswertung-Overlay oder 4.17 Phaser-Migration UI
 
 ---
 

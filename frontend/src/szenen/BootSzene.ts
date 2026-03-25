@@ -35,7 +35,7 @@ export class BootSzene extends Phaser.Scene {
         appStore.reconnecteTisch(aktiverTischId);
         this.scene.start('TischSzene');
       } else {
-        this.scene.start('LobbySzene');
+        this.scene.start('SpielverwaltungsSzene');
       }
     } catch {
       this.statusText?.setText('Initialisierung fehlgeschlagen. Bitte pruefe Backend/Verbindung und lade neu.');

@@ -41,7 +41,7 @@ export interface AppZustand {
   /** true waehrend einer laufenden HTTP-Anfrage (Lade-Indikator). */
   wirdGeladen: boolean;
   /** Aktuell angezeigter Bereich der Anwendung. */
-  bereich: 'LOBBY' | 'TISCH';
+  bereich: 'SPIELVERWALTUNG' | 'TISCH';
   /** WebSocket-Verbindungsstatus. */
   verbindung: 'offline' | 'verbinde' | 'verbunden' | 'fehler';
   /** true wenn der Debug-Modus aktiv ist (alle Haende sichtbar). */
@@ -64,7 +64,7 @@ function erzeugeAnfangszustand(): AppZustand {
   return {
     initialisiert: false,
     wirdGeladen: false,
-    bereich: 'LOBBY',
+    bereich: 'SPIELVERWALTUNG',
     verbindung: 'offline',
     debugModus: false,
     spieler: null,
@@ -164,10 +164,27 @@ export class AppStore {
   }
 
   /**
-   * Erstellt einen neuen Tisch mit dem angegebenen Namen und wechselt zur TischSzene.
-   * @param name - Tischname (wird getrimmt; leer → Fehlermeldung ohne HTTP-Aufruf)
+   * Erstellt ein Quick Game (Einzelspieler gegen 3 KI mit Standardregeln)
+   * und startet die Partie sofort.
    */
-  async erstelleTisch(name: string): Promise<void> {
+  async erstelleQuickGame(): Promise<void> {
+    const spielerName = this.zustand.spieler?.name ?? 'Spieler';
+    await this.fuehreMitStatus(async () => {
+      const tisch = await this.api.erstelleTisch(`Quick Game von ${spielerName}`, {
+        kiSchwierigkeit: 'STANDARD',
+        anzahlSpiele: 12
+      });
+      this.oeffneTisch(tisch);
+      await this.api.starteTisch(tisch.id);
+    });
+  }
+
+  /**
+   * Erstellt einen neuen Tisch mit dem angegebenen Namen und der Konfiguration und wechselt zur TischSzene.
+   * @param name - Tischname
+   * @param konfiguration - Optionale Tisch-Konfiguration
+   */
+  async erstelleKonfiguriertenTisch(name: string, konfiguration: Partial<TischKonfigurationDto>): Promise<void> {
     const tischName = name.trim();
     if (!tischName) {
       this.patch({ meldung: { typ: 'fehler', text: 'Bitte gib einen Tischnamen ein.', fehlerCode: 'ANFRAGE_UNGUELTIG' } });
@@ -175,9 +192,17 @@ export class AppStore {
     }
 
     await this.fuehreMitStatus(async () => {
-      const tisch = await this.api.erstelleTisch(tischName);
+      const tisch = await this.api.erstelleTisch(tischName, konfiguration);
       this.oeffneTisch(tisch);
     });
+  }
+
+  /**
+   * Erstellt einen neuen Tisch mit dem angegebenen Namen und wechselt zur TischSzene.
+   * @param name - Tischname (wird getrimmt; leer → Fehlermeldung ohne HTTP-Aufruf)
+   */
+  async erstelleTisch(name: string): Promise<void> {
+    await this.erstelleKonfiguriertenTisch(name, {});
   }
 
   /**
@@ -217,7 +242,7 @@ export class AppStore {
     await this.fuehreMitStatus(async () => {
       await this.api.verlasseTisch(tisch.id);
       this.setzeTischAbosZurueck();
-      this.patch({ aktuellerTisch: null, partieStand: null, bereich: 'LOBBY' });
+      this.patch({ aktuellerTisch: null, partieStand: null, bereich: 'SPIELVERWALTUNG' });
     });
     // Tischliste separat aktualisieren — wirdGeladen ist hier bereits false,
     // damit der Erstellen-Button in der LobbySzene sofort aktiv ist.
@@ -466,7 +491,7 @@ export class AppStore {
       this.patch({
         aktuellerTisch: null,
         partieStand: null,
-        bereich: 'LOBBY',
+        bereich: 'SPIELVERWALTUNG',
         meldung: { typ: 'info', text: 'Die Partie wurde abgebrochen, weil ein Spieler den Tisch verlassen hat.', fehlerCode: 'PARTIE_ABGEBROCHEN' }
       });
       return;
@@ -474,7 +499,7 @@ export class AppStore {
     if (ereignis.ereignisTyp === 'TISCH_ENTFERNT' || !ereignis.tisch) {
       Logger.store('Zurueck zur Lobby');
       this.setzeTischAbosZurueck();
-      this.patch({ aktuellerTisch: null, partieStand: null, bereich: 'LOBBY' });
+      this.patch({ aktuellerTisch: null, partieStand: null, bereich: 'SPIELVERWALTUNG' });
       return;
     }
 

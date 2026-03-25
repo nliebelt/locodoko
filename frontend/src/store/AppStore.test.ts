@@ -140,7 +140,7 @@ describe('AppStore', () => {
     ]));
   });
 
-  it('oeffnet einen Tisch, verarbeitet Snapshot-Events und kehrt nach dem Verlassen in die Lobby zurueck', async () => {
+  it('oeffnet einen Tisch, verarbeitet Snapshot-Events und kehrt nach dem Verlassen in die Spielverwaltung zurueck', async () => {
     const echtzeit = new FakeEchtzeit();
     const tisch = baueTisch('tisch-42');
     const store = new AppStore(
@@ -190,7 +190,7 @@ describe('AppStore', () => {
     ]));
 
     await store.verlasseAktuellenTisch();
-    expect(store.snapshot()).toMatchObject({ bereich: 'LOBBY', aktuellerTisch: null, partieStand: null, debugModus: true });
+    expect(store.snapshot()).toMatchObject({ bereich: 'SPIELVERWALTUNG', aktuellerTisch: null, partieStand: null, debugModus: true });
   });
 
   it('sendet Karten-, Ansage-, Vorbehalt- und Armut-Aktionen an die passenden Kanaele', async () => {
@@ -263,10 +263,10 @@ describe('AppStore', () => {
     ]));
   });
 
-  it('behandelt PARTIE_ABGEBROCHEN-Event: wechselt zur Lobby und setzt Info-Meldung', async () => {
+  it('behandelt PARTIE_ABGEBROCHEN-Event: wechselt zur Spielverwaltung und setzt Info-Meldung', async () => {
     // Wichtig: Wenn ein Spieler waehrend einer aktiven Partie den Tisch verlaesst,
     // erhalten alle anderen Spieler ein PARTIE_ABGEBROCHEN-Event. Das Frontend muss
-    // daraufhin zur Lobby wechseln und eine verstaendliche Meldung anzeigen — kein
+    // daraufhin zur Spielverwaltung wechseln und eine verstaendliche Meldung anzeigen — kein
     // stiller Fehler, keine unbemerkte Zustandsinkonsistenz.
     const echtzeit = new FakeEchtzeit();
     const tisch = baueTisch('tisch-abbruch');
@@ -290,7 +290,7 @@ describe('AppStore', () => {
     });
 
     expect(store.snapshot()).toMatchObject({
-      bereich: 'LOBBY',
+      bereich: 'SPIELVERWALTUNG',
       aktuellerTisch: null,
       partieStand: null,
       meldung: { typ: 'info', fehlerCode: 'PARTIE_ABGEBROCHEN' }

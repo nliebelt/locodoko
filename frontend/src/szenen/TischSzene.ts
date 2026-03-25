@@ -370,8 +370,8 @@ export class TischSzene extends Phaser.Scene {
       this.synchronisiereAnimationszustand(modell, zustand);
       this.letzterZustand = zustand;
       this.aktualisiereUi(zustand, modell);
-      if (zustand.bereich === 'LOBBY') {
-        this.scene.start('LobbySzene');
+      if (zustand.bereich === 'SPIELVERWALTUNG') {
+        this.scene.start('SpielverwaltungsSzene');
         return;
       }
       // Neues Spiel erkannt: Karten werden unsichtbar gerendert und dann animiert ausgeteilt

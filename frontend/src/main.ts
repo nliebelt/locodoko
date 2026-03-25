@@ -2,7 +2,7 @@ import Phaser from 'phaser';
 import './styles.css';
 import { appStore } from './anwendung';
 import { BootSzene } from './szenen/BootSzene';
-import { LobbySzene } from './szenen/LobbySzene';
+import { SpielverwaltungsSzene } from './szenen/SpielverwaltungsSzene';
 import { TischSzene } from './szenen/TischSzene';
 
 // Globaler Error-Handler — auch im Prod-Build aktiv, damit stumme Fehler sichtbar werden.
@@ -25,7 +25,7 @@ const spiel = new Phaser.Game({
     width: 1280,
     height: 720
   },
-  scene: [BootSzene, LobbySzene, TischSzene]
+  scene: [BootSzene, SpielverwaltungsSzene, TischSzene]
 });
 
 window.addEventListener('beforeunload', () => {
