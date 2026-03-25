@@ -4,24 +4,19 @@
 
 ## Notiz
 
-**2026-03-24:** 4.15 Showstopper-Fixes abgeschlossen — alle 8 UI-Bugs behoben.
+**2026-03-25:** 4.16 Stich-Visualisierung abgeschlossen.
 
 **Was wurde implementiert:**
-- **Karten-Hintergrund**: Weißes `Graphics.rectangle` (0xffffff) vor jedem Karten-Sprite in `renderKartenFaecher` und `renderStichmitte` — PNG-Assets sind auf hellem Hintergrund lesbar.
-- **"Am Zug"-Text entfernt**: Canvas-Text (`Am Zug: ...` / `Warte auf den naechsten Zug`) komplett aus `renderStichmitte` entfernt — Nameplate-Highlight ist ausreichend.
-- **Duplikat-Titeltext entfernt**: Großer Canvas-Text (`modell.titel`, `modell.untertitel · statusText`) aus `renderTisch` entfernt — HUD Top-Bar zeigt diese Infos bereits.
-- **"Noch keine Karte"-Placeholder entfernt**: Leerer Canvas bei leerer Stichmitte statt Hinweistext.
-- **Tischname aus HUD entfernt**: `hudSpieleInfo` zeigt jetzt `Spiel N/M · Spieltyp` statt `Tischname · Spiel N/M · Spieltyp`.
-- **Lobby-Bug (wirdGeladen)**: `aktualisiereTischliste()` aus dem `fuehreMitStatus`-Wrapper in `verlasseAktuellenTisch` herausgelöst — LobbySzene sieht `wirdGeladen: false` wenn sie startet.
-- **OST/WEST-Layout-Overflow**: `kartenX` für WEST von `0.06` auf `0.10` und für OST von `0.94` auf `0.90` korrigiert — rotierte Karten (165px breit) bleiben innerhalb des Canvas.
-- **Render-Bug nach KI-Zug**: `renderTisch(letzterZustand)` am Ende von `starteFolgeanimationen.finally` — stellt sicher dass KI-Züge die während der Stich-Einzieh-Animation ankamen sichtbar werden.
-- 62 Tests grün, Lint clean, Build clean.
+- **Gestampelte Stich-Karten**: Rotation in `renderStichmitte`, Name-Labels entfernt.
+- **Stich-Stapel beim Gewinner**: `renderStichstapel` zeigt verdeckte Mini-Karten beim Gewinner.
+- **Stich-Einzieh-Animation**: Update in `AnimationenService` mit "+1 Stich" Popup und Nameplate-Flash.
+- **Letzter Stich**: Klick auf eigenen Stapel oder Taste 'L' zeigt den letzten Stich als Overlay auf dem Tisch.
+- **Tests**: `AnimationenService.test.ts` und `TischSzene.test.ts` aktualisiert. 62 Tests grün.
 
 **Nächster logischer Schritt:**
-- **4.16 Stich-Visualisierung** — Gestampelte Stiche, Stapel beim Gewinner, Stich umdrehen.
 - **4.13 Spielverwaltungs-Szene** — Start-Screen mit Quick Game, Tisch erstellen, offene Tische.
 - **4.17 Phaser-Migration UI** — Spielaktions-Overlays in Phaser.
-- **4.18 Single-Player UX** — Timeout deaktivieren, laufende Tische in Lobby.
+- **4.14 Rundenauswertung-Overlay** — Styling-Anpassung.
 
 **Bekannte offene Fragen:**
 - Armut-Kartenauswahl per Tastatur (ArrowLeft/Right + Space) noch nicht implementiert — Nice-to-have.
@@ -303,13 +298,14 @@
   - [x] OST/WEST-Layout: kartenX von 0.06/0.94 auf 0.10/0.90 korrigiert
   - [x] Render-Bug: renderTisch() in starteFolgeanimationen.finally ergänzt
 
-- [ ] **4.16 Stich-Visualisierung** — 0/6 DoD
+- [x] **4.16 Stich-Visualisierung** — 6/6 DoD
   - **Gestampelte Stich-Karten**: Die 4 Karten im laufenden Stich werden leicht überlappend/rotiert nach Spielerposition abgelegt (SUED unten, NORD oben, WEST links, OST rechts) — keine Spielernamen an den Karten
   - **Stich-Stapel beim Gewinner**: Gewonnene Stiche als kleiner gestapelter Fächer rechts neben den eigenen Karten (bei SUED), analoger Stapel bei Gegnern
-  - **Stich-Einzieh-Animation**: Karten fliegen nach Stich-Ende zum Gewinner, kurzes Punkte-Popup (z.B. „+1 Stich")
-  - **Letzten Stich umdrehen**: Klick/Taste auf eigenen Stapel deckt die zuletzt gewonnenen 4 Karten kurz auf (wie im echten Spiel erlaubt)
+  - **Stich-Einzieh-Animation**: Karten fliegen nach Stich-Ende zum Gewinner, kurzes Punkte-Popup (z.B. „+1 Stich“)
+  - **Letzten Stich umdrehen**: Klick/Taste (L) auf eigenen Stapel deckt die zuletzt gewonnenen 4 Karten kurz auf (wie im echten Spiel erlaubt)
   - **Stich-Gewinn deutlich machen**: Visuelle Hervorhebung (kurzer Glow/Flash am Gewinner-Nameplate) sodass klar ist wer den Stich gemacht hat
   - Abhängigkeit: 4.15
+
 
 - [ ] **4.17 Phaser-Migration UI-Overlays** — 0/6 DoD
   - **Architektur-Entscheidung**: Spielaktions-UI = Phaser-GameObjects; Meta-UI (Seitenlade, Einstellungen) = HTML bleibt

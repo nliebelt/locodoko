@@ -179,7 +179,8 @@ describe('AnimationenService', () => {
     await vi.advanceTimersByTimeAsync(1);
     await animation;
 
-    expect(aufrufe).toHaveLength(1);
+    // 5 Tweens: 1x Zu, 1x Scale (Karte) + 2x Alpha (Popup) + 1x Zu (Popup)
+    expect(aufrufe).toHaveLength(5);
     expect(aufrufe[0].duration).toBe(600);
     expect(bild).toMatchObject({ x: 50, y: 75 });
     vi.useRealTimers();
@@ -215,7 +216,7 @@ describe('AnimationenService', () => {
     // Kein Tick noetig: warte(0) kehrt sofort zurueck, Tween mit duration=0 loest sofort auf
     await animation;
 
-    expect(aufrufe).toHaveLength(1);
+    expect(aufrufe).toHaveLength(5);
     expect(aufrufe[0].duration).toBe(0);
     vi.useRealTimers();
   });

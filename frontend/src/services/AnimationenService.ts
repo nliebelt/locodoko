@@ -206,29 +206,100 @@ export class AnimationenService {
   }
 
   /**
-   * Zieht alle Karten eines abgeschlossenen Stichs zur Gewinner-Position ein.
-   * Wartet zuerst eine konfigurierbare Zeit, damit Spieler den Stich sehen koennen.
-   * @param kartenobjekte - Alle vier Kartenobjekte des Stichs
-   * @param ziel - Zielposition des Stichwinklers (Spielerposition)
-   * @param wartezeit - Wartezeit vor dem Einziehen in ms (Standard: 1000ms)
-   * @param dauer - Tween-Dauer in ms (Standard: 600ms)
-   */
-  async animiereStichEinziehen(
-    kartenobjekte: AnimierbareKartenobjekte[],
-    ziel: Punkt,
-    wartezeit = 1000,
-    dauer = 600
-  ): Promise<void> {
-    if (kartenobjekte.length === 0) {
-      return;
-    }
-    await this.warte(wartezeit);
-    await this.tweenZu(
-      kartenobjekte.flatMap((kartenobjekt) => [kartenobjekt.bild, kartenobjekt.beschriftung].filter(istVorhanden)),
-      ziel,
-      dauer
-    );
-  }
+   /**
+    * Zieht alle Karten eines abgeschlossenen Stichs zur Gewinner-Position ein.
+    * Wartet zuerst eine konfigurierbare Zeit, damit Spieler den Stich sehen koennen.
+    * @param kartenobjekte - Alle vier Kartenobjekte des Stichs
+    * @param ziel - Zielposition des Stichstapels (beim Spieler)
+    * @param flashObjekt - Optionales Objekt (z.B. Nameplate), das kurz aufleuchten soll
+    * @param wartezeit - Wartezeit vor dem Einziehen in ms (Standard: 1000ms)
+    * @param dauer - Tween-Dauer in ms (Standard: 600ms)
+    */
+   async animiereStichEinziehen(
+     kartenobjekte: AnimierbareKartenobjekte[],
+     ziel: Punkt,
+     flashObjekt?: Phaser.GameObjects.GameObject,
+     wartezeit = 1000,
+     dauer = 600
+   ): Promise<void> {
+     if (kartenobjekte.length === 0) {
+       return;
+     }
+     await this.warte(wartezeit);
+
+     if (flashObjekt) {
+       // Nameplate-Flash am Gewinner
+       void this.tweenAlpha(flashObjekt, 1, 200).then(async () => {
+         await this.warte(200);
+         await this.tweenAlpha(flashObjekt, 0, 200);
+       });
+     }
+
+     // Alle Karten gleichzeitig zum Ziel bewegen und dabei verkleinern
+
+     const animationen = kartenobjekte.flatMap((kartenobjekt) => {
+       const objekte = [kartenobjekt.bild, kartenobjekt.beschriftung].filter(istVorhanden);
+       return [
+         this.tweenZu(objekte, ziel, dauer),
+         this.tweenScale(kartenobjekt.bild, 0.4, dauer)
+       ];
+     });
+
+     await Promise.all(animationen);
+
+     // "+1 Stich" Popup am Ziel einblenden
+     const popup = this.szene.add.text(ziel.x, ziel.y - 40, '+1 Stich', {
+       font: "bold 24px 'Space Grotesk', sans-serif",
+       color: '#ffd166',
+       stroke: '#000000',
+       strokeThickness: 4
+     }).setOrigin(0.5).setDepth(200).setAlpha(0);
+
+     try {
+       await this.tweenAlpha(popup, 1, 200);
+       await this.tweenZu([popup], { x: ziel.x, y: ziel.y - 80 }, 800);
+       await this.tweenAlpha(popup, 0, 300);
+     } finally {
+       popup.destroy();
+     }
+   }
+
+   /**
+    * Animiert die Skalierung eines Phaser-Objekts.
+    * @param ziel - Zu skalierendes Objekt
+    * @param skala - Ziel-Skalierung (1.0 = 100%)
+    * @param dauer - Dauer in ms
+    */
+   private tweenScale(
+     ziel: Phaser.GameObjects.Image | Phaser.GameObjects.Sprite,
+     skala: number,
+     dauer: number
+   ): Promise<void> {
+     return new Promise((resolve) => {
+       const tweenReferenz: { wert?: Phaser.Tweens.Tween } = {};
+       let abgeschlossen = false;
+       const tween = this.szene.tweens.add({
+         targets: [ziel],
+         scaleX: skala,
+         scaleY: skala,
+         duration: this.skalierteDauer(dauer),
+         ease: 'Cubic.Out',
+         onComplete: () => {
+           abgeschlossen = true;
+           if (tweenReferenz.wert) {
+             this.laufendeTweens.delete(tweenReferenz.wert);
+           }
+           resolve();
+         }
+       });
+       tweenReferenz.wert = tween;
+       if (!abgeschlossen) {
+         this.laufendeTweens.add(tween);
+       }
+     });
+   }
+
+   // Animiert die Transparenz eines Phaser-Objekts auf einen Zielwert (0=unsichtbar, 1=sichtbar)
 
   /**
    * Stoppt alle laufenden Tweens und Timer sofort.

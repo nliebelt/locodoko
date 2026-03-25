@@ -47,6 +47,20 @@ function stichSlotPositionen(
   };
 }
 
+// Positionen fuer die gewonnenen Stich-Stapel (rechts neben/bei der Hand)
+function stichStapelPositionen(
+  breite: number, hoehe: number, layout: TischLayout
+): Record<SpielerPosition, { x: number; y: number }> {
+  const versatzX = Math.round(breite * 0.12);
+  const versatzY = Math.round(hoehe * 0.12);
+  return {
+    SUED: { x: layout.SUED.x + versatzX, y: layout.SUED.y },
+    WEST: { x: layout.WEST.x, y: layout.WEST.y + versatzY },
+    NORD: { x: layout.NORD.x - versatzX, y: layout.NORD.y },
+    OST: { x: layout.OST.x, y: layout.OST.y - versatzY }
+  };
+}
+
 // Kartengrösse skaliert mit der Spielbreite; 110x165px Zielgrösse; Seitenverhältnis 110:165
 function berechneKartenGroesse(breite: number): { w: number; h: number } {
   // 110x165px Zielgrösse; skaliert proportional mit der Spielbreite
@@ -804,6 +818,7 @@ export class TischSzene extends Phaser.Scene {
     const ebene = this.add.container(0, 0);
     ebene.add(this.add.ellipse(mitteX, mitteY, tischBreite, tischHoehe, 0x081c15, 0.32).setStrokeStyle(8, 0xd8f3dc, 0.42));
     this.renderStichmitte(ebene, modell, mitteX, mitteY, breite, hoehe);
+    this.renderStichstapel(ebene, modell, breite, hoehe);
 
     modell.spieler.forEach((spieler) => {
       const position = layout[spieler.position];
@@ -879,12 +894,90 @@ export class TischSzene extends Phaser.Scene {
 
     modell.aktuelleStichmitte.forEach((eintrag) => {
       const slot = slotPositionen[eintrag.position];
-      ebene.add(this.add.rectangle(slot.x, slot.y, kgroesse.w, kgroesse.h, 0xffffff));
-      ebene.add(this.add.image(slot.x, slot.y, texturSchluesselFuerKarte(eintrag.karte.farbe, eintrag.karte.wert)).setDisplaySize(kgroesse.w, kgroesse.h));
-      ebene.add(this.add.text(slot.x, slot.y + Math.round(kgroesse.h * 0.63), eintrag.name, {
-        color: '#d8f3dc',
-        fontSize: `${Math.round(Math.max(11, breite * 0.011))}px`
+      // "Gestempelter" Effekt: leichte zufaellige Rotation und Versatz basierend auf Position
+      const rotation = ({
+        SUED: -5 + (eintrag.reihenfolge * 3),
+        WEST: -10 + (eintrag.reihenfolge * 2),
+        NORD: 5 - (eintrag.reihenfolge * 3),
+        OST: 10 - (eintrag.reihenfolge * 2)
+      } as Record<SpielerPosition, number>)[eintrag.position];
+
+      ebene.add(this.add.rectangle(slot.x, slot.y, kgroesse.w, kgroesse.h, 0xffffff).setAngle(rotation));
+      ebene.add(this.add.image(slot.x, slot.y, texturSchluesselFuerKarte(eintrag.karte.farbe, eintrag.karte.wert))
+        .setDisplaySize(kgroesse.w, kgroesse.h)
+        .setAngle(rotation));
+    });
+  }
+
+  /** Rendert die gewonnenen Stiche als gestapelten Faecher neben den Handkarten. */
+  private renderStichstapel(
+    ebene: Phaser.GameObjects.Container,
+    modell: TischAnsichtModell,
+    breite: number,
+    hoehe: number
+  ): void {
+    const layout = berechneLayout(breite, hoehe);
+    const stapelPositionen = stichStapelPositionen(breite, hoehe, layout);
+    const kgroesse = berechneKartenGroesse(breite);
+    const stapelSkala = 0.45; // Stiche im Stapel sind deutlich kleiner
+
+    modell.spieler.forEach((spieler) => {
+      if (spieler.stiche === 0) return;
+
+      const pos = stapelPositionen[spieler.position];
+      // Max. 3 Karten visuell im Stapel anzeigen, um Überladung zu vermeiden
+      const sichtbareKarten = Math.min(3, spieler.stiche);
+
+      for (let i = 0; i < sichtbareKarten; i++) {
+        const versatz = i * 4;
+        const winkel = -10 + (i * 10);
+        ebene.add(this.add.rectangle(pos.x + versatz, pos.y + versatz, kgroesse.w * stapelSkala, kgroesse.h * stapelSkala, 0xffffff).setAngle(winkel));
+        const bild = this.add.image(pos.x + versatz, pos.y + versatz, TEXTUR_KARTE_VERDECKT)
+          .setDisplaySize(kgroesse.w * stapelSkala, kgroesse.h * stapelSkala)
+          .setAngle(winkel);
+        ebene.add(bild);
+
+        // Interaktion: Klick auf eigenen Stapel zeigt letzten Stich
+        if (spieler.istSelbst && i === sichtbareKarten - 1) {
+          bild.setInteractive({ useHandCursor: true });
+          bild.on('pointerdown', () => this.zeigeLetztenStichKurz(modell));
+        }
+      }
+    });
+  }
+
+  /** Zeigt die 4 Karten des zuletzt gewonnenen Stichs kurzzeitig auf dem Tisch an. */
+  private zeigeLetztenStichKurz(modell: TischAnsichtModell): void {
+    const letzterStich = modell.letzteAbgeschlosseneStiche.at(-1);
+    if (!letzterStich || this.spielzugAnimationAktiv) return;
+
+    const breite = this.scale.gameSize.width;
+    const hoehe = this.scale.gameSize.height;
+    const mitteX = breite / 2;
+    const mitteY = hoehe / 2;
+    const kgroesse = berechneKartenGroesse(breite);
+
+    const overlay = this.add.container(0, 0).setDepth(150);
+    const bg = this.add.rectangle(mitteX, mitteY, breite, hoehe, 0x000000, 0.4);
+    overlay.add(bg);
+
+    letzterStich.gespielteKarten.forEach((eintrag, index) => {
+      const x = mitteX - (kgroesse.w * 1.6) + (index * kgroesse.w * 1.1);
+      overlay.add(this.add.rectangle(x, mitteY, kgroesse.w, kgroesse.h, 0xffffff));
+      overlay.add(this.add.image(x, mitteY, texturSchluesselFuerKarte(eintrag.karte.farbe, eintrag.karte.wert))
+        .setDisplaySize(kgroesse.w, kgroesse.h));
+      overlay.add(this.add.text(x, mitteY + (kgroesse.h / 2) + 15, eintrag.name, {
+        fontSize: '14px', color: '#ffffff'
       }).setOrigin(0.5));
+    });
+
+    const info = this.add.text(mitteX, mitteY - (kgroesse.h / 2) - 30, `Letzter Stich (${letzterStich.augen} Augen)`, {
+      fontSize: '20px', fontStyle: 'bold', color: '#ffd166'
+    }).setOrigin(0.5);
+    overlay.add(info);
+
+    this.time.delayedCall(3000, () => {
+      overlay.destroy();
     });
   }
 
@@ -1435,7 +1528,8 @@ export class TischSzene extends Phaser.Scene {
     const hoehe = this.scale.gameSize.height;
     const slotPositionen = stichSlotPositionen(breite / 2, hoehe / 2, breite, hoehe);
     const layout = berechneLayout(breite, hoehe);
-    const ziel = layout[abgeschlossenerStich.gewinnerPosition];
+    const stapelPositionen = stichStapelPositionen(breite, hoehe, layout);
+    const ziel = stapelPositionen[abgeschlossenerStich.gewinnerPosition];
     const kgroesse = berechneKartenGroesse(breite);
     const animierteKarten = abgeschlossenerStich.gespielteKarten.map((karte) => {
       const slot = slotPositionen[karte.position];
@@ -1443,14 +1537,20 @@ export class TischSzene extends Phaser.Scene {
       return { bild };
     });
 
+    // Nameplate-Flash am Gewinner
+    const gewinnerPos = layout[abgeschlossenerStich.gewinnerPosition];
+    const flash = this.add.rectangle(gewinnerPos.x, gewinnerPos.y, 140, 60, 0xffd166, 0.6)
+      .setDepth(10)
+      .setAlpha(0);
+
     try {
-      await this.animationen?.animiereStichEinziehen(animierteKarten, { x: ziel.x, y: ziel.y });
+      await this.animationen?.animiereStichEinziehen(animierteKarten, { x: ziel.x, y: ziel.y }, flash);
     } finally {
+      flash.destroy();
       animierteKarten.forEach((karte) => {
         karte.bild.destroy();
       });
-      // Nach der Animation den letzten bekannten Zustand neu rendern, damit
-      // KI-Zuege die waehrend der Animation ankamen korrekt sichtbar sind.
+      // Nach der Animation den letzten bekannten Zustand neu rendern
       if (this.letzterZustand) {
         this.renderTisch(this.letzterZustand);
       }
@@ -1962,7 +2062,14 @@ export class TischSzene extends Phaser.Scene {
       return;
     }
 
-    // 7. Escape schliesst Seitenlade (falls offen)
+    // 7. L=Letzten Stich anzeigen
+    if (e.key === 'l' || e.key === 'L') {
+      this.zeigeLetztenStichKurz(modell);
+      e.preventDefault();
+      return;
+    }
+
+    // 8. Escape schliesst Seitenlade (falls offen)
     if (e.key === 'Escape' && this.seitenladeOffen) {
       this.togglSeitenlade();
       e.preventDefault();

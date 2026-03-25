@@ -747,8 +747,10 @@ describe('TischSzene', () => {
 
     await vi.runAllTimersAsync();
 
-    expect(tweens.add).toHaveBeenCalledTimes(1);
-    expect(tweens.aufrufe[0].duration).toBe(600);
+    // 13 Tweens: 4x Zu, 4x Scale (Karten) + 2x Alpha (Flash) + 2x Alpha (Popup) + 1x Zu (Popup)
+    expect(tweens.add).toHaveBeenCalledTimes(13);
+    // Erster Karten-Tween (Zu) nach dem Flash-Effekt (Index 0)
+    expect(tweens.aufrufe[1].duration).toBe(600);
     vi.useRealTimers();
   });
 
