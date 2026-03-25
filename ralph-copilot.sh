@@ -24,13 +24,13 @@ set -euo pipefail
 # --- Parse arguments ---
 
 # --- Check for uncommitted changes in Git worktree ---
-if git rev-parse --is-inside-work-tree &>/dev/null; then
-    if [[ -n "$(git status --porcelain)" ]]; then
-        echo "FEHLER: Der Git-Worktree ist nicht sauber. Bitte committe oder stash deine Änderungen, bevor du Ralph startest."
-        echo "Abbruch. Keine Iteration ausgeführt."
-        exit 1
-    fi
-fi
+# if git rev-parse --is-inside-work-tree &>/dev/null; then
+#     if [[ -n "$(git status --porcelain)" ]]; then
+#         echo "FEHLER: Der Git-Worktree ist nicht sauber. Bitte committe oder stash deine Änderungen, bevor du Ralph startest."
+#         echo "Abbruch. Keine Iteration ausgeführt."
+#         exit 1
+#     fi
+# fi
 
 MODE="build"
 PROMPT_FILE="PROMPT_build.md"
@@ -61,7 +61,7 @@ fi
 
 # --- Header ---
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-echo "  Ralph Loop - Locodoko"
+echo "  Ralph Loop - Locodoko (Copilot CLI)"
 echo "  Modus:      $MODE"
 echo "  Prompt:     $PROMPT_FILE"
 echo "  Max:        $MAX_ITERATIONS Iterationen"
@@ -197,6 +197,14 @@ while true; do
     if grep -q '<promise>COMPLETE</promise>' "$ITER_OUTPUT" 2>/dev/null; then
         echo ""
         echo "━━━ Ralph meldet: COMPLETE ━━━"
+        break
+    fi
+
+    # Check for blocked signal — ALL remaining tasks are blocked, no progress possible
+    if grep -q '<promise>BLOCKED</promise>' "$ITER_OUTPUT" 2>/dev/null; then
+        echo ""
+        echo "━━━ Ralph meldet: BLOCKED — Alle Aufgaben blockiert, manuelle Intervention nötig ━━━"
+        echo "    Siehe IMPLEMENTATION_PLAN.md für Details."
         break
     fi
 

@@ -26,6 +26,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 RUN npm install -g \
     @anthropic-ai/claude-code \
     @github/copilot \
+    @google/gemini-cli \
     typescript \
     vite \
     vitest \
