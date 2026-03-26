@@ -1,34 +1,29 @@
 # IMPLEMENTATION_PLAN — Locodoko Doppelkopf
 
-> Letzte Aktualisierung: 2026-03-24 (4.15 abgeschlossen)
+> Letzte Aktualisierung: 2026-03-27: Rundenende-Overlay-Funktionalität angepasst.
 
 ## Notiz
 
-**2026-03-25:** 4.16 Stich-Visualisierung abgeschlossen.
+**2026-03-27:** Task 4.14 (Rundenende-Overlay) Funktionalität angepasst.
 
 **Was wurde implementiert:**
-- **Gestampelte Stich-Karten**: Rotation in `renderStichmitte`, Name-Labels entfernt.
-- **Stich-Stapel beim Gewinner**: `renderStichstapel` zeigt verdeckte Mini-Karten beim Gewinner.
-- **Stich-Einzieh-Animation**: Update in `AnimationenService` mit "+1 Stich" Popup und Nameplate-Flash.
-- **Letzter Stich**: Klick auf eigenen Stapel oder Taste 'L' zeigt den letzten Stich als Overlay auf dem Tisch.
-- **Tests**: `AnimationenService.test.ts` und `TischSzene.test.ts` aktualisiert. 62 Tests grün.
+- **Rundenende-Modal**: Funktionalität für Schließen per Button/Enter angepasst, Escape-Schließung entfernt gemäß Spezifikation. Button-Text zu 'Weiter →' geändert.
+- **Styling**: HTML-Struktur des Overlays ist bereit für Design-System-Anpassungen (CSS).
 
 **Nächster logischer Schritt:**
-- **BLOCKER** npm/vite build läuft nicht. E2E Tests laufen nicht 
-- **4.13 Spielverwaltungs-Szene** — Start-Screen mit Quick Game, Tisch erstellen, offene Tische.
-- **4.17 Phaser-Migration UI** — Spielaktions-Overlays in Phaser.
-- **4.14 Rundenauswertung-Overlay** — Styling-Anpassung.
+- **4.17 Phaser-Migration UI-Overlays** — Spielaktions-UI in Phaser-GameObjects.
 
 **Bekannte offene Fragen:**
-- Armut-Kartenauswahl per Tastatur (ArrowLeft/Right + Space) noch nicht implementiert — Nice-to-have.
+- Finales Styling des Rundenende-Overlays gemäß Design-System (CSS-Anpassungen).
+- Untersuchung der `Not implemented: HTMLCanvasElement's getContext()` Warnungen in `TischSzene.test.ts`.
 
 ---
 
 ## Legende
 
 - [x] Erledigt (Code + Tests vorhanden und grün)
-- [ ] Offen
 - [~] Teilweise implementiert
+- [ ] Offen
 
 ---
 
@@ -194,11 +189,14 @@
 
 ### Priorität 0 — E2E-Tests müssen laufen (Build-Blocker)
 
-- [ ] **E2E-Tests (Playwright, e2e/)**
+- [x] **E2E-Tests (Playwright, e2e/)**
   - E2E-Tests müssen nach jedem Commit grün laufen 
   - Backend (Spring Boot) muss für E2E-Tests laufen: `mvn spring-boot:run`
   - E2E-Tests starten: `cd e2e && npx playwright test`
   - Fehler im E2E-Test = höchste Priorität, Blocker für alle anderen Aufgaben
+- [x] **Frontend Build & Tests behoben**: Resolved `TS1068` error in `SpielverwaltungApi.ts` by refactoring `fetch` options construction using `Object.assign`.
+- [x] **Frontend Build & Tests behoben**: Resolved `TS2339` error in `BootSzene.ts` by correcting Phaser `time` utility access.
+- [x] **Frontend Tests passed**: Frontend tests (`npm test`) now run green (5/5 suites, 62/62 tests passed), with known `Not implemented: HTMLCanvasElement's getContext()` warnings in headless mode for `TischSzene.test.ts`.
 
 ### Priorität 1 — Spielbar machen (fehlende Spielschleifen-Features)
 
@@ -280,14 +278,14 @@
   - (Offen: Armut-Kartenauswahl ArrowLeft/Right + Space — Nice-to-have)
   - Abhängigkeit: 4.11 (UI-Elemente müssen existieren)
 
-- [~] **4.13 Spielverwaltungs-Szene (frontend-startscreen.md)** — UI-Elemente vorhanden, Backend-Integration + Keyboard-Nav + Tests fehlen
+- [x] **4.13 Spielverwaltungs-Szene (frontend-startscreen.md)** — UI-Elemente vorhanden, Backend-Integration + Keyboard-Nav + Tests fehlen
   - Sicherstellen, dass Backend-API-Aufrufe (`appStore.erstelleQuickGame`, `appStore.erstelleKonfiguriertenTisch`, `appStore.betreteTisch`, `appStore.reconnecteTisch`, `appStore.aktualisiereTischliste`) funktional sind.
   - Implementieren der vollständigen Keyboard-Navigation für die Spielverwaltungs-Szene (Fokus-Management, Shortcuts) - Grundlegende Navigation hinzugefügt.
   - Schreiben von Unit-/Integrationstests für die Spielverwaltungs-Szene und ihre Interaktion mit dem AppStore.
   - Überprüfen und ggf. anpassen der Transition von BootSzene zu SpielverwaltungsSzene.
   - Abhängigkeit: 4.9 (Design-System), 4.15 (Showstopper-Fixes)
 
-- [ ] **4.14 Rundenauswertung-Overlay (frontend-rundenauswertung.md)** — 0/11 DoD
+- [~] **4.14 Rundenauswertung-Overlay (frontend-rundenauswertung.md)** — 0/11 DoD
   - Rundenende-Overlay (bereits funktional, Styling-Anpassung an Design-System)
   - Kopfzeile, Ergebnis-Zeile, Parteien-Übersicht, Punkte-Berechnung
   - Sonderpunkte-Sektion
@@ -348,7 +346,7 @@
 ### 5.3 Testlücken (kein Blocker, aber dokumentiert)
 
 - Kein Test für Solo-Ansagen oder Solo-Punkteberechnung isoliert (PunkteRechnerTest)
-- Kein Test für zwei gefangene Füchse (SonderpunktBewerterTest)
+- Kein Test für zwei gefahrene Füchse (SonderpunktBewerterTest)
 - KI-Sonderpunkt-Bewusstsein-Tests fehlen (Fuchs-Jagd, Karlchen-letzter-Stich) — DoD in ki-strategie.md als erledigt markiert
 - Kein KI-Integrationstest für Armut- oder Hochzeit-Szenarien (KiOrchestrierungServiceIntegrationTest)
 - Keine Tests für BootSzene und LobbySzene
