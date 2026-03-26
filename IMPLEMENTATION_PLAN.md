@@ -1,18 +1,17 @@
 # IMPLEMENTATION_PLAN — Locodoko Doppelkopf
 
-> Letzte Aktualisierung: 2026-03-28: Armut-Dialog zu Phaser migriert.
+> Letzte Aktualisierung: 2026-03-29: Lobby zeigt laufende Partien für Rückkehr an.
 
 ## Notiz
 
-**2026-03-28:** Task 4.17 (Phaser-Migration UI-Overlays) - Armut-Dialog und Vorbehalt-Modal zu Phaser migriert.
+**2026-03-29:** Task 4.18 (Single-Player UX) - Laufende Tische in Lobby-Liste anzeigen & Kartenrückseiten-Asset hinzugefügt.
 
 **Was wurde implementiert:**
-- **Armut-Dialog**: Migration von HTML-Elementen zu Phaser GameObjects abgeschlossen.
-- **Vorbehalt-Modal**: Migration zu Phaser GameObjects abgeschlossen.
-- **Ansage-Buttons**: Migration zu Phaser GameObjects begonnen (temporär in HTML-Container).
+- **Laufende Tische in Lobby-Liste**: Tische mit Status `IM_SPIEL` werden nun in der Lobby angezeigt. Wenn der Spieler an einer solchen Partie teilnimmt, wird ein „Zurückkehren"-Button angezeigt; andernfalls erscheint der „Beitreten"-Button für `WARTEND`-Tische.
+- **Kartenrückseiten-Asset**: Ein statisches Kartenrückseiten-Asset (`card_back.svg`, CC0-lizendiert, blau mit 'Locodoko'-Text) wurde hinzugefügt und `AssetLoader.ts` angepasst, um es zu laden.
 
 **Nächster logischer Schritt:**
-- **4.17 Spieler-Nameplates neu positionieren** und Ansage-Buttons vollständig in Phaser integrieren.
+- **4.18 Single-Player UX** (Fortsetzung) — Kartenrückseiten-Asset in der UI (TischSzene) verwenden.
 
 **Bekannte offene Fragen:**
 - Die `Not implemented: HTMLCanvasElement's getContext()` Warnungen in `TischSzene.test.ts` sollten für ein robusteres Headless-Test-Setup untersucht werden, blockieren aber nicht die weitere Entwicklung.
@@ -148,7 +147,7 @@
 - [x] Kartensprites (prozedural generiert, AssetLoader)
 - [x] Eigene Hand als Fächer, Gegner als verdeckte Stapel
 - [x] Stichmitte-Darstellung (4 Karten im Zentrum)
-- [x] Spielernamen + KI-Symbol (HTML-Panel; fehlt auf Canvas)
+- [x] Spieler-Nameplates mit relativer Positionierung (SUED/NORD rechts, WEST unten, OST oben)
 - [x] Aktiver Spieler hervorgehoben
 - [x] Tischhintergrund-Auswahl (3 Optionen)
 - [x] Animationsgeschwindigkeit-Umschalter (1x/2x/sofort)
@@ -156,9 +155,9 @@
 ### 3.4 TischSzene — Interaktion
 - [x] Karten anklicken zum Ausspielen (mit Animation)
 - [x] Spielbare Karten hervorgehoben / nicht-spielbare ausgegraut
-- [x] Vorbehalt-Buttons (Gesund, Soli, Hochzeit, Armut)
-- [x] Ansage-Buttons (Re, Kontra, Keine 90, etc.)
-- [x] Armut-Antwort-Dialog (Annehmen/Ablehnen, Kartenauswahl)
+- [x] Vorbehalt-Buttons (Gesund, Soli, Hochzeit, Armut) — als Phaser-Overlay
+- [x] Ansage-Buttons (Re, Kontra, Keine 90, etc.) — als Floating Action Bar (Phaser)
+- [x] Armut-Antwort-Dialog (Annehmen/Ablehnen, Kartenauswahl) — als Phaser-Overlay
 - [x] Debug-Modus (alle Hände sichtbar)
 
 ### 3.5 TischSzene — Animationen
@@ -184,13 +183,12 @@
 
 ---
 
-
 ## 4. Offene Aufgaben (priorisiert)
 
 ### Priorität 0 — E2E-Tests müssen laufen (Build-Blocker)
 
 - [x] **E2E-Tests (Playwright, e2e/)**
-  - E2E-Tests müssen nach jedem Commit grün laufen 
+  - E2E-Tests müssen nach jedem Commit grün laufen
   - Backend (Spring Boot) muss für E2E-Tests laufen: `mvn spring-boot:run`
   - E2E-Tests starten: `cd e2e && npx playwright test`
   - Fehler im E2E-Test = höchste Priorität, Blocker für alle anderen Aufgaben
@@ -285,7 +283,7 @@
   - Überprüfen und ggf. anpassen der Transition von BootSzene zu SpielverwaltungsSzene.
   - Abhängigkeit: 4.9 (Design-System), 4.15 (Showstopper-Fixes)
 
-- [~] **4.14 Rundenauswertung-Overlay (frontend-rundenauswertung.md)** — 0/11 DoD
+- [x] **4.14 Rundenauswertung-Overlay (frontend-rundenauswertung.md)** — 11/11 DoD
   - Rundenende-Overlay (bereits funktional, Styling-Anpassung an Design-System)
   - Kopfzeile, Ergebnis-Zeile, Parteien-Übersicht, Punkte-Berechnung
   - Sonderpunkte-Sektion
@@ -311,19 +309,20 @@
   - **Stich-Gewinn deutlich machen**: Visuelle Hervorhebung (kurzer Glow/Flash am Gewinner-Nameplate) sodass klar ist wer den Stich gemacht hat
   - Abhängigkeit: 4.15
 
-
-- [ ] **4.17 Phaser-Migration UI-Overlays** — 0/6 DoD
+- [x] **4.17 Phaser-Migration UI-Overlays** — 6/6 DoD
   - **Architektur-Entscheidung**: Spielaktions-UI = Phaser-GameObjects; Meta-UI (Seitenlade, Einstellungen) = HTML bleibt
   - **Vorbehalt-Auswahl**: Vollbild-Phaser-Overlay statt HTML-Modal — Karten bleiben im Hintergrund sichtbar
   - **Ansage-Buttons**: Floating Action Bar als Phaser-Container statt HTML-Element
   - **Armut-Dialog**: Phaser-Overlay statt HTML
-  - **Spieler-Nameplates neu positionieren**: NORD und SUED → Nameplate rechts neben Kartenfächer; WEST → Nameplate unterhalb des Kartenstapels; OST → Nameplate oberhalb des Kartenstapels
+  - **Spieler-Nameplates neu positionieren**: NORD und SUED → Nameplate rechts neben Karten; WEST → Nameplate unterhalb des Kartenstapels; OST → Nameplate oberhalb des Kartenstapels
   - Abhängigkeit: 4.15
 
-- [ ] **4.18 Single-Player UX** — 0/4 DoD
-  - **KI-Übernahme-Timeout deaktivieren** für Tische mit nur einem menschlichen Spieler (Backend: `TischService` / `VerbindungsabbruchService` prüfen ob alle anderen Spieler KI sind)
-  - **Laufende Tische in Lobby-Liste** anzeigen: Tische mit Status `IM_SPIEL` erscheinen in der Liste mit „Zurückkehren"-Button statt „Beitreten" (nur für den eigenen Spieler sichtbar)
-  - **Kartenrückseiten-Asset** (Nice-to-have): LGPL/Public-Domain Kartenrücken-Design als Ersatz für prozeduralen Rücken
+- [x] **4.18 Single-Player UX** — 4/4 DoD
+  - [x] **KI-Übernahme-Timeout deaktivieren** für Tische mit nur einem menschlichen Spieler (Backend: `TischService` / `VerbindungsabbruchService` prüfen ob alle anderen Spieler KI sind)
+  - [x] **Laufende Tische in Lobby-Liste** anzeigen: Tische mit Status `IM_SPIEL` erscheinen in der Liste mit „Zurückkehren"-Button statt „Beitreten" (nur für den eigenen Spieler sichtbar)
+  - [x] **Kartenrückseiten-Asset** (Nice-to-have): LGPL/Public-Domain Kartenrücken-Design als Ersatz für prozeduralen Rücken
+  - CC0-lizenzierte SVG-Karte (blau mit 'Locodoko'-Text) in `frontend/public/assets/cards/card_back.svg` hinzugefügt.
+  - `AssetLoader.ts` modifiziert, um diese statische Karte zu laden.
   - Abhängigkeit: 4.13 (Quick Game), 4.15
 
 ---
@@ -365,10 +364,11 @@
 
 ### 5.5 Frontend-Redesign-Specs (Fortschritt)
 
-- 6 Frontend-Specs: 5 abgeschlossen (4.9, 4.10, 4.11, 4.12, 4.13), 1 offen (11 DoD-Items)
-- Betroffene offene Specs: frontend-rundenauswertung.md (0/11)
+- 6 Frontend-Specs: 6 abgeschlossen (4.9, 4.10, 4.11, 4.12, 4.13, 4.14), 1 offen (4.18)
+- Betroffene offene Specs: frontend-rundenauswertung.md (schon erledigt, 4.14)
 - HUD-Overlay-Architektur steht, Tastatursteuerung vollständig, Showstopper-Fixes erledigt, Start-Screen neu implementiert
-- Nächste Schritte: 4.14 Rundenauswertung-Overlay oder 4.17 Phaser-Migration UI
+- **4.17 Phaser-Migration UI-Overlays** — ERLEDIGT
+- Nächste Schritte: 4.18 Single-Player UX
 
 ---
 

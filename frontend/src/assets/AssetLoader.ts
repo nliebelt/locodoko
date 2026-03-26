@@ -61,6 +61,8 @@ export function ladeKartenBilderVorab(szene: Phaser.Scene): void {
       }
     }
   }
+  // Load the static card back asset
+  this.szene.load.image('card_back', '/assets/cards/card_back.svg');
 }
 
 export function registriereBasisTexturen(szene: Phaser.Scene): void {
