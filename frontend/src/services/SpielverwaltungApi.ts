@@ -69,44 +69,63 @@ async function leseAntwort<T>(antwort: Response): Promise<T | null> {
 
 async function holeJson<T>(pfad: string, init?: RequestInit): Promise<T> {
   const methode = init?.method ?? 'GET';
-  const antwort = await fetch(pfad, {
-    credentials: 'include',
-    headers: {
-      Accept: 'application/json',
-      ...(init?.body ? { 'Content-Type': 'application/json' } : {})
-    },
-    ...init
-  });
+  Logger.api(`[HOLE_JSON] Requesting: ${methode} ${pfad}`);
+  try {
+    const antwort = await fetch(pfad, Object.assign({}, {
+      // Define base options with logic for init/defaults
+      method: init?.method ?? 'GET',
+      body: init?.body,
+      credentials: init?.credentials ?? 'include',
+      headers: {
+        Accept: 'application/json',
+        ...(init?.body ? { 'Content-Type': 'application/json' } : {}),
+        ...(init?.headers || {}), // Merge init's headers
+      },
+      mode: init?.mode,
+      redirect: init?.redirect,
+      referrer: init?.referrer,
+      cache: init?.cache,
+      signal: init?.signal,
+    }, init));
+    Logger.api(`${methode} ${pfad}`, { status: antwort.status });
+    const daten = await leseAntwort<unknown>(antwort);
+    if (!antwort.ok) {
+      Logger.api('API Error Response', { url: pfad, status: antwort.status, body: daten });
+      if (istApiFehlerAntwort(daten)) {
+        throw new SpielverwaltungFehler(daten.fehlerCode, daten.nachricht);
+      }
 
-  Logger.api(`${methode} ${pfad}`, { status: antwort.status });
-  const daten = await leseAntwort<unknown>(antwort);
-  if (!antwort.ok) {
-    Logger.api('Fehler', { url: pfad, status: antwort.status, body: daten });
-    if (istApiFehlerAntwort(daten)) {
-      throw new SpielverwaltungFehler(daten.fehlerCode, daten.nachricht);
+      throw new SpielverwaltungFehler('SERVERFEHLER', `Unerwartete Antwort ${antwort.status}`);
     }
-
-    throw new SpielverwaltungFehler('SERVERFEHLER', `Unerwartete Antwort ${antwort.status}`);
+    Logger.api(`[HOLE_JSON] Successful response for ${pfad}`);
+    return daten as T;
+  } catch (error) {
+    Logger.api(`[HOLE_JSON] Fetch/Parse Error for ${pfad}`, { error });
+    throw error; // Re-throw to be caught by caller
   }
-
-  return daten as T;
 }
 
 export class SpielverwaltungApi {
   async initialisiereSpielerSession(): Promise<SpielerSessionAntwort> {
     const bevorzugterName = leseGespeichertenSpielernamen() ?? generiereStandardSpielernamen();
-    const spieler = await holeJson<SpielerSessionAntwort>('/api/spieler/session', {
-      method: 'POST',
-      body: JSON.stringify({ name: bevorzugterName })
-    });
-    speichereSpielernamen(spieler.name);
-    return spieler;
+    Logger.api('Attempting to initialize player session...');
+    try {
+      const spieler = await holeJson<SpielerSessionAntwort>('/api/spieler/session', {
+        method: 'POST',
+        body: JSON.stringify({ name: bevorzugterName })
+      });
+      Logger.api('Player session initialized successfully.', { spielerId: spieler.spielerId });
+      speichereSpielernamen(spieler.name);
+      return spieler;
+    } catch (error) {
+      Logger.api('Failed to initialize player session.', { error });
+      throw error;
+    }
   }
 
   async listeTische(): Promise<TischListenEintragAntwort[]> {
     return holeJson<TischListenEintragAntwort[]>('/api/tische');
   }
-
   async erstelleTisch(name: string, konfiguration?: Partial<TischKonfigurationDto>): Promise<TischAntwort> {
     return holeJson<TischAntwort>('/api/tische', {
       method: 'POST',

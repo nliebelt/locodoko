@@ -10,7 +10,13 @@ export class BootSzene extends Phaser.Scene {
   }
 
   create(): void {
-    registriereBasisTexturen(this);
+    try {
+      registriereBasisTexturen(this);
+    } catch (error) {
+      console.error('[BootSzene TEXTURE ERROR]', error);
+      this.statusText?.setText('Fehler bei der Textur-Initialisierung. Bitte pruefe Logs.');
+      return; // Stop execution if texture loading fails
+    }
     this.add.tileSprite(640, 360, 1280, 720, TEXTUR_FILZ).setTint(0x0d5f34);
     this.add.text(640, 280, 'Loco Doko', {
       color: '#f8f9fa',
@@ -36,6 +42,10 @@ export class BootSzene extends Phaser.Scene {
         this.scene.start('TischSzene');
       } else {
         this.scene.start('SpielverwaltungsSzene');
+        // Speculative: Add a small delay after starting the next scene to allow Phaser
+        // to potentially process rendering in this headless environment,
+        // as direct element visibility is timing out.
+        void this.time.delayedCall(1000, () => {}); // Wait for 1 second
       }
     } catch {
       this.statusText?.setText('Initialisierung fehlgeschlagen. Bitte pruefe Backend/Verbindung und lade neu.');
