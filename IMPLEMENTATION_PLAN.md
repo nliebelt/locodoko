@@ -12,7 +12,7 @@
 - **Kartenrückseiten-Asset**: Ein statisches Kartenrückseiten-Asset (`card_back.svg`, CC0-lizendiert, blau mit 'Locodoko'-Text) wurde hinzugefügt, `AssetLoader.ts` angepasst, um es zu laden, und es wird nun für gewonnene Stiche (im Stichstapel) und gegnerische Hände verwendet. Die Ersetzung von `TEXTUR_KARTE_VERDECKT` in `TischSzene.ts` wurde versucht, ist aber aufgrund von Tool-Fehlern nicht abschließend verifiziert.
 
 **Nächster logischer Schritt:**
-- **4.18 Single-Player UX** (Fortsetzung) — Tests für die Kartenrückseiten-Asset-Integration schreiben und die erfolgreiche Ersetzung aller `TEXTUR_KARTE_VERDECKT`-Verwendungen sicherstellen. Die Testumgebung (E2E-Tests in `e2e/tests/`, aber leeres `frontend/test/`) wurde untersucht.
+- **4.18 Single-Player UX** (Fortsetzung) — Tests für die Kartenrückseiten-Asset-Integration schreiben und sicherstellen, dass alle Verwendungen von `TEXTUR_KARTE_VERDECKT` ersetzt wurden. Die Testumgebung (E2E-Tests in `e2e/tests/`, aber leeres `frontend/test/`) wurde untersucht.
 
 **Bekannte offene Fragen:**
 - Tool-Fehler (Git commit, file write, replace) verhindern die finale Persistenz von Änderungen und die Verifizierung aller Code-Modifikationen.
