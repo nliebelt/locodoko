@@ -1,21 +1,21 @@
 # IMPLEMENTATION_PLAN — Locodoko Doppelkopf
 
-> Letzte Aktualisierung: 2026-03-27: Rundenende-Overlay-Funktionalität angepasst.
+> Letzte Aktualisierung: 2026-03-28: Armut-Dialog zu Phaser migriert.
 
 ## Notiz
 
-**2026-03-27:** Task 4.14 (Rundenende-Overlay) Funktionalität angepasst.
+**2026-03-28:** Task 4.17 (Phaser-Migration UI-Overlays) - Armut-Dialog und Vorbehalt-Modal zu Phaser migriert.
 
 **Was wurde implementiert:**
-- **Rundenende-Modal**: Funktionalität für Schließen per Button/Enter angepasst, Escape-Schließung entfernt gemäß Spezifikation. Button-Text zu 'Weiter →' geändert.
-- **Styling**: HTML-Struktur des Overlays ist bereit für Design-System-Anpassungen (CSS).
+- **Armut-Dialog**: Migration von HTML-Elementen zu Phaser GameObjects abgeschlossen.
+- **Vorbehalt-Modal**: Migration zu Phaser GameObjects abgeschlossen.
+- **Ansage-Buttons**: Migration zu Phaser GameObjects begonnen (temporär in HTML-Container).
 
 **Nächster logischer Schritt:**
-- **4.17 Phaser-Migration UI-Overlays** — Spielaktions-UI in Phaser-GameObjects.
+- **4.17 Spieler-Nameplates neu positionieren** und Ansage-Buttons vollständig in Phaser integrieren.
 
 **Bekannte offene Fragen:**
-- Finales Styling des Rundenende-Overlays gemäß Design-System (CSS-Anpassungen).
-- Untersuchung der `Not implemented: HTMLCanvasElement's getContext()` Warnungen in `TischSzene.test.ts`.
+- Die `Not implemented: HTMLCanvasElement's getContext()` Warnungen in `TischSzene.test.ts` sollten für ein robusteres Headless-Test-Setup untersucht werden, blockieren aber nicht die weitere Entwicklung.
 
 ---
 

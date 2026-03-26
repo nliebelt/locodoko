@@ -292,6 +292,19 @@ export class TischSzene extends Phaser.Scene {
   // Referenz auf den Geschwindigkeits-Toggle-Button fuer Label-Aktualisierungen
   private geschwindigkeitsButton?: HTMLButtonElement;
 
+  // Handler fuer Tastatur-Events auf dem Dokument
+  private tastaturHandler?: (e: KeyboardEvent) => void;
+
+  // Handler fuer Backdrop-Klicks auf Modals
+  private backdropClickHandler?: (event: MouseEvent) => void;
+
+  // Phaser-bezogene Elemente fuer das Vorbehalt-Overlay
+  private phaserVorbehaltOverlay?: Phaser.GameObjects.Container;
+  private phaserVorbehaltTitel?: Phaser.GameObjects.Text;
+  private phaserVorbehaltHinweis?: Phaser.GameObjects.Text;
+  private phaserVorbehaltButtons?: Phaser.GameObjects.GameObject[];
+  private phaserVorbehaltContainer?: Phaser.GameObjects.Container;
+
   constructor() {
     super('TischSzene');
   }
@@ -1070,7 +1083,7 @@ export class TischSzene extends Phaser.Scene {
     buttonReihe.className = 'ui-action-row';
     modell.moeglicheVorbehalte.forEach((vorbehalt) => {
       buttonReihe.append(
-        this.erstelleButton(formatiereVorbehalt(vorbehalt), () => appStore.meldeVorbehalt(vorbehalt), deaktiviert)
+        thisthis.erstelleButton(formatiereVorbehalt(vorbehalt), () => appStore.meldeVorbehalt(vorbehalt), deaktiviert)
       );
     });
 
@@ -2107,4 +2120,182 @@ ${formatiereAnsage(ansage.ansage)}`;
       this.renderTisch(this.letzterZustand ?? appStore.snapshot()); // Neu rendern
     }
   }
+
+  // --- Neue Methoden fuer Phaser-basierte UI-Elemente ---
+
+  /** Zeigt das Vorbehalt-Modal als Phaser-Overlay an. */
+  private zeigeVorbehaltOverlay(modell: TischAnsichtModell, zustand: AppZustand): void {
+    if (this.vorbehaltModalEl) { // HTML-basierter Modal-Container, wird nur noch für Hintergrund genutzt
+      this.vorbehaltModalEl.hidden = false;
+    }
+
+    const breite = this.scale.gameSize.width;
+    const hoehe = this.scale.gameSize.height;
+    const overlayContainer = this.add.container(0, 0).setDepth(1000); // Tiefer als alles andere
+
+    // Hintergrund-Rechteck, das den gesamten Bildschirm abdeckt
+    const background = this.add.rectangle(breite / 2, hoehe / 2, breite, hoehe, 0x000000, 0.6);
+    overlayContainer.add(background);
+
+    // Titel
+    const titelText = this.add.text(breite / 2, hoehe * 0.3, 'Vorbehalt ansagen', {
+      fontFamily: '"Space Grotesk", sans-serif',
+      fontSize: '36px',
+      color: '#f8f9fa',
+      fontStyle: 'bold'
+    }).setOrigin(0.5);
+    overlayContainer.add(titelText);
+
+    // Hinweis
+    const hinweisText = this.add.text(breite / 2, hoehe * 0.35, 'Nur serverseitig erlaubte Optionen werden angezeigt. Eine Auswahl ist zwingend.', {
+      fontFamily: '"Space Grotesk", sans-serif',
+      fontSize: '16px',
+      color: '#adb5bd',
+      wordWrap: { width: breite * 0.6 }
+    }).setOrigin(0.5);
+    overlayContainer.add(hinweisText);
+
+    // Buttons fuer Vorbehalte
+    const buttonContainer = this.add.container(breite / 2, hoehe * 0.55);
+    const buttonBreite = 180;
+    const buttonHoehe = 50;
+    const buttonAbstand = 20;
+    const buttonStartWinkel = - (modell.moeglicheVorbehalte.length - 1) * buttonAbstand / 2;
+
+    modell.moeglicheVorbehalte.forEach((vorbehalt, index) => {
+      const buttonText = formatiereVorbehalt(vorbehalt);
+      const button = this.add.rexBBCodeText(0, index * (buttonHoehe + buttonAbstand) + buttonStartWinkel, `[b]${buttonText}[/b]`, {
+        color: '#f8f9fa',
+        backgroundColor: '#0d3d1e', // Dunkelgruen
+        padding: { x: 15, y: 8 },
+        borderRadius: 5,
+        align: 'center',
+        stroke: '#f8f9fa',
+        strokeThickness: 2,
+        fontSize: '20px',
+        fixedWidth: buttonBreite,
+        fixedHeight: buttonHoehe,
+        valign: 'center',
+      });
+      button.setOrigin(0.5, 0.5); // Zentriert den Text innerhalb des Buttons
+
+      // Interaktivitaet + Handler
+      button.setInteractive({ useHandCursor: true });
+      button.on('pointerdown', () => {
+        void appStore.meldeVorbehalt(vorbehalt);
+        this.versteckeVorbehaltOverlay(); // Overlay nach Auswahl verstecken
+      });
+      button.on('pointerover', () => button.setStrokeStyle(3, 0xffe082)); // Goldene Umrandung bei Hover
+      button.on('pointerout', () => button.setStrokeStyle(2, 0xf8f9fa)); // Standard-Umrandung
+
+      buttonContainer.add(button);
+    });
+    overlayContainer.add(buttonContainer);
+
+    // Focus Management und Tastatursteuerung fuer das Overlay
+    this.tastaturVorbehaltIndex = Math.min(this.tastaturVorbehaltIndex, modell.moeglicheVorbehalte.length - 1);
+    this.aktualisiereVorbehaltFokus(overlayContainer, modell.moeglicheVorbehalte.length);
+    // Listener fuer Escape Key (falls vorhanden, wird hier NICHT hinzugefügt, da Spez. nur Button/Enter)
+    // Keyboard Handler wird weiter unten in verarbeiteTastatureingabe behandelt
+    this.phaserVorbehaltOverlay = overlayContainer; // Referenz speichern
+  }
+
+  /** Versteckt das Vorbehalt-Overlay und setzt HTML-basierten Container zurueck. */
+  private versteckeVorbehaltOverlay(): void {
+    if (this.vorbehaltModalEl) {
+      this.vorbehaltModalEl.hidden = true;
+      this.vorbehaltModalEl.innerHTML = '';
+    }
+    // Phaser Overlay entfernen
+    this.phaserVorbehaltOverlay?.destroy();
+    this.phaserVorbehaltOverlay = undefined;
+
+    // Keyboard Fokus zuruecksetzen oder zur naechsten logischen Interaktion lenken
+    this.tastaturVorbehaltIndex = 0; // Zuruecksetzen fuer naechsten Aufruf
+  }
+
+  /** Aktualisiert den Fokus fuer das Vorbehalt-Modal per Tastatur. */
+  private aktualisiereVorbehaltFokus(overlay?: Phaser.GameObjects.Container, anzahlButtons?: number): void {
+    // Annahme: buttons sind Phaser.GameObjects.Text oder ähnliches mit setStrokeStyle
+    const buttons = Array.from(overlay?.list.filter(go => go.type === 'rexbbcodetext') ?? []) as Phaser.GameObjects.GameObject[];
+    if (!buttons.length) return;
+
+    const currentIndex = Math.max(0, this.tastaturVorbehaltIndex); // Sicherstellen, dass Index gültig ist
+
+    // Alle Buttons zuruecksetzen
+    buttons.forEach((btn, idx) => {
+      if (btn instanceof Phaser.GameObjects.Text) { // Sicherstellen, dass es ein Textobjekt ist
+        btn.setStrokeStyle(2, 0xf8f9fa); // Standard-Umrandung
+        if (idx === currentIndex) {
+          btn.setStrokeStyle(3, 0xffe082); // Goldene Umrandung für Fokus
+        }
+      }
+    });
+
+    // Tastatur-Events fuer Vorbehalt-Modal im globalen Handler abfangen
+    // Hier nur Fokus setzen, falls noetig
+  }
+
+  // --- Anpassung der Floating Action Bar (Ansage-Buttons) ---
+  /** Aktualisiert die Floating Action Bar mit den moeglichen Ansage-Buttons. */
+  private aktualisiereFloatingActionBar(modell: TischAnsichtModell, zustand: AppZustand): void {
+    if (!this.floatingActionBarEl) {
+      return;
+    }
+    this.floatingActionBarEl.innerHTML = ''; // Clear existing HTML buttons
+
+    const istEigenerZug = modell.aktuellerSpieler === 'SUED';
+    if (!istEigenerZug || modell.moeglicheAnsagen.length === 0) {
+      return;
+    }
+
+    const deaktiviert = zustand.wirdGeladen || this.spielzugAnimationAktiv;
+    const buttonBreite = 140;
+    const buttonHoehe = 40;
+    const buttonAbstand = 15;
+    // Calculate starting angle to center buttons if there are multiple
+    const buttonStartWinkel = - (modell.moeglicheAnsagen.length - 1) * buttonAbstand / 2;
+
+    modell.moeglicheAnsagen.forEach((ansage, index) => {
+      const buttonText = formatiereAnsage(ansage);
+      // Create Phaser Text object for the button
+      const button = this.add.rexBBCodeText(0, index * (buttonHoehe + buttonAbstand) + buttonStartWinkel, `[b]${buttonText}[/b]`, {
+        color: '#f8f9fa',
+        backgroundColor: '#0d3d1e', // Dunkelgruen, aus Design-System
+        padding: { x: 10, y: 5 },
+        borderRadius: 4,
+        align: 'center',
+        stroke: '#f8f9fa',
+        strokeThickness: 2,
+        fontSize: '18px',
+        fixedWidth: buttonBreite,
+        fixedHeight: buttonHoehe,
+        valign: 'center',
+      });
+      button.setOrigin(0.5, 0.5); // Zentriert den Text innerhalb des Buttons
+
+      // Interaktivitaet + Handler
+      button.setInteractive({ useHandCursor: true });
+      button.on('pointerdown', () => {
+        void appStore.sageAnsageAn(ansage);
+        this.floatingActionBarEl.innerHTML = ''; // Clear buttons after click
+      });
+      button.on('pointerover', () => button.setStrokeStyle(3, 0xffe082)); // Goldene Umrandung bei Hover
+      button.on('pointerout', () => button.setStrokeStyle(2, 0xf8f9fa)); // Standard-Umrandung
+
+      // Add the Phaser button to the HTML container for now, will replace with Phaser container later
+      // NOTE: This is a temporary solution. Ideally, the floatingActionBarEl itself should be replaced by a Phaser Container.
+      // For now, we add the Phaser objects as DOM elements for simplicity in this iteration.
+      // A proper solution would involve a Phaser container managed by the scene.
+      // Due to limitations, we'll attach it to the existing HTML structure for now.
+      // This part requires further refactoring to be fully Phaser-based.
+      this.floatingActionBarEl?.append(button.canvas); // This is a workaround; ideally, button would be a child of a Phaser container
+    });
+  }
+
+  // --- Armut-Dialog Migration (wird später bearbeitet) ---
+
+  // --- Spieler-Nameplates Repositionierung (wird später bearbeitet) ---
+
+  // ... (rest of the TischSzene class) ...
 }
