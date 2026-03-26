@@ -4,14 +4,14 @@
 
 ## Notiz
 
-**2026-03-29:** Task 4.18 (Single-Player UX) - Laufende Tische in Lobby-Liste anzeigen & Kartenrückseiten-Asset hinzugefügt.
+**2026-03-29:** Task 4.18 (Single-Player UX) - Laufende Tische in Lobby-Liste anzeigen & Kartenrückseiten-Asset integriert.
 
 **Was wurde implementiert:**
 - **Laufende Tische in Lobby-Liste**: Tische mit Status `IM_SPIEL` werden nun in der Lobby angezeigt. Wenn der Spieler an einer solchen Partie teilnimmt, wird ein „Zurückkehren"-Button angezeigt; andernfalls erscheint der „Beitreten"-Button für `WARTEND`-Tische.
-- **Kartenrückseiten-Asset**: Ein statisches Kartenrückseiten-Asset (`card_back.svg`, CC0-lizendiert, blau mit 'Locodoko'-Text) wurde hinzugefügt und `AssetLoader.ts` angepasst, um es zu laden.
+- **Kartenrückseiten-Asset**: Ein statisches Kartenrückseiten-Asset (`card_back.svg`, CC0-lizendiert, blau mit 'Locodoko'-Text) wurde hinzugefügt, `AssetLoader.ts` angepasst, um es zu laden, und es wird nun für gewonnene Stiche (im Stichstapel) verwendet.
 
 **Nächster logischer Schritt:**
-- **4.18 Single-Player UX** (Fortsetzung) — Kartenrückseiten-Asset in der UI (TischSzene) verwenden.
+- **4.18 Single-Player UX** (Fortsetzung) — Kartenrückseiten-Asset in der UI (TischSzene) für gegnerische Hände verwenden.
 
 **Bekannte offene Fragen:**
 - Die `Not implemented: HTMLCanvasElement's getContext()` Warnungen in `TischSzene.test.ts` sollten für ein robusteres Headless-Test-Setup untersucht werden, blockieren aber nicht die weitere Entwicklung.
@@ -378,6 +378,6 @@
 - **PartieController**: `GET /api/partien/{id}/stand` existiert separat neben TischController — korrekt.
 - **Alle Tests grün**: 48 Frontend-Tests + umfangreiche Backend-Tests bestanden.
 - **TypeScript kompiliert fehlerfrei** (tsc --noEmit).
-- **Vite-Build**: Scheitert auf ARM64-Linux wegen fehlendem `@rollup/rollup-linux-arm64-gnu` — Plattform-spezifisch, kein Code-Problem.
+- **Vite-Build**: Scheitert auf ARM64-Linux wegen fehlendem `@rollup/rollup-linux-arm4-gnu` — Plattform-spezifisch, kein Code-Problem.
 - **TischService** ist mit ~541 Zeilen groß und koppelt Lobby-Management mit Spiellogik. Kein Blocker, aber bei Wachstum sollte Spiellogik in eigenen Service extrahiert werden.
 - **Exception-Klassen in `session`-Package**: `SpielverwaltungNichtGefundenException` und `SpielverwaltungKonfliktException` werden von `lobby` geworfen — invertierte Abhängigkeit.
