@@ -6,8 +6,7 @@ import {
   TEXTUR_KARTE_OFFEN,
   TEXTUR_KARTE_VERDECKT,
   texturSchluesselFuerKarte,
-  registriereKartenSpriteTexturen,
-  ladeKartenBilderVorab
+  registriereKartenSpriteTexturen
 } from '../assets/AssetLoader';
 import { appStore } from '../anwendung';
 import { Logger } from '../logger';
@@ -128,6 +127,22 @@ function berechneLayout(breite: number, hoehe: number): TischLayout {
   };
 }
 
+// Berechnet die Nameplate-Position fuer jeden Spieler so, dass keine Ueberlappung mit dem Kartenfaecher entsteht.
+// SUED/NORD: rechts vom horizontalen Kartenfaecher. WEST: unterhalb des vertikalen Kartenstapels.
+// OST: oberhalb des vertikalen Kartenstapels.
+function nameplatePositionFuer(
+  spielerPosition: SpielerPosition,
+  breite: number,
+  hoehe: number
+): { x: number; y: number } {
+  switch (spielerPosition) {
+    case 'SUED': return { x: breite * 0.79, y: hoehe * 0.87 };
+    case 'NORD': return { x: breite * 0.79, y: hoehe * 0.08 };
+    case 'WEST': return { x: breite * 0.10, y: hoehe * 0.68 };
+    case 'OST':  return { x: breite * 0.90, y: hoehe * 0.27 };
+  }
+}
+
 function texturFuerTischhintergrund(tischhintergrund: Tischhintergrund): string {
   return ({
     FILZ_GRUEN: TEXTUR_FILZ,
@@ -219,16 +234,7 @@ export class TischSzene extends Phaser.Scene {
   // Einstellungs-Modal
   private einstellungsModalEl?: HTMLDivElement;
 
-  // Floating Action Bar (Ansage-Buttons zwischen Stichmitte und eigener Hand)
-  private floatingActionBarEl?: HTMLDivElement;
-
-  // Vorbehalt-Modal (blockierendes Vollbild-Overlay fuer die Vorbehalt-Phase)
-  private vorbehaltModalEl?: HTMLDivElement;
-
-  // Spielaktionen-Overlay (unten Mitte)
-  private aktionsHinweis?: HTMLParagraphElement;
-
-  private aktionsInhalt?: HTMLDivElement;
+  // (Vorbehalt, Ansage, Armut-Dialog, Aktions-Hinweis werden als Phaser-Objekte in renderTisch() gerendert)
 
   private ergebnisInhalt?: HTMLDivElement;
 
@@ -300,7 +306,8 @@ export class TischSzene extends Phaser.Scene {
    * prozedurale Canvas-Generierung zurueck.
    */
   preload(): void {
-    ladeKartenBilderVorab(this);
+    // Kartentexturen werden in create() prozedural per Canvas erzeugt.
+    // Kein PNG-Preloading — Canvas-Texturen haben immer Vorrang und sind direkt verfuegbar.
   }
 
   /**
@@ -356,7 +363,7 @@ export class TischSzene extends Phaser.Scene {
       this.synchronisiereAnimationszustand(modell, zustand);
       this.letzterZustand = zustand;
       this.aktualisiereUi(zustand, modell);
-      if (zustand.bereich === 'LOBBY') {
+      if (zustand.bereich === 'SPIELVERWALTUNG') {
         this.scene.start('LobbySzene');
         return;
       }
@@ -469,23 +476,6 @@ export class TischSzene extends Phaser.Scene {
     `;
     einstellungsModal.append(einstellungsDialog);
 
-    // ── Floating Action Bar (Ansage-Buttons zwischen Stichmitte und Hand) ────
-    const floatingActionBar = document.createElement('div');
-    floatingActionBar.className = 'floating-action-bar';
-
-    // ── Vorbehalt-Modal (blockierendes Vollbild-Overlay) ─────────────────────
-    const vorbehaltModal = document.createElement('div');
-    vorbehaltModal.className = 'vorbehalt-modal-backdrop';
-    vorbehaltModal.hidden = true;
-
-    // ── Spielaktionen-Overlay (unten Mitte, über den Karten) ─────────────────
-    const spielaktioneOverlay = document.createElement('div');
-    spielaktioneOverlay.className = 'spielaktionen-overlay';
-    spielaktioneOverlay.innerHTML = `
-      <p class="ui-panel__muted" data-aktions-hinweis></p>
-      <div class="ui-action-stack" data-aktions-inhalt></div>
-    `;
-
     // ── Toast-Stack (oben rechts) ─────────────────────────────────────────────
     const toastStack = document.createElement('div');
     toastStack.className = 'ui-toast-stack';
@@ -512,8 +502,6 @@ export class TischSzene extends Phaser.Scene {
     const tischhintergrundSelect = einstellungsDialog.querySelector('[data-tischhintergrund]');
     const kiSchwierigkeitSelect = einstellungsDialog.querySelector('[data-ki-schwierigkeit]');
     const geschwindigkeitsButton = seitenlade.querySelector('[data-animationsgeschwindigkeit]');
-    const aktionsHinweis = spielaktioneOverlay.querySelector('[data-aktions-hinweis]');
-    const aktionsInhalt = spielaktioneOverlay.querySelector('[data-aktions-inhalt]');
     const ergebnisInhalt = seitenlade.querySelector('[data-ergebnis]');
     const lobbyButton = seitenlade.querySelector('[data-lobby-button]');
     const leaveButton = seitenlade.querySelector('[data-leave-button]');
@@ -533,8 +521,6 @@ export class TischSzene extends Phaser.Scene {
       || !(tischhintergrundSelect instanceof HTMLSelectElement)
       || !(kiSchwierigkeitSelect instanceof HTMLSelectElement)
       || !(geschwindigkeitsButton instanceof HTMLButtonElement)
-      || !(aktionsHinweis instanceof HTMLParagraphElement)
-      || !(aktionsInhalt instanceof HTMLDivElement)
       || !(ergebnisInhalt instanceof HTMLDivElement)
       || !(lobbyButton instanceof HTMLButtonElement)
       || !(leaveButton instanceof HTMLButtonElement)
@@ -640,10 +626,6 @@ export class TischSzene extends Phaser.Scene {
     this.seitenladeLetzteSticheListe = seitenladeLetzteSticheListe;
     this.seitenladeLetzteStichButton = seitenladeLetzteStichButton;
     this.einstellungsModalEl = einstellungsModal;
-    this.floatingActionBarEl = floatingActionBar;
-    this.vorbehaltModalEl = vorbehaltModal;
-    this.aktionsHinweis = aktionsHinweis;
-    this.aktionsInhalt = aktionsInhalt;
     this.ergebnisInhalt = ergebnisInhalt;
     this.tischhintergrundSelect = tischhintergrundSelect;
     this.kiSchwierigkeitSelect = kiSchwierigkeitSelect;
@@ -652,7 +634,7 @@ export class TischSzene extends Phaser.Scene {
     this.rundenEndeModal = rundenEndeModal;
     this.partieEndeModal = partieEndeModal;
 
-    uiRoot.append(topBar, seitenlade, einstellungsModal, floatingActionBar, vorbehaltModal, spielaktioneOverlay, toastStack, rundenEndeModal, partieEndeModal);
+    uiRoot.append(topBar, seitenlade, einstellungsModal, toastStack, rundenEndeModal, partieEndeModal);
   }
 
   private aktualisiereUi(zustand: AppZustand, modell = this.erstelleModell(zustand)): void {
@@ -669,15 +651,6 @@ export class TischSzene extends Phaser.Scene {
 
     // ── Seitenlade aktualisieren ──────────────────────────────────────────────
     this.aktualisiereSeitenlade(modell, zustand);
-
-    // ── Floating Action Bar (Ansage-Buttons) ─────────────────────────────────
-    this.aktualisiereFloatingActionBar(modell, zustand);
-
-    // ── Vorbehalt-Modal (blockierendes Overlay) ───────────────────────────────
-    this.aktualisiereVorbehaltModal(modell, zustand);
-
-    // ── Spielaktionen-Overlay aktualisieren ──────────────────────────────────
-    this.aktualisiereAktionsbereich(modell, zustand);
 
     // ── Einstellungs-Selects aktualisieren ────────────────────────────────────
     const darfKonfigurieren = zustand.spieler?.spielerId === tisch.erstelltVonSpielerId && tisch.status === 'WARTEND';
@@ -816,7 +789,7 @@ export class TischSzene extends Phaser.Scene {
     this.renderStichmitte(ebene, modell, mitteX, mitteY, breite, hoehe);
 
     modell.spieler.forEach((spieler) => {
-      const position = layout[spieler.position];
+      const npPos = nameplatePositionFuer(spieler.position, breite, hoehe);
       // Nameplate: rechteckig; SUED/NORD horizontal (breit, flach), WEST/OST vertikal (schmal, hoeher)
       const istHorizontal = spieler.position === 'SUED' || spieler.position === 'NORD';
       const nameplateBreite = istHorizontal ? Math.max(120, breite * 0.11) : Math.max(80, breite * 0.07);
@@ -825,12 +798,12 @@ export class TischSzene extends Phaser.Scene {
       const rahmenFarbe = spieler.istAktivHervorgehoben ? 0xffe082 : 0xd8f3dc;
       const rahmenStaerke = spieler.istAktivHervorgehoben ? 3 : 1;
       ebene.add(
-        this.add.rectangle(position.x, position.y, nameplateBreite, nameplateHoehe, 0x0d3d1e, 0.92)
+        this.add.rectangle(npPos.x, npPos.y, nameplateBreite, nameplateHoehe, 0x0d3d1e, 0.92)
           .setStrokeStyle(rahmenStaerke, rahmenFarbe, 0.85)
       );
       // Name (fett, oben)
       const nameSchriftGroesse = Math.round(Math.max(13, breite * 0.012));
-      ebene.add(this.add.text(position.x, position.y - Math.round(nameplateHoehe * 0.28), spieler.name, {
+      ebene.add(this.add.text(npPos.x, npPos.y - Math.round(nameplateHoehe * 0.28), spieler.name, {
         color: '#f8f9fa',
         fontSize: `${nameSchriftGroesse}px`,
         fontStyle: 'bold'
@@ -838,19 +811,19 @@ export class TischSzene extends Phaser.Scene {
       // Typ-Badge: [Du] / [KI] / [Mensch]
       const typLabel = spieler.istSelbst ? '[Du]' : spieler.istMensch ? '[Mensch]' : '[KI]';
       const kleinSchrift = Math.round(Math.max(10, breite * 0.009));
-      ebene.add(this.add.text(position.x, position.y, typLabel, {
+      ebene.add(this.add.text(npPos.x, npPos.y, typLabel, {
         color: spieler.istSelbst ? '#ffd166' : '#a3c4a8',
         fontSize: `${kleinSchrift}px`
       }).setOrigin(0.5));
       // Stiche-Zahl + Geber-Badge
       const sticheText = spieler.istGeber ? `${spieler.stiche} Stiche [G]` : `${spieler.stiche} Stiche`;
-      ebene.add(this.add.text(position.x, position.y + Math.round(nameplateHoehe * 0.28), sticheText, {
+      ebene.add(this.add.text(npPos.x, npPos.y + Math.round(nameplateHoehe * 0.28), sticheText, {
         color: spieler.istGeber ? '#ffd166' : '#d8f3dc',
         fontSize: `${kleinSchrift}px`
       }).setOrigin(0.5));
       // Partei-Badge: [RE] (gold) / [KONTRA] (blau) wenn bekannt
       if (spieler.partei) {
-        ebene.add(this.add.text(position.x, position.y - Math.round(nameplateHoehe * 0.58), `[${spieler.partei}]`, {
+        ebene.add(this.add.text(npPos.x, npPos.y - Math.round(nameplateHoehe * 0.58), `[${spieler.partei}]`, {
           color: spieler.partei === 'RE' ? '#ffd166' : '#90caf9',
           fontSize: `${kleinSchrift}px`,
           fontStyle: 'bold'
@@ -867,6 +840,14 @@ export class TischSzene extends Phaser.Scene {
         color: '#f8f9fa',
         fontSize: `${Math.round(Math.max(14, breite * 0.012))}px`
       }).setOrigin(0.5));
+    }
+
+    // Phaser-UI: Aktions-Hinweis, Ansage-Buttons, Armut-Dialog (zuerst); Vorbehalt-Dialog zuletzt (liegt oben)
+    if (zustand.partieStand?.laufendesSpiel) {
+      this.renderAktionsHinweis(ebene, modell, zustand, breite, hoehe);
+      this.renderAnsageButtons(ebene, modell, zustand, breite, hoehe);
+      this.renderArmutBereich(ebene, modell, zustand, breite, hoehe);
+      this.renderVorbehaltDialog(ebene, modell, zustand, breite, hoehe);
     }
 
     this.tischEbene = ebene;
@@ -900,113 +881,11 @@ export class TischSzene extends Phaser.Scene {
 
     modell.aktuelleStichmitte.forEach((eintrag) => {
       const slot = slotPositionen[eintrag.position];
+      // Karte an der Slot-Position ihres Spielers — Position macht Zuordnung deutlich, kein Text noetig
       ebene.add(this.add.image(slot.x, slot.y, texturSchluesselFuerKarte(eintrag.karte.farbe, eintrag.karte.wert)).setDisplaySize(kgroesse.w, kgroesse.h));
-      ebene.add(this.add.text(slot.x, slot.y + Math.round(kgroesse.h * 0.63), eintrag.name, {
-        color: '#d8f3dc',
-        fontSize: `${Math.round(Math.max(11, breite * 0.011))}px`
-      }).setOrigin(0.5));
     });
   }
 
-
-  private aktualisiereAktionsbereich(modell: TischAnsichtModell, zustand: AppZustand): void {
-    if (!this.aktionsHinweis || !this.aktionsInhalt) {
-      return;
-    }
-
-    const aktionenDeaktiviert = zustand.wirdGeladen || this.spielzugAnimationAktiv;
-    this.aktionsHinweis.textContent = this.bestimmeAktionsHinweis(modell, zustand);
-    this.aktionsInhalt.innerHTML = '';
-
-    if (!zustand.partieStand?.laufendesSpiel) {
-      this.aktionsInhalt.append(this.erstelleInfoSektion('Sobald die Partie laeuft, erscheinen hier deine phasenabhaengigen Aktionen.'));
-      return;
-    }
-
-    const istEigenerZug = modell.aktuellerSpieler === 'SUED';
-
-    if (istEigenerZug && modell.armutAktion) {
-      this.aktionsInhalt.append(this.erstelleArmutSektion(modell, aktionenDeaktiviert));
-    }
-
-    if (this.aktionsInhalt.childElementCount === 0) {
-      const text = istEigenerZug && modell.phase === 'STICHPHASE'
-        ? 'Spiele eine der hervorgehobenen Karten aus deiner Hand.'
-        : 'Aktuell wartet das Spiel auf andere Spieler oder auf den naechsten serverseitigen Statuswechsel.';
-      this.aktionsInhalt.append(this.erstelleInfoSektion(text));
-    }
-  }
-
-  /**
-   * Aktualisiert die Floating Action Bar mit den moeglichen Ansage-Buttons.
-   * Die Bar erscheint nur wenn eigene Ansagen moeglich sind und verschwindet sonst per CSS :empty.
-   * Ansagen werden vom Backend serverseitig geprueft — nur erlaubte Ansagen werden angezeigt.
-   */
-  private aktualisiereFloatingActionBar(modell: TischAnsichtModell, zustand: AppZustand): void {
-    if (!this.floatingActionBarEl) {
-      return;
-    }
-    this.floatingActionBarEl.innerHTML = '';
-
-    const istEigenerZug = modell.aktuellerSpieler === 'SUED';
-    if (!istEigenerZug || modell.moeglicheAnsagen.length === 0) {
-      return;
-    }
-
-    const deaktiviert = zustand.wirdGeladen || this.spielzugAnimationAktiv;
-    modell.moeglicheAnsagen.forEach((ansage) => {
-      this.floatingActionBarEl?.append(
-        this.erstelleButton(formatiereAnsage(ansage), () => appStore.sageAnsageAn(ansage), deaktiviert)
-      );
-    });
-  }
-
-  /**
-   * Aktualisiert das Vorbehalt-Modal: zeigt ein blockierendes Vollbild-Overlay wenn der eigene
-   * Spieler in der VORBEHALT_ANSAGE-Phase eine Wahl treffen muss.
-   * Das Modal kann nicht per Escape geschlossen werden — eine Entscheidung ist zwingend.
-   */
-  private aktualisiereVorbehaltModal(modell: TischAnsichtModell, zustand: AppZustand): void {
-    if (!this.vorbehaltModalEl) {
-      return;
-    }
-
-    const istEigenerZug = modell.aktuellerSpieler === 'SUED';
-    if (!istEigenerZug || modell.moeglicheVorbehalte.length === 0) {
-      this.vorbehaltModalEl.hidden = true;
-      this.vorbehaltModalEl.innerHTML = '';
-      return;
-    }
-
-    // Modal aufbauen — wird bei jedem Update neu gebaut (idempotent)
-    this.vorbehaltModalEl.hidden = false;
-    this.vorbehaltModalEl.innerHTML = '';
-
-    const dialog = document.createElement('div');
-    dialog.className = 'ui-modal';
-
-    const titel = document.createElement('h2');
-    titel.textContent = 'Vorbehalt ansagen';
-    const hinweis = document.createElement('span');
-    hinweis.className = 'ui-hint';
-    hinweis.textContent = 'Nur serverseitig erlaubte Optionen werden angezeigt. Eine Auswahl ist zwingend.';
-
-    const deaktiviert = zustand.wirdGeladen || this.spielzugAnimationAktiv;
-    const buttonReihe = document.createElement('div');
-    buttonReihe.className = 'ui-action-row';
-    modell.moeglicheVorbehalte.forEach((vorbehalt) => {
-      buttonReihe.append(
-        this.erstelleButton(formatiereVorbehalt(vorbehalt), () => appStore.meldeVorbehalt(vorbehalt), deaktiviert)
-      );
-    });
-
-    dialog.append(titel, hinweis, buttonReihe);
-    this.vorbehaltModalEl.append(dialog);
-
-    // Focus-Trap: markierten Vorbehalt-Button fokussieren
-    this.tastaturVorbehaltIndex = Math.min(this.tastaturVorbehaltIndex, modell.moeglicheVorbehalte.length - 1);
-    setTimeout(() => this.aktualisiereVorbehaltFokus(), 0);
-  }
 
   private aktualisiereAnsageHistorie(modell: TischAnsichtModell): void {
     if (!this.seitenladeAnsageHistorie) {
@@ -1243,79 +1122,14 @@ export class TischSzene extends Phaser.Scene {
         bild.on('pointerout', () => setzeOffset(0));
         bild.on('pointerdown', () => {
           if (istSpielbar) {
-            void this.spieleKarteMitAnimation(karte.id, modell);
+            void this.spieleKarteMitAnimation(karte.id);
             return;
           }
           this.toggleArmutKarte(karte.id, modell.armutAktion?.kartenAnzahl ?? 0);
           this.renderTisch(this.letzterZustand ?? appStore.snapshot());
-          this.aktualisiereAktionsbereich(modell, this.letzterZustand ?? appStore.snapshot());
         });
       }
     }
-  }
-
-  private erstelleArmutSektion(modell: TischAnsichtModell, deaktiviert: boolean): HTMLElement {
-    const armutAktion = modell.armutAktion;
-    if (!armutAktion) {
-      return this.erstelleInfoSektion('Keine aktive Armut-Aktion vorhanden.');
-    }
-
-    if (armutAktion.modus === 'ANBIETEN') {
-      const sektion = this.erstelleSektion(
-        'Armut anbieten',
-        `Waehle genau ${armutAktion.kartenAnzahl} Trumpfkarte${armutAktion.kartenAnzahl === 1 ? '' : 'n'} und bestaetige das Angebot.`
-      );
-      sektion.append(this.erstelleAuswahlHinweis(armutAktion.kartenAnzahl));
-      sektion.append(this.erstelleButton(
-        'Trumpfkarten anbieten',
-        () => this.bestaetigeArmut(modell),
-        deaktiviert || this.ausgewaehlteArmutKarten.size !== armutAktion.kartenAnzahl
-      ));
-      return sektion;
-    }
-
-    const sektion = this.erstelleSektion(
-      `Armut von ${armutAktion.armutSpielerName}`,
-      `Bei Annahme gibst du ${armutAktion.kartenAnzahl} Karte${armutAktion.kartenAnzahl === 1 ? '' : 'n'} zurueck.`
-    );
-    if (!this.armutAnnahmeAktiv) {
-      const buttonReihe = document.createElement('div');
-      buttonReihe.className = 'ui-action-row';
-      buttonReihe.append(this.erstelleButton('Annehmen', () => {
-        if (armutAktion.kartenAnzahl === 0) {
-          appStore.beantworteArmut(true, []);
-          return;
-        }
-        this.armutAnnahmeAktiv = true;
-        this.ausgewaehlteArmutKarten.clear();
-        this.aktualisiereAktionsbereich(modell, this.letzterZustand ?? appStore.snapshot());
-        this.renderTisch(this.letzterZustand ?? appStore.snapshot());
-      }, deaktiviert));
-      buttonReihe.append(this.erstelleButton('Ablehnen', () => {
-        this.armutAnnahmeAktiv = false;
-        this.ausgewaehlteArmutKarten.clear();
-        appStore.beantworteArmut(false, []);
-      }, deaktiviert, 'ui-button--secondary'));
-      sektion.append(buttonReihe);
-      return sektion;
-    }
-
-    sektion.append(this.erstelleAuswahlHinweis(armutAktion.kartenAnzahl));
-    const buttonReihe = document.createElement('div');
-    buttonReihe.className = 'ui-action-row';
-    buttonReihe.append(this.erstelleButton(
-      'Annahme bestaetigen',
-      () => this.bestaetigeArmut(modell),
-      deaktiviert || this.ausgewaehlteArmutKarten.size !== armutAktion.kartenAnzahl
-    ));
-    buttonReihe.append(this.erstelleButton('Abbrechen', () => {
-      this.armutAnnahmeAktiv = false;
-      this.ausgewaehlteArmutKarten.clear();
-      this.aktualisiereAktionsbereich(modell, this.letzterZustand ?? appStore.snapshot());
-      this.renderTisch(this.letzterZustand ?? appStore.snapshot());
-    }, deaktiviert, 'ui-button--secondary'));
-    sektion.append(buttonReihe);
-    return sektion;
   }
 
   private bestaetigeArmut(modell: TischAnsichtModell): void {
@@ -1419,7 +1233,7 @@ export class TischSzene extends Phaser.Scene {
     }
   }
 
-  private async spieleKarteMitAnimation(karteId: string, modell: TischAnsichtModell): Promise<void> {
+  private async spieleKarteMitAnimation(karteId: string): Promise<void> {
     Logger.szene('Karte angeklickt', { karte: karteId });
     if (this.spielzugAnimationAktiv) {
       return;
@@ -1435,7 +1249,6 @@ export class TischSzene extends Phaser.Scene {
     const ziel = stichSlotPositionen(breite / 2, hoehe / 2, breite, hoehe).SUED;
     this.spielzugAnimationAktiv = true;
     this.wartendeKartenId = karteId;
-    this.aktualisiereAktionsbereich(modell, this.letzterZustand ?? appStore.snapshot());
     await this.animationen?.animiereKarteAusspielen(kartenobjekte, ziel);
     appStore.spieleKarte(karteId);
   }
@@ -1839,14 +1652,257 @@ export class TischSzene extends Phaser.Scene {
     return sektion;
   }
 
-  private erstelleAuswahlHinweis(erwarteteAnzahl: number): HTMLDivElement {
-    const auswahl = document.createElement('div');
-    auswahl.className = 'ui-selection';
-    const ids = Array.from(this.ausgewaehlteArmutKarten);
-    auswahl.textContent = ids.length > 0
-      ? `Ausgewaehlt (${ids.length}/${erwarteteAnzahl}): ${ids.join(', ')}`
-      : `Ausgewaehlt (0/${erwarteteAnzahl}): noch keine Karten.`;
-    return auswahl;
+  // ── Phaser-UI Hilfsmethoden ──────────────────────────────────────────────────
+
+  /**
+   * Erzeugt einen Phaser-Button bestehend aus einem interaktiven Rechteck und einem Text-Label.
+   * Beide Objekte werden direkt der uebergebenen Ebene hinzugefuegt (kein Container-Overhead).
+   * Der Handler wird nur gebunden wenn deaktiviert=false.
+   */
+  private erstellePhaserButton(
+    ebene: Phaser.GameObjects.Container,
+    x: number,
+    y: number,
+    w: number,
+    h: number,
+    beschriftung: string,
+    handler: () => void,
+    deaktiviert = false,
+    sekundaer = false
+  ): void {
+    const hgFarbe = deaktiviert ? 0x2a2a2a : sekundaer ? 0x1a2a1a : 0x1a5a2a;
+    const rahmenFarbe = deaktiviert ? 0x555555 : sekundaer ? 0x4a7a5a : 0x4adf7a;
+    const textFarbe = deaktiviert ? '#888888' : '#f8f9fa';
+    const schriftGroesse = `${Math.round(Math.max(12, this.scale.gameSize.width * 0.011))}px`;
+
+    const bg = this.add.rectangle(x, y, w, h, hgFarbe, deaktiviert ? 0.5 : 0.92)
+      .setStrokeStyle(1, rahmenFarbe, 0.9);
+    ebene.add(bg);
+    ebene.add(this.add.text(x, y, beschriftung, {
+      color: textFarbe,
+      fontSize: schriftGroesse,
+      fontStyle: 'bold'
+    }).setOrigin(0.5));
+
+    if (!deaktiviert) {
+      bg.setInteractive({ useHandCursor: true }).on('pointerdown', handler);
+    }
+  }
+
+  /**
+   * Rendert das Vorbehalt-Dialog-Overlay als Phaser-Objekt (ersetzt das HTML-Modal).
+   * Erscheint nur wenn der eigene Spieler in der Vorbehalt-Phase eine Auswahl treffen muss.
+   * Legt sich als halbtransparenter Block ueber das gesamte Spielfeld (kein HTML-Dimm-Effekt).
+   */
+  private renderVorbehaltDialog(
+    ebene: Phaser.GameObjects.Container,
+    modell: TischAnsichtModell,
+    zustand: AppZustand,
+    breite: number,
+    hoehe: number
+  ): void {
+    if (modell.aktuellerSpieler !== 'SUED' || modell.moeglicheVorbehalte.length === 0) {
+      return;
+    }
+
+    // Abdeckung des gesamten Spielfelds (faengt Mausklicks ab)
+    ebene.add(this.add.rectangle(breite / 2, hoehe / 2, breite, hoehe, 0x000000, 0.6)
+      .setInteractive());
+
+    const optionen = modell.moeglicheVorbehalte;
+    const btnH = Math.round(Math.max(36, hoehe * 0.055));
+    const btnW = Math.round(Math.min(260, breite * 0.22));
+    const abstand = Math.round(btnH * 0.35);
+    const dialogH = Math.round(hoehe * 0.1) + optionen.length * (btnH + abstand);
+    const dialogW = btnW + Math.round(breite * 0.04);
+    const dialogY = hoehe / 2;
+
+    ebene.add(this.add.rectangle(breite / 2, dialogY, dialogW, dialogH, 0x0a2818, 0.97)
+      .setStrokeStyle(2, 0x4adf7a, 0.7));
+
+    ebene.add(this.add.text(breite / 2, dialogY - dialogH / 2 + Math.round(hoehe * 0.025), 'Vorbehalt ansagen', {
+      color: '#f8f9fa',
+      fontSize: `${Math.round(Math.max(15, breite * 0.014))}px`,
+      fontStyle: 'bold'
+    }).setOrigin(0.5, 0));
+
+    const deaktiviert = zustand.wirdGeladen || this.spielzugAnimationAktiv;
+    const startY = dialogY - dialogH / 2 + Math.round(hoehe * 0.07);
+    optionen.forEach((vorbehalt, index) => {
+      this.erstellePhaserButton(
+        ebene,
+        breite / 2,
+        startY + index * (btnH + abstand),
+        btnW,
+        btnH,
+        formatiereVorbehalt(vorbehalt),
+        () => appStore.meldeVorbehalt(vorbehalt),
+        deaktiviert
+      );
+    });
+  }
+
+  /**
+   * Rendert Ansage-Buttons (Re, Kontra, Keine 90 usw.) als Phaser-Objekte.
+   * Erscheinen nur wenn der eigene Spieler Ansagen machen kann.
+   * Positioniert zwischen Stichmitte und eigener Hand.
+   */
+  private renderAnsageButtons(
+    ebene: Phaser.GameObjects.Container,
+    modell: TischAnsichtModell,
+    zustand: AppZustand,
+    breite: number,
+    hoehe: number
+  ): void {
+    if (modell.aktuellerSpieler !== 'SUED' || modell.moeglicheAnsagen.length === 0) {
+      return;
+    }
+
+    const deaktiviert = zustand.wirdGeladen || this.spielzugAnimationAktiv;
+    const btnH = Math.round(Math.max(32, hoehe * 0.048));
+    const btnW = Math.round(Math.min(110, breite * 0.09));
+    const abstand = Math.round(breite * 0.008);
+    const ansagen = modell.moeglicheAnsagen;
+    const gesamtBreite = ansagen.length * (btnW + abstand) - abstand;
+    const startX = breite / 2 - gesamtBreite / 2 + btnW / 2;
+    const y = hoehe * 0.70;
+
+    ansagen.forEach((ansage, index) => {
+      this.erstellePhaserButton(
+        ebene,
+        startX + index * (btnW + abstand),
+        y,
+        btnW,
+        btnH,
+        formatiereAnsage(ansage),
+        () => appStore.sageAnsageAn(ansage),
+        deaktiviert
+      );
+    });
+  }
+
+  /**
+   * Rendert den Aktions-Hinweis-Text als Phaser-Textobjekt unten im Bild (ersetzt HTML-Overlay).
+   * Zeigt an was der Spieler tun soll (z.B. "Du bist dran. Spiel eine Karte...").
+   */
+  private renderAktionsHinweis(
+    ebene: Phaser.GameObjects.Container,
+    modell: TischAnsichtModell,
+    zustand: AppZustand,
+    breite: number,
+    hoehe: number
+  ): void {
+    const hinweis = this.bestimmeAktionsHinweis(modell, zustand);
+    if (!hinweis) {
+      return;
+    }
+    ebene.add(this.add.text(breite / 2, hoehe * 0.76, hinweis, {
+      color: '#c8e6c9',
+      fontSize: `${Math.round(Math.max(12, breite * 0.010))}px`,
+      align: 'center',
+      wordWrap: { width: breite * 0.55 }
+    }).setOrigin(0.5));
+  }
+
+  /**
+   * Rendert Armut-Aktionsbuttons als Phaser-Objekte (ersetzt den HTML-Aktionsbereich).
+   * Erscheint nur in der ARMUT_TAUSCH-Phase wenn der eigene Spieler betroffen ist.
+   * Trumpfkarten-Auswahl erfolgt weiterhin per Klick auf die Phaser-Handkarten.
+   */
+  private renderArmutBereich(
+    ebene: Phaser.GameObjects.Container,
+    modell: TischAnsichtModell,
+    zustand: AppZustand,
+    breite: number,
+    hoehe: number
+  ): void {
+    if (!modell.armutAktion || modell.aktuellerSpieler !== 'SUED') {
+      return;
+    }
+    const armutAktion = modell.armutAktion;
+    const deaktiviert = zustand.wirdGeladen || this.spielzugAnimationAktiv;
+    const btnH = Math.round(Math.max(32, hoehe * 0.048));
+    const y = hoehe * 0.73;
+
+    if (armutAktion.modus === 'ANBIETEN') {
+      const ausgewaehlt = this.ausgewaehlteArmutKarten.size;
+      const hinweis = `Waehle ${armutAktion.kartenAnzahl} Trumpfkarte${armutAktion.kartenAnzahl === 1 ? '' : 'n'} (${ausgewaehlt}/${armutAktion.kartenAnzahl} gewaehlt)`;
+      ebene.add(this.add.text(breite / 2, y - Math.round(hoehe * 0.032), hinweis, {
+        color: '#d8f3dc',
+        fontSize: `${Math.round(Math.max(11, breite * 0.010))}px`,
+        align: 'center'
+      }).setOrigin(0.5));
+      this.erstellePhaserButton(
+        ebene, breite / 2, y,
+        Math.round(Math.min(200, breite * 0.17)), btnH,
+        'Trumpfkarten anbieten',
+        () => this.bestaetigeArmut(modell),
+        deaktiviert || ausgewaehlt !== armutAktion.kartenAnzahl
+      );
+      return;
+    }
+
+    // ANTWORTEN: Annehmen oder Ablehnen
+    if (!this.armutAnnahmeAktiv) {
+      const btnW = Math.round(Math.min(130, breite * 0.11));
+      const abstand = Math.round(breite * 0.012);
+      this.erstellePhaserButton(
+        ebene, breite / 2 - btnW / 2 - abstand / 2, y,
+        btnW, btnH,
+        'Annehmen',
+        () => {
+          if (armutAktion.kartenAnzahl === 0) {
+            appStore.beantworteArmut(true, []);
+            return;
+          }
+          this.armutAnnahmeAktiv = true;
+          this.ausgewaehlteArmutKarten.clear();
+          this.renderTisch(this.letzterZustand ?? appStore.snapshot());
+        },
+        deaktiviert
+      );
+      this.erstellePhaserButton(
+        ebene, breite / 2 + btnW / 2 + abstand / 2, y,
+        btnW, btnH,
+        'Ablehnen',
+        () => {
+          this.armutAnnahmeAktiv = false;
+          this.ausgewaehlteArmutKarten.clear();
+          appStore.beantworteArmut(false, []);
+        },
+        deaktiviert,
+        true
+      );
+    } else {
+      const ausgewaehlt = this.ausgewaehlteArmutKarten.size;
+      const hinweis = `Waehle ${armutAktion.kartenAnzahl} Karte${armutAktion.kartenAnzahl === 1 ? '' : 'n'} zurueck (${ausgewaehlt}/${armutAktion.kartenAnzahl})`;
+      ebene.add(this.add.text(breite / 2, y - Math.round(hoehe * 0.032), hinweis, {
+        color: '#d8f3dc',
+        fontSize: `${Math.round(Math.max(11, breite * 0.010))}px`,
+        align: 'center'
+      }).setOrigin(0.5));
+      const btnW = Math.round(Math.min(150, breite * 0.13));
+      const abstand = Math.round(breite * 0.012);
+      this.erstellePhaserButton(
+        ebene, breite / 2 - btnW / 2 - abstand / 2, y,
+        btnW, btnH,
+        'Annahme bestaetigen',
+        () => this.bestaetigeArmut(modell),
+        deaktiviert || ausgewaehlt !== armutAktion.kartenAnzahl
+      );
+      this.erstellePhaserButton(
+        ebene, breite / 2 + btnW / 2 + abstand / 2, y,
+        Math.round(Math.min(100, breite * 0.085)), btnH,
+        'Abbrechen',
+        () => {
+          this.armutAnnahmeAktiv = false;
+          this.ausgewaehlteArmutKarten.clear();
+          this.renderTisch(this.letzterZustand ?? appStore.snapshot());
+        },
+        deaktiviert,
+        true
+      );
+    }
   }
 
   private erstelleButton(
@@ -1913,25 +1969,32 @@ export class TischSzene extends Phaser.Scene {
       return;
     }
 
-    // 1. Vorbehalt-Modal hat absoluten Vorrang — keine anderen Shortcuts moeglich
-    if (this.vorbehaltModalEl && !this.vorbehaltModalEl.hidden) {
+    // 1. Vorbehalt-Dialog hat absoluten Vorrang — keine anderen Shortcuts moeglich
+    const vorbehaltAktiv = modell.aktuellerSpieler === 'SUED' && modell.moeglicheVorbehalte.length > 0;
+    if (vorbehaltAktiv) {
       this.verarbeiteVorbehaltTaste(e, modell);
       return;
     }
 
-    // 2. Armut-Antwort-Shortcuts (Annehmen / Ablehnen)
+    // 2. Armut-Antwort-Shortcuts (Annehmen / Ablehnen) — direkt ohne DOM-Button-Suche
     if (modell.aktuellerSpieler === 'SUED'
         && modell.armutAktion?.modus === 'ANTWORTEN'
         && !this.armutAnnahmeAktiv) {
       if (e.key === 'a' || e.key === 'A') {
-        const btn = this.holeSichtbarenButton('Annehmen');
-        btn?.click();
+        if (modell.armutAktion.kartenAnzahl === 0) {
+          appStore.beantworteArmut(true, []);
+        } else {
+          this.armutAnnahmeAktiv = true;
+          this.ausgewaehlteArmutKarten.clear();
+          this.renderTisch(zustand, modell);
+        }
         e.preventDefault();
         return;
       }
       if (e.key === 'n' || e.key === 'N') {
-        const btn = this.holeSichtbarenButton('Ablehnen');
-        btn?.click();
+        this.armutAnnahmeAktiv = false;
+        this.ausgewaehlteArmutKarten.clear();
+        appStore.beantworteArmut(false, []);
         e.preventDefault();
         return;
       }
@@ -2011,16 +2074,14 @@ export class TischSzene extends Phaser.Scene {
       return;
     }
 
-    // ArrowUp/Down: Navigation durch Optionen
+    // ArrowUp/Down: Navigation durch Optionen (Phaser-Dialog hat keinen DOM-Focus)
     if (e.key === 'ArrowUp') {
       this.tastaturVorbehaltIndex = Math.max(0, this.tastaturVorbehaltIndex - 1);
-      this.aktualisiereVorbehaltFokus();
       e.preventDefault();
       return;
     }
     if (e.key === 'ArrowDown') {
       this.tastaturVorbehaltIndex = Math.min(optionen.length - 1, this.tastaturVorbehaltIndex + 1);
-      this.aktualisiereVorbehaltFokus();
       e.preventDefault();
       return;
     }
@@ -2033,18 +2094,6 @@ export class TischSzene extends Phaser.Scene {
       }
       e.preventDefault();
     }
-  }
-
-  /** Setzt den Browser-Fokus auf den per tastaturVorbehaltIndex markierten Vorbehalt-Button. */
-  private aktualisiereVorbehaltFokus(): void {
-    if (!this.vorbehaltModalEl) {
-      return;
-    }
-    const buttons = Array.from(
-      this.vorbehaltModalEl.querySelectorAll<HTMLButtonElement>('button:not([disabled])')
-    );
-    const ziel = buttons[this.tastaturVorbehaltIndex];
-    ziel?.focus();
   }
 
   /**
@@ -2115,7 +2164,7 @@ export class TischSzene extends Phaser.Scene {
       if (this.tastaturKarteIndex >= 0 && this.tastaturKarteIndex < kartenAnzahl) {
         const karteId = modell.spielbareKarten[this.tastaturKarteIndex];
         if (karteId && !this.spielzugAnimationAktiv) {
-          void this.spieleKarteMitAnimation(karteId, modell);
+          void this.spieleKarteMitAnimation(karteId);
         }
       }
       e.preventDefault();
@@ -2184,15 +2233,6 @@ export class TischSzene extends Phaser.Scene {
     }
   }
 
-  /**
-   * Sucht einen sichtbaren, aktivierten Button nach exaktem Text (fuer Tastaturkuerzel).
-   * Wird fuer Armut-Shortcuts (Annehmen/Ablehnen) genutzt.
-   */
-  private holeSichtbarenButton(text: string): HTMLButtonElement | undefined {
-    return Array.from(document.querySelectorAll<HTMLButtonElement>('button'))
-      .find((btn) => btn.textContent?.trim() === text && !btn.disabled && !btn.hidden);
-  }
-
   private handleResize(): void {
     const breite = this.scale.gameSize.width;
     const hoehe = this.scale.gameSize.height;
@@ -2250,8 +2290,6 @@ export class TischSzene extends Phaser.Scene {
     this.seitenladeLetzteSticheListe = undefined;
     this.seitenladeLetzteStichButton = undefined;
     this.einstellungsModalEl = undefined;
-    this.aktionsHinweis = undefined;
-    this.aktionsInhalt = undefined;
     this.ergebnisInhalt = undefined;
     this.tischhintergrundSelect = undefined;
     this.kiSchwierigkeitSelect = undefined;

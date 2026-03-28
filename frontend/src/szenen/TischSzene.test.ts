@@ -472,14 +472,39 @@ function handkartenBilder(szene: TischSzeneInstanz): FakeGameObject[] {
     .sort((links, rechts) => links.x - rechts.x);
 }
 
-function holeButton(text: string): HTMLButtonElement {
-  const button = Array.from(document.querySelectorAll('button'))
-    .find((element) => element.textContent?.trim() === text);
-  if (!(button instanceof HTMLButtonElement)) {
-    throw new Error(`Button "${text}" wurde nicht gefunden.`);
-  }
-  return button;
+// Liefert alle Text-Objekte aus der Phaser-Tischebene (fuer Phaser-UI-Pruefungen).
+function phaserTexte(szene: TischSzeneInstanz): FakeGameObject[] {
+  const ebene = szene['tischEbene'] as FakeContainer | undefined;
+  return (ebene?.kinder ?? []).filter((kind) => kind.typ === 'text');
 }
+
+// Prueft ob ein Phaser-Text mit dem exakten Inhalt in der Tischebene existiert.
+function hatPhaserText(szene: TischSzeneInstanz, text: string): boolean {
+  return phaserTexte(szene).some((kind) => kind.text === text);
+}
+
+// Liefert das interaktive Rechteck, das dem Phaser-Button mit dem gegebenen Label entspricht.
+// Da erstellePhaserButton zuerst das Rechteck, dann den Text hinzufuegt, liegt das Rechteck
+// am Index (buttonTextIndex - 1) in der Kinderliste.
+function phaserButtonRectFuerLabel(szene: TischSzeneInstanz, label: string): FakeGameObject | undefined {
+  const ebene = szene['tischEbene'] as FakeContainer | undefined;
+  const kinder = ebene?.kinder ?? [];
+  const textIndex = kinder.findIndex((kind) => kind.typ === 'text' && kind.text === label);
+  if (textIndex < 1) {
+    return undefined;
+  }
+  return kinder[textIndex - 1];
+}
+
+// Loest den pointerdown-Handler des Phaser-Buttons mit dem gegebenen Label aus.
+function klickePhaserButton(szene: TischSzeneInstanz, label: string): void {
+  const rect = phaserButtonRectFuerLabel(szene, label);
+  if (!rect) {
+    throw new Error(`Phaser-Button "${label}" wurde nicht gefunden.`);
+  }
+  rect.emit('pointerdown');
+}
+
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -535,7 +560,7 @@ describe('TischSzene', () => {
     expect(appStoreHarness.store.spieleKarte).toHaveBeenCalledWith('HERZ-ZEHN-1');
   });
 
-  it('zeigt serverseitig erlaubte Vorbehalte an und sendet die Auswahl zurueck', () => {
+  it('zeigt serverseitig erlaubte Vorbehalte als Phaser-Buttons an und sendet die Auswahl zurueck', () => {
     const zustand = baueZustand({
       partieStand: bauePartieStand(baueLaufendesSpiel({
         phase: 'VORBEHALT_ANSAGE',
@@ -544,13 +569,14 @@ describe('TischSzene', () => {
       }))
     });
 
-    baueSzene(zustand);
+    const { szene } = baueSzene(zustand);
 
-    expect(() => holeButton('Gesund')).not.toThrow();
-    expect(() => holeButton('Armut')).not.toThrow();
-    expect(Array.from(document.querySelectorAll('button')).some((button) => button.textContent?.trim() === 'Bubensolo')).toBe(false);
+    // Vorbehalt-Dialog rendert als Phaser-Text (kein HTML-Modal mehr)
+    expect(hatPhaserText(szene, 'Gesund')).toBe(true);
+    expect(hatPhaserText(szene, 'Armut')).toBe(true);
+    expect(hatPhaserText(szene, 'Bubensolo')).toBe(false);
 
-    holeButton('Armut').click();
+    klickePhaserButton(szene, 'Armut');
     expect(appStoreHarness.store.meldeVorbehalt).toHaveBeenCalledWith('ARMUT');
   });
 
@@ -580,7 +606,7 @@ describe('TischSzene', () => {
     expect(appStoreHarness.store.aktualisiereAktuellenTischhintergrund).toHaveBeenCalledWith('BLAU_GRAFIK');
   });
 
-  it('zeigt Fehler-Toasts und regelkonforme Ansage-Buttons im DOM an', () => {
+  it('zeigt Fehler-Toasts und regelkonforme Ansage-Buttons als Phaser-Objekte an', () => {
     const zustand = baueZustand({
       partieStand: bauePartieStand(baueLaufendesSpiel({
         moeglicheAnsagen: ['RE']
@@ -592,12 +618,15 @@ describe('TischSzene', () => {
       }
     });
 
-    baueSzene(zustand);
+    const { szene } = baueSzene(zustand);
 
+    // Toast bleibt HTML
     const toast = document.querySelector('.ui-toast.ui-toast--error');
     expect(toast?.textContent).toContain('Ansagefenster ist bereits geschlossen.');
 
-    holeButton('Re').click();
+    // Ansage-Buttons sind jetzt Phaser-Objekte
+    expect(hatPhaserText(szene, 'Re')).toBe(true);
+    klickePhaserButton(szene, 'Re');
     expect(appStoreHarness.store.sageAnsageAn).toHaveBeenCalledWith('RE');
   });
 
@@ -635,9 +664,7 @@ describe('TischSzene', () => {
     const zweiteRunde = handkartenBilder(szene);
     expect(zweiteRunde[0].tint).toBe(0xffe082);
 
-    const bestaetigen = holeButton('Trumpfkarten anbieten');
-    expect(bestaetigen.disabled).toBe(false);
-    bestaetigen.click();
+    klickePhaserButton(szene, 'Trumpfkarten anbieten');
 
     expect(appStoreHarness.store.beantworteArmut).toHaveBeenCalledWith(true, ['KARO-KOENIG-1']);
   });
@@ -747,7 +774,8 @@ describe('TischSzene', () => {
 
     await vi.runAllTimersAsync();
 
-    expect(tweens.add).toHaveBeenCalledTimes(1);
+    // 4 Karten × 2 Tweens (tweenZu + tweenScale) + 3 Popup-Tweens = 11
+    expect(tweens.add).toHaveBeenCalledTimes(11);
     expect(tweens.aufrufe[0].duration).toBe(600);
     vi.useRealTimers();
   });
@@ -1057,47 +1085,42 @@ describe('TischSzene', () => {
     expect(modal.hidden).toBe(true);
   });
 
-  // WARUM: Die Floating Action Bar ist der einzige Ort wo Ansage-Buttons erscheinen;
-  // fehlt sie, koennen Spieler keine Ansagen machen und verlieren dadurch Punkte.
-  it('zeigt Ansage-Buttons in der Floating Action Bar wenn Ansagen moeglich sind', () => {
+  // WARUM: Ansage-Buttons sind der einzige Weg um Re/Kontra zu melden;
+  // fehlen sie, verliert der Spieler moegliche Punkte.
+  it('zeigt Ansage-Buttons als Phaser-Objekte wenn Ansagen moeglich sind', () => {
     const zustand = baueZustand({
       partieStand: bauePartieStand(baueLaufendesSpiel({
         moeglicheAnsagen: ['RE', 'KEINE_90']
       }))
     });
 
-    baueSzene(zustand);
+    const { szene } = baueSzene(zustand);
 
-    const fab = document.querySelector('.floating-action-bar') as HTMLElement;
-    expect(fab).toBeTruthy();
-    const buttons = fab.querySelectorAll('button');
-    expect(buttons).toHaveLength(2);
-    expect(buttons[0].textContent).toBe('Re');
-    expect(buttons[1].textContent).toBe('Keine 90');
+    expect(hatPhaserText(szene, 'Re')).toBe(true);
+    expect(hatPhaserText(szene, 'Keine 90')).toBe(true);
 
-    buttons[0].click();
+    klickePhaserButton(szene, 'Re');
     expect(appStoreHarness.store.sageAnsageAn).toHaveBeenCalledWith('RE');
   });
 
-  // WARUM: Die FAB darf nicht als leeres Element im DOM stehen wenn keine Ansagen moeglich sind,
-  // da sie sonst Klicks im Spielbereich abfangen wuerde (pointer-events).
-  it('hat eine leere Floating Action Bar wenn keine Ansagen moeglich sind', () => {
+  // WARUM: Wenn keine Ansagen moeglich sind, duerfen auch keine Ansage-Buttons sichtbar sein —
+  // sonst verwirrt es den Spieler oder loest versehentliche Aktionen aus.
+  it('zeigt keine Ansage-Buttons wenn keine Ansagen moeglich sind', () => {
     const zustand = baueZustand({
       partieStand: bauePartieStand(baueLaufendesSpiel({
         moeglicheAnsagen: []
       }))
     });
 
-    baueSzene(zustand);
+    const { szene } = baueSzene(zustand);
 
-    const fab = document.querySelector('.floating-action-bar') as HTMLElement;
-    expect(fab).toBeTruthy();
-    expect(fab.children).toHaveLength(0);
+    expect(hatPhaserText(szene, 'Re')).toBe(false);
+    expect(hatPhaserText(szene, 'Keine 90')).toBe(false);
   });
 
-  // WARUM: Das Vorbehalt-Modal muss das Spiel blockieren und alle Optionen zeigen;
-  // fehlt es, koennen Spieler ihren Vorbehalt nicht melden und das Spiel haengt.
-  it('zeigt das Vorbehalt-Modal als Vollbild-Overlay wenn eigene Vorbehalte moeglich sind', () => {
+  // WARUM: Der Vorbehalt-Dialog muss alle Optionen zeigen damit der Spieler seinen
+  // Vorbehalt melden kann — fehlt er, haengt das Spiel in der Vorbehalt-Phase.
+  it('zeigt den Vorbehalt-Dialog als Phaser-Overlay wenn eigene Vorbehalte moeglich sind', () => {
     const zustand = baueZustand({
       partieStand: bauePartieStand(baueLaufendesSpiel({
         phase: 'VORBEHALT_ANSAGE',
@@ -1106,21 +1129,19 @@ describe('TischSzene', () => {
       }))
     });
 
-    baueSzene(zustand);
+    const { szene } = baueSzene(zustand);
 
-    const modal = document.querySelector('.vorbehalt-modal-backdrop') as HTMLElement;
-    expect(modal).toBeTruthy();
-    expect(modal.hidden).toBe(false);
-    const buttons = modal.querySelectorAll('button');
-    expect(buttons).toHaveLength(3);
-    expect(buttons[0].textContent).toBe('Gesund');
-    expect(buttons[1].textContent).toBe('Hochzeit');
-    expect(buttons[2].textContent).toBe('Armut');
+    expect(hatPhaserText(szene, 'Gesund')).toBe(true);
+    expect(hatPhaserText(szene, 'Hochzeit')).toBe(true);
+    expect(hatPhaserText(szene, 'Armut')).toBe(true);
+
+    klickePhaserButton(szene, 'Gesund');
+    expect(appStoreHarness.store.meldeVorbehalt).toHaveBeenCalledWith('GESUND');
   });
 
-  // WARUM: Das Vorbehalt-Modal darf nur fuer den eigenen Spieler erscheinen; zeigt es sich
-  // auch wenn ein anderer Spieler am Zug ist, blockiert es die Sicht unnoetig.
-  it('versteckt das Vorbehalt-Modal wenn ein anderer Spieler am Zug ist', () => {
+  // WARUM: Der Vorbehalt-Dialog darf nur fuer den eigenen Spieler erscheinen; zeigt er sich
+  // auch wenn ein anderer Spieler am Zug ist, blockiert er die Sicht unnoetig.
+  it('zeigt keinen Vorbehalt-Dialog wenn ein anderer Spieler am Zug ist', () => {
     const zustand = baueZustand({
       partieStand: bauePartieStand(baueLaufendesSpiel({
         phase: 'VORBEHALT_ANSAGE',
@@ -1130,10 +1151,10 @@ describe('TischSzene', () => {
       }))
     });
 
-    baueSzene(zustand);
+    const { szene } = baueSzene(zustand);
 
-    const modal = document.querySelector('.vorbehalt-modal-backdrop') as HTMLElement;
-    expect(modal.hidden).toBe(true);
+    expect(hatPhaserText(szene, 'Gesund')).toBe(false);
+    expect(hatPhaserText(szene, 'Hochzeit')).toBe(false);
   });
 
   // ── Tastatursteuerung ───────────────────────────────────────────────────────

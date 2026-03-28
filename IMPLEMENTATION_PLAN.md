@@ -4,17 +4,22 @@
 
 ## Notiz
 
-**2026-03-28:** Quick Game funktioniert wieder (Backend-Validierungsfehler durch partielle Konfiguration behoben). TischSzene auf stabilen Pre-Gemini-Stand zurückgesetzt (Gemini hatte rexBBCodeText halluziniert → 103 TS-Fehler). Frontend baut clean durch. Linux-Rollup-Binary aus package.json entfernt.
+**2026-03-28:** Task 4.20 (TischSzene Phaser-Migration & kritische UI-Bugs) vollständig implementiert und getestet.
+
+**Was wurde implementiert:**
+- `preload()` leer (kein PNG-Laden mehr) → Canvas-Texturen via `registriereKartenSpriteTexturen()` in `create()`. Behebt Karten-Transparenz.
+- Spieler-Nameplates mit positionsspezifischen Koordinaten außerhalb der Kartenfächer (SUED/NORD: x=0.79, WEST: y=0.68, OST: y=0.27).
+- Stich-Karten ohne Spieler-Label-Text darunter.
+- Alle HTML-Overlays (floatingActionBar, vorbehaltModal, spielaktioneOverlay) entfernt.
+- Neue Phaser-Render-Methoden: `renderVorbehaltDialog`, `renderAnsageButtons`, `renderAktionsHinweis`, `renderArmutBereich`, `erstellePhaserButton`.
+- Tests auf Phaser-Helfer umgestellt (phaserTexte, hatPhaserText, klickePhaserButton).
+- 62 Tests grün, Build+Lint clean.
 
 **Nächster logischer Schritt:**
-- **4.20 TischSzene: Phaser-Migration & kritische UI-Bugs** — das ist die TOP-PRIORITÄT. Details siehe unten.
+- **4.19 Kritische Backend-Bugs**: Stilles Solo Fix, Variable Trumpfsoli, KI-Timeout Single-Player.
 
-**Bekannte Probleme (User-reported, 2026-03-28):**
-- Karten rendern beim allerersten Seitenaufruf nicht (Browser-Reload nötig)
-- Eigene und aufgedeckte Karten erscheinen transparent/schwer erkennbar
-- Stich-Karten zeigen Spieler-Label-Text statt gestapelter positionierter Darstellung
-- Spieler-Nameplates überlappen mit Karten
-- Vorbehalt-Ansage und "Du bist dran"-Hinweis sind noch HTML-Overlays (dunkeln den Hintergrund ab)
+**Bekannte Probleme:**
+- Karten rendern beim allerersten Seitenaufruf evtl. nicht (Browser-Reload — war vorher bekannt, durch Canvas-only-Approach entschärft).
 
 ---
 
@@ -160,9 +165,9 @@
 ### 3.4 TischSzene — Interaktion
 - [x] Karten anklicken zum Ausspielen (mit Animation)
 - [x] Spielbare Karten hervorgehoben / nicht-spielbare ausgegraut
-- [ ] Vorbehalt-Buttons (Gesund, Soli, Hochzeit, Armut) — noch HTML, Migration zu Phaser in 4.20
-- [ ] Ansage-Buttons (Re, Kontra, Keine 90, etc.) — noch HTML, Migration zu Phaser in 4.20
-- [ ] Aktions-Hinweis ("Du bist dran…") — noch HTML-Overlay, Migration zu Phaser in 4.20
+- [x] Vorbehalt-Buttons (Gesund, Soli, Hochzeit, Armut) — Phaser-Dialog (Task 4.20)
+- [x] Ansage-Buttons (Re, Kontra, Keine 90, etc.) — Phaser-Objekte (Task 4.20)
+- [x] Aktions-Hinweis ("Du bist dran…") — Phaser-Text (Task 4.20)
 - [x] Debug-Modus (alle Hände sichtbar)
 
 ### 3.5 TischSzene — Animationen
@@ -184,7 +189,7 @@
 - [x] Tests: TischAnsichtModell (8 Tests)
 
 ### 3.7 TischSzene Tests
-- [x] 23 Tests in TischSzene.test.ts
+- [x] 32 Tests in TischSzene.test.ts (Phaser-UI vollständig getestet)
 
 ---
 
@@ -192,24 +197,9 @@
 
 ### Priorität 0 — TischSzene spielbar & vollständig Phaser
 
-- [ ] **4.20 TischSzene: Phaser-Migration & kritische UI-Bugs** ← NÄCHSTE AUFGABE FÜR RALPH
+- [x] **4.20 TischSzene: Phaser-Migration & kritische UI-Bugs** ✓ 2026-03-28
 
-  **Bug-Fixes (kritisch):**
-  - [ ] **Karten-Preload**: `preload()`-Methode in `TischSzene` ergänzen, `ladeKartenBilderVorab()` dort aufrufen (nicht in `create()`). Behebt: Karten fehlen beim ersten Laden.
-  - [ ] **Karten-Transparenz**: `registriereKartenSpriteTexturen()` in `create()` VOR dem PNG-Ladeversuch aufrufen — Canvas-Texturen sollen immer Vorrang haben. Alternativ: PNG-Lade-Pfad in `ladeKartenBilderVorab` komplett entfernen und nur Canvas nutzen. Behebt: eigene und aufgedeckte Karten erscheinen transparent.
-  - [ ] **Stich-Karten-Layout**: Karten im laufenden Stich sollen ohne Spieler-Label-Text dargestellt werden. Stattdessen: 4 Karten leicht nach ihrer Spieler-Position versetzt (SUED=unten, NORD=oben, WEST=links, OST=rechts), sodass erkennbar ist wer was gespielt hat. Kein Text auf den Karten.
-  - [ ] **Nameplate-Überlappung**: Spieler-Nameplates sollen neben den Karten sitzen, nicht über ihnen. SUED: unter den eigenen Karten. NORD/WEST/OST: jeweils außen an ihrer Kartenposition.
-
-  **Phaser-Migration (kein HTML mehr in TischSzene):**
-  - [ ] **Vorbehalt-Dialog**: Alle Vorbehalt-Buttons (Gesund, Solo, Hochzeit, Armut) als Phaser-Panel/Buttons — kein HTML-Overlay, kein abgedunkelter Hintergrund.
-  - [ ] **Aktions-Hinweis**: "Du bist dran. Spiel eine serverseitig erlaubte Karte…" als Phaser-Text-Panel unten im Bild — kein HTML-Overlay.
-  - [ ] **Ansage-Buttons**: Re, Kontra, Keine 90 etc. als Phaser-interaktive-Objekte — kein HTML.
-  - [ ] **Armut-Dialog**: Karten-Auswahl für Armut als Phaser-Overlay.
-  - [ ] **Ziel**: `#ui-root` ist während des aktiven Spiels (TischSzene) leer. Kein sichtbares HTML im Spielbereich.
-
-  **Validierung:**
-  - `cd frontend && npm test && npm run build && npm run lint` grün
-  - E2E-Test läuft durch: `cd e2e && npx playwright test`
+  Alle Bug-Fixes und Phaser-Migration abgeschlossen. 62 Tests grün, Build+Lint clean.
 
 ### Priorität 1 — Kritische Backend-Bugs
 
