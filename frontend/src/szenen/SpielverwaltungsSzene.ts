@@ -53,14 +53,21 @@ export class SpielverwaltungsSzene extends Phaser.Scene {
         this.scene.start('TischSzene');
       }
     });
+    
+    // Add keyboard listener for scene navigation
+    window.addEventListener('keydown', this.handleSceneKeyDown.bind(this));
   }
 
   shutdown(): void {
     this.aufraeumen();
+    // Remove keyboard listener
+    window.removeEventListener('keydown', this.handleSceneKeyDown.bind(this));
   }
 
   destroy(): void {
     this.aufraeumen();
+    // Remove keyboard listener (though shutdown should cover this)
+    window.removeEventListener('keydown', this.handleSceneKeyDown.bind(this));
   }
 
   private baueUi(): void {
@@ -306,5 +313,47 @@ export class SpielverwaltungsSzene extends Phaser.Scene {
     const uiRoot = holeUiRoot();
     uiRoot.innerHTML = '';
     this.uiContainer = undefined;
+  }
+
+  // New methods for keyboard navigation
+  private handleSceneKeyDown(e: KeyboardEvent): void {
+    const focusableElements = this.getFocusableUiElements();
+    if (!focusableElements.length) {
+      return; // No interactive elements found
+    }
+
+    const currentIndex = focusableElements.findIndex(el => el === document.activeElement);
+
+    if (e.key === 'ArrowDown' || e.key === 'ArrowRight') {
+      e.preventDefault(); // Prevent default scrolling
+      const nextIndex = (currentIndex + 1) % focusableElements.length;
+      focusableElements[nextIndex].focus();
+    } else if (e.key === 'ArrowUp' || e.key === 'ArrowLeft') {
+      e.preventDefault(); // Prevent default scrolling
+      const prevIndex = (currentIndex - 1 + focusableElements.length) % focusableElements.length;
+      focusableElements[prevIndex].focus();
+    } else if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      const currentElement = focusableElements[currentIndex];
+      if (currentElement instanceof HTMLButtonElement) {
+        currentElement.click();
+      }
+    } else if (e.key === 'Escape') {
+      // If modal is open, Escape is handled there. Otherwise, close table list.
+      if (this.tischListeOffen) {
+        this.tischListeOffen = false;
+        this.stoppePolling();
+        this.aktualisiere(appStore.snapshot());
+      }
+    }
+  }
+
+  private getFocusableUiElements(): HTMLElement[] {
+    if (!this.uiContainer) {
+      return [];
+    }
+    // Return interactive elements within the uiContainer
+    const elements = Array.from(this.uiContainer.querySelectorAll<HTMLElement>('button, input, select'));
+    return elements.filter(el => !(el as HTMLButtonElement | HTMLInputElement | HTMLSelectElement).disabled && el.tabIndex !== -1);
   }
 }

@@ -47,20 +47,6 @@ function stichSlotPositionen(
   };
 }
 
-// Positionen fuer die gewonnenen Stiche als gestapelter Faecher (rechts neben/bei der Hand)
-function stichStapelPositionen(
-  breite: number, hoehe: number, layout: TischLayout
-): Record<SpielerPosition, { x: number; y: number }> {
-  const versatzX = Math.round(breite * 0.12);
-  const versatzY = Math.round(hoehe * 0.12);
-  return {
-    SUED: { x: layout.SUED.x + versatzX, y: layout.SUED.y },
-    WEST: { x: layout.WEST.x, y: layout.WEST.y + versatzY },
-    NORD: { x: layout.NORD.x - versatzX, y: layout.NORD.y },
-    OST: { x: layout.OST.x, y: layout.OST.y - versatzY }
-  };
-}
-
 // Kartengrösse skaliert mit der Spielbreite; 110x165px Zielgrösse; Seitenverhältnis 110:165
 function berechneKartenGroesse(breite: number): { w: number; h: number } {
   // 110x165px Zielgrösse; skaliert proportional mit der Spielbreite
@@ -68,7 +54,7 @@ function berechneKartenGroesse(breite: number): { w: number; h: number } {
   return { w, h: Math.round(w * (165 / 110)) };
 }
 
-// Kartenspiel-Abstand im Faecher skaliert mit der Spielgrösse
+// Kartenabstand im Fächer skaliert mit der Spielgrösse
 function berechneKartenAbstand(breite: number, hoehe: number): { horizontal: number; vertikal: number } {
   return {
     horizontal: Math.max(22, Math.round(breite * 0.022)),  // ≈ 28 bei 1280px
@@ -136,9 +122,9 @@ function holeUiRoot(): HTMLElement {
 function berechneLayout(breite: number, hoehe: number): TischLayout {
   return {
     SUED: { x: breite * 0.5, y: hoehe * 0.82, kartenX: breite * 0.28, kartenY: hoehe * 0.87, kartenWinkel: 0 },
-    WEST: { x: breite * 0.12, y: hoehe * 0.5, kartenX: breite * 0.10, kartenY: hoehe * 0.37, kartenWinkel: 90 },
+    WEST: { x: breite * 0.12, y: hoehe * 0.5, kartenX: breite * 0.06, kartenY: hoehe * 0.37, kartenWinkel: 90 },
     NORD: { x: breite * 0.5, y: hoehe * 0.18, kartenX: breite * 0.28, kartenY: hoehe * 0.08, kartenWinkel: 0 },
-    OST: { x: breite * 0.88, y: hoehe * 0.5, kartenX: breite * 0.90, kartenY: hoehe * 0.37, kartenWinkel: 90 }
+    OST: { x: breite * 0.88, y: hoehe * 0.5, kartenX: breite * 0.94, kartenY: hoehe * 0.37, kartenWinkel: 90 }
   };
 }
 
@@ -233,7 +219,7 @@ export class TischSzene extends Phaser.Scene {
   // Einstellungs-Modal
   private einstellungsModalEl?: HTMLDivElement;
 
-  // Floating Action Bar (Ansage-Buttons zwischen Stichmitte und Hand)
+  // Floating Action Bar (Ansage-Buttons zwischen Stichmitte und eigener Hand)
   private floatingActionBarEl?: HTMLDivElement;
 
   // Vorbehalt-Modal (blockierendes Vollbild-Overlay fuer die Vorbehalt-Phase)
@@ -280,7 +266,16 @@ export class TischSzene extends Phaser.Scene {
   // Wird waehrend der Austeilen-Animation auf true gesetzt; Karten werden dann unsichtbar gerendert
   private austeilenAktiv = false;
 
-  // Index der per Tastatur ausgewaehlten Karte in modell.spielbareKarten (-1 = keine Auswahl)
+  // Handler fuer Escape-Taste am Rundenende-Modal (wird bei Schliessen entfernt)
+  private escapeHandler?: (e: KeyboardEvent) => void;
+
+  // Handler fuer Backdrop-Klick am Rundenende-Modal (wird bei Schliessen entfernt)
+  private backdropClickHandler?: (e: MouseEvent) => void;
+
+  // Handler fuer globale Tastatursteuerung (wird in create() registriert, in aufraeumen() entfernt)
+  private tastaturHandler?: (e: KeyboardEvent) => void;
+
+  // Index der per Tastatur ausgewaehlten spielbaren Karte in modell.spielbareKarten (-1 = keine Auswahl)
   private tastaturKarteIndex = -1;
 
   // Index der aktuell per Tastatur markierten Option im Vorbehalt-Modal (0-basiert)
@@ -291,19 +286,6 @@ export class TischSzene extends Phaser.Scene {
 
   // Referenz auf den Geschwindigkeits-Toggle-Button fuer Label-Aktualisierungen
   private geschwindigkeitsButton?: HTMLButtonElement;
-
-  // Handler fuer Tastatur-Events auf dem Dokument
-  private tastaturHandler?: (e: KeyboardEvent) => void;
-
-  // Handler fuer Backdrop-Klicks auf Modals
-  private backdropClickHandler?: (event: MouseEvent) => void;
-
-  // Phaser-bezogene Elemente fuer das Vorbehalt-Overlay
-  private phaserVorbehaltOverlay?: Phaser.GameObjects.Container;
-  private phaserVorbehaltTitel?: Phaser.GameObjects.Text;
-  private phaserVorbehaltHinweis?: Phaser.GameObjects.Text;
-  private phaserVorbehaltButtons?: Phaser.GameObjects.GameObject[];
-  private phaserVorbehaltContainer?: Phaser.GameObjects.Container;
 
   constructor() {
     super('TischSzene');
@@ -374,8 +356,8 @@ export class TischSzene extends Phaser.Scene {
       this.synchronisiereAnimationszustand(modell, zustand);
       this.letzterZustand = zustand;
       this.aktualisiereUi(zustand, modell);
-      if (zustand.bereich === 'SPIELVERWALTUNG') {
-        this.scene.start('SpielverwaltungsSzene');
+      if (zustand.bereich === 'LOBBY') {
+        this.scene.start('LobbySzene');
         return;
       }
       // Neues Spiel erkannt: Karten werden unsichtbar gerendert und dann animiert ausgeteilt
@@ -491,7 +473,7 @@ export class TischSzene extends Phaser.Scene {
     const floatingActionBar = document.createElement('div');
     floatingActionBar.className = 'floating-action-bar';
 
-    // ── Vorbehalt-Modal (blockierendes Vollbild-Overlay fuer die Vorbehalt-Phase) ─────
+    // ── Vorbehalt-Modal (blockierendes Vollbild-Overlay) ─────────────────────
     const vorbehaltModal = document.createElement('div');
     vorbehaltModal.className = 'vorbehalt-modal-backdrop';
     vorbehaltModal.hidden = true;
@@ -518,7 +500,7 @@ export class TischSzene extends Phaser.Scene {
     partieEndeModal.className = 'ui-modal-backdrop';
     partieEndeModal.hidden = true;
 
-    // ── Referenzen auf DOM-Elemente sichern ──────────────────────────────────
+    // ── Referenzen auf DOM-Elemente sichern ───────────────────────────────────
     const hudStichzaehlerEl = topBar.querySelector('[data-stichzaehler]');
     const hudSpieleInfo = topBar.querySelector('[data-spiele-info]');
     const hudDebugBtn = topBar.querySelector('[data-debug-button]');
@@ -673,16 +655,6 @@ export class TischSzene extends Phaser.Scene {
     uiRoot.append(topBar, seitenlade, einstellungsModal, floatingActionBar, vorbehaltModal, spielaktioneOverlay, toastStack, rundenEndeModal, partieEndeModal);
   }
 
-  /** Phaser-Lifecycle: Raeumt Ressourcen auf wenn die Szene gestoppt wird (z.B. Wechsel zur LobbySzene). */
-  shutdown(): void {
-    this.aufraeumen();
-  }
-
-  /** Phaser-Lifecycle: Raeumt Ressourcen auf wenn die Szene zerstoert wird. */
-  destroy(): void {
-    this.aufraeumen();
-  }
-
   private aktualisiereUi(zustand: AppZustand, modell = this.erstelleModell(zustand)): void {
     const tisch = zustand.aktuellerTisch;
     if (!tisch) {
@@ -701,7 +673,7 @@ export class TischSzene extends Phaser.Scene {
     // ── Floating Action Bar (Ansage-Buttons) ─────────────────────────────────
     this.aktualisiereFloatingActionBar(modell, zustand);
 
-    // ── Vorbehalt-Modal (blockierendes Vollbild-Overlay) ───────────────────────
+    // ── Vorbehalt-Modal (blockierendes Overlay) ───────────────────────────────
     this.aktualisiereVorbehaltModal(modell, zustand);
 
     // ── Spielaktionen-Overlay aktualisieren ──────────────────────────────────
@@ -746,9 +718,9 @@ export class TischSzene extends Phaser.Scene {
     if (this.hudSpieleInfo) {
       const spiel = zustand.partieStand?.laufendesSpiel;
       if (spiel) {
-        this.hudSpieleInfo.textContent = `Spiel ${spiel.spielNummer}/${zustand.partieStand?.anzahlSpiele ?? '?'} · ${modell.spieltyp ?? spiel.spieltyp}`;
+        this.hudSpieleInfo.textContent = `${tisch.name} · Spiel ${spiel.spielNummer}/${zustand.partieStand?.anzahlSpiele ?? '?'} · ${modell.spieltyp ?? spiel.spieltyp}`;
       } else {
-        this.hudSpieleInfo.textContent = tisch.status;
+        this.hudSpieleInfo.textContent = `${tisch.name} · ${tisch.status}`;
       }
     }
     // Start-Button
@@ -831,8 +803,17 @@ export class TischSzene extends Phaser.Scene {
 
     const ebene = this.add.container(0, 0);
     ebene.add(this.add.ellipse(mitteX, mitteY, tischBreite, tischHoehe, 0x081c15, 0.32).setStrokeStyle(8, 0xd8f3dc, 0.42));
+    ebene.add(this.add.text(mitteX, hoehe * 0.06, modell.titel, {
+      color: '#f8f9fa',
+      fontSize: `${Math.round(Math.max(24, breite * 0.024))}px`,
+      fontStyle: 'bold'
+    }).setOrigin(0.5));
+    ebene.add(this.add.text(mitteX, hoehe * 0.1, `${modell.untertitel} · ${modell.statusText}`, {
+      color: '#d8f3dc',
+      fontSize: `${Math.round(Math.max(14, breite * 0.013))}px`
+    }).setOrigin(0.5));
+
     this.renderStichmitte(ebene, modell, mitteX, mitteY, breite, hoehe);
-    this.renderStichstapel(ebene, modell, breite, hoehe);
 
     modell.spieler.forEach((spieler) => {
       const position = layout[spieler.position];
@@ -902,96 +883,28 @@ export class TischSzene extends Phaser.Scene {
     const slotPositionen = stichSlotPositionen(mitteX, mitteY, breite, hoehe);
     const kgroesse = berechneKartenGroesse(breite);
 
+    ebene.add(this.add.text(mitteX, mitteY - Math.round(hoehe * 0.222), modell.aktuellerSpieler ? `Am Zug: ${this.nameFuerPosition(modell, modell.aktuellerSpieler)}` : 'Warte auf den naechsten Zug', {
+      color: '#f8f9fa',
+      fontSize: `${Math.round(Math.max(16, breite * 0.016))}px`,
+      fontStyle: 'bold'
+    }).setOrigin(0.5));
+
     if (modell.aktuelleStichmitte.length === 0) {
+      ebene.add(this.add.text(mitteX, mitteY, 'Noch keine Karte im laufenden Stich', {
+        color: '#d8f3dc',
+        fontSize: `${Math.round(Math.max(14, breite * 0.014))}px`,
+        align: 'center'
+      }).setOrigin(0.5));
       return;
     }
 
     modell.aktuelleStichmitte.forEach((eintrag) => {
       const slot = slotPositionen[eintrag.position];
-      // "Gestempelter" Effekt: leichte zufaellige Rotation und Versatz basierend auf Position
-      const rotation = ({
-        SUED: -5 + (eintrag.reihenfolge * 3),
-        WEST: -10 + (eintrag.reihenfolge * 2),
-        NORD: 5 - (eintrag.reihenfolge * 3),
-        OST: 10 - (eintrag.reihenfolge * 2)
-      } as Record<SpielerPosition, number>)[eintrag.position];
-
-      ebene.add(this.add.rectangle(slot.x, slot.y, kgroesse.w, kgroesse.h, 0xffffff).setAngle(rotation));
-      ebene.add(this.add.image(slot.x, slot.y, texturSchluesselFuerKarte(eintrag.karte.farbe, eintrag.karte.wert))
-        .setDisplaySize(kgroesse.w, kgroesse.h)
-        .setAngle(rotation));
-    });
-  }
-
-  /** Rendert die gewonnenen Stiche als gestapelten Faecher neben den Handkarten. */
-  private renderStichstapel(
-    ebene: Phaser.GameObjects.Container,
-    modell: TischAnsichtModell,
-    breite: number,
-    hoehe: number
-  ): void {
-    const layout = berechneLayout(breite, hoehe);
-    const stapelPositionen = stichStapelPositionen(breite, hoehe, layout);
-    const kgroesse = berechneKartenGroesse(breite);
-    const stapelSkala = 0.45; // Stiche im Stapel sind deutlich kleiner
-
-    modell.spieler.forEach((spieler) => {
-      if (spieler.stiche === 0) return;
-
-      const pos = stapelPositionen[spieler.position];
-      // Max. 3 Karten visuell im Stapel anzeigen, um Überladung zu vermeiden
-      const sichtbareKarten = Math.min(3, spieler.stiche);
-
-      for (let i = 0; i < sichtbareKarten; i++) {
-        const versatz = i * 4;
-        const winkel = -10 + (i * 10);
-        ebene.add(this.add.rectangle(pos.x + versatz, pos.y + versatz, kgroesse.w * stapelSkala, kgroesse.h * stapelSkala, 0xffffff).setAngle(winkel));
-        const bild = this.add.image(pos.x + versatz, pos.y + versatz, TEXTUR_KARTE_VERDECKT)
-          .setDisplaySize(kgroesse.w * stapelSkala, kgroesse.h * stapelSkala)
-          .setAngle(winkel);
-        ebene.add(bild);
-
-        // Interaktion: Klick auf eigenen Stapel zeigt letzten Stich
-        if (spieler.istSelbst && i === sichtbareKarten - 1) {
-          bild.setInteractive({ useHandCursor: true });
-          bild.on('pointerdown', () => this.zeigeLetztenStichKurz(modell));
-        }
-      }
-    });
-  }
-
-  /** Zeigt die 4 Karten des zuletzt gewonnenen Stichs kurzzeitig auf dem Tisch an. */
-  private zeigeLetztenStichKurz(modell: TischAnsichtModell): void {
-    const letzterStich = modell.letzteAbgeschlosseneStiche.at(-1);
-    if (!letzterStich || this.spielzugAnimationAktiv) return;
-
-    const breite = this.scale.gameSize.width;
-    const hoehe = this.scale.gameSize.height;
-    const mitteX = breite / 2;
-    const mitteY = hoehe / 2;
-    const kgroesse = berechneKartenGroesse(breite);
-
-    const overlay = this.add.container(0, 0).setDepth(150);
-    const bg = this.add.rectangle(mitteX, mitteY, breite, hoehe, 0x000000, 0.4);
-    overlay.add(bg);
-
-    letzterStich.gespielteKarten.forEach((eintrag, index) => {
-      const x = mitteX - (kgroesse.w * 1.6) + (index * kgroesse.w * 1.1);
-      overlay.add(this.add.rectangle(x, mitteY, kgroesse.w, kgroesse.h, 0xffffff));
-      overlay.add(this.add.image(x, mitteY, texturSchluesselFuerKarte(eintrag.karte.farbe, eintrag.karte.wert))
-        .setDisplaySize(kgroesse.w, kgroesse.h));
-      overlay.add(this.add.text(x, mitteY + (kgroesse.h / 2) + 15, eintrag.name, {
-        fontSize: '14px', color: '#ffffff'
+      ebene.add(this.add.image(slot.x, slot.y, texturSchluesselFuerKarte(eintrag.karte.farbe, eintrag.karte.wert)).setDisplaySize(kgroesse.w, kgroesse.h));
+      ebene.add(this.add.text(slot.x, slot.y + Math.round(kgroesse.h * 0.63), eintrag.name, {
+        color: '#d8f3dc',
+        fontSize: `${Math.round(Math.max(11, breite * 0.011))}px`
       }).setOrigin(0.5));
-    });
-
-    const info = this.add.text(mitteX, mitteY - (kgroesse.h / 2) - 30, `Letzter Stich (${letzterStich.augen} Augen)`, {
-      fontSize: '20px', fontStyle: 'bold', color: '#ffd166'
-    }).setOrigin(0.5);
-    overlay.add(info);
-
-    this.time.delayedCall(3000, () => {
-      overlay.destroy();
     });
   }
 
@@ -1083,7 +996,7 @@ export class TischSzene extends Phaser.Scene {
     buttonReihe.className = 'ui-action-row';
     modell.moeglicheVorbehalte.forEach((vorbehalt) => {
       buttonReihe.append(
-        thisthis.erstelleButton(formatiereVorbehalt(vorbehalt), () => appStore.meldeVorbehalt(vorbehalt), deaktiviert)
+        this.erstelleButton(formatiereVorbehalt(vorbehalt), () => appStore.meldeVorbehalt(vorbehalt), deaktiviert)
       );
     });
 
@@ -1139,7 +1052,7 @@ export class TischSzene extends Phaser.Scene {
           <span class="ui-badge ${eintrag.position === 'SUED' ? 'ui-badge--highlight' : ''}">${eintrag.position}</span>
         </div>
         <div class="ui-list-item__meta">
-          <span>${eintrag.punkte >= 0 ? '+' : ''}${eintrag.punkte} Punkte</span>
+          <span>${eintrag.punkte} Punkte</span>
         </div>
       `;
       this.seitenladePunktestandListe?.append(li);
@@ -1289,6 +1202,10 @@ export class TischSzene extends Phaser.Scene {
       const istArmutauswahl = karte ? (armutKarten?.has(karte.id) ?? false) : false;
       const istInteraktiv = !this.spielzugAnimationAktiv && (istSpielbar || istArmutauswahl);
       const istAusgewaehlt = karte ? this.ausgewaehlteArmutKarten.has(karte.id) : false;
+      // Kartenspezifische Textur fuer aufgedeckte Karten, Rueckseite fuer verdeckte
+      const textur = (offen && karte)
+        ? texturSchluesselFuerKarte(karte.farbe, karte.wert)
+        : offen ? TEXTUR_KARTE_OFFEN : TEXTUR_KARTE_VERDECKT;
       // Tastatur-Markierung: die spielbare Karte am aktuellen Index ist visuell hervorgehoben
       const istTastaturMarkiert = spieler.istSelbst
         && karte !== undefined
@@ -1300,11 +1217,6 @@ export class TischSzene extends Phaser.Scene {
       const alphaWert = this.austeilenAktiv
         ? 0
         : (offen ? (hatInteraktion && karte && !istInteraktiv ? 0.5 : 1) : 0.92);
-      // Weisser Hintergrund hinter dem Karten-PNG (PNG-Assets sind transparent)
-      const hintergrundKarte = this.add.rectangle(x, y + basisVersatz, kgroesse.w, kgroesse.h, 0xffffff)
-        .setAngle(winkel)
-        .setAlpha(alphaWert);
-      ebene.add(hintergrundKarte);
       const bild = this.add.image(x, y + basisVersatz, textur)
         .setDisplaySize(kgroesse.w, kgroesse.h)
         .setAngle(winkel)
@@ -1538,8 +1450,7 @@ export class TischSzene extends Phaser.Scene {
     const hoehe = this.scale.gameSize.height;
     const slotPositionen = stichSlotPositionen(breite / 2, hoehe / 2, breite, hoehe);
     const layout = berechneLayout(breite, hoehe);
-    const stapelPositionen = stichStapelPositionen(breite, hoehe, layout);
-    const ziel = stapelPositionen[abgeschlossenerStich.gewinnerPosition];
+    const ziel = layout[abgeschlossenerStich.gewinnerPosition];
     const kgroesse = berechneKartenGroesse(breite);
     const animierteKarten = abgeschlossenerStich.gespielteKarten.map((karte) => {
       const slot = slotPositionen[karte.position];
@@ -1547,23 +1458,12 @@ export class TischSzene extends Phaser.Scene {
       return { bild };
     });
 
-    // Nameplate-Flash am Gewinner
-    const gewinnerPos = layout[abgeschlossenerStich.gewinnerPosition];
-    const flash = this.add.rectangle(gewinnerPos.x, gewinnerPos.y, 140, 60, 0xffe082, 0.6)
-      .setDepth(10)
-      .setAlpha(0);
-
     try {
-      await this.animationen?.animiereStichEinziehen(animierteKarten, { x: ziel.x, y: ziel.y }, flash);
+      await this.animationen?.animiereStichEinziehen(animierteKarten, { x: ziel.x, y: ziel.y });
     } finally {
-      flash.destroy();
       animierteKarten.forEach((karte) => {
         karte.bild.destroy();
       });
-      // Nach der Animation den letzten bekannten Zustand neu rendern
-      if (this.letzterZustand) {
-        this.renderTisch(this.letzterZustand);
-      }
     }
   }
 
@@ -1676,8 +1576,7 @@ export class TischSzene extends Phaser.Scene {
     for (const ansage of neueAnsagen) {
       const breite = this.scale.gameSize.width;
       const hoehe = this.scale.gameSize.height;
-      const bannerText = `${ansage.name}
-${formatiereAnsage(ansage.ansage)}`;
+      const bannerText = `${ansage.name}\n${formatiereAnsage(ansage.ansage)}`;
       // Re-Ansagen in Gold, Kontra in Blau (Design-System: --farbe-gold / --farbe-blau)
       const textFarbe = ansage.ansage === 'RE' ? '#ffd166'
         : ansage.ansage === 'KONTRA' ? '#90caf9'
@@ -1790,21 +1689,15 @@ ${formatiereAnsage(ansage.ansage)}`;
       punkteListe.append(li);
     });
 
-    // Button Text "Weiter →" und Enter-Key-Support hinzugefügt
-    const weiterButton = this.erstelleButton('Weiter →', () => this.schliesseRundenEndeModal(), false);
-    weiterButton.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter') {
-        this.schliesseRundenEndeModal();
-      }
-    });
+    const schliessenButton = this.erstelleButton('OK · Weiter', () => this.schliesseRundenEndeModal(), false);
 
-    dialog.append(titel, untertitel, augen, sonderpunkte, punkteListe, weiterButton);
+    dialog.append(titel, untertitel, augen, sonderpunkte, punkteListe, schliessenButton);
     this.rundenEndeModal.innerHTML = '';
     this.rundenEndeModal.append(dialog);
     this.rundenEndeModal.hidden = false;
 
-    // Focus auf den "Weiter" Button setzen (Tastatursteuerung)
-    setTimeout(() => weiterButton.focus(), 0);
+    // Focus-Trap: Fokus auf ersten Button setzen (Tastatursteuerung)
+    setTimeout(() => schliessenButton.focus(), 0);
 
     // Backdrop-Klick schliesst Modal (Klick auf Dialog-Inhalt selbst schliesst nicht)
     this.backdropClickHandler = (event: MouseEvent) => {
@@ -1814,11 +1707,16 @@ ${formatiereAnsage(ansage.ansage)}`;
     };
     this.rundenEndeModal.addEventListener('click', this.backdropClickHandler);
 
-    // Globaler Escape-Handler wird *nicht* mehr für dieses Modal registriert,
-    // da die Spezifikation explizit verlangt, dass es *nicht* per Escape geschlossen werden kann.
+    // Escape-Taste schliesst Modal; Handler wird beim Schliessen entfernt
+    this.escapeHandler = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        this.schliesseRundenEndeModal();
+      }
+    };
+    document.addEventListener('keydown', this.escapeHandler);
   }
 
-  // Schliesst das Rundenende-Modal (Weiter-Button oder Enter-Taste)
+  // Schliesst das Rundenende-Modal (OK-Button, Escape-Taste oder Backdrop-Klick)
   private schliesseRundenEndeModal(): void {
     if (!this.rundenEndeModal) {
       return;
@@ -1826,6 +1724,10 @@ ${formatiereAnsage(ansage.ansage)}`;
     this.rundenEndeModal.hidden = true;
     this.rundenEndeModal.innerHTML = '';
     // Listener entfernen, damit sie nicht mehrfach ausgeloest werden koennen
+    if (this.escapeHandler) {
+      document.removeEventListener('keydown', this.escapeHandler);
+      this.escapeHandler = undefined;
+    }
     if (this.backdropClickHandler && this.rundenEndeModal) {
       this.rundenEndeModal.removeEventListener('click', this.backdropClickHandler);
       this.backdropClickHandler = undefined;
@@ -1974,7 +1876,6 @@ ${formatiereAnsage(ansage.ansage)}`;
 
   /** Registriert den globalen Tastatur-Handler auf document. Wird einmalig in create() aufgerufen. */
   private registriereTastaturHandler(): void {
-    // Escape-Handler wird nicht mehr global registriert, da er nur fuer das Modal gilt und dort separat gehandhabt wird.
     this.tastaturHandler = (e: KeyboardEvent) => this.verarbeiteTastatureingabe(e);
     document.addEventListener('keydown', this.tastaturHandler);
   }
@@ -2012,290 +1913,352 @@ ${formatiereAnsage(ansage.ansage)}`;
       return;
     }
 
-    // Wenn ein Modal offen ist, nur dort Eingaben verarbeiten
-    // (z.B. Escape zum Schliessen des Rundenende-Modals wird *nicht* hier behandelt,
-    // sondern direkt vom Modal-Button per Enter-Key oder Klick ausgeloest)
-    if (this.rundenEndeModal && !this.rundenEndeModal.hidden) {
-      // Rundenende-Modal ist offen. Escape wird hier nicht mehr behandelt.
-      // Enter wird vom "Weiter"-Button behandelt.
-      return;
-    }
-    if (this.partieEndeModal && !this.partieEndeModal.hidden) {
-      // Partie-Ende-Modal ist offen. Escape wird hier nicht mehr behandelt.
-      // Enter wird vom "Jetzt starten" Button behandelt.
-      return;
-    }
+    // 1. Vorbehalt-Modal hat absoluten Vorrang — keine anderen Shortcuts moeglich
     if (this.vorbehaltModalEl && !this.vorbehaltModalEl.hidden) {
-      // Vorbehalt-Modal: Fokus navigieren
-      if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
-        e.preventDefault();
-        const buttons = Array.from(this.vorbehaltModalEl.querySelectorAll<HTMLButtonElement>('.ui-button'));
-        const nextIndex = e.key === 'ArrowDown' ? (this.tastaturVorbehaltIndex + 1) % buttons.length : (this.tastaturVorbehaltIndex - 1 + buttons.length) % buttons.length;
-        buttons[nextIndex]?.focus();
-        this.tastaturVorbehaltIndex = nextIndex;
-      } else if (e.key === 'Enter' || e.key === ' ') {
-        e.preventDefault();
-        const focusedButton = buttons[this.tastaturVorbehaltIndex];
-        focusedButton?.click();
-      }
+      this.verarbeiteVorbehaltTaste(e, modell);
       return;
     }
-    if (this.einstellungsModalEl && !this.einstellungsModalEl.hidden) {
-      // Einstellungs-Modal: Fokus navigieren und Escape zum Schliessen
-      if (e.key === 'Escape') {
-        this.einstellungsModalEl.hidden = true;
+
+    // 2. Armut-Antwort-Shortcuts (Annehmen / Ablehnen)
+    if (modell.aktuellerSpieler === 'SUED'
+        && modell.armutAktion?.modus === 'ANTWORTEN'
+        && !this.armutAnnahmeAktiv) {
+      if (e.key === 'a' || e.key === 'A') {
+        const btn = this.holeSichtbarenButton('Annehmen');
+        btn?.click();
+        e.preventDefault();
         return;
       }
-      // Fuer andere Tasten wird Fokus-Management hier nicht benoetigt, da Selects fokussierbar sind.
-      return;
-    }
-
-    // Hauptszene: Navigation zwischen Buttons
-    if (e.key === 'Tab' || e.key === 'ArrowDown' || e.key === 'ArrowRight' || e.key === 'ArrowUp' || e.key === 'ArrowLeft') {
-      // Fokussierbare Elemente im Container der Hauptszene ermitteln
-      const focusableElements = this.getFocusableUiElements();
-      if (!focusableElements.length) return;
-
-      const currentIndex = focusableElements.findIndex(el => el === document.activeElement);
-
-      let nextIndex = currentIndex;
-      if (e.key === 'ArrowDown' || e.key === 'ArrowRight') {
-        nextIndex = (currentIndex + 1) % focusableElements.length;
-      } else if (e.key === 'ArrowUp' || e.key === 'ArrowLeft') {
-        nextIndex = (currentIndex - 1 + focusableElements.length) % focusableElements.length;
-      } else if (e.key === 'Tab') {
-        // Tab-Navigation wird vom Browser standardmaessig gehandhabt, falls Fokus nicht explizit gesetzt.
-        // Wir setzen hier explizit Fokus auf das naechste/vorherige Element.
-        nextIndex = e.shiftKey
-          ? (currentIndex - 1 + focusableElements.length) % focusableElements.length
-          : (currentIndex + 1) % focusableElements.length;
-      } else {
-        return; // Andere Tasten werden nicht behandelt
+      if (e.key === 'n' || e.key === 'N') {
+        const btn = this.holeSichtbarenButton('Ablehnen');
+        btn?.click();
+        e.preventDefault();
+        return;
       }
+    }
 
-      e.preventDefault();
-      focusableElements[nextIndex]?.focus();
+    // 3. Rundenende-Modal: Focus-Trap (Tab-Zirkulation) und Enter-Bestaetigung
+    if (this.rundenEndeModal && !this.rundenEndeModal.hidden) {
+      this.verarbeiteModalFocusTrap(e, this.rundenEndeModal);
       return;
     }
 
-    // Enter oder Space auf fokussiertem Element ausfuehren
-    if ((e.key === 'Enter' || e.key === ' ') && document.activeElement instanceof HTMLElement) {
-      e.preventDefault();
-      document.activeElement.click();
+    // 4. Partie-Ende-Modal: Focus-Trap
+    if (this.partieEndeModal && !this.partieEndeModal.hidden) {
+      this.verarbeiteModalFocusTrap(e, this.partieEndeModal);
       return;
     }
 
-    // Escape-Taste: Schliesst die Tischliste, wenn offen
-    if (e.key === 'Escape' && this.seitenladeEl?.classList.contains('seitenlade--offen')) {
-      this.seitenladeOffen = false;
-      this.stoppePolling();
-      this.aktualisiereUi(zustand);
-      // Fokus zurueck auf den Toggle-Button der Seitenlade
-      document.querySelector<HTMLButtonElement>('[data-seitenlade-toggle]')?.focus();
+    // 5. Einstellungs-Modal: Escape schliesst, sonst Focus-Trap
+    if (this.einstellungsModalEl && !this.einstellungsModalEl.hidden) {
+      if (e.key === 'Escape') {
+        this.einstellungsModalEl.hidden = true;
+        e.preventDefault();
+      } else {
+        this.verarbeiteModalFocusTrap(e, this.einstellungsModalEl);
+      }
+      return;
+    }
+
+    // 6. Navigationskuerzel: I=Seitenlade, S=Einstellungen
+    if (e.key === 'i' || e.key === 'I') {
+      this.togglSeitenlade();
+      e.preventDefault();
+      return;
+    }
+    if (e.key === 's' || e.key === 'S') {
+      this.togglEinstellungen();
+      e.preventDefault();
+      return;
+    }
+
+    // 7. Escape schliesst Seitenlade (falls offen)
+    if (e.key === 'Escape' && this.seitenladeOffen) {
+      this.togglSeitenlade();
+      e.preventDefault();
+      return;
+    }
+
+    // 8. Ansage-Shortcuts (nur wenn Floating Action Bar Buttons zeigt)
+    if (modell.aktuellerSpieler === 'SUED' && modell.moeglicheAnsagen.length > 0) {
+      if (this.verarbeiteAnsageTaste(e, modell)) {
+        return;
+      }
+    }
+
+    // 9. Karten-Navigation (nur wenn eigener Spielzug mit spielbaren Karten)
+    if (modell.aktuellerSpieler === 'SUED' && modell.spielbareKarten.length > 0) {
+      this.verarbeiteKartenNavigationTaste(e, modell, zustand);
     }
   }
 
-  /** Gibt eine Liste aller fokussierbaren UI-Elemente im Hauptteil der Szene zurueck. */
-  private getFocusableUiElements(): HTMLElement[] {
-    if (!this.uiContainer) {
-      return [];
-    }
-    // Alle Buttons, Inputs und Selects im uiContainer sammeln
-    const elements = Array.from(this.uiContainer.querySelectorAll('button, input, select'));
-    // Nur die elemente zurueckgeben, die nicht disabled sind und einen Fokus haben koennen (tabIndex != -1)
-    return elements.filter(el => !el.disabled && el.tabIndex !== -1);
-  }
-
-  private handleResize(gameSize: { width: number; height: number }): void {
-    const { width, height } = gameSize;
-    this.hintergrund?.setDisplaySize(width, height);
-    const layout = berechneLayout(width, height);
-    const kgroesse = berechneKartenGroesse(width);
-    const kartenAbstand = berechneKartenAbstand(width, height);
-
-    // Positionen und Groessen aller Elemente neu berechnen und setzen
-    if (this.tischEbene) {
-      this.tischEbene.list.forEach(obj => obj.destroy()); // Alle Objekte der Ebene loeschen
-      this.tischEbene.destroy(); // Ebene selbst zerstoeren
-      this.renderTisch(this.letzterZustand ?? appStore.snapshot()); // Neu rendern
-    }
-  }
-
-  // --- Neue Methoden fuer Phaser-basierte UI-Elemente ---
-
-  /** Zeigt das Vorbehalt-Modal als Phaser-Overlay an. */
-  private zeigeVorbehaltOverlay(modell: TischAnsichtModell, zustand: AppZustand): void {
-    if (this.vorbehaltModalEl) { // HTML-basierter Modal-Container, wird nur noch für Hintergrund genutzt
-      this.vorbehaltModalEl.hidden = false;
+  /**
+   * Verarbeitet Tastatureingaben im Vorbehalt-Modal.
+   * Ziffern 1-N waehlen direkt, ArrowUp/Down navigieren, Enter bestaetigt.
+   * Escape ist absichtlich nicht unterstuetzt — eine Entscheidung ist zwingend.
+   */
+  private verarbeiteVorbehaltTaste(e: KeyboardEvent, modell: TischAnsichtModell): void {
+    const optionen = modell.moeglicheVorbehalte;
+    if (optionen.length === 0) {
+      return;
     }
 
-    const breite = this.scale.gameSize.width;
-    const hoehe = this.scale.gameSize.height;
-    const overlayContainer = this.add.container(0, 0).setDepth(1000); // Tiefer als alles andere
-
-    // Hintergrund-Rechteck, das den gesamten Bildschirm abdeckt
-    const background = this.add.rectangle(breite / 2, hoehe / 2, breite, hoehe, 0x000000, 0.6);
-    overlayContainer.add(background);
-
-    // Titel
-    const titelText = this.add.text(breite / 2, hoehe * 0.3, 'Vorbehalt ansagen', {
-      fontFamily: '"Space Grotesk", sans-serif',
-      fontSize: '36px',
-      color: '#f8f9fa',
-      fontStyle: 'bold'
-    }).setOrigin(0.5);
-    overlayContainer.add(titelText);
-
-    // Hinweis
-    const hinweisText = this.add.text(breite / 2, hoehe * 0.35, 'Nur serverseitig erlaubte Optionen werden angezeigt. Eine Auswahl ist zwingend.', {
-      fontFamily: '"Space Grotesk", sans-serif',
-      fontSize: '16px',
-      color: '#adb5bd',
-      wordWrap: { width: breite * 0.6 }
-    }).setOrigin(0.5);
-    overlayContainer.add(hinweisText);
-
-    // Buttons fuer Vorbehalte
-    const buttonContainer = this.add.container(breite / 2, hoehe * 0.55);
-    const buttonBreite = 180;
-    const buttonHoehe = 50;
-    const buttonAbstand = 20;
-    const buttonStartWinkel = - (modell.moeglicheVorbehalte.length - 1) * buttonAbstand / 2;
-
-    modell.moeglicheVorbehalte.forEach((vorbehalt, index) => {
-      const buttonText = formatiereVorbehalt(vorbehalt);
-      const button = this.add.rexBBCodeText(0, index * (buttonHoehe + buttonAbstand) + buttonStartWinkel, `[b]${buttonText}[/b]`, {
-        color: '#f8f9fa',
-        backgroundColor: '#0d3d1e', // Dunkelgruen
-        padding: { x: 15, y: 8 },
-        borderRadius: 5,
-        align: 'center',
-        stroke: '#f8f9fa',
-        strokeThickness: 2,
-        fontSize: '20px',
-        fixedWidth: buttonBreite,
-        fixedHeight: buttonHoehe,
-        valign: 'center',
-      });
-      button.setOrigin(0.5, 0.5); // Zentriert den Text innerhalb des Buttons
-
-      // Interaktivitaet + Handler
-      button.setInteractive({ useHandCursor: true });
-      button.on('pointerdown', () => {
-        void appStore.meldeVorbehalt(vorbehalt);
-        this.versteckeVorbehaltOverlay(); // Overlay nach Auswahl verstecken
-      });
-      button.on('pointerover', () => button.setStrokeStyle(3, 0xffe082)); // Goldene Umrandung bei Hover
-      button.on('pointerout', () => button.setStrokeStyle(2, 0xf8f9fa)); // Standard-Umrandung
-
-      buttonContainer.add(button);
-    });
-    overlayContainer.add(buttonContainer);
-
-    // Focus Management und Tastatursteuerung fuer das Overlay
-    this.tastaturVorbehaltIndex = Math.min(this.tastaturVorbehaltIndex, modell.moeglicheVorbehalte.length - 1);
-    this.aktualisiereVorbehaltFokus(overlayContainer, modell.moeglicheVorbehalte.length);
-    // Listener fuer Escape Key (falls vorhanden, wird hier NICHT hinzugefügt, da Spez. nur Button/Enter)
-    // Keyboard Handler wird weiter unten in verarbeiteTastatureingabe behandelt
-    this.phaserVorbehaltOverlay = overlayContainer; // Referenz speichern
-  }
-
-  /** Versteckt das Vorbehalt-Overlay und setzt HTML-basierten Container zurueck. */
-  private versteckeVorbehaltOverlay(): void {
-    if (this.vorbehaltModalEl) {
-      this.vorbehaltModalEl.hidden = true;
-      this.vorbehaltModalEl.innerHTML = '';
+    // Ziffer 1-N: direkte Auswahl und sofortiger Abschluss
+    const ziffer = parseInt(e.key, 10);
+    if (!isNaN(ziffer) && ziffer >= 1 && ziffer <= optionen.length) {
+      e.preventDefault();
+      appStore.meldeVorbehalt(optionen[ziffer - 1]);
+      return;
     }
-    // Phaser Overlay entfernen
-    this.phaserVorbehaltOverlay?.destroy();
-    this.phaserVorbehaltOverlay = undefined;
 
-    // Keyboard Fokus zuruecksetzen oder zur naechsten logischen Interaktion lenken
-    this.tastaturVorbehaltIndex = 0; // Zuruecksetzen fuer naechsten Aufruf
+    // ArrowUp/Down: Navigation durch Optionen
+    if (e.key === 'ArrowUp') {
+      this.tastaturVorbehaltIndex = Math.max(0, this.tastaturVorbehaltIndex - 1);
+      this.aktualisiereVorbehaltFokus();
+      e.preventDefault();
+      return;
+    }
+    if (e.key === 'ArrowDown') {
+      this.tastaturVorbehaltIndex = Math.min(optionen.length - 1, this.tastaturVorbehaltIndex + 1);
+      this.aktualisiereVorbehaltFokus();
+      e.preventDefault();
+      return;
+    }
+
+    // Enter: aktuell markierte Option bestaetigen
+    if (e.key === 'Enter') {
+      const option = optionen[this.tastaturVorbehaltIndex];
+      if (option !== undefined) {
+        appStore.meldeVorbehalt(option);
+      }
+      e.preventDefault();
+    }
   }
 
-  /** Aktualisiert den Fokus fuer das Vorbehalt-Modal per Tastatur. */
-  private aktualisiereVorbehaltFokus(overlay?: Phaser.GameObjects.Container, anzahlButtons?: number): void {
-    // Annahme: buttons sind Phaser.GameObjects.Text oder ähnliches mit setStrokeStyle
-    const buttons = Array.from(overlay?.list.filter(go => go.type === 'rexbbcodetext') ?? []) as Phaser.GameObjects.GameObject[];
-    if (!buttons.length) return;
+  /** Setzt den Browser-Fokus auf den per tastaturVorbehaltIndex markierten Vorbehalt-Button. */
+  private aktualisiereVorbehaltFokus(): void {
+    if (!this.vorbehaltModalEl) {
+      return;
+    }
+    const buttons = Array.from(
+      this.vorbehaltModalEl.querySelectorAll<HTMLButtonElement>('button:not([disabled])')
+    );
+    const ziel = buttons[this.tastaturVorbehaltIndex];
+    ziel?.focus();
+  }
 
-    const currentIndex = Math.max(0, this.tastaturVorbehaltIndex); // Sicherstellen, dass Index gültig ist
+  /**
+   * Verarbeitet Ansage-Shortcuts in der Floating Action Bar.
+   * R=Re, K=Kontra, 1-5 fuer die Buttons in Anzeigereihenfolge.
+   * Gibt true zurueck wenn eine Taste verarbeitet wurde.
+   */
+  private verarbeiteAnsageTaste(e: KeyboardEvent, modell: TischAnsichtModell): boolean {
+    const ansagen = modell.moeglicheAnsagen;
 
-    // Alle Buttons zuruecksetzen
-    buttons.forEach((btn, idx) => {
-      if (btn instanceof Phaser.GameObjects.Text) { // Sicherstellen, dass es ein Textobjekt ist
-        btn.setStrokeStyle(2, 0xf8f9fa); // Standard-Umrandung
-        if (idx === currentIndex) {
-          btn.setStrokeStyle(3, 0xffe082); // Goldene Umrandung für Fokus
+    if (e.key === 'r' || e.key === 'R') {
+      if (ansagen.includes('RE')) {
+        appStore.sageAnsageAn('RE');
+        e.preventDefault();
+        return true;
+      }
+    }
+    if (e.key === 'k' || e.key === 'K') {
+      if (ansagen.includes('KONTRA')) {
+        appStore.sageAnsageAn('KONTRA');
+        e.preventDefault();
+        return true;
+      }
+    }
+
+    // 1-5: Ansage nach Position in der angezeigten Liste
+    const ziffer = parseInt(e.key, 10);
+    if (!isNaN(ziffer) && ziffer >= 1 && ziffer <= ansagen.length) {
+      const ansage = ansagen[ziffer - 1];
+      if (ansage) {
+        appStore.sageAnsageAn(ansage);
+        e.preventDefault();
+        return true;
+      }
+    }
+
+    return false;
+  }
+
+  /**
+   * Verarbeitet Pfeiltasten/Enter/Space/Escape fuer die Karten-Navigation.
+   * ArrowLeft/Right navigieren durch spielbare Karten (kreisfoermig).
+   * Enter/Space spielen die markierte Karte.
+   * Escape hebt die Markierung auf.
+   */
+  private verarbeiteKartenNavigationTaste(e: KeyboardEvent, modell: TischAnsichtModell, zustand: AppZustand): void {
+    const kartenAnzahl = modell.spielbareKarten.length;
+
+    if (e.key === 'ArrowLeft') {
+      this.tastaturKarteIndex = this.tastaturKarteIndex <= 0
+        ? kartenAnzahl - 1
+        : this.tastaturKarteIndex - 1;
+      this.renderTisch(zustand, modell);
+      e.preventDefault();
+      return;
+    }
+
+    if (e.key === 'ArrowRight') {
+      this.tastaturKarteIndex = this.tastaturKarteIndex < 0 || this.tastaturKarteIndex >= kartenAnzahl - 1
+        ? 0
+        : this.tastaturKarteIndex + 1;
+      this.renderTisch(zustand, modell);
+      e.preventDefault();
+      return;
+    }
+
+    if (e.key === 'Enter' || e.key === ' ') {
+      if (this.tastaturKarteIndex >= 0 && this.tastaturKarteIndex < kartenAnzahl) {
+        const karteId = modell.spielbareKarten[this.tastaturKarteIndex];
+        if (karteId && !this.spielzugAnimationAktiv) {
+          void this.spieleKarteMitAnimation(karteId, modell);
         }
       }
-    });
-
-    // Tastatur-Events fuer Vorbehalt-Modal im globalen Handler abfangen
-    // Hier nur Fokus setzen, falls noetig
-  }
-
-  // --- Anpassung der Floating Action Bar (Ansage-Buttons) ---
-  /** Aktualisiert die Floating Action Bar mit den moeglichen Ansage-Buttons. */
-  private aktualisiereFloatingActionBar(modell: TischAnsichtModell, zustand: AppZustand): void {
-    if (!this.floatingActionBarEl) {
-      return;
-    }
-    this.floatingActionBarEl.innerHTML = ''; // Clear existing HTML buttons
-
-    const istEigenerZug = modell.aktuellerSpieler === 'SUED';
-    if (!istEigenerZug || modell.moeglicheAnsagen.length === 0) {
+      e.preventDefault();
       return;
     }
 
-    const deaktiviert = zustand.wirdGeladen || this.spielzugAnimationAktiv;
-    const buttonBreite = 140;
-    const buttonHoehe = 40;
-    const buttonAbstand = 15;
-    // Calculate starting angle to center buttons if there are multiple
-    const buttonStartWinkel = - (modell.moeglicheAnsagen.length - 1) * buttonAbstand / 2;
-
-    modell.moeglicheAnsagen.forEach((ansage, index) => {
-      const buttonText = formatiereAnsage(ansage);
-      // Create Phaser Text object for the button
-      const button = this.add.rexBBCodeText(0, index * (buttonHoehe + buttonAbstand) + buttonStartWinkel, `[b]${buttonText}[/b]`, {
-        color: '#f8f9fa',
-        backgroundColor: '#0d3d1e', // Dunkelgruen, aus Design-System
-        padding: { x: 10, y: 5 },
-        borderRadius: 4,
-        align: 'center',
-        stroke: '#f8f9fa',
-        strokeThickness: 2,
-        fontSize: '18px',
-        fixedWidth: buttonBreite,
-        fixedHeight: buttonHoehe,
-        valign: 'center',
-      });
-      button.setOrigin(0.5, 0.5); // Zentriert den Text innerhalb des Buttons
-
-      // Interaktivitaet + Handler
-      button.setInteractive({ useHandCursor: true });
-      button.on('pointerdown', () => {
-        void appStore.sageAnsageAn(ansage);
-        this.floatingActionBarEl.innerHTML = ''; // Clear buttons after click
-      });
-      button.on('pointerover', () => button.setStrokeStyle(3, 0xffe082)); // Goldene Umrandung bei Hover
-      button.on('pointerout', () => button.setStrokeStyle(2, 0xf8f9fa)); // Standard-Umrandung
-
-      // Add the Phaser button to the HTML container for now, will replace with Phaser container later
-      // NOTE: This is a temporary solution. Ideally, the floatingActionBarEl itself should be replaced by a Phaser Container.
-      // For now, we add the Phaser objects as DOM elements for simplicity in this iteration.
-      // A proper solution would involve a Phaser container managed by the scene.
-      // Due to limitations, we'll attach it to the existing HTML structure for now.
-      // This part requires further refactoring to be fully Phaser-based.
-      this.floatingActionBarEl?.append(button.canvas); // This is a workaround; ideally, button would be a child of a Phaser container
-    });
+    if (e.key === 'Escape') {
+      this.tastaturKarteIndex = -1;
+      this.renderTisch(zustand, modell);
+      e.preventDefault();
+    }
   }
 
-  // --- Armut-Dialog Migration (wird später bearbeitet) ---
+  /**
+   * Focus-Trap fuer modale Dialoge: Tab zirkuliert zwischen fokussierbaren Elementen,
+   * Enter bestaetigt den ersten aktiven Button.
+   */
+  private verarbeiteModalFocusTrap(e: KeyboardEvent, modal: HTMLElement): void {
+    if (e.key === 'Tab') {
+      const fokussierbar = Array.from(
+        modal.querySelectorAll<HTMLElement>('button:not([disabled]), input:not([disabled]), select:not([disabled])')
+      );
+      if (fokussierbar.length === 0) {
+        return;
+      }
+      const aktuellerIndex = fokussierbar.indexOf(document.activeElement as HTMLElement);
+      if (e.shiftKey) {
+        const vorheriger = aktuellerIndex <= 0 ? fokussierbar.length - 1 : aktuellerIndex - 1;
+        fokussierbar[vorheriger].focus();
+      } else {
+        const naechster = aktuellerIndex >= fokussierbar.length - 1 ? 0 : aktuellerIndex + 1;
+        fokussierbar[naechster].focus();
+      }
+      e.preventDefault();
+    } else if (e.key === 'Enter') {
+      const ersterButton = modal.querySelector<HTMLButtonElement>('button:not([disabled])');
+      ersterButton?.click();
+      e.preventDefault();
+    }
+  }
 
-  // --- Spieler-Nameplates Repositionierung (wird später bearbeitet) ---
+  /** Oeffnet oder schliesst die Seitenlade programmatisch (z.B. per Tastenkuerzel I). */
+  private togglSeitenlade(): void {
+    this.seitenladeOffen = !this.seitenladeOffen;
+    if (this.seitenladeEl) {
+      if (this.seitenladeOffen) {
+        this.seitenladeEl.classList.add('seitenlade--offen');
+      } else {
+        this.seitenladeEl.classList.remove('seitenlade--offen');
+      }
+    }
+  }
 
-  // ... (rest of the TischSzene class) ...
+  /** Oeffnet oder schliesst das Einstellungs-Modal programmatisch (z.B. per Tastenkuerzel S). */
+  private togglEinstellungen(): void {
+    if (!this.einstellungsModalEl) {
+      return;
+    }
+    this.einstellungsModalEl.hidden = !this.einstellungsModalEl.hidden;
+    if (!this.einstellungsModalEl.hidden) {
+      // Fokus auf ersten Button setzen
+      setTimeout(() => {
+        const ersterButton = this.einstellungsModalEl?.querySelector<HTMLButtonElement>('button:not([disabled])');
+        ersterButton?.focus();
+      }, 0);
+    }
+  }
+
+  /**
+   * Sucht einen sichtbaren, aktivierten Button nach exaktem Text (fuer Tastaturkuerzel).
+   * Wird fuer Armut-Shortcuts (Annehmen/Ablehnen) genutzt.
+   */
+  private holeSichtbarenButton(text: string): HTMLButtonElement | undefined {
+    return Array.from(document.querySelectorAll<HTMLButtonElement>('button'))
+      .find((btn) => btn.textContent?.trim() === text && !btn.disabled && !btn.hidden);
+  }
+
+  private handleResize(): void {
+    const breite = this.scale.gameSize.width;
+    const hoehe = this.scale.gameSize.height;
+    this.hintergrund?.setPosition(breite / 2, hoehe / 2).setSize(breite, hoehe);
+    if (this.letzterZustand?.bereich === 'TISCH') {
+      this.renderTisch(this.letzterZustand);
+    }
+  }
+
+  private aufraeumen(): void {
+    this.scale.off(Phaser.Scale.Events.RESIZE, this.handleResize, this);
+    if (this.tastaturHandler) {
+      document.removeEventListener('keydown', this.tastaturHandler);
+      this.tastaturHandler = undefined;
+    }
+    if (this.escapeHandler) {
+      document.removeEventListener('keydown', this.escapeHandler);
+      this.escapeHandler = undefined;
+    }
+    if (this.backdropClickHandler && this.rundenEndeModal) {
+      this.rundenEndeModal.removeEventListener('click', this.backdropClickHandler);
+      this.backdropClickHandler = undefined;
+    }
+    this.abmeldenStore?.();
+    this.abmeldenStore = undefined;
+    this.animationen?.abbrechen();
+    this.animationen = undefined;
+    this.tischEbene?.destroy(true);
+    this.tischEbene = undefined;
+    this.hintergrund?.destroy();
+    this.hintergrund = undefined;
+    this.letzterZustand = undefined;
+    this.letztesModell = null;
+    this.handKartenobjekte.clear();
+    this.spielzugAnimationAktiv = false;
+    this.wartendeKartenId = null;
+    this.tastaturKarteIndex = -1;
+    this.tastaturVorbehaltIndex = 0;
+    this.ausgewaehlteArmutKarten.clear();
+    this.armutAnnahmeAktiv = false;
+    this.letzteSticheOffen = false;
+    this.seitenladeOffen = false;
+    // UI-Root leeren (entfernt Top-Bar, Seitenlade, Overlay, Modals)
+    const uiRoot = document.getElementById('ui-root');
+    if (uiRoot) {
+      uiRoot.innerHTML = '';
+    }
+    this.hudStichzaehlerEl = undefined;
+    this.hudSpieleInfo = undefined;
+    this.hudDebugBtn = undefined;
+    this.seitenladeEl = undefined;
+    this.seitenladeSpielerListe = undefined;
+    this.seitenladePunktestandListe = undefined;
+    this.seitenladeAnsageHistorie = undefined;
+    this.seitenladeLetzteSticheListe = undefined;
+    this.seitenladeLetzteStichButton = undefined;
+    this.einstellungsModalEl = undefined;
+    this.aktionsHinweis = undefined;
+    this.aktionsInhalt = undefined;
+    this.ergebnisInhalt = undefined;
+    this.tischhintergrundSelect = undefined;
+    this.kiSchwierigkeitSelect = undefined;
+    this.geschwindigkeitsButton = undefined;
+    this.toastStack = undefined;
+    this.schliessePartieEndeModal();
+    this.partieEndeModal = undefined;
+    this.rundenEndeModal = undefined;
+  }
 }

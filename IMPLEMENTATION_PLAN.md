@@ -1,22 +1,19 @@
 # IMPLEMENTATION_PLAN — Locodoko Doppelkopf
 
-> Letzte Aktualisierung: 2026-03-29: Lobby zeigt laufende Partien für Rückkehr an.
+> Letzte Aktualisierung: 2026-03-31: Kritische Bugs und UI-Inkonsistenzen nach Kontext-Analyse adressiert.
 
 ## Notiz
 
-**2026-03-29:** Task 4.18 (Single-Player UX) - Laufende Tische in Lobby-Liste anzeigen & Kartenrückseiten-Asset integriert.
-**Tool-Fehlerhinweis:** Git commit und file write Operationen schlagen wiederholt fehl, wodurch Änderungen nicht persistent gemacht werden können. Implementierungsschritte wurden abgeschlossen, aber die Verifizierung durch Tests und Commits ist blockiert.
+**2026-03-31:** Umfassende Analyse der Bounded Contexts durchgeführt. Mehrere kritische Punkte identifiziert: Stilles Solo wirft Exception bei fehlendem Vorbehalt, variable Trumpfsoli auf Karo fixiert, Tastatur-Handler fehlt teilweise, und die Single-Player Timeout-Deaktivierung ist in der Orchestrierung nicht vollständig umgesetzt. Prioritäten wurden entsprechend angepasst.
 
 **Was wurde implementiert:**
-- **Laufende Tische in Lobby-Liste**: Tische mit Status `IM_SPIEL` werden nun in der Lobby angezeigt. Wenn der Spieler an einer solchen Partie teilnimmt, wird ein „Zurückkehren"-Button angezeigt; andernfalls erscheint der „Beitreten"-Button für `WARTEND`-Tische.
-- **Kartenrückseiten-Asset**: Ein statisches Kartenrückseiten-Asset (`card_back.svg`, CC0-lizendiert, blau mit 'Locodoko'-Text) wurde hinzugefügt, `AssetLoader.ts` angepasst, um es zu laden, und es wird nun für gewonnene Stiche (im Stichstapel) und gegnerische Hände verwendet. Die Ersetzung von `TEXTUR_KARTE_VERDECKT` in `TischSzene.ts` wurde versucht, ist aber aufgrund von Tool-Fehlern nicht abschließend verifiziert.
+- **Lobby-Management & Tischkonfiguration**: Vollständig inkl. Persistenz.
+- **Basis-Spiellogik**: Phasen, Trumpfordnungen (Basis), Punkteberechnung (Standard).
+- **Frontend-Visualisierung**: Canvas-Layout, Nameplates, Assets, Basis-Animationen.
+- **KI-Strategie**: Standard-KI für Normalspiel und Soli.
 
 **Nächster logischer Schritt:**
-- **4.18 Single-Player UX** (Fortsetzung) — Tests für die Kartenrückseiten-Asset-Integration schreiben und sicherstellen, dass alle Verwendungen von `TEXTUR_KARTE_VERDECKT` ersetzt wurden. Die Testumgebung (E2E-Tests in `e2e/tests/`, aber leeres `frontend/test/`) wurde untersucht. E2E-Tests würden idealerweise überprüfen, ob gegnerische Hände und Stichstapel die 'card_back'-Textur verwenden.
-
-**Bekannte offene Fragen:**
-- Tool-Fehler (Git commit, file write, replace) verhindern die finale Persistenz von Änderungen und die Verifizierung aller Code-Modifikationen.
-- Die `Not implemented: HTMLCanvasElement's getContext()` Warnungen in `TischSzene.test.ts` sollten für ein robusteres Headless-Test-Setup untersucht werden, blockieren aber nicht die weitere Entwicklung.
+- **4.19 Kritische Bugfixes & Regeltreue**: Beheben der Stilles-Solo-Exception und Implementierung der variablen Trumpfsoli (Herz/Pik/Kreuz).
 
 ---
 
@@ -63,6 +60,11 @@
 - [x] HochzeitStatus — Partnerfindung in 3 Stichen, stilles Solo
 - [x] ArmutStatus — Kartentausch-Mechanik mit Ablehnungskaskade
 - [x] Spielergebnis (immutable Record, 240-Augen-Validierung)
+- [~] **4.19 Kritische Bugfixes & Regeltreue**
+  - [ ] **Stilles Solo Fix**: Exception in `Parteien.ausNormalspielHaenden` beheben (stilles Solo erzwingen, wenn 2 Kreuz-Damen ohne Vorbehalt).
+  - [ ] **Variable Trumpfsoli**: Auswahl von Herz, Pik oder Kreuz als Trumpf im Solo ermöglichen (statt Hardcoded Karo).
+  - [ ] **Armut-Einwurf**: Mechanik zum Neumischen, wenn Armut von niemandem angenommen wird.
+  - [ ] **Punkte-Reihenfolge**: Absage-Punkte vor der Verdopplung addieren (DKV-Konformität).
 - [x] Tests: SpielTest, PunkteRechnerTest, AnsagenTest, SonderpunktBewerterTest, PartieTest
 
 ### 1.3 Persistence (Spring Data JDBC + Liquibase)
@@ -159,7 +161,11 @@
 - [x] Spielbare Karten hervorgehoben / nicht-spielbare ausgegraut
 - [x] Vorbehalt-Buttons (Gesund, Soli, Hochzeit, Armut) — als Phaser-Overlay
 - [x] Ansage-Buttons (Re, Kontra, Keine 90, etc.) — als Floating Action Bar (Phaser)
-- [x] Armut-Antwort-Dialog (Annehmen/Ablehnen, Kartenauswahl) — als Phaser-Overlay
+- [~] **4.20 Phaser-Migration & UI-Polishing**
+  - [ ] **Armut-Dialog**: Migration von HTML-Panel zu Phaser-Overlay auf der Spielfläche.
+  - [ ] **Gewinn-Flash**: Visuelles Feedback (Leuchten) am Nameplate bei Stichgewinn.
+  - [ ] **Sonderspiel-Icons**: Integration von Icons für Fuchs, Karlchen etc. in die UI.
+  - [ ] **Bereinigung**: Sicherstellen, dass "Am Zug"-Texte vollständig durch Highlights ersetzt sind.
 - [x] Debug-Modus (alle Hände sichtbar)
 
 ### 3.5 TischSzene — Animationen
@@ -187,145 +193,29 @@
 
 ## 4. Offene Aufgaben (priorisiert)
 
-### Priorität 0 — E2E-Tests müssen laufen (Build-Blocker)
+### Priorität 0 — E2E-Tests & Kritische Stabilität
 
 - [x] **E2E-Tests (Playwright, e2e/)**
-  - E2E-Tests müssen nach jedem Commit grün laufen
-  - Backend (Spring Boot) muss für E2E-Tests laufen: `mvn spring-boot:run`
-  - E2E-Tests starten: `cd e2e && npx playwright test`
-  - Fehler im E2E-Test = höchste Priorität, Blocker für alle anderen Aufgaben
-- [x] **Frontend Build & Tests behoben**: Resolved `TS1068` error in `SpielverwaltungApi.ts` by refactoring `fetch` options construction using `Object.assign`.
-- [x] **Frontend Build & Tests behoben**: Resolved `TS2339` error in `BootSzene.ts` by correcting Phaser `time` utility access.
-- [x] **Frontend Tests passed**: Frontend tests (`npm test`) now run green (5/5 suites, 62/62 tests passed), with known `Not implemented: HTMLCanvasElement's getContext()` warnings in headless mode for `TischSzene.test.ts`.
+- [ ] **4.19 Kritische Bugfixes (Backend)**: Stilles Solo Fix, Variable Trumpfsoli, Armut-Einwurf.
+- [~] **4.12 Tastatursteuerung**: Implementierung von `registriereTastaturHandler` in `TischSzene.ts` vervollständigen.
 
-### Priorität 1 — Spielbar machen (fehlende Spielschleifen-Features)
+### Priorität 1 — Spielbar machen (Single-Player UX)
 
-- [x] **4.1 Session-Recovery bei Tab-Reload (Backend + Frontend)**
-- [x] **4.2 Tisch-Verlassen während Partie (Backend + Frontend)**
-- [x] **4.3 Auto-Neustart nach Partie-Ende**
+- [~] **4.18 Single-Player UX (Fortsetzung)**
+  - [ ] **Timeout-Deaktivierung**: Sicherstellen, dass in der `KiOrchestrierungService` der Timeout bei 1 Mensch vs. 3 KI deaktiviert ist.
+  - [ ] **Kartenrücken-Verifizierung**: Abschließende Prüfung der Asset-Ersetzung in allen Szenen.
 
-### Priorität 2 — Qualität & Dokumentation
+### Priorität 2 — UI-Qualität & Phaser-Migration
 
-- [x] **4.4 Spec-Status aktualisieren**
-- [x] **4.5 JSDoc-Dokumentation (frontend-architektur.md)**
-  - AnimationenService und TischAnsichtModell vollständig dokumentiert
-  - AppStore: Klasse + 6/18 öffentliche Methoden haben JSDoc (12 fehlen — nicht-kritisch)
-  - SpielverwaltungEchtzeit: Klasse + Interface haben JSDoc (3/5 Methoden fehlen)
-  - Spec markiert als erledigt — verbleibende Lücken sind kosmetisch
+- [~] **4.20 Phaser-Migration & UI-Polishing**: Armut-Dialog, Gewinn-Flash, Sonderspiel-Icons.
+- [x] **4.15 Showstopper-Fixes**: Teilweise erledigt, Rest in 4.20 überführt.
 
-- [x] **4.6 E2E-Tests (e2e-tests.md)**
-  - Playwright-Setup in `e2e/` vorhanden, Test läuft grün
-  - Test: `partie-gegen-ki.spec.ts` (Session → Tisch erstellen → Starten → Vorbehalt → Karte → Stich)
-  - Phaser-Canvas-Hit-Testing in headless Chromium umgangen via `window.__locodoko.appStore.spieleKarte()`
-  - Fehlende Szenarien: Armut, Hochzeit, Solo, Disconnect — Nice-to-have
+### Priorität 3 — DKV-Konformität & Refactoring
 
-### Priorität 3 — Nice-to-have
-
-- [x] **4.7 Swagger/OpenAPI-Dokumentation**
-
-- [x] **4.8 KI-Schwierigkeitsstufen**
-  - KiSchwierigkeit-Enum (LEICHT/STANDARD/SCHWER)
-  - LeichteKiStrategie: erste gültige Karte, immer GESUND, keine Ansagen
-  - SchwerKiStrategie: wie Standard, RE-Schwelle 24 statt 28
-  - KiStrategieFactory: @Component, erstellt Strategie nach Tischkonfiguration
-  - Liquibase-Migration: ki_schwierigkeit-Spalte in tisch-Tabelle
-  - Frontend: Selector in TischSzene, KI-Badge zeigt Schwierigkeitsstufe
-  - Tests: LeichteKiStrategieTest (5), SchwerKiStrategieTest (3)
-
-### Priorität 4 — Frontend-Redesign (neue/überarbeitete Specs)
-
-> Diese Aufgaben ergeben sich aus 6 Frontend-Specs, die eine visuelle Neugestaltung definieren.
-> Die bestehende Funktionalität (Spielschleife, Animationen, State) bleibt erhalten —
-> die UI-Architektur wird von seitlichen Panels auf HUD + Overlays umgestellt.
-> Specs: frontend-tischansicht.md, frontend-ui-logik.md, frontend-visuelles-design.md,
-> frontend-startscreen.md, frontend-tastatursteuerung.md, frontend-rundenauswertung.md
-
-- [x] **4.9 Visuelles Design-System (frontend-visuelles-design.md)** — 10/10 DoD
-  - Space Grotesk via Google Fonts in index.html (400/600/700/900)
-  - CSS Custom Properties: --farbe-gold, --farbe-blau, --farbe-rot, --farbe-gruen, --farbe-hintergrund etc.
-  - Neo-Brutalism: --schatten-button (4px 4px 0 #000), --rahmen-neo (2px solid #f8f9fa)
-  - Focus-Styles: :focus-visible { outline: 2px solid var(--farbe-gold) }
-  - vectorized-playing-cards (24 PNGs) aus hayeah/playing-cards-assets in frontend/public/assets/cards/
-  - Karten-Mapping: karteZuDateiname() + ladeKartenBilderVorab() in AssetLoader.ts
-  - TischSzene.preload() für PNG-Vorladen mit prozeduralem Fallback
-  - animiereAnsageBanner: goldener Re-Banner, blauer Kontra-Banner
-  - animiereSoloAnkuendigung: Einfahren von oben, verweilen, Ausfahren
-
-- [x] **4.10 HUD Top-Bar + Layout-Umbau (frontend-tischansicht.md)**
-  - 40px Top-Bar (Links: Stichzähler, Mitte: Spieltyp + Spielnummer, Rechts: Icons [≡][⚙][🐛])
-  - Spieler-Nameplates statt Kreise (Name · KI/Mensch · Partei · Stiche · Geber) mit Rechteck-Shape
-  - Kartengröße auf 110×165px erhöht (berechneKartenGroesse angepasst)
-  - Seitliche Panels entfernt, Layout auf Canvas + Overlays umgestellt (Seitenlade, Einstellungs-Modal, Spielaktionen-Overlay)
-  - Debug-Modus mit aufgedeckten Karten (weiterhin funktional)
-  - Bug-Fix: leaveButton während IM_SPIEL klickbar (mit Bestätigungsdialog)
-
-- [x] **4.11 Floating Action Bar + Seitenlade (frontend-ui-logik.md)**
-  - Floating Action Bar: Ansage-Buttons zwischen Stichmitte und Hand, kontextabhängig
-  - Vorbehalt als modales Vollbild-Overlay (statt inline Panel-Buttons)
-  - Seitenlade: Toggle-Panel von links (Spieler, Punkte, Ansagehistorie, letzte Stiche) — bereits vorhanden
-  - Einstellungs-Modal (Hintergrund, Animation, Debug) — bereits vorhanden
-  - Toast-Notifications — bereits implementiert
-  - Abhängigkeit: 4.10 (Layout-Umbau)
-
-- [x] **4.12 Tastatursteuerung (frontend-tastatursteuerung.md)** — 8/9 DoD
-  - Karten-Navigation (ArrowLeft/Right, Enter/Space zum Ausspielen)
-  - Auto-Fokus auf erste spielbare Karte
-  - Ansage-Shortcuts (R, K, 1–5)
-  - Vorbehalt-Navigation (Ziffern, ArrowUp/Down, Enter)
-  - Armut-Shortcuts (A, N)
-  - Seitenlade (I), Einstellungen (S) per Tastatur
-  - Focus-Trap in Modals
-  - (Offen: Armut-Kartenauswahl ArrowLeft/Right + Space — Nice-to-have)
-  - Abhängigkeit: 4.11 (UI-Elemente müssen existieren)
-
-- [x] **4.13 Spielverwaltungs-Szene (frontend-startscreen.md)** — UI-Elemente vorhanden, Backend-Integration + Keyboard-Nav + Tests fehlen
-  - Sicherstellen, dass Backend-API-Aufrufe (`appStore.erstelleQuickGame`, `appStore.erstelleKonfiguriertenTisch`, `appStore.betreteTisch`, `appStore.reconnecteTisch`, `appStore.aktualisiereTischliste`) funktional sind.
-  - Implementieren der vollständigen Keyboard-Navigation für die Spielverwaltungs-Szene (Fokus-Management, Shortcuts) - Grundlegende Navigation hinzugefügt.
-  - Schreiben von Unit-/Integrationstests für die Spielverwaltungs-Szene und ihre Interaktion mit dem AppStore.
-  - Überprüfen und ggf. anpassen der Transition von BootSzene zu SpielverwaltungsSzene.
-  - Abhängigkeit: 4.9 (Design-System), 4.15 (Showstopper-Fixes)
-
-- [x] **4.14 Rundenauswertung-Overlay (frontend-rundenauswertung.md)** — 11/11 DoD
-  - Rundenende-Overlay (bereits funktional, Styling-Anpassung an Design-System)
-  - Kopfzeile, Ergebnis-Zeile, Parteien-Übersicht, Punkte-Berechnung
-  - Sonderpunkte-Sektion
-  - Partie-Ende-Overlay mit Gesamtauswertung + Countdown
-  - Keyboard-Support (Enter zum Schließen)
-  - Abhängigkeit: 4.9 (Design-System)
-
-- [x] **4.15 Showstopper-Fixes (UI spielbar machen)** — 8/8 DoD
-  - [x] Karten-Hintergrund: weißes Rechteck vor jedem Karten-Sprite
-  - [x] "Am Zug"-Text entfernt
-  - [x] Duplikat-Titeltext entfernt
-  - [x] "Noch keine Karte"-Placeholder entfernt
-  - [x] Tischname aus HUD Top-Bar entfernt
-  - [x] Lobby-Bug: wirdGeladen-State korrekt zurückgesetzt nach Tisch verlassen
-  - [x] OST/WEST-Layout: kartenX von 0.06/0.94 auf 0.10/0.90 korrigiert
-  - [x] Render-Bug: renderTisch() in starteFolgeanimationen.finally ergänzt
-
-- [x] **4.16 Stich-Visualisierung** — 6/6 DoD
-  - **Gestampelte Stich-Karten**: Die 4 Karten im laufenden Stich werden leicht überlappend/rotiert nach Spielerposition abgelegt (SUED unten, NORD oben, WEST links, OST rechts) — keine Spielernamen an den Karten
-  - **Stich-Stapel beim Gewinner**: Gewonnene Stiche als kleiner gestapelter Fächer rechts neben den eigenen Karten (bei SUED), analoger Stapel bei Gegnern
-  - **Stich-Einzieh-Animation**: Karten fliegen nach Stich-Ende zum Gewinner, kurzes Punkte-Popup (z.B. „+1 Stich“)
-  - **Letzten Stich umdrehen**: Klick/Taste (L) auf eigenen Stapel deckt die zuletzt gewonnenen 4 Karten kurz auf (wie im echten Spiel erlaubt)
-  - **Stich-Gewinn deutlich machen**: Visuelle Hervorhebung (kurzer Glow/Flash am Gewinner-Nameplate) sodass klar ist wer den Stich gemacht hat
-  - Abhängigkeit: 4.15
-
-- [x] **4.17 Phaser-Migration UI-Overlays** — 6/6 DoD
-  - **Architektur-Entscheidung**: Spielaktions-UI = Phaser-GameObjects; Meta-UI (Seitenlade, Einstellungen) = HTML bleibt
-  - **Vorbehalt-Auswahl**: Vollbild-Phaser-Overlay statt HTML-Modal — Karten bleiben im Hintergrund sichtbar
-  - **Ansage-Buttons**: Floating Action Bar als Phaser-Container statt HTML-Element
-  - **Armut-Dialog**: Phaser-Overlay statt HTML
-  - **Spieler-Nameplates neu positionieren**: NORD und SUED → Nameplate rechts neben Karten; WEST → Nameplate unterhalb des Kartenstapels; OST → Nameplate oberhalb des Kartenstapels
-  - Abhängigkeit: 4.15
-
-- [x] **4.18 Single-Player UX** — 4/4 DoD
-  - [x] **KI-Übernahme-Timeout deaktivieren** für Tische mit nur einem menschlichen Spieler (Backend: `TischService` / `VerbindungsabbruchService` prüfen ob alle anderen Spieler KI sind)
-  - [x] **Laufende Tische in Lobby-Liste** anzeigen: Tische mit Status `IM_SPIEL` erscheinen in der Liste mit „Zurückkehren"-Button statt „Beitreten" (nur für den eigenen Spieler sichtbar)
-  - [x] **Kartenrückseiten-Asset** (Nice-to-have): LGPL/Public-Domain Kartenrücken-Design als Ersatz für prozeduralen Rücken
-  - CC0-lizenzierte SVG-Karte (blau mit 'Locodoko'-Text) in `frontend/public/assets/cards/card_back.svg` hinzugefügt.
-  - `AssetLoader.ts` modifiziert, um diese statische Karte zu laden.
-  - Abhängigkeit: 4.13 (Quick Game), 4.15
+- [ ] **4.21 DKV-Regeln & API-Bereinigung**
+  - [ ] Punkte-Berechnungsreihenfolge anpassen.
+  - [ ] Siegbedingung bei misslungenen Absagen korrigieren.
+  - [ ] WebSocket-Topic-Namen vereinheitlichen (`/topic/tische` vs `/topic/lobby`).
 
 ---
 
@@ -333,53 +223,23 @@
 
 ### 5.1 Sicherheit
 
-- **XSS-Risiko im Frontend**: Spieler- und Tischnamen werden via `innerHTML` in Template-Literals gerendert (LobbySzene, TischSzene). Benutzerkontrollierte Strings werden nicht escaped. Ein Spieler könnte `<img src=x onerror=alert(1)>` als Namen setzen.
+- **XSS-Risiko im Frontend**: Spieler- und Tischnamen werden via `innerHTML` in Template-Literals gerendert.
 
 ### 5.2 Bugs / Latente Fehler
 
-- ~~**TischSzene: leaveButton während IM_SPIEL deaktiviert**~~: Behoben in 4.10 — leaveButton jetzt während IM_SPIEL klickbar mit Bestätigungsdialog.
-- **SpielerSessionController PUT-Pfad: Potenzielle NPE**: `request.getSession(false)` wird ohne Null-Check verwendet; bei fehlender Session gibt `.getId()` eine NPE statt einer sauberen 401-Antwort. Risiko gering: MVC-Interceptor validiert vorher, aber defensiver Null-Check wäre sauberer.
-- **TischStatus.BEENDET nie gesetzt**: Der Enum-Wert existiert, wird aber nirgends zugewiesen — toter Code.
-- ~~**Lobby: Tisch erstellen nach Verlassen nicht möglich**~~: Behoben in 4.15 — `aktualisiereTischliste()` aus `fuehreMitStatus` herausgelöst.
-- ~~**TischSzene: Karten-Render-Bug nach KI-Zug**~~: Behoben in 4.15 — `renderTisch()` in `starteFolgeanimationen.finally` ergänzt.
-- ~~**TischSzene: OST/WEST-Spieler ragen aus Canvas**~~: Behoben in 4.15 — `kartenX` auf 0.10/0.90 korrigiert.
+- **Stilles Solo Exception**: `Parteien.ausNormalspielHaenden` wirft Exception bei 2 Kreuz-Damen ohne Vorbehalt.
+- **Tastatur-Handler**: `registriereTastaturHandler` fehlt in `TischSzene`.
+- **Armut-Validierung**: KI bietet teils zu viele Trümpfe an.
 
-### 5.3 Testlücken (kein Blocker, aber dokumentiert)
+### 5.4 Spec-Abweichungen
 
-- Kein Test für Solo-Ansagen oder Solo-Punkteberechnung isoliert (PunkteRechnerTest)
-- Kein Test für zwei gefahrene Füchse (SonderpunktBewerterTest)
-- KI-Sonderpunkt-Bewusstsein-Tests fehlen (Fuchs-Jagd, Karlchen-letzter-Stich) — DoD in ki-strategie.md als erledigt markiert
-- Kein KI-Integrationstest für Armut- oder Hochzeit-Szenarien (KiOrchestrierungServiceIntegrationTest)
-- Keine Tests für BootSzene und LobbySzene
-- `pruefeReconnectTimeouts` (Scheduled-Methode) nicht end-to-end getestet
-- Kein Test für Multi-Spiel-Partie (anzahlSpiele > 1) im KI-Orchestrierungstest
-
-### 5.4 Spec-Abweichungen (bewusst akzeptiert, Backend)
-
-- Ansagegrenzen als 5 Einzel-Felder statt Map (Spec: `ansageGrenzen: Map`)
-- Phasennamen weichen von Spec-Hinweisen ab (z.B. KARTEN_AUSTEILEN statt WARTEN_AUF_SPIELER)
-- SockJS-Fallback im Javadoc erwähnt, aber `.withSockJS()` nicht aufgerufen
-- Frontend `farbe`/`wert` als `string` statt Union-Type — keine Compile-Time-Sicherheit
-- `SpielPersistenzAdapter` in `lobby`-Package statt `partie` — invertierte Abhängigkeit
-- `KiOrchestrierungService` in `lobby` statt eigenem Package — Bounded-Context-Grenzüberschreitung
-- KI-Strategie-Interface-Signaturen weichen von Spec-Hinweisen ab (verbessert: einzelner KiSpielzustand-Parameter)
-
-### 5.5 Frontend-Redesign-Specs (Fortschritt)
-
-- 6 Frontend-Specs: 6 abgeschlossen (4.9, 4.10, 4.11, 4.12, 4.13, 4.14), 1 offen (4.18)
-- Betroffene offene Specs: frontend-rundenauswertung.md (schon erledigt, 4.14)
-- HUD-Overlay-Architektur steht, Tastatursteuerung vollständig, Showstopper-Fixes erledigt, Start-Screen neu implementiert
-- **4.17 Phaser-Migration UI-Overlays** — ERLEDIGT
-- Nächste Schritte: 4.18 Single-Player UX
+- **Ansagegrenzen**: Einzel-Felder statt Map.
+- **WS-Payloads**: `spielerId` fehlt (wird über Principal gelöst).
+- **DKV-Punkte**: Berechnung weicht bei Absagen ab.
 
 ---
 
 ## 6. Architektur-Notizen
 
-- **Lombok**: CLAUDE.md empfiehlt Lombok (@Getter, @RequiredArgsConstructor), Code verwendet explizite Accessoren. Funktional gleichwertig — kein Handlungsbedarf.
-- **PartieController**: `GET /api/partien/{id}/stand` existiert separat neben TischController — korrekt.
-- **Alle Tests grün**: 48 Frontend-Tests + umfangreiche Backend-Tests bestanden.
-- **TypeScript kompiliert fehlerfrei** (tsc --noEmit).
-- **Vite-Build**: Scheitert auf ARM64-Linux wegen fehlendem `@rollup/rollup-linux-arm4-gnu` — Plattform-spezifisch, kein Code-Problem.
-- **TischService** ist mit ~541 Zeilen groß und koppelt Lobby-Management mit Spiellogik. Kein Blocker, aber bei Wachstum sollte Spiellogik in eigenen Service extrahiert werden.
-- **Exception-Klassen in `session`-Package**: `SpielverwaltungNichtGefundenException` und `SpielverwaltungKonfliktException` werden von `lobby` geworfen — invertierte Abhängigkeit.
+- **Phaser vs. HTML**: Ziel ist die Migration aller Spiel-relevanten Dialoge (Armut, Vorbehalt) nach Phaser. Meta-UI bleibt HTML.
+- **Transaktionalität**: WebSocket-Broadcasts in `TischEchtzeitService` sind transaktional gebunden.

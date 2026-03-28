@@ -155,10 +155,23 @@ public class VerbindungsabbruchService {
             Optional<TischEntity> tischOpt = tischRepository.findBySpieler_Id(info.spielerId());
             if (tischOpt.isEmpty() || tischOpt.get().status() != TischStatus.IM_SPIEL) {
                 LOGGER.debug("Kein aktiver Tisch für Spieler '{}' nach Timeout — keine KI-Übernahme nötig.", info.spielerName());
-                continue;
+                continue; // Skip to the next disconnected session
             }
 
             TischEntity tisch = tischOpt.get();
+
+            // Check if the table has only one human player remaining.
+            long humanPlayerCount = tisch.spieler().stream()
+                                       .filter(s -> !s.istKi())
+                                       .count();
+
+            if (humanPlayerCount == 1) {
+                // If there's only one human player left, and it's the one whose timeout expired,
+                // we should NOT take over with KI. The player might reconnect.
+                LOGGER.debug("Only one human player remaining at table {}. Skipping KI takeover for {}.", tisch.id(), info.spielerName());
+                continue; // Skip to the next disconnected session
+            }
+
             LOGGER.info("Reconnect-Timeout für Spieler '{}' abgelaufen. KI übernimmt die Steuerung.", info.spielerName());
 
             // Spieler in der Datenbank als KI-übernommen markieren

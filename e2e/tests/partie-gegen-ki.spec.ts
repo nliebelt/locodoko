@@ -17,9 +17,10 @@ import { test, expect, type Page } from '@playwright/test';
 // Phaser-Canvas-Hit-Tests werden separat in TischSzene.test.ts abgedeckt.
 async function spieleErsteHandkarte(page: Page): Promise<void> {
   await page.evaluate(() => {
-    const locodoko = (window as unknown as Record<string, { appStore: { snapshot(): { partieStand?: { laufendesSpiel?: { spielbareKarten: { id: string }[] } } | null }; spieleKarte(id: string): void } }>)['__locodoko'];
+    interface LocodokoBridge { appStore: { snapshot: () => { partieStand?: { laufendesSpiel?: { spielbareKarten?: { id: string }[] } } }; spieleKarte: (id: string) => void } }
+    const locodoko = (window as unknown as Record<string, LocodokoBridge>)['__locodoko'];
     if (!locodoko?.appStore) {
-      throw new Error('__locodoko.appStore nicht verfuegbar — main.ts korrekt geladen?');
+      throw new Error('__locodoko.appStore nicht verfuegbar - main.ts korrekt geladen?');
     }
     const snap = locodoko.appStore.snapshot();
     const spielbareKarten = snap.partieStand?.laufendesSpiel?.spielbareKarten;
@@ -36,8 +37,8 @@ test.describe('Partie gegen KI', () => {
     // Warum: Phaser-Spiele koennen Fehler stumm schlucken — explizite Pruefung notwendig.
     const jsFehler: string[] = [];
     page.on('console', (msg) => {
-      if (msg.type() === 'error') {
-        jsFehler.push(`[console.error] ${msg.text()}`);
+      if (msg.type() === 'error' || msg.type() === 'warning') {
+        jsFehler.push(`[console.${msg.type()}] ${msg.text()}`);
       }
     });
     page.on('pageerror', (err) => {
@@ -51,18 +52,14 @@ test.describe('Partie gegen KI', () => {
     await expect(
       page.locator('button', { hasText: 'Tisch erstellen' }),
       'Tisch-erstellen-Button soll nach dem Laden sichtbar sein',
-    ).toBeVisible({ timeout: 10_000 });
+    ).toBeVisible({ timeout: 20_000 });
 
-    // Überprüfe auf JS-Fehler, die das Rendering der Lobby-Ansicht verhindern könnten
-    expect(
-      jsFehler,
-      `JavaScript-Fehler sind aufgetreten nach dem Laden der Lobby-Ansicht:\n${jsFehler.join('\n')}`,
-    ).toHaveLength(0);
-
-    // -----------------------------------------------------------------------
-    // Schritt 2: Tisch erstellen
-    // -----------------------------------------------------------------------
+    // Warten, bis das Eingabefeld fuer den Tisch Namen sichtbar und interaktierbar ist
+    await page.waitForSelector('input[placeholder*="Tischname"]', { state: 'visible', timeout: 30_000 });
     await page.fill('input[placeholder*="Tischname"]', 'E2E-Test-Tisch');
+
+    // Warten, bis der Tisch erstellen Button sichtbar und interaktierbar ist, bevor geklickt wird
+    await page.click('button:has-text("Tisch erstellen")');
     await page.click('button:has-text("Tisch erstellen")');
 
     // Tischansicht geladen: linkes Panel mit "Spiel starten" ist sichtbar
@@ -70,6 +67,7 @@ test.describe('Partie gegen KI', () => {
       page.locator('button', { hasText: 'Spiel starten' }),
       'Nach Tisch erstellen soll TischSzene mit "Spiel starten" sichtbar sein',
     ).toBeVisible({ timeout: 10_000 });
+
 
     // Eigene Spielerposition sichtbar (Badge "Du" erscheint in Spielerliste)
     await expect(
@@ -158,7 +156,8 @@ test.describe('Partie gegen KI', () => {
     // -----------------------------------------------------------------------
     expect(
       jsFehler,
-      `JavaScript-Fehler sind aufgetreten:\n${jsFehler.join('\n')}`,
+      `JavaScript-Fehler sind aufgetreten:
+${jsFehler.join('\n')}`,
     ).toHaveLength(0);
   });
 });

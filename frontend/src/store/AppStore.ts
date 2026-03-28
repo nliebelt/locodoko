@@ -138,19 +138,31 @@ export class AppStore {
 
     await this.fuehreMitStatus(async () => {
       this.patch({ verbindung: 'verbinde' });
-      const spieler = await this.api.initialisiereSpielerSession();
-      Logger.store('Session initialisiert', { spielerId: spieler.spielerId });
-      await this.echtzeit.verbinde();
-      this.registriereGemeinsameAbos();
-      const tische = await this.api.listeTische();
-      this.patch({
-        spieler,
-        tische,
-        initialisiert: true,
-        verbindung: 'verbunden',
-        meldung: null
-      });
-      this.echtzeit.senden('/app/tische/snapshot');
+      try {
+        const spieler = await this.api.initialisiereSpielerSession();
+        Logger.store('Spieler-Session erfolgreich initialisiert', { spielerId: spieler.spielerId });
+        try {
+          await this.echtzeit.verbinde();
+          Logger.store('WebSocket-Verbindung erfolgreich hergestellt');
+          this.registriereGemeinsameAbos();
+          const tische = await this.api.listeTische();
+          Logger.store('Tischliste erfolgreich geladen');
+          this.patch({
+            spieler,
+            tische,
+            initialisiert: true,
+            verbindung: 'verbunden',
+            meldung: null
+          });
+          this.echtzeit.senden('/app/tische/snapshot');
+        } catch (wsFehler) {
+          Logger.store('WebSocket-Verbindungsfehler', { fehler: wsFehler });
+          throw new Error('WebSocket-Verbindung fehlgeschlagen.');
+        }
+      } catch (apiFehler) {
+        Logger.store('API-Session-Initialisierungsfehler', { fehler: apiFehler });
+        throw new Error('API-Session-Initialisierung fehlgeschlagen.');
+      }
     });
   }
 
@@ -170,19 +182,16 @@ export class AppStore {
   async erstelleQuickGame(): Promise<void> {
     const spielerName = this.zustand.spieler?.name ?? 'Spieler';
     await this.fuehreMitStatus(async () => {
-      const tisch = await this.api.erstelleTisch(`Quick Game von ${spielerName}`, {
-        kiSchwierigkeit: 'STANDARD',
-        anzahlSpiele: 12
-      });
+      // Keine Konfiguration → Backend verwendet Standardwerte
+      const tisch = await this.api.erstelleTisch(`Quick Game von ${spielerName}`);
       this.oeffneTisch(tisch);
       await this.api.starteTisch(tisch.id);
     });
   }
 
   /**
-   * Erstellt einen neuen Tisch mit dem angegebenen Namen und der Konfiguration und wechselt zur TischSzene.
-   * @param name - Tischname
-   * @param konfiguration - Optionale Tisch-Konfiguration
+   * Erstellt einen neuen Tisch und überschreibt danach selektiv die gewünschten Konfig-Felder.
+   * Strategie: Erst erstellen (Backend-Defaults), dann PATCH der User-Prefs via PUT.
    */
   async erstelleKonfiguriertenTisch(name: string, konfiguration: Partial<TischKonfigurationDto>): Promise<void> {
     const tischName = name.trim();
@@ -192,7 +201,14 @@ export class AppStore {
     }
 
     await this.fuehreMitStatus(async () => {
-      const tisch = await this.api.erstelleTisch(tischName, konfiguration);
+      // Erst ohne Konfiguration erstellen, damit Backend-Defaults greifen
+      const tisch = await this.api.erstelleTisch(tischName);
+      // Dann User-Prefs als vollständige Konfiguration (Defaults + Overrides) zurückschreiben
+      const hatOverrides = Object.keys(konfiguration).length > 0;
+      if (hatOverrides) {
+        const vollstaendig: TischKonfigurationDto = { ...tisch.konfiguration, ...konfiguration };
+        await this.api.aktualisiereTischKonfiguration(tisch.id, vollstaendig);
+      }
       this.oeffneTisch(tisch);
     });
   }

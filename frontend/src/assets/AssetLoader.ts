@@ -5,6 +5,7 @@ export const TEXTUR_HOLZ_DUNKEL = 'holz-dunkel-hintergrund';
 export const TEXTUR_BLAU_GRAFIK = 'blau-grafik-hintergrund';
 export const TEXTUR_KARTE_OFFEN = 'karte-offen';
 export const TEXTUR_KARTE_VERDECKT = 'karte-verdeckt';
+export const TEXTUR_KARTE_RUECKSEITE = 'card_back';
 
 /**
  * Mapping von Doppelkopf-Farbbezeichnungen auf englische PNG-Dateinamen-Bestandteile.
@@ -61,8 +62,10 @@ export function ladeKartenBilderVorab(szene: Phaser.Scene): void {
       }
     }
   }
-  // Load the static card back asset
-  this.szene.load.image('card_back', '/assets/cards/card_back.svg');
+  // Kartenrücken als separates SVG laden
+  if (!szene.textures.exists(TEXTUR_KARTE_RUECKSEITE)) {
+    szene.load.image(TEXTUR_KARTE_RUECKSEITE, '/assets/cards/card_back.svg');
+  }
 }
 
 export function registriereBasisTexturen(szene: Phaser.Scene): void {
