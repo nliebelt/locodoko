@@ -1,19 +1,20 @@
 # IMPLEMENTATION_PLAN — Locodoko Doppelkopf
 
-> Letzte Aktualisierung: 2026-03-31: Kritische Bugs und UI-Inkonsistenzen nach Kontext-Analyse adressiert.
+> Letzte Aktualisierung: 2026-03-28
 
 ## Notiz
 
-**2026-03-31:** Umfassende Analyse der Bounded Contexts durchgeführt. Mehrere kritische Punkte identifiziert: Stilles Solo wirft Exception bei fehlendem Vorbehalt, variable Trumpfsoli auf Karo fixiert, Tastatur-Handler fehlt teilweise, und die Single-Player Timeout-Deaktivierung ist in der Orchestrierung nicht vollständig umgesetzt. Prioritäten wurden entsprechend angepasst.
-
-**Was wurde implementiert:**
-- **Lobby-Management & Tischkonfiguration**: Vollständig inkl. Persistenz.
-- **Basis-Spiellogik**: Phasen, Trumpfordnungen (Basis), Punkteberechnung (Standard).
-- **Frontend-Visualisierung**: Canvas-Layout, Nameplates, Assets, Basis-Animationen.
-- **KI-Strategie**: Standard-KI für Normalspiel und Soli.
+**2026-03-28:** Quick Game funktioniert wieder (Backend-Validierungsfehler durch partielle Konfiguration behoben). TischSzene auf stabilen Pre-Gemini-Stand zurückgesetzt (Gemini hatte rexBBCodeText halluziniert → 103 TS-Fehler). Frontend baut clean durch. Linux-Rollup-Binary aus package.json entfernt.
 
 **Nächster logischer Schritt:**
-- **4.19 Kritische Bugfixes & Regeltreue**: Beheben der Stilles-Solo-Exception und Implementierung der variablen Trumpfsoli (Herz/Pik/Kreuz).
+- **4.20 TischSzene: Phaser-Migration & kritische UI-Bugs** — das ist die TOP-PRIORITÄT. Details siehe unten.
+
+**Bekannte Probleme (User-reported, 2026-03-28):**
+- Karten rendern beim allerersten Seitenaufruf nicht (Browser-Reload nötig)
+- Eigene und aufgedeckte Karten erscheinen transparent/schwer erkennbar
+- Stich-Karten zeigen Spieler-Label-Text statt gestapelter positionierter Darstellung
+- Spieler-Nameplates überlappen mit Karten
+- Vorbehalt-Ansage und "Du bist dran"-Hinweis sind noch HTML-Overlays (dunkeln den Hintergrund ab)
 
 ---
 
@@ -159,13 +160,9 @@
 ### 3.4 TischSzene — Interaktion
 - [x] Karten anklicken zum Ausspielen (mit Animation)
 - [x] Spielbare Karten hervorgehoben / nicht-spielbare ausgegraut
-- [x] Vorbehalt-Buttons (Gesund, Soli, Hochzeit, Armut) — als Phaser-Overlay
-- [x] Ansage-Buttons (Re, Kontra, Keine 90, etc.) — als Floating Action Bar (Phaser)
-- [~] **4.20 Phaser-Migration & UI-Polishing**
-  - [ ] **Armut-Dialog**: Migration von HTML-Panel zu Phaser-Overlay auf der Spielfläche.
-  - [ ] **Gewinn-Flash**: Visuelles Feedback (Leuchten) am Nameplate bei Stichgewinn.
-  - [ ] **Sonderspiel-Icons**: Integration von Icons für Fuchs, Karlchen etc. in die UI.
-  - [ ] **Bereinigung**: Sicherstellen, dass "Am Zug"-Texte vollständig durch Highlights ersetzt sind.
+- [ ] Vorbehalt-Buttons (Gesund, Soli, Hochzeit, Armut) — noch HTML, Migration zu Phaser in 4.20
+- [ ] Ansage-Buttons (Re, Kontra, Keine 90, etc.) — noch HTML, Migration zu Phaser in 4.20
+- [ ] Aktions-Hinweis ("Du bist dran…") — noch HTML-Overlay, Migration zu Phaser in 4.20
 - [x] Debug-Modus (alle Hände sichtbar)
 
 ### 3.5 TischSzene — Animationen
@@ -193,24 +190,35 @@
 
 ## 4. Offene Aufgaben (priorisiert)
 
-### Priorität 0 — E2E-Tests & Kritische Stabilität
+### Priorität 0 — TischSzene spielbar & vollständig Phaser
 
-- [x] **E2E-Tests (Playwright, e2e/)**
-- [ ] **4.19 Kritische Bugfixes (Backend)**: Stilles Solo Fix, Variable Trumpfsoli, Armut-Einwurf.
-- [~] **4.12 Tastatursteuerung**: Implementierung von `registriereTastaturHandler` in `TischSzene.ts` vervollständigen.
+- [ ] **4.20 TischSzene: Phaser-Migration & kritische UI-Bugs** ← NÄCHSTE AUFGABE FÜR RALPH
 
-### Priorität 1 — Spielbar machen (Single-Player UX)
+  **Bug-Fixes (kritisch):**
+  - [ ] **Karten-Preload**: `preload()`-Methode in `TischSzene` ergänzen, `ladeKartenBilderVorab()` dort aufrufen (nicht in `create()`). Behebt: Karten fehlen beim ersten Laden.
+  - [ ] **Karten-Transparenz**: `registriereKartenSpriteTexturen()` in `create()` VOR dem PNG-Ladeversuch aufrufen — Canvas-Texturen sollen immer Vorrang haben. Alternativ: PNG-Lade-Pfad in `ladeKartenBilderVorab` komplett entfernen und nur Canvas nutzen. Behebt: eigene und aufgedeckte Karten erscheinen transparent.
+  - [ ] **Stich-Karten-Layout**: Karten im laufenden Stich sollen ohne Spieler-Label-Text dargestellt werden. Stattdessen: 4 Karten leicht nach ihrer Spieler-Position versetzt (SUED=unten, NORD=oben, WEST=links, OST=rechts), sodass erkennbar ist wer was gespielt hat. Kein Text auf den Karten.
+  - [ ] **Nameplate-Überlappung**: Spieler-Nameplates sollen neben den Karten sitzen, nicht über ihnen. SUED: unter den eigenen Karten. NORD/WEST/OST: jeweils außen an ihrer Kartenposition.
 
-- [~] **4.18 Single-Player UX (Fortsetzung)**
-  - [ ] **Timeout-Deaktivierung**: Sicherstellen, dass in der `KiOrchestrierungService` der Timeout bei 1 Mensch vs. 3 KI deaktiviert ist.
-  - [ ] **Kartenrücken-Verifizierung**: Abschließende Prüfung der Asset-Ersetzung in allen Szenen.
+  **Phaser-Migration (kein HTML mehr in TischSzene):**
+  - [ ] **Vorbehalt-Dialog**: Alle Vorbehalt-Buttons (Gesund, Solo, Hochzeit, Armut) als Phaser-Panel/Buttons — kein HTML-Overlay, kein abgedunkelter Hintergrund.
+  - [ ] **Aktions-Hinweis**: "Du bist dran. Spiel eine serverseitig erlaubte Karte…" als Phaser-Text-Panel unten im Bild — kein HTML-Overlay.
+  - [ ] **Ansage-Buttons**: Re, Kontra, Keine 90 etc. als Phaser-interaktive-Objekte — kein HTML.
+  - [ ] **Armut-Dialog**: Karten-Auswahl für Armut als Phaser-Overlay.
+  - [ ] **Ziel**: `#ui-root` ist während des aktiven Spiels (TischSzene) leer. Kein sichtbares HTML im Spielbereich.
 
-### Priorität 2 — UI-Qualität & Phaser-Migration
+  **Validierung:**
+  - `cd frontend && npm test && npm run build && npm run lint` grün
+  - E2E-Test läuft durch: `cd e2e && npx playwright test`
 
-- [~] **4.20 Phaser-Migration & UI-Polishing**: Armut-Dialog, Gewinn-Flash, Sonderspiel-Icons.
-- [x] **4.15 Showstopper-Fixes**: Teilweise erledigt, Rest in 4.20 überführt.
+### Priorität 1 — Kritische Backend-Bugs
 
-### Priorität 3 — DKV-Konformität & Refactoring
+- [ ] **4.19 Kritische Bugfixes (Backend)**
+  - [ ] **Stilles Solo Fix**: `Parteien.ausNormalspielHaenden` wirft Exception wenn 2 Kreuz-Damen ohne Vorbehalt → defensive Behandlung ergänzen.
+  - [ ] **Variable Trumpfsoli**: Herz-Solo, Pik-Solo, Kreuz-Solo implementieren (aktuell nur Karo fest verdrahtet).
+  - [ ] **KI Timeout Single-Player**: In `KiOrchestrierungService` prüfen ob nur 1 Mensch am Tisch → Reconnect-Timeout nicht ablaufen lassen.
+
+### Priorität 2 — DKV-Konformität
 
 - [ ] **4.21 DKV-Regeln & API-Bereinigung**
   - [ ] Punkte-Berechnungsreihenfolge anpassen.
