@@ -711,7 +711,7 @@ export class TischSzene extends Phaser.Scene {
       const spiel = zustand.partieStand?.laufendesSpiel;
       if (spiel) {
         const gesamtStiche = modell.spieler.reduce((summe, s) => summe + s.stiche, 0);
-        this.hudStichzaehlerEl.textContent = `${gesamtStiche} Stiche`;
+        this.hudStichzaehlerEl.textContent = `Stich ${gesamtStiche}/12`;
       } else {
         this.hudStichzaehlerEl.textContent = '';
       }

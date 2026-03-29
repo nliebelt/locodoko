@@ -4,10 +4,10 @@
 
 ## Notiz
 
-**2026-03-29 (Build-Run #5):**
-- **4.26 Gewinn-Flash** implementiert: In `starteFolgeanimationen` wird ein temporäres goldenes Rechteck (`0xffe082`, alpha=0, depth=150) an der Nameplate-Position des Stichgewinners erzeugt und als `flashObjekt` an `animiereStichEinziehen` übergeben. Der `AnimationenService` hatte bereits `flashObjekt`-Unterstützung (Zeilen 230–235): alpha 0→1 (200ms) → warte 200ms → 1→0 (200ms), nicht-blockierend. Cleanup in `finally`.
-- **Nächster Schritt**: 4.25 HUD Stichzähler Format (`„Stich X/12"` statt `„X Stiche"` in `TischSzene.ts:697`). Einzeiler-Änderung.
-- **Offene Fragen**: Keine kritischen. Flash visuell prüfen (Vision Loop bei laufendem Backend).
+**2026-03-29 (Build-Run #6):**
+- **4.25 HUD Stichzähler Format** implementiert: `TischSzene.ts:714` — `„${gesamtStiche} Stiche"` → `„Stich ${gesamtStiche}/12"`. Einzeiler in `aktualisiereTopBar()`.
+- **Nächster Schritt**: Alle Frontend-Priorität-1/2-Aufgaben erledigt. Nächste sinnvolle Aufgabe: **4.27 KI-Timeout Einzelspieler** (Spec §4.18) oder **0.1 Spring Boot 4 / Java 25** (Tech-Upgrade).
+- **Offene Fragen**: Keine kritischen. KI-Strategie Armut-Antwort bleibt offen (strategisch, nicht buggy).
 
 ---
 
@@ -70,7 +70,7 @@
 
 #### Priorität 2 — Kleinere UI-Korrekturen
 
-- [ ] **4.25 HUD Stichzähler Format**: Anzeige `„Stich X/12"` statt `„X Stiche"` (`TischSzene.ts:697`). Spec: `frontend-tischansicht.md:42`.
+- [x] **4.25 HUD Stichzähler Format**: Anzeige `„Stich X/12"` statt `„X Stiche"` (`TischSzene.ts:714`). ✓ 2026-03-29
 
 ---
 
@@ -100,7 +100,7 @@
 - [x] **4.22 Stich-Stapel-Visualisierung** ✓ 2026-03-29
 - [x] **4.23 Letzter Stich anzeigen** ✓ 2026-03-29
 - [x] **4.26 Gewinn-Flash** (Nameplate aufleuchten bei Stichgewinn) ✓ 2026-03-29
-- [ ] **4.25 HUD Stichzähler Format** (`„Stich X/12"`, Einzeiler in `TischSzene.ts:697`)
+- [x] **4.25 HUD Stichzähler Format** (`„Stich X/12"`, `TischSzene.ts:714`) ✓ 2026-03-29
 
 ### Priorität 3 — KI-Qualität & Robustheit
 
