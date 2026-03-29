@@ -4,10 +4,9 @@
 
 ## Notiz
 
-**2026-03-29 (Build-Run #7):**
-- **0.1 Spring Boot 4 / Java 25** migriert: `pom.xml` — Spring Boot `3.4.4` → `4.0.4`, Java `21` → `25`. 128 Tests grün.
-- **Breaking Changes behoben**: `@AutoConfigureMockMvc` entfernt → `MockMvcBuilders.webAppContextSetup(wac)` in `@BeforeEach`; `TestRestTemplate` entfernt → plain `RestTemplate` mit `@LocalServerPort`; Jackson 2 `ObjectMapper` → Jackson 3 `tools.jackson.databind.ObjectMapper`; `liquibase-core` → `spring-boot-starter-liquibase`.
-- **Nächster Schritt**: **4.27 KI-Timeout Einzelspieler** (Spec §4.18) — `VerbindungsabbruchService` soll bei Solo-Human-Tischen kein Timeout auslösen.
+**2026-03-29 (Build-Run #8):**
+- **4.27 KI-Timeout Einzelspieler** abgeschlossen: `VerbindungsabbruchService.pruefeReconnectTimeouts()` überspringt KI-Übernahme wenn `humanPlayerCount == 1` (Spec §4.18). Fix war bereits vorhanden; `VerbindungsabbruchEinzelspielerTest` (neuer Integrationtest, `reconnect-timeout-sekunden=-1`) bestätigt das Verhalten. 129 Tests grün.
+- **Nächster Schritt**: **KI Armut-Antwort Strategie validieren** — `StandardKiStrategie.waehleArmutAntwort()` gibt bevorzugt Fehlkarten zurück. Strategisch prüfen ob das korrekt ist.
 - **Offene Fragen**: `springdoc-openapi 2.8.6` nutzt Jackson 2 (kompatibel aber heterogen im Classpath) — ggf. auf SB4-kompatible Version updaten falls Probleme auftreten.
 
 ---
@@ -86,7 +85,7 @@
 ### 3.2 Offene KI-Aufgaben
 
 - [ ] **KI Armut-Antwort validieren**: `StandardKiStrategie.waehleArmutAntwort()` gibt bevorzugt Fehlkarten zurück (günstigste Karten per Kosten-Comparator). Technisch regelkonform, aber strategisch prüfen: Soll KI beim Annehmen der Armut wirklich bevorzugt eigene Trümpfe behalten und Fehlkarten zurückgeben? Ursache: `vergleicheAbwurfKosten()` (~Zeilen 355–404, StandardKiStrategie).
-- [ ] **4.27 KI-Timeout für Einzelspieler-Tische deaktivieren**: `VerbindungsabbruchService.pruefeReconnectTimeouts()` übergibt auch bei Einzelspieler-Tischen an KI. Laut Spec §4.18 soll bei Solo-Human-Tischen kein Timeout ausgelöst werden.
+- [x] **4.27 KI-Timeout für Einzelspieler-Tische deaktivieren**: `humanPlayerCount == 1`-Check in `pruefeReconnectTimeouts()` verhindert KI-Übernahme. Abgesichert durch `VerbindungsabbruchEinzelspielerTest`. ✓ 2026-03-29
 
 ---
 
@@ -106,7 +105,7 @@
 ### Priorität 3 — KI-Qualität & Robustheit
 
 - [ ] **KI Armut-Antwort Strategie validieren** (strategisch suboptimal?)
-- [ ] **4.27 KI-Timeout Einzelspieler** (Spec §4.18)
+- [x] **4.27 KI-Timeout Einzelspieler** (Spec §4.18) ✓ 2026-03-29
 - [ ] **KI-Schwierigkeitsgrade differenzieren**: Leicht/Standard/Schwer implementiert aber nicht klar kalibriert/getestet.
 
 ---
