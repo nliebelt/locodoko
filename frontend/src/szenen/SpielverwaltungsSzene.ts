@@ -4,6 +4,10 @@ import { appStore } from '../anwendung';
 import type { AppZustand } from '../store/AppStore';
 import type { TischKonfigurationDto, KiSchwierigkeit, Tischhintergrund } from '../modelle/SpielverwaltungDto';
 
+function escapeHtml(s: string): string {
+  return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;');
+}
+
 function holeUiRoot(): HTMLElement {
   const wurzel = document.getElementById('ui-root');
   if (!wurzel) {
@@ -265,7 +269,7 @@ export class SpielverwaltungsSzene extends Phaser.Scene {
       const info = document.createElement('div');
       info.className = 'neo-list-item-info';
       info.innerHTML = `
-        <strong>${tisch.name}</strong>
+        <strong>${escapeHtml(tisch.name)}</strong>
         <span class="neo-badge">${tisch.spielerAnzahl}/4 Spieler · KI: ${tisch.kurzKonfiguration.anzahlSpiele} Spiele</span>
       `;
       item.append(info);

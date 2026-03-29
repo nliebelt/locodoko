@@ -22,6 +22,10 @@ import type { Ansage, KarteAntwort, KiSchwierigkeit, Sonderpunkt, Tischhintergru
 import { AnimationenService, type AnimierbareKartenobjekte } from '../services/AnimationenService';
 import type { AppZustand } from '../store/AppStore';
 
+function escapeHtml(s: string): string {
+  return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;');
+}
+
 interface TischLayoutEintrag {
   x: number;
   y: number;
@@ -736,7 +740,7 @@ export class TischSzene extends Phaser.Scene {
         const parteiBadge = spieler.partei ? `<span class="ui-badge ui-badge--partei">${spieler.partei}</span>` : '';
         eintrag.innerHTML = `
           <div class="ui-list-item__headline">
-            <strong>${spieler.name}</strong>
+            <strong>${escapeHtml(spieler.name)}</strong>
             <span class="ui-badge ${spieler.istSelbst ? 'ui-badge--highlight' : ''}">${badge}</span>
           </div>
           <div class="ui-list-item__meta">
@@ -905,7 +909,7 @@ export class TischSzene extends Phaser.Scene {
       li.className = 'ui-list-item ui-list-item--dense';
       li.innerHTML = `
         <div class="ui-list-item__headline">
-          <strong>${eintrag.name}</strong>
+          <strong>${escapeHtml(eintrag.name)}</strong>
           <span class="ui-badge">${eintrag.position}</span>
         </div>
         <div class="ui-list-item__meta">
@@ -930,7 +934,7 @@ export class TischSzene extends Phaser.Scene {
       li.className = 'ui-list-item ui-list-item--dense';
       li.innerHTML = `
         <div class="ui-list-item__headline">
-          <strong>${eintrag.name}</strong>
+          <strong>${escapeHtml(eintrag.name)}</strong>
           <span class="ui-badge ${eintrag.position === 'SUED' ? 'ui-badge--highlight' : ''}">${eintrag.position}</span>
         </div>
         <div class="ui-list-item__meta">
@@ -983,7 +987,7 @@ export class TischSzene extends Phaser.Scene {
       li.className = 'ui-list-item ui-list-item--dense';
       li.innerHTML = `
         <div class="ui-list-item__headline">
-          <strong>${eintrag.name}</strong>
+          <strong>${escapeHtml(eintrag.name)}</strong>
           <span class="ui-badge ${eintrag.position === 'SUED' ? 'ui-badge--highlight' : ''}">${eintrag.position}</span>
         </div>
         <div class="ui-list-item__meta">
@@ -1495,7 +1499,7 @@ export class TischSzene extends Phaser.Scene {
       li.className = 'ui-list-item ui-list-item--dense';
       li.innerHTML = `
         <div class="ui-list-item__headline">
-          <strong>${eintrag.name}</strong>
+          <strong>${escapeHtml(eintrag.name)}</strong>
           <span class="ui-badge ${eintrag.position === 'SUED' ? 'ui-badge--highlight' : ''}">${eintrag.position}</span>
         </div>
         <div class="ui-list-item__meta">
@@ -1573,7 +1577,7 @@ export class TischSzene extends Phaser.Scene {
       li.className = 'ui-list-item ui-list-item--dense';
       li.innerHTML = `
         <div class="ui-list-item__headline">
-          <strong>${eintrag.name}</strong>
+          <strong>${escapeHtml(eintrag.name)}</strong>
           <span class="ui-badge ${eintrag.position === 'SUED' ? 'ui-badge--highlight' : ''}">${eintrag.position}</span>
         </div>
         <div class="ui-list-item__meta">
