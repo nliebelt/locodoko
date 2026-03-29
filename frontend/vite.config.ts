@@ -1,8 +1,7 @@
-import { defineConfig, loadEnv } from 'vite';
+import { defineConfig } from 'vite';
 
-export default defineConfig(({ mode }) => {
-  const env = loadEnv(mode, '.', '');
-  const backendZiel = env.VITE_BACKEND_URL || 'http://127.0.0.1:8080';
+export default defineConfig(() => {
+  const backendZiel = 'http://127.0.0.1:8080';
 
   return {
     server: {

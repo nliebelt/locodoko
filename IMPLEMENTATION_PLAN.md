@@ -4,12 +4,10 @@
 
 ## Notiz
 
-**2026-03-29 (Planning-Run):** 5 Bounded-Context-Analysen durchgeführt. Neue Frontend-Lücken identifiziert (Stich-Stapel, HUD-Format, Nameplate-Highlight). Backend vollständig. Plan aktualisiert.
-
-**Vorheriger Stand:**
-
-- XSS-Fix Frontend: `escapeHtml()` in `TischSzene.ts` und `SpielverwaltungsSzene.ts` ✓
-- Spring Boot 4 / Java 25 Migration noch offen
+**2026-03-29 (Build-Run #3):**
+- **4.22 Stich-Stapel-Visualisierung** implementiert: `renderStichStapel()` in `TischSzene.ts`. Kleine gestapelte Kartenrücken (55% Kartengröße) neben jedem Spieler, Anzahl-Badge in Gold. Positionen: SUED/NORD rechts vom Kartenfächer, WEST/OST in der Lücke zwischen Nameplate und Kartenstapel. Helper `stichStapelPositionFuer()` ergänzt. Vite-Config lint-Fix (`loadEnv` entfernt).
+- **Nächster Schritt**: 4.23 Letzter Stich anzeigen (Klick auf eigenen Stapel öffnet die 4 Karten des letzten gewonnenen Stichs) — baut auf 4.22 auf.
+- **Offene Fragen**: Positionen visuell prüfen (Vision Loop), ggf. SUED-Stack-X feinjustieren wenn er mit anderen UI-Elementen kollidiert.
 
 ---
 
@@ -39,6 +37,8 @@
 - [x] **Lobby/Tisch**: GET/POST/PUT `/api/tische`, Beitreten/Verlassen/Starten, WebSocket-Events, TischkonfigurationEmbeddable mit allen 12 Flags + Ansagegrenzen, KI-Schwierigkeit, Tischhintergrund ✓
 - [x] **Partie/Regeln**: Spielphasen, Stichlogik, Trumpfhierarchie (Normal + Solo-Varianten), Parteien (RE/KONTRA), Ansagen, Vorbehalt/Auflösung (Solo > Hochzeit > Armut), Sonderpunkte (Fuchs/Karlchen/Doppelkopf), Punkteberechnung DKV-konform ✓
 - [x] **Session/API**: SpielerEntity, SpielerSessionService, KI-Spieler-Fabrik, alle REST-Endpunkte, WebSocket/STOMP (Karte/Ansage/Vorbehalt/Armut-Antwort/Snapshots), Exception-Handling (@RestControllerAdvice), Session-Cleanup, KI-Übernahme bei Abbruch ✓
+- [x] **Sonderspiele**: 5 Solo-Varianten (Trumpfsolo, Damensolo, Bubensolo, Herz/Pik/Kreuz, Fleischlos), Hochzeit mit Klärungsfrist + stillem Solo, Armut mit Uhrzeigersinn-Abfrage ✓
+- [x] **Verbindungsabbruch**: VerbindungsabbruchService mit DisconnectInfo-Tracking, konfigurierb. Timeout (120s), KI-Übernahme via @Scheduled, Reconnect-Wiederherstellung ✓
 - [x] **4.19 Kritische Bugfixes**: Stilles Solo, Variable Trumpfsoli, KI Timeout, Armut-Einwurf, Punkte-Reihenfolge ✓ 2026-03-29
 - [x] **4.21 DKV-Regeln & API-Bereinigung** ✓ 2026-03-29
 
@@ -58,18 +58,19 @@
 - [x] Debug-Modus (gegnerische Karten aufgedeckt) ✓
 - [x] XSS-Fix: `escapeHtml()` in `TischSzene.ts` und `SpielverwaltungsSzene.ts` ✓ 2026-03-29
 - [x] 4.20 TischSzene: Phaser-Migration & kritische UI-Bugs ✓ 2026-03-28
+- [x] **4.24 Nameplate-Highlight aktiver Spieler**: gold+glow (`TischSzene.ts:800–809`, `istAktivHervorgehoben`) ✓ 2026-03-29
 
 ### 2.2 Offene Frontend-Aufgaben (priorisiert)
 
 #### Priorität 1 — UX-Verbesserungen
 
-- [ ] **4.22 Stich-Stapel-Visualisierung**: `renderStichStapel()` — gestapelter Fächer neben Kartenfächer des Stich-Gewinners. Spec: Stich 4.16 pending.
-- [ ] **4.23 Letzter Stich anzeigen**: Klick auf eigenen Stich-Stapel öffnet Ansicht des letzten Stichs.
-- [ ] **4.24 Nameplate-Highlight aktiver Spieler**: Akzentfarbe/Glow für den Spieler, der am Zug ist (Spec: Tischansicht).
+- [x] **4.22 Stich-Stapel-Visualisierung**: `renderStichStapel()` — gestapelter Fächer mit Badge neben jedem Spieler. ✓ 2026-03-29
+- [ ] **4.23 Letzter Stich anzeigen**: Klick auf eigenen Stich-Stapel öffnet Ansicht der 4 Karten des letzten Stichs. Abhängig von 4.22.
+- [ ] **4.26 Gewinn-Flash**: Nameplate des Stich-Gewinners leuchtet kurz auf (Spec: `frontend-animationen.md:87`). Unabhängig von 4.22.
 
 #### Priorität 2 — Kleinere UI-Korrekturen
 
-- [ ] **4.25 HUD Stichzähler Format**: Anzeige `„Stich X/12"` statt `„X Stiche"` (Spec: Tischansicht 5.x).
+- [ ] **4.25 HUD Stichzähler Format**: Anzeige `„Stich X/12"` statt `„X Stiche"` (`TischSzene.ts:697`). Spec: `frontend-tischansicht.md:42`.
 
 ---
 
@@ -83,7 +84,8 @@
 
 ### 3.2 Offene KI-Aufgaben
 
-- [ ] **KI Armut-Antwort validieren**: `StandardKiStrategie.waehleArmutAntwort()` gibt bevorzugt Fehlkarten zurück (günstigste Karten per Kosten-Comparator). Technisch regelkonform, aber strategisch prüfen: Soll KI beim Annehmen der Armut wirklich bevorzugt eigene Trümpfe behalten und Fehlkarten zurückgeben? Oder soll sie eine bestimmte Anzahl Trümpfe zurückgeben? Ursache liegt in `vergleicheAbwurfKosten()` (Zeilen ~355–404, StandardKiStrategie).
+- [ ] **KI Armut-Antwort validieren**: `StandardKiStrategie.waehleArmutAntwort()` gibt bevorzugt Fehlkarten zurück (günstigste Karten per Kosten-Comparator). Technisch regelkonform, aber strategisch prüfen: Soll KI beim Annehmen der Armut wirklich bevorzugt eigene Trümpfe behalten und Fehlkarten zurückgeben? Ursache: `vergleicheAbwurfKosten()` (~Zeilen 355–404, StandardKiStrategie).
+- [ ] **4.27 KI-Timeout für Einzelspieler-Tische deaktivieren**: `VerbindungsabbruchService.pruefeReconnectTimeouts()` übergibt auch bei Einzelspieler-Tischen an KI. Laut Spec §4.18 soll bei Solo-Human-Tischen kein Timeout ausgelöst werden.
 
 ---
 
@@ -95,15 +97,16 @@
 
 ### Priorität 2 — Frontend UX
 
-- [ ] **4.22 Stich-Stapel-Visualisierung** (kein `renderStichStapel()`)
-- [ ] **4.23 Letzter Stich anzeigen** (Klick-Interaktion)
-- [ ] **4.24 Nameplate-Highlight aktiver Spieler**
-- [ ] **4.25 HUD Stichzähler Format** (`„Stich X/12"`)
+- [x] **4.22 Stich-Stapel-Visualisierung** ✓ 2026-03-29
+- [ ] **4.23 Letzter Stich anzeigen** (Klick-Interaktion, abhängig von 4.22)
+- [ ] **4.26 Gewinn-Flash** (Nameplate aufleuchten bei Stichgewinn)
+- [ ] **4.25 HUD Stichzähler Format** (`„Stich X/12"`, Einzeiler in `TischSzene.ts:697`)
 
-### Priorität 3 — KI-Qualität
+### Priorität 3 — KI-Qualität & Robustheit
 
 - [ ] **KI Armut-Antwort Strategie validieren** (strategisch suboptimal?)
-- [ ] **KI-Schwierigkeitsgrade differenzieren**: Leicht/Standard/Schwer sind implementiert aber nicht klar kalibriert/getestet.
+- [ ] **4.27 KI-Timeout Einzelspieler** (Spec §4.18)
+- [ ] **KI-Schwierigkeitsgrade differenzieren**: Leicht/Standard/Schwer implementiert aber nicht klar kalibriert/getestet.
 
 ---
 

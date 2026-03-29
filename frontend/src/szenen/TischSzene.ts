@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+
 import {
   TEXTUR_BLAU_GRAFIK,
   TEXTUR_FILZ,
@@ -144,10 +145,21 @@ function nameplatePositionFuer(
   hoehe: number
 ): { x: number; y: number } {
   switch (spielerPosition) {
-    case 'SUED': return { x: breite * 0.79, y: hoehe * 0.87 };
-    case 'NORD': return { x: breite * 0.79, y: hoehe * 0.08 };
-    case 'WEST': return { x: breite * 0.10, y: hoehe * 0.68 };
-    case 'OST':  return { x: breite * 0.90, y: hoehe * 0.27 };
+    case 'NORD': return { x: breite * 0.12, y: hoehe * 0.1 };
+    case 'SUED': return { x: breite * 0.68, y: hoehe * 0.94 };
+    case 'WEST': return { x: breite * 0.04, y: hoehe * 0.84 };
+    case 'OST':  return { x: breite * 0.96, y: hoehe * 0.16 };
+  }
+}
+
+// Stich-Stapel: Position des gestapelten Kartenf‌ächers fuer jeden Spieler.
+// SUED/NORD: rechts vom Kartenfaecher. WEST: zwischen Kartenende und Nameplate. OST: zwischen Nameplate und Kartenstapel.
+function stichStapelPositionFuer(position: SpielerPosition, breite: number, hoehe: number): { x: number; y: number } {
+  switch (position) {
+    case 'SUED': return { x: breite * 0.84, y: hoehe * 0.90 };
+    case 'NORD': return { x: breite * 0.84, y: hoehe * 0.10 };
+    case 'WEST': return { x: breite * 0.06, y: hoehe * 0.78 };
+    case 'OST':  return { x: breite * 0.94, y: hoehe * 0.27 };
   }
 }
 
@@ -841,15 +853,17 @@ export class TischSzene extends Phaser.Scene {
       this.renderKartenFaecher(ebene, layout, spieler, modell);
     });
 
-    if (modell.gesamtpunktestand.length > 0) {
-      const punktetext = modell.gesamtpunktestand
-        .map((eintrag) => `${eintrag.name}: ${eintrag.punkte}`)
-        .join(' · ');
-      ebene.add(this.add.text(mitteX, hoehe * 0.94, `Gesamtstand · ${punktetext}`, {
-        color: '#f8f9fa',
-        fontSize: `${Math.round(Math.max(14, breite * 0.012))}px`
-      }).setOrigin(0.5));
-    }
+    this.renderStichStapel(ebene, modell, breite, hoehe);
+
+    // if (modell.gesamtpunktestand.length > 0) {
+    //   const punktetext = modell.gesamtpunktestand
+    //     .map((eintrag) => `${eintrag.name}: ${eintrag.punkte}`)
+    //     .join(' · ');
+    //   ebene.add(this.add.text(mitteX, hoehe * 0.94, `Gesamtstand · ${punktetext}`, {
+    //     color: '#f8f9fa',
+    //     fontSize: `${Math.round(Math.max(14, breite * 0.012))}px`
+    //   }).setOrigin(0.5));
+    // }
 
     // Phaser-UI: Aktions-Hinweis, Ansage-Buttons, Armut-Dialog (zuerst); Vorbehalt-Dialog zuletzt (liegt oben)
     if (zustand.partieStand?.laufendesSpiel) {
@@ -860,6 +874,46 @@ export class TischSzene extends Phaser.Scene {
     }
 
     this.tischEbene = ebene;
+  }
+
+  private renderStichStapel(
+    ebene: Phaser.GameObjects.Container,
+    modell: TischAnsichtModell,
+    breite: number,
+    hoehe: number
+  ): void {
+    const kgroesse = berechneKartenGroesse(breite);
+    const stapelW = Math.round(kgroesse.w * 0.55);
+    const stapelH = Math.round(kgroesse.h * 0.55);
+    const versatzPx = Math.round(stapelH * 0.09); // vertikaler Versatz zwischen gestapelten Karten
+
+    modell.spieler.forEach((spieler) => {
+      if (spieler.stiche <= 0) {
+        return;
+      }
+      const pos = stichStapelPositionFuer(spieler.position, breite, hoehe);
+      const anzahlSichtbar = Math.min(4, spieler.stiche);
+
+      for (let i = 0; i < anzahlSichtbar; i++) {
+        const yVersatz = -(anzahlSichtbar - 1 - i) * versatzPx;
+        ebene.add(
+          this.add.image(pos.x, pos.y + yVersatz, TEXTUR_KARTE_VERDECKT)
+            .setDisplaySize(stapelW, stapelH)
+            .setAlpha(0.88)
+        );
+      }
+
+      const schriftGroesse = Math.round(Math.max(10, breite * 0.009));
+      ebene.add(
+        this.add.text(pos.x, pos.y + Math.round(stapelH * 0.65), `${spieler.stiche}`, {
+          color: '#ffd166',
+          fontSize: `${schriftGroesse}px`,
+          fontStyle: 'bold',
+          backgroundColor: '#0d3d1e',
+          padding: { x: 3, y: 1 }
+        }).setOrigin(0.5)
+      );
+    });
   }
 
   private renderStichmitte(
