@@ -159,6 +159,113 @@ class SchwerKiStrategieTest {
             "da nur die Ansage-Schwellenwerte unterschiedlich sind.");
     }
 
+    /**
+     * KONTRA-Ansage bei mittlerer Hand: Die schwere KI sagt an (Schwelle 22),
+     * die Standard-KI nicht (Schwelle 26).
+     *
+     * Handstaerke: 8 Truempfe (keine Dullen, keine Kreuz-Damen, keine Asse) = 8*3 = 24.
+     * Schwer-Schwelle KONTRA (eigenePartei=KONTRA): 22 → KONTRA!
+     * Standard-Schwelle KONTRA (eigenePartei=KONTRA): 26 → kein KONTRA.
+     *
+     * Wichtig: Ohne diesen Test wäre der KONTRA-Schwellenunterschied (22 vs 26) ungetestet
+     * — nur der RE-Unterschied wäre belegt. Doppelkopf-Partien drehen sich häufig um
+     * KONTRA-Ankündigungen, daher ist diese Abgrenzung spielpraktisch relevant.
+     */
+    @Test
+    void sagtKontraSchonBeiMittlererHandAn() {
+        // Handstaerke: 8 Truempfe × 3 = 24 (keine Dullen/Kreuz-Damen/Asse → saubere Berechnung)
+        KiSpielzustand zustand = new KiSpielzustand(
+            SpielerPosition.WEST,
+            Spieltyp.NORMALSPIEL,
+            Spielphase.STICHPHASE,
+            spielregeln,
+            trumpfOrdnung,
+            new Hand(List.of(
+                karte(Farbe.PIK, Kartenwert.BUBE, 1),
+                karte(Farbe.PIK, Kartenwert.BUBE, 2),
+                karte(Farbe.HERZ, Kartenwert.BUBE, 1),
+                karte(Farbe.HERZ, Kartenwert.BUBE, 2),
+                karte(Farbe.KARO, Kartenwert.BUBE, 1),
+                karte(Farbe.KARO, Kartenwert.BUBE, 2),
+                karte(Farbe.KARO, Kartenwert.NEUN, 1),
+                karte(Farbe.KARO, Kartenwert.NEUN, 2)
+            )),
+            Parteien.ausSolo(SpielerPosition.OST),  // WEST = KONTRA
+            Ansagen.leer(),
+            List.of(),
+            Stich.neu(SpielerPosition.WEST),
+            null,
+            null,
+            List.of(karte(Farbe.PIK, Kartenwert.BUBE, 1)),
+            List.of(Ansage.KONTRA),
+            List.of()
+        );
+
+        assertTrue(strategie.waehleAnsage(zustand).isPresent(),
+            "Die schwere KI soll mit Handstaerke 24 bereits KONTRA ansagen (Schwelle 22), " +
+            "damit der Schwierigkeitsunterschied zur Standard-KI (Schwelle 26) auch bei KONTRA spuerbar ist.");
+        assertEquals(Ansage.KONTRA, strategie.waehleAnsage(zustand).orElseThrow());
+
+        assertTrue(standardStrategie.waehleAnsage(zustand).isEmpty(),
+            "Die Standard-KI darf mit Handstaerke 24 kein KONTRA ansagen (Schwelle 26), " +
+            "um den Unterschied zwischen STANDARD und SCHWER bei der KONTRA-Partei klar abzugrenzen.");
+    }
+
+    /**
+     * KEINE_90-Ansage bei starker Hand: Die schwere KI sagt an (Schwelle 32),
+     * die Standard-KI nicht (Schwelle 36).
+     *
+     * Handstaerke: 11 Truempfe (keine Dullen, keine Kreuz-Damen, keine Asse) = 11*3 = 33.
+     * Schwer-Schwelle KEINE_90: 32 → KEINE_90!
+     * Standard-Schwelle KEINE_90: 36 → keine KEINE_90.
+     *
+     * Wichtig: Verschaerfungen (KEINE_90 ff.) sind die haeufigste Form aggressiver
+     * Spielfuehrung. Ohne diesen Test wäre unbewiesen, ob die schwere KI tatsaechlich
+     * haeufiger Verschaerfungen ansagt als die Standard-KI.
+     */
+    @Test
+    void sagtKeine90BeiStarkerHandAn() {
+        // Handstaerke: 11 Truempfe × 3 = 33 (keine Dullen/Kreuz-Damen/Asse → saubere Berechnung)
+        KiSpielzustand zustand = new KiSpielzustand(
+            SpielerPosition.WEST,
+            Spieltyp.NORMALSPIEL,
+            Spielphase.STICHPHASE,
+            spielregeln,
+            trumpfOrdnung,
+            new Hand(List.of(
+                karte(Farbe.PIK, Kartenwert.DAME, 1),
+                karte(Farbe.PIK, Kartenwert.DAME, 2),
+                karte(Farbe.HERZ, Kartenwert.DAME, 1),
+                karte(Farbe.HERZ, Kartenwert.DAME, 2),
+                karte(Farbe.KARO, Kartenwert.DAME, 1),
+                karte(Farbe.KARO, Kartenwert.DAME, 2),
+                karte(Farbe.KREUZ, Kartenwert.BUBE, 1),
+                karte(Farbe.KREUZ, Kartenwert.BUBE, 2),
+                karte(Farbe.PIK, Kartenwert.BUBE, 1),
+                karte(Farbe.HERZ, Kartenwert.BUBE, 1),
+                karte(Farbe.KARO, Kartenwert.BUBE, 1)
+            )),
+            Parteien.ausSolo(SpielerPosition.WEST),  // WEST = RE
+            Ansagen.leer(),
+            List.of(),
+            Stich.neu(SpielerPosition.WEST),
+            null,
+            null,
+            List.of(karte(Farbe.PIK, Kartenwert.DAME, 1)),
+            List.of(Ansage.KEINE_90),
+            List.of()
+        );
+
+        assertTrue(strategie.waehleAnsage(zustand).isPresent(),
+            "Die schwere KI soll mit Handstaerke 33 bereits KEINE_90 ansagen (Schwelle 32), " +
+            "damit Verschaerfungen haeufiger als bei der Standard-KI (Schwelle 36) ausgerufen werden.");
+        assertEquals(Ansage.KEINE_90, strategie.waehleAnsage(zustand).orElseThrow());
+
+        assertTrue(standardStrategie.waehleAnsage(zustand).isEmpty(),
+            "Die Standard-KI darf mit Handstaerke 33 keine KEINE_90 ansagen (Schwelle 36), " +
+            "um den Unterschied zwischen STANDARD und SCHWER bei Verschaerfungen klar zu belegen.");
+    }
+
     private Karte karte(Farbe farbe, Kartenwert wert, int exemplarIndex) {
         return new Karte(farbe, wert, exemplarIndex);
     }

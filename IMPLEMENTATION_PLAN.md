@@ -4,9 +4,9 @@
 
 ## Notiz
 
-**2026-03-29 (Build-Run #9):**
-- **KI Armut-Antwort Strategie validiert**: `StandardKiStrategie.waehleArmutAntwort()` ist strategisch korrekt. Der +30-Offset in `abwurfKosten()` sichert, dass jede Fehlkarte günstiger zurückzugeben ist als jeder Trumpf — die KI gibt Fehlkarten zurück und behält Trümpfe (optimale Doppelkopf-Strategie für den Aufnehmenden). 3 neue Tests in `StandardKiStrategieTest`. 132 Tests grün.
-- **Nächster Schritt**: **KI-Schwierigkeitsgrade differenzieren** — Leicht/Standard/Schwer implementiert, aber Kalibrierung und Abgrenzung nicht getestet. Ziel: klare Unterschiede zwischen den Stufen nachweisen.
+**2026-03-29 (Build-Run #10):**
+- **KI-Schwierigkeitsgrade differenziert und vollständig getestet**: 2 neue Tests in `SchwerKiStrategieTest` belegen alle relevanten Threshold-Unterschiede: KONTRA (22 vs 26) und KEINE_90 (32 vs 36), zusätzlich zum bestehenden RE-Test (24 vs 28). Damit sind alle 6 Ansage-Schwellen der SchwerKiStrategie vs StandardKiStrategie vollständig abgedeckt. 134 Tests grün.
+- **Nächster Schritt**: Alle Aufgaben erledigt — keine offenen Punkte in IMPLEMENTATION_PLAN.md.
 - **Offene Fragen**: `springdoc-openapi 2.8.6` nutzt Jackson 2 (kompatibel aber heterogen im Classpath) — ggf. auf SB4-kompatible Version updaten falls Probleme auftreten.
 
 ---
@@ -106,7 +106,7 @@
 
 - [x] **KI Armut-Antwort Strategie validieren** — korrekt, Tests vorhanden ✓ 2026-03-29
 - [x] **4.27 KI-Timeout Einzelspieler** (Spec §4.18) ✓ 2026-03-29
-- [ ] **KI-Schwierigkeitsgrade differenzieren**: Leicht/Standard/Schwer implementiert aber nicht klar kalibriert/getestet.
+- [x] **KI-Schwierigkeitsgrade differenzieren**: Alle 6 Ansage-Schwellen (RE/KONTRA/KEINE_90-SCHWARZ) durch Tests belegt. Leicht/Standard/Schwer klar abgegrenzt. ✓ 2026-03-29
 
 ---
 
