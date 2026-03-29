@@ -774,9 +774,10 @@ describe('TischSzene', () => {
 
     await vi.runAllTimersAsync();
 
-    // 4 Karten × 2 Tweens (tweenZu + tweenScale) + 3 Popup-Tweens = 11
-    expect(tweens.add).toHaveBeenCalledTimes(11);
-    expect(tweens.aufrufe[0].duration).toBe(600);
+    // Flash-Tween (alpha rein) + 4 Karten × 2 Tweens (tweenZu + tweenScale) + 3 Popup-Tweens + Flash-Tween (alpha raus) = 13
+    expect(tweens.add).toHaveBeenCalledTimes(13);
+    // Index 0 = Flash alpha-in (200ms); Index 1 = erster Karten-Move-Tween (600ms)
+    expect(tweens.aufrufe[1].duration).toBe(600);
     vi.useRealTimers();
   });
 

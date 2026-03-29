@@ -1418,12 +1418,23 @@ export class TischSzene extends Phaser.Scene {
       return { bild };
     });
 
+    // Gewinn-Flash: goldenes Overlay-Rechteck über dem Nameplate des Gewinners (startet unsichtbar)
+    const gewinnerPos = abgeschlossenerStich.gewinnerPosition;
+    const npPos = nameplatePositionFuer(gewinnerPos, breite, hoehe);
+    const istHorizontal = gewinnerPos === 'SUED' || gewinnerPos === 'NORD';
+    const flashBreite = istHorizontal ? Math.max(120, breite * 0.11) : Math.max(80, breite * 0.07);
+    const flashHoehe = istHorizontal ? Math.max(54, hoehe * 0.075) : Math.max(80, hoehe * 0.11);
+    const flashRechteck = this.add.rectangle(npPos.x, npPos.y, flashBreite, flashHoehe, 0xffe082, 0.7)
+      .setDepth(150)
+      .setAlpha(0);
+
     try {
-      await this.animationen?.animiereStichEinziehen(animierteKarten, { x: ziel.x, y: ziel.y });
+      await this.animationen?.animiereStichEinziehen(animierteKarten, { x: ziel.x, y: ziel.y }, flashRechteck);
     } finally {
       animierteKarten.forEach((karte) => {
         karte.bild.destroy();
       });
+      flashRechteck.destroy();
     }
   }
 

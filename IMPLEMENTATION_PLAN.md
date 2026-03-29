@@ -4,10 +4,10 @@
 
 ## Notiz
 
-**2026-03-29 (Build-Run #4):**
-- **4.23 Letzter Stich anzeigen** implementiert: Klick auf eigenen SUED-Stapel öffnet ein Phaser-Overlay mit den 4 Karten des letzten gewonnenen Stichs. Auto-Close nach 4 Sekunden oder bei erneutem Klick. Backdrop-Klick schließt ebenfalls. Overlay-Container ist unabhängig von `tischEbene` (bleibt über Render-Zyklen erhalten). Cleanup in `aufraeumen()`.
-- **Nächster Schritt**: 4.26 Gewinn-Flash (Nameplate des Stich-Gewinners leuchtet kurz auf) — unabhängig von 4.22/4.23.
-- **Offene Fragen**: Overlay-Position und Kartendarstellung visuell prüfen (Vision Loop). Overlay schließt sich nicht bei Spielzustandsänderung (Timer-basiert) — ggf. beim Einziehen des Stichs explizit schließen.
+**2026-03-29 (Build-Run #5):**
+- **4.26 Gewinn-Flash** implementiert: In `starteFolgeanimationen` wird ein temporäres goldenes Rechteck (`0xffe082`, alpha=0, depth=150) an der Nameplate-Position des Stichgewinners erzeugt und als `flashObjekt` an `animiereStichEinziehen` übergeben. Der `AnimationenService` hatte bereits `flashObjekt`-Unterstützung (Zeilen 230–235): alpha 0→1 (200ms) → warte 200ms → 1→0 (200ms), nicht-blockierend. Cleanup in `finally`.
+- **Nächster Schritt**: 4.25 HUD Stichzähler Format (`„Stich X/12"` statt `„X Stiche"` in `TischSzene.ts:697`). Einzeiler-Änderung.
+- **Offene Fragen**: Keine kritischen. Flash visuell prüfen (Vision Loop bei laufendem Backend).
 
 ---
 
@@ -66,7 +66,7 @@
 
 - [x] **4.22 Stich-Stapel-Visualisierung**: `renderStichStapel()` — gestapelter Fächer mit Badge neben jedem Spieler. ✓ 2026-03-29
 - [x] **4.23 Letzter Stich anzeigen**: Klick auf SUED-Stapel → Phaser-Overlay mit 4 Karten, Auto-Close 4s. ✓ 2026-03-29
-- [ ] **4.26 Gewinn-Flash**: Nameplate des Stich-Gewinners leuchtet kurz auf (Spec: `frontend-animationen.md:87`). Unabhängig von 4.22.
+- [x] **4.26 Gewinn-Flash**: Nameplate des Stich-Gewinners leuchtet kurz auf (goldenes Overlay-Rechteck, 400ms gesamt). ✓ 2026-03-29
 
 #### Priorität 2 — Kleinere UI-Korrekturen
 
@@ -99,7 +99,7 @@
 
 - [x] **4.22 Stich-Stapel-Visualisierung** ✓ 2026-03-29
 - [x] **4.23 Letzter Stich anzeigen** ✓ 2026-03-29
-- [ ] **4.26 Gewinn-Flash** (Nameplate aufleuchten bei Stichgewinn)
+- [x] **4.26 Gewinn-Flash** (Nameplate aufleuchten bei Stichgewinn) ✓ 2026-03-29
 - [ ] **4.25 HUD Stichzähler Format** (`„Stich X/12"`, Einzeiler in `TischSzene.ts:697`)
 
 ### Priorität 3 — KI-Qualität & Robustheit
