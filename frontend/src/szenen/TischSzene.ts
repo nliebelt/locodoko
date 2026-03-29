@@ -6,6 +6,7 @@ import {
   TEXTUR_KARTE_OFFEN,
   TEXTUR_KARTE_VERDECKT,
   texturSchluesselFuerKarte,
+  ladeKartenBilderVorab,
   registriereKartenSpriteTexturen
 } from '../assets/AssetLoader';
 import { appStore } from '../anwendung';
@@ -313,8 +314,7 @@ export class TischSzene extends Phaser.Scene {
    * prozedurale Canvas-Generierung zurueck.
    */
   preload(): void {
-    // Kartentexturen werden in create() prozedural per Canvas erzeugt.
-    // Kein PNG-Preloading — Canvas-Texturen haben immer Vorrang und sind direkt verfuegbar.
+    ladeKartenBilderVorab(this);
   }
 
   /**
@@ -424,6 +424,7 @@ export class TischSzene extends Phaser.Scene {
       </div>
       <div class="hud-topbar__right">
         <button class="ui-button" type="button" data-start-button>Spiel starten</button>
+        <button class="hud-icon-btn" type="button" title="Tisch verlassen" data-leave-top-button>&#x2190;</button>
         <button class="hud-icon-btn" type="button" title="Einstellungen" data-einstellungen-toggle>⚙</button>
         <button class="hud-icon-btn" type="button" title="Debug" data-debug-button>🐛</button>
       </div>
@@ -513,6 +514,7 @@ export class TischSzene extends Phaser.Scene {
     const lobbyButton = seitenlade.querySelector('[data-lobby-button]');
     const leaveButton = seitenlade.querySelector('[data-leave-button]');
     const startButton = topBar.querySelector('[data-start-button]');
+    const leaveTopButton = topBar.querySelector('[data-leave-top-button]');
     const seitenladeToggleBtn = topBar.querySelector('[data-seitenlade-toggle]');
     const einstellungenToggleBtn = topBar.querySelector('[data-einstellungen-toggle]');
     const einstellungenSchliessenBtn = einstellungsDialog.querySelector('[data-einstellungen-schliessen]');
@@ -531,6 +533,7 @@ export class TischSzene extends Phaser.Scene {
       || !(ergebnisInhalt instanceof HTMLDivElement)
       || !(lobbyButton instanceof HTMLButtonElement)
       || !(leaveButton instanceof HTMLButtonElement)
+      || !(leaveTopButton instanceof HTMLButtonElement)
       || !(startButton instanceof HTMLButtonElement)
       || !(seitenladeToggleBtn instanceof HTMLButtonElement)
       || !(einstellungenToggleBtn instanceof HTMLButtonElement)
@@ -575,16 +578,17 @@ export class TischSzene extends Phaser.Scene {
     });
 
     // Tisch verlassen (mit Bestätigungsdialog bei laufendem Spiel)
-    leaveButton.addEventListener('click', () => {
+    const verlasseTisch = (): void => {
       const zustand = appStore.snapshot();
       const istImSpiel = zustand.aktuellerTisch?.status === 'IM_SPIEL';
       if (istImSpiel) {
-        // Bestaetigungsdialog: Verlassen wuerde die laufende Partie abbrechen
         const bestaetigt = window.confirm('Tisch wirklich verlassen? Die laufende Partie wird fuer alle Spieler abgebrochen.');
         if (!bestaetigt) return;
       }
       void appStore.verlasseAktuellenTisch();
-    });
+    };
+    leaveButton.addEventListener('click', verlasseTisch);
+    leaveTopButton.addEventListener('click', verlasseTisch);
 
     // Spiel starten
     startButton.addEventListener('click', () => {
@@ -783,15 +787,6 @@ export class TischSzene extends Phaser.Scene {
 
     const ebene = this.add.container(0, 0);
     ebene.add(this.add.ellipse(mitteX, mitteY, tischBreite, tischHoehe, 0x081c15, 0.32).setStrokeStyle(8, 0xd8f3dc, 0.42));
-    ebene.add(this.add.text(mitteX, hoehe * 0.06, modell.titel, {
-      color: '#f8f9fa',
-      fontSize: `${Math.round(Math.max(24, breite * 0.024))}px`,
-      fontStyle: 'bold'
-    }).setOrigin(0.5));
-    ebene.add(this.add.text(mitteX, hoehe * 0.1, `${modell.untertitel} · ${modell.statusText}`, {
-      color: '#d8f3dc',
-      fontSize: `${Math.round(Math.max(14, breite * 0.013))}px`
-    }).setOrigin(0.5));
 
     this.renderStichmitte(ebene, modell, mitteX, mitteY, breite, hoehe);
 
@@ -801,12 +796,19 @@ export class TischSzene extends Phaser.Scene {
       const istHorizontal = spieler.position === 'SUED' || spieler.position === 'NORD';
       const nameplateBreite = istHorizontal ? Math.max(120, breite * 0.11) : Math.max(80, breite * 0.07);
       const nameplateHoehe = istHorizontal ? Math.max(54, hoehe * 0.075) : Math.max(80, hoehe * 0.11);
-      // Aktiv-Hervorhebung: goldene Umrandung; sonst halbtransparentes Dunkelgruen
+      // Aktiv-Hervorhebung: goldenes Glow-Rechteck + dicker Rahmen; sonst halbtransparentes Dunkelgruen
       const rahmenFarbe = spieler.istAktivHervorgehoben ? 0xffe082 : 0xd8f3dc;
-      const rahmenStaerke = spieler.istAktivHervorgehoben ? 3 : 1;
+      const rahmenStaerke = spieler.istAktivHervorgehoben ? 4 : 1;
+      const hgFarbe = spieler.istAktivHervorgehoben ? 0x1a4a20 : 0x0d3d1e;
+      if (spieler.istAktivHervorgehoben) {
+        // Aeusserer Glow-Ring
+        ebene.add(
+          this.add.rectangle(npPos.x, npPos.y, nameplateBreite + 10, nameplateHoehe + 10, 0xffe082, 0.18)
+        );
+      }
       ebene.add(
-        this.add.rectangle(npPos.x, npPos.y, nameplateBreite, nameplateHoehe, 0x0d3d1e, 0.92)
-          .setStrokeStyle(rahmenStaerke, rahmenFarbe, 0.85)
+        this.add.rectangle(npPos.x, npPos.y, nameplateBreite, nameplateHoehe, hgFarbe, 0.95)
+          .setStrokeStyle(rahmenStaerke, rahmenFarbe, 0.95)
       );
       // Name (fett, oben)
       const nameSchriftGroesse = Math.round(Math.max(13, breite * 0.012));
@@ -871,18 +873,7 @@ export class TischSzene extends Phaser.Scene {
     const slotPositionen = stichSlotPositionen(mitteX, mitteY, breite, hoehe);
     const kgroesse = berechneKartenGroesse(breite);
 
-    ebene.add(this.add.text(mitteX, mitteY - Math.round(hoehe * 0.222), modell.aktuellerSpieler ? `Am Zug: ${this.nameFuerPosition(modell, modell.aktuellerSpieler)}` : 'Warte auf den naechsten Zug', {
-      color: '#f8f9fa',
-      fontSize: `${Math.round(Math.max(16, breite * 0.016))}px`,
-      fontStyle: 'bold'
-    }).setOrigin(0.5));
-
     if (modell.aktuelleStichmitte.length === 0) {
-      ebene.add(this.add.text(mitteX, mitteY, 'Noch keine Karte im laufenden Stich', {
-        color: '#d8f3dc',
-        fontSize: `${Math.round(Math.max(14, breite * 0.014))}px`,
-        align: 'center'
-      }).setOrigin(0.5));
       return;
     }
 
@@ -1356,7 +1347,7 @@ export class TischSzene extends Phaser.Scene {
     vorherigesModell: TischAnsichtModell | null,
     aktuellesModell: TischAnsichtModell
   ): TischAnsichtModell['letzteAbgeschlosseneStiche'][number] | null {
-    if (!vorherigesModell || vorherigesModell.aktuelleStichmitte.length !== 4 || aktuellesModell.aktuelleStichmitte.length > 0) {
+    if (!vorherigesModell) {
       return null;
     }
     const letzterVorher = vorherigesModell.letzteAbgeschlosseneStiche.at(-1);
@@ -1712,34 +1703,37 @@ export class TischSzene extends Phaser.Scene {
       return;
     }
 
-    // Abdeckung des gesamten Spielfelds (faengt Mausklicks ab)
-    ebene.add(this.add.rectangle(breite / 2, hoehe / 2, breite, hoehe, 0x000000, 0.6)
-      .setInteractive());
-
     const optionen = modell.moeglicheVorbehalte;
-    const btnH = Math.round(Math.max(36, hoehe * 0.055));
-    const btnW = Math.round(Math.min(260, breite * 0.22));
-    const abstand = Math.round(btnH * 0.35);
-    const dialogH = Math.round(hoehe * 0.1) + optionen.length * (btnH + abstand);
-    const dialogW = btnW + Math.round(breite * 0.04);
-    const dialogY = hoehe / 2;
+    const btnH = Math.round(Math.max(32, hoehe * 0.048));
+    const btnW = Math.round(Math.min(130, breite * 0.11));
+    const abstandX = Math.round(breite * 0.008);
+    const abstandY = Math.round(btnH * 0.3);
+    const spalten = 2;
+    const zeilen = Math.ceil(optionen.length / spalten);
+    const dialogW = spalten * btnW + (spalten + 1) * abstandX;
+    const titelH = Math.round(hoehe * 0.04);
+    const dialogH = titelH + zeilen * (btnH + abstandY) + abstandY;
+    const dialogY = Math.round(hoehe * 0.28);
 
     ebene.add(this.add.rectangle(breite / 2, dialogY, dialogW, dialogH, 0x0a2818, 0.97)
       .setStrokeStyle(2, 0x4adf7a, 0.7));
 
-    ebene.add(this.add.text(breite / 2, dialogY - dialogH / 2 + Math.round(hoehe * 0.025), 'Vorbehalt ansagen', {
+    ebene.add(this.add.text(breite / 2, dialogY - dialogH / 2 + Math.round(titelH * 0.5), 'Vorbehalt ansagen', {
       color: '#f8f9fa',
-      fontSize: `${Math.round(Math.max(15, breite * 0.014))}px`,
+      fontSize: `${Math.round(Math.max(13, breite * 0.012))}px`,
       fontStyle: 'bold'
-    }).setOrigin(0.5, 0));
+    }).setOrigin(0.5));
 
     const deaktiviert = zustand.wirdGeladen || this.spielzugAnimationAktiv;
-    const startY = dialogY - dialogH / 2 + Math.round(hoehe * 0.07);
+    const gridStartX = breite / 2 - btnW / 2 - abstandX / 2;
+    const gridStartY = dialogY - dialogH / 2 + titelH + abstandY + btnH / 2;
     optionen.forEach((vorbehalt, index) => {
+      const spalte = index % spalten;
+      const zeile = Math.floor(index / spalten);
       this.erstellePhaserButton(
         ebene,
-        breite / 2,
-        startY + index * (btnH + abstand),
+        gridStartX + spalte * (btnW + abstandX),
+        gridStartY + zeile * (btnH + abstandY),
         btnW,
         btnH,
         formatiereVorbehalt(vorbehalt),
@@ -2275,6 +2269,7 @@ export class TischSzene extends Phaser.Scene {
     this.letztesModell = null;
     this.handKartenobjekte.clear();
     this.spielzugAnimationAktiv = false;
+    this.austeilenAktiv = false;
     this.wartendeKartenId = null;
     this.tastaturKarteIndex = -1;
     this.tastaturVorbehaltIndex = 0;

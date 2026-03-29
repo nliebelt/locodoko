@@ -13,6 +13,16 @@ Vollständiges Paket: `mvn clean package` (baut Frontend ein, erzeugt JAR)
 2. `cd frontend && npm test && npm run build && npm run lint` — Frontend komplett
 3. Logs auf Warnungen und Fehler prüfen
 
+## Visuelles Feedback (UI-Änderungen)
+
+Nach Frontend-UI-Änderungen Vision Loop ausführen (Backend muss laufen):
+
+```sh
+cd e2e && npx playwright test vision-loop.spec.ts --headed
+```
+
+Screenshots landen in `e2e/screenshots/`. Mit dem Read-Tool einlesen und visuell prüfen — kein manueller Screenshot nötig. Nur bei UI-relevanten Änderungen, nicht bei reinen Backend- oder Logik-Fixes.
+
 ## Domänensprache
 
 Code, Kommentare, Klassen, Methoden auf **Deutsch**. Fachbegriffe: Stich, Trumpf, Dulle, Fuchs, Karlchen, Re, Kontra, Armut, Hochzeit.
