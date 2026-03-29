@@ -15,6 +15,7 @@ import { Logger } from '../logger';
 import {
   erstelleTischAnsichtAusStatus,
   istTrumpfFuerSpieltyp,
+  type AbgeschlossenerStichAnsicht,
   type AnsageAnsicht,
   type LetztesSpielergebnisAnsicht,
   type TischAnsichtModell,
@@ -309,6 +310,11 @@ export class TischSzene extends Phaser.Scene {
 
   // Aktuell gewaehlte Animations-Geschwindigkeit (wird in localStorage persistiert)
   private animationsGeschwindigkeit: AnimationsGeschwindigkeit = 1;
+
+  // Overlay fuer "Letzter Stich" (Klick auf eigenen Stapel)
+  private letzterStichOverlay?: Phaser.GameObjects.Container;
+
+  private letzterStichTimer?: Phaser.Time.TimerEvent;
 
   // Referenz auf den Geschwindigkeits-Toggle-Button fuer Label-Aktualisierungen
   private geschwindigkeitsButton?: HTMLButtonElement;
@@ -913,7 +919,96 @@ export class TischSzene extends Phaser.Scene {
           padding: { x: 3, y: 1 }
         }).setOrigin(0.5)
       );
+
+      // Eigener Stapel ist klickbar: zeigt die 4 Karten des letzten gewonnenen Stichs
+      if (spieler.istSelbst) {
+        const letzterEigenerStich = modell.letzteAbgeschlosseneStiche
+          .filter((s) => s.gewinnerPosition === 'SUED')
+          .at(-1);
+        if (letzterEigenerStich) {
+          const hitBreite = stapelW + Math.round(stapelW * 0.3);
+          const hitHoehe = stapelH + Math.round(stapelH * 0.3) + Math.round(stapelH * 0.65);
+          const hitZone = this.add.rectangle(pos.x, pos.y, hitBreite, hitHoehe, 0xffffff, 0)
+            .setInteractive({ useHandCursor: true });
+          hitZone.on('pointerdown', () => {
+            if (this.letzterStichOverlay) {
+              this.versteckeLetztesStichOverlay();
+            } else {
+              this.zeigeLetztesStichOverlay(letzterEigenerStich, breite, hoehe);
+            }
+          });
+          ebene.add(hitZone);
+        }
+      }
     });
+  }
+
+  /** Zeigt ein Overlay mit den 4 Karten des letzten eigenen Stichs. */
+  private zeigeLetztesStichOverlay(stich: AbgeschlossenerStichAnsicht, breite: number, hoehe: number): void {
+    this.versteckeLetztesStichOverlay();
+    const kgroesse = berechneKartenGroesse(breite);
+    const kartenAbstand = Math.round(kgroesse.w * 1.15);
+    const gesamtBreite = 4 * kgroesse.w + 3 * (kartenAbstand - kgroesse.w);
+    const panelBreite = Math.max(gesamtBreite + kgroesse.w, 300);
+    const panelHoehe = kgroesse.h + Math.round(kgroesse.h * 0.7);
+    const panelX = breite / 2;
+    const panelY = hoehe / 2;
+
+    const container = this.add.container(0, 0);
+
+    // Halbtransparenter Hintergrund (ganzer Bildschirm zum Schliessen)
+    const backdrop = this.add.rectangle(breite / 2, hoehe / 2, breite, hoehe, 0x000000, 0.45)
+      .setInteractive({ useHandCursor: false });
+    backdrop.on('pointerdown', () => this.versteckeLetztesStichOverlay());
+    container.add(backdrop);
+
+    // Panel
+    container.add(this.add.rectangle(panelX, panelY, panelBreite, panelHoehe, 0x0a2818, 0.97)
+      .setStrokeStyle(2, 0x4adf7a, 0.7));
+
+    // Titel
+    const titelSchrift = Math.round(Math.max(12, breite * 0.011));
+    container.add(this.add.text(panelX, panelY - Math.round(panelHoehe * 0.38),
+      `Letzter Stich — ${stich.augen} Augen`, {
+        color: '#ffd166',
+        fontSize: `${titelSchrift}px`,
+        fontStyle: 'bold'
+      }).setOrigin(0.5));
+
+    // Karten in einer Reihe
+    const karten = stich.gespielteKarten;
+    const startX = panelX - ((karten.length - 1) * kartenAbstand) / 2;
+    const kartenY = panelY + Math.round(panelHoehe * 0.05);
+    karten.forEach((eintrag, index) => {
+      const x = startX + index * kartenAbstand;
+      const textur = texturSchluesselFuerKarte(eintrag.karte.farbe, eintrag.karte.wert);
+      container.add(this.add.image(x, kartenY, textur).setDisplaySize(kgroesse.w, kgroesse.h));
+    });
+
+    // Hinweis-Text
+    const hinweisSchrift = Math.round(Math.max(10, breite * 0.009));
+    container.add(this.add.text(panelX, panelY + Math.round(panelHoehe * 0.44),
+      'Klick zum Schliessen', {
+        color: '#a3c4a8',
+        fontSize: `${hinweisSchrift}px`
+      }).setOrigin(0.5));
+
+    this.letzterStichOverlay = container;
+
+    // Auto-Close nach 4 Sekunden
+    this.letzterStichTimer = this.time.addEvent({
+      delay: 4000,
+      callback: () => this.versteckeLetztesStichOverlay(),
+      callbackScope: this
+    });
+  }
+
+  /** Schliesst das Letzter-Stich-Overlay und bricht den Auto-Close-Timer ab. */
+  private versteckeLetztesStichOverlay(): void {
+    this.letzterStichTimer?.remove(false);
+    this.letzterStichTimer = undefined;
+    this.letzterStichOverlay?.destroy(true);
+    this.letzterStichOverlay = undefined;
   }
 
   private renderStichmitte(
@@ -2327,6 +2422,7 @@ export class TischSzene extends Phaser.Scene {
     this.wartendeKartenId = null;
     this.tastaturKarteIndex = -1;
     this.tastaturVorbehaltIndex = 0;
+    this.versteckeLetztesStichOverlay();
     this.ausgewaehlteArmutKarten.clear();
     this.armutAnnahmeAktiv = false;
     this.letzteSticheOffen = false;

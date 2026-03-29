@@ -4,10 +4,10 @@
 
 ## Notiz
 
-**2026-03-29 (Build-Run #3):**
-- **4.22 Stich-Stapel-Visualisierung** implementiert: `renderStichStapel()` in `TischSzene.ts`. Kleine gestapelte Kartenrücken (55% Kartengröße) neben jedem Spieler, Anzahl-Badge in Gold. Positionen: SUED/NORD rechts vom Kartenfächer, WEST/OST in der Lücke zwischen Nameplate und Kartenstapel. Helper `stichStapelPositionFuer()` ergänzt. Vite-Config lint-Fix (`loadEnv` entfernt).
-- **Nächster Schritt**: 4.23 Letzter Stich anzeigen (Klick auf eigenen Stapel öffnet die 4 Karten des letzten gewonnenen Stichs) — baut auf 4.22 auf.
-- **Offene Fragen**: Positionen visuell prüfen (Vision Loop), ggf. SUED-Stack-X feinjustieren wenn er mit anderen UI-Elementen kollidiert.
+**2026-03-29 (Build-Run #4):**
+- **4.23 Letzter Stich anzeigen** implementiert: Klick auf eigenen SUED-Stapel öffnet ein Phaser-Overlay mit den 4 Karten des letzten gewonnenen Stichs. Auto-Close nach 4 Sekunden oder bei erneutem Klick. Backdrop-Klick schließt ebenfalls. Overlay-Container ist unabhängig von `tischEbene` (bleibt über Render-Zyklen erhalten). Cleanup in `aufraeumen()`.
+- **Nächster Schritt**: 4.26 Gewinn-Flash (Nameplate des Stich-Gewinners leuchtet kurz auf) — unabhängig von 4.22/4.23.
+- **Offene Fragen**: Overlay-Position und Kartendarstellung visuell prüfen (Vision Loop). Overlay schließt sich nicht bei Spielzustandsänderung (Timer-basiert) — ggf. beim Einziehen des Stichs explizit schließen.
 
 ---
 
@@ -65,7 +65,7 @@
 #### Priorität 1 — UX-Verbesserungen
 
 - [x] **4.22 Stich-Stapel-Visualisierung**: `renderStichStapel()` — gestapelter Fächer mit Badge neben jedem Spieler. ✓ 2026-03-29
-- [ ] **4.23 Letzter Stich anzeigen**: Klick auf eigenen Stich-Stapel öffnet Ansicht der 4 Karten des letzten Stichs. Abhängig von 4.22.
+- [x] **4.23 Letzter Stich anzeigen**: Klick auf SUED-Stapel → Phaser-Overlay mit 4 Karten, Auto-Close 4s. ✓ 2026-03-29
 - [ ] **4.26 Gewinn-Flash**: Nameplate des Stich-Gewinners leuchtet kurz auf (Spec: `frontend-animationen.md:87`). Unabhängig von 4.22.
 
 #### Priorität 2 — Kleinere UI-Korrekturen
@@ -98,7 +98,7 @@
 ### Priorität 2 — Frontend UX
 
 - [x] **4.22 Stich-Stapel-Visualisierung** ✓ 2026-03-29
-- [ ] **4.23 Letzter Stich anzeigen** (Klick-Interaktion, abhängig von 4.22)
+- [x] **4.23 Letzter Stich anzeigen** ✓ 2026-03-29
 - [ ] **4.26 Gewinn-Flash** (Nameplate aufleuchten bei Stichgewinn)
 - [ ] **4.25 HUD Stichzähler Format** (`„Stich X/12"`, Einzeiler in `TischSzene.ts:697`)
 
