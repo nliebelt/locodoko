@@ -11,6 +11,7 @@ import de.locodoko.karten.Spieltyp;
 import de.locodoko.karten.Stich;
 import de.locodoko.partie.Ansage;
 import de.locodoko.partie.Ansagen;
+import de.locodoko.partie.ArmutStatus;
 import de.locodoko.partie.HochzeitStatus;
 import de.locodoko.partie.Partei;
 import de.locodoko.partie.Parteien;
@@ -21,7 +22,9 @@ import org.junit.jupiter.api.Test;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertIterableEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class StandardKiStrategieTest {
 
@@ -236,6 +239,88 @@ class StandardKiStrategieTest {
         Karte gewaehlteKarte = strategie.waehleKarte(zustand);
         assertEquals(herzZehn, gewaehlteKarte,
             "Ein Nicht-Hochzeit-Spieler soll den Klaerungsstich gewinnen wollen, wenn der Hochzeit-Spieler fuehrt, um die Re-Partnerrolle zu uebernehmen.");
+    }
+
+    @Test
+    void nimmt_Armut_an_und_gibt_Fehlkarten_zurueck_nicht_eigene_Truempfe() {
+        // KI hat nur 2 Trümpfe → nimmt an (Bedingung eigeneTruepfe > 5 nicht erfüllt).
+        // Fehlkarten haben abwurfKosten = augen + fehlRang (max ~17 für ein As).
+        // Trümpfe haben abwurfKosten = augen + 30 + trumpfRang (min 31 für Karo-Neun).
+        // Der +30-Offset sichert, dass JEDE Fehlkarte günstiger zurückzugeben ist als JEDER Trumpf —
+        // daher gibt die KI korrekt ihre Fehlkarten zurück und behält die Trümpfe für die Re-Partei.
+        Karte kreuzDame = karte(Farbe.KREUZ, Kartenwert.DAME, 1);   // Trumpf, abwurfKosten = 3+30+12 = 45
+        Karte herzZehn  = karte(Farbe.HERZ,  Kartenwert.ZEHN,  1);  // Dulle,  abwurfKosten = 10+30+13 = 53
+        Karte kreuzNeun = karte(Farbe.KREUZ, Kartenwert.NEUN,  1);  // Fehlkarte, abwurfKosten = 0+1 = 1
+        Karte pikKoenig = karte(Farbe.PIK,   Kartenwert.KOENIG, 1); // Fehlkarte, abwurfKosten = 4+4 = 8
+
+        ArmutStatus armutStatus = ArmutStatus.gestartet(SpielerPosition.SUED)
+            .mitAngebot(List.of(
+                karte(Farbe.KARO, Kartenwert.NEUN,   1),  // angebotWert += 8+1 = 9
+                karte(Farbe.KARO, Kartenwert.KOENIG, 1)   // angebotWert += 8+2 = 10 → gesamt 19 < 55
+            ));
+
+        KiSpielzustand zustand = new KiSpielzustand(
+            SpielerPosition.WEST, Spieltyp.ARMUT, Spielphase.ARMUT_TAUSCH,
+            spielregeln, trumpfOrdnung,
+            new Hand(List.of(kreuzDame, herzZehn, kreuzNeun, pikKoenig)),
+            null, Ansagen.leer(), List.of(), null, armutStatus, null,
+            List.of(), List.of(), List.of()
+        );
+
+        KiArmutAntwort antwort = strategie.waehleArmutAntwort(zustand);
+
+        assertTrue(antwort.angenommen(),
+            "KI soll bei ≤5 eigenen Trümpfen die Armut annehmen, um Re-Partner zu werden.");
+        assertIterableEquals(List.of(kreuzNeun, pikKoenig), antwort.rueckgabekarten(),
+            "KI soll Fehlkarten zurückgeben, nicht eigene Trümpfe — der +30-Offset in abwurfKosten() " +
+            "garantiert, dass jeder Trumpf teurer ist als jede Fehlkarte, unabhängig vom Augenwert.");
+    }
+
+    @Test
+    void lehnt_Armut_ab_bei_starker_Hand_und_schwachem_Angebot() {
+        // Ablehnen wenn eigeneTruepfe > 5 UND angebotWert < 55.
+        // 6 Trumpfkarten > 5, ein Karo-Neun-Angebot ergibt Wert 9 < 55 → ablehnen.
+        // Dieser Test schützt vor einer Regression, bei der die KI trotz eigener Trumpfstärke
+        // eine nutzlose Armut annimmt und ihren Trumpfvorteil weggibt.
+        ArmutStatus armutStatus = ArmutStatus.gestartet(SpielerPosition.SUED)
+            .mitAngebot(List.of(karte(Farbe.KARO, Kartenwert.NEUN, 1)));  // angebotWert = 9
+
+        KiSpielzustand zustand = new KiSpielzustand(
+            SpielerPosition.WEST, Spieltyp.ARMUT, Spielphase.ARMUT_TAUSCH,
+            spielregeln, trumpfOrdnung,
+            new Hand(List.of(
+                karte(Farbe.KARO, Kartenwert.NEUN,   1),
+                karte(Farbe.KARO, Kartenwert.NEUN,   2),
+                karte(Farbe.KARO, Kartenwert.KOENIG, 1),
+                karte(Farbe.KARO, Kartenwert.KOENIG, 2),
+                karte(Farbe.KARO, Kartenwert.ZEHN,   1),
+                karte(Farbe.KARO, Kartenwert.ZEHN,   2),  // 6 Trümpfe → eigeneTruepfe > 5
+                karte(Farbe.PIK,  Kartenwert.AS,     1)
+            )),
+            null, Ansagen.leer(), List.of(), null, armutStatus, null,
+            List.of(), List.of(), List.of()
+        );
+
+        KiArmutAntwort antwort = strategie.waehleArmutAntwort(zustand);
+
+        assertFalse(antwort.angenommen(),
+            "KI soll bei eigener Trumpfstärke (>5 Trümpfe) und schwachem Angebot (<55 Punkte) ablehnen.");
+    }
+
+    @Test
+    void lehnt_Armut_ab_wenn_kein_Angebot_vorliegt() {
+        // Schutz gegen vorzeitigen Aufruf — vor dem Einwurf liegt kein Angebot vor.
+        KiSpielzustand zustand = new KiSpielzustand(
+            SpielerPosition.WEST, Spieltyp.ARMUT, Spielphase.ARMUT_TAUSCH,
+            spielregeln, trumpfOrdnung,
+            new Hand(List.of(karte(Farbe.KREUZ, Kartenwert.DAME, 1))),
+            null, Ansagen.leer(), List.of(), null,
+            ArmutStatus.gestartet(SpielerPosition.SUED),  // angebotAbgegeben = false
+            null, List.of(), List.of(), List.of()
+        );
+
+        assertEquals(KiArmutAntwort.ablehnen(), strategie.waehleArmutAntwort(zustand),
+            "KI soll ablehnen solange kein Angebot vorliegt — Guards gegen illegale Aufrufreihenfolge.");
     }
 
     private Karte karte(Farbe farbe, Kartenwert wert, int exemplarIndex) {

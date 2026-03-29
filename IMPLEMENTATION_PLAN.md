@@ -4,9 +4,9 @@
 
 ## Notiz
 
-**2026-03-29 (Build-Run #8):**
-- **4.27 KI-Timeout Einzelspieler** abgeschlossen: `VerbindungsabbruchService.pruefeReconnectTimeouts()` überspringt KI-Übernahme wenn `humanPlayerCount == 1` (Spec §4.18). Fix war bereits vorhanden; `VerbindungsabbruchEinzelspielerTest` (neuer Integrationtest, `reconnect-timeout-sekunden=-1`) bestätigt das Verhalten. 129 Tests grün.
-- **Nächster Schritt**: **KI Armut-Antwort Strategie validieren** — `StandardKiStrategie.waehleArmutAntwort()` gibt bevorzugt Fehlkarten zurück. Strategisch prüfen ob das korrekt ist.
+**2026-03-29 (Build-Run #9):**
+- **KI Armut-Antwort Strategie validiert**: `StandardKiStrategie.waehleArmutAntwort()` ist strategisch korrekt. Der +30-Offset in `abwurfKosten()` sichert, dass jede Fehlkarte günstiger zurückzugeben ist als jeder Trumpf — die KI gibt Fehlkarten zurück und behält Trümpfe (optimale Doppelkopf-Strategie für den Aufnehmenden). 3 neue Tests in `StandardKiStrategieTest`. 132 Tests grün.
+- **Nächster Schritt**: **KI-Schwierigkeitsgrade differenzieren** — Leicht/Standard/Schwer implementiert, aber Kalibrierung und Abgrenzung nicht getestet. Ziel: klare Unterschiede zwischen den Stufen nachweisen.
 - **Offene Fragen**: `springdoc-openapi 2.8.6` nutzt Jackson 2 (kompatibel aber heterogen im Classpath) — ggf. auf SB4-kompatible Version updaten falls Probleme auftreten.
 
 ---
@@ -84,7 +84,7 @@
 
 ### 3.2 Offene KI-Aufgaben
 
-- [ ] **KI Armut-Antwort validieren**: `StandardKiStrategie.waehleArmutAntwort()` gibt bevorzugt Fehlkarten zurück (günstigste Karten per Kosten-Comparator). Technisch regelkonform, aber strategisch prüfen: Soll KI beim Annehmen der Armut wirklich bevorzugt eigene Trümpfe behalten und Fehlkarten zurückgeben? Ursache: `vergleicheAbwurfKosten()` (~Zeilen 355–404, StandardKiStrategie).
+- [x] **KI Armut-Antwort validieren**: Fehlkarten-Rückgabe ist strategisch korrekt. `abwurfKosten()` (+30-Offset) sichert Trumpf > Fehlkarte immer. 3 Tests beweisen das Verhalten. ✓ 2026-03-29
 - [x] **4.27 KI-Timeout für Einzelspieler-Tische deaktivieren**: `humanPlayerCount == 1`-Check in `pruefeReconnectTimeouts()` verhindert KI-Übernahme. Abgesichert durch `VerbindungsabbruchEinzelspielerTest`. ✓ 2026-03-29
 
 ---
@@ -104,7 +104,7 @@
 
 ### Priorität 3 — KI-Qualität & Robustheit
 
-- [ ] **KI Armut-Antwort Strategie validieren** (strategisch suboptimal?)
+- [x] **KI Armut-Antwort Strategie validieren** — korrekt, Tests vorhanden ✓ 2026-03-29
 - [x] **4.27 KI-Timeout Einzelspieler** (Spec §4.18) ✓ 2026-03-29
 - [ ] **KI-Schwierigkeitsgrade differenzieren**: Leicht/Standard/Schwer implementiert aber nicht klar kalibriert/getestet.
 
@@ -118,7 +118,7 @@
 
 ### 5.2 Bugs / Latente Fehler
 
-- **KI Armut-Antwort**: Gibt bevorzugt Fehlkarten zurück — technisch korrekt, strategisch fraglich.
+- **Karten-Rendering**: Beim allerersten Seitenaufruf evtl. nicht gerendert (Browser-Reload nötig — durch Canvas-only-Approach entschärft).
 - **Karten-Rendering**: Beim allerersten Seitenaufruf evtl. nicht gerendert (Browser-Reload nötig — durch Canvas-only-Approach entschärft).
 
 ---
