@@ -52,6 +52,30 @@ public enum VorbehaltAnsage {
             return spielregeln.soloTrumpfAktiv();
         }
     },
+    SOLO_TRUMPF_HERZ(Spieltyp.SOLO_TRUMPF_HERZ, 3) {
+        @Override
+        public boolean istZulaessig(Hand hand, Spielregeln spielregeln) {
+            Objects.requireNonNull(hand, "hand darf nicht null sein");
+            Objects.requireNonNull(spielregeln, "spielregeln duerfen nicht null sein");
+            return spielregeln.soloTrumpfAktiv();
+        }
+    },
+    SOLO_TRUMPF_PIK(Spieltyp.SOLO_TRUMPF_PIK, 3) {
+        @Override
+        public boolean istZulaessig(Hand hand, Spielregeln spielregeln) {
+            Objects.requireNonNull(hand, "hand darf nicht null sein");
+            Objects.requireNonNull(spielregeln, "spielregeln duerfen nicht null sein");
+            return spielregeln.soloTrumpfAktiv();
+        }
+    },
+    SOLO_TRUMPF_KREUZ(Spieltyp.SOLO_TRUMPF_KREUZ, 3) {
+        @Override
+        public boolean istZulaessig(Hand hand, Spielregeln spielregeln) {
+            Objects.requireNonNull(hand, "hand darf nicht null sein");
+            Objects.requireNonNull(spielregeln, "spielregeln duerfen nicht null sein");
+            return spielregeln.soloTrumpfAktiv();
+        }
+    },
     SOLO_FLEISCHLOS(Spieltyp.SOLO_FLEISCHLOS, 3) {
         @Override
         public boolean istZulaessig(Hand hand, Spielregeln spielregeln) {

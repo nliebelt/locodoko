@@ -95,7 +95,10 @@ function formatiereVorbehalt(vorbehalt: VorbehaltAnsage): string {
     GESUND: 'Gesund',
     SOLO_DAME: 'Damensolo',
     SOLO_BUBE: 'Bubensolo',
-    SOLO_TRUMPF: 'Trumpfsolo',
+    SOLO_TRUMPF: 'Karosolo',
+    SOLO_TRUMPF_HERZ: 'Herzsolo',
+    SOLO_TRUMPF_PIK: 'Piksolo',
+    SOLO_TRUMPF_KREUZ: 'Kreuzsolo',
     SOLO_FLEISCHLOS: 'Fleischlos',
     HOCHZEIT: 'Hochzeit',
     ARMUT: 'Armut'

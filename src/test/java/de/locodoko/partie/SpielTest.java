@@ -654,6 +654,89 @@ class SpielTest {
             "Der ansagende Re-Spieler muss fuer alle als RE erkennbar sein.");
     }
 
+    @Test
+    void erkenntStillesSoloBeiBeideKreuzDamenOhneVorbehalt() {
+        // Warum wichtig: Ein Spieler mit beiden Kreuz-Damen, der trotzdem GESUND meldet, wuerde
+        // ausNormalspielHaenden mit nur einem RE-Spieler crashen. Stattdessen muss das Spiel
+        // defensiv als stilles Solo (Trumpfsolo) fortgefuehrt werden.
+        Spiel spiel = Spiel.neu(SpielerPosition.SUED, spielregeln, kartendeckMitVerteiltenHaenden(Map.of(
+                SpielerPosition.WEST, List.of(
+                    karte(Farbe.KREUZ, Kartenwert.DAME, 1),
+                    karte(Farbe.KREUZ, Kartenwert.DAME, 2)
+                )
+            )))
+            .teileKartenAus()
+            .meldeGesund(SpielerPosition.WEST)
+            .meldeGesund(SpielerPosition.NORD)
+            .meldeGesund(SpielerPosition.OST)
+            .meldeGesund(SpielerPosition.SUED)
+            .loeseVorbehalteAuf();
+
+        assertEquals(Spieltyp.SOLO_TRUMPF, spiel.spieltyp(),
+            "Ein Spieler mit beiden Kreuz-Damen ohne Hochzeit-Vorbehalt muss defensiv als Trumpfsolo weiterlaufen, damit kein Server-Crash entsteht.");
+        assertEquals(List.of(SpielerPosition.WEST), spiel.parteien().spielerVon(Partei.RE),
+            "Der Spieler mit beiden Kreuz-Damen spielt das stille Solo alleine gegen die anderen drei.");
+        assertEquals(Spielphase.STICHPHASE, spiel.phase());
+    }
+
+    @Test
+    void loestHerzsoloMitKorrekterTrumpfOrdnungAuf() {
+        // Warum wichtig: SOLO_TRUMPF_HERZ braucht eine eigene TrumpfOrdnung, bei der Herz-Karten
+        // (statt Karo) die Fehltrumpfe bilden. Ohne diesen Test koennte versehentlich NormaleTrumpfOrdnung
+        // aktiv bleiben und Herz-Karten als Fehlfarbe behandeln.
+        Spiel spiel = Spiel.neu(SpielerPosition.SUED, spielregeln, kartendeckMitKontrolliertenHaenden())
+            .teileKartenAus()
+            .meldeGesund(SpielerPosition.WEST)
+            .meldeVorbehalt(SpielerPosition.NORD, VorbehaltAnsage.SOLO_TRUMPF_HERZ)
+            .meldeGesund(SpielerPosition.OST)
+            .meldeGesund(SpielerPosition.SUED)
+            .loeseVorbehalteAuf();
+
+        assertEquals(Spieltyp.SOLO_TRUMPF_HERZ, spiel.spieltyp());
+        assertEquals(List.of(SpielerPosition.NORD), spiel.parteien().spielerVon(Partei.RE),
+            "Im Herzsolo spielt der Solo-Spieler alleine gegen drei Gegner.");
+        assertTrue(spiel.trumpfOrdnung().istTrumpf(karte(Farbe.HERZ, Kartenwert.KOENIG, 1)),
+            "Im Herzsolo muessen Herz-Karten Trumpf sein.");
+        assertFalse(spiel.trumpfOrdnung().istTrumpf(karte(Farbe.KARO, Kartenwert.AS, 1)),
+            "Im Herzsolo sind Karo-Karten (ausser Dame/Bube) Fehlfarbe.");
+        assertTrue(spiel.trumpfOrdnung().istTrumpf(karte(Farbe.HERZ, Kartenwert.ZEHN, 1)),
+            "Die Herz-Zehn ist im Herzsolo als Herz-Karte Trumpf, aber ohne Dulle-Sonderstatus.");
+        assertFalse(spiel.trumpfOrdnung().spaetereGleicheKarteGewinnt(karte(Farbe.HERZ, Kartenwert.ZEHN, 1)),
+            "Im Herzsolo gibt es keinen Dulle-Mechanismus: zweite Herz-Zehn gewinnt nicht automatisch.");
+    }
+
+    @Test
+    void loestPiksoloUndKreuzsoloMitKorrekterParteibildungAuf() {
+        // Warum wichtig: Alle drei variablen Trumpfsoli muessen denselben Solo-Spieler als RE markieren.
+        Spiel pikspiel = Spiel.neu(SpielerPosition.SUED, spielregeln, kartendeckMitKontrolliertenHaenden())
+            .teileKartenAus()
+            .meldeVorbehalt(SpielerPosition.WEST, VorbehaltAnsage.SOLO_TRUMPF_PIK)
+            .meldeGesund(SpielerPosition.NORD)
+            .meldeGesund(SpielerPosition.OST)
+            .meldeGesund(SpielerPosition.SUED)
+            .loeseVorbehalteAuf();
+
+        assertEquals(Spieltyp.SOLO_TRUMPF_PIK, pikspiel.spieltyp());
+        assertEquals(List.of(SpielerPosition.WEST), pikspiel.parteien().spielerVon(Partei.RE));
+        assertTrue(pikspiel.trumpfOrdnung().istTrumpf(karte(Farbe.PIK, Kartenwert.KOENIG, 1)),
+            "Im Piksolo sind Pik-Karten Trumpf.");
+        assertFalse(pikspiel.trumpfOrdnung().istTrumpf(karte(Farbe.KARO, Kartenwert.AS, 1)),
+            "Im Piksolo sind Karo-Karten (ausser Dame/Bube) Fehlfarbe.");
+
+        Spiel kreuzspiel = Spiel.neu(SpielerPosition.SUED, spielregeln, kartendeckMitKontrolliertenHaenden())
+            .teileKartenAus()
+            .meldeVorbehalt(SpielerPosition.WEST, VorbehaltAnsage.SOLO_TRUMPF_KREUZ)
+            .meldeGesund(SpielerPosition.NORD)
+            .meldeGesund(SpielerPosition.OST)
+            .meldeGesund(SpielerPosition.SUED)
+            .loeseVorbehalteAuf();
+
+        assertEquals(Spieltyp.SOLO_TRUMPF_KREUZ, kreuzspiel.spieltyp());
+        assertEquals(List.of(SpielerPosition.WEST), kreuzspiel.parteien().spielerVon(Partei.RE));
+        assertTrue(kreuzspiel.trumpfOrdnung().istTrumpf(karte(Farbe.KREUZ, Kartenwert.KOENIG, 1)),
+            "Im Kreuzsolo sind Kreuz-Karten (ausser Dame/Bube) Trumpf.");
+    }
+
     private Spiel spieleStich(Spiel spiel, Karte ersteKarte, Karte zweiteKarte, Karte dritteKarte, Karte vierteKarte) {
         Spiel aktuellesSpiel = spiel;
         for (Karte karte : List.of(ersteKarte, zweiteKarte, dritteKarte, vierteKarte)) {

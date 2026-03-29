@@ -2,11 +2,14 @@ package de.locodoko.partie;
 
 import de.locodoko.karten.BubensoloTrumpfOrdnung;
 import de.locodoko.karten.DamensoloTrumpfOrdnung;
+import de.locodoko.karten.Farbe;
 import de.locodoko.karten.FleischlosTrumpfOrdnung;
 import de.locodoko.karten.Hand;
 import de.locodoko.karten.Karte;
 import de.locodoko.karten.Kartendeck;
+import de.locodoko.karten.Kartenwert;
 import de.locodoko.karten.NormaleTrumpfOrdnung;
+import de.locodoko.karten.VariableTrumpfsoloTrumpfOrdnung;
 import de.locodoko.karten.SpielerPosition;
 import de.locodoko.karten.Spielregeln;
 import de.locodoko.karten.Spieltyp;
@@ -213,6 +216,23 @@ public final class Spiel {
     public Spiel loeseVorbehalteAuf() {
         pruefePhase(Spielphase.VORBEHALT_AUFLOESUNG, "Vorbehalte aufloesen");
         VorbehaltMeldung hoechsterVorbehalt = hoechsterVorbehalt().orElse(null);
+
+        // Stilles Solo durch Gesund-Meldung: Ein Spieler besitzt beide Kreuz-Damen ohne Vorbehalt.
+        // ausNormalspielHaenden wuerde eine IllegalStateException werfen, da nur 1 RE-Spieler
+        // gefunden wird. Stattdessen wird das Spiel als Trumpfsolo fuer diesen Spieler gestartet.
+        if (hoechsterVorbehalt == null) {
+            SpielerPosition stillesSoloSpieler = erkenneStillesSoloSpieler();
+            if (stillesSoloSpieler != null) {
+                return new Spiel(
+                    spielregeln, kartendeck, new NormaleTrumpfOrdnung(spielregeln),
+                    Spieltyp.SOLO_TRUMPF, geber, Spielphase.STICHPHASE,
+                    haende, vorbehalte, Parteien.ausSolo(stillesSoloSpieler),
+                    Ansagen.leer(), List.of(),
+                    Stich.neu(geber.naechsteImUhrzeigersinn()), null, null, null
+                );
+            }
+        }
+
         Parteien neueParteien = hoechsterVorbehalt == null
             ? Parteien.ausNormalspielHaenden(haende)
             : parteienFuer(hoechsterVorbehalt);
@@ -636,6 +656,9 @@ public final class Spiel {
             case SOLO_DAME -> new DamensoloTrumpfOrdnung();
             case SOLO_BUBE -> new BubensoloTrumpfOrdnung();
             case SOLO_TRUMPF, HOCHZEIT, ARMUT -> new NormaleTrumpfOrdnung(spielregeln);
+            case SOLO_TRUMPF_HERZ -> new VariableTrumpfsoloTrumpfOrdnung(Farbe.HERZ, spielregeln);
+            case SOLO_TRUMPF_PIK -> new VariableTrumpfsoloTrumpfOrdnung(Farbe.PIK, spielregeln);
+            case SOLO_TRUMPF_KREUZ -> new VariableTrumpfsoloTrumpfOrdnung(Farbe.KREUZ, spielregeln);
             case SOLO_FLEISCHLOS -> new FleischlosTrumpfOrdnung();
             case GESUND -> throw new IllegalStateException("GESUND ist kein aufloesbarer Vorbehalt");
         };
@@ -643,7 +666,9 @@ public final class Spiel {
 
     private Parteien parteienFuer(VorbehaltMeldung hoechsterVorbehalt) {
         return switch (hoechsterVorbehalt.ansage()) {
-            case SOLO_DAME, SOLO_BUBE, SOLO_TRUMPF, SOLO_FLEISCHLOS -> Parteien.ausSolo(hoechsterVorbehalt.spielerPosition());
+            case SOLO_DAME, SOLO_BUBE, SOLO_TRUMPF,
+                 SOLO_TRUMPF_HERZ, SOLO_TRUMPF_PIK, SOLO_TRUMPF_KREUZ,
+                 SOLO_FLEISCHLOS -> Parteien.ausSolo(hoechsterVorbehalt.spielerPosition());
             case HOCHZEIT -> Parteien.ausHochzeit(hoechsterVorbehalt.spielerPosition());
             case ARMUT -> Parteien.ausArmut(hoechsterVorbehalt.spielerPosition());
             case GESUND -> throw new IllegalStateException("GESUND ist kein aufloesbarer Vorbehalt");
@@ -729,12 +754,34 @@ public final class Spiel {
         );
     }
 
+    /**
+     * Erkennt das stille Solo durch Gesund-Meldung: Ein Spieler haelt beide Kreuz-Damen.
+     * Gibt den Spieler zurueck, oder null wenn das kein stilles Solo ist.
+     */
+    private SpielerPosition erkenneStillesSoloSpieler() {
+        for (SpielerPosition position : SpielerPosition.standardReihenfolge()) {
+            Hand hand = haende.get(position);
+            if (hand != null) {
+                long anzahlKreuzDamen = hand.karten().stream()
+                    .filter(k -> k.farbe() == Farbe.KREUZ && k.wert() == Kartenwert.DAME)
+                    .count();
+                if (anzahlKreuzDamen >= 2) {
+                    return position;
+                }
+            }
+        }
+        return null;
+    }
+
     private record HochzeitFortschritt(Parteien parteien, HochzeitStatus status) {
     }
 
     private static TrumpfOrdnung trumpfOrdnungFuerPersistiertenStand(Spielregeln spielregeln, Spieltyp spieltyp) {
         return switch (Objects.requireNonNull(spieltyp, "spieltyp darf nicht null sein")) {
             case NORMALSPIEL, HOCHZEIT, ARMUT, SOLO_TRUMPF -> new NormaleTrumpfOrdnung(spielregeln);
+            case SOLO_TRUMPF_HERZ -> new VariableTrumpfsoloTrumpfOrdnung(Farbe.HERZ, spielregeln);
+            case SOLO_TRUMPF_PIK -> new VariableTrumpfsoloTrumpfOrdnung(Farbe.PIK, spielregeln);
+            case SOLO_TRUMPF_KREUZ -> new VariableTrumpfsoloTrumpfOrdnung(Farbe.KREUZ, spielregeln);
             case SOLO_DAME -> new DamensoloTrumpfOrdnung();
             case SOLO_BUBE -> new BubensoloTrumpfOrdnung();
             case SOLO_FLEISCHLOS -> new FleischlosTrumpfOrdnung();

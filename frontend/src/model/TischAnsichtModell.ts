@@ -340,6 +340,12 @@ export function istTrumpfFuerSpieltyp(
       return karte.wert === 'BUBE';
     case 'SOLO_FLEISCHLOS':
       return false;
+    case 'SOLO_TRUMPF_HERZ':
+      return karte.wert === 'DAME' || karte.wert === 'BUBE' || karte.farbe === 'HERZ';
+    case 'SOLO_TRUMPF_PIK':
+      return karte.wert === 'DAME' || karte.wert === 'BUBE' || karte.farbe === 'PIK';
+    case 'SOLO_TRUMPF_KREUZ':
+      return karte.wert === 'DAME' || karte.wert === 'BUBE' || karte.farbe === 'KREUZ';
     case 'SOLO_TRUMPF':
     case 'NORMALSPIEL':
     case 'HOCHZEIT':

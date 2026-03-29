@@ -82,6 +82,9 @@ export type Spieltyp =
   | 'SOLO_DAME'
   | 'SOLO_BUBE'
   | 'SOLO_TRUMPF'
+  | 'SOLO_TRUMPF_HERZ'
+  | 'SOLO_TRUMPF_PIK'
+  | 'SOLO_TRUMPF_KREUZ'
   | 'SOLO_FLEISCHLOS';
 export type Spielphase =
   | 'KARTEN_AUSTEILEN'
@@ -99,6 +102,9 @@ export type VorbehaltAnsage =
   | 'SOLO_DAME'
   | 'SOLO_BUBE'
   | 'SOLO_TRUMPF'
+  | 'SOLO_TRUMPF_HERZ'
+  | 'SOLO_TRUMPF_PIK'
+  | 'SOLO_TRUMPF_KREUZ'
   | 'SOLO_FLEISCHLOS'
   | 'HOCHZEIT'
   | 'ARMUT';

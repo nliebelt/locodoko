@@ -1,22 +1,19 @@
 # IMPLEMENTATION_PLAN — Locodoko Doppelkopf
 
-> Letzte Aktualisierung: 2026-03-28
+> Letzte Aktualisierung: 2026-03-29
 
 ## Notiz
 
-**2026-03-28:** Task 4.20 (TischSzene Phaser-Migration & kritische UI-Bugs) vollständig implementiert und getestet.
+**2026-03-29:** Task 4.19 (Kritische Backend-Bugs) vollständig implementiert und getestet.
 
 **Was wurde implementiert:**
-- `preload()` leer (kein PNG-Laden mehr) → Canvas-Texturen via `registriereKartenSpriteTexturen()` in `create()`. Behebt Karten-Transparenz.
-- Spieler-Nameplates mit positionsspezifischen Koordinaten außerhalb der Kartenfächer (SUED/NORD: x=0.79, WEST: y=0.68, OST: y=0.27).
-- Stich-Karten ohne Spieler-Label-Text darunter.
-- Alle HTML-Overlays (floatingActionBar, vorbehaltModal, spielaktioneOverlay) entfernt.
-- Neue Phaser-Render-Methoden: `renderVorbehaltDialog`, `renderAnsageButtons`, `renderAktionsHinweis`, `renderArmutBereich`, `erstellePhaserButton`.
-- Tests auf Phaser-Helfer umgestellt (phaserTexte, hatPhaserText, klickePhaserButton).
-- 62 Tests grün, Build+Lint clean.
+- **Stilles Solo Fix**: `Spiel.loeseVorbehalteAuf()` erkennt nun Spieler mit 2 Kreuz-Damen ohne Vorbehalt (GESUND) und erzwingt SOLO_TRUMPF statt Exception. `SpielPersistenzAdapter.parteien()` rekonstruiert stilles Solo korrekt aus DB (sucht 2 Kreuz-Damen in Hand + Stichen).
+- **Variable Trumpfsoli**: `VariableTrumpfsoloTrumpfOrdnung` (neue Klasse) für Herz-/Pik-/Kreuzsolo. Neue Enum-Werte `SOLO_TRUMPF_HERZ/PIK/KREUZ` in `VorbehaltAnsage` und `Spieltyp`. Frontend-Typen und TischSzene formatieren die neuen Solos korrekt. `TischAnsichtModell.istTrumpfFuerSpieltyp()` erkennt Trumpf-Karten für alle drei variablen Solos.
+- **KI Timeout Single-Player**: War bereits implementiert (VerbindungsabbruchService.java:164-173) — als erledigt markiert.
+- 128 Backend-Tests grün, 62 Frontend-Tests grün, Build+Lint clean.
 
 **Nächster logischer Schritt:**
-- **4.19 Kritische Backend-Bugs**: Stilles Solo Fix, Variable Trumpfsoli, KI-Timeout Single-Player.
+- **4.21 Armut-Einwurf** (Neumischen wenn Armut abgelehnt) oder **Punkte-Reihenfolge** (DKV-Konformität).
 
 **Bekannte Probleme:**
 - Karten rendern beim allerersten Seitenaufruf evtl. nicht (Browser-Reload — war vorher bekannt, durch Canvas-only-Approach entschärft).
@@ -67,8 +64,9 @@
 - [x] ArmutStatus — Kartentausch-Mechanik mit Ablehnungskaskade
 - [x] Spielergebnis (immutable Record, 240-Augen-Validierung)
 - [~] **4.19 Kritische Bugfixes & Regeltreue**
-  - [ ] **Stilles Solo Fix**: Exception in `Parteien.ausNormalspielHaenden` beheben (stilles Solo erzwingen, wenn 2 Kreuz-Damen ohne Vorbehalt).
-  - [ ] **Variable Trumpfsoli**: Auswahl von Herz, Pik oder Kreuz als Trumpf im Solo ermöglichen (statt Hardcoded Karo).
+  - [x] **Stilles Solo Fix**: Exception in `Parteien.ausNormalspielHaenden` beheben (stilles Solo erzwingen, wenn 2 Kreuz-Damen ohne Vorbehalt).
+  - [x] **Variable Trumpfsoli**: Auswahl von Herz, Pik oder Kreuz als Trumpf im Solo ermöglichen (statt Hardcoded Karo).
+  - [x] **KI Timeout Single-Player**: KI-Timeout bereits in VerbindungsabbruchService implementiert.
   - [ ] **Armut-Einwurf**: Mechanik zum Neumischen, wenn Armut von niemandem angenommen wird.
   - [ ] **Punkte-Reihenfolge**: Absage-Punkte vor der Verdopplung addieren (DKV-Konformität).
 - [x] Tests: SpielTest, PunkteRechnerTest, AnsagenTest, SonderpunktBewerterTest, PartieTest

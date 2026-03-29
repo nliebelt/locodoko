@@ -14,5 +14,8 @@ public enum Spieltyp {
     SOLO_DAME,
     SOLO_BUBE,
     SOLO_TRUMPF,
+    SOLO_TRUMPF_HERZ,
+    SOLO_TRUMPF_PIK,
+    SOLO_TRUMPF_KREUZ,
     SOLO_FLEISCHLOS
 }

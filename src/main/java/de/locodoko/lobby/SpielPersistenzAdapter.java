@@ -1,10 +1,13 @@
 package de.locodoko.lobby;
 
+import de.locodoko.karten.Farbe;
 import de.locodoko.karten.Hand;
 import de.locodoko.karten.GespielteKarte;
 import de.locodoko.karten.Karte;
 import de.locodoko.karten.Kartendeck;
+import de.locodoko.karten.Kartenwert;
 import de.locodoko.karten.SpielerPosition;
+import de.locodoko.karten.Spieltyp;
 import de.locodoko.karten.Stich;
 import de.locodoko.partie.AnsageEreignis;
 import de.locodoko.partie.Ansagen;
@@ -165,10 +168,23 @@ final class SpielPersistenzAdapter {
         VorbehaltMeldung hoechsterVorbehalt = hoechsterVorbehalt(vorbehalte).orElse(null);
         Parteien basisParteien;
         if (hoechsterVorbehalt == null) {
-            basisParteien = parteienFuerNormalspiel(spielEntity, haende);
+            // Stilles Solo durch Gesund-Meldung: Spieltyp wurde in loeseVorbehalteAuf auf SOLO_TRUMPF gesetzt.
+            // Der Solo-Spieler muss aus Haenden oder abgeschlossenen Stichen rekonstruiert werden.
+            if (spielEntity.spieltyp() == Spieltyp.SOLO_TRUMPF) {
+                SpielerPosition stillesSoloSpieler = erkenneStillesSoloSpieler(haende, spielEntity);
+                if (stillesSoloSpieler != null) {
+                    basisParteien = Parteien.ausSolo(stillesSoloSpieler);
+                } else {
+                    basisParteien = parteienFuerNormalspiel(spielEntity, haende);
+                }
+            } else {
+                basisParteien = parteienFuerNormalspiel(spielEntity, haende);
+            }
         } else {
             Optional<Parteien> parteienAusSonderspiel = switch (hoechsterVorbehalt.ansage()) {
-                case SOLO_DAME, SOLO_BUBE, SOLO_TRUMPF, SOLO_FLEISCHLOS ->
+                case SOLO_DAME, SOLO_BUBE, SOLO_TRUMPF,
+                     SOLO_TRUMPF_HERZ, SOLO_TRUMPF_PIK, SOLO_TRUMPF_KREUZ,
+                     SOLO_FLEISCHLOS ->
                     Optional.of(Parteien.ausSolo(hoechsterVorbehalt.spielerPosition()));
                 case HOCHZEIT -> Optional.of(parteienFuerHochzeit(spielEntity, hoechsterVorbehalt.spielerPosition()));
                 case ARMUT -> Optional.of(parteienFuerArmut(spielEntity, hoechsterVorbehalt.spielerPosition()));
@@ -364,8 +380,36 @@ final class SpielPersistenzAdapter {
     }
 
     private static boolean istKreuzDame(Karte karte) {
-        return karte.farbe() == de.locodoko.karten.Farbe.KREUZ
-            && karte.wert() == de.locodoko.karten.Kartenwert.DAME;
+        return karte.farbe() == Farbe.KREUZ && karte.wert() == Kartenwert.DAME;
+    }
+
+    /**
+     * Erkennt den stilles-Solo-Spieler bei Gesund-Meldungen: Zaehlt Kreuz-Damen
+     * ueber alle Quellen (Hand, abgeschlossene Stiche, aktueller Stich).
+     * Gibt den Spieler mit &ge;2 Kreuz-Damen zurueck, oder null falls nicht eindeutig.
+     */
+    private static SpielerPosition erkenneStillesSoloSpieler(
+        Map<SpielerPosition, Hand> haende,
+        SpielEntity spielEntity
+    ) {
+        for (SpielerPosition position : SpielerPosition.standardReihenfolge()) {
+            Hand hand = haende.get(position);
+            long inHand = hand == null ? 0 : hand.karten().stream()
+                .filter(SpielPersistenzAdapter::istKreuzDame).count();
+            long inStichen = spielEntity.stiche().stream()
+                .flatMap(s -> s.gespielteKarten().stream())
+                .filter(k -> k.spielerPosition() == position)
+                .map(SpielPersistenzAdapter::alsKarte)
+                .filter(SpielPersistenzAdapter::istKreuzDame).count();
+            long imAktuellenStich = spielEntity.aktuellerStichKarten().stream()
+                .filter(k -> k.spielerPosition() == position)
+                .map(SpielPersistenzAdapter::alsKarte)
+                .filter(SpielPersistenzAdapter::istKreuzDame).count();
+            if (inHand + inStichen + imAktuellenStich >= 2) {
+                return position;
+            }
+        }
+        return null;
     }
 
     private static Karte alsKarte(HandKarteEmbeddable karte) {

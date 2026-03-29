@@ -81,6 +81,65 @@ class SoloTrumpfOrdnungenTest {
             "Ohne Trumpf darf nur die angefragte Farbe den Stich gewinnen; Abwerfen anderer Farben darf keinen Stich stechen.");
     }
 
+    @Test
+    void erkenntImVariablenTrumpfsoloNurDieGewaehlteFarbeAlsTrumpf() {
+        // Warum wichtig: VariableTrumpfsoloTrumpfOrdnung muss die gewaehlte Farbe als Fehltrumpf
+        // behandeln, waehrend andere Farben (ausser Dame/Bube) Fehlkarten bleiben.
+        // Ohne diesen Test koennte eine falsche Farbe als Trumpf behandelt werden.
+        Spielregeln regeln = Spielregeln.standardRegeln();
+
+        TrumpfOrdnung herzsolo = new VariableTrumpfsoloTrumpfOrdnung(Farbe.HERZ, regeln);
+        assertTrue(herzsolo.istTrumpf(karte(Farbe.HERZ, Kartenwert.KOENIG, 1)),
+            "Im Herzsolo sind Herz-Karten Trumpf.");
+        assertTrue(herzsolo.istTrumpf(karte(Farbe.HERZ, Kartenwert.ZEHN, 1)),
+            "Die Herz-Zehn ist im Herzsolo als Herz-Karte Trumpf (aber kein Dulle-Sonderstatus).");
+        assertFalse(herzsolo.istTrumpf(karte(Farbe.KARO, Kartenwert.AS, 1)),
+            "Karo-As ist im Herzsolo Fehlkarte.");
+        assertFalse(herzsolo.istTrumpf(karte(Farbe.PIK, Kartenwert.KOENIG, 1)));
+        assertTrue(herzsolo.istTrumpf(karte(Farbe.KREUZ, Kartenwert.DAME, 1)),
+            "Damen bleiben in allen variablen Trumpfsoli Trumpf.");
+        assertTrue(herzsolo.istTrumpf(karte(Farbe.PIK, Kartenwert.BUBE, 1)),
+            "Buben bleiben in allen variablen Trumpfsoli Trumpf.");
+        assertFalse(herzsolo.spaetereGleicheKarteGewinnt(karte(Farbe.HERZ, Kartenwert.ZEHN, 1)),
+            "Es gibt keinen Dulle-Mechanismus in variablen Trumpfsoli.");
+
+        TrumpfOrdnung piksolo = new VariableTrumpfsoloTrumpfOrdnung(Farbe.PIK, regeln);
+        assertTrue(piksolo.istTrumpf(karte(Farbe.PIK, Kartenwert.AS, 1)));
+        assertFalse(piksolo.istTrumpf(karte(Farbe.HERZ, Kartenwert.ZEHN, 1)),
+            "Herz-Zehn ist im Piksolo keine Dulle und kein Trumpf.");
+        assertFalse(piksolo.istTrumpf(karte(Farbe.KARO, Kartenwert.NEUN, 1)));
+
+        TrumpfOrdnung kreuzsolo = new VariableTrumpfsoloTrumpfOrdnung(Farbe.KREUZ, regeln);
+        assertTrue(kreuzsolo.istTrumpf(karte(Farbe.KREUZ, Kartenwert.KOENIG, 1)));
+        assertFalse(kreuzsolo.istTrumpf(karte(Farbe.HERZ, Kartenwert.ZEHN, 1)),
+            "Herz-Zehn ist im Kreuzsolo keine Dulle.");
+    }
+
+    @Test
+    void rangordnungImVariablenTrumpfsoloIstKorrekt() {
+        // Warum wichtig: Buben und Damen muessen ueber den Farbtrumpfen rangieren.
+        // Ohne diesen Test koennten Stiche falsch gewertet werden.
+        Spielregeln regeln = Spielregeln.standardRegeln();
+        TrumpfOrdnung herzsolo = new VariableTrumpfsoloTrumpfOrdnung(Farbe.HERZ, regeln);
+
+        assertTrue(
+            herzsolo.trumpfRang(karte(Farbe.KARO, Kartenwert.BUBE, 1))
+                > herzsolo.trumpfRang(karte(Farbe.HERZ, Kartenwert.AS, 1)),
+            "Buben muessen ueber den Farbtrumpfen rangieren.");
+        assertTrue(
+            herzsolo.trumpfRang(karte(Farbe.KARO, Kartenwert.DAME, 1))
+                > herzsolo.trumpfRang(karte(Farbe.KREUZ, Kartenwert.BUBE, 1)),
+            "Damen muessen ueber den Buben rangieren.");
+        assertTrue(
+            herzsolo.trumpfRang(karte(Farbe.KREUZ, Kartenwert.DAME, 1))
+                > herzsolo.trumpfRang(karte(Farbe.KARO, Kartenwert.DAME, 1)),
+            "Farb-Reihenfolge der Damen: Kreuz > Pik > Herz > Karo.");
+        assertTrue(
+            herzsolo.trumpfRang(karte(Farbe.HERZ, Kartenwert.AS, 1))
+                > herzsolo.trumpfRang(karte(Farbe.HERZ, Kartenwert.KOENIG, 1)),
+            "Innerhalb der Farbtrumpfe rangiert As ueber Koenig.");
+    }
+
     private Karte karte(Farbe farbe, Kartenwert wert, int exemplarIndex) {
         return new Karte(farbe, wert, exemplarIndex);
     }
