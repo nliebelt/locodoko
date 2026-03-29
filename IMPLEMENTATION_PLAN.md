@@ -4,10 +4,11 @@
 
 ## Notiz
 
-**2026-03-29 (Build-Run #6):**
-- **4.25 HUD Stichzähler Format** implementiert: `TischSzene.ts:714` — `„${gesamtStiche} Stiche"` → `„Stich ${gesamtStiche}/12"`. Einzeiler in `aktualisiereTopBar()`.
-- **Nächster Schritt**: Alle Frontend-Priorität-1/2-Aufgaben erledigt. Nächste sinnvolle Aufgabe: **4.27 KI-Timeout Einzelspieler** (Spec §4.18) oder **0.1 Spring Boot 4 / Java 25** (Tech-Upgrade).
-- **Offene Fragen**: Keine kritischen. KI-Strategie Armut-Antwort bleibt offen (strategisch, nicht buggy).
+**2026-03-29 (Build-Run #7):**
+- **0.1 Spring Boot 4 / Java 25** migriert: `pom.xml` — Spring Boot `3.4.4` → `4.0.4`, Java `21` → `25`. 128 Tests grün.
+- **Breaking Changes behoben**: `@AutoConfigureMockMvc` entfernt → `MockMvcBuilders.webAppContextSetup(wac)` in `@BeforeEach`; `TestRestTemplate` entfernt → plain `RestTemplate` mit `@LocalServerPort`; Jackson 2 `ObjectMapper` → Jackson 3 `tools.jackson.databind.ObjectMapper`; `liquibase-core` → `spring-boot-starter-liquibase`.
+- **Nächster Schritt**: **4.27 KI-Timeout Einzelspieler** (Spec §4.18) — `VerbindungsabbruchService` soll bei Solo-Human-Tischen kein Timeout auslösen.
+- **Offene Fragen**: `springdoc-openapi 2.8.6` nutzt Jackson 2 (kompatibel aber heterogen im Classpath) — ggf. auf SB4-kompatible Version updaten falls Probleme auftreten.
 
 ---
 
@@ -23,10 +24,10 @@
 
 ### 0.1 Spring Boot 4.0.4 + Java 25
 
-- [ ] `pom.xml`: Spring Boot Parent auf `4.0.4` hochziehen
-- [ ] `pom.xml`: `<java.version>25</java.version>`
-- [ ] Prüfen ob Breaking Changes aus SB 4.x Migration Guide relevant sind
-- [ ] `mvn clean verify` grün
+- [x] `pom.xml`: Spring Boot Parent auf `4.0.4` hochgezogen ✓ 2026-03-29
+- [x] `pom.xml`: `<java.version>25</java.version>` ✓ 2026-03-29
+- [x] Breaking Changes behoben (AutoConfigureMockMvc, TestRestTemplate, Jackson 3, Liquibase-Starter) ✓ 2026-03-29
+- [x] `mvn test` grün (128 Tests) ✓ 2026-03-29
 
 ---
 
@@ -93,7 +94,7 @@
 
 ### Priorität 1 — Tech-Upgrade
 
-- [ ] **0.1 Spring Boot 4 / Java 25**: Siehe Sektion 0.
+- [x] **0.1 Spring Boot 4 / Java 25**: Siehe Sektion 0. ✓ 2026-03-29
 
 ### Priorität 2 — Frontend UX
 

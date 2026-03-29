@@ -26,8 +26,9 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
-import org.springframework.boot.test.web.client.TestRestTemplate;
+import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.context.annotation.Import;
+import org.springframework.web.client.RestTemplate;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
@@ -51,8 +52,10 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 @Import(WebSocketPublikationIntegrationTest.TestKonfiguration.class)
 class WebSocketSpielaktionIntegrationTest {
 
-    @Autowired
-    private TestRestTemplate restTemplate;
+    @LocalServerPort
+    private int port;
+
+    private final RestTemplate restTemplate = new RestTemplate();
 
     @Autowired
     private WebSocketPublikationIntegrationTest.TestWebSocketNachrichtenSpeicher nachrichtenSpeicher;
@@ -552,9 +555,13 @@ class WebSocketSpielaktionIntegrationTest {
             .orElseThrow(() -> new AssertionError("Es wurde keine benutzerbezogene Snapshot-Nachricht publiziert."));
     }
 
+    private String url(String pfad) {
+        return "http://localhost:" + port + pfad;
+    }
+
     private String registriereSpieler(String name) {
         ResponseEntity<String> antwort = restTemplate.postForEntity(
-            "/api/spieler/session",
+            url("/api/spieler/session"),
             new SpielerNameAnfrage(name),
             String.class
         );
@@ -569,7 +576,7 @@ class WebSocketSpielaktionIntegrationTest {
         HttpHeaders headers = new HttpHeaders();
         headers.add(HttpHeaders.COOKIE, sessionCookie);
         ResponseEntity<TischAntwort> antwort = restTemplate.exchange(
-            "/api/tische",
+            url("/api/tische"),
             HttpMethod.POST,
             new HttpEntity<>(new TischErstellenAnfrage(name, null), headers),
             TischAntwort.class
@@ -581,7 +588,7 @@ class WebSocketSpielaktionIntegrationTest {
         HttpHeaders headers = new HttpHeaders();
         headers.add(HttpHeaders.COOKIE, sessionCookie);
         restTemplate.exchange(
-            "/api/tische/" + tischId + "/beitreten",
+            url("/api/tische/" + tischId + "/beitreten"),
             HttpMethod.POST,
             new HttpEntity<>(headers),
             String.class
@@ -592,7 +599,7 @@ class WebSocketSpielaktionIntegrationTest {
         HttpHeaders headers = new HttpHeaders();
         headers.add(HttpHeaders.COOKIE, sessionCookie);
         restTemplate.exchange(
-            "/api/tische/" + tischId + "/starten",
+            url("/api/tische/" + tischId + "/starten"),
             HttpMethod.POST,
             new HttpEntity<>(headers),
             String.class
