@@ -9,9 +9,10 @@ Vollständiges Paket: `mvn clean package` (baut Frontend ein, erzeugt JAR)
 
 ## Validation nach Implementierung
 
-1. `mvn test` — Backend-Tests
-2. `cd frontend && npm test && npm run build && npm run lint` — Frontend komplett
-3. Logs auf Warnungen und Fehler prüfen
+1. Backend-Änderungen: `mvn test`
+2. Frontend-Änderungen: `cd frontend && npm test && npm run build && npm run lint`
+3. Beide betroffen: beide Schritte ausführen
+4. Logs auf Warnungen und Fehler prüfen
 
 ## Visuelles Feedback (UI-Änderungen)
 

@@ -3,6 +3,11 @@
 
 Das latent verrückte Doppelkopf Spiel.
 
+## Starten im Devmode
+
+mvn spring-boot:run
+npm run dev
+
 ## Links
 
 [Ralph](https://ghuntley.com/ralph/)
