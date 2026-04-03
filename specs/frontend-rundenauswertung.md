@@ -125,6 +125,6 @@ Nach jeder abgeschlossenen Runde (einem einzelnen Spiel innerhalb der Partie) er
 ## Technische Hinweise
 
 - Datenbasis: `LetztesSpielergebnisAnsicht` aus `TischAnsichtModell` — dort alle nötigen Felder ergänzen falls noch nicht vorhanden.
-- Das Overlay ist ein HTML-Element in `#ui-root`, `z-index: 100`, `pointer-events: auto`.
+- Die Ansicht ist auch in Phaser umgesetzt.
 - Das bestehende `rundenEndeModal` und `partieEndeModal` in `TischSzene.ts` werden durch diese Spec ersetzt und inhaltlich erweitert.
 - Punkte-Berechnung muss vom Backend vollständig übertragen werden (alle Einzelschritte).

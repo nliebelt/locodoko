@@ -8,6 +8,12 @@ interface AnimierbaresZiel {
   y: number;
 }
 
+interface FakeKartenWurzel extends AnimierbaresZiel {
+  alpha: number;
+  scaleX: number;
+  scaleY: number;
+}
+
 interface FakeTextObjekt {
   x: number;
   y: number;
@@ -36,6 +42,8 @@ function baueTweenSzene() {
           const zielX = konfiguration.x as number | undefined;
           const zielY = konfiguration.y as number | undefined;
           const zielAlpha = typeof konfiguration.alpha === 'number' ? konfiguration.alpha : undefined;
+          const zielScaleX = typeof konfiguration.scaleX === 'number' ? konfiguration.scaleX : undefined;
+          const zielScaleY = typeof konfiguration.scaleY === 'number' ? konfiguration.scaleY : undefined;
           if (zielX !== undefined) {
             ziele.forEach((ziel) => {
               ziel.x = zielX;
@@ -49,6 +57,16 @@ function baueTweenSzene() {
           if (zielAlpha !== undefined) {
             ziele.forEach((ziel) => {
               ziel.alpha = zielAlpha;
+            });
+          }
+          if (zielScaleX !== undefined) {
+            ziele.forEach((ziel) => {
+              (ziel as FakeKartenWurzel).scaleX = zielScaleX;
+            });
+          }
+          if (zielScaleY !== undefined) {
+            ziele.forEach((ziel) => {
+              (ziel as FakeKartenWurzel).scaleY = zielScaleY;
             });
           }
           const onComplete = konfiguration.onComplete;
@@ -81,18 +99,22 @@ function baueTweenSzene() {
   };
 }
 
+function baueKartenWurzel(x = 0, y = 0): FakeKartenWurzel {
+  return { x, y, alpha: 1, scaleX: 1, scaleY: 1 };
+}
+
 describe('AnimationenService', () => {
   it('animiert das Ausspielen einer Karte zur Zielposition', async () => {
     const { szene, aufrufe } = baueTweenSzene();
     const service = new AnimationenService(szene as never);
-    const bild = { x: 10, y: 20 } as never;
+    const wurzel = baueKartenWurzel(10, 20) as never;
     const beschriftung = { x: 10, y: 20 } as never;
 
-    await service.animiereKarteAusspielen({ bild, beschriftung }, { x: 100, y: 200 });
+    await service.animiereKarteAusspielen({ wurzel, beschriftung }, { x: 100, y: 200 });
 
     expect(aufrufe).toHaveLength(1);
     expect(aufrufe[0].duration).toBe(400);
-    expect(bild).toMatchObject({ x: 100, y: 200 });
+    expect(wurzel).toMatchObject({ x: 100, y: 200 });
     expect(beschriftung).toMatchObject({ x: 100, y: 200 });
   });
 
@@ -168,9 +190,9 @@ describe('AnimationenService', () => {
     vi.useFakeTimers();
     const { szene, aufrufe } = baueTweenSzene();
     const service = new AnimationenService(szene as never);
-    const bild = { x: 0, y: 0 } as never;
+    const wurzel = baueKartenWurzel() as never;
 
-    const animation = service.animiereStichEinziehen([{ bild }], { x: 50, y: 75 });
+    const animation = service.animiereStichEinziehen([{ wurzel }], { x: 50, y: 75 });
     expect(aufrufe).toHaveLength(0);
 
     await vi.advanceTimersByTimeAsync(999);
@@ -182,7 +204,7 @@ describe('AnimationenService', () => {
     // 5 Tweens: 1x Zu, 1x Scale (Karte) + 2x Alpha (Popup) + 1x Zu (Popup)
     expect(aufrufe).toHaveLength(5);
     expect(aufrufe[0].duration).toBe(600);
-    expect(bild).toMatchObject({ x: 50, y: 75 });
+    expect(wurzel).toMatchObject({ x: 50, y: 75, scaleX: 0.4, scaleY: 0.4 });
     vi.useRealTimers();
   });
 
@@ -192,16 +214,16 @@ describe('AnimationenService', () => {
   it('skaliert Animationsdauern entsprechend dem gesetzten Geschwindigkeitsfaktor', async () => {
     const { szene, aufrufe } = baueTweenSzene();
     const service = new AnimationenService(szene as never);
-    const bild = { x: 0, y: 0 } as never;
+    const wurzel = baueKartenWurzel() as never;
 
     // Faktor 2: Dauern werden halbiert
     service.setzeGeschwindigkeitsfaktor(2);
-    await service.animiereKarteAusspielen({ bild }, { x: 100, y: 100 });
+    await service.animiereKarteAusspielen({ wurzel }, { x: 100, y: 100 });
     expect(aufrufe[0].duration).toBe(200); // 400ms / 2
 
     // Faktor Infinity (sofort): Dauern werden 0
     service.setzeGeschwindigkeitsfaktor(Infinity);
-    await service.animiereKarteAusspielen({ bild }, { x: 200, y: 200 });
+    await service.animiereKarteAusspielen({ wurzel }, { x: 200, y: 200 });
     expect(aufrufe[1].duration).toBe(0);
   });
 
@@ -211,8 +233,8 @@ describe('AnimationenService', () => {
     const service = new AnimationenService(szene as never, Infinity);
 
     // animiereStichEinziehen wartet normalerweise 1000ms — bei Infinity sofort fertig
-    const bild = { x: 0, y: 0 } as never;
-    const animation = service.animiereStichEinziehen([{ bild }], { x: 50, y: 75 });
+    const wurzel = baueKartenWurzel() as never;
+    const animation = service.animiereStichEinziehen([{ wurzel }], { x: 50, y: 75 });
     // Kein Tick noetig: warte(0) kehrt sofort zurueck, Tween mit duration=0 loest sofort auf
     await animation;
 

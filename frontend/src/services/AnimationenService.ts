@@ -2,10 +2,11 @@ import type Phaser from 'phaser';
 
 /**
  * Phaser-Spielobjekte, die gemeinsam als Karte animiert werden koennen:
- * ein Bild-Sprite und eine optionale Beschriftung.
+ * eine Kartenwurzel und optional direkte Unterobjekte fuer Spezialeffekte.
  */
 export interface AnimierbareKartenobjekte {
-  bild: Phaser.GameObjects.Image;
+  wurzel: Phaser.GameObjects.Container;
+  bild?: Phaser.GameObjects.Image;
   beschriftung?: Phaser.GameObjects.Text;
 }
 
@@ -63,7 +64,7 @@ export class AnimationenService {
     ziel: Punkt,
     dauer = 400
   ): Promise<void> {
-    await this.tweenZu([kartenobjekte.bild, kartenobjekte.beschriftung].filter(istVorhanden), ziel, dauer);
+    await this.tweenZu([kartenobjekte.wurzel, kartenobjekte.beschriftung].filter(istVorhanden), ziel, dauer);
   }
 
   /**
@@ -85,7 +86,7 @@ export class AnimationenService {
     const animationen = pakete.map(async (paket, index) => {
       await this.warte(index * verzoegerungProKarte);
       await this.tweenZu(
-        [paket.kartenobjekte.bild, paket.kartenobjekte.beschriftung].filter(istVorhanden),
+        [paket.kartenobjekte.wurzel, paket.kartenobjekte.beschriftung].filter(istVorhanden),
         paket.ziel,
         dauerProKarte
       );
@@ -238,10 +239,10 @@ export class AnimationenService {
      // Alle Karten gleichzeitig zum Ziel bewegen und dabei verkleinern
 
      const animationen = kartenobjekte.flatMap((kartenobjekt) => {
-       const objekte = [kartenobjekt.bild, kartenobjekt.beschriftung].filter(istVorhanden);
+       const objekte = [kartenobjekt.wurzel, kartenobjekt.beschriftung].filter(istVorhanden);
        return [
          this.tweenZu(objekte, ziel, dauer),
-         this.tweenScale(kartenobjekt.bild, 0.4, dauer)
+         this.tweenScale(kartenobjekt.wurzel, 0.4, dauer)
        ];
      });
 
@@ -271,7 +272,7 @@ export class AnimationenService {
     * @param dauer - Dauer in ms
     */
    private tweenScale(
-     ziel: Phaser.GameObjects.Image | Phaser.GameObjects.Sprite,
+       ziel: Phaser.GameObjects.GameObject & { scaleX: number; scaleY: number },
      skala: number,
      dauer: number
    ): Promise<void> {

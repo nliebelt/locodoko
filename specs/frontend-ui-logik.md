@@ -2,19 +2,19 @@
 
 | Feld           | Wert                                                                                    |
 |----------------|-----------------------------------------------------------------------------------------|
-| Status         | Überarbeitung erforderlich — Spielaktions-UI vollständig in Phaser migrieren            |
+| Status         | Überarbeitung erforderlich — gesamte In-Game-UI vollständig in Phaser migrieren         |
 | Priorität      | Hoch                                                                                    |
 | Abhängigkeiten | frontend-tischansicht.md, websocket-kommunikation.md, stichlogik.md, ansagen.md, frontend-tastatursteuerung.md |
 
 ## Beschreibung
 
-Die UI-Logik bestimmt, welche Interaktionen dem Spieler wann zur Verfügung stehen. Die bisherigen seitlichen HTML-Panels entfallen vollständig. Alle Spielaktionen erscheinen kontextuell als Overlays oder Floating-Elemente, ohne das Spielfeld dauerhaft zu verdecken.
+Die UI-Logik bestimmt, welche Interaktionen dem Spieler wann zur Verfügung stehen. Die bisherigen seitlichen HTML-Panels entfallen vollständig. Das Zielbild für die Tischansicht ist eine vollständig in Phaser umgesetzte In-Game-UI: Spielaktionen, HUD, Seitenlade, Einstellungen, Overlays und Feedback-Elemente gehören in dieselbe Render-Welt und werden nicht mehr als separate HTML-Schicht über das Spielfeld gelegt.
 
-### Grundsatz: Spielaktions-UI vs. Meta-UI
+### Grundsatz: Einheitliche Phaser-UI
 
 **Spielaktions-UI** (Vorbehalt, Ansage, Armut, Stich-Feedback): Alle Elemente die direkt ins Spielgeschehen eingreifen, werden **auf der Spielfläche** dargestellt — sie dürfen die Karten nicht verdecken und gehören visuell zum Tisch.
 
-**Meta-UI** (Seitenlade `[≡]`, Einstellungs-Modal `[⚙]`): Informations- und Konfigurationselemente die das Spiel nicht blockieren.
+**Meta-UI** (Seitenlade `[≡]`, Einstellungs-Modal `[⚙]`): Informations- und Konfigurationselemente werden ebenfalls in Phaser umgesetzt. Sie koennen als eigene Layer oder Container organisiert sein, bleiben aber Teil derselben Szenen-UI.
 
 Hinweise die lediglich den Spielzug des Spielers ankündigen (z.B. „Du bist dran") **entfallen ersatzlos** — der aktive Spieler ist durch Nameplate-Hervorhebung erkennbar.
 
@@ -70,6 +70,7 @@ Hinweise die lediglich den Spielzug des Spielers ankündigen (z.B. „Du bist dr
    - Letzte 3 abgeschlossene Stiche (aufklappbar)
 3. Schließt per erneuten `[≡]`-Klick, Klick auf Backdrop oder Escape-Taste.
 4. Die Seitenlade **blockiert keine Spielaktionen** — Karten können weiterhin gespielt werden.
+5. Die Seitenlade wird als Phaser-Overlay bzw. Phaser-Layer umgesetzt, nicht als HTML-DOM-Panel.
 
 ### Einstellungs-Modal
 
@@ -81,6 +82,7 @@ Hinweise die lediglich den Spielzug des Spielers ankündigen (z.B. „Du bist dr
    - Button „Tisch verlassen" (mit Bestätigungsdialog wenn Partie läuft)
    - Button „Zur Lobby"
 3. Schließt per `[⚙]`-Klick, Klick auf Backdrop oder Escape-Taste.
+4. Das Einstellungs-Modal wird als Phaser-Overlay umgesetzt, nicht als HTML-DOM-Modal.
 
 ### Fehlermeldungen
 
@@ -123,6 +125,6 @@ Hinweise die lediglich den Spielzug des Spielers ankündigen (z.B. „Du bist dr
 - Spielbare Karten: `setInteractive()` / `disableInteractive()` basierend auf Backend-Daten.
 - Karten-Grayout: Alpha-Wert reduzieren (z.B. 0.45) oder Tint setzen.
 - Hover-Effekt: `pointerover`/`pointerout`-Events mit Y-Verschiebung (-10px).
-- Floating Action Bar als HTML-Element absolut positioniert, gebunden an Canvas-Koordinaten.
-- Modals als HTML-Overlays mit `position: absolute; inset: 0; z-index: 100`.
+- Floating Action Bar als Phaser-Container oder eigener UI-Layer, gebunden an Canvas-Koordinaten.
+- Seitenlade, Modal-Dialoge und Overlays als Phaser-Layer/Container über dem Spielfeld.
 - Kein Modal kann per Escape geschlossen werden wenn eine spielrelevante Entscheidung aussteht.

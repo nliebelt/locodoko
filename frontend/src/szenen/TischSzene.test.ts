@@ -17,6 +17,30 @@ import type {
 
 type Handler = () => void;
 
+function richteLocalStorageEin(initialeWerte: Record<string, string> = {}): Storage {
+  const speicher = new Map(Object.entries(initialeWerte));
+  return {
+    get length() {
+      return speicher.size;
+    },
+    clear(): void {
+      speicher.clear();
+    },
+    getItem(schluessel: string): string | null {
+      return speicher.get(schluessel) ?? null;
+    },
+    key(index: number): string | null {
+      return Array.from(speicher.keys())[index] ?? null;
+    },
+    removeItem(schluessel: string): void {
+      speicher.delete(schluessel);
+    },
+    setItem(schluessel: string, wert: string): void {
+      speicher.set(schluessel, wert);
+    }
+  };
+}
+
 const appStoreHarness = vi.hoisted(() => {
   let zustand: unknown;
   let listener: ((wert: unknown) => void) | undefined;
@@ -53,6 +77,89 @@ vi.mock('../anwendung', () => ({
 }));
 
 vi.mock('phaser', () => {
+  class FakeContainerBasis {
+    readonly typ = 'container';
+
+    x: number;
+
+    y: number;
+
+    alpha = 1;
+
+    winkel = 0;
+
+    scaleX = 1;
+
+    scaleY = 1;
+
+    interactive = false;
+
+    zerstort = false;
+
+    textur?: string;
+
+    tint?: number;
+
+    readonly kinder: unknown[] = [];
+
+    private readonly handler = new Map<string, Array<() => void>>();
+
+    constructor(_szene?: unknown, x = 0, y = 0) {
+      this.x = x;
+      this.y = y;
+    }
+
+    add(kind: unknown): this {
+      this.kinder.push(kind);
+      return this;
+    }
+
+    setSize(): this {
+      return this;
+    }
+
+    setAngle(winkel: number): this {
+      this.winkel = winkel;
+      return this;
+    }
+
+    setAlpha(alpha: number): this {
+      this.alpha = alpha;
+      return this;
+    }
+
+    setY(y: number): this {
+      this.y = y;
+      return this;
+    }
+
+    setInteractive(): this {
+      this.interactive = true;
+      return this;
+    }
+
+    on(ereignis: string, handler: () => void): this {
+      const eintraege = this.handler.get(ereignis) ?? [];
+      eintraege.push(handler);
+      this.handler.set(ereignis, eintraege);
+      return this;
+    }
+
+    emit(ereignis: string): void {
+      (this.handler.get(ereignis) ?? []).forEach((handler) => handler());
+    }
+
+    destroy(): this {
+      this.zerstort = true;
+      this.kinder.forEach((kind) => {
+        if (typeof kind === 'object' && kind !== null && 'destroy' in kind && typeof kind.destroy === 'function') {
+          kind.destroy();
+        }
+      });
+      return this;
+    }
+  }
+
   class FakeScene {
     add!: unknown;
 
@@ -66,6 +173,9 @@ vi.mock('phaser', () => {
   return {
     default: {
       Scene: FakeScene,
+      GameObjects: {
+        Container: FakeContainerBasis
+      },
       Scale: {
         Events: {
           RESIZE: 'resize'
@@ -146,6 +256,30 @@ class FakeGameObject {
   }
 
   setStrokeStyle(): this {
+    return this;
+  }
+
+  fillStyle(): this {
+    return this;
+  }
+
+  lineStyle(): this {
+    return this;
+  }
+
+  fillRoundedRect(): this {
+    return this;
+  }
+
+  strokeRoundedRect(): this {
+    return this;
+  }
+
+  lineBetween(): this {
+    return this;
+  }
+
+  clear(): this {
     return this;
   }
 
@@ -366,11 +500,17 @@ function baueZustand(optionen: Partial<AppZustand> = {}): AppZustand {
 
 function erstelleAddApi() {
   return {
+    existing(): void {
+      // In Tests wird das Objekt direkt von der Szene gehalten; kein weiteres Verhalten noetig.
+    },
     tileSprite(x: number, y: number, breite: number, hoehe: number, textur: string): FakeGameObject {
       return new FakeGameObject('tileSprite', { x, y, breite, hoehe, textur });
     },
     container(): FakeContainer {
       return new FakeContainer();
+    },
+    graphics(): FakeGameObject {
+      return new FakeGameObject('graphics');
     },
     ellipse(x: number, y: number, breite: number, hoehe: number): FakeGameObject {
       return new FakeGameObject('ellipse', { x, y, breite, hoehe });
@@ -463,12 +603,12 @@ function baueSzene(zustand: AppZustand, groesse = { width: 1280, height: 720 }):
   return { szene, skalierung, szenenManager, tweens };
 }
 
-// Liefert die Handkarten-Bilder des eigenen Spielers (SUED) aus der Tischebene.
-// Erkennungsmerkmale: Image-Typ, kartenspezifische Textur (karte-offen-*), Y-Position > 500.
+// Liefert die Handkarten-Ansichten des eigenen Spielers (SUED) aus der Tischebene.
+// Erkennungsmerkmale: Kartenansicht-Typ, kartenspezifische Textur (karte-offen-*), Y-Position > 500.
 function handkartenBilder(szene: TischSzeneInstanz): FakeGameObject[] {
   const ebene = szene['tischEbene'] as FakeContainer | undefined;
   return (ebene?.kinder ?? [])
-    .filter((kind) => kind.typ === 'image' && (kind.textur?.startsWith('karte-offen-') ?? false) && kind.y > 500)
+    .filter((kind) => kind.typ === 'kartenansicht' && (kind.textur?.startsWith('karte-offen-') ?? false) && kind.y > 500)
     .sort((links, rechts) => links.x - rechts.x);
 }
 
@@ -509,6 +649,11 @@ function klickePhaserButton(szene: TischSzeneInstanz, label: string): void {
 beforeEach(() => {
   vi.clearAllMocks();
   richteDomEin();
+  Object.defineProperty(globalThis, 'localStorage', {
+    value: richteLocalStorageEin(),
+    configurable: true,
+    writable: true
+  });
 });
 
 afterEach(() => {

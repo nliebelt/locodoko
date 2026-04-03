@@ -8,7 +8,7 @@
 
 ## Beschreibung
 
-Die Tischansicht ist das zentrale Spielfeld. Sie nutzt die **volle Canvas-Fläche** (1280×720px) ohne seitliche Panels. Alle dauerhaften UI-Elemente sind als kompaktes HUD integriert. Der menschliche Spieler sitzt unten (Süd), die anderen Spieler an West, Nord und Ost.
+Die Tischansicht ist das zentrale Spielfeld. Sie nutzt die **volle Canvas-Fläche** (1280×720px) ohne seitliche Panels. Das Zielbild ist eine vollständig in Phaser gerenderte Tisch-UI: HUD, Seitenlade, Einstellungen, Overlays und Spielaktionen gehören zur Szene und werden nicht als separate HTML-Schicht über den Tisch gelegt. Der menschliche Spieler sitzt unten (Süd), die anderen Spieler an West, Nord und Ost.
 
 ## Layout-Übersicht
 
@@ -101,12 +101,14 @@ Die Tischansicht ist das zentrale Spielfeld. Sie nutzt die **volle Canvas-Fläch
 1. Öffnet sich von links als Overlay-Panel (nicht verdrängend).
 2. Inhalt: Spieler am Tisch (mit Partei-Info), Gesamtpunktestand, Ansagehistorie der laufenden Runde, Letzte-Stiche-Liste.
 3. Klick außerhalb oder erneuter `[≡]`-Klick schließt die Lade.
+4. Die Seitenlade ist Teil der Phaser-Szene, nicht der HTML-DOM-Schicht.
 
 ### Einstellungs-Modal `[⚙]`
 
 1. Öffnet zentriertes Modal.
 2. Inhalt: Tischhintergrund (Auswahl), KI-Schwierigkeit (Auswahl), Animationsgeschwindigkeit (1x/2x/sofort), Button „Tisch verlassen", Button „Zur Lobby".
 3. Tischkonfiguration nur veränderbar wenn Tischersteller und Status WARTEND.
+4. Das Einstellungs-Modal ist Teil der Phaser-Szene, nicht der HTML-DOM-Schicht.
 
 ## Akzeptanzkriterien
 
@@ -142,5 +144,5 @@ Die Tischansicht ist das zentrale Spielfeld. Sie nutzt die **volle Canvas-Fläch
 
 - **vectorized-playing-cards**: PNGs als Einzeldateien in `frontend/public/assets/cards/`. Mapping-Konvention: `{farbe}_{wert}.png` → z.B. `kreuz_dame.png`, `herz_10.png`.
 - Canvas skaliert mit `Phaser.Scale.FIT`, Koordinaten bleiben relativ zur Spielgröße.
-- Seitenlade und Modals als HTML-Overlay über dem Canvas (`#ui-root`), `pointer-events: none` auf Root, `pointer-events: auto` nur auf den Elementen selbst.
-- Floating Action Bar als HTML-Element mit `position: absolute`, an untere Kanten des Canvas gebunden.
+- Seitenlade, Modals und andere Overlays als Phaser-Layer bzw. Phaser-Container über dem Spielfeld.
+- Floating Action Bar als Phaser-UI, an untere Kanten des Canvas gebunden.

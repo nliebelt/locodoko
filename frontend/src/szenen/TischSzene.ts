@@ -4,12 +4,9 @@ import {
   TEXTUR_BLAU_GRAFIK,
   TEXTUR_FILZ,
   TEXTUR_HOLZ_DUNKEL,
-  TEXTUR_KARTE_OFFEN,
-  TEXTUR_KARTE_VERDECKT,
-  texturSchluesselFuerKarte,
-  ladeKartenBilderVorab,
-  registriereKartenSpriteTexturen
+  ladeKartenBilderVorab
 } from '../assets/AssetLoader';
+import { Kartenansicht } from '../assets/Kartenansicht';
 import { appStore } from '../anwendung';
 import { Logger } from '../logger';
 import {
@@ -327,9 +324,7 @@ export class TischSzene extends Phaser.Scene {
    * Phaser-Lifecycle: Laedt Karten-PNG-Assets vorab.
    *
    * Wird von Phaser vor create() aufgerufen. Queued alle 24 Karten-PNGs
-   * aus /assets/cards/ in den Phaser-Loader. Falls eine PNG-Datei fehlt,
-   * faellt registriereKartenSpriteTexturen() in create() automatisch auf
-   * prozedurale Canvas-Generierung zurueck.
+   * aus /assets/cards/ in den Phaser-Loader.
    */
   preload(): void {
     ladeKartenBilderVorab(this);
@@ -338,8 +333,8 @@ export class TischSzene extends Phaser.Scene {
   /**
    * Phaser-Lifecycle: Initialisiert die TischSzene.
    *
-   * Erstellt Hintergrund, AnimationenService und HTML-UI, laedt die gespeicherte
-   * Animationsgeschwindigkeit, registriert Kartentexturen und abonniert den AppStore.
+  * Erstellt Hintergrund, AnimationenService und HTML-UI, laedt die gespeicherte
+  * Animationsgeschwindigkeit und abonniert den AppStore.
    * Der AppStore-Listener reagiert auf jeden State-Update mit Animations- und UI-Aktualisierungen.
    */
   create(): void {
@@ -371,8 +366,6 @@ export class TischSzene extends Phaser.Scene {
         this.geschwindigkeitsButton.textContent = geschwindigkeitsLabel(initialGeschwindigkeit);
       }
     }
-    // Individuelle Kartentexturen fuer das franzoesische Blatt laden (idempotent)
-    registriereKartenSpriteTexturen(this);
     this.scale.on(Phaser.Scale.Events.RESIZE, this.handleResize, this);
     this.registriereTastaturHandler();
     this.abmeldenStore = appStore.abonnieren((zustand) => {
@@ -871,9 +864,8 @@ export class TischSzene extends Phaser.Scene {
     //   }).setOrigin(0.5));
     // }
 
-    // Phaser-UI: Aktions-Hinweis, Ansage-Buttons, Armut-Dialog (zuerst); Vorbehalt-Dialog zuletzt (liegt oben)
+    // Phaser-UI: Ansage-Buttons, Armut-Dialog (zuerst); Vorbehalt-Dialog zuletzt (liegt oben)
     if (zustand.partieStand?.laufendesSpiel) {
-      this.renderAktionsHinweis(ebene, modell, zustand, breite, hoehe);
       this.renderAnsageButtons(ebene, modell, zustand, breite, hoehe);
       this.renderArmutBereich(ebene, modell, zustand, breite, hoehe);
       this.renderVorbehaltDialog(ebene, modell, zustand, breite, hoehe);
@@ -902,11 +894,7 @@ export class TischSzene extends Phaser.Scene {
 
       for (let i = 0; i < anzahlSichtbar; i++) {
         const yVersatz = -(anzahlSichtbar - 1 - i) * versatzPx;
-        ebene.add(
-          this.add.image(pos.x, pos.y + yVersatz, TEXTUR_KARTE_VERDECKT)
-            .setDisplaySize(stapelW, stapelH)
-            .setAlpha(0.88)
-        );
+        ebene.add(this.erstelleKartenansicht(pos.x, pos.y + yVersatz, stapelW, stapelH, { verdeckt: true }).setAlpha(0.88));
       }
 
       const schriftGroesse = Math.round(Math.max(10, breite * 0.009));
@@ -981,8 +969,7 @@ export class TischSzene extends Phaser.Scene {
     const kartenY = panelY + Math.round(panelHoehe * 0.05);
     karten.forEach((eintrag, index) => {
       const x = startX + index * kartenAbstand;
-      const textur = texturSchluesselFuerKarte(eintrag.karte.farbe, eintrag.karte.wert);
-      container.add(this.add.image(x, kartenY, textur).setDisplaySize(kgroesse.w, kgroesse.h));
+      container.add(this.erstelleKartenansicht(x, kartenY, kgroesse.w, kgroesse.h, { karte: eintrag.karte }));
     });
 
     // Hinweis-Text
@@ -1029,8 +1016,24 @@ export class TischSzene extends Phaser.Scene {
     modell.aktuelleStichmitte.forEach((eintrag) => {
       const slot = slotPositionen[eintrag.position];
       // Karte an der Slot-Position ihres Spielers — Position macht Zuordnung deutlich, kein Text noetig
-      ebene.add(this.add.image(slot.x, slot.y, texturSchluesselFuerKarte(eintrag.karte.farbe, eintrag.karte.wert)).setDisplaySize(kgroesse.w, kgroesse.h));
+      ebene.add(this.erstelleKartenansicht(slot.x, slot.y, kgroesse.w, kgroesse.h, { karte: eintrag.karte }));
     });
+  }
+
+  private erstelleKartenansicht(
+    x: number,
+    y: number,
+    breite: number,
+    hoehe: number,
+    optionen: { karte?: { farbe: string; wert: string }; verdeckt?: boolean }
+  ): Kartenansicht {
+    if (optionen.karte) {
+      return Kartenansicht.offen(this, x, y, optionen.karte.farbe, optionen.karte.wert, breite, hoehe);
+    }
+    if (optionen.verdeckt) {
+      return Kartenansicht.verdeckt(this, x, y, breite, hoehe);
+    }
+    return Kartenansicht.leer(this, x, y, breite, hoehe);
   }
 
 
@@ -1228,46 +1231,46 @@ export class TischSzene extends Phaser.Scene {
       const istArmutauswahl = karte ? (armutKarten?.has(karte.id) ?? false) : false;
       const istInteraktiv = !this.spielzugAnimationAktiv && (istSpielbar || istArmutauswahl);
       const istAusgewaehlt = karte ? this.ausgewaehlteArmutKarten.has(karte.id) : false;
-      // Kartenspezifische Textur fuer aufgedeckte Karten, Rueckseite fuer verdeckte
-      const textur = (offen && karte)
-        ? texturSchluesselFuerKarte(karte.farbe, karte.wert)
-        : offen ? TEXTUR_KARTE_OFFEN : TEXTUR_KARTE_VERDECKT;
       // Tastatur-Markierung: die spielbare Karte am aktuellen Index ist visuell hervorgehoben
       const istTastaturMarkiert = spieler.istSelbst
         && karte !== undefined
         && this.tastaturKarteIndex >= 0
         && modell.spielbareKarten[this.tastaturKarteIndex] === karte.id;
       const basisVersatz = (istAusgewaehlt || istTastaturMarkiert) ? -auswahlVersatz : 0;
+      const karteAnsicht = offen
+        ? this.erstelleKartenansicht(x, y + basisVersatz, kgroesse.w, kgroesse.h, karte ? { karte } : {})
+        : this.erstelleKartenansicht(x, y + basisVersatz, kgroesse.w, kgroesse.h, { verdeckt: true });
 
       // Waehrend der Austeilen-Animation werden Karten unsichtbar gerendert (die Animation zeigt sie)
       const alphaWert = this.austeilenAktiv
         ? 0
         : (offen ? (hatInteraktion && karte && !istInteraktiv ? 0.5 : 1) : 0.92);
-      const bild = this.add.image(x, y + basisVersatz, textur)
-        .setDisplaySize(kgroesse.w, kgroesse.h)
+      karteAnsicht
         .setAngle(winkel)
         .setAlpha(alphaWert);
       if (istAusgewaehlt) {
-        bild.setTint(0xffe082); // Armut-Auswahl: gelb
+        karteAnsicht.markiereAuswahl(); // Armut-Auswahl: gelb
       } else if (istTastaturMarkiert) {
-        bild.setTint(0xadd8ff); // Tastatur-Selektion: hellblau
+        karteAnsicht.markiereTastaturfokus(); // Tastatur-Selektion: weisser Rahmen
+      } else {
+        karteAnsicht.loescheMarkierung();
       }
-      ebene.add(bild);
+      ebene.add(karteAnsicht);
 
       if (karte) {
-        this.handKartenobjekte.set(karte.id, { bild });
+        this.handKartenobjekte.set(karte.id, { wurzel: karteAnsicht, bild: karteAnsicht.bildObjekt });
       }
 
       if (offen && karte && istInteraktiv) {
         const setzeOffset = (zusatz: number): void => {
-          bild.setY(y + basisVersatz + zusatz);
+          karteAnsicht.setY(y + basisVersatz + zusatz);
         };
-        bild.setInteractive({ useHandCursor: true });
+        karteAnsicht.setInteractive({ useHandCursor: true });
         // Hover-Versatz skaliert mit Kartengrösse
         const hoverVersatz = Math.round(kgroesse.h * 0.08);  // ≈ 10 bei Kartenhöhe 124
-        bild.on('pointerover', () => setzeOffset(-hoverVersatz));
-        bild.on('pointerout', () => setzeOffset(0));
-        bild.on('pointerdown', () => {
+        karteAnsicht.on('pointerover', () => setzeOffset(-hoverVersatz));
+        karteAnsicht.on('pointerout', () => setzeOffset(0));
+        karteAnsicht.on('pointerdown', () => {
           if (istSpielbar) {
             void this.spieleKarteMitAnimation(karte.id);
             return;
@@ -1334,30 +1337,6 @@ export class TischSzene extends Phaser.Scene {
     this.ausgewaehlteArmutKarten.add(karteId);
   }
 
-  private bestimmeAktionsHinweis(modell: TischAnsichtModell, zustand: AppZustand): string {
-    if (this.spielzugAnimationAktiv) {
-      return 'Deine Karte wird gerade ausgespielt. Warte kurz auf den serverseitigen Folgezustand.';
-    }
-    if (!zustand.partieStand?.laufendesSpiel) {
-      return 'Noch keine laufende Partie.';
-    }
-    if (modell.aktuellerSpieler === 'SUED') {
-      if (modell.phase === 'STICHPHASE') {
-        return 'Du bist dran. Spiel eine serverseitig erlaubte Karte oder taetige eine Ansage.';
-      }
-      if (modell.phase === 'VORBEHALT_ANSAGE') {
-        return 'Du bist an der Reihe, einen Vorbehalt zu melden.';
-      }
-      if (modell.phase === 'ARMUT_TAUSCH') {
-        return 'Die Armutphase wartet auf deine Auswahl.';
-      }
-      return 'Die aktuelle Phase erwartet eine Aktion von dir.';
-    }
-    return modell.aktuellerSpieler
-      ? `Aktuell ist ${this.nameFuerPosition(modell, modell.aktuellerSpieler)} dran.`
-      : 'Warte auf den serverseitigen Phasenwechsel.';
-  }
-
   private erstelleModell(zustand: AppZustand): TischAnsichtModell {
     return erstelleTischAnsichtAusStatus(
       zustand.spieler?.spielerId ?? null,
@@ -1414,8 +1393,8 @@ export class TischSzene extends Phaser.Scene {
     const kgroesse = berechneKartenGroesse(breite);
     const animierteKarten = abgeschlossenerStich.gespielteKarten.map((karte) => {
       const slot = slotPositionen[karte.position];
-      const bild = this.add.image(slot.x, slot.y, texturSchluesselFuerKarte(karte.karte.farbe, karte.karte.wert)).setDisplaySize(kgroesse.w, kgroesse.h);
-      return { bild };
+      const wurzel = this.erstelleKartenansicht(slot.x, slot.y, kgroesse.w, kgroesse.h, { karte: karte.karte });
+      return { wurzel, bild: wurzel.bildObjekt };
     });
 
     // Gewinn-Flash: goldenes Overlay-Rechteck über dem Nameplate des Gewinners (startet unsichtbar)
@@ -1432,7 +1411,7 @@ export class TischSzene extends Phaser.Scene {
       await this.animationen?.animiereStichEinziehen(animierteKarten, { x: ziel.x, y: ziel.y }, flashRechteck);
     } finally {
       animierteKarten.forEach((karte) => {
-        karte.bild.destroy();
+        karte.wurzel.destroy();
       });
       flashRechteck.destroy();
     }
@@ -1482,14 +1461,12 @@ export class TischSzene extends Phaser.Scene {
 
         // Eigene Karten offen austeilen, gegnerische Karten verdeckt
         const karte = sichtbareHandkarten?.[index];
-        const textur = (spieler.istSelbst && karte)
-          ? texturSchluesselFuerKarte(karte.farbe, karte.wert)
-          : TEXTUR_KARTE_VERDECKT;
+        const wurzel = (spieler.istSelbst && karte)
+          ? this.erstelleKartenansicht(start.x, start.y, kgroesse.w, kgroesse.h, { karte })
+          : this.erstelleKartenansicht(start.x, start.y, kgroesse.w, kgroesse.h, { verdeckt: true });
 
-        const bild = this.add.image(start.x, start.y, textur)
-          .setDisplaySize(kgroesse.w, kgroesse.h)
-          .setAngle(winkel);
-        pakete.push({ kartenobjekte: { bild }, ziel: { x: zielX, y: zielY } });
+        wurzel.setAngle(winkel);
+        pakete.push({ kartenobjekte: { wurzel, bild: wurzel.bildObjekt }, ziel: { x: zielX, y: zielY } });
       }
     }
 
@@ -1497,7 +1474,7 @@ export class TischSzene extends Phaser.Scene {
       await this.animationen?.animiereKartenAusteilen(pakete);
     } finally {
       // Temporaere Bilder entfernen und echte Karten sichtbar rendern
-      pakete.forEach((paket) => paket.kartenobjekte.bild.destroy());
+      pakete.forEach((paket) => paket.kartenobjekte.wurzel.destroy());
       this.austeilenAktiv = false;
       this.renderTisch(this.letzterZustand ?? zustand);
     }
@@ -1521,10 +1498,6 @@ export class TischSzene extends Phaser.Scene {
       return null;
     }
     return letzterAktuell;
-  }
-
-  private nameFuerPosition(modell: TischAnsichtModell, position: SpielerPosition): string {
-    return modell.spieler.find((spieler) => spieler.position === position)?.name ?? position;
   }
 
   // Erkennt neue Ansagen im Vergleich zum vorherigen Modell-Snapshot
@@ -1940,29 +1913,6 @@ export class TischSzene extends Phaser.Scene {
         deaktiviert
       );
     });
-  }
-
-  /**
-   * Rendert den Aktions-Hinweis-Text als Phaser-Textobjekt unten im Bild (ersetzt HTML-Overlay).
-   * Zeigt an was der Spieler tun soll (z.B. "Du bist dran. Spiel eine Karte...").
-   */
-  private renderAktionsHinweis(
-    ebene: Phaser.GameObjects.Container,
-    modell: TischAnsichtModell,
-    zustand: AppZustand,
-    breite: number,
-    hoehe: number
-  ): void {
-    const hinweis = this.bestimmeAktionsHinweis(modell, zustand);
-    if (!hinweis) {
-      return;
-    }
-    ebene.add(this.add.text(breite / 2, hoehe * 0.76, hinweis, {
-      color: '#c8e6c9',
-      fontSize: `${Math.round(Math.max(12, breite * 0.010))}px`,
-      align: 'center',
-      wordWrap: { width: breite * 0.55 }
-    }).setOrigin(0.5));
   }
 
   /**
