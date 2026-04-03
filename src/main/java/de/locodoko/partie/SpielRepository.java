@@ -22,8 +22,4 @@ public interface SpielRepository extends CrudRepository<SpielEntity, UUID> {
     /** Zaehlt alle Spiele. */
     long count();
 
-    /** Flush-Alias (Spring Data JDBC persistiert sofort, kein expliziter Flush noetig). */
-    default void flush() {
-        // Spring Data JDBC hat kein Flush-Konzept — diese Methode ist ein Kompatibilitaets-Stub
-    }
 }
