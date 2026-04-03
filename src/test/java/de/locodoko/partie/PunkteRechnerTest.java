@@ -87,6 +87,54 @@ class PunkteRechnerTest {
     }
 
     @Test
+    void multiplizierSoloSiegerPunkteMillDrei() {
+        // Wichtig: Ohne diesen Test bliebe die 3er-Multiplikation unbemerkt, falls sie
+        // versehentlich entfernt wird — Soli wären dann gleichwertig mit Normalspielen.
+        Parteien soloParteien = Parteien.ausSolo(SpielerPosition.SUED);
+
+        Spielergebnis ergebnis = punkteRechner.berechneNormalspielErgebnis(
+            kombiniere(wiederhole(reStich20(), 7), wiederhole(kontraStich20(), 5)),
+            soloParteien,
+            trumpfOrdnung,
+            Ansagen.leer(),
+            spielregeln
+        );
+
+        assertEquals(1, ergebnis.spielwert());
+        assertEquals(3, ergebnis.spielpunkteVon(SpielerPosition.SUED),
+            "Solo-Sieger zaehlt dreifach, weil er alleine gegen drei antritt.");
+        assertEquals(-1, ergebnis.spielpunkteVon(SpielerPosition.WEST));
+        assertEquals(-1, ergebnis.spielpunkteVon(SpielerPosition.NORD));
+        assertEquals(-1, ergebnis.spielpunkteVon(SpielerPosition.OST));
+        assertEquals(0, ergebnis.spielpunkteProSpieler().values().stream().mapToInt(Integer::intValue).sum(),
+            "Nullsumme muss auch beim Solo gelten.");
+    }
+
+    @Test
+    void multiplizierSoloVerliererPunkteMillDrei() {
+        // Wichtig: Sicherstellung dass auch der umgekehrte Fall (3 gewinnen gegen 1)
+        // korrekt mit -3 bewertet wird — der Solo-Spieler traegt das volle Verlustrisiko.
+        Parteien soloParteien = Parteien.ausSolo(SpielerPosition.SUED);
+
+        Spielergebnis ergebnis = punkteRechner.berechneNormalspielErgebnis(
+            kombiniere(wiederhole(reStich20(), 5), wiederhole(kontraStich20(), 7)),
+            soloParteien,
+            trumpfOrdnung,
+            Ansagen.leer(),
+            spielregeln
+        );
+
+        assertEquals(1, ergebnis.spielwert());
+        assertEquals(-3, ergebnis.spielpunkteVon(SpielerPosition.SUED),
+            "Solo-Verlierer verliert dreifach — symmetrisch zum Gewinnfall.");
+        assertEquals(1, ergebnis.spielpunkteVon(SpielerPosition.WEST));
+        assertEquals(1, ergebnis.spielpunkteVon(SpielerPosition.NORD));
+        assertEquals(1, ergebnis.spielpunkteVon(SpielerPosition.OST));
+        assertEquals(0, ergebnis.spielpunkteProSpieler().values().stream().mapToInt(Integer::intValue).sum(),
+            "Nullsumme muss auch beim Solo-Verlust gelten.");
+    }
+
+    @Test
     void gibtKontraBeimSiegGegenReAnsageDenZusatzpunkt() {
         Ansagen ansagen = Ansagen.leer()
             .fuegeHinzu(SpielerPosition.SUED, Ansage.RE, parteien, spielregeln, 11);
