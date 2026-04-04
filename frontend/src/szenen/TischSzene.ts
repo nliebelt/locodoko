@@ -1395,8 +1395,7 @@ export class TischSzene extends Phaser.Scene {
     const breite = this.scale.gameSize.width;
     const hoehe = this.scale.gameSize.height;
     const slotPositionen = stichSlotPositionen(breite / 2, hoehe / 2, breite, hoehe);
-    const layout = berechneLayout(breite, hoehe);
-    const ziel = layout[abgeschlossenerStich.gewinnerPosition];
+    const ziel = stichStapelPositionFuer(abgeschlossenerStich.gewinnerPosition, breite, hoehe);
     const kgroesse = berechneKartenGroesse(breite);
     const animierteKarten = abgeschlossenerStich.gespielteKarten.map((karte) => {
       const slot = slotPositionen[karte.position];
@@ -1415,7 +1414,7 @@ export class TischSzene extends Phaser.Scene {
       .setAlpha(0);
 
     try {
-      await this.animationen?.animiereStichEinziehen(animierteKarten, { x: ziel.x, y: ziel.y }, flashRechteck);
+      await this.animationen?.animiereStichEinziehen(animierteKarten, ziel, abgeschlossenerStich.augen, flashRechteck);
     } finally {
       animierteKarten.forEach((karte) => {
         karte.wurzel.destroy();

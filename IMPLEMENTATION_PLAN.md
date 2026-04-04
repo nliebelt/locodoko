@@ -4,10 +4,10 @@
 
 ## Notiz
 
-**2026-04-04 (Plan-Run #15):**
-- **6.2 Gegner-Karten-Animation implementiert**: `starteGegnerKartenAnimationen()` erkennt neu gespielte Karten fremder Spieler, erstellt je eine verdeckte Temp-Karte an der Fächer-Position des Gegners und animiert sie per `animiereKarteAusspielen()` (400ms) zur Stich-Slot-Position. Anschließend wird die Temp-Karte zerstört — die statisch gerenderte offene Karte darunter wird sichtbar. Guard `!vorherigesModell` verhindert Animation beim initialen Load. Alle 62 Frontend-Tests grün.
-- **Nächster Schritt**: 6.3 Stichanimation — (a) Popup zeigt "+1 Stich" statt echter Augenzahl, (b) Karten fliegen nicht zum richtigen Stapel des Stichgewinners.
-- **Offene Fragen**: `springdoc-openapi 2.8.6` nutzt Jackson 2 — ggf. updaten. Manueller Vision-Check für 6.2 empfohlen (Backend lief nicht).
+**2026-04-04 (Plan-Run #16):**
+- **6.3 Stichanimation implementiert**: `animiereStichEinziehen()` erhielt neuen Parameter `augenzahl: number`; Popup zeigt jetzt `+${augenzahl} Augen` statt hartkodiertem "+1 Stich". Zielposition in `handleStichAbgeschlossen()` verwendet nun `stichStapelPositionFuer(gewinnerPosition)` statt `layout[gewinnerPosition]` — Karten fliegen zum richtigen Stapel des Stichgewinners. Alle 62 Frontend-Tests grün.
+- **Nächster Schritt**: 6.4 Kartenfächer-Ausrichtung — Nord/Süd-Fächer verdreht, Ost/West-Karten nicht als vertikaler Fächer.
+- **Offene Fragen**: `springdoc-openapi 2.8.6` nutzt Jackson 2 — ggf. updaten. Manueller Vision-Check für 6.3 empfohlen (Backend lief nicht).
 
 **2026-03-29 (Build-Run #10):**
 - **KI-Schwierigkeitsgrade differenziert und vollständig getestet**: 2 neue Tests in `SchwerKiStrategieTest` belegen alle relevanten Threshold-Unterschiede: KONTRA (22 vs 26) und KEINE_90 (32 vs 36), zusätzlich zum bestehenden RE-Test (24 vs 28). Damit sind alle 6 Ansage-Schwellen der SchwerKiStrategie vs StandardKiStrategie vollständig abgedeckt. 134 Tests grün.
@@ -56,7 +56,7 @@
   - Fix: Bei `KarteGespielt`-Event fremder Spieler: verdeckte Karte an Fächer-Position erstellen → `animiereKarteAusspielen()` aufrufen → Karte aufdecken (verdeckt→offen).
   - Dateien: `frontend/src/szenen/TischSzene.ts`, `frontend/src/services/AnimationenService.ts`
 
-- [ ] **6.3 Stichanimation: Punkte + richtiger Stapel**: (a) Popup zeigt "+1 Stich" statt echte Augenzahl. (b) Karten fliegen nicht zum Stapel des Stichgewinners.
+- [x] **6.3 Stichanimation: Punkte + richtiger Stapel**: (a) Popup zeigt "+1 Stich" statt echte Augenzahl. (b) Karten fliegen nicht zum Stapel des Stichgewinners.
   - Fix: `animiereStichEinziehen()` um `augenzahl`-Parameter erweitern; Zielposition = Stapel-Position des Gewinners.
   - Dateien: `frontend/src/szenen/TischSzene.ts`, `frontend/src/services/AnimationenService.ts`
 

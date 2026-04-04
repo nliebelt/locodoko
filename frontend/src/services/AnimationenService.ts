@@ -219,6 +219,7 @@ export class AnimationenService {
    async animiereStichEinziehen(
      kartenobjekte: AnimierbareKartenobjekte[],
      ziel: Punkt,
+     augenzahl: number,
      flashObjekt?: Phaser.GameObjects.GameObject,
      wartezeit = 1000,
      dauer = 600
@@ -248,8 +249,8 @@ export class AnimationenService {
 
      await Promise.all(animationen);
 
-     // "+1 Stich" Popup am Ziel einblenden
-     const popup = this.szene.add.text(ziel.x, ziel.y - 40, '+1 Stich', {
+     // "+X Augen" Popup am Ziel einblenden
+     const popup = this.szene.add.text(ziel.x, ziel.y - 40, `+${augenzahl} Augen`, {
        font: "bold 24px 'Space Grotesk', sans-serif",
        color: '#ffd166',
        stroke: '#000000',

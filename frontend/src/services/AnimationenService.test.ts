@@ -192,7 +192,7 @@ describe('AnimationenService', () => {
     const service = new AnimationenService(szene as never);
     const wurzel = baueKartenWurzel() as never;
 
-    const animation = service.animiereStichEinziehen([{ wurzel }], { x: 50, y: 75 });
+    const animation = service.animiereStichEinziehen([{ wurzel }], { x: 50, y: 75 }, 14);
     expect(aufrufe).toHaveLength(0);
 
     await vi.advanceTimersByTimeAsync(999);
@@ -234,7 +234,7 @@ describe('AnimationenService', () => {
 
     // animiereStichEinziehen wartet normalerweise 1000ms — bei Infinity sofort fertig
     const wurzel = baueKartenWurzel() as never;
-    const animation = service.animiereStichEinziehen([{ wurzel }], { x: 50, y: 75 });
+    const animation = service.animiereStichEinziehen([{ wurzel }], { x: 50, y: 75 }, 14);
     // Kein Tick noetig: warte(0) kehrt sofort zurueck, Tween mit duration=0 loest sofort auf
     await animation;
 
