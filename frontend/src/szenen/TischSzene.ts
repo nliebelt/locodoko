@@ -1582,9 +1582,10 @@ export class TischSzene extends Phaser.Scene {
       const textFarbe = ansage.ansage === 'RE' ? '#ffd166'
         : ansage.ansage === 'KONTRA' ? '#90caf9'
         : '#ffffff';
+      // Banner im oberen Drittel (y < 200px) anzeigen, damit Handkarten nicht ueberdeckt werden
       await this.animationen?.animiereAnsageBanner(
         bannerText,
-        { x: breite / 2, y: hoehe / 2 },
+        { x: breite / 2, y: Math.round(hoehe * 0.18) },
         undefined,
         textFarbe
       );
