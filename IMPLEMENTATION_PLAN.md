@@ -4,8 +4,8 @@
 
 ## Notiz
 
-**2026-04-03 (Plan-Run #12):**
-- **5.1 Solo-Punkte-Multiplikation verifiziert und getestet**: Multiplikation (Faktor 3) war bereits korrekt in `PunkteRechner.verteileSpielpunkte()` (Zeilen 163-167) implementiert. Zwei neue Tests belegen Solo-Sieger (+3/-1/-1/-1) und Solo-Verlierer (-3/+1/+1/+1) inkl. Nullsummen-Prüfung. 136 Tests grün.
+**2026-04-04 (Plan-Run #13):**
+- **6.1 Karten fehlen beim ersten Start (KRITISCH) behoben**: Race Condition in `ermittleNeuesSpiel()` verursachte unnötige Austeilen-Animation beim Reconnect/Seitenladung (tisch `IM_SPIEL`, aber `partieStand` noch nicht angekommen). Fix: Animation nur wenn vorheriger Tischstatus `WARTEND` war (echter Spielstart). Zusätzlich: explizites `renderTisch(appStore.snapshot())` am Ende von `create()` per Spec. 62 Frontend-Tests grün, Build + Lint sauber.
 - **Nächster Schritt**: 5.2 KI Hochzeit-Partnerstrategie — `StandardKiStrategie` und `SchwerKiStrategie` werten `hochzeitStatus` in `waehleKarte()` nicht aus.
 - **Offene Fragen**: `springdoc-openapi 2.8.6` nutzt Jackson 2 (kompatibel aber heterogen im Classpath) — ggf. auf SB4-kompatible Version updaten falls Probleme auftreten.
 
@@ -48,7 +48,7 @@
 
 > Spec: `specs/frontend-bugfixes-6x.md`
 
-- [ ] **6.1 Karten fehlen beim ersten Start** [KRITISCH]: Beim allerersten Seitenaufruf werden Karten nicht gerendert (Browser-Reload nötig). Race Condition: `renderTisch()` läuft vor Phaser `create()` ist fertig.
+- [x] **6.1 Karten fehlen beim ersten Start** [KRITISCH]: Beim allerersten Seitenaufruf werden Karten nicht gerendert (Browser-Reload nötig). Race Condition: `renderTisch()` läuft vor Phaser `create()` ist fertig.
   - Fix: AppStore-Listener erst in `create()` registrieren; initialen Zustand per `appStore.snapshot()` in `create()` nachziehen.
   - Datei: `frontend/src/szenen/TischSzene.ts`
 

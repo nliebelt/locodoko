@@ -406,6 +406,12 @@ export class TischSzene extends Phaser.Scene {
       }
       this.letztesModell = modell;
     });
+    // Initialen Zustand nachziehen: sicherstellt dass renderTisch() erst nach vollstaendigem
+    // create() laeuft. abonnieren() feuert sofort, aber erst hier ist die Szene vollstaendig
+    // initialisiert. Falls zwischenzeitlich ein WebSocket-Snapshot eintraf, wird er jetzt
+    // mit dem aktuellsten Stand gerendert.
+    const aktuellerZustand = appStore.snapshot();
+    this.renderTisch(aktuellerZustand, this.erstelleModell(aktuellerZustand));
   }
 
   /** Phaser-Lifecycle: Raeumt Ressourcen auf wenn die Szene gestoppt wird (z.B. Wechsel zur LobbySzene). */
@@ -1427,6 +1433,13 @@ export class TischSzene extends Phaser.Scene {
       return false;
     }
     const vorherigeNummer = vorherigerZustand.partieStand?.laufendesSpiel?.spielNummer;
+    if (!vorherigeNummer) {
+      // Kein vorheriges Spiel bekannt. Austeilen-Animation nur wenn der Tisch vorher wartete
+      // (status 'WARTEND') — das signalisiert einen echten Spielstart aus dem Wartezimmer.
+      // War der Tisch bereits 'IM_SPIEL' oder aktuellerTisch noch null, handelt es sich um
+      // einen Reconnect nach Seitenladen; die Karten sollen sofort ohne Animation sichtbar sein.
+      return vorherigerZustand.aktuellerTisch?.status === 'WARTEND';
+    }
     return vorherigeNummer !== aktuelleNummer;
   }
 

@@ -841,8 +841,12 @@ describe('TischSzene', () => {
     // WARUM: Ohne diese Absicherung koennte die Austeilen-Animation heimlich wegbrechen oder
     // doppelt feuern, weil das Spielstart-Signal (neue spielNummer) subtil und asynchron ist.
     vi.useFakeTimers();
-    // Szene startet ohne laufendes Spiel
-    const zustandOhneSpiel = baueZustand({ partieStand: bauePartieStand(null) });
+    // Szene startet ohne laufendes Spiel — Tisch ist im Wartezustand (WARTEND),
+    // damit ermittleNeuesSpiel() einen echten Spielstart erkennt (nicht Reconnect).
+    const zustandOhneSpiel = baueZustand({
+      partieStand: bauePartieStand(null),
+      aktuellerTisch: { ...baueTisch(), status: 'WARTEND' }
+    });
     const { tweens } = baueSzene(zustandOhneSpiel);
 
     // Neues Spiel mit 2 Karten pro Spieler (4 Spieler = 8 Karten gesamt)
