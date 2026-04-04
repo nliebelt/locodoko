@@ -4,10 +4,10 @@
 
 ## Notiz
 
-**2026-04-04 (Plan-Run #16):**
-- **6.3 Stichanimation implementiert**: `animiereStichEinziehen()` erhielt neuen Parameter `augenzahl: number`; Popup zeigt jetzt `+${augenzahl} Augen` statt hartkodiertem "+1 Stich". Zielposition in `handleStichAbgeschlossen()` verwendet nun `stichStapelPositionFuer(gewinnerPosition)` statt `layout[gewinnerPosition]` — Karten fliegen zum richtigen Stapel des Stichgewinners. Alle 62 Frontend-Tests grün.
-- **Nächster Schritt**: 6.4 Kartenfächer-Ausrichtung — Nord/Süd-Fächer verdreht, Ost/West-Karten nicht als vertikaler Fächer.
-- **Offene Fragen**: `springdoc-openapi 2.8.6` nutzt Jackson 2 — ggf. updaten. Manueller Vision-Check für 6.3 empfohlen (Backend lief nicht).
+**2026-04-04 (Plan-Run #17):**
+- **6.4 Kartenfächer-Variation für WEST/OST**: `renderKartenFaecher()` — WEST bekommt `78 + index*3°` (90°-Offset + SUED-Variation), OST `102 - index*3°` (90°-Offset + NORD-Variation). SUED/NORD-Winkel waren bereits korrekt. Alle 62 Frontend-Tests grün.
+- **Nächster Schritt**: 6.5 Ansagen überdecken Karten (Z-Index) — Banner rendern über Handkarten.
+- **Offene Fragen**: `springdoc-openapi 2.8.6` nutzt Jackson 2 — ggf. updaten. Manueller Vision-Check für 6.4 empfohlen (Backend lief nicht).
 
 **2026-03-29 (Build-Run #10):**
 - **KI-Schwierigkeitsgrade differenziert und vollständig getestet**: 2 neue Tests in `SchwerKiStrategieTest` belegen alle relevanten Threshold-Unterschiede: KONTRA (22 vs 26) und KEINE_90 (32 vs 36), zusätzlich zum bestehenden RE-Test (24 vs 28). Damit sind alle 6 Ansage-Schwellen der SchwerKiStrategie vs StandardKiStrategie vollständig abgedeckt. 134 Tests grün.
@@ -60,7 +60,7 @@
   - Fix: `animiereStichEinziehen()` um `augenzahl`-Parameter erweitern; Zielposition = Stapel-Position des Gewinners.
   - Dateien: `frontend/src/szenen/TischSzene.ts`, `frontend/src/services/AnimationenService.ts`
 
-- [ ] **6.4 Kartenfächer-Ausrichtung (Nord/Süd gedreht, Ost/West flach)**: Nord/Süd-Fächer sind verdreht; Ost/West-Karten liegen nebeneinander statt als vertikaler Fächer.
+- [x] **6.4 Kartenfächer-Ausrichtung (Nord/Süd gedreht, Ost/West flach)**: Nord/Süd-Fächer sind verdreht; Ost/West-Karten liegen nebeneinander statt als vertikaler Fächer.
   - Fix: `renderKartenFaecher()` — Winkel und Offset für alle 4 Sitzpositionen korrigieren. SUED/NORD: horizontaler Fächer. WEST/OST: vertikaler Fächer (90° Basis).
   - Datei: `frontend/src/szenen/TischSzene.ts`
 
