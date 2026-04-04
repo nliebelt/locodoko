@@ -47,12 +47,13 @@
 
 2b. **Nur bei Frontend-UI-Änderungen** (Dateien in `frontend/src/szenen/`, `frontend/src/assets/`,
     `frontend/src/components/`):
-    - Führe Vision Loop aus: `cd e2e && npx playwright test vision-loop.spec.ts --headed`
-    - Lese alle generierten Screenshots mit dem Read-Tool ein.
-    - Prüfe visuell: Korrekte Positionen aller Labels/Nameplates, Alpha-Werte, Überlappungen,
-      Kartenfächer-Ausrichtung, fehlende Elemente, falsch platzierte UI-Komponenten.
-    - Wenn du visuelle Fehler siehst: korrigiere sie **bevor** du committst.
-    - Wenn du keine Fehler siehst: weiter zu Schritt 3.
+    - Prüfe zuerst ob das Backend läuft (`curl -s http://localhost:8080/actuator/health`).
+    - Falls ja: führe Vision Loop aus (`cd e2e && npx playwright test vision-loop.spec.ts --headed`),
+      lese alle Screenshots in `e2e/screenshots/` mit dem Read-Tool ein und prüfe visuell auf
+      Fehler (Positionen, Alpha-Werte, Überlappungen, fehlende Elemente).
+      Wenn Fehler sichtbar: sofort korrigieren, dann weiter zu Schritt 3.
+    - Falls Backend nicht läuft: Vision Loop überspringen, weiter zu Schritt 3.
+      Notiere in der Commit-Message dass ein manueller Vision-Check empfohlen wird.
 
 3. Bei grünen Tests:
    - Aktualisiere @IMPLEMENTATION_PLAN.md (Aufgabe als erledigt markieren).

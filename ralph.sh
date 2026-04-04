@@ -149,22 +149,6 @@ while true; do
           ' 2>/dev/null \
         || true
 
-    # --- Vision Loop: automatisch nach UI-Änderungen (nur build-Modus) ---
-    if [ "$MODE" = "build" ]; then
-        ui_changed=$(git diff --name-only HEAD~1 HEAD 2>/dev/null \
-            | grep -cE "frontend/src/szenen/|frontend/src/assets/|frontend/src/components/" || true)
-        if [ "${ui_changed:-0}" -gt 0 ]; then
-            echo ""
-            echo "━━━ UI-Änderungen erkannt ($ui_changed Datei(en)) — Vision Loop startet ━━━"
-            echo "    Backend muss laufen (mvn spring-boot:run)"
-            if (cd e2e && npx playwright test vision-loop.spec.ts --headed 2>&1); then
-                echo "━━━ Vision Loop abgeschlossen — Screenshots in e2e/screenshots/ ━━━"
-            else
-                echo "━━━ Vision Loop fehlgeschlagen — Backend läuft? Screenshots ggf. unvollständig ━━━"
-            fi
-        fi
-    fi
-
     # Append iteration output to log
     echo "--- Iteration $ITERATION ($MODE) $(date) ---" >> "$LOG_FILE"
     cat "$ITER_OUTPUT" >> "$LOG_FILE"

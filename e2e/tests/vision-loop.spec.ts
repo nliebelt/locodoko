@@ -81,10 +81,12 @@ test.describe('Vision Loop — UI Screenshots', () => {
       await quickGameBtn.click();
     } else {
       // Fallback: manuell Tisch erstellen und starten
-      await page.fill('input[placeholder*="Tischname"]', 'Vision-Loop-Tisch');
-      await page.click('button:has-text("Tisch erstellen")');
-      await page.waitForTimeout(1000);
-      await page.click('button:has-text("Starten")');
+      await page.click('button:has-text("Neuen Tisch erstellen")');
+      await page.waitForSelector('#tisch-name', { timeout: 5_000 });
+      await page.fill('#tisch-name', 'Vision-Loop-Tisch');
+      await page.click('#modal-submit');
+      await page.waitForSelector('[data-start-button]', { timeout: 10_000 });
+      await page.click('[data-start-button]');
     }
 
     // ── 3. Vorbehalt-Phase ────────────────────────────────────────────────────
