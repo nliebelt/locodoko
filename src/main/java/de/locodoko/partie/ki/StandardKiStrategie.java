@@ -164,7 +164,9 @@ public class StandardKiStrategie implements KiStrategie {
         Optional<Partei> sichtbareGewinnerPartei = zustand.sichtbareParteiVon(aktuellerGewinner);
         List<Karte> gewinnendeKarten = gewinnendeKarten(zustand);
 
-        if (eigenePartei != null && sichtbareGewinnerPartei.filter(eigenePartei::equals).isPresent() && aktuellerGewinner != zustand.spielerPosition()) {
+        boolean partnerGewinnt = (eigenePartei != null && sichtbareGewinnerPartei.filter(eigenePartei::equals).isPresent())
+            || istHochzeitPartnerGewinner(zustand, aktuellerGewinner);
+        if (partnerGewinnt && aktuellerGewinner != zustand.spielerPosition()) {
             Optional<Karte> schmierkarte = zustand.gueltigeKarten().stream()
                 .filter(karte -> !gewinnendeKarten.contains(karte))
                 .max(Comparator
@@ -204,6 +206,27 @@ public class StandardKiStrategie implements KiStrategie {
         return zustand.gueltigeKarten().stream()
             .min(vergleicheAbwurfKosten(zustand.trumpfOrdnung()))
             .orElseThrow();
+    }
+
+    /**
+     * Prueft ob der aktuelle Stichgewinner der bekannte Hochzeit-Partner ist.
+     * Greift wenn {@code hochzeitStatus.partner()} gesetzt ist, aber die Partei noch nicht
+     * oeffentlich sichtbar — Parteien.ausHochzeit() traegt nur den Hochzeit-Spieler in
+     * offenFuerAlle ein, nicht den Partner.
+     */
+    private boolean istHochzeitPartnerGewinner(KiSpielzustand zustand, SpielerPosition aktuellerGewinner) {
+        if (zustand.hochzeitStatus() == null || zustand.hochzeitStatus().suchtPartner()) {
+            return false;
+        }
+        if (zustand.spielerPosition() == zustand.hochzeitStatus().hochzeitSpieler()) {
+            // Ich bin der Hochzeit-Spieler — schmiere wenn mein bestaetigter Partner gewinnt
+            return zustand.hochzeitStatus().partner()
+                .filter(p -> p == aktuellerGewinner).isPresent();
+        }
+        // Ich bin der Partner — schmiere wenn der Hochzeit-Spieler gewinnt
+        return zustand.hochzeitStatus().partner()
+            .filter(p -> p == zustand.spielerPosition()).isPresent()
+            && aktuellerGewinner == zustand.hochzeitStatus().hochzeitSpieler();
     }
 
     private List<Karte> gewinnendeKarten(KiSpielzustand zustand) {

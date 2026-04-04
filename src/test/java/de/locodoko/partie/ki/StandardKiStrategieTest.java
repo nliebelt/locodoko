@@ -323,6 +323,51 @@ class StandardKiStrategieTest {
             "KI soll ablehnen solange kein Angebot vorliegt — Guards gegen illegale Aufrufreihenfolge.");
     }
 
+    @Test
+    void hochzeitSpielerSchmiertFuerBekanntenPartner() {
+        // WEST ist Hochzeit-Spieler, NORD hat den 1. Klärungsstich gewonnen → NORD ist Partner.
+        // NORD führt gerade den Stich. WEST hat nur Fehlkarten und kann nicht gewinnen.
+        // WEST soll die hohe Fehlkarte (PIK-AS, 11 Augen) schmieren statt die niedrige wegzuwerfen.
+        // Ohne diesen Test könnte die KI das Schmieren übersehen, weil der Partner-Partei-Status
+        // nicht öffentlich sichtbar ist (NORD nicht in offenFuerAlle von Parteien.ausHochzeit).
+        HochzeitStatus hochzeitStatus = new HochzeitStatus(SpielerPosition.WEST, 1, SpielerPosition.NORD, false);
+        // Stich: NORD anspiels (NORD→OST→SUED→WEST), NORD gewinnt mit Kreuz-Dame
+        Karte nordKreuzDame = karte(Farbe.KREUZ, Kartenwert.DAME, 1);
+        Stich stich = Stich.neu(SpielerPosition.NORD)
+            .spieleKarte(SpielerPosition.NORD, nordKreuzDame,
+                new Hand(List.of(nordKreuzDame)), trumpfOrdnung)
+            .spieleKarte(SpielerPosition.OST, karte(Farbe.KARO, Kartenwert.NEUN, 1),
+                new Hand(List.of(karte(Farbe.KARO, Kartenwert.NEUN, 1))), trumpfOrdnung)
+            .spieleKarte(SpielerPosition.SUED, karte(Farbe.KARO, Kartenwert.KOENIG, 1),
+                new Hand(List.of(karte(Farbe.KARO, Kartenwert.KOENIG, 1))), trumpfOrdnung);
+        // Parteien: WEST=RE (offenFuerAlle), NORD=RE (Partner, aber nicht offenFuerAlle)
+        Parteien parteien = Parteien.ausHochzeit(SpielerPosition.WEST)
+            .mitPartei(SpielerPosition.NORD, Partei.RE);
+        Karte pikAs = karte(Farbe.PIK, Kartenwert.AS, 1);
+        Karte pikNeun = karte(Farbe.PIK, Kartenwert.NEUN, 1);
+        KiSpielzustand zustand = new KiSpielzustand(
+            SpielerPosition.WEST,
+            Spieltyp.HOCHZEIT,
+            Spielphase.STICHPHASE,
+            spielregeln,
+            trumpfOrdnung,
+            new Hand(List.of(pikAs, pikNeun)),
+            parteien,
+            Ansagen.leer(),
+            List.of(),
+            stich,
+            null,
+            hochzeitStatus,
+            List.of(pikAs, pikNeun),
+            List.of(),
+            List.of()
+        );
+
+        assertEquals(pikAs, strategie.waehleKarte(zustand),
+            "Der Hochzeit-Spieler soll fuer den bekannten Partner schmieren, auch wenn dessen Partei " +
+            "nicht oeffentlich sichtbar ist — Erkennung ueber hochzeitStatus.partner() statt sichtbareParteiVon().");
+    }
+
     private Karte karte(Farbe farbe, Kartenwert wert, int exemplarIndex) {
         return new Karte(farbe, wert, exemplarIndex);
     }
