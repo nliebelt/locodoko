@@ -1253,7 +1253,7 @@ export class TischSzene extends Phaser.Scene {
       // Waehrend der Austeilen-Animation werden Karten unsichtbar gerendert (die Animation zeigt sie)
       const alphaWert = this.austeilenAktiv
         ? 0
-        : (offen ? (hatInteraktion && karte && !istInteraktiv ? 0.5 : 1) : 0.92);
+        : (offen ? (hatInteraktion && karte && !istInteraktiv ? 0.45 : 1) : 0.92);
       karteAnsicht
         .setAngle(winkel)
         .setAlpha(alphaWert);

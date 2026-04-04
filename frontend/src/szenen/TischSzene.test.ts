@@ -688,7 +688,7 @@ describe('TischSzene', () => {
     expect(bilder[0].interactive).toBe(true);
     expect(bilder[0].alpha).toBe(1);
     expect(bilder[1].interactive).toBe(false);
-    expect(bilder[1].alpha).toBe(0.5);
+    expect(bilder[1].alpha).toBe(0.45);
 
     const startY = bilder[0].y;
     bilder[0].emit('pointerover');
