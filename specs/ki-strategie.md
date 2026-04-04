@@ -70,6 +70,49 @@ KI-Spieler ersetzen menschliche Spieler und treffen regelbasierte, strategische 
 - [x] Integrationstests: vollständiges Spiel 4× KI durchspielbar
 - [x] Code-Review / Plausibilitätsprüfung
 
+## Kalibrierung: Solo-Schwellenwerte
+
+Die KI bewertet jede Hand mit einem Punktescore und meldet ein Solo nur an, wenn der Score die Schwelle erreicht. Die Formeln und Schwellen sind auf eine durchschnittliche Doppelkopf-Hand kalibriert (48 Karten, 12 pro Spieler, Ø 6,5 Trümpfe, Ø 2 Damen, Ø 2 Buben, Ø 2 Asse).
+
+### SOLO_TRUMPF
+
+**Formel:** `trumpfAnzahl × 4 + asse × 2 + damen × 2 + buben × 2`
+
+Damen und Buben sind im Normalspiel bereits Trümpfe und werden in `trumpfAnzahl` mitgezählt. Die zusätzlichen `× 2`-Boni modellieren, dass sie hochrangige Trümpfe sind (nicht Doppelzählung, sondern Qualitätsbewertung).
+
+**Schwelle: 46**
+
+Kalibrierungsbeispiele:
+- Durchschnittshand (6,5 Trümpfe, 2 Damen, 2 Buben, 2 Asse): 6,5×4 + 2×2 + 2×2 + 2×2 = **38** → kein Solo
+- Starke Hand (8 Trümpfe, 3 Damen, 2 Buben, 2 Asse): 8×4 + 2×2 + 3×2 + 2×2 = **46** → Solo
+
+Hintergrund: Vor der Kalibrierung lag die Schwelle bei 34, was dazu führte, dass bereits Durchschnittshände SOLO_TRUMPF triggerten.
+
+### SOLO_DAME / SOLO_BUBE
+
+**Formel:** `damen × 8 + asse × 2 + hoheFehlkarten` (analog für Buben)
+
+`hoheFehlkarten` = nicht-trumpf Asse + nicht-trumpf Zehner. Nicht-trumpf-Asse sind leicht doppelt gewichtet (`asse × 2` + `hoheFehlkarten`), was ihre besondere Bedeutung im Dame/Buben-Solo (sichere Fehlstiche) korrekt abbildet.
+
+**Schwelle: 28**
+
+Kalibrierungsbeispiele:
+- Durchschnittshand (2 Damen, 2 Asse, 2,5 hohe Fehlkarten): 2×8 + 2×2 + 2,5 = **22,5** → kein Solo
+- Grenzfall (3 Damen, 2 Asse, 1 hohe Fehlkarte): 3×8 + 2×2 + 1 = **29** → Solo (3 von 8 Trümpfen + 2 Asse ist spielbar)
+- Starke Hand (4 Damen, 0 Asse): 4×8 = **32** → Solo
+
+### SOLO_FLEISCHLOS
+
+**Formel:** `asse × 6 + hoheFehlkarten × 2 - trumpfAnzahl`
+
+Trümpfe sind im Fleischlos wertlos und verkleinern die Fehlfarbenstruktur — daher negativer Koeffizient.
+
+**Schwelle: 30**
+
+Kalibrierungsbeispiele:
+- Durchschnittshand (2 Asse, 2,5 hohe Fehlkarten, 6,5 Trümpfe): 2×6 + 2,5×2 − 6,5 = **10,5** → kein Solo
+- Gute Hand (3 Fehl-Asse, 3 Zehner, 0 Trümpfe): 3×6 + 6×2 − 0 = **30** → Solo (6 potenzielle Stichgewinner ohne Trumpf ist das Minimum)
+
 ## Technische Hinweise
 
 - **Bounded Context**: KI-Strategie

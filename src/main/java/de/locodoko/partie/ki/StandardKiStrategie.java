@@ -328,7 +328,7 @@ public class StandardKiStrategie implements KiStrategie {
      */
     private int soloSchwelle(VorbehaltAnsage vorbehaltAnsage) {
         return switch (vorbehaltAnsage) {
-            case SOLO_TRUMPF -> 34;
+            case SOLO_TRUMPF -> 46;
             case SOLO_DAME, SOLO_BUBE -> 28;
             case SOLO_FLEISCHLOS -> 30;
             default -> Integer.MAX_VALUE;
