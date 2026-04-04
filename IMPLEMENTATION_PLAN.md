@@ -4,7 +4,7 @@
 
 ## Notiz
 
-**2026-04-04 (Plan-Run #19):** Vision Loop Baseline (1.1) abgeschlossen. Befunde: (1) "Keine 90"-Banner dauerhaft sichtbar im Spielfeld bei y≈503 statt oberes Drittel → Bug 6.5, jetzt implementiert; fix: Banner-Y von hoehe/2 auf hoehe*0.18. (2) KI Clara (OST) Nameplate ragt rechts aus Canvas → Bug 6.7. (3) Handkarten des Spielers in Stichphase nicht sichtbar (möglicherweise außerhalb Viewport, da Canvas-Höhe > 720px Screenshot). Nächster Schritt: 6.6 Alpha-Fix (0.5 → 0.45).
+**2026-04-04 (Plan-Run #19):** Vision Loop Baseline (1.1) abgeschlossen und 6.5 implementiert. Vision-Befunde: KI-Nameplates (OST) ragen aus Canvas → 6.7. Ansage-Banner-Animation (animiereAnsageBanner) war bei hoehe/2, jetzt hoehe*0.18 — überdeckt keine Handkarten mehr. Handkarten sind sichtbar (waren im ersten Run nur durch Spielzustand nicht gezeigt). Nächster Schritt: 6.6 Alpha-Fix (TischSzene.ts Z.1256: 0.5 → 0.45 für nicht-spielbare Karten, Edge-Case wenn keine spielbaren Karten → alle Alpha 1.0).
 
 **2026-04-04 (Plan-Run #18):** Subagenten-Analyse aller 5 Bounded Contexts. Mehrere neue Lücken gefunden. 5.2 bleibt [x] (Stichphase korrekt), aber `waehleVorbehalt()` fehlt → neuer Eintrag 5.5. 5.3 geblockt durch fehlendes `GET /api/tische/{id}` → Blocker-Task 5.6. Frontend-Hochzeit-Dialog komplett fehlend → 5.7. 6.5–6.8 alle offen, bestätigt mit konkreten Zeilen. Nächster Schritt: 6.5 Ansagen Z-Index, dann 6.6 Alpha-Fix. Offene Frage: `StandardKiStrategie.java:343` Kommentar veraltet (soloSchwelle ist 46, nicht 34).
 
