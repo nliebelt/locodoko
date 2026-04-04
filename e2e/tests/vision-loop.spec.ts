@@ -71,7 +71,7 @@ test.describe('Vision Loop — UI Screenshots', () => {
   test('Alle wichtigen Spielzustaende screenshotten', async ({ page }) => {
     // ── 1. Lobby ─────────────────────────────────────────────────────────────
     await page.goto('/');
-    await expect(page.locator('button', { hasText: 'Tisch erstellen' })).toBeVisible({ timeout: 20_000 });
+    await expect(page.locator('button', { hasText: /Quick Game/i })).toBeVisible({ timeout: 20_000 });
     await page.waitForTimeout(500);
     await screenshot(page, '01-lobby');
 

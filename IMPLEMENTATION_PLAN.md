@@ -1,18 +1,14 @@
 # IMPLEMENTATION_PLAN — Locodoko Doppelkopf
 
-> Letzte Aktualisierung: 2026-04-04
+> Letzte Aktualisierung: 2026-04-04 (Plan-Run #18)
 
 ## Notiz
 
-**2026-04-04 (Plan-Run #17):**
-- **6.4 Kartenfächer-Variation für WEST/OST**: `renderKartenFaecher()` — WEST bekommt `78 + index*3°` (90°-Offset + SUED-Variation), OST `102 - index*3°` (90°-Offset + NORD-Variation). SUED/NORD-Winkel waren bereits korrekt. Alle 62 Frontend-Tests grün.
-- **Nächster Schritt**: 6.5 Ansagen überdecken Karten (Z-Index) — Banner rendern über Handkarten.
-- **Offene Fragen**: `springdoc-openapi 2.8.6` nutzt Jackson 2 — ggf. updaten. Manueller Vision-Check für 6.4 empfohlen (Backend lief nicht).
+**2026-04-04 (Plan-Run #18):** Subagenten-Analyse aller 5 Bounded Contexts. Mehrere neue Lücken gefunden. 5.2 bleibt [x] (Stichphase korrekt), aber `waehleVorbehalt()` fehlt → neuer Eintrag 5.5. 5.3 geblockt durch fehlendes `GET /api/tische/{id}` → Blocker-Task 5.6. Frontend-Hochzeit-Dialog komplett fehlend → 5.7. 6.5–6.8 alle offen, bestätigt mit konkreten Zeilen. Nächster Schritt: 6.5 Ansagen Z-Index, dann 6.6 Alpha-Fix. Offene Frage: `StandardKiStrategie.java:343` Kommentar veraltet (soloSchwelle ist 46, nicht 34).
 
-**2026-03-29 (Build-Run #10):**
-- **KI-Schwierigkeitsgrade differenziert und vollständig getestet**: 2 neue Tests in `SchwerKiStrategieTest` belegen alle relevanten Threshold-Unterschiede: KONTRA (22 vs 26) und KEINE_90 (32 vs 36), zusätzlich zum bestehenden RE-Test (24 vs 28). Damit sind alle 6 Ansage-Schwellen der SchwerKiStrategie vs StandardKiStrategie vollständig abgedeckt. 134 Tests grün.
-- **Nächster Schritt**: Alle Aufgaben erledigt — keine offenen Punkte in IMPLEMENTATION_PLAN.md.
-- **Offene Fragen**: `springdoc-openapi 2.8.6` nutzt Jackson 2 (kompatibel aber heterogen im Classpath) — ggf. auf SB4-kompatible Version updaten falls Probleme auftreten.
+**2026-04-04 (Plan-Run #17):** 6.4 Kartenfächer-Variation für WEST/OST implementiert. Alle 62 Frontend-Tests grün.
+
+**2026-03-29 (Build-Run #10):** KI-Schwierigkeitsgrade differenziert und vollständig getestet. 134 Tests grün.
 
 ---
 
@@ -24,6 +20,20 @@
 
 ---
 
+### Priorität 1 — E2E Visueller Baseline-Check
+
+- [ ] **1.1 Vision Loop: Baseline-Screenshots erstellen und prüfen** [VOR allen anderen Aufgaben]: Der Vision Loop muss zuverlässig durchlaufen und alle UI-Zustände korrekt screenshotten. Er dient als visuelle Baseline vor und nach jedem UI-Fix (6.5–6.8).
+  - Umsetzung:
+    1. Backend starten falls nicht läuft.
+    2. `cd e2e && npx playwright test vision-loop.spec.ts --headed` ausführen.
+    3. Alle Screenshots in `e2e/screenshots/` mit Read-Tool einlesen.
+    4. Visuell prüfen: Lobby, Vorbehalt-Phase, Stichphase, Karten, Nameplates, Seitenlade.
+    5. Jede sichtbare Abweichung von der Spec als Kommentar in der Notiz festhalten.
+    6. Erst danach 6.5 ff. implementieren — dann erneut Vision Loop für Vergleich.
+  - Falls Vision Loop abbricht (Selektor-Fehler, Timeout): Selektor-Problem in `vision-loop.spec.ts` beheben, dann erneut starten.
+  - Datei: `e2e/tests/vision-loop.spec.ts`
+
+---
 
 ### Priorität 2 — KI-Qualität
 
@@ -34,13 +44,28 @@
 
 ### Priorität 3 — UX / E2E
 
-- [ ] **5.3 Recovery-Button: Tischname anzeigen**: `SpielverwaltungsSzene.ts` zeigt beim Session-Recovery "Zurück zu Spiel" statt "Zurück zu [Tischname]". Spec fordert den echten Tischnamen.
-  - Umsetzung: `SpielerSessionAntwort` enthält `aktiverTischId` — Tischnamen per REST laden (`GET /api/tische/{id}`) und in Button-Text einsetzen, oder Tischname direkt im Session-Snapshot mitliefern.
+- [ ] **5.3 Recovery-Button: Tischname anzeigen** [BLOCKED: fehlt GET /api/tische/{id} — siehe 5.6]: `SpielverwaltungsSzene.ts` zeigt beim Session-Recovery "Zurück zu Spiel" statt "Zurück zu [Tischname]". Spec fordert den echten Tischnamen.
+  - Umsetzung: `SpielerSessionAntwort` enthält `aktiverTischId` (UUID, korrekt befüllt) — Tischnamen per REST laden (`GET /api/tische/{id}`) und in Button-Text einsetzen. Erst 5.6 umsetzen!
   - Dateien: `frontend/src/scenes/SpielverwaltungsSzene.ts`, ggf. `SpielerSessionAntwort.java`
 
 - [ ] **5.4 E2E Test: Rundenauswertung**: `specs/e2e-tests.md` fordert `rundenauswertung.spec.ts` — prüft ob nach Spielende Punktestand, Sonderpunkte und Rundendetails korrekt angezeigt werden. Datei fehlt vollständig.
   - Umsetzung: Neuen Playwright-Test erstellen der eine Partie gegen KI bis zum Ende spielt und Rundenauswertungs-Modal auf korrekte Inhalte prüft.
-  - Datei: `e2e/rundenauswertung.spec.ts`
+  - Hinweis: `data-testid`-Attribute in betroffenen HTML-Elementen noch nicht gesetzt (e2e-tests.md Z. 23-46) — ggf. gleichzeitig ergänzen.
+  - Datei: `e2e/tests/rundenauswertung.spec.ts`
+
+- [ ] **5.5 KI-Vorbehalt-Phase: Hochzeit proaktiv anmelden**: `StandardKiStrategie.waehleVorbehalt()` erkennt NICHT, ob die KI beide Kreuz-Damen hat und Hochzeit anmelden sollte. Hochzeit wird nur als letzter Fallback zurückgegeben, nicht als bewusste Entscheidung.
+  - Anforderung (specs/ki-strategie.md §15/§17): KI prüft ob sie beide Kreuz-Damen hat → meldet Hochzeit an, sofern kein Solo über Schwelle. `LeichteKiStrategie` darf weiterhin keine Hochzeit anmelden (Zeile 15, 30-31).
+  - Umsetzung: In `waehleVorbehalt()` Zeile 48-49 vor dem Solo-Fallback prüfen: hat KI 2× Kreuz-Dame im Blatt? → `Vorbehalt.HOCHZEIT`. Neuen Test in `StandardKiStrategieTest` ergänzen.
+  - Dateien: `src/main/java/de/locodoko/partie/ki/StandardKiStrategie.java` (Z. 48-49), `SchwerKiStrategie.java`
+
+- [ ] **5.6 Backend: GET /api/tische/{id} ergänzen** [Blocker für 5.3]: `TischController` hat nur `listeOffeneTische()`, keinen Einzeltisch-Endpunkt. Wird von 5.3 (Recovery-Button) benötigt.
+  - Umsetzung: `GET /api/tische/{id}` in `TischController` ergänzen, delegiert an `TischService.findById()`. Tischname + Status zurückgeben (ggf. minimales DTO).
+  - Dateien: `src/main/java/de/locodoko/lobby/TischController.java`, `TischService.java`
+
+- [ ] **5.7 Frontend: Hochzeit-Partner-Anzeige**: Nach dem Klärungsstich (3 Stiche) muss der gefundene Hochzeit-Partner dem Spieler angezeigt werden. Kein UI-Dialog existiert dafür.
+  - Anforderung (specs/hochzeit.md): Nach erfolgreichem Klärungsstich → Anzeige "Partner gefunden: [Spielername]". Bei stillem Solo → entsprechende Meldung.
+  - Umsetzung: `KarteGespielt`/`StichGewonnen`-Event auswerten, wenn Hochzeit aktiv und `hochzeitStatus.partner()` neu gesetzt wurde → kurze Einblendung (Toast o.ä.) in TischSzene.
+  - Dateien: `frontend/src/szenen/TischSzene.ts`, ggf. `frontend/src/services/AnimationenService.ts`
 
 ---
 
@@ -65,18 +90,18 @@
   - Datei: `frontend/src/szenen/TischSzene.ts`
 
 - [ ] **6.5 Ansagen überdecken Karten (Z-Index)**: Ansage-Banner rendern über Handkarten des eigenen Spielers.
-  - Fix: Banner-Depth kleiner als Kartenfächer-Depth, oder Banner-Position in oberes Canvas-Drittel (y < 200px).
-  - Dateien: `frontend/src/services/AnimationenService.ts`, `frontend/src/szenen/TischSzene.ts`
+  - Fix: Banner-Depth (aktuell `setDepth(100)` in AnimationenService.ts Z. 122) kleiner setzen als Kartenfächer-Depth, oder Banner-Position in oberes Canvas-Drittel (y < 200px).
+  - Dateien: `frontend/src/services/AnimationenService.ts` (Z. 122), `frontend/src/szenen/TischSzene.ts`
 
 - [ ] **6.6 Falsche Alpha für nicht-spielbare Karten**: Nicht-spielbare Karten haben Alpha 0.5 statt Spec-Wert 0.45; Edge-Cases nicht abgedeckt.
-  - Fix: Alpha-Wert von `0.5` auf `0.45` korrigieren; Edge-Case wenn kein Spielzug möglich (alle Karten Alpha 1.0).
-  - Datei: `frontend/src/szenen/TischSzene.ts` (~Zeile 1245)
+  - Fix: Alpha-Wert von `0.5` auf `0.45` korrigieren (TischSzene.ts Z. 1256); Edge-Case wenn kein Spielzug möglich (alle Karten Alpha 1.0).
+  - Datei: `frontend/src/szenen/TischSzene.ts` (Z. 1256)
 
-- [ ] **6.7 Nameplates: Positionen und Größen überarbeiten**: Positionen weichen von Spec ab; WEST/OST-Nameplates (80×80px) zu klein für Inhalt.
-  - Fix: Positionen normieren auf Canvas-Prozente: SUED y=85%, NORD y=15%, WEST x=14%, OST x=86%. WEST/OST-Größe auf 120×54px erhöhen.
-  - Datei: `frontend/src/szenen/TischSzene.ts`
+- [ ] **6.7 Nameplates: Positionen und Größen überarbeiten**: Positionen weichen stark von Spec ab; WEST/OST-Nameplates (80px) zu klein.
+  - Fix: `nameplatePositionFuer()` (TischSzene.ts Z. 140–151) auf Canvas-Prozente normieren: SUED y=85%, NORD y=15%, WEST x=14%, OST x=86%. WEST/OST-Breite von 80px auf 120px erhöhen (TischSzene.ts Z. 815).
+  - Datei: `frontend/src/szenen/TischSzene.ts` (Z. 140–151, Z. 815)
 
-- [ ] **6.8 Laufende Ansagen dauerhaft anzeigen**: Welche Ansagen in der Runde gelten ist nicht sichtbar.
+- [ ] **6.8 Laufende Ansagen dauerhaft anzeigen**: Welche Ansagen in der Runde gelten ist nicht sichtbar. Partei-Badges ([RE]/[KONTRA]) existieren, aber Ansage-Badges für laufende Runde fehlen komplett.
   - Fix: Nameplate um Ansage-Badge erweitern: `[RE]` (Gold), `[KONTRA]` (Blau), `[K90]`/`[K60]`/`[S]` (Orange) — aus Backend-Zustand `laufendesSpiel.ansagen`.
   - Datei: `frontend/src/szenen/TischSzene.ts`
 

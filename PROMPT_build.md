@@ -13,7 +13,8 @@
 0a. Studiere @IMPLEMENTATION_PLAN.md. Lies die `## Notiz`-Sektion — sie enthält den Stand
     der letzten Iteration.
 
-0b. Wähle die EINE wichtigste offene Aufgabe. Nicht mehrere.
+0b. Falls Aufgabe 1.1 (Vision Loop Baseline) noch offen ist: ZUERST diese erledigen.
+    Danach wähle die EINE wichtigste offene Aufgabe. Nicht mehrere.
 
 0c. Starte PARALLEL zwei Subagenten:
     - Subagent A: Relevante Specs aus `specs/` (nur die 1-2 direkt betroffenen).
