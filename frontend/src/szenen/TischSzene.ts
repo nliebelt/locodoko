@@ -1232,7 +1232,9 @@ export class TischSzene extends Phaser.Scene {
         ? -12 + index * 3
         : spieler.position === 'NORD'
           ? 12 - index * 3
-          : position.kartenWinkel;
+          : spieler.position === 'WEST'
+            ? 78 + index * 3
+            : 102 - index * 3;
       const karte = sichtbareHandkarten?.[index];
       const istSpielbar = karte ? modell.spielbareKarten.includes(karte.id) : false;
       const istArmutauswahl = karte ? (armutKarten?.has(karte.id) ?? false) : false;
