@@ -4,9 +4,9 @@
 
 ## Notiz
 
-**2026-04-04 (Plan-Run #13):**
-- **6.1 Karten fehlen beim ersten Start (KRITISCH) behoben**: Race Condition in `ermittleNeuesSpiel()` verursachte unnötige Austeilen-Animation beim Reconnect/Seitenladung (tisch `IM_SPIEL`, aber `partieStand` noch nicht angekommen). Fix: Animation nur wenn vorheriger Tischstatus `WARTEND` war (echter Spielstart). Zusätzlich: explizites `renderTisch(appStore.snapshot())` am Ende von `create()` per Spec. 62 Frontend-Tests grün, Build + Lint sauber.
-- **Nächster Schritt**: 5.2 KI Hochzeit-Partnerstrategie — `StandardKiStrategie` und `SchwerKiStrategie` werten `hochzeitStatus` in `waehleKarte()` nicht aus.
+**2026-04-04 (Plan-Run #14):**
+- **5.2 KI Hochzeit-Partnerstrategie behoben**: `Parteien.ausHochzeit()` trägt nur den Hochzeit-Spieler in `offenFuerAlle` ein — `sichtbareParteiVon(partner)` lieferte `Optional.empty()`, Schmier-Logik griff nicht. Fix: neue Hilfsmethode `istHochzeitPartnerGewinner()` nutzt `hochzeitStatus.partner()` statt Parteisichtbarkeit. 1 neuer Test. Alle 135 Backend-Tests grün.
+- **Nächster Schritt**: 6.2 Karten-Spielanimation für andere Spieler — Gegner-Karten erscheinen ohne Animation in der Stichmitte.
 - **Offene Fragen**: `springdoc-openapi 2.8.6` nutzt Jackson 2 (kompatibel aber heterogen im Classpath) — ggf. auf SB4-kompatible Version updaten falls Probleme auftreten.
 
 **2026-03-29 (Build-Run #10):**
@@ -27,7 +27,7 @@
 
 ### Priorität 2 — KI-Qualität
 
-- [ ] **5.2 KI Hochzeit-Partnerstrategie**: `StandardKiStrategie` und `SchwerKiStrategie` haben keine Logik, den Hochzeit-Partner zu erkennen und zu unterstützen. `KiSpielzustand` trägt bereits `hochzeitStatus`, wird aber in `waehleKarte()` nicht ausgewertet.
+- [x] **5.2 KI Hochzeit-Partnerstrategie**: `StandardKiStrategie` und `SchwerKiStrategie` haben keine Logik, den Hochzeit-Partner zu erkennen und zu unterstützen. `KiSpielzustand` trägt bereits `hochzeitStatus`, wird aber in `waehleKarte()` nicht ausgewertet.
   - Anforderung (spec/ki-strategie.md §7/§8): KI erkennt Partner über `hochzeitStatus.partner()` und schmiert in Partner-Stiche.
   - Umsetzung: In `waehleKarte()` prüfen ob Hochzeit aktiv und Partner bekannt → Partner-Stich schmieren (analog zur bestehenden Kontra-Partei-Logik). Neuen Test in `StandardKiStrategieTest` oder separatem `HochzeitKiTest` ergänzen.
   - Dateien: `src/main/java/de/locodoko/partie/ki/StandardKiStrategie.java`, `SchwerKiStrategie.java`, `KiSpielzustand.java`
