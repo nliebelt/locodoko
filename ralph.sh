@@ -149,6 +149,22 @@ while true; do
           ' 2>/dev/null \
         || true
 
+    # --- Vision Loop: automatisch nach UI-Änderungen (nur build-Modus) ---
+    if [ "$MODE" = "build" ]; then
+        ui_changed=$(git diff --name-only HEAD~1 HEAD 2>/dev/null \
+            | grep -cE "frontend/src/szenen/|frontend/src/assets/|frontend/src/components/" || true)
+        if [ "${ui_changed:-0}" -gt 0 ]; then
+            echo ""
+            echo "━━━ UI-Änderungen erkannt ($ui_changed Datei(en)) — Vision Loop startet ━━━"
+            echo "    Backend muss laufen (mvn spring-boot:run)"
+            if (cd e2e && npx playwright test vision-loop.spec.ts --headed 2>&1); then
+                echo "━━━ Vision Loop abgeschlossen — Screenshots in e2e/screenshots/ ━━━"
+            else
+                echo "━━━ Vision Loop fehlgeschlagen — Backend läuft? Screenshots ggf. unvollständig ━━━"
+            fi
+        fi
+    fi
+
     # Append iteration output to log
     echo "--- Iteration $ITERATION ($MODE) $(date) ---" >> "$LOG_FILE"
     cat "$ITER_OUTPUT" >> "$LOG_FILE"
@@ -161,10 +177,17 @@ while true; do
         now=$(date +%s)
         sleep_secs=$(( resets_at - now + 30 ))  # +30s Puffer
         reset_human=$(date -d "@$resets_at" 2>/dev/null || date -r "$resets_at" 2>/dev/null)
+        if [ "$sleep_secs" -le 0 ]; then
+            # Reset liegt bereits in der Vergangenheit — kein echtes (aktuelles) Rate Limit
+            echo ""
+            echo "━━━ Rate Limit (Reset bereits vergangen um $reset_human) — sofort weiter ━━━"
+            continue
+        fi
         echo ""
-        echo "━━━ Rate Limit — Reset um $reset_human (in ${sleep_secs}s) ━━━"
+        echo "━━━ Rate Limit (Tageskontingent erschöpft) — Reset um $reset_human (in ${sleep_secs}s) ━━━"
+        echo "    Tipp: Prüfe vorherigen Claude-Nutzung desselben Tages (interaktiv + API)."
         ITERATION=$((ITERATION - 1))
-        sleep "$(( sleep_secs > 0 ? sleep_secs : 60 ))"
+        sleep "$sleep_secs"
         echo "━━━ Quota reset — weiter ━━━"
         echo ""
         continue

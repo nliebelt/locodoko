@@ -38,12 +38,21 @@
 
 2. Führe die relevanten Tests aus — Backend, Frontend, oder beide je nach Änderungsbereich.
    Orientiere dich an @CLAUDE.md > Validation nach Implementierung.
-   - Grün → weiter zu Schritt 3.
+   - Grün → weiter zu Schritt 2b.
    - Rot → einmal debuggen und beheben.
    - Nach dem zweiten fehlgeschlagenen Versuch: **stop.** Nicht ein drittes Mal versuchen.
      Markiere die Aufgabe als `[BLOCKED: <Grund>]` in @IMPLEMENTATION_PLAN.md
      und wechsle zur nächsten offenen Aufgabe.
      Falls ALLE verbleibenden Aufgaben blockiert sind: gib `<promise>BLOCKED</promise>` aus.
+
+2b. **Nur bei Frontend-UI-Änderungen** (Dateien in `frontend/src/szenen/`, `frontend/src/assets/`,
+    `frontend/src/components/`):
+    - Führe Vision Loop aus: `cd e2e && npx playwright test vision-loop.spec.ts --headed`
+    - Lese alle generierten Screenshots mit dem Read-Tool ein.
+    - Prüfe visuell: Korrekte Positionen aller Labels/Nameplates, Alpha-Werte, Überlappungen,
+      Kartenfächer-Ausrichtung, fehlende Elemente, falsch platzierte UI-Komponenten.
+    - Wenn du visuelle Fehler siehst: korrigiere sie **bevor** du committst.
+    - Wenn du keine Fehler siehst: weiter zu Schritt 3.
 
 3. Bei grünen Tests:
    - Aktualisiere @IMPLEMENTATION_PLAN.md (Aufgabe als erledigt markieren).

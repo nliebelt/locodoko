@@ -4,7 +4,8 @@
       "WebFetch(domain:github.com)",
       "Bash(git add:*)",
       "Bash(git commit:*)",
-      "Bash(grep -r -i \"rate\\\\|limit\\\\|quota\\\\|reset\\\\|retry\\\\|UTC\\\\|wait\" /Users/nliebelt/private/projects/programming/locodoko/ralph-*.log)"
+      "Bash(grep -r -i \"rate\\\\|limit\\\\|quota\\\\|reset\\\\|retry\\\\|UTC\\\\|wait\" /Users/nliebelt/private/projects/programming/locodoko/ralph-*.log)",
+      "Bash(mvn test:*)"
     ]
   }
 }
