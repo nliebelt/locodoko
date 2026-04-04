@@ -4,10 +4,10 @@
 
 ## Notiz
 
-**2026-04-04 (Plan-Run #14):**
-- **5.2 KI Hochzeit-Partnerstrategie behoben**: `Parteien.ausHochzeit()` trägt nur den Hochzeit-Spieler in `offenFuerAlle` ein — `sichtbareParteiVon(partner)` lieferte `Optional.empty()`, Schmier-Logik griff nicht. Fix: neue Hilfsmethode `istHochzeitPartnerGewinner()` nutzt `hochzeitStatus.partner()` statt Parteisichtbarkeit. 1 neuer Test. Alle 135 Backend-Tests grün.
-- **Nächster Schritt**: 6.2 Karten-Spielanimation für andere Spieler — Gegner-Karten erscheinen ohne Animation in der Stichmitte.
-- **Offene Fragen**: `springdoc-openapi 2.8.6` nutzt Jackson 2 (kompatibel aber heterogen im Classpath) — ggf. auf SB4-kompatible Version updaten falls Probleme auftreten.
+**2026-04-04 (Plan-Run #15):**
+- **6.2 Gegner-Karten-Animation implementiert**: `starteGegnerKartenAnimationen()` erkennt neu gespielte Karten fremder Spieler, erstellt je eine verdeckte Temp-Karte an der Fächer-Position des Gegners und animiert sie per `animiereKarteAusspielen()` (400ms) zur Stich-Slot-Position. Anschließend wird die Temp-Karte zerstört — die statisch gerenderte offene Karte darunter wird sichtbar. Guard `!vorherigesModell` verhindert Animation beim initialen Load. Alle 62 Frontend-Tests grün.
+- **Nächster Schritt**: 6.3 Stichanimation — (a) Popup zeigt "+1 Stich" statt echter Augenzahl, (b) Karten fliegen nicht zum richtigen Stapel des Stichgewinners.
+- **Offene Fragen**: `springdoc-openapi 2.8.6` nutzt Jackson 2 — ggf. updaten. Manueller Vision-Check für 6.2 empfohlen (Backend lief nicht).
 
 **2026-03-29 (Build-Run #10):**
 - **KI-Schwierigkeitsgrade differenziert und vollständig getestet**: 2 neue Tests in `SchwerKiStrategieTest` belegen alle relevanten Threshold-Unterschiede: KONTRA (22 vs 26) und KEINE_90 (32 vs 36), zusätzlich zum bestehenden RE-Test (24 vs 28). Damit sind alle 6 Ansage-Schwellen der SchwerKiStrategie vs StandardKiStrategie vollständig abgedeckt. 134 Tests grün.
@@ -52,7 +52,7 @@
   - Fix: AppStore-Listener erst in `create()` registrieren; initialen Zustand per `appStore.snapshot()` in `create()` nachziehen.
   - Datei: `frontend/src/szenen/TischSzene.ts`
 
-- [ ] **6.2 Karten-Spielanimation für andere Spieler fehlt**: Gegner-Karten erscheinen ohne Animation in der Stichmitte. Eigene Karte hat Gleit-Animation, fremde nicht.
+- [x] **6.2 Karten-Spielanimation für andere Spieler fehlt**: Gegner-Karten erscheinen ohne Animation in der Stichmitte. Eigene Karte hat Gleit-Animation, fremde nicht.
   - Fix: Bei `KarteGespielt`-Event fremder Spieler: verdeckte Karte an Fächer-Position erstellen → `animiereKarteAusspielen()` aufrufen → Karte aufdecken (verdeckt→offen).
   - Dateien: `frontend/src/szenen/TischSzene.ts`, `frontend/src/services/AnimationenService.ts`
 

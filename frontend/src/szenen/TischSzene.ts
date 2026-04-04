@@ -394,6 +394,7 @@ export class TischSzene extends Phaser.Scene {
       }
       this.renderTisch(zustand, modell);
       void this.starteFolgeanimationen(vorherigesModell, modell);
+      void this.starteGegnerKartenAnimationen(vorherigesModell, modell);
       void this.starteAnsageBannerAnimationen(this.ermittleNeueAnsagen(vorherigesModell, modell));
       void this.starteSonderpunktFeedbackAnimationen(this.ermittleNeueSonderpunkte(vorherigesModell, modell));
       // Neues Spielergebnis → Rundenende- oder Partie-Ende-Modal einblenden
@@ -1421,6 +1422,48 @@ export class TischSzene extends Phaser.Scene {
       });
       flashRechteck.destroy();
     }
+  }
+
+  /**
+   * Animiert neu gespielte Karten fremder Spieler: verdeckte Karte gleitet von der
+   * Faecher-Position des Gegners zur Stich-Slot-Position und wird dann zerstoert,
+   * sodass die darunter bereits statisch gerenderte offene Karte erscheint.
+   */
+  private async starteGegnerKartenAnimationen(
+    vorherigesModell: TischAnsichtModell | null,
+    aktuellesModell: TischAnsichtModell
+  ): Promise<void> {
+    if (!vorherigesModell) {
+      return;
+    }
+    const eigeneSpielerPosition = aktuellesModell.spieler.find((s) => s.istSelbst)?.position;
+    const neueGegnerKarten = aktuellesModell.aktuelleStichmitte.filter((eintrag) => {
+      if (eintrag.position === eigeneSpielerPosition) return false;
+      return !vorherigesModell.aktuelleStichmitte.some((v) => v.karte.id === eintrag.karte.id);
+    });
+
+    if (neueGegnerKarten.length === 0) {
+      return;
+    }
+
+    const breite = this.scale.gameSize.width;
+    const hoehe = this.scale.gameSize.height;
+    const layout = berechneLayout(breite, hoehe);
+    const slotPositionen = stichSlotPositionen(breite / 2, hoehe / 2, breite, hoehe);
+    const kgroesse = berechneKartenGroesse(breite);
+
+    const animationen = neueGegnerKarten.map(async (eintrag) => {
+      const start = layout[eintrag.position];
+      const ziel = slotPositionen[eintrag.position];
+      const tempKarte = this.erstelleKartenansicht(start.kartenX, start.kartenY, kgroesse.w, kgroesse.h, { verdeckt: true });
+      try {
+        await this.animationen?.animiereKarteAusspielen({ wurzel: tempKarte }, ziel);
+      } finally {
+        tempKarte.destroy(true);
+      }
+    });
+
+    await Promise.all(animationen);
   }
 
   // Erkennt ob ein neues Spiel begonnen hat (andere spielNummer als zuvor)
