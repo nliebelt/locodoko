@@ -266,7 +266,7 @@ export class AppStore {
       this.patch({ aktuellerTisch: null, partieStand: null, bereich: 'SPIELVERWALTUNG' });
     });
     // Tischliste separat aktualisieren — wirdGeladen ist hier bereits false,
-    // damit der Erstellen-Button in der LobbySzene sofort aktiv ist.
+    // damit der Erstellen-Button in der SpielverwaltungsSzene sofort aktiv ist.
     void this.aktualisiereTischliste();
   }
 

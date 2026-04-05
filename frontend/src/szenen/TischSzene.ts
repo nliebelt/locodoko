@@ -393,7 +393,7 @@ export class TischSzene extends Phaser.Scene {
       this.letzterZustand = zustand;
       this.aktualisiereUi(zustand, modell);
       if (zustand.bereich === 'SPIELVERWALTUNG') {
-        this.scene.start('LobbySzene');
+        this.scene.start('SpielverwaltungsSzene');
         return;
       }
       // Neues Spiel erkannt: Karten werden unsichtbar gerendert und dann animiert ausgeteilt
@@ -427,7 +427,7 @@ export class TischSzene extends Phaser.Scene {
     this.renderTisch(aktuellerZustand, this.erstelleModell(aktuellerZustand));
   }
 
-  /** Phaser-Lifecycle: Raeumt Ressourcen auf wenn die Szene gestoppt wird (z.B. Wechsel zur LobbySzene). */
+  /** Phaser-Lifecycle: Raeumt Ressourcen auf wenn die Szene gestoppt wird (z.B. Wechsel zur SpielverwaltungsSzene). */
   shutdown(): void {
     this.aufraeumen();
   }
@@ -616,7 +616,7 @@ export class TischSzene extends Phaser.Scene {
 
     // Zur Lobby
     lobbyButton.addEventListener('click', () => {
-      this.scene.start('LobbySzene');
+      this.scene.start('SpielverwaltungsSzene');
     });
 
     // Tisch verlassen (mit Bestätigungsdialog bei laufendem Spiel)
