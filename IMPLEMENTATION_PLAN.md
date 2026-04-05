@@ -4,6 +4,8 @@
 
 ## Notiz
 
+**2026-04-05 (Plan-Run #25):** 8.5 "Du bist dran"-Hinweis entfernt (bildeStatusText gibt stets 'Du' zurück). 8.7 SchwerKiStrategie meldetHochzeitBeiZweiKreuzDamen-Test ergänzt (6 Tests grün). 8.2 alle 17 data-testid Attribute aus specs/e2e-tests.md gesetzt (SpielverwaltungsSzene + TischSzene, Phaser-Marker als 0x0-Divs). 8.6 Architektur-Konflikt aufgelöst: specs/frontend-ui-logik.md auf hybride UI korrigiert (Meta-UI bleibt HTML). 8.4 SonderpunktEreignis mit Täter/Opfer-Info implementiert — 20 Dateien angepasst (Domain, Persistenz, REST, Frontend), 142 Backend + 62 Frontend-Tests grün. 8.3 E2E appStore-Hack durch Tastatureingaben ersetzt (ArrowRight+Enter zum Kartenspielen, Ziffer-Taste für Vorbehalt). Alle 8.x Aufgaben abgeschlossen. Keine offenen Aufgaben mehr im Plan.
+
 **2026-04-05 (Plan-Run #24):** 7.3 Punkte-Einzelschritte vollständig implementiert. `Spielergebnis.java` um 4 Felder erweitert (grundwert, absagePunkte, gegenDieAltenPunkte, soloMultiplikator). `PunkteRechner` berechnet und persistiert Einzelschritte. Liquibase-Migration 003 ergänzt nullable INT-Spalten. `LetztesSpielergebnisAntwort` gibt Aufschlüsselung zurück. Frontend zeigt Punkte-Berechnung-Block im Overlay. 141 Backend + 62 Frontend-Tests grün. Nächste offene Aufgaben: 8.2 (data-testid Attribute), 8.3 (appStore-Hack ersetzen), 8.4 (Sonderpunkte Täter-Opfer), 8.5 ("Du bist dran" entfernen), 8.6 (Phaser vs HTML Design-Entscheidung), 8.7 (SchwerKiStrategie Hochzeit-Test). Empfehlung: 8.5 als nächstes (1-Zeilen-Fix, sehr geringes Risiko).
 
 **2026-04-05 (Plan-Run #23):** Subagenten-Analyse aller 5 Bounded Contexts. Ergebnisse:
