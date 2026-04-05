@@ -18,10 +18,12 @@ import de.locodoko.karten.TrumpfOrdnung;
 
 import java.util.ArrayList;
 import java.util.EnumMap;
+import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 
 /**
  * Ein einzelnes Doppelkopf-Spiel innerhalb einer Partie.
@@ -53,6 +55,7 @@ public final class Spiel {
     private final Spielergebnis ergebnis;
     private final HochzeitStatus hochzeitStatus;
     private final ArmutStatus armutStatus;
+    private final Set<Partei> pflichtansageAusstehend;
 
     private Spiel(
         Spielregeln spielregeln,
@@ -69,7 +72,8 @@ public final class Spiel {
         Stich aktuellerStich,
         Spielergebnis ergebnis,
         HochzeitStatus hochzeitStatus,
-        ArmutStatus armutStatus
+        ArmutStatus armutStatus,
+        Set<Partei> pflichtansageAusstehend
     ) {
         this.spielregeln = Objects.requireNonNull(spielregeln, "spielregeln duerfen nicht null sein");
         this.kartendeck = Objects.requireNonNull(kartendeck, "kartendeck darf nicht null sein");
@@ -86,6 +90,9 @@ public final class Spiel {
         this.ergebnis = ergebnis;
         this.hochzeitStatus = hochzeitStatus;
         this.armutStatus = armutStatus;
+        this.pflichtansageAusstehend = Objects.requireNonNull(pflichtansageAusstehend, "pflichtansageAusstehend darf nicht null sein").isEmpty()
+            ? Set.of()
+            : Set.copyOf(pflichtansageAusstehend);
     }
 
     public static Spiel neu(SpielerPosition geber, Spielregeln spielregeln, Kartendeck kartendeck) {
@@ -105,7 +112,8 @@ public final class Spiel {
             null,
             null,
             null,
-            null
+            null,
+            Set.of()
         );
     }
 
@@ -123,7 +131,8 @@ public final class Spiel {
         Stich aktuellerStich,
         Spielergebnis ergebnis,
         HochzeitStatus hochzeitStatus,
-        ArmutStatus armutStatus
+        ArmutStatus armutStatus,
+        Set<Partei> pflichtansageAusstehend
     ) {
         return new Spiel(
             spielregeln,
@@ -140,7 +149,8 @@ public final class Spiel {
             aktuellerStich,
             ergebnis,
             hochzeitStatus,
-            armutStatus
+            armutStatus,
+            pflichtansageAusstehend
         );
     }
 
@@ -166,7 +176,8 @@ public final class Spiel {
             null,
             null,
             null,
-            null
+            null,
+            Set.of()
         );
     }
 
@@ -214,7 +225,8 @@ public final class Spiel {
             aktuellerStich,
             ergebnis,
             hochzeitStatus,
-            armutStatus
+            armutStatus,
+            Set.of()
         );
     }
 
@@ -233,7 +245,8 @@ public final class Spiel {
                     Spieltyp.SOLO_TRUMPF, geber, Spielphase.STICHPHASE,
                     haende, vorbehalte, Parteien.ausSolo(stillesSoloSpieler),
                     Ansagen.leer(), List.of(),
-                    Stich.neu(geber.naechsteImUhrzeigersinn()), null, null, null
+                    Stich.neu(geber.naechsteImUhrzeigersinn()), null, null, null,
+                    Set.of()
                 );
             }
         }
@@ -264,7 +277,8 @@ public final class Spiel {
             ersterStich,
             null,
             neuerHochzeitStatus,
-            neuerArmutStatus
+            neuerArmutStatus,
+            Set.of()
         );
     }
 
@@ -310,7 +324,8 @@ public final class Spiel {
             aktuellerStich,
             ergebnis,
             hochzeitStatus,
-            status.mitAngebot(angeboteneTrumpfkarten)
+            status.mitAngebot(angeboteneTrumpfkarten),
+            pflichtansageAusstehend
         );
     }
 
@@ -341,7 +356,8 @@ public final class Spiel {
             aktuellerStich,
             ergebnis,
             hochzeitStatus,
-            neuerStatus
+            neuerStatus,
+            pflichtansageAusstehend
         );
     }
 
@@ -389,7 +405,8 @@ public final class Spiel {
             Stich.neu(geber.naechsteImUhrzeigersinn()),
             null,
             hochzeitStatus,
-            status.mitPartner(spielerPosition)
+            status.mitPartner(spielerPosition),
+            Set.of()
         );
     }
 
@@ -428,26 +445,25 @@ public final class Spiel {
         Objects.requireNonNull(spielerPosition, "spielerPosition darf nicht null sein");
         Objects.requireNonNull(karte, "karte darf nicht null sein");
 
+        if (!pflichtansageAusstehend.isEmpty()) {
+            throw new IllegalStateException(
+                "Karte spielen ist erst erlaubt wenn alle ausstehenden Pflichtansagen gemacht wurden: " + pflichtansageAusstehend
+            );
+        }
+
         Hand hand = handVon(spielerPosition);
         Stich gespielterStich = aktuellerStich.spieleKarte(spielerPosition, karte, hand, trumpfOrdnung);
         Map<SpielerPosition, Hand> neueHaende = kopiereHaende();
         neueHaende.put(spielerPosition, hand.ohne(karte));
 
         if (!gespielterStich.istVollstaendig()) {
-            return neuesSpielMitStichfortschritt(neueHaende, abgeschlosseneStiche, gespielterStich, phase, parteien, hochzeitStatus);
+            return neuesSpielMitStichfortschritt(neueHaende, abgeschlosseneStiche, gespielterStich, phase, parteien, hochzeitStatus, pflichtansageAusstehend);
         }
 
         List<Stich> neueAbgeschlosseneStiche = new ArrayList<>(abgeschlosseneStiche);
         neueAbgeschlosseneStiche.add(gespielterStich);
 
-        // TODO(dreissig-augen-pflicht): Wenn spielregeln.dreissigAugenPflichtAktiv() &&
-        //   neueAbgeschlosseneStiche.size() <= 2 && gespielterStich.augen() > 30:
-        //   Gewinnende Partei ermitteln (parteien.parteiVon(gespielterStich.gewinner(...).spieler())).
-        //   Falls diese Partei noch keine Grundansage hat (ansagen.hatGrundansage(...) == false)
-        //   und Spieltyp kein Solo (parteien.spielerVon(RE).size() != 1):
-        //   Pflichtansage-Marker setzen (z. B. pflichtansageAusstehend: Set<Partei> in Spiel).
-        //   Am Beginn von spieleKarte(): wenn pflichtansageAusstehend nicht leer ist, Exception.
-        //   Gilt nicht fuer Solo (Spieltyp SOLO_*).
+        Set<Partei> neuesPflichtansageAusstehend = berechneNeuePflichtansagen(gespielterStich, neueAbgeschlosseneStiche.size());
 
         HochzeitFortschritt hochzeitFortschritt = fortschrittNachVollstaendigemStich(gespielterStich);
         if (neueAbgeschlosseneStiche.size() == kartenProSpieler()) {
@@ -457,7 +473,8 @@ public final class Spiel {
                 null,
                 Spielphase.AUSWERTUNG,
                 hochzeitFortschritt.parteien(),
-                hochzeitFortschritt.status()
+                hochzeitFortschritt.status(),
+                Set.of()
             );
         }
 
@@ -468,8 +485,38 @@ public final class Spiel {
             naechsterStich,
             Spielphase.STICHPHASE,
             hochzeitFortschritt.parteien(),
-            hochzeitFortschritt.status()
+            hochzeitFortschritt.status(),
+            neuesPflichtansageAusstehend
         );
+    }
+
+    /**
+     * Berechnet nach Abschluss eines Stichs, welche Parteien eine Pflichtansage machen muessen.
+     *
+     * <p>Bedingungen (alle muessen zutreffen): dreissigAugenPflichtAktiv, Stich 1 oder 2,
+     * Spieltyp NORMALSPIEL oder HOCHZEIT, Stich hat mehr als 30 Augen, die gewinnende Partei
+     * hat noch keine Grundansage gemacht.</p>
+     */
+    private Set<Partei> berechneNeuePflichtansagen(Stich abgeschlossenerStich, int stichNummer) {
+        if (!spielregeln.dreissigAugenPflichtAktiv()) {
+            return Set.of();
+        }
+        if (stichNummer > 2) {
+            return Set.of();
+        }
+        if (spieltyp != Spieltyp.NORMALSPIEL && spieltyp != Spieltyp.HOCHZEIT) {
+            return Set.of();
+        }
+        if (abgeschlossenerStich.augen() <= 30) {
+            return Set.of();
+        }
+        Partei gewinnendePflichtpartei = parteien.parteiVon(abgeschlossenerStich.gewinner(trumpfOrdnung).spieler());
+        if (ansagen.hatGrundansage(gewinnendePflichtpartei, parteien)) {
+            return Set.of();
+        }
+        EnumSet<Partei> ergebnis = EnumSet.noneOf(Partei.class);
+        ergebnis.add(gewinnendePflichtpartei);
+        return Set.copyOf(ergebnis);
     }
 
     public boolean kannAnsagen(SpielerPosition spielerPosition, Ansage ansage) {
@@ -481,7 +528,13 @@ public final class Spiel {
         if (hochzeitStatus != null && hochzeitStatus.suchtPartner() && spielerPosition != hochzeitStatus.hochzeitSpieler()) {
             return false;
         }
-        return ansagen.kannAnsagen(spielerPosition, ansage, parteien(), spielregeln, handVon(spielerPosition).karten().size());
+        // Pflichtansage: Mindestkartenanzahl wird ignoriert
+        Partei partei = parteien().parteiVon(spielerPosition);
+        boolean istPflichtansage = !pflichtansageAusstehend.isEmpty()
+            && pflichtansageAusstehend.contains(partei)
+            && ansage.istGrundansage();
+        int effektiveKartenAnzahl = istPflichtansage ? Integer.MAX_VALUE : handVon(spielerPosition).karten().size();
+        return ansagen.kannAnsagen(spielerPosition, ansage, parteien(), spielregeln, effektiveKartenAnzahl);
     }
 
     public Spiel sageAn(SpielerPosition spielerPosition, Ansage ansage) {
@@ -496,18 +549,34 @@ public final class Spiel {
         if (hochzeitStatus != null && hochzeitStatus.suchtPartner() && spielerPosition != hochzeitStatus.hochzeitSpieler()) {
             throw new IllegalStateException("Vor der Klaerung der Hochzeit darf nur der Hochzeits-Spieler Ansagen taetigen");
         }
+        // Pflichtansage: Mindestkartenanzahl wird ignoriert (gleiches Prinzip wie in kannAnsagen)
+        Partei ansagenPartei = parteien().parteiVon(spielerPosition);
+        boolean istPflichtansage = !pflichtansageAusstehend.isEmpty()
+            && pflichtansageAusstehend.contains(ansagenPartei)
+            && ansage.istGrundansage();
+        int effektiveKartenAnzahlFuerAnsage = istPflichtansage ? Integer.MAX_VALUE : handVon(spielerPosition).karten().size();
         Ansagen neueAnsagen = ansagen.fuegeHinzu(
             spielerPosition,
             ansage,
             parteien(),
             spielregeln,
-            handVon(spielerPosition).karten().size()
+            effektiveKartenAnzahlFuerAnsage
         );
         // Grundansagen (Re/Kontra) offenbaren die Parteizugehoerigkeit serverseitig — das Backend
         // ist einzige Wahrheitsquelle, daher wird offenFuerAlle im Domainmodell aktualisiert.
         Parteien aktualisierteParteien = ansage.istGrundansage()
             ? parteien.mitOffenenParteienFuerAlle(List.of(spielerPosition))
             : parteien;
+        // Pflichtansage erfuellt: betroffene Partei aus ausstehenden Pflichtansagen entfernen
+        Set<Partei> aktualisiertesPflichtansageAusstehend = pflichtansageAusstehend;
+        if (ansage.istGrundansage() && !pflichtansageAusstehend.isEmpty()) {
+            Partei partei = parteien.parteiVon(spielerPosition);
+            if (pflichtansageAusstehend.contains(partei)) {
+                EnumSet<Partei> neuesMenge = EnumSet.copyOf(pflichtansageAusstehend);
+                neuesMenge.remove(partei);
+                aktualisiertesPflichtansageAusstehend = neuesMenge.isEmpty() ? Set.of() : Set.copyOf(neuesMenge);
+            }
+        }
         return new Spiel(
             spielregeln,
             kartendeck,
@@ -523,7 +592,8 @@ public final class Spiel {
             aktuellerStich,
             ergebnis,
             hochzeitStatus,
-            armutStatus
+            armutStatus,
+            aktualisiertesPflichtansageAusstehend
         );
     }
 
@@ -552,7 +622,8 @@ public final class Spiel {
             null,
             neuesErgebnis,
             hochzeitStatus,
-            armutStatus
+            armutStatus,
+            Set.of()
         );
     }
 
@@ -618,6 +689,10 @@ public final class Spiel {
 
     public Optional<ArmutStatus> armutStatus() {
         return Optional.ofNullable(armutStatus);
+    }
+
+    public Set<Partei> pflichtansageAusstehend() {
+        return pflichtansageAusstehend;
     }
 
     public TrumpfOrdnung trumpfOrdnung() {
@@ -727,7 +802,8 @@ public final class Spiel {
         Stich neuerAktuellerStich,
         Spielphase neuePhase,
         Parteien neueParteien,
-        HochzeitStatus neuerHochzeitStatus
+        HochzeitStatus neuerHochzeitStatus,
+        Set<Partei> neuesPflichtansageAusstehend
     ) {
         return new Spiel(
             spielregeln,
@@ -744,7 +820,8 @@ public final class Spiel {
             neuerAktuellerStich,
             ergebnis,
             neuerHochzeitStatus,
-            armutStatus
+            armutStatus,
+            neuesPflichtansageAusstehend
         );
     }
 
@@ -786,7 +863,8 @@ public final class Spiel {
             null,
             null,
             null,
-            null
+            null,
+            Set.of()
         );
     }
 

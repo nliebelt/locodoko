@@ -11,3 +11,5 @@ databaseChangeLog:
       file: db/changelog/005-hausregeln-felder.yaml
   - include:
       file: db/changelog/006-bockrunden-zaehler.yaml
+  - include:
+      file: db/changelog/007-pflicht-ansage-ausstehend.yaml

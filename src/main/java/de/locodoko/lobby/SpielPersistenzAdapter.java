@@ -39,6 +39,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 
 /**
  * Adapter zwischen dem Domain-Spiel-Objekt und der JDBC-Persistenzschicht.
@@ -74,7 +75,8 @@ final class SpielPersistenzAdapter {
             aktuellerStich(spielEntity),
             spielergebnis(spielEntity).orElse(null),
             hochzeitStatus(spielEntity, vorbehalte).orElse(null),
-            armutStatus(spielEntity, vorbehalte).orElse(null)
+            armutStatus(spielEntity, vorbehalte).orElse(null),
+            pflichtansageAusstehend(spielEntity)
         );
     }
 
@@ -126,6 +128,7 @@ final class SpielPersistenzAdapter {
             ),
             ziel::leereHochzeitStatus
         );
+        ziel.setzePflichtansageAusstehend(quelle.pflichtansageAusstehend());
     }
 
     static Map<SpielerPosition, Integer> gewonneneStiche(SpielEntity spielEntity) {
@@ -497,5 +500,17 @@ final class SpielPersistenzAdapter {
             case ARMUT_TAUSCH, STICHPHASE, AUSWERTUNG, GESAMTSTAND_AKTUALISIEREN -> true;
             default -> false;
         };
+    }
+
+    private static Set<Partei> pflichtansageAusstehend(SpielEntity spielEntity) {
+        List<String> namen = spielEntity.pflichtansageAusstehend();
+        if (namen.isEmpty()) {
+            return Set.of();
+        }
+        EnumSet<Partei> ergebnis = EnumSet.noneOf(Partei.class);
+        for (String name : namen) {
+            ergebnis.add(Partei.valueOf(name));
+        }
+        return Set.copyOf(ergebnis);
     }
 }

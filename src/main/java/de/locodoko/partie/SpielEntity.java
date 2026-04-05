@@ -83,6 +83,10 @@ public class SpielEntity extends AbstraktePersistenzEntity {
     @Column("hochzeit_stilles_solo")
     private boolean hochzeitStillesSolo;
 
+    /** Parteien mit ausstehender Pflichtansage als JSON-Array (z.B. ["RE"] oder []). */
+    @Column("pflicht_ansage_ausstehend")
+    private String pflichtAnsageAusstehendJson = "[]";
+
     /** Aktueller Stich */
     @Column("aktueller_stich_aufspieler_position")
     private String aktuellerStichAufspielerPosition;
@@ -292,6 +296,16 @@ public class SpielEntity extends AbstraktePersistenzEntity {
 
     public void leereAktuellenStich() {
         setzeAktuellenStich(null, List.of());
+    }
+
+    public void setzePflichtansageAusstehend(java.util.Set<Partei> parteien) {
+        Objects.requireNonNull(parteien, "parteien duerfen nicht null sein");
+        List<String> namen = parteien.stream().map(Enum::name).toList();
+        this.pflichtAnsageAusstehendJson = JsonKonverter.schreibeAlsJson(namen);
+    }
+
+    public List<String> pflichtansageAusstehend() {
+        return JsonKonverter.liesList(pflichtAnsageAusstehendJson, new TypeReference<List<String>>() {});
     }
 
     /** Gibt das Ergebnis als SpielErgebnisEmbeddable zurueck, oder null wenn kein Ergebnis vorhanden. */

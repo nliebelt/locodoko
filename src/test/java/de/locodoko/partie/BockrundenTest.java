@@ -15,6 +15,7 @@ import org.junit.jupiter.api.Test;
 import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -245,7 +246,8 @@ class BockrundenTest {
             null,
             null,
             null,
-            null
+            null,
+            Set.of()
         );
     }
 
@@ -270,7 +272,8 @@ class BockrundenTest {
             null,
             ergebnis,
             null,
-            null
+            null,
+            Set.of()
         );
     }
 

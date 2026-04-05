@@ -1,12 +1,12 @@
 # IMPLEMENTATION_PLAN — Locodoko Doppelkopf
 
-> Letzte Aktualisierung: 2026-04-05 (Plan-Run #29)
+> Letzte Aktualisierung: 2026-04-05 (Plan-Run #33)
 
 ## Notiz
 
-**2026-04-05 (Plan-Run #32):** Task 2 (Bockrunden Backend) vollständig erledigt — `bockrundenZaehler` in `Partie`-Domain und `PartieEntity`, Liquibase-Changeset 006, Trigger-Erkennung (Herz durchgegangen + verlorenes Kontra) in `Partie.schliesseAktuellesSpielAb()` und `KiOrchestrierungService.schliesseSpielAbUndStarteNaechstes()`, `Spiel.hatHerzDurchgegangenenStich()`. 9 neue BockrundenTests grün, alle 153 Backend-Tests grün.
-Nächster logischer Schritt: Task 3 (Schweinchen Backend) oder Task 4 (Dreißig-Augen-Pflicht Backend).
-Offene Fragen: Task 4 hat Priorität "Hoch" laut Plan — aber kein expliziter Blocker für Task 3. Empfehlung: Task 4 zuerst (höhere Priorität).
+**2026-04-05 (Plan-Run #33):** Task 4 (Dreißig-Augen-Pflicht Backend) vollständig erledigt — `pflichtansageAusstehend: Set<Partei>` in `Spiel`, Liquibase-Changeset 007 (`pflicht_ansage_ausstehend` in `spiel`-Tabelle), Trigger-Erkennung in `Spiel.berechneNeuePflichtansagen()` (Stich 1/2, >30 Augen, NORMALSPIEL/HOCHZEIT), Blockierung in `spieleKarte()`, Mindestkartenanzahl-Bypass in `kannAnsagen()` und `sageAn()`, Freigabe nach Grundansage. Persistenz via `SpielEntity.setzePflichtansageAusstehend()` + `SpielPersistenzAdapter`. 9 neue DreissigAugenPflichtTests grün, alle Backend-Tests grün.
+Nächster logischer Schritt: Task 3 (Schweinchen Backend).
+Offene Fragen: Keine Blocker für Task 3.
 
 ---
 
@@ -62,14 +62,14 @@ Offene Fragen: Task 4 hat Priorität "Hoch" laut Plan — aber kein expliziter B
 
 > **Blockiert von:** 1 (Spielregeln-Felder) | **Spec:** `specs/dreissig-augen-pflicht.md` | **Priorität: Hoch**
 
-- [ ] **4.1** `Spiel`: Feld `pflichtansageAusstehend: Set<Partei>` hinzufügen (leer = kein Block)
+- [x] **4.1** `Spiel`: Feld `pflichtansageAusstehend: Set<Partei>` hinzufügen (leer = kein Block)
   - Datei: `src/main/java/de/locodoko/partie/Spiel.java`
-- [ ] **4.2** Prüfung in `Spiel.spieleKarte()` nach vollständigem 1./2. Stich: wenn `stich.augen() > 30` und betroffene Partei noch kein Re/Kontra → Pflichtansage-Set füllen
-- [ ] **4.3** Blockierung in `spieleKarte()`: wenn `pflichtansageAusstehend` nicht leer → Exception werfen
-- [ ] **4.4** `Ansagen.kannAnsagen()`: separater Pfad für Pflichtansagen — Mindestkartenanzahl ignorieren
-- [ ] **4.5** Solo-Ausschluss: Nur Normalspiel und Hochzeit
-- [ ] **4.6** Persistenz: `pflichtansageAusstehend` im Spiel-Entity mitspeichern
-- [ ] **4.7** Unit-Tests: Blockierung+Entsperrung, Solo-Ausschluss, Stich 3+ kein Trigger, Deaktivierung
+- [x] **4.2** Prüfung in `Spiel.spieleKarte()` nach vollständigem 1./2. Stich: wenn `stich.augen() > 30` und betroffene Partei noch kein Re/Kontra → Pflichtansage-Set füllen
+- [x] **4.3** Blockierung in `spieleKarte()`: wenn `pflichtansageAusstehend` nicht leer → Exception werfen
+- [x] **4.4** `Ansagen.kannAnsagen()`: separater Pfad für Pflichtansagen — Mindestkartenanzahl ignorieren
+- [x] **4.5** Solo-Ausschluss: Nur Normalspiel und Hochzeit
+- [x] **4.6** Persistenz: `pflichtansageAusstehend` im Spiel-Entity mitspeichern
+- [x] **4.7** Unit-Tests: Blockierung+Entsperrung, Solo-Ausschluss, Stich 3+ kein Trigger, Deaktivierung
 
 ---
 

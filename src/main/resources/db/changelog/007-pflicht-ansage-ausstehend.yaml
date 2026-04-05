@@ -1,0 +1,14 @@
+databaseChangeLog:
+  - changeSet:
+      id: 007-pflicht-ansage-ausstehend
+      author: locodoko
+      changes:
+        - addColumn:
+            tableName: spiel
+            columns:
+              - column:
+                  name: pflicht_ansage_ausstehend
+                  type: VARCHAR(255)
+                  defaultValue: '[]'
+                  constraints:
+                    nullable: false
