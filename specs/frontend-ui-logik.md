@@ -2,19 +2,19 @@
 
 | Feld           | Wert                                                                                    |
 |----------------|-----------------------------------------------------------------------------------------|
-| Status         | Überarbeitung erforderlich — gesamte In-Game-UI vollständig in Phaser migrieren         |
+| Status         | Implementiert — Spielaktions-UI in Phaser, Meta-UI als HTML-DOM                        |
 | Priorität      | Hoch                                                                                    |
 | Abhängigkeiten | frontend-tischansicht.md, websocket-kommunikation.md, stichlogik.md, ansagen.md, frontend-tastatursteuerung.md |
 
 ## Beschreibung
 
-Die UI-Logik bestimmt, welche Interaktionen dem Spieler wann zur Verfügung stehen. Die bisherigen seitlichen HTML-Panels entfallen vollständig. Das Zielbild für die Tischansicht ist eine vollständig in Phaser umgesetzte In-Game-UI: Spielaktionen, HUD, Seitenlade, Einstellungen, Overlays und Feedback-Elemente gehören in dieselbe Render-Welt und werden nicht mehr als separate HTML-Schicht über das Spielfeld gelegt.
+Die UI-Logik bestimmt, welche Interaktionen dem Spieler wann zur Verfügung stehen. Die Tischansicht verwendet ein hybrides Modell: Spielaktions-Elemente (Vorbehalt, Ansage, Armut, Stich-Feedback, Nameplates) sind in Phaser umgesetzt und rendern auf der Spielfläche. Meta-UI-Elemente (Seitenlade, Einstellungs-Modal, Rundenauswertung) sind als HTML-DOM über dem Canvas implementiert — sie benötigen keine Phaser-Migration da sie funktional vollständig sind und keinen Spielwert-Nutzen einer Migration hätte.
 
-### Grundsatz: Einheitliche Phaser-UI
+### Grundsatz: Hybride UI
 
 **Spielaktions-UI** (Vorbehalt, Ansage, Armut, Stich-Feedback): Alle Elemente die direkt ins Spielgeschehen eingreifen, werden **auf der Spielfläche** dargestellt — sie dürfen die Karten nicht verdecken und gehören visuell zum Tisch.
 
-**Meta-UI** (Seitenlade `[≡]`, Einstellungs-Modal `[⚙]`): Informations- und Konfigurationselemente werden ebenfalls in Phaser umgesetzt. Sie koennen als eigene Layer oder Container organisiert sein, bleiben aber Teil derselben Szenen-UI.
+**Meta-UI** (Seitenlade `[≡]`, Einstellungs-Modal `[⚙]`): Informations- und Konfigurationselemente sind als HTML-DOM-Elemente implementiert — sie liegen als CSS-Overlay über dem Phaser-Canvas und werden per JavaScript-Event-Handler gesteuert.
 
 Hinweise die lediglich den Spielzug des Spielers ankündigen (z.B. „Du bist dran") **entfallen ersatzlos** — der aktive Spieler ist durch Nameplate-Hervorhebung erkennbar.
 
@@ -70,7 +70,8 @@ Hinweise die lediglich den Spielzug des Spielers ankündigen (z.B. „Du bist dr
    - Letzte 3 abgeschlossene Stiche (aufklappbar)
 3. Schließt per erneuten `[≡]`-Klick, Klick auf Backdrop oder Escape-Taste.
 4. Die Seitenlade **blockiert keine Spielaktionen** — Karten können weiterhin gespielt werden.
-5. Die Seitenlade wird als Phaser-Overlay bzw. Phaser-Layer umgesetzt, nicht als HTML-DOM-Panel.
+5. Die Seitenlade ist als HTML-DOM-Panel implementiert (CSS slide-in über Canvas).
+6. Zusätzliche Aktionen in der Seitenlade: Animationsgeschwindigkeit (1x / 2x / sofort), „Zur Lobby", „Tisch verlassen".
 
 ### Einstellungs-Modal
 
@@ -82,7 +83,8 @@ Hinweise die lediglich den Spielzug des Spielers ankündigen (z.B. „Du bist dr
    - Button „Tisch verlassen" (mit Bestätigungsdialog wenn Partie läuft)
    - Button „Zur Lobby"
 3. Schließt per `[⚙]`-Klick, Klick auf Backdrop oder Escape-Taste.
-4. Das Einstellungs-Modal wird als Phaser-Overlay umgesetzt, nicht als HTML-DOM-Modal.
+4. Das Einstellungs-Modal ist als HTML-DOM-Modal implementiert (Backdrop + Dialog-Div über Canvas).
+5. Aktionsbuttons (Tisch verlassen, Zur Lobby, Animationsgeschwindigkeit) befinden sich in der Seitenlade, nicht im Einstellungs-Modal.
 
 ### Fehlermeldungen
 
