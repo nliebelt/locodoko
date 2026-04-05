@@ -183,7 +183,7 @@
   - Umsetzung: Attribute in `TischSzene.ts` (Phaser-DOM-Elemente) und ggf. `SpielverwaltungsSzene.ts` (Lobby-Screen) setzen. Für Phaser-Canvas-Elemente reicht ein unsichtbares HTML-Marker-Element.
   - Dateien: `frontend/src/szenen/TischSzene.ts`, `frontend/src/scenes/SpielverwaltungsSzene.ts`
 
-- [ ] **8.3 E2E: appStore-Hack ersetzen + Test-Bug "Quick Game" beheben**: Alle drei E2E-Testdateien nutzen `window.__locodoko.appStore.spieleKarte()`. Spec `e2e-tests.md:20` fordert explizit: "Kein `__locodoko.appStore`-Hack mehr — Tastatureingaben (ArrowLeft/Right + Enter) statt direktem Store-Zugriff". Zusätzlich: `rundenauswertung.spec.ts:73-76` sucht `/Quick Game/i`-Button der weder in Spec noch im Frontend existiert — wahrscheinlich Test-Bug.
+- [x] **8.3 E2E: appStore-Hack ersetzen + Test-Bug "Quick Game" beheben**: Alle drei E2E-Testdateien nutzen `window.__locodoko.appStore.spieleKarte()`. Spec `e2e-tests.md:20` fordert explizit: "Kein `__locodoko.appStore`-Hack mehr — Tastatureingaben (ArrowLeft/Right + Enter) statt direktem Store-Zugriff". Zusätzlich: `rundenauswertung.spec.ts:73-76` sucht `/Quick Game/i`-Button der weder in Spec noch im Frontend existiert — wahrscheinlich Test-Bug.
   - Umsetzung:
     1. `partie-gegen-ki.spec.ts:15-31`: `appStore.spieleKarte()`-Aufruf durch `page.keyboard.press('ArrowLeft')` + `page.keyboard.press('Enter')` ersetzen (Tastatursteuerung ist via 7.1 implementiert).
     2. `rundenauswertung.spec.ts:17-44`: analog auf Tastatur umstellen.

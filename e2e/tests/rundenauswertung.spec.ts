@@ -36,14 +36,8 @@ async function warteAufEigenenZug(page: Page, timeoutMs = 15_000): Promise<void>
 }
 
 async function spieleErsteHandkarte(page: Page): Promise<void> {
-  await page.evaluate(() => {
-    interface LocodokoBridge { appStore: { snapshot: () => { partieStand?: { laufendesSpiel?: { spielbareKarten?: { id: string }[] } } }; spieleKarte: (id: string) => void } }
-    const loco = (window as unknown as Record<string, LocodokoBridge>)['__locodoko'];
-    const spielbareKarten = loco?.appStore?.snapshot()?.partieStand?.laufendesSpiel?.spielbareKarten;
-    if (spielbareKarten?.length) {
-      loco.appStore.spieleKarte(spielbareKarten[0].id);
-    }
-  });
+  await page.keyboard.press('ArrowRight'); // erste spielbare Karte markieren
+  await page.keyboard.press('Enter');      // Karte ausspielen
 }
 
 async function warteAufEigenenVorbehalt(page: Page, timeoutMs = 15_000): Promise<void> {
@@ -59,11 +53,16 @@ async function warteAufEigenenVorbehalt(page: Page, timeoutMs = 15_000): Promise
 }
 
 async function meldeVorbehalt(page: Page, vorbehalt: string): Promise<void> {
-  await page.evaluate((v: string) => {
-    interface LocodokoBridge { appStore: { meldeVorbehalt: (v: string) => void } }
-    const loco = (window as unknown as Record<string, LocodokoBridge>)['__locodoko'];
-    loco?.appStore?.meldeVorbehalt(v);
-  }, vorbehalt);
+  // Vorbehalt per Ziffer-Taste auswaehlen: '1' = erste Option (GESUND), '2' = zweite, etc.
+  // Reihenfolge der Optionen entspricht dem Backend-Order (GESUND immer erste Option).
+  const zifferFuerVorbehalt: Record<string, string> = {
+    GESUND: '1',
+    HOCHZEIT: '2',
+    ARMUT: '2',
+    SOLO_TRUMPF: '2'
+  };
+  const taste = zifferFuerVorbehalt[vorbehalt] ?? '1';
+  await page.keyboard.press(taste);
 }
 
 test.describe('Rundenauswertung', () => {

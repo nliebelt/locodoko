@@ -9,26 +9,12 @@
 
 import { test, expect, type Page } from '@playwright/test';
 
-// Hilfsfunktion: Spielt die erste spielbare Handkarte des menschlichen Spielers aus.
-// Warum appStore statt Canvas-Klick: In headless Chromium (Playwright) funktioniert
-// Phaser's Hit-Testing fuer Canvas-basierte Klicks nicht zuverlaessig. Der direkte
-// appStore-Aufruf via window.__locodoko testet denselben WebSocket→Backend→KI-Fluss
-// ohne Abhaengigkeit von Phaser-internen Eingabemechanismen.
-// Phaser-Canvas-Hit-Tests werden separat in TischSzene.test.ts abgedeckt.
+// Hilfsfunktion: Spielt die erste spielbare Handkarte des menschlichen Spielers per Tastatur aus.
+// ArrowRight waehlt die erste Karte (Index 0), Enter spielt sie aus.
+// Der TischSzene-Tastatur-Handler ist auf document registriert, kein Canvas-Fokus noetig.
 async function spieleErsteHandkarte(page: Page): Promise<void> {
-  await page.evaluate(() => {
-    interface LocodokoBridge { appStore: { snapshot: () => { partieStand?: { laufendesSpiel?: { spielbareKarten?: { id: string }[] } } }; spieleKarte: (id: string) => void } }
-    const locodoko = (window as unknown as Record<string, LocodokoBridge>)['__locodoko'];
-    if (!locodoko?.appStore) {
-      throw new Error('__locodoko.appStore nicht verfuegbar - main.ts korrekt geladen?');
-    }
-    const snap = locodoko.appStore.snapshot();
-    const spielbareKarten = snap.partieStand?.laufendesSpiel?.spielbareKarten;
-    if (!spielbareKarten?.length) {
-      throw new Error('Keine spielbaren Karten in partieStand.laufendesSpiel.spielbareKarten');
-    }
-    locodoko.appStore.spieleKarte(spielbareKarten[0].id);
-  });
+  await page.keyboard.press('ArrowRight'); // erste spielbare Karte markieren
+  await page.keyboard.press('Enter');      // Karte ausspielen
 }
 
 test.describe('Partie gegen KI', () => {
@@ -137,7 +123,7 @@ test.describe('Partie gegen KI', () => {
       'Aktionshinweis soll anzeigen, dass SUED eine Karte spielen soll',
     ).toContainText('Du bist dran.', { timeout: 20_000 });
 
-    // Erste spielbare Karte via appStore ausspielen
+    // Erste spielbare Karte per Tastatur (ArrowRight + Enter) ausspielen
     await spieleErsteHandkarte(page);
 
     // -----------------------------------------------------------------------
