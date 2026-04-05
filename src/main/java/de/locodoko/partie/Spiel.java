@@ -624,6 +624,27 @@ public final class Spiel {
         return trumpfOrdnung;
     }
 
+    /**
+     * Prueft ob mindestens ein abgeschlossener Stich "Herz durchgegangen" ist.
+     *
+     * <p>Ein Stich gilt als Herz-durchgegangen, wenn alle vier gespielte Karten
+     * die Farbe Herz haben und keine von ihnen Trumpf gemaess der aktuellen
+     * Trumpfordnung ist. Dies loest einen Bockrunden-Trigger aus.</p>
+     */
+    public boolean hatHerzDurchgegangenenStich() {
+        return abgeschlosseneStiche.stream().anyMatch(this::istHerzDurchgegangen);
+    }
+
+    private boolean istHerzDurchgegangen(Stich stich) {
+        if (!stich.istVollstaendig()) {
+            return false;
+        }
+        return stich.gespielteKarten().stream().allMatch(gespielteKarte ->
+            gespielteKarte.karte().farbe() == Farbe.HERZ
+                && !trumpfOrdnung.istTrumpf(gespielteKarte.karte())
+        );
+    }
+
     private Map<SpielerPosition, Hand> kopiereHaende() {
         EnumMap<SpielerPosition, Hand> kopie = new EnumMap<>(SpielerPosition.class);
         kopie.putAll(haende);

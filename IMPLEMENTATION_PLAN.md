@@ -4,9 +4,9 @@
 
 ## Notiz
 
-**2026-04-05 (Plan-Run #31):** Task 1 (Spielregeln-Felder erweitern) vollständig erledigt — `bockrundenAktiv`, `schweinchenAktiv`, `dreissigAugenPflichtAktiv` in `Spielregeln` record, `TischkonfigurationEmbeddable`, `TischKonfigurationDto` (Backend + Frontend), Liquibase-Changeset 005. Alle Tests grün.
-Nächster logischer Schritt: Task 2 (Bockrunden Backend) — jetzt entsperrt.
-Offene Fragen: keine.
+**2026-04-05 (Plan-Run #32):** Task 2 (Bockrunden Backend) vollständig erledigt — `bockrundenZaehler` in `Partie`-Domain und `PartieEntity`, Liquibase-Changeset 006, Trigger-Erkennung (Herz durchgegangen + verlorenes Kontra) in `Partie.schliesseAktuellesSpielAb()` und `KiOrchestrierungService.schliesseSpielAbUndStarteNaechstes()`, `Spiel.hatHerzDurchgegangenenStich()`. 9 neue BockrundenTests grün, alle 153 Backend-Tests grün.
+Nächster logischer Schritt: Task 3 (Schweinchen Backend) oder Task 4 (Dreißig-Augen-Pflicht Backend).
+Offene Fragen: Task 4 hat Priorität "Hoch" laut Plan — aber kein expliziter Blocker für Task 3. Empfehlung: Task 4 zuerst (höhere Priorität).
 
 ---
 
@@ -34,14 +34,14 @@ Offene Fragen: keine.
 
 > **Blockiert von:** 1 (Spielregeln-Felder) | **Spec:** `specs/bockrunden.md`
 
-- [ ] **2.1** `Partie`: Feld `bockrundenZaehler: int` hinzufügen, in Konstruktor und `neu()` mitführen
+- [x] **2.1** `Partie`: Feld `bockrundenZaehler: int` hinzufügen, in Konstruktor und `neu()` mitführen
   - Datei: `src/main/java/de/locodoko/partie/Partie.java`
-- [ ] **2.2** Liquibase-Migration: `bockrunden_zaehler INTEGER NOT NULL DEFAULT 0` in `partie`-Tabelle
-- [ ] **2.3** Trigger-Erkennung "Herz durchgegangen": Hilfsmethode auf `Spiel` — prüft ob ein Stich nur Fehlherz enthält (Herz-As/König, kein Trumpf per TrumpfOrdnung)
-- [ ] **2.4** Trigger-Erkennung "verlorenes Kontra": `ergebnis.siegerPartei() == RE && ansagen.hatGrundansage(KONTRA)`
-- [ ] **2.5** `Partie.schliesseAktuellesSpielAb()`: Nach Spielergebnis-Berechnung Trigger prüfen → Zähler erhöhen → wenn Zähler > 0: Spielpunkte × 2 anwenden (außerhalb des Spielergebnis-Objekts) → Zähler -1 → in neue Partie-Instanz übernehmen
-- [ ] **2.6** Persistenz-Adapter: `bockrundenZaehler` lesen/schreiben in `SpielPersistenzAdapter`
-- [ ] **2.7** Unit-Tests: Multiplikation+Dekrementierung, beide Trigger einzeln+kombiniert, Deaktivierung
+- [x] **2.2** Liquibase-Migration: `bockrunden_zaehler INTEGER NOT NULL DEFAULT 0` in `partie`-Tabelle
+- [x] **2.3** Trigger-Erkennung "Herz durchgegangen": `Spiel.hatHerzDurchgegangenenStich()` — prüft ob ein Stich nur Fehlherz enthält (kein Trumpf per TrumpfOrdnung)
+- [x] **2.4** Trigger-Erkennung "verlorenes Kontra": `ergebnis.siegerPartei() == RE && ansagen.hatGrundansage(KONTRA)`
+- [x] **2.5** `Partie.schliesseAktuellesSpielAb()`: Trigger prüfen → Zähler erhöhen → wenn Zähler > 0: Spielpunkte × 2 → Zähler -1 → in neue Partie-Instanz übernehmen
+- [x] **2.6** Persistenz: `bockrundenZaehler` in `PartieEntity` + `KiOrchestrierungService.schliesseSpielAbUndStarteNaechstes()`
+- [x] **2.7** Unit-Tests: Multiplikation+Dekrementierung, beide Trigger einzeln+kombiniert, Deaktivierung
 
 ---
 

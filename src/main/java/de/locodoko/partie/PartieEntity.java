@@ -46,6 +46,9 @@ public class PartieEntity extends AbstraktePersistenzEntity {
     @Column("punkte_ost")
     private int punkteOst = 0;
 
+    @Column("bockrunden_zaehler")
+    private int bockrundenZaehler = 0;
+
     /**
      * Spiele: Owned by dieser Partie via @MappedCollection.
      * Map-Key = spiel_nummer (1-basiert).
@@ -132,6 +135,17 @@ public class PartieEntity extends AbstraktePersistenzEntity {
             })
             .map(Map.Entry::getValue)
             .toList();
+    }
+
+    public int bockrundenZaehler() {
+        return bockrundenZaehler;
+    }
+
+    public void setzeBockrundenZaehler(int bockrundenZaehler) {
+        if (bockrundenZaehler < 0) {
+            throw new IllegalArgumentException("bockrundenZaehler darf nicht negativ sein");
+        }
+        this.bockrundenZaehler = bockrundenZaehler;
     }
 
     public Map<SpielerPosition, Integer> gesamtpunktestand() {

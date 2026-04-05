@@ -1,0 +1,14 @@
+databaseChangeLog:
+  - changeSet:
+      id: 006-bockrunden-zaehler
+      author: locodoko
+      changes:
+        - addColumn:
+            tableName: partie
+            columns:
+              - column:
+                  name: bockrunden_zaehler
+                  type: INTEGER
+                  defaultValueNumeric: 0
+                  constraints:
+                    nullable: false

@@ -30,10 +30,7 @@ public final class Partie {
     private final List<Spiel> abgeschlosseneSpiele;
     private final Spiel aktuellesSpiel;
     private final Map<SpielerPosition, Integer> gesamtpunktestand;
-    // TODO(bockrunden): int bockrundenZaehler ergaenzen — Anzahl der naechsten Spiele,
-    //   die doppelt gewertet werden. Startwert 0. Im privaten Konstruktor, in neu() und
-    //   in allen zurueckgegebenen Partie-Instanzen mitfuehren.
-    //   Persistenz: INTEGER-Spalte bockrunden_zaehler in der partie-Tabelle.
+    private final int bockrundenZaehler;
 
     private Partie(
         int anzahlSpiele,
@@ -41,7 +38,8 @@ public final class Partie {
         SpielerPosition naechsterGeber,
         List<Spiel> abgeschlosseneSpiele,
         Spiel aktuellesSpiel,
-        Map<SpielerPosition, Integer> gesamtpunktestand
+        Map<SpielerPosition, Integer> gesamtpunktestand,
+        int bockrundenZaehler
     ) {
         if (anzahlSpiele < 1) {
             throw new IllegalArgumentException("Eine Partie muss mindestens ein Spiel enthalten");
@@ -52,6 +50,10 @@ public final class Partie {
         this.abgeschlosseneSpiele = List.copyOf(abgeschlosseneSpiele);
         this.aktuellesSpiel = aktuellesSpiel;
         this.gesamtpunktestand = Map.copyOf(gesamtpunktestand);
+        if (bockrundenZaehler < 0) {
+            throw new IllegalArgumentException("bockrundenZaehler darf nicht negativ sein");
+        }
+        this.bockrundenZaehler = bockrundenZaehler;
     }
 
     public static Partie neu(int anzahlSpiele, SpielerPosition ersterGeber, Spielregeln spielregeln) {
@@ -59,7 +61,7 @@ public final class Partie {
         for (SpielerPosition position : SpielerPosition.standardReihenfolge()) {
             gesamtpunktestand.put(position, 0);
         }
-        return new Partie(anzahlSpiele, spielregeln, ersterGeber, List.of(), null, gesamtpunktestand);
+        return new Partie(anzahlSpiele, spielregeln, ersterGeber, List.of(), null, gesamtpunktestand, 0);
     }
 
     public Partie starteNaechstesSpiel(Kartendeck kartendeck) {
@@ -76,7 +78,8 @@ public final class Partie {
             naechsterGeber,
             abgeschlosseneSpiele,
             Spiel.neu(naechsterGeber, spielregeln, kartendeck),
-            gesamtpunktestand
+            gesamtpunktestand,
+            bockrundenZaehler
         );
     }
 
@@ -85,7 +88,7 @@ public final class Partie {
         if (aktuellesSpiel == null) {
             throw new IllegalStateException("Es gibt kein aktuelles Spiel");
         }
-        return new Partie(anzahlSpiele, spielregeln, naechsterGeber, abgeschlosseneSpiele, spiel, gesamtpunktestand);
+        return new Partie(anzahlSpiele, spielregeln, naechsterGeber, abgeschlosseneSpiele, spiel, gesamtpunktestand, bockrundenZaehler);
     }
 
     public Partie schliesseAktuellesSpielAb() {
@@ -96,19 +99,28 @@ public final class Partie {
         Spielergebnis ergebnis = spiel.ergebnis()
             .orElseThrow(() -> new IllegalStateException("Ein abgeschlossenes Spiel braucht ein Ergebnis"));
 
-        // TODO(bockrunden): Neue Trigger aus abgeschlossenem Spiel erkennen (vor Multiplikation):
-        //   1. Herz durchgegangen: Pruefe alle spiel.abgeschlosseneStiche() — ein Stich gilt als
-        //      Herz-durchgegangen wenn alle 4 Karten Fehlherz (As oder Koenig) sind.
-        //   2. Verlorenes Kontra: ergebnis.siegerPartei() == RE &&
-        //      spiel.ansagen().hatGrundansage(KONTRA, spiel.parteien()).
-        //   Dann: wenn bockrundenZaehler > 0, alle spielpunkteVon() mit 2 multiplizieren
-        //   und bockrundenZaehler um 1 dekrementieren. Nur wenn spielregeln.bockrundenAktiv().
+        // Bockrunden: Neue Trigger aus abgeschlossenem Spiel erkennen
+        int neueTrigger = 0;
+        if (spielregeln.bockrundenAktiv()) {
+            if (spiel.hatHerzDurchgegangenenStich()) {
+                neueTrigger++;
+            }
+            if (ergebnis.siegerPartei() == Partei.RE
+                    && spiel.ansagen().hatGrundansage(Partei.KONTRA, spiel.parteien())) {
+                neueTrigger++;
+            }
+        }
 
+        // Spielpunkte akkumulieren — mit Bockrunden-Multiplikator falls aktiv
+        int multiplikator = (spielregeln.bockrundenAktiv() && bockrundenZaehler > 0) ? 2 : 1;
         Map<SpielerPosition, Integer> neuerGesamtpunktestand = new EnumMap<>(SpielerPosition.class);
         neuerGesamtpunktestand.putAll(gesamtpunktestand);
         for (SpielerPosition position : SpielerPosition.standardReihenfolge()) {
-            neuerGesamtpunktestand.merge(position, ergebnis.spielpunkteVon(position), Integer::sum);
+            neuerGesamtpunktestand.merge(position, ergebnis.spielpunkteVon(position) * multiplikator, Integer::sum);
         }
+
+        // Bockrunden-Zaehler aktualisieren: alten Eintrag verbrauchen, neue Trigger ergaenzen
+        int neuerBockrundenZaehler = (bockrundenZaehler > 0 ? bockrundenZaehler - 1 : 0) + neueTrigger;
         List<Spiel> neueAbgeschlosseneSpiele = new ArrayList<>(abgeschlosseneSpiele);
         neueAbgeschlosseneSpiele.add(spiel);
 
@@ -123,7 +135,8 @@ public final class Partie {
             spiel.geber().naechsteImUhrzeigersinn(),
             neueAbgeschlosseneSpiele,
             null,
-            neuerGesamtpunktestand
+            neuerGesamtpunktestand,
+            neuerBockrundenZaehler
         );
     }
 
@@ -158,5 +171,9 @@ public final class Partie {
 
     public Map<SpielerPosition, Integer> gesamtpunktestand() {
         return gesamtpunktestand;
+    }
+
+    public int bockrundenZaehler() {
+        return bockrundenZaehler;
     }
 }

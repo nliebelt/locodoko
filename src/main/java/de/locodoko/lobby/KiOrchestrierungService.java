@@ -8,6 +8,7 @@ import de.locodoko.karten.Kartendeck;
 import de.locodoko.karten.Karte;
 import de.locodoko.karten.SpielerPosition;
 import de.locodoko.partie.Ansage;
+import de.locodoko.partie.Partei;
 import de.locodoko.partie.PunkteRechner;
 import de.locodoko.partie.Spiel;
 import de.locodoko.partie.Spielphase;
@@ -150,10 +151,31 @@ public class KiOrchestrierungService {
         Spielergebnis spielergebnis = laufendesSpiel.ergebnis()
             .orElseThrow(() -> new IllegalStateException("Ein abgeschlossenes Spiel braucht ein Ergebnis"));
         PartieEntity partie = tisch.partie();
+        boolean bockrundenAktiv = tisch.konfiguration().bockrundenAktiv();
+
+        // Bockrunden: Neue Trigger erkennen
+        int neueTrigger = 0;
+        if (bockrundenAktiv) {
+            if (laufendesSpiel.hatHerzDurchgegangenenStich()) {
+                neueTrigger++;
+            }
+            if (spielergebnis.siegerPartei() == Partei.RE
+                    && laufendesSpiel.ansagen().hatGrundansage(Partei.KONTRA, laufendesSpiel.parteien())) {
+                neueTrigger++;
+            }
+        }
+
+        // Spielpunkte mit optionalem Bockrunden-Multiplikator akkumulieren
+        int multiplikator = (bockrundenAktiv && partie.bockrundenZaehler() > 0) ? 2 : 1;
         for (SpielerPosition position : SpielerPosition.standardReihenfolge()) {
-            int neuerWert = partie.gesamtpunktestand().getOrDefault(position, 0) + spielergebnis.spielpunkteVon(position);
+            int neuerWert = partie.gesamtpunktestand().getOrDefault(position, 0)
+                + spielergebnis.spielpunkteVon(position) * multiplikator;
             partie.setzeGesamtpunktestand(position, neuerWert);
         }
+
+        // Bockrunden-Zaehler aktualisieren
+        int neuerBockrundenZaehler = (partie.bockrundenZaehler() > 0 ? partie.bockrundenZaehler() - 1 : 0) + neueTrigger;
+        partie.setzeBockrundenZaehler(neuerBockrundenZaehler);
         long abgeschlosseneSpiele = partie.spiele().stream().filter(spiel -> spiel.ergebnis() != null).count();
         if (abgeschlosseneSpiele >= partie.anzahlSpiele()) {
             partie.markiereAlsBeendet();
