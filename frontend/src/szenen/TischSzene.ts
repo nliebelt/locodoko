@@ -509,6 +509,7 @@ export class TischSzene extends Phaser.Scene {
     // ── Rundenende-Modal: initial versteckt ────────────────────────────────
     const rundenEndeModal = document.createElement('div');
     rundenEndeModal.className = 'ui-modal-backdrop';
+    rundenEndeModal.dataset['testid'] = 'rundenauswertung-overlay';
     rundenEndeModal.hidden = true;
 
     // ── Partie-Ende-Modal: initial versteckt ────────────────────────────────
@@ -1773,6 +1774,7 @@ export class TischSzene extends Phaser.Scene {
     gesamtstand.textContent = `Gesamtstand: ${gesamtstandText}`;
 
     const schliessenButton = this.erstelleButton('Weiter →', () => this.schliesseRundenEndeModal(), false);
+    schliessenButton.dataset['testid'] = 'btn-rundenauswertung-weiter';
 
     dialog.append(titel, ergebnisZeile, parteien);
     if (alleSonderpunkte.length > 0) {
