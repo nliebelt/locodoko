@@ -397,6 +397,7 @@ export class TischSzene extends Phaser.Scene {
       void this.starteGegnerKartenAnimationen(vorherigesModell, modell);
       void this.starteAnsageBannerAnimationen(this.ermittleNeueAnsagen(vorherigesModell, modell));
       void this.starteSonderpunktFeedbackAnimationen(this.ermittleNeueSonderpunkte(vorherigesModell, modell));
+      void this.zeigeHochzeitEreignis(this.ermittleHochzeitEreignis(vorherigerZustand ?? null, zustand));
       // Neues Spielergebnis → Rundenende- oder Partie-Ende-Modal einblenden
       if (this.erkennteNeuesSpielErgebnis(vorherigesModell, modell) && modell.letztesSpielergebnis) {
         if (modell.partieBeendet) {
@@ -1640,6 +1641,45 @@ export class TischSzene extends Phaser.Scene {
         { x: breite / 2, y: hoehe / 2 }
       );
     }
+  }
+
+  // Erkennt Hochzeit-Ereignisse (Partner gefunden / Stilles Solo) anhand von Zustandsänderungen
+  private ermittleHochzeitEreignis(
+    vorherigerZustand: AppZustand | null,
+    aktuellerZustand: AppZustand
+  ): string | null {
+    const vorherigesSpiel = vorherigerZustand?.partieStand?.laufendesSpiel;
+    const aktuellesSpiel = aktuellerZustand.partieStand?.laufendesSpiel;
+    if (!vorherigesSpiel || !aktuellesSpiel) {
+      return null;
+    }
+    // Stilles Solo: Spieltyp wechselt von HOCHZEIT zu einem Solo-Typ (kein Partner gefunden)
+    if (vorherigesSpiel.spieltyp === 'HOCHZEIT' && aktuellesSpiel.spieltyp !== 'HOCHZEIT') {
+      return 'Stilles Solo';
+    }
+    // Partner gefunden: Nicht-selbst-Spieler bekommt Partei RE (war vorher null)
+    if (aktuellesSpiel.spieltyp !== 'HOCHZEIT') {
+      return null;
+    }
+    for (const spieler of aktuellesSpiel.spieler) {
+      if (spieler.istSelbst) {
+        continue;
+      }
+      const vorher = vorherigesSpiel.spieler.find((s) => s.position === spieler.position);
+      if (vorher?.partei === null && spieler.partei === 'RE') {
+        return `Partner gefunden: ${spieler.name}`;
+      }
+    }
+    return null;
+  }
+
+  private async zeigeHochzeitEreignis(meldung: string | null): Promise<void> {
+    if (!meldung) {
+      return;
+    }
+    const breite = this.scale.gameSize.width;
+    const hoehe = this.scale.gameSize.height;
+    await this.animationen?.animiereSonderpunktFeedback(meldung, { x: breite / 2, y: hoehe * 0.4 }, 2000);
   }
 
   // Erkennt ob ein neues Spielergebnis eingetroffen ist (andere spielNummer als zuvor)

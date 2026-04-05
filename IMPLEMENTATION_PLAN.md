@@ -73,7 +73,7 @@
   - Umsetzung: `GET /api/tische/{id}` in `TischController` ergänzen, delegiert an `TischService.findById()`. Tischname + Status zurückgeben (ggf. minimales DTO).
   - Dateien: `src/main/java/de/locodoko/lobby/TischController.java`, `TischService.java`
 
-- [ ] **5.7 Frontend: Hochzeit-Partner-Anzeige**: Nach dem Klärungsstich (3 Stiche) muss der gefundene Hochzeit-Partner dem Spieler angezeigt werden. Kein UI-Dialog existiert dafür.
+- [x] **5.7 Frontend: Hochzeit-Partner-Anzeige**: Nach dem Klärungsstich (3 Stiche) muss der gefundene Hochzeit-Partner dem Spieler angezeigt werden. Kein UI-Dialog existiert dafür.
   - Anforderung (specs/hochzeit.md): Nach erfolgreichem Klärungsstich → Anzeige "Partner gefunden: [Spielername]". Bei stillem Solo → entsprechende Meldung.
   - Umsetzung: `KarteGespielt`/`StichGewonnen`-Event auswerten, wenn Hochzeit aktiv und `hochzeitStatus.partner()` neu gesetzt wurde → kurze Einblendung (Toast o.ä.) in TischSzene.
   - Dateien: `frontend/src/szenen/TischSzene.ts`, ggf. `frontend/src/services/AnimationenService.ts`
