@@ -143,10 +143,10 @@ function nameplatePositionFuer(
   hoehe: number
 ): { x: number; y: number } {
   switch (spielerPosition) {
-    case 'NORD': return { x: breite * 0.12, y: hoehe * 0.1 };
-    case 'SUED': return { x: breite * 0.68, y: hoehe * 0.94 };
-    case 'WEST': return { x: breite * 0.04, y: hoehe * 0.84 };
-    case 'OST':  return { x: breite * 0.96, y: hoehe * 0.16 };
+    case 'NORD': return { x: breite * 0.12, y: hoehe * 0.15 };
+    case 'SUED': return { x: breite * 0.68, y: hoehe * 0.85 };
+    case 'WEST': return { x: breite * 0.14, y: hoehe * 0.84 };
+    case 'OST':  return { x: breite * 0.86, y: hoehe * 0.16 };
   }
 }
 
@@ -812,7 +812,7 @@ export class TischSzene extends Phaser.Scene {
       const npPos = nameplatePositionFuer(spieler.position, breite, hoehe);
       // Nameplate: rechteckig; SUED/NORD horizontal (breit, flach), WEST/OST vertikal (schmal, hoeher)
       const istHorizontal = spieler.position === 'SUED' || spieler.position === 'NORD';
-      const nameplateBreite = istHorizontal ? Math.max(120, breite * 0.11) : Math.max(80, breite * 0.07);
+      const nameplateBreite = istHorizontal ? Math.max(120, breite * 0.11) : Math.max(120, breite * 0.07);
       const nameplateHoehe = istHorizontal ? Math.max(54, hoehe * 0.075) : Math.max(80, hoehe * 0.11);
       // Aktiv-Hervorhebung: goldenes Glow-Rechteck + dicker Rahmen; sonst halbtransparentes Dunkelgruen
       const rahmenFarbe = spieler.istAktivHervorgehoben ? 0xffe082 : 0xd8f3dc;

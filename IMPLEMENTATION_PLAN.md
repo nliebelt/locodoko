@@ -1,8 +1,10 @@
 # IMPLEMENTATION_PLAN — Locodoko Doppelkopf
 
-> Letzte Aktualisierung: 2026-04-04 (Plan-Run #21)
+> Letzte Aktualisierung: 2026-04-05 (Plan-Run #22)
 
 ## Notiz
+
+**2026-04-05 (Plan-Run #22):** 1.1 Vision Loop erfolgreich ausgeführt (headless, kein Display nötig). 8 Screenshots erstellt. Befund: Lobby/Vorbehalt/Stichphase/Seitenlade/Einstellungen alle funktional. 6.7 Nameplates implementiert: NORD y=10%→15%, SUED y=94%→85%, WEST x=4%→14%, OST x=96%→86%, WEST/OST-Mindestbreite 80px→120px. Vision Loop nach Fix bestätigt verbesserte Positionen. 62 Frontend-Tests grün. Nächster Schritt: 6.8 Ansage-Badges (laufende Ansagen dauerhaft in Nameplates anzeigen).
 
 **2026-04-04 (Plan-Run #21):** Subagenten-Analyse aller 5 Bounded Contexts. Ergebnisse:
 - Lobby/Tisch: Vollständig implementiert. `GET /api/tische/{id}` fehlt weiterhin (Blocker 5.6 gültig). Mutability von `TischkonfigurationEmbeddable` ist Style-Abweichung, kein Funktionsproblem — kein Plan-Eintrag nötig.
@@ -31,7 +33,7 @@
 
 ### Priorität 1 — E2E Visueller Baseline-Check
 
-- [ ] **1.1 Vision Loop: Baseline-Screenshots erstellen und prüfen** [VOR allen anderen Aufgaben]: Der Vision Loop muss zuverlässig durchlaufen und alle UI-Zustände korrekt screenshotten. Er dient als visuelle Baseline vor und nach jedem UI-Fix (6.7–7.2).
+- [x] **1.1 Vision Loop: Baseline-Screenshots erstellen und prüfen** [VOR allen anderen Aufgaben]: Der Vision Loop muss zuverlässig durchlaufen und alle UI-Zustände korrekt screenshotten. Er dient als visuelle Baseline vor und nach jedem UI-Fix (6.7–7.2).
   - Umsetzung:
     1. Backend starten falls nicht läuft.
     2. `cd e2e && npx playwright test vision-loop.spec.ts --headed` ausführen.
@@ -106,7 +108,7 @@
   - Fix: Alpha-Wert von `0.5` auf `0.45` korrigieren (TischSzene.ts Z. 1256); Edge-Case wenn kein Spielzug möglich (alle Karten Alpha 1.0).
   - Datei: `frontend/src/szenen/TischSzene.ts` (Z. 1256)
 
-- [ ] **6.7 Nameplates: Positionen und Größen überarbeiten**: Positionen weichen stark von Spec ab; WEST/OST-Nameplates (80px) zu klein. Code-Check bestätigt: aktuelle Werte NORD y=10%, SUED y=94%, WEST x=4%, OST x=96% — Spec fordert andere Prozente; Breite WEST/OST ist `Math.max(80, …)` statt 120px-Minimum.
+- [x] **6.7 Nameplates: Positionen und Größen überarbeiten**: Positionen weichen stark von Spec ab; WEST/OST-Nameplates (80px) zu klein. Code-Check bestätigt: aktuelle Werte NORD y=10%, SUED y=94%, WEST x=4%, OST x=96% — Spec fordert andere Prozente; Breite WEST/OST ist `Math.max(80, …)` statt 120px-Minimum.
   - Fix: `nameplatePositionFuer()` (TischSzene.ts Z. 140–151) auf Canvas-Prozente normieren: SUED y=85%, NORD y=15%, WEST x=14%, OST x=86%. WEST/OST-Breite von 80px auf 120px erhöhen (TischSzene.ts Z. 815).
   - Datei: `frontend/src/szenen/TischSzene.ts` (Z. 140–151, Z. 815)
 
