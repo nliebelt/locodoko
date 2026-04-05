@@ -1,8 +1,17 @@
 # IMPLEMENTATION_PLAN — Locodoko Doppelkopf
 
-> Letzte Aktualisierung: 2026-04-05 (Plan-Run #23)
+> Letzte Aktualisierung: 2026-04-05 (Plan-Run #26)
 
 ## Notiz
+
+**2026-04-05 (Plan-Run #27):** 9.1 Farbsolos implementiert. `specs/solo-farbsolo.md` erstellt. `StandardKiStrategie.waehleVorbehalt()` bewertet jetzt SOLO_TRUMPF_HERZ/PIK/KREUZ. Formel: `farbsoloTrumpfAnzahl × 4 + fehlAsse × 2 + damen × 2 + buben × 2`, Schwelle 46 (analog SOLO_TRUMPF). 2 neue Tests. 144 Backend-Tests grün. Nächste offene Aufgabe: 9.2 (Stich-Gewinn-Flash + Stapel-Visualisierung) — Frontend-only, benötigt AnimationenService + TischSzene. Danach 9.3 (Tastatur-Shortcuts verifizieren, kann per Grep schnell abgeklärt werden). 9.4 (Spec-Update hochzeit.md) ist Minor ohne Code-Änderung.
+
+**2026-04-05 (Plan-Run #26):** Subagenten-Analyse aller 5 Bounded Contexts. Ergebnisse:
+- Lobby/Tisch: Vollständig. Style-Abweichungen (Lombok, TischkonfigurationEmbeddable-Mutability) wie in Plan-Run #21 entschieden: kein Plan-Eintrag.
+- Partie/Regeln: Stilles Solo korrekt implementiert, fehlt aber in hochzeit.md (→ 9.4). Ansage-Timing: `kannAnsagen()` prüft keine Spielphase (→ Risiko, nicht Blocker, vorerst kein Eintrag). Armut-Kartentausch-Verantwortlichkeit unklar (Subagent unsicher — kein bestätigter Bug).
+- Session/API: data-testid (8.2 war [x], Phaser-Marker als 0x0-Divs korrekt — kein neuer Eintrag). Subagent meldete "98% fehlen", hat aber Phaser-Marker übersehen. Neue-Partie-Countdown: Backend sendet kein explizites Event — Frontend verwaltet Countdown client-seitig (kein Blocker).
+- Frontend: Stich-Gewinn-Flash + Stapel-Visualisierung (frontend-animationen.md §4.16) fehlt komplett (→ 9.2). Tastatur-Shortcuts R/K/1–5/A/N/I/S aus 7.1 möglicherweise nicht vollständig implementiert (→ 9.3).
+- Sonderspiele/KI: **Farbsolos** (SOLO_TRUMPF_HERZ/PIK/KREUZ) im Code ohne Spec und ohne KI-Support — kritische Inkonsistenz (→ 9.1). Standard-Solo, Hochzeit, Armut vollständig.
 
 **2026-04-05 (Plan-Run #25):** 8.5 "Du bist dran"-Hinweis entfernt (bildeStatusText gibt stets 'Du' zurück). 8.7 SchwerKiStrategie meldetHochzeitBeiZweiKreuzDamen-Test ergänzt (6 Tests grün). 8.2 alle 17 data-testid Attribute aus specs/e2e-tests.md gesetzt (SpielverwaltungsSzene + TischSzene, Phaser-Marker als 0x0-Divs). 8.6 Architektur-Konflikt aufgelöst: specs/frontend-ui-logik.md auf hybride UI korrigiert (Meta-UI bleibt HTML). 8.4 SonderpunktEreignis mit Täter/Opfer-Info implementiert — 20 Dateien angepasst (Domain, Persistenz, REST, Frontend), 142 Backend + 62 Frontend-Tests grün. 8.3 E2E appStore-Hack durch Tastatureingaben ersetzt (ArrowRight+Enter zum Kartenspielen, Ziffer-Taste für Vorbehalt). Alle 8.x Aufgaben abgeschlossen. Keine offenen Aufgaben mehr im Plan.
 
@@ -217,6 +226,36 @@
 - [x] **8.7 SchwerKiStrategie: Hochzeit-Test ergänzen** [minor]: `SchwerKiStrategieTest.java` hat keine Test-Methode für Hochzeit-Anmeldung bei 2 Kreuz-Damen. Code funktioniert korrekt via Vererbung von `StandardKiStrategie`, aber die Testabdeckung fehlt für `SchwerKiStrategie` direkt.
   - Umsetzung: Analog zu `StandardKiStrategieTest.meldetHochzeitBeiZweiKreuzDamen()` einen Test in `SchwerKiStrategieTest.java` ergänzen.
   - Datei: `src/test/java/de/locodoko/.../SchwerKiStrategieTest.java`
+
+---
+
+### Priorität 4 — Neue Lücken aus Plan-Run #26
+
+- [x] **9.1 Farbsolos: Spezifikation + KI-Erweiterung** [Architektur-Entscheidung, KRITISCH]: Code enthält `SOLO_TRUMPF_HERZ`, `SOLO_TRUMPF_PIK`, `SOLO_TRUMPF_KREUZ` (Enum + `VariableTrumpfsoloTrumpfOrdnung`) ohne zugehörige Spec und ohne KI-Support. KI: `waehleVorbehalt()` listet nur 4 Solo-Typen — Farbsolos werden niemals angemeldet. `soloWert()` + `soloSchwelle()` haben keinen Default-Fall für SOLO_TRUMPF_* → würde Integer.MAX_VALUE als Schwelle triggern (de-facto Sperre).
+  - Entscheidung nötig:
+    - **(A) Implementieren** — `specs/solo-farbsolo.md` erstellen (Herz/Pik/Kreuz-Solo analog zu Trumpfsolo, aber nur Trumpf-Farbe + Pik-Ass ist Trumpf). In `waehleVorbehalt()` Farbsolos evaluieren; `soloWert()` + `soloSchwelle()` um die 3 Farbtypen erweitern. Tests für alle 3 ergänzen.
+    - **(B) Entfernen** — `Vorbehalt.SOLO_TRUMPF_HERZ/PIK/KREUZ` aus Enum entfernen, `VariableTrumpfsoloTrumpfOrdnung.java` löschen, alle Referenzen bereinigen.
+  - Empfehlung: Option A, da Farbsolos zum Standard-Doppelkopf gehören und die Basis-Infrastruktur bereits vorhanden ist.
+  - Dateien: `src/main/java/de/locodoko/partie/Vorbehalt.java`, `VariableTrumpfsoloTrumpfOrdnung.java`, `src/main/java/de/locodoko/partie/ki/StandardKiStrategie.java` (Z. 30–35, soloWert, soloSchwelle), `SchwerKiStrategie.java`
+
+- [ ] **9.2 Frontend-Animationen: Stich-Gewinn-Flash + Stapel-Visualisierung**: `specs/frontend-animationen.md §4.16` fordert drei Animationen die nicht implementiert sind: (a) Nameplate des Stichgewinners leuchtet kurz auf (Tween: Alpha 1.0→0.5→1.0, Duration ~400ms), (b) Karten fliegen beim Einziehen sichtbar auf den Stapel des Stichgewinners (nicht nur aus der Stichmitte verschwinden), (c) beim letzten Stich: kurze Flip-Animation der eigenen Karten auf dem Stapel.
+  - Umsetzung:
+    1. In `AnimationenService.ts`: `animiereStichEinziehen()` um Flash-Tween auf Nameplate-Sprite erweitern (Gewinner-Position per Parameter).
+    2. Karten-Ziel: statt `setVisible(false)` nach Stich → `tweenTo()` zur Stapelposition des Stichgewinners, dann `setVisible(false)`.
+    3. Letzter Stich-Flag aus `TischSzene.ts` übergeben; wenn letzter Stich: Flip-Tween (scaleX 1→0→1 mit Textur-Wechsel zu Rückseite und zurück).
+  - Dateien: `frontend/src/services/AnimationenService.ts`, `frontend/src/szenen/TischSzene.ts`
+
+- [ ] **9.3 Tastatur-Shortcuts: Vollständigkeit verifizieren und ergänzen** [Priorität Mittel]: Task 7.1 implementierte ArrowLeft/Right+Enter für Karten und Ziffern für Vorbehalt. Subagent-Analyse findet folgende Shortcuts aus `specs/frontend-tastatursteuerung.md` nicht im Code: Ansage (R=Re, K=Kontra, 1–5=Absage-Höhe), Armut (A=Annehmen, N=Ablehnen), Seitenlade (I=öffnen/schließen), Einstellungen (S=öffnen).
+  - Umsetzung:
+    1. `TischSzene.ts` nach Key-Handler für R, K, 1, 2, 3, 4, 5, A, N, I, S durchsuchen (Grep).
+    2. Fehlende Handler implementieren: Ansage-Keys in Stichphase auslösen wenn Ansage möglich (`appStore.kannAnsagen()`), Armut-Keys im Armut-Dialog, I/S global.
+    3. Tests in `frontend/tests/` ergänzen wo sinnvoll.
+  - Dateien: `frontend/src/szenen/TischSzene.ts`
+  - Hinweis: Erst per Grep verifizieren — 7.1 war umfangreich, Keys könnten bereits vorhanden sein.
+
+- [ ] **9.4 Spec-Update: Stilles Solo in hochzeit.md dokumentieren** [Minor, keine Code-Änderung]: Code implementiert stilles Solo korrekt — `HochzeitStatus.stillesSolo` wird gesetzt wenn kein Partner innerhalb der ersten 3 Klärungsstiche gefunden wird; Spieler spielt dann allein gegen die anderen 3. `specs/hochzeit.md` erwähnt diese Regel jedoch nicht (Subagent-Befund: "Keine Erwähnung dieser Regel").
+  - Umsetzung: Abschnitt "Stilles Solo" in `specs/hochzeit.md` ergänzen: Definition, Bedingung (kein Partner nach 3 Stichen), Konsequenz (Hochzeits-Spieler allein = Solo-Wertung), Punktemultiplikator-Verhalten.
+  - Datei: `specs/hochzeit.md`
 
 ---
 
