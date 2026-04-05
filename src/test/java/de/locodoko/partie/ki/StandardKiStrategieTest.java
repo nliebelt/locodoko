@@ -447,6 +447,89 @@ class StandardKiStrategieTest {
             "nicht oeffentlich sichtbar ist — Erkennung ueber hochzeitStatus.partner() statt sichtbareParteiVon().");
     }
 
+    @Test
+    void meldetHerzsoloBeiSehrStarkerHerzhand() {
+        // KI hat viele Herz-Farbtrümpfe (Dame+Bube+Herz-Karten) + starke Fehlasse.
+        // Wichtig: Stellt sicher dass Farbsolos bewertet und angemeldet werden,
+        // damit die KI nicht blind auf Trumpfsolo beschränkt ist wenn Farbsolo besser passt.
+        KiSpielzustand zustand = new KiSpielzustand(
+            SpielerPosition.NORD,
+            Spieltyp.NORMALSPIEL,
+            Spielphase.VORBEHALT_ANSAGE,
+            spielregeln,
+            trumpfOrdnung,
+            new Hand(List.of(
+                karte(Farbe.KREUZ, Kartenwert.DAME, 1),
+                karte(Farbe.KREUZ, Kartenwert.DAME, 2),
+                karte(Farbe.KREUZ, Kartenwert.BUBE, 1),
+                karte(Farbe.KREUZ, Kartenwert.BUBE, 2),
+                karte(Farbe.HERZ, Kartenwert.AS, 1),
+                karte(Farbe.HERZ, Kartenwert.AS, 2),
+                karte(Farbe.HERZ, Kartenwert.ZEHN, 1),
+                karte(Farbe.HERZ, Kartenwert.KOENIG, 1),
+                karte(Farbe.HERZ, Kartenwert.NEUN, 1),
+                karte(Farbe.KARO, Kartenwert.AS, 1),
+                karte(Farbe.PIK, Kartenwert.AS, 1),
+                karte(Farbe.KREUZ, Kartenwert.AS, 1)
+            )),
+            null,
+            Ansagen.leer(),
+            List.of(),
+            null,
+            null,
+            null,
+            List.of(),
+            List.of(),
+            List.of(VorbehaltAnsage.GESUND, VorbehaltAnsage.SOLO_TRUMPF_HERZ)
+        );
+
+        assertEquals(VorbehaltAnsage.SOLO_TRUMPF_HERZ, strategie.waehleVorbehalt(zustand),
+            "Eine Hand mit vielen Herz-Farbtrümpfen und starken Fehlassen soll als Herzsolo erkannt werden, "
+            + "damit die KI alle drei Farbsolo-Varianten gleichwertig bewertet.");
+    }
+
+    @Test
+    void meldetKeinFarbsoloBeiSchwacherFarbhand() {
+        // KI hat nur 2 Damen und wenig Herz — Farbsolo-Wert weit unter Schwelle.
+        // Wichtig: Schützt vor übermütigem Farbsolo-Melden bei unzureichender Hand;
+        // die KI soll GESUND wählen statt ein verlustreiches Solo zu riskieren.
+        KiSpielzustand zustand = new KiSpielzustand(
+            SpielerPosition.OST,
+            Spieltyp.NORMALSPIEL,
+            Spielphase.VORBEHALT_ANSAGE,
+            spielregeln,
+            trumpfOrdnung,
+            new Hand(List.of(
+                karte(Farbe.KREUZ, Kartenwert.DAME, 1),
+                karte(Farbe.PIK, Kartenwert.DAME, 1),
+                karte(Farbe.HERZ, Kartenwert.KOENIG, 1),
+                karte(Farbe.KREUZ, Kartenwert.KOENIG, 1),
+                karte(Farbe.PIK, Kartenwert.KOENIG, 1),
+                karte(Farbe.KARO, Kartenwert.KOENIG, 1),
+                karte(Farbe.KREUZ, Kartenwert.NEUN, 1),
+                karte(Farbe.PIK, Kartenwert.NEUN, 1),
+                karte(Farbe.HERZ, Kartenwert.NEUN, 1),
+                karte(Farbe.KARO, Kartenwert.NEUN, 1),
+                karte(Farbe.KREUZ, Kartenwert.NEUN, 2),
+                karte(Farbe.PIK, Kartenwert.NEUN, 2)
+            )),
+            null,
+            Ansagen.leer(),
+            List.of(),
+            null,
+            null,
+            null,
+            List.of(),
+            List.of(),
+            List.of(VorbehaltAnsage.GESUND, VorbehaltAnsage.SOLO_TRUMPF_HERZ,
+                VorbehaltAnsage.SOLO_TRUMPF_PIK, VorbehaltAnsage.SOLO_TRUMPF_KREUZ)
+        );
+
+        assertEquals(VorbehaltAnsage.GESUND, strategie.waehleVorbehalt(zustand),
+            "Eine schwache Hand mit nur 2 Damen und wenig Farb-Trumpf darf keinen Farbsolo auslösen, "
+            + "damit die KI nicht risikoreich Solo spielt ohne ausreichende Handstärke.");
+    }
+
     private Karte karte(Farbe farbe, Kartenwert wert, int exemplarIndex) {
         return new Karte(farbe, wert, exemplarIndex);
     }

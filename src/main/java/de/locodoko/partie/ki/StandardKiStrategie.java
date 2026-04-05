@@ -29,6 +29,9 @@ public class StandardKiStrategie implements KiStrategie {
         int besterSoloWert = Integer.MIN_VALUE;
         for (VorbehaltAnsage vorbehalt : List.of(
             VorbehaltAnsage.SOLO_TRUMPF,
+            VorbehaltAnsage.SOLO_TRUMPF_HERZ,
+            VorbehaltAnsage.SOLO_TRUMPF_PIK,
+            VorbehaltAnsage.SOLO_TRUMPF_KREUZ,
             VorbehaltAnsage.SOLO_DAME,
             VorbehaltAnsage.SOLO_BUBE,
             VorbehaltAnsage.SOLO_FLEISCHLOS
@@ -306,7 +309,11 @@ public class StandardKiStrategie implements KiStrategie {
      *   <li><b>SOLO_TRUMPF:</b> Trümpfe × 4 (wichtigste Ressource — mehr Trumpf = sicherer Sieg),
      *       Asse/Damen/Buben × 2 (jede dieser Karten ist entweder Trumpf oder Fehl-Ass;
      *       geringeres Gewicht weil sie bereits in trumpfAnzahl enthalten sind oder als
-     *       Fehlfarben-Gewinner wirken). Schwelle: 34 (≈ 8 Trümpfe + 1 Ass).</li>
+     *       Fehlfarben-Gewinner wirken). Schwelle: 46.</li>
+     *   <li><b>SOLO_TRUMPF_HERZ/PIK/KREUZ:</b> Farbsolo-Trümpfe × 4 (Dame + Bube + Farbkarten
+     *       der gewählten Farbe), Fehl-Asse × 2 (Asse der Nicht-Trumpf-Farben), Damen/Buben × 2
+     *       (Bonus für starke Oberkarten die bereits in Trumpfanzahl enthalten sind).
+     *       Schwelle: 46.</li>
      *   <li><b>SOLO_DAME:</b> Damen × 8 (einzige Trümpfe — alle 4 Damen = klare Mehrheit),
      *       Asse × 2 (sichern Fehlstiche), hoheFehlkarten × 1 (Zehn gewinnt nach Ass-Zug).
      *       Schwelle: 28 (≈ 3 Damen + 2 Asse).</li>
@@ -329,6 +336,12 @@ public class StandardKiStrategie implements KiStrategie {
             .count();
         return switch (vorbehaltAnsage) {
             case SOLO_TRUMPF -> trumpfAnzahl * 4 + asse * 2 + damen * 2 + buben * 2;
+            case SOLO_TRUMPF_HERZ -> farbsoloTrumpfAnzahl(Farbe.HERZ, zustand) * 4
+                + farbsoloFehlAsse(Farbe.HERZ, zustand) * 2 + damen * 2 + buben * 2;
+            case SOLO_TRUMPF_PIK -> farbsoloTrumpfAnzahl(Farbe.PIK, zustand) * 4
+                + farbsoloFehlAsse(Farbe.PIK, zustand) * 2 + damen * 2 + buben * 2;
+            case SOLO_TRUMPF_KREUZ -> farbsoloTrumpfAnzahl(Farbe.KREUZ, zustand) * 4
+                + farbsoloFehlAsse(Farbe.KREUZ, zustand) * 2 + damen * 2 + buben * 2;
             case SOLO_DAME -> damen * 8 + asse * 2 + hoheFehlkarten;
             case SOLO_BUBE -> buben * 8 + asse * 2 + hoheFehlkarten;
             case SOLO_FLEISCHLOS -> asse * 6 + hoheFehlkarten * 2 - trumpfAnzahl;
@@ -336,13 +349,28 @@ public class StandardKiStrategie implements KiStrategie {
         };
     }
 
+    private int farbsoloTrumpfAnzahl(Farbe trumpfFarbe, KiSpielzustand zustand) {
+        return (int) zustand.eigeneHand().karten().stream()
+            .filter(karte -> karte.wert() == Kartenwert.DAME
+                || karte.wert() == Kartenwert.BUBE
+                || karte.farbe() == trumpfFarbe)
+            .count();
+    }
+
+    private int farbsoloFehlAsse(Farbe trumpfFarbe, KiSpielzustand zustand) {
+        return (int) zustand.eigeneHand().karten().stream()
+            .filter(karte -> karte.wert() == Kartenwert.AS && karte.farbe() != trumpfFarbe)
+            .count();
+    }
+
     /**
      * Mindestscore aus {@link #soloWert}, ab dem ein Solo angemeldet wird.
      *
      * <p>Kalibrierungsgrundlage:
      * <ul>
-     *   <li>SOLO_TRUMPF 34: entspricht ~8 Trümpfen (8×4=32) + 1 Ass (2) — klassische starke
-     *       Solohand mit Trumpfmehrheit.</li>
+     *   <li>SOLO_TRUMPF 46: entspricht ~9 Trümpfen mit guten Begleitkarten.</li>
+     *   <li>SOLO_TRUMPF_HERZ/PIK/KREUZ 46: Farbsolo hat dieselbe Trupfanzahl wie Trumpfsolo
+     *       (24 Trumpfkarten im Deck: 8 Damen + 8 Buben + 8 Farbkarten) — gleiche Schwelle.</li>
      *   <li>SOLO_DAME/SOLO_BUBE 28: entspricht ~3 Damen/Buben (3×8=24) + 2 Asse (4) —
      *       Mindest-Trumpfkontrolle für ein realistisch gewinnbares Spezialsolo.</li>
      *   <li>SOLO_FLEISCHLOS 30: entspricht ~4 Asse (4×6=24) + 3 hohe Fehlkarten (3×2=6) —
@@ -351,7 +379,7 @@ public class StandardKiStrategie implements KiStrategie {
      */
     private int soloSchwelle(VorbehaltAnsage vorbehaltAnsage) {
         return switch (vorbehaltAnsage) {
-            case SOLO_TRUMPF -> 46;
+            case SOLO_TRUMPF, SOLO_TRUMPF_HERZ, SOLO_TRUMPF_PIK, SOLO_TRUMPF_KREUZ -> 46;
             case SOLO_DAME, SOLO_BUBE -> 28;
             case SOLO_FLEISCHLOS -> 30;
             default -> Integer.MAX_VALUE;
