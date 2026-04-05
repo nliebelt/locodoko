@@ -55,7 +55,7 @@
 
 ### Priorität 3 — UX / E2E
 
-- [ ] **5.3 Recovery-Button: Tischname anzeigen** [BLOCKED: fehlt GET /api/tische/{id} — siehe 5.6]: `SpielverwaltungsSzene.ts` zeigt beim Session-Recovery "Zurück zu Spiel" statt "Zurück zu [Tischname]". Spec fordert den echten Tischnamen.
+- [x] **5.3 Recovery-Button: Tischname anzeigen**: `SpielverwaltungsSzene.ts` zeigt beim Session-Recovery "Zurück zu Spiel" statt "Zurück zu [Tischname]". Spec fordert den echten Tischnamen.
   - Umsetzung: `SpielerSessionAntwort` enthält `aktiverTischId` (UUID, korrekt befüllt) — Tischnamen per REST laden (`GET /api/tische/{id}`) und in Button-Text einsetzen. Erst 5.6 umsetzen!
   - Dateien: `frontend/src/scenes/SpielverwaltungsSzene.ts`, ggf. `SpielerSessionAntwort.java`
 

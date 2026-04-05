@@ -245,6 +245,11 @@ export class AppStore {
     this.echtzeit.senden(`/app/tisch/${tischId}/snapshot`);
   }
 
+  async ladeTischName(tischId: Uuid): Promise<string> {
+    const tisch = await this.api.ladeTisch(tischId);
+    return tisch.name;
+  }
+
   /**
    * Verlaesst den aktuellen Tisch und kehrt zur Lobby zurueck.
    * Bei laufender Partie wird diese fuer alle Spieler abgebrochen.

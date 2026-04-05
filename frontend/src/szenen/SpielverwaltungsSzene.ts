@@ -106,6 +106,10 @@ export class SpielverwaltungsSzene extends Phaser.Scene {
       });
       recoveryBtn.style.marginBottom = '20px';
       this.uiContainer.append(recoveryBtn);
+      // Tischname asynchron nachladen und Button-Text aktualisieren
+      void appStore.ladeTischName(aktiverTischId).then((name) => {
+        recoveryBtn.textContent = `↩ Zurück zu ${name}`;
+      }).catch(() => { /* Fallback: generischer Text bleibt */ });
     }
 
     // 2. Quick Game

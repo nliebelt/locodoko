@@ -126,6 +126,10 @@ export class SpielverwaltungApi {
   async listeTische(): Promise<TischListenEintragAntwort[]> {
     return holeJson<TischListenEintragAntwort[]>('/api/tische');
   }
+
+  async ladeTisch(tischId: Uuid): Promise<TischAntwort> {
+    return holeJson<TischAntwort>(`/api/tische/${tischId}`);
+  }
   async erstelleTisch(name: string, konfiguration?: Partial<TischKonfigurationDto>): Promise<TischAntwort> {
     return holeJson<TischAntwort>('/api/tische', {
       method: 'POST',
