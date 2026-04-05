@@ -76,13 +76,17 @@ export interface AbgeschlossenerStichAnsicht {
 
 /**
  * Auswertungsergebnis des zuletzt abgeschlossenen Spiels.
- * Enthaelt Siegerpartei, Spielwert, Augenstand und Sonderpunkte beider Parteien.
+ * Enthaelt Siegerpartei, Spielwert mit Aufschluesselung, Augenstand und Sonderpunkte beider Parteien.
  */
 export interface LetztesSpielergebnisAnsicht {
   spielNummer: number;
   spieltyp: LaufendesSpielAntwort['spieltyp'];
   siegerPartei: Partei;
   spielwert: number;
+  grundwert: number;
+  absagePunkte: number;
+  gegenDieAltenPunkte: number;
+  soloMultiplikator: number;
   augenRe: number;
   augenKontra: number;
   spielpunkte: PunktestandEintrag[];
@@ -497,6 +501,10 @@ function mappeLetztesSpielergebnis(
     spieltyp: ergebnis.spieltyp,
     siegerPartei: ergebnis.siegerPartei,
     spielwert: ergebnis.spielwert,
+    grundwert: ergebnis.grundwert,
+    absagePunkte: ergebnis.absagePunkte,
+    gegenDieAltenPunkte: ergebnis.gegenDieAltenPunkte,
+    soloMultiplikator: ergebnis.soloMultiplikator,
     augenRe: ergebnis.augenProPartei.RE ?? 0,
     augenKontra: ergebnis.augenProPartei.KONTRA ?? 0,
     spielpunkte: mappeSpielpunkte(spielerAnsichten, ergebnis.spielpunkteProSpieler),

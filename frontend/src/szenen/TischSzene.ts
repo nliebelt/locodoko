@@ -1734,14 +1734,39 @@ export class TischSzene extends Phaser.Scene {
       </div>
     `;
 
-    // Sonderpunkte (nur wenn vorhanden)
+    // Punkte-Berechnung (Einzelschritte)
+    const berechnungZeilen: string[] = [];
+    berechnungZeilen.push(`Grundwert: +${ergebnis.grundwert}`);
+    if (ergebnis.absagePunkte !== 0) {
+      berechnungZeilen.push(`Ansagen: ${ergebnis.absagePunkte > 0 ? '+' : ''}${ergebnis.absagePunkte}`);
+    }
+    if (ergebnis.gegenDieAltenPunkte > 0) {
+      berechnungZeilen.push(`Gegen die Alten: +${ergebnis.gegenDieAltenPunkte}`);
+    }
     const alleSonderpunkte = [
       ...ergebnis.sonderpunkteRe.map((sp) => `Re: ${formatiereSonderpunkt(sp)}`),
       ...ergebnis.sonderpunkteKontra.map((sp) => `Kontra: ${formatiereSonderpunkt(sp)}`)
     ];
+    if (alleSonderpunkte.length > 0) {
+      berechnungZeilen.push(`Sonderpunkte: +${alleSonderpunkte.length}`);
+    }
+    if (ergebnis.soloMultiplikator === 3) {
+      berechnungZeilen.push('Solo-Multiplikator: ×3');
+    }
+    const berechnungContainer = document.createElement('div');
+    berechnungContainer.className = 'ui-list-item ui-list-item--dense';
+    berechnungContainer.dataset['testid'] = 'rundenauswertung-punkte-berechnung';
+    berechnungContainer.innerHTML = `
+      <div class="ui-list-item__headline"><strong>Punkte-Berechnung</strong></div>
+      <div class="ui-list-item__meta">${berechnungZeilen.map((z) => escapeHtml(z)).join(' · ')}</div>
+      <div class="ui-list-item__meta"><strong>Gesamt: ${ergebnis.spielwert}</strong></div>
+    `;
+
+    // Sonderpunkte (nur wenn vorhanden, als separate Liste mit Einzelnamen)
     const sonderpunkteContainer = document.createElement('div');
     if (alleSonderpunkte.length > 0) {
       sonderpunkteContainer.className = 'ui-list-item ui-list-item--dense';
+      sonderpunkteContainer.dataset['testid'] = 'rundenauswertung-sonderpunkte';
       sonderpunkteContainer.innerHTML = `
         <div class="ui-list-item__headline"><strong>Sonderpunkte</strong></div>
         <div class="ui-list-item__meta">${alleSonderpunkte.map((s) => escapeHtml(s)).join(' · ')}</div>
@@ -1776,7 +1801,7 @@ export class TischSzene extends Phaser.Scene {
     const schliessenButton = this.erstelleButton('Weiter →', () => this.schliesseRundenEndeModal(), false);
     schliessenButton.dataset['testid'] = 'btn-rundenauswertung-weiter';
 
-    dialog.append(titel, ergebnisZeile, parteien);
+    dialog.append(titel, ergebnisZeile, parteien, berechnungContainer);
     if (alleSonderpunkte.length > 0) {
       dialog.append(sonderpunkteContainer);
     }

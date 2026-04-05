@@ -47,6 +47,15 @@ class PunkteRechnerTest {
         assertEquals(100, ergebnis.augenVon(Partei.KONTRA));
         assertEquals(1, ergebnis.spielwert(),
             "Eine gewonnene Re-Ansage zaehlt doppelt, eine verfehlte Absage gibt den Punkt aber an die Gegenpartei zurueck.");
+        // Einzelschritte: grundwert=2 (Re angesagt), absagePunkte=-1 (KEINE_90 verfehlt), gesamt=1
+        assertEquals(2, ergebnis.grundwert(),
+            "Re-Ansage verdoppelt den Grundwert auf 2 — ohne diesen Test bliebe die Verdopplung unbemerkt.");
+        assertEquals(-1, ergebnis.absagePunkte(),
+            "Eine verfehlte Absage gibt -1, weil KONTRA KEINE_90 ankuendigte aber RE 140 Augen holte.");
+        assertEquals(0, ergebnis.gegenDieAltenPunkte(),
+            "Gegen-die-Alten faellt hier weg, weil RE gewinnt.");
+        assertEquals(1, ergebnis.soloMultiplikator(),
+            "Normales 2v2-Spiel hat soloMultiplikator=1.");
         assertEquals(1, ergebnis.spielpunkteVon(SpielerPosition.SUED));
         assertEquals(-1, ergebnis.spielpunkteVon(SpielerPosition.NORD));
         assertEquals(0, ergebnis.spielpunkteProSpieler().values().stream().mapToInt(Integer::intValue).sum(),
@@ -101,6 +110,8 @@ class PunkteRechnerTest {
         );
 
         assertEquals(1, ergebnis.spielwert());
+        assertEquals(3, ergebnis.soloMultiplikator(),
+            "Solo-Spiel (1 gegen 3) hat soloMultiplikator=3 — ohne diesen Test bliebe die Solo-Kennzeichnung unbemerkt.");
         assertEquals(3, ergebnis.spielpunkteVon(SpielerPosition.SUED),
             "Solo-Sieger zaehlt dreifach, weil er alleine gegen drei antritt.");
         assertEquals(-1, ergebnis.spielpunkteVon(SpielerPosition.WEST));
@@ -151,6 +162,12 @@ class PunkteRechnerTest {
         assertEquals(140, ergebnis.augenVon(Partei.KONTRA));
         assertEquals(3, ergebnis.spielwert(),
             "Gewinnt Kontra gegen eine Re-Ansage, braucht die Wertung zusaetzlich den Punkt gegen die Alten.");
+        assertEquals(2, ergebnis.grundwert(),
+            "Re-Ansage verdoppelt den Grundwert.");
+        assertEquals(0, ergebnis.absagePunkte(),
+            "Keine Absagen wurden gemacht.");
+        assertEquals(1, ergebnis.gegenDieAltenPunkte(),
+            "Kontra gewinnt gegen Re-Ansage: +1 Punkt gegen-die-Alten — ohne diesen Test bliebe dieser Bonus unbemerkt.");
         assertEquals(3, ergebnis.spielpunkteVon(SpielerPosition.NORD));
         assertEquals(-3, ergebnis.spielpunkteVon(SpielerPosition.SUED));
     }

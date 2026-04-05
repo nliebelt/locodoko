@@ -11,7 +11,8 @@ import java.util.Objects;
 /**
  * Unveraenderliches Ergebnis eines abgeschlossenen Doppelkopf-Spiels.
  *
- * <p>Enthaelt Augen pro Partei (Summe immer 240), die Sieger-Partei, den Spielwert,
+ * <p>Enthaelt Augen pro Partei (Summe immer 240), die Sieger-Partei, den Spielwert
+ * sowie dessen Aufschluesselung (Grundwert, Absage-Punkte, Gegen-die-Alten, Solo-Multiplikator),
  * die als Nullsumme verteilten Spielpunkte je Spieler sowie aufgetretene Sonderpunkte
  * pro Partei (Fuchs, Karlchen, Doppelkopf). Wird von {@link PunkteRechner} erzeugt
  * und direkt in den Partie-Snapshot uebernommen.</p>
@@ -20,6 +21,10 @@ public record Spielergebnis(
     Map<Partei, Integer> augenProPartei,
     Partei siegerPartei,
     int spielwert,
+    int grundwert,
+    int absagePunkte,
+    int gegenDieAltenPunkte,
+    int soloMultiplikator,
     Map<SpielerPosition, Integer> spielpunkteProSpieler,
     Map<Partei, List<Sonderpunkt>> sonderpunkteProPartei
 ) {
@@ -29,6 +34,9 @@ public record Spielergebnis(
         Objects.requireNonNull(siegerPartei, "siegerPartei darf nicht null sein");
         Objects.requireNonNull(spielpunkteProSpieler, "spielpunkteProSpieler darf nicht null sein");
         Objects.requireNonNull(sonderpunkteProPartei, "sonderpunkteProPartei duerfen nicht null sein");
+        if (soloMultiplikator != 1 && soloMultiplikator != 3) {
+            throw new IllegalArgumentException("soloMultiplikator muss 1 oder 3 sein, war " + soloMultiplikator);
+        }
 
         EnumMap<Partei, Integer> augenKopie = new EnumMap<>(Partei.class);
         augenKopie.putAll(augenProPartei);

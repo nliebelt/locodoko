@@ -3,3 +3,5 @@ databaseChangeLog:
       file: db/changelog/001-initiales-schema.yaml
   - include:
       file: db/changelog/002-ki-schwierigkeit.yaml
+  - include:
+      file: db/changelog/003-spielwert-einzelschritte.yaml

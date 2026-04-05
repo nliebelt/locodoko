@@ -169,6 +169,10 @@ export interface LetztesSpielergebnisAntwort {
   spieltyp: Spieltyp;
   siegerPartei: Partei;
   spielwert: number;
+  grundwert: number;
+  absagePunkte: number;
+  gegenDieAltenPunkte: number;
+  soloMultiplikator: number;
   augenProPartei: Record<Partei, number>;
   spielpunkteProSpieler: Record<SpielerPosition, number>;
   sonderpunkteProPartei: Record<Partei, Sonderpunkt[]>;

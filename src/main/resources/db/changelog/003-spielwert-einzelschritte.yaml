@@ -1,0 +1,28 @@
+databaseChangeLog:
+  - changeSet:
+      id: 003-spielwert-einzelschritte
+      author: locodoko
+      changes:
+        - addColumn:
+            tableName: spiel
+            columns:
+              - column:
+                  name: grundwert
+                  type: INT
+                  constraints:
+                    nullable: true
+              - column:
+                  name: absage_punkte
+                  type: INT
+                  constraints:
+                    nullable: true
+              - column:
+                  name: gegen_die_alten_punkte
+                  type: INT
+                  constraints:
+                    nullable: true
+              - column:
+                  name: solo_multiplikator
+                  type: INT
+                  constraints:
+                    nullable: true

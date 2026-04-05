@@ -76,6 +76,7 @@ class PartieStandAntwortTest {
             Map.of(Partei.RE, 151, Partei.KONTRA, 89),
             Partei.RE,
             3,
+            1, 1, 1, 1,
             Map.of(
                 SpielerPosition.SUED, 3,
                 SpielerPosition.WEST, 3,

@@ -1,8 +1,15 @@
 # IMPLEMENTATION_PLAN — Locodoko Doppelkopf
 
-> Letzte Aktualisierung: 2026-04-05 (Plan-Run #22)
+> Letzte Aktualisierung: 2026-04-05 (Plan-Run #23)
 
 ## Notiz
+
+**2026-04-05 (Plan-Run #23):** Subagenten-Analyse aller 5 Bounded Contexts. Ergebnisse:
+- Lobby/Tisch: Vollständig. Alle Endpunkte inkl. `GET /api/tische/{id}` implementiert. Keine Lücken.
+- Partie/Regeln: **Gap bestätigt** — `Spielergebnis.java` speichert nur Gesamtspielwert, keine Aufschlüsselung (Grundwert, Absage-Punkte, Gegen-die-Alten, Solo-Multiplikator). `PunkteRechner` berechnet Einzelschritte intern, aber speichert sie nicht. `LetztesSpielergebnisAntwort` (PartieStandAntwort.java:326-373) gibt nur aggregierte Werte zurück. Spec (punkteberechnung.md:86-89) fordert Aufschlüsselung. → Neuer Eintrag 7.3.
+- Session/API: E2E-Tests nutzen `window.__locodoko.appStore.spieleKarte()` (alle 3 Testdateien) — Spec e2e-tests.md:20 fordert explizit "Kein appStore-Hack, stattdessen Tastatur". 16 `data-testid`-Attribute fehlen komplett im Frontend-Source (0 Treffer in frontend/src/). `rundenauswertung.spec.ts:75` sucht `/Quick Game/i`-Button der nicht in Spec/Frontend existiert (Test-Bug). → Neue Einträge 8.2, 8.3.
+- Frontend: 7.2 unvollständig (Punkte-Einzelschritte fehlen, bestätigt durch Backend-Gap). `formatiereSonderpunkt()` zeigt keine Täter-Opfer-Info ("Fuchs gefangen" statt "Fuchs gefangen (X fängt Y Fuchs)"). Seitenlade und Einstellungs-Modal als HTML-DOM implementiert — CLAUDE.md sagt "Meta-UI bleibt HTML", frontend-ui-logik.md fordert Phaser-Migration; dieser Widerspruch wird als Design-Entscheidungs-Eintrag dokumentiert. `TischAnsichtModell.ts:654` enthält noch "Du bist dran"-Text, den spec-ui-logik.md:19 ersatzlos streichen will. → Neue Einträge 8.4, 8.5, 8.6.
+- Sonderspiele/KI: 95% vollständig. Alle Kern-Features implementiert. `SchwerKiStrategieTest.java` hat keinen Hochzeit-Szenario-Test (Code funktioniert via Vererbung von StandardKiStrategie). → Neuer Eintrag 8.7.
 
 **2026-04-05 (Plan-Run #22):** 1.1 Vision Loop (headless), 6.7 Nameplates, 6.8 Ansage-Badges, 5.5 KI-Hochzeit-Vorbehalt, 5.6 GET /api/tische/{id}, 5.3 Recovery-Button, 5.7 Hochzeit-Partner-Anzeige, 7.1 Tastatursteuerung (verifiziert — war bereits vollständig implementiert), 7.2 Rundenauswertung-Overlay (spec-konform mit Parteien-Übersicht, Gesamtstand, kein Escape), 5.4 E2E-Test Rundenauswertung. 6.7: Positionen auf Spec-Prozente normiert, WEST/OST 80px→120px. 6.8: [K90]/[K60]/[K30]/[S] Badges in Orange aus ansageHistorie. 5.5: Code bereits korrekt (Hochzeit nach Solo-Threshold), 3 Tests ergänzt (meldetHochzeitBeiZweiKreuzDamen, meldetKeinHochzeitBeiSehrStarkerTrumpfhand, Bestätigung Solo-Priorität). 134 Backend-Tests grün, 62 Frontend-Tests grün. ALLE offenen Aufgaben erledigt. Nächster Plan-Run: Subagenten-Analyse auf neue Gaps prüfen — besonders Punkte-Berechnung (Einzelschritte) für 7.2 (benötigt Backend-Erweiterung von LetztesSpielergebnisAntwort).
 
@@ -141,7 +148,19 @@
     3. Keyboard-Support: Enter schließt Overlay (nicht Escape).
     4. `data-testid`-Attribute für E2E-Tests setzen.
   - Dateien: `frontend/src/szenen/TischSzene.ts`, `frontend/src/model/TischAnsichtModell.ts`
-  - Hinweis: Backend liefert bereits alle nötigen Daten via `SpielErgebnis`. Prüfen ob Punkte-Einzelschritte im DTO vollständig vorhanden sind.
+  - Hinweis: Layout-Gerüst implementiert (Kopfzeile, Parteien, Spielpunkte, Gesamtstand). Punkte-Einzelschritte fehlen noch — erst 7.3 umsetzen!
+
+- [ ] **7.3 Punkte-Einzelschritte: Backend + Frontend** [Blocker für vollständige 7.2-Anzeige]: `Spielergebnis.java` speichert nur den Gesamtspielwert; `PunkteRechner` berechnet Grundwert, Absage-Punkte und Gegen-die-Alten-Punkte intern, verwirft sie aber. `LetztesSpielergebnisAntwort` gibt keine Aufschlüsselung zurück. `frontend-rundenauswertung.md` Z. 32-40 fordert explizit "Grundwert +1, Re hat angesagt +1, …" als einzelne Zeilen.
+  - Umsetzung Backend:
+    1. `Spielergebnis.java` (Record): neue Felder `grundwert: int`, `absagePunkte: int`, `gegenDieAltenPunkte: int`, `soloMultiplikator: int` ergänzen.
+    2. `PunkteRechner.berechneSpielwert()` (Z. 77-90): Zwischenwerte in lokale Variablen speichern und in erweitertem `Spielergebnis`-Record zurückgeben statt nur addieren.
+    3. `LetztesSpielergebnisAntwort` (PartieStandAntwort.java Z. 326-373): neue Felder `grundwert`, `absagePunkte`, `gegenDieAltenPunkte`, `soloMultiplikator` in DTO aufnehmen.
+    4. `PunkteRechnerTest.java`: Assertions auf Einzelkomponenten ergänzen (bisher nur Gesamtspielwert geprüft, Z. 82-84, 152-153).
+  - Umsetzung Frontend:
+    1. `LetztesSpielergebnisAntwort`-Interface in `SpielverwaltungDto.ts` (Z. 167-175) um Einzelschritte-Felder erweitern.
+    2. `LetztesSpielergebnisAnsicht` in `TischAnsichtModell.ts` die Felder durchreichen.
+    3. `TischSzene.ts` Rundenauswertungs-Overlay: Einzelschritte-Zeilen rendern (nach Parteien-Block, vor Sonderpunkten).
+  - Dateien: `src/main/java/de/locodoko/partie/Spielergebnis.java`, `PunkteRechner.java`, `src/main/java/de/locodoko/lobby/PartieStandAntwort.java` (Z. 326+), `frontend/src/modelle/SpielverwaltungDto.ts` (Z. 167), `frontend/src/model/TischAnsichtModell.ts`, `frontend/src/szenen/TischSzene.ts`
 
 ---
 
@@ -155,6 +174,48 @@
 
 ---
 
+### E2E-Tests / Testqualität
+
+- [ ] **8.2 E2E: data-testid Attribute setzen** [Voraussetzung für stabile E2E-Tests]: 16 `data-testid`-Werte aus `specs/e2e-tests.md` Z. 27-45 fehlen vollständig im Frontend-Source (Grep-Ergebnis: 0 Treffer in `frontend/src/`). Nur 2 Attribute in Testdateien selbst sichtbar.
+  - Anforderung (specs/e2e-tests.md Z. 27-45): `data-testid="startscreen"`, `btn-neuer-tisch`, `tischszene`, `hud-stichzaehler`, `hud-gesamtpunktestand`, `rundenauswertung-overlay`, `rundenauswertung-spieltyp`, `rundenauswertung-ergebnis`, `rundenauswertung-parteien`, `rundenauswertung-punkte-berechnung`, `rundenauswertung-sonderpunkte`, `rundenauswertung-gesamtstand`, `rundenauswertung-weiter-btn`, `partieende-overlay`, `partieende-gesamtauswertung`, `partieende-neustart-countdown`
+  - Umsetzung: Attribute in `TischSzene.ts` (Phaser-DOM-Elemente) und ggf. `SpielverwaltungsSzene.ts` (Lobby-Screen) setzen. Für Phaser-Canvas-Elemente reicht ein unsichtbares HTML-Marker-Element.
+  - Dateien: `frontend/src/szenen/TischSzene.ts`, `frontend/src/scenes/SpielverwaltungsSzene.ts`
+
+- [ ] **8.3 E2E: appStore-Hack ersetzen + Test-Bug "Quick Game" beheben**: Alle drei E2E-Testdateien nutzen `window.__locodoko.appStore.spieleKarte()`. Spec `e2e-tests.md:20` fordert explizit: "Kein `__locodoko.appStore`-Hack mehr — Tastatureingaben (ArrowLeft/Right + Enter) statt direktem Store-Zugriff". Zusätzlich: `rundenauswertung.spec.ts:73-76` sucht `/Quick Game/i`-Button der weder in Spec noch im Frontend existiert — wahrscheinlich Test-Bug.
+  - Umsetzung:
+    1. `partie-gegen-ki.spec.ts:15-31`: `appStore.spieleKarte()`-Aufruf durch `page.keyboard.press('ArrowLeft')` + `page.keyboard.press('Enter')` ersetzen (Tastatursteuerung ist via 7.1 implementiert).
+    2. `rundenauswertung.spec.ts:17-44`: analog auf Tastatur umstellen.
+    3. `rundenauswertung.spec.ts:73-76`: `/Quick Game/i`-Button-Suche durch normalen Lobby-Flow ersetzen (Tisch erstellen, starten).
+    4. `vision-loop.spec.ts`: appStore-Hack kann bleiben (Vision Loop ist kein Spec-Test, sondern Debugging-Tool).
+  - Dateien: `e2e/tests/partie-gegen-ki.spec.ts`, `e2e/tests/rundenauswertung.spec.ts`
+
+---
+
+### Frontend-Qualität / Spec-Abweichungen
+
+- [ ] **8.4 Sonderpunkte: Täter-Opfer-Beschreibung in formatiereSonderpunkt()**: `formatiereSonderpunkt()` in `TischSzene.ts` zeigt Sonderpunkte ohne Kontext ("Fuchs gefangen" statt "Fuchs gefangen (Friedhelm fängt Carlossens Fuchs) +1"). Spec `frontend-rundenauswertung.md:44` fordert Täter + Opfer im Text.
+  - Umsetzung: Prüfen ob das Sonderpunkt-Domain-Objekt (Backend) Täter/Opfer-Info trägt. Falls ja: in DTO und `LetztesSpielergebnisAntwort` durchreichen, `formatiereSonderpunkt()` anpassen.
+  - Dateien: `frontend/src/szenen/TischSzene.ts`, ggf. Backend `Sonderpunkt.java` + `LetztesSpielergebnisAntwort`
+
+- [ ] **8.5 "Du bist dran"-Hinweis entfernen**: `TischAnsichtModell.ts:654` gibt `'Du bist dran'` zurück wenn `spieler.istAmZug`. Spec `frontend-ui-logik.md:19` fordert: "Hinweise die lediglich den Spielzug ankündigen **entfallen ersatzlos** — der aktive Spieler ist durch Nameplate-Hervorhebung erkennbar."
+  - Umsetzung: `TischAnsichtModell.ts:654` — Text auf Leerstring oder Spielernamen ändern (kein "Du bist dran"). Prüfen ob Nameplate-Hervorhebung des aktiven Spielers bereits implementiert ist.
+  - Datei: `frontend/src/model/TischAnsichtModell.ts` (Z. 654)
+
+- [ ] **8.6 Seitenlade + Einstellungs-Modal: Phaser vs. HTML — Design-Entscheidung** [Architektur-Konflikt]: `frontend-ui-logik.md:17` fordert "Meta-UI ebenfalls in Phaser umsetzen". Aktuelle Implementierung nutzt HTML-DOM (`seitenlade.className = 'seitenlade'` in TischSzene.ts:453, `einstellungen-backdrop` in TischSzene.ts:477). `CLAUDE.md` Architektur-Notiz sagt dagegen: "Meta-UI bleibt HTML". Widerspruch muss aufgelöst werden.
+  - Handlungsoptionen: (A) Spec umsetzen → Seitenlade + Einstellungs-Modal nach Phaser migrieren. (B) Spec anpassen → `frontend-ui-logik.md` auf HTML-Implementierung korrigieren, CLAUDE.md bestätigen.
+  - Empfehlung: Option B — funktional vollständig implementiert, Phaser-Migration hätte keinen Spielwert-Nutzen. Inhalt der Seitenlade (Spieler, Punktestand, Ansagehistorie, letzte 3 Stiche aufklappbar) und Einstellungs-Modal (Tischhintergrund, KI-Schwierigkeit, Animationsgeschwindigkeit, Tisch verlassen, Zur Lobby) auf Vollständigkeit gegen Spec prüfen.
+  - Dateien: `frontend/src/szenen/TischSzene.ts` (Z. 437-560), `specs/frontend-ui-logik.md`
+
+---
+
+### KI-Testabdeckung
+
+- [ ] **8.7 SchwerKiStrategie: Hochzeit-Test ergänzen** [minor]: `SchwerKiStrategieTest.java` hat keine Test-Methode für Hochzeit-Anmeldung bei 2 Kreuz-Damen. Code funktioniert korrekt via Vererbung von `StandardKiStrategie`, aber die Testabdeckung fehlt für `SchwerKiStrategie` direkt.
+  - Umsetzung: Analog zu `StandardKiStrategieTest.meldetHochzeitBeiZweiKreuzDamen()` einen Test in `SchwerKiStrategieTest.java` ergänzen.
+  - Datei: `src/test/java/de/locodoko/.../SchwerKiStrategieTest.java`
+
+---
+
 ## 7. Bekannte Probleme & Risiken
 
 ### Sicherheit
@@ -165,6 +226,6 @@
 
 ## 8. Architektur-Notizen
 
-- **Phaser vs. HTML**: Ziel ist die Migration aller Spiel-relevanten Dialoge (Armut, Vorbehalt) nach Phaser. Meta-UI bleibt HTML. Armut- und Vorbehalt-Dialoge bereits migriert.
+- **Phaser vs. HTML**: Ziel ist die Migration aller Spiel-relevanten Dialoge (Armut, Vorbehalt) nach Phaser. Meta-UI bleibt HTML. Armut- und Vorbehalt-Dialoge bereits migriert. KONFLIKT mit `frontend-ui-logik.md:17` (fordert auch Meta-UI in Phaser) — siehe Task 8.6.
 - **Transaktionalität**: WebSocket-Broadcasts in `TischEchtzeitService` sind transaktional gebunden.
 - **Pragmatisches DDD**: Domain Model = Persistence Model. Spring Data JDBC (kein JPA) + Liquibase.

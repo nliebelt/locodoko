@@ -27,6 +27,7 @@ import de.locodoko.partie.GespielteKarteEntity;
 import de.locodoko.partie.HandEntity;
 import de.locodoko.partie.HandKarteEmbeddable;
 import de.locodoko.partie.SpielEntity;
+import de.locodoko.partie.SpielErgebnisEmbeddable;
 import de.locodoko.partie.SpielSonderpunktEntity;
 import de.locodoko.partie.StichEntity;
 import de.locodoko.partie.VorbehaltMeldungEmbeddable;
@@ -339,10 +340,20 @@ final class SpielPersistenzAdapter {
             .map(SpielSonderpunktEntity::sonderpunkt)
             .toList());
 
+        SpielErgebnisEmbeddable ergebnis = spielEntity.ergebnis();
+        Integer dbGrundwert = ergebnis.grundwert();
+        Integer dbAbsagePunkte = ergebnis.absagePunkte();
+        Integer dbGegenDieAltenPunkte = ergebnis.gegenDieAltenPunkte();
+        Integer dbSoloMultiplikator = ergebnis.soloMultiplikator();
+
         return Optional.of(new Spielergebnis(
             augenProPartei,
-            spielEntity.ergebnis().siegerPartei(),
-            spielEntity.ergebnis().spielwert(),
+            ergebnis.siegerPartei(),
+            ergebnis.spielwert(),
+            dbGrundwert != null ? dbGrundwert : ergebnis.spielwert(),
+            dbAbsagePunkte != null ? dbAbsagePunkte : 0,
+            dbGegenDieAltenPunkte != null ? dbGegenDieAltenPunkte : 0,
+            dbSoloMultiplikator != null ? dbSoloMultiplikator : 1,
             spielpunkteProSpieler,
             sonderpunkteProPartei
         ));

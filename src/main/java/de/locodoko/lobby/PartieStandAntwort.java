@@ -328,6 +328,10 @@ public record PartieStandAntwort(
         Spieltyp spieltyp,
         Partei siegerPartei,
         int spielwert,
+        int grundwert,
+        int absagePunkte,
+        int gegenDieAltenPunkte,
+        int soloMultiplikator,
         Map<Partei, Integer> augenProPartei,
         Map<SpielerPosition, Integer> spielpunkteProSpieler,
         Map<Partei, List<Sonderpunkt>> sonderpunkteProPartei
@@ -360,11 +364,20 @@ public record PartieStandAntwort(
                 );
             }
 
+            Integer dbGrundwert = ergebnis.grundwert();
+            Integer dbAbsagePunkte = ergebnis.absagePunkte();
+            Integer dbGegenDieAltenPunkte = ergebnis.gegenDieAltenPunkte();
+            Integer dbSoloMultiplikator = ergebnis.soloMultiplikator();
+
             return new LetztesSpielergebnisAntwort(
                 spiel.spielNummer(),
                 spiel.spieltyp(),
                 ergebnis.siegerPartei(),
                 ergebnis.spielwert(),
+                dbGrundwert != null ? dbGrundwert : ergebnis.spielwert(),
+                dbAbsagePunkte != null ? dbAbsagePunkte : 0,
+                dbGegenDieAltenPunkte != null ? dbGegenDieAltenPunkte : 0,
+                dbSoloMultiplikator != null ? dbSoloMultiplikator : 1,
                 Map.copyOf(augenProPartei),
                 Map.copyOf(spielpunkteProSpieler),
                 Map.copyOf(sonderpunkteProPartei)

@@ -274,6 +274,6 @@ class PersistenzRepositoryTest {
         sonderpunkte.put(Partei.RE, List.of(Sonderpunkt.FUCHS_GEFANGEN, Sonderpunkt.DOPPELKOPF));
         sonderpunkte.put(Partei.KONTRA, List.of());
 
-        return new Spielergebnis(augen, Partei.RE, 3, spielpunkte, sonderpunkte);
+        return new Spielergebnis(augen, Partei.RE, 3, 1, 0, 0, 1, spielpunkte, sonderpunkte);
     }
 }

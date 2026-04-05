@@ -349,6 +349,10 @@ describe('erstelleTischAnsichtAusStatus', () => {
         spieltyp: 'NORMALSPIEL',
         siegerPartei: 'RE',
         spielwert: 3,
+        grundwert: 1,
+        absagePunkte: 0,
+        gegenDieAltenPunkte: 0,
+        soloMultiplikator: 1,
         augenProPartei: { RE: 151, KONTRA: 89 },
         spielpunkteProSpieler: { SUED: 3, WEST: 3, NORD: -3, OST: -3 },
         sonderpunkteProPartei: { RE: ['DOPPELKOPF'], KONTRA: ['FUCHS_GEFANGEN'] }

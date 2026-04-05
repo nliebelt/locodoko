@@ -15,6 +15,10 @@ public class SpielErgebnisEmbeddable {
     private Integer kontraAugen;
     private String siegerPartei;
     private Integer spielwert;
+    private Integer grundwert;
+    private Integer absagePunkte;
+    private Integer gegenDieAltenPunkte;
+    private Integer soloMultiplikator;
     private Integer spielpunkteSued;
     private Integer spielpunkteWest;
     private Integer spielpunkteNord;
@@ -28,6 +32,10 @@ public class SpielErgebnisEmbeddable {
         this.kontraAugen = spielergebnis.augenVon(Partei.KONTRA);
         this.siegerPartei = spielergebnis.siegerPartei().name();
         this.spielwert = spielergebnis.spielwert();
+        this.grundwert = spielergebnis.grundwert();
+        this.absagePunkte = spielergebnis.absagePunkte();
+        this.gegenDieAltenPunkte = spielergebnis.gegenDieAltenPunkte();
+        this.soloMultiplikator = spielergebnis.soloMultiplikator();
         this.spielpunkteSued = spielergebnis.spielpunkteVon(SpielerPosition.SUED);
         this.spielpunkteWest = spielergebnis.spielpunkteVon(SpielerPosition.WEST);
         this.spielpunkteNord = spielergebnis.spielpunkteVon(SpielerPosition.NORD);
@@ -54,6 +62,22 @@ public class SpielErgebnisEmbeddable {
         return spielwert;
     }
 
+    public Integer grundwert() {
+        return grundwert;
+    }
+
+    public Integer absagePunkte() {
+        return absagePunkte;
+    }
+
+    public Integer gegenDieAltenPunkte() {
+        return gegenDieAltenPunkte;
+    }
+
+    public Integer soloMultiplikator() {
+        return soloMultiplikator;
+    }
+
     public Integer spielpunkteSued() {
         return spielpunkteSued;
     }
@@ -75,6 +99,10 @@ public class SpielErgebnisEmbeddable {
     void setKontraAugen(Integer kontraAugen) { this.kontraAugen = kontraAugen; }
     void setSiegerPartei(String siegerPartei) { this.siegerPartei = siegerPartei; }
     void setSpielwert(Integer spielwert) { this.spielwert = spielwert; }
+    void setGrundwert(Integer grundwert) { this.grundwert = grundwert; }
+    void setAbsagePunkte(Integer absagePunkte) { this.absagePunkte = absagePunkte; }
+    void setGegenDieAltenPunkte(Integer gegenDieAltenPunkte) { this.gegenDieAltenPunkte = gegenDieAltenPunkte; }
+    void setSoloMultiplikator(Integer soloMultiplikator) { this.soloMultiplikator = soloMultiplikator; }
     void setSpielpunkteSued(Integer spielpunkteSued) { this.spielpunkteSued = spielpunkteSued; }
     void setSpielpunkteWest(Integer spielpunkteWest) { this.spielpunkteWest = spielpunkteWest; }
     void setSpielpunkteNord(Integer spielpunkteNord) { this.spielpunkteNord = spielpunkteNord; }

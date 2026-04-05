@@ -61,32 +61,24 @@ public final class PunkteRechner {
         Partei siegerPartei = augenProPartei.get(Partei.RE) >= 121 ? Partei.RE : Partei.KONTRA;
         EnumMap<Partei, List<Sonderpunkt>> sonderpunkteProPartei =
             sonderpunktBewerter.bewerte(stiche, parteien, trumpfOrdnung, spielregeln);
-        int spielwert = berechneSpielwert(
-            siegerPartei,
-            augenProPartei,
-            sticheProPartei,
-            parteien,
-            ansagen,
-            sonderpunkteProPartei
-        );
+
+        int grundwert = grundwert(ansagen, parteien);
+        int absagePunkte = bewerteAbsagen(siegerPartei, augenProPartei, sticheProPartei, parteien, ansagen);
+        int gegenDieAltenPunkte = bewerteGegenDieAlten(siegerPartei, parteien, ansagen);
+        int sonderpunkteWert = bewerteSonderpunkte(siegerPartei, sonderpunkteProPartei);
+        int spielwert = Math.max(1, grundwert + absagePunkte + gegenDieAltenPunkte + sonderpunkteWert);
+
+        List<SpielerPosition> sieger = parteien.spielerVon(siegerPartei);
+        List<SpielerPosition> verlierer = parteien.spielerVon(siegerPartei.gegenpartei());
+        int soloMultiplikator = (sieger.size() == 1 || verlierer.size() == 1) ? 3 : 1;
+
         EnumMap<SpielerPosition, Integer> spielpunkteProSpieler = new EnumMap<>(SpielerPosition.class);
         verteileSpielpunkte(spielpunkteProSpieler, parteien, siegerPartei, spielwert);
-        return new Spielergebnis(augenProPartei, siegerPartei, spielwert, spielpunkteProSpieler, sonderpunkteProPartei);
-    }
-
-    private int berechneSpielwert(
-        Partei siegerPartei,
-        Map<Partei, Integer> augenProPartei,
-        Map<Partei, Integer> sticheProPartei,
-        Parteien parteien,
-        Ansagen ansagen,
-        Map<Partei, List<Sonderpunkt>> sonderpunkteProPartei
-    ) {
-        int spielwert = grundwert(ansagen, parteien);
-        spielwert += bewerteAbsagen(siegerPartei, augenProPartei, sticheProPartei, parteien, ansagen);
-        spielwert += bewerteGegenDieAlten(siegerPartei, parteien, ansagen);
-        spielwert += bewerteSonderpunkte(siegerPartei, sonderpunkteProPartei);
-        return Math.max(1, spielwert);
+        return new Spielergebnis(
+            augenProPartei, siegerPartei, spielwert,
+            grundwert, absagePunkte, gegenDieAltenPunkte, soloMultiplikator,
+            spielpunkteProSpieler, sonderpunkteProPartei
+        );
     }
 
     private int grundwert(Ansagen ansagen, Parteien parteien) {
