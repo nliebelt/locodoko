@@ -195,7 +195,7 @@
 
 ### Frontend-Qualität / Spec-Abweichungen
 
-- [ ] **8.4 Sonderpunkte: Täter-Opfer-Beschreibung in formatiereSonderpunkt()**: `formatiereSonderpunkt()` in `TischSzene.ts` zeigt Sonderpunkte ohne Kontext ("Fuchs gefangen" statt "Fuchs gefangen (Friedhelm fängt Carlossens Fuchs) +1"). Spec `frontend-rundenauswertung.md:44` fordert Täter + Opfer im Text.
+- [x] **8.4 Sonderpunkte: Täter-Opfer-Beschreibung in formatiereSonderpunkt()**: `formatiereSonderpunkt()` in `TischSzene.ts` zeigt Sonderpunkte ohne Kontext ("Fuchs gefangen" statt "Fuchs gefangen (Friedhelm fängt Carlossens Fuchs) +1"). Spec `frontend-rundenauswertung.md:44` fordert Täter + Opfer im Text.
   - Umsetzung: Prüfen ob das Sonderpunkt-Domain-Objekt (Backend) Täter/Opfer-Info trägt. Falls ja: in DTO und `LetztesSpielergebnisAntwort` durchreichen, `formatiereSonderpunkt()` anpassen.
   - Dateien: `frontend/src/szenen/TischSzene.ts`, ggf. Backend `Sonderpunkt.java` + `LetztesSpielergebnisAntwort`
 

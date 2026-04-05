@@ -355,7 +355,10 @@ describe('erstelleTischAnsichtAusStatus', () => {
         soloMultiplikator: 1,
         augenProPartei: { RE: 151, KONTRA: 89 },
         spielpunkteProSpieler: { SUED: 3, WEST: 3, NORD: -3, OST: -3 },
-        sonderpunkteProPartei: { RE: ['DOPPELKOPF'], KONTRA: ['FUCHS_GEFANGEN'] }
+        sonderpunkteProPartei: {
+          RE: [{ art: 'DOPPELKOPF', taeter: 'SUED', opfer: null }],
+          KONTRA: [{ art: 'FUCHS_GEFANGEN', taeter: 'NORD', opfer: 'SUED' }]
+        }
       },
       letzteAbgeschlosseneStiche: [
         {
@@ -380,8 +383,8 @@ describe('erstelleTischAnsichtAusStatus', () => {
       siegerPartei: 'RE',
       augenRe: 151,
       augenKontra: 89,
-      sonderpunkteRe: ['DOPPELKOPF'],
-      sonderpunkteKontra: ['FUCHS_GEFANGEN']
+      sonderpunkteRe: [{ art: 'DOPPELKOPF', taeter: 'SUED', opfer: null }],
+      sonderpunkteKontra: [{ art: 'FUCHS_GEFANGEN', taeter: 'NORD', opfer: 'SUED' }]
     });
     expect(modell.letztesSpielergebnis?.spielpunkte.map((eintrag) => `${eintrag.name}:${eintrag.punkte}`))
       .toEqual(['Ben:3', 'Clara:-3', 'Dirk:-3', 'Anna:3']);

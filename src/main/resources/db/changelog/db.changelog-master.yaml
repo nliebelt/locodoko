@@ -5,3 +5,5 @@ databaseChangeLog:
       file: db/changelog/002-ki-schwierigkeit.yaml
   - include:
       file: db/changelog/003-spielwert-einzelschritte.yaml
+  - include:
+      file: db/changelog/004-sonderpunkt-taeter-opfer.yaml

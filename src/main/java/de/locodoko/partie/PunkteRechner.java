@@ -59,7 +59,7 @@ public final class PunkteRechner {
         }
 
         Partei siegerPartei = augenProPartei.get(Partei.RE) >= 121 ? Partei.RE : Partei.KONTRA;
-        EnumMap<Partei, List<Sonderpunkt>> sonderpunkteProPartei =
+        EnumMap<Partei, List<SonderpunktEreignis>> sonderpunkteProPartei =
             sonderpunktBewerter.bewerte(stiche, parteien, trumpfOrdnung, spielregeln);
 
         int grundwert = grundwert(ansagen, parteien);
@@ -133,7 +133,7 @@ public final class PunkteRechner {
         return siegerPartei == Partei.KONTRA && ansagen.hatGrundansage(Partei.RE, parteien) ? 1 : 0;
     }
 
-    private int bewerteSonderpunkte(Partei siegerPartei, Map<Partei, List<Sonderpunkt>> sonderpunkteProPartei) {
+    private int bewerteSonderpunkte(Partei siegerPartei, Map<Partei, List<SonderpunktEreignis>> sonderpunkteProPartei) {
         int spielwert = 0;
         for (Partei partei : Partei.values()) {
             int anzahl = sonderpunkteProPartei.get(partei).size();

@@ -8,7 +8,7 @@ import type {
   LetztesSpielergebnisAntwort,
   Partei,
   PartieStandAntwort,
-  Sonderpunkt,
+  SonderpunktEreignis,
   SpielerAmTischAntwort,
   SpielerImSpielAntwort,
   SpielerPosition as BackendSpielerPosition,
@@ -90,8 +90,8 @@ export interface LetztesSpielergebnisAnsicht {
   augenRe: number;
   augenKontra: number;
   spielpunkte: PunktestandEintrag[];
-  sonderpunkteRe: Sonderpunkt[];
-  sonderpunkteKontra: Sonderpunkt[];
+  sonderpunkteRe: SonderpunktEreignis[];
+  sonderpunkteKontra: SonderpunktEreignis[];
 }
 
 /**

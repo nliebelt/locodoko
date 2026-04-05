@@ -1,0 +1,18 @@
+databaseChangeLog:
+  - changeSet:
+      id: 004-sonderpunkt-taeter-opfer
+      author: locodoko
+      changes:
+        - addColumn:
+            tableName: spiel_sonderpunkt
+            columns:
+              - column:
+                  name: taeter
+                  type: VARCHAR(50)
+                  constraints:
+                    nullable: true
+              - column:
+                  name: opfer
+                  type: VARCHAR(50)
+                  constraints:
+                    nullable: true

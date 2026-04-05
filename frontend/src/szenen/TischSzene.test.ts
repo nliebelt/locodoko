@@ -954,7 +954,10 @@ describe('TischSzene', () => {
           soloMultiplikator: 1,
           augenProPartei: { RE: 130, KONTRA: 110 },
           spielpunkteProSpieler: { SUED: 1, WEST: -1, NORD: 1, OST: -1 },
-          sonderpunkteProPartei: { RE: ['FUCHS_GEFANGEN'], KONTRA: [] }
+          sonderpunkteProPartei: {
+            RE: [{ art: 'FUCHS_GEFANGEN', taeter: 'SUED', opfer: 'NORD' }],
+            KONTRA: []
+          }
         }
       }
     }));
@@ -1030,7 +1033,10 @@ describe('TischSzene', () => {
           soloMultiplikator: 1,
           augenProPartei: { RE: 130, KONTRA: 110 },
           spielpunkteProSpieler: { SUED: 1, WEST: -1, NORD: 1, OST: -1 },
-          sonderpunkteProPartei: { RE: ['FUCHS_GEFANGEN'], KONTRA: [] }
+          sonderpunkteProPartei: {
+            RE: [{ art: 'FUCHS_GEFANGEN', taeter: 'SUED', opfer: 'NORD' }],
+            KONTRA: []
+          }
         }
       }
     }));
@@ -1061,7 +1067,10 @@ describe('TischSzene', () => {
           soloMultiplikator: 1,
           augenProPartei: { RE: 100, KONTRA: 140 },
           spielpunkteProSpieler: { SUED: -2, WEST: 2, NORD: -2, OST: 2 },
-          sonderpunkteProPartei: { RE: [], KONTRA: ['KARLCHEN'] }
+          sonderpunkteProPartei: {
+            RE: [],
+            KONTRA: [{ art: 'KARLCHEN', taeter: 'WEST', opfer: null }]
+          }
         }
       }
     }));

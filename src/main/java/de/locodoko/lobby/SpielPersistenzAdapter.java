@@ -18,7 +18,7 @@ import de.locodoko.partie.Parteien;
 import de.locodoko.partie.Spiel;
 import de.locodoko.partie.Spielphase;
 import de.locodoko.partie.Spielergebnis;
-import de.locodoko.partie.Sonderpunkt;
+import de.locodoko.partie.SonderpunktEreignis;
 import de.locodoko.partie.VorbehaltAnsage;
 import de.locodoko.partie.VorbehaltMeldung;
 import de.locodoko.partie.AnsageEreignisEmbeddable;
@@ -330,14 +330,14 @@ final class SpielPersistenzAdapter {
         spielpunkteProSpieler.put(SpielerPosition.NORD, spielEntity.ergebnis().spielpunkteNord());
         spielpunkteProSpieler.put(SpielerPosition.OST, spielEntity.ergebnis().spielpunkteOst());
 
-        EnumMap<Partei, List<Sonderpunkt>> sonderpunkteProPartei = new EnumMap<>(Partei.class);
+        EnumMap<Partei, List<SonderpunktEreignis>> sonderpunkteProPartei = new EnumMap<>(Partei.class);
         sonderpunkteProPartei.put(Partei.RE, spielEntity.sonderpunkte().stream()
             .filter(eintrag -> eintrag.partei() == Partei.RE)
-            .map(SpielSonderpunktEntity::sonderpunkt)
+            .map(SpielSonderpunktEntity::alsEreignis)
             .toList());
         sonderpunkteProPartei.put(Partei.KONTRA, spielEntity.sonderpunkte().stream()
             .filter(eintrag -> eintrag.partei() == Partei.KONTRA)
-            .map(SpielSonderpunktEntity::sonderpunkt)
+            .map(SpielSonderpunktEntity::alsEreignis)
             .toList());
 
         SpielErgebnisEmbeddable ergebnis = spielEntity.ergebnis();

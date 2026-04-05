@@ -19,6 +19,7 @@ import de.locodoko.partie.Partei;
 import de.locodoko.partie.Spielergebnis;
 import de.locodoko.partie.Spielphase;
 import de.locodoko.partie.Sonderpunkt;
+import de.locodoko.partie.SonderpunktEreignis;
 import jakarta.validation.ConstraintViolationException;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -270,8 +271,11 @@ class PersistenzRepositoryTest {
         spielpunkte.put(SpielerPosition.NORD, -1);
         spielpunkte.put(SpielerPosition.OST, -1);
 
-        Map<Partei, List<Sonderpunkt>> sonderpunkte = new EnumMap<>(Partei.class);
-        sonderpunkte.put(Partei.RE, List.of(Sonderpunkt.FUCHS_GEFANGEN, Sonderpunkt.DOPPELKOPF));
+        Map<Partei, List<SonderpunktEreignis>> sonderpunkte = new EnumMap<>(Partei.class);
+        sonderpunkte.put(Partei.RE, List.of(
+            new SonderpunktEreignis(Sonderpunkt.FUCHS_GEFANGEN, SpielerPosition.SUED, SpielerPosition.NORD),
+            new SonderpunktEreignis(Sonderpunkt.DOPPELKOPF, SpielerPosition.SUED, null)
+        ));
         sonderpunkte.put(Partei.KONTRA, List.of());
 
         return new Spielergebnis(augen, Partei.RE, 3, 1, 0, 0, 1, spielpunkte, sonderpunkte);

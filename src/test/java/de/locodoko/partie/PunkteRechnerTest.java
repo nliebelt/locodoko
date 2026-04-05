@@ -90,7 +90,8 @@ class PunkteRechnerTest {
         assertEquals(0, ergebnis.augenVon(Partei.KONTRA));
         assertEquals(11, ergebnis.spielwert(),
             "Grundansagen, erreichte Absagen und Sonderpunkte muessen gemeinsam den finalen Spielwert bilden, weil genau das die Endwertung traegt.");
-        assertEquals(List.of(Sonderpunkt.DOPPELKOPF, Sonderpunkt.FUCHS_GEFANGEN, Sonderpunkt.KARLCHEN), ergebnis.sonderpunkteVon(Partei.RE));
+        List<Sonderpunkt> reArten = ergebnis.sonderpunkteVon(Partei.RE).stream().map(SonderpunktEreignis::art).toList();
+        assertEquals(List.of(Sonderpunkt.DOPPELKOPF, Sonderpunkt.FUCHS_GEFANGEN, Sonderpunkt.KARLCHEN), reArten);
         assertEquals(11, ergebnis.spielpunkteVon(SpielerPosition.SUED));
         assertEquals(-11, ergebnis.spielpunkteVon(SpielerPosition.NORD));
     }

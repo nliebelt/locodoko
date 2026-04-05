@@ -17,7 +17,7 @@ import {
   type TischAnsichtModell,
   type SpielerPosition
 } from '../model/TischAnsichtModell';
-import type { Ansage, KarteAntwort, KiSchwierigkeit, Sonderpunkt, Tischhintergrund, VorbehaltAnsage } from '../modelle/SpielverwaltungDto';
+import type { Ansage, KarteAntwort, KiSchwierigkeit, Sonderpunkt, SonderpunktEreignis, Tischhintergrund, VorbehaltAnsage } from '../modelle/SpielverwaltungDto';
 import { AnimationenService, type AnimierbareKartenobjekte } from '../services/AnimationenService';
 import type { AppZustand } from '../store/AppStore';
 
@@ -108,12 +108,24 @@ function formatiereVorbehalt(vorbehalt: VorbehaltAnsage): string {
   } as Record<VorbehaltAnsage, string>)[vorbehalt];
 }
 
-function formatiereSonderpunkt(sonderpunkt: Sonderpunkt): string {
-  return ({
+function formatiereSonderpunkt(ereignis: SonderpunktEreignis, spielerNamen?: Map<string, string>): string {
+  const basisText = ({
     FUCHS_GEFANGEN: 'Fuchs gefangen',
     KARLCHEN: 'Karlchen',
     DOPPELKOPF: 'Doppelkopf'
-  } as Record<Sonderpunkt, string>)[sonderpunkt];
+  } as Record<Sonderpunkt, string>)[ereignis.art];
+  if (!spielerNamen) {
+    return basisText;
+  }
+  const taeter = spielerNamen.get(ereignis.taeter) ?? ereignis.taeter;
+  if (ereignis.art === 'FUCHS_GEFANGEN' && ereignis.opfer) {
+    const opfer = spielerNamen.get(ereignis.opfer) ?? ereignis.opfer;
+    return `${basisText} (${taeter} fängt ${opfer}s Fuchs)`;
+  }
+  if (ereignis.art === 'KARLCHEN') {
+    return `${basisText} (${taeter})`;
+  }
+  return basisText;
 }
 
 function holeUiRoot(): HTMLElement {
@@ -1153,8 +1165,8 @@ export class TischSzene extends Phaser.Scene {
         <span class="ui-badge">${ergebnis.siegerPartei}</span>
       </div>
       <div class="ui-list-item__meta">
-        <span>Re: ${ergebnis.sonderpunkteRe.length > 0 ? ergebnis.sonderpunkteRe.map(formatiereSonderpunkt).join(', ') : 'Keine'}</span>
-        <span>Kontra: ${ergebnis.sonderpunkteKontra.length > 0 ? ergebnis.sonderpunkteKontra.map(formatiereSonderpunkt).join(', ') : 'Keine'}</span>
+        <span>Re: ${ergebnis.sonderpunkteRe.length > 0 ? ergebnis.sonderpunkteRe.map((sp) => formatiereSonderpunkt(sp)).join(', ') : 'Keine'}</span>
+        <span>Kontra: ${ergebnis.sonderpunkteKontra.length > 0 ? ergebnis.sonderpunkteKontra.map((sp) => formatiereSonderpunkt(sp)).join(', ') : 'Keine'}</span>
       </div>
     `;
     const punkteListe = document.createElement('ul');
@@ -1632,12 +1644,13 @@ export class TischSzene extends Phaser.Scene {
     if (vorherigeNummer === neuesErgebnis.spielNummer) {
       return [];
     }
+    const spielerNamen = new Map(aktuellesModell.spieler.map((s) => [s.position, s.name] as const));
     const sonderpunkte: string[] = [];
     for (const sp of neuesErgebnis.sonderpunkteRe) {
-      sonderpunkte.push(`Re: ${formatiereSonderpunkt(sp)}`);
+      sonderpunkte.push(`Re: ${formatiereSonderpunkt(sp, spielerNamen)}`);
     }
     for (const sp of neuesErgebnis.sonderpunkteKontra) {
-      sonderpunkte.push(`Kontra: ${formatiereSonderpunkt(sp)}`);
+      sonderpunkte.push(`Kontra: ${formatiereSonderpunkt(sp, spielerNamen)}`);
     }
     return sonderpunkte;
   }
@@ -1716,6 +1729,7 @@ export class TischSzene extends Phaser.Scene {
       ? `Spiel ${ergebnis.spielNummer} von ${anzahlSpiele}`
       : `Spiel ${ergebnis.spielNummer}`;
     const spieltypLabel = formatiereVorbehalt(ergebnis.spieltyp as VorbehaltAnsage) ?? ergebnis.spieltyp;
+    const spielerNamenMap = new Map(modell.spieler.map((s) => [s.position, s.name] as const));
 
     const dialog = document.createElement('div');
     dialog.className = 'ui-modal';
@@ -1758,8 +1772,8 @@ export class TischSzene extends Phaser.Scene {
       berechnungZeilen.push(`Gegen die Alten: +${ergebnis.gegenDieAltenPunkte}`);
     }
     const alleSonderpunkte = [
-      ...ergebnis.sonderpunkteRe.map((sp) => `Re: ${formatiereSonderpunkt(sp)}`),
-      ...ergebnis.sonderpunkteKontra.map((sp) => `Kontra: ${formatiereSonderpunkt(sp)}`)
+      ...ergebnis.sonderpunkteRe.map((sp) => `Re: ${formatiereSonderpunkt(sp, spielerNamenMap)}`),
+      ...ergebnis.sonderpunkteKontra.map((sp) => `Kontra: ${formatiereSonderpunkt(sp, spielerNamenMap)}`)
     ];
     if (alleSonderpunkte.length > 0) {
       berechnungZeilen.push(`Sonderpunkte: +${alleSonderpunkte.length}`);

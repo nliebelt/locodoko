@@ -323,6 +323,12 @@ public record PartieStandAntwort(
         }
     }
 
+    public record SonderpunktEreignisDto(
+        Sonderpunkt art,
+        SpielerPosition taeter,
+        SpielerPosition opfer
+    ) {}
+
     public record LetztesSpielergebnisAntwort(
         int spielNummer,
         Spieltyp spieltyp,
@@ -334,7 +340,7 @@ public record PartieStandAntwort(
         int soloMultiplikator,
         Map<Partei, Integer> augenProPartei,
         Map<SpielerPosition, Integer> spielpunkteProSpieler,
-        Map<Partei, List<Sonderpunkt>> sonderpunkteProPartei
+        Map<Partei, List<SonderpunktEreignisDto>> sonderpunkteProPartei
     ) {
 
         static LetztesSpielergebnisAntwort aus(SpielEntity spiel) {
@@ -353,13 +359,13 @@ public record PartieStandAntwort(
             spielpunkteProSpieler.put(SpielerPosition.NORD, ergebnis.spielpunkteNord());
             spielpunkteProSpieler.put(SpielerPosition.OST, ergebnis.spielpunkteOst());
 
-            EnumMap<Partei, List<Sonderpunkt>> sonderpunkteProPartei = new EnumMap<>(Partei.class);
+            EnumMap<Partei, List<SonderpunktEreignisDto>> sonderpunkteProPartei = new EnumMap<>(Partei.class);
             for (Partei partei : Partei.values()) {
                 sonderpunkteProPartei.put(
                     partei,
                     spiel.sonderpunkte().stream()
-                        .filter(sonderpunkt -> sonderpunkt.partei() == partei)
-                        .map(sonderpunkt -> sonderpunkt.sonderpunkt())
+                        .filter(sp -> sp.partei() == partei)
+                        .map(sp -> new SonderpunktEreignisDto(sp.sonderpunkt(), sp.taeter(), sp.opfer()))
                         .toList()
                 );
             }

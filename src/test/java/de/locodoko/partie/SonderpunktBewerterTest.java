@@ -43,10 +43,16 @@ class SonderpunktBewerterTest {
                 .spieleKarte(SpielerPosition.SUED, kreuzAs(2), new Hand(List.of(kreuzAs(2))), trumpfOrdnung)
         );
 
-        Map<Partei, List<Sonderpunkt>> sonderpunkte = bewerter.bewerte(stiche, parteien, trumpfOrdnung, spielregeln);
+        Map<Partei, List<SonderpunktEreignis>> sonderpunkte = bewerter.bewerte(stiche, parteien, trumpfOrdnung, spielregeln);
 
-        assertEquals(List.of(Sonderpunkt.DOPPELKOPF, Sonderpunkt.FUCHS_GEFANGEN, Sonderpunkt.KARLCHEN), sonderpunkte.get(Partei.RE),
+        List<Sonderpunkt> reArten = sonderpunkte.get(Partei.RE).stream().map(SonderpunktEreignis::art).toList();
+        assertEquals(List.of(Sonderpunkt.DOPPELKOPF, Sonderpunkt.FUCHS_GEFANGEN, Sonderpunkt.KARLCHEN), reArten,
             "Fuchs, Karlchen und Doppelkopf muessen gesammelt an die gewinnende Partei gehen, weil sie spaeter gemeinsam in die Wertung einfliessen.");
+        // Fuchs gefangen: WEST fängt NORD's Fuchs (WEST gewinnt den ersten Stich, NORD spielt Karo-As)
+        SonderpunktEreignis fuchsEreignis = sonderpunkte.get(Partei.RE).stream()
+            .filter(e -> e.art() == Sonderpunkt.FUCHS_GEFANGEN).findFirst().orElseThrow();
+        assertEquals(SpielerPosition.WEST, fuchsEreignis.taeter(), "Taeter muss der Stichgewinner WEST sein");
+        assertEquals(SpielerPosition.NORD, fuchsEreignis.opfer(), "Opfer muss der Fuchs-Besitzer NORD sein");
         assertEquals(List.of(), sonderpunkte.get(Partei.KONTRA));
     }
 
@@ -61,7 +67,7 @@ class SonderpunktBewerterTest {
                 .spieleKarte(SpielerPosition.OST, kreuzAs(1), new Hand(List.of(kreuzAs(1))), trumpfOrdnung)
         );
 
-        Map<Partei, List<Sonderpunkt>> sonderpunkte =
+        Map<Partei, List<SonderpunktEreignis>> sonderpunkte =
             bewerter.bewerte(stiche, parteien, trumpfOrdnung, regelnOhneSonderpunkte);
 
         assertEquals(List.of(), sonderpunkte.get(Partei.RE));

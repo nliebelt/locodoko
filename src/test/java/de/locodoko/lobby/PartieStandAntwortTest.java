@@ -10,6 +10,7 @@ import de.locodoko.partie.Partei;
 import de.locodoko.partie.Spielergebnis;
 import de.locodoko.partie.Spielphase;
 import de.locodoko.partie.Sonderpunkt;
+import de.locodoko.partie.SonderpunktEreignis;
 import de.locodoko.partie.PartieEntity;
 import de.locodoko.partie.SpielEntity;
 import de.locodoko.session.SpielerEntity;
@@ -84,8 +85,8 @@ class PartieStandAntwortTest {
                 SpielerPosition.OST, -3
             ),
             Map.of(
-                Partei.RE, List.of(Sonderpunkt.DOPPELKOPF),
-                Partei.KONTRA, List.of(Sonderpunkt.FUCHS_GEFANGEN)
+                Partei.RE, List.of(new SonderpunktEreignis(Sonderpunkt.DOPPELKOPF, SpielerPosition.SUED, null)),
+                Partei.KONTRA, List.of(new SonderpunktEreignis(Sonderpunkt.FUCHS_GEFANGEN, SpielerPosition.NORD, SpielerPosition.SUED))
             )
         ));
 
@@ -104,7 +105,9 @@ class PartieStandAntwortTest {
             "Die letzte Auswertung muss im Snapshot enthalten sein, damit das Frontend Ergebnis-Overlays ohne lokale Nachberechnung darstellen kann.");
         assertEquals(Partei.RE, antwort.letztesSpielergebnis().siegerPartei());
         assertEquals(151, antwort.letztesSpielergebnis().augenProPartei().get(Partei.RE));
-        assertEquals(List.of(Sonderpunkt.DOPPELKOPF), antwort.letztesSpielergebnis().sonderpunkteProPartei().get(Partei.RE));
+        assertEquals(1, antwort.letztesSpielergebnis().sonderpunkteProPartei().get(Partei.RE).size());
+        assertEquals(Sonderpunkt.DOPPELKOPF, antwort.letztesSpielergebnis().sonderpunkteProPartei().get(Partei.RE).getFirst().art());
+        assertEquals(SpielerPosition.SUED, antwort.letztesSpielergebnis().sonderpunkteProPartei().get(Partei.RE).getFirst().taeter());
         assertEquals(2, antwort.letzteAbgeschlosseneStiche().size(),
             "Die zuletzt abgeschlossenen Stiche muessen im Snapshot bleiben, damit die Letzte-Stiche-Ansicht auch nach der Wertung noch denselben serverseitigen Verlauf zeigen kann.");
         assertEquals(2, antwort.letzteAbgeschlosseneStiche().get(1).stichNummer());

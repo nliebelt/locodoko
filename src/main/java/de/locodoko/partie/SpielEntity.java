@@ -6,7 +6,7 @@ import de.locodoko.karten.Spieltyp;
 import de.locodoko.partie.Partei;
 import de.locodoko.partie.Spielergebnis;
 import de.locodoko.partie.Spielphase;
-import de.locodoko.partie.Sonderpunkt;
+import de.locodoko.partie.SonderpunktEreignis;
 import org.springframework.data.annotation.Transient;
 import org.springframework.data.relational.core.mapping.Column;
 import org.springframework.data.relational.core.mapping.MappedCollection;
@@ -205,9 +205,9 @@ public class SpielEntity extends AbstraktePersistenzEntity {
         this.spielpunkteNord = ergebnis.spielpunkteNord();
         this.spielpunkteOst = ergebnis.spielpunkteOst();
         sonderpunkte.clear();
-        for (Map.Entry<Partei, List<Sonderpunkt>> eintrag : spielergebnis.sonderpunkteProPartei().entrySet()) {
-            for (Sonderpunkt sonderpunkt : eintrag.getValue()) {
-                SpielSonderpunktEntity sonderpunktEntity = SpielSonderpunktEntity.neu(eintrag.getKey(), sonderpunkt);
+        for (Map.Entry<Partei, List<SonderpunktEreignis>> eintrag : spielergebnis.sonderpunkteProPartei().entrySet()) {
+            for (SonderpunktEreignis ereignis : eintrag.getValue()) {
+                SpielSonderpunktEntity sonderpunktEntity = SpielSonderpunktEntity.neu(eintrag.getKey(), ereignis);
                 sonderpunktEntity.setzeSpiel(this);
                 sonderpunkte.add(sonderpunktEntity);
             }

@@ -3,6 +3,7 @@ package de.locodoko.partie;
 import de.locodoko.karten.Farbe;
 import de.locodoko.karten.GespielteKarte;
 import de.locodoko.karten.Kartenwert;
+import de.locodoko.karten.SpielerPosition;
 import de.locodoko.karten.Spielregeln;
 import de.locodoko.karten.Stich;
 import de.locodoko.karten.TrumpfOrdnung;
@@ -22,7 +23,7 @@ import java.util.Objects;
  */
 public final class SonderpunktBewerter {
 
-    public EnumMap<Partei, List<Sonderpunkt>> bewerte(
+    public EnumMap<Partei, List<SonderpunktEreignis>> bewerte(
         List<Stich> stiche,
         Parteien parteien,
         TrumpfOrdnung trumpfOrdnung,
@@ -33,20 +34,21 @@ public final class SonderpunktBewerter {
         Objects.requireNonNull(trumpfOrdnung, "trumpfOrdnung darf nicht null sein");
         Objects.requireNonNull(spielregeln, "spielregeln duerfen nicht null sein");
 
-        EnumMap<Partei, List<Sonderpunkt>> sonderpunkte = leereSonderpunktMap();
+        EnumMap<Partei, List<SonderpunktEreignis>> sonderpunkte = leereSonderpunktMap();
         for (int index = 0; index < stiche.size(); index++) {
             Stich stich = stiche.get(index);
-            Partei gewinnerPartei = parteien.parteiVon(stich.gewinner(trumpfOrdnung).spieler());
+            GespielteKarte gewinnerKarte = stich.gewinner(trumpfOrdnung);
+            SpielerPosition gewinnerPosition = gewinnerKarte.spieler();
+            Partei gewinnerPartei = parteien.parteiVon(gewinnerPosition);
             if (spielregeln.doppelkopfAktiv() && stich.augen() >= 40) {
-                sonderpunkte.get(gewinnerPartei).add(Sonderpunkt.DOPPELKOPF);
+                sonderpunkte.get(gewinnerPartei).add(new SonderpunktEreignis(Sonderpunkt.DOPPELKOPF, gewinnerPosition, null));
             }
             if (spielregeln.fuchsAktiv()) {
-                bewerteFuechse(stich, gewinnerPartei, parteien, sonderpunkte);
+                bewerteFuechse(stich, gewinnerPosition, gewinnerPartei, parteien, sonderpunkte);
             }
             if (spielregeln.karlchenAktiv() && index == stiche.size() - 1) {
-                GespielteKarte gewinnerkarte = stich.gewinner(trumpfOrdnung);
-                if (istKarlchen(gewinnerkarte)) {
-                    sonderpunkte.get(gewinnerPartei).add(Sonderpunkt.KARLCHEN);
+                if (istKarlchen(gewinnerKarte)) {
+                    sonderpunkte.get(gewinnerPartei).add(new SonderpunktEreignis(Sonderpunkt.KARLCHEN, gewinnerPosition, null));
                 }
             }
         }
@@ -55,9 +57,10 @@ public final class SonderpunktBewerter {
 
     private void bewerteFuechse(
         Stich stich,
+        SpielerPosition gewinnerPosition,
         Partei gewinnerPartei,
         Parteien parteien,
-        EnumMap<Partei, List<Sonderpunkt>> sonderpunkte
+        EnumMap<Partei, List<SonderpunktEreignis>> sonderpunkte
     ) {
         for (GespielteKarte gespielteKarte : stich.gespielteKarten()) {
             if (!istFuchs(gespielteKarte)) {
@@ -65,7 +68,9 @@ public final class SonderpunktBewerter {
             }
             Partei parteiDerKarte = parteien.parteiVon(gespielteKarte.spieler());
             if (parteiDerKarte != gewinnerPartei) {
-                sonderpunkte.get(gewinnerPartei).add(Sonderpunkt.FUCHS_GEFANGEN);
+                sonderpunkte.get(gewinnerPartei).add(
+                    new SonderpunktEreignis(Sonderpunkt.FUCHS_GEFANGEN, gewinnerPosition, gespielteKarte.spieler())
+                );
             }
         }
     }
@@ -78,15 +83,15 @@ public final class SonderpunktBewerter {
         return gespielteKarte.karte().farbe() == Farbe.KREUZ && gespielteKarte.karte().wert() == Kartenwert.BUBE;
     }
 
-    private EnumMap<Partei, List<Sonderpunkt>> leereSonderpunktMap() {
-        EnumMap<Partei, List<Sonderpunkt>> sonderpunkte = new EnumMap<>(Partei.class);
+    private EnumMap<Partei, List<SonderpunktEreignis>> leereSonderpunktMap() {
+        EnumMap<Partei, List<SonderpunktEreignis>> sonderpunkte = new EnumMap<>(Partei.class);
         sonderpunkte.put(Partei.RE, new ArrayList<>());
         sonderpunkte.put(Partei.KONTRA, new ArrayList<>());
         return sonderpunkte;
     }
 
-    private EnumMap<Partei, List<Sonderpunkt>> kopiereSonderpunkte(EnumMap<Partei, List<Sonderpunkt>> sonderpunkte) {
-        EnumMap<Partei, List<Sonderpunkt>> kopie = new EnumMap<>(Partei.class);
+    private EnumMap<Partei, List<SonderpunktEreignis>> kopiereSonderpunkte(EnumMap<Partei, List<SonderpunktEreignis>> sonderpunkte) {
+        EnumMap<Partei, List<SonderpunktEreignis>> kopie = new EnumMap<>(Partei.class);
         for (Partei partei : Partei.values()) {
             kopie.put(partei, List.copyOf(sonderpunkte.get(partei)));
         }

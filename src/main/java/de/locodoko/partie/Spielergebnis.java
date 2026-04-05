@@ -26,7 +26,7 @@ public record Spielergebnis(
     int gegenDieAltenPunkte,
     int soloMultiplikator,
     Map<SpielerPosition, Integer> spielpunkteProSpieler,
-    Map<Partei, List<Sonderpunkt>> sonderpunkteProPartei
+    Map<Partei, List<SonderpunktEreignis>> sonderpunkteProPartei
 ) {
 
     public Spielergebnis {
@@ -42,7 +42,7 @@ public record Spielergebnis(
         augenKopie.putAll(augenProPartei);
         EnumMap<SpielerPosition, Integer> punkteKopie = new EnumMap<>(SpielerPosition.class);
         punkteKopie.putAll(spielpunkteProSpieler);
-        EnumMap<Partei, List<Sonderpunkt>> sonderpunkteKopie = new EnumMap<>(Partei.class);
+        EnumMap<Partei, List<SonderpunktEreignis>> sonderpunkteKopie = new EnumMap<>(Partei.class);
         sonderpunkteKopie.putAll(sonderpunkteProPartei);
 
         if (!augenKopie.keySet().containsAll(EnumSet.allOf(Partei.class))) {
@@ -78,7 +78,7 @@ public record Spielergebnis(
         return spielpunkteProSpieler.get(spielerPosition);
     }
 
-    public List<Sonderpunkt> sonderpunkteVon(Partei partei) {
+    public List<SonderpunktEreignis> sonderpunkteVon(Partei partei) {
         return sonderpunkteProPartei.get(partei);
     }
 }

@@ -97,6 +97,12 @@ export type Spielphase =
 export type Partei = 'RE' | 'KONTRA';
 export type Ansage = 'RE' | 'KONTRA' | 'KEINE_90' | 'KEINE_60' | 'KEINE_30' | 'SCHWARZ';
 export type Sonderpunkt = 'FUCHS_GEFANGEN' | 'KARLCHEN' | 'DOPPELKOPF';
+export type SpielerPositionTyp = 'SUED' | 'WEST' | 'NORD' | 'OST';
+export interface SonderpunktEreignis {
+  art: Sonderpunkt;
+  taeter: SpielerPositionTyp;
+  opfer: SpielerPositionTyp | null;
+}
 export type VorbehaltAnsage =
   | 'GESUND'
   | 'SOLO_DAME'
@@ -175,7 +181,7 @@ export interface LetztesSpielergebnisAntwort {
   soloMultiplikator: number;
   augenProPartei: Record<Partei, number>;
   spielpunkteProSpieler: Record<SpielerPosition, number>;
-  sonderpunkteProPartei: Record<Partei, Sonderpunkt[]>;
+  sonderpunkteProPartei: Record<Partei, SonderpunktEreignis[]>;
 }
 
 export interface PartieStandAntwort {
