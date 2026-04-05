@@ -80,6 +80,7 @@ export class SpielverwaltungsSzene extends Phaser.Scene {
 
     const container = document.createElement('div');
     container.className = 'spielverwaltung-container';
+    container.dataset['testid'] = 'startscreen';
     // Zentrales Layout via CSS (styles.css muss angepasst werden)
     container.style.display = 'flex';
     container.style.flexDirection = 'column';
@@ -104,6 +105,7 @@ export class SpielverwaltungsSzene extends Phaser.Scene {
       const recoveryBtn = this.erstelleNeoButton(`↩ Zurück zu Spiel`, 'primary', () => {
         appStore.reconnecteTisch(aktiverTischId);
       });
+      recoveryBtn.dataset['testid'] = 'btn-session-recovery';
       recoveryBtn.style.marginBottom = '20px';
       this.uiContainer.append(recoveryBtn);
       // Tischname asynchron nachladen und Button-Text aktualisieren
@@ -122,6 +124,7 @@ export class SpielverwaltungsSzene extends Phaser.Scene {
     const erstelleTischBtn = this.erstelleNeoButton('+ Neuen Tisch erstellen', 'secondary', () => {
       this.oeffneKonfigurationsModal(zustand);
     });
+    erstelleTischBtn.dataset['testid'] = 'btn-neuer-tisch';
     this.uiContainer.append(erstelleTischBtn);
 
     // 4. Offene Tische
@@ -139,6 +142,7 @@ export class SpielverwaltungsSzene extends Phaser.Scene {
         this.aktualisiere(appStore.snapshot());
       }
     );
+    listeBtn.dataset['testid'] = 'btn-offene-tische';
     this.uiContainer.append(listeBtn);
 
     // 5. Tischliste (wenn offen)
@@ -161,14 +165,15 @@ export class SpielverwaltungsSzene extends Phaser.Scene {
     const uiRoot = holeUiRoot();
     const backdrop = document.createElement('div');
     backdrop.className = 'modal-backdrop';
-    
+    backdrop.dataset['testid'] = 'tisch-config-modal';
+
     const modal = document.createElement('div');
     modal.className = 'neo-modal';
     modal.innerHTML = `
       <h2>Neuen Tisch erstellen</h2>
       <div class="neo-form-group">
         <label>Tischname</label>
-        <input type="text" id="tisch-name" class="neo-input" maxlength="50" value="Tisch von ${zustand.spieler?.name ?? 'mir'}">
+        <input type="text" id="tisch-name" class="neo-input" maxlength="50" value="Tisch von ${zustand.spieler?.name ?? 'mir'}" data-testid="input-tischname">
       </div>
       <div class="neo-form-group">
         <label>Rundenanzahl</label>
@@ -201,7 +206,7 @@ export class SpielverwaltungsSzene extends Phaser.Scene {
       </div>
       <div class="neo-modal-actions">
         <button id="modal-cancel" class="neo-button neo-button--secondary">Abbrechen</button>
-        <button id="modal-submit" class="neo-button neo-button--primary">Tisch erstellen</button>
+        <button id="modal-submit" class="neo-button neo-button--primary" data-testid="btn-tisch-erstellen">Tisch erstellen</button>
       </div>
     `;
 

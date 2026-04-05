@@ -428,6 +428,7 @@ export class TischSzene extends Phaser.Scene {
   private baueUi(): void {
     const uiRoot = holeUiRoot();
     uiRoot.innerHTML = '';
+    uiRoot.dataset['testid'] = 'tischszene';
 
     // ── Top-Bar (40px, oben) ─────────────────────────────────────────────────
     const topBar = document.createElement('div');
@@ -435,15 +436,15 @@ export class TischSzene extends Phaser.Scene {
     topBar.innerHTML = `
       <div class="hud-topbar__left">
         <button class="hud-icon-btn" type="button" title="Seitenlade öffnen/schließen" data-seitenlade-toggle>☰</button>
-        <span class="hud-topbar__stichzaehler" data-stichzaehler></span>
+        <span class="hud-topbar__stichzaehler" data-stichzaehler data-testid="hud-stichzaehler"></span>
       </div>
       <div class="hud-topbar__center">
-        <span data-spiele-info></span>
+        <span data-spiele-info data-testid="hud-spieltyp"></span>
       </div>
       <div class="hud-topbar__right">
-        <button class="ui-button" type="button" data-start-button>Spiel starten</button>
+        <button class="ui-button" type="button" data-start-button data-testid="btn-spiel-starten">Spiel starten</button>
         <button class="hud-icon-btn" type="button" title="Tisch verlassen" data-leave-top-button>&#x2190;</button>
-        <button class="hud-icon-btn" type="button" title="Einstellungen" data-einstellungen-toggle>⚙</button>
+        <button class="hud-icon-btn" type="button" title="Einstellungen" data-einstellungen-toggle data-testid="hud-btn-einstellungen">⚙</button>
         <button class="hud-icon-btn" type="button" title="Debug" data-debug-button>🐛</button>
       </div>
     `;
@@ -475,6 +476,7 @@ export class TischSzene extends Phaser.Scene {
     // ── Einstellungs-Modal ────────────────────────────────────────────────────
     const einstellungsModal = document.createElement('div');
     einstellungsModal.className = 'einstellungen-backdrop';
+    einstellungsModal.dataset['testid'] = 'einstellungen-modal';
     einstellungsModal.hidden = true;
     const einstellungsDialog = document.createElement('div');
     einstellungsDialog.className = 'ui-modal';
@@ -515,7 +517,16 @@ export class TischSzene extends Phaser.Scene {
     // ── Partie-Ende-Modal: initial versteckt ────────────────────────────────
     const partieEndeModal = document.createElement('div');
     partieEndeModal.className = 'ui-modal-backdrop';
+    partieEndeModal.dataset['testid'] = 'partieende-overlay';
     partieEndeModal.hidden = true;
+
+    // ── Marker-Elemente für Phaser-Canvas-Overlays (testid-Anker) ────────────
+    const vorbehaltMarker = document.createElement('div');
+    vorbehaltMarker.dataset['testid'] = 'vorbehalt-overlay';
+    vorbehaltMarker.style.cssText = 'position:absolute;width:0;height:0;overflow:hidden;pointer-events:none';
+    const actionBarMarker = document.createElement('div');
+    actionBarMarker.dataset['testid'] = 'floating-action-bar';
+    actionBarMarker.style.cssText = 'position:absolute;width:0;height:0;overflow:hidden;pointer-events:none';
 
     // ── Referenzen auf DOM-Elemente sichern ───────────────────────────────────
     const hudStichzaehlerEl = topBar.querySelector('[data-stichzaehler]');
@@ -664,7 +675,7 @@ export class TischSzene extends Phaser.Scene {
     this.rundenEndeModal = rundenEndeModal;
     this.partieEndeModal = partieEndeModal;
 
-    uiRoot.append(topBar, seitenlade, einstellungsModal, toastStack, rundenEndeModal, partieEndeModal);
+    uiRoot.append(topBar, seitenlade, einstellungsModal, toastStack, rundenEndeModal, partieEndeModal, vorbehaltMarker, actionBarMarker);
   }
 
   private aktualisiereUi(zustand: AppZustand, modell = this.erstelleModell(zustand)): void {
@@ -1711,10 +1722,12 @@ export class TischSzene extends Phaser.Scene {
 
     // Kopfzeile: Spieltyp + Nummer
     const titel = document.createElement('h2');
+    titel.dataset['testid'] = 'rundenauswertung-spieltyp';
     titel.textContent = `${spieltypLabel} · ${spielNummerText}`;
 
     // Ergebnis-Zeile: Sieger + Spielwert
     const ergebnisZeile = document.createElement('strong');
+    ergebnisZeile.dataset['testid'] = 'rundenauswertung-ergebnis';
     ergebnisZeile.style.color = ergebnis.siegerPartei === 'RE' ? '#ffd166' : '#90caf9';
     ergebnisZeile.textContent = `${ergebnis.siegerPartei} gewinnt  (+${ergebnis.spielwert} Punkte)`;
 
@@ -1723,6 +1736,7 @@ export class TischSzene extends Phaser.Scene {
     const kontraSpieler = modell.spieler.filter((s) => s.partei === 'KONTRA').map((s) => escapeHtml(s.name));
     const parteien = document.createElement('div');
     parteien.className = 'ui-grid ui-grid--two';
+    parteien.dataset['testid'] = 'rundenauswertung-parteien';
     parteien.innerHTML = `
       <div class="ui-stat-card">
         <span class="ui-hint">RE · ${ergebnis.augenRe} Augen</span>
@@ -1796,6 +1810,7 @@ export class TischSzene extends Phaser.Scene {
       .join(' · ');
     const gesamtstand = document.createElement('span');
     gesamtstand.className = 'ui-hint';
+    gesamtstand.dataset['testid'] = 'rundenauswertung-gesamtstand';
     gesamtstand.textContent = `Gesamtstand: ${gesamtstandText}`;
 
     const schliessenButton = this.erstelleButton('Weiter →', () => this.schliesseRundenEndeModal(), false);
@@ -1858,6 +1873,7 @@ export class TischSzene extends Phaser.Scene {
 
     const gesamtstandListe = document.createElement('ul');
     gesamtstandListe.className = 'ui-list ui-list--dense';
+    gesamtstandListe.dataset['testid'] = 'partieende-gesamtauswertung';
     const sortiertePunkte = [...modell.gesamtpunktestand].sort((a, b) => b.punkte - a.punkte);
     sortiertePunkte.forEach((eintrag) => {
       const li = document.createElement('li');
@@ -1876,6 +1892,7 @@ export class TischSzene extends Phaser.Scene {
 
     const countdownSpan = document.createElement('span');
     countdownSpan.className = 'ui-hint';
+    countdownSpan.dataset['testid'] = 'partieende-neustart-countdown';
     countdownSpan.textContent = `Neue Partie startet in ${COUNTDOWN_SEKUNDEN} Sekunden ...`;
 
     const aktionenReihe = document.createElement('div');

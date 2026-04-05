@@ -178,7 +178,7 @@
 
 ### E2E-Tests / Testqualität
 
-- [ ] **8.2 E2E: data-testid Attribute setzen** [Voraussetzung für stabile E2E-Tests]: 16 `data-testid`-Werte aus `specs/e2e-tests.md` Z. 27-45 fehlen vollständig im Frontend-Source (Grep-Ergebnis: 0 Treffer in `frontend/src/`). Nur 2 Attribute in Testdateien selbst sichtbar.
+- [x] **8.2 E2E: data-testid Attribute setzen** [Voraussetzung für stabile E2E-Tests]: 16 `data-testid`-Werte aus `specs/e2e-tests.md` Z. 27-45 fehlen vollständig im Frontend-Source (Grep-Ergebnis: 0 Treffer in `frontend/src/`). Nur 2 Attribute in Testdateien selbst sichtbar.
   - Anforderung (specs/e2e-tests.md Z. 27-45): `data-testid="startscreen"`, `btn-neuer-tisch`, `tischszene`, `hud-stichzaehler`, `hud-gesamtpunktestand`, `rundenauswertung-overlay`, `rundenauswertung-spieltyp`, `rundenauswertung-ergebnis`, `rundenauswertung-parteien`, `rundenauswertung-punkte-berechnung`, `rundenauswertung-sonderpunkte`, `rundenauswertung-gesamtstand`, `rundenauswertung-weiter-btn`, `partieende-overlay`, `partieende-gesamtauswertung`, `partieende-neustart-countdown`
   - Umsetzung: Attribute in `TischSzene.ts` (Phaser-DOM-Elemente) und ggf. `SpielverwaltungsSzene.ts` (Lobby-Screen) setzen. Für Phaser-Canvas-Elemente reicht ein unsichtbares HTML-Marker-Element.
   - Dateien: `frontend/src/szenen/TischSzene.ts`, `frontend/src/scenes/SpielverwaltungsSzene.ts`
