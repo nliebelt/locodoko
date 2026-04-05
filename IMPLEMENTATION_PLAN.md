@@ -4,6 +4,8 @@
 
 ## Notiz
 
+**2026-04-05 (Plan-Run #24):** 7.3 Punkte-Einzelschritte vollständig implementiert. `Spielergebnis.java` um 4 Felder erweitert (grundwert, absagePunkte, gegenDieAltenPunkte, soloMultiplikator). `PunkteRechner` berechnet und persistiert Einzelschritte. Liquibase-Migration 003 ergänzt nullable INT-Spalten. `LetztesSpielergebnisAntwort` gibt Aufschlüsselung zurück. Frontend zeigt Punkte-Berechnung-Block im Overlay. 141 Backend + 62 Frontend-Tests grün. Nächste offene Aufgaben: 8.2 (data-testid Attribute), 8.3 (appStore-Hack ersetzen), 8.4 (Sonderpunkte Täter-Opfer), 8.5 ("Du bist dran" entfernen), 8.6 (Phaser vs HTML Design-Entscheidung), 8.7 (SchwerKiStrategie Hochzeit-Test). Empfehlung: 8.5 als nächstes (1-Zeilen-Fix, sehr geringes Risiko).
+
 **2026-04-05 (Plan-Run #23):** Subagenten-Analyse aller 5 Bounded Contexts. Ergebnisse:
 - Lobby/Tisch: Vollständig. Alle Endpunkte inkl. `GET /api/tische/{id}` implementiert. Keine Lücken.
 - Partie/Regeln: **Gap bestätigt** — `Spielergebnis.java` speichert nur Gesamtspielwert, keine Aufschlüsselung (Grundwert, Absage-Punkte, Gegen-die-Alten, Solo-Multiplikator). `PunkteRechner` berechnet Einzelschritte intern, aber speichert sie nicht. `LetztesSpielergebnisAntwort` (PartieStandAntwort.java:326-373) gibt nur aggregierte Werte zurück. Spec (punkteberechnung.md:86-89) fordert Aufschlüsselung. → Neuer Eintrag 7.3.
@@ -150,7 +152,7 @@
   - Dateien: `frontend/src/szenen/TischSzene.ts`, `frontend/src/model/TischAnsichtModell.ts`
   - Hinweis: Layout-Gerüst implementiert (Kopfzeile, Parteien, Spielpunkte, Gesamtstand). Punkte-Einzelschritte fehlen noch — erst 7.3 umsetzen!
 
-- [ ] **7.3 Punkte-Einzelschritte: Backend + Frontend** [Blocker für vollständige 7.2-Anzeige]: `Spielergebnis.java` speichert nur den Gesamtspielwert; `PunkteRechner` berechnet Grundwert, Absage-Punkte und Gegen-die-Alten-Punkte intern, verwirft sie aber. `LetztesSpielergebnisAntwort` gibt keine Aufschlüsselung zurück. `frontend-rundenauswertung.md` Z. 32-40 fordert explizit "Grundwert +1, Re hat angesagt +1, …" als einzelne Zeilen.
+- [x] **7.3 Punkte-Einzelschritte: Backend + Frontend** [Blocker für vollständige 7.2-Anzeige]: `Spielergebnis.java` speichert nur den Gesamtspielwert; `PunkteRechner` berechnet Grundwert, Absage-Punkte und Gegen-die-Alten-Punkte intern, verwirft sie aber. `LetztesSpielergebnisAntwort` gibt keine Aufschlüsselung zurück. `frontend-rundenauswertung.md` Z. 32-40 fordert explizit "Grundwert +1, Re hat angesagt +1, …" als einzelne Zeilen.
   - Umsetzung Backend:
     1. `Spielergebnis.java` (Record): neue Felder `grundwert: int`, `absagePunkte: int`, `gegenDieAltenPunkte: int`, `soloMultiplikator: int` ergänzen.
     2. `PunkteRechner.berechneSpielwert()` (Z. 77-90): Zwischenwerte in lokale Variablen speichern und in erweitertem `Spielergebnis`-Record zurückgeben statt nur addieren.
