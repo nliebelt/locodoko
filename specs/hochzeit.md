@@ -42,6 +42,16 @@ Die Hochzeit ist ein Sonderspiel im Doppelkopf. Ein Spieler, der beide Kreuz-Dam
 - [x] Integration in Vorbehalt-Phase getestet
 - [x] Code-Review / Plausibilitätsprüfung
 
+## Stilles Solo
+
+Findet sich innerhalb der ersten 3 Klärungsstiche kein Partner (d.h. der Hochzeits-Spieler gewinnt alle 3 Stiche selbst), wechselt das Spiel in das **stille Solo**:
+
+- **Definition**: Der Hochzeits-Spieler spielt allein als Re-Partei gegen alle drei anderen Spieler (Kontra-Partei).
+- **Bedingung**: Kein fremder Spieler hat innerhalb der ersten 3 Klärungsstiche einen Stich gewonnen.
+- **Konsequenz**: Das Spiel läuft als Trumpfsolo weiter — die Trumpfhierarchie bleibt unverändert.
+- **Wertung**: Das stille Solo wird wie ein reguläres Solo gewertet. Der Solo-Multiplikator (×3) gilt, zusätzliche Sonderpunkte (Doppelkopf, Fuchs, Karlchen) werden normal verrechnet.
+- **Zustand**: `HochzeitStatus.stillesSolo` wird intern gesetzt; kein neuer Vorbehalt, da die Phase bereits abgeschlossen ist.
+
 ## Technische Hinweise
 
 - **Bounded Context**: Spielregeln

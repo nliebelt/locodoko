@@ -4,7 +4,7 @@
 
 ## Notiz
 
-**2026-04-05 (Plan-Run #28):** 9.2 Flip-Animation für Letzter-Stich-Overlay implementiert. `zeigeLetztesStichOverlay()` zeigt jetzt Karten mit gestaffelter Flip-Animation (scaleX 0→1, je 150ms, Versatz 60ms je Karte). Items (a) Nameplate-Flash und (b) Karten-zu-Stapel waren bereits durch 6.3/6.7-Tasks implementiert. 62 Frontend-Tests grün. Nächste offene Aufgabe: 9.3 (Tastatur-Shortcuts per Grep verifizieren, R/K/1-5/A/N/I/S prüfen). 9.4 (Spec-Update hochzeit.md) ist Minor ohne Code-Änderung.
+**2026-04-05 (Plan-Run #28):** 9.2 Flip-Animation für Letzter-Stich-Overlay implementiert. 9.3 per Grep verifiziert — alle Shortcuts (R/K/1-5/A/N/I/S + ArrowLeft/Right+Enter/Space+Escape) bereits vollständig in TischSzene.ts implementiert, kein Code-Change nötig. 9.4 specs/hochzeit.md um Abschnitt "Stilles Solo" erweitert (Definition, Bedingung, Wertung, Solo-Multiplikator ×3). Alle 9.x Aufgaben abgeschlossen. Alle offenen Aufgaben erledigt.
 
 **2026-04-05 (Plan-Run #26):** Subagenten-Analyse aller 5 Bounded Contexts. Ergebnisse:
 - Lobby/Tisch: Vollständig. Style-Abweichungen (Lombok, TischkonfigurationEmbeddable-Mutability) wie in Plan-Run #21 entschieden: kein Plan-Eintrag.
@@ -245,7 +245,7 @@
     3. Letzter Stich-Flag aus `TischSzene.ts` übergeben; wenn letzter Stich: Flip-Tween (scaleX 1→0→1 mit Textur-Wechsel zu Rückseite und zurück).
   - Dateien: `frontend/src/services/AnimationenService.ts`, `frontend/src/szenen/TischSzene.ts`
 
-- [ ] **9.3 Tastatur-Shortcuts: Vollständigkeit verifizieren und ergänzen** [Priorität Mittel]: Task 7.1 implementierte ArrowLeft/Right+Enter für Karten und Ziffern für Vorbehalt. Subagent-Analyse findet folgende Shortcuts aus `specs/frontend-tastatursteuerung.md` nicht im Code: Ansage (R=Re, K=Kontra, 1–5=Absage-Höhe), Armut (A=Annehmen, N=Ablehnen), Seitenlade (I=öffnen/schließen), Einstellungen (S=öffnen).
+- [x] **9.3 Tastatur-Shortcuts: Vollständigkeit verifizieren und ergänzen** [Priorität Mittel]: Task 7.1 implementierte ArrowLeft/Right+Enter für Karten und Ziffern für Vorbehalt. Subagent-Analyse findet folgende Shortcuts aus `specs/frontend-tastatursteuerung.md` nicht im Code: Ansage (R=Re, K=Kontra, 1–5=Absage-Höhe), Armut (A=Annehmen, N=Ablehnen), Seitenlade (I=öffnen/schließen), Einstellungen (S=öffnen).
   - Umsetzung:
     1. `TischSzene.ts` nach Key-Handler für R, K, 1, 2, 3, 4, 5, A, N, I, S durchsuchen (Grep).
     2. Fehlende Handler implementieren: Ansage-Keys in Stichphase auslösen wenn Ansage möglich (`appStore.kannAnsagen()`), Armut-Keys im Armut-Dialog, I/S global.
@@ -253,7 +253,7 @@
   - Dateien: `frontend/src/szenen/TischSzene.ts`
   - Hinweis: Erst per Grep verifizieren — 7.1 war umfangreich, Keys könnten bereits vorhanden sein.
 
-- [ ] **9.4 Spec-Update: Stilles Solo in hochzeit.md dokumentieren** [Minor, keine Code-Änderung]: Code implementiert stilles Solo korrekt — `HochzeitStatus.stillesSolo` wird gesetzt wenn kein Partner innerhalb der ersten 3 Klärungsstiche gefunden wird; Spieler spielt dann allein gegen die anderen 3. `specs/hochzeit.md` erwähnt diese Regel jedoch nicht (Subagent-Befund: "Keine Erwähnung dieser Regel").
+- [x] **9.4 Spec-Update: Stilles Solo in hochzeit.md dokumentieren** [Minor, keine Code-Änderung]: Code implementiert stilles Solo korrekt — `HochzeitStatus.stillesSolo` wird gesetzt wenn kein Partner innerhalb der ersten 3 Klärungsstiche gefunden wird; Spieler spielt dann allein gegen die anderen 3. `specs/hochzeit.md` erwähnt diese Regel jedoch nicht (Subagent-Befund: "Keine Erwähnung dieser Regel").
   - Umsetzung: Abschnitt "Stilles Solo" in `specs/hochzeit.md` ergänzen: Definition, Bedingung (kein Partner nach 3 Stichen), Konsequenz (Hochzeits-Spieler allein = Solo-Wertung), Punktemultiplikator-Verhalten.
   - Datei: `specs/hochzeit.md`
 
