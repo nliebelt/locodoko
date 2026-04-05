@@ -1029,8 +1029,8 @@ describe('TischSzene', () => {
     appStoreHarness.sendeZustand();
 
     expect(modal.hidden).toBe(false);
-    expect(modal.querySelector('h2')?.textContent).toBe('Spiel 1 · NORMALSPIEL');
-    expect(modal.querySelector('.ui-modal-backdrop .ui-hint')?.textContent).toBe('Sieger: RE · Spielwert 1');
+    expect(modal.querySelector('h2')?.textContent).toBe('NORMALSPIEL · Spiel 1 von 8');
+    expect(modal.querySelector('strong')?.textContent).toBe('RE gewinnt  (+1 Punkte)');
   });
 
   // WARUM: Der Schliessen-Button ist das einzige Mittel fuer den Spieler, das Modal zu
@@ -1064,10 +1064,10 @@ describe('TischSzene', () => {
     expect(modal.hidden).toBe(true);
   });
 
-  // WARUM: Escape-Taste ist die erwartete Tastaturkuerzung um Dialoge zu schliessen;
-  // ohne diese Absicherung koennte ein fehlerhafter removeEventListener-Aufruf
-  // den Handler am naechsten Modal doppelt ausloesen oder Memory-Leaks verursachen.
-  it('schliesst das Rundenende-Modal wenn die Escape-Taste gedrueckt wird', () => {
+  // WARUM: Spec (frontend-rundenauswertung.md) schreibt vor dass Escape das Rundenende-Modal
+  // NICHT schliessen darf — nur der Weiter-Button oder Enter. Dies verhindert versehentliches
+  // Schliessen waehrend der Spieler das Ergebnis liest.
+  it('schliesst das Rundenende-Modal NICHT bei Escape-Taste (nur Weiter-Button/Enter)', () => {
     baueSzene(baueZustand({ partieStand: bauePartieStand(null) }));
 
     appStoreHarness.setZustand(baueZustand({
@@ -1091,7 +1091,8 @@ describe('TischSzene', () => {
 
     document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }));
 
-    expect(modal.hidden).toBe(true);
+    // Escape darf das Modal NICHT schliessen
+    expect(modal.hidden).toBe(false);
   });
 
   // WARUM: Backdrop-Klick ist ein gaengiges UX-Muster fuer modale Dialoge;

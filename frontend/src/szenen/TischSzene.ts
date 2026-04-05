@@ -14,7 +14,6 @@ import {
   istTrumpfFuerSpieltyp,
   type AbgeschlossenerStichAnsicht,
   type AnsageAnsicht,
-  type LetztesSpielergebnisAnsicht,
   type TischAnsichtModell,
   type SpielerPosition
 } from '../model/TischAnsichtModell';
@@ -403,7 +402,7 @@ export class TischSzene extends Phaser.Scene {
         if (modell.partieBeendet) {
           this.zeigePartieEndeModal(modell);
         } else {
-          this.zeigeRundenEndeModal(modell.letztesSpielergebnis);
+          this.zeigeRundenEndeModal(modell);
         }
       }
       this.letztesModell = modell;
@@ -1695,40 +1694,60 @@ export class TischSzene extends Phaser.Scene {
   }
 
   // Zeigt das Rundenende-Modal mit Augen, Sonderpunkten und Spielpunkten pro Spieler
-  private zeigeRundenEndeModal(ergebnis: LetztesSpielergebnisAnsicht): void {
-    if (!this.rundenEndeModal) {
+  private zeigeRundenEndeModal(modell: TischAnsichtModell): void {
+    const ergebnis = modell.letztesSpielergebnis;
+    if (!this.rundenEndeModal || !ergebnis) {
       return;
     }
+    const anzahlSpiele = this.letzterZustand?.aktuellerTisch?.konfiguration?.anzahlSpiele;
+    const spielNummerText = anzahlSpiele
+      ? `Spiel ${ergebnis.spielNummer} von ${anzahlSpiele}`
+      : `Spiel ${ergebnis.spielNummer}`;
+    const spieltypLabel = formatiereVorbehalt(ergebnis.spieltyp as VorbehaltAnsage) ?? ergebnis.spieltyp;
+
     const dialog = document.createElement('div');
     dialog.className = 'ui-modal';
 
+    // Kopfzeile: Spieltyp + Nummer
     const titel = document.createElement('h2');
-    titel.textContent = `Spiel ${ergebnis.spielNummer} · ${ergebnis.spieltyp}`;
+    titel.textContent = `${spieltypLabel} · ${spielNummerText}`;
 
-    const untertitel = document.createElement('span');
-    untertitel.className = 'ui-hint';
-    untertitel.textContent = `Sieger: ${ergebnis.siegerPartei} · Spielwert ${ergebnis.spielwert}`;
+    // Ergebnis-Zeile: Sieger + Spielwert
+    const ergebnisZeile = document.createElement('strong');
+    ergebnisZeile.style.color = ergebnis.siegerPartei === 'RE' ? '#ffd166' : '#90caf9';
+    ergebnisZeile.textContent = `${ergebnis.siegerPartei} gewinnt  (+${ergebnis.spielwert} Punkte)`;
 
-    const augen = document.createElement('div');
-    augen.className = 'ui-grid ui-grid--two';
-    augen.innerHTML = `
-      <div class="ui-stat-card"><span class="ui-hint">Re</span><strong>${ergebnis.augenRe} Augen</strong></div>
-      <div class="ui-stat-card"><span class="ui-hint">Kontra</span><strong>${ergebnis.augenKontra} Augen</strong></div>
-    `;
-
-    const sonderpunkte = document.createElement('div');
-    sonderpunkte.className = 'ui-list-item ui-list-item--dense';
-    sonderpunkte.innerHTML = `
-      <div class="ui-list-item__headline">
-        <strong>Sonderpunkte</strong>
-        <span class="ui-badge">${ergebnis.siegerPartei}</span>
+    // Parteien-Übersicht: RE links, KONTRA rechts mit Spielernamen und Augen
+    const reSpieler = modell.spieler.filter((s) => s.partei === 'RE').map((s) => escapeHtml(s.name));
+    const kontraSpieler = modell.spieler.filter((s) => s.partei === 'KONTRA').map((s) => escapeHtml(s.name));
+    const parteien = document.createElement('div');
+    parteien.className = 'ui-grid ui-grid--two';
+    parteien.innerHTML = `
+      <div class="ui-stat-card">
+        <span class="ui-hint">RE · ${ergebnis.augenRe} Augen</span>
+        <strong>${reSpieler.length > 0 ? reSpieler.join(', ') : '–'}</strong>
       </div>
-      <div class="ui-list-item__meta">
-        <span>Re: ${ergebnis.sonderpunkteRe.length > 0 ? ergebnis.sonderpunkteRe.map(formatiereSonderpunkt).join(', ') : 'Keine'}</span>
-        <span>Kontra: ${ergebnis.sonderpunkteKontra.length > 0 ? ergebnis.sonderpunkteKontra.map(formatiereSonderpunkt).join(', ') : 'Keine'}</span>
+      <div class="ui-stat-card">
+        <span class="ui-hint">KONTRA · ${ergebnis.augenKontra} Augen</span>
+        <strong>${kontraSpieler.length > 0 ? kontraSpieler.join(', ') : '–'}</strong>
       </div>
     `;
 
+    // Sonderpunkte (nur wenn vorhanden)
+    const alleSonderpunkte = [
+      ...ergebnis.sonderpunkteRe.map((sp) => `Re: ${formatiereSonderpunkt(sp)}`),
+      ...ergebnis.sonderpunkteKontra.map((sp) => `Kontra: ${formatiereSonderpunkt(sp)}`)
+    ];
+    const sonderpunkteContainer = document.createElement('div');
+    if (alleSonderpunkte.length > 0) {
+      sonderpunkteContainer.className = 'ui-list-item ui-list-item--dense';
+      sonderpunkteContainer.innerHTML = `
+        <div class="ui-list-item__headline"><strong>Sonderpunkte</strong></div>
+        <div class="ui-list-item__meta">${alleSonderpunkte.map((s) => escapeHtml(s)).join(' · ')}</div>
+      `;
+    }
+
+    // Spielpunkte pro Spieler
     const punkteListe = document.createElement('ul');
     punkteListe.className = 'ui-list ui-list--dense';
     ergebnis.spielpunkte.forEach((eintrag) => {
@@ -1737,23 +1756,34 @@ export class TischSzene extends Phaser.Scene {
       li.innerHTML = `
         <div class="ui-list-item__headline">
           <strong>${escapeHtml(eintrag.name)}</strong>
-          <span class="ui-badge ${eintrag.position === 'SUED' ? 'ui-badge--highlight' : ''}">${eintrag.position}</span>
-        </div>
-        <div class="ui-list-item__meta">
-          <span>${eintrag.punkte >= 0 ? '+' : ''}${eintrag.punkte} Spielpunkte</span>
+          <span class="ui-badge ${eintrag.position === 'SUED' ? 'ui-badge--highlight' : ''}">${eintrag.punkte >= 0 ? '+' : ''}${eintrag.punkte}</span>
         </div>
       `;
       punkteListe.append(li);
     });
 
-    const schliessenButton = this.erstelleButton('OK · Weiter', () => this.schliesseRundenEndeModal(), false);
+    // Gesamtstand (einzeilig)
+    const gesamtstandText = modell.gesamtpunktestand
+      .slice()
+      .sort((a, b) => b.punkte - a.punkte)
+      .map((e) => `${escapeHtml(e.name)} ${e.punkte}`)
+      .join(' · ');
+    const gesamtstand = document.createElement('span');
+    gesamtstand.className = 'ui-hint';
+    gesamtstand.textContent = `Gesamtstand: ${gesamtstandText}`;
 
-    dialog.append(titel, untertitel, augen, sonderpunkte, punkteListe, schliessenButton);
+    const schliessenButton = this.erstelleButton('Weiter →', () => this.schliesseRundenEndeModal(), false);
+
+    dialog.append(titel, ergebnisZeile, parteien);
+    if (alleSonderpunkte.length > 0) {
+      dialog.append(sonderpunkteContainer);
+    }
+    dialog.append(punkteListe, gesamtstand, schliessenButton);
     this.rundenEndeModal.innerHTML = '';
     this.rundenEndeModal.append(dialog);
     this.rundenEndeModal.hidden = false;
 
-    // Focus-Trap: Fokus auf ersten Button setzen (Tastatursteuerung)
+    // Focus-Trap: Fokus auf Button setzen (Enter schliesst Modal per Button-Click)
     setTimeout(() => schliessenButton.focus(), 0);
 
     // Backdrop-Klick schliesst Modal (Klick auf Dialog-Inhalt selbst schliesst nicht)
@@ -1763,14 +1793,7 @@ export class TischSzene extends Phaser.Scene {
       }
     };
     this.rundenEndeModal.addEventListener('click', this.backdropClickHandler);
-
-    // Escape-Taste schliesst Modal; Handler wird beim Schliessen entfernt
-    this.escapeHandler = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        this.schliesseRundenEndeModal();
-      }
-    };
-    document.addEventListener('keydown', this.escapeHandler);
+    // Kein Escape-Handler: Spec fordert Schliessen nur per Button oder Enter
   }
 
   // Schliesst das Rundenende-Modal (OK-Button, Escape-Taste oder Backdrop-Klick)

@@ -4,7 +4,7 @@
 
 ## Notiz
 
-**2026-04-05 (Plan-Run #22):** 1.1 Vision Loop (headless), 6.7 Nameplates, 6.8 Ansage-Badges, 5.5 KI-Hochzeit-Vorbehalt implementiert. 6.7: Positionen auf Spec-Prozente normiert, WEST/OST 80px→120px. 6.8: [K90]/[K60]/[K30]/[S] Badges in Orange aus ansageHistorie. 5.5: Code bereits korrekt (Hochzeit nach Solo-Threshold), 3 Tests ergänzt (meldetHochzeitBeiZweiKreuzDamen, meldetKeinHochzeitBeiSehrStarkerTrumpfhand, Bestätigung Solo-Priorität). 134 Backend-Tests grün, 62 Frontend-Tests grün. Nächster Schritt: 5.6 Backend GET /api/tische/{id} (Blocker für 5.3 Recovery-Button).
+**2026-04-05 (Plan-Run #22):** 1.1 Vision Loop (headless), 6.7 Nameplates, 6.8 Ansage-Badges, 5.5 KI-Hochzeit-Vorbehalt, 5.6 GET /api/tische/{id}, 5.3 Recovery-Button, 5.7 Hochzeit-Partner-Anzeige, 7.1 Tastatursteuerung (war bereits implementiert — verifiziert), 7.2 Rundenauswertung-Overlay verbessert implementiert. 6.7: Positionen auf Spec-Prozente normiert, WEST/OST 80px→120px. 6.8: [K90]/[K60]/[K30]/[S] Badges in Orange aus ansageHistorie. 5.5: Code bereits korrekt (Hochzeit nach Solo-Threshold), 3 Tests ergänzt (meldetHochzeitBeiZweiKreuzDamen, meldetKeinHochzeitBeiSehrStarkerTrumpfhand, Bestätigung Solo-Priorität). 134 Backend-Tests grün, 62 Frontend-Tests grün. ALLE offenen Aufgaben (Prio 1–3) erledigt. Nächster Schritt: 5.4 E2E-Test Rundenauswertung (war Blocker durch 7.2, jetzt lösbar).
 
 **2026-04-04 (Plan-Run #21):** Subagenten-Analyse aller 5 Bounded Contexts. Ergebnisse:
 - Lobby/Tisch: Vollständig implementiert. `GET /api/tische/{id}` fehlt weiterhin (Blocker 5.6 gültig). Mutability von `TischkonfigurationEmbeddable` ist Style-Abweichung, kein Funktionsproblem — kein Plan-Eintrag nötig.
@@ -122,7 +122,7 @@
 
 > Neu entdeckt in Plan-Run #21 durch Spec-Analyse.
 
-- [ ] **7.1 Tastatursteuerung** [Priorität Mittel]: Das Spiel ist vollständig per Tastatur spielbar. Kein einziger Shortcut ist implementiert. Seitenlade `[≡]` und Einstellungs-Modal `[⚙]` existieren noch nicht.
+- [x] **7.1 Tastatursteuerung** [Priorität Mittel]: Das Spiel ist vollständig per Tastatur spielbar. Kein einziger Shortcut ist implementiert. Seitenlade `[≡]` und Einstellungs-Modal `[⚙]` existieren noch nicht.
   - Anforderung (specs/frontend-tastatursteuerung.md): Karten per ArrowLeft/Right navigieren, Enter/Space zum Spielen; Ansagen R/K/1–5; Vorbehalt per Ziffern + Enter; Armut A/N; Seitenlade I, Einstellungen S; Focus-Trap in Modals.
   - Umsetzung:
     1. Keyboard-Event-Handler in `TischSzene.ts` registrieren (Phaser `this.input.keyboard`).
@@ -133,7 +133,7 @@
   - Dateien: `frontend/src/szenen/TischSzene.ts`, `frontend/src/store/AppStore.ts`
   - Hinweis: Tastatursteuerung ist auch Voraussetzung für zuverlässige E2E-Tests (Canvas-Klick-Probleme umgehen).
 
-- [ ] **7.2 Rundenauswertung-Overlay** [Priorität Mittel, Blocker für 5.4]: Nach jedem Spielende erscheint ein modales Overlay mit vollständiger Spielauswertung. Kein UI existiert dafür (nur rudimentäres `rundenEndeModal`/`partieEndeModal` in TischSzene.ts).
+- [x] **7.2 Rundenauswertung-Overlay** [Priorität Mittel, Blocker für 5.4]: Nach jedem Spielende erscheint ein modales Overlay mit vollständiger Spielauswertung. Kein UI existiert dafür (nur rudimentäres `rundenEndeModal`/`partieEndeModal` in TischSzene.ts).
   - Anforderung (specs/frontend-rundenauswertung.md): Overlay mit Spieltyp, Spielnummer, Ergebnis-Zeile, Parteien-Übersicht, Punkte-Berechnung (einzeln), Sonderpunkte, Gesamtstand. Partie-Ende zusätzlich mit Gesamtauswertung und Neustart-Countdown.
   - Umsetzung:
     1. `LetztesSpielergebnisAnsicht` in `TischAnsichtModell.ts` um alle nötigen Felder erweitern (Punkte-Einzelschritte, Sonderpunkte mit Beschreibung, Parteien-Zuordnung).
