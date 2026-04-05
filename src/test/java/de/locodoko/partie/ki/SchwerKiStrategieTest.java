@@ -266,6 +266,51 @@ class SchwerKiStrategieTest {
             "um den Unterschied zwischen STANDARD und SCHWER bei Verschaerfungen klar zu belegen.");
     }
 
+    /**
+     * Hochzeit-Anmeldung bei zwei Kreuz-Damen: SchwerKiStrategie erbt waehleVorbehalt()
+     * von StandardKiStrategie und muss Hochzeit korrekt anmelden.
+     *
+     * Wichtig: Prueft dass die Vererbungskette intakt ist — SchwerKiStrategie darf
+     * die Hochzeit-Logik nicht durch einen Override unterbrechen.
+     */
+    @Test
+    void meldetHochzeitBeiZweiKreuzDamen() {
+        KiSpielzustand zustand = new KiSpielzustand(
+            SpielerPosition.SUED,
+            Spieltyp.NORMALSPIEL,
+            Spielphase.VORBEHALT_ANSAGE,
+            spielregeln,
+            trumpfOrdnung,
+            new Hand(List.of(
+                karte(Farbe.KREUZ, Kartenwert.DAME, 1),
+                karte(Farbe.KREUZ, Kartenwert.DAME, 2),
+                karte(Farbe.KREUZ, Kartenwert.AS, 1),
+                karte(Farbe.PIK, Kartenwert.AS, 1),
+                karte(Farbe.HERZ, Kartenwert.AS, 1),
+                karte(Farbe.KREUZ, Kartenwert.KOENIG, 1),
+                karte(Farbe.PIK, Kartenwert.KOENIG, 1),
+                karte(Farbe.HERZ, Kartenwert.KOENIG, 1),
+                karte(Farbe.KREUZ, Kartenwert.NEUN, 1),
+                karte(Farbe.PIK, Kartenwert.NEUN, 1),
+                karte(Farbe.HERZ, Kartenwert.NEUN, 1),
+                karte(Farbe.HERZ, Kartenwert.NEUN, 2)
+            )),
+            null,
+            Ansagen.leer(),
+            List.of(),
+            null,
+            null,
+            null,
+            List.of(),
+            List.of(),
+            List.of(VorbehaltAnsage.GESUND, VorbehaltAnsage.HOCHZEIT)
+        );
+
+        assertEquals(VorbehaltAnsage.HOCHZEIT, strategie.waehleVorbehalt(zustand),
+            "SchwerKiStrategie erbt waehleVorbehalt() und muss bei zwei Kreuz-Damen und " +
+            "schwacher Hand Hochzeit anmelden — Vererbungskette darf nicht unterbrochen sein.");
+    }
+
     private Karte karte(Farbe farbe, Kartenwert wert, int exemplarIndex) {
         return new Karte(farbe, wert, exemplarIndex);
     }

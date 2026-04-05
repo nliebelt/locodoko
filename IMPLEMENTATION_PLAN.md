@@ -199,7 +199,7 @@
   - Umsetzung: Prüfen ob das Sonderpunkt-Domain-Objekt (Backend) Täter/Opfer-Info trägt. Falls ja: in DTO und `LetztesSpielergebnisAntwort` durchreichen, `formatiereSonderpunkt()` anpassen.
   - Dateien: `frontend/src/szenen/TischSzene.ts`, ggf. Backend `Sonderpunkt.java` + `LetztesSpielergebnisAntwort`
 
-- [ ] **8.5 "Du bist dran"-Hinweis entfernen**: `TischAnsichtModell.ts:654` gibt `'Du bist dran'` zurück wenn `spieler.istAmZug`. Spec `frontend-ui-logik.md:19` fordert: "Hinweise die lediglich den Spielzug ankündigen **entfallen ersatzlos** — der aktive Spieler ist durch Nameplate-Hervorhebung erkennbar."
+- [x] **8.5 "Du bist dran"-Hinweis entfernen**: `TischAnsichtModell.ts:654` gibt `'Du bist dran'` zurück wenn `spieler.istAmZug`. Spec `frontend-ui-logik.md:19` fordert: "Hinweise die lediglich den Spielzug ankündigen **entfallen ersatzlos** — der aktive Spieler ist durch Nameplate-Hervorhebung erkennbar."
   - Umsetzung: `TischAnsichtModell.ts:654` — Text auf Leerstring oder Spielernamen ändern (kein "Du bist dran"). Prüfen ob Nameplate-Hervorhebung des aktiven Spielers bereits implementiert ist.
   - Datei: `frontend/src/model/TischAnsichtModell.ts` (Z. 654)
 
@@ -212,7 +212,7 @@
 
 ### KI-Testabdeckung
 
-- [ ] **8.7 SchwerKiStrategie: Hochzeit-Test ergänzen** [minor]: `SchwerKiStrategieTest.java` hat keine Test-Methode für Hochzeit-Anmeldung bei 2 Kreuz-Damen. Code funktioniert korrekt via Vererbung von `StandardKiStrategie`, aber die Testabdeckung fehlt für `SchwerKiStrategie` direkt.
+- [x] **8.7 SchwerKiStrategie: Hochzeit-Test ergänzen** [minor]: `SchwerKiStrategieTest.java` hat keine Test-Methode für Hochzeit-Anmeldung bei 2 Kreuz-Damen. Code funktioniert korrekt via Vererbung von `StandardKiStrategie`, aber die Testabdeckung fehlt für `SchwerKiStrategie` direkt.
   - Umsetzung: Analog zu `StandardKiStrategieTest.meldetHochzeitBeiZweiKreuzDamen()` einen Test in `SchwerKiStrategieTest.java` ergänzen.
   - Datei: `src/test/java/de/locodoko/.../SchwerKiStrategieTest.java`
 
