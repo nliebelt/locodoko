@@ -51,6 +51,9 @@ export interface TischKonfigurationDto {
   mindestkartenKeine60: number;
   mindestkartenKeine30: number;
   mindestkartenSchwarz: number;
+  bockrundenAktiv: boolean;
+  schweinchenAktiv: boolean;
+  dreissigAugenPflichtAktiv: boolean;
   /** Schwierigkeitsstufe der KI-Gegner. Standard: STANDARD. */
   kiSchwierigkeit: KiSchwierigkeit;
 }

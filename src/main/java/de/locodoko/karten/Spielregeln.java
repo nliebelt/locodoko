@@ -16,14 +16,6 @@ package de.locodoko.karten;
  * {@code dkvRegeln()} — gemaess specs/regelkatalog.md. {@code standardRegeln()} kann
  * danach auf {@code locoBlatRegeln()} delegieren.</p>
  *
- * <p>TODO(bockrunden): Feld {@code bockrundenAktiv: boolean} ergaenzen (Standard: true).
- * Mit*-Methode ergaenzen. In allen bestehenden Konstruktoraufrufen mitfuehren.</p>
- *
- * <p>TODO(schweinchen): Feld {@code schweinchenAktiv: boolean} ergaenzen (Standard: true).
- * Gilt nur fuer NORMALSPIEL und SOLO_TRUMPF.</p>
- *
- * <p>TODO(dreissig-augen-pflicht): Feld {@code dreissigAugenPflichtAktiv: boolean}
- * ergaenzen (Standard: true). Gilt nicht fuer Solo-Spieltypen.</p>
  */
 public record Spielregeln(
     boolean ohneNeunen,
@@ -41,7 +33,10 @@ public record Spielregeln(
     boolean soloBubeAktiv,
     boolean soloTrumpfAktiv,
     boolean soloFleischlosAktiv,
-    boolean hochzeitAktiv
+    boolean hochzeitAktiv,
+    boolean bockrundenAktiv,
+    boolean schweinchenAktiv,
+    boolean dreissigAugenPflichtAktiv
 ) {
 
     public Spielregeln {
@@ -59,11 +54,11 @@ public record Spielregeln(
     }
 
     public static Spielregeln standardRegeln() {
-        return new Spielregeln(false, true, 11, 10, 9, 8, 7, true, true, true, true, true, true, true, true, true);
+        return new Spielregeln(false, true, 11, 10, 9, 8, 7, true, true, true, true, true, true, true, true, true, false, false, false);
     }
 
     public static Spielregeln ohneNeunenRegeln() {
-        return new Spielregeln(true, true, 9, 8, 7, 6, 5, true, true, true, true, true, true, true, true, true);
+        return new Spielregeln(true, true, 9, 8, 7, 6, 5, true, true, true, true, true, true, true, true, true, false, false, false);
     }
 
     public Spielregeln mitAnsagegrenzen(
@@ -89,7 +84,10 @@ public record Spielregeln(
             soloBubeAktiv,
             soloTrumpfAktiv,
             soloFleischlosAktiv,
-            hochzeitAktiv
+            hochzeitAktiv,
+            bockrundenAktiv,
+            schweinchenAktiv,
+            dreissigAugenPflichtAktiv
         );
     }
 
@@ -110,7 +108,10 @@ public record Spielregeln(
             soloBubeAktiv,
             soloTrumpfAktiv,
             soloFleischlosAktiv,
-            hochzeitAktiv
+            hochzeitAktiv,
+            bockrundenAktiv,
+            schweinchenAktiv,
+            dreissigAugenPflichtAktiv
         );
     }
 
@@ -131,7 +132,10 @@ public record Spielregeln(
             soloBubeAktiv,
             soloTrumpfAktiv,
             soloFleischlosAktiv,
-            hochzeitAktiv
+            hochzeitAktiv,
+            bockrundenAktiv,
+            schweinchenAktiv,
+            dreissigAugenPflichtAktiv
         );
     }
 
@@ -152,7 +156,10 @@ public record Spielregeln(
             soloBubeAktiv,
             soloTrumpfAktiv,
             soloFleischlosAktiv,
-            hochzeitAktiv
+            hochzeitAktiv,
+            bockrundenAktiv,
+            schweinchenAktiv,
+            dreissigAugenPflichtAktiv
         );
     }
 
@@ -173,7 +180,10 @@ public record Spielregeln(
             soloBubeAktiv,
             soloTrumpfAktiv,
             soloFleischlosAktiv,
-            hochzeitAktiv
+            hochzeitAktiv,
+            bockrundenAktiv,
+            schweinchenAktiv,
+            dreissigAugenPflichtAktiv
         );
     }
 
@@ -194,7 +204,10 @@ public record Spielregeln(
             soloBubeAktiv,
             soloTrumpfAktiv,
             soloFleischlosAktiv,
-            hochzeitAktiv
+            hochzeitAktiv,
+            bockrundenAktiv,
+            schweinchenAktiv,
+            dreissigAugenPflichtAktiv
         );
     }
 
@@ -215,7 +228,10 @@ public record Spielregeln(
             soloBubeAktiv,
             soloTrumpfAktiv,
             soloFleischlosAktiv,
-            hochzeitAktiv
+            hochzeitAktiv,
+            bockrundenAktiv,
+            schweinchenAktiv,
+            dreissigAugenPflichtAktiv
         );
     }
 
@@ -236,7 +252,82 @@ public record Spielregeln(
             soloBubeAktiv,
             soloTrumpfAktiv,
             soloFleischlosAktiv,
-            hochzeitAktiv
+            hochzeitAktiv,
+            bockrundenAktiv,
+            schweinchenAktiv,
+            dreissigAugenPflichtAktiv
+        );
+    }
+
+    public Spielregeln mitBockrundenAktiv(boolean bockrundenAktiv) {
+        return new Spielregeln(
+            ohneNeunen,
+            zweiteDulleSticht,
+            mindestkartenReKontra,
+            mindestkartenKeine90,
+            mindestkartenKeine60,
+            mindestkartenKeine30,
+            mindestkartenSchwarz,
+            fuchsAktiv,
+            karlchenAktiv,
+            doppelkopfAktiv,
+            armutAktiv,
+            soloDameAktiv,
+            soloBubeAktiv,
+            soloTrumpfAktiv,
+            soloFleischlosAktiv,
+            hochzeitAktiv,
+            bockrundenAktiv,
+            schweinchenAktiv,
+            dreissigAugenPflichtAktiv
+        );
+    }
+
+    public Spielregeln mitSchweinchenAktiv(boolean schweinchenAktiv) {
+        return new Spielregeln(
+            ohneNeunen,
+            zweiteDulleSticht,
+            mindestkartenReKontra,
+            mindestkartenKeine90,
+            mindestkartenKeine60,
+            mindestkartenKeine30,
+            mindestkartenSchwarz,
+            fuchsAktiv,
+            karlchenAktiv,
+            doppelkopfAktiv,
+            armutAktiv,
+            soloDameAktiv,
+            soloBubeAktiv,
+            soloTrumpfAktiv,
+            soloFleischlosAktiv,
+            hochzeitAktiv,
+            bockrundenAktiv,
+            schweinchenAktiv,
+            dreissigAugenPflichtAktiv
+        );
+    }
+
+    public Spielregeln mitDreissigAugenPflichtAktiv(boolean dreissigAugenPflichtAktiv) {
+        return new Spielregeln(
+            ohneNeunen,
+            zweiteDulleSticht,
+            mindestkartenReKontra,
+            mindestkartenKeine90,
+            mindestkartenKeine60,
+            mindestkartenKeine30,
+            mindestkartenSchwarz,
+            fuchsAktiv,
+            karlchenAktiv,
+            doppelkopfAktiv,
+            armutAktiv,
+            soloDameAktiv,
+            soloBubeAktiv,
+            soloTrumpfAktiv,
+            soloFleischlosAktiv,
+            hochzeitAktiv,
+            bockrundenAktiv,
+            schweinchenAktiv,
+            dreissigAugenPflichtAktiv
         );
     }
 

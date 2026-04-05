@@ -113,6 +113,9 @@ function baueTisch(tischId: Uuid = 'tisch-1'): TischAntwort {
       mindestkartenKeine60: 9,
       mindestkartenKeine30: 8,
       mindestkartenSchwarz: 7,
+      bockrundenAktiv: false,
+      schweinchenAktiv: false,
+      dreissigAugenPflichtAktiv: false,
       kiSchwierigkeit: 'STANDARD' as const
     },
     spieler: [{ spielerId: 'spieler-1', name: 'Nora', istKi: false }]

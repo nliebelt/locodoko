@@ -7,3 +7,5 @@ databaseChangeLog:
       file: db/changelog/003-spielwert-einzelschritte.yaml
   - include:
       file: db/changelog/004-sonderpunkt-taeter-opfer.yaml
+  - include:
+      file: db/changelog/005-hausregeln-felder.yaml

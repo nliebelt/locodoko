@@ -21,6 +21,9 @@ const standardKonfiguration: TischKonfigurationDto = {
   mindestkartenKeine60: 9,
   mindestkartenKeine30: 8,
   mindestkartenSchwarz: 7,
+  bockrundenAktiv: false,
+  schweinchenAktiv: false,
+  dreissigAugenPflichtAktiv: false,
   kiSchwierigkeit: 'STANDARD' as const
 };
 

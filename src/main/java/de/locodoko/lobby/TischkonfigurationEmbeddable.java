@@ -48,6 +48,10 @@ public class TischkonfigurationEmbeddable {
     @Min(1)
     private int mindestkartenSchwarz = 7;
 
+    private boolean bockrundenAktiv = false;
+    private boolean schweinchenAktiv = false;
+    private boolean dreissigAugenPflichtAktiv = false;
+
     /** Schwierigkeitsstufe der KI-Gegner. Standard ist STANDARD. */
     private KiSchwierigkeit kiSchwierigkeit = KiSchwierigkeit.STANDARD;
 
@@ -73,6 +77,9 @@ public class TischkonfigurationEmbeddable {
         int mindestkartenKeine60,
         int mindestkartenKeine30,
         int mindestkartenSchwarz,
+        boolean bockrundenAktiv,
+        boolean schweinchenAktiv,
+        boolean dreissigAugenPflichtAktiv,
         KiSchwierigkeit kiSchwierigkeit
     ) {
         this.ohneNeunen = ohneNeunen;
@@ -93,6 +100,9 @@ public class TischkonfigurationEmbeddable {
         this.mindestkartenKeine60 = mindestkartenKeine60;
         this.mindestkartenKeine30 = mindestkartenKeine30;
         this.mindestkartenSchwarz = mindestkartenSchwarz;
+        this.bockrundenAktiv = bockrundenAktiv;
+        this.schweinchenAktiv = schweinchenAktiv;
+        this.dreissigAugenPflichtAktiv = dreissigAugenPflichtAktiv;
         this.kiSchwierigkeit = kiSchwierigkeit;
     }
 
@@ -137,6 +147,9 @@ public class TischkonfigurationEmbeddable {
             spielregeln.mindestkartenKeine60(),
             spielregeln.mindestkartenKeine30(),
             spielregeln.mindestkartenSchwarz(),
+            spielregeln.bockrundenAktiv(),
+            spielregeln.schweinchenAktiv(),
+            spielregeln.dreissigAugenPflichtAktiv(),
             kiSchwierigkeit
         );
     }
@@ -168,7 +181,10 @@ public class TischkonfigurationEmbeddable {
             bubensoloErlaubt,
             trumpfsoloErlaubt,
             fleischlosErlaubt,
-            hochzeitErlaubt
+            hochzeitErlaubt,
+            bockrundenAktiv,
+            schweinchenAktiv,
+            dreissigAugenPflichtAktiv
         );
     }
 
@@ -242,6 +258,18 @@ public class TischkonfigurationEmbeddable {
 
     public int mindestkartenSchwarz() {
         return mindestkartenSchwarz;
+    }
+
+    public boolean bockrundenAktiv() {
+        return bockrundenAktiv;
+    }
+
+    public boolean schweinchenAktiv() {
+        return schweinchenAktiv;
+    }
+
+    public boolean dreissigAugenPflichtAktiv() {
+        return dreissigAugenPflichtAktiv;
     }
 
     public KiSchwierigkeit kiSchwierigkeit() {

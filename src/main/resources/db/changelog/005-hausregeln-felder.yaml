@@ -1,0 +1,26 @@
+databaseChangeLog:
+  - changeSet:
+      id: 005-hausregeln-felder
+      author: locodoko
+      changes:
+        - addColumn:
+            tableName: tisch
+            columns:
+              - column:
+                  name: bockrunden_aktiv
+                  type: BOOLEAN
+                  defaultValueBoolean: false
+                  constraints:
+                    nullable: false
+              - column:
+                  name: schweinchen_aktiv
+                  type: BOOLEAN
+                  defaultValueBoolean: false
+                  constraints:
+                    nullable: false
+              - column:
+                  name: dreissig_augen_pflicht_aktiv
+                  type: BOOLEAN
+                  defaultValueBoolean: false
+                  constraints:
+                    nullable: false

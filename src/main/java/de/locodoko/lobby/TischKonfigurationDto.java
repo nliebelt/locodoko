@@ -39,6 +39,9 @@ public record TischKonfigurationDto(
     int mindestkartenKeine30,
     @Min(value = 1, message = "Die Schwarz-Grenze muss mindestens 1 sein.")
     int mindestkartenSchwarz,
+    boolean bockrundenAktiv,
+    boolean schweinchenAktiv,
+    boolean dreissigAugenPflichtAktiv,
     /** Schwierigkeitsstufe der KI-Gegner. Standard: STANDARD. */
     KiSchwierigkeit kiSchwierigkeit
 ) {
@@ -63,6 +66,9 @@ public record TischKonfigurationDto(
             konfiguration.mindestkartenKeine60(),
             konfiguration.mindestkartenKeine30(),
             konfiguration.mindestkartenSchwarz(),
+            konfiguration.bockrundenAktiv(),
+            konfiguration.schweinchenAktiv(),
+            konfiguration.dreissigAugenPflichtAktiv(),
             konfiguration.kiSchwierigkeit()
         );
     }
@@ -85,7 +91,10 @@ public record TischKonfigurationDto(
                 bubensoloErlaubt,
                 trumpfsoloErlaubt,
                 fleischlosErlaubt,
-                hochzeitErlaubt
+                hochzeitErlaubt,
+                bockrundenAktiv,
+                schweinchenAktiv,
+                dreissigAugenPflichtAktiv
             ),
             anzahlSpiele,
             tischhintergrund,

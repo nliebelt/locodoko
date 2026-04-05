@@ -4,8 +4,8 @@
 
 ## Notiz
 
-**2026-04-05 (Plan-Run #30):** Task 7 (Szenen-Namensbug) erledigt — `'LobbySzene'` in TischSzene.ts und AppStore.ts durch `'SpielverwaltungsSzene'` ersetzt. Rückkehr zur Lobby funktioniert jetzt.
-Nächster logischer Schritt: Task 1 (Spielregeln-Felder erweitern) — blockiert Tasks 2, 3, 4, 6.
+**2026-04-05 (Plan-Run #31):** Task 1 (Spielregeln-Felder erweitern) vollständig erledigt — `bockrundenAktiv`, `schweinchenAktiv`, `dreissigAugenPflichtAktiv` in `Spielregeln` record, `TischkonfigurationEmbeddable`, `TischKonfigurationDto` (Backend + Frontend), Liquibase-Changeset 005. Alle Tests grün.
+Nächster logischer Schritt: Task 2 (Bockrunden Backend) — jetzt entsperrt.
 Offene Fragen: keine.
 
 ---
@@ -22,16 +22,11 @@ Offene Fragen: keine.
 
 > **Blockiert:** 2, 3, 4, 5 — alle Sonderregeln benötigen diese Felder.
 
-- [ ] **1.1** `Spielregeln` record um 3 Felder erweitern: `bockrundenAktiv`, `schweinchenAktiv`, `dreissigAugenPflichtAktiv`
-  - Datei: `src/main/java/de/locodoko/karten/Spielregeln.java`
-  - Bestehende `standardRegeln()` Factory-Methode anpassen (alle 3 auf `false` setzen für Abwärtskompatibilität)
-  - Compact-Constructor-Validierung nicht nötig (booleans)
-- [ ] **1.2** `TischkonfigurationEmbeddable` um 3 korrespondierende Felder erweitern + `alsSpielregeln()` anpassen
-  - Datei: `src/main/java/de/locodoko/lobby/TischkonfigurationEmbeddable.java`
-- [ ] **1.3** Liquibase-Migration: 3 neue `BOOLEAN NOT NULL DEFAULT FALSE`-Spalten in `tisch_konfiguration`
-  - Neue Changeset-Datei unter `src/main/resources/db/changelog/`
-- [ ] **1.4** Frontend `TischAnsichtModell` / API-DTOs anpassen falls nötig, damit die neuen Felder im Konfigurations-Modal sichtbar werden
-- [ ] **1.5** Bestehende Tests anpassen (Spielregeln-Konstruktoraufrufe erweitern)
+- [x] **1.1** `Spielregeln` record um 3 Felder erweitern: `bockrundenAktiv`, `schweinchenAktiv`, `dreissigAugenPflichtAktiv`
+- [x] **1.2** `TischkonfigurationEmbeddable` um 3 korrespondierende Felder erweitern + `alsSpielregeln()` anpassen
+- [x] **1.3** Liquibase-Migration: 3 neue `BOOLEAN NOT NULL DEFAULT FALSE`-Spalten in `tisch`-Tabelle (Changeset 005)
+- [x] **1.4** Frontend `TischKonfigurationDto` in `SpielverwaltungDto.ts` um 3 neue Felder erweitert
+- [x] **1.5** Bestehende Tests angepasst (`TischControllerTest`, `AppStore.test.ts`, `TischAnsichtModell.test.ts`, `TischSzene.test.ts`)
 
 ---
 
