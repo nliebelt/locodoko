@@ -4,7 +4,7 @@
 
 ## Notiz
 
-**2026-04-05 (Plan-Run #22):** 1.1 Vision Loop erfolgreich ausgeführt (headless, kein Display nötig). 8 Screenshots erstellt. Befund: Lobby/Vorbehalt/Stichphase/Seitenlade/Einstellungen alle funktional. 6.7 Nameplates implementiert und 6.8 Ansage-Badges implementiert. 6.7: NORD y=10%→15%, SUED y=94%→85%, WEST x=4%→14%, OST x=96%→86%, WEST/OST-Mindestbreite 80px→120px. 6.8: Ansage-Badges [K90]/[K60]/[K30]/[S] (Orange) unter dem Nameplate aus ansageHistorie gefiltert nach Position — erscheinen dauerhaft wenn Ansage getätigt wurde. 62 Frontend-Tests grün. Nächster Schritt: 5.5 KI-Vorbehalt-Phase (Hochzeit proaktiv anmelden) oder 5.6 Backend GET /api/tische/{id}.
+**2026-04-05 (Plan-Run #22):** 1.1 Vision Loop (headless), 6.7 Nameplates, 6.8 Ansage-Badges, 5.5 KI-Hochzeit-Vorbehalt implementiert. 6.7: Positionen auf Spec-Prozente normiert, WEST/OST 80px→120px. 6.8: [K90]/[K60]/[K30]/[S] Badges in Orange aus ansageHistorie. 5.5: Code bereits korrekt (Hochzeit nach Solo-Threshold), 3 Tests ergänzt (meldetHochzeitBeiZweiKreuzDamen, meldetKeinHochzeitBeiSehrStarkerTrumpfhand, Bestätigung Solo-Priorität). 134 Backend-Tests grün, 62 Frontend-Tests grün. Nächster Schritt: 5.6 Backend GET /api/tische/{id} (Blocker für 5.3 Recovery-Button).
 
 **2026-04-04 (Plan-Run #21):** Subagenten-Analyse aller 5 Bounded Contexts. Ergebnisse:
 - Lobby/Tisch: Vollständig implementiert. `GET /api/tische/{id}` fehlt weiterhin (Blocker 5.6 gültig). Mutability von `TischkonfigurationEmbeddable` ist Style-Abweichung, kein Funktionsproblem — kein Plan-Eintrag nötig.
@@ -64,7 +64,7 @@
   - Hinweis: `data-testid`-Attribute in betroffenen HTML-Elementen noch nicht gesetzt (e2e-tests.md Z. 23-46) — gleichzeitig ergänzen.
   - Datei: `e2e/tests/rundenauswertung.spec.ts`
 
-- [ ] **5.5 KI-Vorbehalt-Phase: Hochzeit proaktiv anmelden**: `StandardKiStrategie.waehleVorbehalt()` erkennt NICHT, ob die KI beide Kreuz-Damen hat und Hochzeit anmelden sollte. Hochzeit wird nur als letzter Fallback zurückgegeben, nicht als bewusste Entscheidung.
+- [x] **5.5 KI-Vorbehalt-Phase: Hochzeit proaktiv anmelden**: `StandardKiStrategie.waehleVorbehalt()` erkennt NICHT, ob die KI beide Kreuz-Damen hat und Hochzeit anmelden sollte. Hochzeit wird nur als letzter Fallback zurückgegeben, nicht als bewusste Entscheidung.
   - Anforderung (specs/ki-strategie.md §15/§17): KI prüft ob sie beide Kreuz-Damen hat → meldet Hochzeit an, sofern kein Solo über Schwelle. `LeichteKiStrategie` darf weiterhin keine Hochzeit anmelden (Zeile 15, 30-31).
   - Umsetzung: In `waehleVorbehalt()` Zeile 48-49 vor dem Solo-Fallback prüfen: hat KI 2× Kreuz-Dame im Blatt? → `Vorbehalt.HOCHZEIT`. Neuen Test in `StandardKiStrategieTest` ergänzen.
   - Dateien: `src/main/java/de/locodoko/partie/ki/StandardKiStrategie.java` (Z. 48-49), `SchwerKiStrategie.java`

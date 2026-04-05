@@ -70,6 +70,85 @@ class StandardKiStrategieTest {
     }
 
     @Test
+    void meldetHochzeitBeiZweiKreuzDamen() {
+        // KI hat beide Kreuz-Damen aber kein starkes Solo → soll Hochzeit anmelden.
+        // Wichtig: Prueft dass Hochzeit als bewusste Entscheidung getroffen wird,
+        // nicht zufaellig durch einen schwachen Solo-Fallback uebersprungen wird.
+        KiSpielzustand zustand = new KiSpielzustand(
+            SpielerPosition.SUED,
+            Spieltyp.NORMALSPIEL,
+            Spielphase.VORBEHALT_ANSAGE,
+            spielregeln,
+            trumpfOrdnung,
+            new Hand(List.of(
+                karte(Farbe.KREUZ, Kartenwert.DAME, 1),
+                karte(Farbe.KREUZ, Kartenwert.DAME, 2),
+                karte(Farbe.KREUZ, Kartenwert.AS, 1),
+                karte(Farbe.PIK, Kartenwert.AS, 1),
+                karte(Farbe.HERZ, Kartenwert.AS, 1),
+                karte(Farbe.KREUZ, Kartenwert.KOENIG, 1),
+                karte(Farbe.PIK, Kartenwert.KOENIG, 1),
+                karte(Farbe.HERZ, Kartenwert.KOENIG, 1),
+                karte(Farbe.KREUZ, Kartenwert.NEUN, 1),
+                karte(Farbe.PIK, Kartenwert.NEUN, 1),
+                karte(Farbe.HERZ, Kartenwert.NEUN, 1),
+                karte(Farbe.HERZ, Kartenwert.NEUN, 2)
+            )),
+            null,
+            Ansagen.leer(),
+            List.of(),
+            null,
+            null,
+            null,
+            List.of(),
+            List.of(),
+            List.of(VorbehaltAnsage.GESUND, VorbehaltAnsage.HOCHZEIT)
+        );
+
+        assertEquals(VorbehaltAnsage.HOCHZEIT, strategie.waehleVorbehalt(zustand),
+            "Eine KI mit beiden Kreuz-Damen und schwacher Hand soll Hochzeit anmelden, damit ein Partner gesucht wird statt Still-Solo zu riskieren.");
+    }
+
+    @Test
+    void meldetKeinHochzeitBeiSehrStarkerTrumpfhandTrotzKreuzDamen() {
+        // KI hat eine Kreuz-Dame und starkes Solo — soll Solo bevorzugen, nicht Hochzeit.
+        // Wichtig: Solo-Schwelle darf nicht durch Hochzeit umgangen werden.
+        KiSpielzustand zustand = new KiSpielzustand(
+            SpielerPosition.SUED,
+            Spieltyp.NORMALSPIEL,
+            Spielphase.VORBEHALT_ANSAGE,
+            spielregeln,
+            trumpfOrdnung,
+            new Hand(List.of(
+                karte(Farbe.HERZ, Kartenwert.ZEHN, 1),
+                karte(Farbe.HERZ, Kartenwert.ZEHN, 2),
+                karte(Farbe.KREUZ, Kartenwert.DAME, 1),
+                karte(Farbe.PIK, Kartenwert.DAME, 1),
+                karte(Farbe.HERZ, Kartenwert.DAME, 1),
+                karte(Farbe.KREUZ, Kartenwert.BUBE, 1),
+                karte(Farbe.PIK, Kartenwert.BUBE, 1),
+                karte(Farbe.KARO, Kartenwert.AS, 1),
+                karte(Farbe.KARO, Kartenwert.ZEHN, 1),
+                karte(Farbe.KARO, Kartenwert.KOENIG, 1),
+                karte(Farbe.KREUZ, Kartenwert.AS, 1),
+                karte(Farbe.PIK, Kartenwert.AS, 1)
+            )),
+            null,
+            Ansagen.leer(),
+            List.of(),
+            null,
+            null,
+            null,
+            List.of(),
+            List.of(),
+            List.of(VorbehaltAnsage.GESUND, VorbehaltAnsage.SOLO_TRUMPF)
+        );
+
+        assertEquals(VorbehaltAnsage.SOLO_TRUMPF, strategie.waehleVorbehalt(zustand),
+            "Bei starkem Solo soll die KI Solo bevorzugen, auch wenn theoretisch Hochzeit moeglich waere.");
+    }
+
+    @Test
     void bietetBeiArmutExaktAlleTruepfeAn() {
         KiSpielzustand zustand = new KiSpielzustand(
             SpielerPosition.WEST,
