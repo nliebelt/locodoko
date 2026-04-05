@@ -856,6 +856,21 @@ export class TischSzene extends Phaser.Scene {
           fontStyle: 'bold'
         }).setOrigin(0.5));
       }
+      // Ansage-Badges: laufende Ansagen (Keine90/60/30/Schwarz) dauerhaft im Nameplate
+      const ansageBadgeLabels: Partial<Record<string, string>> = {
+        KEINE_90: '[K90]', KEINE_60: '[K60]', KEINE_30: '[K30]', SCHWARZ: '[S]'
+      };
+      const spielerAnsagen = modell.ansageHistorie.filter(
+        (a) => a.position === spieler.position && ansageBadgeLabels[a.ansage] !== undefined
+      );
+      if (spielerAnsagen.length > 0) {
+        const badgeText = spielerAnsagen.map((a) => ansageBadgeLabels[a.ansage]).join(' ');
+        ebene.add(this.add.text(npPos.x, npPos.y + Math.round(nameplateHoehe * 0.58), badgeText, {
+          color: '#ff9800',
+          fontSize: `${kleinSchrift}px`,
+          fontStyle: 'bold'
+        }).setOrigin(0.5));
+      }
       this.renderKartenFaecher(ebene, layout, spieler, modell);
     });
 

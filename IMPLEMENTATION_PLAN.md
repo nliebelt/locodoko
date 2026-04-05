@@ -4,7 +4,7 @@
 
 ## Notiz
 
-**2026-04-05 (Plan-Run #22):** 1.1 Vision Loop erfolgreich ausgeführt (headless, kein Display nötig). 8 Screenshots erstellt. Befund: Lobby/Vorbehalt/Stichphase/Seitenlade/Einstellungen alle funktional. 6.7 Nameplates implementiert: NORD y=10%→15%, SUED y=94%→85%, WEST x=4%→14%, OST x=96%→86%, WEST/OST-Mindestbreite 80px→120px. Vision Loop nach Fix bestätigt verbesserte Positionen. 62 Frontend-Tests grün. Nächster Schritt: 6.8 Ansage-Badges (laufende Ansagen dauerhaft in Nameplates anzeigen).
+**2026-04-05 (Plan-Run #22):** 1.1 Vision Loop erfolgreich ausgeführt (headless, kein Display nötig). 8 Screenshots erstellt. Befund: Lobby/Vorbehalt/Stichphase/Seitenlade/Einstellungen alle funktional. 6.7 Nameplates implementiert und 6.8 Ansage-Badges implementiert. 6.7: NORD y=10%→15%, SUED y=94%→85%, WEST x=4%→14%, OST x=96%→86%, WEST/OST-Mindestbreite 80px→120px. 6.8: Ansage-Badges [K90]/[K60]/[K30]/[S] (Orange) unter dem Nameplate aus ansageHistorie gefiltert nach Position — erscheinen dauerhaft wenn Ansage getätigt wurde. 62 Frontend-Tests grün. Nächster Schritt: 5.5 KI-Vorbehalt-Phase (Hochzeit proaktiv anmelden) oder 5.6 Backend GET /api/tische/{id}.
 
 **2026-04-04 (Plan-Run #21):** Subagenten-Analyse aller 5 Bounded Contexts. Ergebnisse:
 - Lobby/Tisch: Vollständig implementiert. `GET /api/tische/{id}` fehlt weiterhin (Blocker 5.6 gültig). Mutability von `TischkonfigurationEmbeddable` ist Style-Abweichung, kein Funktionsproblem — kein Plan-Eintrag nötig.
@@ -112,7 +112,7 @@
   - Fix: `nameplatePositionFuer()` (TischSzene.ts Z. 140–151) auf Canvas-Prozente normieren: SUED y=85%, NORD y=15%, WEST x=14%, OST x=86%. WEST/OST-Breite von 80px auf 120px erhöhen (TischSzene.ts Z. 815).
   - Datei: `frontend/src/szenen/TischSzene.ts` (Z. 140–151, Z. 815)
 
-- [ ] **6.8 Laufende Ansagen dauerhaft anzeigen**: Welche Ansagen in der Runde gelten ist nicht sichtbar. Partei-Badges ([RE]/[KONTRA]) existieren, aber Ansage-Badges für laufende Runde fehlen komplett (Code-Check: kein `ansageBadge` in TischSzene.ts).
+- [x] **6.8 Laufende Ansagen dauerhaft anzeigen**: Welche Ansagen in der Runde gelten ist nicht sichtbar. Partei-Badges ([RE]/[KONTRA]) existieren, aber Ansage-Badges für laufende Runde fehlen komplett (Code-Check: kein `ansageBadge` in TischSzene.ts).
   - Fix: Nameplate um Ansage-Badge erweitern: `[RE]` (Gold), `[KONTRA]` (Blau), `[K90]`/`[K60]`/`[S]` (Orange) — aus Backend-Zustand `laufendesSpiel.ansagen`.
   - Datei: `frontend/src/szenen/TischSzene.ts`
 
