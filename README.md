@@ -8,6 +8,10 @@ Das latent verrückte Doppelkopf Spiel.
 mvn spring-boot:run
 npm run dev
 
+claude install
+export PATH="$HOME/.local/bin:$PATH"
+
+
 ## Links
 
 [Ralph](https://ghuntley.com/ralph/)

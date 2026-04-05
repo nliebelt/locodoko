@@ -59,6 +59,18 @@ async function spieleErsteHandkarte(page: Page): Promise<void> {
   });
 }
 
+async function warteAufEigenenVorbehalt(page: Page, timeoutMs = 15_000): Promise<void> {
+  await page.waitForFunction(
+    () => {
+      interface LocodokoBridge { appStore: { snapshot: () => { partieStand?: { laufendesSpiel?: { moeglicheVorbehalte?: unknown[] } } } } }
+      const loco = (window as unknown as Record<string, LocodokoBridge>)['__locodoko'];
+      const vorbehalte = loco?.appStore?.snapshot()?.partieStand?.laufendesSpiel?.moeglicheVorbehalte;
+      return (vorbehalte?.length ?? 0) > 0;
+    },
+    { timeout: timeoutMs }
+  );
+}
+
 async function meldeVorbehalt(page: Page, vorbehalt: string): Promise<void> {
   await page.evaluate((v: string) => {
     interface LocodokoBridge { appStore: { meldeVorbehalt: (v: string) => void } }
@@ -94,7 +106,8 @@ test.describe('Vision Loop — UI Screenshots', () => {
     await page.waitForTimeout(800); // Austeilen-Animation abwarten
     await screenshot(page, '02-vorbehalt-phase');
 
-    // Eigenen Vorbehalt ansagen (GESUND = kein Vorbehalt)
+    // Eigenen Vorbehalt ansagen (GESUND = kein Vorbehalt) — erst wenn Spieler an der Reihe
+    await warteAufEigenenVorbehalt(page, 20_000);
     await meldeVorbehalt(page, 'GESUND');
     await page.waitForTimeout(500);
 

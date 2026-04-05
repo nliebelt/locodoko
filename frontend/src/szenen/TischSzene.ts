@@ -1013,9 +1013,24 @@ export class TischSzene extends Phaser.Scene {
     const karten = stich.gespielteKarten;
     const startX = panelX - ((karten.length - 1) * kartenAbstand) / 2;
     const kartenY = panelY + Math.round(panelHoehe * 0.05);
+    const kartenObjekte: Kartenansicht[] = [];
     karten.forEach((eintrag, index) => {
       const x = startX + index * kartenAbstand;
-      container.add(this.erstelleKartenansicht(x, kartenY, kgroesse.w, kgroesse.h, { karte: eintrag.karte }));
+      const ansicht = this.erstelleKartenansicht(x, kartenY, kgroesse.w, kgroesse.h, { karte: eintrag.karte });
+      ansicht.setScale(0, 1);
+      kartenObjekte.push(ansicht);
+      container.add(ansicht);
+    });
+
+    // Flip-Animation: Karten versetzt von scaleX=0 auf 1 aufklappen (simuliert Kartenumdrehen)
+    kartenObjekte.forEach((ansicht, i) => {
+      this.tweens.add({
+        targets: ansicht,
+        scaleX: 1,
+        duration: 150,
+        ease: 'Cubic.Out',
+        delay: i * 60
+      });
     });
 
     // Hinweis-Text

@@ -4,7 +4,7 @@
 
 ## Notiz
 
-**2026-04-05 (Plan-Run #27):** 9.1 Farbsolos implementiert. `specs/solo-farbsolo.md` erstellt. `StandardKiStrategie.waehleVorbehalt()` bewertet jetzt SOLO_TRUMPF_HERZ/PIK/KREUZ. Formel: `farbsoloTrumpfAnzahl × 4 + fehlAsse × 2 + damen × 2 + buben × 2`, Schwelle 46 (analog SOLO_TRUMPF). 2 neue Tests. 144 Backend-Tests grün. Nächste offene Aufgabe: 9.2 (Stich-Gewinn-Flash + Stapel-Visualisierung) — Frontend-only, benötigt AnimationenService + TischSzene. Danach 9.3 (Tastatur-Shortcuts verifizieren, kann per Grep schnell abgeklärt werden). 9.4 (Spec-Update hochzeit.md) ist Minor ohne Code-Änderung.
+**2026-04-05 (Plan-Run #28):** 9.2 Flip-Animation für Letzter-Stich-Overlay implementiert. `zeigeLetztesStichOverlay()` zeigt jetzt Karten mit gestaffelter Flip-Animation (scaleX 0→1, je 150ms, Versatz 60ms je Karte). Items (a) Nameplate-Flash und (b) Karten-zu-Stapel waren bereits durch 6.3/6.7-Tasks implementiert. 62 Frontend-Tests grün. Nächste offene Aufgabe: 9.3 (Tastatur-Shortcuts per Grep verifizieren, R/K/1-5/A/N/I/S prüfen). 9.4 (Spec-Update hochzeit.md) ist Minor ohne Code-Änderung.
 
 **2026-04-05 (Plan-Run #26):** Subagenten-Analyse aller 5 Bounded Contexts. Ergebnisse:
 - Lobby/Tisch: Vollständig. Style-Abweichungen (Lombok, TischkonfigurationEmbeddable-Mutability) wie in Plan-Run #21 entschieden: kein Plan-Eintrag.
@@ -238,7 +238,7 @@
   - Empfehlung: Option A, da Farbsolos zum Standard-Doppelkopf gehören und die Basis-Infrastruktur bereits vorhanden ist.
   - Dateien: `src/main/java/de/locodoko/partie/Vorbehalt.java`, `VariableTrumpfsoloTrumpfOrdnung.java`, `src/main/java/de/locodoko/partie/ki/StandardKiStrategie.java` (Z. 30–35, soloWert, soloSchwelle), `SchwerKiStrategie.java`
 
-- [ ] **9.2 Frontend-Animationen: Stich-Gewinn-Flash + Stapel-Visualisierung**: `specs/frontend-animationen.md §4.16` fordert drei Animationen die nicht implementiert sind: (a) Nameplate des Stichgewinners leuchtet kurz auf (Tween: Alpha 1.0→0.5→1.0, Duration ~400ms), (b) Karten fliegen beim Einziehen sichtbar auf den Stapel des Stichgewinners (nicht nur aus der Stichmitte verschwinden), (c) beim letzten Stich: kurze Flip-Animation der eigenen Karten auf dem Stapel.
+- [x] **9.2 Frontend-Animationen: Stich-Gewinn-Flash + Stapel-Visualisierung**: `specs/frontend-animationen.md §4.16` fordert drei Animationen die nicht implementiert sind: (a) Nameplate des Stichgewinners leuchtet kurz auf (Tween: Alpha 1.0→0.5→1.0, Duration ~400ms), (b) Karten fliegen beim Einziehen sichtbar auf den Stapel des Stichgewinners (nicht nur aus der Stichmitte verschwinden), (c) beim letzten Stich: kurze Flip-Animation der eigenen Karten auf dem Stapel.
   - Umsetzung:
     1. In `AnimationenService.ts`: `animiereStichEinziehen()` um Flash-Tween auf Nameplate-Sprite erweitern (Gewinner-Position per Parameter).
     2. Karten-Ziel: statt `setVisible(false)` nach Stich → `tweenTo()` zur Stapelposition des Stichgewinners, dann `setVisible(false)`.
