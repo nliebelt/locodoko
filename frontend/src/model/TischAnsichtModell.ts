@@ -659,7 +659,7 @@ function mappeLobbySpieler(
 
 function bildeStatusText(spieler: SpielerImSpielAntwort): string {
   if (spieler.istSelbst) {
-    return spieler.istAmZug ? 'Du bist dran' : 'Du';
+    return 'Du';
   }
   if (spieler.istAmZug) {
     return 'Am Zug';
