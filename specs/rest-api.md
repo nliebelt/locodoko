@@ -1,9 +1,9 @@
 # REST-API
 
-| Feld           | Wert                                        |
-|----------------|---------------------------------------------|
-| Status         | Vollständig implementiert                   |
-| Priorität      | Hoch                                        |
+| Feld           | Wert                                                                      |
+|----------------|---------------------------------------------------------------------------|
+| Status         | Vollständig implementiert                                                 |
+| Priorität      | Hoch                                                                      |
 | Abhängigkeiten | lobby.md, tischkonfiguration.md, spieler-session.md, punkteberechnung.md |
 
 ## Beschreibung
@@ -38,29 +38,38 @@ Die REST-API stellt Endpunkte für nicht-echtzeit-kritische Operationen bereit: 
 
 ### Konfiguration-Endpunkte
 
-6. **`GET /api/tische/{id}/konfiguration`** — Tischregeln abrufen.
+1. **`GET /api/tische/{id}/konfiguration`** — Tischregeln abrufen.
    - Response: Vollständige Tischkonfiguration.
 
-7. **`PUT /api/tische/{id}/konfiguration`** — Tischregeln anpassen.
+2. **`PUT /api/tische/{id}/konfiguration`** — Tischregeln anpassen.
    - Validierung: Nur durch Tischersteller, nur vor Spielbeginn.
    - Request-Body: Konfigurationsobjekt.
    - Response: Aktualisierte Konfiguration.
 
 ### Punktestand-Endpunkte
 
-8. **`GET /api/partien/{id}/stand`** — Aktuellen Punktestand einer Partie abrufen.
+1. **`GET /api/partien/{id}/stand`** — Aktuellen Punktestand einer Partie abrufen.
    - Response: Gesamtpunktestand pro Spieler, Anzahl gespielte Spiele.
+
+### Betrieb / Monitoring
+
+1. **`GET /actuator/health`** — Anwendungsstatus für Health-Checks (z.B. Load Balancer, Deployment-Pipelines).
+   - Response: `{ "status": "UP" }` — keine Details exponiert.
+
+2. **`GET /actuator/info`** — Build-Metadaten der laufenden Instanz.
+   - Response: `{ "build": { "artifact": "locodoko", "group": "de.locodoko", "version": "...", "name": "...", "time": "..." } }`
+   - Erzeugt durch `spring-boot-maven-plugin` Goal `build-info` (`META-INF/build-info.properties`).
 
 ### Allgemein
 
-9. Alle Endpunkte verwenden **JSON** als Datenformat.
-10. Fehler werden mit geeigneten **HTTP-Statuscodes** beantwortet:
+1. Alle Endpunkte verwenden **JSON** als Datenformat.
+1. Fehler werden mit geeigneten **HTTP-Statuscodes** beantwortet:
     - 400: Ungültige Anfrage (Validierungsfehler)
     - 404: Ressource nicht gefunden
     - 409: Konflikt (z.B. Tisch voll)
     - 500: Serverfehler
-11. Fehler-Responses enthalten eine **strukturierte Fehlermeldung**: `{ fehlerCode, nachricht }`.
-12. Alle Endpunkte loggen **Zugriff und Fehler** für die Fehleranalyse.
+1. Fehler-Responses enthalten eine **strukturierte Fehlermeldung**: `{ fehlerCode, nachricht }`.
+1. Alle Endpunkte loggen **Zugriff und Fehler** für die Fehleranalyse.
 
 ## Akzeptanzkriterien
 
