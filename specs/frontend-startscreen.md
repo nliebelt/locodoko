@@ -71,8 +71,12 @@ Die Spielverwaltungs-Szene ist die **dritte Phaser-Szene** (nach BootSzene, vor 
    - Anzahl Spiele / Rundenanzahl (Auswahl: 12, 24, 36, ...)
    - KI-Schwierigkeit (Auswahl: Leicht, Standard, Schwer)
    - Tischhintergrund (Auswahl: Grüner Filz, Dunkles Holz, Blaue Grafik)
-4. **Sonderregeln** (Checkboxen, Details in einer späteren Iteration):
-   - Placeholder-Sektion „Sonderregeln" mit Hinweis „Konfiguration folgt".
+4. **Regelset** (Preset-Auswahl + optionale Detailkonfiguration):
+   - Dropdown: „Loco Blatt" (Standard) / „DKV-Turnier" / „Ohne Neunen" / „Benutzerdefiniert"
+   - Bei „Benutzerdefiniert": Checkboxen für alle Einzeloptionen einblenden
+     (Bockrunden, Schweinchen, 30-Augen-Pflicht, Sonderpunkte, Sonderspiele, Dulle-Regel)
+   - Bei den anderen Presets: Optionen schreibgeschützt anzeigen (kein Bearbeiten)
+   - Details zu Presets und Optionen: regelkatalog.md, tischkonfiguration.md
 5. Buttons: „Tisch erstellen" (Primary) und „Abbrechen" (Secondary / Escape).
 6. Nach erfolgreichem Erstellen wechselt die Szene direkt zur **TischSzene**.
 

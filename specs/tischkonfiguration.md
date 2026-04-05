@@ -2,9 +2,9 @@
 
 | Feld           | Wert                                        |
 |----------------|---------------------------------------------|
-| Status         | Vollständig implementiert und getestet      |
+| Status         | Teilweise implementiert                     |
 | Priorität      | Mittel                                      |
-| Abhängigkeiten | lobby.md                                    |
+| Abhängigkeiten | lobby.md, regelkatalog.md                   |
 
 ## Beschreibung
 
@@ -18,23 +18,28 @@ Die Tischkonfiguration definiert das Regelwerk, das an einem bestimmten Tisch gi
 4. **Während eines laufenden Spiels** kann die Konfiguration **nicht** geändert werden.
 5. Folgende Optionen sind konfigurierbar:
 
-   | Option                       | Typ     | Standard          | Beschreibung |
-   |------------------------------|---------|-------------------|--------------|
-   | `ohneNeunen`                 | boolean | false             | Spiel ohne Neunen (40 statt 48 Karten) |
-   | `anzahlSpiele`               | int     | 24                | Anzahl Spiele pro Partie |
-   | `hochzeitErlaubt`            | boolean | true              | Hochzeit als Sonderspiel zulassen |
-   | `armutErlaubt`               | boolean | true              | Armut als Sonderspiel zulassen |
-   | `damensoloErlaubt`           | boolean | true              | Damensolo zulassen |
-   | `bubensoloErlaubt`           | boolean | true              | Bubensolo zulassen |
-   | `fleischlosErlaubt`          | boolean | true              | Fleischlos zulassen |
-   | `trumpfsoloErlaubt`          | boolean | true              | Trumpfsolo zulassen |
-   | `zweiteDulleSticht`          | boolean | true              | Zweite Dulle sticht die erste |
-   | `fuchsGefangenAktiv`         | boolean | true              | Sonderpunkt „Fuchs gefangen" aktiv |
-   | `karlchenAktiv`              | boolean | true              | Sonderpunkt „Karlchen" aktiv |
-   | `doppelkopfAktiv`            | boolean | true              | Sonderpunkt „Doppelkopf" aktiv |
-   | `ansageGrenzen`              | Map     | {re: 11, k90: 10, k60: 9, k30: 8, schwarz: 7} | Mindestkartenanzahl für Ansagen |
+   | Option | Typ | Standard (Loco Blatt) | Beschreibung |
+   | ------ | --- | --------------------- | ------------ |
+   | `ohneNeunen` | boolean | false | Spiel ohne Neunen (40 statt 48 Karten) |
+   | `anzahlSpiele` | int | 24 | Anzahl Spiele pro Partie |
+   | `hochzeitAktiv` | boolean | true | Hochzeit als Sonderspiel zulassen |
+   | `armutAktiv` | boolean | true | Armut als Sonderspiel zulassen |
+   | `soloDameAktiv` | boolean | true | Damensolo zulassen |
+   | `soloBubeAktiv` | boolean | true | Bubensolo zulassen |
+   | `soloFleischlosAktiv` | boolean | true | Fleischlos zulassen |
+   | `soloTrumpfAktiv` | boolean | true | Trumpfsolo zulassen |
+   | `zweiteDulleSticht` | boolean | true | Zweite Dulle sticht die erste |
+   | `fuchsAktiv` | boolean | true | Sonderpunkt „Fuchs gefangen" aktiv |
+   | `karlchenAktiv` | boolean | true | Sonderpunkt „Karlchen" aktiv |
+   | `doppelkopfAktiv` | boolean | true | Sonderpunkt „Doppelkopf" aktiv |
+   | `bockrundenAktiv` | boolean | true | Bockrunden aktiv (siehe bockrunden.md) |
+   | `schweinchenAktiv` | boolean | true | Schweinchen aktiv (siehe schweinchen.md) |
+   | `dreissigAugenPflichtAktiv` | boolean | true | 30-Augen-Pflicht aktiv (siehe dreissig-augen-pflicht.md) |
+   | `ansageGrenzen` | Map | {re: 11, k90: 10, k60: 9, k30: 8, schwarz: 7} | Mindestkartenanzahl für Ansagen |
 
-6. Es gibt eine **Standard-Konfiguration** (DKV-Turniermodus), die als Default verwendet wird.
+6. Es gibt benannte **Regel-Presets** die alle Optionen auf einmal vorbelegen
+   (Details in regelkatalog.md): **Loco Blatt** (Standard), **DKV-Turnier**, **Ohne Neunen**,
+   **Benutzerdefiniert**.
 7. Die Konfiguration muss **validiert** werden (z.B. Anzahl Spiele > 0).
 
 ## Akzeptanzkriterien
@@ -50,11 +55,13 @@ Die Tischkonfiguration definiert das Regelwerk, das an einem bestimmten Tisch gi
 
 ## Definition of Done
 
-- [x] Alle Anforderungen implementiert
+- [x] Grundlegende Anforderungen implementiert (alle Optionen bis inkl. ansageGrenzen)
 - [x] Unit-Tests für Konfigurationsvalidierung geschrieben und bestanden
 - [x] REST-API-Endpunkte für Konfiguration implementiert und getestet
 - [x] Integration mit Spiellogik getestet (aktivierte/deaktivierte Regeln)
 - [x] Code-Review / Plausibilitätsprüfung
+- [ ] Neue Optionen ergänzt: `bockrundenAktiv`, `schweinchenAktiv`, `dreissigAugenPflichtAktiv`
+- [ ] Regel-Presets implementiert (Backend-Factory + Frontend-Dropdown, siehe regelkatalog.md)
 
 ## Technische Hinweise
 

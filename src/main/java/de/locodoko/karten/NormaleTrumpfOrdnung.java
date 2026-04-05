@@ -15,6 +15,13 @@ import java.util.Map;
  */
 public final class NormaleTrumpfOrdnung implements TrumpfOrdnung {
 
+    // TODO(schweinchen): Neue Unterklasse SchweinchenTrumpfOrdnung (oder Decorator)
+    //   erstellen, die TRUMPF_RANG fuer Karo-As exemplarIndex 1 auf Rang 14 und
+    //   exemplarIndex 2 auf Rang 15 setzt (oberhalb aller bestehenden Eintraege).
+    //   spaetereGleicheKarteGewinnt(Karte) muss true fuer Karo-As zurueckgeben
+    //   (zweites Schweinchen schlaegt erstes, analog zur Dulle-Regel).
+    //   NormaleTrumpfOrdnung selbst bleibt unveraendert.
+
     private static final Map<Karte, Integer> TRUMPF_RANG = Map.ofEntries(
         Map.entry(new Karte(Farbe.KARO, Kartenwert.NEUN, 1), 1),
         Map.entry(new Karte(Farbe.KARO, Kartenwert.KOENIG, 1), 2),

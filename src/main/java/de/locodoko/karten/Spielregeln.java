@@ -11,6 +11,19 @@ package de.locodoko.karten;
  * <p>Standardkonfiguration liefert {@link #standardRegeln()}, die "Ohne Neunen"-Variante
  * liefert {@link #ohneNeunenRegeln()}. Einzelne Parameter koennen per {@code mit*}-Methoden
  * unveraendernd ueberschrieben werden (Builder-Stil).</p>
+ *
+ * <p>TODO(regelkatalog): Neue Factory-Methoden ergaenzen — {@code locoBlatRegeln()} und
+ * {@code dkvRegeln()} — gemaess specs/regelkatalog.md. {@code standardRegeln()} kann
+ * danach auf {@code locoBlatRegeln()} delegieren.</p>
+ *
+ * <p>TODO(bockrunden): Feld {@code bockrundenAktiv: boolean} ergaenzen (Standard: true).
+ * Mit*-Methode ergaenzen. In allen bestehenden Konstruktoraufrufen mitfuehren.</p>
+ *
+ * <p>TODO(schweinchen): Feld {@code schweinchenAktiv: boolean} ergaenzen (Standard: true).
+ * Gilt nur fuer NORMALSPIEL und SOLO_TRUMPF.</p>
+ *
+ * <p>TODO(dreissig-augen-pflicht): Feld {@code dreissigAugenPflichtAktiv: boolean}
+ * ergaenzen (Standard: true). Gilt nicht fuer Solo-Spieltypen.</p>
  */
 public record Spielregeln(
     boolean ohneNeunen,

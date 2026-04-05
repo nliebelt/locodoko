@@ -1,9 +1,9 @@
 # Spielablauf
 
-| Feld           | Wert                                        |
-|----------------|---------------------------------------------|
-| Status         | Vollständig implementiert und getestet      |
-| Priorität      | Hoch                                        |
+| Feld           | Wert                                              |
+|----------------|---------------------------------------------------|
+| Status         | Teilweise implementiert                           |
+| Priorität      | Hoch                                              |
 | Abhängigkeiten | kartendeck.md, stichlogik.md, trumpfhierarchie.md |
 
 ## Beschreibung
@@ -20,45 +20,54 @@ Definition des gesamten Spielablaufs einer Doppelkopf-Partie. Eine Partie besteh
 
 ### Geberrotation
 
-4. Zu Beginn der Partie wird ein **erster Geber** bestimmt (zufällig oder nach Position).
-5. Der Geber **rotiert nach jedem Spiel im Uhrzeigersinn** zum nächsten Spieler.
-6. Der Spieler **links vom Geber** beginnt das Spiel (erster Aufspieler im ersten Stich).
+1. Zu Beginn der Partie wird ein **erster Geber** bestimmt (zufällig oder nach Position).
+2. Der Geber **rotiert nach jedem Normalspiel im Uhrzeigersinn** zum nächsten Spieler.
+3. Der Spieler **links vom Geber** beginnt das Spiel (erster Aufspieler im ersten Stich).
 
 ### Phasen eines Spiels
 
-7. Jedes Spiel durchläuft folgende Phasen in dieser Reihenfolge:
+1. Jedes Spiel durchläuft folgende Phasen in dieser Reihenfolge:
 
-   | Phase | Name                        | Beschreibung |
-   |-------|-----------------------------|--------------|
-   | 1     | **Karten austeilen**        | Karten werden gemischt und gleichmäßig verteilt |
-   | 2     | **Vorbehalt-Ansage**        | Jeder Spieler gibt reihum an, ob er einen Vorbehalt hat (Solo, Hochzeit, Armut) oder „gesund" ist |
-   | 3     | **Vorbehalt-Auflösung**     | Falls Vorbehalte existieren: Höchster Vorbehalt wird aufgelöst (Solo > Hochzeit > Armut). Falls kein Vorbehalt: Normalspiel |
-   | 4     | **Armut-Tausch** (optional) | Falls Armut angemeldet: Kartentausch wird durchgeführt |
-   | 5     | **Stichphase**              | 12 (bzw. 10) Stiche werden nacheinander gespielt |
-   | 6     | **Auswertung**              | Augen zählen, Sonderpunkte berechnen, Spielpunkte vergeben |
-   | 7     | **Gesamtstand aktualisieren** | Spielpunkte zum Partiestand hinzufügen |
+   | Phase | Name | Beschreibung |
+   | ----- | ---- | ------------ |
+   | 1 | **Karten austeilen** | Karten werden gemischt und gleichmaessig verteilt |
+   | 2 | **Vorbehalt-Ansage** | Jeder Spieler gibt reihum an, ob er einen Vorbehalt hat (Solo, Hochzeit, Armut) oder „gesund" ist |
+   | 3 | **Vorbehalt-Auflösung** | Hoechster Vorbehalt aufgeloest (Solo > Hochzeit > Armut); kein Vorbehalt: Normalspiel |
+   | 4 | **Armut-Tausch** (optional) | Falls Armut angemeldet: Kartentausch wird durchgefuehrt |
+   | 5 | **Stichphase** | 12 (bzw. 10) Stiche werden nacheinander gespielt |
+   | 6 | **Auswertung** | Augen zaehlen, Sonderpunkte berechnen, Spielpunkte vergeben |
+   | 7 | **Gesamtstand aktualisieren** | Spielpunkte zum Partiestand hinzufuegen |
 
-8. Die **Vorbehalt-Reihenfolge** beginnt beim Spieler links vom Geber und geht im Uhrzeigersinn.
-9. **Vorbehalt-Priorität** (absteigend): Solo > Hochzeit > Armut. Bei **mehreren Soli** entscheidet die **Sitzreihenfolge**: Der Spieler, der in der Reihenfolge (links vom Geber ausgehend) zuerst dran ist, darf sein Solo spielen. Es gibt keine Rangfolge zwischen den Solo-Typen.
-10. Wenn kein Spieler einen Vorbehalt hat, wird ein **Normalspiel** gespielt.
+2. Die **Vorbehalt-Reihenfolge** beginnt beim Spieler links vom Geber und geht im Uhrzeigersinn.
+3. **Vorbehalt-Priorität** (absteigend): Solo > Hochzeit > Armut. Bei **mehreren Soli** entscheidet die **Sitzreihenfolge**: Der Spieler, der in der Reihenfolge (links vom Geber ausgehend) zuerst dran ist, darf sein Solo spielen. Es gibt keine Rangfolge zwischen den Solo-Typen.
+4. Wenn kein Spieler einen Vorbehalt hat, wird ein **Normalspiel** gespielt.
 
 ### Parteibildung
 
-11. Im **Normalspiel** bilden die beiden Spieler, die jeweils eine **Kreuz-Dame** besitzen, die **Re-Partei** („die Alten"). Die anderen beiden Spieler bilden die **Kontra-Partei**.
-12. Die Parteizugehörigkeit ist zu Beginn des Spiels **geheim** — jeder Spieler kennt nur seine eigene Partei (ob er eine Kreuz-Dame hat oder nicht).
-13. Die Parteien werden im Laufe des Spiels durch Ansagen, Spielverhalten oder das Ausspielen der Kreuz-Dame offenbart.
+1. Im **Normalspiel** bilden die beiden Spieler, die jeweils eine **Kreuz-Dame** besitzen, die **Re-Partei** („die Alten"). Die anderen beiden Spieler bilden die **Kontra-Partei**.
+2. Die Parteizugehörigkeit ist zu Beginn des Spiels **geheim** — jeder Spieler kennt nur seine eigene Partei (ob er eine Kreuz-Dame hat oder nicht).
+3. Die Parteien werden im Laufe des Spiels durch Ansagen, Spielverhalten oder das Ausspielen der Kreuz-Dame offenbart.
+
+### Geberrotation bei Solo (Nachgeben)
+
+1. Wenn das abgeschlossene Spiel ein **Solo** war, bleibt der **Geber identisch** mit dem Geber
+   des beendeten Spiels — der Geber rotiert in diesem Fall nicht.
+2. Im nächsten Spiel nach einem Solo erhält der **Solist automatisch das Anspielrecht** (er spielt
+   die erste Karte des ersten Stichs), unabhängig von seiner Position relativ zum Geber.
 
 ### Zustandsverwaltung
 
-14. Der aktuelle Spielzustand muss jederzeit abfragbar sein (welche Phase, wer ist dran, welche Karten liegen).
-15. Zustandsübergänge sind nur in der definierten Reihenfolge möglich (keine Phase kann übersprungen werden).
-16. Ungültige Zustandsübergänge müssen abgelehnt werden.
+1. Der aktuelle Spielzustand muss jederzeit abfragbar sein (welche Phase, wer ist dran, welche Karten liegen).
+2. Zustandsübergänge sind nur in der definierten Reihenfolge möglich (keine Phase kann übersprungen werden).
+3. Ungültige Zustandsübergänge müssen abgelehnt werden.
 
 ## Akzeptanzkriterien
 
 - Eine neue Partie startet korrekt mit der konfigurierten Anzahl Spiele.
-- Der Geber rotiert nach jedem Spiel im Uhrzeigersinn.
-- Der Spieler links vom Geber startet jedes Spiel als Aufspieler.
+- Der Geber rotiert nach jedem Normalspiel im Uhrzeigersinn.
+- Nach einem Solo bleibt der Geber gleich (kein Weiterrotieren).
+- Nach einem Solo spielt der Solist die erste Karte des nächsten Spiels.
+- Der Spieler links vom Geber startet jedes Normalspiel als Aufspieler.
 - Alle 7 Phasen werden in korrekter Reihenfolge durchlaufen.
 - Die Vorbehalt-Phase wird korrekt abgearbeitet (alle Spieler gefragt, Priorität beachtet).
 - Bei mehreren Soli gewinnt der Spieler, der in der Sitzreihenfolge zuerst dran ist.
@@ -71,19 +80,22 @@ Definition des gesamten Spielablaufs einer Doppelkopf-Partie. Eine Partie besteh
 
 ## Definition of Done
 
-- [x] Alle Anforderungen implementiert
+- [x] Alle Anforderungen (Normalspiel) implementiert
 - [x] Unit-Tests für Phasenablauf geschrieben und bestanden
-- [x] Geberrotation getestet
+- [x] Geberrotation (Normalspiel) getestet
 - [x] Vorbehalt-Priorisierung getestet
 - [x] Zustandsmaschine getestet (gültige und ungültige Übergänge)
 - [x] Integrationstests für vollständiges Spiel bestanden
 - [x] Code-Review / Plausibilitätsprüfung
+- [ ] Solo-Nachgeben: Geber bleibt nach Solo gleich (`Partie.schliesseAktuellesSpielAb`)
+- [ ] Solo-Nachgeben: Solist erhält Anspielrecht im Folge-Spiel
 
 ## Technische Hinweise
 
 - **Bounded Context**: Spielverwaltung
 - Spring Statemachine für den Spielzustand verwenden
-- Zustände gemäß PRD: `WARTEN_AUF_SPIELER → SONDERSPIEL_ANSAGE → (ARMUT_TAUSCH) → STICH_PHASE → (NAECHSTER_STICH) → SPIELENDE → NAECHSTES_SPIEL → PARTIEENDE`
+- Zustände gemäß PRD: `WARTEN_AUF_SPIELER -> SONDERSPIEL_ANSAGE -> (ARMUT_TAUSCH) -> STICH_PHASE -> (NAECHSTER_STICH) -> SPIELENDE -> NAECHSTES_SPIEL -> PARTIEENDE`
 - `Partie`-Aggregate-Root mit Liste von `Spiel`-Entities
 - `Spiel`-Entity enthält Phase, Geber, aktuelle Stiche, Ergebnis
 - Events bei Phasenübergängen auslösen (für Frontend-Benachrichtigung)
+- Solo-Nachgeben: `parteien.spielerVon(RE).size() == 1` prüfen; bei Solo `naechsterGeber = spiel.geber()` statt `spiel.geber().naechsteImUhrzeigersinn()`. Anspielrecht des Solisten: `Stich.neu(solistPosition)` statt `geber.naechsteImUhrzeigersinn()`.

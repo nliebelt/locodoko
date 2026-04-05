@@ -30,6 +30,10 @@ public final class Partie {
     private final List<Spiel> abgeschlosseneSpiele;
     private final Spiel aktuellesSpiel;
     private final Map<SpielerPosition, Integer> gesamtpunktestand;
+    // TODO(bockrunden): int bockrundenZaehler ergaenzen — Anzahl der naechsten Spiele,
+    //   die doppelt gewertet werden. Startwert 0. Im privaten Konstruktor, in neu() und
+    //   in allen zurueckgegebenen Partie-Instanzen mitfuehren.
+    //   Persistenz: INTEGER-Spalte bockrunden_zaehler in der partie-Tabelle.
 
     private Partie(
         int anzahlSpiele,
@@ -92,6 +96,14 @@ public final class Partie {
         Spielergebnis ergebnis = spiel.ergebnis()
             .orElseThrow(() -> new IllegalStateException("Ein abgeschlossenes Spiel braucht ein Ergebnis"));
 
+        // TODO(bockrunden): Neue Trigger aus abgeschlossenem Spiel erkennen (vor Multiplikation):
+        //   1. Herz durchgegangen: Pruefe alle spiel.abgeschlosseneStiche() — ein Stich gilt als
+        //      Herz-durchgegangen wenn alle 4 Karten Fehlherz (As oder Koenig) sind.
+        //   2. Verlorenes Kontra: ergebnis.siegerPartei() == RE &&
+        //      spiel.ansagen().hatGrundansage(KONTRA, spiel.parteien()).
+        //   Dann: wenn bockrundenZaehler > 0, alle spielpunkteVon() mit 2 multiplizieren
+        //   und bockrundenZaehler um 1 dekrementieren. Nur wenn spielregeln.bockrundenAktiv().
+
         Map<SpielerPosition, Integer> neuerGesamtpunktestand = new EnumMap<>(SpielerPosition.class);
         neuerGesamtpunktestand.putAll(gesamtpunktestand);
         for (SpielerPosition position : SpielerPosition.standardReihenfolge()) {
@@ -99,6 +111,12 @@ public final class Partie {
         }
         List<Spiel> neueAbgeschlosseneSpiele = new ArrayList<>(abgeschlosseneSpiele);
         neueAbgeschlosseneSpiele.add(spiel);
+
+        // TODO(solo-nachgeben): Wenn das Spiel ein Solo war (spiel.parteien().spielerVon(RE).size() == 1),
+        //   naechsterGeber = spiel.geber() statt spiel.geber().naechsteImUhrzeigersinn().
+        //   Ausserdem muss der Solist im naechsten Spiel das Anspielrecht erhalten —
+        //   Partie muss dazu den Solisten merken (zusaetzliches Feld) und in
+        //   starteNaechstesSpiel() an Spiel.neu() weitergeben.
         return new Partie(
             anzahlSpiele,
             spielregeln,

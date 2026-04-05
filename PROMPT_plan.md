@@ -23,14 +23,16 @@ auslieferbar als einzelnes JAR.
     - Subagent 2 — Partie/Regeln: `src/main/java/de/locodoko/partie/`
       + specs/spielablauf.md, specs/stichlogik.md, specs/trumpfhierarchie.md,
         specs/kartendeck.md, specs/punkteberechnung.md, specs/ansagen.md,
-        specs/sonderpunkte.md
+        specs/sonderpunkte.md, specs/bockrunden.md, specs/schweinchen.md,
+        specs/dreissig-augen-pflicht.md, specs/regelkatalog.md,
+        specs/tischkonfiguration.md
 
     - Subagent 3 — Session/API: `src/main/java/de/locodoko/session/`
       + specs/spieler-session.md, specs/websocket-kommunikation.md,
         specs/rest-api.md, specs/verbindungsabbruch.md, specs/e2e-tests.md
 
     - Subagent 4 — Frontend: `frontend/src/`
-      + specs/frontend-*.md
+      + specs/frontend-*.md, specs/regelkatalog.md
 
     - Subagent 5 — Sonderspiele/KI: betroffener Code in `src/` und `frontend/`
       + specs/hochzeit.md, specs/armut.md, specs/solo-*.md, specs/ki-strategie.md

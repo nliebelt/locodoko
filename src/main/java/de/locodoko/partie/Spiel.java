@@ -146,6 +146,11 @@ public final class Spiel {
 
     public Spiel teileKartenAus() {
         pruefePhase(Spielphase.KARTEN_AUSTEILEN, "Karten austeilen");
+        // TODO(schweinchen): Nach dem Austeilen pruefen ob ein Spieler beide Karo-Asse haelt
+        //   (Farbe.KARO, Kartenwert.AS, exemplarIndex 1 und 2 auf derselben Hand).
+        //   Falls ja, spielregeln.schweinchenAktiv() == true und Spieltyp ist NORMALSPIEL
+        //   oder SOLO_TRUMPF: trumpfOrdnung durch SchweinchenTrumpfOrdnung ersetzen
+        //   (Decorator ueber NormaleTrumpfOrdnung mit Rang 14/15 fuer Karo-Asse).
         return new Spiel(
             spielregeln,
             kartendeck,
@@ -434,6 +439,16 @@ public final class Spiel {
 
         List<Stich> neueAbgeschlosseneStiche = new ArrayList<>(abgeschlosseneStiche);
         neueAbgeschlosseneStiche.add(gespielterStich);
+
+        // TODO(dreissig-augen-pflicht): Wenn spielregeln.dreissigAugenPflichtAktiv() &&
+        //   neueAbgeschlosseneStiche.size() <= 2 && gespielterStich.augen() > 30:
+        //   Gewinnende Partei ermitteln (parteien.parteiVon(gespielterStich.gewinner(...).spieler())).
+        //   Falls diese Partei noch keine Grundansage hat (ansagen.hatGrundansage(...) == false)
+        //   und Spieltyp kein Solo (parteien.spielerVon(RE).size() != 1):
+        //   Pflichtansage-Marker setzen (z. B. pflichtansageAusstehend: Set<Partei> in Spiel).
+        //   Am Beginn von spieleKarte(): wenn pflichtansageAusstehend nicht leer ist, Exception.
+        //   Gilt nicht fuer Solo (Spieltyp SOLO_*).
+
         HochzeitFortschritt hochzeitFortschritt = fortschrittNachVollstaendigemStich(gespielterStich);
         if (neueAbgeschlosseneStiche.size() == kartenProSpieler()) {
             return neuesSpielMitStichfortschritt(
