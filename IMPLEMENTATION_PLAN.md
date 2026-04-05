@@ -69,7 +69,7 @@
   - Umsetzung: In `waehleVorbehalt()` Zeile 48-49 vor dem Solo-Fallback prüfen: hat KI 2× Kreuz-Dame im Blatt? → `Vorbehalt.HOCHZEIT`. Neuen Test in `StandardKiStrategieTest` ergänzen.
   - Dateien: `src/main/java/de/locodoko/partie/ki/StandardKiStrategie.java` (Z. 48-49), `SchwerKiStrategie.java`
 
-- [ ] **5.6 Backend: GET /api/tische/{id} ergänzen** [Blocker für 5.3]: `TischController` hat nur `listeOffeneTische()`, keinen Einzeltisch-Endpunkt. Wird von 5.3 (Recovery-Button) benötigt.
+- [x] **5.6 Backend: GET /api/tische/{id} ergänzen** [Blocker für 5.3]: `TischController` hat nur `listeOffeneTische()`, keinen Einzeltisch-Endpunkt. Wird von 5.3 (Recovery-Button) benötigt.
   - Umsetzung: `GET /api/tische/{id}` in `TischController` ergänzen, delegiert an `TischService.findById()`. Tischname + Status zurückgeben (ggf. minimales DTO).
   - Dateien: `src/main/java/de/locodoko/lobby/TischController.java`, `TischService.java`
 

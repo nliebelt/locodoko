@@ -71,6 +71,17 @@ public class TischController {
         return ResponseEntity.status(HttpStatus.CREATED).body(antwort);
     }
 
+    @Operation(summary = "Einzelnen Tisch abrufen", description = "Gibt den Tisch mit der angegebenen ID zurueck.")
+    @ApiResponses({
+        @ApiResponse(responseCode = "200", description = "Tisch gefunden"),
+        @ApiResponse(responseCode = "404", description = "Tisch nicht gefunden")
+    })
+    @GetMapping("/{id}")
+    public TischAntwort ladeTisch(@Parameter(description = "Tisch-ID") @PathVariable UUID id) {
+        LOGGER.info("Tisch {} abgefragt", id);
+        return tischService.ladeTisch(id);
+    }
+
     @Operation(summary = "Tisch beitreten", description = "Fuegt den anfragenden Spieler einem bestehenden Tisch hinzu.")
     @ApiResponses({
         @ApiResponse(responseCode = "200", description = "Erfolgreich beigetreten"),
