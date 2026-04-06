@@ -4,8 +4,8 @@
 
 ## Notiz
 
-**2026-04-06 (Plan-Run #35):** Task 5 (Solo-Nachgeben Backend) vollständig erledigt — `Spiel.solistAufspieler` (nullable Feld, propagiert durch alle Spiel-Mutationen), `Spiel.neuMitSolistAufspieler()` Factory-Methode, `loeseVorbehalteAuf()` + `nimmArmutAn()` nutzen `solistAufspieler` für ersten Stich, `Partie.solistDesLetztenSpiels` (Optional), `schliesseAktuellesSpielAb()` erkennt Solo via `parteien.spielerVon(RE).size()==1` und hält Geber + Solist fest, `starteNaechstesSpiel()` delegiert an `neuMitSolistAufspieler()`, `PartieEntity.solistDesLetztenSpiels` (VARCHAR nullable), Liquibase-Changeset 009, `KiOrchestrierungService` angepasst, `SpielPersistenzAdapter` liest Solist aus `PartieEntity`. 3 neue Tests grün, alle 175 Backend-Tests grün.
-Nächster logischer Schritt: Task 6 (Regelkatalog-Presets Backend + Frontend).
+**2026-04-06 (Plan-Run #36):** Task 6 (Regelkatalog-Presets) vollständig erledigt — `Spielregeln.locoBlatRegeln()` (alle Sonderregeln aktiv), `Spielregeln.dkvRegeln()` (ohne Bockrunden/Schweinchen/30AP), `Spielregeln.ohneNeunenLocoBlatRegeln()` (wie Loco Blatt + ohneNeunen + angepasste Mindestkarten), `SpielregelnTest.java` (4 neue Tests), `frontend/src/modelle/regelPresets.ts` (TypeScript-Konstanten + `standardMindestkarten()`), `SpielverwaltungsSzene.ts` Konfigurations-Modal um Preset-Dropdown erweitert (Loco Blatt / DKV-Turnier / Ohne Neunen / Benutzerdefiniert) mit dynamischer Regel-Checkbox-Grid (schreibgeschützt für Presets, editierbar für Benutzerdefiniert). 179 Backend-Tests grün, 62 Frontend-Tests grün, Build + Lint sauber.
+Nächster logischer Schritt: Task 8 (Frontend-Animationen: Stich-Visualisierung) oder Task 9 (Rundenauswertungs-Overlay).
 Offene Fragen: keine.
 
 ---
@@ -88,12 +88,12 @@ Offene Fragen: keine.
 
 > **Blockiert von:** 1 (Spielregeln-Felder für Bockrunden/Schweinchen/30AP) | **Spec:** `specs/regelkatalog.md`
 
-- [ ] **6.1** Backend: `Spielregeln.locoBlatRegeln()` — statische Factory-Methode mit allen Werten aus Spec
-- [ ] **6.2** Backend: `Spielregeln.dkvRegeln()` — ohne Bockrunden/Schweinchen/30AP
-- [ ] **6.3** Backend: `Spielregeln.ohneNeunenLocoBlatRegeln()` — wie Loco Blatt mit `ohneNeunen=true`
-- [ ] **6.4** Backend: Unit-Tests für alle Factory-Methoden
-- [ ] **6.5** Frontend: `regelPresets.ts` mit TypeScript-Konstanten für die 3 Presets
-- [ ] **6.6** Frontend: Preset-Dropdown im Tisch-Konfigurations-Modal (SpielverwaltungsSzene.ts)
+- [x] **6.1** Backend: `Spielregeln.locoBlatRegeln()` — statische Factory-Methode mit allen Werten aus Spec
+- [x] **6.2** Backend: `Spielregeln.dkvRegeln()` — ohne Bockrunden/Schweinchen/30AP
+- [x] **6.3** Backend: `Spielregeln.ohneNeunenLocoBlatRegeln()` — wie Loco Blatt mit `ohneNeunen=true`
+- [x] **6.4** Backend: Unit-Tests für alle Factory-Methoden
+- [x] **6.5** Frontend: `regelPresets.ts` mit TypeScript-Konstanten für die 3 Presets
+- [x] **6.6** Frontend: Preset-Dropdown im Tisch-Konfigurations-Modal (SpielverwaltungsSzene.ts)
   - Bei Preset-Wechsel: alle Felder automatisch vorbelegen
   - "Benutzerdefiniert": alle Felder editierbar
   - Andere Presets: Felder schreibgeschützt sichtbar

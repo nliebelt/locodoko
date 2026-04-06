@@ -3,6 +3,13 @@ import { TEXTUR_FILZ } from '../assets/AssetLoader';
 import { appStore } from '../anwendung';
 import type { AppZustand } from '../store/AppStore';
 import type { TischKonfigurationDto, KiSchwierigkeit, Tischhintergrund } from '../modelle/SpielverwaltungDto';
+import {
+  REGEL_PRESETS,
+  PRESET_BEZEICHNUNGEN,
+  standardMindestkarten,
+  type RegelPresetName,
+  type RegelFelder,
+} from '../modelle/regelPresets';
 
 function escapeHtml(s: string): string {
   return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;');
@@ -173,8 +180,18 @@ export class SpielverwaltungsSzene extends Phaser.Scene {
       <h2>Neuen Tisch erstellen</h2>
       <div class="neo-form-group">
         <label>Tischname</label>
-        <input type="text" id="tisch-name" class="neo-input" maxlength="50" value="Tisch von ${zustand.spieler?.name ?? 'mir'}" data-testid="input-tischname">
+        <input type="text" id="tisch-name" class="neo-input" maxlength="50" value="Tisch von ${escapeHtml(zustand.spieler?.name ?? 'mir')}" data-testid="input-tischname">
       </div>
+      <div class="neo-form-group">
+        <label>Regelkatalog</label>
+        <select id="regel-preset" class="neo-select">
+          <option value="LOCO_BLAT" selected>${PRESET_BEZEICHNUNGEN.LOCO_BLAT}</option>
+          <option value="DKV">${PRESET_BEZEICHNUNGEN.DKV}</option>
+          <option value="OHNE_NEUNEN_LOCO_BLAT">${PRESET_BEZEICHNUNGEN.OHNE_NEUNEN_LOCO_BLAT}</option>
+          <option value="BENUTZERDEFINIERT">${PRESET_BEZEICHNUNGEN.BENUTZERDEFINIERT}</option>
+        </select>
+      </div>
+      <div id="regel-details-container"></div>
       <div class="neo-form-group">
         <label>Rundenanzahl</label>
         <select id="runden-anzahl" class="neo-select">
@@ -200,15 +217,89 @@ export class SpielverwaltungsSzene extends Phaser.Scene {
           <option value="BLAU_GRAFIK">Blaue Grafik</option>
         </select>
       </div>
-      <div class="neo-form-group neo-form-group--muted">
-        <label>Sonderregeln</label>
-        <p>Detail-Konfiguration folgt...</p>
-      </div>
       <div class="neo-modal-actions">
         <button id="modal-cancel" class="neo-button neo-button--secondary">Abbrechen</button>
         <button id="modal-submit" class="neo-button neo-button--primary" data-testid="btn-tisch-erstellen">Tisch erstellen</button>
       </div>
     `;
+
+    const regelFelder: Array<{ feld: keyof RegelFelder; label: string }> = [
+      { feld: 'bockrundenAktiv', label: 'Bockrunden' },
+      { feld: 'schweinchenAktiv', label: 'Schweinchen' },
+      { feld: 'dreissigAugenPflichtAktiv', label: '30-Augen-Pflicht' },
+      { feld: 'fuchsGefangenAktiv', label: 'Fuchs gefangen' },
+      { feld: 'karlchenAktiv', label: 'Karlchen' },
+      { feld: 'doppelkopfAktiv', label: 'Doppelkopf' },
+      { feld: 'hochzeitErlaubt', label: 'Hochzeit' },
+      { feld: 'armutErlaubt', label: 'Armut' },
+      { feld: 'damensoloErlaubt', label: 'Damen-Solo' },
+      { feld: 'bubensoloErlaubt', label: 'Buben-Solo' },
+      { feld: 'trumpfsoloErlaubt', label: 'Trumpf-Solo' },
+      { feld: 'fleischlosErlaubt', label: 'Fleischlos' },
+      { feld: 'zweiteDulleSticht', label: 'Zweite Dulle sticht' },
+      { feld: 'ohneNeunen', label: 'Ohne Neunen' },
+    ];
+
+    const aktualisiereRegelDetails = (presetName: RegelPresetName): void => {
+      const container = modal.querySelector('#regel-details-container') as HTMLDivElement;
+      container.innerHTML = '';
+      const isCustom = presetName === 'BENUTZERDEFINIERT';
+      const werte: RegelFelder = isCustom
+        ? { ...REGEL_PRESETS.LOCO_BLAT }
+        : REGEL_PRESETS[presetName as Exclude<RegelPresetName, 'BENUTZERDEFINIERT'>];
+
+      const gruppe = document.createElement('div');
+      gruppe.className = 'neo-form-group';
+      const labelEl = document.createElement('label');
+      labelEl.textContent = 'Sonderregeln';
+      gruppe.appendChild(labelEl);
+
+      const grid = document.createElement('div');
+      grid.className = 'neo-checkbox-grid';
+      grid.style.cssText = 'display:grid;grid-template-columns:1fr 1fr;gap:4px 16px;margin-top:6px;';
+
+      regelFelder.forEach(({ feld, label }) => {
+        const checkLabel = document.createElement('label');
+        checkLabel.className = 'neo-checkbox-label';
+        checkLabel.style.cssText = 'display:flex;align-items:center;gap:6px;font-size:13px;cursor:' + (isCustom ? 'pointer' : 'default');
+
+        const checkbox = document.createElement('input');
+        checkbox.type = 'checkbox';
+        checkbox.id = `regel-${feld}`;
+        checkbox.name = feld;
+        checkbox.checked = werte[feld] as boolean;
+        checkbox.disabled = !isCustom;
+
+        checkLabel.appendChild(checkbox);
+        checkLabel.appendChild(document.createTextNode(label));
+        grid.appendChild(checkLabel);
+      });
+
+      gruppe.appendChild(grid);
+      container.appendChild(gruppe);
+    };
+
+    const leseRegelKonfig = (presetName: RegelPresetName): RegelFelder => {
+      if (presetName !== 'BENUTZERDEFINIERT') {
+        return REGEL_PRESETS[presetName as Exclude<RegelPresetName, 'BENUTZERDEFINIERT'>];
+      }
+      const ohneNeunenCb = modal.querySelector('#regel-ohneNeunen') as HTMLInputElement | null;
+      const ohneNeunen = ohneNeunenCb?.checked ?? false;
+      const boolFelder = Object.fromEntries(
+        regelFelder.map(({ feld }) => {
+          const cb = modal.querySelector(`#regel-${feld}`) as HTMLInputElement | null;
+          return [feld, cb?.checked ?? false];
+        })
+      ) as Record<keyof RegelFelder, boolean>;
+      return { ...boolFelder, ...standardMindestkarten(ohneNeunen) };
+    };
+
+    const presetSelect = modal.querySelector('#regel-preset') as HTMLSelectElement;
+    aktualisiereRegelDetails('LOCO_BLAT');
+
+    presetSelect.addEventListener('change', () => {
+      aktualisiereRegelDetails(presetSelect.value as RegelPresetName);
+    });
 
     const schliesseModal = (): void => {
       backdrop.remove();
@@ -227,10 +318,12 @@ export class SpielverwaltungsSzene extends Phaser.Scene {
       const kiSelect = modal.querySelector('#ki-schwierigkeit') as HTMLSelectElement;
       const hintergrundSelect = modal.querySelector('#tisch-hintergrund') as HTMLSelectElement;
 
+      const regelKonfig = leseRegelKonfig(presetSelect.value as RegelPresetName);
       const konfig: Partial<TischKonfigurationDto> = {
+        ...regelKonfig,
         anzahlSpiele: parseInt(rundenSelect.value, 10),
         kiSchwierigkeit: kiSelect.value as KiSchwierigkeit,
-        tischhintergrund: hintergrundSelect.value as Tischhintergrund
+        tischhintergrund: hintergrundSelect.value as Tischhintergrund,
       };
 
       void appStore.erstelleKonfiguriertenTisch(nameInput.value, konfig);

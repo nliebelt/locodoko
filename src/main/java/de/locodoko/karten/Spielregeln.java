@@ -61,6 +61,21 @@ public record Spielregeln(
         return new Spielregeln(true, true, 9, 8, 7, 6, 5, true, true, true, true, true, true, true, true, true, false, false, false);
     }
 
+    /** Loco-Blatt-Regelkatalog: alle Sonderregeln (Bockrunden, Schweinchen, 30-Augen-Pflicht) aktiv. */
+    public static Spielregeln locoBlatRegeln() {
+        return new Spielregeln(false, true, 11, 10, 9, 8, 7, true, true, true, true, true, true, true, true, true, true, true, true);
+    }
+
+    /** DKV-Turnier-Regelkatalog: wie Loco Blatt, aber ohne Bockrunden, Schweinchen und 30-Augen-Pflicht. */
+    public static Spielregeln dkvRegeln() {
+        return new Spielregeln(false, true, 11, 10, 9, 8, 7, true, true, true, true, true, true, true, true, true, false, false, false);
+    }
+
+    /** Loco-Blatt-Regelkatalog ohne Neunen (10-Karten-Spiel, angepasste Ansagegrenzen). */
+    public static Spielregeln ohneNeunenLocoBlatRegeln() {
+        return new Spielregeln(true, true, 9, 8, 7, 6, 5, true, true, true, true, true, true, true, true, true, true, true, true);
+    }
+
     public Spielregeln mitAnsagegrenzen(
         int mindestkartenReKontra,
         int mindestkartenKeine90,
