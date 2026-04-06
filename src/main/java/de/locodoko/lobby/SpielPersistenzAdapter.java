@@ -61,6 +61,7 @@ final class SpielPersistenzAdapter {
         List<VorbehaltMeldung> vorbehalte = vorbehalte(spielEntity);
         Ansagen ansagen = ansagen(spielEntity);
         List<Stich> abgeschlosseneStiche = abgeschlosseneStiche(spielEntity);
+        SpielerPosition solistAufspieler = spielEntity.partie().solistDesLetztenSpiels();
         return Spiel.ausPersistiertemStand(
             spielEntity.partie().tisch().konfiguration().alsSpielregeln(),
             Kartendeck.ausKarten(alleKarten(spielEntity)),
@@ -77,7 +78,8 @@ final class SpielPersistenzAdapter {
             hochzeitStatus(spielEntity, vorbehalte).orElse(null),
             armutStatus(spielEntity, vorbehalte).orElse(null),
             pflichtansageAusstehend(spielEntity),
-            spielEntity.schweinchenAktiv()
+            spielEntity.schweinchenAktiv(),
+            solistAufspieler
         );
     }
 

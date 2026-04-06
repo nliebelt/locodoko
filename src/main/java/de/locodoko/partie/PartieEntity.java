@@ -49,6 +49,10 @@ public class PartieEntity extends AbstraktePersistenzEntity {
     @Column("bockrunden_zaehler")
     private int bockrundenZaehler = 0;
 
+    /** Solist des letzten Solo-Spiels — bekommt das Anspielrecht im naechsten Spiel. Null wenn kein Solo vorausging. */
+    @Column("solist_des_letzten_spiels")
+    private String solistDesLetztenSpiels = null;
+
     /**
      * Spiele: Owned by dieser Partie via @MappedCollection.
      * Map-Key = spiel_nummer (1-basiert).
@@ -146,6 +150,14 @@ public class PartieEntity extends AbstraktePersistenzEntity {
             throw new IllegalArgumentException("bockrundenZaehler darf nicht negativ sein");
         }
         this.bockrundenZaehler = bockrundenZaehler;
+    }
+
+    public SpielerPosition solistDesLetztenSpiels() {
+        return solistDesLetztenSpiels != null ? SpielerPosition.valueOf(solistDesLetztenSpiels) : null;
+    }
+
+    public void setzeSolistDesLetztenSpiels(SpielerPosition position) {
+        this.solistDesLetztenSpiels = position != null ? position.name() : null;
     }
 
     public Map<SpielerPosition, Integer> gesamtpunktestand() {

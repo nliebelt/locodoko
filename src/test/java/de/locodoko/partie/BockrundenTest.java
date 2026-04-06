@@ -248,7 +248,8 @@ class BockrundenTest {
             null,
             null,
             Set.of(),
-            false
+            false,
+            null
         );
     }
 
@@ -275,7 +276,8 @@ class BockrundenTest {
             null,
             null,
             Set.of(),
-            false
+            false,
+            null
         );
     }
 

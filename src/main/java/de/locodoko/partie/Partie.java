@@ -31,6 +31,7 @@ public final class Partie {
     private final Spiel aktuellesSpiel;
     private final Map<SpielerPosition, Integer> gesamtpunktestand;
     private final int bockrundenZaehler;
+    private final SpielerPosition solistDesLetztenSpiels;
 
     private Partie(
         int anzahlSpiele,
@@ -39,7 +40,8 @@ public final class Partie {
         List<Spiel> abgeschlosseneSpiele,
         Spiel aktuellesSpiel,
         Map<SpielerPosition, Integer> gesamtpunktestand,
-        int bockrundenZaehler
+        int bockrundenZaehler,
+        SpielerPosition solistDesLetztenSpiels
     ) {
         if (anzahlSpiele < 1) {
             throw new IllegalArgumentException("Eine Partie muss mindestens ein Spiel enthalten");
@@ -54,6 +56,7 @@ public final class Partie {
             throw new IllegalArgumentException("bockrundenZaehler darf nicht negativ sein");
         }
         this.bockrundenZaehler = bockrundenZaehler;
+        this.solistDesLetztenSpiels = solistDesLetztenSpiels;
     }
 
     public static Partie neu(int anzahlSpiele, SpielerPosition ersterGeber, Spielregeln spielregeln) {
@@ -61,7 +64,7 @@ public final class Partie {
         for (SpielerPosition position : SpielerPosition.standardReihenfolge()) {
             gesamtpunktestand.put(position, 0);
         }
-        return new Partie(anzahlSpiele, spielregeln, ersterGeber, List.of(), null, gesamtpunktestand, 0);
+        return new Partie(anzahlSpiele, spielregeln, ersterGeber, List.of(), null, gesamtpunktestand, 0, null);
     }
 
     public Partie starteNaechstesSpiel(Kartendeck kartendeck) {
@@ -72,14 +75,18 @@ public final class Partie {
         if (aktuellesSpiel != null) {
             throw new IllegalStateException("Es laeuft bereits ein Spiel");
         }
+        Spiel neuesSpiel = solistDesLetztenSpiels != null
+            ? Spiel.neuMitSolistAufspieler(naechsterGeber, solistDesLetztenSpiels, spielregeln, kartendeck)
+            : Spiel.neu(naechsterGeber, spielregeln, kartendeck);
         return new Partie(
             anzahlSpiele,
             spielregeln,
             naechsterGeber,
             abgeschlosseneSpiele,
-            Spiel.neu(naechsterGeber, spielregeln, kartendeck),
+            neuesSpiel,
             gesamtpunktestand,
-            bockrundenZaehler
+            bockrundenZaehler,
+            null
         );
     }
 
@@ -88,7 +95,7 @@ public final class Partie {
         if (aktuellesSpiel == null) {
             throw new IllegalStateException("Es gibt kein aktuelles Spiel");
         }
-        return new Partie(anzahlSpiele, spielregeln, naechsterGeber, abgeschlosseneSpiele, spiel, gesamtpunktestand, bockrundenZaehler);
+        return new Partie(anzahlSpiele, spielregeln, naechsterGeber, abgeschlosseneSpiele, spiel, gesamtpunktestand, bockrundenZaehler, solistDesLetztenSpiels);
     }
 
     public Partie schliesseAktuellesSpielAb() {
@@ -124,19 +131,19 @@ public final class Partie {
         List<Spiel> neueAbgeschlosseneSpiele = new ArrayList<>(abgeschlosseneSpiele);
         neueAbgeschlosseneSpiele.add(spiel);
 
-        // TODO(solo-nachgeben): Wenn das Spiel ein Solo war (spiel.parteien().spielerVon(RE).size() == 1),
-        //   naechsterGeber = spiel.geber() statt spiel.geber().naechsteImUhrzeigersinn().
-        //   Ausserdem muss der Solist im naechsten Spiel das Anspielrecht erhalten —
-        //   Partie muss dazu den Solisten merken (zusaetzliches Feld) und in
-        //   starteNaechstesSpiel() an Spiel.neu() weitergeben.
+        // Solo-Nachgeben: nach einem Solo bleibt der Geber gleich und der Solist erhaelt das Anspielrecht
+        boolean warSolo = spiel.parteien() != null && spiel.parteien().spielerVon(Partei.RE).size() == 1;
+        SpielerPosition neuerGeber = warSolo ? spiel.geber() : spiel.geber().naechsteImUhrzeigersinn();
+        SpielerPosition neuerSolist = warSolo ? spiel.parteien().spielerVon(Partei.RE).get(0) : null;
         return new Partie(
             anzahlSpiele,
             spielregeln,
-            spiel.geber().naechsteImUhrzeigersinn(),
+            neuerGeber,
             neueAbgeschlosseneSpiele,
             null,
             neuerGesamtpunktestand,
-            neuerBockrundenZaehler
+            neuerBockrundenZaehler,
+            neuerSolist
         );
     }
 
@@ -175,5 +182,9 @@ public final class Partie {
 
     public int bockrundenZaehler() {
         return bockrundenZaehler;
+    }
+
+    public Optional<SpielerPosition> solistDesLetztenSpiels() {
+        return Optional.ofNullable(solistDesLetztenSpiels);
     }
 }

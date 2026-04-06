@@ -1,0 +1,13 @@
+databaseChangeLog:
+  - changeSet:
+      id: 009-solist-position
+      author: locodoko
+      changes:
+        - addColumn:
+            tableName: partie
+            columns:
+              - column:
+                  name: solist_des_letzten_spiels
+                  type: VARCHAR(10)
+                  constraints:
+                    nullable: true

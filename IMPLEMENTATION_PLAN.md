@@ -4,9 +4,9 @@
 
 ## Notiz
 
-**2026-04-06 (Plan-Run #34):** Task 3 (Schweinchen Backend) vollständig erledigt — `SchweinchenTrumpfOrdnung` (Karo-As Rang 14/15, `spaetereGleicheKarteGewinnt=true`), Erkennung in `Spiel.teileKartenAus()` via `hatSchweinchen()`, Solo-Ausschluss via `trumpfOrdnungFuer()` (SOLO_TRUMPF → NormaleTrumpfOrdnung), Persistenz via Liquibase-Changeset 008 (`schweinchen_aktiv BOOLEAN` in `spiel`), `SpielEntity.schweinchenAktiv()` + `setzeSchweinchenAktiv()`, `Spiel.ausPersistiertemStand()` mit neuem `schweinchenAktiv`-Parameter, `SpielPersistenzAdapter`. 10 neue SchweinchenTests grün, alle 172 Backend-Tests grün.
-Nächster logischer Schritt: Task 5 (Solo-Nachgeben Backend) oder Task 6 (Regelkatalog-Presets).
-Offene Fragen: Task 3.3 Spec-Entscheidung umgesetzt: Solo-Ausschluss für SOLO_TRUMPF (nur NORMALSPIEL hat Schweinchen nach teileKartenAus — SOLO_TRUMPF verliert Schweinchen beim loeseVorbehalteAuf).
+**2026-04-06 (Plan-Run #35):** Task 5 (Solo-Nachgeben Backend) vollständig erledigt — `Spiel.solistAufspieler` (nullable Feld, propagiert durch alle Spiel-Mutationen), `Spiel.neuMitSolistAufspieler()` Factory-Methode, `loeseVorbehalteAuf()` + `nimmArmutAn()` nutzen `solistAufspieler` für ersten Stich, `Partie.solistDesLetztenSpiels` (Optional), `schliesseAktuellesSpielAb()` erkennt Solo via `parteien.spielerVon(RE).size()==1` und hält Geber + Solist fest, `starteNaechstesSpiel()` delegiert an `neuMitSolistAufspieler()`, `PartieEntity.solistDesLetztenSpiels` (VARCHAR nullable), Liquibase-Changeset 009, `KiOrchestrierungService` angepasst, `SpielPersistenzAdapter` liest Solist aus `PartieEntity`. 3 neue Tests grün, alle 175 Backend-Tests grün.
+Nächster logischer Schritt: Task 6 (Regelkatalog-Presets Backend + Frontend).
+Offene Fragen: keine.
 
 ---
 
@@ -76,12 +76,11 @@ Offene Fragen: Task 3.3 Spec-Entscheidung umgesetzt: Solo-Ausschluss für SOLO_T
 
 > **Blockiert von:** nichts | **Spec:** `specs/spielablauf.md` Zeilen 90-91, 101 | **TODO im Code:** `Partie.java:115-119`
 
-- [ ] **5.1** `Partie.schliesseAktuellesSpielAb()`: Wenn Spiel ein Solo war (`parteien.spielerVon(RE).size() == 1`), `naechsterGeber = spiel.geber()` statt `spiel.geber().naechsteImUhrzeigersinn()`
-  - Datei: `src/main/java/de/locodoko/partie/Partie.java:120-123`
-- [ ] **5.2** Solist-Anspielrecht: Partie muss den Solisten merken (neues Feld `solistDesLetztenSpiels: SpielerPosition`) und in `starteNaechstesSpiel()` an `Spiel.neu()` als Aufspieler übergeben → `Stich.neu(solistPosition)` statt `geber.naechsteImUhrzeigersinn()`
-- [ ] **5.3** Gleiche Logik in `KiOrchestrierungService.java:171` anpassen
-- [ ] **5.4** Persistenz: `solist_position` Spalte in `partie`-Tabelle (nullable VARCHAR)
-- [ ] **5.5** Unit-Tests: Geber bleibt nach Solo gleich, Solist spielt auf, normales Spiel rotiert weiter
+- [x] **5.1** `Partie.schliesseAktuellesSpielAb()`: Wenn Spiel ein Solo war (`parteien.spielerVon(RE).size() == 1`), `naechsterGeber = spiel.geber()` statt `spiel.geber().naechsteImUhrzeigersinn()`
+- [x] **5.2** Solist-Anspielrecht: Partie merkt sich Solist, `starteNaechstesSpiel()` → `Spiel.neuMitSolistAufspieler()` → `loeseVorbehalteAuf()` nutzt `solistAufspieler` für ersten Stich
+- [x] **5.3** Gleiche Logik in `KiOrchestrierungService.java` angepasst
+- [x] **5.4** Persistenz: `solist_des_letzten_spiels` Spalte in `partie`-Tabelle (nullable VARCHAR), Changeset 009
+- [x] **5.5** Unit-Tests: Geber bleibt nach Solo gleich, Solist spielt auf, normales Spiel rotiert weiter
 
 ---
 

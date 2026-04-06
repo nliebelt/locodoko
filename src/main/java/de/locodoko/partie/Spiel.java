@@ -57,6 +57,8 @@ public final class Spiel {
     private final HochzeitStatus hochzeitStatus;
     private final ArmutStatus armutStatus;
     private final Set<Partei> pflichtansageAusstehend;
+    /** Position des Solisten aus dem vorherigen Spiel; bestimmt den ersten Aufspieler. Null wenn kein Solo vorausging. */
+    private final SpielerPosition solistAufspieler;
 
     private Spiel(
         Spielregeln spielregeln,
@@ -74,7 +76,8 @@ public final class Spiel {
         Spielergebnis ergebnis,
         HochzeitStatus hochzeitStatus,
         ArmutStatus armutStatus,
-        Set<Partei> pflichtansageAusstehend
+        Set<Partei> pflichtansageAusstehend,
+        SpielerPosition solistAufspieler
     ) {
         this.spielregeln = Objects.requireNonNull(spielregeln, "spielregeln duerfen nicht null sein");
         this.kartendeck = Objects.requireNonNull(kartendeck, "kartendeck darf nicht null sein");
@@ -94,6 +97,7 @@ public final class Spiel {
         this.pflichtansageAusstehend = Objects.requireNonNull(pflichtansageAusstehend, "pflichtansageAusstehend darf nicht null sein").isEmpty()
             ? Set.of()
             : Set.copyOf(pflichtansageAusstehend);
+        this.solistAufspieler = solistAufspieler;
     }
 
     public static Spiel neu(SpielerPosition geber, Spielregeln spielregeln, Kartendeck kartendeck) {
@@ -114,7 +118,33 @@ public final class Spiel {
             null,
             null,
             null,
-            Set.of()
+            Set.of(),
+            null
+        );
+    }
+
+    /** Wie {@link #neu}, aber der Solist des vorherigen Spiels erhaelt das Anspielrecht. */
+    public static Spiel neuMitSolistAufspieler(SpielerPosition geber, SpielerPosition solistAufspieler, Spielregeln spielregeln, Kartendeck kartendeck) {
+        Objects.requireNonNull(geber, "geber darf nicht null sein");
+        Objects.requireNonNull(solistAufspieler, "solistAufspieler darf nicht null sein");
+        return new Spiel(
+            spielregeln,
+            kartendeck,
+            new NormaleTrumpfOrdnung(spielregeln),
+            Spieltyp.NORMALSPIEL,
+            geber,
+            Spielphase.KARTEN_AUSTEILEN,
+            Map.of(),
+            List.of(),
+            null,
+            Ansagen.leer(),
+            List.of(),
+            null,
+            null,
+            null,
+            null,
+            Set.of(),
+            solistAufspieler
         );
     }
 
@@ -134,7 +164,8 @@ public final class Spiel {
         HochzeitStatus hochzeitStatus,
         ArmutStatus armutStatus,
         Set<Partei> pflichtansageAusstehend,
-        boolean schweinchenAktiv
+        boolean schweinchenAktiv,
+        SpielerPosition solistAufspieler
     ) {
         return new Spiel(
             spielregeln,
@@ -152,7 +183,8 @@ public final class Spiel {
             ergebnis,
             hochzeitStatus,
             armutStatus,
-            pflichtansageAusstehend
+            pflichtansageAusstehend,
+            solistAufspieler
         );
     }
 
@@ -178,7 +210,8 @@ public final class Spiel {
             null,
             null,
             null,
-            Set.of()
+            Set.of(),
+            solistAufspieler
         );
     }
 
@@ -227,7 +260,8 @@ public final class Spiel {
             ergebnis,
             hochzeitStatus,
             armutStatus,
-            Set.of()
+            Set.of(),
+            solistAufspieler
         );
     }
 
@@ -238,6 +272,8 @@ public final class Spiel {
         // Stilles Solo durch Gesund-Meldung: Ein Spieler besitzt beide Kreuz-Damen ohne Vorbehalt.
         // ausNormalspielHaenden wuerde eine IllegalStateException werfen, da nur 1 RE-Spieler
         // gefunden wird. Stattdessen wird das Spiel als Trumpfsolo fuer diesen Spieler gestartet.
+        SpielerPosition ersterAufspieler = solistAufspieler != null ? solistAufspieler : geber.naechsteImUhrzeigersinn();
+
         if (hoechsterVorbehalt == null) {
             SpielerPosition stillesSoloSpieler = erkenneStillesSoloSpieler();
             if (stillesSoloSpieler != null) {
@@ -246,8 +282,8 @@ public final class Spiel {
                     Spieltyp.SOLO_TRUMPF, geber, Spielphase.STICHPHASE,
                     haende, vorbehalte, Parteien.ausSolo(stillesSoloSpieler),
                     Ansagen.leer(), List.of(),
-                    Stich.neu(geber.naechsteImUhrzeigersinn()), null, null, null,
-                    Set.of()
+                    Stich.neu(ersterAufspieler), null, null, null,
+                    Set.of(), null
                 );
             }
         }
@@ -262,7 +298,8 @@ public final class Spiel {
             ? ArmutStatus.gestartet(hoechsterVorbehalt.spielerPosition())
             : null;
         Spielphase naechstePhase = neuerArmutStatus == null ? Spielphase.STICHPHASE : Spielphase.ARMUT_TAUSCH;
-        Stich ersterStich = naechstePhase == Spielphase.STICHPHASE ? Stich.neu(geber.naechsteImUhrzeigersinn()) : null;
+        // Bei Armut-Beginn keinen Stich setzen; bei STICHPHASE solistAufspieler nutzen falls gesetzt
+        Stich ersterStich = naechstePhase == Spielphase.STICHPHASE ? Stich.neu(ersterAufspieler) : null;
         return new Spiel(
             spielregeln,
             kartendeck,
@@ -279,7 +316,8 @@ public final class Spiel {
             null,
             neuerHochzeitStatus,
             neuerArmutStatus,
-            Set.of()
+            Set.of(),
+            null
         );
     }
 
@@ -326,7 +364,8 @@ public final class Spiel {
             ergebnis,
             hochzeitStatus,
             status.mitAngebot(angeboteneTrumpfkarten),
-            pflichtansageAusstehend
+            pflichtansageAusstehend,
+            solistAufspieler
         );
     }
 
@@ -358,7 +397,8 @@ public final class Spiel {
             ergebnis,
             hochzeitStatus,
             neuerStatus,
-            pflichtansageAusstehend
+            pflichtansageAusstehend,
+            solistAufspieler
         );
     }
 
@@ -391,6 +431,7 @@ public final class Spiel {
         Parteien neueParteien = parteien
             .mitPartei(spielerPosition, Partei.RE)
             .mitOffenenParteienFuerAlle(SpielerPosition.standardReihenfolge());
+        SpielerPosition ersterAufspieler = solistAufspieler != null ? solistAufspieler : geber.naechsteImUhrzeigersinn();
         return new Spiel(
             spielregeln,
             kartendeck,
@@ -403,11 +444,12 @@ public final class Spiel {
             neueParteien,
             Ansagen.leer(),
             List.of(),
-            Stich.neu(geber.naechsteImUhrzeigersinn()),
+            Stich.neu(ersterAufspieler),
             null,
             hochzeitStatus,
             status.mitPartner(spielerPosition),
-            Set.of()
+            Set.of(),
+            null
         );
     }
 
@@ -594,7 +636,8 @@ public final class Spiel {
             ergebnis,
             hochzeitStatus,
             armutStatus,
-            aktualisiertesPflichtansageAusstehend
+            aktualisiertesPflichtansageAusstehend,
+            null
         );
     }
 
@@ -624,7 +667,8 @@ public final class Spiel {
             neuesErgebnis,
             hochzeitStatus,
             armutStatus,
-            Set.of()
+            Set.of(),
+            null
         );
     }
 
@@ -826,7 +870,8 @@ public final class Spiel {
             ergebnis,
             neuerHochzeitStatus,
             armutStatus,
-            neuesPflichtansageAusstehend
+            neuesPflichtansageAusstehend,
+            null
         );
     }
 
@@ -869,7 +914,8 @@ public final class Spiel {
             null,
             null,
             null,
-            Set.of()
+            Set.of(),
+            null
         );
     }
 

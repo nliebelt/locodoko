@@ -176,6 +176,14 @@ public class KiOrchestrierungService {
         // Bockrunden-Zaehler aktualisieren
         int neuerBockrundenZaehler = (partie.bockrundenZaehler() > 0 ? partie.bockrundenZaehler() - 1 : 0) + neueTrigger;
         partie.setzeBockrundenZaehler(neuerBockrundenZaehler);
+        // Solo-Nachgeben: Solist und Geber fuer naechstes Spiel bestimmen
+        boolean warSolo = laufendesSpiel.parteien() != null
+            && laufendesSpiel.parteien().spielerVon(Partei.RE).size() == 1;
+        SpielerPosition naechsterGeber = warSolo
+            ? laufendesSpiel.geber()
+            : laufendesSpiel.geber().naechsteImUhrzeigersinn();
+        SpielerPosition solist = warSolo ? laufendesSpiel.parteien().spielerVon(Partei.RE).get(0) : null;
+        partie.setzeSolistDesLetztenSpiels(null); // alten Solist-Eintrag loeschen
         long abgeschlosseneSpiele = partie.spiele().stream().filter(spiel -> spiel.ergebnis() != null).count();
         if (abgeschlosseneSpiele >= partie.anzahlSpiele()) {
             partie.markiereAlsBeendet();
@@ -189,11 +197,11 @@ public class KiOrchestrierungService {
                 s.hebeKiUebernahmeAuf();
                 spielerRepository.save(s);
             });
-        Spiel neuesSpiel = Spiel.neu(
-            laufendesSpiel.geber().naechsteImUhrzeigersinn(),
-            tisch.konfiguration().alsSpielregeln(),
-            Kartendeck.neu(tisch.konfiguration().alsSpielregeln()).gemischt()
-        ).teileKartenAus();
+        Spiel neuesSpiel = solist != null
+            ? Spiel.neuMitSolistAufspieler(naechsterGeber, solist, tisch.konfiguration().alsSpielregeln(),
+                Kartendeck.neu(tisch.konfiguration().alsSpielregeln()).gemischt()).teileKartenAus()
+            : Spiel.neu(naechsterGeber, tisch.konfiguration().alsSpielregeln(),
+                Kartendeck.neu(tisch.konfiguration().alsSpielregeln()).gemischt()).teileKartenAus();
         SpielEntity neuesSpielEntity = SpielEntity.neu(
             partie.aktuellesSpielNummer() + 1,
             neuesSpiel.geber(),

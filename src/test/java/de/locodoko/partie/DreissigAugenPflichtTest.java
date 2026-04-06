@@ -312,7 +312,8 @@ class DreissigAugenPflichtTest {
             null,
             null,
             Set.of(),
-            false
+            false,
+            null
         ).spieleKarte(vierterSpieler, karte4);
     }
 
@@ -344,7 +345,8 @@ class DreissigAugenPflichtTest {
             null,
             null,
             Set.of(partei),
-            false
+            false,
+            null
         );
     }
 
