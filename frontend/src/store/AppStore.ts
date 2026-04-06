@@ -186,6 +186,10 @@ export class AppStore {
       const tisch = await this.api.erstelleTisch(`Quick Game von ${spielerName}`);
       this.oeffneTisch(tisch);
       await this.api.starteTisch(tisch.id);
+      // Frischen Snapshot anfordern: erste Snapshot-Anfrage kam zurück bevor starteTisch die
+      // Transaktion committed hatte (Tisch noch WARTEND, keine Kartendaten). Dieser zweite
+      // Snapshot – nach dem Commit – liefert den aktuellen IM_SPIEL-Stand inkl. Spielerhand.
+      this.echtzeit.senden(`/app/tisch/${tisch.id}/snapshot`);
     });
   }
 
