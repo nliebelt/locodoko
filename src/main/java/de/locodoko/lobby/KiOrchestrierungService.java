@@ -15,16 +15,22 @@ import de.locodoko.partie.Spielphase;
 import de.locodoko.partie.Spielergebnis;
 import de.locodoko.partie.VorbehaltAnsage;
 import de.locodoko.partie.PartieEntity;
+import de.locodoko.partie.PartieRepository;
 import de.locodoko.partie.PartieStatus;
 import de.locodoko.partie.SpielEntity;
+import de.locodoko.session.PartieEreignisAntwort;
+import de.locodoko.session.PartieEreignisTyp;
 import de.locodoko.session.SpielerEntity;
 import de.locodoko.session.SpielerRepository;
-import de.locodoko.lobby.TischEntity;
+import de.locodoko.session.TischEchtzeitService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.EnumMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
@@ -48,11 +54,23 @@ public class KiOrchestrierungService {
 
     private final KiStrategieFactory kiStrategieFactory;
     private final SpielerRepository spielerRepository;
+    private final TischRepository tischRepository;
+    private final PartieRepository partieRepository;
+    private final TischEchtzeitService tischEchtzeitService;
     private final PunkteRechner punkteRechner = new PunkteRechner();
 
-    public KiOrchestrierungService(KiStrategieFactory kiStrategieFactory, SpielerRepository spielerRepository) {
+    public KiOrchestrierungService(
+        KiStrategieFactory kiStrategieFactory,
+        SpielerRepository spielerRepository,
+        TischRepository tischRepository,
+        PartieRepository partieRepository,
+        TischEchtzeitService tischEchtzeitService
+    ) {
         this.kiStrategieFactory = kiStrategieFactory;
         this.spielerRepository = spielerRepository;
+        this.tischRepository = tischRepository;
+        this.partieRepository = partieRepository;
+        this.tischEchtzeitService = tischEchtzeitService;
     }
 
     public void automatisiereTisch(TischEntity tisch) {
@@ -233,5 +251,58 @@ public class KiOrchestrierungService {
             spielerNachPosition.put(SpielerPosition.standardReihenfolge().get(index), tisch.spieler().get(index));
         }
         return Map.copyOf(spielerNachPosition);
+    }
+
+    /**
+     * Sicherheitsnetz fuer haengende KI-Zuege.
+     *
+     * <p>Prueft alle 15 Sekunden ob ein aktiver Tisch auf einen KI-Spieler wartet,
+     * der nicht von alleine agiert (z.B. nach einer Exception im letzten Zug).
+     * Falls ja, wird automatisiereTisch() erneut aufgerufen und der aktuelle Stand
+     * an alle Beteiligten gebroadcastet, damit die UI nicht eingefroren bleibt.</p>
+     */
+    @Scheduled(fixedDelay = 15_000)
+    @Transactional
+    public void behebeFestgefahreneKiTische() {
+        List<TischEntity> aktiveTische = tischRepository.findAllByStatusOrderByErstelltAmAsc(TischStatus.IM_SPIEL);
+        for (TischEntity tisch : aktiveTische) {
+            try {
+                SpielEntity laufendesSpielEntity = findeLaufendesSpiel(tisch.partie());
+                if (laufendesSpielEntity == null) {
+                    continue;
+                }
+                Spiel spiel = SpielPersistenzAdapter.zuDomainSpiel(laufendesSpielEntity);
+                SpielerPosition erwartet = spiel.erwarteterSpieler().orElse(null);
+                if (erwartet == null) {
+                    continue;
+                }
+                SpielerEntity spielerEntity = spielerNachPosition(tisch).get(erwartet);
+                if (spielerEntity == null || (!spielerEntity.istKi() && !spielerEntity.istKiUebernommen())) {
+                    continue;
+                }
+                // KI ist dran, aber hat offensichtlich nicht agiert — erneut versuchen
+                LOGGER.warn("Festgefahrener KI-Tisch entdeckt, starte Wiederherstellung [tischId={}, spieler={}]",
+                    tisch.id(), erwartet);
+                automatisiereTisch(tisch);
+                partieRepository.saveAndFlush(tisch.partie());
+                veroeffentlichePartieStand(tisch);
+            } catch (Exception e) {
+                LOGGER.error("Fehler beim Wiederherstellen von Tisch {} — wird uebersprungen: {}",
+                    tisch.id(), e.getMessage(), e);
+            }
+        }
+    }
+
+    private void veroeffentlichePartieStand(TischEntity tisch) {
+        PartieStandAntwort broadcastStand = PartieStandAntwort.aus(tisch.partie());
+        tischEchtzeitService.planePartieEreignis(
+            PartieEreignisAntwort.aktualisiert(PartieEreignisTyp.PARTIE_AKTUALISIERT, broadcastStand));
+        tisch.spieler().stream()
+            .filter(s -> !s.istKi() && s.sessionId() != null)
+            .forEach(s -> tischEchtzeitService.planeAnBenutzer(
+                s.sessionId(),
+                "/queue/partie/" + tisch.partie().id(),
+                PartieEreignisAntwort.snapshot(PartieStandAntwort.aus(tisch.partie(), s.id()))
+            ));
     }
 }
