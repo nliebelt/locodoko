@@ -8,9 +8,9 @@
 Nächster logischer Schritt: Task 8 (Frontend-Animationen: Stich-Visualisierung) oder Task 9 (Rundenauswertungs-Overlay).
 Offene Fragen: keine.
 
-**2026-04-06 (Plan-Run #38):** Task 9.4 (Stichmitte-Rotation) implementiert — `stichSlotPositionen` um `winkel`-Feld (SUED:-4°, WEST:+6°, NORD:+3°, OST:-5°) erweitert, `renderStichmitte` ruft `kartenansicht.setAngle(slot.winkel)` auf. Außerdem festgestellt: Task 10.3 (Partie-Ende-Overlay) und Task 11 (alle 6 data-testids) waren bereits vollständig implementiert — im Plan jetzt als erledigt markiert. Build + Lint sauber, 24 Frontend-Tests grün.
-Nächster logischer Schritt: Task 8.3 (E2E-Tests gegen laufendes Backend verifizieren) oder Task 9.1 (Gewinn-Flash Phaser-Tween) oder Task 9.2 (Stich-Stapel Fächer).
-Offene Fragen: Task 8.3 braucht laufendes Backend. `rundenauswertung.spec.ts` sollte stabil sein (Implementierung sieht solide aus).
+**2026-04-06 (Plan-Run #39):** Tasks 9.1 und 9.2 waren bereits vollständig implementiert — im Plan als erledigt markiert. Task 9.1 (Gewinn-Flash): `starteFolgeanimationen()` erstellt ein goldenes `flashRechteck` über dem Nameplate des Gewinners und übergibt es an `animiereStichEinziehen()`, das den Alpha-Tween (0→1→0 in 600ms) auslöst. Task 9.2 (Stich-Stapel): `renderStichStapel()` zeichnet bis zu 4 gestapelte verdeckte Karten + Zähler pro Spieler. 24 Frontend-Tests grün.
+Nächster logischer Schritt: Task 8.3 (E2E-Tests gegen laufendes Backend verifizieren), Task 9.5 (Visuelles Review) oder Task 10.6 (Visuelles Review) — alle brauchen laufendes Backend.
+Offene Fragen: Backend war beim letzten Run nicht verfügbar. Bei nächstem Run zuerst Backend starten und Vision Loop ausführen.
 
 ---
 
@@ -127,8 +127,8 @@ Offene Fragen: Task 8.3 braucht laufendes Backend. `rundenauswertung.spec.ts` so
 
 > **Setzt voraus:** Task 8 (E2E grün) | **Spec:** `specs/frontend-animationen.md` DoD, `specs/frontend-tischansicht.md` Abschnitt "Stich-Stapel beim Gewinner"
 
-- [ ] **9.1** Gewinn-Flash: Nameplate des Stichgewinners leuchtet kurz auf (Phaser-Tween, ~300ms Glow-Effekt)
-- [ ] **9.2** Stich-Stapel: Karten landen sichtbar auf Stapel beim Gewinner (nicht nur Zähler, sondern gestapelter Fächer)
+- [x] **9.1** Gewinn-Flash: Nameplate des Stichgewinners leuchtet kurz auf (Phaser-Tween, ~300ms Glow-Effekt)
+- [x] **9.2** Stich-Stapel: Karten landen sichtbar auf Stapel beim Gewinner (nicht nur Zähler, sondern gestapelter Fächer)
 - [x] **9.3** Letzter-Stich-Flip: Klick auf eigenen Stapel oder Taste deckt 4 Karten des letzten Stichs auf (implementiert — Bug #7, `letzterStichOverlay` in TischSzene.ts)
 - [x] **9.4** Stichmitte: Karten „leicht überlappend und minimal rotiert" gemäß Spec — aktuell lineare Positionierung ohne Rotation
 - [ ] **9.5** Visuelles Review nach Umsetzung (Vision Loop)
