@@ -4,9 +4,9 @@
 
 ## Notiz
 
-**2026-04-05 (Plan-Run #33):** Task 4 (Dreißig-Augen-Pflicht Backend) vollständig erledigt — `pflichtansageAusstehend: Set<Partei>` in `Spiel`, Liquibase-Changeset 007 (`pflicht_ansage_ausstehend` in `spiel`-Tabelle), Trigger-Erkennung in `Spiel.berechneNeuePflichtansagen()` (Stich 1/2, >30 Augen, NORMALSPIEL/HOCHZEIT), Blockierung in `spieleKarte()`, Mindestkartenanzahl-Bypass in `kannAnsagen()` und `sageAn()`, Freigabe nach Grundansage. Persistenz via `SpielEntity.setzePflichtansageAusstehend()` + `SpielPersistenzAdapter`. 9 neue DreissigAugenPflichtTests grün, alle Backend-Tests grün.
-Nächster logischer Schritt: Task 3 (Schweinchen Backend).
-Offene Fragen: Keine Blocker für Task 3.
+**2026-04-06 (Plan-Run #34):** Task 3 (Schweinchen Backend) vollständig erledigt — `SchweinchenTrumpfOrdnung` (Karo-As Rang 14/15, `spaetereGleicheKarteGewinnt=true`), Erkennung in `Spiel.teileKartenAus()` via `hatSchweinchen()`, Solo-Ausschluss via `trumpfOrdnungFuer()` (SOLO_TRUMPF → NormaleTrumpfOrdnung), Persistenz via Liquibase-Changeset 008 (`schweinchen_aktiv BOOLEAN` in `spiel`), `SpielEntity.schweinchenAktiv()` + `setzeSchweinchenAktiv()`, `Spiel.ausPersistiertemStand()` mit neuem `schweinchenAktiv`-Parameter, `SpielPersistenzAdapter`. 10 neue SchweinchenTests grün, alle 172 Backend-Tests grün.
+Nächster logischer Schritt: Task 5 (Solo-Nachgeben Backend) oder Task 6 (Regelkatalog-Presets).
+Offene Fragen: Task 3.3 Spec-Entscheidung umgesetzt: Solo-Ausschluss für SOLO_TRUMPF (nur NORMALSPIEL hat Schweinchen nach teileKartenAus — SOLO_TRUMPF verliert Schweinchen beim loeseVorbehalteAuf).
 
 ---
 
@@ -49,12 +49,11 @@ Offene Fragen: Keine Blocker für Task 3.
 
 > **Blockiert von:** 1 (Spielregeln-Felder) | **Spec:** `specs/schweinchen.md`
 
-- [ ] **3.1** `SchweinchenTrumpfOrdnung`: Decorator/Unterklasse von `NormaleTrumpfOrdnung` — Karo-As exemplarIndex 1 → Rang 14, exemplarIndex 2 → Rang 15, `spaetereGleicheKarteGewinnt(Karte)` = true für Karo-As
+- [x] **3.1** `SchweinchenTrumpfOrdnung`: Decorator/Unterklasse von `NormaleTrumpfOrdnung` — Karo-As exemplarIndex 1 → Rang 14, exemplarIndex 2 → Rang 15, `spaetereGleicheKarteGewinnt(Karte)` = true für Karo-As
   - Neuer Typ in `src/main/java/de/locodoko/karten/`
-- [ ] **3.2** Schweinchen-Erkennung in `Spiel.teileKartenAus()` oder `loeseVorbehalteAuf()`: prüfe ob ein Spieler beide Karo-Asse hält + Spieltyp NORMALSPIEL + Regel aktiv → ersetze `trumpfOrdnung` durch `SchweinchenTrumpfOrdnung`
-- [ ] **3.3** Solo-Ausschluss: Schweinchen nur bei NORMALSPIEL (nicht bei SOLO_DAME, SOLO_BUBE, SOLO_FLEISCHLOS, Hochzeit, Armut)
-  - **Spec-Korrektur nötig:** Spec Punkt 5 sagt "nur NORMALSPIEL", aber technischer Hinweis sagt "NORMALSPIEL oder SOLO_TRUMPF". Die Spec-Tabelle in `regelkatalog.md` Loco-Blatt hat `schweinchenAktiv: true` — für Trumpfsoli wäre Schweinchen sinnvoll. **Entscheidung: Spec-Text in schweinchen.md Punkt 5 folgen (nur NORMALSPIEL)**, da Punkt 5 die explizite Anforderung ist.
-- [ ] **3.4** Unit-Tests: Trumpfrang mit/ohne Schweinchen, zweites Schweinchen schlägt erstes, Solo-Ausschluss, Deaktivierung
+- [x] **3.2** Schweinchen-Erkennung in `Spiel.teileKartenAus()`: prüfe ob ein Spieler beide Karo-Asse hält + Spieltyp NORMALSPIEL + Regel aktiv → ersetze `trumpfOrdnung` durch `SchweinchenTrumpfOrdnung`
+- [x] **3.3** Solo-Ausschluss: Schweinchen nur bei NORMALSPIEL (nicht bei SOLO_DAME, SOLO_BUBE, SOLO_FLEISCHLOS, Hochzeit, Armut, SOLO_TRUMPF)
+- [x] **3.4** Unit-Tests: Trumpfrang mit/ohne Schweinchen, zweites Schweinchen schlägt erstes, Solo-Ausschluss, Deaktivierung
 
 ---
 

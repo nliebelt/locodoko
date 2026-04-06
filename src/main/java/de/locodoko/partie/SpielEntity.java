@@ -87,6 +87,10 @@ public class SpielEntity extends AbstraktePersistenzEntity {
     @Column("pflicht_ansage_ausstehend")
     private String pflichtAnsageAusstehendJson = "[]";
 
+    /** Ob die Schweinchen-Regel fuer dieses Spiel aktiv ist (ein Spieler haelt beide Karo-Asse). */
+    @Column("schweinchen_aktiv")
+    private boolean schweinchenAktiv;
+
     /** Aktueller Stich */
     @Column("aktueller_stich_aufspieler_position")
     private String aktuellerStichAufspielerPosition;
@@ -296,6 +300,14 @@ public class SpielEntity extends AbstraktePersistenzEntity {
 
     public void leereAktuellenStich() {
         setzeAktuellenStich(null, List.of());
+    }
+
+    public boolean schweinchenAktiv() {
+        return schweinchenAktiv;
+    }
+
+    public void setzeSchweinchenAktiv(boolean schweinchenAktiv) {
+        this.schweinchenAktiv = schweinchenAktiv;
     }
 
     public void setzePflichtansageAusstehend(java.util.Set<Partei> parteien) {

@@ -76,7 +76,8 @@ final class SpielPersistenzAdapter {
             spielergebnis(spielEntity).orElse(null),
             hochzeitStatus(spielEntity, vorbehalte).orElse(null),
             armutStatus(spielEntity, vorbehalte).orElse(null),
-            pflichtansageAusstehend(spielEntity)
+            pflichtansageAusstehend(spielEntity),
+            spielEntity.schweinchenAktiv()
         );
     }
 
@@ -129,6 +130,7 @@ final class SpielPersistenzAdapter {
             ziel::leereHochzeitStatus
         );
         ziel.setzePflichtansageAusstehend(quelle.pflichtansageAusstehend());
+        ziel.setzeSchweinchenAktiv(quelle.schweinchenAktiv());
     }
 
     static Map<SpielerPosition, Integer> gewonneneStiche(SpielEntity spielEntity) {

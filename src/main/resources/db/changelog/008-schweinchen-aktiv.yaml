@@ -1,0 +1,14 @@
+databaseChangeLog:
+  - changeSet:
+      id: 008-schweinchen-aktiv
+      author: locodoko
+      changes:
+        - addColumn:
+            tableName: spiel
+            columns:
+              - column:
+                  name: schweinchen_aktiv
+                  type: BOOLEAN
+                  defaultValueBoolean: false
+                  constraints:
+                    nullable: false

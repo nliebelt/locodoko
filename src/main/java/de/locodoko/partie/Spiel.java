@@ -9,6 +9,7 @@ import de.locodoko.karten.Karte;
 import de.locodoko.karten.Kartendeck;
 import de.locodoko.karten.Kartenwert;
 import de.locodoko.karten.NormaleTrumpfOrdnung;
+import de.locodoko.karten.SchweinchenTrumpfOrdnung;
 import de.locodoko.karten.VariableTrumpfsoloTrumpfOrdnung;
 import de.locodoko.karten.SpielerPosition;
 import de.locodoko.karten.Spielregeln;
@@ -132,12 +133,13 @@ public final class Spiel {
         Spielergebnis ergebnis,
         HochzeitStatus hochzeitStatus,
         ArmutStatus armutStatus,
-        Set<Partei> pflichtansageAusstehend
+        Set<Partei> pflichtansageAusstehend,
+        boolean schweinchenAktiv
     ) {
         return new Spiel(
             spielregeln,
             kartendeck,
-            trumpfOrdnungFuerPersistiertenStand(spielregeln, spieltyp),
+            trumpfOrdnungFuerPersistiertenStand(spielregeln, spieltyp, schweinchenAktiv),
             spieltyp,
             geber,
             phase,
@@ -156,19 +158,18 @@ public final class Spiel {
 
     public Spiel teileKartenAus() {
         pruefePhase(Spielphase.KARTEN_AUSTEILEN, "Karten austeilen");
-        // TODO(schweinchen): Nach dem Austeilen pruefen ob ein Spieler beide Karo-Asse haelt
-        //   (Farbe.KARO, Kartenwert.AS, exemplarIndex 1 und 2 auf derselben Hand).
-        //   Falls ja, spielregeln.schweinchenAktiv() == true und Spieltyp ist NORMALSPIEL
-        //   oder SOLO_TRUMPF: trumpfOrdnung durch SchweinchenTrumpfOrdnung ersetzen
-        //   (Decorator ueber NormaleTrumpfOrdnung mit Rang 14/15 fuer Karo-Asse).
+        Map<SpielerPosition, Hand> neueHaende = kartendeck.anVierSpielerAusteilen();
+        TrumpfOrdnung neueTrumpfOrdnung = hatSchweinchen(spielregeln, neueHaende)
+            ? new SchweinchenTrumpfOrdnung(spielregeln)
+            : trumpfOrdnung;
         return new Spiel(
             spielregeln,
             kartendeck,
-            trumpfOrdnung,
+            neueTrumpfOrdnung,
             spieltyp,
             geber,
             Spielphase.VORBEHALT_ANSAGE,
-            kartendeck.anVierSpielerAusteilen(),
+            neueHaende,
             List.of(),
             null,
             ansagen,
@@ -699,6 +700,10 @@ public final class Spiel {
         return trumpfOrdnung;
     }
 
+    public boolean schweinchenAktiv() {
+        return trumpfOrdnung instanceof SchweinchenTrumpfOrdnung;
+    }
+
     /**
      * Prueft ob mindestens ein abgeschlossener Stich "Herz durchgegangen" ist.
      *
@@ -887,12 +892,28 @@ public final class Spiel {
         return null;
     }
 
+    private static boolean hatSchweinchen(Spielregeln spielregeln, Map<SpielerPosition, Hand> haende) {
+        if (!spielregeln.schweinchenAktiv()) {
+            return false;
+        }
+        return haende.values().stream().anyMatch(hand ->
+            hand.karten().stream()
+                .filter(k -> k.farbe() == Farbe.KARO && k.wert() == Kartenwert.AS)
+                .count() == 2
+        );
+    }
+
     private record HochzeitFortschritt(Parteien parteien, HochzeitStatus status) {
     }
 
-    private static TrumpfOrdnung trumpfOrdnungFuerPersistiertenStand(Spielregeln spielregeln, Spieltyp spieltyp) {
+    private static TrumpfOrdnung trumpfOrdnungFuerPersistiertenStand(Spielregeln spielregeln, Spieltyp spieltyp, boolean schweinchenAktiv) {
         return switch (Objects.requireNonNull(spieltyp, "spieltyp darf nicht null sein")) {
-            case NORMALSPIEL, HOCHZEIT, ARMUT, SOLO_TRUMPF -> new NormaleTrumpfOrdnung(spielregeln);
+            case NORMALSPIEL, HOCHZEIT, ARMUT, SOLO_TRUMPF -> {
+                if (schweinchenAktiv) {
+                    yield new SchweinchenTrumpfOrdnung(spielregeln);
+                }
+                yield new NormaleTrumpfOrdnung(spielregeln);
+            }
             case SOLO_TRUMPF_HERZ -> new VariableTrumpfsoloTrumpfOrdnung(Farbe.HERZ, spielregeln);
             case SOLO_TRUMPF_PIK -> new VariableTrumpfsoloTrumpfOrdnung(Farbe.PIK, spielregeln);
             case SOLO_TRUMPF_KREUZ -> new VariableTrumpfsoloTrumpfOrdnung(Farbe.KREUZ, spielregeln);
