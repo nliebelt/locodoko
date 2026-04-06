@@ -29,10 +29,15 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import jakarta.annotation.PreDestroy;
 import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.UUID;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Orchestriert KI-Zuege nach jeder menschlichen oder KI-Aktion.
@@ -51,6 +56,16 @@ public class KiOrchestrierungService {
     private static final Logger LOGGER = LoggerFactory.getLogger(KiOrchestrierungService.class);
 
     private static final int MAXIMALE_KI_AKTIONEN = 512;
+
+    // Mindestwartezeit zwischen zwei KI-Kartenzuegen in der Stichphase (ms)
+    private static final long KI_KARTEN_VERZOEGERUNG_MS = 800;
+
+    // Einzel-Thread-Scheduler fuer zeitverzoegerte KI-Zuege (Daemon-Thread, lebt nur solange die JVM laeuft)
+    private final ScheduledExecutorService kiScheduler = Executors.newSingleThreadScheduledExecutor(r -> {
+        Thread t = new Thread(r, "ki-timing");
+        t.setDaemon(true);
+        return t;
+    });
 
     private final KiStrategieFactory kiStrategieFactory;
     private final SpielerRepository spielerRepository;
@@ -117,8 +132,33 @@ public class KiOrchestrierungService {
             // dieselbe Exception erzeugen wuerde.
             try {
                 KiStrategie strategie = kiStrategieFactory.erzeuge(tisch.konfiguration().kiSchwierigkeit());
+                Spielphase phaseVorAktion = laufendesSpiel.phase();
                 Spiel naechsterStand = fuehreKiAktionAus(laufendesSpiel, erwarteterSpieler, strategie);
                 SpielPersistenzAdapter.uebernehmeDomainSpiel(laufendesSpielEntity, naechsterStand);
+                // Stichphase-Zug: naechsten KI-Zug zeitverzoegert ausloesen, damit jede
+                // KI-Karte einzeln animiert im Frontend erscheint (Timing-Feature).
+                // Nur wenn ein menschlicher Spieler am Tisch sitzt – bei reinen KI-Partien
+                // bleibt der synchrone Durchlauf erhalten.
+                boolean hatMenschlichenSpieler = tisch.spieler().stream()
+                    .anyMatch(s -> !s.istKi());
+                if (hatMenschlichenSpieler
+                        && phaseVorAktion == Spielphase.STICHPHASE
+                        && naechsterStand.phase() == Spielphase.STICHPHASE) {
+                    SpielerPosition naechster = naechsterStand.erwarteterSpieler().orElse(null);
+                    SpielerEntity naechsterSpielerEntity =
+                        naechster != null ? spielerNachPosition(tisch).get(naechster) : null;
+                if (naechsterSpielerEntity != null
+                        && (naechsterSpielerEntity.istKi() || naechsterSpielerEntity.istKiUebernommen())
+                        && !naechster.equals(erwarteterSpieler)) {
+                    final UUID tischId = tisch.id();
+                    kiScheduler.schedule(
+                        () -> verzoegerteKiAktionAusfuehren(tischId),
+                        KI_KARTEN_VERZOEGERUNG_MS,
+                        TimeUnit.MILLISECONDS
+                    );
+                    return;
+                }
+                }
             } catch (Exception e) {
                 LOGGER.error(
                     "KI-Strategie-Fehler fuer Spieler {} in Phase {} an Tisch {} – Partie bleibt im letzten konsistenten Stand: {}",
@@ -130,6 +170,92 @@ public class KiOrchestrierungService {
         LOGGER.error("KI-Orchestrierung hat das Sicherheitslimit von {} Aktionen an Tisch {} erreicht – moegliche Endlosschleife.",
             MAXIMALE_KI_AKTIONEN, tisch.id());
         throw new IllegalStateException("Die KI-Orchestrierung hat das Sicherheitslimit erreicht.");
+    }
+
+    @PreDestroy
+    public void beende() {
+        kiScheduler.shutdownNow();
+    }
+
+    /**
+     * Laedt den Tisch neu aus der Datenbank und fuehrt genau einen verzoegerten KI-Zug aus.
+     * Wird zeitverzoegert vom {@link #kiScheduler} aufgerufen, damit jede KI-Karte einzeln
+     * im Frontend animiert werden kann. Falls der naechste Spieler danach ebenfalls eine KI
+     * ist, wird ein weiterer Delay geplant.
+     */
+    @Transactional
+    public void verzoegerteKiAktionAusfuehren(UUID tischId) {
+        TischEntity tisch = tischRepository.findById(tischId).orElse(null);
+        if (tisch == null || tisch.partie() == null || tisch.partie().status() == PartieStatus.BEENDET) {
+            return;
+        }
+        fuehreVerzoegertenKiZugAus(tisch);
+        partieRepository.saveAndFlush(tisch.partie());
+        veroeffentlichePartieStand(tisch);
+    }
+
+    /**
+     * Fuehrt exakt einen KI-Zug in der Stichphase aus. Falls danach erneut eine KI
+     * an der Reihe ist (und Menschen am Tisch sitzen), wird ein weiterer Delay geplant.
+     * Andernfalls wird automatisiereTisch aufgerufen um etwaige Folgephasen abzuschliessen.
+     */
+    private void fuehreVerzoegertenKiZugAus(TischEntity tisch) {
+        if (tisch.partie() == null || tisch.partie().status() == PartieStatus.BEENDET) {
+            return;
+        }
+        SpielEntity laufendesSpielEntity = findeLaufendesSpiel(tisch.partie());
+        if (laufendesSpielEntity == null) {
+            return;
+        }
+        Spiel laufendesSpiel = SpielPersistenzAdapter.zuDomainSpiel(laufendesSpielEntity);
+        if (laufendesSpiel.phase() != Spielphase.STICHPHASE) {
+            // Nicht-Stichphase: vollstaendige Orchestrierung uebergeben
+            automatisiereTisch(tisch);
+            return;
+        }
+        SpielerPosition erwarteterSpieler = laufendesSpiel.erwarteterSpieler().orElse(null);
+        if (erwarteterSpieler == null) {
+            return;
+        }
+        SpielerEntity spielerEntity = spielerNachPosition(tisch).get(erwarteterSpieler);
+        if (spielerEntity == null || (!spielerEntity.istKi() && !spielerEntity.istKiUebernommen())) {
+            // Human ist dran – kein KI-Zug
+            return;
+        }
+        LOGGER.info("KI-Spielzug (verzoegert) [spielerId={}, phase=STICHPHASE]", erwarteterSpieler);
+        try {
+            KiStrategie strategie = kiStrategieFactory.erzeuge(tisch.konfiguration().kiSchwierigkeit());
+            Spiel naechsterStand = fuehreKiAktionAus(laufendesSpiel, erwarteterSpieler, strategie);
+            SpielPersistenzAdapter.uebernehmeDomainSpiel(laufendesSpielEntity, naechsterStand);
+            // Pruefen ob noch eine KI folgt (und Menschen am Tisch sind)
+            boolean hatMenschlichenSpieler = tisch.spieler().stream().anyMatch(s -> !s.istKi());
+            if (hatMenschlichenSpieler && naechsterStand.phase() == Spielphase.STICHPHASE) {
+                SpielerPosition naechster = naechsterStand.erwarteterSpieler().orElse(null);
+                SpielerEntity naechsterSpielerEntity = naechster != null ? spielerNachPosition(tisch).get(naechster) : null;
+                if (naechsterSpielerEntity != null
+                        && (naechsterSpielerEntity.istKi() || naechsterSpielerEntity.istKiUebernommen())) {
+                    // Wenn derselbe KI-Spieler wieder dran ist (nach Ansage), direkt weiter ohne Delay
+                    if (naechster.equals(erwarteterSpieler)) {
+                        fuehreVerzoegertenKiZugAus(tisch);
+                        return;
+                    }
+                    final UUID tischId = tisch.id();
+                    kiScheduler.schedule(
+                        () -> verzoegerteKiAktionAusfuehren(tischId),
+                        KI_KARTEN_VERZOEGERUNG_MS,
+                        TimeUnit.MILLISECONDS
+                    );
+                    return;
+                }
+            }
+            // Naechster ist kein KI-Stichphase-Spieler: vollstaendige Orchestrierung fuer Folgephasen
+            automatisiereTisch(tisch);
+        } catch (Exception e) {
+            LOGGER.error(
+                "KI-Strategie-Fehler (verzoegert) fuer Spieler {} an Tisch {} – Partie bleibt im letzten konsistenten Stand: {}",
+                erwarteterSpieler, tisch.id(), e.getMessage(), e
+            );
+        }
     }
 
     private Spiel fuehreKiAktionAus(Spiel laufendesSpiel, SpielerPosition spielerPosition, KiStrategie strategie) {

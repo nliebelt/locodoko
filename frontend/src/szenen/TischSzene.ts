@@ -409,6 +409,7 @@ export class TischSzene extends Phaser.Scene {
       void this.starteAnsageBannerAnimationen(this.ermittleNeueAnsagen(vorherigesModell, modell));
       void this.starteSonderpunktFeedbackAnimationen(this.ermittleNeueSonderpunkte(vorherigesModell, modell));
       void this.zeigeHochzeitEreignis(this.ermittleHochzeitEreignis(vorherigerZustand ?? null, zustand));
+      void this.zeigeSpielankuendigung(this.ermittleSpielankuendigung(vorherigerZustand ?? null, zustand));
       // Neues Spielergebnis → Rundenende- oder Partie-Ende-Modal einblenden
       if (this.erkennteNeuesSpielErgebnis(vorherigesModell, modell) && modell.letztesSpielergebnis) {
         if (modell.partieBeendet) {
@@ -1719,6 +1720,52 @@ export class TischSzene extends Phaser.Scene {
     const breite = this.scale.gameSize.width;
     const hoehe = this.scale.gameSize.height;
     await this.animationen?.animiereSonderpunktFeedback(meldung, { x: breite / 2, y: hoehe * 0.4 }, 2000);
+  }
+
+  // Erkennt wenn der Spieltyp von NORMALSPIEL auf ein Solo oder Hochzeit wechselt (nach Vorbehalt-Aufloesung)
+  private ermittleSpielankuendigung(
+    vorherigerZustand: AppZustand | null,
+    aktuellerZustand: AppZustand
+  ): string | null {
+    const vorherigesSpiel = vorherigerZustand?.partieStand?.laufendesSpiel;
+    const aktuellesSpiel = aktuellerZustand.partieStand?.laufendesSpiel;
+    if (!vorherigesSpiel || !aktuellesSpiel) {
+      return null;
+    }
+    const vorherigerTyp = vorherigesSpiel.spieltyp;
+    const aktuellerTyp = aktuellesSpiel.spieltyp;
+    // Nur bei Uebergang von NORMALSPIEL -> etwas anderes (Solo, Hochzeit, Armut)
+    if (vorherigerTyp === aktuellerTyp || vorherigerTyp !== 'NORMALSPIEL') {
+      return null;
+    }
+    const spieltypLabels: Partial<Record<string, string>> = {
+      SOLO_DAME: 'Damensolo',
+      SOLO_BUBE: 'Bubensolo',
+      SOLO_TRUMPF: 'Karosolo',
+      SOLO_TRUMPF_HERZ: 'Herzsolo',
+      SOLO_TRUMPF_PIK: 'Piksolo',
+      SOLO_TRUMPF_KREUZ: 'Kreuzsolo',
+      SOLO_FLEISCHLOS: 'Fleischlos',
+      HOCHZEIT: 'Hochzeit',
+      ARMUT: 'Armut',
+    };
+    const label = spieltypLabels[aktuellerTyp] ?? aktuellerTyp;
+    // Solist: bei Solo-Typen gibt es genau einen RE-Spieler
+    const solist = aktuellesSpiel.spieler.find((s) => s.partei === 'RE');
+    if (!solist) {
+      return label;
+    }
+    return `${solist.name} spielt ${label}`;
+  }
+
+  // Zeigt die Solo-/Hochzeit-Ankuendigung als dramatisches Einfahrt-Banner
+  private async zeigeSpielankuendigung(meldung: string | null): Promise<void> {
+    if (!meldung) {
+      return;
+    }
+    const breite = this.scale.gameSize.width;
+    const hoehe = this.scale.gameSize.height;
+    await this.animationen?.animiereSoloAnkuendigung(meldung, { x: breite / 2, y: hoehe / 2 });
   }
 
   // Erkennt ob ein neues Spielergebnis eingetroffen ist (andere spielNummer als zuvor)
