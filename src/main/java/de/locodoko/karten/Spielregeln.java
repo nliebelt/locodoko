@@ -61,19 +61,20 @@ public record Spielregeln(
         return new Spielregeln(true, true, 9, 8, 7, 6, 5, true, true, true, true, true, true, true, true, true, false, false, false);
     }
 
-    /** Loco-Blatt-Regelkatalog: alle Sonderregeln (Bockrunden, Schweinchen, 30-Augen-Pflicht) aktiv. */
+    /** Loco-Blatt-Regelkatalog: alle Sonderregeln aktiv, immer ohne Neunen (10-Karten-Spiel). */
     public static Spielregeln locoBlatRegeln() {
-        return new Spielregeln(false, true, 11, 10, 9, 8, 7, true, true, true, true, true, true, true, true, true, true, true, true);
+        return new Spielregeln(true, true, 9, 8, 7, 6, 5, true, true, true, true, true, true, true, true, true, true, true, true);
     }
 
-    /** DKV-Turnier-Regelkatalog: wie Loco Blatt, aber ohne Bockrunden, Schweinchen und 30-Augen-Pflicht. */
+    /** DKV-Turnier-Regelkatalog: ohne Bockrunden, Schweinchen und 30-Augen-Pflicht, mit Neunen. */
     public static Spielregeln dkvRegeln() {
         return new Spielregeln(false, true, 11, 10, 9, 8, 7, true, true, true, true, true, true, true, true, true, false, false, false);
     }
 
-    /** Loco-Blatt-Regelkatalog ohne Neunen (10-Karten-Spiel, angepasste Ansagegrenzen). */
+    /** @deprecated Identisch mit {@link #locoBlatRegeln()} — Loco Blatt ist immer ohne Neunen. */
+    @Deprecated
     public static Spielregeln ohneNeunenLocoBlatRegeln() {
-        return new Spielregeln(true, true, 9, 8, 7, 6, 5, true, true, true, true, true, true, true, true, true, true, true, true);
+        return locoBlatRegeln();
     }
 
     public Spielregeln mitAnsagegrenzen(

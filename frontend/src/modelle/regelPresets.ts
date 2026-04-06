@@ -1,12 +1,12 @@
 import type { TischKonfigurationDto } from './SpielverwaltungDto';
 
-export type RegelPresetName = 'LOCO_BLAT' | 'DKV' | 'OHNE_NEUNEN_LOCO_BLAT' | 'BENUTZERDEFINIERT';
+export type RegelPresetName = 'LOCO_BLAT' | 'DKV' | 'BENUTZERDEFINIERT';
 
 /** Alle Regelfelder ohne die Tisch-Meta-Felder (Rundenanzahl, Hintergrund, KI). */
 export type RegelFelder = Omit<TischKonfigurationDto, 'anzahlSpiele' | 'tischhintergrund' | 'kiSchwierigkeit'>;
 
 const LOCO_BLAT_REGELN: RegelFelder = {
-    ohneNeunen: false,
+    ohneNeunen: true,
     zweiteDulleSticht: true,
     hochzeitErlaubt: true,
     armutErlaubt: true,
@@ -20,23 +20,6 @@ const LOCO_BLAT_REGELN: RegelFelder = {
     bockrundenAktiv: true,
     schweinchenAktiv: true,
     dreissigAugenPflichtAktiv: true,
-    mindestkartenReKontra: 11,
-    mindestkartenKeine90: 10,
-    mindestkartenKeine60: 9,
-    mindestkartenKeine30: 8,
-    mindestkartenSchwarz: 7,
-};
-
-const DKV_REGELN: RegelFelder = {
-    ...LOCO_BLAT_REGELN,
-    bockrundenAktiv: false,
-    schweinchenAktiv: false,
-    dreissigAugenPflichtAktiv: false,
-};
-
-const OHNE_NEUNEN_LOCO_BLAT_REGELN: RegelFelder = {
-    ...LOCO_BLAT_REGELN,
-    ohneNeunen: true,
     mindestkartenReKontra: 9,
     mindestkartenKeine90: 8,
     mindestkartenKeine60: 7,
@@ -44,16 +27,27 @@ const OHNE_NEUNEN_LOCO_BLAT_REGELN: RegelFelder = {
     mindestkartenSchwarz: 5,
 };
 
+const DKV_REGELN: RegelFelder = {
+    ...LOCO_BLAT_REGELN,
+    ohneNeunen: false,
+    bockrundenAktiv: false,
+    schweinchenAktiv: false,
+    dreissigAugenPflichtAktiv: false,
+    mindestkartenReKontra: 11,
+    mindestkartenKeine90: 10,
+    mindestkartenKeine60: 9,
+    mindestkartenKeine30: 8,
+    mindestkartenSchwarz: 7,
+};
+
 export const REGEL_PRESETS: Record<Exclude<RegelPresetName, 'BENUTZERDEFINIERT'>, RegelFelder> = {
     LOCO_BLAT: LOCO_BLAT_REGELN,
     DKV: DKV_REGELN,
-    OHNE_NEUNEN_LOCO_BLAT: OHNE_NEUNEN_LOCO_BLAT_REGELN,
 };
 
 export const PRESET_BEZEICHNUNGEN: Record<RegelPresetName, string> = {
     LOCO_BLAT: 'Loco Blatt',
     DKV: 'DKV-Turnier',
-    OHNE_NEUNEN_LOCO_BLAT: 'Ohne Neunen',
     BENUTZERDEFINIERT: 'Benutzerdefiniert',
 };
 

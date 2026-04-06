@@ -14,8 +14,8 @@ class SpielregelnTest {
         assertThat(regeln.bockrundenAktiv()).isTrue();
         assertThat(regeln.schweinchenAktiv()).isTrue();
         assertThat(regeln.dreissigAugenPflichtAktiv()).isTrue();
-        assertThat(regeln.ohneNeunen()).isFalse();
-        assertThat(regeln.mindestkartenReKontra()).isEqualTo(11);
+        assertThat(regeln.ohneNeunen()).isTrue();
+        assertThat(regeln.mindestkartenReKontra()).isEqualTo(9);
     }
 
     @Test
@@ -55,7 +55,8 @@ class SpielregelnTest {
         assertThat(loco.karlchenAktiv()).isEqualTo(dkv.karlchenAktiv());
         assertThat(loco.hochzeitAktiv()).isEqualTo(dkv.hochzeitAktiv());
         assertThat(loco.armutAktiv()).isEqualTo(dkv.armutAktiv());
-        assertThat(loco.mindestkartenReKontra()).isEqualTo(dkv.mindestkartenReKontra());
-        assertThat(loco.ohneNeunen()).isEqualTo(dkv.ohneNeunen());
+        // Loco Blatt hat ohneNeunen=true (10 Karten), DKV spielt mit Neunen (12 Karten)
+        assertThat(loco.ohneNeunen()).isTrue();
+        assertThat(dkv.ohneNeunen()).isFalse();
     }
 }

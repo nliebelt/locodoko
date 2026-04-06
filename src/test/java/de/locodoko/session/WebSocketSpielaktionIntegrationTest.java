@@ -111,7 +111,7 @@ class WebSocketSpielaktionIntegrationTest {
                 .findFirst()
                 .orElseThrow()
                 .sichtbareHandkarten()
-                .size() == 12,
+                .size() == 10,
             "Nach einer Spielaktion braucht jeder menschliche Spieler erneut einen benutzerbezogenen Snapshot mit eigener Hand statt eines leeren Broadcast-Stands.");
     }
 
@@ -340,8 +340,8 @@ class WebSocketSpielaktionIntegrationTest {
         assertEquals(Spielphase.VORBEHALT_ANSAGE, ereignis.partieStand().laufendesSpiel().phase(),
             "Wenn niemand die Armut annimmt, muss das Spiel eingeworfen und ein Broadcast mit der neuen Vorbehaltsphase gesendet werden.");
         ereignis.partieStand().laufendesSpiel().spieler().forEach(spieler ->
-            assertEquals(12, spieler.verbleibendeKarten(),
-                "Nach einem Armut-Einwurf muss jeder Spieler wieder 12 Karten erhalten, damit die neue Vorbehaltsrunde auf einem vollstaendigen Deck basiert."));
+            assertEquals(10, spieler.verbleibendeKarten(),
+                "Nach einem Armut-Einwurf muss jeder Spieler wieder 10 Karten erhalten (locoBlatRegeln=ohneNeunen), damit die neue Vorbehaltsrunde auf einem vollstaendigen Deck basiert."));
     }
 
     @Test
@@ -449,7 +449,7 @@ class WebSocketSpielaktionIntegrationTest {
                 karte(Farbe.HERZ, Kartenwert.KOENIG, 1)
             ),
             SpielerPosition.SUED, List.of(
-                karte(Farbe.KREUZ, Kartenwert.NEUN, 1),
+                karte(Farbe.KARO, Kartenwert.KOENIG, 1),
                 karte(Farbe.HERZ, Kartenwert.AS, 1),
                 karte(Farbe.PIK, Kartenwert.KOENIG, 1)
             )
@@ -477,7 +477,7 @@ class WebSocketSpielaktionIntegrationTest {
     }
 
     private Map<SpielerPosition, List<Karte>> verteilungMitVorgaben(Map<SpielerPosition, List<Karte>> vorgaben) {
-        List<Karte> restkarten = new ArrayList<>(Kartendeck.neu(Spielregeln.standardRegeln()).karten());
+        List<Karte> restkarten = new ArrayList<>(Kartendeck.neu(Spielregeln.locoBlatRegeln()).karten());
         EnumMap<SpielerPosition, List<Karte>> haende = new EnumMap<>(SpielerPosition.class);
         for (SpielerPosition position : SpielerPosition.standardReihenfolge()) {
             List<Karte> karten = new ArrayList<>(vorgaben.getOrDefault(position, List.of()));
@@ -485,7 +485,7 @@ class WebSocketSpielaktionIntegrationTest {
             haende.put(position, karten);
         }
         for (SpielerPosition position : SpielerPosition.standardReihenfolge()) {
-            while (haende.get(position).size() < 12) {
+            while (haende.get(position).size() < 10) {
                 haende.get(position).add(restkarten.removeFirst());
             }
         }
@@ -493,6 +493,7 @@ class WebSocketSpielaktionIntegrationTest {
     }
 
     private List<Karte> handMitDreiTruepfen(Karte ersteTrumpfkarte, Karte zweiteTrumpfkarte, Karte dritteTrumpfkarte) {
+        // 3 Trumpfkarten + 7 Nichttruempfe (kein NEUN — locoBlatRegeln=ohneNeunen) = 10 Karten
         return List.of(
             ersteTrumpfkarte,
             zweiteTrumpfkarte,
@@ -500,29 +501,26 @@ class WebSocketSpielaktionIntegrationTest {
             karte(Farbe.KREUZ, Kartenwert.AS, 1),
             karte(Farbe.KREUZ, Kartenwert.KOENIG, 1),
             karte(Farbe.KREUZ, Kartenwert.ZEHN, 1),
-            karte(Farbe.KREUZ, Kartenwert.NEUN, 1),
             karte(Farbe.PIK, Kartenwert.AS, 1),
             karte(Farbe.PIK, Kartenwert.KOENIG, 1),
             karte(Farbe.PIK, Kartenwert.ZEHN, 1),
-            karte(Farbe.PIK, Kartenwert.NEUN, 1),
             karte(Farbe.HERZ, Kartenwert.KOENIG, 1)
         );
     }
 
     private List<Karte> gegenhandFuerArmutAnnahme(Karte rueckgabeEins, Karte rueckgabeZwei, Karte rueckgabeDrei) {
+        // 3 Rueckgabekarten + 7 Fuellkarten (kein NEUN — locoBlatRegeln=ohneNeunen) = 10 Karten
         return List.of(
             rueckgabeEins,
             rueckgabeZwei,
             rueckgabeDrei,
             karte(Farbe.KREUZ, Kartenwert.KOENIG, 2),
             karte(Farbe.KREUZ, Kartenwert.ZEHN, 2),
-            karte(Farbe.KREUZ, Kartenwert.NEUN, 2),
             karte(Farbe.PIK, Kartenwert.KOENIG, 2),
             karte(Farbe.PIK, Kartenwert.ZEHN, 2),
-            karte(Farbe.PIK, Kartenwert.NEUN, 2),
             karte(Farbe.HERZ, Kartenwert.KOENIG, 2),
-            karte(Farbe.HERZ, Kartenwert.NEUN, 1),
-            karte(Farbe.HERZ, Kartenwert.NEUN, 2)
+            karte(Farbe.HERZ, Kartenwert.AS, 2),
+            karte(Farbe.KARO, Kartenwert.KOENIG, 1)
         );
     }
 

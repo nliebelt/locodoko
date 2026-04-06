@@ -187,7 +187,6 @@ export class SpielverwaltungsSzene extends Phaser.Scene {
         <select id="regel-preset" class="neo-select">
           <option value="LOCO_BLAT" selected>${PRESET_BEZEICHNUNGEN.LOCO_BLAT}</option>
           <option value="DKV">${PRESET_BEZEICHNUNGEN.DKV}</option>
-          <option value="OHNE_NEUNEN_LOCO_BLAT">${PRESET_BEZEICHNUNGEN.OHNE_NEUNEN_LOCO_BLAT}</option>
           <option value="BENUTZERDEFINIERT">${PRESET_BEZEICHNUNGEN.BENUTZERDEFINIERT}</option>
         </select>
       </div>
