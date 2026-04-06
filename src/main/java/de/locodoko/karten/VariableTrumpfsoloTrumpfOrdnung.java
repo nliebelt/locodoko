@@ -70,8 +70,10 @@ public final class VariableTrumpfsoloTrumpfOrdnung implements TrumpfOrdnung {
         if (!istTrumpf(karte)) {
             throw new IllegalArgumentException("Fehlkarten haben keinen Trumpfrang: " + karte);
         }
-        // Karten der Trumpffarbe (Rang 1–4)
-        if (karte.farbe() == trumpfFarbe) {
+        // Karten der Trumpffarbe (Rang 1–4), ohne Dame/Bube — die haben eigene Ranges unten
+        if (karte.farbe() == trumpfFarbe
+                && karte.wert() != Kartenwert.DAME
+                && karte.wert() != Kartenwert.BUBE) {
             Integer rang = SUIT_RANG.get(karte.wert());
             if (rang == null) {
                 throw new IllegalArgumentException("Kein Trumpfrang fuer Karte definiert: " + karte);

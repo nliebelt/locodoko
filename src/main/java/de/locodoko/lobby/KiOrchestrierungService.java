@@ -134,6 +134,14 @@ public class KiOrchestrierungService {
                     : laufendesSpiel.lehneArmutAb(spielerPosition);
             }
             case STICHPHASE -> {
+                // Pflichtansage hat absoluten Vorrang vor Kartenspielen (dreissigAugenPflicht)
+                if (!laufendesSpiel.pflichtansageAusstehend().isEmpty()) {
+                    Partei eigenePartei = laufendesSpiel.parteien().parteiVon(spielerPosition);
+                    if (laufendesSpiel.pflichtansageAusstehend().contains(eigenePartei)) {
+                        Ansage pflichtansage = eigenePartei == Partei.RE ? Ansage.RE : Ansage.KONTRA;
+                        yield laufendesSpiel.sageAn(spielerPosition, pflichtansage);
+                    }
+                }
                 Ansage ansage = strategie.waehleAnsage(zustand).orElse(null);
                 if (ansage != null) {
                     yield laufendesSpiel.sageAn(spielerPosition, ansage);
