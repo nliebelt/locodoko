@@ -8,8 +8,9 @@
 Nächster logischer Schritt: Task 8 (Frontend-Animationen: Stich-Visualisierung) oder Task 9 (Rundenauswertungs-Overlay).
 Offene Fragen: keine.
 
-**2026-04-06 (Plan-Run #37):** Bug #6 (KI-Karten-Timing — 800ms Verzögerung zwischen KI-Zügen in STICHPHASE bei menschlichem Mitspieler, kein Delay nach eigener Ansage), Bug #7 (Letzter-Stich-Flip per Klick auf Stich-Stapel — `letzterStichOverlay`) und Bug #8 (Spielansage-Flash-Banner bei Spieltyp-Wechsel NORMALSPIEL→Solo/Hochzeit/Armut — `ermittleSpielankuendigung`/`zeigeSpielankuendigung` in TischSzene.ts) implementiert und committed. data-testids `tischszene`, `vorbehalt-overlay`, `floating-action-bar`, `rundenauswertung-overlay`, `btn-rundenauswertung-weiter` gesetzt. E2E-Tests (`partie-gegen-ki.spec.ts`, `rundenauswertung.spec.ts`) teilweise umgestellt. **Nächster Schritt: Task 8 (E2E-Tests stabilisieren)** vor Task 9 (Animationen-Rest) — KI-Timing (800ms/Karte) macht `rundenauswertung.spec.ts` noch instabil.
-Offene Fragen: `rundenauswertung.spec.ts` Schleife bei rein-KI-Stichen noch nicht stabil.
+**2026-04-06 (Plan-Run #38):** Task 9.4 (Stichmitte-Rotation) implementiert — `stichSlotPositionen` um `winkel`-Feld (SUED:-4°, WEST:+6°, NORD:+3°, OST:-5°) erweitert, `renderStichmitte` ruft `kartenansicht.setAngle(slot.winkel)` auf. Außerdem festgestellt: Task 10.3 (Partie-Ende-Overlay) und Task 11 (alle 6 data-testids) waren bereits vollständig implementiert — im Plan jetzt als erledigt markiert. Build + Lint sauber, 24 Frontend-Tests grün.
+Nächster logischer Schritt: Task 8.3 (E2E-Tests gegen laufendes Backend verifizieren) oder Task 9.1 (Gewinn-Flash Phaser-Tween) oder Task 9.2 (Stich-Stapel Fächer).
+Offene Fragen: Task 8.3 braucht laufendes Backend. `rundenauswertung.spec.ts` sollte stabil sein (Implementierung sieht solide aus).
 
 ---
 
@@ -129,7 +130,7 @@ Offene Fragen: `rundenauswertung.spec.ts` Schleife bei rein-KI-Stichen noch nich
 - [ ] **9.1** Gewinn-Flash: Nameplate des Stichgewinners leuchtet kurz auf (Phaser-Tween, ~300ms Glow-Effekt)
 - [ ] **9.2** Stich-Stapel: Karten landen sichtbar auf Stapel beim Gewinner (nicht nur Zähler, sondern gestapelter Fächer)
 - [x] **9.3** Letzter-Stich-Flip: Klick auf eigenen Stapel oder Taste deckt 4 Karten des letzten Stichs auf (implementiert — Bug #7, `letzterStichOverlay` in TischSzene.ts)
-- [ ] **9.4** Stichmitte: Karten „leicht überlappend und minimal rotiert" gemäß Spec — aktuell lineare Positionierung ohne Rotation
+- [x] **9.4** Stichmitte: Karten „leicht überlappend und minimal rotiert" gemäß Spec — aktuell lineare Positionierung ohne Rotation
 - [ ] **9.5** Visuelles Review nach Umsetzung (Vision Loop)
 
 ---
@@ -140,7 +141,7 @@ Offene Fragen: `rundenauswertung.spec.ts` Schleife bei rein-KI-Stichen noch nich
 
 - [x] **10.1** Rundenauswertungs-Overlay implementiert: Kopfzeile (Spieltyp + Spielnummer), Ergebnis-Zeile (Gewinner-Partei + Punkte), Weiter-Button
 - [x] **10.2** Backend-Felder ausreichend — keine Erweiterung von `LetztesSpielergebnisAnsicht` / `TischAnsichtModell` nötig
-- [ ] **10.3** Partie-Ende-Overlay: Gesamtauswertung nach letztem Spiel (Tabelle mit Endstand, Gewinner, Neustart-Countdown)
+- [x] **10.3** Partie-Ende-Overlay: Gesamtauswertung nach letztem Spiel (Tabelle mit Endstand, Gewinner, Neustart-Countdown)
 - [x] **10.4** Keyboard: Enter schließt Overlay / Escape wird ignoriert
 - [x] **10.5** `data-testid="rundenauswertung-overlay"` und `data-testid="btn-rundenauswertung-weiter"` gesetzt
 - [ ] **10.6** Visuelles Review (Vision Loop)
@@ -153,13 +154,13 @@ Offene Fragen: `rundenauswertung.spec.ts` Schleife bei rein-KI-Stichen noch nich
 
 Bereits gesetzt (11): `input-tischname`, `btn-tisch-erstellen`, `hud-stichzaehler`, `hud-spieltyp`, `btn-spiel-starten`, `hud-btn-einstellungen`, `tischszene`, `vorbehalt-overlay`, `floating-action-bar`, `rundenauswertung-overlay`, `btn-rundenauswertung-weiter`
 
-Fehlend (6):
-- [ ] **11.1** `startscreen` — Wurzel-Container der SpielverwaltungsSzene
-- [ ] **11.2** `btn-neuer-tisch` — „+ Neuen Tisch erstellen"-Button
-- [ ] **11.3** `btn-offene-tische` — „Offene Tische"-Button
-- [ ] **11.4** `btn-session-recovery` — „Zurück zu [Tischname]"-Button (wenn vorhanden)
-- [ ] **11.5** `tisch-config-modal` — Konfigurations-Modal-Container
-- [ ] **11.6** `einstellungen-modal` — Einstellungs-Modal
+Alle gesetzt (17 gesamt):
+- [x] **11.1** `startscreen` — Wurzel-Container der SpielverwaltungsSzene
+- [x] **11.2** `btn-neuer-tisch` — „+ Neuen Tisch erstellen"-Button
+- [x] **11.3** `btn-offene-tische` — „Offene Tische"-Button
+- [x] **11.4** `btn-session-recovery` — „Zurück zu [Tischname]"-Button (wenn vorhanden)
+- [x] **11.5** `tisch-config-modal` — Konfigurations-Modal-Container
+- [x] **11.6** `einstellungen-modal` — Einstellungs-Modal
 
 ---
 

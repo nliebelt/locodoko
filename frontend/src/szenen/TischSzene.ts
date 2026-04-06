@@ -36,16 +36,17 @@ interface TischLayoutEintrag {
 type TischLayout = Record<SpielerPosition, TischLayoutEintrag>;
 
 // Stich-Slot-Positionen relativ zur Spielgrösse (früher hardcodiert 108/132px)
+// winkel: kleine Rotation pro Position für natürliches „auf dem Tisch liegend"-Gefühl
 function stichSlotPositionen(
   mitteX: number, mitteY: number, breite: number, hoehe: number
-): Record<SpielerPosition, { x: number; y: number }> {
+): Record<SpielerPosition, { x: number; y: number; winkel: number }> {
   const versatzY = Math.round(hoehe * 0.15);   // ≈ 108 bei 720px
   const versatzX = Math.round(breite * 0.103);  // ≈ 132 bei 1280px
   return {
-    SUED: { x: mitteX, y: mitteY + versatzY },
-    WEST: { x: mitteX - versatzX, y: mitteY },
-    NORD: { x: mitteX, y: mitteY - versatzY },
-    OST: { x: mitteX + versatzX, y: mitteY }
+    SUED: { x: mitteX,           y: mitteY + versatzY, winkel: -4 },
+    WEST: { x: mitteX - versatzX, y: mitteY,            winkel:  6 },
+    NORD: { x: mitteX,           y: mitteY - versatzY, winkel:  3 },
+    OST:  { x: mitteX + versatzX, y: mitteY,            winkel: -5 }
   };
 }
 
@@ -1078,7 +1079,9 @@ export class TischSzene extends Phaser.Scene {
     modell.aktuelleStichmitte.forEach((eintrag) => {
       const slot = slotPositionen[eintrag.position];
       // Karte an der Slot-Position ihres Spielers — Position macht Zuordnung deutlich, kein Text noetig
-      ebene.add(this.erstelleKartenansicht(slot.x, slot.y, kgroesse.w, kgroesse.h, { karte: eintrag.karte }));
+      const kartenansicht = this.erstelleKartenansicht(slot.x, slot.y, kgroesse.w, kgroesse.h, { karte: eintrag.karte });
+      kartenansicht.setAngle(slot.winkel);
+      ebene.add(kartenansicht);
     });
   }
 
