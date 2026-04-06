@@ -58,6 +58,13 @@ KI-Spieler ersetzen menschliche Spieler und treffen regelbasierte, strategische 
 - Die KI erkennt ihren Partner und unterstützt ihn.
 - Die KI sagt Re/Kontra basierend auf Handstärke an.
 - Die KI berücksichtigt Sonderpunkte (Fuchs, Karlchen).
+
+## KI-Timing (UX)
+
+18. KI-Karten sollen in der **STICHPHASE nicht sofort** gespielt werden, wenn ein menschlicher Spieler am Tisch sitzt — eine künstliche Verzögerung von **800ms** zwischen KI-Zügen macht das Spielgeschehen für den Menschen nachvollziehbar.
+19. Die Verzögerung gilt **nur** wenn sich der nächste Spieler vom aktuellen unterscheidet (keine Verzögerung wenn derselbe KI-Spieler nach einer Ansage noch eine Karte legen muss).
+20. Bei rein-KI-Tischen (kein menschlicher Mitspieler) wird **keine** Verzögerung angewandt — dort läuft die Partie ohne Pause durch.
+21. Technisch: `KiOrchestrierungService` nutzt einen `ScheduledExecutorService` mit `schedule(..., 800, MILLISECONDS)`; verschachtelte Ansagen werden durch rekursiven Aufruf von `fuehreVerzoegertenKiZugAus` ohne weiteren Delay abgearbeitet.
 - Die KI trifft sinnvolle Sonderspiel-Entscheidungen.
 - Ein komplettes Spiel gegen 3 KI-Spieler kann ohne Fehler durchgespielt werden.
 

@@ -45,23 +45,30 @@ Animationen machen das Spielerlebnis lebendig und geben visuelles Feedback zu Sp
 13. Das Banner zeigt den Ansagetext (z.B. „RE!" oder „KONTRA!") und den Spielernamen.
 14. Das Banner **blendet sich ein**, bleibt ca. **1,5 Sekunden** sichtbar und **blendet sich wieder aus**.
 
+### Spielansage-Flash (Spieltyp-Wechsel)
+
+15. Wenn in der Vorbehalt-Phase der Spieltyp von `NORMALSPIEL` zu einem Solo, Hochzeit oder Armut wechselt, erscheint ein **Spielansage-Flash-Banner**.
+16. Das Banner zeigt Spielernamen und Spieltyp: z.B. „Bob spielt Damensolo", „Alice: Hochzeit", „Kontra: Armut".
+17. Die Anzeige nutzt dieselbe `animiereSoloAnkuendigung`-Funktion im `AnimationenService` wie andere Banner; Dauer ca. 1,5–2 Sekunden.
+18. Erkennungslogik in `TischSzene.ts` (`ermittleSpielankuendigung`): Wechsel von `NORMALSPIEL` → anderer Spieltyp zwischen zwei aufeinanderfolgenden App-Zuständen.
+
 ### Rundenende
 
-15. Am Ende eines Spiels wird eine **Punkteübersicht** eingeblendet.
+22. Am Ende eines Spiels wird eine **Punkteübersicht** eingeblendet.
 16. Die Übersicht zeigt: Augen pro Partei, Spielpunkte, Sonderpunkte-Aufschlüsselung.
 17. Die Übersicht bleibt sichtbar, bis der Spieler sie **explizit schließt** oder das nächste Spiel bestätigt.
 
 ### Sonderpunkt-Anzeige
 
-18. Wenn ein **Sonderpunkt** erzielt wird (Fuchs, Karlchen, Doppelkopf), erscheint ein **kurzes visuelles Feedback**.
-19. Dies kann ein **Icon** sein, das kurz aufblitzt, oder ein Text-Label.
-20. Die Anzeige dauert ca. **1–2 Sekunden** und verschwindet dann.
+25. Wenn ein **Sonderpunkt** erzielt wird (Fuchs, Karlchen, Doppelkopf), erscheint ein **kurzes visuelles Feedback**.
+26. Dies kann ein **Icon** sein, das kurz aufblitzt, oder ein Text-Label.
+27. Die Anzeige dauert ca. **1–2 Sekunden** und verschwindet dann.
 
 ### Allgemein
 
-21. Alle Animationen sind **nicht blockierend** — der Spielfluss wird nicht unterbrochen (außer bei notwendigen Pausen wie Stich-Einziehen).
-22. Animationen können über eine Einstellung **beschleunigt** oder **übersprungen** werden (für erfahrene Spieler).
-23. Animationen müssen mit dem **WebSocket-Eventfluss** synchronisiert sein.
+28. Alle Animationen sind **nicht blockierend** — der Spielfluss wird nicht unterbrochen (außer bei notwendigen Pausen wie Stich-Einziehen).
+29. Animationen können über eine Einstellung **beschleunigt** oder **übersprungen** werden (für erfahrene Spieler).
+30. Animationen müssen mit dem **WebSocket-Eventfluss** synchronisiert sein.
 
 ## Akzeptanzkriterien
 
@@ -86,7 +93,8 @@ Animationen machen das Spielerlebnis lebendig und geben visuelles Feedback zu Sp
 - [x] Performance-Test: keine Frame-Drops bei Animationen
 - [ ] Gewinn-Flash: Nameplate des Stichgewinners leuchtet kurz auf (4.16)
 - [ ] Stich-Stapel: Karten landen sichtbar auf Stapel beim Gewinner (4.16)
-- [ ] Letzter Stich umdrehen: Flip-Animation auf eigenem Stapel (4.16)
+- [x] Letzter Stich umdrehen: Klick auf eigenen Stapel deckt 4 Karten des letzten Stichs auf (implementiert — Bug #7, `letzterStichOverlay`)
+- [x] Spielansage-Flash-Banner: Spieltyp-Wechsel NORMALSPIEL→Solo/Hochzeit/Armut (`ermittleSpielankuendigung` / `animiereSoloAnkuendigung`)
 - [ ] Visuelles Review nach 4.16
 
 ## Technische Hinweise

@@ -8,6 +8,9 @@
 Nächster logischer Schritt: Task 8 (Frontend-Animationen: Stich-Visualisierung) oder Task 9 (Rundenauswertungs-Overlay).
 Offene Fragen: keine.
 
+**2026-04-06 (Plan-Run #37):** Bug #6 (KI-Karten-Timing — 800ms Verzögerung zwischen KI-Zügen in STICHPHASE bei menschlichem Mitspieler, kein Delay nach eigener Ansage), Bug #7 (Letzter-Stich-Flip per Klick auf Stich-Stapel — `letzterStichOverlay`) und Bug #8 (Spielansage-Flash-Banner bei Spieltyp-Wechsel NORMALSPIEL→Solo/Hochzeit/Armut — `ermittleSpielankuendigung`/`zeigeSpielankuendigung` in TischSzene.ts) implementiert und committed. data-testids `tischszene`, `vorbehalt-overlay`, `floating-action-bar`, `rundenauswertung-overlay`, `btn-rundenauswertung-weiter` gesetzt. E2E-Tests (`partie-gegen-ki.spec.ts`, `rundenauswertung.spec.ts`) teilweise umgestellt. **Nächster Schritt: Task 8 (E2E-Tests stabilisieren)** vor Task 9 (Animationen-Rest) — KI-Timing (800ms/Karte) macht `rundenauswertung.spec.ts` noch instabil.
+Offene Fragen: `rundenauswertung.spec.ts` Schleife bei rein-KI-Stichen noch nicht stabil.
+
 ---
 
 ## Legende
@@ -109,64 +112,54 @@ Offene Fragen: keine.
 
 ---
 
-## 8. Frontend-Animationen: Stich-Visualisierung
+## 8. E2E-Tests stabilisieren und erweitern
 
-> **Blockiert von:** nichts | **Spec:** `specs/frontend-animationen.md` DoD Zeilen 87-90, `specs/frontend-tischansicht.md` Abschnitt "Stich-Stapel beim Gewinner"
+> **Nächster Schritt** | **Spec:** `specs/e2e-tests.md` | **Hinweis:** KI-Karten-Delay (800ms/Karte in STICHPHASE) erfordert `playwright.config.ts timeout: 300_000` und ausreichende Wartezeiten in den Testschleifen
 
-- [ ] **8.1** Gewinn-Flash: Nameplate des Stichgewinners leuchtet kurz auf (Phaser-Tween, ~300ms Glow-Effekt)
-- [ ] **8.2** Stich-Stapel: Karten landen sichtbar auf Stapel beim Gewinner (nicht nur Zähler, sondern gestapelter Fächer)
-- [ ] **8.3** Letzter-Stich-Flip: Klick auf eigenen Stapel oder Taste deckt 4 Karten des letzten Stichs auf (Flip-Animation bereits teilweise vorhanden als `letzterStichOverlay`)
-- [ ] **8.4** Stichmitte: Karten "leicht überlappend und minimal rotiert" gemäß Spec — aktuell lineare Positionierung ohne Rotation
-- [ ] **8.5** Visuelles Review nach Umsetzung (Vision Loop)
+- [~] **8.1** `partie-gegen-ki.spec.ts`: data-testid-Selektoren, TypeScript-Helper (`warteAufPhase`, `warteAufEigenenZug`, `bridge`) und KI-Timing-Wartezeiten — weitgehend umgestellt
+- [~] **8.2** `rundenauswertung.spec.ts`: Vorbehalt → alle Stiche spielen → Overlay prüfen → Enter schließen — implementiert, aber Schleife bei rein-KI-Stichen (kein eigener Zug in einem `waitForFunction`-Durchlauf) noch instabil
+- [ ] **8.3** Beide Tests lokal grün gegen `mvn spring-boot:run` verifizieren
 
 ---
 
-## 9. Rundenauswertungs-Overlay (Frontend)
+## 9. Frontend-Animationen: Stich-Visualisierung
 
-> **Blockiert von:** nichts (Backend liefert bereits Spielergebnis) | **Spec:** `specs/frontend-rundenauswertung.md` | **Status: Neu**
+> **Setzt voraus:** Task 8 (E2E grün) | **Spec:** `specs/frontend-animationen.md` DoD, `specs/frontend-tischansicht.md` Abschnitt "Stich-Stapel beim Gewinner"
 
-- [ ] **9.1** Bestehendes `rundenEndeModal` in `TischSzene.ts` erweitern:
-  - Kopfzeile: Spieltyp + Spielnummer
-  - Ergebnis-Zeile: Gewinner-Partei in Akzentfarbe + Punkte
-  - Parteien-Übersicht: RE links, KONTRA rechts, Spielernamen + Augenzahl
-  - Punkte-Berechnung: Jede Regel einzeln aufgelistet (Grundwert, Ansagen, Solo-Multiplikator)
-  - Sonderpunkte: Bedingt sichtbar (Fuchs, Karlchen, Doppelkopf)
-  - Gesamtstand: Aktueller Partie-Punktestand
-- [ ] **9.2** Backend: `LetztesSpielergebnisAnsicht` / `TischAnsichtModell` um fehlende Felder erweitern falls nötig (Einzelschritte der Punkteberechnung, Sonderpunkte-Details)
-- [ ] **9.3** Partie-Ende-Overlay: Gesamtauswertung nach letztem Spiel (Tabelle mit Endstand, Gewinner, Neustart-Countdown)
-- [ ] **9.4** Keyboard: Enter schließt Overlay / Escape wird ignoriert
-- [ ] **9.5** `data-testid="rundenauswertung-overlay"` und `data-testid="btn-rundenauswertung-weiter"` setzen
-- [ ] **9.6** Visuelles Review (Vision Loop)
+- [ ] **9.1** Gewinn-Flash: Nameplate des Stichgewinners leuchtet kurz auf (Phaser-Tween, ~300ms Glow-Effekt)
+- [ ] **9.2** Stich-Stapel: Karten landen sichtbar auf Stapel beim Gewinner (nicht nur Zähler, sondern gestapelter Fächer)
+- [x] **9.3** Letzter-Stich-Flip: Klick auf eigenen Stapel oder Taste deckt 4 Karten des letzten Stichs auf (implementiert — Bug #7, `letzterStichOverlay` in TischSzene.ts)
+- [ ] **9.4** Stichmitte: Karten „leicht überlappend und minimal rotiert" gemäß Spec — aktuell lineare Positionierung ohne Rotation
+- [ ] **9.5** Visuelles Review nach Umsetzung (Vision Loop)
 
 ---
 
-## 10. data-testid-Attribute (Frontend)
+## 10. Rundenauswertungs-Overlay (Frontend)
 
-> **Blockiert:** 11 (E2E-Tests) | **Spec:** `specs/e2e-tests.md` Abschnitt "data-testid-Attribute"
+> **Status: Größtenteils implementiert** | **Spec:** `specs/frontend-rundenauswertung.md`
 
-Bereits gesetzt (6): `input-tischname`, `btn-tisch-erstellen`, `hud-stichzaehler`, `hud-spieltyp`, `btn-spiel-starten`, `hud-btn-einstellungen`
-
-Fehlend (10):
-- [ ] **10.1** `startscreen` — Wurzel-Container der SpielverwaltungsSzene
-- [ ] **10.2** `btn-neuer-tisch` — "+ Neuen Tisch erstellen"-Button
-- [ ] **10.3** `btn-offene-tische` — "Offene Tische"-Button
-- [ ] **10.4** `btn-session-recovery` — "Zurück zu [Tischname]"-Button
-- [ ] **10.5** `tisch-config-modal` — Konfigurations-Modal-Container
-- [ ] **10.6** `tischszene` — TischSzene Wurzel-Container
-- [ ] **10.7** `einstellungen-modal` — Einstellungs-Modal
-- [ ] **10.8** `vorbehalt-overlay` — Vorbehalt-Overlay
-- [ ] **10.9** `floating-action-bar` — Floating Action Bar
-- [ ] **10.10** `rundenauswertung-overlay` + `btn-rundenauswertung-weiter` — siehe Task 9.5
+- [x] **10.1** Rundenauswertungs-Overlay implementiert: Kopfzeile (Spieltyp + Spielnummer), Ergebnis-Zeile (Gewinner-Partei + Punkte), Weiter-Button
+- [x] **10.2** Backend-Felder ausreichend — keine Erweiterung von `LetztesSpielergebnisAnsicht` / `TischAnsichtModell` nötig
+- [ ] **10.3** Partie-Ende-Overlay: Gesamtauswertung nach letztem Spiel (Tabelle mit Endstand, Gewinner, Neustart-Countdown)
+- [x] **10.4** Keyboard: Enter schließt Overlay / Escape wird ignoriert
+- [x] **10.5** `data-testid="rundenauswertung-overlay"` und `data-testid="btn-rundenauswertung-weiter"` gesetzt
+- [ ] **10.6** Visuelles Review (Vision Loop)
 
 ---
 
-## 11. E2E-Tests aktualisieren
+## 11. data-testid-Attribute (Frontend)
 
-> **Blockiert von:** 10 (data-testid), 9 (Rundenauswertung) | **Spec:** `specs/e2e-tests.md`
+> **Spec:** `specs/e2e-tests.md` Abschnitt "data-testid-Attribute"
 
-- [ ] **11.1** `partie-gegen-ki.spec.ts`: Auf data-testid-Selektoren und Tastatursteuerung umstellen (alte Button-Text-Selektoren entfernen)
-- [ ] **11.2** `rundenauswertung.spec.ts`: Komplett implementieren gemäß Spec Testfall 2 (alle Karten per Enter spielen, Rundenauswertungs-Overlay prüfen)
-- [ ] **11.3** Beide Tests lokal grün gegen `mvn spring-boot:run` verifizieren
+Bereits gesetzt (11): `input-tischname`, `btn-tisch-erstellen`, `hud-stichzaehler`, `hud-spieltyp`, `btn-spiel-starten`, `hud-btn-einstellungen`, `tischszene`, `vorbehalt-overlay`, `floating-action-bar`, `rundenauswertung-overlay`, `btn-rundenauswertung-weiter`
+
+Fehlend (6):
+- [ ] **11.1** `startscreen` — Wurzel-Container der SpielverwaltungsSzene
+- [ ] **11.2** `btn-neuer-tisch` — „+ Neuen Tisch erstellen"-Button
+- [ ] **11.3** `btn-offene-tische` — „Offene Tische"-Button
+- [ ] **11.4** `btn-session-recovery` — „Zurück zu [Tischname]"-Button (wenn vorhanden)
+- [ ] **11.5** `tisch-config-modal` — Konfigurations-Modal-Container
+- [ ] **11.6** `einstellungen-modal` — Einstellungs-Modal
 
 ---
 

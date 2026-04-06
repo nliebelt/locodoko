@@ -161,17 +161,10 @@ while true; do
         now=$(date +%s)
         sleep_secs=$(( resets_at - now + 30 ))  # +30s Puffer
         reset_human=$(date -d "@$resets_at" 2>/dev/null || date -r "$resets_at" 2>/dev/null)
-        if [ "$sleep_secs" -le 0 ]; then
-            # Reset liegt bereits in der Vergangenheit — kein echtes (aktuelles) Rate Limit
-            echo ""
-            echo "━━━ Rate Limit (Reset bereits vergangen um $reset_human) — sofort weiter ━━━"
-            continue
-        fi
         echo ""
-        echo "━━━ Rate Limit (Tageskontingent erschöpft) — Reset um $reset_human (in ${sleep_secs}s) ━━━"
-        echo "    Tipp: Prüfe vorherigen Claude-Nutzung desselben Tages (interaktiv + API)."
+        echo "━━━ Rate Limit — Reset um $reset_human (in ${sleep_secs}s) ━━━"
         ITERATION=$((ITERATION - 1))
-        sleep "$sleep_secs"
+        sleep "$(( sleep_secs > 0 ? sleep_secs : 60 ))"
         echo "━━━ Quota reset — weiter ━━━"
         echo ""
         continue

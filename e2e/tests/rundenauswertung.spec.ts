@@ -67,33 +67,68 @@ async function meldeVorbehalt(page: Page, vorbehalt: string): Promise<void> {
 
 test.describe('Rundenauswertung', () => {
   test('Rundenauswertungs-Overlay erscheint nach Spielende und kann geschlossen werden', async ({ page }) => {
-    test.setTimeout(120_000);
+    test.setTimeout(300_000);
 
     // ── 1. Lobby → Quick Game ─────────────────────────────────────────────────
     await page.goto('/');
     await expect(page.locator('button', { hasText: /Quick Game/i })).toBeVisible({ timeout: 20_000 });
     await page.locator('button', { hasText: /Quick Game/i }).click();
+    // Warten bis TischSzene vollstaendig geladen ist — stellt sicher dass der
+    // Phaser-Keyboard-Handler (document.addEventListener) registriert ist,
+    // bevor Tastendrucke fuer Vorbehalt/Karten gesendet werden.
+    // Warum: Quick Game startet Spiel sofort nach oeffneTisch() — ohne diesen
+    // Wait koennte create() noch nicht ausgefuehrt worden sein.
+    await expect(
+      page.locator('[data-testid="tischszene"]'),
+      'TischSzene muss geladen sein bevor Tastatureingaben moeglich sind',
+    ).toBeVisible({ timeout: 15_000 });
 
     // ── 2. Vorbehalt-Phase durchlaufen ───────────────────────────────────────
     await warteAufPhase(page, 'VORBEHALT_ANSAGE', 20_000);
     await warteAufEigenenVorbehalt(page, 20_000);
     await meldeVorbehalt(page, 'GESUND');
 
-    // ── 3. Alle 12 Stiche spielen (Karten über API ausspielen) ───────────────
-    for (let stich = 0; stich < 12; stich++) {
-      try {
-        await warteAufEigenenZug(page, 25_000);
-        await spieleErsteHandkarte(page);
-        // kurz warten damit Stich-Animation und KI-Züge durchlaufen
-        await page.waitForTimeout(1500);
-      } catch {
-        // Kein eigener Zug mehr — KI hat letzten Stich übernommen
-        break;
-      }
+    // ── 3. Alle 12 Stiche spielen bis Overlay erscheint ─────────────────────
+    // Strategie: Kombiniertes waitForFunction — wartet auf "Overlay sichtbar"
+    // ODER "eigener Zug" (spielbareKarten > 0 in STICHPHASE). Bei eigenem Zug
+    // wird Enter gedrueckt (auto-Selektion setzt tastaturKarteIndex = 0).
+    // Warum dieser Ansatz: Einfacher Poll-Loop fuehrt bei schnellen Uebergaengen
+    // zu verpassten Zuegen oder falschen Spieler-Zuordnungen.
+
+    const overlay = page.locator('[data-testid="rundenauswertung-overlay"]');
+
+    // Strategie: Warte auf "Overlay sichtbar" ODER "eigener Zug verfuegbar" mit grossem
+    // Timeout (120s) fuer die gesamte Spielphase. Bei eigenem Zug: Enter druecken und
+    // 3.5s warten (Kartenanimation + bis zu 3 KI-Karten a 800ms). Loop laeuft bis
+    // Overlay erscheint oder max 15 Iterationen (mehr als genug fuer 12 Stiche).
+    for (let versuch = 0; versuch < 15; versuch++) {
+      if (await overlay.isVisible()) break;
+
+      // Kombiniert warten: Overlay ODER eigener Zug.
+      // Timeout 120s: fuer rein-KI-Stiche (3x 800ms + Overhead) reicht das sicher.
+      const ereignis = await page.waitForFunction(
+        (): string | null => {
+          const el = document.querySelector('[data-testid="rundenauswertung-overlay"]') as HTMLElement | null;
+          if (el && !el.hidden) return 'overlay';
+          interface B { appStore: { snapshot: () => { partieStand?: { laufendesSpiel?: { spielbareKarten?: unknown[]; phase?: string } } } } }
+          const loco = (window as unknown as Record<string, B>)['__locodoko'];
+          const spiel = loco?.appStore?.snapshot()?.partieStand?.laufendesSpiel;
+          if (spiel?.phase === 'STICHPHASE' && (spiel?.spielbareKarten?.length ?? 0) > 0) return 'zug';
+          return null;
+        },
+        { timeout: 120_000 }
+      ).then((h) => h.jsonValue() as Promise<string>).catch(() => 'timeout');
+
+      if (ereignis === 'overlay' || ereignis === 'timeout') break;
+
+      // Eigener Zug: Enter spielt die auto-ausgewaehlte Karte (tastaturKarteIndex = 0)
+      await page.keyboard.press('Enter');
+      // Pause fuer Kartenanimation (400ms Tween) + KI-Verarbeitung mit 800ms-Delays.
+      // Mit bis zu 3 KI-Karten a 800ms benoetigen wir 2.4s KI-Zeit + Puffer.
+      await page.waitForTimeout(3_500);
     }
 
     // ── 4. Rundenauswertungs-Overlay prüfen ──────────────────────────────────
-    const overlay = page.locator('[data-testid="rundenauswertung-overlay"]');
     await expect(overlay).toBeVisible({ timeout: 30_000 });
 
     // Kopfzeile: enthält Spieltyp und Spielnummer
