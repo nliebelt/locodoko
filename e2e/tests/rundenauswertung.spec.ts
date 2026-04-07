@@ -97,29 +97,65 @@ test.describe('Rundenauswertung', () => {
 
     const overlay = page.locator('[data-testid="rundenauswertung-overlay"]');
 
-    // Strategie: Warte auf "Overlay sichtbar" ODER "eigener Zug verfuegbar" mit grossem
-    // Timeout (120s) fuer die gesamte Spielphase. Bei eigenem Zug: Enter druecken und
-    // 3.5s warten (Kartenanimation + bis zu 3 KI-Karten a 800ms). Loop laeuft bis
-    // Overlay erscheint oder max 15 Iterationen (mehr als genug fuer 12 Stiche).
-    for (let versuch = 0; versuch < 15; versuch++) {
+    // MutationObserver-basierter Watcher: erkennt Overlay-Erscheinen sofort (nicht Polling).
+    // Wird parallel zum Karten-Loop gestartet — loest auf sobald hidden=false gesetzt wird,
+    // auch wenn das Overlay millisekunden spaeter wieder geschlossen wird (Race-Schutz).
+    const overlayWatcher = page.waitForSelector(
+      '[data-testid="rundenauswertung-overlay"]',
+      { state: 'visible', timeout: 240_000 }
+    );
+
+    // Strategie: Kombiniertes waitForFunction mit kurzem Polling-Intervall.
+    // Wartet auf "Overlay sichtbar" ODER "eigener Zug" (STICHPHASE + spielbareKarten > 0).
+    // polling: 200ms — erkennt Zustandsaenderungen schnell (nicht erst nach mehreren Sekunden).
+    // timeout: 4s — bei rein-KI-Stichen (kein eigener Zug, kein Overlay) laeuft der Timeout
+    //   nach 4s ab statt nach 30s; die naechste Iteration pollt erneut. So entstehen keine
+    //   langen Blockaden, wenn die KI mehrere Karten in Folge spielt (3 KI x 800ms = 2,4s).
+    // Limit 60: Mit 4s Timeout pro KI-Stich und bis zu 12 Stichen 48s Puffer, plus eigene
+    //   Zuege — bleibt weit unter dem aeusseren 300s-Timeout.
+    for (let versuch = 0; versuch < 60; versuch++) {
       if (await overlay.isVisible()) break;
 
-      // Kombiniert warten: Overlay ODER eigener Zug.
-      // Timeout 120s: fuer rein-KI-Stiche (3x 800ms + Overhead) reicht das sicher.
+      interface B { appStore: { snapshot: () => { partieStand?: { laufendesSpiel?: { spielbareKarten?: unknown[]; phase?: string } } } } }
       const ereignis = await page.waitForFunction(
         (): string | null => {
           const el = document.querySelector('[data-testid="rundenauswertung-overlay"]') as HTMLElement | null;
           if (el && !el.hidden) return 'overlay';
-          interface B { appStore: { snapshot: () => { partieStand?: { laufendesSpiel?: { spielbareKarten?: unknown[]; phase?: string } } } } }
           const loco = (window as unknown as Record<string, B>)['__locodoko'];
           const spiel = loco?.appStore?.snapshot()?.partieStand?.laufendesSpiel;
           if (spiel?.phase === 'STICHPHASE' && (spiel?.spielbareKarten?.length ?? 0) > 0) return 'zug';
           return null;
         },
-        { timeout: 120_000 }
+        { timeout: 4_000, polling: 200 }
       ).then((h) => h.jsonValue() as Promise<string>).catch(() => 'timeout');
 
-      if (ereignis === 'overlay' || ereignis === 'timeout') break;
+      // Debug: Spielzustand bei Timeout loggen
+      if (ereignis === 'timeout') {
+        const dbgState = await page.evaluate(() => {
+          interface B2 { appStore: { snapshot: () => { partieStand?: { laufendesSpiel?: { spielbareKarten?: unknown[]; phase?: string } } } } }
+          const loco = (window as unknown as Record<string, B2>)['__locodoko'];
+          const spiel = loco?.appStore?.snapshot()?.partieStand?.laufendesSpiel;
+          const el = document.querySelector('[data-testid="rundenauswertung-overlay"]') as HTMLElement | null;
+          return {
+            phase: spiel?.phase ?? 'n/a',
+            karten: spiel?.spielbareKarten?.length ?? -1,
+            overlayHidden: el?.hidden,
+          };
+        }).catch(() => ({ phase: 'error', karten: -1, overlayHidden: undefined }));
+        console.log(`[rundenauswertung] TIMEOUT state: phase=${dbgState.phase} karten=${dbgState.karten} overlayHidden=${String(dbgState.overlayHidden)}`);
+      }
+
+      console.log(`[rundenauswertung] versuch=${versuch} ereignis=${ereignis}`);
+
+      // Overlay: Schleife beenden.
+      // Timeout: NICHT abbrechen — KI koennte kurz geblockt haben; naechste Iteration versucht es erneut.
+      if (ereignis === 'overlay') break;
+      if (ereignis === 'timeout') continue;
+
+      // Race-Condition-Schutz: Overlay koennte zwischen waitForFunction-Rueckgabe und
+      // dem Enter-Tastendruck erschienen sein (CDP-Latenz ~10-50ms). Ein zweiter Check
+      // verhindert dass Enter das Overlay schliesst statt eine Karte zu spielen.
+      if (await overlay.isVisible()) break;
 
       // Eigener Zug: Enter spielt die auto-ausgewaehlte Karte (tastaturKarteIndex = 0)
       await page.keyboard.press('Enter');
@@ -129,7 +165,10 @@ test.describe('Rundenauswertung', () => {
     }
 
     // ── 4. Rundenauswertungs-Overlay prüfen ──────────────────────────────────
-    await expect(overlay).toBeVisible({ timeout: 30_000 });
+    // overlayWatcher (MutationObserver) hat das Erscheinen bereits registriert
+    // oder wartet noch darauf. Zuverlässiger als nur expect().toBeVisible().
+    await overlayWatcher;
+    await expect(overlay).toBeVisible({ timeout: 10_000 });
 
     // Kopfzeile: enthält Spieltyp und Spielnummer
     const titel = overlay.locator('h2');

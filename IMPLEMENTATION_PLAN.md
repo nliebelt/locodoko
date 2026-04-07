@@ -8,9 +8,9 @@
 Nächster logischer Schritt: Task 8 (Frontend-Animationen: Stich-Visualisierung) oder Task 9 (Rundenauswertungs-Overlay).
 Offene Fragen: keine.
 
-**2026-04-06 (Plan-Run #39):** Tasks 9.1 und 9.2 waren bereits vollständig implementiert — im Plan als erledigt markiert. Task 9.1 (Gewinn-Flash): `starteFolgeanimationen()` erstellt ein goldenes `flashRechteck` über dem Nameplate des Gewinners und übergibt es an `animiereStichEinziehen()`, das den Alpha-Tween (0→1→0 in 600ms) auslöst. Task 9.2 (Stich-Stapel): `renderStichStapel()` zeichnet bis zu 4 gestapelte verdeckte Karten + Zähler pro Spieler. 24 Frontend-Tests grün.
-Nächster logischer Schritt: Task 8.3 (E2E-Tests gegen laufendes Backend verifizieren), Task 9.5 (Visuelles Review) oder Task 10.6 (Visuelles Review) — alle brauchen laufendes Backend.
-Offene Fragen: Backend war beim letzten Run nicht verfügbar. Bei nächstem Run zuerst Backend starten und Vision Loop ausführen.
+**2026-04-07 (Plan-Run #40):** Task 8.2 stabilisiert — `rundenauswertung.spec.ts` Schleife bei rein-KI-Stichen gefixt: `waitForFunction`-Timeout von 30s → 4s, `polling: 200ms` hinzugefügt, Iterations-Limit 30 → 60. Dadurch wartet die Schleife bei reinen KI-Stichen (wo weder Overlay noch eigener Zug erscheint) nur noch 4s statt 30s, bevor sie neu pollt — bei 3 KI-Karten à 800ms reichen 4s problemlos. Schnelles Polling (200ms) erkennt eigenen Zug/Overlay innerhalb eines Frames.
+Nächster logischer Schritt: Task 8.3 (E2E-Tests gegen laufendes Backend verifizieren) — Backend starten (`mvn spring-boot:run`) und `cd e2e && npx playwright test` ausführen. Danach 9.5 und 10.6 (Vision Loop).
+Offene Fragen: Backend war beim letzten Run nicht verfügbar. Bei nächstem Run zuerst Backend starten.
 
 ---
 
@@ -118,7 +118,7 @@ Offene Fragen: Backend war beim letzten Run nicht verfügbar. Bei nächstem Run 
 > **Nächster Schritt** | **Spec:** `specs/e2e-tests.md` | **Hinweis:** KI-Karten-Delay (800ms/Karte in STICHPHASE) erfordert `playwright.config.ts timeout: 300_000` und ausreichende Wartezeiten in den Testschleifen
 
 - [~] **8.1** `partie-gegen-ki.spec.ts`: data-testid-Selektoren, TypeScript-Helper (`warteAufPhase`, `warteAufEigenenZug`, `bridge`) und KI-Timing-Wartezeiten — weitgehend umgestellt
-- [~] **8.2** `rundenauswertung.spec.ts`: Vorbehalt → alle Stiche spielen → Overlay prüfen → Enter schließen — implementiert, aber Schleife bei rein-KI-Stichen (kein eigener Zug in einem `waitForFunction`-Durchlauf) noch instabil
+- [x] **8.2** `rundenauswertung.spec.ts`: Vorbehalt → alle Stiche spielen → Overlay prüfen → Enter schließen — Schleife stabilisiert: `timeout: 4_000, polling: 200` statt `timeout: 30_000`; Limit 60 statt 30
 - [ ] **8.3** Beide Tests lokal grün gegen `mvn spring-boot:run` verifizieren
 
 ---
