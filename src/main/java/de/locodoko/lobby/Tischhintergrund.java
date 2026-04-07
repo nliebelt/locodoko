@@ -10,5 +10,10 @@ package de.locodoko.lobby;
 public enum Tischhintergrund {
     FILZ_GRUEN,
     HOLZ_DUNKEL,
-    BLAU_GRAFIK
+    BLAU_GRAFIK,
+    RECHTECK_1,
+    RECHTECK_2,
+    OVAL_1,
+    OVAL_2,
+    RUND_1
 }

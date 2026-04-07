@@ -211,9 +211,14 @@ export class SpielverwaltungsSzene extends Phaser.Scene {
       <div class="neo-form-group">
         <label>Tischhintergrund</label>
         <select id="tisch-hintergrund" class="neo-select">
-          <option value="FILZ_GRUEN" selected>Grüner Filz</option>
+          <option value="FILZ_GRUEN">Grüner Filz</option>
           <option value="HOLZ_DUNKEL">Dunkles Holz</option>
           <option value="BLAU_GRAFIK">Blaue Grafik</option>
+          <option value="RECHTECK_1">Rechteck 1</option>
+          <option value="RECHTECK_2">Rechteck 2</option>
+          <option value="OVAL_1">Oval 1</option>
+          <option value="OVAL_2" selected>Oval 2</option>
+          <option value="RUND_1">Rund 1</option>
         </select>
       </div>
       <div class="neo-modal-actions">

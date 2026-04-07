@@ -75,7 +75,7 @@ export interface TischAntwort {
 }
 
 export type SpielerPosition = 'NORD' | 'OST' | 'SUED' | 'WEST';
-export type Tischhintergrund = 'FILZ_GRUEN' | 'HOLZ_DUNKEL' | 'BLAU_GRAFIK';
+export type Tischhintergrund = 'FILZ_GRUEN' | 'HOLZ_DUNKEL' | 'BLAU_GRAFIK' | 'RECHTECK_1' | 'RECHTECK_2' | 'OVAL_1' | 'OVAL_2' | 'RUND_1';
 export type KiSchwierigkeit = 'LEICHT' | 'STANDARD' | 'SCHWER';
 export type PartieStatus = 'LAUFEND' | 'BEENDET';
 export type Spieltyp =

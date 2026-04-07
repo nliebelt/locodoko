@@ -93,7 +93,7 @@ class TischControllerTest {
             .andExpect(jsonPath("$.status").value(TischStatus.WARTEND.name()))
             .andExpect(jsonPath("$.spieler.length()").value(1))
             .andExpect(jsonPath("$.konfiguration.anzahlSpiele").value(24))
-            .andExpect(jsonPath("$.konfiguration.tischhintergrund").value(Tischhintergrund.FILZ_GRUEN.name()))
+            .andExpect(jsonPath("$.konfiguration.tischhintergrund").value(Tischhintergrund.OVAL_2.name()))
             .andReturn();
 
         TischAntwort antwort = objectMapper.readValue(ergebnis.getResponse().getContentAsByteArray(), TischAntwort.class);
@@ -183,7 +183,7 @@ class TischControllerTest {
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.ohneNeunen").value(true))
             .andExpect(jsonPath("$.anzahlSpiele").value(24))
-            .andExpect(jsonPath("$.tischhintergrund").value(Tischhintergrund.FILZ_GRUEN.name()));
+            .andExpect(jsonPath("$.tischhintergrund").value(Tischhintergrund.OVAL_2.name()));
 
         TischKonfigurationDto neueKonfiguration = new TischKonfigurationDto(
             true,

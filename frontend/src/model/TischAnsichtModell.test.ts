@@ -32,7 +32,7 @@ describe('erstelleStandardTischAnsicht', () => {
     const modell = erstelleStandardTischAnsicht('Spieler Sued');
 
     expect(modell.debugModus).toBe(false);
-    expect(modell.tischhintergrund).toBe('FILZ_GRUEN');
+    expect(modell.tischhintergrund).toBe('OVAL_2');
     expect(modell.spieler).toHaveLength(4);
     expect(modell.spieler[0]).toMatchObject({ position: 'SUED', name: 'Spieler Sued', istMensch: true, istSelbst: true });
     expect(modell.spieler.slice(1).map((spieler) => spieler.position)).toEqual(['WEST', 'NORD', 'OST']);

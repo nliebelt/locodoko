@@ -3,6 +3,11 @@ import type Phaser from 'phaser';
 export const TEXTUR_FILZ = 'filz-hintergrund';
 export const TEXTUR_HOLZ_DUNKEL = 'holz-dunkel-hintergrund';
 export const TEXTUR_BLAU_GRAFIK = 'blau-grafik-hintergrund';
+export const TEXTUR_BILD_RECHTECK_1 = 'hintergrund-rechteck-1';
+export const TEXTUR_BILD_RECHTECK_2 = 'hintergrund-rechteck-2';
+export const TEXTUR_BILD_OVAL_1 = 'hintergrund-oval-1';
+export const TEXTUR_BILD_OVAL_2 = 'hintergrund-oval-2';
+export const TEXTUR_BILD_RUND_1 = 'hintergrund-rund-1';
 export const TEXTUR_KARTE_OFFEN = 'karte-offen';
 export const TEXTUR_KARTE_VERDECKT = 'karte-verdeckt';
 export const TEXTUR_KARTE_RUECKSEITE = 'card_back';
@@ -65,6 +70,25 @@ export function ladeKartenBilderVorab(szene: Phaser.Scene): void {
   // Kartenrücken als separates SVG laden
   if (!szene.textures.exists(TEXTUR_KARTE_RUECKSEITE)) {
     szene.load.image(TEXTUR_KARTE_RUECKSEITE, '/assets/cards/card_back.svg');
+  }
+}
+
+/**
+ * Laedt alle 5 Foto-Hintergrundbilder aus /assets/backgrounds/ in den Phaser-Preloader.
+ * Muss in der preload()-Methode der Szene aufgerufen werden.
+ */
+export function ladeHintergrundbilder(szene: Phaser.Scene): void {
+  const bilder: [string, string][] = [
+    [TEXTUR_BILD_RECHTECK_1, 'background_rectangle1.png'],
+    [TEXTUR_BILD_RECHTECK_2, 'background_rectangle2.png'],
+    [TEXTUR_BILD_OVAL_1, 'background_oval1.png'],
+    [TEXTUR_BILD_OVAL_2, 'background_oval2.png'],
+    [TEXTUR_BILD_RUND_1, 'background_round1.png'],
+  ];
+  for (const [schluessel, dateiname] of bilder) {
+    if (!szene.textures.exists(schluessel)) {
+      szene.load.image(schluessel, `/assets/backgrounds/${dateiname}`);
+    }
   }
 }
 

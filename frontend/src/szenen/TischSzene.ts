@@ -1,9 +1,15 @@
 import Phaser from 'phaser';
 
 import {
+  TEXTUR_BILD_OVAL_1,
+  TEXTUR_BILD_OVAL_2,
+  TEXTUR_BILD_RECHTECK_1,
+  TEXTUR_BILD_RECHTECK_2,
+  TEXTUR_BILD_RUND_1,
   TEXTUR_BLAU_GRAFIK,
   TEXTUR_FILZ,
   TEXTUR_HOLZ_DUNKEL,
+  ladeHintergrundbilder,
   ladeKartenBilderVorab
 } from '../assets/AssetLoader';
 import { Kartenansicht } from '../assets/Kartenansicht';
@@ -177,8 +183,17 @@ function texturFuerTischhintergrund(tischhintergrund: Tischhintergrund): string 
   return ({
     FILZ_GRUEN: TEXTUR_FILZ,
     HOLZ_DUNKEL: TEXTUR_HOLZ_DUNKEL,
-    BLAU_GRAFIK: TEXTUR_BLAU_GRAFIK
+    BLAU_GRAFIK: TEXTUR_BLAU_GRAFIK,
+    RECHTECK_1: TEXTUR_BILD_RECHTECK_1,
+    RECHTECK_2: TEXTUR_BILD_RECHTECK_2,
+    OVAL_1: TEXTUR_BILD_OVAL_1,
+    OVAL_2: TEXTUR_BILD_OVAL_2,
+    RUND_1: TEXTUR_BILD_RUND_1,
   } as Record<Tischhintergrund, string>)[tischhintergrund];
+}
+
+function istBildHintergrund(bg: Tischhintergrund): boolean {
+  return bg === 'RECHTECK_1' || bg === 'RECHTECK_2' || bg === 'OVAL_1' || bg === 'OVAL_2' || bg === 'RUND_1';
 }
 
 /** Lesbares Label fuer die KI-Schwierigkeitsstufe (fuer Badges und Anzeige). */
@@ -235,7 +250,7 @@ export class TischSzene extends Phaser.Scene {
 
   private letzterZustand?: AppZustand;
 
-  private hintergrund?: Phaser.GameObjects.TileSprite;
+  private hintergrund?: Phaser.GameObjects.TileSprite | Phaser.GameObjects.Image;
 
   private tischEbene?: Phaser.GameObjects.Container;
 
@@ -340,6 +355,7 @@ export class TischSzene extends Phaser.Scene {
    */
   preload(): void {
     ladeKartenBilderVorab(this);
+    ladeHintergrundbilder(this);
   }
 
   /**
@@ -360,13 +376,7 @@ export class TischSzene extends Phaser.Scene {
       snapshot.partieStand,
       snapshot.debugModus
     );
-    this.hintergrund = this.add.tileSprite(
-      breite / 2,
-      hoehe / 2,
-      breite,
-      hoehe,
-      texturFuerTischhintergrund(anfangsModell.tischhintergrund)
-    );
+    this.aktualisiereHintergrund(anfangsModell.tischhintergrund, breite, hoehe);
     this.animationen = new AnimationenService(this);
     this.baueUi();
     // Gespeicherte Animations-Geschwindigkeit wiederherstellen
@@ -502,6 +512,11 @@ export class TischSzene extends Phaser.Scene {
           <option value="FILZ_GRUEN">Gruener Filz</option>
           <option value="HOLZ_DUNKEL">Dunkles Holz</option>
           <option value="BLAU_GRAFIK">Blaue Grafik</option>
+          <option value="RECHTECK_1">Rechteck 1</option>
+          <option value="RECHTECK_2">Rechteck 2</option>
+          <option value="OVAL_1">Oval 1</option>
+          <option value="OVAL_2">Oval 2</option>
+          <option value="RUND_1">Rund 1</option>
         </select>
       </div>
       <div class="ui-section">
@@ -824,10 +839,7 @@ export class TischSzene extends Phaser.Scene {
     const mitteY = hoehe / 2;
     const tischBreite = Math.min(breite * 0.76, 980);
     const tischHoehe = Math.min(hoehe * 0.74, 530);
-    this.hintergrund
-      ?.setTexture(texturFuerTischhintergrund(modell.tischhintergrund))
-      .setPosition(mitteX, mitteY)
-      .setSize(breite, hoehe);
+    this.aktualisiereHintergrund(modell.tischhintergrund, breite, hoehe);
 
     const ebene = this.add.container(0, 0);
     ebene.add(this.add.ellipse(mitteX, mitteY, tischBreite, tischHoehe, 0x081c15, 0.32).setStrokeStyle(8, 0xd8f3dc, 0.42));
@@ -2300,6 +2312,30 @@ export class TischSzene extends Phaser.Scene {
 
   // ── Tastatursteuerung ───────────────────────────────────────────────────────
 
+  /**
+   * Erstellt oder aktualisiert das Hintergrund-Objekt.
+   * Prozedurale Texturen werden als TileSprite gerendert (gekachelt),
+   * Foto-Hintergruende als Image mit Cover-Skalierung.
+   */
+  private aktualisiereHintergrund(bg: Tischhintergrund, breite: number, hoehe: number): void {
+    const textur = texturFuerTischhintergrund(bg);
+    if (istBildHintergrund(bg)) {
+      if (this.hintergrund instanceof Phaser.GameObjects.Image && this.hintergrund.texture.key === textur) {
+        this.hintergrund.setPosition(breite / 2, hoehe / 2).setDisplaySize(breite, hoehe);
+        return;
+      }
+      this.hintergrund?.destroy();
+      this.hintergrund = this.add.image(breite / 2, hoehe / 2, textur).setDisplaySize(breite, hoehe).setDepth(0);
+    } else {
+      if (this.hintergrund instanceof Phaser.GameObjects.TileSprite && this.hintergrund.texture.key === textur) {
+        this.hintergrund.setPosition(breite / 2, hoehe / 2).setSize(breite, hoehe);
+        return;
+      }
+      this.hintergrund?.destroy();
+      this.hintergrund = this.add.tileSprite(breite / 2, hoehe / 2, breite, hoehe, textur).setDepth(0);
+    }
+  }
+
   /** Registriert den globalen Tastatur-Handler auf document. Wird einmalig in create() aufgerufen. */
   private registriereTastaturHandler(): void {
     this.tastaturHandler = (e: KeyboardEvent) => this.verarbeiteTastatureingabe(e);
@@ -2606,7 +2642,11 @@ export class TischSzene extends Phaser.Scene {
   private handleResize(): void {
     const breite = this.scale.gameSize.width;
     const hoehe = this.scale.gameSize.height;
-    this.hintergrund?.setPosition(breite / 2, hoehe / 2).setSize(breite, hoehe);
+    if (this.hintergrund instanceof Phaser.GameObjects.Image) {
+      this.hintergrund.setPosition(breite / 2, hoehe / 2).setDisplaySize(breite, hoehe);
+    } else {
+      this.hintergrund?.setPosition(breite / 2, hoehe / 2).setSize(breite, hoehe);
+    }
     if (this.letzterZustand?.bereich === 'TISCH') {
       this.renderTisch(this.letzterZustand);
     }

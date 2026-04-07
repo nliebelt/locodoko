@@ -20,7 +20,7 @@ public class TischkonfigurationEmbeddable {
 
     private boolean ohneNeunen = false;
 
-    private Tischhintergrund tischhintergrund = Tischhintergrund.FILZ_GRUEN;
+    private Tischhintergrund tischhintergrund = Tischhintergrund.OVAL_2;
 
     private boolean hochzeitErlaubt = true;
     private boolean armutErlaubt = true;
@@ -111,7 +111,7 @@ public class TischkonfigurationEmbeddable {
     }
 
     public static TischkonfigurationEmbeddable ausSpielregeln(Spielregeln spielregeln, int anzahlSpiele) {
-        return ausSpielregeln(spielregeln, anzahlSpiele, Tischhintergrund.FILZ_GRUEN);
+        return ausSpielregeln(spielregeln, anzahlSpiele, Tischhintergrund.OVAL_2);
     }
 
     public static TischkonfigurationEmbeddable ausSpielregeln(
