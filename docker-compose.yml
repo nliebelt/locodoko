@@ -37,5 +37,5 @@ services:
       - seccomp:unconfined
 
     # Expose a port if the agent runs a local HTTP server or API.
-    # ports:
-    #   - "8080:8080"
+    ports:
+      - "8080:8080"

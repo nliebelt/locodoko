@@ -162,6 +162,7 @@ export interface LaufendesSpielAntwort {
   ansageHistorie: AnsageEreignisAntwort[];
   moeglicheAnsagen: Ansage[];
   moeglicheVorbehalte: VorbehaltAnsage[];
+  istBockrunde: boolean;
 }
 
 export interface AbgeschlossenerStichAntwort {

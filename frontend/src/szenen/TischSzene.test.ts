@@ -437,6 +437,7 @@ function baueLaufendesSpiel(optionen: Partial<LaufendesSpielAntwort> = {}): Lauf
     ansageHistorie: [],
     moeglicheAnsagen: [],
     moeglicheVorbehalte: [],
+    istBockrunde: false,
     ...optionen
   };
 }

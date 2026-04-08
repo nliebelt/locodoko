@@ -89,102 +89,101 @@ test.describe('Rundenauswertung', () => {
     await meldeVorbehalt(page, 'GESUND');
 
     // ── 3. Alle 12 Stiche spielen bis Overlay erscheint ─────────────────────
-    // Strategie: Kombiniertes waitForFunction — wartet auf "Overlay sichtbar"
-    // ODER "eigener Zug" (spielbareKarten > 0 in STICHPHASE). Bei eigenem Zug
-    // wird Enter gedrueckt (auto-Selektion setzt tastaturKarteIndex = 0).
-    // Warum dieser Ansatz: Einfacher Poll-Loop fuehrt bei schnellen Uebergaengen
-    // zu verpassten Zuegen oder falschen Spieler-Zuordnungen.
+    // Strategie: Kombiniertes waitForFunction mit Polling — erkennt:
+    //   'overlay'   → Rundenauswertungs-Overlay erschienen (Spiel beendet)
+    //   'vorbehalt' → Eigener Vorbehalt ausstehend (Spiel 2+)
+    //   'zug'       → Eigene spielbare Karte in STICHPHASE
+    // Warum 30s Timeout: KI-Karten haben 800ms Delay je Karte; bei rein-KI-Stichen
+    //   (3 Karten × 800ms = 2.4s) plus Vorbehalt-Phasen zwischen Spielen reichen
+    //   10s zu knapp. 30s gibt ausreichend Puffer auch fuer komplexe Spieltypen.
+    // Warum kein festes waitForTimeout nach Enter: Die naechste waitForFunction-Iteration
+    //   wartet von selbst bis der naechste Zustand eintritt — kein blindes Schlafen noetig.
+    // 30-Augen-Pflichtansage (locoBlatRegeln): muss vor Karte-Spielen gemacht werden;
+    //   Backend wirft Exception wenn spielbareKarten > 0 aber Pflichtansage noch aussteht.
 
     const overlay = page.locator('[data-testid="rundenauswertung-overlay"]');
 
-    // MutationObserver-basierter Watcher: erkennt Overlay-Erscheinen sofort (nicht Polling).
-    // Wird parallel zum Karten-Loop gestartet — loest auf sobald hidden=false gesetzt wird,
-    // auch wenn das Overlay millisekunden spaeter wieder geschlossen wird (Race-Schutz).
+    // Parallel-Watcher: loest auf sobald Overlay sichtbar wird.
+    // .catch(() => null) verhindert Unhandled-Rejection bei Test-Ende.
     const overlayWatcher = page.waitForSelector(
       '[data-testid="rundenauswertung-overlay"]',
       { state: 'visible', timeout: 240_000 }
-    );
+    ).catch(() => null);
 
-    // Strategie: Kombiniertes waitForFunction mit kurzem Polling-Intervall.
-    // Wartet auf "Overlay sichtbar" ODER "eigener Zug" (STICHPHASE + spielbareKarten > 0).
-    // polling: 200ms — erkennt Zustandsaenderungen schnell (nicht erst nach mehreren Sekunden).
-    // timeout: 4s — bei rein-KI-Stichen (kein eigener Zug, kein Overlay) laeuft der Timeout
-    //   nach 4s ab statt nach 30s; die naechste Iteration pollt erneut. So entstehen keine
-    //   langen Blockaden, wenn die KI mehrere Karten in Folge spielt (3 KI x 800ms = 2,4s).
-    // Limit 60: Mit 4s Timeout pro KI-Stich und bis zu 12 Stichen 48s Puffer, plus eigene
-    //   Zuege — bleibt weit unter dem aeusseren 300s-Timeout.
-    for (let versuch = 0; versuch < 60; versuch++) {
+    for (let versuch = 0; versuch < 120; versuch++) {
       if (await overlay.isVisible()) break;
 
-      interface B { appStore: { snapshot: () => { partieStand?: { laufendesSpiel?: { spielbareKarten?: unknown[]; phase?: string } } } } }
+      interface B { appStore: { snapshot: () => { partieStand?: { laufendesSpiel?: { spielbareKarten?: unknown[]; phase?: string; moeglicheVorbehalte?: unknown[]; aktuellerSpieler?: string | null } } } } }
       const ereignis = await page.waitForFunction(
         (): string | null => {
           const el = document.querySelector('[data-testid="rundenauswertung-overlay"]') as HTMLElement | null;
           if (el && !el.hidden) return 'overlay';
           const loco = (window as unknown as Record<string, B>)['__locodoko'];
           const spiel = loco?.appStore?.snapshot()?.partieStand?.laufendesSpiel;
-          if (spiel?.phase === 'STICHPHASE' && (spiel?.spielbareKarten?.length ?? 0) > 0) return 'zug';
+          if (!spiel) return null;
+          // Vorbehalt (inkl. Spiel 2+ nach Rundenende)
+          if ((spiel.moeglicheVorbehalte?.length ?? 0) > 0) return 'vorbehalt';
+          // Armut-Tausch-Phase: Human muss annehmen/ablehnen (Taste 'n' = ablehnen)
+          // Warum: ohne Behandlung wartet waitForFunction 30s × n-Mal bis Timeout.
+          if (spiel.phase === 'ARMUT_TAUSCH') return 'armut';
+          // Eigene Karte spielbar
+          if (spiel.phase === 'STICHPHASE' && (spiel.spielbareKarten?.length ?? 0) > 0) return 'zug';
           return null;
         },
-        { timeout: 4_000, polling: 200 }
+        { timeout: 30_000, polling: 200 }
       ).then((h) => h.jsonValue() as Promise<string>).catch(() => 'timeout');
 
-      // Debug: Spielzustand bei Timeout loggen
-      if (ereignis === 'timeout') {
-        const dbgState = await page.evaluate(() => {
-          interface B2 { appStore: { snapshot: () => { partieStand?: { laufendesSpiel?: { spielbareKarten?: unknown[]; phase?: string } } } } }
-          const loco = (window as unknown as Record<string, B2>)['__locodoko'];
-          const spiel = loco?.appStore?.snapshot()?.partieStand?.laufendesSpiel;
-          const el = document.querySelector('[data-testid="rundenauswertung-overlay"]') as HTMLElement | null;
-          return {
-            phase: spiel?.phase ?? 'n/a',
-            karten: spiel?.spielbareKarten?.length ?? -1,
-            overlayHidden: el?.hidden,
-          };
-        }).catch(() => ({ phase: 'error', karten: -1, overlayHidden: undefined }));
-        console.log(`[rundenauswertung] TIMEOUT state: phase=${dbgState.phase} karten=${dbgState.karten} overlayHidden=${String(dbgState.overlayHidden)}`);
-      }
-
-      console.log(`[rundenauswertung] versuch=${versuch} ereignis=${ereignis}`);
-
-      // Overlay: Schleife beenden.
-      // Timeout: NICHT abbrechen — KI koennte kurz geblockt haben; naechste Iteration versucht es erneut.
       if (ereignis === 'overlay') break;
       if (ereignis === 'timeout') continue;
 
-      // Race-Condition-Schutz: Overlay koennte zwischen waitForFunction-Rueckgabe und
-      // dem Enter-Tastendruck erschienen sein (CDP-Latenz ~10-50ms). Ein zweiter Check
-      // verhindert dass Enter das Overlay schliesst statt eine Karte zu spielen.
+      // Race-Condition-Schutz: Overlay koennte in CDP-Latenz (~10-50ms) erschienen sein.
       if (await overlay.isVisible()) break;
 
-      // Eigener Zug: Enter spielt die auto-ausgewaehlte Karte (tastaturKarteIndex = 0)
+      if (ereignis === 'vorbehalt') {
+        // Zwischen-Spiel-Vorbehalt: immer GESUND (erste Option, Taste '1').
+        // Warum: Test testet Rundenauswertung, nicht Vorbehalt-Varianten.
+        await page.keyboard.press('1');
+        continue;
+      }
+
+      if (ereignis === 'armut') {
+        // Armut ablehnen (Taste 'n'). Wenn kein aktueller Spieler SUED ist,
+        // hat 'n' keinen Effekt (TischSzene prueft aktuellerSpieler === 'SUED').
+        // Warum Ablehnen: Vereinfacht den Spielfluss; Armut-Stilles-Solo ist valide.
+        await page.keyboard.press('n');
+        await page.waitForTimeout(500);
+        continue;
+      }
+
+      // ereignis === 'zug': Karte spielen
+      // 30-Augen-Pflichtansage: moeglicheAnsagen enthaelt RE/KONTRA wenn Pflicht aussteht.
+      // Warum: Backend blockiert spieleKarte() mit Exception bis Pflichtansage gemacht wurde.
+      const ansagen = await page.evaluate((): string[] => {
+        interface B4 { appStore: { snapshot: () => { partieStand?: { laufendesSpiel?: { moeglicheAnsagen?: string[] } } } } }
+        const loco = (window as unknown as Record<string, B4>)['__locodoko'];
+        return loco?.appStore?.snapshot()?.partieStand?.laufendesSpiel?.moeglicheAnsagen ?? [];
+      }).catch(() => [] as string[]);
+      if (ansagen.includes('KONTRA')) await page.keyboard.press('k');
+      else if (ansagen.includes('RE')) await page.keyboard.press('r');
+
+      // Karte spielen (auto-Selektion via tastaturKarteIndex = 0, kein ArrowRight noetig).
+      // Kurze Pause danach damit der WebSocket-State-Update ankommt bevor naechste
+      // waitForFunction-Iteration prueft — verhindert Doppel-Spielen mit veralteten Daten.
       await page.keyboard.press('Enter');
-      // Pause fuer Kartenanimation (400ms Tween) + KI-Verarbeitung mit 800ms-Delays.
-      // Mit bis zu 3 KI-Karten a 800ms benoetigen wir 2.4s KI-Zeit + Puffer.
-      await page.waitForTimeout(3_500);
+      await page.waitForTimeout(500);
     }
 
     // ── 4. Rundenauswertungs-Overlay prüfen ──────────────────────────────────
-    // overlayWatcher (MutationObserver) hat das Erscheinen bereits registriert
-    // oder wartet noch darauf. Zuverlässiger als nur expect().toBeVisible().
+    // overlayWatcher loest null auf (falls .catch() gefeuert) oder den ElementHandle.
+    // Die eigentliche Sichtbarkeits-Pruefung erfolgt per expect() unabhaengig davon.
+    // Hinweis: Inhalte (Titel, Ergebnis, Spielpunkte) werden vollstaendig in Phaser
+    // gerendert und sind daher nicht per DOM-Locator pruefbar.
     await overlayWatcher;
-    await expect(overlay).toBeVisible({ timeout: 10_000 });
+    await expect(overlay).toBeVisible({ timeout: 30_000 });
 
-    // Kopfzeile: enthält Spieltyp und Spielnummer
-    const titel = overlay.locator('h2');
-    await expect(titel).toBeVisible();
-    const titelText = await titel.textContent();
-    expect(titelText).toMatch(/Spiel \d+ von \d+/);
-
-    // Ergebnis-Zeile: enthält gewinnende Partei
-    const ergebnisZeile = overlay.locator('strong').first();
-    await expect(ergebnisZeile).toBeVisible();
-    const ergebnisText = await ergebnisZeile.textContent();
-    expect(ergebnisText).toMatch(/(RE|KONTRA) gewinnt/);
-
-    // Weiter-Button ist vorhanden
+    // Weiter-Button ist vorhanden (HTML-Element fuer Keyboard-Handling)
     const weiterButton = page.locator('[data-testid="btn-rundenauswertung-weiter"]');
-    await expect(weiterButton).toBeVisible();
+    await expect(weiterButton).toBeVisible({ timeout: 15_000 });
 
     // ── 5. Overlay per Enter schließen ───────────────────────────────────────
     await page.keyboard.press('Enter');

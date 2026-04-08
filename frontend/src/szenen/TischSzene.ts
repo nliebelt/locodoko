@@ -24,7 +24,7 @@ import {
   type SpielerPosition
 } from '../model/TischAnsichtModell';
 import type { Ansage, KarteAntwort, KiSchwierigkeit, Sonderpunkt, SonderpunktEreignis, Tischhintergrund, VorbehaltAnsage } from '../modelle/SpielverwaltungDto';
-import { AnimationenService, type AnimierbareKartenobjekte } from '../services/AnimationenService';
+import { AnimationenService, type AnimierbareKartenobjekte, type RundenauswertungDaten } from '../services/AnimationenService';
 import type { AppZustand } from '../store/AppStore';
 
 function escapeHtml(s: string): string {
@@ -317,6 +317,17 @@ export class TischSzene extends Phaser.Scene {
   // Wird waehrend der Austeilen-Animation auf true gesetzt; Karten werden dann unsichtbar gerendert
   private austeilenAktiv = false;
 
+  // Laeuft eine Stich-Einziehen-Animation, wird hier das Promise gespeichert damit
+  // nachfolgende KI-Karten-Animationen erst danach starten koennen.
+  private stichEinziehenLaeuft: Promise<void> | null = null;
+
+  // Phaser-Objekte der aktuell sichtbaren Rundenauswertung — werden beim Schliessen zerstoert.
+  private rundenauswertungObjekte: Phaser.GameObjects.GameObject[] = [];
+
+  // Sequentielle Kette fuer alle Banner-Animationen (Ansagen, Sonderpunkte, Ankuendigungen).
+  // Jede neue Banner-Animation wird ans Ende gekettet, damit sie nicht parallel auftauchen.
+  private animationsKette: Promise<void> = Promise.resolve();
+
   // Handler fuer Escape-Taste am Rundenende-Modal (wird bei Schliessen entfernt)
   private escapeHandler?: (e: KeyboardEvent) => void;
 
@@ -417,16 +428,25 @@ export class TischSzene extends Phaser.Scene {
       this.renderTisch(zustand, modell);
       void this.starteFolgeanimationen(vorherigesModell, modell);
       void this.starteGegnerKartenAnimationen(vorherigesModell, modell);
-      void this.starteAnsageBannerAnimationen(this.ermittleNeueAnsagen(vorherigesModell, modell));
-      void this.starteSonderpunktFeedbackAnimationen(this.ermittleNeueSonderpunkte(vorherigesModell, modell));
-      void this.zeigeHochzeitEreignis(this.ermittleHochzeitEreignis(vorherigerZustand ?? null, zustand));
-      void this.zeigeSpielankuendigung(this.ermittleSpielankuendigung(vorherigerZustand ?? null, zustand));
-      // Neues Spielergebnis → Rundenende- oder Partie-Ende-Modal einblenden
+      // Alle Banner-Animationen nacheinander in eine gemeinsame Kette einreihen
+      const neueAnsagen = this.ermittleNeueAnsagen(vorherigesModell, modell);
+      const neueSonderpunkte = this.ermittleNeueSonderpunkte(vorherigesModell, modell);
+      const hochzeitMeldung = this.ermittleHochzeitEreignis(vorherigerZustand ?? null, zustand);
+      const spielankuendigung = this.ermittleSpielankuendigung(vorherigerZustand ?? null, zustand);
+      const bockrundeMeldung = this.ermittleBockrundeEreignis(vorherigerZustand ?? null, zustand);
+      if (neueAnsagen.length > 0) this.reiheBannerEin(() => this.starteAnsageBannerAnimationen(neueAnsagen));
+      if (neueSonderpunkte.length > 0) this.reiheBannerEin(() => this.starteSonderpunktFeedbackAnimationen(neueSonderpunkte));
+      if (hochzeitMeldung) this.reiheBannerEin(() => this.zeigeHochzeitEreignis(hochzeitMeldung));
+      if (spielankuendigung) this.reiheBannerEin(() => this.zeigeSpielankuendigung(spielankuendigung));
+      if (bockrundeMeldung) this.reiheBannerEin(() => this.zeigeBockrundeEreignis());
+      // Neues Spielergebnis → erst Gewinner-Flash, dann Modal einblenden (beides in der Queue)
       if (this.erkennteNeuesSpielErgebnis(vorherigesModell, modell) && modell.letztesSpielergebnis) {
+        const ergebnisModell = modell;
+        this.reiheBannerEin(() => this.zeigeGewinnerFlash(ergebnisModell));
         if (modell.partieBeendet) {
-          this.zeigePartieEndeModal(modell);
+          this.reiheBannerEin(() => { this.zeigePartieEndeModal(ergebnisModell); return Promise.resolve(); });
         } else {
-          this.zeigeRundenEndeModal(modell);
+          this.reiheBannerEin(() => this.zeigeRundenEndeModal(ergebnisModell));
         }
       }
       this.letztesModell = modell;
@@ -1485,8 +1505,14 @@ export class TischSzene extends Phaser.Scene {
       .setDepth(150)
       .setAlpha(0);
 
+    const animation = this.animationen?.animiereStichEinziehen(animierteKarten, ziel, abgeschlossenerStich.augen, flashRechteck)
+      ?? Promise.resolve();
+    this.stichEinziehenLaeuft = animation.finally(() => {
+      this.stichEinziehenLaeuft = null;
+    });
+
     try {
-      await this.animationen?.animiereStichEinziehen(animierteKarten, ziel, abgeschlossenerStich.augen, flashRechteck);
+      await animation;
     } finally {
       animierteKarten.forEach((karte) => {
         karte.wurzel.destroy();
@@ -1506,6 +1532,11 @@ export class TischSzene extends Phaser.Scene {
   ): Promise<void> {
     if (!vorherigesModell) {
       return;
+    }
+    // Warten bis eine laufende Stich-Einziehen-Animation abgeschlossen ist,
+    // damit KI-Karten nicht waehrend des Einziehens in die Mitte gleiten.
+    if (this.stichEinziehenLaeuft) {
+      await this.stichEinziehenLaeuft;
     }
     const eigeneSpielerPosition = aktuellesModell.spieler.find((s) => s.istSelbst)?.position;
     const neueGegnerKarten = aktuellesModell.aktuelleStichmitte.filter((eintrag) => {
@@ -1783,6 +1814,60 @@ export class TischSzene extends Phaser.Scene {
     await this.animationen?.animiereSoloAnkuendigung(meldung, { x: breite / 2, y: hoehe / 2 });
   }
 
+  // Reiht eine Banner-Animationsfunktion ans Ende der sequentiellen Kette ein.
+  // Fehler werden abgefangen damit ein fehlgeschlagenes Banner die Kette nicht blockiert.
+  private reiheBannerEin(fn: () => Promise<void>): void {
+    this.animationsKette = this.animationsKette.then(fn).catch(() => undefined);
+  }
+
+  // Erkennt ob das naechste Spiel eine Bockrunde ist (bockrundenZaehler > 0 beim Spielstart).
+  // Gibt true zurueck wenn ein neues Spiel beginnt und istBockrunde gesetzt ist.
+  private ermittleBockrundeEreignis(
+    vorherigerZustand: AppZustand | null,
+    aktuellerZustand: AppZustand
+  ): boolean {
+    const vorherigesSpiel = vorherigerZustand?.partieStand?.laufendesSpiel;
+    const aktuellesSpiel = aktuellerZustand.partieStand?.laufendesSpiel;
+    if (!aktuellesSpiel?.istBockrunde) {
+      return false;
+    }
+    // Nur beim Uebergang zu einem neuen Spiel anzeigen, nicht bei jedem State-Update
+    if (vorherigesSpiel?.spielNummer === aktuellesSpiel.spielNummer) {
+      return false;
+    }
+    return true;
+  }
+
+  private async zeigeBockrundeEreignis(): Promise<void> {
+    const breite = this.scale.gameSize.width;
+    const hoehe = this.scale.gameSize.height;
+    await this.animationen?.animiereBockrunde({ x: breite / 2, y: hoehe / 2 });
+  }
+
+  // Zeigt Siegerpartei, Spielernamen und Spielwert als animierten Flash vor dem Rundenende-Modal
+  private async zeigeGewinnerFlash(modell: TischAnsichtModell): Promise<void> {
+    const ergebnis = modell.letztesSpielergebnis;
+    if (!ergebnis) {
+      return;
+    }
+    const breite = this.scale.gameSize.width;
+    const hoehe = this.scale.gameSize.height;
+    const farbe = ergebnis.siegerPartei === 'RE' ? '#ffd166' : '#90caf9';
+    const parteiText = `${ergebnis.siegerPartei} gewinnt!`;
+    const siegerNamen = modell.spieler
+      .filter((s) => s.partei === ergebnis.siegerPartei)
+      .map((s) => s.name)
+      .join(', ');
+    const punkteText = `+${ergebnis.spielwert} Punkte`;
+    await this.animationen?.animiereGewinnerFlash(
+      parteiText,
+      siegerNamen,
+      punkteText,
+      farbe,
+      { x: breite / 2, y: hoehe / 2 }
+    );
+  }
+
   // Erkennt ob ein neues Spielergebnis eingetroffen ist (andere spielNummer als zuvor)
   private erkennteNeuesSpielErgebnis(
     vorherigesModell: TischAnsichtModell | null,
@@ -1795,12 +1880,15 @@ export class TischSzene extends Phaser.Scene {
     return vorherigesModell?.letztesSpielergebnis?.spielNummer !== neues.spielNummer;
   }
 
-  // Zeigt das Rundenende-Modal mit Augen, Sonderpunkten und Spielpunkten pro Spieler
-  private zeigeRundenEndeModal(modell: TischAnsichtModell): void {
+  // Baut die Rundenauswertung vollstaendig in Phaser auf und zeigt den HTML-Marker.
+  // Gibt eine Promise zurueck, die nach Abschluss aller Intro-Animationen aufloest
+  // (nicht erst wenn der Nutzer "Weiter" klickt).
+  private async zeigeRundenEndeModal(modell: TischAnsichtModell): Promise<void> {
     const ergebnis = modell.letztesSpielergebnis;
     if (!this.rundenEndeModal || !ergebnis) {
       return;
     }
+
     const anzahlSpiele = this.letzterZustand?.aktuellerTisch?.konfiguration?.anzahlSpiele;
     const spielNummerText = anzahlSpiele
       ? `Spiel ${ergebnis.spielNummer} von ${anzahlSpiele}`
@@ -1808,38 +1896,7 @@ export class TischSzene extends Phaser.Scene {
     const spieltypLabel = formatiereVorbehalt(ergebnis.spieltyp as VorbehaltAnsage) ?? ergebnis.spieltyp;
     const spielerNamenMap = new Map(modell.spieler.map((s) => [s.position, s.name] as const));
 
-    const dialog = document.createElement('div');
-    dialog.className = 'ui-modal';
-
-    // Kopfzeile: Spieltyp + Nummer
-    const titel = document.createElement('h2');
-    titel.dataset['testid'] = 'rundenauswertung-spieltyp';
-    titel.textContent = `${spieltypLabel} · ${spielNummerText}`;
-
-    // Ergebnis-Zeile: Sieger + Spielwert
-    const ergebnisZeile = document.createElement('strong');
-    ergebnisZeile.dataset['testid'] = 'rundenauswertung-ergebnis';
-    ergebnisZeile.style.color = ergebnis.siegerPartei === 'RE' ? '#ffd166' : '#90caf9';
-    ergebnisZeile.textContent = `${ergebnis.siegerPartei} gewinnt  (+${ergebnis.spielwert} Punkte)`;
-
-    // Parteien-Übersicht: RE links, KONTRA rechts mit Spielernamen und Augen
-    const reSpieler = modell.spieler.filter((s) => s.partei === 'RE').map((s) => escapeHtml(s.name));
-    const kontraSpieler = modell.spieler.filter((s) => s.partei === 'KONTRA').map((s) => escapeHtml(s.name));
-    const parteien = document.createElement('div');
-    parteien.className = 'ui-grid ui-grid--two';
-    parteien.dataset['testid'] = 'rundenauswertung-parteien';
-    parteien.innerHTML = `
-      <div class="ui-stat-card">
-        <span class="ui-hint">RE · ${ergebnis.augenRe} Augen</span>
-        <strong>${reSpieler.length > 0 ? reSpieler.join(', ') : '–'}</strong>
-      </div>
-      <div class="ui-stat-card">
-        <span class="ui-hint">KONTRA · ${ergebnis.augenKontra} Augen</span>
-        <strong>${kontraSpieler.length > 0 ? kontraSpieler.join(', ') : '–'}</strong>
-      </div>
-    `;
-
-    // Punkte-Berechnung (Einzelschritte)
+    // Berechnungszeilen fuer die Phaser-Darstellung aufbereiten
     const berechnungZeilen: string[] = [];
     berechnungZeilen.push(`Grundwert: +${ergebnis.grundwert}`);
     if (ergebnis.absagePunkte !== 0) {
@@ -1858,84 +1915,63 @@ export class TischSzene extends Phaser.Scene {
     if (ergebnis.soloMultiplikator === 3) {
       berechnungZeilen.push('Solo-Multiplikator: ×3');
     }
-    const berechnungContainer = document.createElement('div');
-    berechnungContainer.className = 'ui-list-item ui-list-item--dense';
-    berechnungContainer.dataset['testid'] = 'rundenauswertung-punkte-berechnung';
-    berechnungContainer.innerHTML = `
-      <div class="ui-list-item__headline"><strong>Punkte-Berechnung</strong></div>
-      <div class="ui-list-item__meta">${berechnungZeilen.map((z) => escapeHtml(z)).join(' · ')}</div>
-      <div class="ui-list-item__meta"><strong>Gesamt: ${ergebnis.spielwert}</strong></div>
-    `;
 
-    // Sonderpunkte (nur wenn vorhanden, als separate Liste mit Einzelnamen)
-    const sonderpunkteContainer = document.createElement('div');
-    if (alleSonderpunkte.length > 0) {
-      sonderpunkteContainer.className = 'ui-list-item ui-list-item--dense';
-      sonderpunkteContainer.dataset['testid'] = 'rundenauswertung-sonderpunkte';
-      sonderpunkteContainer.innerHTML = `
-        <div class="ui-list-item__headline"><strong>Sonderpunkte</strong></div>
-        <div class="ui-list-item__meta">${alleSonderpunkte.map((s) => escapeHtml(s)).join(' · ')}</div>
-      `;
+    const daten: RundenauswertungDaten = {
+      spieltypLabel,
+      spielNummerText,
+      siegerPartei: ergebnis.siegerPartei,
+      spielwert: ergebnis.spielwert,
+      reSpielerNamen: modell.spieler.filter((s) => s.partei === 'RE').map((s) => s.name).join(', ') || '–',
+      kontraSpielerNamen: modell.spieler.filter((s) => s.partei === 'KONTRA').map((s) => s.name).join(', ') || '–',
+      augenRe: ergebnis.augenRe,
+      augenKontra: ergebnis.augenKontra,
+      berechnungZeilen,
+      spielpunkte: ergebnis.spielpunkte.map((e) => ({
+        name: e.name,
+        punkte: e.punkte,
+        istSelbst: e.position === 'SUED',
+      })),
+      gesamtstand: modell.gesamtpunktestand.map((e) => ({ name: e.name, punkte: e.punkte })),
+    };
+
+    // Phaser-Animation starten
+    const breite = this.scale.gameSize.width;
+    const hoehe = this.scale.gameSize.height;
+    if (this.animationen) {
+      this.rundenauswertungObjekte = await this.animationen.animiereRundenauswertung(daten, breite, hoehe);
     }
 
-    // Spielpunkte pro Spieler
-    const punkteListe = document.createElement('ul');
-    punkteListe.className = 'ui-list ui-list--dense';
-    ergebnis.spielpunkte.forEach((eintrag) => {
-      const li = document.createElement('li');
-      li.className = 'ui-list-item ui-list-item--dense';
-      li.innerHTML = `
-        <div class="ui-list-item__headline">
-          <strong>${escapeHtml(eintrag.name)}</strong>
-          <span class="ui-badge ${eintrag.position === 'SUED' ? 'ui-badge--highlight' : ''}">${eintrag.punkte >= 0 ? '+' : ''}${eintrag.punkte}</span>
-        </div>
-      `;
-      punkteListe.append(li);
-    });
-
-    // Gesamtstand (einzeilig)
-    const gesamtstandText = modell.gesamtpunktestand
-      .slice()
-      .sort((a, b) => b.punkte - a.punkte)
-      .map((e) => `${escapeHtml(e.name)} ${e.punkte}`)
-      .join(' · ');
-    const gesamtstand = document.createElement('span');
-    gesamtstand.className = 'ui-hint';
-    gesamtstand.dataset['testid'] = 'rundenauswertung-gesamtstand';
-    gesamtstand.textContent = `Gesamtstand: ${gesamtstandText}`;
-
+    // HTML-Overlay als transparenter Marker sichtbar schalten (fuer E2E-Erkennung und Tastatur-Handling)
+    // Kein visueller Inhalt — alles laeuft in Phaser
     const schliessenButton = this.erstelleButton('Weiter →', () => this.schliesseRundenEndeModal(), false);
     schliessenButton.dataset['testid'] = 'btn-rundenauswertung-weiter';
-
-    dialog.append(titel, ergebnisZeile, parteien, berechnungContainer);
-    if (alleSonderpunkte.length > 0) {
-      dialog.append(sonderpunkteContainer);
-    }
-    dialog.append(punkteListe, gesamtstand, schliessenButton);
     this.rundenEndeModal.innerHTML = '';
-    this.rundenEndeModal.append(dialog);
+    this.rundenEndeModal.className = 'ui-rundenauswertung-overlay';
+    this.rundenEndeModal.append(schliessenButton);
     this.rundenEndeModal.hidden = false;
 
-    // Focus-Trap: Fokus auf Button setzen (Enter schliesst Modal per Button-Click)
+    // Fokus setzen damit Enter direkt den Button trifft
     setTimeout(() => schliessenButton.focus(), 0);
 
-    // Backdrop-Klick schliesst Modal (Klick auf Dialog-Inhalt selbst schliesst nicht)
+    // Klick auf Overlay (nicht Button) schliesst ebenfalls
     this.backdropClickHandler = (event: MouseEvent) => {
       if (event.target === this.rundenEndeModal) {
         this.schliesseRundenEndeModal();
       }
     };
     this.rundenEndeModal.addEventListener('click', this.backdropClickHandler);
-    // Kein Escape-Handler: Spec fordert Schliessen nur per Button oder Enter
   }
 
-  // Schliesst das Rundenende-Modal (OK-Button, Escape-Taste oder Backdrop-Klick)
+  // Schliesst das Rundenende-Modal und raeumt Phaser-Objekte ab
   private schliesseRundenEndeModal(): void {
     if (!this.rundenEndeModal) {
       return;
     }
     this.rundenEndeModal.hidden = true;
     this.rundenEndeModal.innerHTML = '';
+    // Phaser-Objekte der Rundenauswertung zerstoeren
+    this.rundenauswertungObjekte.forEach((obj) => obj.destroy());
+    this.rundenauswertungObjekte = [];
     // Listener entfernen, damit sie nicht mehrfach ausgeloest werden koennen
     if (this.escapeHandler) {
       document.removeEventListener('keydown', this.escapeHandler);
@@ -2670,6 +2706,8 @@ export class TischSzene extends Phaser.Scene {
     this.abmeldenStore = undefined;
     this.animationen?.abbrechen();
     this.animationen = undefined;
+    this.rundenauswertungObjekte.forEach((obj) => obj.destroy());
+    this.rundenauswertungObjekte = [];
     this.tischEbene?.destroy(true);
     this.tischEbene = undefined;
     this.hintergrund?.destroy();

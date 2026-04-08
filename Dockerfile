@@ -40,7 +40,7 @@ RUN groupadd --gid $USER_GID $USERNAME \
     && chmod 0440 /etc/sudoers.d/$USERNAME
 
 # 5. Environment (Dynamisches Java Home)
-ENV JAVA_HOME=/usr/lib/jvm/temurin-21-jdk-arm64
+ENV JAVA_HOME=/usr/lib/jvm/temurin-25-jdk-arm64
 ENV PATH="$JAVA_HOME/bin:$PATH"
 ENV CHROMIUM_FLAGS="--no-sandbox --disable-dev-shm-usage"
 

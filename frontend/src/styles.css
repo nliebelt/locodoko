@@ -322,6 +322,23 @@ canvas {
   backdrop-filter: blur(4px);
 }
 
+/* Rundenauswertung: transparentes HTML-Overlay, Phaser rendert den Inhalt.
+   Positioniert nur den "Weiter"-Button am unteren Rand. */
+.ui-rundenauswertung-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 100;
+  pointer-events: none;
+  background: transparent;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding-bottom: 36px;
+}
+.ui-rundenauswertung-overlay > * {
+  pointer-events: auto;
+}
+
 .ui-modal {
   max-width: 480px;
   width: calc(100% - 32px);

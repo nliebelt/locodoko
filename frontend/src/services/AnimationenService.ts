@@ -106,7 +106,7 @@ export class AnimationenService {
   async animiereAnsageBanner(
     text: string,
     position: Punkt,
-    sichtbarkeitsdauer = 1500,
+    sichtbarkeitsdauer = 2500,
     textFarbe = '#ffffff'
   ): Promise<void> {
     const bannerobjekt = this.szene.add
@@ -141,7 +141,7 @@ export class AnimationenService {
   async animiereSoloAnkuendigung(
     text: string,
     position: Punkt,
-    sichtbarkeitsdauer = 1500
+    sichtbarkeitsdauer = 2500
   ): Promise<void> {
     // Startposition: ausserhalb des sichtbaren Bereichs (oberhalb)
     const startY = position.y - 160;
@@ -175,16 +175,142 @@ export class AnimationenService {
   }
 
   /**
+   * Gewinner-Flash am Rundenende: Siegerpartei, Spielernamen und Spielwert fahren von oben ein,
+   * verweilen kurz und fahren wieder heraus. Erscheint vor dem Rundenende-Modal.
+   * @param parteiText - z.B. "RE gewinnt!" oder "KONTRA gewinnt!"
+   * @param namenText - Kommagetrennte Spielernamen der Siegerpartei
+   * @param punkteText - z.B. "+3 Punkte"
+   * @param farbe - CSS-Farbe passend zur Partei (Gold fuer RE, Blau fuer KONTRA)
+   * @param position - Zielposition in der Szene (z.B. Bildmitte)
+   * @param sichtbarkeitsdauer - Haltezeit in ms (Standard: 2500ms)
+   */
+  async animiereGewinnerFlash(
+    parteiText: string,
+    namenText: string,
+    punkteText: string,
+    farbe: string,
+    position: Punkt,
+    sichtbarkeitsdauer = 2500
+  ): Promise<void> {
+    const startY = position.y - 200;
+    const parteiLabel = this.szene.add
+      .text(position.x, startY, parteiText, {
+        font: "900 56px 'Space Grotesk', system-ui, sans-serif",
+        color: farbe,
+        stroke: '#000000',
+        strokeThickness: 8,
+        align: 'center'
+      })
+      .setOrigin(0.5, 0.5)
+      .setDepth(115)
+      .setAlpha(0);
+    const namenLabel = this.szene.add
+      .text(position.x, startY + 68, namenText, {
+        font: "700 28px 'Space Grotesk', system-ui, sans-serif",
+        color: '#f8f9fa',
+        stroke: '#000000',
+        strokeThickness: 5,
+        align: 'center'
+      })
+      .setOrigin(0.5, 0.5)
+      .setDepth(115)
+      .setAlpha(0);
+    const punkteLabel = this.szene.add
+      .text(position.x, startY + 108, punkteText, {
+        font: "900 36px 'Space Grotesk', system-ui, sans-serif",
+        color: '#ffffff',
+        stroke: '#000000',
+        strokeThickness: 6,
+        align: 'center'
+      })
+      .setOrigin(0.5, 0.5)
+      .setDepth(115)
+      .setAlpha(0);
+    const zielPartei = { x: position.x, y: position.y - 54 };
+    const zielNamen = { x: position.x, y: position.y + 14 };
+    const zielPunkte = { x: position.x, y: position.y + 54 };
+    try {
+      await Promise.all([
+        this.tweenZu([parteiLabel], zielPartei, 400),
+        this.tweenZu([namenLabel], zielNamen, 400),
+        this.tweenZu([punkteLabel], zielPunkte, 400),
+        this.tweenAlpha(parteiLabel, 1, 300),
+        this.tweenAlpha(namenLabel, 1, 300),
+        this.tweenAlpha(punkteLabel, 1, 300)
+      ]);
+      await this.warte(sichtbarkeitsdauer);
+      await Promise.all([
+        this.tweenZu([parteiLabel], { x: position.x, y: startY }, 400),
+        this.tweenZu([namenLabel], { x: position.x, y: startY + 68 }, 400),
+        this.tweenZu([punkteLabel], { x: position.x, y: startY + 108 }, 400),
+        this.tweenAlpha(parteiLabel, 0, 300),
+        this.tweenAlpha(namenLabel, 0, 300),
+        this.tweenAlpha(punkteLabel, 0, 300)
+      ]);
+    } finally {
+      parteiLabel.destroy();
+      namenLabel.destroy();
+      punkteLabel.destroy();
+    }
+  }
+
+  /**
+   * Bockrunden-Ankuendigung: Ein Schaf faehrt von oben herein, verweilt und faehrt wieder heraus.
+   * @param position - Zielposition in der Szene (z.B. Bildmitte)
+   * @param sichtbarkeitsdauer - Haltezeit in ms (Standard: 2500ms)
+   */
+  async animiereBockrunde(position: Punkt, sichtbarkeitsdauer = 2500): Promise<void> {
+    const startY = position.y - 200;
+    const schaf = this.szene.add
+      .text(position.x, startY, '🐑', {
+        font: "900 96px 'Space Grotesk', system-ui, sans-serif",
+        align: 'center'
+      })
+      .setOrigin(0.5, 0.5)
+      .setDepth(115)
+      .setAlpha(0);
+    const titel = this.szene.add
+      .text(position.x, startY + 90, 'Bockrunde!', {
+        font: "900 51px 'Space Grotesk', system-ui, sans-serif",
+        color: '#ff6b35',
+        stroke: '#000000',
+        strokeThickness: 8,
+        align: 'center'
+      })
+      .setOrigin(0.5, 0.5)
+      .setDepth(115)
+      .setAlpha(0);
+    try {
+      await Promise.all([
+        this.tweenZu([schaf], { x: position.x, y: position.y - 40 }, 400),
+        this.tweenZu([titel], { x: position.x, y: position.y + 50 }, 400),
+        this.tweenAlpha(schaf, 1, 300),
+        this.tweenAlpha(titel, 1, 300)
+      ]);
+      await this.warte(sichtbarkeitsdauer);
+      await Promise.all([
+        this.tweenZu([schaf], { x: position.x, y: startY - 40 }, 400),
+        this.tweenZu([titel], { x: position.x, y: startY + 50 }, 400),
+        this.tweenAlpha(schaf, 0, 300),
+        this.tweenAlpha(titel, 0, 300)
+      ]);
+    } finally {
+      schaf.destroy();
+      titel.destroy();
+    }
+  }
+
+  /**
    * Zeigt kurzes visuelles Feedback (goldener Text) bei einem Sonderpunkt
    * (Fuchs gefangen, Karlchen, Doppelkopf). Nicht blockierend — setzt keine Spielaktion aus.
    * @param text - Anzeige-Label des Sonderpunkts (z.B. "Fuchs gefangen")
    * @param position - Anzeigeposition in Spielpixeln
-   * @param sichtbarkeitsdauer - Haltezeit in ms (Standard: 1000ms)
+   * @param sichtbarkeitsdauer - Haltezeit in ms (Standard: 2000ms)
    */
   async animiereSonderpunktFeedback(
     text: string,
     position: Punkt,
-    sichtbarkeitsdauer = 1000
+    sichtbarkeitsdauer = 2000
   ): Promise<void> {
     const feedbackobjekt = this.szene.add
       .text(position.x, position.y, text, {
@@ -393,4 +519,219 @@ export class AnimationenService {
   private skalierteDauer(dauer: number): number {
     return Math.max(0, Math.round(dauer / Math.max(this.geschwindigkeitsfaktor, 0.01)));
   }
+
+  /**
+   * Animiert die Rundenauswertung vollstaendig in Phaser:
+   * dunkles Overlay, Sieger-Banner (Bounce), Punkte-Berechnung,
+   * Flipper-Zaehler pro Spieler und Gesamtstand.
+   * Gibt alle erstellten GameObjects zurueck — der Aufrufer ist fuer die Zerstoerung zustaendig.
+   */
+  async animiereRundenauswertung(
+    daten: RundenauswertungDaten,
+    breite: number,
+    hoehe: number
+  ): Promise<Phaser.GameObjects.GameObject[]> {
+    const objekte: Phaser.GameObjects.GameObject[] = [];
+    const cx = breite / 2;
+    const TIEFE = 300;
+    const FARBE_RE = '#ffd166';
+    const FARBE_KONTRA = '#90caf9';
+    const siegerFarbe = daten.siegerPartei === 'RE' ? FARBE_RE : FARBE_KONTRA;
+    const FONT = "'Space Grotesk', system-ui, sans-serif";
+
+    const fuege = <T extends Phaser.GameObjects.GameObject>(obj: T): T => {
+      objekte.push(obj);
+      return obj;
+    };
+
+    // ── 1. Dunkles Overlay ────────────────────────────────────────────────
+    const bg = fuege(
+      this.szene.add.rectangle(cx, hoehe / 2, breite, hoehe, 0x050a10, 0.93)
+        .setDepth(TIEFE).setAlpha(0)
+    );
+    await this.tweenAlpha(bg, 1, 300);
+
+    let y = Math.round(hoehe * 0.08);
+
+    // ── 2. Spieltyp + Nummer ──────────────────────────────────────────────
+    const kopf = fuege(
+      this.szene.add.text(cx, y, `${daten.spieltypLabel}  ·  ${daten.spielNummerText}`, {
+        font: `500 18px ${FONT}`, color: '#7a9aaa',
+      }).setOrigin(0.5, 0).setDepth(TIEFE + 1).setAlpha(0)
+    );
+    await this.tweenAlpha(kopf, 1, 250);
+    y += 44;
+
+    // ── 3. Sieger-Banner (Scale-Bounce) ───────────────────────────────────
+    const sieger = fuege(
+      this.szene.add.text(cx, y, `${daten.siegerPartei} gewinnt!`, {
+        font: `900 54px ${FONT}`, color: siegerFarbe,
+        stroke: '#000000', strokeThickness: 7,
+      }).setOrigin(0.5, 0).setDepth(TIEFE + 1).setAlpha(0).setScale(0.5)
+    );
+    await Promise.all([
+      this.tweenAlpha(sieger, 1, 280),
+      this.tweenScale(sieger, 1.1, 320),
+    ]);
+    await this.tweenScale(sieger, 1.0, 140);
+    y += 74;
+
+    // ── 4. Parteien: Spielernamen + Augen ─────────────────────────────────
+    const reZeile = `RE: ${daten.reSpielerNamen}  (${daten.augenRe} Augen)`;
+    const kontraZeile = `KONTRA: ${daten.kontraSpielerNamen}  (${daten.augenKontra} Augen)`;
+    const parteien = fuege(
+      this.szene.add.text(cx, y, `${reZeile}    ·    ${kontraZeile}`, {
+        font: `400 16px ${FONT}`, color: '#99bbcc', align: 'center',
+      }).setOrigin(0.5, 0).setDepth(TIEFE + 1).setAlpha(0)
+    );
+    await this.tweenAlpha(parteien, 1, 220);
+    y += 34;
+
+    // ── Trennlinie ────────────────────────────────────────────────────────
+    const linie1 = fuege(
+      this.szene.add.rectangle(cx, y + 6, Math.min(breite * 0.62, 500), 1, 0x334455)
+        .setDepth(TIEFE + 1).setAlpha(0)
+    );
+    await this.tweenAlpha(linie1, 0.45, 180);
+    y += 22;
+
+    // ── 5. Punkte-Berechnung: Zeilen nacheinander ─────────────────────────
+    const berLabel = fuege(
+      this.szene.add.text(cx, y, 'Punkte-Berechnung', {
+        font: `500 13px ${FONT}`, color: '#557766',
+      }).setOrigin(0.5, 0).setDepth(TIEFE + 1).setAlpha(0)
+    );
+    await this.tweenAlpha(berLabel, 1, 130);
+    y += 22;
+
+    for (const zeile of daten.berechnungZeilen) {
+      const zobj = fuege(
+        this.szene.add.text(cx, y, zeile, {
+          font: `400 16px ${FONT}`, color: '#aabbcc',
+        }).setOrigin(0.5, 0).setDepth(TIEFE + 1).setAlpha(0)
+      );
+      await this.tweenAlpha(zobj, 1, 120);
+      y += 25;
+    }
+
+    await this.warte(80);
+
+    // ── 6. Gesamt-Flipper ─────────────────────────────────────────────────
+    const gesamtObj = fuege(
+      this.szene.add.text(cx, y, 'Gesamt:  +0', {
+        font: `900 26px ${FONT}`, color: '#e8f0e8',
+      }).setOrigin(0.5, 0).setDepth(TIEFE + 1).setAlpha(0)
+    );
+    await this.tweenAlpha(gesamtObj, 1, 150);
+    await this.flipperZaehler(gesamtObj, daten.spielwert, 'Gesamt:  +', 650);
+    y += 42;
+
+    // ── Trennlinie 2 ──────────────────────────────────────────────────────
+    const linie2 = fuege(
+      this.szene.add.rectangle(cx, y + 6, Math.min(breite * 0.62, 500), 1, 0x334455)
+        .setDepth(TIEFE + 1).setAlpha(0)
+    );
+    await this.tweenAlpha(linie2, 0.45, 180);
+    y += 22;
+
+    // ── 7. Spielpunkte pro Spieler mit Flipper ────────────────────────────
+    const spLabel = fuege(
+      this.szene.add.text(cx, y, 'Spielpunkte', {
+        font: `500 13px ${FONT}`, color: '#557766',
+      }).setOrigin(0.5, 0).setDepth(TIEFE + 1).setAlpha(0)
+    );
+    await this.tweenAlpha(spLabel, 1, 130);
+    y += 22;
+
+    const panelW = Math.min(breite * 0.58, 440);
+    const linkX = cx - panelW / 2;
+    const rechtsX = cx + panelW / 2;
+
+    for (const eintrag of daten.spielpunkte) {
+      const nameObj = fuege(
+        this.szene.add.text(linkX, y, eintrag.istSelbst ? `▸ ${eintrag.name}` : eintrag.name, {
+          font: `${eintrag.istSelbst ? 700 : 400} 18px ${FONT}`,
+          color: eintrag.istSelbst ? '#f0f4f0' : '#99aabb',
+        }).setOrigin(0, 0).setDepth(TIEFE + 1).setAlpha(0)
+      );
+      const pfx = eintrag.punkte >= 0 ? '+' : '';
+      const punkteObj = fuege(
+        this.szene.add.text(rechtsX, y, `${pfx}0`, {
+          font: `700 18px ${FONT}`,
+          color: eintrag.punkte >= 0 ? '#7edd94' : '#ff8877',
+        }).setOrigin(1, 0).setDepth(TIEFE + 1).setAlpha(0)
+      );
+      await Promise.all([
+        this.tweenAlpha(nameObj, 1, 120),
+        this.tweenAlpha(punkteObj, 1, 120),
+      ]);
+      await this.flipperZaehler(punkteObj, eintrag.punkte, pfx, 480);
+      y += 30;
+    }
+
+    y += 8;
+
+    // ── 8. Gesamtstand kompakt ────────────────────────────────────────────
+    const gsText = daten.gesamtstand
+      .slice().sort((a, b) => b.punkte - a.punkte)
+      .map((e) => `${e.name} ${e.punkte}`)
+      .join('  ·  ');
+    const gsObj = fuege(
+      this.szene.add.text(cx, y, `Gesamtstand: ${gsText}`, {
+        font: `400 13px ${FONT}`, color: '#557766',
+      }).setOrigin(0.5, 0).setDepth(TIEFE + 1).setAlpha(0)
+    );
+    await this.tweenAlpha(gsObj, 1, 200);
+
+    return objekte;
+  }
+
+  /** Flipper-Zaehler: animiert Text-Objekt von 0 auf Zielwert (Flipper/Pinball-Stil). */
+  private async flipperZaehler(
+    obj: Phaser.GameObjects.Text,
+    ziel: number,
+    prefix: string,
+    dauer: number
+  ): Promise<void> {
+    const counter = { val: 0 };
+    await new Promise<void>((resolve) => {
+      const ref: { tween?: Phaser.Tweens.Tween } = {};
+      let fertig = false;
+      const tween = this.szene.tweens.add({
+        targets: counter,
+        val: ziel,
+        duration: this.skalierteDauer(dauer),
+        ease: 'Cubic.Out',
+        onUpdate: () => {
+          obj.setText(`${prefix}${Math.round(counter.val)}`);
+        },
+        onComplete: () => {
+          fertig = true;
+          if (ref.tween) this.laufendeTweens.delete(ref.tween);
+          resolve();
+        },
+      });
+      ref.tween = tween;
+      if (!fertig) this.laufendeTweens.add(tween);
+    });
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Daten-Transfer-Objekt fuer die Phaser-Rundenauswertung
+// ---------------------------------------------------------------------------
+
+export interface RundenauswertungDaten {
+  spieltypLabel: string;
+  spielNummerText: string;
+  siegerPartei: 'RE' | 'KONTRA';
+  spielwert: number;
+  reSpielerNamen: string;
+  kontraSpielerNamen: string;
+  augenRe: number;
+  augenKontra: number;
+  /** Vorformatierte Berechnungszeilen, z.B. "Grundwert: +1", "Solo-Multiplikator: ×3" */
+  berechnungZeilen: string[];
+  spielpunkte: { name: string; punkte: number; istSelbst: boolean }[];
+  gesamtstand: { name: string; punkte: number }[];
 }
