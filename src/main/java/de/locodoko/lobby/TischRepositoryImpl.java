@@ -1,6 +1,8 @@
 package de.locodoko.lobby;
 
+import de.locodoko.partie.PartieId;
 import de.locodoko.session.SpielerEntity;
+import de.locodoko.session.SpielerId;
 import de.locodoko.session.SpielerRepository;
 import de.locodoko.partie.PartieEntity;
 import de.locodoko.partie.PartieRepository;
@@ -85,13 +87,13 @@ class TischRepositoryImpl implements TischRepository {
             // Partie-Referenz in tisch zuerst auf null setzen
             jdbcTemplate.update("UPDATE tisch SET partie_id = NULL WHERE id = ?", tisch.id());
             // Dann Partie und ihre Kinder loeschen (Spiele, Stiche, etc. via CASCADE)
-            partieRepository.deleteById(tisch.partieId());
+            partieRepository.deleteById(PartieId.von(tisch.partieId()));
         }
         tischJdbcRepository.deleteById(tisch.id());
     }
 
     @Override
-    public void deleteById(UUID id) {
+    public void deleteById(TischId id) {
         findById(id).ifPresent(this::delete);
     }
 
@@ -102,24 +104,24 @@ class TischRepositoryImpl implements TischRepository {
 
     @Override
     @Transactional(readOnly = true)
-    public Optional<TischEntity> findById(UUID id) {
-        return tischJdbcRepository.findById(id).map(this::befuelleTransienteFelder);
+    public Optional<TischEntity> findById(TischId id) {
+        return tischJdbcRepository.findById(id.wert()).map(this::befuelleTransienteFelder);
     }
 
     @Override
     @Transactional(readOnly = true)
-    public Optional<TischEntity> findByPartieId(UUID partieId) {
-        return tischJdbcRepository.findByPartieId(partieId).map(this::befuelleTransienteFelder);
+    public Optional<TischEntity> findByPartieId(PartieId partieId) {
+        return tischJdbcRepository.findByPartieId(partieId.wert()).map(this::befuelleTransienteFelder);
     }
 
     @Override
     @Transactional(readOnly = true)
-    public Optional<TischEntity> findByIdWithLock(UUID id) {
+    public Optional<TischEntity> findByIdWithLock(TischId id) {
         // Pessimistisches Write-Lock via SELECT FOR UPDATE
         List<UUID> ids = jdbcTemplate.queryForList(
             "SELECT id FROM tisch WHERE id = ? FOR UPDATE",
             UUID.class,
-            id
+            id.wert()
         );
         if (ids.isEmpty()) {
             return Optional.empty();
@@ -138,8 +140,8 @@ class TischRepositoryImpl implements TischRepository {
 
     @Override
     @Transactional(readOnly = true)
-    public Optional<TischEntity> findBySpieler_Id(UUID spielerId) {
-        return tischJdbcRepository.findBySpielerId(spielerId)
+    public Optional<TischEntity> findBySpieler_Id(SpielerId spielerId) {
+        return tischJdbcRepository.findBySpielerId(spielerId.wert())
             .map(this::befuelleTransienteFelder);
     }
 
@@ -157,8 +159,8 @@ class TischRepositoryImpl implements TischRepository {
 
     @Override
     @Transactional(readOnly = true)
-    public boolean existsById(UUID id) {
-        return tischJdbcRepository.existsById(id);
+    public boolean existsById(TischId id) {
+        return tischJdbcRepository.existsById(id.wert());
     }
 
     /**
@@ -171,19 +173,19 @@ class TischRepositoryImpl implements TischRepository {
         // Spielerliste aus den Join-Tabellen-Eintraegen laden (Reihenfolge beibehalten)
         List<SpielerEntity> spielerListe = new ArrayList<>();
         for (TischSpielerRelation relation : tisch.spielerRelationen()) {
-            spielerRepository.findById(relation.spielerId()).ifPresent(spielerListe::add);
+            spielerRepository.findById(SpielerId.von(relation.spielerId())).ifPresent(spielerListe::add);
         }
         tisch.setzeSpielerListe(spielerListe);
 
         // erstelltVon-Spieler laden
         if (tisch.erstelltVonSpielerId() != null) {
-            spielerRepository.findById(tisch.erstelltVonSpielerId())
+            spielerRepository.findById(SpielerId.von(tisch.erstelltVonSpielerId()))
                 .ifPresent(tisch::setzeErstelltVonTransient);
         }
 
         // Partie laden
         if (tisch.partieId() != null) {
-            partieRepository.findById(tisch.partieId()).ifPresent(partie -> {
+            partieRepository.findById(PartieId.von(tisch.partieId())).ifPresent(partie -> {
                 // Transiente Tisch-Rueckreferenz in der Partie setzen
                 partie.setzeTisch(tisch);
                 // Spiel-Partie-Rueckreferenz setzen

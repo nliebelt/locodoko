@@ -17,7 +17,6 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Map;
 import java.util.Optional;
-import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
@@ -49,7 +48,7 @@ public class VerbindungsabbruchService {
     private final int reconnectTimeoutSekunden;
 
     /** Tracking-Eintrag für einen getrennten Spieler. */
-    private record DisconnectInfo(UUID spielerId, String spielerName, Instant disconnectZeit) {}
+    private record DisconnectInfo(SpielerId spielerId, String spielerName, Instant disconnectZeit) {}
 
     public VerbindungsabbruchService(
             TischRepository tischRepository,
@@ -74,7 +73,7 @@ public class VerbindungsabbruchService {
      * @param spielerName   Anzeigename für die Benachrichtigung
      */
     @Transactional(readOnly = true)
-    public void verarbeiteDisconnect(String httpSessionId, UUID spielerId, String spielerName) {
+    public void verarbeiteDisconnect(String httpSessionId, SpielerId spielerId, String spielerName) {
         if (httpSessionId == null || spielerId == null) {
             return;
         }
@@ -103,7 +102,7 @@ public class VerbindungsabbruchService {
      * @param spielerName   Anzeigename für die Benachrichtigung
      */
     @Transactional
-    public void verarbeiteReconnect(String httpSessionId, UUID spielerId, String spielerName) {
+    public void verarbeiteReconnect(String httpSessionId, SpielerId spielerId, String spielerName) {
         DisconnectInfo info = getrennteSessionen.remove(httpSessionId);
         if (info == null) {
             // Erstverbindung — kein Reconnect-Szenario
@@ -120,7 +119,7 @@ public class VerbindungsabbruchService {
 
             // Aktuellen Spielzustand direkt an den reconnectenden Spieler senden
             if (tisch.status() == TischStatus.IM_SPIEL && tisch.partie() != null) {
-                PartieStandAntwort stand = PartieStandAntwort.aus(tisch.partie(), spielerId);
+                PartieStandAntwort stand = PartieStandAntwort.aus(tisch.partie(), spielerId.wert());
                 tischEchtzeitService.planeAnBenutzer(
                         httpSessionId,
                         "/queue/partie/" + tisch.partie().id(),

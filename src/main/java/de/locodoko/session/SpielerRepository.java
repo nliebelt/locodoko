@@ -18,6 +18,16 @@ public interface SpielerRepository extends CrudRepository<SpielerEntity, UUID> {
         return save(spieler);
     }
 
+    /** Sucht einen Spieler anhand der typisierten ID. */
+    default Optional<SpielerEntity> findById(SpielerId id) {
+        return findById(id.wert());
+    }
+
+    /** Prueft ob ein Spieler mit der typisierten ID existiert. */
+    default boolean existsById(SpielerId id) {
+        return existsById(id.wert());
+    }
+
     /** Sucht einen Spieler anhand seiner HTTP-Session-ID. */
     @Query("SELECT * FROM spieler WHERE session_id = :sessionId")
     Optional<SpielerEntity> findBySessionId(String sessionId);

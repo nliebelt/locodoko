@@ -141,7 +141,7 @@ class KiOrchestrierungServiceFehlerTest {
 
         // Datenbankstand: Phase muss unveraendert STICHPHASE sein, kein Stich begonnen
         transactionTemplate.executeWithoutResult(status -> {
-            TischEntity tisch = tischRepository.findById(tischId).orElseThrow();
+            TischEntity tisch = tischRepository.findById(TischId.von(tischId)).orElseThrow();
             SpielEntity laufendesSpiel = tisch.partie().spiele().getLast();
 
             assertEquals(Spielphase.STICHPHASE, laufendesSpiel.phase(),
@@ -180,7 +180,7 @@ class KiOrchestrierungServiceFehlerTest {
         });
 
         transactionTemplate.executeWithoutResult(status -> {
-            TischEntity tisch = tischRepository.findById(tischId).orElseThrow();
+            TischEntity tisch = tischRepository.findById(TischId.von(tischId)).orElseThrow();
             SpielEntity laufendesSpiel = tisch.partie().spiele().getLast();
 
             assertEquals(Spielphase.VORBEHALT_ANSAGE, laufendesSpiel.phase(),

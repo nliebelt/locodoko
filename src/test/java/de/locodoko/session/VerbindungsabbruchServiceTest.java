@@ -74,7 +74,7 @@ class VerbindungsabbruchServiceTest {
         String sessionId = menschlicherSpieler.sessionId();
         UUID spielerId = menschlicherSpieler.id();
 
-        verbindungsabbruchService.verarbeiteDisconnect(sessionId, spielerId, menschlicherSpieler.name());
+        verbindungsabbruchService.verarbeiteDisconnect(sessionId, SpielerId.von(spielerId), menschlicherSpieler.name());
 
         assertTrue(
                 verbindungsabbruchService.istGetrennt(sessionId),
@@ -92,10 +92,10 @@ class VerbindungsabbruchServiceTest {
         String sessionId = menschlicherSpieler.sessionId();
         UUID spielerId = menschlicherSpieler.id();
 
-        verbindungsabbruchService.verarbeiteDisconnect(sessionId, spielerId, menschlicherSpieler.name());
+        verbindungsabbruchService.verarbeiteDisconnect(sessionId, SpielerId.von(spielerId), menschlicherSpieler.name());
         assertTrue(verbindungsabbruchService.istGetrennt(sessionId));
 
-        verbindungsabbruchService.verarbeiteReconnect(sessionId, spielerId, menschlicherSpieler.name());
+        verbindungsabbruchService.verarbeiteReconnect(sessionId, SpielerId.von(spielerId), menschlicherSpieler.name());
 
         assertFalse(
                 verbindungsabbruchService.istGetrennt(sessionId),
@@ -114,7 +114,7 @@ class VerbindungsabbruchServiceTest {
         UUID spielerId = menschlicherSpieler.id();
 
         // Kein vorheriger Disconnect — soll keine Exception und keinen Eintrag erzeugen
-        verbindungsabbruchService.verarbeiteReconnect(sessionId, spielerId, menschlicherSpieler.name());
+        verbindungsabbruchService.verarbeiteReconnect(sessionId, SpielerId.von(spielerId), menschlicherSpieler.name());
 
         assertFalse(
                 verbindungsabbruchService.istGetrennt(sessionId),

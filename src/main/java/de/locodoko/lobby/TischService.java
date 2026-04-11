@@ -5,6 +5,7 @@ import de.locodoko.karten.Karte;
 import de.locodoko.karten.UngueltigerSpielzugException;
 import de.locodoko.karten.SpielerPosition;
 import de.locodoko.partie.Ansage;
+import de.locodoko.partie.PartieId;
 import de.locodoko.partie.Spiel;
 import de.locodoko.partie.VorbehaltAnsage;
 import de.locodoko.partie.PartieEntity;
@@ -12,6 +13,7 @@ import de.locodoko.partie.PartieRepository;
 import de.locodoko.partie.PartieStatus;
 import de.locodoko.partie.HandEntity;
 import de.locodoko.session.SpielerEntity;
+import de.locodoko.session.SpielerId;
 import de.locodoko.session.SpielerRepository;
 import de.locodoko.partie.SpielEntity;
 import de.locodoko.lobby.TischEntity;
@@ -69,7 +71,7 @@ public class TischService {
 
     @Transactional
     public TischAntwort erstelleTisch(SpielerEntity spieler, TischErstellenAnfrage anfrage) {
-        SpielerEntity verwalteterSpieler = ladeSpieler(spieler.id());
+        SpielerEntity verwalteterSpieler = ladeSpieler(SpielerId.von(spieler.id()));
         pruefeDassSpielerAnKeinemTischSitzt(verwalteterSpieler);
         TischkonfigurationEmbeddable konfiguration = anfrage.konfiguration() == null
             ? TischkonfigurationEmbeddable.standard()
@@ -86,8 +88,8 @@ public class TischService {
     }
 
     @Transactional
-    public TischAntwort betreteTisch(UUID tischId, SpielerEntity spieler) {
-        SpielerEntity verwalteterSpieler = ladeSpieler(spieler.id());
+    public TischAntwort betreteTisch(TischId tischId, SpielerEntity spieler) {
+        SpielerEntity verwalteterSpieler = ladeSpieler(SpielerId.von(spieler.id()));
         pruefeDassSpielerAnKeinemTischSitzt(verwalteterSpieler);
         TischEntity tisch = ladeTischEntityMitSperre(tischId);
         pruefeWartendenTisch(tisch, "TISCH_BEREITS_GESTARTET", "Ein gestarteter Tisch kann nicht mehr betreten werden.");
@@ -105,8 +107,8 @@ public class TischService {
     }
 
     @Transactional
-    public BestaetigungAntwort verlasseTisch(UUID tischId, SpielerEntity spieler) {
-        SpielerEntity verwalteterSpieler = ladeSpieler(spieler.id());
+    public BestaetigungAntwort verlasseTisch(TischId tischId, SpielerEntity spieler) {
+        SpielerEntity verwalteterSpieler = ladeSpieler(SpielerId.von(spieler.id()));
         TischEntity tisch = ladeTischEntityMitSperre(tischId);
 
         if (!tisch.enthaeltSpieler(verwalteterSpieler)) {
@@ -163,8 +165,8 @@ public class TischService {
     }
 
     @Transactional
-    public TischAntwort starteTisch(UUID tischId, SpielerEntity spieler) {
-        SpielerEntity verwalteterSpieler = ladeSpieler(spieler.id());
+    public TischAntwort starteTisch(TischId tischId, SpielerEntity spieler) {
+        SpielerEntity verwalteterSpieler = ladeSpieler(SpielerId.von(spieler.id()));
         TischEntity tisch = ladeTischEntityMitSperre(tischId);
         pruefeWartendenTisch(tisch, "TISCH_BEREITS_GESTARTET", "Der Tisch wurde bereits gestartet.");
         if (!tisch.erstelltVon().id().equals(verwalteterSpieler.id())) {
@@ -206,8 +208,8 @@ public class TischService {
      * Die neuen Partie-Events werden an alle Spieler am Tisch gesendet.</p>
      */
     @Transactional
-    public BestaetigungAntwort starteNeuePartie(UUID tischId, SpielerEntity spieler) {
-        ladeSpieler(spieler.id()); // Session validieren
+    public BestaetigungAntwort starteNeuePartie(TischId tischId, SpielerEntity spieler) {
+        ladeSpieler(SpielerId.von(spieler.id())); // Session validieren
         TischEntity tisch = ladeTischEntityMitSperre(tischId);
         if (tisch.status() != TischStatus.IM_SPIEL) {
             throw new SpielverwaltungKonfliktException(
@@ -249,17 +251,17 @@ public class TischService {
     }
 
     @Transactional(readOnly = true)
-    public TischKonfigurationDto ladeKonfiguration(UUID tischId) {
+    public TischKonfigurationDto ladeKonfiguration(TischId tischId) {
         return TischKonfigurationDto.aus(ladeTischEntity(tischId).konfiguration());
     }
 
     @Transactional
     public TischKonfigurationDto aktualisiereKonfiguration(
-        UUID tischId,
+        TischId tischId,
         SpielerEntity spieler,
         TischKonfigurationDto konfiguration
     ) {
-        SpielerEntity verwalteterSpieler = ladeSpieler(spieler.id());
+        SpielerEntity verwalteterSpieler = ladeSpieler(SpielerId.von(spieler.id()));
         TischEntity tisch = ladeTischEntityMitSperre(tischId);
         pruefeWartendenTisch(
             tisch,
@@ -285,26 +287,26 @@ public class TischService {
     }
 
     @Transactional(readOnly = true)
-    public PartieStandAntwort ladePartieStand(UUID partieId) {
+    public PartieStandAntwort ladePartieStand(PartieId partieId) {
         return PartieStandAntwort.aus(ladePartieEntity(partieId));
     }
 
     @Transactional(readOnly = true)
-    public PartieStandAntwort ladePartieStand(UUID partieId, SpielerEntity spieler) {
+    public PartieStandAntwort ladePartieStand(PartieId partieId, SpielerEntity spieler) {
         return PartieStandAntwort.aus(ladePartieEntity(partieId), spieler.id());
     }
 
     @Transactional(readOnly = true)
-    public PartieStandAntwort ladePartieStand(UUID partieId, SpielerEntity spieler, boolean debugModus) {
+    public PartieStandAntwort ladePartieStand(PartieId partieId, SpielerEntity spieler, boolean debugModus) {
         return PartieStandAntwort.aus(ladePartieEntity(partieId), spieler.id(), debugModus);
     }
 
     @Transactional
-    public PartieStandAntwort meldeVorbehalt(UUID tischId, SpielerEntity spieler, VorbehaltAnsage vorbehalt) {
+    public PartieStandAntwort meldeVorbehalt(TischId tischId, SpielerEntity spieler, VorbehaltAnsage vorbehalt) {
         if (vorbehalt == null) {
             throw new IllegalArgumentException("Ein Vorbehalt muss angegeben werden.");
         }
-        SpielerEntity verwalteterSpieler = ladeSpieler(spieler.id());
+        SpielerEntity verwalteterSpieler = ladeSpieler(SpielerId.von(spieler.id()));
         TischEntity tisch = ladeAktivenTischMitSpieler(tischId, verwalteterSpieler);
         SpielEntity laufendesSpielEntity = ladeLaufendesSpiel(tisch.partie());
         SpielerPosition position = spielerPositionVon(tisch.partie(), verwalteterSpieler);
@@ -325,8 +327,8 @@ public class TischService {
     }
 
     @Transactional
-    public PartieStandAntwort verarbeiteArmutAntwort(UUID tischId, SpielerEntity spieler, List<String> kartenIds, boolean angenommen) {
-        SpielerEntity verwalteterSpieler = ladeSpieler(spieler.id());
+    public PartieStandAntwort verarbeiteArmutAntwort(TischId tischId, SpielerEntity spieler, List<String> kartenIds, boolean angenommen) {
+        SpielerEntity verwalteterSpieler = ladeSpieler(SpielerId.von(spieler.id()));
         TischEntity tisch = ladeAktivenTischMitSpieler(tischId, verwalteterSpieler);
         SpielEntity laufendesSpielEntity = ladeLaufendesSpiel(tisch.partie());
         SpielerPosition position = spielerPositionVon(tisch.partie(), verwalteterSpieler);
@@ -351,8 +353,8 @@ public class TischService {
     }
 
     @Transactional
-    public PartieStandAntwort spieleKarte(UUID tischId, SpielerEntity spieler, String karteId) {
-        SpielerEntity verwalteterSpieler = ladeSpieler(spieler.id());
+    public PartieStandAntwort spieleKarte(TischId tischId, SpielerEntity spieler, String karteId) {
+        SpielerEntity verwalteterSpieler = ladeSpieler(SpielerId.von(spieler.id()));
         TischEntity tisch = ladeAktivenTischMitSpieler(tischId, verwalteterSpieler);
         SpielEntity laufendesSpielEntity = ladeLaufendesSpiel(tisch.partie());
         SpielerPosition position = spielerPositionVon(tisch.partie(), verwalteterSpieler);
@@ -370,11 +372,11 @@ public class TischService {
     }
 
     @Transactional
-    public PartieStandAntwort sageAn(UUID tischId, SpielerEntity spieler, Ansage ansage) {
+    public PartieStandAntwort sageAn(TischId tischId, SpielerEntity spieler, Ansage ansage) {
         if (ansage == null) {
             throw new IllegalArgumentException("Eine Ansage muss angegeben werden.");
         }
-        SpielerEntity verwalteterSpieler = ladeSpieler(spieler.id());
+        SpielerEntity verwalteterSpieler = ladeSpieler(SpielerId.von(spieler.id()));
         TischEntity tisch = ladeAktivenTischMitSpieler(tischId, verwalteterSpieler);
         SpielEntity laufendesSpielEntity = ladeLaufendesSpiel(tisch.partie());
         SpielerPosition position = spielerPositionVon(tisch.partie(), verwalteterSpieler);
@@ -391,7 +393,7 @@ public class TischService {
         return PartieStandAntwort.aus(tisch.partie(), verwalteterSpieler.id());
     }
 
-    private PartieEntity ladePartieEntity(UUID partieId) {
+    private PartieEntity ladePartieEntity(PartieId partieId) {
         // Ueber TischRepository laden, damit befuelleTransienteFelder() ausgefuehrt wird
         // und PartieEntity.tisch() das transiente Tisch-Objekt mit Spielerliste enthaelt.
         // Das ist notwendig fuer PartieStandAntwort, die tisch.spieler() aufruft.
@@ -405,7 +407,7 @@ public class TischService {
     }
 
     @Transactional(readOnly = true)
-    public TischAntwort ladeTisch(UUID tischId) {
+    public TischAntwort ladeTisch(TischId tischId) {
         return TischAntwort.aus(ladeTischEntity(tischId));
     }
 
@@ -429,7 +431,7 @@ public class TischService {
             ));
     }
 
-    private TischEntity ladeTischEntity(UUID tischId) {
+    private TischEntity ladeTischEntity(TischId tischId) {
         return tischRepository.findById(tischId)
             .orElseThrow(() -> new SpielverwaltungNichtGefundenException(
                 "TISCH_NICHT_GEFUNDEN",
@@ -444,7 +446,7 @@ public class TischService {
      * sonst koennen zwei gleichzeitige Requests beide die Pruefung bestehen und
      * den Tisch in einen inkonsistenten Zustand bringen.
      */
-    private TischEntity ladeTischEntityMitSperre(UUID tischId) {
+    private TischEntity ladeTischEntityMitSperre(TischId tischId) {
         return tischRepository.findByIdWithLock(tischId)
             .orElseThrow(() -> new SpielverwaltungNichtGefundenException(
                 "TISCH_NICHT_GEFUNDEN",
@@ -452,7 +454,7 @@ public class TischService {
             ));
     }
 
-    private SpielerEntity ladeSpieler(UUID spielerId) {
+    private SpielerEntity ladeSpieler(SpielerId spielerId) {
         return spielerRepository.findById(spielerId)
             .orElseThrow(() -> new SpielverwaltungNichtGefundenException(
                 "SPIELER_NICHT_GEFUNDEN",
@@ -461,7 +463,7 @@ public class TischService {
     }
 
     private void pruefeDassSpielerAnKeinemTischSitzt(SpielerEntity spieler) {
-        tischRepository.findBySpieler_Id(spieler.id()).ifPresent(tisch -> {
+        tischRepository.findBySpieler_Id(SpielerId.von(spieler.id())).ifPresent(tisch -> {
             throw new SpielverwaltungKonfliktException(
                 "SPIELER_BEREITS_AN_TISCH",
                 "Ein Spieler darf gleichzeitig nur an einem Tisch sitzen."
@@ -475,7 +477,7 @@ public class TischService {
         }
     }
 
-    private TischEntity ladeAktivenTischMitSpieler(UUID tischId, SpielerEntity spieler) {
+    private TischEntity ladeAktivenTischMitSpieler(TischId tischId, SpielerEntity spieler) {
         TischEntity tisch = ladeTischEntity(tischId);
         if (!tisch.enthaeltSpieler(spieler)) {
             throw new SpielverwaltungKonfliktException("SPIELER_NICHT_AM_TISCH", "Der Spieler sitzt nicht an diesem Tisch.");

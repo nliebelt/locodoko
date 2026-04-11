@@ -1,5 +1,6 @@
 package de.locodoko.lobby;
 
+import de.locodoko.partie.PartieId;
 import de.locodoko.session.SpielerEntity;
 import de.locodoko.session.SpielerSessionService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -79,7 +80,7 @@ public class TischController {
     @GetMapping("/{id}")
     public TischAntwort ladeTisch(@Parameter(description = "Tisch-ID") @PathVariable UUID id) {
         LOGGER.info("Tisch {} abgefragt", id);
-        return tischService.ladeTisch(id);
+        return tischService.ladeTisch(TischId.von(id));
     }
 
     @Operation(summary = "Tisch beitreten", description = "Fuegt den anfragenden Spieler einem bestehenden Tisch hinzu.")
@@ -93,7 +94,7 @@ public class TischController {
     public TischAntwort betreteTisch(@Parameter(description = "Tisch-ID") @PathVariable UUID id, HttpServletRequest request) {
         SpielerEntity spieler = ladeAktivenSpieler(request);
         LOGGER.info("Spieler {} tritt Tisch {} bei", spieler.id(), id);
-        return tischService.betreteTisch(id, spieler);
+        return tischService.betreteTisch(TischId.von(id), spieler);
     }
 
     @Operation(summary = "Tisch verlassen", description = "Entfernt den anfragenden Spieler vom Tisch. Laeuft eine Partie, wird sie abgebrochen.")
@@ -106,7 +107,7 @@ public class TischController {
     public BestaetigungAntwort verlasseTisch(@Parameter(description = "Tisch-ID") @PathVariable UUID id, HttpServletRequest request) {
         SpielerEntity spieler = ladeAktivenSpieler(request);
         LOGGER.info("Spieler {} verlaesst Tisch {}", spieler.id(), id);
-        return tischService.verlasseTisch(id, spieler);
+        return tischService.verlasseTisch(TischId.von(id), spieler);
     }
 
     @Operation(summary = "Spiel starten", description = "Startet das Spiel am Tisch. Fehlende Spieler werden durch KI-Spieler aufgefuellt. Nur der Tischersteller kann starten.")
@@ -120,7 +121,7 @@ public class TischController {
     public BestaetigungAntwort starteTisch(@Parameter(description = "Tisch-ID") @PathVariable UUID id, HttpServletRequest request) {
         SpielerEntity spieler = ladeAktivenSpieler(request);
         LOGGER.info("Spieler {} startet Tisch {}", spieler.id(), id);
-        TischAntwort antwort = tischService.starteTisch(id, spieler);
+        TischAntwort antwort = tischService.starteTisch(TischId.von(id), spieler);
         return new BestaetigungAntwort("Tisch " + antwort.id() + " wurde gestartet.");
     }
 
@@ -135,7 +136,7 @@ public class TischController {
     public BestaetigungAntwort starteNeuePartie(@Parameter(description = "Tisch-ID") @PathVariable UUID id, HttpServletRequest request) {
         SpielerEntity spieler = ladeAktivenSpieler(request);
         LOGGER.info("Spieler {} startet neue Partie an Tisch {}", spieler.id(), id);
-        return tischService.starteNeuePartie(id, spieler);
+        return tischService.starteNeuePartie(TischId.von(id), spieler);
     }
 
     @Operation(summary = "Tischkonfiguration abrufen", description = "Gibt alle Spielregeln des Tisches zurueck (Trumpfreihenfolge, Sonderpunkte, Timeouts etc.).")
@@ -146,7 +147,7 @@ public class TischController {
     @GetMapping("/{id}/konfiguration")
     public TischKonfigurationDto gibKonfiguration(@Parameter(description = "Tisch-ID") @PathVariable UUID id) {
         LOGGER.info("Konfiguration fuer Tisch {} abgefragt", id);
-        return tischService.ladeKonfiguration(id);
+        return tischService.ladeKonfiguration(TischId.von(id));
     }
 
     @Operation(summary = "Tischkonfiguration aktualisieren", description = "Aendert die Spielregeln des Tisches. Nur moeglich, solange noch keine Partie laeuft. Nur der Tischersteller kann die Konfiguration aendern.")
@@ -165,7 +166,7 @@ public class TischController {
     ) {
         SpielerEntity spieler = ladeAktivenSpieler(request);
         LOGGER.info("Spieler {} aktualisiert die Konfiguration von Tisch {}", spieler.id(), id);
-        return tischService.aktualisiereKonfiguration(id, spieler, konfiguration);
+        return tischService.aktualisiereKonfiguration(TischId.von(id), spieler, konfiguration);
     }
 
     private SpielerEntity ladeAktivenSpieler(HttpServletRequest request) {

@@ -19,6 +19,16 @@ public interface SpielRepository extends CrudRepository<SpielEntity, UUID> {
     @Query("SELECT * FROM spiel WHERE partie_id = :partieId ORDER BY spiel_nummer ASC")
     List<SpielEntity> findAllByPartie_IdOrderBySpielNummerAsc(UUID partieId);
 
+    /** Liefert alle Spiele einer Partie (typisierte ID), sortiert nach Spielnummer. */
+    default List<SpielEntity> findAllByPartieId(PartieId partieId) {
+        return findAllByPartie_IdOrderBySpielNummerAsc(partieId.wert());
+    }
+
+    /** Sucht ein Spiel anhand der typisierten ID. */
+    default Optional<SpielEntity> findById(SpielId id) {
+        return findById(id.wert());
+    }
+
     /** Zaehlt alle Spiele. */
     long count();
 

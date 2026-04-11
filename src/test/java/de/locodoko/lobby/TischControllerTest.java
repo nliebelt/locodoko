@@ -97,7 +97,7 @@ class TischControllerTest {
             .andReturn();
 
         TischAntwort antwort = objectMapper.readValue(ergebnis.getResponse().getContentAsByteArray(), TischAntwort.class);
-        TischEntity gespeichert = tischRepository.findById(antwort.id()).orElseThrow();
+        TischEntity gespeichert = tischRepository.findById(TischId.von(antwort.id())).orElseThrow();
         assertEquals(1, gespeichert.spieler().size(),
             "Der Ersteller muss sofort am Tisch sitzen, damit die Lobby ohne weiteren Join-Schritt konsistent bleibt.");
     }
@@ -140,7 +140,7 @@ class TischControllerTest {
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.nachricht").value("Tisch erfolgreich verlassen."));
 
-        TischEntity geladen = tischRepository.findById(tischId).orElseThrow();
+        TischEntity geladen = tischRepository.findById(TischId.von(tischId)).orElseThrow();
         assertEquals(1, geladen.spieler().size(),
             "Nach dem Verlassen muss die Sitzbelegung reduziert sein, damit freie Plaetze spaeter korrekt mit KI aufgefuellt werden.");
         assertEquals("Bert", geladen.erstelltVon().name(),
@@ -156,7 +156,7 @@ class TischControllerTest {
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.nachricht").value("Tisch " + tischId + " wurde gestartet."));
 
-        TischEntity geladen = tischRepository.findById(tischId).orElseThrow();
+        TischEntity geladen = tischRepository.findById(TischId.von(tischId)).orElseThrow();
         assertEquals(TischStatus.IM_SPIEL, geladen.status(),
             "Der Tischstatus muss nach dem Start umspringen, damit Lobby und Spielansicht denselben Startzustand sehen.");
         assertEquals(4, geladen.spieler().size(),
@@ -364,7 +364,7 @@ class TischControllerTest {
         mockMvc.perform(post("/api/tische/{id}/verlassen", tischId).session(adaSession))
             .andExpect(status().isOk());
 
-        assertTrue(tischRepository.findById(tischId).isEmpty(),
+        assertTrue(tischRepository.findById(TischId.von(tischId)).isEmpty(),
             "Nach Abbruch einer laufenden Partie wird der Tisch geloescht, damit kein verwaister Tischzustand entsteht.");
     }
 
@@ -396,7 +396,7 @@ class TischControllerTest {
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.nachricht").value("Neue Partie gestartet."));
 
-        TischEntity geladen = tischRepository.findById(tischId).orElseThrow();
+        TischEntity geladen = tischRepository.findById(TischId.von(tischId)).orElseThrow();
         assertNotNull(geladen.partie(),
             "Nach neue-partie muss eine Partie vorhanden sein, damit der PartieStand abrufbar ist.");
         assertTrue(!geladen.partie().id().equals(altePartieId),

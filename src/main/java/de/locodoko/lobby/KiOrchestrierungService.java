@@ -150,7 +150,7 @@ public class KiOrchestrierungService {
                 if (naechsterSpielerEntity != null
                         && (naechsterSpielerEntity.istKi() || naechsterSpielerEntity.istKiUebernommen())
                         && !naechster.equals(erwarteterSpieler)) {
-                    final UUID tischId = tisch.id();
+                    final TischId tischId = TischId.von(tisch.id());
                     kiScheduler.schedule(
                         () -> verzoegerteKiAktionAusfuehren(tischId),
                         KI_KARTEN_VERZOEGERUNG_MS,
@@ -184,7 +184,7 @@ public class KiOrchestrierungService {
      * ist, wird ein weiterer Delay geplant.
      */
     @Transactional
-    public void verzoegerteKiAktionAusfuehren(UUID tischId) {
+    public void verzoegerteKiAktionAusfuehren(TischId tischId) {
         TischEntity tisch = tischRepository.findById(tischId).orElse(null);
         if (tisch == null || tisch.partie() == null || tisch.partie().status() == PartieStatus.BEENDET) {
             return;
@@ -239,7 +239,7 @@ public class KiOrchestrierungService {
                         fuehreVerzoegertenKiZugAus(tisch);
                         return;
                     }
-                    final UUID tischId = tisch.id();
+                    final TischId tischId = TischId.von(tisch.id());
                     kiScheduler.schedule(
                         () -> verzoegerteKiAktionAusfuehren(tischId),
                         KI_KARTEN_VERZOEGERUNG_MS,

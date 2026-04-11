@@ -1,5 +1,6 @@
 package de.locodoko.lobby;
 
+import de.locodoko.partie.PartieId;
 import de.locodoko.session.SpielerEntity;
 import de.locodoko.session.SpielerSessionService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -47,7 +48,7 @@ public class PartieController {
     public PartieStandAntwort gibPartieStand(@Parameter(description = "Partie-ID") @PathVariable UUID id, HttpServletRequest request) {
         SpielerEntity spieler = ladeAktivenSpieler(request);
         LOGGER.info("Partiestand fuer Partie {} von Spieler {} abgefragt", id, spieler.id());
-        return tischService.ladePartieStand(id, spieler);
+        return tischService.ladePartieStand(PartieId.von(id), spieler);
     }
 
     private SpielerEntity ladeAktivenSpieler(HttpServletRequest request) {

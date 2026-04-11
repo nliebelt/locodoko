@@ -44,7 +44,7 @@ public class VerbindungsSessionEreignisListener {
         String spielerName = (String) attribute.get("spielerName");
 
         if (httpSessionId != null && spielerId != null && spielerName != null) {
-            verbindungsabbruchService.verarbeiteReconnect(httpSessionId, spielerId, spielerName);
+            verbindungsabbruchService.verarbeiteReconnect(httpSessionId, SpielerId.von(spielerId), spielerName);
         }
     }
 
@@ -63,7 +63,7 @@ public class VerbindungsSessionEreignisListener {
         String spielerName = (String) attribute.get("spielerName");
 
         if (httpSessionId != null && spielerId != null && spielerName != null) {
-            verbindungsabbruchService.verarbeiteDisconnect(httpSessionId, spielerId, spielerName);
+            verbindungsabbruchService.verarbeiteDisconnect(httpSessionId, SpielerId.von(spielerId), spielerName);
         } else {
             LOGGER.debug("WebSocket-Disconnect ohne gültige Spieler-Attribute — vermutlich fehlgeschlagener Handshake.");
         }

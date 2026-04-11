@@ -8,8 +8,9 @@
 Nächster logischer Schritt: Task 8 (Frontend-Animationen: Stich-Visualisierung) oder Task 9 (Rundenauswertungs-Overlay).
 Offene Fragen: keine.
 
-**2026-04-11 (Architektur-Review):** Vollständige Refactoring-Sektion R0–R11 + Test-Sektion T1–T6 hinzugefügt. Ziel: saubere OO-Domäne als Multiplayer-Fundament. Kritische Test-Lücken: Hochzeit (0 Unit-Tests), Armut (0 Unit-Tests), Race Conditions (0 Tests). Neue Specs: `specs/architektur-spielkern.md`, `specs/architektur-domain-events.md`.
-Nächster logischer Schritt: **R0.1** (Typed IDs) und **T1.1** (Hochzeit-Tests) können parallel gestartet werden. R11 kommt zuletzt.
+**2026-04-11 (R0 Typed IDs):** `TischId`, `PartieId`, `SpielId`, `SpielerId` Records in jeweiligen Bounded Contexts angelegt. `TischRepository` (custom) vollständig auf Typed IDs umgestellt; `PartieRepository`, `SpielRepository`, `SpielerRepository` mit typisierten Default-Overload-Methoden erweitert (JDBC-Schicht bleibt UUID-basiert). `TischService`, beide Controller, `WebSocketController`, `VerbindungsabbruchService`, `SpielerSessionCleanupService` und `SpielerSessionService` auf Typed IDs umgestellt. 179 Backend-Tests grün.
+Nächster logischer Schritt: **T1** (Hochzeit Unit-Tests) — unabhängig, kritisch (0 Unit-Tests vorhanden). Danach **R1** (SpielBuilder) als nächster R-Task.
+Offene Fragen: keine.
 
 ---
 
@@ -182,11 +183,11 @@ Alle gesetzt (17 gesamt):
 
 > **Blockiert:** alle anderen R-Tasks profitieren davon | **Spec:** `specs/architektur-spielkern.md` Abschnitt "Typed IDs"
 
-- [ ] **R0.1** Records `TischId`, `SpielId`, `PartieId`, `SpielerId` im jeweiligen Bounded Context anlegen — je mit `neu()`, `von(UUID)`, `von(String)` Factory-Methoden
-- [ ] **R0.2** Spring Data JDBC Converter registrieren: `TischId ↔ UUID`, `SpielId ↔ UUID`, etc. — damit `@Table`-Annotierungen weiter funktionieren
-- [ ] **R0.3** Alle Repository-Interfaces auf Typed IDs umstellen (`findById(TischId)` statt `findById(UUID)`)
-- [ ] **R0.4** Alle Service-Methoden und Controller auf Typed IDs umstellen — `@PathVariable UUID` → intern `TischId.von(uuid)` konvertieren
-- [ ] **R0.5** Alle Tests anpassen und grün
+- [x] **R0.1** Records `TischId`, `SpielId`, `PartieId`, `SpielerId` im jeweiligen Bounded Context anlegen — je mit `neu()`, `von(UUID)`, `von(String)` Factory-Methoden
+- [x] **R0.2** Entities behalten `UUID id` für JDBC; CrudRepository-Repos erhalten typisierte Default-Overload-Methoden (`findById(PartieId)` etc.) statt Konverter — sauberer und wartbarer
+- [x] **R0.3** TischRepository (custom) vollständig auf Typed IDs umgestellt; CrudRepository-Repos mit typisierten Overloads
+- [x] **R0.4** TischService, TischController, PartieController, WebSocketController, VerbindungsabbruchService, SpielerSessionCleanupService, SpielerSessionService auf Typed IDs umgestellt
+- [x] **R0.5** Alle Tests angepasst und grün (179 Tests)
 
 ---
 

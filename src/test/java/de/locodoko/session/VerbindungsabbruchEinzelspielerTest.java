@@ -68,7 +68,7 @@ class VerbindungsabbruchEinzelspielerTest {
     void einzelspielerTischLoestKeinenKiTimeoutAus() {
         verbindungsabbruchService.verarbeiteDisconnect(
                 mensch.sessionId(),
-                mensch.id(),
+                SpielerId.von(mensch.id()),
                 mensch.name()
         );
 

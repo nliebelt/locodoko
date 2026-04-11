@@ -5,6 +5,7 @@ import de.locodoko.partie.PartieRepository;
 import de.locodoko.session.SpielerEntity;
 import de.locodoko.session.SpielerRepository;
 import de.locodoko.lobby.TischEntity;
+import de.locodoko.lobby.TischId;
 import de.locodoko.lobby.TischRepository;
 import de.locodoko.lobby.TischkonfigurationEmbeddable;
 import org.junit.jupiter.api.BeforeEach;
@@ -109,7 +110,7 @@ class SpielerSessionCleanupServiceTest {
 
         cleanupService.bereinige(spieler.sessionId());
 
-        TischEntity nachBereinigung = tischRepository.findById(tisch.id()).orElseThrow();
+        TischEntity nachBereinigung = tischRepository.findById(TischId.von(tisch.id())).orElseThrow();
         assertFalse(
                 nachBereinigung.enthaeltSpieler(spieler),
                 "Nach Session-Ablauf muss der Spieler aus dem wartenden Tisch entfernt worden sein, " +
@@ -134,7 +135,7 @@ class SpielerSessionCleanupServiceTest {
         cleanupService.bereinige(spieler.sessionId());
 
         assertFalse(
-                tischRepository.existsById(tisch.id()),
+                tischRepository.existsById(TischId.von(tisch.id())),
                 "Ein leerer Tisch muss nach dem Session-Ablauf des letzten Spielers gelöscht werden — " +
                 "sonst entstehen Geistertische ohne Spieler, die den Lobby-Zustand verfälschen."
         );
@@ -177,7 +178,7 @@ class SpielerSessionCleanupServiceTest {
 
         cleanupService.bereinige(spieler.sessionId());
 
-        TischEntity nachBereinigung = tischRepository.findById(tisch.id()).orElseThrow();
+        TischEntity nachBereinigung = tischRepository.findById(TischId.von(tisch.id())).orElseThrow();
         assertTrue(
                 nachBereinigung.enthaeltSpieler(spieler),
                 "Bei einem aktiven Tisch darf der Spieler nicht entfernt werden — " +

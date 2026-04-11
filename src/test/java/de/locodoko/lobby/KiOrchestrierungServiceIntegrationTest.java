@@ -86,11 +86,11 @@ class KiOrchestrierungServiceIntegrationTest {
         });
 
         // Timing-Mechanismus: in Tests die verzoegerten KI-Zuege synchron ausloesen (NORD, OST)
-        kiOrchestrierungService.verzoegerteKiAktionAusfuehren(ids.tischId());
-        kiOrchestrierungService.verzoegerteKiAktionAusfuehren(ids.tischId());
+        kiOrchestrierungService.verzoegerteKiAktionAusfuehren(TischId.von(ids.tischId()));
+        kiOrchestrierungService.verzoegerteKiAktionAusfuehren(TischId.von(ids.tischId()));
 
         transactionTemplate.executeWithoutResult(status -> {
-            TischEntity tisch = tischRepository.findById(ids.tischId()).orElseThrow();
+            TischEntity tisch = tischRepository.findById(TischId.von(ids.tischId())).orElseThrow();
             PartieStandAntwort stand = PartieStandAntwort.aus(tisch.partie(), tisch.spieler().getFirst().id());
 
             assertEquals(SpielerPosition.SUED, stand.laufendesSpiel().aktuellerSpieler(),
@@ -137,7 +137,7 @@ class KiOrchestrierungServiceIntegrationTest {
         });
 
         transactionTemplate.executeWithoutResult(status -> {
-            TischEntity tisch = tischRepository.findById(ids.tischId()).orElseThrow();
+            TischEntity tisch = tischRepository.findById(TischId.von(ids.tischId())).orElseThrow();
             PartieEntity partie = tisch.partie();
 
             assertEquals(PartieStatus.BEENDET, partie.status(),

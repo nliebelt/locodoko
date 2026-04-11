@@ -109,7 +109,7 @@ class PersistenzRepositoryTest {
         TischEntity gespeichert = tischRepository.saveAndFlush(tisch);
 
         // Spring Data JDBC liest immer direkt aus der Datenbank — kein Cache-Clear noetig
-        TischEntity geladen = tischRepository.findById(gespeichert.id()).orElseThrow();
+        TischEntity geladen = tischRepository.findById(de.locodoko.lobby.TischId.von(gespeichert.id())).orElseThrow();
         assertEquals(TischStatus.IM_SPIEL, geladen.status(),
             "Die Tisch-Persistenz muss den laufenden Status tragen, damit Lobby und Startlogik denselben Wahrheitsstand sehen.");
         assertEquals(12, geladen.konfiguration().anzahlSpiele());
@@ -165,7 +165,7 @@ class PersistenzRepositoryTest {
         tisch.setzePartie(partie);
         TischEntity gespeichert = tischRepository.saveAndFlush(tisch);
 
-        tischRepository.deleteById(gespeichert.id());
+        tischRepository.deleteById(de.locodoko.lobby.TischId.von(gespeichert.id()));
 
         assertEquals(0, tischRepository.count(),
             "Wenn ein Tisch geloescht wird, darf kein verwaistes Lobby-Aggregat in der Datenbank bleiben.");

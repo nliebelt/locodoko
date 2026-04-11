@@ -83,7 +83,7 @@ public class SpielerSessionCleanupService {
         // WebSocket-Disconnect-Tracking bereinigen: Reconnect ist mit abgelaufener Session unmöglich
         verbindungsabbruchService.entferneAusTracking(sessionId);
 
-        Optional<TischEntity> tischOpt = tischRepository.findBySpieler_Id(spieler.id());
+        Optional<TischEntity> tischOpt = tischRepository.findBySpieler_Id(SpielerId.von(spieler.id()));
         if (tischOpt.isEmpty()) {
             // Spieler sitzt an keinem Tisch — nur Session-ID leeren
             spieler.nullifiziereSessionId();

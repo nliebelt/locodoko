@@ -91,7 +91,7 @@ public class SpielerSessionService {
      */
     @Transactional(readOnly = true)
     public java.util.UUID ladeAktiveTischId(java.util.UUID spielerId) {
-        return tischRepository.findBySpieler_Id(spielerId)
+        return tischRepository.findBySpieler_Id(SpielerId.von(spielerId))
             .map(tisch -> tisch.id())
             .orElse(null);
     }

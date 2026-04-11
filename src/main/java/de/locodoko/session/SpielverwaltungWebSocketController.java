@@ -16,6 +16,9 @@ import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.simp.annotation.SendToUser;
 import org.springframework.stereotype.Controller;
 
+import de.locodoko.lobby.TischId;
+import de.locodoko.partie.PartieId;
+
 import java.security.Principal;
 import java.util.UUID;
 
@@ -62,8 +65,8 @@ public class SpielverwaltungWebSocketController {
     @MessageMapping("/tisch/{tischId}/snapshot")
     public void sendeTischSnapshot(@DestinationVariable UUID tischId, Principal principal) {
         SpielerEntity spieler = ladeAktivenSpieler(principal);
-        TischAntwort tisch = tischService.ladeTisch(tischId);
-        PartieStandAntwort partieStand = tisch.partieId() == null ? null : tischService.ladePartieStand(tisch.partieId(), spieler);
+        TischAntwort tisch = tischService.ladeTisch(TischId.von(tischId));
+        PartieStandAntwort partieStand = tisch.partieId() == null ? null : tischService.ladePartieStand(PartieId.von(tisch.partieId()), spieler);
         LOGGER.info("Spieler {} fordert Tisch-Snapshot {} per WebSocket an", spieler.id(), tischId);
         tischEchtzeitService.sendeAnBenutzer(
             principal.getName(),
@@ -79,7 +82,7 @@ public class SpielverwaltungWebSocketController {
         tischEchtzeitService.sendeAnBenutzer(
             principal.getName(),
             "/queue/partie/" + partieId,
-            PartieEreignisAntwort.snapshot(tischService.ladePartieStand(partieId, spieler))
+            PartieEreignisAntwort.snapshot(tischService.ladePartieStand(PartieId.von(partieId), spieler))
         );
     }
 
@@ -90,7 +93,7 @@ public class SpielverwaltungWebSocketController {
         tischEchtzeitService.sendeAnBenutzer(
             principal.getName(),
             "/queue/partie/" + partieId,
-            PartieEreignisAntwort.snapshot(tischService.ladePartieStand(partieId, spieler, true))
+            PartieEreignisAntwort.snapshot(tischService.ladePartieStand(PartieId.von(partieId), spieler, true))
         );
     }
 
@@ -98,28 +101,28 @@ public class SpielverwaltungWebSocketController {
     public void meldeVorbehalt(@DestinationVariable UUID tischId, VorbehaltAnfrage anfrage, Principal principal) {
         SpielerEntity spieler = ladeAktivenSpieler(principal);
         LOGGER.info("Spieler {} meldet Vorbehalt {} per WebSocket an Tisch {}", spieler.id(), anfrage.vorbehalt(), tischId);
-        tischService.meldeVorbehalt(tischId, spieler, anfrage.vorbehalt());
+        tischService.meldeVorbehalt(TischId.von(tischId), spieler, anfrage.vorbehalt());
     }
 
     @MessageMapping("/tisch/{tischId}/armut-antwort")
     public void verarbeiteArmutAntwort(@DestinationVariable UUID tischId, ArmutAntwortAnfrage anfrage, Principal principal) {
         SpielerEntity spieler = ladeAktivenSpieler(principal);
         LOGGER.info("Spieler {} beantwortet Armut per WebSocket an Tisch {}", spieler.id(), tischId);
-        tischService.verarbeiteArmutAntwort(tischId, spieler, anfrage.kartenIds(), anfrage.angenommen());
+        tischService.verarbeiteArmutAntwort(TischId.von(tischId), spieler, anfrage.kartenIds(), anfrage.angenommen());
     }
 
     @MessageMapping("/tisch/{tischId}/karte")
     public void spieleKarte(@DestinationVariable UUID tischId, KarteSpielenAnfrage anfrage, Principal principal) {
         SpielerEntity spieler = ladeAktivenSpieler(principal);
         LOGGER.info("Spieler {} spielt Karte {} per WebSocket an Tisch {}", spieler.id(), anfrage.karteId(), tischId);
-        tischService.spieleKarte(tischId, spieler, anfrage.karteId());
+        tischService.spieleKarte(TischId.von(tischId), spieler, anfrage.karteId());
     }
 
     @MessageMapping("/tisch/{tischId}/ansage")
     public void sageAn(@DestinationVariable UUID tischId, AnsageAnfrage anfrage, Principal principal) {
         SpielerEntity spieler = ladeAktivenSpieler(principal);
         LOGGER.info("Spieler {} taetigt Ansage {} per WebSocket an Tisch {}", spieler.id(), anfrage.ansage(), tischId);
-        tischService.sageAn(tischId, spieler, anfrage.ansage());
+        tischService.sageAn(TischId.von(tischId), spieler, anfrage.ansage());
     }
 
     @MessageExceptionHandler({
