@@ -8,9 +8,8 @@
 Nächster logischer Schritt: Task 8 (Frontend-Animationen: Stich-Visualisierung) oder Task 9 (Rundenauswertungs-Overlay).
 Offene Fragen: keine.
 
-**2026-04-07 (Plan-Run #40):** Task 8.2 stabilisiert — `rundenauswertung.spec.ts` Schleife bei rein-KI-Stichen gefixt: `waitForFunction`-Timeout von 30s → 4s, `polling: 200ms` hinzugefügt, Iterations-Limit 30 → 60. Dadurch wartet die Schleife bei reinen KI-Stichen (wo weder Overlay noch eigener Zug erscheint) nur noch 4s statt 30s, bevor sie neu pollt — bei 3 KI-Karten à 800ms reichen 4s problemlos. Schnelles Polling (200ms) erkennt eigenen Zug/Overlay innerhalb eines Frames.
-Nächster logischer Schritt: Task 8.3 (E2E-Tests gegen laufendes Backend verifizieren) — Backend starten (`mvn spring-boot:run`) und `cd e2e && npx playwright test` ausführen. Danach 9.5 und 10.6 (Vision Loop).
-Offene Fragen: Backend war beim letzten Run nicht verfügbar. Bei nächstem Run zuerst Backend starten.
+**2026-04-11 (Architektur-Review):** Vollständige Refactoring-Sektion R0–R11 + Test-Sektion T1–T6 hinzugefügt. Ziel: saubere OO-Domäne als Multiplayer-Fundament. Kritische Test-Lücken: Hochzeit (0 Unit-Tests), Armut (0 Unit-Tests), Race Conditions (0 Tests). Neue Specs: `specs/architektur-spielkern.md`, `specs/architektur-domain-events.md`.
+Nächster logischer Schritt: **R0.1** (Typed IDs) und **T1.1** (Hochzeit-Tests) können parallel gestartet werden. R11 kommt zuletzt.
 
 ---
 
@@ -170,6 +169,212 @@ Alle gesetzt (17 gesamt):
 - **Transaktionalität**: WebSocket-Broadcasts in `TischEchtzeitService` sind transaktional gebunden.
 - **Pragmatisches DDD**: Domain Model = Persistence Model. Spring Data JDBC (kein JPA) + Liquibase.
 - **Tech-Migration**: Spring Data JDBC + Liquibase + Java 25 + Spring Boot 4.x bereits abgeschlossen (specs/tech-migration.md).
+
+---
+
+## R — Refactoring: Saubere Multiplayer-Basis
+
+> **Ziel:** Clean Code, keine God-Objects, Domain Events als Fundament für echten Multiplayer.
+> **Specs:** `specs/architektur-spielkern.md`, `specs/architektur-domain-events.md`
+> **Strategie:** Inkrementell — Tests müssen nach jeder Iteration grün bleiben. Kein Verhalten ändert sich.
+
+### R0. Typed IDs — Primitive Obsession eliminieren
+
+> **Blockiert:** alle anderen R-Tasks profitieren davon | **Spec:** `specs/architektur-spielkern.md` Abschnitt "Typed IDs"
+
+- [ ] **R0.1** Records `TischId`, `SpielId`, `PartieId`, `SpielerId` im jeweiligen Bounded Context anlegen — je mit `neu()`, `von(UUID)`, `von(String)` Factory-Methoden
+- [ ] **R0.2** Spring Data JDBC Converter registrieren: `TischId ↔ UUID`, `SpielId ↔ UUID`, etc. — damit `@Table`-Annotierungen weiter funktionieren
+- [ ] **R0.3** Alle Repository-Interfaces auf Typed IDs umstellen (`findById(TischId)` statt `findById(UUID)`)
+- [ ] **R0.4** Alle Service-Methoden und Controller auf Typed IDs umstellen — `@PathVariable UUID` → intern `TischId.von(uuid)` konvertieren
+- [ ] **R0.5** Alle Tests anpassen und grün
+
+---
+
+### R1. SpielBuilder (inner class in Spiel.java)
+
+> **Blockiert:** R2, R3, R4 profitieren davon | **Spec:** `specs/architektur-spielkern.md` Abschnitt "SpielBuilder"
+
+- [ ] **R1.1** `SpielBuilder` als `private static inner class` in `Spiel.java` implementieren — Felder entsprechen allen 17 Konstruktor-Parametern, Fluent-API (gibt `this` zurück), `build()` ruft privaten Konstruktor auf
+- [ ] **R1.2** `toBuilder()` Instanzmethode in `Spiel` — liefert `SpielBuilder` mit allen aktuellen Feldern vorbelegt
+- [ ] **R1.3** Alle Mutationsmethoden (`spieleKarte`, `sageAn`, `meldeVorbehalt`, `teileKartenAus`, `loeseVorbehalteAuf`, `legeArmutTrumpfkarten`, `lehneArmutAb`, `nimmArmutAn`, `werteAus`) auf `toBuilder().…build()` umstellen
+- [ ] **R1.4** Factory-Methoden (`neu()`, `neuMitSolistAufspieler()`, `ausPersistiertemStand()`) auf `SpielBuilder` umstellen
+- [ ] **R1.5** Alle bestehenden Tests grün — kein Verhalten geändert
+
+### R2. Pflichtansage-Logik DRY
+
+> **Blockiert von:** nichts | **Spec:** `specs/architektur-spielkern.md` Abschnitt "Pflichtansage-Logik DRY"
+
+- [ ] **R2.1** Private Hilfsmethode `effektiveKartenAnzahlFuer(SpielerPosition, Ansage)` in `Spiel.java` extrahieren
+- [ ] **R2.2** `kannAnsagen()` und `sageAn()` nutzen die neue Methode — ~20 duplizierte Zeilen entfallen
+- [ ] **R2.3** Tests grün
+
+### R3. TischService aufteilen
+
+> **Blockiert von:** nichts | **Spec:** `specs/architektur-spielkern.md` Abschnitt "TischService aufteilen"
+
+- [ ] **R3.1** `TischVerwaltungsService` extrahieren: `tischErstellen()`, `tischLoeschen()`, `konfigurationAendern()`, `spielerBeitreten()`, `kiAuffuellen()`
+- [ ] **R3.2** `SpielAktionsService` extrahieren: `karteSpielenFuer()`, `ansageTaetigenFuer()`, `vorbehaltMeldenFuer()`, `spielStarten()`
+- [ ] **R3.3** `SpielAktionsService.karteSpielenFuer()` leitet `SpielerPosition` aus Server-Session ab (nicht aus Request-Body) — Übergangslösung: validiert dass gesendete Position mit Session übereinstimmt
+- [ ] **R3.4** `TischController` und `PartieController` auf neue Services umstellen
+- [ ] **R3.5** Alter `TischService` entfernen
+- [ ] **R3.6** Alle Tests anpassen und grün
+
+### R4. KiOrchestrierungService: Domain-Logik zurück in Partie
+
+> **Blockiert von:** R3 | **Spec:** `specs/architektur-spielkern.md` Abschnitt "KiOrchestrierungService"
+
+- [ ] **R4.1** `Partie.schliesseAktuellesSpielAbUndStarteNaechstes(PunkteRechner)` als zentrale Methode — enthält Bockrunden-Trigger, Solist-Geber-Logik, Gesamtpunktestand-Update
+- [ ] **R4.2** `KiOrchestrierungService` ruft nur noch: Phase prüfen → `partie.schliesseAb…()` → persistieren → broadcast. Keine Spiellogik im Service.
+- [ ] **R4.3** `SpielPersistenzAdapter` wird von `KiOrchestrierungService` entkoppelt — Persistenz läuft durch `SpielAktionsService`
+- [ ] **R4.4** Tests für `Partie`-Methode, bestehende KI-Tests grün
+
+### R5. SpielRegistry (In-Memory Spiel-Cache)
+
+> **Blockiert von:** R3, R4 | **Spec:** `specs/architektur-spielkern.md` Abschnitte "SpielRegistry" und "Concurrency"
+
+- [ ] **R5.1** `SpielRegistry` als `@Component` implementieren — `ConcurrentHashMap<UUID, Spiel>` + `ReentrantLock` pro TischId
+- [ ] **R5.2** `mitSpielGesperrt(tischId, Function<Spiel, SpielUndErgebnis<T>>)` als zentrale Mutationsmethode
+- [ ] **R5.3** `SpielAktionsService` nutzt `SpielRegistry` statt direkt zu lesen/schreiben
+- [ ] **R5.4** Bei Server-Start: laufende Spiele aus DB in Registry laden (`SpielPersistenzAdapter.ladeAlleAktiven()`)
+- [ ] **R5.5** Tests: Concurrency-Test (zwei simultane Karten-Plays lösen keine Race Condition aus)
+
+### R6. Domain Events + KI als Subscriber
+
+> **Blockiert von:** R3, R4, R5 | **Spec:** `specs/architektur-domain-events.md`
+
+- [ ] **R6.1** Event-Records erstellen: `NaechsterSpielerErwartet`, `StichAbgeschlossen`, `SpielGestartet`, `SpielBeendet`, `VorbehaltErwartet` im Package `de.locodoko.partie.ereignisse`
+- [ ] **R6.2** `SpielAktionsService` publisht nach jeder Mutation das passende Event via `ApplicationEventPublisher`
+- [ ] **R6.3** `KiEventAdapter` als `@Component`: lauscht auf `NaechsterSpielerErwartet` + `VorbehaltErwartet`, führt KI-Zug aus — alle `if (isKi())`-Verzweigungen aus `SpielAktionsService` entfernen
+- [ ] **R6.4** `WebSocketBroadcastAdapter` als `@Component`: lauscht auf Events, sendet Broadcasts — `TischEchtzeitService`-Aufrufe aus `SpielAktionsService` entfernen
+- [ ] **R6.5** KI-Delay-Logik konsolidiert in `KiEventAdapter` (eine Stelle statt verstreut)
+- [ ] **R6.6** Alle bestehenden Tests grün — Verhalten identisch, nur Verkabelung geändert
+
+### R7. Frontend: TischSzene aufteilen
+
+> **Blockiert von:** nichts (unabhängig vom Backend) | **Spec:** `specs/architektur-spielkern.md` Abschnitt "Dokumentation"
+
+- [ ] **R7.1** `TischInputHandler.ts` extrahieren: alle `verarbeiteTaste*`-Methoden, Keyboard-Listener-Setup
+- [ ] **R7.2** `TischUIManager.ts` extrahieren: alle DOM-Methoden (`baueUi`, `aktualisiereTopBar`, alle `renderXxxDom`-Methoden)
+- [ ] **R7.3** `TischSzene.ts` delegiert an `TischInputHandler` und `TischUIManager` — Phaser-Lifecycle-Methoden (`create`, `update`, `preload`) bleiben in `TischSzene`
+- [ ] **R7.4** TSDoc auf allen neuen Klassen (Klassenebene + öffentliche Methoden)
+- [ ] **R7.5** Bestehende Frontend-Tests grün, `npm run build` und `npm run lint` clean
+
+### R8. Frontend: AnimationenService DRY
+
+> **Blockiert von:** nichts | **Spec:** `specs/architektur-spielkern.md` Abschnitt "Dokumentation"
+
+- [ ] **R8.1** Private `animiereTween<T>(targets, properties, config)` Methode in `AnimationenService` — zentrale Promise-Logik für alle Tween-Typen
+- [ ] **R8.2** `tweenAlpha`, `tweenZu`, `tweenScale` nutzen `animiereTween` intern — ~60 Zeilen Duplikation entfallen
+- [ ] **R8.3** Tests und Lint grün
+
+---
+
+### R9. Augen + Spielpunkte als Value Objects
+
+> **Blockiert von:** R1 (SpielBuilder macht Umbau wartbar) | **Spec:** `specs/architektur-spielkern.md` Abschnitt "Augen + Spielpunkte"
+
+- [ ] **R9.1** `Augen` record in `de.locodoko.karten` — mit `plus()`, `ueberschreitet()`, `mindestens()`, Invariante `wert >= 0`
+- [ ] **R9.2** `Spielpunkte` record in `de.locodoko.partie` — mit `mal()`, `plus()`
+- [ ] **R9.3** `Stich.augen()` gibt `Augen` zurück statt `int`
+- [ ] **R9.4** `Spielergebnis`, `PunkteRechner`, `SonderpunktBewerter` auf `Augen`/`Spielpunkte` umstellen
+- [ ] **R9.5** DTOs und API-Antworten geben weiterhin `int` nach außen — Umwandlung im Assembler
+- [ ] **R9.6** Alle Tests grün
+
+---
+
+### R10. PunkteRechner — Feature Envy beseitigen
+
+> **Blockiert von:** R1, R9 | **Spec:** `specs/architektur-spielkern.md` Abschnitt "PunkteRechner"
+
+- [ ] **R10.1** `Spiel.werteAus()` ohne Parameter — ruft intern `new PunkteRechner().berechne(...)` auf
+- [ ] **R10.2** `PunkteRechner` wird `final class` mit package-private Konstruktor, kein `@Component`
+- [ ] **R10.3** Alle `punkteRechner`-Parameter aus `KiOrchestrierungService` und Tests entfernen
+- [ ] **R10.4** Tests grün
+
+---
+
+### R11. State Pattern für Spielphase
+
+> **Blockiert von:** R0–R10 vollständig abgeschlossen | **Spec:** `specs/architektur-spielkern.md` Abschnitt "State Pattern"
+> **Achtung:** Größte Einzeländerung im Refactoring — erst anpacken wenn alle vorherigen R-Tasks grün sind.
+
+- [ ] **R11.1** `sealed interface SpielPhase` mit Implementierungen: `KartenAusteilen`, `VorbehaltAnsagen`, `VorbehaltAufloesung`, `ArmutTausch`, `Stichphase`, `Auswertung`, `GesamtstandAktualisieren`
+- [ ] **R11.2** `Stichphase` record hält `aktuellerStich` und `pflichtansageAusstehend` — diese Felder raus aus `Spiel`
+- [ ] **R11.3** `ArmutTausch` record hält `armutStatus` — raus aus `Spiel`
+- [ ] **R11.4** `VorbehaltAnsagen`/`VorbehaltAufloesung` hält `hochzeitStatus` bis Partnersuche abgeschlossen
+- [ ] **R11.5** `Spiel` hält `SpielPhase aktuellePhase` statt Enum + separate Felder — `pruefePhase()`-Aufrufe entfallen
+- [ ] **R11.6** `SpielPersistenzAdapter` serialisiert/deserialisiert `SpielPhase`-Zustand korrekt
+- [ ] **R11.7** Alle ~180 Tests grün, kein Verhalten geändert
+
+---
+
+## T — Test-Coverage: Lücken schließen
+
+> **Strategie:** Tests werden parallel zu den R-Tasks geschrieben — jede neue Klasse bekommt sofort Tests.
+> Bestehende Lücken werden in T1–T4 explizit geschlossen.
+
+### T1. Hochzeit Unit-Tests
+
+> **Blockiert von:** nichts | **Kritisch:** Hochzeit ist die komplexeste Sonderregel, aktuell 0 Unit-Tests
+
+- [ ] **T1.1** `HochzeitTest` — Hochzeit erkannt wenn beide Kreuz-Damen auf einer Hand
+- [ ] **T1.2** Partnersuche: erster Stich den ein anderer gewinnt → Partner gefunden, Parteien offenbart
+- [ ] **T1.3** Kein Partner in 3 Stichen → Stilles Solo (Spieltyp wechselt zu SOLO_TRUMPF)
+- [ ] **T1.4** Hochzeit-Spieler darf Ansagen erst nach Partnerfindung
+- [ ] **T1.5** Hochzeit + Dreißig-Augen-Pflicht kombiniert
+
+### T2. Armut Unit-Tests
+
+> **Blockiert von:** nichts | **Kritisch:** 80+ Zeilen Kartentausch-Logik ohne direkten Unit-Test
+
+- [ ] **T2.1** `ArmutTest` — Armut erkannt bei ≤3 Trumpfkarten
+- [ ] **T2.2** Angebot: Spieler legt genau alle Trumpfkarten ab — Hand korrekt reduziert
+- [ ] **T2.3** Annahme: Kartentausch bidirektional korrekt, Parteien korrekt gesetzt
+- [ ] **T2.4** Ablehnung durch alle Spieler → Einwurf (neue Karten, neue Runde)
+- [ ] **T2.5** Armut-Spieler hat 0 Trumpfkarten → trotzdem Armut
+
+### T3. Solo-Varianten Spielfluss-Tests (Unit)
+
+> **Blockiert von:** nichts | **Solo-Ordnungen sind getestet, Spielfluss (Aufspieler, Parteien, Geberrotation) nicht**
+
+- [ ] **T3.1** `SoloSpieltypTest` — Solo-Spieler ist nach Vorbehalt allein Re, die drei anderen Kontra
+- [ ] **T3.2** Geberrotation nach Solo: Geber bleibt (Solo-Nachgeben), Aufspieler = Solist beim Folge-Spiel
+- [ ] **T3.3** Solo Dame: Damen als einzige Trümpfe, Buben Fehlfarbe — Stich verloren wenn nur Bube gespielt
+- [ ] **T3.4** Solo Bube: Buben als einzige Trümpfe, Damen Fehlfarbe
+- [ ] **T3.5** Fleischlos: kein Trumpf, höchste angefragte Fehlfarbe gewinnt
+- [ ] **T3.6** Ansagen im Solo: Re-Ansage des Solisten ×2, Kontra der Gegner ×2, Grundwert ×3
+- [ ] **T3.7** Punkte nach Solo-Sieg und Solo-Niederlage (Vorzeichen und Multiplikator korrekt)
+
+### T4. Technische Schulden in Tests bereinigen
+
+> **Blockiert von:** nichts | **Klein, aber sauber**
+
+- [ ] **T4.1** `LocodokoAnwendungTests.kontextLaedt()` entfernen — leerer Test ohne Assertion
+- [ ] **T4.2** Sonderpunkte einzeln testen: `SonderpunktTest` mit je einem Test für Fuchs, Karlchen, Doppelkopf isoliert (nicht nur im `PunkteRechnerTest` eingebettet)
+- [ ] **T4.3** Grenzwert: Spiel mit 240 Augen gesamt — immer erfüllt, explizit assertiert
+
+### T5. E2E: Fehlerszenarien und Sonderregeln
+
+> **Blockiert von:** R3 (Spieler-Authentifizierung aus Session) | **Spec:** `specs/e2e-tests.md`
+
+- [ ] **T5.1** E2E: Armut-Workflow — Trumpfkarten anbieten, Tausch annehmen, Spiel läuft weiter
+- [ ] **T5.2** E2E: Ungültige Karte spielen → Fehler-Toast sichtbar, Spiel geht weiter
+- [ ] **T5.3** E2E: **Solo-Spielfluss** — neue Datei `e2e/tests/solo-spielfluss.spec.ts` (Testfall 3 aus `specs/e2e-tests.md`):
+  - Solo-Vorbehalt wählen (oder `test.skip` bei keiner Solo-Hand)
+  - HUD zeigt Solo-Spieltyp durchgehend
+  - Alle 12 Stiche bis Rundenauswertung
+  - Overlay: Solo-Spieltyp + nur ein RE + Multiplikator ×3
+  - Geber-Wiederholung im Folge-Spiel prüfen
+  - Zwei neue `data-testid`: `rundenauswertung-spieltyp`, `rundenauswertung-punktemultiplikator`
+- [ ] **T5.4** E2E: Reconnect — Tab schließen, neuen Tab öffnen, Session-Recovery-Button führt zurück ins Spiel
+
+### T6. Concurrency-Tests (nach R5 SpielRegistry)
+
+> **Blockiert von:** R5 | **Kritisch für Multiplayer**
+
+- [ ] **T6.1** `SpielRegistryConcurrencyTest` — zwei gleichzeitige `karteSpielenFuer()`-Aufrufe auf demselben Tisch: einer gewinnt, einer bekommt Exception — kein korrupter Zustand
+- [ ] **T6.2** Idempotenz: dasselbe Kommando zweimal gesendet → zweites Mal gecachtes Ergebnis, nicht doppelt ausgeführt
+- [ ] **T6.3** `SpielRegistry` nach Server-Neustart: Spiele aus DB korrekt in Memory geladen
 
 ---
 

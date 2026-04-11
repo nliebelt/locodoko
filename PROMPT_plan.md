@@ -20,16 +20,18 @@ auslieferbar als einzelnes JAR.
     - Subagent 1 — Lobby/Tisch: `src/main/java/de/locodoko/lobby/`
       + specs/lobby.md, specs/tischkonfiguration.md, specs/datenbankmodell.md
 
-    - Subagent 2 — Partie/Regeln: `src/main/java/de/locodoko/partie/`
+    - Subagent 2 — Partie/Regeln/Architektur: `src/main/java/de/locodoko/partie/`
       + specs/spielablauf.md, specs/stichlogik.md, specs/trumpfhierarchie.md,
         specs/kartendeck.md, specs/punkteberechnung.md, specs/ansagen.md,
         specs/sonderpunkte.md, specs/bockrunden.md, specs/schweinchen.md,
         specs/dreissig-augen-pflicht.md, specs/regelkatalog.md,
-        specs/tischkonfiguration.md
+        specs/tischkonfiguration.md,
+        **specs/architektur-spielkern.md** (Refactoring-Zielzustand)
 
-    - Subagent 3 — Session/API: `src/main/java/de/locodoko/session/`
+    - Subagent 3 — Session/API/Events: `src/main/java/de/locodoko/session/`
       + specs/spieler-session.md, specs/websocket-kommunikation.md,
-        specs/rest-api.md, specs/verbindungsabbruch.md, specs/e2e-tests.md
+        specs/rest-api.md, specs/verbindungsabbruch.md, specs/e2e-tests.md,
+        **specs/architektur-domain-events.md** (KI als Event-Subscriber)
 
     - Subagent 4 — Frontend: `frontend/src/`
       + specs/frontend-*.md, specs/regelkatalog.md

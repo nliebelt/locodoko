@@ -7,17 +7,22 @@
 - **Vertraue deinen Subagenten.** Wenn ein Subagent eine Datei bereits zusammengefasst hat,
   lies sie nicht nochmal selbst. Arbeite mit der Zusammenfassung.
 - **Tests müssen echte Fehler finden können.** Schreibe dazu kurz auf WARUM jeder Test wichtig ist.
+- **Architekturprinzipien einhalten.** Domain Model = Persistence Model. Immutable Domain Objects.
+  Typed IDs statt nackter UUID. Keine God-Objects. Ubiquitous Language auf Deutsch.
 
 ## Vorbereitung
 
 0a. Studiere @IMPLEMENTATION_PLAN.md. Lies die `## Notiz`-Sektion — sie enthält den Stand
     der letzten Iteration.
 
-0b. Falls Aufgabe 1.1 (Vision Loop Baseline) noch offen ist: ZUERST diese erledigen.
-    Danach wähle die EINE wichtigste offene Aufgabe. Nicht mehrere.
+0b. Wähle die EINE wichtigste offene Aufgabe. Ausnahme: Test-Tasks (T1–T6) und ihr
+    zugehöriger R-Task können gemeinsam in einer Iteration erledigt werden wenn sie
+    dieselbe Klasse betreffen (z.B. T1 + R0 wenn beide `Spiel.java` berühren).
 
 0c. Starte PARALLEL zwei Subagenten:
     - Subagent A: Relevante Specs aus `specs/` (nur die 1-2 direkt betroffenen).
+      Bei R-Tasks immer auch `specs/architektur-spielkern.md` einbeziehen.
+      Bei R5/R6 auch `specs/architektur-domain-events.md`.
       Kompakte Zusammenfassung — max. 15 Zeilen. Was sagen die Specs zu dieser Aufgabe?
     - Subagent B: Betroffener Code in `src/`, `frontend/`, `pom.xml`, `package.json`.
       Kompakte Zusammenfassung — max. 15 Zeilen. Was existiert bereits?

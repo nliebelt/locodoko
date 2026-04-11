@@ -155,6 +155,57 @@ cd e2e && npx playwright test --ui
 
 ---
 
+## Testfall 3: Solo-Spielfluss — vollständige Solo-Runde
+
+> **Hinweis**: Dieser Test erzwingt kein Solo durch eine Tischkonfiguration — er wartet deterministisch
+> auf eine Solo-Hand des Spielers, oder nutzt `meldeVorbehalt(page, 'SOLO_DAME')` wenn der Spieler
+> die Wahl hat. Falls kein Solo möglich: `test.skip`.
+>
+> **Warum E2E für Solo wichtig:** Solo verändert drei Dinge die im Normalspiel nicht beobachtbar sind:
+> - HUD zeigt anderen Spieltyp (z.B. „Damensolo")
+> - Nur der Solist ist Re, alle anderen Kontra — Rundenauswertung zeigt das korrekt
+> - Geberrotation bleibt nach Solo beim selben Geber — zweites Spiel bestätigt das
+
+### Testablauf
+
+#### 1–3. Wie Testfall 1 (Tisch erstellen, Spiel starten)
+
+#### 4. Vorbehalt-Phase: Solo wählen
+
+- Assert: `[data-testid="vorbehalt-overlay"]` wird sichtbar (timeout: 15s)
+- Falls Spieler einen Solo-Vorbehalt hat: Drücke passende Ziffer (z.B. `3` für SOLO_DAME)
+- Falls kein Solo möglich: `test.skip('Keine Solo-Hand — Test übersprungen')`
+- Assert: `[data-testid="vorbehalt-overlay"]` verschwindet
+- Assert: `[data-testid="hud-spieltyp"]` zeigt Solo-Spieltyp, z.B. `Damensolo` (timeout: 15s)
+
+#### 5. Solo-Spielfluss: alle Stiche
+
+- Wiederhole für jeden eigenen Zug: warte auf Zug, drücke `Enter`
+- Assert nach Stich 1: `hud-stichzaehler` zeigt `Stich 2/12`
+- Assert: Spieltyp im HUD wechselt nicht während der Runde
+
+#### 6. Rundenauswertung: Solo-spezifische Anzeige
+
+- Assert: `[data-testid="rundenauswertung-overlay"]` wird sichtbar (timeout: 120s)
+- Assert: `[data-testid="rundenauswertung-spieltyp"]` enthält Solo-Typ (z.B. „Damensolo")
+- Assert: Overlay enthält „RE" genau einmal (nur Solist) und „KONTRA" für die anderen drei
+- Assert: `[data-testid="rundenauswertung-punktemultiplikator"]` zeigt `×3`
+
+#### 7. Nächstes Spiel: Geber-Wiederholung nach Solo
+
+- Drücke `Enter` um Overlay zu schließen
+- Assert: Neues Vorbehalt-Overlay erscheint (neues Spiel gestartet)
+- Assert: Kein JavaScript-Fehler im gesamten Test
+
+### Neue data-testid-Attribute für Testfall 3
+
+| `data-testid` | Element | Szene |
+|---|---|---|
+| `rundenauswertung-spieltyp` | Spieltyp-Text im Rundenauswertungs-Overlay | Tischansicht |
+| `rundenauswertung-punktemultiplikator` | Multiplikator-Anzeige (×3 bei Solo) | Tischansicht |
+
+---
+
 ## Konfiguration: `playwright.config.ts`
 
 ```typescript

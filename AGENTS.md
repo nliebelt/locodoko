@@ -11,4 +11,10 @@ Build-Befehle und Architektur: siehe CLAUDE.md (wird automatisch geladen).
 - SB4: `liquibase-core` allein reicht nicht → `spring-boot-starter-liquibase` nötig (Autoconfig eigener Starter)
 - SB4: `spring-boot-test-autoconfigure` hat nur noch `jdbc` und `json` Test-Slices (kein `web.servlet` mehr)
 
+## Vision Loop Bridge (2026-04-11)
+
+- `vision-loop.spec.ts` nutzt `window.__locodoko.appStore.spieleKarte()` direkt — bypassed Keyboard-Handler
+- Nach **R7** (TischSzene aufteilen): Bridge-Schnittstelle prüfen ob AppStore-Methode noch gleich heißt
+- Falls Bridge bricht: `vision-loop.spec.ts` auf Tastatur-Input (`ArrowRight` + `Enter`) umstellen
+
 <!-- Ralph trägt hier neue Erkenntnisse über den Build-Prozess ein. -->
