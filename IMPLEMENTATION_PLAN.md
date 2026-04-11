@@ -8,8 +8,8 @@
 Nächster logischer Schritt: Task 8 (Frontend-Animationen: Stich-Visualisierung) oder Task 9 (Rundenauswertungs-Overlay).
 Offene Fragen: keine.
 
-**2026-04-11 (R0 Typed IDs):** `TischId`, `PartieId`, `SpielId`, `SpielerId` Records in jeweiligen Bounded Contexts angelegt. `TischRepository` (custom) vollständig auf Typed IDs umgestellt; `PartieRepository`, `SpielRepository`, `SpielerRepository` mit typisierten Default-Overload-Methoden erweitert (JDBC-Schicht bleibt UUID-basiert). `TischService`, beide Controller, `WebSocketController`, `VerbindungsabbruchService`, `SpielerSessionCleanupService` und `SpielerSessionService` auf Typed IDs umgestellt. 179 Backend-Tests grün.
-Nächster logischer Schritt: **T1** (Hochzeit Unit-Tests) — unabhängig, kritisch (0 Unit-Tests vorhanden). Danach **R1** (SpielBuilder) als nächster R-Task.
+**2026-04-11 (T1 Hochzeit Unit-Tests):** `HochzeitTest.java` mit 10 Tests angelegt. Abdeckung: T1.1 Erkennung via `VorbehaltAnsage.HOCHZEIT.istZulaessig()` (mit/ohne beide Kreuz-Damen, deaktivierte Regel); T1.2 Partnersuche — `HochzeitStatus.mitGeklaertemStich()` direkt (fremder Gewinner → Partner, eigener Gewinn setzt Suche fort); T1.3 Stilles Solo — 3 eigene Klärstiche → `stillesSolo()=true`, Immutabilität nach Partnerfund; T1.4 Ansagen — Kontragegner gesperrt während `suchtPartner()`, Hochzeit-Spieler darf RE; T1.5 Dreißig-Augen-Pflicht + HOCHZEIT — Pflichtansage ausgelöst via `Spiel.ausPersistiertemStand()`. 189 Backend-Tests grün.
+Nächster logischer Schritt: **R1** (SpielBuilder) — inner class in Spiel.java, entfernt 17-Parameter-Konstruktor-Duplikation.
 Offene Fragen: keine.
 
 ---
@@ -318,11 +318,11 @@ Alle gesetzt (17 gesamt):
 
 > **Blockiert von:** nichts | **Kritisch:** Hochzeit ist die komplexeste Sonderregel, aktuell 0 Unit-Tests
 
-- [ ] **T1.1** `HochzeitTest` — Hochzeit erkannt wenn beide Kreuz-Damen auf einer Hand
-- [ ] **T1.2** Partnersuche: erster Stich den ein anderer gewinnt → Partner gefunden, Parteien offenbart
-- [ ] **T1.3** Kein Partner in 3 Stichen → Stilles Solo (Spieltyp wechselt zu SOLO_TRUMPF)
-- [ ] **T1.4** Hochzeit-Spieler darf Ansagen erst nach Partnerfindung
-- [ ] **T1.5** Hochzeit + Dreißig-Augen-Pflicht kombiniert
+- [x] **T1.1** `HochzeitTest` — Hochzeit erkannt wenn beide Kreuz-Damen auf einer Hand
+- [x] **T1.2** Partnersuche: erster Stich den ein anderer gewinnt → Partner gefunden, Parteien offenbart
+- [x] **T1.3** Kein Partner in 3 Stichen → Stilles Solo (Spieltyp wechselt zu SOLO_TRUMPF)
+- [x] **T1.4** Hochzeit-Spieler darf Ansagen erst nach Partnerfindung
+- [x] **T1.5** Hochzeit + Dreißig-Augen-Pflicht kombiniert
 
 ### T2. Armut Unit-Tests
 
