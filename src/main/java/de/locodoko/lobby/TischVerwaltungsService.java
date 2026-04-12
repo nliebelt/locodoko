@@ -35,6 +35,7 @@ public class TischVerwaltungsService {
     private final KiSpielerFabrik kiSpielerFabrik;
     private final KiOrchestrierungService kiOrchestrierungService;
     private final TischEchtzeitService tischEchtzeitService;
+    private final SpielRegistry spielRegistry;
 
     public TischVerwaltungsService(
         TischRepository tischRepository,
@@ -42,7 +43,8 @@ public class TischVerwaltungsService {
         SpielerRepository spielerRepository,
         KiSpielerFabrik kiSpielerFabrik,
         KiOrchestrierungService kiOrchestrierungService,
-        TischEchtzeitService tischEchtzeitService
+        TischEchtzeitService tischEchtzeitService,
+        SpielRegistry spielRegistry
     ) {
         this.tischRepository = tischRepository;
         this.partieRepository = partieRepository;
@@ -50,6 +52,7 @@ public class TischVerwaltungsService {
         this.kiSpielerFabrik = kiSpielerFabrik;
         this.kiOrchestrierungService = kiOrchestrierungService;
         this.tischEchtzeitService = tischEchtzeitService;
+        this.spielRegistry = spielRegistry;
     }
 
     @Transactional(readOnly = true)
@@ -146,6 +149,7 @@ public class TischVerwaltungsService {
             tisch.partie().markiereAlsAbgebrochen();
             partieRepository.saveAndFlush(tisch.partie());
         }
+        spielRegistry.entferne(TischId.von(tischId));
         tischRepository.delete(tisch);
         tischRepository.flush();
         tischEchtzeitService.planeTischliste(TischlisteEreignisAntwort.aktualisiert(listeOffeneTische()));
@@ -179,6 +183,7 @@ public class TischVerwaltungsService {
         TischEntity gespeicherterTisch = tischRepository.saveAndFlush(tisch);
         kiOrchestrierungService.automatisiereTisch(gespeicherterTisch);
         gespeicherterTisch = tischRepository.saveAndFlush(gespeicherterTisch);
+        synchronisiereRegistry(tischId, gespeicherterTisch);
         TischAntwort antwort = TischAntwort.aus(gespeicherterTisch);
         PartieStandAntwort partieStand = PartieStandAntwort.aus(gespeicherterTisch.partie());
         veroeffentlicheTischAktualisierung(
@@ -227,6 +232,7 @@ public class TischVerwaltungsService {
         TischEntity gespeicherterTisch = tischRepository.saveAndFlush(tisch);
         kiOrchestrierungService.automatisiereTisch(gespeicherterTisch);
         gespeicherterTisch = tischRepository.saveAndFlush(gespeicherterTisch);
+        synchronisiereRegistry(tischId, gespeicherterTisch);
         TischAntwort tischAntwort = TischAntwort.aus(gespeicherterTisch);
         PartieStandAntwort partieStand = PartieStandAntwort.aus(gespeicherterTisch.partie());
         veroeffentlicheTischAktualisierung(
@@ -276,6 +282,20 @@ public class TischVerwaltungsService {
     @Transactional(readOnly = true)
     public TischAntwort ladeTisch(TischId tischId) {
         return TischAntwort.aus(ladeTischEntity(tischId));
+    }
+
+    private void synchronisiereRegistry(TischId tischId, TischEntity tisch) {
+        if (tisch.partie() == null) {
+            spielRegistry.entferne(tischId);
+            return;
+        }
+        tisch.partie().spiele().stream()
+            .filter(s -> s.ergebnis() == null)
+            .reduce((a, b) -> b)
+            .ifPresentOrElse(
+                s -> spielRegistry.registriere(tischId, SpielPersistenzAdapter.zuDomainSpiel(s)),
+                () -> spielRegistry.entferne(tischId)
+            );
     }
 
     private void veroeffentlicheTischAktualisierung(

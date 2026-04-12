@@ -71,6 +71,7 @@ public class KiOrchestrierungService {
     private final TischRepository tischRepository;
     private final PartieRepository partieRepository;
     private final TischEchtzeitService tischEchtzeitService;
+    private final SpielRegistry spielRegistry;
     private final PunkteRechner punkteRechner = new PunkteRechner();
 
     public KiOrchestrierungService(
@@ -78,13 +79,15 @@ public class KiOrchestrierungService {
         SpielerRepository spielerRepository,
         TischRepository tischRepository,
         PartieRepository partieRepository,
-        TischEchtzeitService tischEchtzeitService
+        TischEchtzeitService tischEchtzeitService,
+        SpielRegistry spielRegistry
     ) {
         this.kiStrategieFactory = kiStrategieFactory;
         this.spielerRepository = spielerRepository;
         this.tischRepository = tischRepository;
         this.partieRepository = partieRepository;
         this.tischEchtzeitService = tischEchtzeitService;
+        this.spielRegistry = spielRegistry;
     }
 
     public void automatisiereTisch(TischEntity tisch) {
@@ -190,6 +193,7 @@ public class KiOrchestrierungService {
         }
         fuehreVerzoegertenKiZugAus(tisch);
         partieRepository.saveAndFlush(tisch.partie());
+        synchronisiereRegistry(tischId, tisch);
         veroeffentlichePartieStand(tisch);
     }
 
@@ -406,12 +410,27 @@ public class KiOrchestrierungService {
                     tisch.id(), erwartet);
                 automatisiereTisch(tisch);
                 partieRepository.saveAndFlush(tisch.partie());
+                synchronisiereRegistry(TischId.von(tisch.id()), tisch);
                 veroeffentlichePartieStand(tisch);
             } catch (Exception e) {
                 LOGGER.error("Fehler beim Wiederherstellen von Tisch {} — wird uebersprungen: {}",
                     tisch.id(), e.getMessage(), e);
             }
         }
+    }
+
+    private void synchronisiereRegistry(TischId tischId, TischEntity tisch) {
+        if (tisch.partie() == null) {
+            spielRegistry.entferne(tischId);
+            return;
+        }
+        tisch.partie().spiele().stream()
+            .filter(s -> s.ergebnis() == null)
+            .reduce((a, b) -> b)
+            .ifPresentOrElse(
+                s -> spielRegistry.registriere(tischId, SpielPersistenzAdapter.zuDomainSpiel(s)),
+                () -> spielRegistry.entferne(tischId)
+            );
     }
 
     private void veroeffentlichePartieStand(TischEntity tisch) {
