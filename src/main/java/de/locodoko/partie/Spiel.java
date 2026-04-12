@@ -102,50 +102,50 @@ public final class Spiel {
 
     public static Spiel neu(SpielerPosition geber, Spielregeln spielregeln, Kartendeck kartendeck) {
         Objects.requireNonNull(geber, "geber darf nicht null sein");
-        return new Spiel(
-            spielregeln,
-            kartendeck,
-            new NormaleTrumpfOrdnung(spielregeln),
-            Spieltyp.NORMALSPIEL,
-            geber,
-            Spielphase.KARTEN_AUSTEILEN,
-            Map.of(),
-            List.of(),
-            null,
-            Ansagen.leer(),
-            List.of(),
-            null,
-            null,
-            null,
-            null,
-            Set.of(),
-            null
-        );
+        return new SpielBuilder()
+            .spielregeln(spielregeln)
+            .kartendeck(kartendeck)
+            .trumpfOrdnung(new NormaleTrumpfOrdnung(spielregeln))
+            .spieltyp(Spieltyp.NORMALSPIEL)
+            .geber(geber)
+            .phase(Spielphase.KARTEN_AUSTEILEN)
+            .haende(Map.of())
+            .vorbehalte(List.of())
+            .parteien(null)
+            .ansagen(Ansagen.leer())
+            .abgeschlosseneStiche(List.of())
+            .aktuellerStich(null)
+            .ergebnis(null)
+            .hochzeitStatus(null)
+            .armutStatus(null)
+            .pflichtansageAusstehend(Set.of())
+            .solistAufspieler(null)
+            .build();
     }
 
     /** Wie {@link #neu}, aber der Solist des vorherigen Spiels erhaelt das Anspielrecht. */
     public static Spiel neuMitSolistAufspieler(SpielerPosition geber, SpielerPosition solistAufspieler, Spielregeln spielregeln, Kartendeck kartendeck) {
         Objects.requireNonNull(geber, "geber darf nicht null sein");
         Objects.requireNonNull(solistAufspieler, "solistAufspieler darf nicht null sein");
-        return new Spiel(
-            spielregeln,
-            kartendeck,
-            new NormaleTrumpfOrdnung(spielregeln),
-            Spieltyp.NORMALSPIEL,
-            geber,
-            Spielphase.KARTEN_AUSTEILEN,
-            Map.of(),
-            List.of(),
-            null,
-            Ansagen.leer(),
-            List.of(),
-            null,
-            null,
-            null,
-            null,
-            Set.of(),
-            solistAufspieler
-        );
+        return new SpielBuilder()
+            .spielregeln(spielregeln)
+            .kartendeck(kartendeck)
+            .trumpfOrdnung(new NormaleTrumpfOrdnung(spielregeln))
+            .spieltyp(Spieltyp.NORMALSPIEL)
+            .geber(geber)
+            .phase(Spielphase.KARTEN_AUSTEILEN)
+            .haende(Map.of())
+            .vorbehalte(List.of())
+            .parteien(null)
+            .ansagen(Ansagen.leer())
+            .abgeschlosseneStiche(List.of())
+            .aktuellerStich(null)
+            .ergebnis(null)
+            .hochzeitStatus(null)
+            .armutStatus(null)
+            .pflichtansageAusstehend(Set.of())
+            .solistAufspieler(solistAufspieler)
+            .build();
     }
 
     public static Spiel ausPersistiertemStand(
@@ -167,25 +167,25 @@ public final class Spiel {
         boolean schweinchenAktiv,
         SpielerPosition solistAufspieler
     ) {
-        return new Spiel(
-            spielregeln,
-            kartendeck,
-            trumpfOrdnungFuerPersistiertenStand(spielregeln, spieltyp, schweinchenAktiv),
-            spieltyp,
-            geber,
-            phase,
-            haende,
-            vorbehalte,
-            parteien,
-            ansagen,
-            abgeschlosseneStiche,
-            aktuellerStich,
-            ergebnis,
-            hochzeitStatus,
-            armutStatus,
-            pflichtansageAusstehend,
-            solistAufspieler
-        );
+        return new SpielBuilder()
+            .spielregeln(spielregeln)
+            .kartendeck(kartendeck)
+            .trumpfOrdnung(trumpfOrdnungFuerPersistiertenStand(spielregeln, spieltyp, schweinchenAktiv))
+            .spieltyp(spieltyp)
+            .geber(geber)
+            .phase(phase)
+            .haende(haende)
+            .vorbehalte(vorbehalte)
+            .parteien(parteien)
+            .ansagen(ansagen)
+            .abgeschlosseneStiche(abgeschlosseneStiche)
+            .aktuellerStich(aktuellerStich)
+            .ergebnis(ergebnis)
+            .hochzeitStatus(hochzeitStatus)
+            .armutStatus(armutStatus)
+            .pflichtansageAusstehend(pflichtansageAusstehend)
+            .solistAufspieler(solistAufspieler)
+            .build();
     }
 
     public Spiel teileKartenAus() {
@@ -194,25 +194,18 @@ public final class Spiel {
         TrumpfOrdnung neueTrumpfOrdnung = hatSchweinchen(spielregeln, neueHaende)
             ? new SchweinchenTrumpfOrdnung(spielregeln)
             : trumpfOrdnung;
-        return new Spiel(
-            spielregeln,
-            kartendeck,
-            neueTrumpfOrdnung,
-            spieltyp,
-            geber,
-            Spielphase.VORBEHALT_ANSAGE,
-            neueHaende,
-            List.of(),
-            null,
-            ansagen,
-            abgeschlosseneStiche,
-            null,
-            null,
-            null,
-            null,
-            Set.of(),
-            solistAufspieler
-        );
+        return toBuilder()
+            .trumpfOrdnung(neueTrumpfOrdnung)
+            .phase(Spielphase.VORBEHALT_ANSAGE)
+            .haende(neueHaende)
+            .vorbehalte(List.of())
+            .parteien(null)
+            .aktuellerStich(null)
+            .ergebnis(null)
+            .hochzeitStatus(null)
+            .armutStatus(null)
+            .pflichtansageAusstehend(Set.of())
+            .build();
     }
 
     public Optional<SpielerPosition> naechsterVorbehaltSpieler() {
@@ -244,25 +237,11 @@ public final class Spiel {
         Spielphase naechstePhase = neueVorbehalte.size() == SpielerPosition.standardReihenfolge().size()
             ? Spielphase.VORBEHALT_AUFLOESUNG
             : Spielphase.VORBEHALT_ANSAGE;
-        return new Spiel(
-            spielregeln,
-            kartendeck,
-            trumpfOrdnung,
-            spieltyp,
-            geber,
-            naechstePhase,
-            haende,
-            neueVorbehalte,
-            parteien,
-            ansagen,
-            abgeschlosseneStiche,
-            aktuellerStich,
-            ergebnis,
-            hochzeitStatus,
-            armutStatus,
-            Set.of(),
-            solistAufspieler
-        );
+        return toBuilder()
+            .phase(naechstePhase)
+            .vorbehalte(neueVorbehalte)
+            .pflichtansageAusstehend(Set.of())
+            .build();
     }
 
     public Spiel loeseVorbehalteAuf() {
@@ -277,14 +256,20 @@ public final class Spiel {
         if (hoechsterVorbehalt == null) {
             SpielerPosition stillesSoloSpieler = erkenneStillesSoloSpieler();
             if (stillesSoloSpieler != null) {
-                return new Spiel(
-                    spielregeln, kartendeck, new NormaleTrumpfOrdnung(spielregeln),
-                    Spieltyp.SOLO_TRUMPF, geber, Spielphase.STICHPHASE,
-                    haende, vorbehalte, Parteien.ausSolo(stillesSoloSpieler),
-                    Ansagen.leer(), List.of(),
-                    Stich.neu(ersterAufspieler), null, null, null,
-                    Set.of(), null
-                );
+                return toBuilder()
+                    .trumpfOrdnung(new NormaleTrumpfOrdnung(spielregeln))
+                    .spieltyp(Spieltyp.SOLO_TRUMPF)
+                    .phase(Spielphase.STICHPHASE)
+                    .parteien(Parteien.ausSolo(stillesSoloSpieler))
+                    .ansagen(Ansagen.leer())
+                    .abgeschlosseneStiche(List.of())
+                    .aktuellerStich(Stich.neu(ersterAufspieler))
+                    .ergebnis(null)
+                    .hochzeitStatus(null)
+                    .armutStatus(null)
+                    .pflichtansageAusstehend(Set.of())
+                    .solistAufspieler(null)
+                    .build();
             }
         }
 
@@ -300,25 +285,20 @@ public final class Spiel {
         Spielphase naechstePhase = neuerArmutStatus == null ? Spielphase.STICHPHASE : Spielphase.ARMUT_TAUSCH;
         // Bei Armut-Beginn keinen Stich setzen; bei STICHPHASE solistAufspieler nutzen falls gesetzt
         Stich ersterStich = naechstePhase == Spielphase.STICHPHASE ? Stich.neu(ersterAufspieler) : null;
-        return new Spiel(
-            spielregeln,
-            kartendeck,
-            trumpfOrdnungFuer(hoechsterVorbehalt),
-            spieltypFuer(hoechsterVorbehalt),
-            geber,
-            naechstePhase,
-            haende,
-            vorbehalte,
-            neueParteien,
-            Ansagen.leer(),
-            List.of(),
-            ersterStich,
-            null,
-            neuerHochzeitStatus,
-            neuerArmutStatus,
-            Set.of(),
-            null
-        );
+        return toBuilder()
+            .trumpfOrdnung(trumpfOrdnungFuer(hoechsterVorbehalt))
+            .spieltyp(spieltypFuer(hoechsterVorbehalt))
+            .phase(naechstePhase)
+            .parteien(neueParteien)
+            .ansagen(Ansagen.leer())
+            .abgeschlosseneStiche(List.of())
+            .aktuellerStich(ersterStich)
+            .ergebnis(null)
+            .hochzeitStatus(neuerHochzeitStatus)
+            .armutStatus(neuerArmutStatus)
+            .pflichtansageAusstehend(Set.of())
+            .solistAufspieler(null)
+            .build();
     }
 
     public Spiel legeArmutTrumpfkarten(SpielerPosition spielerPosition, List<Karte> angeboteneTrumpfkarten) {
@@ -348,25 +328,10 @@ public final class Spiel {
         }
         Map<SpielerPosition, Hand> neueHaende = kopiereHaende();
         neueHaende.put(spielerPosition, armutHand.ohneAlle(angeboteneTrumpfkarten));
-        return new Spiel(
-            spielregeln,
-            kartendeck,
-            trumpfOrdnung,
-            spieltyp,
-            geber,
-            phase,
-            neueHaende,
-            vorbehalte,
-            parteien,
-            ansagen,
-            abgeschlosseneStiche,
-            aktuellerStich,
-            ergebnis,
-            hochzeitStatus,
-            status.mitAngebot(angeboteneTrumpfkarten),
-            pflichtansageAusstehend,
-            solistAufspieler
-        );
+        return toBuilder()
+            .haende(neueHaende)
+            .armutStatus(status.mitAngebot(angeboteneTrumpfkarten))
+            .build();
     }
 
     public Spiel lehneArmutAb(SpielerPosition spielerPosition) {
@@ -381,25 +346,9 @@ public final class Spiel {
         if (neuerStatus.alleAntwortenErschoepft()) {
             return eingeworfenesSpiel();
         }
-        return new Spiel(
-            spielregeln,
-            kartendeck,
-            trumpfOrdnung,
-            spieltyp,
-            geber,
-            phase,
-            haende,
-            vorbehalte,
-            parteien,
-            ansagen,
-            abgeschlosseneStiche,
-            aktuellerStich,
-            ergebnis,
-            hochzeitStatus,
-            neuerStatus,
-            pflichtansageAusstehend,
-            solistAufspieler
-        );
+        return toBuilder()
+            .armutStatus(neuerStatus)
+            .build();
     }
 
     public Spiel nimmArmutAn(SpielerPosition spielerPosition, List<Karte> rueckgabekarten) {
@@ -432,25 +381,18 @@ public final class Spiel {
             .mitPartei(spielerPosition, Partei.RE)
             .mitOffenenParteienFuerAlle(SpielerPosition.standardReihenfolge());
         SpielerPosition ersterAufspieler = solistAufspieler != null ? solistAufspieler : geber.naechsteImUhrzeigersinn();
-        return new Spiel(
-            spielregeln,
-            kartendeck,
-            trumpfOrdnung,
-            spieltyp,
-            geber,
-            Spielphase.STICHPHASE,
-            neueHaende,
-            vorbehalte,
-            neueParteien,
-            Ansagen.leer(),
-            List.of(),
-            Stich.neu(ersterAufspieler),
-            null,
-            hochzeitStatus,
-            status.mitPartner(spielerPosition),
-            Set.of(),
-            null
-        );
+        return toBuilder()
+            .phase(Spielphase.STICHPHASE)
+            .haende(neueHaende)
+            .parteien(neueParteien)
+            .ansagen(Ansagen.leer())
+            .abgeschlosseneStiche(List.of())
+            .aktuellerStich(Stich.neu(ersterAufspieler))
+            .ergebnis(null)
+            .armutStatus(status.mitPartner(spielerPosition))
+            .pflichtansageAusstehend(Set.of())
+            .solistAufspieler(null)
+            .build();
     }
 
     public Optional<SpielerPosition> aktuellerSpieler() {
@@ -620,25 +562,12 @@ public final class Spiel {
                 aktualisiertesPflichtansageAusstehend = neuesMenge.isEmpty() ? Set.of() : Set.copyOf(neuesMenge);
             }
         }
-        return new Spiel(
-            spielregeln,
-            kartendeck,
-            trumpfOrdnung,
-            spieltyp,
-            geber,
-            phase,
-            haende,
-            vorbehalte,
-            aktualisierteParteien,
-            neueAnsagen,
-            abgeschlosseneStiche,
-            aktuellerStich,
-            ergebnis,
-            hochzeitStatus,
-            armutStatus,
-            aktualisiertesPflichtansageAusstehend,
-            null
-        );
+        return toBuilder()
+            .parteien(aktualisierteParteien)
+            .ansagen(neueAnsagen)
+            .pflichtansageAusstehend(aktualisiertesPflichtansageAusstehend)
+            .solistAufspieler(null)
+            .build();
     }
 
     public Spiel werteAus(PunkteRechner punkteRechner) {
@@ -651,25 +580,13 @@ public final class Spiel {
             ansagen,
             spielregeln
         );
-        return new Spiel(
-            spielregeln,
-            kartendeck,
-            trumpfOrdnung,
-            spieltyp,
-            geber,
-            Spielphase.GESAMTSTAND_AKTUALISIEREN,
-            haende,
-            vorbehalte,
-            parteien,
-            ansagen,
-            abgeschlosseneStiche,
-            null,
-            neuesErgebnis,
-            hochzeitStatus,
-            armutStatus,
-            Set.of(),
-            null
-        );
+        return toBuilder()
+            .phase(Spielphase.GESAMTSTAND_AKTUALISIEREN)
+            .aktuellerStich(null)
+            .ergebnis(neuesErgebnis)
+            .pflichtansageAusstehend(Set.of())
+            .solistAufspieler(null)
+            .build();
     }
 
     public Spielregeln spielregeln() {
@@ -769,6 +686,27 @@ public final class Spiel {
         );
     }
 
+    private SpielBuilder toBuilder() {
+        return new SpielBuilder()
+            .spielregeln(spielregeln)
+            .kartendeck(kartendeck)
+            .trumpfOrdnung(trumpfOrdnung)
+            .spieltyp(spieltyp)
+            .geber(geber)
+            .phase(phase)
+            .haende(haende)
+            .vorbehalte(vorbehalte)
+            .parteien(parteien)
+            .ansagen(ansagen)
+            .abgeschlosseneStiche(abgeschlosseneStiche)
+            .aktuellerStich(aktuellerStich)
+            .ergebnis(ergebnis)
+            .hochzeitStatus(hochzeitStatus)
+            .armutStatus(armutStatus)
+            .pflichtansageAusstehend(pflichtansageAusstehend)
+            .solistAufspieler(solistAufspieler);
+    }
+
     private Map<SpielerPosition, Hand> kopiereHaende() {
         EnumMap<SpielerPosition, Hand> kopie = new EnumMap<>(SpielerPosition.class);
         kopie.putAll(haende);
@@ -854,25 +792,16 @@ public final class Spiel {
         HochzeitStatus neuerHochzeitStatus,
         Set<Partei> neuesPflichtansageAusstehend
     ) {
-        return new Spiel(
-            spielregeln,
-            kartendeck,
-            trumpfOrdnung,
-            spieltyp,
-            geber,
-            neuePhase,
-            neueHaende,
-            vorbehalte,
-            neueParteien,
-            ansagen,
-            neueAbgeschlosseneStiche,
-            neuerAktuellerStich,
-            ergebnis,
-            neuerHochzeitStatus,
-            armutStatus,
-            neuesPflichtansageAusstehend,
-            null
-        );
+        return toBuilder()
+            .phase(neuePhase)
+            .haende(neueHaende)
+            .parteien(neueParteien)
+            .abgeschlosseneStiche(neueAbgeschlosseneStiche)
+            .aktuellerStich(neuerAktuellerStich)
+            .hochzeitStatus(neuerHochzeitStatus)
+            .pflichtansageAusstehend(neuesPflichtansageAusstehend)
+            .solistAufspieler(null)
+            .build();
     }
 
     private HochzeitFortschritt fortschrittNachVollstaendigemStich(Stich gespielterStich) {
@@ -898,25 +827,23 @@ public final class Spiel {
 
     private Spiel eingeworfenesSpiel() {
         Kartendeck neuesDeck = kartendeck.gemischt();
-        return new Spiel(
-            spielregeln,
-            neuesDeck,
-            new NormaleTrumpfOrdnung(spielregeln),
-            Spieltyp.NORMALSPIEL,
-            geber,
-            Spielphase.VORBEHALT_ANSAGE,
-            neuesDeck.anVierSpielerAusteilen(),
-            List.of(),
-            null,
-            Ansagen.leer(),
-            List.of(),
-            null,
-            null,
-            null,
-            null,
-            Set.of(),
-            null
-        );
+        return toBuilder()
+            .kartendeck(neuesDeck)
+            .trumpfOrdnung(new NormaleTrumpfOrdnung(spielregeln))
+            .spieltyp(Spieltyp.NORMALSPIEL)
+            .phase(Spielphase.VORBEHALT_ANSAGE)
+            .haende(neuesDeck.anVierSpielerAusteilen())
+            .vorbehalte(List.of())
+            .parteien(null)
+            .ansagen(Ansagen.leer())
+            .abgeschlosseneStiche(List.of())
+            .aktuellerStich(null)
+            .ergebnis(null)
+            .hochzeitStatus(null)
+            .armutStatus(null)
+            .pflichtansageAusstehend(Set.of())
+            .solistAufspieler(null)
+            .build();
     }
 
     /**
@@ -967,5 +894,51 @@ public final class Spiel {
             case SOLO_BUBE -> new BubensoloTrumpfOrdnung();
             case SOLO_FLEISCHLOS -> new FleischlosTrumpfOrdnung();
         };
+    }
+
+    private static final class SpielBuilder {
+        private Spielregeln spielregeln;
+        private Kartendeck kartendeck;
+        private TrumpfOrdnung trumpfOrdnung;
+        private Spieltyp spieltyp;
+        private SpielerPosition geber;
+        private Spielphase phase;
+        private Map<SpielerPosition, Hand> haende;
+        private List<VorbehaltMeldung> vorbehalte;
+        private Parteien parteien;
+        private Ansagen ansagen;
+        private List<Stich> abgeschlosseneStiche;
+        private Stich aktuellerStich;
+        private Spielergebnis ergebnis;
+        private HochzeitStatus hochzeitStatus;
+        private ArmutStatus armutStatus;
+        private Set<Partei> pflichtansageAusstehend;
+        private SpielerPosition solistAufspieler;
+
+        SpielBuilder spielregeln(Spielregeln spielregeln) { this.spielregeln = spielregeln; return this; }
+        SpielBuilder kartendeck(Kartendeck kartendeck) { this.kartendeck = kartendeck; return this; }
+        SpielBuilder trumpfOrdnung(TrumpfOrdnung trumpfOrdnung) { this.trumpfOrdnung = trumpfOrdnung; return this; }
+        SpielBuilder spieltyp(Spieltyp spieltyp) { this.spieltyp = spieltyp; return this; }
+        SpielBuilder geber(SpielerPosition geber) { this.geber = geber; return this; }
+        SpielBuilder phase(Spielphase phase) { this.phase = phase; return this; }
+        SpielBuilder haende(Map<SpielerPosition, Hand> haende) { this.haende = haende; return this; }
+        SpielBuilder vorbehalte(List<VorbehaltMeldung> vorbehalte) { this.vorbehalte = vorbehalte; return this; }
+        SpielBuilder parteien(Parteien parteien) { this.parteien = parteien; return this; }
+        SpielBuilder ansagen(Ansagen ansagen) { this.ansagen = ansagen; return this; }
+        SpielBuilder abgeschlosseneStiche(List<Stich> abgeschlosseneStiche) { this.abgeschlosseneStiche = abgeschlosseneStiche; return this; }
+        SpielBuilder aktuellerStich(Stich aktuellerStich) { this.aktuellerStich = aktuellerStich; return this; }
+        SpielBuilder ergebnis(Spielergebnis ergebnis) { this.ergebnis = ergebnis; return this; }
+        SpielBuilder hochzeitStatus(HochzeitStatus hochzeitStatus) { this.hochzeitStatus = hochzeitStatus; return this; }
+        SpielBuilder armutStatus(ArmutStatus armutStatus) { this.armutStatus = armutStatus; return this; }
+        SpielBuilder pflichtansageAusstehend(Set<Partei> pflichtansageAusstehend) { this.pflichtansageAusstehend = pflichtansageAusstehend; return this; }
+        SpielBuilder solistAufspieler(SpielerPosition solistAufspieler) { this.solistAufspieler = solistAufspieler; return this; }
+
+        Spiel build() {
+            return new Spiel(
+                spielregeln, kartendeck, trumpfOrdnung, spieltyp, geber, phase,
+                haende, vorbehalte, parteien, ansagen, abgeschlosseneStiche, aktuellerStich,
+                ergebnis, hochzeitStatus, armutStatus, pflichtansageAusstehend, solistAufspieler
+            );
+        }
     }
 }

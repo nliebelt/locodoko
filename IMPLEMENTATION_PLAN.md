@@ -8,8 +8,8 @@
 Nächster logischer Schritt: Task 8 (Frontend-Animationen: Stich-Visualisierung) oder Task 9 (Rundenauswertungs-Overlay).
 Offene Fragen: keine.
 
-**2026-04-11 (T1 Hochzeit Unit-Tests):** `HochzeitTest.java` mit 10 Tests angelegt. Abdeckung: T1.1 Erkennung via `VorbehaltAnsage.HOCHZEIT.istZulaessig()` (mit/ohne beide Kreuz-Damen, deaktivierte Regel); T1.2 Partnersuche — `HochzeitStatus.mitGeklaertemStich()` direkt (fremder Gewinner → Partner, eigener Gewinn setzt Suche fort); T1.3 Stilles Solo — 3 eigene Klärstiche → `stillesSolo()=true`, Immutabilität nach Partnerfund; T1.4 Ansagen — Kontragegner gesperrt während `suchtPartner()`, Hochzeit-Spieler darf RE; T1.5 Dreißig-Augen-Pflicht + HOCHZEIT — Pflichtansage ausgelöst via `Spiel.ausPersistiertemStand()`. 189 Backend-Tests grün.
-Nächster logischer Schritt: **R1** (SpielBuilder) — inner class in Spiel.java, entfernt 17-Parameter-Konstruktor-Duplikation.
+**2026-04-12 (R1 SpielBuilder):** `SpielBuilder` als `private static inner class` in `Spiel.java` implementiert. Alle 17 Felder als Fluent-Setter, `build()` delegiert an privaten Konstruktor. `toBuilder()` Instanzmethode vorbelegt alle Felder. Alle 9 Mutationsmethoden (`spieleKarte`, `sageAn`, `meldeVorbehalt`, `teileKartenAus`, `loeseVorbehalteAuf`, `legeArmutTrumpfkarten`, `lehneArmutAb`, `nimmArmutAn`, `werteAus`) und 3 Factory-Methoden sowie 2 private Hilfsmethoden (`neuesSpielMitStichfortschritt`, `eingeworfenesSpiel`) auf Builder umgestellt. 189 Tests grün.
+Nächster logischer Schritt: **R2** (Pflichtansage-Logik DRY) — private Hilfsmethode `effektiveKartenAnzahlFuer()` in Spiel.java extrahieren, ~20 duplizierte Zeilen in `kannAnsagen()` und `sageAn()` entfernen.
 Offene Fragen: keine.
 
 ---
@@ -195,11 +195,11 @@ Alle gesetzt (17 gesamt):
 
 > **Blockiert:** R2, R3, R4 profitieren davon | **Spec:** `specs/architektur-spielkern.md` Abschnitt "SpielBuilder"
 
-- [ ] **R1.1** `SpielBuilder` als `private static inner class` in `Spiel.java` implementieren — Felder entsprechen allen 17 Konstruktor-Parametern, Fluent-API (gibt `this` zurück), `build()` ruft privaten Konstruktor auf
-- [ ] **R1.2** `toBuilder()` Instanzmethode in `Spiel` — liefert `SpielBuilder` mit allen aktuellen Feldern vorbelegt
-- [ ] **R1.3** Alle Mutationsmethoden (`spieleKarte`, `sageAn`, `meldeVorbehalt`, `teileKartenAus`, `loeseVorbehalteAuf`, `legeArmutTrumpfkarten`, `lehneArmutAb`, `nimmArmutAn`, `werteAus`) auf `toBuilder().…build()` umstellen
-- [ ] **R1.4** Factory-Methoden (`neu()`, `neuMitSolistAufspieler()`, `ausPersistiertemStand()`) auf `SpielBuilder` umstellen
-- [ ] **R1.5** Alle bestehenden Tests grün — kein Verhalten geändert
+- [x] **R1.1** `SpielBuilder` als `private static inner class` in `Spiel.java` implementieren — Felder entsprechen allen 17 Konstruktor-Parametern, Fluent-API (gibt `this` zurück), `build()` ruft privaten Konstruktor auf
+- [x] **R1.2** `toBuilder()` Instanzmethode in `Spiel` — liefert `SpielBuilder` mit allen aktuellen Feldern vorbelegt
+- [x] **R1.3** Alle Mutationsmethoden (`spieleKarte`, `sageAn`, `meldeVorbehalt`, `teileKartenAus`, `loeseVorbehalteAuf`, `legeArmutTrumpfkarten`, `lehneArmutAb`, `nimmArmutAn`, `werteAus`) auf `toBuilder().…build()` umstellen
+- [x] **R1.4** Factory-Methoden (`neu()`, `neuMitSolistAufspieler()`, `ausPersistiertemStand()`) auf `SpielBuilder` umstellen
+- [x] **R1.5** Alle bestehenden Tests grün — kein Verhalten geändert
 
 ### R2. Pflichtansage-Logik DRY
 
