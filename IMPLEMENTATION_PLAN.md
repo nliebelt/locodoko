@@ -8,8 +8,8 @@
 Nächster logischer Schritt: Task 8 (Frontend-Animationen: Stich-Visualisierung) oder Task 9 (Rundenauswertungs-Overlay).
 Offene Fragen: keine.
 
-**2026-04-12 (R4 KiOrchestrierungService: Domain-Logik zurück in Partie):** `Partie.schliesseAktuellesSpielAbUndStarteNaechstes(PunkteRechner)` als zentrale Domain-Methode implementiert — kapselt AUSWERTUNG + GESAMTSTAND_AKTUALISIEREN + Bockrunden-Trigger + Solo-Nachgeben + nächstes Spiel starten. `Partie.ausPersistiertemStand()` Factory-Methode hinzugefügt. `KiOrchestrierungService`: doppelter `schliesseSpielAbUndStarteNaechstes()`-Code entfernt, ersetzt durch `rekonstruierePartieDomain()` + `uebernehmeDomainPartieAbschluss()` (Persistenz-Mapping). 3 neue Tests in `PartieTest.java`. 192 Tests grün.
-Nächster logischer Schritt: **R5** (SpielRegistry: In-Memory Spiel-Cache mit Concurrency-Sicherheit).
+**2026-04-12 (R5 SpielRegistry):** `SpielUndErgebnis<T>` Record, `SpielRegistry` mit `ConcurrentHashMap` + `ReentrantLock` pro TischId, `mitSpielGesperrt()` in zwei Varianten (cache-lesen + entity-refresh). `@PostConstruct` lädt alle IM_SPIEL-Tische aus DB. `SpielAktionsService` nutzt entity-refresh-Variante (frischesSpiel inner lock), sodass direkte DB-Änderungen transparent korrekt verarbeitet werden. `synchronisiereRegistry()` hält Cache nach KI-Zügen aktuell. `TischVerwaltungsService` + `KiOrchestrierungService` registrieren/deregistrieren. 5 Unit-Tests inkl. Concurrency-Test. 198 Tests grün.
+Nächster logischer Schritt: **R6** (Domain Events + KI als Subscriber).
 Offene Fragen: keine.
 
 ---
@@ -233,11 +233,11 @@ Alle gesetzt (17 gesamt):
 
 > **Blockiert von:** R3, R4 | **Spec:** `specs/architektur-spielkern.md` Abschnitte "SpielRegistry" und "Concurrency"
 
-- [ ] **R5.1** `SpielRegistry` als `@Component` implementieren — `ConcurrentHashMap<UUID, Spiel>` + `ReentrantLock` pro TischId
-- [ ] **R5.2** `mitSpielGesperrt(tischId, Function<Spiel, SpielUndErgebnis<T>>)` als zentrale Mutationsmethode
-- [ ] **R5.3** `SpielAktionsService` nutzt `SpielRegistry` statt direkt zu lesen/schreiben
-- [ ] **R5.4** Bei Server-Start: laufende Spiele aus DB in Registry laden (`SpielPersistenzAdapter.ladeAlleAktiven()`)
-- [ ] **R5.5** Tests: Concurrency-Test (zwei simultane Karten-Plays lösen keine Race Condition aus)
+- [x] **R5.1** `SpielRegistry` als `@Component` implementieren — `ConcurrentHashMap<UUID, Spiel>` + `ReentrantLock` pro TischId
+- [x] **R5.2** `mitSpielGesperrt(tischId, Function<Spiel, SpielUndErgebnis<T>>)` als zentrale Mutationsmethode
+- [x] **R5.3** `SpielAktionsService` nutzt `SpielRegistry` statt direkt zu lesen/schreiben
+- [x] **R5.4** Bei Server-Start: laufende Spiele aus DB in Registry laden (`@PostConstruct` in `SpielRegistry`)
+- [x] **R5.5** Tests: Concurrency-Test (10 parallele Threads auf demselben Tisch, keine Race Conditions)
 
 ### R6. Domain Events + KI als Subscriber
 
