@@ -9,7 +9,9 @@ Nächster logischer Schritt: Task 8 (Frontend-Animationen: Stich-Visualisierung)
 Offene Fragen: keine.
 
 **2026-04-12 (R6.5 KI-Delay konsolidiert):** `KiEventAdapter` besitzt jetzt `kiScheduler` (ScheduledExecutorService), `KI_KARTEN_VERZOEGERUNG_MS = 800ms`, `@PreDestroy beende()` und neue Methode `planeVerzoegertenKiZug(TischId)`. `KiOrchestrierungService` injiziert `KiEventAdapter` via `@Lazy` (Setter-Injection mit `@Autowired`) und ruft `kiEventAdapter.planeVerzoegertenKiZug()` statt `kiScheduler.schedule(...)` auf. Circular Dependency mit `@Lazy` aufgelöst. 198 Tests grün.
-Nächster logischer Schritt: R7 (Frontend TischSzene aufteilen) oder R8 (AnimationenService DRY).
+
+**2026-04-12 (R7 TischSzene aufgeteilt):** `TischSzene.ts` (~2750 Zeilen) in drei fokussierte Dateien aufgeteilt: `TischInputHandler.ts` (Tastatursteuerung, 312 Zeilen), `TischUIManager.ts` (DOM-Build und -Update, ~700 Zeilen), `tischFormatierer.ts` (reine Formatierungsfunktionen, 79 Zeilen). Context-Interface-Muster (`TischInputKontext`, `TischUIKontext`) entkoppelt die neuen Klassen von TischSzene ohne zirkuläre Abhängigkeiten. `TischSzene` delegiert alle DOM- und Keyboard-Aufgaben und behält nur Phaser-Lifecycle + Rendering. 24 Frontend-Tests grün, Build und Lint sauber.
+Nächster logischer Schritt: R8 (AnimationenService DRY).
 Offene Fragen: keine.
 
 ---
@@ -254,11 +256,11 @@ Alle gesetzt (17 gesamt):
 
 > **Blockiert von:** nichts (unabhängig vom Backend) | **Spec:** `specs/architektur-spielkern.md` Abschnitt "Dokumentation"
 
-- [ ] **R7.1** `TischInputHandler.ts` extrahieren: alle `verarbeiteTaste*`-Methoden, Keyboard-Listener-Setup
-- [ ] **R7.2** `TischUIManager.ts` extrahieren: alle DOM-Methoden (`baueUi`, `aktualisiereTopBar`, alle `renderXxxDom`-Methoden)
-- [ ] **R7.3** `TischSzene.ts` delegiert an `TischInputHandler` und `TischUIManager` — Phaser-Lifecycle-Methoden (`create`, `update`, `preload`) bleiben in `TischSzene`
-- [ ] **R7.4** TSDoc auf allen neuen Klassen (Klassenebene + öffentliche Methoden)
-- [ ] **R7.5** Bestehende Frontend-Tests grün, `npm run build` und `npm run lint` clean
+- [x] **R7.1** `TischInputHandler.ts` extrahieren: alle `verarbeiteTaste*`-Methoden, Keyboard-Listener-Setup
+- [x] **R7.2** `TischUIManager.ts` extrahieren: alle DOM-Methoden (`baueUi`, `aktualisiereTopBar`, alle `renderXxxDom`-Methoden)
+- [x] **R7.3** `TischSzene.ts` delegiert an `TischInputHandler` und `TischUIManager` — Phaser-Lifecycle-Methoden (`create`, `update`, `preload`) bleiben in `TischSzene`
+- [x] **R7.4** TSDoc auf allen neuen Klassen (Klassenebene + öffentliche Methoden)
+- [x] **R7.5** Bestehende Frontend-Tests grün, `npm run build` und `npm run lint` clean
 
 ### R8. Frontend: AnimationenService DRY
 
