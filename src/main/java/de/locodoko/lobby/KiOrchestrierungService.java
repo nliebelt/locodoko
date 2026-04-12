@@ -24,19 +24,16 @@ import de.locodoko.session.SpielerRepository;
 import de.locodoko.session.TischEchtzeitService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import jakarta.annotation.PreDestroy;
 import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.UUID;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
 
 /**
  * Orchestriert KI-Zuege nach jeder menschlichen oder KI-Aktion.
@@ -56,16 +53,6 @@ public class KiOrchestrierungService {
 
     private static final int MAXIMALE_KI_AKTIONEN = 512;
 
-    // Mindestwartezeit zwischen zwei KI-Kartenzuegen in der Stichphase (ms)
-    private static final long KI_KARTEN_VERZOEGERUNG_MS = 800;
-
-    // Einzel-Thread-Scheduler fuer zeitverzoegerte KI-Zuege (Daemon-Thread, lebt nur solange die JVM laeuft)
-    private final ScheduledExecutorService kiScheduler = Executors.newSingleThreadScheduledExecutor(r -> {
-        Thread t = new Thread(r, "ki-timing");
-        t.setDaemon(true);
-        return t;
-    });
-
     private final KiStrategieFactory kiStrategieFactory;
     private final SpielerRepository spielerRepository;
     private final TischRepository tischRepository;
@@ -73,6 +60,10 @@ public class KiOrchestrierungService {
     private final TischEchtzeitService tischEchtzeitService;
     private final SpielRegistry spielRegistry;
     private final PunkteRechner punkteRechner = new PunkteRechner();
+
+    // Zyklische Abhaengigkeit: KiEventAdapter -> KiOrchestrierungService -> KiEventAdapter (Scheduling)
+    // @Lazy verzoegert die Instanziierung und verhindert den Startup-Fehler.
+    private KiEventAdapter kiEventAdapter;
 
     public KiOrchestrierungService(
         KiStrategieFactory kiStrategieFactory,
@@ -88,6 +79,11 @@ public class KiOrchestrierungService {
         this.partieRepository = partieRepository;
         this.tischEchtzeitService = tischEchtzeitService;
         this.spielRegistry = spielRegistry;
+    }
+
+    @Autowired
+    void setzeKiEventAdapter(@Lazy KiEventAdapter kiEventAdapter) {
+        this.kiEventAdapter = kiEventAdapter;
     }
 
     public void automatisiereTisch(TischEntity tisch) {
@@ -152,12 +148,7 @@ public class KiOrchestrierungService {
                 if (naechsterSpielerEntity != null
                         && (naechsterSpielerEntity.istKi() || naechsterSpielerEntity.istKiUebernommen())
                         && !naechster.equals(erwarteterSpieler)) {
-                    final TischId tischId = TischId.von(tisch.id());
-                    kiScheduler.schedule(
-                        () -> verzoegerteKiAktionAusfuehren(tischId),
-                        KI_KARTEN_VERZOEGERUNG_MS,
-                        TimeUnit.MILLISECONDS
-                    );
+                    kiEventAdapter.planeVerzoegertenKiZug(TischId.von(tisch.id()));
                     return;
                 }
                 }
@@ -174,16 +165,11 @@ public class KiOrchestrierungService {
         throw new IllegalStateException("Die KI-Orchestrierung hat das Sicherheitslimit erreicht.");
     }
 
-    @PreDestroy
-    public void beende() {
-        kiScheduler.shutdownNow();
-    }
-
     /**
      * Laedt den Tisch neu aus der Datenbank und fuehrt genau einen verzoegerten KI-Zug aus.
-     * Wird zeitverzoegert vom {@link #kiScheduler} aufgerufen, damit jede KI-Karte einzeln
-     * im Frontend animiert werden kann. Falls der naechste Spieler danach ebenfalls eine KI
-     * ist, wird ein weiterer Delay geplant.
+     * Wird zeitverzoegert von {@link KiEventAdapter#planeVerzoegertenKiZug} aufgerufen, damit
+     * jede KI-Karte einzeln im Frontend animiert werden kann. Falls der naechste Spieler
+     * danach ebenfalls eine KI ist, wird ein weiterer Delay geplant.
      */
     @Transactional
     public void verzoegerteKiAktionAusfuehren(TischId tischId) {
@@ -242,12 +228,7 @@ public class KiOrchestrierungService {
                         fuehreVerzoegertenKiZugAus(tisch);
                         return;
                     }
-                    final TischId tischId = TischId.von(tisch.id());
-                    kiScheduler.schedule(
-                        () -> verzoegerteKiAktionAusfuehren(tischId),
-                        KI_KARTEN_VERZOEGERUNG_MS,
-                        TimeUnit.MILLISECONDS
-                    );
+                    kiEventAdapter.planeVerzoegertenKiZug(TischId.von(tisch.id()));
                     return;
                 }
             }
