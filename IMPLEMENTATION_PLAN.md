@@ -8,9 +8,9 @@
 Nächster logischer Schritt: Task 8 (Frontend-Animationen: Stich-Visualisierung) oder Task 9 (Rundenauswertungs-Overlay).
 Offene Fragen: keine.
 
-**2026-04-12 (R5 SpielRegistry):** `SpielUndErgebnis<T>` Record, `SpielRegistry` mit `ConcurrentHashMap` + `ReentrantLock` pro TischId, `mitSpielGesperrt()` in zwei Varianten (cache-lesen + entity-refresh). `@PostConstruct` lädt alle IM_SPIEL-Tische aus DB. `SpielAktionsService` nutzt entity-refresh-Variante (frischesSpiel inner lock), sodass direkte DB-Änderungen transparent korrekt verarbeitet werden. `synchronisiereRegistry()` hält Cache nach KI-Zügen aktuell. `TischVerwaltungsService` + `KiOrchestrierungService` registrieren/deregistrieren. 5 Unit-Tests inkl. Concurrency-Test. 198 Tests grün.
-Nächster logischer Schritt: **R6** (Domain Events + KI als Subscriber).
-Offene Fragen: keine.
+**2026-04-12 (R6 Domain Events):** 6 Event-Records in `de.locodoko.partie.ereignisse` (UUID-only, kein circular dep): `NaechsterSpielerErwartet`, `VorbehaltErwartet`, `PartieAktualisiert`, `StichAbgeschlossen`, `SpielGestartet`, `SpielBeendet`. `KiEventAdapter` (`@Component`, `@EventListener`): lädt TischEntity frisch aus DB, ruft `KiOrchestrierungService.automatisiereTisch()` synchron innerhalb derselben Transaktion auf. `WebSocketBroadcastAdapter` (`@Component`, `@EventListener`): lädt TischEntity frisch aus DB, sendet Broadcast via `TischEchtzeitService` (After-Commit intern garantiert). `SpielAktionsService`: `KiOrchestrierungService` + `TischEchtzeitService` entfernt, `ApplicationEventPublisher` hinzugefügt, `veroeffentlicheEreignisse()` publiziert phasenabhängig KI-Trigger und danach `PartieAktualisiert`. 198 Tests grün.
+Nächster logischer Schritt: R6.5 (KI-Delay in KiEventAdapter konsolidieren) oder R7 (Frontend TischSzene aufteilen).
+Offene Fragen: R6.5 (KI-Delay-Logik) ist noch in KiOrchestrierungService — nicht in KiEventAdapter. Das ist akzeptabel da der Delay-Mechanismus komplex ist und mit dem Scheduler interagiert.
 
 ---
 
@@ -243,12 +243,12 @@ Alle gesetzt (17 gesamt):
 
 > **Blockiert von:** R3, R4, R5 | **Spec:** `specs/architektur-domain-events.md`
 
-- [ ] **R6.1** Event-Records erstellen: `NaechsterSpielerErwartet`, `StichAbgeschlossen`, `SpielGestartet`, `SpielBeendet`, `VorbehaltErwartet` im Package `de.locodoko.partie.ereignisse`
-- [ ] **R6.2** `SpielAktionsService` publisht nach jeder Mutation das passende Event via `ApplicationEventPublisher`
-- [ ] **R6.3** `KiEventAdapter` als `@Component`: lauscht auf `NaechsterSpielerErwartet` + `VorbehaltErwartet`, führt KI-Zug aus — alle `if (isKi())`-Verzweigungen aus `SpielAktionsService` entfernen
-- [ ] **R6.4** `WebSocketBroadcastAdapter` als `@Component`: lauscht auf Events, sendet Broadcasts — `TischEchtzeitService`-Aufrufe aus `SpielAktionsService` entfernen
-- [ ] **R6.5** KI-Delay-Logik konsolidiert in `KiEventAdapter` (eine Stelle statt verstreut)
-- [ ] **R6.6** Alle bestehenden Tests grün — Verhalten identisch, nur Verkabelung geändert
+- [x] **R6.1** Event-Records erstellen: `NaechsterSpielerErwartet`, `StichAbgeschlossen`, `SpielGestartet`, `SpielBeendet`, `VorbehaltErwartet` + `PartieAktualisiert` im Package `de.locodoko.partie.ereignisse`
+- [x] **R6.2** `SpielAktionsService` publisht nach jeder Mutation das passende Event via `ApplicationEventPublisher`
+- [x] **R6.3** `KiEventAdapter` als `@Component`: lauscht auf `NaechsterSpielerErwartet` + `VorbehaltErwartet`, ruft `KiOrchestrierungService.automatisiereTisch()` aus — `KiOrchestrierungService` + direkte KI-Aufrufe aus `SpielAktionsService` entfernt
+- [x] **R6.4** `WebSocketBroadcastAdapter` als `@Component`: lauscht auf `PartieAktualisiert`, sendet Broadcasts — `TischEchtzeitService`-Aufrufe aus `SpielAktionsService` entfernt
+- [ ] **R6.5** KI-Delay-Logik konsolidiert in `KiEventAdapter` (eine Stelle statt verstreut) — noch in KiOrchestrierungService
+- [x] **R6.6** Alle bestehenden Tests grün — Verhalten identisch, nur Verkabelung geändert
 
 ### R7. Frontend: TischSzene aufteilen
 

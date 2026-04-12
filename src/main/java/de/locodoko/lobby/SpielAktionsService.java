@@ -7,17 +7,19 @@ import de.locodoko.partie.Ansage;
 import de.locodoko.partie.PartieEntity;
 import de.locodoko.partie.PartieId;
 import de.locodoko.partie.PartieRepository;
+import de.locodoko.partie.PartieStatus;
 import de.locodoko.partie.Spiel;
 import de.locodoko.partie.SpielEntity;
 import de.locodoko.partie.VorbehaltAnsage;
+import de.locodoko.partie.ereignisse.NaechsterSpielerErwartet;
+import de.locodoko.partie.ereignisse.PartieAktualisiert;
+import de.locodoko.partie.ereignisse.VorbehaltErwartet;
 import de.locodoko.session.SpielerEntity;
 import de.locodoko.session.SpielerId;
 import de.locodoko.session.SpielerRepository;
 import de.locodoko.session.SpielverwaltungKonfliktException;
 import de.locodoko.session.SpielverwaltungNichtGefundenException;
-import de.locodoko.session.PartieEreignisAntwort;
-import de.locodoko.session.PartieEreignisTyp;
-import de.locodoko.session.TischEchtzeitService;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -30,24 +32,21 @@ public class SpielAktionsService {
     private final TischRepository tischRepository;
     private final PartieRepository partieRepository;
     private final SpielerRepository spielerRepository;
-    private final KiOrchestrierungService kiOrchestrierungService;
-    private final TischEchtzeitService tischEchtzeitService;
     private final SpielRegistry spielRegistry;
+    private final ApplicationEventPublisher eventPublisher;
 
     public SpielAktionsService(
         TischRepository tischRepository,
         PartieRepository partieRepository,
         SpielerRepository spielerRepository,
-        KiOrchestrierungService kiOrchestrierungService,
-        TischEchtzeitService tischEchtzeitService,
-        SpielRegistry spielRegistry
+        SpielRegistry spielRegistry,
+        ApplicationEventPublisher eventPublisher
     ) {
         this.tischRepository = tischRepository;
         this.partieRepository = partieRepository;
         this.spielerRepository = spielerRepository;
-        this.kiOrchestrierungService = kiOrchestrierungService;
-        this.tischEchtzeitService = tischEchtzeitService;
         this.spielRegistry = spielRegistry;
+        this.eventPublisher = eventPublisher;
     }
 
     @Transactional(readOnly = true)
@@ -84,13 +83,12 @@ public class SpielAktionsService {
                 return new SpielUndErgebnis<>(finales, finales);
             });
             SpielPersistenzAdapter.uebernehmeDomainSpiel(laufendesSpielEntity, aktualisiertesSpiel);
-            kiOrchestrierungService.automatisiereTisch(tisch);
         } catch (IllegalStateException exception) {
             throw new SpielverwaltungKonfliktException("VORBEHALT_UNGUELTIG", exception.getMessage());
         }
         partieRepository.saveAndFlush(tisch.partie());
         synchronisiereRegistry(tischId, tisch);
-        veroeffentlichePartieAktualisierung(tisch);
+        veroeffentlicheEreignisse(tischId, tisch);
         return PartieStandAntwort.aus(tisch.partie(), verwalteterSpieler.id());
     }
 
@@ -114,13 +112,12 @@ public class SpielAktionsService {
                 return new SpielUndErgebnis<>(neu, neu);
             });
             SpielPersistenzAdapter.uebernehmeDomainSpiel(laufendesSpielEntity, aktualisiertesSpiel);
-            kiOrchestrierungService.automatisiereTisch(tisch);
         } catch (IllegalStateException exception) {
             throw new SpielverwaltungKonfliktException("ARMUT_ANTWORT_UNGUELTIG", exception.getMessage());
         }
         partieRepository.saveAndFlush(tisch.partie());
         synchronisiereRegistry(tischId, tisch);
-        veroeffentlichePartieAktualisierung(tisch);
+        veroeffentlicheEreignisse(tischId, tisch);
         return PartieStandAntwort.aus(tisch.partie(), verwalteterSpieler.id());
     }
 
@@ -137,13 +134,12 @@ public class SpielAktionsService {
                 return new SpielUndErgebnis<>(neu, neu);
             });
             SpielPersistenzAdapter.uebernehmeDomainSpiel(laufendesSpielEntity, aktualisiertesSpiel);
-            kiOrchestrierungService.automatisiereTisch(tisch);
         } catch (IllegalStateException | UngueltigerSpielzugException exception) {
             throw new SpielverwaltungKonfliktException("KARTE_UNGUELTIG", exception.getMessage());
         }
         partieRepository.saveAndFlush(tisch.partie());
         synchronisiereRegistry(tischId, tisch);
-        veroeffentlichePartieAktualisierung(tisch);
+        veroeffentlicheEreignisse(tischId, tisch);
         return PartieStandAntwort.aus(tisch.partie(), verwalteterSpieler.id());
     }
 
@@ -163,14 +159,39 @@ public class SpielAktionsService {
                 return new SpielUndErgebnis<>(neu, neu);
             });
             SpielPersistenzAdapter.uebernehmeDomainSpiel(laufendesSpielEntity, aktualisiertesSpiel);
-            kiOrchestrierungService.automatisiereTisch(tisch);
         } catch (IllegalStateException exception) {
             throw new SpielverwaltungKonfliktException("ANSAGE_UNGUELTIG", exception.getMessage());
         }
         partieRepository.saveAndFlush(tisch.partie());
         synchronisiereRegistry(tischId, tisch);
-        veroeffentlichePartieAktualisierung(tisch);
+        veroeffentlicheEreignisse(tischId, tisch);
         return PartieStandAntwort.aus(tisch.partie(), verwalteterSpieler.id());
+    }
+
+    /**
+     * Veroeffentlicht Domain Events nach jeder Spielaktion.
+     *
+     * <p>Zuerst wird das passende KI-Trigger-Event synchron veroeffentlicht
+     * ({@link NaechsterSpielerErwartet} oder {@link VorbehaltErwartet}), damit
+     * {@link KiEventAdapter} noch innerhalb derselben Transaktion reagiert.
+     * Danach wird {@link PartieAktualisiert} veroeffentlicht, sodass
+     * {@link WebSocketBroadcastAdapter} den finalen Stand (nach KI-Zuegen) ladet
+     * und per WebSocket sendet.</p>
+     */
+    private void veroeffentlicheEreignisse(TischId tischId, TischEntity tisch) {
+        if (tisch.partie() != null && tisch.partie().status() != PartieStatus.BEENDET) {
+            tisch.partie().spiele().stream()
+                .filter(s -> s.ergebnis() == null)
+                .reduce((a, b) -> b)
+                .ifPresent(laufendesSpiel -> {
+                    if (laufendesSpiel.phase() == Spielphase.VORBEHALT_ANSAGE) {
+                        eventPublisher.publishEvent(new VorbehaltErwartet(tischId.wert()));
+                    } else {
+                        eventPublisher.publishEvent(new NaechsterSpielerErwartet(tischId.wert()));
+                    }
+                });
+        }
+        eventPublisher.publishEvent(new PartieAktualisiert(tischId.wert()));
     }
 
     /**
@@ -203,18 +224,6 @@ public class SpielAktionsService {
                     "PARTIE_NICHT_GEFUNDEN",
                     "Es wurde keine Partie mit der ID " + partieId + " gefunden."
                 )));
-    }
-
-    private void veroeffentlichePartieAktualisierung(TischEntity tisch) {
-        PartieStandAntwort broadcastStand = PartieStandAntwort.aus(tisch.partie());
-        tischEchtzeitService.planePartieEreignis(PartieEreignisAntwort.aktualisiert(PartieEreignisTyp.PARTIE_AKTUALISIERT, broadcastStand));
-        tisch.spieler().stream()
-            .filter(spieler -> !spieler.istKi() && spieler.sessionId() != null)
-            .forEach(spieler -> tischEchtzeitService.planeAnBenutzer(
-                spieler.sessionId(),
-                "/queue/partie/" + tisch.partie().id(),
-                PartieEreignisAntwort.snapshot(PartieStandAntwort.aus(tisch.partie(), spieler.id()))
-            ));
     }
 
     private TischEntity ladeAktivenTischMitSpieler(TischId tischId, SpielerEntity spieler) {
