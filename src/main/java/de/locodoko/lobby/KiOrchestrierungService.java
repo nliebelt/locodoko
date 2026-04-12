@@ -4,15 +4,14 @@ import de.locodoko.partie.ki.KiArmutAntwort;
 import de.locodoko.partie.ki.KiSpielzustand;
 import de.locodoko.partie.ki.KiStrategie;
 import de.locodoko.partie.ki.KiStrategieFactory;
-import de.locodoko.karten.Kartendeck;
 import de.locodoko.karten.Karte;
 import de.locodoko.karten.SpielerPosition;
 import de.locodoko.partie.Ansage;
 import de.locodoko.partie.Partei;
+import de.locodoko.partie.Partie;
 import de.locodoko.partie.PunkteRechner;
 import de.locodoko.partie.Spiel;
 import de.locodoko.partie.Spielphase;
-import de.locodoko.partie.Spielergebnis;
 import de.locodoko.partie.VorbehaltAnsage;
 import de.locodoko.partie.PartieEntity;
 import de.locodoko.partie.PartieRepository;
@@ -106,13 +105,13 @@ public class KiOrchestrierungService {
                 return;
             }
             Spiel laufendesSpiel = SpielPersistenzAdapter.zuDomainSpiel(laufendesSpielEntity);
-            if (laufendesSpiel.phase() == Spielphase.AUSWERTUNG) {
-                LOGGER.info("Spiel beendet [spielNr={}, tischId={}]", laufendesSpielEntity.spielNummer(), tisch.id());
-                SpielPersistenzAdapter.uebernehmeDomainSpiel(laufendesSpielEntity, laufendesSpiel.werteAus(punkteRechner));
-                continue;
-            }
-            if (laufendesSpiel.phase() == Spielphase.GESAMTSTAND_AKTUALISIEREN) {
-                schliesseSpielAbUndStarteNaechstes(tisch, laufendesSpielEntity, laufendesSpiel);
+            if (laufendesSpiel.phase() == Spielphase.AUSWERTUNG
+                    || laufendesSpiel.phase() == Spielphase.GESAMTSTAND_AKTUALISIEREN) {
+                LOGGER.info("Spiel abschliessen und naechstes starten [spielNr={}, tischId={}]",
+                    laufendesSpielEntity.spielNummer(), tisch.id());
+                Partie partie = rekonstruierePartieDomain(tisch, laufendesSpielEntity, laufendesSpiel);
+                Partie neuePartie = partie.schliesseAktuellesSpielAbUndStarteNaechstes(punkteRechner);
+                uebernehmeDomainPartieAbschluss(tisch, laufendesSpielEntity, neuePartie);
                 continue;
             }
             SpielerPosition erwarteterSpieler = laufendesSpiel.erwarteterSpieler().orElse(null);
@@ -298,62 +297,58 @@ public class KiOrchestrierungService {
         };
     }
 
-    private void schliesseSpielAbUndStarteNaechstes(TischEntity tisch, SpielEntity laufendesSpielEntity, Spiel laufendesSpiel) {
-        SpielPersistenzAdapter.uebernehmeDomainSpiel(laufendesSpielEntity, laufendesSpiel);
-        Spielergebnis spielergebnis = laufendesSpiel.ergebnis()
-            .orElseThrow(() -> new IllegalStateException("Ein abgeschlossenes Spiel braucht ein Ergebnis"));
+    /**
+     * Rekonstruiert das Domain-{@link Partie}-Objekt aus den persistierten Entities.
+     * Wird benoetigt, um {@link Partie#schliesseAktuellesSpielAbUndStarteNaechstes(PunkteRechner)}
+     * aufzurufen und die Domain-Logik sauber von der Persistenz zu trennen.
+     */
+    private Partie rekonstruierePartieDomain(TischEntity tisch, SpielEntity laufendesSpielEntity, Spiel laufendesSpiel) {
         PartieEntity partie = tisch.partie();
-        boolean bockrundenAktiv = tisch.konfiguration().bockrundenAktiv();
+        List<Spiel> abgeschlosseneSpiele = partie.spiele().stream()
+            .filter(s -> !s.equals(laufendesSpielEntity))
+            .map(SpielPersistenzAdapter::zuDomainSpiel)
+            .toList();
+        return Partie.ausPersistiertemStand(
+            partie.anzahlSpiele(),
+            tisch.konfiguration().alsSpielregeln(),
+            laufendesSpiel.geber(),
+            abgeschlosseneSpiele,
+            laufendesSpiel,
+            partie.gesamtpunktestand(),
+            partie.bockrundenZaehler(),
+            partie.solistDesLetztenSpiels()
+        );
+    }
 
-        // Bockrunden: Neue Trigger erkennen
-        int neueTrigger = 0;
-        if (bockrundenAktiv) {
-            if (laufendesSpiel.hatHerzDurchgegangenenStich()) {
-                neueTrigger++;
-            }
-            if (spielergebnis.siegerPartei() == Partei.RE
-                    && laufendesSpiel.ansagen().hatGrundansage(Partei.KONTRA, laufendesSpiel.parteien())) {
-                neueTrigger++;
-            }
-        }
-
-        // Spielpunkte mit optionalem Bockrunden-Multiplikator akkumulieren
-        int multiplikator = (bockrundenAktiv && partie.bockrundenZaehler() > 0) ? 2 : 1;
+    /**
+     * Uebertraegt das Ergebnis von {@link Partie#schliesseAktuellesSpielAbUndStarteNaechstes(PunkteRechner)}
+     * in die persistierbaren Entities. Entkoppelt die Domain-Logik von der Persistenzkarte.
+     */
+    private void uebernehmeDomainPartieAbschluss(TischEntity tisch, SpielEntity abgeschlossenesSpielEntity, Partie neuePartie) {
+        PartieEntity partie = tisch.partie();
+        // Gesamtpunktestand, Bockrunden und Solist aus Domain uebernehmen
         for (SpielerPosition position : SpielerPosition.standardReihenfolge()) {
-            int neuerWert = partie.gesamtpunktestand().getOrDefault(position, 0)
-                + spielergebnis.spielpunkteVon(position) * multiplikator;
-            partie.setzeGesamtpunktestand(position, neuerWert);
+            partie.setzeGesamtpunktestand(position, neuePartie.gesamtpunktestand().get(position));
         }
-
-        // Bockrunden-Zaehler aktualisieren
-        int neuerBockrundenZaehler = (partie.bockrundenZaehler() > 0 ? partie.bockrundenZaehler() - 1 : 0) + neueTrigger;
-        partie.setzeBockrundenZaehler(neuerBockrundenZaehler);
-        // Solo-Nachgeben: Solist und Geber fuer naechstes Spiel bestimmen
-        boolean warSolo = laufendesSpiel.parteien() != null
-            && laufendesSpiel.parteien().spielerVon(Partei.RE).size() == 1;
-        SpielerPosition naechsterGeber = warSolo
-            ? laufendesSpiel.geber()
-            : laufendesSpiel.geber().naechsteImUhrzeigersinn();
-        SpielerPosition solist = warSolo ? laufendesSpiel.parteien().spielerVon(Partei.RE).get(0) : null;
-        partie.setzeSolistDesLetztenSpiels(null); // alten Solist-Eintrag loeschen
-        long abgeschlosseneSpiele = partie.spiele().stream().filter(spiel -> spiel.ergebnis() != null).count();
-        if (abgeschlosseneSpiele >= partie.anzahlSpiele()) {
+        partie.setzeBockrundenZaehler(neuePartie.bockrundenZaehler());
+        partie.setzeSolistDesLetztenSpiels(neuePartie.solistDesLetztenSpiels().orElse(null));
+        // Abgeschlossenes Spiel in Entity uebernehmen (enthaelt Ergebnis, Punkte usw.)
+        SpielPersistenzAdapter.uebernehmeDomainSpiel(
+            abgeschlossenesSpielEntity, neuePartie.abgeschlosseneSpiele().getLast());
+        if (neuePartie.istBeendet()) {
             partie.markiereAlsBeendet();
             return;
         }
-        // Beim Start eines neuen Spiels: KI-Übernahme für alle Spieler aufheben,
-        // damit reconnectete Spieler wieder selbst spielen können
+        // Beim Start eines neuen Spiels: KI-Uebernahme fuer alle Spieler aufheben,
+        // damit reconnectete Spieler wieder selbst spielen koennen
         tisch.spieler().stream()
             .filter(s -> !s.istKi() && s.istKiUebernommen())
             .forEach(s -> {
                 s.hebeKiUebernahmeAuf();
                 spielerRepository.save(s);
             });
-        Spiel neuesSpiel = solist != null
-            ? Spiel.neuMitSolistAufspieler(naechsterGeber, solist, tisch.konfiguration().alsSpielregeln(),
-                Kartendeck.neu(tisch.konfiguration().alsSpielregeln()).gemischt()).teileKartenAus()
-            : Spiel.neu(naechsterGeber, tisch.konfiguration().alsSpielregeln(),
-                Kartendeck.neu(tisch.konfiguration().alsSpielregeln()).gemischt()).teileKartenAus();
+        // Naechstes Spiel als Entity anlegen
+        Spiel neuesSpiel = neuePartie.aktuellesSpiel();
         SpielEntity neuesSpielEntity = SpielEntity.neu(
             partie.aktuellesSpielNummer() + 1,
             neuesSpiel.geber(),
@@ -362,7 +357,7 @@ public class KiOrchestrierungService {
         );
         SpielPersistenzAdapter.uebernehmeDomainSpiel(neuesSpielEntity, neuesSpiel);
         partie.fuegeSpielHinzu(neuesSpielEntity);
-        LOGGER.info("Neue Partie gestartet [tischId={}, spielNr={}]", tisch.id(), neuesSpielEntity.spielNummer());
+        LOGGER.info("Naechstes Spiel gestartet [tischId={}, spielNr={}]", tisch.id(), neuesSpielEntity.spielNummer());
     }
 
     private SpielEntity findeLaufendesSpiel(PartieEntity partie) {

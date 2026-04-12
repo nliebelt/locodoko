@@ -8,8 +8,8 @@
 Nächster logischer Schritt: Task 8 (Frontend-Animationen: Stich-Visualisierung) oder Task 9 (Rundenauswertungs-Overlay).
 Offene Fragen: keine.
 
-**2026-04-12 (R3 TischService aufteilen):** `TischService` in zwei fokussierte Services aufgeteilt: `TischVerwaltungsService` (Lobby-Operationen: Tisch erstellen/beitreten/verlassen/starten, neue Partie, Konfiguration) und `SpielAktionsService` (Spielaktionen: Karte spielen, Ansage, Vorbehalt, Armut, Partiestand laden). `TischService.java` gelöscht. `TischController`, `PartieController` und `SpielverwaltungWebSocketController` auf die neuen Services umgestellt. 189 Tests grün.
-Nächster logischer Schritt: **R4** (KiOrchestrierungService: Domain-Logik zurück in Partie) — `Partie.schliesseAktuellesSpielAbUndStarteNaechstes(PunkteRechner)` als zentrale Methode.
+**2026-04-12 (R4 KiOrchestrierungService: Domain-Logik zurück in Partie):** `Partie.schliesseAktuellesSpielAbUndStarteNaechstes(PunkteRechner)` als zentrale Domain-Methode implementiert — kapselt AUSWERTUNG + GESAMTSTAND_AKTUALISIEREN + Bockrunden-Trigger + Solo-Nachgeben + nächstes Spiel starten. `Partie.ausPersistiertemStand()` Factory-Methode hinzugefügt. `KiOrchestrierungService`: doppelter `schliesseSpielAbUndStarteNaechstes()`-Code entfernt, ersetzt durch `rekonstruierePartieDomain()` + `uebernehmeDomainPartieAbschluss()` (Persistenz-Mapping). 3 neue Tests in `PartieTest.java`. 192 Tests grün.
+Nächster logischer Schritt: **R5** (SpielRegistry: In-Memory Spiel-Cache mit Concurrency-Sicherheit).
 Offene Fragen: keine.
 
 ---
@@ -224,10 +224,10 @@ Alle gesetzt (17 gesamt):
 
 > **Blockiert von:** R3 | **Spec:** `specs/architektur-spielkern.md` Abschnitt "KiOrchestrierungService"
 
-- [ ] **R4.1** `Partie.schliesseAktuellesSpielAbUndStarteNaechstes(PunkteRechner)` als zentrale Methode — enthält Bockrunden-Trigger, Solist-Geber-Logik, Gesamtpunktestand-Update
-- [ ] **R4.2** `KiOrchestrierungService` ruft nur noch: Phase prüfen → `partie.schliesseAb…()` → persistieren → broadcast. Keine Spiellogik im Service.
-- [ ] **R4.3** `SpielPersistenzAdapter` wird von `KiOrchestrierungService` entkoppelt — Persistenz läuft durch `SpielAktionsService`
-- [ ] **R4.4** Tests für `Partie`-Methode, bestehende KI-Tests grün
+- [x] **R4.1** `Partie.schliesseAktuellesSpielAbUndStarteNaechstes(PunkteRechner)` als zentrale Methode — enthält Bockrunden-Trigger, Solist-Geber-Logik, Gesamtpunktestand-Update
+- [x] **R4.2** `KiOrchestrierungService` ruft nur noch: Phase prüfen → `partie.schliesseAb…()` → persistieren → broadcast. Keine Spiellogik im Service.
+- [x] **R4.3** `SpielPersistenzAdapter` wird von `KiOrchestrierungService` entkoppelt — Persistenz läuft durch `uebernehmeDomainPartieAbschluss()` (separater privater Adapter-Methode)
+- [x] **R4.4** Tests für `Partie`-Methode, bestehende KI-Tests grün
 
 ### R5. SpielRegistry (In-Memory Spiel-Cache)
 

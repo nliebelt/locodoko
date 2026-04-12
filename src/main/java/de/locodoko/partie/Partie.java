@@ -59,6 +59,19 @@ public final class Partie {
         this.solistDesLetztenSpiels = solistDesLetztenSpiels;
     }
 
+    public static Partie ausPersistiertemStand(
+        int anzahlSpiele,
+        Spielregeln spielregeln,
+        SpielerPosition naechsterGeber,
+        List<Spiel> abgeschlosseneSpiele,
+        Spiel aktuellesSpiel,
+        Map<SpielerPosition, Integer> gesamtpunktestand,
+        int bockrundenZaehler,
+        SpielerPosition solistDesLetztenSpiels
+    ) {
+        return new Partie(anzahlSpiele, spielregeln, naechsterGeber, abgeschlosseneSpiele, aktuellesSpiel, gesamtpunktestand, bockrundenZaehler, solistDesLetztenSpiels);
+    }
+
     public static Partie neu(int anzahlSpiele, SpielerPosition ersterGeber, Spielregeln spielregeln) {
         EnumMap<SpielerPosition, Integer> gesamtpunktestand = new EnumMap<>(SpielerPosition.class);
         for (SpielerPosition position : SpielerPosition.standardReihenfolge()) {
@@ -145,6 +158,32 @@ public final class Partie {
             neuerBockrundenZaehler,
             neuerSolist
         );
+    }
+
+    /**
+     * Kombinierte Methode: wertet das aktuelle Spiel aus (falls noetig), schliesst es ab
+     * und startet das naechste Spiel — oder markiert die Partie als beendet.
+     *
+     * <p>Kapselt den vollstaendigen Game-Loop: AUSWERTUNG → Punkteberechnung →
+     * Bockrunden-/Solo-Logik → naechstes Spiel starten. Darf in Phase
+     * {@link Spielphase#AUSWERTUNG} oder {@link Spielphase#GESAMTSTAND_AKTUALISIEREN}
+     * aufgerufen werden.</p>
+     */
+    public Partie schliesseAktuellesSpielAbUndStarteNaechstes(PunkteRechner punkteRechner) {
+        Spiel spiel = aktuellesSpiel();
+        // Auswertung falls noch nicht geschehen
+        Partie partieNachAuswertung = spiel.phase() == Spielphase.AUSWERTUNG
+            ? mitAktuellemSpiel(spiel.werteAus(punkteRechner))
+            : this;
+        // Spiel abschliessen — Bockrunden, Solo-Nachgeben, Gesamtpunktestand
+        Partie abgeschlossenePartie = partieNachAuswertung.schliesseAktuellesSpielAb();
+        if (abgeschlossenePartie.istBeendet()) {
+            return abgeschlossenePartie;
+        }
+        // Naechstes Spiel mit gemischtem Deck starten und Karten austeilen
+        Kartendeck kartendeck = Kartendeck.neu(abgeschlossenePartie.spielregeln()).gemischt();
+        Partie partieNaechstesSpiel = abgeschlossenePartie.starteNaechstesSpiel(kartendeck);
+        return partieNaechstesSpiel.mitAktuellemSpiel(partieNaechstesSpiel.aktuellesSpiel().teileKartenAus());
     }
 
     public boolean istBeendet() {

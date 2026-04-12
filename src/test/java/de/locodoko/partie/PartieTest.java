@@ -81,6 +81,59 @@ class PartieTest {
             "Nach einem Normalspiel muss der Geber im Uhrzeigersinn rotieren.");
     }
 
+    @Test
+    void schliesseAktuellesSpielAbUndStarteNaechstesStartetNaechstesSpiel() {
+        // Wichtig: Die kombinierte Methode muss in einem Aufruf auswerten, abschliessen UND das naechste Spiel starten —
+        // sonst muss der Service diese drei Schritte koordinieren und kann Bockrunden-/Solo-Logik doppeln.
+        Partie partie = Partie.neu(2, SpielerPosition.SUED, spielregeln);
+        partie = partie.starteNaechstesSpiel(Kartendeck.neu(spielregeln));
+        Spiel spielInAuswertung = spieleAutomatischZuEnde(partie.aktuellesSpiel());
+        partie = partie.mitAktuellemSpiel(spielInAuswertung);
+
+        Partie neuePartie = partie.schliesseAktuellesSpielAbUndStarteNaechstes(punkteRechner);
+
+        assertEquals(1, neuePartie.abgeschlosseneSpiele().size(),
+            "Nach einem Spiel muss genau ein abgeschlossenes Spiel in der Partie vorliegen.");
+        assertTrue(neuePartie.aktuellesSpielOptional().isPresent(),
+            "Die Partie muss nach dem Abschluss ein neues laufendes Spiel besitzen.");
+        assertEquals(SpielerPosition.WEST, neuePartie.naechsterGeber(),
+            "Der Geber muss nach einem Normalspiel im Uhrzeigersinn rotieren.");
+    }
+
+    @Test
+    void schliesseAktuellesSpielAbUndStarteNaechstesMarkiertPartieAlsBeendet() {
+        // Wichtig: Die Partie muss nach dem letzten Spiel korrekt als beendet markiert werden —
+        // ein Folgespiel darf nicht gestartet werden.
+        Partie partie = Partie.neu(1, SpielerPosition.SUED, spielregeln);
+        partie = partie.starteNaechstesSpiel(Kartendeck.neu(spielregeln));
+        Spiel letztesspiel = spieleAutomatischZuEnde(partie.aktuellesSpiel());
+        partie = partie.mitAktuellemSpiel(letztesspiel);
+
+        Partie abgeschlossenePartie = partie.schliesseAktuellesSpielAbUndStarteNaechstes(punkteRechner);
+
+        assertTrue(abgeschlossenePartie.istBeendet(),
+            "Nach dem letzten Spiel muss die Partie als beendet markiert sein.");
+        assertTrue(abgeschlossenePartie.aktuellesSpielOptional().isEmpty(),
+            "Nach einer beendeten Partie darf kein aktives Spiel mehr vorhanden sein.");
+    }
+
+    @Test
+    void schliesseAktuellesSpielAbUndStarteNaechstesAkzeptiertGesamtstandPhase() {
+        // Wichtig: Die Methode muss auch in GESAMTSTAND_AKTUALISIEREN Phase funktionieren —
+        // damit bei einem Neustart nach einem abgewerteten Spiel kein Fehler auftritt.
+        Partie partie = Partie.neu(2, SpielerPosition.SUED, spielregeln);
+        partie = partie.starteNaechstesSpiel(Kartendeck.neu(spielregeln));
+        Spiel spielNachWertung = spieleAutomatischZuEnde(partie.aktuellesSpiel());
+        // spieleAutomatischZuEnde liefert bereits GESAMTSTAND_AKTUALISIEREN
+        assertEquals(Spielphase.GESAMTSTAND_AKTUALISIEREN, spielNachWertung.phase(),
+            "Hilfsmethode muss Spiel in GESAMTSTAND_AKTUALISIEREN liefern.");
+        partie = partie.mitAktuellemSpiel(spielNachWertung);
+
+        Partie neuePartie = partie.schliesseAktuellesSpielAbUndStarteNaechstes(punkteRechner);
+
+        assertEquals(1, neuePartie.abgeschlosseneSpiele().size());
+    }
+
     private Spiel spieleSoloZuEnde(Spiel spiel, SpielerPosition solist) {
         Spiel aktuellesSpiel = spiel.teileKartenAus();
         // Solist meldet SOLO_TRUMPF, alle anderen GESUND
