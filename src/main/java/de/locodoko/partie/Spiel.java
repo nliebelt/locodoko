@@ -513,12 +513,7 @@ public final class Spiel {
         if (hochzeitStatus != null && hochzeitStatus.suchtPartner() && spielerPosition != hochzeitStatus.hochzeitSpieler()) {
             return false;
         }
-        // Pflichtansage: Mindestkartenanzahl wird ignoriert
-        Partei partei = parteien().parteiVon(spielerPosition);
-        boolean istPflichtansage = !pflichtansageAusstehend.isEmpty()
-            && pflichtansageAusstehend.contains(partei)
-            && ansage.istGrundansage();
-        int effektiveKartenAnzahl = istPflichtansage ? Integer.MAX_VALUE : handVon(spielerPosition).karten().size();
+        int effektiveKartenAnzahl = effektiveKartenAnzahlFuer(spielerPosition, ansage);
         return ansagen.kannAnsagen(spielerPosition, ansage, parteien(), spielregeln, effektiveKartenAnzahl);
     }
 
@@ -534,12 +529,7 @@ public final class Spiel {
         if (hochzeitStatus != null && hochzeitStatus.suchtPartner() && spielerPosition != hochzeitStatus.hochzeitSpieler()) {
             throw new IllegalStateException("Vor der Klaerung der Hochzeit darf nur der Hochzeits-Spieler Ansagen taetigen");
         }
-        // Pflichtansage: Mindestkartenanzahl wird ignoriert (gleiches Prinzip wie in kannAnsagen)
-        Partei ansagenPartei = parteien().parteiVon(spielerPosition);
-        boolean istPflichtansage = !pflichtansageAusstehend.isEmpty()
-            && pflichtansageAusstehend.contains(ansagenPartei)
-            && ansage.istGrundansage();
-        int effektiveKartenAnzahlFuerAnsage = istPflichtansage ? Integer.MAX_VALUE : handVon(spielerPosition).karten().size();
+        int effektiveKartenAnzahlFuerAnsage = effektiveKartenAnzahlFuer(spielerPosition, ansage);
         Ansagen neueAnsagen = ansagen.fuegeHinzu(
             spielerPosition,
             ansage,
@@ -568,6 +558,14 @@ public final class Spiel {
             .pflichtansageAusstehend(aktualisiertesPflichtansageAusstehend)
             .solistAufspieler(null)
             .build();
+    }
+
+    private int effektiveKartenAnzahlFuer(SpielerPosition position, Ansage ansage) {
+        Partei partei = parteien().parteiVon(position);
+        boolean istPflichtansage = !pflichtansageAusstehend.isEmpty()
+            && pflichtansageAusstehend.contains(partei)
+            && ansage.istGrundansage();
+        return istPflichtansage ? Integer.MAX_VALUE : handVon(position).karten().size();
     }
 
     public Spiel werteAus(PunkteRechner punkteRechner) {

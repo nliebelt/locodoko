@@ -8,8 +8,8 @@
 Nächster logischer Schritt: Task 8 (Frontend-Animationen: Stich-Visualisierung) oder Task 9 (Rundenauswertungs-Overlay).
 Offene Fragen: keine.
 
-**2026-04-12 (R1 SpielBuilder):** `SpielBuilder` als `private static inner class` in `Spiel.java` implementiert. Alle 17 Felder als Fluent-Setter, `build()` delegiert an privaten Konstruktor. `toBuilder()` Instanzmethode vorbelegt alle Felder. Alle 9 Mutationsmethoden (`spieleKarte`, `sageAn`, `meldeVorbehalt`, `teileKartenAus`, `loeseVorbehalteAuf`, `legeArmutTrumpfkarten`, `lehneArmutAb`, `nimmArmutAn`, `werteAus`) und 3 Factory-Methoden sowie 2 private Hilfsmethoden (`neuesSpielMitStichfortschritt`, `eingeworfenesSpiel`) auf Builder umgestellt. 189 Tests grün.
-Nächster logischer Schritt: **R2** (Pflichtansage-Logik DRY) — private Hilfsmethode `effektiveKartenAnzahlFuer()` in Spiel.java extrahieren, ~20 duplizierte Zeilen in `kannAnsagen()` und `sageAn()` entfernen.
+**2026-04-12 (R2 Pflichtansage DRY):** Private Hilfsmethode `effektiveKartenAnzahlFuer(SpielerPosition, Ansage)` in `Spiel.java` extrahiert. Berechnet ob Pflichtansage vorliegt (→ `Integer.MAX_VALUE`) oder die echte Handgröße zurückgibt. ~16 duplizierte Zeilen aus `kannAnsagen()` und `sageAn()` entfernt. 189 Tests grün.
+Nächster logischer Schritt: **R3** (TischService aufteilen) — `TischVerwaltungsService` und `SpielAktionsService` extrahieren.
 Offene Fragen: keine.
 
 ---
@@ -205,9 +205,9 @@ Alle gesetzt (17 gesamt):
 
 > **Blockiert von:** nichts | **Spec:** `specs/architektur-spielkern.md` Abschnitt "Pflichtansage-Logik DRY"
 
-- [ ] **R2.1** Private Hilfsmethode `effektiveKartenAnzahlFuer(SpielerPosition, Ansage)` in `Spiel.java` extrahieren
-- [ ] **R2.2** `kannAnsagen()` und `sageAn()` nutzen die neue Methode — ~20 duplizierte Zeilen entfallen
-- [ ] **R2.3** Tests grün
+- [x] **R2.1** Private Hilfsmethode `effektiveKartenAnzahlFuer(SpielerPosition, Ansage)` in `Spiel.java` extrahieren
+- [x] **R2.2** `kannAnsagen()` und `sageAn()` nutzen die neue Methode — ~20 duplizierte Zeilen entfallen
+- [x] **R2.3** Tests grün
 
 ### R3. TischService aufteilen
 
