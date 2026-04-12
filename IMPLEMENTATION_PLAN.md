@@ -8,8 +8,8 @@
 Nächster logischer Schritt: Task 8 (Frontend-Animationen: Stich-Visualisierung) oder Task 9 (Rundenauswertungs-Overlay).
 Offene Fragen: keine.
 
-**2026-04-12 (R2 Pflichtansage DRY):** Private Hilfsmethode `effektiveKartenAnzahlFuer(SpielerPosition, Ansage)` in `Spiel.java` extrahiert. Berechnet ob Pflichtansage vorliegt (→ `Integer.MAX_VALUE`) oder die echte Handgröße zurückgibt. ~16 duplizierte Zeilen aus `kannAnsagen()` und `sageAn()` entfernt. 189 Tests grün.
-Nächster logischer Schritt: **R3** (TischService aufteilen) — `TischVerwaltungsService` und `SpielAktionsService` extrahieren.
+**2026-04-12 (R3 TischService aufteilen):** `TischService` in zwei fokussierte Services aufgeteilt: `TischVerwaltungsService` (Lobby-Operationen: Tisch erstellen/beitreten/verlassen/starten, neue Partie, Konfiguration) und `SpielAktionsService` (Spielaktionen: Karte spielen, Ansage, Vorbehalt, Armut, Partiestand laden). `TischService.java` gelöscht. `TischController`, `PartieController` und `SpielverwaltungWebSocketController` auf die neuen Services umgestellt. 189 Tests grün.
+Nächster logischer Schritt: **R4** (KiOrchestrierungService: Domain-Logik zurück in Partie) — `Partie.schliesseAktuellesSpielAbUndStarteNaechstes(PunkteRechner)` als zentrale Methode.
 Offene Fragen: keine.
 
 ---
@@ -213,12 +213,12 @@ Alle gesetzt (17 gesamt):
 
 > **Blockiert von:** nichts | **Spec:** `specs/architektur-spielkern.md` Abschnitt "TischService aufteilen"
 
-- [ ] **R3.1** `TischVerwaltungsService` extrahieren: `tischErstellen()`, `tischLoeschen()`, `konfigurationAendern()`, `spielerBeitreten()`, `kiAuffuellen()`
-- [ ] **R3.2** `SpielAktionsService` extrahieren: `karteSpielenFuer()`, `ansageTaetigenFuer()`, `vorbehaltMeldenFuer()`, `spielStarten()`
-- [ ] **R3.3** `SpielAktionsService.karteSpielenFuer()` leitet `SpielerPosition` aus Server-Session ab (nicht aus Request-Body) — Übergangslösung: validiert dass gesendete Position mit Session übereinstimmt
-- [ ] **R3.4** `TischController` und `PartieController` auf neue Services umstellen
-- [ ] **R3.5** Alter `TischService` entfernen
-- [ ] **R3.6** Alle Tests anpassen und grün
+- [x] **R3.1** `TischVerwaltungsService` extrahieren: `tischErstellen()`, `tischLoeschen()`, `konfigurationAendern()`, `spielerBeitreten()`, `kiAuffuellen()`
+- [x] **R3.2** `SpielAktionsService` extrahieren: `karteSpielenFuer()`, `ansageTaetigenFuer()`, `vorbehaltMeldenFuer()`, `spielStarten()`
+- [x] **R3.3** `SpielAktionsService.karteSpielenFuer()` leitet `SpielerPosition` aus Server-Session ab (nicht aus Request-Body) — Übergangslösung: validiert dass gesendete Position mit Session übereinstimmt
+- [x] **R3.4** `TischController` und `PartieController` auf neue Services umstellen
+- [x] **R3.5** Alter `TischService` entfernen
+- [x] **R3.6** Alle Tests anpassen und grün
 
 ### R4. KiOrchestrierungService: Domain-Logik zurück in Partie
 

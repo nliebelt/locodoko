@@ -39,11 +39,11 @@ public class TischController {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(TischController.class);
 
-    private final TischService tischService;
+    private final TischVerwaltungsService tischVerwaltungsService;
     private final SpielerSessionService spielerSessionService;
 
-    public TischController(TischService tischService, SpielerSessionService spielerSessionService) {
-        this.tischService = tischService;
+    public TischController(TischVerwaltungsService tischVerwaltungsService, SpielerSessionService spielerSessionService) {
+        this.tischVerwaltungsService = tischVerwaltungsService;
         this.spielerSessionService = spielerSessionService;
     }
 
@@ -52,7 +52,7 @@ public class TischController {
     @GetMapping
     public List<TischListenEintragAntwort> listeTische() {
         LOGGER.info("Offene Tischliste abgefragt");
-        return tischService.listeOffeneTische();
+        return tischVerwaltungsService.listeOffeneTische();
     }
 
     @Operation(summary = "Neuen Tisch erstellen", description = "Erstellt einen neuen Tisch mit dem angegebenen Namen und der Konfiguration. Der anfragende Spieler wird automatisch Ersteller und Teilnehmer.")
@@ -68,7 +68,7 @@ public class TischController {
     ) {
         SpielerEntity spieler = ladeAktivenSpieler(request);
         LOGGER.info("Spieler {} erstellt Tisch '{}'", spieler.id(), anfrage.name());
-        TischAntwort antwort = tischService.erstelleTisch(spieler, anfrage);
+        TischAntwort antwort = tischVerwaltungsService.erstelleTisch(spieler, anfrage);
         return ResponseEntity.status(HttpStatus.CREATED).body(antwort);
     }
 
@@ -80,7 +80,7 @@ public class TischController {
     @GetMapping("/{id}")
     public TischAntwort ladeTisch(@Parameter(description = "Tisch-ID") @PathVariable UUID id) {
         LOGGER.info("Tisch {} abgefragt", id);
-        return tischService.ladeTisch(TischId.von(id));
+        return tischVerwaltungsService.ladeTisch(TischId.von(id));
     }
 
     @Operation(summary = "Tisch beitreten", description = "Fuegt den anfragenden Spieler einem bestehenden Tisch hinzu.")
@@ -94,7 +94,7 @@ public class TischController {
     public TischAntwort betreteTisch(@Parameter(description = "Tisch-ID") @PathVariable UUID id, HttpServletRequest request) {
         SpielerEntity spieler = ladeAktivenSpieler(request);
         LOGGER.info("Spieler {} tritt Tisch {} bei", spieler.id(), id);
-        return tischService.betreteTisch(TischId.von(id), spieler);
+        return tischVerwaltungsService.betreteTisch(TischId.von(id), spieler);
     }
 
     @Operation(summary = "Tisch verlassen", description = "Entfernt den anfragenden Spieler vom Tisch. Laeuft eine Partie, wird sie abgebrochen.")
@@ -107,7 +107,7 @@ public class TischController {
     public BestaetigungAntwort verlasseTisch(@Parameter(description = "Tisch-ID") @PathVariable UUID id, HttpServletRequest request) {
         SpielerEntity spieler = ladeAktivenSpieler(request);
         LOGGER.info("Spieler {} verlaesst Tisch {}", spieler.id(), id);
-        return tischService.verlasseTisch(TischId.von(id), spieler);
+        return tischVerwaltungsService.verlasseTisch(TischId.von(id), spieler);
     }
 
     @Operation(summary = "Spiel starten", description = "Startet das Spiel am Tisch. Fehlende Spieler werden durch KI-Spieler aufgefuellt. Nur der Tischersteller kann starten.")
@@ -121,7 +121,7 @@ public class TischController {
     public BestaetigungAntwort starteTisch(@Parameter(description = "Tisch-ID") @PathVariable UUID id, HttpServletRequest request) {
         SpielerEntity spieler = ladeAktivenSpieler(request);
         LOGGER.info("Spieler {} startet Tisch {}", spieler.id(), id);
-        TischAntwort antwort = tischService.starteTisch(TischId.von(id), spieler);
+        TischAntwort antwort = tischVerwaltungsService.starteTisch(TischId.von(id), spieler);
         return new BestaetigungAntwort("Tisch " + antwort.id() + " wurde gestartet.");
     }
 
@@ -136,7 +136,7 @@ public class TischController {
     public BestaetigungAntwort starteNeuePartie(@Parameter(description = "Tisch-ID") @PathVariable UUID id, HttpServletRequest request) {
         SpielerEntity spieler = ladeAktivenSpieler(request);
         LOGGER.info("Spieler {} startet neue Partie an Tisch {}", spieler.id(), id);
-        return tischService.starteNeuePartie(TischId.von(id), spieler);
+        return tischVerwaltungsService.starteNeuePartie(TischId.von(id), spieler);
     }
 
     @Operation(summary = "Tischkonfiguration abrufen", description = "Gibt alle Spielregeln des Tisches zurueck (Trumpfreihenfolge, Sonderpunkte, Timeouts etc.).")
@@ -147,7 +147,7 @@ public class TischController {
     @GetMapping("/{id}/konfiguration")
     public TischKonfigurationDto gibKonfiguration(@Parameter(description = "Tisch-ID") @PathVariable UUID id) {
         LOGGER.info("Konfiguration fuer Tisch {} abgefragt", id);
-        return tischService.ladeKonfiguration(TischId.von(id));
+        return tischVerwaltungsService.ladeKonfiguration(TischId.von(id));
     }
 
     @Operation(summary = "Tischkonfiguration aktualisieren", description = "Aendert die Spielregeln des Tisches. Nur moeglich, solange noch keine Partie laeuft. Nur der Tischersteller kann die Konfiguration aendern.")
@@ -166,7 +166,7 @@ public class TischController {
     ) {
         SpielerEntity spieler = ladeAktivenSpieler(request);
         LOGGER.info("Spieler {} aktualisiert die Konfiguration von Tisch {}", spieler.id(), id);
-        return tischService.aktualisiereKonfiguration(TischId.von(id), spieler, konfiguration);
+        return tischVerwaltungsService.aktualisiereKonfiguration(TischId.von(id), spieler, konfiguration);
     }
 
     private SpielerEntity ladeAktivenSpieler(HttpServletRequest request) {

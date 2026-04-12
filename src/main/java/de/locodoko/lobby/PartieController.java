@@ -26,11 +26,11 @@ public class PartieController {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(PartieController.class);
 
-    private final TischService tischService;
+    private final SpielAktionsService spielAktionsService;
     private final SpielerSessionService spielerSessionService;
 
-    public PartieController(TischService tischService, SpielerSessionService spielerSessionService) {
-        this.tischService = tischService;
+    public PartieController(SpielAktionsService spielAktionsService, SpielerSessionService spielerSessionService) {
+        this.spielAktionsService = spielAktionsService;
         this.spielerSessionService = spielerSessionService;
     }
 
@@ -48,7 +48,7 @@ public class PartieController {
     public PartieStandAntwort gibPartieStand(@Parameter(description = "Partie-ID") @PathVariable UUID id, HttpServletRequest request) {
         SpielerEntity spieler = ladeAktivenSpieler(request);
         LOGGER.info("Partiestand fuer Partie {} von Spieler {} abgefragt", id, spieler.id());
-        return tischService.ladePartieStand(PartieId.von(id), spieler);
+        return spielAktionsService.ladePartieStand(PartieId.von(id), spieler);
     }
 
     private SpielerEntity ladeAktivenSpieler(HttpServletRequest request) {
