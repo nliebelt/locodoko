@@ -10,8 +10,8 @@ Offene Fragen: keine.
 
 **2026-04-12 (R6.5 KI-Delay konsolidiert):** `KiEventAdapter` besitzt jetzt `kiScheduler` (ScheduledExecutorService), `KI_KARTEN_VERZOEGERUNG_MS = 800ms`, `@PreDestroy beende()` und neue Methode `planeVerzoegertenKiZug(TischId)`. `KiOrchestrierungService` injiziert `KiEventAdapter` via `@Lazy` (Setter-Injection mit `@Autowired`) und ruft `kiEventAdapter.planeVerzoegertenKiZug()` statt `kiScheduler.schedule(...)` auf. Circular Dependency mit `@Lazy` aufgelöst. 198 Tests grün.
 
-**2026-04-12 (R7 TischSzene aufgeteilt):** `TischSzene.ts` (~2750 Zeilen) in drei fokussierte Dateien aufgeteilt: `TischInputHandler.ts` (Tastatursteuerung, 312 Zeilen), `TischUIManager.ts` (DOM-Build und -Update, ~700 Zeilen), `tischFormatierer.ts` (reine Formatierungsfunktionen, 79 Zeilen). Context-Interface-Muster (`TischInputKontext`, `TischUIKontext`) entkoppelt die neuen Klassen von TischSzene ohne zirkuläre Abhängigkeiten. `TischSzene` delegiert alle DOM- und Keyboard-Aufgaben und behält nur Phaser-Lifecycle + Rendering. 24 Frontend-Tests grün, Build und Lint sauber.
-Nächster logischer Schritt: R8 (AnimationenService DRY).
+**2026-04-12 (R8 AnimationenService DRY):** `animiereTween(konfiguration)` als zentraler Promise-Wrapper in `AnimationenService` extrahiert. `tweenAlpha`, `tweenZu`, `tweenScale` delegieren nun dorthin — ~60 Zeilen Boilerplate (Promise-Wrapper, tweenReferenz, abgeschlossen-Flag, laufendeTweens-Registrierung) entfallen. Cast auf `Phaser.Types.Tweens.TweenBuilderConfig` nötig wegen Spread+Omit-TypeScript-Limitierung. 24 Frontend-Tests grün, Build und Lint sauber.
+Nächster logischer Schritt: R9 (Augen + Spielpunkte als Value Objects) oder T2 (Armut Unit-Tests).
 Offene Fragen: keine.
 
 ---
@@ -266,9 +266,9 @@ Alle gesetzt (17 gesamt):
 
 > **Blockiert von:** nichts | **Spec:** `specs/architektur-spielkern.md` Abschnitt "Dokumentation"
 
-- [ ] **R8.1** Private `animiereTween<T>(targets, properties, config)` Methode in `AnimationenService` — zentrale Promise-Logik für alle Tween-Typen
-- [ ] **R8.2** `tweenAlpha`, `tweenZu`, `tweenScale` nutzen `animiereTween` intern — ~60 Zeilen Duplikation entfallen
-- [ ] **R8.3** Tests und Lint grün
+- [x] **R8.1** Private `animiereTween<T>(targets, properties, config)` Methode in `AnimationenService` — zentrale Promise-Logik für alle Tween-Typen
+- [x] **R8.2** `tweenAlpha`, `tweenZu`, `tweenScale` nutzen `animiereTween` intern — ~60 Zeilen Duplikation entfallen
+- [x] **R8.3** Tests und Lint grün
 
 ---
 

@@ -392,42 +392,47 @@ export class AnimationenService {
      }
    }
 
-   /**
-    * Animiert die Skalierung eines Phaser-Objekts.
-    * @param ziel - Zu skalierendes Objekt
-    * @param skala - Ziel-Skalierung (1.0 = 100%)
-    * @param dauer - Dauer in ms
-    */
-   private tweenScale(
-       ziel: Phaser.GameObjects.GameObject & { scaleX: number; scaleY: number },
-     skala: number,
-     dauer: number
-   ): Promise<void> {
-     return new Promise((resolve) => {
-       const tweenReferenz: { wert?: Phaser.Tweens.Tween } = {};
-       let abgeschlossen = false;
-       const tween = this.szene.tweens.add({
-         targets: [ziel],
-         scaleX: skala,
-         scaleY: skala,
-         duration: this.skalierteDauer(dauer),
-         ease: 'Cubic.Out',
-         onComplete: () => {
-           abgeschlossen = true;
-           if (tweenReferenz.wert) {
-             this.laufendeTweens.delete(tweenReferenz.wert);
-           }
-           resolve();
-         }
-       });
-       tweenReferenz.wert = tween;
-       if (!abgeschlossen) {
-         this.laufendeTweens.add(tween);
-       }
-     });
-   }
+  // Zentraler Promise-Wrapper für alle Phaser-Tweens — Warum: tweenAlpha/tweenZu/tweenScale
+  // teilten identische Registrierungs- und Cleanup-Logik; hier statt dreifach dupliziert.
+  private animiereTween(
+    konfiguration: Omit<Phaser.Types.Tweens.TweenBuilderConfig, 'duration' | 'onComplete'> & { duration: number }
+  ): Promise<void> {
+    return new Promise((resolve) => {
+      const tweenReferenz: { wert?: Phaser.Tweens.Tween } = {};
+      let abgeschlossen = false;
+      // Cast nötig: TypeScript verliert beim Spread die targets-Info aus dem Omit-Typ
+      const tweenKonfig: Phaser.Types.Tweens.TweenBuilderConfig = {
+        ...(konfiguration as Phaser.Types.Tweens.TweenBuilderConfig),
+        duration: this.skalierteDauer(konfiguration.duration),
+        onComplete: () => {
+          abgeschlossen = true;
+          if (tweenReferenz.wert) {
+            this.laufendeTweens.delete(tweenReferenz.wert);
+          }
+          resolve();
+        }
+      };
+      const tween = this.szene.tweens.add(tweenKonfig);
+      tweenReferenz.wert = tween;
+      if (!abgeschlossen) {
+        this.laufendeTweens.add(tween);
+      }
+    });
+  }
 
-   // Animiert die Transparenz eines Phaser-Objekts auf einen Zielwert (0=unsichtbar, 1=sichtbar)
+  /**
+   * Animiert die Skalierung eines Phaser-Objekts.
+   * @param ziel - Zu skalierendes Objekt
+   * @param skala - Ziel-Skalierung (1.0 = 100%)
+   * @param dauer - Dauer in ms
+   */
+  private tweenScale(
+    ziel: Phaser.GameObjects.GameObject & { scaleX: number; scaleY: number },
+    skala: number,
+    dauer: number
+  ): Promise<void> {
+    return this.animiereTween({ targets: [ziel], scaleX: skala, scaleY: skala, duration: dauer, ease: 'Cubic.Out' });
+  }
 
   /**
    * Stoppt alle laufenden Tweens und Timer sofort.
@@ -446,60 +451,18 @@ export class AnimationenService {
     alpha: number,
     dauer: number
   ): Promise<void> {
-    return new Promise((resolve) => {
-      const tweenReferenz: { wert?: Phaser.Tweens.Tween } = {};
-      let abgeschlossen = false;
-      const tween = this.szene.tweens.add({
-        targets: [ziel],
-        alpha,
-        duration: this.skalierteDauer(dauer),
-        ease: 'Linear',
-        onComplete: () => {
-          abgeschlossen = true;
-          if (tweenReferenz.wert) {
-            this.laufendeTweens.delete(tweenReferenz.wert);
-          }
-          resolve();
-        }
-      });
-      tweenReferenz.wert = tween;
-      if (!abgeschlossen) {
-        this.laufendeTweens.add(tween);
-      }
-    });
+    return this.animiereTween({ targets: [ziel], alpha, duration: dauer, ease: 'Linear' });
   }
 
   private tweenZu(
     ziele: Phaser.GameObjects.GameObject[],
-    ziel: Punkt,
+    zielPunkt: Punkt,
     dauer: number
   ): Promise<void> {
     if (ziele.length === 0) {
       return Promise.resolve();
     }
-
-    return new Promise((resolve) => {
-      const tweenReferenz: { wert?: Phaser.Tweens.Tween } = {};
-      let abgeschlossen = false;
-      const tween = this.szene.tweens.add({
-        targets: ziele,
-        x: ziel.x,
-        y: ziel.y,
-        duration: this.skalierteDauer(dauer),
-        ease: 'Cubic.Out',
-        onComplete: () => {
-          abgeschlossen = true;
-          if (tweenReferenz.wert) {
-            this.laufendeTweens.delete(tweenReferenz.wert);
-          }
-          resolve();
-        }
-      });
-      tweenReferenz.wert = tween;
-      if (!abgeschlossen) {
-        this.laufendeTweens.add(tween);
-      }
-    });
+    return this.animiereTween({ targets: ziele, x: zielPunkt.x, y: zielPunkt.y, duration: dauer, ease: 'Cubic.Out' });
   }
 
   private warte(wartezeit: number): Promise<void> {
