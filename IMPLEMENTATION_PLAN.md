@@ -4,9 +4,9 @@
 
 ## Notiz
 
-**2026-04-13 (T6 Concurrency-Tests):** Drei Concurrency-Tests für SpielRegistry implementiert: T6.1 testet gleichzeitige Domain-Mutationen (spieleKarte) auf demselben Tisch — einer gewinnt, kein korrupter Zustand. T6.2: Idempotenz-Cache in `SpielRegistry.mitSpielGesperrtIdempotent()` eingebaut — `KommandoSchluessel(tischId, position, kommandoHash)` verhindert Doppelausführung bei Netzwerk-Duplikaten. `SpielAktionsService.spieleKarte()` und `sageAn()` nutzen die idempotente Variante. T6.3: `initialisiere()` lädt laufende Spiele korrekt aus DB-Stub in den Cache. Plus Randfall-Test (Tisch ohne Partie). 221 Tests grün (+5 neue).
-Nächster logischer Schritt: T5 (E2E-Fehlerszenarien) oder 8.3 (E2E lokal grün verifizieren).
-Offene Fragen: Keine.
+**2026-04-13 (T5.1 E2E Armut-Workflow):** Neuer E2E-Test `e2e/tests/armut-workflow.spec.ts` implementiert. Testet den kompletten Armut-Spielfluss: Quick Game starten, Spiele durchlaufen bis Armut-Situation auftritt (eigene Armut per Vorbehalt ODER KI-Armut per ANTWORTEN-Modus), Trumpfkarten per Bridge anbieten/annehmen (Phaser-Canvas-Buttons nicht klickbar in headless Playwright), dann Stiche per Tastatur bis Rundenauswertung spielen. Beide Armut-Pfade (ANBIETEN + ANTWORTEN) abgedeckt. Bei keiner Armut nach 30 Spielen: test.skip. 221 Backend-Tests + 24 Frontend-Tests weiterhin grün.
+Nächster logischer Schritt: T5.2 (E2E ungültige Karte spielen) oder T5.3 (Solo-Spielfluss).
+Offene Fragen: Keine — E2E-Test kann nur gegen laufendes Backend verifiziert werden (8.3).
 
 ---
 
@@ -354,7 +354,7 @@ Alle gesetzt (17 gesamt):
 
 > **Blockiert von:** R3 (Spieler-Authentifizierung aus Session) | **Spec:** `specs/e2e-tests.md`
 
-- [ ] **T5.1** E2E: Armut-Workflow — Trumpfkarten anbieten, Tausch annehmen, Spiel läuft weiter
+- [x] **T5.1** E2E: Armut-Workflow — Trumpfkarten anbieten, Tausch annehmen, Spiel läuft weiter
 - [ ] **T5.2** E2E: Ungültige Karte spielen → Fehler-Toast sichtbar, Spiel geht weiter
 - [ ] **T5.3** E2E: **Solo-Spielfluss** — neue Datei `e2e/tests/solo-spielfluss.spec.ts` (Testfall 3 aus `specs/e2e-tests.md`):
   - Solo-Vorbehalt wählen (oder `test.skip` bei keiner Solo-Hand)
