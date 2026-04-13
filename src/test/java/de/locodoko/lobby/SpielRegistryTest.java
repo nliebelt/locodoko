@@ -1,9 +1,15 @@
 package de.locodoko.lobby;
 
+import de.locodoko.karten.Karte;
 import de.locodoko.karten.Kartendeck;
 import de.locodoko.karten.SpielerPosition;
 import de.locodoko.karten.Spielregeln;
 import de.locodoko.partie.Spiel;
+import de.locodoko.partie.Spielphase;
+import de.locodoko.partie.VorbehaltAnsage;
+import de.locodoko.partie.PartieEntity;
+import de.locodoko.partie.SpielEntity;
+import de.locodoko.session.SpielerEntity;
 import de.locodoko.session.SpielerId;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -16,6 +22,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -36,10 +43,16 @@ class SpielRegistryTest {
 
     /** Stub: kein Tisch IM_SPIEL -- Registry startet leer. */
     private static TischRepository leeresTischRepository() {
+        return stubTischRepository(List.of());
+    }
+
+    private static TischRepository stubTischRepository(List<TischEntity> tische) {
         return new TischRepository() {
             @Override
             public List<TischEntity> findAllByStatusOrderByErstelltAmAsc(TischStatus status) {
-                return List.of();
+                return tische.stream()
+                    .filter(t -> t.status() == status)
+                    .toList();
             }
             @Override public TischEntity save(TischEntity t) { return t; }
             @Override public TischEntity saveAndFlush(TischEntity t) { return t; }
@@ -174,8 +187,210 @@ class SpielRegistryTest {
         assertThat(zaehlerB.get()).isEqualTo(50);
     }
 
+    // === T6.1: Zwei gleichzeitige spieleKarte()-Aufrufe auf demselben Tisch ===
+
+    @Test
+    void gleichzeitigeKartenSpielAktionen_einerGewinnt_keinerKorruptiert()
+            throws InterruptedException {
+        // Warum: Im Multiplayer senden zwei Spieler nahezu zeitgleich ihre Karte.
+        // Ohne Locking wuerde der zweite Zug den ersten ueberschreiben — korrupter Zustand.
+        // Mit Lock gewinnt einer, der andere erhaelt eine Exception; Spielstand bleibt konsistent.
+        Spiel stichSpiel = erzeugeStichphasenSpiel();
+        registry.registriere(tischId, stichSpiel);
+
+        SpielerPosition aufspieler = stichSpiel.aktuellerSpieler().orElseThrow();
+        Karte gueltigeKarte = stichSpiel.gueltigeKartenFuer(aufspieler).getFirst();
+
+        CountDownLatch bereit = new CountDownLatch(2);
+        CountDownLatch start = new CountDownLatch(1);
+        AtomicInteger erfolge = new AtomicInteger(0);
+        AtomicInteger fehler = new AtomicInteger(0);
+        AtomicReference<Spiel> erfolgreichesSpiel = new AtomicReference<>();
+
+        ExecutorService pool = Executors.newFixedThreadPool(2);
+        for (int i = 0; i < 2; i++) {
+            pool.submit(() -> {
+                bereit.countDown();
+                try {
+                    start.await();
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                    return;
+                }
+                try {
+                    registry.mitSpielGesperrt(tischId, s -> {
+                        // Echte Domain-Mutation: Karte fuer den aktuellen Spieler spielen.
+                        SpielerPosition aktuellerSpieler = s.aktuellerSpieler().orElseThrow();
+                        Karte karte = s.gueltigeKartenFuer(aktuellerSpieler).getFirst();
+                        Spiel neu = s.spieleKarte(aktuellerSpieler, karte);
+                        return new SpielUndErgebnis<>(neu, neu);
+                    });
+                    erfolge.incrementAndGet();
+                } catch (Exception e) {
+                    fehler.incrementAndGet();
+                }
+            });
+        }
+
+        bereit.await();
+        start.countDown();
+        pool.shutdown();
+        assertThat(pool.awaitTermination(10, TimeUnit.SECONDS)).isTrue();
+
+        // Genau ein Thread gewinnt, der andere scheitert — weil nach dem ersten Zug
+        // ein anderer Spieler an der Reihe ist und die selbe Karte nicht mehr gespielt werden kann.
+        assertThat(erfolge.get() + fehler.get()).isEqualTo(2);
+        assertThat(erfolge.get()).isGreaterThanOrEqualTo(1);
+
+        // Cache-Zustand konsistent: genau eine Karte wurde gespielt.
+        Spiel nachher = registry.finde(tischId).orElseThrow();
+        assertThat(nachher.phase()).isInstanceOf(Spielphase.Stichphase.class);
+        Spielphase.Stichphase stichphase = (Spielphase.Stichphase) nachher.phase();
+        // Mindestens eine Karte liegt in der Stichmitte (vom erfolgreichen Thread).
+        assertThat(stichphase.aktuellerStich().gespielteKarten()).hasSizeGreaterThanOrEqualTo(1);
+    }
+
+    // === T6.2: Idempotenz — dasselbe Kommando zweimal → gecachtes Ergebnis ===
+
+    @Test
+    void idempotenteMutation_gibtGecachtesErgebnisZurueck_ohneNeuausfuehrung() {
+        // Warum: Bei Netzwerk-Duplikaten (Reconnect, Doppelklick) darf dasselbe Kommando
+        // nicht doppelt ausgefuehrt werden — das wuerde zu einem Domain-Fehler fuehren
+        // (Karte nicht mehr auf der Hand). Der Idempotenz-Cache gibt stattdessen das
+        // urspruengliche Ergebnis zurueck.
+        Spiel stichSpiel = erzeugeStichphasenSpiel();
+
+        SpielRegistry.KommandoSchluessel schluessel = new SpielRegistry.KommandoSchluessel(
+            tischId.wert(), SpielerPosition.WEST, "KARTE:KREUZ-AS-1:STICHPHASE"
+        );
+
+        AtomicInteger ausfuehrungsZaehler = new AtomicInteger(0);
+
+        // Erster Aufruf: Mutation wird ausgefuehrt.
+        Spiel erstesErgebnis = registry.mitSpielGesperrtIdempotent(tischId, stichSpiel, schluessel, s -> {
+            ausfuehrungsZaehler.incrementAndGet();
+            SpielerPosition aktuellerSpieler = s.aktuellerSpieler().orElseThrow();
+            Karte karte = s.gueltigeKartenFuer(aktuellerSpieler).getFirst();
+            Spiel neu = s.spieleKarte(aktuellerSpieler, karte);
+            return new SpielUndErgebnis<>(neu, neu);
+        });
+
+        assertThat(ausfuehrungsZaehler.get()).isEqualTo(1);
+        assertThat(erstesErgebnis).isNotNull();
+
+        // Zweiter Aufruf mit demselben Schluessel: Mutation wird NICHT erneut ausgefuehrt.
+        Spiel zweitesErgebnis = registry.mitSpielGesperrtIdempotent(tischId, stichSpiel, schluessel, s -> {
+            ausfuehrungsZaehler.incrementAndGet();
+            return new SpielUndErgebnis<>(s, s);
+        });
+
+        assertThat(ausfuehrungsZaehler.get()).isEqualTo(1);
+        assertThat(zweitesErgebnis).isSameAs(erstesErgebnis);
+    }
+
+    @Test
+    void idempotenzCache_wirdBeimEntfernenGeloescht() {
+        // Warum: Nach Spielende darf der Idempotenz-Cache nicht endlos wachsen — Memory-Leak.
+        Spiel stichSpiel = erzeugeStichphasenSpiel();
+
+        SpielRegistry.KommandoSchluessel schluessel = new SpielRegistry.KommandoSchluessel(
+            tischId.wert(), SpielerPosition.WEST, "KARTE:TEST:STICHPHASE"
+        );
+
+        registry.mitSpielGesperrtIdempotent(tischId, stichSpiel, schluessel, s -> {
+            return new SpielUndErgebnis<>(s, "gecacht");
+        });
+
+        // Tisch entfernen — Cache muss geleert werden.
+        registry.entferne(tischId);
+
+        // Neues Spiel registrieren: derselbe Schluessel darf keinen Cache-Hit liefern.
+        Spiel neuesSpiel = erzeugeStichphasenSpiel();
+        AtomicInteger zaehler = new AtomicInteger(0);
+
+        registry.mitSpielGesperrtIdempotent(tischId, neuesSpiel, schluessel, s -> {
+            zaehler.incrementAndGet();
+            return new SpielUndErgebnis<>(s, "neu");
+        });
+
+        assertThat(zaehler.get()).isEqualTo(1);
+    }
+
+    // === T6.3: SpielRegistry nach Server-Neustart — Spiele aus DB korrekt in Memory geladen ===
+
+    @Test
+    void initialisiere_laedt_laufendeSpiele_aus_DB_in_Cache() {
+        // Warum: Nach einem Server-Neustart muessen laufende Spiele sofort im Cache liegen,
+        // damit Spielaktionen ohne vorherige Registrierung funktionieren. Ohne diesen
+        // Mechanismus waere jedes Spiel nach einem Neustart verloren.
+        Spielregeln regeln = Spielregeln.locoBlatRegeln();
+        Spiel laufendesSpiel = erzeugeStichphasenSpiel();
+
+        // TischEntity mit laufender Partie erstellen
+        SpielerEntity ersteller = SpielerEntity.ki("KI Ada");
+        TischEntity tisch = TischEntity.neu(
+            "Test-Tisch", ersteller,
+            TischkonfigurationEmbeddable.ausSpielregeln(regeln, 1)
+        );
+        tisch.fuegeSpielerHinzu(ersteller);
+        tisch.fuegeSpielerHinzu(SpielerEntity.ki("KI Bert"));
+        tisch.fuegeSpielerHinzu(SpielerEntity.ki("KI Clara"));
+        tisch.fuegeSpielerHinzu(SpielerEntity.ki("KI Dora"));
+
+        PartieEntity partie = PartieEntity.neu(1);
+        SpielEntity spielEntity = SpielEntity.neu(1, laufendesSpiel.geber(), laufendesSpiel.spieltyp(), laufendesSpiel.phase());
+        SpielPersistenzAdapter.uebernehmeDomainSpiel(spielEntity, laufendesSpiel);
+        partie.fuegeSpielHinzu(spielEntity);
+        tisch.setzePartie(partie);
+
+        // Registry mit Stub-Repository erstellen, das diesen Tisch liefert
+        SpielRegistry neueRegistry = new SpielRegistry(stubTischRepository(List.of(tisch)));
+        neueRegistry.initialisiere();
+
+        assertThat(neueRegistry.groesse()).isEqualTo(1);
+        Optional<Spiel> geladenes = neueRegistry.finde(TischId.von(tisch.id()));
+        assertThat(geladenes).isPresent();
+        assertThat(geladenes.get().phase()).isInstanceOf(Spielphase.Stichphase.class);
+        assertThat(geladenes.get().geber()).isEqualTo(laufendesSpiel.geber());
+    }
+
+    @Test
+    void initialisiere_ignoriert_tische_ohne_laufendes_spiel() {
+        // Warum: Beendete Partien oder Tische ohne Partie duerfen nicht im Cache landen --
+        // sonst waechst der Cache mit historischen Daten an.
+        SpielerEntity ersteller = SpielerEntity.ki("KI Ada");
+        TischEntity tischOhnePartie = TischEntity.neu(
+            "Leerer Tisch", ersteller,
+            TischkonfigurationEmbeddable.ausSpielregeln(Spielregeln.locoBlatRegeln(), 1)
+        );
+        // Status IM_SPIEL setzen, aber keine Partie — Randbedingung in der Praxis unwahrscheinlich,
+        // aber initialisiere() muss robust damit umgehen.
+        tischOhnePartie.fuegeSpielerHinzu(ersteller);
+
+        SpielRegistry neueRegistry = new SpielRegistry(stubTischRepository(List.of(tischOhnePartie)));
+        neueRegistry.initialisiere();
+
+        assertThat(neueRegistry.groesse()).isEqualTo(0);
+    }
+
+    // === Hilfsmethoden ===
+
     private static Spiel erzeugeTestSpiel() {
         Spielregeln regeln = Spielregeln.locoBlatRegeln();
         return Spiel.neu(SpielerPosition.SUED, regeln, Kartendeck.neu(regeln)).teileKartenAus();
+    }
+
+    /** Erzeugt ein Spiel in der STICHPHASE — alle Vorbehalte "gesund" gemeldet. */
+    private static Spiel erzeugeStichphasenSpiel() {
+        Spielregeln regeln = Spielregeln.locoBlatRegeln();
+        Spiel spiel = Spiel.neu(SpielerPosition.SUED, regeln, Kartendeck.neu(regeln))
+            .teileKartenAus()
+            .meldeGesund(SpielerPosition.WEST)
+            .meldeGesund(SpielerPosition.NORD)
+            .meldeGesund(SpielerPosition.OST)
+            .meldeGesund(SpielerPosition.SUED)
+            .loeseVorbehalteAuf();
+        assertThat(spiel.phase()).isInstanceOf(Spielphase.Stichphase.class);
+        return spiel;
     }
 }

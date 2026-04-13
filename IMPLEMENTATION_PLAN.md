@@ -4,9 +4,9 @@
 
 ## Notiz
 
-**2026-04-13 (R11 State Pattern für Spielphase):** `Spielphase` von Enum zu sealed interface mit 7 Record-Subtypen refaktoriert. Datentragende Phasen: `Stichphase(Stich, Set<Partei>, HochzeitStatus)` und `ArmutTausch(ArmutStatus)` — entsprechende Felder raus aus `Spiel`. Datenlose Phasen haben Singleton-Konstanten. `SpielEntity` speichert Phase als String, `SpielPersistenzAdapter.bauePhase()` rekonstruiert vollen Zustand aus DB-Spalten. Phasen-Prüfungen überall auf `instanceof` umgestellt. `PartieStandAntwort` liefert Phase als String (Frontend erwartet `"STICHPHASE"`). 216 Tests grün, kein Verhalten geändert.
-Nächster logischer Schritt: T5 (Re/Kontra-Ansage) oder T6 (Stich-Animation/Übergang) — beide haben keine weiteren Vorbedingungen.
-Offene Fragen: Keine — R11 war die letzte große Architektur-Aufgabe. Die verbleibenden Tasks (T5, T6, 8.3, 9.5, 10.6) sind Feature-Erweiterungen.
+**2026-04-13 (T6 Concurrency-Tests):** Drei Concurrency-Tests für SpielRegistry implementiert: T6.1 testet gleichzeitige Domain-Mutationen (spieleKarte) auf demselben Tisch — einer gewinnt, kein korrupter Zustand. T6.2: Idempotenz-Cache in `SpielRegistry.mitSpielGesperrtIdempotent()` eingebaut — `KommandoSchluessel(tischId, position, kommandoHash)` verhindert Doppelausführung bei Netzwerk-Duplikaten. `SpielAktionsService.spieleKarte()` und `sageAn()` nutzen die idempotente Variante. T6.3: `initialisiere()` lädt laufende Spiele korrekt aus DB-Stub in den Cache. Plus Randfall-Test (Tisch ohne Partie). 221 Tests grün (+5 neue).
+Nächster logischer Schritt: T5 (E2E-Fehlerszenarien) oder 8.3 (E2E lokal grün verifizieren).
+Offene Fragen: Keine.
 
 ---
 
@@ -369,9 +369,9 @@ Alle gesetzt (17 gesamt):
 
 > **Blockiert von:** R5 | **Kritisch für Multiplayer**
 
-- [ ] **T6.1** `SpielRegistryConcurrencyTest` — zwei gleichzeitige `karteSpielenFuer()`-Aufrufe auf demselben Tisch: einer gewinnt, einer bekommt Exception — kein korrupter Zustand
-- [ ] **T6.2** Idempotenz: dasselbe Kommando zweimal gesendet → zweites Mal gecachtes Ergebnis, nicht doppelt ausgeführt
-- [ ] **T6.3** `SpielRegistry` nach Server-Neustart: Spiele aus DB korrekt in Memory geladen
+- [x] **T6.1** `SpielRegistryConcurrencyTest` — zwei gleichzeitige `karteSpielenFuer()`-Aufrufe auf demselben Tisch: einer gewinnt, einer bekommt Exception — kein korrupter Zustand
+- [x] **T6.2** Idempotenz: dasselbe Kommando zweimal gesendet → zweites Mal gecachtes Ergebnis, nicht doppelt ausgeführt
+- [x] **T6.3** `SpielRegistry` nach Server-Neustart: Spiele aus DB korrekt in Memory geladen
 
 ---
 

@@ -1,5 +1,6 @@
 package de.locodoko.lobby;
 
+import de.locodoko.karten.SpielerPosition;
 import de.locodoko.partie.Spiel;
 import jakarta.annotation.PostConstruct;
 import org.slf4j.Logger;
@@ -31,8 +32,15 @@ public class SpielRegistry {
 
     private final ConcurrentHashMap<UUID, Spiel> spielCache = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<UUID, ReentrantLock> locks = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<KommandoSchluessel, Object> kommandoCache = new ConcurrentHashMap<>();
 
     private final TischRepository tischRepository;
+
+    /**
+     * Schluessel fuer den Idempotenz-Cache: identifiziert ein Kommando pro Tisch,
+     * Spielerposition und Kommando-Hash (z.B. Karten-ID oder Ansage-Typ).
+     */
+    public record KommandoSchluessel(UUID tischId, SpielerPosition position, String kommandoHash) {}
 
     public SpielRegistry(TischRepository tischRepository) {
         this.tischRepository = tischRepository;
@@ -115,10 +123,41 @@ public class SpielRegistry {
         spielCache.put(tischId.wert(), spiel);
     }
 
-    /** Entfernt Spiel und Lock eines beendeten Tisches aus dem Cache. */
+    /**
+     * Fuehrt eine Spiel-Mutation unter TischId-bezogenem Lock aus — mit Idempotenz-Schutz.
+     *
+     * <p>Falls derselbe {@code schluessel} bereits erfolgreich verarbeitet wurde, wird das
+     * gecachte Ergebnis zurueckgegeben, ohne die Mutation erneut auszufuehren. So fuehren
+     * Netzwerk-Duplikate (z.B. doppelter Klick, Reconnect-Replay) nicht zu einem Fehler.</p>
+     */
+    @SuppressWarnings("unchecked")
+    public <T> T mitSpielGesperrtIdempotent(TischId tischId, Spiel frischesSpiel,
+                                             KommandoSchluessel schluessel,
+                                             Function<Spiel, SpielUndErgebnis<T>> aktion) {
+        UUID id = tischId.wert();
+        ReentrantLock lock = locks.computeIfAbsent(id, k -> new ReentrantLock());
+        lock.lock();
+        try {
+            Object gecachtes = kommandoCache.get(schluessel);
+            if (gecachtes != null) {
+                LOGGER.debug("Idempotenz-Cache-Hit fuer {}", schluessel);
+                return (T) gecachtes;
+            }
+            spielCache.put(id, frischesSpiel);
+            SpielUndErgebnis<T> ergebnis = aktion.apply(frischesSpiel);
+            spielCache.put(id, ergebnis.neuesSpiel());
+            kommandoCache.put(schluessel, ergebnis.wert());
+            return ergebnis.wert();
+        } finally {
+            lock.unlock();
+        }
+    }
+
+    /** Entfernt Spiel, Lock und Kommando-Cache eines beendeten Tisches. */
     public void entferne(TischId tischId) {
         spielCache.remove(tischId.wert());
         locks.remove(tischId.wert());
+        kommandoCache.keySet().removeIf(k -> k.tischId().equals(tischId.wert()));
     }
 
     /** Liefert das gecachte Spiel eines Tisches, falls vorhanden. */

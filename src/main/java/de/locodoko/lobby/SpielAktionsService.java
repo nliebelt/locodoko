@@ -128,8 +128,11 @@ public class SpielAktionsService {
         SpielEntity laufendesSpielEntity = ladeLaufendesSpiel(tisch.partie());
         SpielerPosition position = spielerPositionVon(tisch.partie(), verwalteterSpieler);
         Spiel frischesSpiel = SpielPersistenzAdapter.zuDomainSpiel(laufendesSpielEntity);
+        SpielRegistry.KommandoSchluessel schluessel = new SpielRegistry.KommandoSchluessel(
+            tischId.wert(), position, "KARTE:" + karteId + ":" + frischesSpiel.phase().name()
+        );
         try {
-            Spiel aktualisiertesSpiel = spielRegistry.mitSpielGesperrt(tischId, frischesSpiel, spiel -> {
+            Spiel aktualisiertesSpiel = spielRegistry.mitSpielGesperrtIdempotent(tischId, frischesSpiel, schluessel, spiel -> {
                 Spiel neu = spiel.spieleKarte(position, parseKarte(karteId));
                 return new SpielUndErgebnis<>(neu, neu);
             });
@@ -153,8 +156,11 @@ public class SpielAktionsService {
         SpielEntity laufendesSpielEntity = ladeLaufendesSpiel(tisch.partie());
         SpielerPosition position = spielerPositionVon(tisch.partie(), verwalteterSpieler);
         Spiel frischesSpiel = SpielPersistenzAdapter.zuDomainSpiel(laufendesSpielEntity);
+        SpielRegistry.KommandoSchluessel schluessel = new SpielRegistry.KommandoSchluessel(
+            tischId.wert(), position, "ANSAGE:" + ansage.name() + ":" + frischesSpiel.phase().name()
+        );
         try {
-            Spiel aktualisiertesSpiel = spielRegistry.mitSpielGesperrt(tischId, frischesSpiel, spiel -> {
+            Spiel aktualisiertesSpiel = spielRegistry.mitSpielGesperrtIdempotent(tischId, frischesSpiel, schluessel, spiel -> {
                 Spiel neu = spiel.sageAn(position, ansage);
                 return new SpielUndErgebnis<>(neu, neu);
             });
