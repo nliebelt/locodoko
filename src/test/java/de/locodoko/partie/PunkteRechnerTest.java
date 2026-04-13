@@ -147,6 +147,24 @@ class PunkteRechnerTest {
     }
 
     @Test
+    void augenbetragtImmerGenau240Gesamt() {
+        // 6 RE-Stiche (je 20 Augen) + 6 KONTRA-Stiche (je 20 Augen) = 240 Augen gesamt
+        // Prueft: Kein Auge darf bei der Auswertung verloren gehen — diese Invariante
+        // muss immer gelten, damit Partiestand und Serienwertung nicht auseinanderlaufen.
+        Spielergebnis ergebnis = punkteRechner.berechneNormalspielErgebnis(
+            kombiniere(wiederhole(reStich20(), 6), wiederhole(kontraStich20(), 6)),
+            parteien,
+            trumpfOrdnung,
+            Ansagen.leer(),
+            spielregeln
+        );
+
+        int gesamt = ergebnis.augenVon(Partei.RE).wert() + ergebnis.augenVon(Partei.KONTRA).wert();
+        assertEquals(240, gesamt,
+            "Alle 240 Augen muessen auf die zwei Parteien verteilt sein.");
+    }
+
+    @Test
     void gibtKontraBeimSiegGegenReAnsageDenZusatzpunkt() {
         Ansagen ansagen = Ansagen.leer()
             .fuegeHinzu(SpielerPosition.SUED, Ansage.RE, parteien, spielregeln, 11);
