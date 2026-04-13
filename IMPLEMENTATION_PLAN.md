@@ -4,8 +4,8 @@
 
 ## Notiz
 
-**2026-04-13 (T5.2 E2E Ungültige Karte):** Neuer E2E-Test `e2e/tests/ungueltige-karte.spec.ts` implementiert. Testet dass bei einer ungültigen Karte (nicht auf der Hand) ein Fehler-Toast (`data-testid="fehler-toast"`) erscheint und das Spiel danach normal weiterläuft (gültige Karte per Tastatur spielbar). `TischUIManager.ts` um `data-testid` auf Toast-Elementen erweitert. 221 Backend-Tests + 24 Frontend-Tests + Build + Lint weiterhin grün.
-Nächster logischer Schritt: T5.3 (E2E Solo-Spielfluss) oder T5.4 (E2E Reconnect).
+**2026-04-13 (T5.3 E2E Solo-Spielfluss):** Neuer E2E-Test `e2e/tests/solo-spielfluss.spec.ts` implementiert. Testet Solo-Vorbehalt-Wahl, HUD-Spieltyp-Anzeige durchgehend, alle Stiche bis Rundenauswertung, Overlay mit Solo-Spieltyp + Multiplikator ×3, und Geber-Wiederholung im Folge-Spiel. `TischSzene.ts` um zwei neue `data-testid`-Elemente erweitert: `rundenauswertung-spieltyp` und `rundenauswertung-punktemultiplikator`. 221 Backend-Tests + 24 Frontend-Tests + Build + Lint weiterhin grün.
+Nächster logischer Schritt: T5.4 (E2E Reconnect).
 Offene Fragen: Keine — E2E-Test kann nur gegen laufendes Backend verifiziert werden.
 
 ---
@@ -356,7 +356,7 @@ Alle gesetzt (17 gesamt):
 
 - [x] **T5.1** E2E: Armut-Workflow — Trumpfkarten anbieten, Tausch annehmen, Spiel läuft weiter
 - [x] **T5.2** E2E: Ungültige Karte spielen → Fehler-Toast sichtbar, Spiel geht weiter
-- [ ] **T5.3** E2E: **Solo-Spielfluss** — neue Datei `e2e/tests/solo-spielfluss.spec.ts` (Testfall 3 aus `specs/e2e-tests.md`):
+- [x] **T5.3** E2E: **Solo-Spielfluss** — neue Datei `e2e/tests/solo-spielfluss.spec.ts` (Testfall 3 aus `specs/e2e-tests.md`):
   - Solo-Vorbehalt wählen (oder `test.skip` bei keiner Solo-Hand)
   - HUD zeigt Solo-Spieltyp durchgehend
   - Alle 12 Stiche bis Rundenauswertung

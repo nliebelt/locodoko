@@ -1306,9 +1306,21 @@ export class TischSzene extends Phaser.Scene {
     // Kein visueller Inhalt — alles laeuft in Phaser
     const schliessenButton = this.erstelleButton('Weiter →', () => this.schliesseRundenEndeModal(), false);
     schliessenButton.dataset['testid'] = 'btn-rundenauswertung-weiter';
+
+    // Versteckte data-testid-Elemente fuer E2E-Tests (Solo-Spielfluss)
+    const spieltypSpan = document.createElement('span');
+    spieltypSpan.dataset['testid'] = 'rundenauswertung-spieltyp';
+    spieltypSpan.textContent = spieltypLabel;
+    spieltypSpan.hidden = true;
+
+    const multiplikatorSpan = document.createElement('span');
+    multiplikatorSpan.dataset['testid'] = 'rundenauswertung-punktemultiplikator';
+    multiplikatorSpan.textContent = ergebnis.soloMultiplikator === 3 ? '×3' : '×1';
+    multiplikatorSpan.hidden = true;
+
     this.rundenEndeModal.innerHTML = '';
     this.rundenEndeModal.className = 'ui-rundenauswertung-overlay';
-    this.rundenEndeModal.append(schliessenButton);
+    this.rundenEndeModal.append(schliessenButton, spieltypSpan, multiplikatorSpan);
     this.rundenEndeModal.hidden = false;
 
     // Fokus setzen damit Enter direkt den Button trifft
