@@ -4,8 +4,8 @@
 
 ## Notiz
 
-**2026-04-13 (R10 PunkteRechner — Feature Envy beseitigen):** `Spiel.werteAus()` nimmt keinen Parameter mehr — erstellt intern `new PunkteRechner()`. `PunkteRechner`-Konstruktor von `public` auf package-private geändert (kein `@Component`, reiner Hilfsberechner). `Partie.schliesseAktuellesSpielAbUndStarteNaechstes()` ohne Parameter. `Tisch.werteAktuellesSpielAus()` ohne Parameter. `KiOrchestrierungService`: `punkteRechner`-Feld und Import entfernt, Aufruf ohne Parameter. Tests (`SpielTest`, `PartieTest`, `BockrundenTest`): `punkteRechner`-Felder und Parameterübergaben entfernt. `PunkteRechnerTest` unverändert (gleicher Package — package-private Konstruktor zugänglich). 198 Tests grün.
-Nächster logischer Schritt: R11 (State Pattern für Spielphase — alle R0–R10 nun abgeschlossen) oder T2 (Armut Unit-Tests).
+**2026-04-13 (T2 Armut Unit-Tests):** `ArmutTest` neu erstellt mit 8 Tests — Erkennung bei 0/2/3/4 Trumpfs (T2.1, T2.5), deaktivierte Regel, Angebot reduziert Hand korrekt (T2.2), bidirektionaler Kartentausch + RE-Parteizuordnung nach Annahme (T2.3), Einwurf bei Ablehnung aller Spieler (T2.4). Testaufbau nutzt `Spiel.ausPersistiertemStand()` direkt statt `teileKartenAus()` + Vorbehalt-Flow (Round-Robin-Verteilung hätte vorgegebene Hände korrumpiert). 206 Tests grün.
+Nächster logischer Schritt: T3 (Solo-Varianten Spielfluss-Tests) oder R11 (State Pattern).
 Offene Fragen: R11 ist die größte Einzeländerung im Refactoring — sorgfältige Planung empfohlen.
 
 ---
@@ -324,11 +324,11 @@ Alle gesetzt (17 gesamt):
 
 > **Blockiert von:** nichts | **Kritisch:** 80+ Zeilen Kartentausch-Logik ohne direkten Unit-Test
 
-- [ ] **T2.1** `ArmutTest` — Armut erkannt bei ≤3 Trumpfkarten
-- [ ] **T2.2** Angebot: Spieler legt genau alle Trumpfkarten ab — Hand korrekt reduziert
-- [ ] **T2.3** Annahme: Kartentausch bidirektional korrekt, Parteien korrekt gesetzt
-- [ ] **T2.4** Ablehnung durch alle Spieler → Einwurf (neue Karten, neue Runde)
-- [ ] **T2.5** Armut-Spieler hat 0 Trumpfkarten → trotzdem Armut
+- [x] **T2.1** `ArmutTest` — Armut erkannt bei ≤3 Trumpfkarten
+- [x] **T2.2** Angebot: Spieler legt genau alle Trumpfkarten ab — Hand korrekt reduziert
+- [x] **T2.3** Annahme: Kartentausch bidirektional korrekt, Parteien korrekt gesetzt
+- [x] **T2.4** Ablehnung durch alle Spieler → Einwurf (neue Karten, neue Runde)
+- [x] **T2.5** Armut-Spieler hat 0 Trumpfkarten → trotzdem Armut
 
 ### T3. Solo-Varianten Spielfluss-Tests (Unit)
 
