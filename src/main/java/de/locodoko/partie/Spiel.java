@@ -568,10 +568,9 @@ public final class Spiel {
         return istPflichtansage ? Integer.MAX_VALUE : handVon(position).karten().size();
     }
 
-    public Spiel werteAus(PunkteRechner punkteRechner) {
+    public Spiel werteAus() {
         pruefePhase(Spielphase.AUSWERTUNG, "Spiel auswerten");
-        Objects.requireNonNull(punkteRechner, "punkteRechner darf nicht null sein");
-        Spielergebnis neuesErgebnis = punkteRechner.berechneNormalspielErgebnis(
+        Spielergebnis neuesErgebnis = new PunkteRechner().berechneNormalspielErgebnis(
             abgeschlosseneStiche,
             parteien(),
             trumpfOrdnung,

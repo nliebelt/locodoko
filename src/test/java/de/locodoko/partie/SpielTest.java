@@ -22,7 +22,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class SpielTest {
 
     private final Spielregeln spielregeln = Spielregeln.standardRegeln();
-    private final PunkteRechner punkteRechner = new PunkteRechner();
 
     @Test
     void loestTrumpfsoloMitSitzreihenfolgeAufUndOffenbartParteienVonBeginnAn() {
@@ -312,7 +311,7 @@ class SpielTest {
             "Die RE-Partei muss am Ende des stillen Solos unveraendert nur WEST enthalten, damit die Punkteberechnung korrekt arbeitet.");
 
         // Auswertung ausfuehren und Invarianten pruefen
-        spiel = spiel.werteAus(punkteRechner);
+        spiel = spiel.werteAus();
 
         assertEquals(Spielphase.GESAMTSTAND_AKTUALISIEREN, spiel.phase());
         Spielergebnis ergebnis = spiel.ergebnis().orElseThrow();
@@ -568,7 +567,7 @@ class SpielTest {
             "Ein vollstaendiges Normalspiel braucht 12 Stiche, sonst kann keine belastbare Endauswertung stattfinden.");
         assertEquals(Spielphase.AUSWERTUNG, spiel.phase());
 
-        spiel = spiel.werteAus(punkteRechner);
+        spiel = spiel.werteAus();
 
         assertEquals(Spielphase.GESAMTSTAND_AKTUALISIEREN, spiel.phase());
         Spielergebnis ergebnis = spiel.ergebnis().orElseThrow();
@@ -601,7 +600,7 @@ class SpielTest {
             .loeseVorbehalteAuf();
 
         Spiel laufendesStichspiel = spiel;
-        assertThrows(IllegalStateException.class, () -> laufendesStichspiel.werteAus(punkteRechner),
+        assertThrows(IllegalStateException.class, () -> laufendesStichspiel.werteAus(),
             "Eine Auswertung vor dem letzten Stich wuerde unvollstaendige Augenstaende in den Gesamtstand schleusen.");
     }
 

@@ -4,9 +4,9 @@
 
 ## Notiz
 
-**2026-04-13 (R9 Augen + Spielpunkte als Value Objects):** `Augen(int wert)` record in `de.locodoko.karten` (mit `plus()`, `ueberschreitet()`, `mindestens()`, Invariante `wert >= 0`) und `Spielpunkte(int wert)` record in `de.locodoko.partie` (mit `mal()`, `plus()`, `negiert()`) eingeführt. `Stich.augen()` gibt `Augen` zurück. `PunkteRechner` nutzt `Map<Partei, Augen>` intern und wraps `spielwert` als `Spielpunkte`. `Spielergebnis` hält typisierte Felder (`Map<Partei, Augen>`, `Spielpunkte spielwert`, `Map<SpielerPosition, Spielpunkte>`). `SonderpunktBewerter`, `Spiel` (Pflichtansage-Check) auf neue Typen umgestellt. Assembler (`SpielErgebnisEmbeddable`, `SpielPersistenzAdapter`) rufen `.wert()` für Persistence-Grenze. 198 Tests grün.
-Nächster logischer Schritt: R10 (PunkteRechner — Feature Envy beseitigen, jetzt von R1+R9 freigegeben) oder T2 (Armut Unit-Tests).
-Offene Fragen: keine.
+**2026-04-13 (R10 PunkteRechner — Feature Envy beseitigen):** `Spiel.werteAus()` nimmt keinen Parameter mehr — erstellt intern `new PunkteRechner()`. `PunkteRechner`-Konstruktor von `public` auf package-private geändert (kein `@Component`, reiner Hilfsberechner). `Partie.schliesseAktuellesSpielAbUndStarteNaechstes()` ohne Parameter. `Tisch.werteAktuellesSpielAus()` ohne Parameter. `KiOrchestrierungService`: `punkteRechner`-Feld und Import entfernt, Aufruf ohne Parameter. Tests (`SpielTest`, `PartieTest`, `BockrundenTest`): `punkteRechner`-Felder und Parameterübergaben entfernt. `PunkteRechnerTest` unverändert (gleicher Package — package-private Konstruktor zugänglich). 198 Tests grün.
+Nächster logischer Schritt: R11 (State Pattern für Spielphase — alle R0–R10 nun abgeschlossen) oder T2 (Armut Unit-Tests).
+Offene Fragen: R11 ist die größte Einzeländerung im Refactoring — sorgfältige Planung empfohlen.
 
 ---
 
@@ -283,10 +283,10 @@ Alle gesetzt (17 gesamt):
 
 > **Blockiert von:** R1, R9 | **Spec:** `specs/architektur-spielkern.md` Abschnitt "PunkteRechner"
 
-- [ ] **R10.1** `Spiel.werteAus()` ohne Parameter — ruft intern `new PunkteRechner().berechne(...)` auf
-- [ ] **R10.2** `PunkteRechner` wird `final class` mit package-private Konstruktor, kein `@Component`
-- [ ] **R10.3** Alle `punkteRechner`-Parameter aus `KiOrchestrierungService` und Tests entfernen
-- [ ] **R10.4** Tests grün
+- [x] **R10.1** `Spiel.werteAus()` ohne Parameter — ruft intern `new PunkteRechner().berechne(...)` auf
+- [x] **R10.2** `PunkteRechner` wird `final class` mit package-private Konstruktor, kein `@Component`
+- [x] **R10.3** Alle `punkteRechner`-Parameter aus `KiOrchestrierungService` und Tests entfernen
+- [x] **R10.4** Tests grün
 
 ---
 

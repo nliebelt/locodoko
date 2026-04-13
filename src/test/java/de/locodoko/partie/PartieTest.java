@@ -12,7 +12,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class PartieTest {
 
     private final Spielregeln spielregeln = Spielregeln.standardRegeln();
-    private final PunkteRechner punkteRechner = new PunkteRechner();
 
     @Test
     void rotiertDenGeberUndAkkumuliertDenGesamtstandUeberMehrereSpiele() {
@@ -90,7 +89,7 @@ class PartieTest {
         Spiel spielInAuswertung = spieleAutomatischZuEnde(partie.aktuellesSpiel());
         partie = partie.mitAktuellemSpiel(spielInAuswertung);
 
-        Partie neuePartie = partie.schliesseAktuellesSpielAbUndStarteNaechstes(punkteRechner);
+        Partie neuePartie = partie.schliesseAktuellesSpielAbUndStarteNaechstes();
 
         assertEquals(1, neuePartie.abgeschlosseneSpiele().size(),
             "Nach einem Spiel muss genau ein abgeschlossenes Spiel in der Partie vorliegen.");
@@ -109,7 +108,7 @@ class PartieTest {
         Spiel letztesspiel = spieleAutomatischZuEnde(partie.aktuellesSpiel());
         partie = partie.mitAktuellemSpiel(letztesspiel);
 
-        Partie abgeschlossenePartie = partie.schliesseAktuellesSpielAbUndStarteNaechstes(punkteRechner);
+        Partie abgeschlossenePartie = partie.schliesseAktuellesSpielAbUndStarteNaechstes();
 
         assertTrue(abgeschlossenePartie.istBeendet(),
             "Nach dem letzten Spiel muss die Partie als beendet markiert sein.");
@@ -129,7 +128,7 @@ class PartieTest {
             "Hilfsmethode muss Spiel in GESAMTSTAND_AKTUALISIEREN liefern.");
         partie = partie.mitAktuellemSpiel(spielNachWertung);
 
-        Partie neuePartie = partie.schliesseAktuellesSpielAbUndStarteNaechstes(punkteRechner);
+        Partie neuePartie = partie.schliesseAktuellesSpielAbUndStarteNaechstes();
 
         assertEquals(1, neuePartie.abgeschlosseneSpiele().size());
     }
@@ -149,7 +148,7 @@ class PartieTest {
             Karte karte = aktuellesSpiel.gueltigeKartenFuer(spieler).getFirst();
             aktuellesSpiel = aktuellesSpiel.spieleKarte(spieler, karte);
         }
-        return aktuellesSpiel.werteAus(punkteRechner);
+        return aktuellesSpiel.werteAus();
     }
 
     private Spiel spieleAutomatischZuEnde(Spiel spiel) {
@@ -163,6 +162,6 @@ class PartieTest {
             Karte karte = aktuellesSpiel.gueltigeKartenFuer(spieler).getFirst();
             aktuellesSpiel = aktuellesSpiel.spieleKarte(spieler, karte);
         }
-        return aktuellesSpiel.werteAus(punkteRechner);
+        return aktuellesSpiel.werteAus();
     }
 }

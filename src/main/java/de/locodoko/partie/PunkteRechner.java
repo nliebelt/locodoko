@@ -23,7 +23,7 @@ public final class PunkteRechner {
 
     private final SonderpunktBewerter sonderpunktBewerter;
 
-    public PunkteRechner() {
+    PunkteRechner() {
         this(new SonderpunktBewerter());
     }
 

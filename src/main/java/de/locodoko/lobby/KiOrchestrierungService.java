@@ -9,7 +9,6 @@ import de.locodoko.karten.SpielerPosition;
 import de.locodoko.partie.Ansage;
 import de.locodoko.partie.Partei;
 import de.locodoko.partie.Partie;
-import de.locodoko.partie.PunkteRechner;
 import de.locodoko.partie.Spiel;
 import de.locodoko.partie.Spielphase;
 import de.locodoko.partie.VorbehaltAnsage;
@@ -59,8 +58,6 @@ public class KiOrchestrierungService {
     private final PartieRepository partieRepository;
     private final TischEchtzeitService tischEchtzeitService;
     private final SpielRegistry spielRegistry;
-    private final PunkteRechner punkteRechner = new PunkteRechner();
-
     // Zyklische Abhaengigkeit: KiEventAdapter -> KiOrchestrierungService -> KiEventAdapter (Scheduling)
     // @Lazy verzoegert die Instanziierung und verhindert den Startup-Fehler.
     private KiEventAdapter kiEventAdapter;
@@ -109,7 +106,7 @@ public class KiOrchestrierungService {
                 LOGGER.info("Spiel abschliessen und naechstes starten [spielNr={}, tischId={}]",
                     laufendesSpielEntity.spielNummer(), tisch.id());
                 Partie partie = rekonstruierePartieDomain(tisch, laufendesSpielEntity, laufendesSpiel);
-                Partie neuePartie = partie.schliesseAktuellesSpielAbUndStarteNaechstes(punkteRechner);
+                Partie neuePartie = partie.schliesseAktuellesSpielAbUndStarteNaechstes();
                 uebernehmeDomainPartieAbschluss(tisch, laufendesSpielEntity, neuePartie);
                 continue;
             }
@@ -284,7 +281,7 @@ public class KiOrchestrierungService {
 
     /**
      * Rekonstruiert das Domain-{@link Partie}-Objekt aus den persistierten Entities.
-     * Wird benoetigt, um {@link Partie#schliesseAktuellesSpielAbUndStarteNaechstes(PunkteRechner)}
+     * Wird benoetigt, um {@link Partie#schliesseAktuellesSpielAbUndStarteNaechstes()}
      * aufzurufen und die Domain-Logik sauber von der Persistenz zu trennen.
      */
     private Partie rekonstruierePartieDomain(TischEntity tisch, SpielEntity laufendesSpielEntity, Spiel laufendesSpiel) {
@@ -306,7 +303,7 @@ public class KiOrchestrierungService {
     }
 
     /**
-     * Uebertraegt das Ergebnis von {@link Partie#schliesseAktuellesSpielAbUndStarteNaechstes(PunkteRechner)}
+     * Uebertraegt das Ergebnis von {@link Partie#schliesseAktuellesSpielAbUndStarteNaechstes()}
      * in die persistierbaren Entities. Entkoppelt die Domain-Logik von der Persistenzkarte.
      */
     private void uebernehmeDomainPartieAbschluss(TischEntity tisch, SpielEntity abgeschlossenesSpielEntity, Partie neuePartie) {

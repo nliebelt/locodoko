@@ -26,8 +26,6 @@ class BockrundenTest {
 
     private final Spielregeln spielregelOhneBockrunden = Spielregeln.standardRegeln();
     private final Spielregeln spielregelnMitBockrunden = Spielregeln.standardRegeln().mitBockrundenAktiv(true);
-    private final PunkteRechner punkteRechner = new PunkteRechner();
-
     // --- hatHerzDurchgegangenenStich ---
 
     @Test

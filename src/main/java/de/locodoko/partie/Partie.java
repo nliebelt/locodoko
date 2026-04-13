@@ -169,11 +169,11 @@ public final class Partie {
      * {@link Spielphase#AUSWERTUNG} oder {@link Spielphase#GESAMTSTAND_AKTUALISIEREN}
      * aufgerufen werden.</p>
      */
-    public Partie schliesseAktuellesSpielAbUndStarteNaechstes(PunkteRechner punkteRechner) {
+    public Partie schliesseAktuellesSpielAbUndStarteNaechstes() {
         Spiel spiel = aktuellesSpiel();
         // Auswertung falls noch nicht geschehen
         Partie partieNachAuswertung = spiel.phase() == Spielphase.AUSWERTUNG
-            ? mitAktuellemSpiel(spiel.werteAus(punkteRechner))
+            ? mitAktuellemSpiel(spiel.werteAus())
             : this;
         // Spiel abschliessen — Bockrunden, Solo-Nachgeben, Gesamtpunktestand
         Partie abgeschlossenePartie = partieNachAuswertung.schliesseAktuellesSpielAb();

@@ -61,8 +61,8 @@ public final class Tisch {
         return mitAktuellemSpiel(partie.aktuellesSpiel().sageAn(spielerPosition, ansage));
     }
 
-    public Tisch werteAktuellesSpielAus(PunkteRechner punkteRechner) {
-        return mitAktuellemSpiel(partie.aktuellesSpiel().werteAus(punkteRechner));
+    public Tisch werteAktuellesSpielAus() {
+        return mitAktuellemSpiel(partie.aktuellesSpiel().werteAus());
     }
 
     public Tisch schliesseAktuellesSpielAb() {
