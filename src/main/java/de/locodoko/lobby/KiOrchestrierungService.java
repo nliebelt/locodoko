@@ -89,7 +89,7 @@ public class KiOrchestrierungService {
             return;
         }
         SpielEntity startSpiel = findeLaufendesSpiel(tisch.partie());
-        Spielphase startPhase = startSpiel != null ? startSpiel.phase() : null;
+        String startPhase = startSpiel != null ? startSpiel.phasenName() : null;
         LOGGER.info("KI-Orchestrierung gestartet [tischId={}, spielphase={}]", tisch.id(), startPhase);
         int anzahlAktionen = 0;
         while (anzahlAktionen++ < MAXIMALE_KI_AKTIONEN) {
@@ -101,8 +101,8 @@ public class KiOrchestrierungService {
                 return;
             }
             Spiel laufendesSpiel = SpielPersistenzAdapter.zuDomainSpiel(laufendesSpielEntity);
-            if (laufendesSpiel.phase() == Spielphase.AUSWERTUNG
-                    || laufendesSpiel.phase() == Spielphase.GESAMTSTAND_AKTUALISIEREN) {
+            if (laufendesSpiel.phase() instanceof Spielphase.Auswertung
+                    || laufendesSpiel.phase() instanceof Spielphase.GesamtstandAktualisieren) {
                 LOGGER.info("Spiel abschliessen und naechstes starten [spielNr={}, tischId={}]",
                     laufendesSpielEntity.spielNummer(), tisch.id());
                 Partie partie = rekonstruierePartieDomain(tisch, laufendesSpielEntity, laufendesSpiel);
@@ -137,8 +137,8 @@ public class KiOrchestrierungService {
                 boolean hatMenschlichenSpieler = tisch.spieler().stream()
                     .anyMatch(s -> !s.istKi());
                 if (hatMenschlichenSpieler
-                        && phaseVorAktion == Spielphase.STICHPHASE
-                        && naechsterStand.phase() == Spielphase.STICHPHASE) {
+                        && phaseVorAktion instanceof Spielphase.Stichphase
+                        && naechsterStand.phase() instanceof Spielphase.Stichphase) {
                     SpielerPosition naechster = naechsterStand.erwarteterSpieler().orElse(null);
                     SpielerEntity naechsterSpielerEntity =
                         naechster != null ? spielerNachPosition(tisch).get(naechster) : null;
@@ -194,7 +194,7 @@ public class KiOrchestrierungService {
             return;
         }
         Spiel laufendesSpiel = SpielPersistenzAdapter.zuDomainSpiel(laufendesSpielEntity);
-        if (laufendesSpiel.phase() != Spielphase.STICHPHASE) {
+        if (!(laufendesSpiel.phase() instanceof Spielphase.Stichphase)) {
             // Nicht-Stichphase: vollstaendige Orchestrierung uebergeben
             automatisiereTisch(tisch);
             return;
@@ -215,7 +215,7 @@ public class KiOrchestrierungService {
             SpielPersistenzAdapter.uebernehmeDomainSpiel(laufendesSpielEntity, naechsterStand);
             // Pruefen ob noch eine KI folgt (und Menschen am Tisch sind)
             boolean hatMenschlichenSpieler = tisch.spieler().stream().anyMatch(s -> !s.istKi());
-            if (hatMenschlichenSpieler && naechsterStand.phase() == Spielphase.STICHPHASE) {
+            if (hatMenschlichenSpieler && naechsterStand.phase() instanceof Spielphase.Stichphase) {
                 SpielerPosition naechster = naechsterStand.erwarteterSpieler().orElse(null);
                 SpielerEntity naechsterSpielerEntity = naechster != null ? spielerNachPosition(tisch).get(naechster) : null;
                 if (naechsterSpielerEntity != null
@@ -242,14 +242,14 @@ public class KiOrchestrierungService {
     private Spiel fuehreKiAktionAus(Spiel laufendesSpiel, SpielerPosition spielerPosition, KiStrategie strategie) {
         KiSpielzustand zustand = KiSpielzustand.aus(laufendesSpiel, spielerPosition);
         return switch (laufendesSpiel.phase()) {
-            case VORBEHALT_ANSAGE -> {
+            case Spielphase.VorbehaltAnsage _ -> {
                 VorbehaltAnsage vorbehalt = strategie.waehleVorbehalt(zustand);
                 Spiel spielNachVorbehalt = laufendesSpiel.meldeVorbehalt(spielerPosition, vorbehalt);
-                yield spielNachVorbehalt.phase() == Spielphase.VORBEHALT_AUFLOESUNG
+                yield spielNachVorbehalt.phase() instanceof Spielphase.VorbehaltAufloesung
                     ? spielNachVorbehalt.loeseVorbehalteAuf()
                     : spielNachVorbehalt;
             }
-            case ARMUT_TAUSCH -> {
+            case Spielphase.ArmutTausch _ -> {
                 if (laufendesSpiel.armutStatus().filter(status -> status.armutSpieler() == spielerPosition && !status.angebotLiegtVor()).isPresent()) {
                     yield laufendesSpiel.legeArmutTrumpfkarten(spielerPosition, strategie.waehleArmutAngebot(zustand));
                 }
@@ -258,7 +258,7 @@ public class KiOrchestrierungService {
                     ? laufendesSpiel.nimmArmutAn(spielerPosition, armutAntwort.rueckgabekarten())
                     : laufendesSpiel.lehneArmutAb(spielerPosition);
             }
-            case STICHPHASE -> {
+            case Spielphase.Stichphase _ -> {
                 // Pflichtansage hat absoluten Vorrang vor Kartenspielen (dreissigAugenPflicht)
                 if (!laufendesSpiel.pflichtansageAusstehend().isEmpty()) {
                     Partei eigenePartei = laufendesSpiel.parteien().parteiVon(spielerPosition);

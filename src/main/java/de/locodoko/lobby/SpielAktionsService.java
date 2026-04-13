@@ -77,7 +77,7 @@ public class SpielAktionsService {
         try {
             Spiel aktualisiertesSpiel = spielRegistry.mitSpielGesperrt(tischId, frischesSpiel, spiel -> {
                 Spiel nachVorbehalt = spiel.meldeVorbehalt(position, vorbehalt);
-                Spiel finales = nachVorbehalt.phase() == Spielphase.VORBEHALT_AUFLOESUNG
+                Spiel finales = nachVorbehalt.phase() instanceof Spielphase.VorbehaltAufloesung
                     ? nachVorbehalt.loeseVorbehalteAuf()
                     : nachVorbehalt;
                 return new SpielUndErgebnis<>(finales, finales);
@@ -184,7 +184,7 @@ public class SpielAktionsService {
                 .filter(s -> s.ergebnis() == null)
                 .reduce((a, b) -> b)
                 .ifPresent(laufendesSpiel -> {
-                    if (laufendesSpiel.phase() == Spielphase.VORBEHALT_ANSAGE) {
+                    if ("VORBEHALT_ANSAGE".equals(laufendesSpiel.phasenName())) {
                         eventPublisher.publishEvent(new VorbehaltErwartet(tischId.wert()));
                     } else {
                         eventPublisher.publishEvent(new NaechsterSpielerErwartet(tischId.wert()));

@@ -113,7 +113,7 @@ public final class Partie {
 
     public Partie schliesseAktuellesSpielAb() {
         Spiel spiel = aktuellesSpiel();
-        if (spiel.phase() != Spielphase.GESAMTSTAND_AKTUALISIEREN) {
+        if (!(spiel.phase() instanceof Spielphase.GesamtstandAktualisieren)) {
             throw new IllegalStateException("Nur vollstaendig ausgewertete Spiele duerfen abgeschlossen werden");
         }
         Spielergebnis ergebnis = spiel.ergebnis()
@@ -172,7 +172,7 @@ public final class Partie {
     public Partie schliesseAktuellesSpielAbUndStarteNaechstes() {
         Spiel spiel = aktuellesSpiel();
         // Auswertung falls noch nicht geschehen
-        Partie partieNachAuswertung = spiel.phase() == Spielphase.AUSWERTUNG
+        Partie partieNachAuswertung = spiel.phase() instanceof Spielphase.Auswertung
             ? mitAktuellemSpiel(spiel.werteAus())
             : this;
         // Spiel abschliessen — Bockrunden, Solo-Nachgeben, Gesamtpunktestand

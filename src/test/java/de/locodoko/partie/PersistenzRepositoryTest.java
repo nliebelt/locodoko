@@ -8,6 +8,7 @@ import de.locodoko.lobby.TischkonfigurationEmbeddable;
 import de.locodoko.session.SpielerEntity;
 
 import de.locodoko.karten.Augen;
+import de.locodoko.karten.Stich;
 import de.locodoko.karten.Farbe;
 import de.locodoko.karten.GespielteKarte;
 import de.locodoko.karten.Karte;
@@ -32,6 +33,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -159,7 +161,7 @@ class PersistenzRepositoryTest {
         tisch.fuegeSpielerHinzu(ki);
 
         PartieEntity partie = PartieEntity.neu(24);
-        SpielEntity spiel = SpielEntity.neu(1, SpielerPosition.WEST, Spieltyp.NORMALSPIEL, Spielphase.STICHPHASE);
+        SpielEntity spiel = SpielEntity.neu(1, SpielerPosition.WEST, Spieltyp.NORMALSPIEL, new Spielphase.Stichphase(Stich.neu(SpielerPosition.WEST), Set.of(), null));
         StichEntity stich = StichEntity.neu(1, SpielerPosition.WEST, SpielerPosition.WEST, 11);
         stich.fuegeGespielteKarteHinzu(GespielteKarteEntity.neu(SpielerPosition.WEST, new Karte(Farbe.HERZ, Kartenwert.AS, 1), 0));
         spiel.fuegeStichHinzu(stich);
@@ -234,7 +236,7 @@ class PersistenzRepositoryTest {
         tisch.fuegeSpielerHinzu(gast);
 
         PartieEntity partie = PartieEntity.neu(1);
-        SpielEntity spiel = SpielEntity.neu(1, SpielerPosition.SUED, Spieltyp.HOCHZEIT, Spielphase.STICHPHASE);
+        SpielEntity spiel = SpielEntity.neu(1, SpielerPosition.SUED, Spieltyp.HOCHZEIT, new Spielphase.Stichphase(Stich.neu(SpielerPosition.SUED), Set.of(), null));
         spiel.fuegeHandHinzu(HandEntity.neu(SpielerPosition.WEST, List.of(new Karte(Farbe.KREUZ, Kartenwert.DAME, 1))));
         spiel.ersetzeAnsagen(List.of(AnsageEreignisEmbeddable.neu(SpielerPosition.WEST, Ansage.RE)));
         spiel.setzeAktuellenStich(

@@ -76,7 +76,7 @@ public record PartieStandAntwort(
     public record LaufendesSpielAntwort(
         int spielNummer,
         Spieltyp spieltyp,
-        Spielphase phase,
+        String phase,
         SpielerPosition geber,
         SpielerPosition aktuellerSpieler,
         List<SpielerImSpielAntwort> spieler,
@@ -119,11 +119,11 @@ public record PartieStandAntwort(
             return new LaufendesSpielAntwort(
                 laufendesSpiel.spielNummer(),
                 laufendesSpiel.spieltyp(),
-                laufendesSpiel.phase(),
+                laufendesSpiel.phasenName(),
                 laufendesSpiel.geberPosition(),
                 aktuellerSpieler,
                 spieler,
-                sichtbarePosition != null && sichtbarePosition == aktuellerSpieler && fachlichesSpiel.phase() == Spielphase.STICHPHASE
+                sichtbarePosition != null && sichtbarePosition == aktuellerSpieler && fachlichesSpiel.phase() instanceof Spielphase.Stichphase
                     ? fachlichesSpiel.gueltigeKartenFuer(sichtbarePosition).stream().map(KarteAntwort::aus).toList()
                     : List.of(),
                 fachlichesSpiel.aktuellerStich()
@@ -141,7 +141,7 @@ public record PartieStandAntwort(
             SpielerPosition sichtbarePosition,
             SpielerPosition aktuellerSpieler
         ) {
-            if (sichtbarePosition == null || sichtbarePosition != aktuellerSpieler || laufendesSpiel.phase() != Spielphase.VORBEHALT_ANSAGE) {
+            if (sichtbarePosition == null || sichtbarePosition != aktuellerSpieler || !(laufendesSpiel.phase() instanceof Spielphase.VorbehaltAnsage)) {
                 return List.of();
             }
             return List.of(VorbehaltAnsage.values()).stream()
@@ -154,7 +154,7 @@ public record PartieStandAntwort(
             SpielerPosition sichtbarePosition,
             SpielerPosition aktuellerSpieler
         ) {
-            if (sichtbarePosition == null || sichtbarePosition != aktuellerSpieler || laufendesSpiel.phase() != Spielphase.STICHPHASE) {
+            if (sichtbarePosition == null || sichtbarePosition != aktuellerSpieler || !(laufendesSpiel.phase() instanceof Spielphase.Stichphase)) {
                 return List.of();
             }
             return List.of(Ansage.values()).stream()

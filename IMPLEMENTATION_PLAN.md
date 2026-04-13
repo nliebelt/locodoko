@@ -4,9 +4,9 @@
 
 ## Notiz
 
-**2026-04-13 (T4 Technische Schulden in Tests):** `LocodokoAnwendungTests` entfernt (leerer Spring-Kontext-Test ohne Assertion). `SonderpunktTest` neu angelegt mit 8 isolierten Tests für Fuchs-Gefangen, Karlchen und Doppelkopf — je positiver Fall, negativer Fall (eigene Partei gewinnt Fuchs / Kreuz-Bube nicht im letzten Stich) und Deaktivierung per Spielregeln. In `PunkteRechnerTest` Grenzwert-Test für die 240-Augen-Invariante ergänzt. 216 Tests grün.
-Nächster logischer Schritt: R11 (State Pattern für Spielphase) — die größte verbleibende Architektur-Änderung, alle Vorbedingungen (R0–R10) sind erfüllt. Sorgfältige Planung empfohlen.
-Offene Fragen: R11 ist komplex (7 Sub-Tasks, 180+ Tests betroffen). Alternativ: T5 oder T6 wenn R11 zu groß erscheint.
+**2026-04-13 (R11 State Pattern für Spielphase):** `Spielphase` von Enum zu sealed interface mit 7 Record-Subtypen refaktoriert. Datentragende Phasen: `Stichphase(Stich, Set<Partei>, HochzeitStatus)` und `ArmutTausch(ArmutStatus)` — entsprechende Felder raus aus `Spiel`. Datenlose Phasen haben Singleton-Konstanten. `SpielEntity` speichert Phase als String, `SpielPersistenzAdapter.bauePhase()` rekonstruiert vollen Zustand aus DB-Spalten. Phasen-Prüfungen überall auf `instanceof` umgestellt. `PartieStandAntwort` liefert Phase als String (Frontend erwartet `"STICHPHASE"`). 216 Tests grün, kein Verhalten geändert.
+Nächster logischer Schritt: T5 (Re/Kontra-Ansage) oder T6 (Stich-Animation/Übergang) — beide haben keine weiteren Vorbedingungen.
+Offene Fragen: Keine — R11 war die letzte große Architektur-Aufgabe. Die verbleibenden Tasks (T5, T6, 8.3, 9.5, 10.6) sind Feature-Erweiterungen.
 
 ---
 
@@ -295,13 +295,13 @@ Alle gesetzt (17 gesamt):
 > **Blockiert von:** R0–R10 vollständig abgeschlossen | **Spec:** `specs/architektur-spielkern.md` Abschnitt "State Pattern"
 > **Achtung:** Größte Einzeländerung im Refactoring — erst anpacken wenn alle vorherigen R-Tasks grün sind.
 
-- [ ] **R11.1** `sealed interface SpielPhase` mit Implementierungen: `KartenAusteilen`, `VorbehaltAnsagen`, `VorbehaltAufloesung`, `ArmutTausch`, `Stichphase`, `Auswertung`, `GesamtstandAktualisieren`
-- [ ] **R11.2** `Stichphase` record hält `aktuellerStich` und `pflichtansageAusstehend` — diese Felder raus aus `Spiel`
-- [ ] **R11.3** `ArmutTausch` record hält `armutStatus` — raus aus `Spiel`
-- [ ] **R11.4** `VorbehaltAnsagen`/`VorbehaltAufloesung` hält `hochzeitStatus` bis Partnersuche abgeschlossen
-- [ ] **R11.5** `Spiel` hält `SpielPhase aktuellePhase` statt Enum + separate Felder — `pruefePhase()`-Aufrufe entfallen
-- [ ] **R11.6** `SpielPersistenzAdapter` serialisiert/deserialisiert `SpielPhase`-Zustand korrekt
-- [ ] **R11.7** Alle ~180 Tests grün, kein Verhalten geändert
+- [x] **R11.1** `sealed interface SpielPhase` mit Implementierungen: `KartenAusteilen`, `VorbehaltAnsagen`, `VorbehaltAufloesung`, `ArmutTausch`, `Stichphase`, `Auswertung`, `GesamtstandAktualisieren`
+- [x] **R11.2** `Stichphase` record hält `aktuellerStich` und `pflichtansageAusstehend` — diese Felder raus aus `Spiel`
+- [x] **R11.3** `ArmutTausch` record hält `armutStatus` — raus aus `Spiel`
+- [x] **R11.4** `VorbehaltAnsagen`/`VorbehaltAufloesung` hält `hochzeitStatus` bis Partnersuche abgeschlossen
+- [x] **R11.5** `Spiel` hält `SpielPhase aktuellePhase` statt Enum + separate Felder — `pruefePhase()`-Aufrufe entfallen
+- [x] **R11.6** `SpielPersistenzAdapter` serialisiert/deserialisiert `SpielPhase`-Zustand korrekt
+- [x] **R11.7** Alle ~180 Tests grün, kein Verhalten geändert
 
 ---
 

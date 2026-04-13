@@ -94,7 +94,7 @@ class WebSocketSpielaktionIntegrationTest {
             PartieEreignisAntwort.class
         );
         PartieEreignisAntwort broadcast = (PartieEreignisAntwort) broadcastNachricht.payload();
-        assertEquals(Spielphase.STICHPHASE, broadcast.partieStand().laufendesSpiel().phase(),
+        assertEquals("STICHPHASE", broadcast.partieStand().laufendesSpiel().phase(),
             "Nach vier WebSocket-Vorbehalten muss das Spiel automatisch aufgeloest und in die Stichphase ueberfuehrt werden.");
         assertEquals("SOLO_TRUMPF", broadcast.partieStand().laufendesSpiel().spieltyp().name());
 
@@ -167,7 +167,7 @@ class WebSocketSpielaktionIntegrationTest {
             PartieEreignisAntwort.class
         );
         PartieEreignisAntwort broadcast = (PartieEreignisAntwort) broadcastNachricht.payload();
-        assertEquals(Spielphase.STICHPHASE, broadcast.partieStand().laufendesSpiel().phase(),
+        assertEquals("STICHPHASE", broadcast.partieStand().laufendesSpiel().phase(),
             "Nach Angebot, Ablehnung und Annahme muss der WebSocket-Armutfluss die Stichphase erreichen, damit das Spiel ohne manuelle Eingriffe weiterlaufen kann.");
 
         WebSocketNachrichtGesendet ostSnapshot = findeBenutzerNachricht(
@@ -337,7 +337,7 @@ class WebSocketSpielaktionIntegrationTest {
         WebSocketNachrichtGesendet broadcast = findeLetzteNachricht(nachrichten, "/topic/partie/" + setup.partieId(), PartieEreignisAntwort.class);
         PartieEreignisAntwort ereignis = (PartieEreignisAntwort) broadcast.payload();
 
-        assertEquals(Spielphase.VORBEHALT_ANSAGE, ereignis.partieStand().laufendesSpiel().phase(),
+        assertEquals("VORBEHALT_ANSAGE", ereignis.partieStand().laufendesSpiel().phase(),
             "Wenn niemand die Armut annimmt, muss das Spiel eingeworfen und ein Broadcast mit der neuen Vorbehaltsphase gesendet werden.");
         ereignis.partieStand().laufendesSpiel().spieler().forEach(spieler ->
             assertEquals(10, spieler.verbleibendeKarten(),
@@ -382,7 +382,7 @@ class WebSocketSpielaktionIntegrationTest {
         WebSocketNachrichtGesendet broadcast = findeLetzteNachricht(nachrichten, "/topic/partie/" + setup.partieId(), PartieEreignisAntwort.class);
         PartieEreignisAntwort ereignis = (PartieEreignisAntwort) broadcast.payload();
 
-        assertEquals(Spielphase.VORBEHALT_ANSAGE, ereignis.partieStand().laufendesSpiel().phase(),
+        assertEquals("VORBEHALT_ANSAGE", ereignis.partieStand().laufendesSpiel().phase(),
             "Wiederholte Armut-Einwuerfe muessen unbegrenzt moeglich sein; auch nach dem zweiten Einwurf muss das Spiel wieder in der Vorbehaltsphase sein.");
     }
 

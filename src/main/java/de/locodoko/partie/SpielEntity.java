@@ -353,8 +353,9 @@ public class SpielEntity extends AbstraktePersistenzEntity {
         return Spieltyp.valueOf(spieltyp);
     }
 
-    public Spielphase phase() {
-        return Spielphase.valueOf(phase);
+    /** Gibt den Phasennamen als String zurueck (z.B. "STICHPHASE"). */
+    public String phasenName() {
+        return phase;
     }
 
     public List<VorbehaltMeldungEmbeddable> vorbehalte() {

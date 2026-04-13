@@ -63,13 +63,13 @@ public record KiSpielzustand(
             spiel.spielregeln(),
             spiel.trumpfOrdnung(),
             spiel.handVon(spielerPosition),
-            spiel.phase() == Spielphase.VORBEHALT_ANSAGE ? null : spiel.parteien(),
+            spiel.phase() instanceof Spielphase.VorbehaltAnsage ? null : spiel.parteien(),
             spiel.ansagen(),
             spiel.abgeschlosseneStiche(),
             spiel.aktuellerStich().orElse(null),
             spiel.armutStatus().orElse(null),
             spiel.hochzeitStatus().orElse(null),
-            spiel.erwarteterSpieler().filter(spielerPosition::equals).isPresent() && spiel.phase() == Spielphase.STICHPHASE
+            spiel.erwarteterSpieler().filter(spielerPosition::equals).isPresent() && spiel.phase() instanceof Spielphase.Stichphase
                 ? spiel.gueltigeKartenFuer(spielerPosition)
                 : List.of(),
             List.of(Ansage.values()).stream().filter(ansage -> spiel.kannAnsagen(spielerPosition, ansage)).toList(),

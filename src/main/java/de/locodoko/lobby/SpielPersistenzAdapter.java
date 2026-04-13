@@ -64,25 +64,42 @@ final class SpielPersistenzAdapter {
         Ansagen ansagen = ansagen(spielEntity);
         List<Stich> abgeschlosseneStiche = abgeschlosseneStiche(spielEntity);
         SpielerPosition solistAufspieler = spielEntity.partie().solistDesLetztenSpiels();
+        Spielphase phase = bauePhase(spielEntity, vorbehalte);
         return Spiel.ausPersistiertemStand(
             spielEntity.partie().tisch().konfiguration().alsSpielregeln(),
             Kartendeck.ausKarten(alleKarten(spielEntity)),
             spielEntity.spieltyp(),
             spielEntity.geberPosition(),
-            spielEntity.phase(),
+            phase,
             haende,
             vorbehalte,
             parteien(spielEntity, haende, vorbehalte, ansagen).orElse(null),
             ansagen,
             abgeschlosseneStiche,
-            aktuellerStich(spielEntity),
             spielergebnis(spielEntity).orElse(null),
-            hochzeitStatus(spielEntity, vorbehalte).orElse(null),
-            armutStatus(spielEntity, vorbehalte).orElse(null),
-            pflichtansageAusstehend(spielEntity),
             spielEntity.schweinchenAktiv(),
             solistAufspieler
         );
+    }
+
+    private static Spielphase bauePhase(SpielEntity spielEntity, List<VorbehaltMeldung> vorbehalte) {
+        return switch (spielEntity.phasenName()) {
+            case "KARTEN_AUSTEILEN" -> Spielphase.KARTEN_AUSTEILEN;
+            case "VORBEHALT_ANSAGE" -> Spielphase.VORBEHALT_ANSAGE;
+            case "VORBEHALT_AUFLOESUNG" -> Spielphase.VORBEHALT_AUFLOESUNG;
+            case "ARMUT_TAUSCH" -> new Spielphase.ArmutTausch(
+                armutStatus(spielEntity, vorbehalte).orElseThrow(() ->
+                    new IllegalStateException("ARMUT_TAUSCH ohne ArmutStatus"))
+            );
+            case "STICHPHASE" -> new Spielphase.Stichphase(
+                aktuellerStich(spielEntity),
+                pflichtansageAusstehend(spielEntity),
+                hochzeitStatus(spielEntity, vorbehalte).orElse(null)
+            );
+            case "AUSWERTUNG" -> Spielphase.AUSWERTUNG;
+            case "GESAMTSTAND_AKTUALISIEREN" -> Spielphase.GESAMTSTAND_AKTUALISIEREN;
+            default -> throw new IllegalStateException("Unbekannte Phase: " + spielEntity.phasenName());
+        };
     }
 
     static void uebernehmeDomainSpiel(SpielEntity ziel, Spiel quelle) {
@@ -172,7 +189,7 @@ final class SpielPersistenzAdapter {
         List<VorbehaltMeldung> vorbehalte,
         Ansagen ansagen
     ) {
-        if (!istAufgeloest(spielEntity.phase())) {
+        if (!istAufgeloest(spielEntity.phasenName())) {
             return Optional.empty();
         }
         VorbehaltMeldung hoechsterVorbehalt = hoechsterVorbehalt(vorbehalte).orElse(null);
@@ -265,7 +282,7 @@ final class SpielPersistenzAdapter {
                 spielEntity.hochzeitStillesSolo()
             ));
         }
-        if (!istAufgeloest(spielEntity.phase())) {
+        if (!istAufgeloest(spielEntity.phasenName())) {
             return Optional.empty();
         }
         return hoechsterVorbehalt(vorbehalte)
@@ -274,7 +291,7 @@ final class SpielPersistenzAdapter {
     }
 
     private static Optional<ArmutStatus> armutStatus(SpielEntity spielEntity, List<VorbehaltMeldung> vorbehalte) {
-        if (spielEntity.armutSpielerPosition() == null && !istAufgeloest(spielEntity.phase())) {
+        if (spielEntity.armutSpielerPosition() == null && !istAufgeloest(spielEntity.phasenName())) {
             return Optional.empty();
         }
         SpielerPosition armutSpieler = spielEntity.armutSpielerPosition();
@@ -302,7 +319,7 @@ final class SpielPersistenzAdapter {
     }
 
     private static Stich aktuellerStich(SpielEntity spielEntity) {
-        if (spielEntity.phase() != Spielphase.STICHPHASE) {
+        if (!"STICHPHASE".equals(spielEntity.phasenName())) {
             return null;
         }
         if (spielEntity.aktuellerStichAufspielerPosition() != null) {
@@ -373,7 +390,7 @@ final class SpielPersistenzAdapter {
         spielEntity.haende().forEach(hand -> hand.karten().forEach(karte -> karten.add(alsKarte(karte))));
         spielEntity.stiche().forEach(stich -> stich.gespielteKarten().forEach(karte -> karten.add(alsKarte(karte))));
         spielEntity.aktuellerStichKarten().forEach(karte -> karten.add(alsKarte(karte)));
-        if (spielEntity.phase() == Spielphase.ARMUT_TAUSCH && spielEntity.armutPartnerSpielerPosition() == null) {
+        if ("ARMUT_TAUSCH".equals(spielEntity.phasenName()) && spielEntity.armutPartnerSpielerPosition() == null) {
             spielEntity.armutAngeboteneKarten().forEach(karte -> karten.add(alsKarte(karte)));
         }
         return karten;
@@ -501,9 +518,9 @@ final class SpielPersistenzAdapter {
         return Optional.ofNullable(hoechsterVorbehalt);
     }
 
-    private static boolean istAufgeloest(Spielphase phase) {
-        return switch (phase) {
-            case ARMUT_TAUSCH, STICHPHASE, AUSWERTUNG, GESAMTSTAND_AKTUALISIEREN -> true;
+    private static boolean istAufgeloest(String phasenName) {
+        return switch (phasenName) {
+            case "ARMUT_TAUSCH", "STICHPHASE", "AUSWERTUNG", "GESAMTSTAND_AKTUALISIEREN" -> true;
             default -> false;
         };
     }

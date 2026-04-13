@@ -144,7 +144,7 @@ class KiOrchestrierungServiceFehlerTest {
             TischEntity tisch = tischRepository.findById(TischId.von(tischId)).orElseThrow();
             SpielEntity laufendesSpiel = tisch.partie().spiele().getLast();
 
-            assertEquals(Spielphase.STICHPHASE, laufendesSpiel.phase(),
+            assertEquals("STICHPHASE", laufendesSpiel.phasenName(),
                 "Die Spielphase muss nach einer KI-Exception unveraendert STICHPHASE sein, " +
                 "weil uebernehmeDomainSpiel() nie aufgerufen wurde und der letzte Datenbankstand gilt.");
 
@@ -183,7 +183,7 @@ class KiOrchestrierungServiceFehlerTest {
             TischEntity tisch = tischRepository.findById(TischId.von(tischId)).orElseThrow();
             SpielEntity laufendesSpiel = tisch.partie().spiele().getLast();
 
-            assertEquals(Spielphase.VORBEHALT_ANSAGE, laufendesSpiel.phase(),
+            assertEquals("VORBEHALT_ANSAGE", laufendesSpiel.phasenName(),
                 "Die Spielphase muss nach einer KI-Exception in der Vorbehaltphase unveraendert " +
                 "VORBEHALT_ANSAGE bleiben, damit kein halbgemeldeter Vorbehalt persistiert wird.");
         });
