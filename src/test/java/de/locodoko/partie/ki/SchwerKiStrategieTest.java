@@ -17,6 +17,7 @@ import de.locodoko.partie.VorbehaltAnsage;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
+import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -53,7 +54,7 @@ class SchwerKiStrategieTest {
         KiSpielzustand zustand = new KiSpielzustand(
             SpielerPosition.WEST,
             Spieltyp.NORMALSPIEL,
-            Spielphase.STICHPHASE,
+            new Spielphase.Stichphase(Stich.neu(SpielerPosition.WEST), Set.of(), null),
             spielregeln,
             trumpfOrdnung,
             new Hand(List.of(
@@ -96,7 +97,7 @@ class SchwerKiStrategieTest {
         KiSpielzustand zustand = new KiSpielzustand(
             SpielerPosition.WEST,
             Spieltyp.NORMALSPIEL,
-            Spielphase.STICHPHASE,
+            new Spielphase.Stichphase(Stich.neu(SpielerPosition.NORD), Set.of(), null),
             spielregeln,
             trumpfOrdnung,
             new Hand(List.of(kreuzDame, karoNeun)),
@@ -177,7 +178,7 @@ class SchwerKiStrategieTest {
         KiSpielzustand zustand = new KiSpielzustand(
             SpielerPosition.WEST,
             Spieltyp.NORMALSPIEL,
-            Spielphase.STICHPHASE,
+            new Spielphase.Stichphase(Stich.neu(SpielerPosition.WEST), Set.of(), null),
             spielregeln,
             trumpfOrdnung,
             new Hand(List.of(
@@ -229,7 +230,7 @@ class SchwerKiStrategieTest {
         KiSpielzustand zustand = new KiSpielzustand(
             SpielerPosition.WEST,
             Spieltyp.NORMALSPIEL,
-            Spielphase.STICHPHASE,
+            new Spielphase.Stichphase(Stich.neu(SpielerPosition.WEST), Set.of(), null),
             spielregeln,
             trumpfOrdnung,
             new Hand(List.of(

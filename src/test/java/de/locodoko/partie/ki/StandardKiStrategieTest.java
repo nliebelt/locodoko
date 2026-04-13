@@ -20,6 +20,7 @@ import de.locodoko.partie.VorbehaltAnsage;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
+import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -153,7 +154,7 @@ class StandardKiStrategieTest {
         KiSpielzustand zustand = new KiSpielzustand(
             SpielerPosition.WEST,
             Spieltyp.ARMUT,
-            Spielphase.ARMUT_TAUSCH,
+            new Spielphase.ArmutTausch(ArmutStatus.gestartet(SpielerPosition.NORD)),
             spielregeln,
             trumpfOrdnung,
             new Hand(List.of(
@@ -191,7 +192,7 @@ class StandardKiStrategieTest {
         KiSpielzustand zustand = new KiSpielzustand(
             SpielerPosition.NORD,
             Spieltyp.SOLO_TRUMPF,
-            Spielphase.STICHPHASE,
+            new Spielphase.Stichphase(stich, Set.of(), null),
             spielregeln,
             trumpfOrdnung,
             new Hand(List.of(
@@ -221,7 +222,7 @@ class StandardKiStrategieTest {
         KiSpielzustand zustand = new KiSpielzustand(
             SpielerPosition.WEST,
             Spieltyp.NORMALSPIEL,
-            Spielphase.STICHPHASE,
+            new Spielphase.Stichphase(Stich.neu(SpielerPosition.WEST), Set.of(), null),
             spielregeln,
             trumpfOrdnung,
             new Hand(List.of(
@@ -264,7 +265,7 @@ class StandardKiStrategieTest {
         KiSpielzustand zustand = new KiSpielzustand(
             SpielerPosition.WEST,
             Spieltyp.HOCHZEIT,
-            Spielphase.STICHPHASE,
+            new Spielphase.Stichphase(Stich.neu(SpielerPosition.NORD), Set.of(), hochzeitStatus),
             spielregeln,
             trumpfOrdnung,
             new Hand(List.of(kreuzDame, karoNeun)),
@@ -300,7 +301,7 @@ class StandardKiStrategieTest {
         KiSpielzustand zustand = new KiSpielzustand(
             SpielerPosition.NORD,
             Spieltyp.HOCHZEIT,
-            Spielphase.STICHPHASE,
+            new Spielphase.Stichphase(stich, Set.of(), hochzeitStatus),
             spielregeln,
             trumpfOrdnung,
             new Hand(List.of(herzZehn, karoNeun)),
@@ -339,7 +340,7 @@ class StandardKiStrategieTest {
             ));
 
         KiSpielzustand zustand = new KiSpielzustand(
-            SpielerPosition.WEST, Spieltyp.ARMUT, Spielphase.ARMUT_TAUSCH,
+            SpielerPosition.WEST, Spieltyp.ARMUT, new Spielphase.ArmutTausch(armutStatus),
             spielregeln, trumpfOrdnung,
             new Hand(List.of(kreuzDame, herzZehn, kreuzNeun, pikKoenig)),
             null, Ansagen.leer(), List.of(), null, armutStatus, null,
@@ -365,7 +366,7 @@ class StandardKiStrategieTest {
             .mitAngebot(List.of(karte(Farbe.KARO, Kartenwert.NEUN, 1)));  // angebotWert = 9
 
         KiSpielzustand zustand = new KiSpielzustand(
-            SpielerPosition.WEST, Spieltyp.ARMUT, Spielphase.ARMUT_TAUSCH,
+            SpielerPosition.WEST, Spieltyp.ARMUT, new Spielphase.ArmutTausch(armutStatus),
             spielregeln, trumpfOrdnung,
             new Hand(List.of(
                 karte(Farbe.KARO, Kartenwert.NEUN,   1),
@@ -390,7 +391,7 @@ class StandardKiStrategieTest {
     void lehnt_Armut_ab_wenn_kein_Angebot_vorliegt() {
         // Schutz gegen vorzeitigen Aufruf — vor dem Einwurf liegt kein Angebot vor.
         KiSpielzustand zustand = new KiSpielzustand(
-            SpielerPosition.WEST, Spieltyp.ARMUT, Spielphase.ARMUT_TAUSCH,
+            SpielerPosition.WEST, Spieltyp.ARMUT, new Spielphase.ArmutTausch(ArmutStatus.gestartet(SpielerPosition.SUED)),
             spielregeln, trumpfOrdnung,
             new Hand(List.of(karte(Farbe.KREUZ, Kartenwert.DAME, 1))),
             null, Ansagen.leer(), List.of(), null,
@@ -427,7 +428,7 @@ class StandardKiStrategieTest {
         KiSpielzustand zustand = new KiSpielzustand(
             SpielerPosition.WEST,
             Spieltyp.HOCHZEIT,
-            Spielphase.STICHPHASE,
+            new Spielphase.Stichphase(stich, Set.of(), hochzeitStatus),
             spielregeln,
             trumpfOrdnung,
             new Hand(List.of(pikAs, pikNeun)),

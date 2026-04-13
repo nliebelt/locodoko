@@ -8,14 +8,17 @@ import de.locodoko.karten.NormaleTrumpfOrdnung;
 import de.locodoko.karten.SpielerPosition;
 import de.locodoko.karten.Spielregeln;
 import de.locodoko.karten.Spieltyp;
+import de.locodoko.partie.ArmutStatus;
 import de.locodoko.partie.Ansagen;
 import de.locodoko.partie.Parteien;
 import de.locodoko.partie.Spielphase;
+import de.locodoko.karten.Stich;
 import de.locodoko.partie.VorbehaltAnsage;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -87,7 +90,7 @@ class LeichteKiStrategieTest {
         KiSpielzustand zustand = new KiSpielzustand(
             SpielerPosition.WEST,
             Spieltyp.NORMALSPIEL,
-            Spielphase.STICHPHASE,
+            new Spielphase.Stichphase(Stich.neu(SpielerPosition.NORD), Set.of(), null),
             spielregeln,
             trumpfOrdnung,
             new Hand(List.of(
@@ -123,7 +126,7 @@ class LeichteKiStrategieTest {
         KiSpielzustand zustand = new KiSpielzustand(
             SpielerPosition.WEST,
             Spieltyp.NORMALSPIEL,
-            Spielphase.STICHPHASE,
+            new Spielphase.Stichphase(Stich.neu(SpielerPosition.NORD), Set.of(), null),
             spielregeln,
             trumpfOrdnung,
             new Hand(List.of(ersteKarte, zweiteKarte)),
@@ -152,7 +155,7 @@ class LeichteKiStrategieTest {
         KiSpielzustand zustand = new KiSpielzustand(
             SpielerPosition.WEST,
             Spieltyp.ARMUT,
-            Spielphase.ARMUT_TAUSCH,
+            new Spielphase.ArmutTausch(ArmutStatus.gestartet(SpielerPosition.NORD)),
             spielregeln,
             trumpfOrdnung,
             new Hand(List.of(
@@ -186,7 +189,7 @@ class LeichteKiStrategieTest {
         KiSpielzustand zustand = new KiSpielzustand(
             SpielerPosition.WEST,
             Spieltyp.ARMUT,
-            Spielphase.ARMUT_TAUSCH,
+            new Spielphase.ArmutTausch(ArmutStatus.gestartet(SpielerPosition.NORD)),
             spielregeln,
             trumpfOrdnung,
             new Hand(List.of(trumpf, fehlkarte)),
