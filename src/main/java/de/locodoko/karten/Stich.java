@@ -115,8 +115,8 @@ public final class Stich {
         return gewinner(trumpfOrdnung).spieler();
     }
 
-    public int augen() {
-        return gespielteKarten.stream().mapToInt(gespielteKarte -> gespielteKarte.karte().augen()).sum();
+    public Augen augen() {
+        return new Augen(gespielteKarten.stream().mapToInt(gespielteKarte -> gespielteKarte.karte().augen()).sum());
     }
 
     private boolean sticht(

@@ -1,5 +1,6 @@
 package de.locodoko.lobby;
 
+import de.locodoko.karten.Augen;
 import de.locodoko.karten.Farbe;
 import de.locodoko.karten.Hand;
 import de.locodoko.karten.GespielteKarte;
@@ -18,6 +19,7 @@ import de.locodoko.partie.Parteien;
 import de.locodoko.partie.Spiel;
 import de.locodoko.partie.Spielphase;
 import de.locodoko.partie.Spielergebnis;
+import de.locodoko.partie.Spielpunkte;
 import de.locodoko.partie.SonderpunktEreignis;
 import de.locodoko.partie.VorbehaltAnsage;
 import de.locodoko.partie.VorbehaltMeldung;
@@ -327,15 +329,15 @@ final class SpielPersistenzAdapter {
         if (spielEntity.ergebnis() == null) {
             return Optional.empty();
         }
-        EnumMap<Partei, Integer> augenProPartei = new EnumMap<>(Partei.class);
-        augenProPartei.put(Partei.RE, spielEntity.ergebnis().reAugen());
-        augenProPartei.put(Partei.KONTRA, spielEntity.ergebnis().kontraAugen());
+        EnumMap<Partei, Augen> augenProPartei = new EnumMap<>(Partei.class);
+        augenProPartei.put(Partei.RE, new Augen(spielEntity.ergebnis().reAugen()));
+        augenProPartei.put(Partei.KONTRA, new Augen(spielEntity.ergebnis().kontraAugen()));
 
-        EnumMap<SpielerPosition, Integer> spielpunkteProSpieler = new EnumMap<>(SpielerPosition.class);
-        spielpunkteProSpieler.put(SpielerPosition.SUED, spielEntity.ergebnis().spielpunkteSued());
-        spielpunkteProSpieler.put(SpielerPosition.WEST, spielEntity.ergebnis().spielpunkteWest());
-        spielpunkteProSpieler.put(SpielerPosition.NORD, spielEntity.ergebnis().spielpunkteNord());
-        spielpunkteProSpieler.put(SpielerPosition.OST, spielEntity.ergebnis().spielpunkteOst());
+        EnumMap<SpielerPosition, Spielpunkte> spielpunkteProSpieler = new EnumMap<>(SpielerPosition.class);
+        spielpunkteProSpieler.put(SpielerPosition.SUED, new Spielpunkte(spielEntity.ergebnis().spielpunkteSued()));
+        spielpunkteProSpieler.put(SpielerPosition.WEST, new Spielpunkte(spielEntity.ergebnis().spielpunkteWest()));
+        spielpunkteProSpieler.put(SpielerPosition.NORD, new Spielpunkte(spielEntity.ergebnis().spielpunkteNord()));
+        spielpunkteProSpieler.put(SpielerPosition.OST, new Spielpunkte(spielEntity.ergebnis().spielpunkteOst()));
 
         EnumMap<Partei, List<SonderpunktEreignis>> sonderpunkteProPartei = new EnumMap<>(Partei.class);
         sonderpunkteProPartei.put(Partei.RE, spielEntity.sonderpunkte().stream()
@@ -356,7 +358,7 @@ final class SpielPersistenzAdapter {
         return Optional.of(new Spielergebnis(
             augenProPartei,
             ergebnis.siegerPartei(),
-            ergebnis.spielwert(),
+            new Spielpunkte(ergebnis.spielwert()),
             dbGrundwert != null ? dbGrundwert : ergebnis.spielwert(),
             dbAbsagePunkte != null ? dbAbsagePunkte : 0,
             dbGegenDieAltenPunkte != null ? dbGegenDieAltenPunkte : 0,
@@ -473,7 +475,7 @@ final class SpielPersistenzAdapter {
                 index,
                 stich.aufspieler(),
                 stich.gewinner(spiel.trumpfOrdnung()).spieler(),
-                stich.augen()
+                stich.augen().wert()
             );
             for (GespielteKarte gespielteKarte : stich.gespielteKarten()) {
                 stichEntity.fuegeGespielteKarteHinzu(

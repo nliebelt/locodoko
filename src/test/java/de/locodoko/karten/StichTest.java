@@ -44,7 +44,7 @@ class StichTest {
 
         assertEquals(SpielerPosition.NORD, stich.gewinner(trumpfOrdnung).spieler(),
             "Trumpf muss Fehlkarten jederzeit ueberstechen koennen; darauf basiert die komplette Stichauswertung.");
-        assertEquals(36, stich.augen(),
+        assertEquals(36, stich.augen().wert(),
             "Die Summe der Augen ist Grundlage fuer Sieg, Absagen und Sonderpunkte am Spielende.");
         assertEquals(SpielerPosition.NORD, stich.naechsterAufspieler(trumpfOrdnung),
             "Der Stichgewinner muss den naechsten Stich eroeffnen, damit die Spielreihenfolge stabil bleibt.");

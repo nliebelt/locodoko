@@ -492,7 +492,7 @@ public final class Spiel {
         if (spieltyp != Spieltyp.NORMALSPIEL && spieltyp != Spieltyp.HOCHZEIT) {
             return Set.of();
         }
-        if (abgeschlossenerStich.augen() <= 30) {
+        if (!abgeschlossenerStich.augen().ueberschreitet(30)) {
             return Set.of();
         }
         Partei gewinnendePflichtpartei = parteien.parteiVon(abgeschlossenerStich.gewinner(trumpfOrdnung).spieler());

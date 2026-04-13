@@ -136,7 +136,7 @@ public final class Partie {
         Map<SpielerPosition, Integer> neuerGesamtpunktestand = new EnumMap<>(SpielerPosition.class);
         neuerGesamtpunktestand.putAll(gesamtpunktestand);
         for (SpielerPosition position : SpielerPosition.standardReihenfolge()) {
-            neuerGesamtpunktestand.merge(position, ergebnis.spielpunkteVon(position) * multiplikator, Integer::sum);
+            neuerGesamtpunktestand.merge(position, ergebnis.spielpunkteVon(position).wert() * multiplikator, Integer::sum);
         }
 
         // Bockrunden-Zaehler aktualisieren: alten Eintrag verbrauchen, neue Trigger ergaenzen

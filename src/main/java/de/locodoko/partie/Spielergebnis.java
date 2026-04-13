@@ -1,5 +1,6 @@
 package de.locodoko.partie;
 
+import de.locodoko.karten.Augen;
 import de.locodoko.karten.SpielerPosition;
 
 import java.util.EnumMap;
@@ -18,14 +19,14 @@ import java.util.Objects;
  * und direkt in den Partie-Snapshot uebernommen.</p>
  */
 public record Spielergebnis(
-    Map<Partei, Integer> augenProPartei,
+    Map<Partei, Augen> augenProPartei,
     Partei siegerPartei,
-    int spielwert,
+    Spielpunkte spielwert,
     int grundwert,
     int absagePunkte,
     int gegenDieAltenPunkte,
     int soloMultiplikator,
-    Map<SpielerPosition, Integer> spielpunkteProSpieler,
+    Map<SpielerPosition, Spielpunkte> spielpunkteProSpieler,
     Map<Partei, List<SonderpunktEreignis>> sonderpunkteProPartei
 ) {
 
@@ -38,9 +39,9 @@ public record Spielergebnis(
             throw new IllegalArgumentException("soloMultiplikator muss 1 oder 3 sein, war " + soloMultiplikator);
         }
 
-        EnumMap<Partei, Integer> augenKopie = new EnumMap<>(Partei.class);
+        EnumMap<Partei, Augen> augenKopie = new EnumMap<>(Partei.class);
         augenKopie.putAll(augenProPartei);
-        EnumMap<SpielerPosition, Integer> punkteKopie = new EnumMap<>(SpielerPosition.class);
+        EnumMap<SpielerPosition, Spielpunkte> punkteKopie = new EnumMap<>(SpielerPosition.class);
         punkteKopie.putAll(spielpunkteProSpieler);
         EnumMap<Partei, List<SonderpunktEreignis>> sonderpunkteKopie = new EnumMap<>(Partei.class);
         sonderpunkteKopie.putAll(sonderpunkteProPartei);
@@ -54,14 +55,14 @@ public record Spielergebnis(
         if (!sonderpunkteKopie.keySet().containsAll(EnumSet.allOf(Partei.class))) {
             throw new IllegalArgumentException("Sonderpunkte muessen fuer beide Parteien vorliegen");
         }
-        if (spielwert < 1) {
+        if (spielwert.wert() < 1) {
             throw new IllegalArgumentException("Der Spielwert muss positiv sein");
         }
-        int gesamtaugen = augenKopie.values().stream().mapToInt(Integer::intValue).sum();
+        int gesamtaugen = augenKopie.values().stream().mapToInt(Augen::wert).sum();
         if (gesamtaugen != 240) {
             throw new IllegalArgumentException("Ein Spiel muss genau 240 Augen ergeben, war aber " + gesamtaugen);
         }
-        int nullsumme = punkteKopie.values().stream().mapToInt(Integer::intValue).sum();
+        int nullsumme = punkteKopie.values().stream().mapToInt(Spielpunkte::wert).sum();
         if (nullsumme != 0) {
             throw new IllegalArgumentException("Spielpunkte muessen eine Nullsumme bilden, Summe war " + nullsumme);
         }
@@ -70,11 +71,11 @@ public record Spielergebnis(
         sonderpunkteProPartei = Map.copyOf(sonderpunkteKopie);
     }
 
-    public int augenVon(Partei partei) {
+    public Augen augenVon(Partei partei) {
         return augenProPartei.get(partei);
     }
 
-    public int spielpunkteVon(SpielerPosition spielerPosition) {
+    public Spielpunkte spielpunkteVon(SpielerPosition spielerPosition) {
         return spielpunkteProSpieler.get(spielerPosition);
     }
 

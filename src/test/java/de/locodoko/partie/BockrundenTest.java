@@ -1,5 +1,6 @@
 package de.locodoko.partie;
 
+import de.locodoko.karten.Augen;
 import de.locodoko.karten.Farbe;
 import de.locodoko.karten.GespielteKarte;
 import de.locodoko.karten.Karte;
@@ -286,22 +287,22 @@ class BockrundenTest {
      * RE: SUED und NORD (je +spielwert), KONTRA: WEST und OST (je -spielwert).
      */
     private Spielergebnis normalspielErgebnis(Partei sieger, int spielwert) {
-        EnumMap<Partei, Integer> augen = new EnumMap<>(Partei.class);
-        augen.put(Partei.RE, 121);
-        augen.put(Partei.KONTRA, 119);
+        EnumMap<Partei, Augen> augen = new EnumMap<>(Partei.class);
+        augen.put(Partei.RE, new Augen(121));
+        augen.put(Partei.KONTRA, new Augen(119));
 
         int reMultiplikator = sieger == Partei.RE ? 1 : -1;
-        EnumMap<SpielerPosition, Integer> spielpunkte = new EnumMap<>(SpielerPosition.class);
-        spielpunkte.put(SpielerPosition.SUED, reMultiplikator * spielwert);
-        spielpunkte.put(SpielerPosition.NORD, reMultiplikator * spielwert);
-        spielpunkte.put(SpielerPosition.WEST, -reMultiplikator * spielwert);
-        spielpunkte.put(SpielerPosition.OST,  -reMultiplikator * spielwert);
+        EnumMap<SpielerPosition, Spielpunkte> spielpunkte = new EnumMap<>(SpielerPosition.class);
+        spielpunkte.put(SpielerPosition.SUED, new Spielpunkte(reMultiplikator * spielwert));
+        spielpunkte.put(SpielerPosition.NORD, new Spielpunkte(reMultiplikator * spielwert));
+        spielpunkte.put(SpielerPosition.WEST, new Spielpunkte(-reMultiplikator * spielwert));
+        spielpunkte.put(SpielerPosition.OST,  new Spielpunkte(-reMultiplikator * spielwert));
 
         EnumMap<Partei, List<SonderpunktEreignis>> sonderpunkte = new EnumMap<>(Partei.class);
         sonderpunkte.put(Partei.RE, List.of());
         sonderpunkte.put(Partei.KONTRA, List.of());
 
-        return new Spielergebnis(augen, sieger, spielwert, spielwert, 0, 0, 1, spielpunkte, sonderpunkte);
+        return new Spielergebnis(augen, sieger, new Spielpunkte(spielwert), spielwert, 0, 0, 1, spielpunkte, sonderpunkte);
     }
 
     /** Normalspiel-Parteien: SUED+NORD=RE, WEST+OST=KONTRA. */

@@ -4,14 +4,8 @@
 
 ## Notiz
 
-**2026-04-06 (Plan-Run #36):** Task 6 (Regelkatalog-Presets) vollständig erledigt — `Spielregeln.locoBlatRegeln()` (alle Sonderregeln aktiv), `Spielregeln.dkvRegeln()` (ohne Bockrunden/Schweinchen/30AP), `Spielregeln.ohneNeunenLocoBlatRegeln()` (wie Loco Blatt + ohneNeunen + angepasste Mindestkarten), `SpielregelnTest.java` (4 neue Tests), `frontend/src/modelle/regelPresets.ts` (TypeScript-Konstanten + `standardMindestkarten()`), `SpielverwaltungsSzene.ts` Konfigurations-Modal um Preset-Dropdown erweitert (Loco Blatt / DKV-Turnier / Ohne Neunen / Benutzerdefiniert) mit dynamischer Regel-Checkbox-Grid (schreibgeschützt für Presets, editierbar für Benutzerdefiniert). 179 Backend-Tests grün, 62 Frontend-Tests grün, Build + Lint sauber.
-Nächster logischer Schritt: Task 8 (Frontend-Animationen: Stich-Visualisierung) oder Task 9 (Rundenauswertungs-Overlay).
-Offene Fragen: keine.
-
-**2026-04-12 (R6.5 KI-Delay konsolidiert):** `KiEventAdapter` besitzt jetzt `kiScheduler` (ScheduledExecutorService), `KI_KARTEN_VERZOEGERUNG_MS = 800ms`, `@PreDestroy beende()` und neue Methode `planeVerzoegertenKiZug(TischId)`. `KiOrchestrierungService` injiziert `KiEventAdapter` via `@Lazy` (Setter-Injection mit `@Autowired`) und ruft `kiEventAdapter.planeVerzoegertenKiZug()` statt `kiScheduler.schedule(...)` auf. Circular Dependency mit `@Lazy` aufgelöst. 198 Tests grün.
-
-**2026-04-12 (R8 AnimationenService DRY):** `animiereTween(konfiguration)` als zentraler Promise-Wrapper in `AnimationenService` extrahiert. `tweenAlpha`, `tweenZu`, `tweenScale` delegieren nun dorthin — ~60 Zeilen Boilerplate (Promise-Wrapper, tweenReferenz, abgeschlossen-Flag, laufendeTweens-Registrierung) entfallen. Cast auf `Phaser.Types.Tweens.TweenBuilderConfig` nötig wegen Spread+Omit-TypeScript-Limitierung. 24 Frontend-Tests grün, Build und Lint sauber.
-Nächster logischer Schritt: R9 (Augen + Spielpunkte als Value Objects) oder T2 (Armut Unit-Tests).
+**2026-04-13 (R9 Augen + Spielpunkte als Value Objects):** `Augen(int wert)` record in `de.locodoko.karten` (mit `plus()`, `ueberschreitet()`, `mindestens()`, Invariante `wert >= 0`) und `Spielpunkte(int wert)` record in `de.locodoko.partie` (mit `mal()`, `plus()`, `negiert()`) eingeführt. `Stich.augen()` gibt `Augen` zurück. `PunkteRechner` nutzt `Map<Partei, Augen>` intern und wraps `spielwert` als `Spielpunkte`. `Spielergebnis` hält typisierte Felder (`Map<Partei, Augen>`, `Spielpunkte spielwert`, `Map<SpielerPosition, Spielpunkte>`). `SonderpunktBewerter`, `Spiel` (Pflichtansage-Check) auf neue Typen umgestellt. Assembler (`SpielErgebnisEmbeddable`, `SpielPersistenzAdapter`) rufen `.wert()` für Persistence-Grenze. 198 Tests grün.
+Nächster logischer Schritt: R10 (PunkteRechner — Feature Envy beseitigen, jetzt von R1+R9 freigegeben) oder T2 (Armut Unit-Tests).
 Offene Fragen: keine.
 
 ---
@@ -276,12 +270,12 @@ Alle gesetzt (17 gesamt):
 
 > **Blockiert von:** R1 (SpielBuilder macht Umbau wartbar) | **Spec:** `specs/architektur-spielkern.md` Abschnitt "Augen + Spielpunkte"
 
-- [ ] **R9.1** `Augen` record in `de.locodoko.karten` — mit `plus()`, `ueberschreitet()`, `mindestens()`, Invariante `wert >= 0`
-- [ ] **R9.2** `Spielpunkte` record in `de.locodoko.partie` — mit `mal()`, `plus()`
-- [ ] **R9.3** `Stich.augen()` gibt `Augen` zurück statt `int`
-- [ ] **R9.4** `Spielergebnis`, `PunkteRechner`, `SonderpunktBewerter` auf `Augen`/`Spielpunkte` umstellen
-- [ ] **R9.5** DTOs und API-Antworten geben weiterhin `int` nach außen — Umwandlung im Assembler
-- [ ] **R9.6** Alle Tests grün
+- [x] **R9.1** `Augen` record in `de.locodoko.karten` — mit `plus()`, `ueberschreitet()`, `mindestens()`, Invariante `wert >= 0`
+- [x] **R9.2** `Spielpunkte` record in `de.locodoko.partie` — mit `mal()`, `plus()`
+- [x] **R9.3** `Stich.augen()` gibt `Augen` zurück statt `int`
+- [x] **R9.4** `Spielergebnis`, `PunkteRechner`, `SonderpunktBewerter` auf `Augen`/`Spielpunkte` umstellen
+- [x] **R9.5** DTOs und API-Antworten geben weiterhin `int` nach außen — Umwandlung im Assembler
+- [x] **R9.6** Alle Tests grün
 
 ---
 

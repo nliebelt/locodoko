@@ -316,13 +316,13 @@ class SpielTest {
 
         assertEquals(Spielphase.GESAMTSTAND_AKTUALISIEREN, spiel.phase());
         Spielergebnis ergebnis = spiel.ergebnis().orElseThrow();
-        assertEquals(240, ergebnis.augenVon(Partei.RE) + ergebnis.augenVon(Partei.KONTRA),
+        assertEquals(240, ergebnis.augenVon(Partei.RE).wert() + ergebnis.augenVon(Partei.KONTRA).wert(),
             "Die 240-Augen-Invariante muss auch im stillen Solo gelten, weil immer alle Karten gespielt werden.");
         assertEquals(0,
-            ergebnis.spielpunkteVon(SpielerPosition.WEST)
-                + ergebnis.spielpunkteVon(SpielerPosition.NORD)
-                + ergebnis.spielpunkteVon(SpielerPosition.OST)
-                + ergebnis.spielpunkteVon(SpielerPosition.SUED),
+            ergebnis.spielpunkteVon(SpielerPosition.WEST).wert()
+                + ergebnis.spielpunkteVon(SpielerPosition.NORD).wert()
+                + ergebnis.spielpunkteVon(SpielerPosition.OST).wert()
+                + ergebnis.spielpunkteVon(SpielerPosition.SUED).wert(),
             "Die Nullsumme muss auch nach dem stillen Solo gelten, damit der Gesamtstand konsistent bleibt.");
     }
 
@@ -572,11 +572,11 @@ class SpielTest {
 
         assertEquals(Spielphase.GESAMTSTAND_AKTUALISIEREN, spiel.phase());
         Spielergebnis ergebnis = spiel.ergebnis().orElseThrow();
-        assertEquals(240, ergebnis.augenVon(Partei.RE) + ergebnis.augenVon(Partei.KONTRA));
-        assertEquals(0, ergebnis.spielpunkteVon(SpielerPosition.SUED)
-            + ergebnis.spielpunkteVon(SpielerPosition.WEST)
-            + ergebnis.spielpunkteVon(SpielerPosition.NORD)
-            + ergebnis.spielpunkteVon(SpielerPosition.OST),
+        assertEquals(240, ergebnis.augenVon(Partei.RE).wert() + ergebnis.augenVon(Partei.KONTRA).wert());
+        assertEquals(0, ergebnis.spielpunkteVon(SpielerPosition.SUED).wert()
+            + ergebnis.spielpunkteVon(SpielerPosition.WEST).wert()
+            + ergebnis.spielpunkteVon(SpielerPosition.NORD).wert()
+            + ergebnis.spielpunkteVon(SpielerPosition.OST).wert(),
             "Die Nullsumme macht den Partiestand robust und verhindert schleichende Bewertungsfehler.");
         assertFalse(spiel.aktuellerStich().isPresent());
     }

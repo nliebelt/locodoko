@@ -40,7 +40,7 @@ public final class SonderpunktBewerter {
             GespielteKarte gewinnerKarte = stich.gewinner(trumpfOrdnung);
             SpielerPosition gewinnerPosition = gewinnerKarte.spieler();
             Partei gewinnerPartei = parteien.parteiVon(gewinnerPosition);
-            if (spielregeln.doppelkopfAktiv() && stich.augen() >= 40) {
+            if (spielregeln.doppelkopfAktiv() && stich.augen().mindestens(40)) {
                 sonderpunkte.get(gewinnerPartei).add(new SonderpunktEreignis(Sonderpunkt.DOPPELKOPF, gewinnerPosition, null));
             }
             if (spielregeln.fuchsAktiv()) {

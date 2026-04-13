@@ -1,5 +1,6 @@
 package de.locodoko.partie;
 
+import de.locodoko.karten.Augen;
 import de.locodoko.karten.SpielerPosition;
 import de.locodoko.karten.Spielregeln;
 import de.locodoko.karten.Stich;
@@ -46,19 +47,19 @@ public final class PunkteRechner {
             throw new IllegalArgumentException("Ein Spiel ohne Stiche kann nicht ausgewertet werden");
         }
 
-        EnumMap<Partei, Integer> augenProPartei = new EnumMap<>(Partei.class);
-        augenProPartei.put(Partei.RE, 0);
-        augenProPartei.put(Partei.KONTRA, 0);
+        EnumMap<Partei, Augen> augenProPartei = new EnumMap<>(Partei.class);
+        augenProPartei.put(Partei.RE, Augen.null_());
+        augenProPartei.put(Partei.KONTRA, Augen.null_());
         EnumMap<Partei, Integer> sticheProPartei = new EnumMap<>(Partei.class);
         sticheProPartei.put(Partei.RE, 0);
         sticheProPartei.put(Partei.KONTRA, 0);
         for (Stich stich : stiche) {
             Partei partei = parteien.parteiVon(stich.gewinner(trumpfOrdnung).spieler());
-            augenProPartei.merge(partei, stich.augen(), Integer::sum);
+            augenProPartei.merge(partei, stich.augen(), Augen::plus);
             sticheProPartei.merge(partei, 1, Integer::sum);
         }
 
-        Partei siegerPartei = augenProPartei.get(Partei.RE) >= 121 ? Partei.RE : Partei.KONTRA;
+        Partei siegerPartei = augenProPartei.get(Partei.RE).mindestens(121) ? Partei.RE : Partei.KONTRA;
         EnumMap<Partei, List<SonderpunktEreignis>> sonderpunkteProPartei =
             sonderpunktBewerter.bewerte(stiche, parteien, trumpfOrdnung, spielregeln);
 
@@ -66,13 +67,13 @@ public final class PunkteRechner {
         int absagePunkte = bewerteAbsagen(siegerPartei, augenProPartei, sticheProPartei, parteien, ansagen);
         int gegenDieAltenPunkte = bewerteGegenDieAlten(siegerPartei, parteien, ansagen);
         int sonderpunkteWert = bewerteSonderpunkte(siegerPartei, sonderpunkteProPartei);
-        int spielwert = Math.max(1, grundwert + absagePunkte + gegenDieAltenPunkte + sonderpunkteWert);
+        Spielpunkte spielwert = new Spielpunkte(Math.max(1, grundwert + absagePunkte + gegenDieAltenPunkte + sonderpunkteWert));
 
         List<SpielerPosition> sieger = parteien.spielerVon(siegerPartei);
         List<SpielerPosition> verlierer = parteien.spielerVon(siegerPartei.gegenpartei());
         int soloMultiplikator = (sieger.size() == 1 || verlierer.size() == 1) ? 3 : 1;
 
-        EnumMap<SpielerPosition, Integer> spielpunkteProSpieler = new EnumMap<>(SpielerPosition.class);
+        EnumMap<SpielerPosition, Spielpunkte> spielpunkteProSpieler = new EnumMap<>(SpielerPosition.class);
         verteileSpielpunkte(spielpunkteProSpieler, parteien, siegerPartei, spielwert);
         return new Spielergebnis(
             augenProPartei, siegerPartei, spielwert,
@@ -94,7 +95,7 @@ public final class PunkteRechner {
 
     private int bewerteAbsagen(
         Partei siegerPartei,
-        Map<Partei, Integer> augenProPartei,
+        Map<Partei, Augen> augenProPartei,
         Map<Partei, Integer> sticheProPartei,
         Parteien parteien,
         Ansagen ansagen
@@ -116,14 +117,14 @@ public final class PunkteRechner {
     private boolean ansageErreicht(
         Partei partei,
         Ansage ansage,
-        Map<Partei, Integer> augenProPartei,
+        Map<Partei, Augen> augenProPartei,
         Map<Partei, Integer> sticheProPartei
     ) {
         Partei gegenpartei = partei.gegenpartei();
         return switch (ansage) {
-            case KEINE_90 -> augenProPartei.get(gegenpartei) < 90;
-            case KEINE_60 -> augenProPartei.get(gegenpartei) < 60;
-            case KEINE_30 -> augenProPartei.get(gegenpartei) < 30;
+            case KEINE_90 -> !augenProPartei.get(gegenpartei).mindestens(90);
+            case KEINE_60 -> !augenProPartei.get(gegenpartei).mindestens(60);
+            case KEINE_30 -> !augenProPartei.get(gegenpartei).mindestens(30);
             case SCHWARZ -> sticheProPartei.get(gegenpartei) == 0;
             case RE, KONTRA -> throw new IllegalArgumentException("Grundansagen koennen nicht als Absagen bewertet werden");
         };
@@ -143,19 +144,19 @@ public final class PunkteRechner {
     }
 
     private void verteileSpielpunkte(
-        EnumMap<SpielerPosition, Integer> spielpunkteProSpieler,
+        EnumMap<SpielerPosition, Spielpunkte> spielpunkteProSpieler,
         Parteien parteien,
         Partei siegerPartei,
-        int spielwert
+        Spielpunkte spielwert
     ) {
         List<SpielerPosition> sieger = parteien.spielerVon(siegerPartei);
         List<SpielerPosition> verlierer = parteien.spielerVon(siegerPartei.gegenpartei());
-        int siegerWert = spielwert;
-        int verliererWert = -spielwert;
+        Spielpunkte siegerWert = spielwert;
+        Spielpunkte verliererWert = spielwert.negiert();
         if (sieger.size() == 1 && verlierer.size() == 3) {
-            siegerWert = spielwert * 3;
+            siegerWert = spielwert.mal(3);
         } else if (sieger.size() == 3 && verlierer.size() == 1) {
-            verliererWert = -spielwert * 3;
+            verliererWert = spielwert.mal(3).negiert();
         }
         for (SpielerPosition position : SpielerPosition.standardReihenfolge()) {
             spielpunkteProSpieler.put(position, parteien.parteiVon(position) == siegerPartei ? siegerWert : verliererWert);

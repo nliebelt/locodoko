@@ -43,9 +43,9 @@ class PunkteRechnerTest {
             spielregeln
         );
 
-        assertEquals(140, ergebnis.augenVon(Partei.RE));
-        assertEquals(100, ergebnis.augenVon(Partei.KONTRA));
-        assertEquals(1, ergebnis.spielwert(),
+        assertEquals(140, ergebnis.augenVon(Partei.RE).wert());
+        assertEquals(100, ergebnis.augenVon(Partei.KONTRA).wert());
+        assertEquals(1, ergebnis.spielwert().wert(),
             "Eine gewonnene Re-Ansage zaehlt doppelt, eine verfehlte Absage gibt den Punkt aber an die Gegenpartei zurueck.");
         // Einzelschritte: grundwert=2 (Re angesagt), absagePunkte=-1 (KEINE_90 verfehlt), gesamt=1
         assertEquals(2, ergebnis.grundwert(),
@@ -56,9 +56,9 @@ class PunkteRechnerTest {
             "Gegen-die-Alten faellt hier weg, weil RE gewinnt.");
         assertEquals(1, ergebnis.soloMultiplikator(),
             "Normales 2v2-Spiel hat soloMultiplikator=1.");
-        assertEquals(1, ergebnis.spielpunkteVon(SpielerPosition.SUED));
-        assertEquals(-1, ergebnis.spielpunkteVon(SpielerPosition.NORD));
-        assertEquals(0, ergebnis.spielpunkteProSpieler().values().stream().mapToInt(Integer::intValue).sum(),
+        assertEquals(1, ergebnis.spielpunkteVon(SpielerPosition.SUED).wert());
+        assertEquals(-1, ergebnis.spielpunkteVon(SpielerPosition.NORD).wert());
+        assertEquals(0, ergebnis.spielpunkteProSpieler().values().stream().mapToInt(Spielpunkte::wert).sum(),
             "Die Nullsumme der Spielerpunkte ist entscheidend, damit Partiestand und Serienwertung nicht auseinanderlaufen.");
     }
 
@@ -86,14 +86,14 @@ class PunkteRechnerTest {
             spielregeln
         );
 
-        assertEquals(240, ergebnis.augenVon(Partei.RE));
-        assertEquals(0, ergebnis.augenVon(Partei.KONTRA));
-        assertEquals(11, ergebnis.spielwert(),
+        assertEquals(240, ergebnis.augenVon(Partei.RE).wert());
+        assertEquals(0, ergebnis.augenVon(Partei.KONTRA).wert());
+        assertEquals(11, ergebnis.spielwert().wert(),
             "Grundansagen, erreichte Absagen und Sonderpunkte muessen gemeinsam den finalen Spielwert bilden, weil genau das die Endwertung traegt.");
         List<Sonderpunkt> reArten = ergebnis.sonderpunkteVon(Partei.RE).stream().map(SonderpunktEreignis::art).toList();
         assertEquals(List.of(Sonderpunkt.DOPPELKOPF, Sonderpunkt.FUCHS_GEFANGEN, Sonderpunkt.KARLCHEN), reArten);
-        assertEquals(11, ergebnis.spielpunkteVon(SpielerPosition.SUED));
-        assertEquals(-11, ergebnis.spielpunkteVon(SpielerPosition.NORD));
+        assertEquals(11, ergebnis.spielpunkteVon(SpielerPosition.SUED).wert());
+        assertEquals(-11, ergebnis.spielpunkteVon(SpielerPosition.NORD).wert());
     }
 
     @Test
@@ -110,15 +110,15 @@ class PunkteRechnerTest {
             spielregeln
         );
 
-        assertEquals(1, ergebnis.spielwert());
+        assertEquals(1, ergebnis.spielwert().wert());
         assertEquals(3, ergebnis.soloMultiplikator(),
             "Solo-Spiel (1 gegen 3) hat soloMultiplikator=3 — ohne diesen Test bliebe die Solo-Kennzeichnung unbemerkt.");
-        assertEquals(3, ergebnis.spielpunkteVon(SpielerPosition.SUED),
+        assertEquals(3, ergebnis.spielpunkteVon(SpielerPosition.SUED).wert(),
             "Solo-Sieger zaehlt dreifach, weil er alleine gegen drei antritt.");
-        assertEquals(-1, ergebnis.spielpunkteVon(SpielerPosition.WEST));
-        assertEquals(-1, ergebnis.spielpunkteVon(SpielerPosition.NORD));
-        assertEquals(-1, ergebnis.spielpunkteVon(SpielerPosition.OST));
-        assertEquals(0, ergebnis.spielpunkteProSpieler().values().stream().mapToInt(Integer::intValue).sum(),
+        assertEquals(-1, ergebnis.spielpunkteVon(SpielerPosition.WEST).wert());
+        assertEquals(-1, ergebnis.spielpunkteVon(SpielerPosition.NORD).wert());
+        assertEquals(-1, ergebnis.spielpunkteVon(SpielerPosition.OST).wert());
+        assertEquals(0, ergebnis.spielpunkteProSpieler().values().stream().mapToInt(Spielpunkte::wert).sum(),
             "Nullsumme muss auch beim Solo gelten.");
     }
 
@@ -136,13 +136,13 @@ class PunkteRechnerTest {
             spielregeln
         );
 
-        assertEquals(1, ergebnis.spielwert());
-        assertEquals(-3, ergebnis.spielpunkteVon(SpielerPosition.SUED),
+        assertEquals(1, ergebnis.spielwert().wert());
+        assertEquals(-3, ergebnis.spielpunkteVon(SpielerPosition.SUED).wert(),
             "Solo-Verlierer verliert dreifach — symmetrisch zum Gewinnfall.");
-        assertEquals(1, ergebnis.spielpunkteVon(SpielerPosition.WEST));
-        assertEquals(1, ergebnis.spielpunkteVon(SpielerPosition.NORD));
-        assertEquals(1, ergebnis.spielpunkteVon(SpielerPosition.OST));
-        assertEquals(0, ergebnis.spielpunkteProSpieler().values().stream().mapToInt(Integer::intValue).sum(),
+        assertEquals(1, ergebnis.spielpunkteVon(SpielerPosition.WEST).wert());
+        assertEquals(1, ergebnis.spielpunkteVon(SpielerPosition.NORD).wert());
+        assertEquals(1, ergebnis.spielpunkteVon(SpielerPosition.OST).wert());
+        assertEquals(0, ergebnis.spielpunkteProSpieler().values().stream().mapToInt(Spielpunkte::wert).sum(),
             "Nullsumme muss auch beim Solo-Verlust gelten.");
     }
 
@@ -159,9 +159,9 @@ class PunkteRechnerTest {
             spielregeln
         );
 
-        assertEquals(100, ergebnis.augenVon(Partei.RE));
-        assertEquals(140, ergebnis.augenVon(Partei.KONTRA));
-        assertEquals(3, ergebnis.spielwert(),
+        assertEquals(100, ergebnis.augenVon(Partei.RE).wert());
+        assertEquals(140, ergebnis.augenVon(Partei.KONTRA).wert());
+        assertEquals(3, ergebnis.spielwert().wert(),
             "Gewinnt Kontra gegen eine Re-Ansage, braucht die Wertung zusaetzlich den Punkt gegen die Alten.");
         assertEquals(2, ergebnis.grundwert(),
             "Re-Ansage verdoppelt den Grundwert.");
@@ -169,8 +169,8 @@ class PunkteRechnerTest {
             "Keine Absagen wurden gemacht.");
         assertEquals(1, ergebnis.gegenDieAltenPunkte(),
             "Kontra gewinnt gegen Re-Ansage: +1 Punkt gegen-die-Alten — ohne diesen Test bliebe dieser Bonus unbemerkt.");
-        assertEquals(3, ergebnis.spielpunkteVon(SpielerPosition.NORD));
-        assertEquals(-3, ergebnis.spielpunkteVon(SpielerPosition.SUED));
+        assertEquals(3, ergebnis.spielpunkteVon(SpielerPosition.NORD).wert());
+        assertEquals(-3, ergebnis.spielpunkteVon(SpielerPosition.SUED).wert());
     }
 
     private List<Stich> wiederhole(Stich stich, int anzahl) {

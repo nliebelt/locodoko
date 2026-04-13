@@ -7,6 +7,7 @@ import de.locodoko.session.SpielerRepository;
 import de.locodoko.lobby.TischkonfigurationEmbeddable;
 import de.locodoko.session.SpielerEntity;
 
+import de.locodoko.karten.Augen;
 import de.locodoko.karten.Farbe;
 import de.locodoko.karten.GespielteKarte;
 import de.locodoko.karten.Karte;
@@ -18,6 +19,7 @@ import de.locodoko.partie.Ansage;
 import de.locodoko.partie.Partei;
 import de.locodoko.partie.Spielergebnis;
 import de.locodoko.partie.Spielphase;
+import de.locodoko.partie.Spielpunkte;
 import de.locodoko.partie.Sonderpunkt;
 import de.locodoko.partie.SonderpunktEreignis;
 import jakarta.validation.ConstraintViolationException;
@@ -261,15 +263,15 @@ class PersistenzRepositoryTest {
     }
 
     private Spielergebnis beispielErgebnis() {
-        Map<Partei, Integer> augen = new EnumMap<>(Partei.class);
-        augen.put(Partei.RE, 151);
-        augen.put(Partei.KONTRA, 89);
+        Map<Partei, Augen> augen = new EnumMap<>(Partei.class);
+        augen.put(Partei.RE, new Augen(151));
+        augen.put(Partei.KONTRA, new Augen(89));
 
-        Map<SpielerPosition, Integer> spielpunkte = new EnumMap<>(SpielerPosition.class);
-        spielpunkte.put(SpielerPosition.SUED, 3);
-        spielpunkte.put(SpielerPosition.WEST, -1);
-        spielpunkte.put(SpielerPosition.NORD, -1);
-        spielpunkte.put(SpielerPosition.OST, -1);
+        Map<SpielerPosition, Spielpunkte> spielpunkte = new EnumMap<>(SpielerPosition.class);
+        spielpunkte.put(SpielerPosition.SUED, new Spielpunkte(3));
+        spielpunkte.put(SpielerPosition.WEST, new Spielpunkte(-1));
+        spielpunkte.put(SpielerPosition.NORD, new Spielpunkte(-1));
+        spielpunkte.put(SpielerPosition.OST, new Spielpunkte(-1));
 
         Map<Partei, List<SonderpunktEreignis>> sonderpunkte = new EnumMap<>(Partei.class);
         sonderpunkte.put(Partei.RE, List.of(
@@ -278,6 +280,6 @@ class PersistenzRepositoryTest {
         ));
         sonderpunkte.put(Partei.KONTRA, List.of());
 
-        return new Spielergebnis(augen, Partei.RE, 3, 1, 0, 0, 1, spielpunkte, sonderpunkte);
+        return new Spielergebnis(augen, Partei.RE, new Spielpunkte(3), 1, 0, 0, 1, spielpunkte, sonderpunkte);
     }
 }

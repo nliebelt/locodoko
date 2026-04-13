@@ -28,18 +28,18 @@ public class SpielErgebnisEmbeddable {
     }
 
     private SpielErgebnisEmbeddable(Spielergebnis spielergebnis) {
-        this.reAugen = spielergebnis.augenVon(Partei.RE);
-        this.kontraAugen = spielergebnis.augenVon(Partei.KONTRA);
+        this.reAugen = spielergebnis.augenVon(Partei.RE).wert();
+        this.kontraAugen = spielergebnis.augenVon(Partei.KONTRA).wert();
         this.siegerPartei = spielergebnis.siegerPartei().name();
-        this.spielwert = spielergebnis.spielwert();
+        this.spielwert = spielergebnis.spielwert().wert();
         this.grundwert = spielergebnis.grundwert();
         this.absagePunkte = spielergebnis.absagePunkte();
         this.gegenDieAltenPunkte = spielergebnis.gegenDieAltenPunkte();
         this.soloMultiplikator = spielergebnis.soloMultiplikator();
-        this.spielpunkteSued = spielergebnis.spielpunkteVon(SpielerPosition.SUED);
-        this.spielpunkteWest = spielergebnis.spielpunkteVon(SpielerPosition.WEST);
-        this.spielpunkteNord = spielergebnis.spielpunkteVon(SpielerPosition.NORD);
-        this.spielpunkteOst = spielergebnis.spielpunkteVon(SpielerPosition.OST);
+        this.spielpunkteSued = spielergebnis.spielpunkteVon(SpielerPosition.SUED).wert();
+        this.spielpunkteWest = spielergebnis.spielpunkteVon(SpielerPosition.WEST).wert();
+        this.spielpunkteNord = spielergebnis.spielpunkteVon(SpielerPosition.NORD).wert();
+        this.spielpunkteOst = spielergebnis.spielpunkteVon(SpielerPosition.OST).wert();
     }
 
     public static SpielErgebnisEmbeddable aus(Spielergebnis spielergebnis) {

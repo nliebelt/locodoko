@@ -1,5 +1,6 @@
 package de.locodoko.lobby;
 
+import de.locodoko.karten.Augen;
 import de.locodoko.karten.Farbe;
 import de.locodoko.karten.Karte;
 import de.locodoko.karten.Kartenwert;
@@ -8,6 +9,7 @@ import de.locodoko.karten.Spielregeln;
 import de.locodoko.karten.Spieltyp;
 import de.locodoko.partie.Partei;
 import de.locodoko.partie.Spielergebnis;
+import de.locodoko.partie.Spielpunkte;
 import de.locodoko.partie.Spielphase;
 import de.locodoko.partie.Sonderpunkt;
 import de.locodoko.partie.SonderpunktEreignis;
@@ -74,15 +76,15 @@ class PartieStandAntwortTest {
         spiel.fuegeStichHinzu(ersterStich);
         spiel.fuegeStichHinzu(zweiterStich);
         spiel.uebernehmeErgebnis(new Spielergebnis(
-            Map.of(Partei.RE, 151, Partei.KONTRA, 89),
+            Map.of(Partei.RE, new Augen(151), Partei.KONTRA, new Augen(89)),
             Partei.RE,
-            3,
+            new Spielpunkte(3),
             1, 1, 1, 1,
             Map.of(
-                SpielerPosition.SUED, 3,
-                SpielerPosition.WEST, 3,
-                SpielerPosition.NORD, -3,
-                SpielerPosition.OST, -3
+                SpielerPosition.SUED, new Spielpunkte(3),
+                SpielerPosition.WEST, new Spielpunkte(3),
+                SpielerPosition.NORD, new Spielpunkte(-3),
+                SpielerPosition.OST, new Spielpunkte(-3)
             ),
             Map.of(
                 Partei.RE, List.of(new SonderpunktEreignis(Sonderpunkt.DOPPELKOPF, SpielerPosition.SUED, null)),
