@@ -4,9 +4,9 @@
 
 ## Notiz
 
-**2026-04-13 (T2 Armut Unit-Tests):** `ArmutTest` neu erstellt mit 8 Tests — Erkennung bei 0/2/3/4 Trumpfs (T2.1, T2.5), deaktivierte Regel, Angebot reduziert Hand korrekt (T2.2), bidirektionaler Kartentausch + RE-Parteizuordnung nach Annahme (T2.3), Einwurf bei Ablehnung aller Spieler (T2.4). Testaufbau nutzt `Spiel.ausPersistiertemStand()` direkt statt `teileKartenAus()` + Vorbehalt-Flow (Round-Robin-Verteilung hätte vorgegebene Hände korrumpiert). 206 Tests grün.
-Nächster logischer Schritt: T3 (Solo-Varianten Spielfluss-Tests) oder R11 (State Pattern).
-Offene Fragen: R11 ist die größte Einzeländerung im Refactoring — sorgfältige Planung empfohlen.
+**2026-04-13 (T3 Solo-Varianten Spielfluss-Tests):** T3.1/T3.2/T3.5/T3.6/T3.7 waren bereits in bestehenden Tests abgedeckt (SpielTest, PartieTest, PunkteRechnerTest, SoloTrumpfOrdnungenTest). Neu hinzugefügt in `SpielTest`: `loestDamensoloAufUndBubeVerliert_WeilBubeFehlfarbe` (T3.3) und `loestBubensoloAufUndDameVerliert_WeilDameFehlfarbe` (T3.4) — prüfen Stich-Gewinner-Logik wenn Bube bzw. Dame in Solo-Varianten als Fehlfarbe spielen. 208 Tests grün.
+Nächster logischer Schritt: T4 (Technische Schulden in Tests bereinigen — klein, 3 Sub-Tasks) oder R11 (State Pattern — größte Einzeländerung).
+Offene Fragen: R11 erfordert sorgfältige Planung; T4 ist klein und sofort machbar.
 
 ---
 
@@ -334,13 +334,13 @@ Alle gesetzt (17 gesamt):
 
 > **Blockiert von:** nichts | **Solo-Ordnungen sind getestet, Spielfluss (Aufspieler, Parteien, Geberrotation) nicht**
 
-- [ ] **T3.1** `SoloSpieltypTest` — Solo-Spieler ist nach Vorbehalt allein Re, die drei anderen Kontra
-- [ ] **T3.2** Geberrotation nach Solo: Geber bleibt (Solo-Nachgeben), Aufspieler = Solist beim Folge-Spiel
-- [ ] **T3.3** Solo Dame: Damen als einzige Trümpfe, Buben Fehlfarbe — Stich verloren wenn nur Bube gespielt
-- [ ] **T3.4** Solo Bube: Buben als einzige Trümpfe, Damen Fehlfarbe
-- [ ] **T3.5** Fleischlos: kein Trumpf, höchste angefragte Fehlfarbe gewinnt
-- [ ] **T3.6** Ansagen im Solo: Re-Ansage des Solisten ×2, Kontra der Gegner ×2, Grundwert ×3
-- [ ] **T3.7** Punkte nach Solo-Sieg und Solo-Niederlage (Vorzeichen und Multiplikator korrekt)
+- [x] **T3.1** Solo-Spieler ist nach Vorbehalt allein Re, die drei anderen Kontra — bereits in `SpielTest.loestTrumpfsoloMitSitzreihenfolgeAufUndOffenbartParteienVonBeginnAn`
+- [x] **T3.2** Geberrotation nach Solo: Geber bleibt (Solo-Nachgeben), Aufspieler = Solist beim Folge-Spiel — bereits in `PartieTest.geberBleibtNachSolo` + `solistSpieltNachSoloZuerstAuf`
+- [x] **T3.3** Solo Dame: Damen als einzige Trümpfe, Buben Fehlfarbe — Stich verloren wenn nur Bube gespielt — neu: `SpielTest.loestDamensoloAufUndBubeVerliert_WeilBubeFehlfarbe`
+- [x] **T3.4** Solo Bube: Buben als einzige Trümpfe, Damen Fehlfarbe — neu: `SpielTest.loestBubensoloAufUndDameVerliert_WeilDameFehlfarbe`
+- [x] **T3.5** Fleischlos: kein Trumpf, höchste angefragte Fehlfarbe gewinnt — bereits in `SpielTest.loestFleischlosAufUndLaesstAbwerfenNichtStechen`
+- [x] **T3.6** Ansagen im Solo: Re-Ansage des Solisten ×2, Kontra der Gegner ×2, Grundwert ×3 — bereits in `PunkteRechnerTest.multiplizierSoloSiegerPunkteMillDrei`
+- [x] **T3.7** Punkte nach Solo-Sieg und Solo-Niederlage — bereits in `PunkteRechnerTest.multiplizierSoloVerliererPunkteMillDrei`
 
 ### T4. Technische Schulden in Tests bereinigen
 

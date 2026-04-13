@@ -70,6 +70,62 @@ class SpielTest {
     }
 
     @Test
+    void loestDamensoloAufUndBubeVerliert_WeilBubeFehlfarbe() {
+        // Warum wichtig: Im Normalspiel wuerde Kreuz-Bube als Trump die Kreuz-As stechen.
+        // Wird DamensoloTrumpfOrdnung faelschlich als Trump behandelt, gewinnt NORD statt WEST —
+        // dieser Test sichert die Stich-Gewinner-Logik ab, nicht nur das istTrumpf-Flag.
+        Karte kreuzAs    = karte(Farbe.KREUZ, Kartenwert.AS,     1);
+        Karte kreuzBube  = karte(Farbe.KREUZ, Kartenwert.BUBE,   1);
+        Karte kreuzKoenig = karte(Farbe.KREUZ, Kartenwert.KOENIG, 1);
+        Karte kreuzNeun  = karte(Farbe.KREUZ, Kartenwert.NEUN,   1);
+        Spiel spiel = Spiel.neu(SpielerPosition.SUED, spielregeln, kartendeckMitVerteiltenHaenden(Map.of(
+                SpielerPosition.WEST, List.of(kreuzAs),
+                SpielerPosition.NORD, List.of(kreuzBube),
+                SpielerPosition.OST,  List.of(kreuzKoenig),
+                SpielerPosition.SUED, List.of(kreuzNeun)
+            )))
+            .teileKartenAus()
+            .meldeVorbehalt(SpielerPosition.WEST, VorbehaltAnsage.SOLO_DAME)
+            .meldeGesund(SpielerPosition.NORD)
+            .meldeGesund(SpielerPosition.OST)
+            .meldeGesund(SpielerPosition.SUED)
+            .loeseVorbehalteAuf();
+
+        spiel = spieleStich(spiel, kreuzAs, kreuzBube, kreuzKoenig, kreuzNeun);
+
+        assertEquals(SpielerPosition.WEST, spiel.abgeschlosseneStiche().getFirst().gewinner(spiel.trumpfOrdnung()).spieler(),
+            "Im Damensolo ist Kreuz-Bube Fehlfarbe Kreuz (fehlRang 2), kein Trump; Kreuz-As (fehlRang 6) muss den Stich gewinnen, nicht der Bube.");
+    }
+
+    @Test
+    void loestBubensoloAufUndDameVerliert_WeilDameFehlfarbe() {
+        // Warum wichtig: Im Normalspiel wuerde Herz-Dame als Trump die Herz-As stechen.
+        // Wird BubensoloTrumpfOrdnung faelschlich als Trump behandelt, gewinnt NORD statt WEST —
+        // dieser Test sichert die Stich-Gewinner-Logik fuer Bubensolo ab.
+        Karte herzAs    = karte(Farbe.HERZ, Kartenwert.AS,     1);
+        Karte herzDame  = karte(Farbe.HERZ, Kartenwert.DAME,   1);
+        Karte herzKoenig = karte(Farbe.HERZ, Kartenwert.KOENIG, 1);
+        Karte herzNeun  = karte(Farbe.HERZ, Kartenwert.NEUN,   1);
+        Spiel spiel = Spiel.neu(SpielerPosition.SUED, spielregeln, kartendeckMitVerteiltenHaenden(Map.of(
+                SpielerPosition.WEST, List.of(herzAs),
+                SpielerPosition.NORD, List.of(herzDame),
+                SpielerPosition.OST,  List.of(herzKoenig),
+                SpielerPosition.SUED, List.of(herzNeun)
+            )))
+            .teileKartenAus()
+            .meldeVorbehalt(SpielerPosition.WEST, VorbehaltAnsage.SOLO_BUBE)
+            .meldeGesund(SpielerPosition.NORD)
+            .meldeGesund(SpielerPosition.OST)
+            .meldeGesund(SpielerPosition.SUED)
+            .loeseVorbehalteAuf();
+
+        spiel = spieleStich(spiel, herzAs, herzDame, herzKoenig, herzNeun);
+
+        assertEquals(SpielerPosition.WEST, spiel.abgeschlosseneStiche().getFirst().gewinner(spiel.trumpfOrdnung()).spieler(),
+            "Im Bubensolo ist Herz-Dame Fehlfarbe Herz (fehlRang 3), kein Trump; Herz-As (fehlRang 6) muss den Stich gewinnen, nicht die Dame.");
+    }
+
+    @Test
     void entscheidetBeiVerschiedenenSoloTypenNachSitzreihenfolge() {
         Spiel spiel = Spiel.neu(SpielerPosition.SUED, spielregeln, kartendeckMitKontrolliertenHaenden())
             .teileKartenAus()
