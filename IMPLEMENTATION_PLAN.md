@@ -4,9 +4,9 @@
 
 ## Notiz
 
-**2026-04-13 (T3 Solo-Varianten Spielfluss-Tests):** T3.1/T3.2/T3.5/T3.6/T3.7 waren bereits in bestehenden Tests abgedeckt (SpielTest, PartieTest, PunkteRechnerTest, SoloTrumpfOrdnungenTest). Neu hinzugefügt in `SpielTest`: `loestDamensoloAufUndBubeVerliert_WeilBubeFehlfarbe` (T3.3) und `loestBubensoloAufUndDameVerliert_WeilDameFehlfarbe` (T3.4) — prüfen Stich-Gewinner-Logik wenn Bube bzw. Dame in Solo-Varianten als Fehlfarbe spielen. 208 Tests grün.
-Nächster logischer Schritt: T4 (Technische Schulden in Tests bereinigen — klein, 3 Sub-Tasks) oder R11 (State Pattern — größte Einzeländerung).
-Offene Fragen: R11 erfordert sorgfältige Planung; T4 ist klein und sofort machbar.
+**2026-04-13 (T4 Technische Schulden in Tests):** `LocodokoAnwendungTests` entfernt (leerer Spring-Kontext-Test ohne Assertion). `SonderpunktTest` neu angelegt mit 8 isolierten Tests für Fuchs-Gefangen, Karlchen und Doppelkopf — je positiver Fall, negativer Fall (eigene Partei gewinnt Fuchs / Kreuz-Bube nicht im letzten Stich) und Deaktivierung per Spielregeln. In `PunkteRechnerTest` Grenzwert-Test für die 240-Augen-Invariante ergänzt. 216 Tests grün.
+Nächster logischer Schritt: R11 (State Pattern für Spielphase) — die größte verbleibende Architektur-Änderung, alle Vorbedingungen (R0–R10) sind erfüllt. Sorgfältige Planung empfohlen.
+Offene Fragen: R11 ist komplex (7 Sub-Tasks, 180+ Tests betroffen). Alternativ: T5 oder T6 wenn R11 zu groß erscheint.
 
 ---
 
@@ -346,9 +346,9 @@ Alle gesetzt (17 gesamt):
 
 > **Blockiert von:** nichts | **Klein, aber sauber**
 
-- [ ] **T4.1** `LocodokoAnwendungTests.kontextLaedt()` entfernen — leerer Test ohne Assertion
-- [ ] **T4.2** Sonderpunkte einzeln testen: `SonderpunktTest` mit je einem Test für Fuchs, Karlchen, Doppelkopf isoliert (nicht nur im `PunkteRechnerTest` eingebettet)
-- [ ] **T4.3** Grenzwert: Spiel mit 240 Augen gesamt — immer erfüllt, explizit assertiert
+- [x] **T4.1** `LocodokoAnwendungTests.kontextLaedt()` entfernen — leerer Test ohne Assertion
+- [x] **T4.2** Sonderpunkte einzeln testen: `SonderpunktTest` mit je einem Test für Fuchs, Karlchen, Doppelkopf isoliert (nicht nur im `PunkteRechnerTest` eingebettet)
+- [x] **T4.3** Grenzwert: Spiel mit 240 Augen gesamt — immer erfüllt, explizit assertiert
 
 ### T5. E2E: Fehlerszenarien und Sonderregeln
 
