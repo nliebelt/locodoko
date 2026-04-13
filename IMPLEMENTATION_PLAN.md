@@ -4,8 +4,8 @@
 
 ## Notiz
 
-**2026-04-13 (T5.3 E2E Solo-Spielfluss):** Neuer E2E-Test `e2e/tests/solo-spielfluss.spec.ts` implementiert. Testet Solo-Vorbehalt-Wahl, HUD-Spieltyp-Anzeige durchgehend, alle Stiche bis Rundenauswertung, Overlay mit Solo-Spieltyp + Multiplikator ×3, und Geber-Wiederholung im Folge-Spiel. `TischSzene.ts` um zwei neue `data-testid`-Elemente erweitert: `rundenauswertung-spieltyp` und `rundenauswertung-punktemultiplikator`. 221 Backend-Tests + 24 Frontend-Tests + Build + Lint weiterhin grün.
-Nächster logischer Schritt: T5.4 (E2E Reconnect).
+**2026-04-13 (T5.4 E2E Reconnect):** Neuer E2E-Test `e2e/tests/reconnect.spec.ts` implementiert. Testet zwei Reconnect-Pfade: (1) Page-Reload — BootSzene erkennt aktiverTischId, leitet automatisch zur TischSzene weiter, Stichzähler und Handkarten stimmen überein, Spieler kann weiter interagieren. (2) Neuer Tab im selben Browser-Kontext — Session-Cookie wird geteilt, BootSzene auto-reconnect liefert TischSzene mit HUD. 221 Backend-Tests + 24 Frontend-Tests + Build + Lint weiterhin grün.
+Nächster logischer Schritt: 8.3 (E2E-Tests lokal gegen Backend verifizieren) oder 9.5/10.6 (Vision Loop Reviews).
 Offene Fragen: Keine — E2E-Test kann nur gegen laufendes Backend verifiziert werden.
 
 ---
@@ -363,7 +363,7 @@ Alle gesetzt (17 gesamt):
   - Overlay: Solo-Spieltyp + nur ein RE + Multiplikator ×3
   - Geber-Wiederholung im Folge-Spiel prüfen
   - Zwei neue `data-testid`: `rundenauswertung-spieltyp`, `rundenauswertung-punktemultiplikator`
-- [ ] **T5.4** E2E: Reconnect — Tab schließen, neuen Tab öffnen, Session-Recovery-Button führt zurück ins Spiel
+- [x] **T5.4** E2E: Reconnect — Tab schließen, neuen Tab öffnen, Session-Recovery-Button führt zurück ins Spiel
 
 ### T6. Concurrency-Tests (nach R5 SpielRegistry)
 
