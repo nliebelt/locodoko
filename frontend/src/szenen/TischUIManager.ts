@@ -660,6 +660,7 @@ export class TischUIManager {
     }
     const toast = document.createElement('div');
     toast.className = `ui-toast ${zustand.meldung.typ === 'fehler' ? 'ui-toast--error' : ''}`;
+    toast.dataset['testid'] = zustand.meldung.typ === 'fehler' ? 'fehler-toast' : 'info-toast';
     toast.innerHTML = `
       <strong>${zustand.meldung.typ === 'fehler' ? 'Fehler' : 'Info'}</strong>
       <div>${zustand.meldung.text}</div>

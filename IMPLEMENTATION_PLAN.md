@@ -4,9 +4,9 @@
 
 ## Notiz
 
-**2026-04-13 (T5.1 E2E Armut-Workflow):** Neuer E2E-Test `e2e/tests/armut-workflow.spec.ts` implementiert. Testet den kompletten Armut-Spielfluss: Quick Game starten, Spiele durchlaufen bis Armut-Situation auftritt (eigene Armut per Vorbehalt ODER KI-Armut per ANTWORTEN-Modus), Trumpfkarten per Bridge anbieten/annehmen (Phaser-Canvas-Buttons nicht klickbar in headless Playwright), dann Stiche per Tastatur bis Rundenauswertung spielen. Beide Armut-Pfade (ANBIETEN + ANTWORTEN) abgedeckt. Bei keiner Armut nach 30 Spielen: test.skip. 221 Backend-Tests + 24 Frontend-Tests weiterhin grün.
-Nächster logischer Schritt: T5.2 (E2E ungültige Karte spielen) oder T5.3 (Solo-Spielfluss).
-Offene Fragen: Keine — E2E-Test kann nur gegen laufendes Backend verifiziert werden (8.3).
+**2026-04-13 (T5.2 E2E Ungültige Karte):** Neuer E2E-Test `e2e/tests/ungueltige-karte.spec.ts` implementiert. Testet dass bei einer ungültigen Karte (nicht auf der Hand) ein Fehler-Toast (`data-testid="fehler-toast"`) erscheint und das Spiel danach normal weiterläuft (gültige Karte per Tastatur spielbar). `TischUIManager.ts` um `data-testid` auf Toast-Elementen erweitert. 221 Backend-Tests + 24 Frontend-Tests + Build + Lint weiterhin grün.
+Nächster logischer Schritt: T5.3 (E2E Solo-Spielfluss) oder T5.4 (E2E Reconnect).
+Offene Fragen: Keine — E2E-Test kann nur gegen laufendes Backend verifiziert werden.
 
 ---
 
@@ -355,7 +355,7 @@ Alle gesetzt (17 gesamt):
 > **Blockiert von:** R3 (Spieler-Authentifizierung aus Session) | **Spec:** `specs/e2e-tests.md`
 
 - [x] **T5.1** E2E: Armut-Workflow — Trumpfkarten anbieten, Tausch annehmen, Spiel läuft weiter
-- [ ] **T5.2** E2E: Ungültige Karte spielen → Fehler-Toast sichtbar, Spiel geht weiter
+- [x] **T5.2** E2E: Ungültige Karte spielen → Fehler-Toast sichtbar, Spiel geht weiter
 - [ ] **T5.3** E2E: **Solo-Spielfluss** — neue Datei `e2e/tests/solo-spielfluss.spec.ts` (Testfall 3 aus `specs/e2e-tests.md`):
   - Solo-Vorbehalt wählen (oder `test.skip` bei keiner Solo-Hand)
   - HUD zeigt Solo-Spieltyp durchgehend
