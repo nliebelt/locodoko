@@ -143,7 +143,7 @@ class PartieTest {
                 : aktuellesSpiel.meldeGesund(naechster);
         }
         aktuellesSpiel = aktuellesSpiel.loeseVorbehalteAuf();
-        while (aktuellesSpiel.phase() == Spielphase.STICHPHASE) {
+        while (aktuellesSpiel.phase() instanceof Spielphase.Stichphase) {
             SpielerPosition spieler = aktuellesSpiel.aktuellerSpieler().orElseThrow();
             Karte karte = aktuellesSpiel.gueltigeKartenFuer(spieler).getFirst();
             aktuellesSpiel = aktuellesSpiel.spieleKarte(spieler, karte);
@@ -157,7 +157,7 @@ class PartieTest {
             aktuellesSpiel = aktuellesSpiel.meldeGesund(aktuellesSpiel.naechsterVorbehaltSpieler().orElseThrow());
         }
         aktuellesSpiel = aktuellesSpiel.loeseVorbehalteAuf();
-        while (aktuellesSpiel.phase() == Spielphase.STICHPHASE) {
+        while (aktuellesSpiel.phase() instanceof Spielphase.Stichphase) {
             SpielerPosition spieler = aktuellesSpiel.aktuellerSpieler().orElseThrow();
             Karte karte = aktuellesSpiel.gueltigeKartenFuer(spieler).getFirst();
             aktuellesSpiel = aktuellesSpiel.spieleKarte(spieler, karte);

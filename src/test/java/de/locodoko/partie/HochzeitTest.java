@@ -268,17 +268,13 @@ class HochzeitTest {
             Kartendeck.ausKarten(alleKarten),
             Spieltyp.HOCHZEIT,
             SpielerPosition.SUED,
-            Spielphase.STICHPHASE,
+            new Spielphase.Stichphase(laufenderStich, Set.of(), HochzeitStatus.gestartet(aufspieler)),
             haende,
             List.of(),
             parteien,
             Ansagen.leer(),
             List.of(),
-            laufenderStich,
             null,
-            HochzeitStatus.gestartet(aufspieler),
-            null,
-            Set.of(),
             false,
             null
         ).spieleKarte(vierterSpieler, karte4);

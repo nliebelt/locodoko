@@ -17,6 +17,7 @@ import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
@@ -149,7 +150,7 @@ class ArmutTest {
         Spiel nachAnnahme = nachAngebot.nimmArmutAn(SpielerPosition.NORD, rueckgabekarten);
 
         // Phase muss STICHPHASE sein
-        assertEquals(Spielphase.STICHPHASE, nachAnnahme.phase(),
+        assertInstanceOf(Spielphase.Stichphase.class, nachAnnahme.phase(),
             "Nach der Annahme muss das Spiel in die Stichphase wechseln.");
 
         // NORD hat die Trumpfkarten erhalten
@@ -263,17 +264,13 @@ class ArmutTest {
             Kartendeck.neu(spielregeln),
             Spieltyp.ARMUT,
             SpielerPosition.SUED,
-            Spielphase.ARMUT_TAUSCH,
+            new Spielphase.ArmutTausch(ArmutStatus.gestartet(SpielerPosition.WEST)),
             haende,
             List.of(),
             Parteien.ausArmut(SpielerPosition.WEST),
             Ansagen.leer(),
             List.of(),
             null,
-            null,
-            null,
-            ArmutStatus.gestartet(SpielerPosition.WEST),
-            Set.of(),
             false,
             null
         );

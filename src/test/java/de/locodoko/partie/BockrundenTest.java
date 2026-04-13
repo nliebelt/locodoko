@@ -236,17 +236,13 @@ class BockrundenTest {
             Kartendeck.neu(regeln),
             Spieltyp.NORMALSPIEL,
             SpielerPosition.SUED,
-            Spielphase.STICHPHASE,
+            Spielphase.AUSWERTUNG,
             Map.of(),
             List.of(),
             null,
             Ansagen.leer(),
             stiche,
             null,
-            null,
-            null,
-            null,
-            Set.of(),
             false,
             null
         );
@@ -270,11 +266,7 @@ class BockrundenTest {
             parteien,
             ansagen,
             stiche,
-            null,
             ergebnis,
-            null,
-            null,
-            Set.of(),
             false,
             null
         );

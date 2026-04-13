@@ -16,6 +16,7 @@ import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -349,11 +350,11 @@ class SpielTest {
             "Stilles Solo muss nach 3 eigenen Klaerungsstichen aktiv sein, bevor das restliche Spiel korrekt ausgewertet werden kann.");
         assertEquals(List.of(SpielerPosition.WEST), spiel.parteien().spielerVon(Partei.RE),
             "Im stillen Solo spielt WEST als einziger RE-Spieler; Parteikonsistenz ist Voraussetzung fuer korrekte Auswertung.");
-        assertEquals(Spielphase.STICHPHASE, spiel.phase(),
+        assertInstanceOf(Spielphase.Stichphase.class, spiel.phase(),
             "Das Spiel muss trotz stillem Solo in der Stichphase bleiben, bis alle 12 Stiche gespielt sind.");
 
         // Restliche 9 Stiche automatisch zu Ende spielen
-        while (spiel.phase() == Spielphase.STICHPHASE) {
+        while (spiel.phase() instanceof Spielphase.Stichphase) {
             SpielerPosition aktuellerSpieler = spiel.aktuellerSpieler().orElseThrow();
             Karte naechsteKarte = spiel.gueltigeKartenFuer(aktuellerSpieler).getFirst();
             spiel = spiel.spieleKarte(aktuellerSpieler, naechsteKarte);
@@ -445,7 +446,7 @@ class SpielTest {
             .meldeGesund(SpielerPosition.SUED)
             .loeseVorbehalteAuf();
 
-        assertEquals(Spielphase.ARMUT_TAUSCH, spiel.phase(),
+        assertInstanceOf(Spielphase.ArmutTausch.class, spiel.phase(),
             "Armut braucht eine eigene Tauschphase vor dem ersten Stich, damit Angebot und Annahme serverseitig validiert werden.");
         assertEquals(Spieltyp.ARMUT, spiel.spieltyp());
 
@@ -456,7 +457,7 @@ class SpielTest {
         spiel = spiel.lehneArmutAb(SpielerPosition.NORD)
             .nimmArmutAn(SpielerPosition.OST, List.of(rueckgabeEins, rueckgabeZwei, rueckgabeDrei));
 
-        assertEquals(Spielphase.STICHPHASE, spiel.phase());
+        assertInstanceOf(Spielphase.Stichphase.class, spiel.phase());
         assertEquals(List.of(SpielerPosition.WEST, SpielerPosition.OST), spiel.parteien().spielerVon(Partei.RE),
             "Armut-Spieler und annehmender Spieler muessen danach gemeinsam Re bilden, sonst stimmen Ansagen und Wertung nicht.");
         assertEquals(12, spiel.handVon(SpielerPosition.WEST).karten().size());
@@ -603,7 +604,7 @@ class SpielTest {
         assertEquals(Spielphase.VORBEHALT_AUFLOESUNG, spiel.phase());
 
         spiel = spiel.loeseVorbehalteAuf();
-        assertEquals(Spielphase.STICHPHASE, spiel.phase());
+        assertInstanceOf(Spielphase.Stichphase.class, spiel.phase());
         assertEquals(Partei.RE, spiel.parteien().parteiVon(SpielerPosition.SUED));
         assertEquals(Partei.RE, spiel.parteien().parteiVon(SpielerPosition.WEST));
         assertEquals(Partei.KONTRA, spiel.parteien().parteiVon(SpielerPosition.NORD));
@@ -613,7 +614,7 @@ class SpielTest {
         assertTrue(spiel.parteien().sichtAufPartei(SpielerPosition.SUED, SpielerPosition.WEST).isEmpty(),
             "Andere Parteien bleiben zu Beginn verdeckt, damit das Normalspiel fachlich korrekt startet.");
 
-        while (spiel.phase() == Spielphase.STICHPHASE) {
+        while (spiel.phase() instanceof Spielphase.Stichphase) {
             SpielerPosition aktuellerSpieler = spiel.aktuellerSpieler().orElseThrow();
             Karte karte = spiel.gueltigeKartenFuer(aktuellerSpieler).getFirst();
             spiel = spiel.spieleKarte(aktuellerSpieler, karte);
@@ -731,7 +732,7 @@ class SpielTest {
             "Ein Spieler mit beiden Kreuz-Damen ohne Hochzeit-Vorbehalt muss defensiv als Trumpfsolo weiterlaufen, damit kein Server-Crash entsteht.");
         assertEquals(List.of(SpielerPosition.WEST), spiel.parteien().spielerVon(Partei.RE),
             "Der Spieler mit beiden Kreuz-Damen spielt das stille Solo alleine gegen die anderen drei.");
-        assertEquals(Spielphase.STICHPHASE, spiel.phase());
+        assertInstanceOf(Spielphase.Stichphase.class, spiel.phase());
     }
 
     @Test
