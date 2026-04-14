@@ -91,7 +91,7 @@ class KiOrchestrierungServiceIntegrationTest {
 
         transactionTemplate.executeWithoutResult(status -> {
             TischEntity tisch = tischRepository.findById(TischId.von(ids.tischId())).orElseThrow();
-            PartieStandAntwort stand = PartieStandAntwort.aus(tisch.partie(), tisch.spieler().getFirst().id());
+            PartieStandAntwort stand = PartieStandAntwort.aus(tisch, tisch.spieler().getFirst().id());
 
             assertEquals(SpielerPosition.SUED, stand.laufendesSpiel().aktuellerSpieler(),
                 "Nach drei automatischen KI-Karten muss der menschliche Spieler wieder am Zug sein, damit 1-Mensch-gegen-3-KI ohne manuelle Backend-Eingriffe spielbar bleibt.");
@@ -147,7 +147,7 @@ class KiOrchestrierungServiceIntegrationTest {
                 "Das vollautomatische KI-Spiel braucht ein persistiertes Ergebnis, damit Ergebnis-Overlay und Gesamtstand darauf aufbauen koennen.");
             assertEquals(0, partie.gesamtpunktestand().values().stream().mapToInt(Integer::intValue).sum(),
                 "Auch vollautomatische KI-Partien muessen die Nullsummen-Invariante des Gesamtstands wahren.");
-            PartieStandAntwort stand = PartieStandAntwort.aus(partie);
+            PartieStandAntwort stand = PartieStandAntwort.aus(tisch);
             assertNull(stand.laufendesSpiel(),
                 "Nach dem Ende einer Ein-Spiel-Partie darf kein weiteres laufendes Spiel mehr sichtbar sein.");
         });

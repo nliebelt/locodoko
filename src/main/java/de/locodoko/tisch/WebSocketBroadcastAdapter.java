@@ -35,7 +35,7 @@ class WebSocketBroadcastAdapter {
         if (tisch == null || tisch.partie() == null) {
             return;
         }
-        PartieStandAntwort broadcastStand = PartieStandAntwort.aus(tisch.partie());
+        PartieStandAntwort broadcastStand = PartieStandAntwort.aus(tisch);
         tischEchtzeitService.planePartieEreignis(
             PartieEreignisAntwort.aktualisiert(PartieEreignisTyp.PARTIE_AKTUALISIERT, broadcastStand));
         tisch.spieler().stream()
@@ -43,7 +43,7 @@ class WebSocketBroadcastAdapter {
             .forEach(spieler -> tischEchtzeitService.planeAnBenutzer(
                 spieler.sessionId(),
                 "/queue/partie/" + tisch.partie().id(),
-                PartieEreignisAntwort.snapshot(PartieStandAntwort.aus(tisch.partie(), spieler.id()))
+                PartieEreignisAntwort.snapshot(PartieStandAntwort.aus(tisch, spieler.id()))
             ));
     }
 }

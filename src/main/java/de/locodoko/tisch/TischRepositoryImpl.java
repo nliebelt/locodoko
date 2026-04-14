@@ -66,7 +66,6 @@ class TischRepositoryImpl implements TischRepository {
         gespeichert.setzeSpielerListe(new ArrayList<>(tisch.spieler()));
         gespeichert.setzeErstelltVonTransient(tisch.erstelltVon());
         if (partie != null) {
-            partie.setzeTisch(gespeichert);
             gespeichert.setzePartieTransient(partie);
         }
         return gespeichert;
@@ -186,8 +185,6 @@ class TischRepositoryImpl implements TischRepository {
         // Partie laden
         if (tisch.partieId() != null) {
             partieRepository.findById(PartieId.von(tisch.partieId())).ifPresent(partie -> {
-                // Transiente Tisch-Rueckreferenz in der Partie setzen
-                partie.setzeTisch(tisch);
                 // Spiel-Partie-Rueckreferenz setzen
                 partie.spiele().forEach(spiel -> spiel.setzePartie(partie));
                 tisch.setzePartieTransient(partie);

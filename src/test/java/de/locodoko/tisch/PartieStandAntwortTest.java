@@ -99,7 +99,7 @@ class PartieStandAntwortTest {
         partie.setzeGesamtpunktestand(SpielerPosition.OST, -3);
         tisch.setzePartie(partie);
 
-        PartieStandAntwort antwort = PartieStandAntwort.aus(partie);
+        PartieStandAntwort antwort = PartieStandAntwort.aus(tisch);
 
         assertNull(antwort.laufendesSpiel(),
             "Nach abgeschlossenem Spiel darf der Snapshot kein laufendes Spiel mehr melden.");

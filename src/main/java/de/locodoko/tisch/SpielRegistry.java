@@ -60,7 +60,7 @@ public class SpielRegistry {
                 .filter(spiel -> spiel.ergebnis() == null)
                 .reduce((erstes, zweites) -> zweites)
                 .ifPresent(laufendesSpielEntity -> {
-                    Spiel spiel = SpielPersistenzAdapter.zuDomainSpiel(laufendesSpielEntity);
+                    Spiel spiel = SpielPersistenzAdapter.zuDomainSpiel(laufendesSpielEntity, tisch.konfiguration().alsSpielregeln());
                     spielCache.put(tisch.id(), spiel);
                     LOGGER.info("SpielRegistry: Spiel fuer Tisch {} aus DB geladen", tisch.id());
                 });

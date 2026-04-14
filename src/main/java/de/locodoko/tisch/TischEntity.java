@@ -118,7 +118,6 @@ public class TischEntity extends AbstraktePersistenzEntity {
     public void setzePartie(PartieEntity partie) {
         this.partie = Objects.requireNonNull(partie, "partie darf nicht null sein");
         this.partieId = partie.id();
-        partie.setzeTisch(this);
         this.status = TischStatus.IM_SPIEL.name();
     }
 
@@ -130,7 +129,6 @@ public class TischEntity extends AbstraktePersistenzEntity {
         this.partie = partie;
         if (partie != null) {
             this.partieId = partie.id();
-            partie.setzeTisch(this);
         }
     }
 

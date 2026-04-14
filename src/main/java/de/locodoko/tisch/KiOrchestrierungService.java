@@ -5,6 +5,7 @@ import de.locodoko.ki.KiSpielzustand;
 import de.locodoko.ki.KiStrategie;
 import de.locodoko.ki.KiStrategieFactory;
 import de.locodoko.karten.Karte;
+import de.locodoko.karten.Spielregeln;
 import de.locodoko.partie.SpielerPosition;
 import de.locodoko.partie.Ansage;
 import de.locodoko.partie.Partei;
@@ -100,7 +101,7 @@ public class KiOrchestrierungService {
             if (laufendesSpielEntity == null) {
                 return;
             }
-            Spiel laufendesSpiel = SpielPersistenzAdapter.zuDomainSpiel(laufendesSpielEntity);
+            Spiel laufendesSpiel = SpielPersistenzAdapter.zuDomainSpiel(laufendesSpielEntity, tisch.konfiguration().alsSpielregeln());
             if (laufendesSpiel.phase() instanceof Spielphase.Auswertung
                     || laufendesSpiel.phase() instanceof Spielphase.GesamtstandAktualisieren) {
                 LOGGER.info("Spiel abschliessen und naechstes starten [spielNr={}, tischId={}]",
@@ -193,7 +194,7 @@ public class KiOrchestrierungService {
         if (laufendesSpielEntity == null) {
             return;
         }
-        Spiel laufendesSpiel = SpielPersistenzAdapter.zuDomainSpiel(laufendesSpielEntity);
+        Spiel laufendesSpiel = SpielPersistenzAdapter.zuDomainSpiel(laufendesSpielEntity, tisch.konfiguration().alsSpielregeln());
         if (!(laufendesSpiel.phase() instanceof Spielphase.Stichphase)) {
             // Nicht-Stichphase: vollstaendige Orchestrierung uebergeben
             automatisiereTisch(tisch);
@@ -286,9 +287,10 @@ public class KiOrchestrierungService {
      */
     private Partie rekonstruierePartieDomain(TischEntity tisch, SpielEntity laufendesSpielEntity, Spiel laufendesSpiel) {
         PartieEntity partie = tisch.partie();
+        Spielregeln spielregeln = tisch.konfiguration().alsSpielregeln();
         List<Spiel> abgeschlosseneSpiele = partie.spiele().stream()
             .filter(s -> !s.equals(laufendesSpielEntity))
-            .map(SpielPersistenzAdapter::zuDomainSpiel)
+            .map(s -> SpielPersistenzAdapter.zuDomainSpiel(s, spielregeln))
             .toList();
         return Partie.ausPersistiertemStand(
             partie.anzahlSpiele(),
@@ -374,7 +376,7 @@ public class KiOrchestrierungService {
                 if (laufendesSpielEntity == null) {
                     continue;
                 }
-                Spiel spiel = SpielPersistenzAdapter.zuDomainSpiel(laufendesSpielEntity);
+                Spiel spiel = SpielPersistenzAdapter.zuDomainSpiel(laufendesSpielEntity, tisch.konfiguration().alsSpielregeln());
                 // Auswertungsphase hat keinen erwarteten Spieler — trotzdem abschliessen,
                 // damit Spiele nicht dauerhaft in AUSWERTUNG haengen bleiben.
                 if (spiel.phase() instanceof Spielphase.Auswertung
@@ -417,13 +419,13 @@ public class KiOrchestrierungService {
             .filter(s -> s.ergebnis() == null)
             .reduce((a, b) -> b)
             .ifPresentOrElse(
-                s -> spielRegistry.registriere(tischId, SpielPersistenzAdapter.zuDomainSpiel(s)),
+                s -> spielRegistry.registriere(tischId, SpielPersistenzAdapter.zuDomainSpiel(s, tisch.konfiguration().alsSpielregeln())),
                 () -> spielRegistry.entferne(tischId)
             );
     }
 
     private void veroeffentlichePartieStand(TischEntity tisch) {
-        PartieStandAntwort broadcastStand = PartieStandAntwort.aus(tisch.partie());
+        PartieStandAntwort broadcastStand = PartieStandAntwort.aus(tisch);
         tischEchtzeitService.planePartieEreignis(
             PartieEreignisAntwort.aktualisiert(PartieEreignisTyp.PARTIE_AKTUALISIERT, broadcastStand));
         tisch.spieler().stream()
@@ -431,7 +433,7 @@ public class KiOrchestrierungService {
             .forEach(s -> tischEchtzeitService.planeAnBenutzer(
                 s.sessionId(),
                 "/queue/partie/" + tisch.partie().id(),
-                PartieEreignisAntwort.snapshot(PartieStandAntwort.aus(tisch.partie(), s.id()))
+                PartieEreignisAntwort.snapshot(PartieStandAntwort.aus(tisch, s.id()))
             ));
     }
 }

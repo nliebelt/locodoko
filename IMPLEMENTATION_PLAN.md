@@ -1,6 +1,6 @@
 # IMPLEMENTATION_PLAN — Locodoko Doppelkopf
 
-> **Letzte Aktualisierung: 2026-04-14 (Plan-Run #39)**
+> **Letzte Aktualisierung: 2026-04-14 (Plan-Run #40)**
 
 ## Legende
 
@@ -90,9 +90,9 @@ Keine karten-interne Klasse importiert Stich/GespielteKarte/SpielerPosition.
 
 ### 1.5 Cross-Modul-Verletzung beheben: PartieEntity → TischEntity
 
-- [ ] `PartieEntity.java` Zeile 3: `import de.locodoko.lobby.TischEntity` entfernen
-- [ ] Beziehung nur noch über `TischId` (Foreign Key als UUID), kein direkter Typ-Import
-- [ ] Prüfen ob weitere Cross-Modul-Verletzungen existieren (partie → lobby/session Imports)
+- [x] `PartieEntity.java` Zeile 3: `import de.locodoko.lobby.TischEntity` entfernen
+- [x] Beziehung nur noch über `TischId` (Foreign Key als UUID), kein direkter Typ-Import
+- [x] Prüfen ob weitere Cross-Modul-Verletzungen existieren (partie → lobby/session Imports)
 
 **Regel:** `partie/` darf nur `karten/` importieren (laut `architektur-ddd.md`).
 
@@ -294,18 +294,17 @@ Phase 4 (parallel, niedrige Priorität):
 
 ## Notiz
 
-**Zuletzt erledigt (Plan-Run #39):** Task 1.4 — SpielerPosition, Stich, GespielteKarte von
-`de.locodoko.karten` nach `de.locodoko.partie` verschoben. 3 Main-Dateien verschoben,
-~50 Dateien (Main + Test) Imports aktualisiert. `Kartendeck.anVierSpielerAusteilen()` refaktoriert
-von `Map<SpielerPosition, Hand>` zu `List<Hand>`, damit `karten/` nicht `partie/` importiert
-(verbotene Abhängigkeitsrichtung). Mapping-Logik in `Spiel.haendeAusDeck()` verlagert.
-`StichTest` nach `partie/` verschoben. TrumpfOrdnung-JavaDoc auf FQN aktualisiert.
-Redundante Same-Package-Imports in `partie/` entfernt.
-221 Backend-Tests grün, 24 Frontend-Tests grün.
+**Zuletzt erledigt (Plan-Run #40):** Task 1.5 — Cross-Modul-Verletzung PartieEntity → TischEntity
+behoben. Transientes `TischEntity`-Feld samt Getter/Setter aus `PartieEntity` entfernt, damit
+`partie/` nicht mehr `tisch/` importiert. `PartieStandAntwort.aus()` nimmt jetzt `TischEntity`
+statt `PartieEntity` (alle Aufrufer in `tisch/` und `spieler/` hatten bereits Zugriff auf TischEntity).
+`SpielPersistenzAdapter.zuDomainSpiel()` erhaelt `Spielregeln` als expliziten Parameter statt
+ueber `partie.tisch().konfiguration()` zu navigieren. `SpielAktionsService.ladePartieEntity()`
+refaktoriert zu `ladeTischFuerPartie()` — gibt TischEntity zurueck.
+10 Dateien geaendert (Main + Test). 221 Backend-Tests grün, 24 Frontend-Tests grün.
 
-**Nächster logischer Schritt:** Task 1.5 (Cross-Modul-Verletzung PartieEntity → TischEntity)
-oder 1.6 (PunkteRechner package-private). Alle Tasks 1.1–1.6 sind Voraussetzung für 1.7
-(Spring Modulith).
+**Nächster logischer Schritt:** Task 1.6 (PunkteRechner package-private). Danach sind alle
+Tasks 1.1–1.6 erledigt und 1.7 (Spring Modulith Dependencies) kann entsperrt werden.
 
 **Offene Fragen:** Keine.
 

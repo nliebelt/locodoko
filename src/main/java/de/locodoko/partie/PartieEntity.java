@@ -1,8 +1,5 @@
 package de.locodoko.partie;
 
-import de.locodoko.tisch.TischEntity;
-
-import org.springframework.data.annotation.Transient;
 import org.springframework.data.relational.core.mapping.Column;
 import org.springframework.data.relational.core.mapping.MappedCollection;
 import org.springframework.data.relational.core.mapping.Table;
@@ -60,10 +57,6 @@ public class PartieEntity extends AbstraktePersistenzEntity {
     @MappedCollection(idColumn = "partie_id", keyColumn = "spiel_nummer")
     private Map<Integer, SpielEntity> spieleMap = new LinkedHashMap<>();
 
-    /** Rueckreferenz auf den Tisch (transient, wird in-memory gesetzt). */
-    @Transient
-    private TischEntity tisch;
-
     protected PartieEntity() {
     }
 
@@ -78,11 +71,6 @@ public class PartieEntity extends AbstraktePersistenzEntity {
 
     public static PartieEntity neu(int anzahlSpiele) {
         return new PartieEntity(anzahlSpiele);
-    }
-
-    /** Setzt die transiente Tisch-Referenz (in-memory, nicht persistiert). */
-    public void setzeTisch(TischEntity tisch) {
-        this.tisch = tisch;
     }
 
     public void fuegeSpielHinzu(SpielEntity spiel) {
@@ -121,10 +109,6 @@ public class PartieEntity extends AbstraktePersistenzEntity {
 
     public PartieStatus status() {
         return PartieStatus.valueOf(status);
-    }
-
-    public TischEntity tisch() {
-        return tisch;
     }
 
     public List<SpielEntity> spiele() {

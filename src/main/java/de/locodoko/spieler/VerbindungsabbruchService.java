@@ -119,7 +119,7 @@ public class VerbindungsabbruchService {
 
             // Aktuellen Spielzustand direkt an den reconnectenden Spieler senden
             if (tisch.status() == TischStatus.IM_SPIEL && tisch.partie() != null) {
-                PartieStandAntwort stand = PartieStandAntwort.aus(tisch.partie(), spielerId.wert());
+                PartieStandAntwort stand = PartieStandAntwort.aus(tisch, spielerId.wert());
                 tischEchtzeitService.planeAnBenutzer(
                         httpSessionId,
                         "/queue/partie/" + tisch.partie().id(),
@@ -191,7 +191,7 @@ public class VerbindungsabbruchService {
 
             // Aktualisierten Spielzustand an alle Spieler am Tisch senden
             if (tisch.partie() != null) {
-                PartieStandAntwort broadcastStand = PartieStandAntwort.aus(tisch.partie());
+                PartieStandAntwort broadcastStand = PartieStandAntwort.aus(tisch);
                 tischEchtzeitService.planePartieEreignis(
                         PartieEreignisAntwort.aktualisiert(PartieEreignisTyp.PARTIE_AKTUALISIERT, broadcastStand)
                 );
@@ -200,7 +200,7 @@ public class VerbindungsabbruchService {
                         .forEach(s -> tischEchtzeitService.planeAnBenutzer(
                                 s.sessionId(),
                                 "/queue/partie/" + tisch.partie().id(),
-                                PartieEreignisAntwort.snapshot(PartieStandAntwort.aus(tisch.partie(), s.id()))
+                                PartieEreignisAntwort.snapshot(PartieStandAntwort.aus(tisch, s.id()))
                         ));
             }
         }

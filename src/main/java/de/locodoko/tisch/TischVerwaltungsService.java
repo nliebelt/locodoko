@@ -185,7 +185,7 @@ public class TischVerwaltungsService {
         gespeicherterTisch = tischRepository.saveAndFlush(gespeicherterTisch);
         synchronisiereRegistry(tischId, gespeicherterTisch);
         TischAntwort antwort = TischAntwort.aus(gespeicherterTisch);
-        PartieStandAntwort partieStand = PartieStandAntwort.aus(gespeicherterTisch.partie());
+        PartieStandAntwort partieStand = PartieStandAntwort.aus(gespeicherterTisch);
         veroeffentlicheTischAktualisierung(
             TischlisteEreignisAntwort.aktualisiert(listeOffeneTische()),
             TischEreignisAntwort.spielGestartet(antwort, partieStand)
@@ -234,7 +234,7 @@ public class TischVerwaltungsService {
         gespeicherterTisch = tischRepository.saveAndFlush(gespeicherterTisch);
         synchronisiereRegistry(tischId, gespeicherterTisch);
         TischAntwort tischAntwort = TischAntwort.aus(gespeicherterTisch);
-        PartieStandAntwort partieStand = PartieStandAntwort.aus(gespeicherterTisch.partie());
+        PartieStandAntwort partieStand = PartieStandAntwort.aus(gespeicherterTisch);
         veroeffentlicheTischAktualisierung(
             TischlisteEreignisAntwort.aktualisiert(listeOffeneTische()),
             TischEreignisAntwort.spielGestartet(tischAntwort, partieStand)
@@ -293,7 +293,7 @@ public class TischVerwaltungsService {
             .filter(s -> s.ergebnis() == null)
             .reduce((a, b) -> b)
             .ifPresentOrElse(
-                s -> spielRegistry.registriere(tischId, SpielPersistenzAdapter.zuDomainSpiel(s)),
+                s -> spielRegistry.registriere(tischId, SpielPersistenzAdapter.zuDomainSpiel(s, tisch.konfiguration().alsSpielregeln())),
                 () -> spielRegistry.entferne(tischId)
             );
     }
@@ -307,14 +307,14 @@ public class TischVerwaltungsService {
     }
 
     private void veroeffentlichePartieAktualisierung(TischEntity tisch) {
-        PartieStandAntwort broadcastStand = PartieStandAntwort.aus(tisch.partie());
+        PartieStandAntwort broadcastStand = PartieStandAntwort.aus(tisch);
         tischEchtzeitService.planePartieEreignis(PartieEreignisAntwort.aktualisiert(PartieEreignisTyp.PARTIE_AKTUALISIERT, broadcastStand));
         tisch.spieler().stream()
             .filter(spieler -> !spieler.istKi() && spieler.sessionId() != null)
             .forEach(spieler -> tischEchtzeitService.planeAnBenutzer(
                 spieler.sessionId(),
                 "/queue/partie/" + tisch.partie().id(),
-                PartieEreignisAntwort.snapshot(PartieStandAntwort.aus(tisch.partie(), spieler.id()))
+                PartieEreignisAntwort.snapshot(PartieStandAntwort.aus(tisch, spieler.id()))
             ));
     }
 

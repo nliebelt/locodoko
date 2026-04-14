@@ -8,6 +8,7 @@ import de.locodoko.karten.Karte;
 import de.locodoko.karten.Kartendeck;
 import de.locodoko.karten.Kartenwert;
 import de.locodoko.partie.SpielerPosition;
+import de.locodoko.karten.Spielregeln;
 import de.locodoko.karten.Spieltyp;
 import de.locodoko.partie.Stich;
 import de.locodoko.partie.AnsageEreignis;
@@ -57,8 +58,9 @@ final class SpielPersistenzAdapter {
     private SpielPersistenzAdapter() {
     }
 
-    static Spiel zuDomainSpiel(SpielEntity spielEntity) {
+    static Spiel zuDomainSpiel(SpielEntity spielEntity, Spielregeln spielregeln) {
         Objects.requireNonNull(spielEntity, "spielEntity darf nicht null sein");
+        Objects.requireNonNull(spielregeln, "spielregeln darf nicht null sein");
         Map<SpielerPosition, Hand> haende = haende(spielEntity);
         List<VorbehaltMeldung> vorbehalte = vorbehalte(spielEntity);
         Ansagen ansagen = ansagen(spielEntity);
@@ -66,7 +68,7 @@ final class SpielPersistenzAdapter {
         SpielerPosition solistAufspieler = spielEntity.partie().solistDesLetztenSpiels();
         Spielphase phase = bauePhase(spielEntity, vorbehalte);
         return Spiel.ausPersistiertemStand(
-            spielEntity.partie().tisch().konfiguration().alsSpielregeln(),
+            spielregeln,
             Kartendeck.ausKarten(alleKarten(spielEntity)),
             spielEntity.spieltyp(),
             spielEntity.geberPosition(),

@@ -51,17 +51,17 @@ public class SpielAktionsService {
 
     @Transactional(readOnly = true)
     public PartieStandAntwort ladePartieStand(PartieId partieId) {
-        return PartieStandAntwort.aus(ladePartieEntity(partieId));
+        return PartieStandAntwort.aus(ladeTischFuerPartie(partieId));
     }
 
     @Transactional(readOnly = true)
     public PartieStandAntwort ladePartieStand(PartieId partieId, SpielerEntity spieler) {
-        return PartieStandAntwort.aus(ladePartieEntity(partieId), spieler.id());
+        return PartieStandAntwort.aus(ladeTischFuerPartie(partieId), spieler.id());
     }
 
     @Transactional(readOnly = true)
     public PartieStandAntwort ladePartieStand(PartieId partieId, SpielerEntity spieler, boolean debugModus) {
-        return PartieStandAntwort.aus(ladePartieEntity(partieId), spieler.id(), debugModus);
+        return PartieStandAntwort.aus(ladeTischFuerPartie(partieId), spieler.id(), debugModus);
     }
 
     @Transactional
@@ -72,8 +72,8 @@ public class SpielAktionsService {
         SpielerEntity verwalteterSpieler = ladeSpieler(SpielerId.von(spieler.id()));
         TischEntity tisch = ladeAktivenTischMitSpieler(tischId, verwalteterSpieler);
         SpielEntity laufendesSpielEntity = ladeLaufendesSpiel(tisch.partie());
-        SpielerPosition position = spielerPositionVon(tisch.partie(), verwalteterSpieler);
-        Spiel frischesSpiel = SpielPersistenzAdapter.zuDomainSpiel(laufendesSpielEntity);
+        SpielerPosition position = spielerPositionVon(tisch, verwalteterSpieler);
+        Spiel frischesSpiel = SpielPersistenzAdapter.zuDomainSpiel(laufendesSpielEntity, tisch.konfiguration().alsSpielregeln());
         try {
             Spiel aktualisiertesSpiel = spielRegistry.mitSpielGesperrt(tischId, frischesSpiel, spiel -> {
                 Spiel nachVorbehalt = spiel.meldeVorbehalt(position, vorbehalt);
@@ -89,7 +89,7 @@ public class SpielAktionsService {
         partieRepository.saveAndFlush(tisch.partie());
         synchronisiereRegistry(tischId, tisch);
         veroeffentlicheEreignisse(tischId, tisch);
-        return PartieStandAntwort.aus(tisch.partie(), verwalteterSpieler.id());
+        return PartieStandAntwort.aus(tisch, verwalteterSpieler.id());
     }
 
     @Transactional
@@ -97,9 +97,9 @@ public class SpielAktionsService {
         SpielerEntity verwalteterSpieler = ladeSpieler(SpielerId.von(spieler.id()));
         TischEntity tisch = ladeAktivenTischMitSpieler(tischId, verwalteterSpieler);
         SpielEntity laufendesSpielEntity = ladeLaufendesSpiel(tisch.partie());
-        SpielerPosition position = spielerPositionVon(tisch.partie(), verwalteterSpieler);
+        SpielerPosition position = spielerPositionVon(tisch, verwalteterSpieler);
         List<Karte> karten = parseKarten(kartenIds);
-        Spiel frischesSpiel = SpielPersistenzAdapter.zuDomainSpiel(laufendesSpielEntity);
+        Spiel frischesSpiel = SpielPersistenzAdapter.zuDomainSpiel(laufendesSpielEntity, tisch.konfiguration().alsSpielregeln());
         try {
             Spiel aktualisiertesSpiel = spielRegistry.mitSpielGesperrt(tischId, frischesSpiel, spiel -> {
                 Spiel neu = spiel.armutStatus()
@@ -118,7 +118,7 @@ public class SpielAktionsService {
         partieRepository.saveAndFlush(tisch.partie());
         synchronisiereRegistry(tischId, tisch);
         veroeffentlicheEreignisse(tischId, tisch);
-        return PartieStandAntwort.aus(tisch.partie(), verwalteterSpieler.id());
+        return PartieStandAntwort.aus(tisch, verwalteterSpieler.id());
     }
 
     @Transactional
@@ -126,8 +126,8 @@ public class SpielAktionsService {
         SpielerEntity verwalteterSpieler = ladeSpieler(SpielerId.von(spieler.id()));
         TischEntity tisch = ladeAktivenTischMitSpieler(tischId, verwalteterSpieler);
         SpielEntity laufendesSpielEntity = ladeLaufendesSpiel(tisch.partie());
-        SpielerPosition position = spielerPositionVon(tisch.partie(), verwalteterSpieler);
-        Spiel frischesSpiel = SpielPersistenzAdapter.zuDomainSpiel(laufendesSpielEntity);
+        SpielerPosition position = spielerPositionVon(tisch, verwalteterSpieler);
+        Spiel frischesSpiel = SpielPersistenzAdapter.zuDomainSpiel(laufendesSpielEntity, tisch.konfiguration().alsSpielregeln());
         SpielRegistry.KommandoSchluessel schluessel = new SpielRegistry.KommandoSchluessel(
             tischId.wert(), position, "KARTE:" + karteId + ":" + frischesSpiel.phase().name()
         );
@@ -143,7 +143,7 @@ public class SpielAktionsService {
         partieRepository.saveAndFlush(tisch.partie());
         synchronisiereRegistry(tischId, tisch);
         veroeffentlicheEreignisse(tischId, tisch);
-        return PartieStandAntwort.aus(tisch.partie(), verwalteterSpieler.id());
+        return PartieStandAntwort.aus(tisch, verwalteterSpieler.id());
     }
 
     @Transactional
@@ -154,8 +154,8 @@ public class SpielAktionsService {
         SpielerEntity verwalteterSpieler = ladeSpieler(SpielerId.von(spieler.id()));
         TischEntity tisch = ladeAktivenTischMitSpieler(tischId, verwalteterSpieler);
         SpielEntity laufendesSpielEntity = ladeLaufendesSpiel(tisch.partie());
-        SpielerPosition position = spielerPositionVon(tisch.partie(), verwalteterSpieler);
-        Spiel frischesSpiel = SpielPersistenzAdapter.zuDomainSpiel(laufendesSpielEntity);
+        SpielerPosition position = spielerPositionVon(tisch, verwalteterSpieler);
+        Spiel frischesSpiel = SpielPersistenzAdapter.zuDomainSpiel(laufendesSpielEntity, tisch.konfiguration().alsSpielregeln());
         SpielRegistry.KommandoSchluessel schluessel = new SpielRegistry.KommandoSchluessel(
             tischId.wert(), position, "ANSAGE:" + ansage.name() + ":" + frischesSpiel.phase().name()
         );
@@ -171,7 +171,7 @@ public class SpielAktionsService {
         partieRepository.saveAndFlush(tisch.partie());
         synchronisiereRegistry(tischId, tisch);
         veroeffentlicheEreignisse(tischId, tisch);
-        return PartieStandAntwort.aus(tisch.partie(), verwalteterSpieler.id());
+        return PartieStandAntwort.aus(tisch, verwalteterSpieler.id());
     }
 
     /**
@@ -214,22 +214,17 @@ public class SpielAktionsService {
             .filter(s -> s.ergebnis() == null)
             .reduce((a, b) -> b)
             .ifPresentOrElse(
-                s -> spielRegistry.registriere(tischId, SpielPersistenzAdapter.zuDomainSpiel(s)),
+                s -> spielRegistry.registriere(tischId, SpielPersistenzAdapter.zuDomainSpiel(s, tisch.konfiguration().alsSpielregeln())),
                 () -> spielRegistry.entferne(tischId)
             );
     }
 
-    private PartieEntity ladePartieEntity(PartieId partieId) {
-        // Ueber TischRepository laden, damit befuelleTransienteFelder() ausgefuehrt wird
-        // und PartieEntity.tisch() das transiente Tisch-Objekt mit Spielerliste enthaelt.
-        // Das ist notwendig fuer PartieStandAntwort, die tisch.spieler() aufruft.
+    private TischEntity ladeTischFuerPartie(PartieId partieId) {
         return tischRepository.findByPartieId(partieId)
-            .map(TischEntity::partie)
-            .orElseGet(() -> partieRepository.findById(partieId)
-                .orElseThrow(() -> new SpielverwaltungNichtGefundenException(
-                    "PARTIE_NICHT_GEFUNDEN",
-                    "Es wurde keine Partie mit der ID " + partieId + " gefunden."
-                )));
+            .orElseThrow(() -> new SpielverwaltungNichtGefundenException(
+                "PARTIE_NICHT_GEFUNDEN",
+                "Es wurde keine Partie mit der ID " + partieId + " gefunden."
+            ));
     }
 
     private TischEntity ladeAktivenTischMitSpieler(TischId tischId, SpielerEntity spieler) {
@@ -269,8 +264,8 @@ public class SpielAktionsService {
             ));
     }
 
-    private SpielerPosition spielerPositionVon(PartieEntity partie, SpielerEntity spieler) {
-        List<SpielerEntity> spielerAmTisch = partie.tisch().spieler();
+    private SpielerPosition spielerPositionVon(TischEntity tisch, SpielerEntity spieler) {
+        List<SpielerEntity> spielerAmTisch = tisch.spieler();
         List<SpielerPosition> positionen = SpielerPosition.standardReihenfolge();
         for (int index = 0; index < spielerAmTisch.size() && index < positionen.size(); index++) {
             if (spielerAmTisch.get(index).id().equals(spieler.id())) {

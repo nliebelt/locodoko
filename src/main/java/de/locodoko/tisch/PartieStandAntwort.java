@@ -1,6 +1,7 @@
 package de.locodoko.tisch;
 
 import de.locodoko.karten.Karte;
+import de.locodoko.karten.Spielregeln;
 import de.locodoko.partie.SpielerPosition;
 import de.locodoko.karten.Spieltyp;
 import de.locodoko.partie.Ansage;
@@ -44,15 +45,17 @@ public record PartieStandAntwort(
     LaufendesSpielAntwort laufendesSpiel
 ) {
 
-    public static PartieStandAntwort aus(PartieEntity partie) {
-        return aus(partie, null, false);
+    public static PartieStandAntwort aus(TischEntity tisch) {
+        return aus(tisch, null, false);
     }
 
-    public static PartieStandAntwort aus(PartieEntity partie, UUID sichtbarerSpielerId) {
-        return aus(partie, sichtbarerSpielerId, false);
+    public static PartieStandAntwort aus(TischEntity tisch, UUID sichtbarerSpielerId) {
+        return aus(tisch, sichtbarerSpielerId, false);
     }
 
-    public static PartieStandAntwort aus(PartieEntity partie, UUID sichtbarerSpielerId, boolean debugModus) {
+    public static PartieStandAntwort aus(TischEntity tisch, UUID sichtbarerSpielerId, boolean debugModus) {
+        PartieEntity partie = tisch.partie();
+        Spielregeln spielregeln = tisch.konfiguration().alsSpielregeln();
         SpielEntity laufendesSpiel = partie.spiele().stream()
             .filter(spiel -> spiel.ergebnis() == null)
             .reduce((erstes, zweites) -> zweites)
@@ -69,7 +72,7 @@ public record PartieStandAntwort(
             partie.gesamtpunktestand(),
             LetztesSpielergebnisAntwort.aus(letztesAbgeschlossenesSpiel),
             AbgeschlossenerStichAntwort.aus(laufendesSpiel != null ? laufendesSpiel : letztesAbgeschlossenesSpiel),
-            LaufendesSpielAntwort.aus(partie, laufendesSpiel, sichtbarerSpielerId, debugModus)
+            LaufendesSpielAntwort.aus(tisch, laufendesSpiel, sichtbarerSpielerId, debugModus)
         );
     }
 
@@ -88,14 +91,14 @@ public record PartieStandAntwort(
         boolean istBockrunde
     ) {
 
-        static LaufendesSpielAntwort aus(PartieEntity partie, SpielEntity laufendesSpiel, UUID sichtbarerSpielerId, boolean debugModus) {
+        static LaufendesSpielAntwort aus(TischEntity tisch, SpielEntity laufendesSpiel, UUID sichtbarerSpielerId, boolean debugModus) {
             if (laufendesSpiel == null) {
                 return null;
             }
 
-            Map<SpielerPosition, SpielerEntity> spielerNachPosition = spielerNachPosition(partie);
+            Map<SpielerPosition, SpielerEntity> spielerNachPosition = spielerNachPosition(tisch);
             SpielerPosition sichtbarePosition = positionVonSpieler(spielerNachPosition, sichtbarerSpielerId);
-            Spiel fachlichesSpiel = SpielPersistenzAdapter.zuDomainSpiel(laufendesSpiel);
+            Spiel fachlichesSpiel = SpielPersistenzAdapter.zuDomainSpiel(laufendesSpiel, tisch.konfiguration().alsSpielregeln());
             SpielerPosition aktuellerSpieler = aktuellerSpieler(fachlichesSpiel);
             boolean zeigeAlleHaende = debugModus && sichtbarePosition != null;
             Map<SpielerPosition, Integer> gewonneneStiche = SpielPersistenzAdapter.gewonneneStiche(laufendesSpiel);
@@ -132,7 +135,7 @@ public record PartieStandAntwort(
                 fachlichesSpiel.ansagen().ereignisse().stream().map(AnsageEreignisAntwort::aus).toList(),
                 bestimmeMoeglicheAnsagen(fachlichesSpiel, sichtbarePosition, aktuellerSpieler),
                 bestimmeMoeglicheVorbehalte(fachlichesSpiel, sichtbarePosition, aktuellerSpieler),
-                partie.bockrundenZaehler() > 0
+                tisch.partie().bockrundenZaehler() > 0
             );
         }
 
@@ -180,9 +183,9 @@ public record PartieStandAntwort(
             return laufendesSpiel.erwarteterSpieler().orElse(null);
         }
 
-        private static Map<SpielerPosition, SpielerEntity> spielerNachPosition(PartieEntity partie) {
+        private static Map<SpielerPosition, SpielerEntity> spielerNachPosition(TischEntity tisch) {
             EnumMap<SpielerPosition, SpielerEntity> spielerNachPosition = new EnumMap<>(SpielerPosition.class);
-            List<SpielerEntity> spieler = partie.tisch().spieler();
+            List<SpielerEntity> spieler = tisch.spieler();
             List<SpielerPosition> positionen = SpielerPosition.standardReihenfolge();
             for (int index = 0; index < spieler.size() && index < positionen.size(); index++) {
                 spielerNachPosition.put(positionen.get(index), spieler.get(index));
