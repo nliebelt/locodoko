@@ -1,6 +1,6 @@
 # IMPLEMENTATION_PLAN — Locodoko Doppelkopf
 
-> **Letzte Aktualisierung: 2026-04-14 (Plan-Run #41)**
+> **Letzte Aktualisierung: 2026-04-14 (Plan-Run #42)**
 
 ## Legende
 
@@ -106,12 +106,10 @@ Keine karten-interne Klasse importiert Stich/GespielteKarte/SpielerPosition.
 
 ### 1.7 Spring Modulith Dependencies hinzufügen
 
-- [ ] `spring-modulith-starter-core` in `pom.xml` (BOM via `spring-modulith-bom`)
-- [ ] `spring-modulith-starter-jdbc` in `pom.xml` (Transactional Outbox)
-- [ ] Version passend zu Spring Boot 4.0.x wählen (Spring Modulith 1.3.x oder kompatibel)
-- [ ] `mvn compile` muss erfolgreich sein
-
-[BLOCKED: 1.1–1.6 erledigt, kann entsperrt werden]
+- [x] `spring-modulith-starter-core` in `pom.xml` (BOM via `spring-modulith-bom`)
+- [x] `spring-modulith-starter-jdbc` in `pom.xml` (Transactional Outbox)
+- [x] Version passend zu Spring Boot 4.0.x wählen (Spring Modulith 2.0.0)
+- [x] `mvn compile` muss erfolgreich sein
 
 ### 1.8 Liquibase-Changeset: event_publication-Tabelle
 
@@ -121,8 +119,6 @@ Keine karten-interne Klasse importiert Stich/GespielteKarte/SpielerPosition.
       `publication_date TIMESTAMP`, `completion_date TIMESTAMP`
 - [ ] In `db.changelog-master.yaml` einbinden
 - [ ] `mvn test` muss grün sein (Liquibase-Migration läuft sauber durch)
-
-[BLOCKED: 1.7 (Spring Modulith Dependency muss vorhanden sein)]
 
 ### 1.9 @EventListener → @ApplicationModuleListener migrieren
 
@@ -294,13 +290,13 @@ Phase 4 (parallel, niedrige Priorität):
 
 ## Notiz
 
-**Zuletzt erledigt (Plan-Run #41):** Task 1.6 — PunkteRechner von `public final class` zu
-`final class` (package-private) geändert. Keine weiteren Änderungen nötig: kein Code außerhalb
-`de.locodoko.partie` referenziert PunkteRechner, und PunkteRechnerTest liegt bereits im selben
-Package. 322 Backend-Tests grün.
+**Zuletzt erledigt (Plan-Run #42):** Task 1.7 — Spring Modulith Dependencies hinzugefügt.
+`spring-modulith-bom` 2.0.0 als BOM in `<dependencyManagement>`, `spring-modulith-starter-core`
+und `spring-modulith-starter-jdbc` (runtime) als Dependencies. `mvn compile` und alle 221
+Backend-Tests grün.
 
-**Nächster logischer Schritt:** Task 1.7 (Spring Modulith Dependencies hinzufügen). Tasks 1.1–1.6
-sind jetzt alle erledigt, 1.7 ist entsperrt.
+**Nächster logischer Schritt:** Task 1.8 (Liquibase-Changeset für `event_publication`-Tabelle).
+Dependency auf 1.7 ist erfüllt.
 
 **Offene Fragen:** Keine.
 
