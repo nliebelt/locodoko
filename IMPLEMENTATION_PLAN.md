@@ -255,10 +255,13 @@ Keine karten-interne Klasse importiert Stich/GespielteKarte/SpielerPosition.
 
 ### 4.3 frontend-architektur.md aktualisieren
 
-- [ ] Dateistruktur-Sektion auf aktuellen Stand bringen (neue Dateien: TischInputHandler,
-      TischUIManager, AnimationenService etc.)
-- [ ] Datenfluss-Diagramm überprüfen
-- [ ] Code-Review / Plausibilitätsprüfung
+- [x] Dateistruktur-Sektion auf aktuellen Stand bringen (neue Dateien: TischInputHandler,
+      TischUIManager, tischFormatierer, Kartenansicht, regelPresets, anwendung)
+- [x] LobbySzene → SpielverwaltungsSzene umbenannt (Datenfluss-Diagramm + Tabelle)
+- [x] Kommunikations-Schicht als Service-Schicht reorganisiert (SpielverwaltungApi, -Echtzeit)
+- [x] Datenfluss-Diagramm überprüft und aktualisiert
+- [x] DoD-Checkboxen auf aktuellen Stand gebracht (JSDoc-Tasks aus 3.1 als erledigt markiert)
+- [x] Code-Review / Plausibilitätsprüfung
 
 ---
 
@@ -305,15 +308,14 @@ Phase 4 (parallel, niedrige Priorität):
 
 ## Notiz
 
-**Zuletzt erledigt (Plan-Run #51):** Tasks 3.3 + 3.4 — data-testid-Attribute und Offene Tische Modal.
-Alle 17 data-testids aus specs/e2e-tests.md bereits vorhanden — kein Nachziehen nötig.
-baueTischliste() verbessert: Status jetzt als lesbarer Text ("Wartend"/"Im Spiel"),
-Regelkonfiguration zeigt "X Spiele · Mit/Ohne Neunen", data-testids auf Listeneinträgen.
-Echtzeit-Updates via /topic/tische waren bereits in AppStore implementiert.
+**Zuletzt erledigt (Plan-Run #52):** Task 4.3 — frontend-architektur.md aktualisiert.
+LobbySzene → SpielverwaltungsSzene korrigiert (Datenfluss-Diagramm + Bounded-Context-Tabelle).
+Neue Dateien ergänzt: TischInputHandler, TischUIManager, tischFormatierer, Kartenansicht, regelPresets, anwendung.
+Kommunikations-Schicht als Service-Schicht reorganisiert. DoD-Checkboxen (JSDoc) als erledigt markiert.
 
 **Naechster logischer Schritt:** Phase 4 fortsetzen:
-4.2 E2E-Tests stabilisieren (Testfall 1 + 2 gruen machen),
-4.3 frontend-architektur.md aktualisieren (Dateistruktur auf aktuellen Stand bringen).
+4.2 E2E-Tests stabilisieren — Testfall 1 + 2 grün machen gegen `mvn spring-boot:run`.
+Dazu: `cd e2e && npx playwright test partie-gegen-ki.spec.ts` ausführen und Fehler analysieren.
 
 **Offene Fragen:** Keine.
 

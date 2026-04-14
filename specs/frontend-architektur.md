@@ -29,7 +29,7 @@ Backend (Spring Boot)
                                          │
                                          ▼
                                     TischSzene.ts ────► AnimationenService.ts
-                                    LobbySzene.ts
+                                    SpielverwaltungsSzene.ts
                                     BootSzene.ts
 ```
 
@@ -37,17 +37,23 @@ Backend (Spring Boot)
 
 | Schicht          | Datei(en)                                    | Verantwortung                                             |
 |------------------|----------------------------------------------|-----------------------------------------------------------|
-| Kommunikation    | `SpielverwaltungApi.ts`                      | HTTP-Aufrufe (Session, Tisch, Partie)                     |
-| Kommunikation    | `SpielverwaltungEchtzeit.ts`                 | WebSocket STOMP: Subscribe, Publish, Reconnect            |
 | Zustand          | `AppStore.ts`                                | Zentraler Zustand: Session, Tisch, Partie, Aktionen       |
 | Modell           | `TischAnsichtModell.ts`                      | Sitzordnung relativ zum eigenen Spieler, abgeleitete Sichten |
 | Modell           | `SpielverwaltungDto.ts`                      | TypeScript-Typen für Backend-DTOs                         |
 | Darstellung      | `TischSzene.ts`                              | Phaser-Scene: Tisch rendern, Karten, HUD, Dialoge         |
-| Darstellung      | `LobbySzene.ts`                              | Phaser-Scene: Tischliste, Erstellen, Beitreten            |
-| Darstellung      | `BootSzene.ts`                               | Initialisierung: Session laden, Asset-Preload             |
+| Darstellung      | `TischInputHandler.ts`                       | Tastatur- und Klick-Event-Handling für die TischSzene     |
+| Darstellung      | `TischUIManager.ts`                          | Verwaltung und Aktualisierung aller UI-Komponenten der TischSzene |
+| Darstellung      | `SpielverwaltungsSzene.ts`                   | Phaser-Scene: Tischliste, Schnellstart, Erstellen, Beitreten |
+| Darstellung      | `BootSzene.ts`                               | Initialisierung: Session laden, URL-Hash-Routing, Asset-Preload |
+| Darstellung      | `Kartenansicht.ts`                           | Phaser-Sprite-Verwaltung für einzelne Spielkarten         |
 | Service          | `AnimationenService.ts`                      | Phaser-Tweens für Karten, Stiche, Banner                  |
+| Service          | `SpielverwaltungApi.ts`                      | HTTP-Aufrufe (Session, Tisch, Partie)                     |
+| Service          | `SpielverwaltungEchtzeit.ts`                 | WebSocket STOMP: Subscribe, Publish, Reconnect            |
+| Infrastruktur    | `anwendung.ts`                               | Phaser-Game-Konfiguration und -Initialisierung            |
 | Infrastruktur    | `logger.ts`                                  | Dev-Mode-Logger (siehe frontend-logging.md)               |
 | Infrastruktur    | `AssetLoader.ts`                             | Asset-Registrierung für Phaser                            |
+| Infrastruktur    | `tischFormatierer.ts`                        | Hilfsformatierungen für Tischanzeige (Text, Zahlen)       |
+| Infrastruktur    | `regelPresets.ts`                            | Vordefinierte Regelkonfigurationen (Presets)              |
 
 ---
 
@@ -153,13 +159,14 @@ Kapselt alle Phaser-Tweens und stellt sicher, dass Animationen sequenziell und n
 
 ## Definition of Done
 
-- [ ] JSDoc für `AppStore.ts` (Klasse + alle öffentlichen Methoden)
-- [ ] JSDoc für `TischSzene.ts` (Klasse + kritische Methoden: create, render, Dialoge, Karten-Klick)
-- [ ] JSDoc für `SpielverwaltungEchtzeit.ts` (Klasse + alle öffentlichen Methoden)
-- [ ] JSDoc für `TischAnsichtModell.ts` (Klasse + alle öffentlichen Methoden)
-- [ ] JSDoc für `AnimationenService.ts` (Klasse + alle öffentlichen Methoden)
-- [ ] `specs/frontend-architektur.md` auf aktuellem Stand (Dateistruktur, Datenfluss)
-- [ ] Code-Review / Plausibilitätsprüfung
+- [x] JSDoc für `AppStore.ts` (Klasse + alle öffentlichen Methoden)
+- [x] JSDoc für `TischSzene.ts` (Klasse + kritische Methoden: create, render, Dialoge, Karten-Klick)
+- [x] JSDoc für `SpielverwaltungEchtzeit.ts` (Klasse + alle öffentlichen Methoden)
+- [x] JSDoc für `TischAnsichtModell.ts` (Klasse + alle öffentlichen Methoden)
+- [x] JSDoc für `AnimationenService.ts` (Klasse + alle öffentlichen Methoden)
+- [x] `TischUIManager.ts` und `TischInputHandler.ts` JSDoc (Klasse + kritische Methoden)
+- [x] `specs/frontend-architektur.md` auf aktuellem Stand (Dateistruktur, Datenfluss)
+- [x] Code-Review / Plausibilitätsprüfung
 
 ## Technische Hinweise
 
