@@ -1,4 +1,4 @@
-package de.locodoko.partie.ki;
+package de.locodoko.ki;
 
 import de.locodoko.karten.Karte;
 import de.locodoko.partie.Ansage;

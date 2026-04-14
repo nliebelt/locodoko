@@ -1,4 +1,4 @@
-package de.locodoko.partie.ki;
+package de.locodoko.ki;
 
 import org.springframework.stereotype.Component;
 

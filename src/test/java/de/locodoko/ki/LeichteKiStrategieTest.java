@@ -1,4 +1,4 @@
-package de.locodoko.partie.ki;
+package de.locodoko.ki;
 
 import de.locodoko.karten.Farbe;
 import de.locodoko.karten.Hand;

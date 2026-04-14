@@ -1,9 +1,9 @@
 package de.locodoko.tisch;
 
-import de.locodoko.partie.ki.KiArmutAntwort;
-import de.locodoko.partie.ki.KiSpielzustand;
-import de.locodoko.partie.ki.KiStrategie;
-import de.locodoko.partie.ki.KiStrategieFactory;
+import de.locodoko.ki.KiArmutAntwort;
+import de.locodoko.ki.KiSpielzustand;
+import de.locodoko.ki.KiStrategie;
+import de.locodoko.ki.KiStrategieFactory;
 import de.locodoko.karten.Karte;
 import de.locodoko.karten.SpielerPosition;
 import de.locodoko.partie.Ansage;

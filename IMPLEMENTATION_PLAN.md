@@ -1,6 +1,6 @@
 # IMPLEMENTATION_PLAN — Locodoko Doppelkopf
 
-> **Letzte Aktualisierung: 2026-04-14 (Plan-Run #37)**
+> **Letzte Aktualisierung: 2026-04-14 (Plan-Run #38)**
 
 ## Legende
 
@@ -59,9 +59,9 @@ VerbindungsSessionEreignisListener, SessionCleanupService u.a.
 
 ### 1.3 Package-Rename: partie/ki → ki (top-level)
 
-- [ ] Package `de.locodoko.partie.ki` verschieben zu `de.locodoko.ki`
-- [ ] Alle Imports aktualisieren
-- [ ] KiEventAdapter verbleibt in `tisch/` (konsumiert Events, ruft SpielAktionsService auf)
+- [x] Package `de.locodoko.partie.ki` verschieben zu `de.locodoko.ki`
+- [x] Alle Imports aktualisieren
+- [x] KiEventAdapter verbleibt in `tisch/` (konsumiert Events, ruft SpielAktionsService auf)
   ODER wird nach `ki/` verschoben falls `ki/` direkt `SpielAktionsService` aufrufen darf
   → **Klärung:** Laut Spec darf `ki/` nur `partie/` und `karten/` importieren, NICHT `tisch/`.
     `KiEventAdapter` muss deshalb in `tisch/` bleiben (er ruft `SpielAktionsService` in `tisch/` auf).
@@ -292,12 +292,15 @@ Phase 4 (parallel, niedrige Priorität):
 
 ## Notiz
 
-**Zuletzt erledigt (Plan-Run #37):** Task 1.2 — Package-Rename `session` → `spieler`.
-43 Main-Dateien + 8 Test-Dateien verschoben, 18 externe Imports in tisch/partie aktualisiert,
-`application-dev.properties` Logging-Pfad angepasst. 221 Backend-Tests grün, Frontend grün.
+**Zuletzt erledigt (Plan-Run #38):** Task 1.3 — Package-Rename `partie/ki` → `ki`.
+8 Main-Dateien + 3 Test-Dateien von `de.locodoko.partie.ki` nach `de.locodoko.ki` verschoben.
+5 externe Dateien in `tisch/` aktualisiert (KiOrchestrierungService, TischkonfigurationEmbeddable,
+TischKonfigurationDto, KiOrchestrierungServiceFehlerTest, TischControllerTest).
+KiEventAdapter verbleibt in `tisch/` (ruft SpielAktionsService auf, darf laut Spec nicht in `ki/`).
+221 Backend-Tests grün, Frontend grün.
 
-**Nächster logischer Schritt:** Task 1.3 (Package-Rename `partie/ki` → `ki`) oder
-alternativ 1.4/1.5 da diese ebenfalls unabhängig sind. Alle Tasks 1.1–1.6 sind
+**Nächster logischer Schritt:** Task 1.4 (SpielerPosition, Stich, GespielteKarte von `karten` → `partie`)
+oder alternativ 1.5/1.6 da diese ebenfalls unabhängig sind. Alle Tasks 1.1–1.6 sind
 Voraussetzung für 1.7 (Spring Modulith).
 
 **Offene Fragen:** Keine.

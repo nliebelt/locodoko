@@ -10,7 +10,7 @@ import de.locodoko.tisch.TischEntity;
 import de.locodoko.tisch.TischRepository;
 import de.locodoko.tisch.TischStatus;
 import de.locodoko.tisch.TischkonfigurationEmbeddable;
-import de.locodoko.partie.ki.KiSchwierigkeit;
+import de.locodoko.ki.KiSchwierigkeit;
 import de.locodoko.spieler.SpielerNameAnfrage;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
