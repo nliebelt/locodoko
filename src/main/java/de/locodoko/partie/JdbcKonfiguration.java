@@ -18,7 +18,7 @@ import java.util.Set;
  * Objekten dieselbe Schutzwirkung haben wie frueheres JPA-Hibernate-Validator.
  */
 @Configuration
-@EnableJdbcRepositories(basePackages = {"de.locodoko.partie", "de.locodoko.tisch", "de.locodoko.session"})
+@EnableJdbcRepositories(basePackages = {"de.locodoko.partie", "de.locodoko.tisch", "de.locodoko.spieler"})
 public class JdbcKonfiguration {
 
     /**

@@ -15,7 +15,7 @@ import de.locodoko.partie.Sonderpunkt;
 import de.locodoko.partie.SonderpunktEreignis;
 import de.locodoko.partie.PartieEntity;
 import de.locodoko.partie.SpielEntity;
-import de.locodoko.session.SpielerEntity;
+import de.locodoko.spieler.SpielerEntity;
 import de.locodoko.partie.StichEntity;
 import de.locodoko.tisch.TischEntity;
 import de.locodoko.tisch.TischkonfigurationEmbeddable;

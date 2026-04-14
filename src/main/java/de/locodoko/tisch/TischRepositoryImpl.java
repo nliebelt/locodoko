@@ -1,9 +1,9 @@
 package de.locodoko.tisch;
 
 import de.locodoko.partie.PartieId;
-import de.locodoko.session.SpielerEntity;
-import de.locodoko.session.SpielerId;
-import de.locodoko.session.SpielerRepository;
+import de.locodoko.spieler.SpielerEntity;
+import de.locodoko.spieler.SpielerId;
+import de.locodoko.spieler.SpielerRepository;
 import de.locodoko.partie.PartieEntity;
 import de.locodoko.partie.PartieRepository;
 

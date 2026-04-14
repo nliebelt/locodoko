@@ -1,7 +1,7 @@
 package de.locodoko.tisch;
 
 import de.locodoko.partie.PartieId;
-import de.locodoko.session.SpielerId;
+import de.locodoko.spieler.SpielerId;
 
 import java.util.List;
 import java.util.Optional;

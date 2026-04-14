@@ -2,7 +2,7 @@ package de.locodoko.tisch;
 
 import de.locodoko.partie.AbstraktePersistenzEntity;
 import de.locodoko.partie.PartieEntity;
-import de.locodoko.session.SpielerEntity;
+import de.locodoko.spieler.SpielerEntity;
 
 import de.locodoko.tisch.Tischhintergrund;
 import jakarta.validation.Valid;

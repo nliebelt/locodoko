@@ -1,9 +1,9 @@
 package de.locodoko.tisch;
 
 import de.locodoko.partie.ereignisse.PartieAktualisiert;
-import de.locodoko.session.PartieEreignisAntwort;
-import de.locodoko.session.PartieEreignisTyp;
-import de.locodoko.session.TischEchtzeitService;
+import de.locodoko.spieler.PartieEreignisAntwort;
+import de.locodoko.spieler.PartieEreignisTyp;
+import de.locodoko.spieler.TischEchtzeitService;
 import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;
 

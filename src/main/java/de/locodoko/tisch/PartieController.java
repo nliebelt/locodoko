@@ -1,8 +1,8 @@
 package de.locodoko.tisch;
 
 import de.locodoko.partie.PartieId;
-import de.locodoko.session.SpielerEntity;
-import de.locodoko.session.SpielerSessionService;
+import de.locodoko.spieler.SpielerEntity;
+import de.locodoko.spieler.SpielerSessionService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;

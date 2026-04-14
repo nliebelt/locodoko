@@ -1,6 +1,6 @@
 # IMPLEMENTATION_PLAN — Locodoko Doppelkopf
 
-> **Letzte Aktualisierung: 2026-04-14 (Plan-Run #36)**
+> **Letzte Aktualisierung: 2026-04-14 (Plan-Run #37)**
 
 ## Legende
 
@@ -49,9 +49,9 @@ GlobalerFehlerHandler u.a.
 
 ### 1.2 Package-Rename: session → spieler
 
-- [ ] Package `de.locodoko.session` umbenennen zu `de.locodoko.spieler`
-- [ ] Alle Imports aktualisieren
-- [ ] Session-Cookie-Name und HTTP-Session-Logik bleiben unverändert
+- [x] Package `de.locodoko.session` umbenennen zu `de.locodoko.spieler`
+- [x] Alle Imports aktualisieren
+- [x] Session-Cookie-Name und HTTP-Session-Logik bleiben unverändert
 
 **Betroffene Klassen (aktuell in `session/`):** SpielerEntity, SpielerId, SpielerRepository,
 SpielerSessionService, SpielerSessionController, VerbindungsabbruchService,
@@ -292,12 +292,12 @@ Phase 4 (parallel, niedrige Priorität):
 
 ## Notiz
 
-**Zuletzt erledigt (Plan-Run #36):** Task 1.1 — Package-Rename `lobby` → `tisch`.
-Alle 27 Main-Dateien + 5 Test-Dateien verschoben, 25+ Imports in session/partie aktualisiert,
+**Zuletzt erledigt (Plan-Run #37):** Task 1.2 — Package-Rename `session` → `spieler`.
+43 Main-Dateien + 8 Test-Dateien verschoben, 18 externe Imports in tisch/partie aktualisiert,
 `application-dev.properties` Logging-Pfad angepasst. 221 Backend-Tests grün, Frontend grün.
 
-**Nächster logischer Schritt:** Task 1.2 (Package-Rename `session` → `spieler`) oder
-alternativ 1.4/1.5 da diese ebenfalls unabhängig von 1.1 sind. Alle Tasks 1.1–1.6 sind
+**Nächster logischer Schritt:** Task 1.3 (Package-Rename `partie/ki` → `ki`) oder
+alternativ 1.4/1.5 da diese ebenfalls unabhängig sind. Alle Tasks 1.1–1.6 sind
 Voraussetzung für 1.7 (Spring Modulith).
 
 **Offene Fragen:** Keine.

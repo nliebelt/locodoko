@@ -1,6 +1,6 @@
 package de.locodoko.tisch;
 
-import de.locodoko.session.SpielerEntity;
+import de.locodoko.spieler.SpielerEntity;
 
 import java.util.UUID;
 

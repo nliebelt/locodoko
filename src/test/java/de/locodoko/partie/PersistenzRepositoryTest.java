@@ -3,9 +3,9 @@ package de.locodoko.partie;
 import de.locodoko.tisch.TischEntity;
 import de.locodoko.tisch.TischRepository;
 import de.locodoko.tisch.TischStatus;
-import de.locodoko.session.SpielerRepository;
+import de.locodoko.spieler.SpielerRepository;
 import de.locodoko.tisch.TischkonfigurationEmbeddable;
-import de.locodoko.session.SpielerEntity;
+import de.locodoko.spieler.SpielerEntity;
 
 import de.locodoko.karten.Augen;
 import de.locodoko.karten.Stich;

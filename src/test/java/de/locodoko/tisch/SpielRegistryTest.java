@@ -9,8 +9,8 @@ import de.locodoko.partie.Spielphase;
 import de.locodoko.partie.VorbehaltAnsage;
 import de.locodoko.partie.PartieEntity;
 import de.locodoko.partie.SpielEntity;
-import de.locodoko.session.SpielerEntity;
-import de.locodoko.session.SpielerId;
+import de.locodoko.spieler.SpielerEntity;
+import de.locodoko.spieler.SpielerId;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 

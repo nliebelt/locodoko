@@ -15,7 +15,7 @@ import de.locodoko.partie.PartieEntity;
 import de.locodoko.partie.PartieStatus;
 import de.locodoko.partie.SpielEntity;
 import de.locodoko.partie.SpielErgebnisEmbeddable;
-import de.locodoko.session.SpielerEntity;
+import de.locodoko.spieler.SpielerEntity;
 
 import java.util.ArrayList;
 import java.util.EnumMap;
