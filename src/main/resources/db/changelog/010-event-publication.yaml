@@ -1,0 +1,60 @@
+databaseChangeLog:
+  - changeSet:
+      id: 010-event-publication
+      author: locodoko
+      changes:
+        - createTable:
+            tableName: event_publication
+            columns:
+              - column:
+                  name: id
+                  type: UUID
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: listener_id
+                  type: VARCHAR(512)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: event_type
+                  type: VARCHAR(512)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: serialized_event
+                  type: VARCHAR(4000)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: publication_date
+                  type: TIMESTAMP(9) WITH TIME ZONE
+                  constraints:
+                    nullable: false
+              - column:
+                  name: completion_date
+                  type: TIMESTAMP(9) WITH TIME ZONE
+              - column:
+                  name: status
+                  type: VARCHAR(20)
+              - column:
+                  name: completion_attempts
+                  type: INT
+              - column:
+                  name: last_resubmission_date
+                  type: TIMESTAMP(9) WITH TIME ZONE
+        - createIndex:
+            tableName: event_publication
+            indexName: event_publication_by_listener_id_and_serialized_event_idx
+            columns:
+              - column:
+                  name: listener_id
+              - column:
+                  name: serialized_event
+        - createIndex:
+            tableName: event_publication
+            indexName: event_publication_by_completion_date_idx
+            columns:
+              - column:
+                  name: completion_date

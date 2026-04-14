@@ -1,6 +1,6 @@
 # IMPLEMENTATION_PLAN — Locodoko Doppelkopf
 
-> **Letzte Aktualisierung: 2026-04-14 (Plan-Run #42)**
+> **Letzte Aktualisierung: 2026-04-14 (Plan-Run #43)**
 
 ## Legende
 
@@ -113,12 +113,13 @@ Keine karten-interne Klasse importiert Stich/GespielteKarte/SpielerPosition.
 
 ### 1.8 Liquibase-Changeset: event_publication-Tabelle
 
-- [ ] Changeset `010-event-publication.yaml` erstellen
-- [ ] Tabelle `event_publication` mit Spalten laut Spring Modulith Dokumentation:
+- [x] Changeset `010-event-publication.yaml` erstellen
+- [x] Tabelle `event_publication` mit Spalten laut Spring Modulith Dokumentation:
       `id UUID PK`, `listener_id TEXT`, `event_type TEXT`, `serialized_event TEXT`,
       `publication_date TIMESTAMP`, `completion_date TIMESTAMP`
-- [ ] In `db.changelog-master.yaml` einbinden
-- [ ] `mvn test` muss grün sein (Liquibase-Migration läuft sauber durch)
+      (plus `status`, `completion_attempts`, `last_resubmission_date` aus Modulith 2.0.0 Schema)
+- [x] In `db.changelog-master.yaml` einbinden
+- [x] `mvn test` muss grün sein (Liquibase-Migration läuft sauber durch)
 
 ### 1.9 @EventListener → @ApplicationModuleListener migrieren
 
@@ -131,7 +132,7 @@ Keine karten-interne Klasse importiert Stich/GespielteKarte/SpielerPosition.
       `org.springframework.modulith.events.ApplicationModuleListener` aktualisieren
 - [ ] Sicherstellen dass Events nach DB-Commit gefeuert werden (Outbox-Semantik)
 
-[BLOCKED: 1.7, 1.8]
+[BLOCKED: 1.7]
 
 ### 1.10 ApplicationModulesTest erstellen
 
@@ -290,13 +291,14 @@ Phase 4 (parallel, niedrige Priorität):
 
 ## Notiz
 
-**Zuletzt erledigt (Plan-Run #42):** Task 1.7 — Spring Modulith Dependencies hinzugefügt.
-`spring-modulith-bom` 2.0.0 als BOM in `<dependencyManagement>`, `spring-modulith-starter-core`
-und `spring-modulith-starter-jdbc` (runtime) als Dependencies. `mvn compile` und alle 221
-Backend-Tests grün.
+**Zuletzt erledigt (Plan-Run #43):** Task 1.8 — Liquibase-Changeset `010-event-publication.yaml`
+erstellt. Tabelle `event_publication` mit allen 9 Spalten aus Spring Modulith 2.0.0 Schema
+(id, listener_id, event_type, serialized_event, publication_date, completion_date, status,
+completion_attempts, last_resubmission_date) plus 2 Indizes. In `db.changelog-master.yaml`
+eingebunden. Alle 221 Backend-Tests grün.
 
-**Nächster logischer Schritt:** Task 1.8 (Liquibase-Changeset für `event_publication`-Tabelle).
-Dependency auf 1.7 ist erfüllt.
+**Nächster logischer Schritt:** Task 1.9 (`@EventListener` → `@ApplicationModuleListener` migrieren).
+Dependency auf 1.7 + 1.8 ist erfüllt.
 
 **Offene Fragen:** Keine.
 

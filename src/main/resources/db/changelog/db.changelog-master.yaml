@@ -17,3 +17,5 @@ databaseChangeLog:
       file: db/changelog/008-schweinchen-aktiv.yaml
   - include:
       file: db/changelog/009-solist-position.yaml
+  - include:
+      file: db/changelog/010-event-publication.yaml
