@@ -1,14 +1,3 @@
-/**
- * Verwaltet den gesamten DOM-basierten UI-Aufbau und die reaktiven DOM-Updates der TischSzene.
- *
- * Verantwortlichkeiten:
- * - Erstellt und verwaltet alle HTML-Elemente (Top-Bar, Seitenlade, Modals, Toast-Stack)
- * - Reagiert auf Zustandsaenderungen mit gezielten DOM-Mutationen
- * - Kapselt Seitenlade- und Einstellungs-Toggle-Logik
- *
- * Abhaengigkeiten werden ueber TischUIKontext injiziert; TischUIManager hat keine direkte
- * Referenz auf TischSzene oder Phaser-Objekte.
- */
 import { appStore } from '../anwendung';
 import {
   type TischAnsichtModell,
@@ -72,6 +61,17 @@ export interface TischUIKontext {
   onLetzteSticheToggle(): void;
 }
 
+/**
+ * Verwaltet den gesamten DOM-basierten UI-Aufbau und die reaktiven DOM-Updates der TischSzene.
+ *
+ * Verantwortlichkeiten:
+ * - Erstellt und verwaltet alle HTML-Elemente (Top-Bar, Seitenlade, Modals, Toast-Stack)
+ * - Reagiert auf Zustandsaenderungen mit gezielten DOM-Mutationen
+ * - Kapselt Seitenlade- und Einstellungs-Toggle-Logik
+ *
+ * Abhaengigkeiten werden ueber TischUIKontext injiziert; TischUIManager hat keine direkte
+ * Referenz auf TischSzene oder Phaser-Objekte.
+ */
 export class TischUIManager {
   // ── Top-Bar ──────────────────────────────────────────────────────────────────
   private hudStichzaehlerEl?: HTMLSpanElement;
@@ -580,6 +580,7 @@ export class TischUIManager {
     });
   }
 
+  /** Aktualisiert die Ergebnis-Sektion in der Seitenlade (Spielwert, Augen, Sonderpunkte). */
   aktualisiereErgebnis(modell: TischAnsichtModell): void {
     if (!this.ergebnisInhalt) {
       return;
@@ -635,6 +636,7 @@ export class TischUIManager {
     this.ergebnisInhalt.append(sektion);
   }
 
+  /** Aktualisiert die "Letzte Stiche"-Liste in der Seitenlade (Toggle + Inhalt). */
   aktualisiereLetzteStiche(modell: TischAnsichtModell): void {
     if (!this.seitenladeLetzteSticheListe || !this.seitenladeLetzteStichButton) {
       return;
@@ -672,6 +674,7 @@ export class TischUIManager {
     });
   }
 
+  /** Zeigt oder entfernt Toast-Meldungen (Fehler/Info) im oberen Bereich. */
   aktualisiereToasts(zustand: AppZustand): void {
     if (!this.toastStack) {
       return;

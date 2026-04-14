@@ -254,6 +254,12 @@ export class AppStore {
     this.echtzeit.senden(`/app/tisch/${tischId}/snapshot`);
   }
 
+  /**
+   * Laedt den Namen eines Tisches per REST-API.
+   * Wird fuer die Session-Recovery verwendet, wenn nur die TischId bekannt ist.
+   * @param tischId - ID des Tisches
+   * @returns Name des Tisches
+   */
   async ladeTischName(tischId: Uuid): Promise<string> {
     const tisch = await this.api.ladeTisch(tischId);
     return tisch.name;

@@ -1,6 +1,6 @@
 # IMPLEMENTATION_PLAN — Locodoko Doppelkopf
 
-> **Letzte Aktualisierung: 2026-04-14 (Plan-Run #47)**
+> **Letzte Aktualisierung: 2026-04-14 (Plan-Run #48)**
 
 ## Legende
 
@@ -189,13 +189,13 @@ Keine karten-interne Klasse importiert Stich/GespielteKarte/SpielerPosition.
 
 ### 3.1 JSDoc vervollständigen
 
-- [ ] `AppStore.ts`: Klasse + alle öffentlichen Methoden (teilweise vorhanden, ergänzen)
-- [ ] `TischSzene.ts`: Klasse + kritische Methoden (create, render, Dialoge, Karten-Klick)
-- [ ] `SpielverwaltungEchtzeit.ts`: Klasse + alle öffentlichen Methoden
-- [ ] `TischAnsichtModell.ts`: Klasse + alle öffentlichen Methoden (teilweise vorhanden)
-- [ ] `AnimationenService.ts`: Klasse + alle öffentlichen Methoden (teilweise vorhanden)
-- [ ] `TischInputHandler.ts`: TSDoc auf Klassenebene
-- [ ] `TischUIManager.ts`: TSDoc auf Klassenebene
+- [x] `AppStore.ts`: Klasse + alle öffentlichen Methoden (Klasse + 24/25 Methoden waren vorhanden, `ladeTischName` ergänzt)
+- [x] `TischSzene.ts`: Klasse + kritische Methoden (Klasse + preload/create/shutdown/destroy — alles bereits vorhanden)
+- [x] `SpielverwaltungEchtzeit.ts`: Klasse + alle öffentlichen Methoden (alles bereits vorhanden)
+- [x] `TischAnsichtModell.ts`: Klasse + alle öffentlichen Methoden (Interface + 3 Funktionen — alles bereits vorhanden)
+- [x] `AnimationenService.ts`: Klasse + alle öffentlichen Methoden (Klasse + 10 Methoden — alles bereits vorhanden)
+- [x] `TischInputHandler.ts`: TSDoc auf Klassenebene (bereits vorhanden)
+- [x] `TischUIManager.ts`: TSDoc auf Klassenebene + 3 fehlende Methoden-Docs ergänzt (aktualisiereErgebnis, aktualisiereLetzteStiche, aktualisiereToasts)
 
 **Referenz:** `specs/frontend-architektur.md` (DoD), `specs/architektur-spielkern.md` (Frontend TSDoc)
 
@@ -300,19 +300,16 @@ Phase 4 (parallel, niedrige Priorität):
 
 ## Notiz
 
-**Zuletzt erledigt (Plan-Run #47):** Task 2.2 — Einladungslink implementiert.
-Backend: `TischEntity` hat neues Feld `einladungsCode` (8-stellig alphanumerisch, auto-generiert
-bei Erstellung, UNIQUE NOT NULL, ohne verwechselbare Zeichen wie 0/O/1/I). Liquibase-Changeset
-`011-einladungs-code.yaml`. `TischVerwaltungsService.beitretenViaCode()` loest Code zu TischId auf
-und delegiert an `betreteTisch()` (case-insensitive). REST-Endpoint: `POST /api/tische/beitreten/{code}`.
-Frontend: `SpielverwaltungApi.betreteTischViaCode()`, `AppStore.betreteTischViaCode()`,
-„Link teilen"-Button in TischSzene-TopBar (kopiert `#join/{code}` URL in Zwischenablage),
-BootSzene prueft beim Start auf `#join/{code}` Hash und tritt automatisch bei.
-`TischAntwort` liefert `einladungsCode` an Frontend. 6 neue Integrationstests.
-231 Backend-Tests gruen, 24 Frontend-Tests gruen, Build + Lint clean.
+**Zuletzt erledigt (Plan-Run #48):** Task 3.1 — JSDoc vervollstaendigen.
+Audit aller 7 Frontend-Dateien ergab: 5 von 7 waren bereits vollstaendig dokumentiert
+(TischSzene, TischAnsichtModell, AnimationenService, SpielverwaltungEchtzeit, TischInputHandler).
+Ergaenzt: `AppStore.ladeTischName()` JSDoc, `TischUIManager` Klassen-Level-JSDoc (von Datei-Kopf
+zum Klassen-Block verschoben) + 3 fehlende Methoden-Docs (aktualisiereErgebnis,
+aktualisiereLetzteStiche, aktualisiereToasts).
+24 Frontend-Tests gruen, Build + Lint clean.
 
-**Naechster logischer Schritt:** 2.1/2.2 E2E-Tests noch offen, oder Phase 3 (JSDoc, Logging,
-data-testid, Offene Tische), oder Phase 4 (DoD-Checkboxen, E2E-Stabilisierung).
+**Naechster logischer Schritt:** Phase 3 weitermachen (3.2 Logging, 3.3 data-testid, 3.4 Offene Tische),
+oder Phase 4 (DoD-Checkboxen, E2E-Stabilisierung).
 
 **Offene Fragen:** Keine.
 
