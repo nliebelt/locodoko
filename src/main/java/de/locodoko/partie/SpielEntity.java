@@ -1,7 +1,6 @@
 package de.locodoko.partie;
 
 import com.fasterxml.jackson.core.type.TypeReference;
-import de.locodoko.karten.SpielerPosition;
 import de.locodoko.karten.Spieltyp;
 import de.locodoko.partie.Partei;
 import de.locodoko.partie.Spielergebnis;

@@ -1,6 +1,6 @@
 # IMPLEMENTATION_PLAN — Locodoko Doppelkopf
 
-> **Letzte Aktualisierung: 2026-04-14 (Plan-Run #38)**
+> **Letzte Aktualisierung: 2026-04-14 (Plan-Run #39)**
 
 ## Legende
 
@@ -74,11 +74,13 @@ KiSchwierigkeit, KiArmutAntwort.
 
 ### 1.4 SpielerPosition, Stich, GespielteKarte von karten → partie verschieben
 
-- [ ] `SpielerPosition.java` von `de.locodoko.karten` nach `de.locodoko.partie` verschieben
-- [ ] `Stich.java` von `de.locodoko.karten` nach `de.locodoko.partie` verschieben
-- [ ] `GespielteKarte.java` von `de.locodoko.karten` nach `de.locodoko.partie` verschieben
-- [ ] Alle Imports aktualisieren (betrifft ~30+ Dateien in lobby/tisch, partie, session/spieler, ki)
-- [ ] JavaDoc in `TrumpfOrdnung` anpassen (referenziert `Stich` im Kommentar)
+- [x] `SpielerPosition.java` von `de.locodoko.karten` nach `de.locodoko.partie` verschieben
+- [x] `Stich.java` von `de.locodoko.karten` nach `de.locodoko.partie` verschieben
+- [x] `GespielteKarte.java` von `de.locodoko.karten` nach `de.locodoko.partie` verschieben
+- [x] Alle Imports aktualisieren (betrifft ~30+ Dateien in lobby/tisch, partie, session/spieler, ki)
+- [x] JavaDoc in `TrumpfOrdnung` anpassen (referenziert `Stich` im Kommentar)
+- [x] `Kartendeck.anVierSpielerAusteilen()` refaktoriert: gibt `List<Hand>` statt `Map<SpielerPosition, Hand>` zurück (vermeidet karten→partie-Abhängigkeit)
+- [x] `StichTest` von `karten/` nach `partie/` verschoben (testet Stich, gehört dorthin)
 
 **Begründung:** `SpielerPosition` gehört laut DoD in `partie/`, nicht in `karten/`.
 `Stich` und `GespielteKarte` hängen von `SpielerPosition` ab und enthalten Domain-Logik
@@ -292,16 +294,18 @@ Phase 4 (parallel, niedrige Priorität):
 
 ## Notiz
 
-**Zuletzt erledigt (Plan-Run #38):** Task 1.3 — Package-Rename `partie/ki` → `ki`.
-8 Main-Dateien + 3 Test-Dateien von `de.locodoko.partie.ki` nach `de.locodoko.ki` verschoben.
-5 externe Dateien in `tisch/` aktualisiert (KiOrchestrierungService, TischkonfigurationEmbeddable,
-TischKonfigurationDto, KiOrchestrierungServiceFehlerTest, TischControllerTest).
-KiEventAdapter verbleibt in `tisch/` (ruft SpielAktionsService auf, darf laut Spec nicht in `ki/`).
-221 Backend-Tests grün, Frontend grün.
+**Zuletzt erledigt (Plan-Run #39):** Task 1.4 — SpielerPosition, Stich, GespielteKarte von
+`de.locodoko.karten` nach `de.locodoko.partie` verschoben. 3 Main-Dateien verschoben,
+~50 Dateien (Main + Test) Imports aktualisiert. `Kartendeck.anVierSpielerAusteilen()` refaktoriert
+von `Map<SpielerPosition, Hand>` zu `List<Hand>`, damit `karten/` nicht `partie/` importiert
+(verbotene Abhängigkeitsrichtung). Mapping-Logik in `Spiel.haendeAusDeck()` verlagert.
+`StichTest` nach `partie/` verschoben. TrumpfOrdnung-JavaDoc auf FQN aktualisiert.
+Redundante Same-Package-Imports in `partie/` entfernt.
+221 Backend-Tests grün, 24 Frontend-Tests grün.
 
-**Nächster logischer Schritt:** Task 1.4 (SpielerPosition, Stich, GespielteKarte von `karten` → `partie`)
-oder alternativ 1.5/1.6 da diese ebenfalls unabhängig sind. Alle Tasks 1.1–1.6 sind
-Voraussetzung für 1.7 (Spring Modulith).
+**Nächster logischer Schritt:** Task 1.5 (Cross-Modul-Verletzung PartieEntity → TischEntity)
+oder 1.6 (PunkteRechner package-private). Alle Tasks 1.1–1.6 sind Voraussetzung für 1.7
+(Spring Modulith).
 
 **Offene Fragen:** Keine.
 

@@ -1,7 +1,7 @@
 package de.locodoko.tisch;
 
 import tools.jackson.databind.ObjectMapper;
-import de.locodoko.karten.SpielerPosition;
+import de.locodoko.partie.SpielerPosition;
 import de.locodoko.partie.PartieEntity;
 import de.locodoko.partie.SpielEntity;
 import de.locodoko.spieler.SpielerEntity;

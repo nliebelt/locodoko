@@ -1,6 +1,5 @@
 package de.locodoko.partie;
 
-import de.locodoko.karten.SpielerPosition;
 import de.locodoko.karten.Spielregeln;
 
 import java.util.ArrayList;

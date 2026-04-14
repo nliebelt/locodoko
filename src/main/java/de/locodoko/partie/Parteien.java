@@ -4,7 +4,6 @@ import de.locodoko.karten.Farbe;
 import de.locodoko.karten.Hand;
 import de.locodoko.karten.Karte;
 import de.locodoko.karten.Kartenwert;
-import de.locodoko.karten.SpielerPosition;
 
 import java.util.ArrayList;
 import java.util.Collection;

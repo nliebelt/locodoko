@@ -1,4 +1,6 @@
-package de.locodoko.karten;
+package de.locodoko.partie;
+
+import de.locodoko.karten.Karte;
 
 /**
  * Eine gespielte Karte innerhalb eines Stichs.

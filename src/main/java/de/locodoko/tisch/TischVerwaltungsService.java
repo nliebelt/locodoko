@@ -1,7 +1,7 @@
 package de.locodoko.tisch;
 
 import de.locodoko.karten.Kartendeck;
-import de.locodoko.karten.SpielerPosition;
+import de.locodoko.partie.SpielerPosition;
 import de.locodoko.partie.PartieEntity;
 import de.locodoko.partie.PartieRepository;
 import de.locodoko.partie.PartieStatus;

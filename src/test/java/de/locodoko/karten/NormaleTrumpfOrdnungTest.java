@@ -1,5 +1,7 @@
 package de.locodoko.karten;
 
+import de.locodoko.partie.SpielerPosition;
+import de.locodoko.partie.Stich;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;

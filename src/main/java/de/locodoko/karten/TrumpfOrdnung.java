@@ -5,7 +5,7 @@ package de.locodoko.karten;
  *
  * <p>Definiert fuer jeden Spieltyp (Normalspiel, Damensolo, Bubensolo, Fleischlos usw.),
  * welche Karten Trumpf sind und wie Trumpf- bzw. Fehlkarten innerhalb eines Stichs
- * gegeneinander abgestuft werden. Die Stichlogik in {@link Stich} delegiert alle
+ * gegeneinander abgestuft werden. Die Stichlogik in {@link de.locodoko.partie.Stich} delegiert alle
  * Rang-Entscheidungen an diese Schnittstelle, um Spielvarianten auszutauschen ohne
  * die Kernlogik zu veraendern.</p>
  */

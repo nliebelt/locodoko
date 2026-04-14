@@ -52,12 +52,12 @@ class KartendeckTest {
         assertNotEquals(ungemischt.karten(), gemischt.karten(),
             "Mischen ist wichtig, damit keine deterministische Kartenverteilung den Spielstart verzerrt.");
 
-        Map<SpielerPosition, Hand> haende = gemischt.anVierSpielerAusteilen();
+        List<Hand> haende = gemischt.anVierSpielerAusteilen();
 
         assertEquals(4, haende.size());
-        assertTrue(haende.values().stream().allMatch(hand -> hand.karten().size() == 12),
+        assertTrue(haende.stream().allMatch(hand -> hand.karten().size() == 12),
             "Im Normalspiel brauchen alle vier Spieler jeweils 12 Karten fuer eine vollstaendige Runde.");
-        assertEquals(48, haende.values().stream().flatMap(hand -> hand.karten().stream()).distinct().count(),
+        assertEquals(48, haende.stream().flatMap(hand -> hand.karten().stream()).distinct().count(),
             "Beim Austeilen darf keine Karte verloren gehen oder doppelt bei verschiedenen Spielern landen.");
     }
 }

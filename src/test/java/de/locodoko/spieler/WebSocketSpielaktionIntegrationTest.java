@@ -4,7 +4,7 @@ import de.locodoko.karten.Farbe;
 import de.locodoko.karten.Karte;
 import de.locodoko.karten.Kartenwert;
 import de.locodoko.karten.Kartendeck;
-import de.locodoko.karten.SpielerPosition;
+import de.locodoko.partie.SpielerPosition;
 import de.locodoko.karten.Spielregeln;
 import de.locodoko.partie.Ansage;
 import de.locodoko.partie.Partei;

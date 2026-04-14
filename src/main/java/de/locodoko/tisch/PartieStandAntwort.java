@@ -1,7 +1,7 @@
 package de.locodoko.tisch;
 
 import de.locodoko.karten.Karte;
-import de.locodoko.karten.SpielerPosition;
+import de.locodoko.partie.SpielerPosition;
 import de.locodoko.karten.Spieltyp;
 import de.locodoko.partie.Ansage;
 import de.locodoko.partie.AnsageEreignis;
@@ -270,7 +270,7 @@ public record PartieStandAntwort(
 
     public record GespielteKarteAntwort(SpielerPosition spielerPosition, KarteAntwort karte, int reihenfolge) {
 
-        static GespielteKarteAntwort aus(de.locodoko.karten.GespielteKarte gespielteKarte) {
+        static GespielteKarteAntwort aus(de.locodoko.partie.GespielteKarte gespielteKarte) {
             return new GespielteKarteAntwort(
                 gespielteKarte.spieler(),
                 KarteAntwort.aus(gespielteKarte.karte()),

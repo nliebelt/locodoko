@@ -3,10 +3,8 @@ package de.locodoko.partie;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import de.locodoko.karten.Farbe;
-import de.locodoko.karten.GespielteKarte;
 import de.locodoko.karten.Karte;
 import de.locodoko.karten.Kartenwert;
-import de.locodoko.karten.SpielerPosition;
 
 import java.util.Objects;
 

@@ -1,4 +1,11 @@
-package de.locodoko.karten;
+package de.locodoko.partie;
+
+import de.locodoko.karten.Augen;
+import de.locodoko.karten.Bedienfarbe;
+import de.locodoko.karten.Hand;
+import de.locodoko.karten.Karte;
+import de.locodoko.karten.TrumpfOrdnung;
+import de.locodoko.karten.UngueltigerSpielzugException;
 
 import java.util.ArrayList;
 import java.util.List;

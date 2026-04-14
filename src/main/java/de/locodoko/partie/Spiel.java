@@ -11,10 +11,8 @@ import de.locodoko.karten.Kartenwert;
 import de.locodoko.karten.NormaleTrumpfOrdnung;
 import de.locodoko.karten.SchweinchenTrumpfOrdnung;
 import de.locodoko.karten.VariableTrumpfsoloTrumpfOrdnung;
-import de.locodoko.karten.SpielerPosition;
 import de.locodoko.karten.Spielregeln;
 import de.locodoko.karten.Spieltyp;
-import de.locodoko.karten.Stich;
 import de.locodoko.karten.TrumpfOrdnung;
 
 import java.util.ArrayList;
@@ -160,7 +158,7 @@ public final class Spiel {
 
     public Spiel teileKartenAus() {
         pruefePhase(Spielphase.KartenAusteilen.class, "Karten austeilen");
-        Map<SpielerPosition, Hand> neueHaende = kartendeck.anVierSpielerAusteilen();
+        Map<SpielerPosition, Hand> neueHaende = haendeAusDeck(kartendeck);
         TrumpfOrdnung neueTrumpfOrdnung = hatSchweinchen(spielregeln, neueHaende)
             ? new SchweinchenTrumpfOrdnung(spielregeln)
             : trumpfOrdnung;
@@ -781,7 +779,7 @@ public final class Spiel {
             .trumpfOrdnung(new NormaleTrumpfOrdnung(spielregeln))
             .spieltyp(Spieltyp.NORMALSPIEL)
             .phase(Spielphase.VORBEHALT_ANSAGE)
-            .haende(neuesDeck.anVierSpielerAusteilen())
+            .haende(haendeAusDeck(neuesDeck))
             .vorbehalte(List.of())
             .parteien(null)
             .ansagen(Ansagen.leer())
@@ -808,6 +806,16 @@ public final class Spiel {
             }
         }
         return null;
+    }
+
+    private static Map<SpielerPosition, Hand> haendeAusDeck(Kartendeck deck) {
+        List<Hand> liste = deck.anVierSpielerAusteilen();
+        List<SpielerPosition> positionen = SpielerPosition.standardReihenfolge();
+        Map<SpielerPosition, Hand> haende = new EnumMap<>(SpielerPosition.class);
+        for (int i = 0; i < positionen.size(); i++) {
+            haende.put(positionen.get(i), liste.get(i));
+        }
+        return Map.copyOf(haende);
     }
 
     private static boolean hatSchweinchen(Spielregeln spielregeln, Map<SpielerPosition, Hand> haende) {

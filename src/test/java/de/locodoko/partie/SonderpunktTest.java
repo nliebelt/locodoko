@@ -5,9 +5,7 @@ import de.locodoko.karten.Hand;
 import de.locodoko.karten.Karte;
 import de.locodoko.karten.Kartenwert;
 import de.locodoko.karten.NormaleTrumpfOrdnung;
-import de.locodoko.karten.SpielerPosition;
 import de.locodoko.karten.Spielregeln;
-import de.locodoko.karten.Stich;
 import de.locodoko.karten.TrumpfOrdnung;
 import org.junit.jupiter.api.Test;
 

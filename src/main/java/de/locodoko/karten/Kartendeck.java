@@ -4,9 +4,7 @@ import java.security.SecureRandom;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.EnumMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 import java.util.Random;
 
@@ -16,7 +14,7 @@ import java.util.Random;
  * <p>Ein Standard-Doppelkopf-Deck enthaelt 48 Karten (je 2 Exemplare der 24 Karten
  * aus Farbe x Wert ohne Neunen) bzw. 40 Karten in der "Ohne Neunen"-Variante.
  * Das Deck ist unveraenderlich; Mischen und Austeilen erzeugen jeweils neue Instanzen.
- * {@link #anVierSpielerAusteilen()} verteilt die Karten gleichmaessig in Sitz-Reihenfolge
+ * {@link #anVierSpielerAusteilen()} verteilt die Karten gleichmaessig an vier Spieler
  * im Uhrzeigersinn (Sued, West, Nord, Ost).</p>
  */
 public final class Kartendeck {
@@ -64,23 +62,23 @@ public final class Kartendeck {
         return karten.stream().mapToInt(Karte::augen).sum();
     }
 
-    public Map<SpielerPosition, Hand> anVierSpielerAusteilen() {
+    /**
+     * Teilt die Karten gleichmaessig an vier Spieler aus.
+     *
+     * <p>Gibt eine Liste von vier {@link Hand}-Instanzen zurueck, verteilt im
+     * Uhrzeigersinn (Index 0 = Sued, 1 = West, 2 = Nord, 3 = Ost).</p>
+     */
+    public List<Hand> anVierSpielerAusteilen() {
         if (karten.size() % 4 != 0) {
             throw new IllegalStateException("Kartenzahl muss durch vier teilbar sein");
         }
-        Map<SpielerPosition, List<Karte>> verteilung = new EnumMap<>(SpielerPosition.class);
-        for (SpielerPosition position : SpielerPosition.standardReihenfolge()) {
-            verteilung.put(position, new ArrayList<>());
+        List<List<Karte>> verteilung = new ArrayList<>(4);
+        for (int i = 0; i < 4; i++) {
+            verteilung.add(new ArrayList<>());
         }
-        List<SpielerPosition> reihenfolge = SpielerPosition.standardReihenfolge();
         for (int index = 0; index < karten.size(); index++) {
-            SpielerPosition position = reihenfolge.get(index % reihenfolge.size());
-            verteilung.get(position).add(karten.get(index));
+            verteilung.get(index % 4).add(karten.get(index));
         }
-        Map<SpielerPosition, Hand> haende = new EnumMap<>(SpielerPosition.class);
-        for (Map.Entry<SpielerPosition, List<Karte>> eintrag : verteilung.entrySet()) {
-            haende.put(eintrag.getKey(), new Hand(eintrag.getValue()));
-        }
-        return Map.copyOf(haende);
+        return verteilung.stream().map(Hand::new).toList();
     }
 }

@@ -1,6 +1,5 @@
 package de.locodoko.partie;
 
-import de.locodoko.karten.SpielerPosition;
 import de.locodoko.partie.Partei;
 import de.locodoko.partie.Sonderpunkt;
 import org.springframework.data.annotation.Transient;

@@ -2,7 +2,7 @@ package de.locodoko.tisch;
 
 import de.locodoko.karten.Karte;
 import de.locodoko.karten.Kartendeck;
-import de.locodoko.karten.SpielerPosition;
+import de.locodoko.partie.SpielerPosition;
 import de.locodoko.karten.Spielregeln;
 import de.locodoko.ki.KiArmutAntwort;
 import de.locodoko.ki.KiSchwierigkeit;

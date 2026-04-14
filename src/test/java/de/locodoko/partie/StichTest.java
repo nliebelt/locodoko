@@ -1,5 +1,13 @@
-package de.locodoko.karten;
+package de.locodoko.partie;
 
+import de.locodoko.karten.Farbe;
+import de.locodoko.karten.Hand;
+import de.locodoko.karten.Karte;
+import de.locodoko.karten.Kartenwert;
+import de.locodoko.karten.NormaleTrumpfOrdnung;
+import de.locodoko.karten.Spielregeln;
+import de.locodoko.karten.TrumpfOrdnung;
+import de.locodoko.karten.UngueltigerSpielzugException;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;

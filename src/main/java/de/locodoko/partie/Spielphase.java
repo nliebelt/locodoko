@@ -1,6 +1,5 @@
 package de.locodoko.partie;
 
-import de.locodoko.karten.Stich;
 
 import java.util.Objects;
 import java.util.Set;

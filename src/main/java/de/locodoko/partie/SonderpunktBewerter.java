@@ -1,11 +1,8 @@
 package de.locodoko.partie;
 
 import de.locodoko.karten.Farbe;
-import de.locodoko.karten.GespielteKarte;
 import de.locodoko.karten.Kartenwert;
-import de.locodoko.karten.SpielerPosition;
 import de.locodoko.karten.Spielregeln;
-import de.locodoko.karten.Stich;
 import de.locodoko.karten.TrumpfOrdnung;
 
 import java.util.ArrayList;

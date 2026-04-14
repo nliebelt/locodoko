@@ -1,7 +1,6 @@
 package de.locodoko.partie;
 
 import de.locodoko.karten.Augen;
-import de.locodoko.karten.SpielerPosition;
 
 import java.util.EnumMap;
 import java.util.EnumSet;

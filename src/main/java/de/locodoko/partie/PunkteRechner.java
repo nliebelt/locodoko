@@ -1,9 +1,7 @@
 package de.locodoko.partie;
 
 import de.locodoko.karten.Augen;
-import de.locodoko.karten.SpielerPosition;
 import de.locodoko.karten.Spielregeln;
-import de.locodoko.karten.Stich;
 import de.locodoko.karten.TrumpfOrdnung;
 
 import java.util.EnumMap;

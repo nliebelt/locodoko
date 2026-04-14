@@ -1,7 +1,7 @@
 package de.locodoko.tisch;
 
 import de.locodoko.karten.Karte;
-import de.locodoko.karten.SpielerPosition;
+import de.locodoko.partie.SpielerPosition;
 import de.locodoko.karten.UngueltigerSpielzugException;
 import de.locodoko.partie.Ansage;
 import de.locodoko.partie.PartieEntity;

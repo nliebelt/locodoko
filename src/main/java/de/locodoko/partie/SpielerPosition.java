@@ -1,4 +1,4 @@
-package de.locodoko.karten;
+package de.locodoko.partie;
 
 import java.util.List;
 

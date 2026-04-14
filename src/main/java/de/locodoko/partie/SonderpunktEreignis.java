@@ -1,6 +1,5 @@
 package de.locodoko.partie;
 
-import de.locodoko.karten.SpielerPosition;
 
 /**
  * Beschreibt ein konkretes Sonderpunkt-Ereignis mit Taeter und optionalem Opfer.

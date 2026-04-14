@@ -5,7 +5,7 @@ import de.locodoko.ki.KiSpielzustand;
 import de.locodoko.ki.KiStrategie;
 import de.locodoko.ki.KiStrategieFactory;
 import de.locodoko.karten.Karte;
-import de.locodoko.karten.SpielerPosition;
+import de.locodoko.partie.SpielerPosition;
 import de.locodoko.partie.Ansage;
 import de.locodoko.partie.Partei;
 import de.locodoko.partie.Partie;

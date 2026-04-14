@@ -1,6 +1,5 @@
 package de.locodoko.partie;
 
-import de.locodoko.karten.SpielerPosition;
 import org.springframework.data.relational.core.mapping.Column;
 import org.springframework.data.relational.core.mapping.Table;
 

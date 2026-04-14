@@ -2,7 +2,6 @@ package de.locodoko.partie;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import de.locodoko.karten.SpielerPosition;
 import de.locodoko.partie.Ansage;
 
 import java.util.Objects;

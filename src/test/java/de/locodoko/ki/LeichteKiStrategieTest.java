@@ -5,14 +5,14 @@ import de.locodoko.karten.Hand;
 import de.locodoko.karten.Karte;
 import de.locodoko.karten.Kartenwert;
 import de.locodoko.karten.NormaleTrumpfOrdnung;
-import de.locodoko.karten.SpielerPosition;
+import de.locodoko.partie.SpielerPosition;
 import de.locodoko.karten.Spielregeln;
 import de.locodoko.karten.Spieltyp;
 import de.locodoko.partie.ArmutStatus;
 import de.locodoko.partie.Ansagen;
 import de.locodoko.partie.Parteien;
 import de.locodoko.partie.Spielphase;
-import de.locodoko.karten.Stich;
+import de.locodoko.partie.Stich;
 import de.locodoko.partie.VorbehaltAnsage;
 import org.junit.jupiter.api.Test;
 

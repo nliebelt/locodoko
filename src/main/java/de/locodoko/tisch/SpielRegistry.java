@@ -1,6 +1,6 @@
 package de.locodoko.tisch;
 
-import de.locodoko.karten.SpielerPosition;
+import de.locodoko.partie.SpielerPosition;
 import de.locodoko.partie.Spiel;
 import jakarta.annotation.PostConstruct;
 import org.slf4j.Logger;
