@@ -2,7 +2,7 @@
 
 | Feld           | Wert                                                                 |
 |----------------|----------------------------------------------------------------------|
-| Status         | Finalisierte Vorgabe                                                 |
+| Status         | Finalisierte Vorgabe |
 | Priorität      | Kritisch                                                             |
 | Abhängigkeiten | datenbankmodell.md                                                   |
 | Letztes Update | 2026-04-13 — Spring Modulith, neue BC-Namen, Application Layer      |

@@ -2,7 +2,7 @@
 
 | Feld           | Wert                                                                      |
 |----------------|---------------------------------------------------------------------------|
-| Status         | Vollständig implementiert und getestet                                    |
+| Status         | Zu prüfen |
 | Priorität      | Hoch                                                                      |
 | Abhängigkeiten | spieler-session.md, ki-strategie.md, websocket-kommunikation.md, lobby.md |
 

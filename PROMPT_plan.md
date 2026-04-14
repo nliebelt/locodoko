@@ -14,11 +14,14 @@ auslieferbar als einzelnes JAR.
     Jeder gibt zurück: was implementiert ist, was fehlt, was zwischen Spec und Code
     inkonsistent ist — max. 20 Zeilen. Zuerst suchen, nicht annehmen dass etwas fehlt.
 
-    Specs mit Status "Vollständig implementiert und getestet" nur überfliegen —
-    offene oder teilweise implementierte Specs genau lesen.
+    Specs mit Status "Zu prüfen" immer vollständig lesen. Specs mit Status
+    "Aktive Vorgabe" / "Finalisierte Vorgabe" / "Abgeschlossen" nur überfliegen.
 
-    - Subagent 1 — Lobby/Tisch: `src/main/java/de/locodoko/lobby/`
-      + specs/lobby.md, specs/tischkonfiguration.md, specs/datenbankmodell.md
+    - Subagent 1 — Tisch/Spieler: `src/main/java/de/locodoko/` (alle Packages auflisten!)
+      Ziel-BCs laut `specs/architektur-ddd.md`: `tisch/`, `spieler/` (aktuell: `lobby/`, `session/`)
+      + specs/lobby.md, specs/tischkonfiguration.md, specs/datenbankmodell.md,
+        specs/spieler-session.md, specs/verbindungsabbruch.md,
+        **specs/architektur-ddd.md** (Ziel-Modulstruktur)
 
     - Subagent 2 — Partie/Regeln/Architektur: `src/main/java/de/locodoko/partie/`
       + specs/spielablauf.md, specs/stichlogik.md, specs/trumpfhierarchie.md,
@@ -26,11 +29,12 @@ auslieferbar als einzelnes JAR.
         specs/sonderpunkte.md, specs/bockrunden.md, specs/schweinchen.md,
         specs/dreissig-augen-pflicht.md, specs/regelkatalog.md,
         specs/tischkonfiguration.md,
-        **specs/architektur-spielkern.md** (Refactoring-Zielzustand)
+        **specs/architektur-spielkern.md** (Zielzustand Spielkern)
 
-    - Subagent 3 — Session/API/Events: `src/main/java/de/locodoko/session/`
-      + specs/spieler-session.md, specs/websocket-kommunikation.md,
-        specs/rest-api.md, specs/verbindungsabbruch.md, specs/e2e-tests.md,
+    - Subagent 3 — API/Events/KI-Modul: `src/main/java/de/locodoko/` (partie/ki/, system/)
+      Ziel-BC laut `specs/architektur-ddd.md`: `ki/` top-level (aktuell: `partie/ki/`)
+      + specs/websocket-kommunikation.md, specs/rest-api.md, specs/e2e-tests.md,
+        specs/ki-strategie.md,
         **specs/architektur-domain-events.md** (KI als Event-Subscriber)
 
     - Subagent 4 — Frontend: `frontend/src/`

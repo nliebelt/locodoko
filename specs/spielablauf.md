@@ -2,7 +2,7 @@
 
 | Feld           | Wert                                              |
 |----------------|---------------------------------------------------|
-| Status         | Teilweise implementiert                           |
+| Status         | Zu prüfen |
 | Priorität      | Hoch                                              |
 | Abhängigkeiten | kartendeck.md, stichlogik.md, trumpfhierarchie.md |
 

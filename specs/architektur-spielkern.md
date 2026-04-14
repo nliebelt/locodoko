@@ -1,5 +1,11 @@
 # Architektur Spielkern — Locodoko
 
+| Feld           | Wert                                                        |
+|----------------|-------------------------------------------------------------|
+| Status         | Aktive Vorgabe                                              |
+| Priorität      | Kritisch                                                    |
+| Abhängigkeiten | architektur-ddd.md, kartendeck.md                           |
+
 ## Glossar
 
 Die Fachbegriffe folgen den offiziellen DKV-Doppelkopf-Regeln. Code, Klassen und Methoden spiegeln diese Sprache exakt.

@@ -2,7 +2,7 @@
 
 | Feld           | Wert                                                                      |
 |----------------|---------------------------------------------------------------------------|
-| Status         | Vollständig implementiert                                                 |
+| Status         | Zu prüfen |
 | Priorität      | Hoch                                                                      |
 | Abhängigkeiten | lobby.md, tischkonfiguration.md, spieler-session.md, punkteberechnung.md |
 

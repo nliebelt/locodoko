@@ -2,7 +2,7 @@
 
 | Feld           | Wert                                      |
 |----------------|-------------------------------------------|
-| Status         | Neu — ersetzt implizite Design-Entscheide |
+| Status         | Zu prüfen |
 | Priorität      | Hoch                                      |
 | Abhängigkeiten | frontend-tischansicht.md, frontend-animationen.md |
 

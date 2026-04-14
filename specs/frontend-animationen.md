@@ -2,7 +2,7 @@
 
 | Feld           | Wert                                        |
 |----------------|---------------------------------------------|
-| Status         | Erweiterung erforderlich — Stich-Visualisierung (4.16) |
+| Status         | Zu prüfen |
 | Priorität      | Mittel                                      |
 | Abhängigkeiten | frontend-tischansicht.md, websocket-kommunikation.md |
 

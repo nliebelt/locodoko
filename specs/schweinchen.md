@@ -2,7 +2,7 @@
 
 | Feld           | Wert                                                      |
 |----------------|-----------------------------------------------------------|
-| Status         | Spezifiziert, nicht implementiert                         |
+| Status         | Zu prüfen |
 | Priorität      | Mittel                                                    |
 | Abhängigkeiten | trumpfhierarchie.md, spielablauf.md                       |
 

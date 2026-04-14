@@ -2,7 +2,7 @@
 
 | Feld           | Wert                                               |
 |----------------|----------------------------------------------------|
-| Status         | Testfall 1 und 2 implementiert — Testfall 2 noch instabil (rein-KI-Stiche in Schleife) |
+| Status         | Zu prüfen |
 | Priorität      | Hoch                                               |
 | Abhängigkeiten | spieler-session.md, lobby.md, spielablauf.md, ki-strategie.md, frontend-tischansicht.md, frontend-tastatursteuerung.md |
 

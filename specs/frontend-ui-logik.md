@@ -2,7 +2,7 @@
 
 | Feld           | Wert                                                                                    |
 |----------------|-----------------------------------------------------------------------------------------|
-| Status         | Implementiert — Spielaktions-UI in Phaser, Meta-UI als HTML-DOM                        |
+| Status         | Zu prüfen |
 | Priorität      | Hoch                                                                                    |
 | Abhängigkeiten | frontend-tischansicht.md, websocket-kommunikation.md, stichlogik.md, ansagen.md, frontend-tastatursteuerung.md |
 

@@ -2,7 +2,7 @@
 
 | Feld           | Wert                                                                    |
 |----------------|-------------------------------------------------------------------------|
-| Status         | Überarbeitung erforderlich — Showstopper-Fixes + Stich-Visualisierung   |
+| Status         | Zu prüfen |
 | Priorität      | Hoch                                                                    |
 | Abhängigkeiten | kartendeck.md, websocket-kommunikation.md, frontend-visuelles-design.md |
 

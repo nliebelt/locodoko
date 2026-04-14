@@ -2,7 +2,7 @@
 
 | Feld           | Wert                                                      |
 |----------------|-----------------------------------------------------------|
-| Status         | Spezifiziert, nicht implementiert                         |
+| Status         | Zu prüfen |
 | Priorität      | Hoch                                                      |
 | Abhängigkeiten | ansagen.md, stichlogik.md, spielablauf.md                 |
 

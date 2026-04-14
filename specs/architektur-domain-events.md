@@ -1,5 +1,11 @@
 # Architektur Domain Events — Locodoko
 
+| Feld           | Wert                                                        |
+|----------------|-------------------------------------------------------------|
+| Status         | Aktive Vorgabe                                              |
+| Priorität      | Kritisch                                                    |
+| Abhängigkeiten | architektur-ddd.md, architektur-spielkern.md                |
+
 ## Ziel
 
 Entkopplung der KI-Orchestrierung von der Spiel-Engine durch Domain Events.

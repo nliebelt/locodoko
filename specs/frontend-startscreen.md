@@ -2,7 +2,7 @@
 
 | Feld           | Wert                              |
 |----------------|-----------------------------------|
-| Status         | Neu                               |
+| Status         | Zu prüfen |
 | Priorität      | Hoch                              |
 | Abhängigkeiten | frontend-visuelles-design.md, lobby.md |
 

@@ -2,7 +2,7 @@
 
 | Feld           | Wert                                                      |
 |----------------|-----------------------------------------------------------|
-| Status         | Neue Vorgabe                                              |
+| Status         | Aktive Vorgabe |
 | Priorität      | Mittel                                                    |
 | Abhängigkeiten | frontend-logging.md, websocket-kommunikation.md, rest-api.md |
 

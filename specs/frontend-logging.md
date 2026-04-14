@@ -2,7 +2,7 @@
 
 | Feld           | Wert                                                        |
 |----------------|-------------------------------------------------------------|
-| Status         | Neue Vorgabe                                                |
+| Status         | Zu prüfen |
 | Priorität      | Hoch                                                        |
 | Abhängigkeiten | frontend-architektur.md, websocket-kommunikation.md         |
 

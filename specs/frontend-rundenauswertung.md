@@ -2,7 +2,7 @@
 
 | Feld           | Wert                                              |
 |----------------|---------------------------------------------------|
-| Status         | Neu                                               |
+| Status         | Zu prüfen |
 | Priorität      | Mittel                                            |
 | Abhängigkeiten | punkteberechnung.md, sonderpunkte.md, ansagen.md  |
 

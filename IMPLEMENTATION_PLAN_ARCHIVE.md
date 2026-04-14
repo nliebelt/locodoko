@@ -138,3 +138,64 @@
 - [x] `einstellungen-modal`, `btn-spiel-starten`
 - [x] `vorbehalt-overlay`, `floating-action-bar`
 - [x] `rundenauswertung-overlay`, `btn-rundenauswertung-weiter`
+
+---
+
+## Plan-Run #35 — Archiviert 2026-04-14
+
+> Vollständig erledigt. Alle 221 Backend-Tests + 24 Frontend-Tests grün.
+
+### 1–11. Feature-Implementierungen (Sonderregeln, Animationen, E2E)
+
+- [x] Spielregeln-Felder (Bockrunden, Schweinchen, 30-Augen-Pflicht)
+- [x] Bockrunden (Trigger Herz-durchgegangen + verlorenes Kontra, Verdoppelung, Persistenz)
+- [x] Schweinchen (SchweinchenTrumpfOrdnung, Solo-Ausschluss)
+- [x] Dreißig-Augen-Pflicht (Pflichtansage-Set, Blockierung, Solo-Ausschluss)
+- [x] Solo-Nachgeben (Geber bleibt, Solist spielt auf)
+- [x] Regelkatalog-Presets (locoBlatRegeln, dkvRegeln, ohneNeunen; Dropdown Frontend)
+- [x] Frontend-Bug Szenen-Name (LobbySzene → SpielverwaltungsSzene)
+- [x] E2E-Tests stabilisiert (partie-gegen-ki, rundenauswertung, solo-spielfluss, armut, reconnect, ungueltige-karte)
+- [x] Frontend-Animationen: Stich-Visualisierung (Gewinn-Flash, Stich-Stapel, Letzter-Stich-Flip, Rotation)
+- [x] Rundenauswertungs-Overlay (Kopfzeile, Ergebnis, Partie-Ende, Keyboard)
+- [x] data-testid-Attribute (17 gesamt)
+
+### R0–R11. Refactoring: Saubere Multiplayer-Basis
+
+- [x] R0: Typed IDs (TischId, SpielId, PartieId, SpielerId)
+- [x] R1: SpielBuilder (inner class, toBuilder(), immutable Mutationen)
+- [x] R2: Pflichtansage-Logik DRY (effektiveKartenAnzahlFuer)
+- [x] R3: TischService aufteilen (TischVerwaltungsService + SpielAktionsService)
+- [x] R4: KiOrchestrierungService entschlackt (Domain-Logik → Partie)
+- [x] R5: SpielRegistry (In-Memory Cache, ConcurrentHashMap, ReentrantLock)
+- [x] R6: Domain Events (NaechsterSpielerErwartet, StichAbgeschlossen etc. + KiEventAdapter + WebSocketBroadcastAdapter)
+- [x] R7: Frontend TischSzene aufteilen (TischInputHandler, TischUIManager)
+- [x] R8: AnimationenService DRY (animiereTween Methode)
+- [x] R9: Augen + Spielpunkte als Value Objects
+- [x] R10: PunkteRechner Feature Envy beseitigt
+- [x] R11: State Pattern für Spielphase (sealed interface SpielPhase)
+
+### T1–T6. Test-Coverage
+
+- [x] T1: Hochzeit Unit-Tests
+- [x] T2: Armut Unit-Tests
+- [x] T3: Solo-Varianten Spielfluss-Tests
+- [x] T4: Technische Schulden in Tests bereinigt
+- [x] T5: E2E Fehlerszenarien und Sonderregeln
+- [x] T6: Concurrency-Tests (SpielRegistry)
+
+# IMPLEMENTATION_PLAN — Locodoko Doppelkopf
+
+> **Letzte Aktualisierung: 2026-04-14 (neu erstellt nach Plan-Run #35)**
+
+## Notiz
+
+Ausstehend — Plan-Run noch nicht ausgeführt.
+
+---
+
+## Legende
+
+- [x] Erledigt (Code + Tests vorhanden und grün)
+- [~] Teilweise implementiert
+- [ ] Offen
+

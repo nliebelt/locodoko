@@ -2,7 +2,7 @@
 
 | Feld           | Wert                                                              |
 |----------------|-------------------------------------------------------------------|
-| Status         | Vollständig implementiert und getestet                            |
+| Status         | Zu prüfen |
 | Priorität      | Mittel                                                            |
 | Abhängigkeiten | kartendeck.md, trumpfhierarchie.md, spielablauf.md, ki-strategie.md |
 

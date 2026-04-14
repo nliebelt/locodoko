@@ -2,7 +2,7 @@
 
 | Feld           | Wert                                                       |
 |----------------|------------------------------------------------------------|
-| Status         | Neu                                                        |
+| Status         | Zu prüfen |
 | Priorität      | Mittel                                                     |
 | Abhängigkeiten | frontend-tischansicht.md, frontend-ui-logik.md, e2e-tests.md |
 
