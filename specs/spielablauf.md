@@ -87,8 +87,8 @@ Definition des gesamten Spielablaufs einer Doppelkopf-Partie. Eine Partie besteh
 - [x] Zustandsmaschine getestet (gültige und ungültige Übergänge)
 - [x] Integrationstests für vollständiges Spiel bestanden
 - [x] Code-Review / Plausibilitätsprüfung
-- [ ] Solo-Nachgeben: Geber bleibt nach Solo gleich (`Partie.schliesseAktuellesSpielAb`)
-- [ ] Solo-Nachgeben: Solist erhält Anspielrecht im Folge-Spiel
+- [x] Solo-Nachgeben: Geber bleibt nach Solo gleich (`Partie.schliesseAktuellesSpielAb`)
+- [x] Solo-Nachgeben: Solist erhält Anspielrecht im Folge-Spiel
 
 ## Technische Hinweise
 

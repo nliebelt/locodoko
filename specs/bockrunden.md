@@ -58,15 +58,15 @@ folgenden Spiele noch doppelt gewertet werden. Der Zähler wird durch bestimmte 
 
 ## Definition of Done
 
-- [ ] `Partie` enthält Feld `bockrundenZaehler: int`, übergeben in Konstruktor und allen `neu()`-Methoden
-- [ ] `Partie.schliesseAktuellesSpielAb()`: Multiplikation und Dekrementierung implementiert
-- [ ] Trigger-Erkennung „Herz durchgegangen" (Hilfsmethode auf `Stich` oder `Spiel`)
-- [ ] Trigger-Erkennung „verlorenes Kontra" aus `Spielergebnis` und `Ansagen`
-- [ ] `Spielregeln` enthält `bockrundenAktiv: boolean`
-- [ ] Persistenz: `bockrunden_zaehler`-Spalte in `partie`-Tabelle (Liquibase Migration)
-- [ ] Unit-Tests für Multiplikation und Dekrementierung
-- [ ] Unit-Tests für beide Trigger (einzeln und kombiniert)
-- [ ] Deaktivierung per Konfiguration getestet
+- [x] `Partie` enthält Feld `bockrundenZaehler: int`, übergeben in Konstruktor und allen `neu()`-Methoden
+- [x] `Partie.schliesseAktuellesSpielAb()`: Multiplikation und Dekrementierung implementiert
+- [x] Trigger-Erkennung „Herz durchgegangen" (Hilfsmethode auf `Stich` oder `Spiel`)
+- [x] Trigger-Erkennung „verlorenes Kontra" aus `Spielergebnis` und `Ansagen`
+- [x] `Spielregeln` enthält `bockrundenAktiv: boolean`
+- [x] Persistenz: `bockrunden_zaehler`-Spalte in `partie`-Tabelle (Liquibase Migration)
+- [x] Unit-Tests für Multiplikation und Dekrementierung
+- [x] Unit-Tests für beide Trigger (einzeln und kombiniert)
+- [x] Deaktivierung per Konfiguration getestet
 
 ## Technische Hinweise
 

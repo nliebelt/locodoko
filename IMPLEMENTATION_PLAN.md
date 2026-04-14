@@ -1,6 +1,6 @@
 # IMPLEMENTATION_PLAN — Locodoko Doppelkopf
 
-> **Letzte Aktualisierung: 2026-04-14 (Plan-Run #49)**
+> **Letzte Aktualisierung: 2026-04-14 (Plan-Run #50)**
 
 ## Legende
 
@@ -231,16 +231,16 @@ Keine karten-interne Klasse importiert Stich/GespielteKarte/SpielerPosition.
 
 ### 4.1 DoD-Checkboxen in Specs aktualisieren
 
-- [ ] `specs/spielablauf.md`: Solo-Nachgeben als `[x]` markieren (ist implementiert)
-- [ ] `specs/bockrunden.md`: alle DoD-Items als `[x]` markieren (lt. Archiv erledigt)
-- [ ] `specs/dreissig-augen-pflicht.md`: alle DoD-Items als `[x]` markieren (lt. Archiv erledigt)
-- [ ] `specs/schweinchen.md`: alle DoD-Items als `[x]` markieren (lt. Archiv erledigt)
-- [ ] `specs/frontend-animationen.md`: erledigte Items als `[x]` markieren
-- [ ] `specs/frontend-rundenauswertung.md`: erledigte Items als `[x]` markieren
-- [ ] `specs/frontend-logging.md`: bereits implementierte Items als `[x]` markieren
+- [x] `specs/spielablauf.md`: Solo-Nachgeben als `[x]` markieren (ist implementiert)
+- [x] `specs/bockrunden.md`: alle DoD-Items als `[x]` markieren (lt. Archiv erledigt)
+- [x] `specs/dreissig-augen-pflicht.md`: alle DoD-Items als `[x]` markieren (lt. Archiv erledigt)
+- [x] `specs/schweinchen.md`: alle DoD-Items als `[x]` markieren (lt. Archiv erledigt)
+- [x] `specs/frontend-animationen.md`: erledigte Items als `[x]` markieren
+- [x] `specs/frontend-rundenauswertung.md`: erledigte Items als `[x]` markieren
+- [x] `specs/frontend-logging.md`: bereits implementierte Items als `[x]` markieren
       (logger.ts vorhanden, window.onerror registriert)
-- [ ] `specs/e2e-tests.md`: implementierte Tests als `[x]` markieren
-- [ ] `specs/architektur-ddd.md`: DoD-Items abhaken sobald Phase 1 abgeschlossen
+- [x] `specs/e2e-tests.md`: implementierte Tests als `[x]` markieren
+- [x] `specs/architektur-ddd.md`: DoD-Items abhaken sobald Phase 1 abgeschlossen
 
 ### 4.2 E2E-Tests stabilisieren
 
@@ -300,15 +300,16 @@ Phase 4 (parallel, niedrige Priorität):
 
 ## Notiz
 
-**Zuletzt erledigt (Plan-Run #49):** Task 3.2 — Logging-Punkte erweitern.
-Audit ergab: Grossteil der Logging-Punkte war bereits implementiert (SpielverwaltungEchtzeit 5 Calls,
-AppStore 12 Calls, SpielverwaltungApi 8 Calls, KiOrchestrierungService 12+ Calls, logger.ts + Tests
-vorhanden). Ergaenzt: TischSzene shutdown/destroy-Logging. Bugfix: application-dev.properties hatte
-falschen Package-Namen fuer TischEchtzeitService (spieler → tisch). Spec-DoD aktualisiert.
-231 Backend-Tests gruen, 24 Frontend-Tests gruen, Build + Lint clean.
+**Zuletzt erledigt (Plan-Run #50):** Task 4.1 — DoD-Checkboxen in Specs aktualisieren.
+9 Spec-Dateien geprueft, 7 davon aktualisiert: spielablauf.md (2 Solo-Nachgeben Items),
+bockrunden.md (9 Items), dreissig-augen-pflicht.md (8 Items), schweinchen.md (7 Items),
+frontend-animationen.md (2 Items: Gewinn-Flash + Stich-Stapel), frontend-rundenauswertung.md
+(10 von 11 Items — Visuelles Review bleibt offen), architektur-ddd.md (12 Items).
+frontend-logging.md war bereits vollstaendig (nur Code-Review offen — manueller Task).
+e2e-tests.md: Testfall 1+2 weiterhin nicht gruen — unveraendert gelassen.
 
 **Naechster logischer Schritt:** Phase 3 weitermachen (3.3 data-testid, 3.4 Offene Tische),
-oder Phase 4 (4.1 DoD-Checkboxen, 4.2 E2E-Stabilisierung, 4.3 frontend-architektur.md).
+oder Phase 4 fortsetzen (4.2 E2E-Stabilisierung, 4.3 frontend-architektur.md).
 
 **Offene Fragen:** Keine.
 

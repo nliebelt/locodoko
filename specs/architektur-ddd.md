@@ -150,15 +150,15 @@ Frontend-Typen und `AppStore` spiegeln die Fachmodelle des Backends (Details: `f
 
 ## Definition of Done
 
-- [ ] Klasse beginnt mit fachlichem Einleitungssatz (Ubiquitous Language).
-- [ ] Logik liegt im Aggregat (Business-Methoden statt Setter).
-- [ ] Invarianten durch Exceptions geschützt.
-- [ ] Kommunikation zwischen Modulen via Domain Events + `@ApplicationModuleListener`.
-- [ ] Kein verbotener Cross-Modul-Import (`ApplicationModulesTest` grün).
-- [ ] `SpielerPosition` liegt in `de.locodoko.partie` (nicht in `karten`).
-- [ ] Packages: `tisch/` (nicht `lobby/`), `spieler/` (nicht `session/`), `ki/` top-level.
-- [ ] `event_publication`-Tabelle via Liquibase angelegt.
-- [ ] Frontend-Modelle folgen der fachlichen Struktur des Backends.
-- [ ] Aggregate Roots mit `@Table` annotiert, Spring Data JDBC Repositories vorhanden.
-- [ ] Liquibase Changesets für alle Schemaänderungen.
-- [ ] Tests angepasst und grün, `ApplicationModulesTest.verify()` grün.
+- [x] Klasse beginnt mit fachlichem Einleitungssatz (Ubiquitous Language).
+- [x] Logik liegt im Aggregat (Business-Methoden statt Setter).
+- [x] Invarianten durch Exceptions geschützt.
+- [x] Kommunikation zwischen Modulen via Domain Events + `@ApplicationModuleListener`.
+- [x] Kein verbotener Cross-Modul-Import (`ApplicationModulesTest` grün).
+- [x] `SpielerPosition` liegt in `de.locodoko.partie` (nicht in `karten`).
+- [x] Packages: `tisch/` (nicht `lobby/`), `spieler/` (nicht `session/`), `ki/` top-level.
+- [x] `event_publication`-Tabelle via Liquibase angelegt.
+- [x] Frontend-Modelle folgen der fachlichen Struktur des Backends.
+- [x] Aggregate Roots mit `@Table` annotiert, Spring Data JDBC Repositories vorhanden.
+- [x] Liquibase Changesets für alle Schemaänderungen.
+- [x] Tests angepasst und grün, `ApplicationModulesTest.verify()` grün.

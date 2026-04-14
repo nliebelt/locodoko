@@ -38,14 +38,14 @@ muss erfolgen, bevor die nächste Karte gespielt wird.
 
 ## Definition of Done
 
-- [ ] Prüfung nach vollständigem 1. und 2. Stich in `Spiel.spieleKarte()`
-- [ ] `Spiel`-Zustand enthält Marker für ausstehende Pflichtansage (z. B. `Set<Partei>`)
-- [ ] Blockierungslogik in `spieleKarte()` implementiert
-- [ ] Pflichtansage ohne Mindestkartengrenze in `Ansagen.kannAnsagen()` möglich
-- [ ] Solo-Ausschluss getestet
-- [ ] `Spielregeln` enthält `dreissigAugenPflichtAktiv: boolean`
-- [ ] Unit-Tests für Blockierung und Entsperrung
-- [ ] Integrationstests für vollständigen Spielablauf mit Pflichtansage
+- [x] Prüfung nach vollständigem 1. und 2. Stich in `Spiel.spieleKarte()`
+- [x] `Spiel`-Zustand enthält Marker für ausstehende Pflichtansage (z. B. `Set<Partei>`)
+- [x] Blockierungslogik in `spieleKarte()` implementiert
+- [x] Pflichtansage ohne Mindestkartengrenze in `Ansagen.kannAnsagen()` möglich
+- [x] Solo-Ausschluss getestet
+- [x] `Spielregeln` enthält `dreissigAugenPflichtAktiv: boolean`
+- [x] Unit-Tests für Blockierung und Entsperrung
+- [x] Integrationstests für vollständigen Spielablauf mit Pflichtansage
 
 ## Technische Hinweise
 

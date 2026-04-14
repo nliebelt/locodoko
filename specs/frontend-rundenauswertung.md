@@ -110,16 +110,16 @@ Nach jeder abgeschlossenen Runde (einem einzelnen Spiel innerhalb der Partie) er
 
 ## Definition of Done
 
-- [ ] Rundenende-Overlay implementiert
-- [ ] Kopfzeile mit Spieltyp und Spielnummer
-- [ ] Ergebnis-Zeile mit Gewinner und Punkten
-- [ ] Parteien-Übersicht mit Augenzahl
-- [ ] Punkte-Berechnung vollständig aufgelistet
-- [ ] Sonderpunkte-Sektion (bedingt)
-- [ ] Gesamtstand-Zeile
-- [ ] Partie-Ende-Overlay mit Gesamtauswertung
-- [ ] Countdown für Neustart
-- [ ] Keyboard-Support (Enter zum Schließen)
+- [x] Rundenende-Overlay implementiert
+- [x] Kopfzeile mit Spieltyp und Spielnummer
+- [x] Ergebnis-Zeile mit Gewinner und Punkten
+- [x] Parteien-Übersicht mit Augenzahl
+- [x] Punkte-Berechnung vollständig aufgelistet
+- [x] Sonderpunkte-Sektion (bedingt)
+- [x] Gesamtstand-Zeile
+- [x] Partie-Ende-Overlay mit Gesamtauswertung
+- [x] Countdown für Neustart
+- [x] Keyboard-Support (Enter zum Schließen)
 - [ ] Visuelles Review
 
 ## Technische Hinweise

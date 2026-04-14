@@ -36,13 +36,13 @@ im Normalspiel und im Trumpfsolo (nicht in Fleischlos, Damen- oder Bubensolo).
 
 ## Definition of Done
 
-- [ ] Schweinchen-Erkennung nach `teileKartenAus()` in `Spiel` (oder nach `loeseVorbehalteAuf()`)
-- [ ] `NormaleTrumpfOrdnung` unterstützt erhöhte Karo-As-Ränge (Unterklasse oder Konstruktor-Parameter)
-- [ ] `spaetereGleicheKarteGewinnt(Karte)` gibt `true` für Karo-As zurück wenn Schweinchen aktiv
-- [ ] `Spielregeln` enthält `schweinchenAktiv: boolean`
-- [ ] Solo-Ausschluss (`SOLO_DAME`, `SOLO_BUBE`, `SOLO_FLEISCHLOS`) getestet
-- [ ] Unit-Tests für Trumpfrangvergleich mit und ohne Schweinchen
-- [ ] Deaktivierung per Konfiguration getestet
+- [x] Schweinchen-Erkennung nach `teileKartenAus()` in `Spiel` (oder nach `loeseVorbehalteAuf()`)
+- [x] `NormaleTrumpfOrdnung` unterstützt erhöhte Karo-As-Ränge (Unterklasse oder Konstruktor-Parameter)
+- [x] `spaetereGleicheKarteGewinnt(Karte)` gibt `true` für Karo-As zurück wenn Schweinchen aktiv
+- [x] `Spielregeln` enthält `schweinchenAktiv: boolean`
+- [x] Solo-Ausschluss (`SOLO_DAME`, `SOLO_BUBE`, `SOLO_FLEISCHLOS`) getestet
+- [x] Unit-Tests für Trumpfrangvergleich mit und ohne Schweinchen
+- [x] Deaktivierung per Konfiguration getestet
 
 ## Technische Hinweise
 
