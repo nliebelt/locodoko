@@ -72,6 +72,19 @@ public class TischController {
         return ResponseEntity.status(HttpStatus.CREATED).body(antwort);
     }
 
+    @Operation(summary = "Schnellstart", description = "Sucht einen offenen Tisch mit freiem Platz und tritt bei, oder erstellt einen neuen Tisch. Fehlende Spieler werden mit KI aufgefuellt und die Partie sofort gestartet.")
+    @ApiResponses({
+        @ApiResponse(responseCode = "200", description = "Schnellstart erfolgreich, Partie laeuft"),
+        @ApiResponse(responseCode = "401", description = "Keine gueltige Spieler-Session"),
+        @ApiResponse(responseCode = "409", description = "Spieler sitzt bereits an einem Tisch")
+    })
+    @PostMapping("/schnellstart")
+    public TischAntwort schnellstart(HttpServletRequest request) {
+        SpielerEntity spieler = ladeAktivenSpieler(request);
+        LOGGER.info("Spieler {} startet Schnellstart", spieler.id());
+        return tischVerwaltungsService.schnellEinsteigen(spieler);
+    }
+
     @Operation(summary = "Einzelnen Tisch abrufen", description = "Gibt den Tisch mit der angegebenen ID zurueck.")
     @ApiResponses({
         @ApiResponse(responseCode = "200", description = "Tisch gefunden"),

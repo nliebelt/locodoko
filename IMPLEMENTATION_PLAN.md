@@ -1,6 +1,6 @@
 # IMPLEMENTATION_PLAN — Locodoko Doppelkopf
 
-> **Letzte Aktualisierung: 2026-04-14 (Plan-Run #45)**
+> **Letzte Aktualisierung: 2026-04-14 (Plan-Run #46)**
 
 ## Legende
 
@@ -160,14 +160,15 @@ Keine karten-interne Klasse importiert Stich/GespielteKarte/SpielerPosition.
 
 ### 2.1 Schnellstart (Quick Play)
 
-- [ ] `TischVerwaltungsService.schnellEinsteigen(SpielerId)` implementieren:
+- [x] `TischVerwaltungsService.schnellEinsteigen(SpielerEntity)` implementiert:
       1. Suche offenen Tisch (`TischStatus.WARTEND`, freier Platz)
-      2. Falls vorhanden: `spielerBeitreten(tischId, spielerId)`
-      3. Sonst: `tischErstellen(...)` + `spielerBeitreten(...)` + `kiAuffuellen(...)`
-      4. Bei 4 Spielern: `spielStarten(tischId)`
-- [ ] REST-Endpoint: `POST /api/tische/schnellstart` (oder als Aktion auf bestehenden Endpoint)
-- [ ] Frontend: Button „Schnell Spielen" auf SpielverwaltungsSzene (neben „Neuer Tisch")
-- [ ] Unit-Tests: Beitritt zu bestehendem Tisch, Neuerstellung, KI-Auffüllung
+      2. Falls vorhanden: Beitritt mit pessimistischer Sperre
+      3. Sonst: neuen Tisch erstellen + Spieler hinzufügen
+      4. KI auffüllen + Partie starten (alles in einer Transaktion)
+- [x] REST-Endpoint: `POST /api/tische/schnellstart` (gibt TischAntwort zurück)
+- [x] Frontend: Button „Quick Game" auf SpielverwaltungsSzene nutzt serverseitigen Schnellstart
+      (AppStore.erstelleQuickGame → api.schnellstart statt erstelleTisch + starteTisch)
+- [x] Unit-Tests: Neuerstellung ohne offenen Tisch, Beitritt zu bestehendem Tisch, Ablehnung bei Doppel-Tisch
 - [ ] E2E-Test: Schnellstart-Flow
 
 ### 2.2 Einladungslink
@@ -299,17 +300,16 @@ Phase 4 (parallel, niedrige Priorität):
 
 ## Notiz
 
-**Zuletzt erledigt (Plan-Run #45):** Task 1.10 — `ModulstrukturTest` erstellt, `ApplicationModules.verify()` grün.
-Hauptarbeit war das Auflösen des `spieler ↔ tisch` Abhängigkeitszyklus: 28 Klassen (WebSocket-Controller,
-TischEchtzeitService, VerbindungsabbruchService, KiSpielerFabrik, DTOs, Exceptions, WebSocket-Konfiguration)
-von `spieler` nach `tisch` verschoben. `SpielerTischAbfrage`-Interface eingeführt (Dependency Inversion),
-damit `SpielerSessionService` nicht mehr direkt `TischRepository` importiert. `partie.ereignisse` als
-`@NamedInterface` exponiert. `spring-modulith-starter-test` als Test-Dependency ergänzt. 222 Tests grün.
+**Zuletzt erledigt (Plan-Run #46):** Task 2.1 — Schnellstart (Quick Play) implementiert.
+Backend: `TischVerwaltungsService.schnellEinsteigen()` sucht zuerst offenen WARTEND-Tisch mit
+freiem Platz (pessimistisch gesperrt), tritt bei oder erstellt neuen Tisch, füllt KI auf und
+startet Partie — alles in einer Transaktion. REST-Endpoint: `POST /api/tische/schnellstart`.
+Frontend: `AppStore.erstelleQuickGame()` ruft jetzt serverseitigen Schnellstart statt
+`erstelleTisch + starteTisch` auf (ein Request statt zwei). 3 neue Integrationstests.
+225 Backend-Tests grün, 24 Frontend-Tests grün, Build + Lint clean.
 
-**Phase 1 ist komplett.** Alle Modulstruktur-Aufgaben (1.1–1.10) sind erledigt.
-
-**Nächster logischer Schritt:** Phase 2, 3 oder 4 — alle sind unabhängig voneinander.
-Empfehlung: 2.1 (Schnellstart) als nächstes Feature oder 4.1 (DoD-Checkboxen) als Quick-Win.
+**Nächster logischer Schritt:** 2.1 E2E-Test noch offen, oder 2.2 (Einladungslink),
+oder Phase 3/4 (JSDoc, Logging, DoD-Checkboxen).
 
 **Offene Fragen:** Keine.
 

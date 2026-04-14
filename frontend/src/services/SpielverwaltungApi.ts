@@ -137,6 +137,10 @@ export class SpielverwaltungApi {
     });
   }
 
+  async schnellstart(): Promise<TischAntwort> {
+    return holeJson<TischAntwort>('/api/tische/schnellstart', { method: 'POST' });
+  }
+
   async betreteTisch(tischId: Uuid): Promise<TischAntwort> {
     return holeJson<TischAntwort>(`/api/tische/${tischId}/beitreten`, { method: 'POST' });
   }

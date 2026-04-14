@@ -426,6 +426,63 @@ class TischControllerTest {
             .andExpect(jsonPath("$.nachricht").value("Partie laeuft bereits."));
     }
 
+    @Test
+    void schnellstartErstelltNeuenTischWennKeinOffenerVorhanden() throws Exception {
+        // WARUM: Wenn kein offener Tisch existiert, muss Schnellstart automatisch einen neuen
+        // Tisch erstellen, mit KI auffuellen und die Partie sofort starten — alles in einem Request.
+        MockHttpSession adaSession = registriereSpieler("AdaSchnell");
+
+        MvcResult ergebnis = mockMvc.perform(post("/api/tische/schnellstart").session(adaSession))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.status").value(TischStatus.IM_SPIEL.name()))
+            .andExpect(jsonPath("$.spieler.length()").value(4))
+            .andExpect(jsonPath("$.name").value("Schnellstart von AdaSchnell"))
+            .andReturn();
+
+        TischAntwort antwort = objectMapper.readValue(ergebnis.getResponse().getContentAsByteArray(), TischAntwort.class);
+        TischEntity geladen = tischRepository.findById(TischId.von(antwort.id())).orElseThrow();
+        assertEquals(4, geladen.spieler().size(),
+            "Schnellstart muss den Tisch mit KI-Spielern auffuellen, damit die Partie sofort spielbar ist.");
+        assertNotNull(geladen.partie(),
+            "Schnellstart muss automatisch eine Partie anlegen.");
+        assertTrue(geladen.spieler().stream().filter(SpielerEntity::istKi).count() >= 3,
+            "Beim Solo-Schnellstart muessen mindestens 3 KI-Spieler erzeugt werden.");
+    }
+
+    @Test
+    void schnellstartTrittBestehendemOffenenTischBei() throws Exception {
+        // WARUM: Wenn bereits ein offener Tisch mit freiem Platz existiert, soll Schnellstart
+        // den Spieler dort einsetzen statt einen neuen Tisch zu erstellen.
+        MockHttpSession adaSession = registriereSpieler("AdaOffen");
+        erstelleTisch(adaSession, "Offener Tisch");
+
+        MockHttpSession bertSession = registriereSpieler("BertSchnell");
+        MvcResult ergebnis = mockMvc.perform(post("/api/tische/schnellstart").session(bertSession))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.status").value(TischStatus.IM_SPIEL.name()))
+            .andExpect(jsonPath("$.name").value("Offener Tisch"))
+            .andExpect(jsonPath("$.spieler.length()").value(4))
+            .andReturn();
+
+        TischAntwort antwort = objectMapper.readValue(ergebnis.getResponse().getContentAsByteArray(), TischAntwort.class);
+        TischEntity geladen = tischRepository.findById(TischId.von(antwort.id())).orElseThrow();
+        long menschlicheSpieler = geladen.spieler().stream().filter(s -> !s.istKi()).count();
+        assertEquals(2, menschlicheSpieler,
+            "Schnellstart muss den zweiten Spieler zum bestehenden Tisch hinzufuegen, bevor KI aufgefuellt wird.");
+    }
+
+    @Test
+    void schnellstartLehntAbWennSpielerBereitsAnTischSitzt() throws Exception {
+        // WARUM: Ein Spieler darf nur an einem Tisch gleichzeitig sitzen.
+        // Schnellstart muss denselben Schutz bieten wie manuelles Beitreten.
+        MockHttpSession adaSession = registriereSpieler("AdaDoppelt");
+        erstelleTisch(adaSession, "Besetzter Tisch");
+
+        mockMvc.perform(post("/api/tische/schnellstart").session(adaSession))
+            .andExpect(status().isConflict())
+            .andExpect(jsonPath("$.fehlerCode").value("SPIELER_BEREITS_AN_TISCH"));
+    }
+
     private MockHttpSession registriereSpieler(String name) throws Exception {
         MvcResult ergebnis = mockMvc.perform(post("/api/spieler/session")
                 .contentType(APPLICATION_JSON)

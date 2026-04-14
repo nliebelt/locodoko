@@ -176,19 +176,13 @@ export class AppStore {
   }
 
   /**
-   * Erstellt ein Quick Game (Einzelspieler gegen 3 KI mit Standardregeln)
-   * und startet die Partie sofort.
+   * Schnellstart: Tritt einem offenen Tisch bei oder erstellt einen neuen.
+   * KI-Spieler werden serverseitig aufgefuellt und die Partie sofort gestartet.
    */
   async erstelleQuickGame(): Promise<void> {
-    const spielerName = this.zustand.spieler?.name ?? 'Spieler';
     await this.fuehreMitStatus(async () => {
-      // Keine Konfiguration → Backend verwendet Standardwerte
-      const tisch = await this.api.erstelleTisch(`Quick Game von ${spielerName}`);
+      const tisch = await this.api.schnellstart();
       this.oeffneTisch(tisch);
-      await this.api.starteTisch(tisch.id);
-      // Frischen Snapshot anfordern: erste Snapshot-Anfrage kam zurück bevor starteTisch die
-      // Transaktion committed hatte (Tisch noch WARTEND, keine Kartendaten). Dieser zweite
-      // Snapshot – nach dem Commit – liefert den aktuellen IM_SPIEL-Stand inkl. Spielerhand.
       this.echtzeit.senden(`/app/tisch/${tisch.id}/snapshot`);
     });
   }

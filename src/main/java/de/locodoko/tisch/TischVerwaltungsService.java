@@ -15,6 +15,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 @Service
@@ -268,6 +269,64 @@ public class TischVerwaltungsService {
             )
         );
         return TischKonfigurationDto.aus(gespeicherterTisch.konfiguration());
+    }
+
+    /**
+     * Schnellstart: Sucht einen offenen Tisch mit freiem Platz. Falls vorhanden, tritt der Spieler
+     * bei. Andernfalls wird ein neuer Tisch erstellt. In beiden Faellen wird der Tisch anschliessend
+     * mit KI-Spielern aufgefuellt und die Partie sofort gestartet.
+     */
+    @Transactional
+    public TischAntwort schnellEinsteigen(SpielerEntity spieler) {
+        SpielerEntity verwalteterSpieler = ladeSpieler(SpielerId.von(spieler.id()));
+        pruefeDassSpielerAnKeinemTischSitzt(verwalteterSpieler);
+
+        TischEntity tisch = sucheOffenenTisch()
+            .map(offenerTisch -> {
+                TischEntity gesperrt = ladeTischEntityMitSperre(TischId.von(offenerTisch.id()));
+                if (gesperrt.istVoll() || gesperrt.status() != TischStatus.WARTEND) {
+                    return null;
+                }
+                gesperrt.fuegeSpielerHinzu(verwalteterSpieler);
+                return tischRepository.saveAndFlush(gesperrt);
+            })
+            .orElse(null);
+
+        if (tisch == null) {
+            String spielerName = verwalteterSpieler.name() != null ? verwalteterSpieler.name() : "Spieler";
+            tisch = TischEntity.neu("Schnellstart von " + spielerName, verwalteterSpieler, TischkonfigurationEmbeddable.standard());
+            tisch.fuegeSpielerHinzu(verwalteterSpieler);
+            tisch = tischRepository.saveAndFlush(tisch);
+        }
+
+        while (!tisch.istVoll()) {
+            tisch.fuegeSpielerHinzu(kiSpielerFabrik.erzeugeNaechstenSpieler());
+        }
+        PartieEntity partie = PartieEntity.neu(tisch.konfiguration().anzahlSpiele());
+        partie.fuegeSpielHinzu(erzeugeErstesSpiel(tisch));
+        tisch.setzePartie(partie);
+        TischEntity gespeicherterTisch = tischRepository.saveAndFlush(tisch);
+        kiOrchestrierungService.automatisiereTisch(gespeicherterTisch);
+        gespeicherterTisch = tischRepository.saveAndFlush(gespeicherterTisch);
+        synchronisiereRegistry(TischId.von(gespeicherterTisch.id()), gespeicherterTisch);
+        TischAntwort antwort = TischAntwort.aus(gespeicherterTisch);
+        PartieStandAntwort partieStand = PartieStandAntwort.aus(gespeicherterTisch);
+        veroeffentlicheTischAktualisierung(
+            TischlisteEreignisAntwort.aktualisiert(listeOffeneTische()),
+            TischEreignisAntwort.spielGestartet(antwort, partieStand)
+        );
+        veroeffentlichePartieAktualisierung(gespeicherterTisch);
+        return antwort;
+    }
+
+    /**
+     * Sucht den aeltesten offenen Tisch mit mindestens einem freien Platz.
+     */
+    private Optional<TischEntity> sucheOffenenTisch() {
+        return tischRepository.findAllByStatusOrderByErstelltAmAsc(TischStatus.WARTEND)
+            .stream()
+            .filter(tisch -> !tisch.istVoll())
+            .findFirst();
     }
 
     @Transactional(readOnly = true)
