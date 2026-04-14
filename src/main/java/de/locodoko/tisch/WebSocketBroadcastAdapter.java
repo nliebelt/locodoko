@@ -1,9 +1,6 @@
 package de.locodoko.tisch;
 
 import de.locodoko.partie.ereignisse.PartieAktualisiert;
-import de.locodoko.spieler.PartieEreignisAntwort;
-import de.locodoko.spieler.PartieEreignisTyp;
-import de.locodoko.spieler.TischEchtzeitService;
 import org.springframework.modulith.events.ApplicationModuleListener;
 import org.springframework.stereotype.Component;
 

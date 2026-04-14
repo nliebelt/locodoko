@@ -1,6 +1,6 @@
 # IMPLEMENTATION_PLAN — Locodoko Doppelkopf
 
-> **Letzte Aktualisierung: 2026-04-14 (Plan-Run #43)**
+> **Letzte Aktualisierung: 2026-04-14 (Plan-Run #45)**
 
 ## Legende
 
@@ -140,12 +140,16 @@ Keine karten-interne Klasse importiert Stich/GespielteKarte/SpielerPosition.
 
 ### 1.10 ApplicationModulesTest erstellen
 
-- [ ] Neue Testklasse `de.locodoko.ModulstrukturTest` (oder `ApplicationModulesTest`)
-- [ ] `ApplicationModules.of(LocodokoAnwendung.class).verify()` aufrufen
-- [ ] Test muss grün sein → bestätigt dass keine verbotenen Cross-Modul-Imports existieren
-- [ ] In `mvn test` Lauf enthalten
-
-[BLOCKED: 1.1–1.9 (alle Modulgrenzen müssen sauber sein)]
+- [x] Neue Testklasse `de.locodoko.ModulstrukturTest` (oder `ApplicationModulesTest`)
+- [x] `ApplicationModules.of(LocodokoAnwendung.class).verify()` aufrufen
+- [x] Test muss grün sein → bestätigt dass keine verbotenen Cross-Modul-Imports existieren
+- [x] In `mvn test` Lauf enthalten
+- [x] `spring-modulith-starter-test` Dependency in `pom.xml` ergänzt
+- [x] `spieler ↔ tisch` Zyklus aufgelöst: 28 Klassen (WebSocket, Echtzeit, Verbindung, DTOs) von `spieler` nach `tisch` verschoben
+- [x] `SpielerTischAbfrage`-Interface in `spieler` eingeführt (Dependency Inversion für `SpielerSessionService`)
+- [x] `partie.ereignisse` als `@NamedInterface` exponiert (Events sind öffentliche Modul-API)
+- [x] Leeres `session/`-Package entfernt
+- [x] `mvn test` grün (222 Tests)
 
 ---
 
@@ -295,16 +299,17 @@ Phase 4 (parallel, niedrige Priorität):
 
 ## Notiz
 
-**Zuletzt erledigt (Plan-Run #44):** Task 1.9 — `@EventListener` → `@ApplicationModuleListener` migriert.
-`KiEventAdapter` (2 Methoden) und `WebSocketBroadcastAdapter` (1 Methode) auf `@ApplicationModuleListener`
-umgestellt. `VerbindungsSessionEreignisListener` bleibt bei `@EventListener` (Intra-Modul, Spring WebSocket).
-Kernproblem gelöst: `spring-modulith-events-api` war nur `runtime`-Dependency; Java-Compiler verwirft
-Annotationen ohne Compile-Time-Zugriff auf den Annotation-Typ stumm. Explizites `compile`-Dependency ergänzt.
-`@EnableAsync` hinzugefügt, `TischEchtzeitService.sendePartieEreignis()` für Post-Commit-Aufrufer ergänzt,
-`awaitility` und asynchrone Test-Polling-Logik für WebSocket-Tests eingeführt. 221 Tests grün.
+**Zuletzt erledigt (Plan-Run #45):** Task 1.10 — `ModulstrukturTest` erstellt, `ApplicationModules.verify()` grün.
+Hauptarbeit war das Auflösen des `spieler ↔ tisch` Abhängigkeitszyklus: 28 Klassen (WebSocket-Controller,
+TischEchtzeitService, VerbindungsabbruchService, KiSpielerFabrik, DTOs, Exceptions, WebSocket-Konfiguration)
+von `spieler` nach `tisch` verschoben. `SpielerTischAbfrage`-Interface eingeführt (Dependency Inversion),
+damit `SpielerSessionService` nicht mehr direkt `TischRepository` importiert. `partie.ereignisse` als
+`@NamedInterface` exponiert. `spring-modulith-starter-test` als Test-Dependency ergänzt. 222 Tests grün.
 
-**Nächster logischer Schritt:** Task 1.10 (`ApplicationModulesTest` erstellen).
-Dependency auf 1.1–1.9 ist erfüllt.
+**Phase 1 ist komplett.** Alle Modulstruktur-Aufgaben (1.1–1.10) sind erledigt.
+
+**Nächster logischer Schritt:** Phase 2, 3 oder 4 — alle sind unabhängig voneinander.
+Empfehlung: 2.1 (Schnellstart) als nächstes Feature oder 4.1 (DoD-Checkboxen) als Quick-Win.
 
 **Offene Fragen:** Keine.
 

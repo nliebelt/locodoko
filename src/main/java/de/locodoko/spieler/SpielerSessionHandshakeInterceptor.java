@@ -23,7 +23,7 @@ import java.util.Map;
 @Component
 public class SpielerSessionHandshakeInterceptor implements HandshakeInterceptor {
 
-    static final String SPIELER_SESSION_ID_ATTRIBUT = "spielerSessionId";
+    public static final String SPIELER_SESSION_ID_ATTRIBUT = "spielerSessionId";
 
     private final SpielerSessionService spielerSessionService;
 

@@ -11,15 +11,6 @@ import de.locodoko.partie.HandEntity;
 import de.locodoko.spieler.SpielerEntity;
 import de.locodoko.spieler.SpielerId;
 import de.locodoko.spieler.SpielerRepository;
-import de.locodoko.spieler.KiSpielerFabrik;
-import de.locodoko.spieler.SpielverwaltungKonfliktException;
-import de.locodoko.spieler.SpielverwaltungNichtGefundenException;
-import de.locodoko.spieler.PartieEreignisAntwort;
-import de.locodoko.spieler.PartieEreignisTyp;
-import de.locodoko.spieler.TischEchtzeitService;
-import de.locodoko.spieler.TischEreignisAntwort;
-import de.locodoko.spieler.TischEreignisTyp;
-import de.locodoko.spieler.TischlisteEreignisAntwort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 

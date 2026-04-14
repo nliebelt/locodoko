@@ -17,8 +17,6 @@ import de.locodoko.partie.ereignisse.VorbehaltErwartet;
 import de.locodoko.spieler.SpielerEntity;
 import de.locodoko.spieler.SpielerId;
 import de.locodoko.spieler.SpielerRepository;
-import de.locodoko.spieler.SpielverwaltungKonfliktException;
-import de.locodoko.spieler.SpielverwaltungNichtGefundenException;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;

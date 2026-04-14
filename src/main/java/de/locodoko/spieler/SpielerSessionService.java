@@ -1,8 +1,5 @@
 package de.locodoko.spieler;
 
-import de.locodoko.spieler.SpielerEntity;
-import de.locodoko.spieler.SpielerRepository;
-import de.locodoko.tisch.TischRepository;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;
 import org.springframework.stereotype.Service;
@@ -14,16 +11,16 @@ import org.springframework.transaction.annotation.Transactional;
 public class SpielerSessionService {
 
     private final SpielerRepository spielerRepository;
-    private final TischRepository tischRepository;
+    private final SpielerTischAbfrage tischAbfrage;
     private final SpielerSessionEigenschaften eigenschaften;
 
     public SpielerSessionService(
         SpielerRepository spielerRepository,
-        TischRepository tischRepository,
+        SpielerTischAbfrage tischAbfrage,
         SpielerSessionEigenschaften eigenschaften
     ) {
         this.spielerRepository = spielerRepository;
-        this.tischRepository = tischRepository;
+        this.tischAbfrage = tischAbfrage;
         this.eigenschaften = eigenschaften;
     }
 
@@ -73,7 +70,7 @@ public class SpielerSessionService {
     @Transactional
     public SpielerEntity aendereNamen(String sessionId, String neuerName) {
         SpielerEntity spieler = ladeAktivenSpieler(sessionId);
-        if (tischRepository.existsBySpieler_SessionId(sessionId)) {
+        if (tischAbfrage.spielerSitztAmTisch(sessionId)) {
             throw new SpielerNameAenderungNichtErlaubtException(
                 "Der Spielername darf nur geaendert werden, solange der Spieler keinem Tisch zugeordnet ist."
             );
@@ -91,9 +88,7 @@ public class SpielerSessionService {
      */
     @Transactional(readOnly = true)
     public java.util.UUID ladeAktiveTischId(java.util.UUID spielerId) {
-        return tischRepository.findBySpieler_Id(SpielerId.von(spielerId))
-            .map(tisch -> tisch.id())
-            .orElse(null);
+        return tischAbfrage.ladeAktiveTischId(spielerId);
     }
 
     public void uebernehmeTimeout(HttpSession session) {
