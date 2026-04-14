@@ -114,7 +114,7 @@ Jeder Schritt der KI-Orchestrierung wird mit `log.info` / `log.warn` / `log.erro
 
 ```properties
 # KI-Orchestrierung auf DEBUG für Entwicklung
-logging.level.de.locodoko.ki.KiEventAdapter=DEBUG
+logging.level.de.locodoko.tisch.KiOrchestrierungService=DEBUG
 logging.level.de.locodoko.tisch.TischEchtzeitService=DEBUG
 ```
 
@@ -130,15 +130,15 @@ logging.level.de.locodoko.tisch.TischEchtzeitService=DEBUG
 
 ## Definition of Done
 
-- [ ] `frontend/src/logger.ts` angelegt mit Dev-Mode-Switch
-- [ ] `window.onerror` und `unhandledrejection` in `main.ts` registriert
-- [ ] Logging-Punkte in `SpielverwaltungEchtzeit.ts` eingezogen
-- [ ] Logging-Punkte in `AppStore.ts` eingezogen
-- [ ] Logging-Punkte in `TischSzene.ts` eingezogen (phasenbasiert, nicht pro Frame)
-- [ ] Logging-Punkte in `SpielverwaltungApi.ts` eingezogen
-- [ ] `KiOrchestrierungService` mit strukturiertem Logging auf allen relevanten Pfaden
-- [ ] `application-dev.properties` mit Log-Level-Konfiguration für KI-Orchestrierung
-- [ ] Frontend-Tests prüfen, dass Logger im Prod-Mode nicht aufgerufen wird
+- [x] `frontend/src/logger.ts` angelegt mit Dev-Mode-Switch
+- [x] `window.onerror` und `unhandledrejection` in `main.ts` registriert
+- [x] Logging-Punkte in `SpielverwaltungEchtzeit.ts` eingezogen
+- [x] Logging-Punkte in `AppStore.ts` eingezogen
+- [x] Logging-Punkte in `TischSzene.ts` eingezogen (phasenbasiert, nicht pro Frame)
+- [x] Logging-Punkte in `SpielverwaltungApi.ts` eingezogen
+- [x] `KiOrchestrierungService` mit strukturiertem Logging auf allen relevanten Pfaden
+- [x] `application-dev.properties` mit Log-Level-Konfiguration für KI-Orchestrierung
+- [x] Frontend-Tests prüfen, dass Logger im Prod-Mode nicht aufgerufen wird
 - [ ] Code-Review / Plausibilitätsprüfung
 
 ## Technische Hinweise

@@ -362,11 +362,13 @@ export class TischSzene extends Phaser.Scene {
 
   /** Phaser-Lifecycle: Raeumt Ressourcen auf wenn die Szene gestoppt wird (z.B. Wechsel zur SpielverwaltungsSzene). */
   shutdown(): void {
+    Logger.szene('TischSzene shutdown');
     this.aufraeumen();
   }
 
   /** Phaser-Lifecycle: Raeumt Ressourcen auf wenn die Szene zerstoert wird. */
   destroy(): void {
+    Logger.szene('TischSzene destroy');
     this.aufraeumen();
   }
 

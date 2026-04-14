@@ -1,6 +1,6 @@
 # IMPLEMENTATION_PLAN — Locodoko Doppelkopf
 
-> **Letzte Aktualisierung: 2026-04-14 (Plan-Run #48)**
+> **Letzte Aktualisierung: 2026-04-14 (Plan-Run #49)**
 
 ## Legende
 
@@ -201,13 +201,13 @@ Keine karten-interne Klasse importiert Stich/GespielteKarte/SpielerPosition.
 
 ### 3.2 Logging-Punkte erweitern
 
-- [ ] `SpielverwaltungEchtzeit.ts`: Logging bei WebSocket-Verbindung, Reconnect, Nachrichtenempfang
-- [ ] `AppStore.ts`: Logging bei Zustandsänderungen (phasenbasiert, nicht pro Frame)
-- [ ] `TischSzene.ts`: Logging bei Szenen-Lifecycle (create, destroy) und Fehlern
-- [ ] `SpielverwaltungApi.ts`: Logging bei API-Aufrufen (Request/Response/Error)
-- [ ] Backend `KiOrchestrierungService`: strukturiertes Logging auf allen Pfaden
-- [ ] `application-dev.properties`: Log-Level-Konfiguration für KI-Orchestrierung
-- [ ] Test: Logger wird im Prod-Mode nicht aufgerufen
+- [x] `SpielverwaltungEchtzeit.ts`: Logging bei WebSocket-Verbindung, Reconnect, Nachrichtenempfang
+- [x] `AppStore.ts`: Logging bei Zustandsänderungen (phasenbasiert, nicht pro Frame)
+- [x] `TischSzene.ts`: Logging bei Szenen-Lifecycle (create, destroy) und Fehlern
+- [x] `SpielverwaltungApi.ts`: Logging bei API-Aufrufen (Request/Response/Error)
+- [x] Backend `KiOrchestrierungService`: strukturiertes Logging auf allen Pfaden
+- [x] `application-dev.properties`: Log-Level-Konfiguration für KI-Orchestrierung
+- [x] Test: Logger wird im Prod-Mode nicht aufgerufen
 
 **Referenz:** `specs/frontend-logging.md`
 
@@ -300,16 +300,15 @@ Phase 4 (parallel, niedrige Priorität):
 
 ## Notiz
 
-**Zuletzt erledigt (Plan-Run #48):** Task 3.1 — JSDoc vervollstaendigen.
-Audit aller 7 Frontend-Dateien ergab: 5 von 7 waren bereits vollstaendig dokumentiert
-(TischSzene, TischAnsichtModell, AnimationenService, SpielverwaltungEchtzeit, TischInputHandler).
-Ergaenzt: `AppStore.ladeTischName()` JSDoc, `TischUIManager` Klassen-Level-JSDoc (von Datei-Kopf
-zum Klassen-Block verschoben) + 3 fehlende Methoden-Docs (aktualisiereErgebnis,
-aktualisiereLetzteStiche, aktualisiereToasts).
-24 Frontend-Tests gruen, Build + Lint clean.
+**Zuletzt erledigt (Plan-Run #49):** Task 3.2 — Logging-Punkte erweitern.
+Audit ergab: Grossteil der Logging-Punkte war bereits implementiert (SpielverwaltungEchtzeit 5 Calls,
+AppStore 12 Calls, SpielverwaltungApi 8 Calls, KiOrchestrierungService 12+ Calls, logger.ts + Tests
+vorhanden). Ergaenzt: TischSzene shutdown/destroy-Logging. Bugfix: application-dev.properties hatte
+falschen Package-Namen fuer TischEchtzeitService (spieler → tisch). Spec-DoD aktualisiert.
+231 Backend-Tests gruen, 24 Frontend-Tests gruen, Build + Lint clean.
 
-**Naechster logischer Schritt:** Phase 3 weitermachen (3.2 Logging, 3.3 data-testid, 3.4 Offene Tische),
-oder Phase 4 (DoD-Checkboxen, E2E-Stabilisierung).
+**Naechster logischer Schritt:** Phase 3 weitermachen (3.3 data-testid, 3.4 Offene Tische),
+oder Phase 4 (4.1 DoD-Checkboxen, 4.2 E2E-Stabilisierung, 4.3 frontend-architektur.md).
 
 **Offene Fragen:** Keine.
 
