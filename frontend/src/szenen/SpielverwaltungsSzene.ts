@@ -371,12 +371,15 @@ export class SpielverwaltungsSzene extends Phaser.Scene {
     sichtbareTische.forEach(tisch => {
       const item = document.createElement('li');
       item.className = 'neo-list-item';
-      
+      item.dataset['testid'] = 'tischliste-eintrag';
+
       const info = document.createElement('div');
       info.className = 'neo-list-item-info';
+      const statusLabel = tisch.status === 'WARTEND' ? 'Wartend' : 'Im Spiel';
+      const konfigLabel = `${tisch.kurzKonfiguration.anzahlSpiele} Spiele · ${tisch.kurzKonfiguration.ohneNeunen ? 'Ohne Neunen' : 'Mit Neunen'}`;
       info.innerHTML = `
         <strong>${escapeHtml(tisch.name)}</strong>
-        <span class="neo-badge">${tisch.spielerAnzahl}/4 Spieler · KI: ${tisch.kurzKonfiguration.anzahlSpiele} Spiele</span>
+        <span class="neo-badge">${tisch.spielerAnzahl}/4 Spieler · ${escapeHtml(statusLabel)} · ${escapeHtml(konfigLabel)}</span>
       `;
       item.append(info);
 
@@ -385,14 +388,16 @@ export class SpielverwaltungsSzene extends Phaser.Scene {
       if (tisch.id === zustand.spieler?.aktiverTischId) {
         actionBtn.textContent = 'Zurückkehren';
         actionBtn.classList.add('neo-button--primary');
+        actionBtn.dataset['testid'] = 'btn-tisch-zurueckkehren';
         actionBtn.addEventListener('click', () => appStore.reconnecteTisch(tisch.id));
-      } else {
+      } else if (tisch.status === 'WARTEND') {
         actionBtn.textContent = 'Beitreten';
+        actionBtn.dataset['testid'] = 'btn-tisch-beitreten';
         actionBtn.addEventListener('click', () => void appStore.betreteTisch(tisch.id));
-        if (tisch.status !== 'WARTEND') {
-          actionBtn.disabled = true;
-          actionBtn.textContent = 'Voll';
-        }
+      } else {
+        actionBtn.textContent = 'Voll';
+        actionBtn.disabled = true;
+        actionBtn.dataset['testid'] = 'btn-tisch-voll';
       }
       item.append(actionBtn);
       liste.append(item);

@@ -213,15 +213,20 @@ Keine karten-interne Klasse importiert Stich/GespielteKarte/SpielerPosition.
 
 ### 3.3 data-testid-Attribute ergänzen
 
-- [ ] Prüfen welche data-testids laut `specs/e2e-tests.md` und `specs/frontend-tischansicht.md`
-      noch fehlen (aktuell 7 gefunden, Archiv listet ~17 als erledigt — ggf. dynamisch generiert)
-- [ ] Fehlende Attribute nachziehen falls nötig
+- [x] Prüfen welche data-testids laut `specs/e2e-tests.md` und `specs/frontend-tischansicht.md`
+      noch fehlen — alle 17 Attribute aus dem Spec vorhanden (startscreen, btn-neuer-tisch,
+      btn-offene-tische, btn-session-recovery, tisch-config-modal, input-tischname,
+      btn-tisch-erstellen, tischszene, hud-stichzaehler, hud-spieltyp, hud-btn-einstellungen,
+      einstellungen-modal, btn-spiel-starten, vorbehalt-overlay, floating-action-bar,
+      rundenauswertung-overlay, btn-rundenauswertung-weiter)
+- [x] Tischliste-Einträge: data-testid="tischliste-eintrag", "btn-tisch-beitreten",
+      "btn-tisch-zurueckkehren", "btn-tisch-voll" ergänzt
 
 ### 3.4 „Offene Tische"-Modal vervollständigen
 
-- [ ] Liste aller offenen Tische mit Name, Spieleranzahl, Status, Regelkonfiguration
-- [ ] Echtzeit-Updates via WebSocket (Tische erscheinen/verschwinden)
-- [ ] Beitritt-Button pro Tisch
+- [x] Liste aller offenen Tische mit Name, Spieleranzahl, Status, Regelkonfiguration
+- [x] Echtzeit-Updates via WebSocket (Tische erscheinen/verschwinden) — via `/topic/tische` in AppStore
+- [x] Beitritt-Button pro Tisch
 
 **Referenz:** `specs/lobby.md` Anforderung 1–2, 4, 8
 
@@ -300,16 +305,15 @@ Phase 4 (parallel, niedrige Priorität):
 
 ## Notiz
 
-**Zuletzt erledigt (Plan-Run #50):** Task 4.1 — DoD-Checkboxen in Specs aktualisieren.
-9 Spec-Dateien geprueft, 7 davon aktualisiert: spielablauf.md (2 Solo-Nachgeben Items),
-bockrunden.md (9 Items), dreissig-augen-pflicht.md (8 Items), schweinchen.md (7 Items),
-frontend-animationen.md (2 Items: Gewinn-Flash + Stich-Stapel), frontend-rundenauswertung.md
-(10 von 11 Items — Visuelles Review bleibt offen), architektur-ddd.md (12 Items).
-frontend-logging.md war bereits vollstaendig (nur Code-Review offen — manueller Task).
-e2e-tests.md: Testfall 1+2 weiterhin nicht gruen — unveraendert gelassen.
+**Zuletzt erledigt (Plan-Run #51):** Tasks 3.3 + 3.4 — data-testid-Attribute und Offene Tische Modal.
+Alle 17 data-testids aus specs/e2e-tests.md bereits vorhanden — kein Nachziehen nötig.
+baueTischliste() verbessert: Status jetzt als lesbarer Text ("Wartend"/"Im Spiel"),
+Regelkonfiguration zeigt "X Spiele · Mit/Ohne Neunen", data-testids auf Listeneinträgen.
+Echtzeit-Updates via /topic/tische waren bereits in AppStore implementiert.
 
-**Naechster logischer Schritt:** Phase 3 weitermachen (3.3 data-testid, 3.4 Offene Tische),
-oder Phase 4 fortsetzen (4.2 E2E-Stabilisierung, 4.3 frontend-architektur.md).
+**Naechster logischer Schritt:** Phase 4 fortsetzen:
+4.2 E2E-Tests stabilisieren (Testfall 1 + 2 gruen machen),
+4.3 frontend-architektur.md aktualisieren (Dateistruktur auf aktuellen Stand bringen).
 
 **Offene Fragen:** Keine.
 
