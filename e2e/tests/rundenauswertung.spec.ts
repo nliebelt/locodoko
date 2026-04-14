@@ -9,6 +9,7 @@
  */
 
 import { test, expect, type Page } from '@playwright/test';
+import { join } from 'path';
 
 // Liest Spielzustand aus dem AppStore — ein einzelnes page.evaluate pro Iteration
 interface SpielZustand {
@@ -16,7 +17,6 @@ interface SpielZustand {
   phase: string | null;
   spielbareKarten: number;
   moeglicheVorbehalte: number;
-  moeglicheAnsagen: string[];
   spielNummer: number;
 }
 async function leseSpielZustand(page: Page): Promise<SpielZustand> {
@@ -26,7 +26,7 @@ async function leseSpielZustand(page: Page): Promise<SpielZustand> {
 
     interface B { appStore: { snapshot: () => { partieStand?: { laufendesSpiel?: {
       spielbareKarten?: unknown[]; phase?: string; moeglicheVorbehalte?: unknown[];
-      moeglicheAnsagen?: string[]; spielNummer?: number;
+      spielNummer?: number;
     } } } } }
     const loco = (window as unknown as Record<string, B>)['__locodoko'];
     const spiel = loco?.appStore?.snapshot()?.partieStand?.laufendesSpiel;
@@ -35,7 +35,6 @@ async function leseSpielZustand(page: Page): Promise<SpielZustand> {
       phase: spiel?.phase ?? null,
       spielbareKarten: spiel?.spielbareKarten?.length ?? 0,
       moeglicheVorbehalte: spiel?.moeglicheVorbehalte?.length ?? 0,
-      moeglicheAnsagen: spiel?.moeglicheAnsagen ?? [],
       spielNummer: spiel?.spielNummer ?? 0,
     };
   });
@@ -60,33 +59,42 @@ test.describe('Rundenauswertung', () => {
 
     // ── 2. E2E-Bridge konfigurieren ───────────────────────────────────────────
     // geschwindigkeitsfaktor=Infinity: alle Tweens/Flipper/Warte sofort aufgeloest.
-    // reduziereRendering: Phaser-GameLoop von RAF(60fps) auf setTimeout(2fps),
-    // verhindert dass Firefox den Tab nach ~2.5min Canvas2D-Rendering killt.
+    // reduziereRendering wird NICHT verwendet — bei 60fps funktioniert die
+    // Tastatursteuerung zuverlaessiger, und das Spiel endet in unter 90s
+    // (weit unter der 2.5-Minuten-Grenze fuer Firefox-Tab-Kills).
+    await page.waitForFunction(() => {
+      const b = (window as unknown as Record<string, Record<string, unknown>>)['__locodoko'];
+      return typeof b?.['setzeAnimationsGeschwindigkeit'] === 'function';
+    }, undefined, { timeout: 10_000 });
     await page.evaluate(() => {
-      const bridge = (window as Record<string, Record<string, unknown>>)['__locodoko'];
-      if (typeof bridge?.['setzeAnimationsGeschwindigkeit'] === 'function') {
-        (bridge['setzeAnimationsGeschwindigkeit'] as (f: number) => void)(Infinity);
-      }
-      if (typeof bridge?.['reduziereRendering'] === 'function') {
-        (bridge['reduziereRendering'] as () => void)();
-      }
+      const bridge = (window as unknown as Record<string, Record<string, unknown>>)['__locodoko'];
+      (bridge['setzeAnimationsGeschwindigkeit'] as (f: number) => void)(Infinity);
     });
 
     // ── 3. Spiel durchspielen ─────────────────────────────────────────────────
-    // Einfache Polling-Schleife: alle 500ms Zustand pruefen.
-    // Spielt durch beliebig viele Spiele bis das Overlay erscheint.
+    // Polling-Schleife: Zustand pruefen, eigene Karte spielen wenn am Zug,
+    // Vorbehalt als GESUND melden, Armut ablehnen. Laeuft bis Overlay erscheint.
     const overlay = page.locator('[data-testid="rundenauswertung-overlay"]');
     let overlayGefunden = false;
+    let letztePhase = '';
+    let letztesSpiel = 0;
 
-    for (let i = 0; i < 600; i++) {       // 600 × 500ms = 300s Budget
+    for (let i = 0; i < 600; i++) {
       const zustand = await leseSpielZustand(page).catch(() => null);
       if (!zustand) { await page.waitForTimeout(500); continue; }
+
+      // Fortschritt loggen bei Phase/Spiel-Wechsel
+      if (zustand.phase !== letztePhase || zustand.spielNummer !== letztesSpiel) {
+        console.log(`[${i}] Spiel ${zustand.spielNummer} Phase=${zustand.phase} Karten=${zustand.spielbareKarten} Vorbehalte=${zustand.moeglicheVorbehalte}`);
+        letztePhase = zustand.phase ?? '';
+        letztesSpiel = zustand.spielNummer;
+      }
 
       if (zustand.overlayVisible) { overlayGefunden = true; break; }
 
       if (zustand.moeglicheVorbehalte > 0) {
         await page.keyboard.press('1'); // GESUND
-        await page.waitForTimeout(200);
+        await page.waitForTimeout(300);
         continue;
       }
       if (zustand.phase === 'ARMUT_TAUSCH') {
@@ -95,20 +103,16 @@ test.describe('Rundenauswertung', () => {
         continue;
       }
       if (zustand.phase === 'STICHPHASE' && zustand.spielbareKarten > 0) {
-        // Pflichtansage pruefen
-        if (zustand.moeglicheAnsagen.includes('KONTRA')) await page.keyboard.press('k');
-        else if (zustand.moeglicheAnsagen.includes('RE')) await page.keyboard.press('r');
         await page.keyboard.press('Enter');
-        await page.waitForTimeout(200);
+        await page.waitForTimeout(300);
         continue;
       }
-      // Warten (KI am Zug oder Uebergang zwischen Spielen)
+      // KI am Zug oder Phase-Uebergang
       await page.waitForTimeout(500);
     }
 
     // ── 4. Overlay muss sichtbar sein ─────────────────────────────────────────
     if (!overlayGefunden) {
-      // Debug-Info sammeln bevor der Assertion fehlschlaegt
       const debugInfo = await page.evaluate(() => {
         const el = document.querySelector('[data-testid="rundenauswertung-overlay"]') as HTMLElement | null;
         interface B { appStore: { snapshot: () => Record<string, unknown> } }
@@ -119,7 +123,6 @@ test.describe('Rundenauswertung', () => {
         return {
           overlayExists: !!el,
           overlayHidden: el?.hidden,
-          overlayChildCount: el?.childElementCount ?? 0,
           spielPhase: ls?.['phase'],
           spielNummer: ls?.['spielNummer'],
           hatErgebnis: !!ps?.['letztesSpielergebnis'],
@@ -130,15 +133,18 @@ test.describe('Rundenauswertung', () => {
     }
     await expect(overlay).toBeVisible({ timeout: 30_000 });
 
-    // ── 5. Overlay pruefen ────────────────────────────────────────────────────
+    // ── 5. Screenshot fuer visuelles Review (Vision Loop 10.6) ───────────────
+    await page.screenshot({ path: join(__dirname, '..', 'screenshots', '09-rundenauswertung-overlay.png') });
+
+    // ── 6. Overlay pruefen ────────────────────────────────────────────────────
     const weiterButton = page.locator('[data-testid="btn-rundenauswertung-weiter"]');
     await expect(weiterButton).toBeVisible({ timeout: 10_000 });
 
-    // ── 6. Overlay per Button-Klick schliessen ────────────────────────────────
+    // ── 7. Overlay per Button-Klick schliessen ────────────────────────────────
     await weiterButton.click();
     await expect(overlay).toBeHidden({ timeout: 5_000 });
 
-    // ── 7. Spiel laeuft weiter ───────────────────────────────────────────────
+    // ── 8. Spiel laeuft weiter ───────────────────────────────────────────────
     const naechstePhase = await page.evaluate(() => {
       interface LocodokoBridge { appStore: { snapshot: () => { partieStand?: { laufendesSpiel?: { phase?: string } } } } }
       const loco = (window as unknown as Record<string, LocodokoBridge>)['__locodoko'];

@@ -44,24 +44,13 @@ Events sind `record`s im Package `de.locodoko.partie.ereignisse`.
 
 ## KI als Event-Subscriber (Reactive AI)
 
-### Aktueller Zustand (imperativ)
-
-```java
-// KiOrchestrierungService.java — überall verstreut:
-if (spielerEntity.isKi()) {
-    KiStrategie ki = kiStrategieFactory.erstelle(spielerEntity.kiSchwierigkeit());
-    Karte karte = ki.waehleKarte(kiSpielzustand);
-    spielAktionsService.karteSpielenFuer(tischId, karte, position);
-}
-```
-
-### Zielzustand (reaktiv)
+`KiEventAdapter` reagiert auf `NaechsterSpielerErwartet` — `SpielAktionsService` enthält kein `if (isKi())` mehr:
 
 ```java
 @Component
 public class KiEventAdapter {
 
-    @EventListener
+    @ApplicationModuleListener
     public void beiNaechsterSpielerErwartet(NaechsterSpielerErwartet event) {
         SpielerEntity spieler = spielerRepository.findeAnTisch(event.tischId(), event.position());
         if (!spieler.isKi()) return;  // Menschen reagieren selbst via WebSocket
@@ -79,13 +68,7 @@ public class KiEventAdapter {
 }
 ```
 
-### Vorteile
-
-- `SpielAktionsService` enthält kein `if (isKi())` mehr
-- KI-Delay-Logik an genau einer Stelle
-- Für echten Multiplayer: `KiEventAdapter` durch `WebSocketBroadcastAdapter` ersetzen
-  oder parallel betreiben — der Spielkern merkt es nicht
-- Unit-Tests für Spiel-Logik brauchen keinen KI-Mock mehr
+Für echten Multiplayer: `KiEventAdapter` und `WebSocketBroadcastAdapter` laufen parallel — der Spielkern bemerkt keinen Unterschied.
 
 ---
 
@@ -97,13 +80,13 @@ Auch `TischEchtzeitService` wird zum Event-Subscriber, statt direkt aufgerufen z
 @Component
 public class WebSocketBroadcastAdapter {
 
-    @EventListener
+    @ApplicationModuleListener
     public void beiSpielAktualisiert(KarteGespielt event) {
         PartieStandAntwort antwort = partieStandAssembler.erstelle(event.tischId());
         tischEchtzeitService.sendePartieUpdate(event.tischId(), antwort);
     }
 
-    @EventListener
+    @ApplicationModuleListener
     public void beiStichAbgeschlossen(StichAbgeschlossen event) {
         // Animationshinweis an Clients senden
     }
@@ -116,18 +99,16 @@ Dadurch hat `SpielAktionsService` keine direkte Abhängigkeit mehr auf `TischEch
 
 ## Transaktionsgrenzen
 
-`@TransactionalEventListener` für Persistenz-Events — Broadcast erst nach
-erfolgreichem DB-Commit:
+`@ApplicationModuleListener` ist der Standard — er entspricht `@TransactionalEventListener(phase = AFTER_COMMIT)` und ist zusätzlich asynchron. Broadcasts und KI-Züge laufen damit immer nach erfolgreichem DB-Commit in eigenen Transaktionen:
 
 ```java
-@TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+@ApplicationModuleListener
 public void beiKarteGespielt(KarteGespielt event) {
     tischEchtzeitService.sendePartieUpdate(...);
 }
 ```
 
-Events die innerhalb einer Transaktion aufgerufen werden sollen (z.B. KI-Zug direkt
-nach menschlichem Zug in einem Request): `@EventListener` ohne `@Transactional`.
+Für intra-modul-synchrone Events (innerhalb desselben Moduls, selbe Transaktion) kann `@EventListener` genutzt werden — im Cross-Modul-Kontext ist es verboten.
 
 ---
 

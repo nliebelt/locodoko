@@ -2,7 +2,7 @@
 
 | Feld           | Wert                                        |
 |----------------|---------------------------------------------|
-| Status         | Neue Vorgabe                                |
+| Status         | Abgeschlossen                               |
 | Priorität      | Kritisch (Blocker für weitere Entwicklung) |
 | Abhängigkeiten | architektur-ddd.md, datenbankmodell.md      |
 

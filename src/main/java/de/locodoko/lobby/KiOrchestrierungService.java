@@ -375,6 +375,17 @@ public class KiOrchestrierungService {
                     continue;
                 }
                 Spiel spiel = SpielPersistenzAdapter.zuDomainSpiel(laufendesSpielEntity);
+                // Auswertungsphase hat keinen erwarteten Spieler — trotzdem abschliessen,
+                // damit Spiele nicht dauerhaft in AUSWERTUNG haengen bleiben.
+                if (spiel.phase() instanceof Spielphase.Auswertung
+                        || spiel.phase() instanceof Spielphase.GesamtstandAktualisieren) {
+                    LOGGER.warn("Spiel in Auswertungsphase festgefahren, starte Abschluss [tischId={}]", tisch.id());
+                    automatisiereTisch(tisch);
+                    partieRepository.saveAndFlush(tisch.partie());
+                    synchronisiereRegistry(TischId.von(tisch.id()), tisch);
+                    veroeffentlichePartieStand(tisch);
+                    continue;
+                }
                 SpielerPosition erwartet = spiel.erwarteterSpieler().orElse(null);
                 if (erwartet == null) {
                     continue;

@@ -156,4 +156,73 @@ test.describe('Vision Loop — UI Screenshots', () => {
     console.log(`Screenshots in: ${SCREENSHOTS_DIR}`);
     screenshots.forEach((f) => console.log(`  ${SCREENSHOTS_DIR}/${f}`));
   });
+
+  test('Rundenauswertung-Overlay screenshotten', async ({ page }) => {
+    test.setTimeout(300_000);
+
+    // ── 1. Quick Game starten ─────────────────────────────────────────────────
+    await page.goto('/');
+    await expect(page.locator('button', { hasText: /Quick Game/i })).toBeVisible({ timeout: 20_000 });
+    await page.locator('button', { hasText: /Quick Game/i }).click();
+    await expect(page.locator('[data-testid="tischszene"]')).toBeVisible({ timeout: 15_000 });
+
+    // ── 2. Sofort auf Turbo schalten ──────────────────────────────────────────
+    // reduziereRendering wird NICHT verwendet — bei 60fps funktioniert die
+    // Tastatursteuerung zuverlaessiger, und das Spiel endet in unter 90s.
+    await page.waitForFunction(() => {
+      const b = (window as unknown as Record<string, Record<string, unknown>>)['__locodoko'];
+      return typeof b?.['setzeAnimationsGeschwindigkeit'] === 'function';
+    }, undefined, { timeout: 10_000 });
+    await page.evaluate(() => {
+      const bridge = (window as unknown as Record<string, Record<string, unknown>>)['__locodoko'];
+      (bridge['setzeAnimationsGeschwindigkeit'] as (f: number) => void)(Infinity);
+    });
+
+    // ── 3. Spiel durchspielen bis Overlay erscheint ───────────────────────────
+    let overlayGefunden = false;
+    for (let i = 0; i < 600; i++) {
+      const zustand = await page.evaluate(() => {
+        const el = document.querySelector('[data-testid="rundenauswertung-overlay"]') as HTMLElement | null;
+        const overlayVisible = !!el && !el.hidden;
+        interface B { appStore: { snapshot: () => { partieStand?: { laufendesSpiel?: {
+          spielbareKarten?: unknown[]; phase?: string; moeglicheVorbehalte?: unknown[];
+        } } } } }
+        const loco = (window as unknown as Record<string, B>)['__locodoko'];
+        const spiel = loco?.appStore?.snapshot()?.partieStand?.laufendesSpiel;
+        return {
+          overlayVisible,
+          phase: spiel?.phase ?? null,
+          spielbareKarten: spiel?.spielbareKarten?.length ?? 0,
+          moeglicheVorbehalte: spiel?.moeglicheVorbehalte?.length ?? 0,
+        };
+      }).catch(() => null);
+
+      if (!zustand) { await page.waitForTimeout(500); continue; }
+      if (zustand.overlayVisible) { overlayGefunden = true; break; }
+
+      if (zustand.moeglicheVorbehalte > 0) {
+        await page.keyboard.press('1');
+        await page.waitForTimeout(200);
+        continue;
+      }
+      if (zustand.phase === 'ARMUT_TAUSCH') {
+        await page.keyboard.press('n');
+        await page.waitForTimeout(300);
+        continue;
+      }
+      if (zustand.phase === 'STICHPHASE' && zustand.spielbareKarten > 0) {
+        await page.keyboard.press('Enter');
+        await page.waitForTimeout(200);
+        continue;
+      }
+      await page.waitForTimeout(500);
+    }
+
+    // ── 4. Screenshot ─────────────────────────────────────────────────────────
+    expect(overlayGefunden, 'Rundenauswertung-Overlay muss sichtbar sein').toBeTruthy();
+    await page.waitForTimeout(500);
+    await screenshot(page, '09-rundenauswertung-overlay');
+    console.log(`\n=== Rundenauswertung-Screenshot ===`);
+    console.log(`  ${SCREENSHOTS_DIR}/09-rundenauswertung-overlay.png`);
+  });
 });

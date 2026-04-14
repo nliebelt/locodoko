@@ -1,12 +1,11 @@
 # IMPLEMENTATION_PLAN — Locodoko Doppelkopf
 
-> **Letzte Aktualisierung: 2026-04-14 (Plan-Run #34)**
+> **Letzte Aktualisierung: 2026-04-14 (Plan-Run #35)**
 
 ## Notiz
 
-**2026-04-14 (8.3 E2E gegen Backend verifiziert):** Beide E2E-Tests `partie-gegen-ki.spec.ts` und `rundenauswertung.spec.ts` laufen stabil grün gegen `mvn spring-boot:run`. Stabilitäts-Maßnahmen: (1) Firefox statt Chromium — Chromium headless hängt bei langen Phaser-Canvas2D-Sessions. (2) `geschwindigkeitsfaktor=Infinity` — AnimationenService short-circuitet alle Tweens/Flipper/Warte sofort (`animiereTween`/`flipperZaehler`/`warte` returnen `Promise.resolve()`). (3) `reduziereRendering` — Phaser-GameLoop von RAF(60fps) auf setTimeout(2fps), verhindert Firefox-Tab-Kill nach ~2.5min. (4) `favicon.ico` — verhindert 500-Fehler bei Chromium-Anfragen.
-221 Backend-Tests + 24 Frontend-Tests + Build + Lint weiterhin grün.
-Nächster logischer Schritt: 9.5/10.6 (Vision Loop Reviews).
+**2026-04-14 (9.5 + 10.6 Vision Loop Reviews abgeschlossen):** Vision Loop für Stich-Animationen (9.5) und Rundenauswertungs-Overlay (10.6) visuell geprüft — keine Bugs gefunden. Wichtige Erkenntnis: `reduziereRendering` (2fps-Modus) bricht die Tastatursteuerung für Kartenspielen — Tests dürfen NUR `geschwindigkeitsfaktor=Infinity` verwenden, NICHT `reduziereRendering`. `rundenauswertung.spec.ts` und `vision-loop.spec.ts` entsprechend korrigiert. Außerdem: `KiOrchestrierungService.behebeFestgefahreneKiTische()` um AUSWERTUNG-Phase ergänzt, damit Spiele nicht in der Auswertung hängen bleiben. 221 Backend-Tests + 24 Frontend-Tests + Build + Lint grün.
+Nächster logischer Schritt: Nächste offene Aufgabe im Plan suchen.
 
 ---
 
@@ -127,7 +126,7 @@ Nächster logischer Schritt: 9.5/10.6 (Vision Loop Reviews).
 - [x] **9.2** Stich-Stapel: Karten landen sichtbar auf Stapel beim Gewinner (nicht nur Zähler, sondern gestapelter Fächer)
 - [x] **9.3** Letzter-Stich-Flip: Klick auf eigenen Stapel oder Taste deckt 4 Karten des letzten Stichs auf (implementiert — Bug #7, `letzterStichOverlay` in TischSzene.ts)
 - [x] **9.4** Stichmitte: Karten „leicht überlappend und minimal rotiert" gemäß Spec — aktuell lineare Positionierung ohne Rotation
-- [ ] **9.5** Visuelles Review nach Umsetzung (Vision Loop)
+- [x] **9.5** Visuelles Review nach Umsetzung (Vision Loop)
 
 ---
 
@@ -140,7 +139,7 @@ Nächster logischer Schritt: 9.5/10.6 (Vision Loop Reviews).
 - [x] **10.3** Partie-Ende-Overlay: Gesamtauswertung nach letztem Spiel (Tabelle mit Endstand, Gewinner, Neustart-Countdown)
 - [x] **10.4** Keyboard: Enter schließt Overlay / Escape wird ignoriert
 - [x] **10.5** `data-testid="rundenauswertung-overlay"` und `data-testid="btn-rundenauswertung-weiter"` gesetzt
-- [ ] **10.6** Visuelles Review (Vision Loop)
+- [x] **10.6** Visuelles Review (Vision Loop)
 
 ---
 

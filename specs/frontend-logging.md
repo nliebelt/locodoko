@@ -114,8 +114,8 @@ Jeder Schritt der KI-Orchestrierung wird mit `log.info` / `log.warn` / `log.erro
 
 ```properties
 # KI-Orchestrierung auf DEBUG für Entwicklung
-logging.level.de.locodoko.lobby.KiOrchestrierungService=DEBUG
-logging.level.de.locodoko.session.TischEchtzeitService=DEBUG
+logging.level.de.locodoko.ki.KiEventAdapter=DEBUG
+logging.level.de.locodoko.tisch.TischEchtzeitService=DEBUG
 ```
 
 ---

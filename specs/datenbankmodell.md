@@ -20,12 +20,12 @@ Für die Entwicklung wird H2 (In-Memory) verwendet, für die Produktion PostgreS
 
 ### Aggregate Roots (mutable, mit @Table)
 
-1. **`Tisch`** (Aggregate Root in `de.locodoko.lobby`)
+1. **`Tisch`** (Aggregate Root in `de.locodoko.tisch`)
    - Felder: id (UUID), name, status (WARTEND, IM_SPIEL, BEENDET), erstelltVonSpielerId (UUID FK), erstelltAm
    - Foreign Key: tischId in anderen Aggregates
    - Konfiguration: Als @Embedded oder Werte direkt im Tisch-Table
 
-2. **`Spieler`** (Aggregate Root in `de.locodoko.session`)
+2. **`Spieler`** (Aggregate Root in `de.locodoko.spieler`)
    - Felder: id (UUID), name, sessionId, istKi, erstelltAm
    - Foreign Key: spielerId referenziert von anderen Aggregates
 
@@ -95,7 +95,7 @@ Für die Entwicklung wird H2 (In-Memory) verwendet, für die Produktion PostgreS
 ## Definition of Done
 
 - [x] Alte JPA-Entitäten aus `spielverwaltung/persistenz/` gelöscht
-- [x] Domain-Klassen in Bounded Contexts nach `lobby/`, `partie/`, `karten/`, `session/` verschoben
+- [x] Domain-Klassen in Bounded Contexts nach `tisch/`, `partie/`, `karten/`, `spieler/` verschoben
 - [x] Aggregate Roots mit Spring Data JDBC `@Table` annotiert
 - [x] Repositories (Spring Data JDBC) für alle Aggregate Roots erstellt (`TischRepository`, `PartieRepository`, `SpielerRepository`)
 - [x] Liquibase Changesets generiert und committiert (`db/changelog/*.yaml`)
