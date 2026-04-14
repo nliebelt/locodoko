@@ -1,7 +1,7 @@
 package de.locodoko.session;
 
-import de.locodoko.lobby.PartieStandAntwort;
-import de.locodoko.lobby.TischAntwort;
+import de.locodoko.tisch.PartieStandAntwort;
+import de.locodoko.tisch.TischAntwort;
 
 import java.time.Instant;
 import java.util.UUID;

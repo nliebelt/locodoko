@@ -1,8 +1,8 @@
 package de.locodoko.session;
 
 import de.locodoko.session.SpielerNameAnfrage;
-import de.locodoko.lobby.TischAntwort;
-import de.locodoko.lobby.TischErstellenAnfrage;
+import de.locodoko.tisch.TischAntwort;
+import de.locodoko.tisch.TischErstellenAnfrage;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;

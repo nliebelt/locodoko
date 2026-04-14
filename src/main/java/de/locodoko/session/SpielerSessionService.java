@@ -2,7 +2,7 @@ package de.locodoko.session;
 
 import de.locodoko.session.SpielerEntity;
 import de.locodoko.session.SpielerRepository;
-import de.locodoko.lobby.TischRepository;
+import de.locodoko.tisch.TischRepository;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;
 import org.springframework.stereotype.Service;

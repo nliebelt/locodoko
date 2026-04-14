@@ -5,10 +5,10 @@ import de.locodoko.session.SpielerSessionService;
 import de.locodoko.session.SpielerSessionUngueltigException;
 import de.locodoko.session.SpielverwaltungKonfliktException;
 import de.locodoko.session.SpielverwaltungNichtGefundenException;
-import de.locodoko.lobby.PartieStandAntwort;
-import de.locodoko.lobby.SpielAktionsService;
-import de.locodoko.lobby.TischAntwort;
-import de.locodoko.lobby.TischVerwaltungsService;
+import de.locodoko.tisch.PartieStandAntwort;
+import de.locodoko.tisch.SpielAktionsService;
+import de.locodoko.tisch.TischAntwort;
+import de.locodoko.tisch.TischVerwaltungsService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.messaging.handler.annotation.DestinationVariable;
@@ -17,7 +17,7 @@ import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.simp.annotation.SendToUser;
 import org.springframework.stereotype.Controller;
 
-import de.locodoko.lobby.TischId;
+import de.locodoko.tisch.TischId;
 import de.locodoko.partie.PartieId;
 
 import java.security.Principal;
@@ -28,8 +28,8 @@ import java.util.UUID;
  *
  * <p>Empfaengt Spielaktionen von Clients ({@code /app/tisch/{id}/karte},
  * {@code /vorbehalt}, {@code /ansage}, {@code /armut-antwort}, {@code /snapshot},
- * {@code /debug-snapshot}) und delegiert an {@link de.locodoko.lobby.TischVerwaltungsService}
- * und {@link de.locodoko.lobby.SpielAktionsService}.
+ * {@code /debug-snapshot}) und delegiert an {@link de.locodoko.tisch.TischVerwaltungsService}
+ * und {@link de.locodoko.tisch.SpielAktionsService}.
  * Nach jeder Aktion werden automatische Broadcasts und ggf. benutzerbezogene Antworten
  * ueber {@link de.locodoko.session.TischEchtzeitService} versandt. Fehler werden als
  * {@link SpielverwaltungWebSocketFehlerAntwort} an den Verursacher zurueckgesendet.</p>

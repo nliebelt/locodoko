@@ -1,6 +1,6 @@
 package de.locodoko.session;
 
-import de.locodoko.lobby.PartieStandAntwort;
+import de.locodoko.tisch.PartieStandAntwort;
 
 import java.time.Instant;
 

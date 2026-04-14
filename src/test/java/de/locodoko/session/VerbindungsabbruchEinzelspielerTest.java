@@ -1,8 +1,8 @@
 package de.locodoko.session;
 
-import de.locodoko.lobby.TischEntity;
-import de.locodoko.lobby.TischRepository;
-import de.locodoko.lobby.TischkonfigurationEmbeddable;
+import de.locodoko.tisch.TischEntity;
+import de.locodoko.tisch.TischRepository;
+import de.locodoko.tisch.TischkonfigurationEmbeddable;
 import de.locodoko.partie.PartieEntity;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;

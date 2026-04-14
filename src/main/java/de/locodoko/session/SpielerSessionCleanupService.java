@@ -2,11 +2,11 @@ package de.locodoko.session;
 
 import de.locodoko.session.SpielerEntity;
 import de.locodoko.session.SpielerRepository;
-import de.locodoko.lobby.TischEntity;
-import de.locodoko.lobby.TischRepository;
-import de.locodoko.lobby.TischStatus;
-import de.locodoko.lobby.TischAntwort;
-import de.locodoko.lobby.TischListenEintragAntwort;
+import de.locodoko.tisch.TischEntity;
+import de.locodoko.tisch.TischRepository;
+import de.locodoko.tisch.TischStatus;
+import de.locodoko.tisch.TischAntwort;
+import de.locodoko.tisch.TischListenEintragAntwort;
 import de.locodoko.session.TischEchtzeitService;
 import de.locodoko.session.TischEreignisAntwort;
 import de.locodoko.session.TischEreignisTyp;

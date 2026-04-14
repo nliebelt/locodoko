@@ -1,6 +1,6 @@
 package de.locodoko.partie;
 
-import de.locodoko.lobby.TischEntity;
+import de.locodoko.tisch.TischEntity;
 
 import de.locodoko.karten.SpielerPosition;
 import org.springframework.data.annotation.Transient;

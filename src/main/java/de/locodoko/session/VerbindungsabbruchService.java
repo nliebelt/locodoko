@@ -1,11 +1,11 @@
 package de.locodoko.session;
 
 import de.locodoko.session.SpielerRepository;
-import de.locodoko.lobby.TischEntity;
-import de.locodoko.lobby.TischRepository;
-import de.locodoko.lobby.TischStatus;
-import de.locodoko.lobby.KiOrchestrierungService;
-import de.locodoko.lobby.PartieStandAntwort;
+import de.locodoko.tisch.TischEntity;
+import de.locodoko.tisch.TischRepository;
+import de.locodoko.tisch.TischStatus;
+import de.locodoko.tisch.KiOrchestrierungService;
+import de.locodoko.tisch.PartieStandAntwort;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;

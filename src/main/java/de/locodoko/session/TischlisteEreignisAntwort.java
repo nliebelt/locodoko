@@ -1,6 +1,6 @@
 package de.locodoko.session;
 
-import de.locodoko.lobby.TischListenEintragAntwort;
+import de.locodoko.tisch.TischListenEintragAntwort;
 
 import java.time.Instant;
 import java.util.List;
