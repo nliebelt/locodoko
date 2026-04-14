@@ -55,6 +55,14 @@ public class TischEchtzeitService {
         planeNachCommit(() -> sendeAnBenutzer(benutzer, ziel, payload));
     }
 
+    /**
+     * Sendet einen Partie-Broadcast sofort (ohne planeNachCommit-Wrapper).
+     * Fuer Aufrufer die bereits nach dem DB-Commit laufen (z.B. {@code @ApplicationModuleListener}).
+     */
+    public void sendePartieEreignis(PartieEreignisAntwort antwort) {
+        sendeBroadcast("/topic/partie/" + antwort.partieStand().partieId(), antwort);
+    }
+
     private void planeNachCommit(Runnable aktion) {
         if (TransactionSynchronizationManager.isSynchronizationActive()) {
             TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {

@@ -36,6 +36,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.transaction.support.TransactionTemplate;
 
 import java.security.Principal;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.EnumMap;
 import java.util.List;
@@ -43,6 +44,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
 
+import static org.awaitility.Awaitility.await;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -87,9 +89,7 @@ class WebSocketSpielaktionIntegrationTest {
         webSocketController.meldeVorbehalt(setup.tischId(), new VorbehaltAnfrage(VorbehaltAnsage.GESUND), principal(setup.sessionIds().get(SpielerPosition.OST)));
         webSocketController.meldeVorbehalt(setup.tischId(), new VorbehaltAnfrage(VorbehaltAnsage.GESUND), principal(setup.sessionIds().get(SpielerPosition.SUED)));
 
-        List<WebSocketNachrichtGesendet> nachrichten = nachrichtenSpeicher.nachrichten();
         WebSocketNachrichtGesendet broadcastNachricht = findeLetzteNachricht(
-            nachrichten,
             "/topic/partie/" + setup.partieId(),
             PartieEreignisAntwort.class
         );
@@ -99,7 +99,6 @@ class WebSocketSpielaktionIntegrationTest {
         assertEquals("SOLO_TRUMPF", broadcast.partieStand().laufendesSpiel().spieltyp().name());
 
         WebSocketNachrichtGesendet nordSnapshot = findeBenutzerNachricht(
-            nachrichten,
             setup.sessionIds().get(SpielerPosition.NORD),
             "/queue/partie/" + setup.partieId(),
             PartieEreignisAntwort.class
@@ -160,9 +159,7 @@ class WebSocketSpielaktionIntegrationTest {
             principal(setup.sessionIds().get(SpielerPosition.OST))
         );
 
-        List<WebSocketNachrichtGesendet> nachrichten = nachrichtenSpeicher.nachrichten();
         WebSocketNachrichtGesendet broadcastNachricht = findeLetzteNachricht(
-            nachrichten,
             "/topic/partie/" + setup.partieId(),
             PartieEreignisAntwort.class
         );
@@ -171,7 +168,6 @@ class WebSocketSpielaktionIntegrationTest {
             "Nach Angebot, Ablehnung und Annahme muss der WebSocket-Armutfluss die Stichphase erreichen, damit das Spiel ohne manuelle Eingriffe weiterlaufen kann.");
 
         WebSocketNachrichtGesendet ostSnapshot = findeBenutzerNachricht(
-            nachrichten,
             setup.sessionIds().get(SpielerPosition.OST),
             "/queue/partie/" + setup.partieId(),
             PartieEreignisAntwort.class
@@ -198,9 +194,7 @@ class WebSocketSpielaktionIntegrationTest {
             principal(setup.sessionIds().get(SpielerPosition.WEST))
         );
 
-        List<WebSocketNachrichtGesendet> nachrichten = nachrichtenSpeicher.nachrichten();
         WebSocketNachrichtGesendet broadcastNachricht = findeLetzteNachricht(
-            nachrichten,
             "/topic/partie/" + setup.partieId(),
             PartieEreignisAntwort.class
         );
@@ -210,7 +204,6 @@ class WebSocketSpielaktionIntegrationTest {
         assertEquals("KREUZ-AS-1", broadcast.partieStand().laufendesSpiel().aktuelleStichmitte().getFirst().karte().id());
 
         WebSocketNachrichtGesendet nordSnapshotNachricht = findeBenutzerNachricht(
-            nachrichten,
             setup.sessionIds().get(SpielerPosition.NORD),
             "/queue/partie/" + setup.partieId(),
             PartieEreignisAntwort.class
@@ -231,6 +224,8 @@ class WebSocketSpielaktionIntegrationTest {
             new KarteSpielenAnfrage("KREUZ-AS-1"),
             principal(setup.sessionIds().get(SpielerPosition.WEST))
         );
+        // Auf asynchrone Events des gültigen Zugs warten, bevor der Speicher geleert wird
+        findeLetzteNachricht("/topic/partie/" + setup.partieId(), PartieEreignisAntwort.class);
         nachrichtenSpeicher.leeren();
 
         SpielverwaltungKonfliktException exception = assertThrows(
@@ -260,9 +255,7 @@ class WebSocketSpielaktionIntegrationTest {
             principal(setup.sessionIds().get(SpielerPosition.WEST))
         );
 
-        List<WebSocketNachrichtGesendet> nachrichten = nachrichtenSpeicher.nachrichten();
         WebSocketNachrichtGesendet broadcastNachricht = findeLetzteNachricht(
-            nachrichten,
             "/topic/partie/" + setup.partieId(),
             PartieEreignisAntwort.class
         );
@@ -273,7 +266,6 @@ class WebSocketSpielaktionIntegrationTest {
         assertEquals(SpielerPosition.WEST, broadcast.partieStand().laufendesSpiel().ansageHistorie().getFirst().spielerPosition());
 
         WebSocketNachrichtGesendet nordSnapshotNachricht = findeBenutzerNachricht(
-            nachrichten,
             setup.sessionIds().get(SpielerPosition.NORD),
             "/queue/partie/" + setup.partieId(),
             PartieEreignisAntwort.class
@@ -292,6 +284,8 @@ class WebSocketSpielaktionIntegrationTest {
         SpielSetup setup = starteVierSpielerTisch("Ungueltige Ansage");
         setzeKontrollierteStandardhaende(setup.partieId());
         meldeGesundesSpiel(setup);
+        // Auf asynchrone Events der Vorbehaltsrunde warten, bevor der Speicher geleert wird
+        findeLetzteNachricht("/topic/partie/" + setup.partieId(), PartieEreignisAntwort.class);
         nachrichtenSpeicher.leeren();
 
         SpielverwaltungKonfliktException exception = assertThrows(
@@ -333,8 +327,7 @@ class WebSocketSpielaktionIntegrationTest {
         webSocketController.verarbeiteArmutAntwort(setup.tischId(), new ArmutAntwortAnfrage(false, List.of()), principal(setup.sessionIds().get(SpielerPosition.OST)));
         webSocketController.verarbeiteArmutAntwort(setup.tischId(), new ArmutAntwortAnfrage(false, List.of()), principal(setup.sessionIds().get(SpielerPosition.SUED)));
 
-        List<WebSocketNachrichtGesendet> nachrichten = nachrichtenSpeicher.nachrichten();
-        WebSocketNachrichtGesendet broadcast = findeLetzteNachricht(nachrichten, "/topic/partie/" + setup.partieId(), PartieEreignisAntwort.class);
+        WebSocketNachrichtGesendet broadcast = findeLetzteNachricht("/topic/partie/" + setup.partieId(), PartieEreignisAntwort.class);
         PartieEreignisAntwort ereignis = (PartieEreignisAntwort) broadcast.payload();
 
         assertEquals("VORBEHALT_ANSAGE", ereignis.partieStand().laufendesSpiel().phase(),
@@ -378,8 +371,7 @@ class WebSocketSpielaktionIntegrationTest {
         webSocketController.verarbeiteArmutAntwort(setup.tischId(), new ArmutAntwortAnfrage(false, List.of()), principal(setup.sessionIds().get(SpielerPosition.OST)));
         webSocketController.verarbeiteArmutAntwort(setup.tischId(), new ArmutAntwortAnfrage(false, List.of()), principal(setup.sessionIds().get(SpielerPosition.SUED)));
 
-        List<WebSocketNachrichtGesendet> nachrichten = nachrichtenSpeicher.nachrichten();
-        WebSocketNachrichtGesendet broadcast = findeLetzteNachricht(nachrichten, "/topic/partie/" + setup.partieId(), PartieEreignisAntwort.class);
+        WebSocketNachrichtGesendet broadcast = findeLetzteNachricht("/topic/partie/" + setup.partieId(), PartieEreignisAntwort.class);
         PartieEreignisAntwort ereignis = (PartieEreignisAntwort) broadcast.payload();
 
         assertEquals("VORBEHALT_ANSAGE", ereignis.partieStand().laufendesSpiel().phase(),
@@ -528,24 +520,34 @@ class WebSocketSpielaktionIntegrationTest {
         return new Karte(farbe, wert, exemplarIndex);
     }
 
+    private static final Duration ASYNC_TIMEOUT = Duration.ofSeconds(5);
+
     private WebSocketNachrichtGesendet findeLetzteNachricht(
-        List<WebSocketNachrichtGesendet> nachrichten,
         String ziel,
         Class<?> payloadTyp
     ) {
-        return nachrichten.stream()
+        await().atMost(ASYNC_TIMEOUT).until(() ->
+            nachrichtenSpeicher.nachrichten().stream()
+                .anyMatch(n -> ziel.equals(n.ziel()) && payloadTyp.isInstance(n.payload()))
+        );
+        return nachrichtenSpeicher.nachrichten().stream()
             .filter(nachricht -> ziel.equals(nachricht.ziel()) && payloadTyp.isInstance(nachricht.payload()))
             .reduce((erstes, zweites) -> zweites)
             .orElseThrow(() -> new AssertionError("Es wurde keine passende WebSocket-Nachricht fuer " + ziel + " gefunden."));
     }
 
     private WebSocketNachrichtGesendet findeBenutzerNachricht(
-        List<WebSocketNachrichtGesendet> nachrichten,
         String benutzer,
         String ziel,
         Class<?> payloadTyp
     ) {
-        return nachrichten.stream()
+        await().atMost(ASYNC_TIMEOUT).until(() ->
+            nachrichtenSpeicher.nachrichten().stream()
+                .anyMatch(n -> ziel.equals(n.ziel())
+                    && benutzer.equals(n.benutzer())
+                    && payloadTyp.isInstance(n.payload()))
+        );
+        return nachrichtenSpeicher.nachrichten().stream()
             .filter(nachricht -> ziel.equals(nachricht.ziel())
                 && benutzer.equals(nachricht.benutzer())
                 && payloadTyp.isInstance(nachricht.payload()))

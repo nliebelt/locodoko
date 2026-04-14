@@ -123,16 +123,20 @@ Keine karten-interne Klasse importiert Stich/GespielteKarte/SpielerPosition.
 
 ### 1.9 @EventListener → @ApplicationModuleListener migrieren
 
-- [ ] `KiEventAdapter` (tisch/): `@EventListener` → `@ApplicationModuleListener`
+- [x] `KiEventAdapter` (tisch/): `@EventListener` → `@ApplicationModuleListener`
       (beide Methoden: `beiNaechsterSpielerErwartet`, `beiVorbehaltErwartet`)
-- [ ] `WebSocketBroadcastAdapter` (tisch/): `@EventListener` → `@ApplicationModuleListener`
-- [ ] `VerbindungsSessionEreignisListener` (spieler/): prüfen ob Cross-Modul
-      (falls ja → @ApplicationModuleListener; falls Intra-Modul → @EventListener bleibt OK)
-- [ ] Import-Statement von `org.springframework.context.event.EventListener` →
+- [x] `WebSocketBroadcastAdapter` (tisch/): `@EventListener` → `@ApplicationModuleListener`
+- [x] `VerbindungsSessionEreignisListener` (spieler/): geprüft — Intra-Modul (Spring WebSocket-Events) → `@EventListener` bleibt
+- [x] Import-Statement von `org.springframework.context.event.EventListener` →
       `org.springframework.modulith.events.ApplicationModuleListener` aktualisieren
-- [ ] Sicherstellen dass Events nach DB-Commit gefeuert werden (Outbox-Semantik)
-
-[BLOCKED: 1.7]
+- [x] Sicherstellen dass Events nach DB-Commit gefeuert werden (Outbox-Semantik)
+- [x] `spring-modulith-events-api` als compile-Dependency hinzugefügt (war nur runtime via starter-jdbc;
+      ohne compile-scope werden `@ApplicationModuleListener`-Annotationen vom Compiler stumm verworfen)
+- [x] `@EnableAsync` zu `LocodokoAnwendung` hinzugefügt (notwendig für `@Async`-Semantik der Listener)
+- [x] `TischEchtzeitService.sendePartieEreignis()` Direkt-Methode ergänzt (kein `planeNachCommit`-Wrapper,
+      da `@ApplicationModuleListener` bereits post-commit läuft)
+- [x] `awaitility` Test-Dependency + WebSocket-Tests auf asynchrone Event-Zustellung angepasst
+- [x] `mvn test` grün (221 Tests)
 
 ### 1.10 ApplicationModulesTest erstellen
 
@@ -291,14 +295,16 @@ Phase 4 (parallel, niedrige Priorität):
 
 ## Notiz
 
-**Zuletzt erledigt (Plan-Run #43):** Task 1.8 — Liquibase-Changeset `010-event-publication.yaml`
-erstellt. Tabelle `event_publication` mit allen 9 Spalten aus Spring Modulith 2.0.0 Schema
-(id, listener_id, event_type, serialized_event, publication_date, completion_date, status,
-completion_attempts, last_resubmission_date) plus 2 Indizes. In `db.changelog-master.yaml`
-eingebunden. Alle 221 Backend-Tests grün.
+**Zuletzt erledigt (Plan-Run #44):** Task 1.9 — `@EventListener` → `@ApplicationModuleListener` migriert.
+`KiEventAdapter` (2 Methoden) und `WebSocketBroadcastAdapter` (1 Methode) auf `@ApplicationModuleListener`
+umgestellt. `VerbindungsSessionEreignisListener` bleibt bei `@EventListener` (Intra-Modul, Spring WebSocket).
+Kernproblem gelöst: `spring-modulith-events-api` war nur `runtime`-Dependency; Java-Compiler verwirft
+Annotationen ohne Compile-Time-Zugriff auf den Annotation-Typ stumm. Explizites `compile`-Dependency ergänzt.
+`@EnableAsync` hinzugefügt, `TischEchtzeitService.sendePartieEreignis()` für Post-Commit-Aufrufer ergänzt,
+`awaitility` und asynchrone Test-Polling-Logik für WebSocket-Tests eingeführt. 221 Tests grün.
 
-**Nächster logischer Schritt:** Task 1.9 (`@EventListener` → `@ApplicationModuleListener` migrieren).
-Dependency auf 1.7 + 1.8 ist erfüllt.
+**Nächster logischer Schritt:** Task 1.10 (`ApplicationModulesTest` erstellen).
+Dependency auf 1.1–1.9 ist erfüllt.
 
 **Offene Fragen:** Keine.
 

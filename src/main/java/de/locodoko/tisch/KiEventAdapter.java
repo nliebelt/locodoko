@@ -3,7 +3,7 @@ package de.locodoko.tisch;
 import de.locodoko.partie.ereignisse.NaechsterSpielerErwartet;
 import de.locodoko.partie.ereignisse.VorbehaltErwartet;
 import jakarta.annotation.PreDestroy;
-import org.springframework.context.event.EventListener;
+import org.springframework.modulith.events.ApplicationModuleListener;
 import org.springframework.stereotype.Component;
 
 import java.util.concurrent.Executors;
@@ -13,10 +13,11 @@ import java.util.concurrent.TimeUnit;
 /**
  * Reagiert auf Spielereignisse und loest KI-Zuege aus.
  *
- * <p>Lauscht auf {@link NaechsterSpielerErwartet} und {@link VorbehaltErwartet}.
+ * <p>Lauscht auf {@link NaechsterSpielerErwartet} und {@link VorbehaltErwartet}
+ * via {@code @ApplicationModuleListener} (Outbox-Semantik: Events werden erst nach DB-Commit
+ * asynchron in eigener Transaktion zugestellt).
  * Falls der naechste Spieler eine KI ist, fuehrt {@link KiOrchestrierungService#automatisiereTisch}
- * den Zug synchron im selben Transaktionskontext aus. Menschliche Spieler agieren
- * eigenstaendig ueber WebSocket und werden ignoriert.</p>
+ * den Zug aus. Menschliche Spieler agieren eigenstaendig ueber WebSocket und werden ignoriert.</p>
  *
  * <p>Zentralisiert die gesamte KI-Delay-Logik: der {@link #kiScheduler} und die Konstante
  * {@link #KI_KARTEN_VERZOEGERUNG_MS} liegen hier. {@link KiOrchestrierungService} ruft
@@ -43,13 +44,13 @@ class KiEventAdapter {
         this.tischRepository = tischRepository;
     }
 
-    @EventListener
+    @ApplicationModuleListener
     void beiNaechsterSpielerErwartet(NaechsterSpielerErwartet ereignis) {
         tischRepository.findById(TischId.von(ereignis.tischId()))
             .ifPresent(kiOrchestrierungService::automatisiereTisch);
     }
 
-    @EventListener
+    @ApplicationModuleListener
     void beiVorbehaltErwartet(VorbehaltErwartet ereignis) {
         tischRepository.findById(TischId.von(ereignis.tischId()))
             .ifPresent(kiOrchestrierungService::automatisiereTisch);

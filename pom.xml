@@ -93,6 +93,12 @@
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-actuator</artifactId>
         </dependency>
+        <!-- Awaitility für asynchrone Test-Assertions (ApplicationModuleListener ist async) -->
+        <dependency>
+            <groupId>org.awaitility</groupId>
+            <artifactId>awaitility</artifactId>
+            <scope>test</scope>
+        </dependency>
         <!-- OpenAPI/Swagger-Dokumentation via springdoc-openapi -->
         <dependency>
             <groupId>org.springdoc</groupId>
@@ -103,6 +109,10 @@
         <dependency>
             <groupId>org.springframework.modulith</groupId>
             <artifactId>spring-modulith-starter-core</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.modulith</groupId>
+            <artifactId>spring-modulith-events-api</artifactId>
         </dependency>
         <dependency>
             <groupId>org.springframework.modulith</groupId>
