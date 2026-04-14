@@ -125,6 +125,7 @@ export class SpielverwaltungsSzene extends Phaser.Scene {
     const quickGameBtn = this.erstelleNeoButton('▶  Quick Game', 'primary', () => {
       void appStore.erstelleQuickGame();
     });
+    quickGameBtn.dataset['testid'] = 'btn-quick-game';
     this.uiContainer.append(quickGameBtn);
 
     // 3. Neuen Tisch erstellen

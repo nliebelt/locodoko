@@ -169,7 +169,7 @@ Keine karten-interne Klasse importiert Stich/GespielteKarte/SpielerPosition.
 - [x] Frontend: Button „Quick Game" auf SpielverwaltungsSzene nutzt serverseitigen Schnellstart
       (AppStore.erstelleQuickGame → api.schnellstart statt erstelleTisch + starteTisch)
 - [x] Unit-Tests: Neuerstellung ohne offenen Tisch, Beitritt zu bestehendem Tisch, Ablehnung bei Doppel-Tisch
-- [ ] E2E-Test: Schnellstart-Flow
+- [x] E2E-Test: Schnellstart-Flow
 
 ### 2.2 Einladungslink
 
@@ -308,16 +308,15 @@ Phase 4 (parallel, niedrige Priorität):
 
 ## Notiz
 
-**Zuletzt erledigt (Plan-Run #53):** Task 4.2 — E2E-Tests stabilisiert.
-Testfall 1 (`partie-gegen-ki.spec.ts`) läuft in ~6s grün.
-Testfall 2 (`rundenauswertung.spec.ts`) läuft in ~2.7min grün (vollständige Runde gegen KI).
-Beide Tests liefen ohne Änderungen am Testcode durch — der bestehende Code war bereits korrekt.
-DoD-Checkboxen in `specs/e2e-tests.md` als erledigt markiert.
+**Zuletzt erledigt (Plan-Run #54):** Task 2.1 — E2E-Test Schnellstart-Flow implementiert.
+`e2e/tests/schnellstart.spec.ts` geschrieben: Start-Screen → Quick-Game-Klick → TischSzene direkt
+(kein Spielstart-Schritt) → Vorbehalt-Phase → Karte spielen → Stich 1/12 prüfen.
+`SpielverwaltungsSzene.ts`: `data-testid="btn-quick-game"` zum Quick-Game-Button ergänzt.
+Frontend-Build, Tests und Lint grün.
 
-**Naechster logischer Schritt:** Offene E2E-Tests aus Phase 2:
-2.1 E2E-Test: Schnellstart-Flow (POST /api/tische/schnellstart → Spiel direkt startet)
+**Naechster logischer Schritt:**
 2.2 E2E-Test: Link-Beitritt-Flow (#join/{code} URL-Route → automatischer Beitritt)
-Beide sind eigenständige Testdateien die noch geschrieben werden müssen.
+Neue Testdatei `e2e/tests/einladungslink.spec.ts` schreiben.
 
 **Offene Fragen:** Keine.
 
