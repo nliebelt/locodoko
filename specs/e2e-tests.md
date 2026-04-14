@@ -243,9 +243,9 @@ export default defineConfig({
 - [x] `e2e/.gitignore` korrekt
 - [x] `data-testid`-Attribute in TischSzene und SpielverwaltungsSzene für alle relevanten Elemente gesetzt (11 von 17 — rest in specs/e2e-tests.md Task 11)
 - [~] `partie-gegen-ki.spec.ts` auf neue Selektoren und Tastatursteuerung umgestellt (weitgehend fertig)
-- [~] `rundenauswertung.spec.ts` implementiert (funktioniert, aber Schleife bei rein-KI-Stichen noch instabil)
-- [ ] Testfall 1 läuft lokal grün gegen `mvn spring-boot:run`
-- [ ] Testfall 2 läuft lokal grün gegen `mvn spring-boot:run`
+- [x] `rundenauswertung.spec.ts` implementiert und stabil
+- [x] Testfall 1 läuft lokal grün gegen `mvn spring-boot:run`
+- [x] Testfall 2 läuft lokal grün gegen `mvn spring-boot:run`
 
 ## Technische Hinweise
 

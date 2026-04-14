@@ -249,9 +249,9 @@ Keine karten-interne Klasse importiert Stich/GespielteKarte/SpielerPosition.
 
 ### 4.2 E2E-Tests stabilisieren
 
-- [~] `partie-gegen-ki.spec.ts`: data-testid-Selektoren, KI-Timing (lt. Archiv weitgehend umgestellt)
-- [ ] E2E-Testfall 1 läuft grün gegen `mvn spring-boot:run` (DoD aus `specs/e2e-tests.md`)
-- [ ] E2E-Testfall 2 läuft grün gegen `mvn spring-boot:run`
+- [x] `partie-gegen-ki.spec.ts`: data-testid-Selektoren, KI-Timing (lt. Archiv weitgehend umgestellt)
+- [x] E2E-Testfall 1 läuft grün gegen `mvn spring-boot:run` (DoD aus `specs/e2e-tests.md`)
+- [x] E2E-Testfall 2 läuft grün gegen `mvn spring-boot:run`
 
 ### 4.3 frontend-architektur.md aktualisieren
 
@@ -308,14 +308,16 @@ Phase 4 (parallel, niedrige Priorität):
 
 ## Notiz
 
-**Zuletzt erledigt (Plan-Run #52):** Task 4.3 — frontend-architektur.md aktualisiert.
-LobbySzene → SpielverwaltungsSzene korrigiert (Datenfluss-Diagramm + Bounded-Context-Tabelle).
-Neue Dateien ergänzt: TischInputHandler, TischUIManager, tischFormatierer, Kartenansicht, regelPresets, anwendung.
-Kommunikations-Schicht als Service-Schicht reorganisiert. DoD-Checkboxen (JSDoc) als erledigt markiert.
+**Zuletzt erledigt (Plan-Run #53):** Task 4.2 — E2E-Tests stabilisiert.
+Testfall 1 (`partie-gegen-ki.spec.ts`) läuft in ~6s grün.
+Testfall 2 (`rundenauswertung.spec.ts`) läuft in ~2.7min grün (vollständige Runde gegen KI).
+Beide Tests liefen ohne Änderungen am Testcode durch — der bestehende Code war bereits korrekt.
+DoD-Checkboxen in `specs/e2e-tests.md` als erledigt markiert.
 
-**Naechster logischer Schritt:** Phase 4 fortsetzen:
-4.2 E2E-Tests stabilisieren — Testfall 1 + 2 grün machen gegen `mvn spring-boot:run`.
-Dazu: `cd e2e && npx playwright test partie-gegen-ki.spec.ts` ausführen und Fehler analysieren.
+**Naechster logischer Schritt:** Offene E2E-Tests aus Phase 2:
+2.1 E2E-Test: Schnellstart-Flow (POST /api/tische/schnellstart → Spiel direkt startet)
+2.2 E2E-Test: Link-Beitritt-Flow (#join/{code} URL-Route → automatischer Beitritt)
+Beide sind eigenständige Testdateien die noch geschrieben werden müssen.
 
 **Offene Fragen:** Keine.
 
