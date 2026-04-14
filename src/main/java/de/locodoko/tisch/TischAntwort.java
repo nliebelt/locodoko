@@ -17,6 +17,7 @@ import java.util.UUID;
 public record TischAntwort(
     UUID id,
     String name,
+    String einladungsCode,
     TischStatus status,
     UUID erstelltVonSpielerId,
     List<SpielerAmTischAntwort> spieler,
@@ -28,6 +29,7 @@ public record TischAntwort(
         return new TischAntwort(
             tisch.id(),
             tisch.name(),
+            tisch.einladungsCode(),
             tisch.status(),
             tisch.erstelltVon().id(),
             tisch.spieler().stream().map(SpielerAmTischAntwort::aus).toList(),

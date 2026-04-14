@@ -41,4 +41,10 @@ interface TischJdbcRepository extends CrudRepository<TischEntity, UUID> {
      */
     @Query("SELECT * FROM tisch WHERE partie_id = :partieId")
     Optional<TischEntity> findByPartieId(UUID partieId);
+
+    /**
+     * Sucht einen Tisch anhand seines Einladungscodes.
+     */
+    @Query("SELECT * FROM tisch WHERE einladungs_code = :einladungsCode")
+    Optional<TischEntity> findByEinladungsCode(String einladungsCode);
 }

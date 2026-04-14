@@ -67,6 +67,7 @@ export interface SpielerAmTischAntwort {
 export interface TischAntwort {
   id: Uuid;
   name: string;
+  einladungsCode: string;
   status: TischStatus;
   erstelltVonSpielerId: Uuid;
   spieler: SpielerAmTischAntwort[];

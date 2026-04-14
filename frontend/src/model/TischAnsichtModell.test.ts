@@ -50,6 +50,7 @@ describe('erstelleTischAnsichtAusStatus', () => {
   it('ordnet den aktuellen Spieler nach Sued und fuellt freie Plaetze auf', () => {
     const modell = erstelleTischAnsichtAusStatus('spieler-2', {
       id: 'tisch-1',
+      einladungsCode: 'TEST1234',
       name: 'Abendrunde',
       status: 'WARTEND',
       erstelltVonSpielerId: 'spieler-1',
@@ -73,6 +74,7 @@ describe('erstelleTischAnsichtAusStatus', () => {
   it('verwendet laufendesSpiel fuer echte Tischinformationen und zeigt nur die eigene Hand offen an', () => {
     const modell = erstelleTischAnsichtAusStatus('spieler-1', {
       id: 'tisch-1',
+      einladungsCode: 'TEST1234',
       name: 'Abendrunde',
       status: 'IM_SPIEL',
       erstelltVonSpielerId: 'spieler-1',
@@ -173,6 +175,7 @@ describe('erstelleTischAnsichtAusStatus', () => {
   it('sortiert sichtbare Handkarten nach Trumpf- und Fehlrang und reicht den Debug-Modus durch', () => {
     const modell = erstelleTischAnsichtAusStatus('spieler-1', {
       id: 'tisch-1',
+      einladungsCode: 'TEST1234',
       name: 'Abendrunde',
       status: 'IM_SPIEL',
       erstelltVonSpielerId: 'spieler-1',
@@ -278,6 +281,7 @@ describe('erstelleTischAnsichtAusStatus', () => {
   it('rotiert Spieler, Stichmitte und Historie auf die Sicht des eigenen Spielers', () => {
     const modell = erstelleTischAnsichtAusStatus('spieler-2', {
       id: 'tisch-7',
+      einladungsCode: 'TEST1234',
       name: 'Rotation',
       status: 'IM_SPIEL',
       erstelltVonSpielerId: 'spieler-1',
@@ -333,6 +337,7 @@ describe('erstelleTischAnsichtAusStatus', () => {
   it('mappt letztes Spielergebnis und abgeschlossene Stiche fuer Ergebnis- und Replay-UI', () => {
     const modell = erstelleTischAnsichtAusStatus('spieler-2', {
       id: 'tisch-8',
+      einladungsCode: 'TEST1234',
       name: 'Ergebnisrunde',
       status: 'IM_SPIEL',
       erstelltVonSpielerId: 'spieler-1',
@@ -415,6 +420,7 @@ describe('erstelleTischAnsichtAusStatus', () => {
   it('leitet in der Armutphase Angebots- und Antwortzustand fuer die UI ab', () => {
     const angebotModell = erstelleTischAnsichtAusStatus('spieler-1', {
       id: 'tisch-9',
+      einladungsCode: 'TEST1234',
       name: 'Armut',
       status: 'IM_SPIEL',
       erstelltVonSpielerId: 'spieler-1',
@@ -462,6 +468,7 @@ describe('erstelleTischAnsichtAusStatus', () => {
 
     const antwortModell = erstelleTischAnsichtAusStatus('spieler-2', {
       id: 'tisch-10',
+      einladungsCode: 'TEST1234',
       name: 'Armut',
       status: 'IM_SPIEL',
       erstelltVonSpielerId: 'spieler-1',

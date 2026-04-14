@@ -110,6 +110,20 @@ public class TischController {
         return tischVerwaltungsService.betreteTisch(TischId.von(id), spieler);
     }
 
+    @Operation(summary = "Tisch per Einladungscode beitreten", description = "Fuegt den anfragenden Spieler einem Tisch hinzu, der ueber seinen Einladungscode identifiziert wird.")
+    @ApiResponses({
+        @ApiResponse(responseCode = "200", description = "Erfolgreich beigetreten"),
+        @ApiResponse(responseCode = "401", description = "Keine gueltige Spieler-Session"),
+        @ApiResponse(responseCode = "404", description = "Kein Tisch mit diesem Code gefunden"),
+        @ApiResponse(responseCode = "409", description = "Tisch voll oder Partie bereits gestartet")
+    })
+    @PostMapping("/beitreten/{code}")
+    public TischAntwort betreteTischViaCode(@Parameter(description = "8-stelliger Einladungscode") @PathVariable String code, HttpServletRequest request) {
+        SpielerEntity spieler = ladeAktivenSpieler(request);
+        LOGGER.info("Spieler {} tritt Tisch via Einladungscode bei", spieler.id());
+        return tischVerwaltungsService.beitretenViaCode(code, spieler);
+    }
+
     @Operation(summary = "Tisch verlassen", description = "Entfernt den anfragenden Spieler vom Tisch. Laeuft eine Partie, wird sie abgebrochen.")
     @ApiResponses({
         @ApiResponse(responseCode = "200", description = "Tisch erfolgreich verlassen"),

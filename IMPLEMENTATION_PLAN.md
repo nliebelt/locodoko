@@ -1,6 +1,6 @@
 # IMPLEMENTATION_PLAN — Locodoko Doppelkopf
 
-> **Letzte Aktualisierung: 2026-04-14 (Plan-Run #46)**
+> **Letzte Aktualisierung: 2026-04-14 (Plan-Run #47)**
 
 ## Legende
 
@@ -173,14 +173,14 @@ Keine karten-interne Klasse importiert Stich/GespielteKarte/SpielerPosition.
 
 ### 2.2 Einladungslink
 
-- [ ] `TischEntity`: neues Feld `einladungsCode` (8-stellig alphanumerisch, auto-generiert)
-- [ ] Liquibase-Changeset: `einladungs_code VARCHAR(8) UNIQUE NOT NULL` in `tisch`-Tabelle
-- [ ] `TischVerwaltungsService.beitretenViaCode(code, spielerId)`:
-      Lookup TischId via einladungsCode → `spielerBeitreten(tischId, spielerId)`
-- [ ] REST-Endpoint: `POST /api/tische/beitreten/{code}`
-- [ ] Frontend: „Link teilen"-Button in TischSzene, Copy-to-Clipboard
-- [ ] Frontend: URL-Route `/join/{code}` → automatischer Beitritt bei SpielverwaltungsSzene-Load
-- [ ] Unit-Tests: Code-Generierung, Lookup, Duplikat-Schutz
+- [x] `TischEntity`: neues Feld `einladungsCode` (8-stellig alphanumerisch, auto-generiert)
+- [x] Liquibase-Changeset: `einladungs_code VARCHAR(8) UNIQUE NOT NULL` in `tisch`-Tabelle
+- [x] `TischVerwaltungsService.beitretenViaCode(code, spielerId)`:
+      Lookup TischId via einladungsCode → `betreteTisch(tischId, spielerId)`
+- [x] REST-Endpoint: `POST /api/tische/beitreten/{code}`
+- [x] Frontend: „Link teilen"-Button in TischSzene, Copy-to-Clipboard
+- [x] Frontend: URL-Route `#join/{code}` → automatischer Beitritt bei BootSzene-Load
+- [x] Unit-Tests: Code-Generierung, Lookup, Case-Insensitivity, Duplikat-Schutz, Ungueltig-Handling
 - [ ] E2E-Test: Link-Beitritt-Flow
 
 ---
@@ -300,16 +300,19 @@ Phase 4 (parallel, niedrige Priorität):
 
 ## Notiz
 
-**Zuletzt erledigt (Plan-Run #46):** Task 2.1 — Schnellstart (Quick Play) implementiert.
-Backend: `TischVerwaltungsService.schnellEinsteigen()` sucht zuerst offenen WARTEND-Tisch mit
-freiem Platz (pessimistisch gesperrt), tritt bei oder erstellt neuen Tisch, füllt KI auf und
-startet Partie — alles in einer Transaktion. REST-Endpoint: `POST /api/tische/schnellstart`.
-Frontend: `AppStore.erstelleQuickGame()` ruft jetzt serverseitigen Schnellstart statt
-`erstelleTisch + starteTisch` auf (ein Request statt zwei). 3 neue Integrationstests.
-225 Backend-Tests grün, 24 Frontend-Tests grün, Build + Lint clean.
+**Zuletzt erledigt (Plan-Run #47):** Task 2.2 — Einladungslink implementiert.
+Backend: `TischEntity` hat neues Feld `einladungsCode` (8-stellig alphanumerisch, auto-generiert
+bei Erstellung, UNIQUE NOT NULL, ohne verwechselbare Zeichen wie 0/O/1/I). Liquibase-Changeset
+`011-einladungs-code.yaml`. `TischVerwaltungsService.beitretenViaCode()` loest Code zu TischId auf
+und delegiert an `betreteTisch()` (case-insensitive). REST-Endpoint: `POST /api/tische/beitreten/{code}`.
+Frontend: `SpielverwaltungApi.betreteTischViaCode()`, `AppStore.betreteTischViaCode()`,
+„Link teilen"-Button in TischSzene-TopBar (kopiert `#join/{code}` URL in Zwischenablage),
+BootSzene prueft beim Start auf `#join/{code}` Hash und tritt automatisch bei.
+`TischAntwort` liefert `einladungsCode` an Frontend. 6 neue Integrationstests.
+231 Backend-Tests gruen, 24 Frontend-Tests gruen, Build + Lint clean.
 
-**Nächster logischer Schritt:** 2.1 E2E-Test noch offen, oder 2.2 (Einladungslink),
-oder Phase 3/4 (JSDoc, Logging, DoD-Checkboxen).
+**Naechster logischer Schritt:** 2.1/2.2 E2E-Tests noch offen, oder Phase 3 (JSDoc, Logging,
+data-testid, Offene Tische), oder Phase 4 (DoD-Checkboxen, E2E-Stabilisierung).
 
 **Offene Fragen:** Keine.
 

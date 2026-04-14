@@ -473,6 +473,7 @@ function baueTisch(): TischAntwort {
   return {
     id: 'tisch-1',
     name: 'Abendrunde',
+    einladungsCode: 'WXYZ5678',
     status: 'IM_SPIEL',
     erstelltVonSpielerId: 'spieler-1',
     partieId: 'partie-1',

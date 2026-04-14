@@ -90,6 +90,7 @@ class TischControllerTest {
                 .content(objectMapper.writeValueAsString(new TischErstellenAnfrage("Abendtisch", null))))
             .andExpect(status().isCreated())
             .andExpect(jsonPath("$.name").value("Abendtisch"))
+            .andExpect(jsonPath("$.einladungsCode").isNotEmpty())
             .andExpect(jsonPath("$.status").value(TischStatus.WARTEND.name()))
             .andExpect(jsonPath("$.spieler.length()").value(1))
             .andExpect(jsonPath("$.konfiguration.anzahlSpiele").value(24))
@@ -481,6 +482,94 @@ class TischControllerTest {
         mockMvc.perform(post("/api/tische/schnellstart").session(adaSession))
             .andExpect(status().isConflict())
             .andExpect(jsonPath("$.fehlerCode").value("SPIELER_BEREITS_AN_TISCH"));
+    }
+
+    // ── Einladungslink-Tests ────────────────────────────────────────────────────
+
+    @Test
+    void einladungsCodeWird8StelligAlphanumerischGeneriert() throws Exception {
+        // WARUM: Der Einladungscode dient als kurzer, teilbarer Link-Identifier. Er muss
+        // exakt 8 Zeichen lang sein und nur verwechslungssichere Zeichen enthalten.
+        MockHttpSession adaSession = registriereSpieler("AdaCode");
+        UUID tischId = erstelleTisch(adaSession, "Code-Tisch");
+
+        TischEntity tisch = tischRepository.findById(TischId.von(tischId)).orElseThrow();
+        assertNotNull(tisch.einladungsCode(), "Einladungscode muss auto-generiert werden");
+        assertEquals(8, tisch.einladungsCode().length(),
+            "Einladungscode muss exakt 8 Zeichen lang sein");
+        assertTrue(tisch.einladungsCode().matches("[A-Z0-9]{8}"),
+            "Einladungscode darf nur Grossbuchstaben und Ziffern enthalten");
+    }
+
+    @Test
+    void einladungsCodeWirdInRestAntwortMitgeliefert() throws Exception {
+        // WARUM: Das Frontend braucht den Code um den „Link teilen"-Button zu befuellen.
+        MockHttpSession adaSession = registriereSpieler("AdaAntwort");
+
+        mockMvc.perform(post("/api/tische")
+                .session(adaSession)
+                .contentType(APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(new TischErstellenAnfrage("Antwort-Tisch", null))))
+            .andExpect(status().isCreated())
+            .andExpect(jsonPath("$.einladungsCode").isNotEmpty())
+            .andExpect(jsonPath("$.einladungsCode").isString());
+    }
+
+    @Test
+    void laesstSpielerPerEinladungscodeBeitreten() throws Exception {
+        // WARUM: Kernfunktion des Einladungslinks — Code-basierter Beitritt statt UUID.
+        MockHttpSession adaSession = registriereSpieler("AdaEinladung");
+        MockHttpSession bertSession = registriereSpieler("BertEinladung");
+
+        UUID tischId = erstelleTisch(adaSession, "Einladungstisch");
+        TischEntity tisch = tischRepository.findById(TischId.von(tischId)).orElseThrow();
+        String code = tisch.einladungsCode();
+
+        mockMvc.perform(post("/api/tische/beitreten/{code}", code).session(bertSession))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.spieler.length()").value(2))
+            .andExpect(jsonPath("$.spieler[1].name").value("BertEinladung"));
+    }
+
+    @Test
+    void einladungscodeIstCaseInsensitive() throws Exception {
+        // WARUM: Benutzer koennten den Code klein eintippen — Gross/Klein soll egal sein.
+        MockHttpSession adaSession = registriereSpieler("AdaCase");
+        MockHttpSession bertSession = registriereSpieler("BertCase");
+
+        UUID tischId = erstelleTisch(adaSession, "CaseTisch");
+        TischEntity tisch = tischRepository.findById(TischId.von(tischId)).orElseThrow();
+        String kleingeschrieben = tisch.einladungsCode().toLowerCase();
+
+        mockMvc.perform(post("/api/tische/beitreten/{code}", kleingeschrieben).session(bertSession))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.spieler.length()").value(2));
+    }
+
+    @Test
+    void gibtFehlerBeiUngueltigemEinladungscode() throws Exception {
+        // WARUM: Ungueltige Codes muessen sauber abgewiesen werden (404, nicht 500).
+        MockHttpSession bertSession = registriereSpieler("BertUngueltig");
+
+        mockMvc.perform(post("/api/tische/beitreten/{code}", "XXXXXXXX").session(bertSession))
+            .andExpect(status().isNotFound())
+            .andExpect(jsonPath("$.fehlerCode").value("EINLADUNGSCODE_UNGUELTIG"));
+    }
+
+    @Test
+    void einladungscodesVerschiedenerTischeSindUnterschiedlich() throws Exception {
+        // WARUM: UNIQUE-Constraint in DB — jeder Tisch braucht einen eigenen Code.
+        MockHttpSession adaSession = registriereSpieler("AdaUnique1");
+        MockHttpSession bertSession = registriereSpieler("BertUnique2");
+
+        UUID tischId1 = erstelleTisch(adaSession, "Tisch A");
+        TischEntity tisch1 = tischRepository.findById(TischId.von(tischId1)).orElseThrow();
+
+        UUID tischId2 = erstelleTisch(bertSession, "Tisch B");
+        TischEntity tisch2 = tischRepository.findById(TischId.von(tischId2)).orElseThrow();
+
+        assertTrue(!tisch1.einladungsCode().equals(tisch2.einladungsCode()),
+            "Verschiedene Tische muessen unterschiedliche Einladungscodes haben");
     }
 
     private MockHttpSession registriereSpieler(String name) throws Exception {

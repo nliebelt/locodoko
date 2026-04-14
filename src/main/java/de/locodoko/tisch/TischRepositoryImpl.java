@@ -162,6 +162,12 @@ class TischRepositoryImpl implements TischRepository {
         return tischJdbcRepository.existsById(id.wert());
     }
 
+    @Override
+    @Transactional(readOnly = true)
+    public Optional<TischEntity> findByEinladungsCode(String einladungsCode) {
+        return tischJdbcRepository.findByEinladungsCode(einladungsCode).map(this::befuelleTransienteFelder);
+    }
+
     /**
      * Befuellt die transienten Felder eines aus der Datenbank geladenen TischEntity:
      * - spieler (aus tisch_spieler join table via spielerRelationen)

@@ -13,6 +13,7 @@ import org.springframework.data.relational.core.mapping.Embedded;
 import org.springframework.data.relational.core.mapping.MappedCollection;
 import org.springframework.data.relational.core.mapping.Table;
 
+import java.security.SecureRandom;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -28,12 +29,20 @@ import java.util.UUID;
 @Table("tisch")
 public class TischEntity extends AbstraktePersistenzEntity {
 
+    private static final String EINLADUNGSCODE_ZEICHEN = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+    private static final int EINLADUNGSCODE_LAENGE = 8;
+    private static final SecureRandom ZUFALL = new SecureRandom();
+
     @NotBlank
     @Column("name")
     private String name;
 
     @Column("status")
     private String status;
+
+    /** 8-stelliger alphanumerischer Einladungscode (eindeutig, auto-generiert). */
+    @Column("einladungs_code")
+    private String einladungsCode;
 
     /** Konfiguration direkt als Spalten eingebettet. Bean-Validierung kaskadiert via @Valid. */
     @Valid
@@ -73,6 +82,15 @@ public class TischEntity extends AbstraktePersistenzEntity {
         this.erstelltVonSpielerId = erstelltVon.id();
         this.konfiguration = Objects.requireNonNull(konfiguration, "konfiguration darf nicht null sein");
         this.status = TischStatus.WARTEND.name();
+        this.einladungsCode = generiereEinladungsCode();
+    }
+
+    static String generiereEinladungsCode() {
+        var sb = new StringBuilder(EINLADUNGSCODE_LAENGE);
+        for (int i = 0; i < EINLADUNGSCODE_LAENGE; i++) {
+            sb.append(EINLADUNGSCODE_ZEICHEN.charAt(ZUFALL.nextInt(EINLADUNGSCODE_ZEICHEN.length())));
+        }
+        return sb.toString();
     }
 
     public static TischEntity neu(String name, SpielerEntity erstelltVon, TischkonfigurationEmbeddable konfiguration) {
@@ -162,6 +180,10 @@ public class TischEntity extends AbstraktePersistenzEntity {
 
     public String name() {
         return name;
+    }
+
+    public String einladungsCode() {
+        return einladungsCode;
     }
 
     public TischStatus status() {

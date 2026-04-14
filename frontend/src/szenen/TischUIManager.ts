@@ -161,6 +161,7 @@ export class TischUIManager {
         <span data-spiele-info data-testid="hud-spieltyp"></span>
       </div>
       <div class="hud-topbar__right">
+        <button class="ui-button ui-button--secondary" type="button" data-share-button data-testid="btn-link-teilen" title="Einladungslink kopieren">🔗 Link teilen</button>
         <button class="ui-button" type="button" data-start-button data-testid="btn-spiel-starten">Spiel starten</button>
         <button class="hud-icon-btn" type="button" title="Tisch verlassen" data-leave-top-button>&#x2190;</button>
         <button class="hud-icon-btn" type="button" title="Einstellungen" data-einstellungen-toggle data-testid="hud-btn-einstellungen">⚙</button>
@@ -268,6 +269,7 @@ export class TischUIManager {
     const lobbyButton = seitenlade.querySelector('[data-lobby-button]');
     const leaveButton = seitenlade.querySelector('[data-leave-button]');
     const startButton = topBar.querySelector('[data-start-button]');
+    const shareButton = topBar.querySelector('[data-share-button]');
     const leaveTopButton = topBar.querySelector('[data-leave-top-button]');
     const seitenladeToggleBtn = topBar.querySelector('[data-seitenlade-toggle]');
     const einstellungenToggleBtn = topBar.querySelector('[data-einstellungen-toggle]');
@@ -341,6 +343,21 @@ export class TischUIManager {
     startButton.addEventListener('click', () => {
       void appStore.starteAktuellenTisch();
     });
+
+    // Einladungslink teilen
+    if (shareButton instanceof HTMLButtonElement) {
+      shareButton.addEventListener('click', () => {
+        const tisch = appStore.snapshot().aktuellerTisch;
+        if (!tisch?.einladungsCode) return;
+        const url = `${window.location.origin}#join/${tisch.einladungsCode}`;
+        void navigator.clipboard.writeText(url).then(() => {
+          shareButton.textContent = '✓ Kopiert!';
+          setTimeout(() => { shareButton.textContent = '🔗 Link teilen'; }, 2000);
+        }).catch(() => {
+          window.prompt('Einladungslink kopieren:', url);
+        });
+      });
+    }
 
     // Debug-Toggle
     hudDebugBtn.addEventListener('click', () => {
@@ -433,6 +450,11 @@ export class TischUIManager {
       const darfStarten = zustand.spieler?.spielerId === tisch.erstelltVonSpielerId && tisch.status === 'WARTEND';
       startButtonEl.disabled = zustand.wirdGeladen || !darfStarten;
       startButtonEl.hidden = tisch.status !== 'WARTEND';
+    }
+    // Link-teilen-Button (nur im Wartezimmer sichtbar)
+    const shareButtonEl = document.querySelector<HTMLButtonElement>('[data-share-button]');
+    if (shareButtonEl) {
+      shareButtonEl.hidden = tisch.status !== 'WARTEND';
     }
     // Debug-Button
     if (this.hudDebugBtn) {

@@ -231,6 +231,17 @@ export class AppStore {
   }
 
   /**
+   * Tritt einem Tisch ueber seinen Einladungscode bei und wechselt zur TischSzene.
+   * @param einladungsCode - 8-stelliger alphanumerischer Code
+   */
+  async betreteTischViaCode(einladungsCode: string): Promise<void> {
+    await this.fuehreMitStatus(async () => {
+      const tisch = await this.api.betreteTischViaCode(einladungsCode);
+      this.oeffneTisch(tisch);
+    });
+  }
+
+  /**
    * Session-Recovery nach Tab-Reload: Abonniert den Tisch direkt anhand seiner ID
    * und fordert einen Snapshot an, ohne erneut beizutreten.
    * Der Snapshot kommt asynchron via WebSocket und befuellt den Zustand.

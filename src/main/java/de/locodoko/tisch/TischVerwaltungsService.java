@@ -334,6 +334,20 @@ public class TischVerwaltungsService {
         return TischAntwort.aus(ladeTischEntity(tischId));
     }
 
+    /**
+     * Tritt einem Tisch ueber seinen Einladungscode bei.
+     * Delegiert an {@link #betreteTisch} nachdem der Tisch via Code aufgeloest wurde.
+     */
+    @Transactional
+    public TischAntwort beitretenViaCode(String einladungsCode, SpielerEntity spieler) {
+        TischEntity tisch = tischRepository.findByEinladungsCode(einladungsCode.toUpperCase())
+            .orElseThrow(() -> new SpielverwaltungNichtGefundenException(
+                "EINLADUNGSCODE_UNGUELTIG",
+                "Es wurde kein Tisch mit dem Einladungscode '" + einladungsCode + "' gefunden."
+            ));
+        return betreteTisch(TischId.von(tisch.id()), spieler);
+    }
+
     private void synchronisiereRegistry(TischId tischId, TischEntity tisch) {
         if (tisch.partie() == null) {
             spielRegistry.entferne(tischId);

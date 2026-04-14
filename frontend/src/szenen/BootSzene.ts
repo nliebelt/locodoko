@@ -41,6 +41,18 @@ export class BootSzene extends Phaser.Scene {
         appStore.reconnecteTisch(aktiverTischId);
         this.scene.start('TischSzene');
       } else {
+        // Einladungslink: #join/{code} → automatischer Beitritt
+        const einladungsCode = this.leseEinladungsCodeAusUrl();
+        if (einladungsCode) {
+          window.location.hash = '';
+          try {
+            await appStore.betreteTischViaCode(einladungsCode);
+            this.scene.start('TischSzene');
+            return;
+          } catch {
+            // Fehlgeschlagen (Code ungueltig, Tisch voll etc.) → weiter zur Lobby
+          }
+        }
         this.scene.start('SpielverwaltungsSzene');
         // Speculative: Add a small delay after starting the next scene to allow Phaser
         // to potentially process rendering in this headless environment,
@@ -50,5 +62,12 @@ export class BootSzene extends Phaser.Scene {
     } catch {
       this.statusText?.setText('Initialisierung fehlgeschlagen. Bitte pruefe Backend/Verbindung und lade neu.');
     }
+  }
+
+  /** Liest einen Einladungscode aus dem URL-Hash (Format: #join/{code}). */
+  private leseEinladungsCodeAusUrl(): string | null {
+    const hash = window.location.hash;
+    const treffer = hash.match(/^#join\/([A-Za-z0-9]{8})$/);
+    return treffer ? treffer[1] : null;
   }
 }

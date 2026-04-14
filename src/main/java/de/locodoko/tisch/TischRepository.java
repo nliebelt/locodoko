@@ -52,4 +52,7 @@ public interface TischRepository {
 
     /** Prueft ob ein Tisch mit der gegebenen ID existiert. */
     boolean existsById(TischId id);
+
+    /** Sucht einen Tisch anhand seines Einladungscodes. */
+    Optional<TischEntity> findByEinladungsCode(String einladungsCode);
 }

@@ -145,6 +145,10 @@ export class SpielverwaltungApi {
     return holeJson<TischAntwort>(`/api/tische/${tischId}/beitreten`, { method: 'POST' });
   }
 
+  async betreteTischViaCode(einladungsCode: string): Promise<TischAntwort> {
+    return holeJson<TischAntwort>(`/api/tische/beitreten/${encodeURIComponent(einladungsCode)}`, { method: 'POST' });
+  }
+
   async verlasseTisch(tischId: Uuid): Promise<BestaetigungAntwort> {
     return holeJson<BestaetigungAntwort>(`/api/tische/${tischId}/verlassen`, { method: 'POST' });
   }

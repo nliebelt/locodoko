@@ -1,0 +1,18 @@
+databaseChangeLog:
+  - changeSet:
+      id: 011-einladungs-code
+      author: locodoko
+      changes:
+        - addColumn:
+            tableName: tisch
+            columns:
+              - column:
+                  name: einladungs_code
+                  type: VARCHAR(8)
+                  constraints:
+                    nullable: false
+                  defaultValue: "00000000"
+        - addUniqueConstraint:
+            tableName: tisch
+            columnNames: einladungs_code
+            constraintName: uq_tisch_einladungs_code

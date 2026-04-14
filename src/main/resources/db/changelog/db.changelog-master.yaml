@@ -19,3 +19,5 @@ databaseChangeLog:
       file: db/changelog/009-solist-position.yaml
   - include:
       file: db/changelog/010-event-publication.yaml
+  - include:
+      file: db/changelog/011-einladungs-code.yaml
