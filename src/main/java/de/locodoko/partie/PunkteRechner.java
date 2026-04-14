@@ -17,7 +17,7 @@ import java.util.Objects;
  * auf alle Spieler. Sonderpunkte werden ueber {@link SonderpunktBewerter} ermittelt und
  * in das Ergebnis eingerechnet.</p>
  */
-public final class PunkteRechner {
+final class PunkteRechner {
 
     private final SonderpunktBewerter sonderpunktBewerter;
 

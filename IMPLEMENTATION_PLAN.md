@@ -1,6 +1,6 @@
 # IMPLEMENTATION_PLAN — Locodoko Doppelkopf
 
-> **Letzte Aktualisierung: 2026-04-14 (Plan-Run #40)**
+> **Letzte Aktualisierung: 2026-04-14 (Plan-Run #41)**
 
 ## Legende
 
@@ -98,9 +98,9 @@ Keine karten-interne Klasse importiert Stich/GespielteKarte/SpielerPosition.
 
 ### 1.6 PunkteRechner: public → package-private
 
-- [ ] `public final class PunkteRechner` → `final class PunkteRechner` (Zeile 22, PunkteRechner.java)
-- [ ] Sicherstellen dass kein Code außerhalb `de.locodoko.partie` auf PunkteRechner zugreift
-- [ ] Tests ggf. ins gleiche Package verschieben (Test-Package muss übereinstimmen)
+- [x] `public final class PunkteRechner` → `final class PunkteRechner` (Zeile 20, PunkteRechner.java)
+- [x] Sicherstellen dass kein Code außerhalb `de.locodoko.partie` auf PunkteRechner zugreift
+- [x] Tests ggf. ins gleiche Package verschieben (Test-Package muss übereinstimmen)
 
 **Referenz:** `specs/architektur-spielkern.md` — "package-private Utility, kein @Component"
 
@@ -111,7 +111,7 @@ Keine karten-interne Klasse importiert Stich/GespielteKarte/SpielerPosition.
 - [ ] Version passend zu Spring Boot 4.0.x wählen (Spring Modulith 1.3.x oder kompatibel)
 - [ ] `mvn compile` muss erfolgreich sein
 
-[BLOCKED: 1.1–1.5 müssen zuerst erledigt sein, damit Modulgrenzen stimmen]
+[BLOCKED: 1.1–1.6 erledigt, kann entsperrt werden]
 
 ### 1.8 Liquibase-Changeset: event_publication-Tabelle
 
@@ -294,17 +294,13 @@ Phase 4 (parallel, niedrige Priorität):
 
 ## Notiz
 
-**Zuletzt erledigt (Plan-Run #40):** Task 1.5 — Cross-Modul-Verletzung PartieEntity → TischEntity
-behoben. Transientes `TischEntity`-Feld samt Getter/Setter aus `PartieEntity` entfernt, damit
-`partie/` nicht mehr `tisch/` importiert. `PartieStandAntwort.aus()` nimmt jetzt `TischEntity`
-statt `PartieEntity` (alle Aufrufer in `tisch/` und `spieler/` hatten bereits Zugriff auf TischEntity).
-`SpielPersistenzAdapter.zuDomainSpiel()` erhaelt `Spielregeln` als expliziten Parameter statt
-ueber `partie.tisch().konfiguration()` zu navigieren. `SpielAktionsService.ladePartieEntity()`
-refaktoriert zu `ladeTischFuerPartie()` — gibt TischEntity zurueck.
-10 Dateien geaendert (Main + Test). 221 Backend-Tests grün, 24 Frontend-Tests grün.
+**Zuletzt erledigt (Plan-Run #41):** Task 1.6 — PunkteRechner von `public final class` zu
+`final class` (package-private) geändert. Keine weiteren Änderungen nötig: kein Code außerhalb
+`de.locodoko.partie` referenziert PunkteRechner, und PunkteRechnerTest liegt bereits im selben
+Package. 322 Backend-Tests grün.
 
-**Nächster logischer Schritt:** Task 1.6 (PunkteRechner package-private). Danach sind alle
-Tasks 1.1–1.6 erledigt und 1.7 (Spring Modulith Dependencies) kann entsperrt werden.
+**Nächster logischer Schritt:** Task 1.7 (Spring Modulith Dependencies hinzufügen). Tasks 1.1–1.6
+sind jetzt alle erledigt, 1.7 ist entsperrt.
 
 **Offene Fragen:** Keine.
 
