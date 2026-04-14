@@ -251,6 +251,25 @@ export class TischSzene extends Phaser.Scene {
     this.aktualisiereHintergrund(anfangsModell.tischhintergrund, breite, hoehe);
     this.animationen = new AnimationenService(this);
 
+    // E2E-Test-Hook: Animationsgeschwindigkeit per Bridge steuerbar machen.
+    // Ermoeglicht Tests, Animationen auf Sofort zu beschleunigen (geschwindigkeitsfaktor = Infinity).
+    const bridge = (window as unknown as Record<string, Record<string, unknown>>)['__locodoko'];
+    if (bridge) {
+      bridge['setzeAnimationsGeschwindigkeit'] = (faktor: number) => {
+        this.animationen?.setzeGeschwindigkeitsfaktor(faktor);
+      };
+      // Phaser-GameLoop von requestAnimationFrame (60fps) auf setTimeout (2fps) umschalten:
+      // gibt den Main-Thread frei damit page.waitForFunction schnell pollen kann.
+      // sleep() → Konfiguration aendern → wake() startet mit neuer Konfiguration.
+      bridge['reduziereRendering'] = () => {
+        const loop = this.game.loop;
+        loop.sleep();
+        (loop as unknown as Record<string, unknown>)['forceSetTimeOut'] = true;
+        (loop as unknown as Record<string, unknown>)['_target'] = 500;
+        loop.wake();
+      };
+    }
+
     const uiKontext: TischUIKontext = {
       szeneStarten: (name) => { this.scene.start(name); },
       onGeschwindigkeitGeaendert: (f) => { this.animationen?.setzeGeschwindigkeitsfaktor(f); },

@@ -394,28 +394,47 @@ export class AnimationenService {
 
   // Zentraler Promise-Wrapper für alle Phaser-Tweens — Warum: tweenAlpha/tweenZu/tweenScale
   // teilten identische Registrierungs- und Cleanup-Logik; hier statt dreifach dupliziert.
+  // Sicherheits-Timeout: Falls onComplete im Headless-Modus nicht feuert (zerstoertes Target,
+  // GPU-Rendering deaktiviert), wird die Promise nach maxDauer*3+2000ms aufgeloest, damit
+  // die Animationskette nicht fuer immer haengt.
   private animiereTween(
     konfiguration: Omit<Phaser.Types.Tweens.TweenBuilderConfig, 'duration' | 'onComplete'> & { duration: number }
   ): Promise<void> {
+    // Sofort auflösen wenn skalierte Dauer 0 (z.B. geschwindigkeitsfaktor = Infinity):
+    // Phaser-Tweens mit duration=0 feuern onComplete nicht zuverlässig im Headless-Modus,
+    // und der Sicherheits-Timeout (2000ms) pro Tween summiert sich in langen Animationsketten.
+    const skalierteDauer = this.skalierteDauer(konfiguration.duration);
+    if (skalierteDauer <= 0) {
+      return Promise.resolve();
+    }
     return new Promise((resolve) => {
       const tweenReferenz: { wert?: Phaser.Tweens.Tween } = {};
       let abgeschlossen = false;
+      let sicherheitsTimer: number | undefined;
+      const fertig = () => {
+        if (abgeschlossen) return;
+        abgeschlossen = true;
+        if (tweenReferenz.wert) {
+          this.laufendeTweens.delete(tweenReferenz.wert);
+        }
+        if (sicherheitsTimer !== undefined) {
+          window.clearTimeout(sicherheitsTimer);
+          this.laufendenTimer.delete(sicherheitsTimer);
+        }
+        resolve();
+      };
       // Cast nötig: TypeScript verliert beim Spread die targets-Info aus dem Omit-Typ
       const tweenKonfig: Phaser.Types.Tweens.TweenBuilderConfig = {
         ...(konfiguration as Phaser.Types.Tweens.TweenBuilderConfig),
-        duration: this.skalierteDauer(konfiguration.duration),
-        onComplete: () => {
-          abgeschlossen = true;
-          if (tweenReferenz.wert) {
-            this.laufendeTweens.delete(tweenReferenz.wert);
-          }
-          resolve();
-        }
+        duration: skalierteDauer,
+        onComplete: fertig
       };
       const tween = this.szene.tweens.add(tweenKonfig);
       tweenReferenz.wert = tween;
       if (!abgeschlossen) {
         this.laufendeTweens.add(tween);
+        sicherheitsTimer = window.setTimeout(fertig, skalierteDauer * 3 + 2000);
+        this.laufendenTimer.add(sicherheitsTimer);
       }
     });
   }
@@ -656,26 +675,43 @@ export class AnimationenService {
     prefix: string,
     dauer: number
   ): Promise<void> {
+    // Sofort Zielwert setzen wenn skalierte Dauer 0 (kein Tween noetig)
+    const skalierteDauer = this.skalierteDauer(dauer);
+    if (skalierteDauer <= 0) {
+      try { obj.setText(`${prefix}${ziel}`); } catch { /* Objekt bereits zerstoert */ }
+      return;
+    }
     const counter = { val: 0 };
     await new Promise<void>((resolve) => {
       const ref: { tween?: Phaser.Tweens.Tween } = {};
       let fertig = false;
+      let sicherheitsTimer: number | undefined;
+      const abschliessen = () => {
+        if (fertig) return;
+        fertig = true;
+        if (ref.tween) this.laufendeTweens.delete(ref.tween);
+        if (sicherheitsTimer !== undefined) {
+          window.clearTimeout(sicherheitsTimer);
+          this.laufendenTimer.delete(sicherheitsTimer);
+        }
+        resolve();
+      };
       const tween = this.szene.tweens.add({
         targets: counter,
         val: ziel,
-        duration: this.skalierteDauer(dauer),
+        duration: skalierteDauer,
         ease: 'Cubic.Out',
         onUpdate: () => {
-          obj.setText(`${prefix}${Math.round(counter.val)}`);
+          try { obj.setText(`${prefix}${Math.round(counter.val)}`); } catch { /* Objekt bereits zerstoert */ }
         },
-        onComplete: () => {
-          fertig = true;
-          if (ref.tween) this.laufendeTweens.delete(ref.tween);
-          resolve();
-        },
+        onComplete: abschliessen,
       });
       ref.tween = tween;
-      if (!fertig) this.laufendeTweens.add(tween);
+      if (!fertig) {
+        this.laufendeTweens.add(tween);
+        sicherheitsTimer = window.setTimeout(abschliessen, skalierteDauer * 3 + 2000);
+        this.laufendenTimer.add(sicherheitsTimer);
+      }
     });
   }
 }

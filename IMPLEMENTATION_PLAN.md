@@ -1,12 +1,12 @@
 # IMPLEMENTATION_PLAN — Locodoko Doppelkopf
 
-> Letzte Aktualisierung: 2026-04-05 (Plan-Run #33)
+> **Letzte Aktualisierung: 2026-04-14 (Plan-Run #34)**
 
 ## Notiz
 
-**2026-04-13 (T5.4 E2E Reconnect):** Neuer E2E-Test `e2e/tests/reconnect.spec.ts` implementiert. Testet zwei Reconnect-Pfade: (1) Page-Reload — BootSzene erkennt aktiverTischId, leitet automatisch zur TischSzene weiter, Stichzähler und Handkarten stimmen überein, Spieler kann weiter interagieren. (2) Neuer Tab im selben Browser-Kontext — Session-Cookie wird geteilt, BootSzene auto-reconnect liefert TischSzene mit HUD. 221 Backend-Tests + 24 Frontend-Tests + Build + Lint weiterhin grün.
-Nächster logischer Schritt: 8.3 (E2E-Tests lokal gegen Backend verifizieren) oder 9.5/10.6 (Vision Loop Reviews).
-Offene Fragen: Keine — E2E-Test kann nur gegen laufendes Backend verifiziert werden.
+**2026-04-14 (8.3 E2E gegen Backend verifiziert):** Beide E2E-Tests `partie-gegen-ki.spec.ts` und `rundenauswertung.spec.ts` laufen stabil grün gegen `mvn spring-boot:run`. Stabilitäts-Maßnahmen: (1) Firefox statt Chromium — Chromium headless hängt bei langen Phaser-Canvas2D-Sessions. (2) `geschwindigkeitsfaktor=Infinity` — AnimationenService short-circuitet alle Tweens/Flipper/Warte sofort (`animiereTween`/`flipperZaehler`/`warte` returnen `Promise.resolve()`). (3) `reduziereRendering` — Phaser-GameLoop von RAF(60fps) auf setTimeout(2fps), verhindert Firefox-Tab-Kill nach ~2.5min. (4) `favicon.ico` — verhindert 500-Fehler bei Chromium-Anfragen.
+221 Backend-Tests + 24 Frontend-Tests + Build + Lint weiterhin grün.
+Nächster logischer Schritt: 9.5/10.6 (Vision Loop Reviews).
 
 ---
 
@@ -111,11 +111,11 @@ Offene Fragen: Keine — E2E-Test kann nur gegen laufendes Backend verifiziert w
 
 ## 8. E2E-Tests stabilisieren und erweitern
 
-> **Nächster Schritt** | **Spec:** `specs/e2e-tests.md` | **Hinweis:** KI-Karten-Delay (800ms/Karte in STICHPHASE) erfordert `playwright.config.ts timeout: 300_000` und ausreichende Wartezeiten in den Testschleifen
+> **Erledigt** | **Spec:** `specs/e2e-tests.md` | **Hinweis:** KI-Karten-Delay (800ms/Karte in STICHPHASE) erfordert `playwright.config.ts timeout: 360_000` und ausreichende Wartezeiten in den Testschleifen
 
-- [~] **8.1** `partie-gegen-ki.spec.ts`: data-testid-Selektoren, TypeScript-Helper (`warteAufPhase`, `warteAufEigenenZug`, `bridge`) und KI-Timing-Wartezeiten — weitgehend umgestellt
-- [x] **8.2** `rundenauswertung.spec.ts`: Vorbehalt → alle Stiche spielen → Overlay prüfen → Enter schließen — Schleife stabilisiert: `timeout: 4_000, polling: 200` statt `timeout: 30_000`; Limit 60 statt 30
-- [ ] **8.3** Beide Tests lokal grün gegen `mvn spring-boot:run` verifizieren
+- [x] **8.1** `partie-gegen-ki.spec.ts`: data-testid-Selektoren, TypeScript-Helper (`warteAufPhase`, `warteAufEigenenZug`, `bridge`) und KI-Timing-Wartezeiten — weitgehend umgestellt
+- [x] **8.2** `rundenauswertung.spec.ts`: Vorbehalt → alle Stiche spielen → Overlay prüfen → Button schließen — stabilisiert mit einfacher Polling-Schleife (500ms-Takt), Animations-Short-Circuit und reduziertem Phaser-Rendering
+- [x] **8.3** Beide Tests lokal grün gegen `mvn spring-boot:run` verifiziert — Firefox, `geschwindigkeitsfaktor=Infinity`, `reduziereRendering`
 
 ---
 
