@@ -1,4 +1,7 @@
-package de.locodoko.partie;
+package de.locodoko.tisch.persistenz;
+
+import de.locodoko.system.AbstraktePersistenzEntity;
+import de.locodoko.partie.SpielerPosition;
 
 import org.springframework.data.annotation.Transient;
 import org.springframework.data.relational.core.mapping.Column;

@@ -1,5 +1,6 @@
 package de.locodoko.partie;
 
+import de.locodoko.system.AbstraktePersistenzEntity;
 import jakarta.validation.ConstraintViolation;
 import jakarta.validation.ConstraintViolationException;
 import jakarta.validation.Validator;

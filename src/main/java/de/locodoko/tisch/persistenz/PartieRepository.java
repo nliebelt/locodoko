@@ -1,4 +1,6 @@
-package de.locodoko.partie;
+package de.locodoko.tisch.persistenz;
+
+import de.locodoko.partie.PartieId;
 
 import org.springframework.data.repository.CrudRepository;
 

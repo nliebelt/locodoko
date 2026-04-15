@@ -7,7 +7,7 @@ import de.locodoko.spieler.SpielerRepository;
 import de.locodoko.tisch.TischEntity;
 import de.locodoko.tisch.TischRepository;
 import de.locodoko.tisch.TischkonfigurationEmbeddable;
-import de.locodoko.partie.PartieEntity;
+import de.locodoko.tisch.persistenz.PartieEntity;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;

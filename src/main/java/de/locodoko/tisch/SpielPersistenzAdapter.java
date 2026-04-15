@@ -26,13 +26,13 @@ import de.locodoko.partie.VorbehaltAnsage;
 import de.locodoko.partie.VorbehaltMeldung;
 import de.locodoko.partie.AnsageEreignisEmbeddable;
 import de.locodoko.partie.AktuellerStichKarteEmbeddable;
-import de.locodoko.partie.GespielteKarteEntity;
-import de.locodoko.partie.HandEntity;
+import de.locodoko.tisch.persistenz.GespielteKarteEntity;
+import de.locodoko.tisch.persistenz.HandEntity;
 import de.locodoko.partie.HandKarteEmbeddable;
-import de.locodoko.partie.SpielEntity;
+import de.locodoko.tisch.persistenz.SpielEntity;
 import de.locodoko.partie.SpielErgebnisEmbeddable;
-import de.locodoko.partie.SpielSonderpunktEntity;
-import de.locodoko.partie.StichEntity;
+import de.locodoko.tisch.persistenz.SpielSonderpunktEntity;
+import de.locodoko.tisch.persistenz.StichEntity;
 import de.locodoko.partie.VorbehaltMeldungEmbeddable;
 
 import java.util.ArrayList;

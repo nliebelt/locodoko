@@ -1,4 +1,4 @@
-package de.locodoko.partie;
+package de.locodoko.tisch.persistenz;
 
 import org.springframework.data.jdbc.repository.query.Query;
 import org.springframework.data.repository.CrudRepository;

@@ -15,7 +15,7 @@ import java.util.List;
  * Wird fuer Spring Data JDBC verwendet, da ElementCollection
  * nicht mehr unterstuetzt wird. Jede Liste wird als JSON-Text gespeichert.
  */
-final class JsonKonverter {
+public final class JsonKonverter {
 
     private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
@@ -23,7 +23,7 @@ final class JsonKonverter {
     }
 
     /** Serialisiert eine Liste als JSON-String. Null-sicher (liefert "[]"). */
-    static <T> String schreibeAlsJson(List<T> liste) {
+    public static <T> String schreibeAlsJson(List<T> liste) {
         if (liste == null || liste.isEmpty()) {
             return "[]";
         }
@@ -35,7 +35,7 @@ final class JsonKonverter {
     }
 
     /** Deserialisiert einen JSON-String in eine Liste. Null/leer liefert leere Liste. */
-    static <T> List<T> liesList(String json, TypeReference<List<T>> typeReference) {
+    public static <T> List<T> liesList(String json, TypeReference<List<T>> typeReference) {
         if (json == null || json.isBlank() || json.equals("[]")) {
             return List.of();
         }

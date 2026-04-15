@@ -1,4 +1,4 @@
-package de.locodoko.partie;
+package de.locodoko.system;
 
 import org.springframework.data.relational.core.mapping.event.BeforeConvertCallback;
 import org.springframework.stereotype.Component;

@@ -11,10 +11,10 @@ import de.locodoko.partie.Spiel;
 import de.locodoko.partie.Spielphase;
 import de.locodoko.partie.Sonderpunkt;
 import de.locodoko.partie.VorbehaltAnsage;
-import de.locodoko.partie.HandEntity;
-import de.locodoko.partie.PartieEntity;
+import de.locodoko.tisch.persistenz.HandEntity;
+import de.locodoko.tisch.persistenz.PartieEntity;
 import de.locodoko.partie.PartieStatus;
-import de.locodoko.partie.SpielEntity;
+import de.locodoko.tisch.persistenz.SpielEntity;
 import de.locodoko.partie.SpielErgebnisEmbeddable;
 import de.locodoko.spieler.SpielerEntity;
 
@@ -281,7 +281,7 @@ public record PartieStandAntwort(
             );
         }
 
-        static GespielteKarteAntwort aus(de.locodoko.partie.GespielteKarteEntity gespielteKarte) {
+        static GespielteKarteAntwort aus(de.locodoko.tisch.persistenz.GespielteKarteEntity gespielteKarte) {
             return new GespielteKarteAntwort(
                 gespielteKarte.spielerPosition(),
                 new KarteAntwort(

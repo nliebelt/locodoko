@@ -3,8 +3,8 @@ package de.locodoko.tisch;
 import de.locodoko.spieler.SpielerEntity;
 import de.locodoko.spieler.SpielerRepository;
 
-import de.locodoko.partie.PartieEntity;
-import de.locodoko.partie.PartieRepository;
+import de.locodoko.tisch.persistenz.PartieEntity;
+import de.locodoko.tisch.persistenz.PartieRepository;
 import de.locodoko.spieler.SpielerEntity;
 import de.locodoko.spieler.SpielerRepository;
 import de.locodoko.tisch.TischEntity;

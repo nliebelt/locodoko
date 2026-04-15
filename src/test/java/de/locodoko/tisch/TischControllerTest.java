@@ -2,8 +2,8 @@ package de.locodoko.tisch;
 
 import tools.jackson.databind.ObjectMapper;
 import de.locodoko.partie.SpielerPosition;
-import de.locodoko.partie.PartieEntity;
-import de.locodoko.partie.SpielEntity;
+import de.locodoko.tisch.persistenz.PartieEntity;
+import de.locodoko.tisch.persistenz.SpielEntity;
 import de.locodoko.spieler.SpielerEntity;
 import de.locodoko.spieler.SpielerRepository;
 import de.locodoko.tisch.TischEntity;

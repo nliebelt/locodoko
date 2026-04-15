@@ -2,12 +2,12 @@ package de.locodoko.tisch;
 
 import de.locodoko.karten.Kartendeck;
 import de.locodoko.partie.SpielerPosition;
-import de.locodoko.partie.PartieEntity;
-import de.locodoko.partie.PartieRepository;
+import de.locodoko.tisch.persistenz.PartieEntity;
+import de.locodoko.tisch.persistenz.PartieRepository;
 import de.locodoko.partie.PartieStatus;
 import de.locodoko.partie.Spiel;
-import de.locodoko.partie.SpielEntity;
-import de.locodoko.partie.HandEntity;
+import de.locodoko.tisch.persistenz.SpielEntity;
+import de.locodoko.tisch.persistenz.HandEntity;
 import de.locodoko.spieler.SpielerEntity;
 import de.locodoko.spieler.SpielerId;
 import de.locodoko.spieler.SpielerRepository;

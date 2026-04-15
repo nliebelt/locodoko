@@ -1,4 +1,7 @@
-package de.locodoko.partie;
+package de.locodoko.tisch.persistenz;
+
+import de.locodoko.partie.PartieId;
+import de.locodoko.partie.SpielId;
 
 import org.springframework.data.jdbc.repository.query.Query;
 import org.springframework.data.repository.CrudRepository;

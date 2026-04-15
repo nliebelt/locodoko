@@ -1,6 +1,6 @@
 # IMPLEMENTATION_PLAN — Locodoko Doppelkopf
 
-> **Letzte Aktualisierung: 2026-04-15 (Plan-Run #59)**
+> **Letzte Aktualisierung: 2026-04-15 (Plan-Run #63)**
 
 ## Legende
 
@@ -29,11 +29,11 @@ Schnellstart, Einladungslink, Spring Modulith Modulstruktur.
 
 ## Notiz
 
-**Zuletzt erledigt (Plan-Run #62):** BUG-4 — Browser-Reload zeigt alten State. Ursache: `TischSzene.create()` startete mit `letztesModell=null` und `letzterZustand=undefined`. Beim ersten Store-Callback erkannten `erkennteNeuesSpielErgebnis()`, `ermittleNeueSonderpunkte()` und `ermittleBockrundeEreignis()` fälschlich „neue" Ergebnisse (null→Wert = Transition), was Gewinner-Flash und Rundenende-Modal auslöste. Fix: (1) `letzterZustand` und `letztesModell` werden vor der Store-Subscription initialisiert, sodass der erste Callback keine falsche Transition sieht. (2) Null-Guards in den drei Erkennungsmethoden als Defense-in-Depth. (3) Neuer Test: Szene mit Spielergebnis starten → Modal bleibt verborgen. Frontend: `npm test` grün (24/24), `npm run build` grün, `npm run lint` grün. Backend: `mvn test` grün (237 Tests).
+**Zuletzt erledigt (Plan-Run #63):** R12 — Entity-Klassen von `partie/` nach `tisch/persistenz/` verschoben. Verschoben: 6 Entity-Klassen (`PartieEntity`, `SpielEntity`, `StichEntity`, `HandEntity`, `GespielteKarteEntity`, `SpielSonderpunktEntity`) + 5 Repositories nach `de.locodoko.tisch.persistenz/` (internes Sub-Package). `AbstraktePersistenzEntity` + 3 Callbacks nach `de.locodoko.system/` (querschnittliche Infrastruktur), da `spieler/SpielerEntity` sie benötigt und `spieler → tisch` einen Zyklus erzeugen würde. Package-private Methoden/Konstruktoren in `JsonKonverter`, `SpielErgebnisEmbeddable` auf `public` geändert (Cross-Package-Zugriff). `ModulstrukturTest.verify()` grün, `mvn test` grün (237 Tests).
 
-**Nächster Schritt:** R12 (Entity-Klassen von partie/ nach tisch/ verschieben).
+**Nächster Schritt:** R13 (JSON-Blob für Stiche/Hände) ist jetzt entblockt.
 
-**Offene Fragen:** TischSzene.test.ts und AnimationenService.test.ts laufen nicht wegen pre-existing jsdom/ESM-Kompatibilitätsfehler (ERR_REQUIRE_ASYNC_MODULE). Neuer BUG-4-Test ist geschrieben, wird aber erst ausgeführt wenn die jsdom-Umgebung gefixt wird.
+**Offene Fragen:** TischSzene.test.ts und AnimationenService.test.ts laufen nicht wegen pre-existing jsdom/ESM-Kompatibilitätsfehler (ERR_REQUIRE_ASYNC_MODULE).
 
 ---
 
@@ -192,7 +192,7 @@ das Spiel nicht ab.
 
 ## Phase R — Architektur-Refactoring (DoD architektur-ddd.md)
 
-### R12: Entity-Klassen von partie/ nach tisch/ verschieben [ ]
+### R12: Entity-Klassen von partie/ nach tisch/ verschieben [x]
 
 **Priorität: Mittel** — DoD-Verletzung (Zeile 173 in architektur-ddd.md), kein Runtime-Effekt.
 
@@ -218,7 +218,7 @@ aber laut DoD und Architektur-Spec nach `de.locodoko.tisch/`:
 
 ---
 
-### R13: JSON-Blob für Stiche/Hände [BLOCKED: R12]
+### R13: JSON-Blob für Stiche/Hände [ ]
 
 **Priorität: Niedrig** — Architektur-Verbesserung, kein funktionaler Effekt.
 
@@ -268,7 +268,7 @@ Domain-Klasse. `SpielPersistenzAdapter` fällt weg.
 - Frontend (AppStore, Szenen, Tastatursteuerung, Logging, data-testid)
 
 **Spec ist Wahrheit (Code muss angepasst werden):**
-- DoD Zeile 173: "Keine *Entity-Klassen in partie/" → R12 offen.
+- DoD Zeile 173: "Keine *Entity-Klassen in partie/" → R12 erledigt.
 
 **Code ist Wahrheit (kein Spec-Update nötig):**
 - `Tisch.java` liegt in `partie/` als Domain-Fassade. Das ist korrekt: `Tisch` verbindet

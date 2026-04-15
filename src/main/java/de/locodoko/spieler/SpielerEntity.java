@@ -1,6 +1,6 @@
 package de.locodoko.spieler;
 
-import de.locodoko.partie.AbstraktePersistenzEntity;
+import de.locodoko.system.AbstraktePersistenzEntity;
 
 import jakarta.validation.constraints.NotBlank;
 import org.springframework.data.relational.core.mapping.Column;

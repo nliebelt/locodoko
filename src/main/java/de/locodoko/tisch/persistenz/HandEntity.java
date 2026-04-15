@@ -1,4 +1,9 @@
-package de.locodoko.partie;
+package de.locodoko.tisch.persistenz;
+
+import de.locodoko.system.AbstraktePersistenzEntity;
+import de.locodoko.partie.JsonKonverter;
+import de.locodoko.partie.HandKarteEmbeddable;
+import de.locodoko.partie.SpielerPosition;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import de.locodoko.karten.Karte;

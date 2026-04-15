@@ -1,4 +1,7 @@
-package de.locodoko.partie;
+package de.locodoko.tisch.persistenz;
+
+import de.locodoko.system.AbstraktePersistenzEntity;
+import de.locodoko.partie.SpielerPosition;
 
 import de.locodoko.karten.Farbe;
 import de.locodoko.karten.Karte;

@@ -23,7 +23,7 @@ public class SpielErgebnisEmbeddable {
     private Integer spielpunkteNord;
     private Integer spielpunkteOst;
 
-    protected SpielErgebnisEmbeddable() {
+    public SpielErgebnisEmbeddable() {
     }
 
     private SpielErgebnisEmbeddable(Spielergebnis spielergebnis) {
@@ -94,16 +94,16 @@ public class SpielErgebnisEmbeddable {
     }
 
     // Getter/Setter fuer Spring Data JDBC (ohne @Embedded brauchen wir flache Felder direkt in SpielEntity)
-    void setReAugen(Integer reAugen) { this.reAugen = reAugen; }
-    void setKontraAugen(Integer kontraAugen) { this.kontraAugen = kontraAugen; }
-    void setSiegerPartei(String siegerPartei) { this.siegerPartei = siegerPartei; }
-    void setSpielwert(Integer spielwert) { this.spielwert = spielwert; }
-    void setGrundwert(Integer grundwert) { this.grundwert = grundwert; }
-    void setAbsagePunkte(Integer absagePunkte) { this.absagePunkte = absagePunkte; }
-    void setGegenDieAltenPunkte(Integer gegenDieAltenPunkte) { this.gegenDieAltenPunkte = gegenDieAltenPunkte; }
-    void setSoloMultiplikator(Integer soloMultiplikator) { this.soloMultiplikator = soloMultiplikator; }
-    void setSpielpunkteSued(Integer spielpunkteSued) { this.spielpunkteSued = spielpunkteSued; }
-    void setSpielpunkteWest(Integer spielpunkteWest) { this.spielpunkteWest = spielpunkteWest; }
-    void setSpielpunkteNord(Integer spielpunkteNord) { this.spielpunkteNord = spielpunkteNord; }
-    void setSpielpunkteOst(Integer spielpunkteOst) { this.spielpunkteOst = spielpunkteOst; }
+    public void setReAugen(Integer reAugen) { this.reAugen = reAugen; }
+    public void setKontraAugen(Integer kontraAugen) { this.kontraAugen = kontraAugen; }
+    public void setSiegerPartei(String siegerPartei) { this.siegerPartei = siegerPartei; }
+    public void setSpielwert(Integer spielwert) { this.spielwert = spielwert; }
+    public void setGrundwert(Integer grundwert) { this.grundwert = grundwert; }
+    public void setAbsagePunkte(Integer absagePunkte) { this.absagePunkte = absagePunkte; }
+    public void setGegenDieAltenPunkte(Integer gegenDieAltenPunkte) { this.gegenDieAltenPunkte = gegenDieAltenPunkte; }
+    public void setSoloMultiplikator(Integer soloMultiplikator) { this.soloMultiplikator = soloMultiplikator; }
+    public void setSpielpunkteSued(Integer spielpunkteSued) { this.spielpunkteSued = spielpunkteSued; }
+    public void setSpielpunkteWest(Integer spielpunkteWest) { this.spielpunkteWest = spielpunkteWest; }
+    public void setSpielpunkteNord(Integer spielpunkteNord) { this.spielpunkteNord = spielpunkteNord; }
+    public void setSpielpunkteOst(Integer spielpunkteOst) { this.spielpunkteOst = spielpunkteOst; }
 }

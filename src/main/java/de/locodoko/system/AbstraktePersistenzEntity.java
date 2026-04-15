@@ -1,4 +1,4 @@
-package de.locodoko.partie;
+package de.locodoko.system;
 
 import org.springframework.data.annotation.Id;
 import org.springframework.data.annotation.Transient;

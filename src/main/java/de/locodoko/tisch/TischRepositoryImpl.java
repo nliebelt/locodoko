@@ -4,8 +4,8 @@ import de.locodoko.partie.PartieId;
 import de.locodoko.spieler.SpielerEntity;
 import de.locodoko.spieler.SpielerId;
 import de.locodoko.spieler.SpielerRepository;
-import de.locodoko.partie.PartieEntity;
-import de.locodoko.partie.PartieRepository;
+import de.locodoko.tisch.persistenz.PartieEntity;
+import de.locodoko.tisch.persistenz.PartieRepository;
 
 import org.springframework.context.annotation.Primary;
 import org.springframework.jdbc.core.JdbcTemplate;

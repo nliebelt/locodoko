@@ -13,10 +13,10 @@ import de.locodoko.partie.Spielpunkte;
 import de.locodoko.partie.Spielphase;
 import de.locodoko.partie.Sonderpunkt;
 import de.locodoko.partie.SonderpunktEreignis;
-import de.locodoko.partie.PartieEntity;
-import de.locodoko.partie.SpielEntity;
+import de.locodoko.tisch.persistenz.PartieEntity;
+import de.locodoko.tisch.persistenz.SpielEntity;
 import de.locodoko.spieler.SpielerEntity;
-import de.locodoko.partie.StichEntity;
+import de.locodoko.tisch.persistenz.StichEntity;
 import de.locodoko.tisch.TischEntity;
 import de.locodoko.tisch.TischkonfigurationEmbeddable;
 import org.junit.jupiter.api.Test;
@@ -46,30 +46,30 @@ class PartieStandAntwortTest {
         SpielEntity spiel = SpielEntity.neu(1, SpielerPosition.SUED, Spieltyp.NORMALSPIEL, Spielphase.GESAMTSTAND_AKTUALISIEREN);
 
         StichEntity ersterStich = StichEntity.neu(1, SpielerPosition.SUED, SpielerPosition.WEST, 26);
-        ersterStich.fuegeGespielteKarteHinzu(de.locodoko.partie.GespielteKarteEntity.neu(
+        ersterStich.fuegeGespielteKarteHinzu(de.locodoko.tisch.persistenz.GespielteKarteEntity.neu(
             SpielerPosition.SUED, karte(Farbe.KREUZ, Kartenwert.AS, 1), 0
         ));
-        ersterStich.fuegeGespielteKarteHinzu(de.locodoko.partie.GespielteKarteEntity.neu(
+        ersterStich.fuegeGespielteKarteHinzu(de.locodoko.tisch.persistenz.GespielteKarteEntity.neu(
             SpielerPosition.WEST, karte(Farbe.KARO, Kartenwert.ZEHN, 1), 1
         ));
-        ersterStich.fuegeGespielteKarteHinzu(de.locodoko.partie.GespielteKarteEntity.neu(
+        ersterStich.fuegeGespielteKarteHinzu(de.locodoko.tisch.persistenz.GespielteKarteEntity.neu(
             SpielerPosition.NORD, karte(Farbe.HERZ, Kartenwert.AS, 1), 2
         ));
-        ersterStich.fuegeGespielteKarteHinzu(de.locodoko.partie.GespielteKarteEntity.neu(
+        ersterStich.fuegeGespielteKarteHinzu(de.locodoko.tisch.persistenz.GespielteKarteEntity.neu(
             SpielerPosition.OST, karte(Farbe.PIK, Kartenwert.AS, 1), 3
         ));
 
         StichEntity zweiterStich = StichEntity.neu(2, SpielerPosition.WEST, SpielerPosition.SUED, 18);
-        zweiterStich.fuegeGespielteKarteHinzu(de.locodoko.partie.GespielteKarteEntity.neu(
+        zweiterStich.fuegeGespielteKarteHinzu(de.locodoko.tisch.persistenz.GespielteKarteEntity.neu(
             SpielerPosition.WEST, karte(Farbe.KREUZ, Kartenwert.ZEHN, 2), 0
         ));
-        zweiterStich.fuegeGespielteKarteHinzu(de.locodoko.partie.GespielteKarteEntity.neu(
+        zweiterStich.fuegeGespielteKarteHinzu(de.locodoko.tisch.persistenz.GespielteKarteEntity.neu(
             SpielerPosition.NORD, karte(Farbe.KREUZ, Kartenwert.KOENIG, 1), 1
         ));
-        zweiterStich.fuegeGespielteKarteHinzu(de.locodoko.partie.GespielteKarteEntity.neu(
+        zweiterStich.fuegeGespielteKarteHinzu(de.locodoko.tisch.persistenz.GespielteKarteEntity.neu(
             SpielerPosition.OST, karte(Farbe.KREUZ, Kartenwert.NEUN, 1), 2
         ));
-        zweiterStich.fuegeGespielteKarteHinzu(de.locodoko.partie.GespielteKarteEntity.neu(
+        zweiterStich.fuegeGespielteKarteHinzu(de.locodoko.tisch.persistenz.GespielteKarteEntity.neu(
             SpielerPosition.SUED, karte(Farbe.KARO, Kartenwert.BUBE, 1), 3
         ));
 

@@ -1,7 +1,7 @@
 package de.locodoko.tisch;
 
-import de.locodoko.partie.AbstraktePersistenzEntity;
-import de.locodoko.partie.PartieEntity;
+import de.locodoko.system.AbstraktePersistenzEntity;
+import de.locodoko.tisch.persistenz.PartieEntity;
 import de.locodoko.spieler.SpielerEntity;
 
 import de.locodoko.tisch.Tischhintergrund;
