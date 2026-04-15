@@ -13,10 +13,8 @@ import de.locodoko.partie.Partie;
 import de.locodoko.partie.Spiel;
 import de.locodoko.partie.Spielphase;
 import de.locodoko.partie.VorbehaltAnsage;
-import de.locodoko.tisch.persistenz.PartieEntity;
 import de.locodoko.tisch.persistenz.PartieRepository;
 import de.locodoko.partie.PartieStatus;
-import de.locodoko.tisch.persistenz.SpielEntity;
 import de.locodoko.spieler.SpielerEntity;
 import de.locodoko.spieler.SpielerRepository;
 import org.slf4j.Logger;
@@ -83,34 +81,35 @@ public class KiOrchestrierungService {
 
     public void automatisiereTisch(TischEntity tisch) {
         Objects.requireNonNull(tisch, "tisch darf nicht null sein");
-        if (tisch.partie() == null || tisch.partie().status() == PartieStatus.BEENDET) {
+        if (tisch.partie() == null || tisch.partie().statusAusDb() == PartieStatus.BEENDET) {
             return;
         }
-        SpielEntity startSpiel = findeLaufendesSpiel(tisch.partie());
+        Spiel startSpiel = findeLaufendesSpiel(tisch.partie());
         String startPhase = startSpiel != null ? startSpiel.phasenName() : null;
         LOGGER.info("KI-Orchestrierung gestartet [tischId={}, spielphase={}]", tisch.id(), startPhase);
         int anzahlAktionen = 0;
         while (anzahlAktionen++ < MAXIMALE_KI_AKTIONEN) {
-            if (tisch.partie().status() == PartieStatus.BEENDET) {
+            if (tisch.partie().statusAusDb() == PartieStatus.BEENDET) {
                 return;
             }
-            SpielEntity laufendesSpielEntity = findeLaufendesSpiel(tisch.partie());
-            if (laufendesSpielEntity == null) {
+            Spiel laufendesSpiel = findeLaufendesSpiel(tisch.partie());
+            if (laufendesSpiel == null) {
                 return;
             }
-            Spiel laufendesSpiel = SpielPersistenzAdapter.zuDomainSpiel(laufendesSpielEntity, tisch.konfiguration().alsSpielregeln());
+            laufendesSpiel.hydriere(tisch.konfiguration().alsSpielregeln());
             if (laufendesSpiel.phase() instanceof Spielphase.Auswertung
                     || laufendesSpiel.phase() instanceof Spielphase.GesamtstandAktualisieren) {
                 LOGGER.info("Spiel abschliessen und naechstes starten [spielNr={}, tischId={}]",
-                    laufendesSpielEntity.spielNummer(), tisch.id());
+                    laufendesSpiel.spielNummer(), tisch.id());
                 try {
-                    Partie partie = rekonstruierePartieDomain(tisch, laufendesSpielEntity, laufendesSpiel);
-                    Partie neuePartie = partie.schliesseAktuellesSpielAbUndStarteNaechstes();
-                    uebernehmeDomainPartieAbschluss(tisch, laufendesSpielEntity, neuePartie);
+                    Partie persistentePartie = tisch.partie();
+                    persistentePartie.hydriere(tisch.konfiguration().alsSpielregeln());
+                    Partie neuePartie = persistentePartie.schliesseAktuellesSpielAbUndStarteNaechstes();
+                    uebernehmeDomainPartieAbschluss(tisch, laufendesSpiel, neuePartie);
                 } catch (Exception e) {
                     LOGGER.error(
                         "Fehler beim Abschliessen von Spiel {} an Tisch {} – Partie bleibt im letzten konsistenten Stand: {}",
-                        laufendesSpielEntity.spielNummer(), tisch.id(), e.getMessage(), e
+                        laufendesSpiel.spielNummer(), tisch.id(), e.getMessage(), e
                     );
                     return;
                 }
@@ -135,7 +134,7 @@ public class KiOrchestrierungService {
                 KiStrategie strategie = kiStrategieFactory.erzeuge(tisch.konfiguration().kiSchwierigkeit());
                 Spielphase phaseVorAktion = laufendesSpiel.phase();
                 Spiel naechsterStand = fuehreKiAktionAus(laufendesSpiel, erwarteterSpieler, strategie);
-                SpielPersistenzAdapter.uebernehmeDomainSpiel(laufendesSpielEntity, naechsterStand);
+                laufendesSpiel.uebernehmeDomainStand(naechsterStand);
                 // Stichphase-Zug: naechsten KI-Zug zeitverzoegert ausloesen, damit jede
                 // KI-Karte einzeln animiert im Frontend erscheint (Timing-Feature).
                 // Nur wenn ein menschlicher Spieler am Tisch sitzt – bei reinen KI-Partien
@@ -177,7 +176,7 @@ public class KiOrchestrierungService {
     @Transactional
     public void verzoegerteKiAktionAusfuehren(TischId tischId) {
         TischEntity tisch = tischRepository.findById(tischId).orElse(null);
-        if (tisch == null || tisch.partie() == null || tisch.partie().status() == PartieStatus.BEENDET) {
+        if (tisch == null || tisch.partie() == null || tisch.partie().statusAusDb() == PartieStatus.BEENDET) {
             return;
         }
         fuehreVerzoegertenKiZugAus(tisch);
@@ -192,14 +191,14 @@ public class KiOrchestrierungService {
      * Andernfalls wird automatisiereTisch aufgerufen um etwaige Folgephasen abzuschliessen.
      */
     private void fuehreVerzoegertenKiZugAus(TischEntity tisch) {
-        if (tisch.partie() == null || tisch.partie().status() == PartieStatus.BEENDET) {
+        if (tisch.partie() == null || tisch.partie().statusAusDb() == PartieStatus.BEENDET) {
             return;
         }
-        SpielEntity laufendesSpielEntity = findeLaufendesSpiel(tisch.partie());
-        if (laufendesSpielEntity == null) {
+        Spiel laufendesSpiel = findeLaufendesSpiel(tisch.partie());
+        if (laufendesSpiel == null) {
             return;
         }
-        Spiel laufendesSpiel = SpielPersistenzAdapter.zuDomainSpiel(laufendesSpielEntity, tisch.konfiguration().alsSpielregeln());
+        laufendesSpiel.hydriere(tisch.konfiguration().alsSpielregeln());
         if (!(laufendesSpiel.phase() instanceof Spielphase.Stichphase)) {
             // Nicht-Stichphase: vollstaendige Orchestrierung uebergeben
             try {
@@ -225,7 +224,7 @@ public class KiOrchestrierungService {
         try {
             KiStrategie strategie = kiStrategieFactory.erzeuge(tisch.konfiguration().kiSchwierigkeit());
             Spiel naechsterStand = fuehreKiAktionAus(laufendesSpiel, erwarteterSpieler, strategie);
-            SpielPersistenzAdapter.uebernehmeDomainSpiel(laufendesSpielEntity, naechsterStand);
+            laufendesSpiel.uebernehmeDomainStand(naechsterStand);
             // Pruefen ob noch eine KI folgt (und Menschen am Tisch sind)
             boolean hatMenschlichenSpieler = tisch.spieler().stream().anyMatch(s -> !s.istKi());
             if (hatMenschlichenSpieler && naechsterStand.phase() instanceof Spielphase.Stichphase) {
@@ -293,70 +292,34 @@ public class KiOrchestrierungService {
     }
 
     /**
-     * Rekonstruiert das Domain-{@link Partie}-Objekt aus den persistierten Entities.
-     * Wird benoetigt, um {@link Partie#schliesseAktuellesSpielAbUndStarteNaechstes()}
-     * aufzurufen und die Domain-Logik sauber von der Persistenz zu trennen.
-     */
-    private Partie rekonstruierePartieDomain(TischEntity tisch, SpielEntity laufendesSpielEntity, Spiel laufendesSpiel) {
-        PartieEntity partie = tisch.partie();
-        Spielregeln spielregeln = tisch.konfiguration().alsSpielregeln();
-        List<Spiel> abgeschlosseneSpiele = partie.spiele().stream()
-            .filter(s -> !s.equals(laufendesSpielEntity))
-            .map(s -> SpielPersistenzAdapter.zuDomainSpiel(s, spielregeln))
-            .toList();
-        return Partie.ausPersistiertemStand(
-            partie.anzahlSpiele(),
-            tisch.konfiguration().alsSpielregeln(),
-            laufendesSpiel.geber(),
-            abgeschlosseneSpiele,
-            laufendesSpiel,
-            partie.gesamtpunktestand(),
-            partie.bockrundenZaehler(),
-            partie.solistDesLetztenSpiels()
-        );
-    }
-
-    /**
      * Uebertraegt das Ergebnis von {@link Partie#schliesseAktuellesSpielAbUndStarteNaechstes()}
-     * in die persistierbaren Entities. Entkoppelt die Domain-Logik von der Persistenzkarte.
+     * in die persistierte Partie.
      */
-    private void uebernehmeDomainPartieAbschluss(TischEntity tisch, SpielEntity abgeschlossenesSpielEntity, Partie neuePartie) {
-        PartieEntity partie = tisch.partie();
-        // Gesamtpunktestand, Bockrunden und Solist aus Domain uebernehmen
+    private void uebernehmeDomainPartieAbschluss(TischEntity tisch, Spiel abgeschlossenesSpiel, Partie neuePartie) {
+        Partie partie = tisch.partie();
         for (SpielerPosition position : SpielerPosition.standardReihenfolge()) {
             partie.setzeGesamtpunktestand(position, neuePartie.gesamtpunktestand().get(position));
         }
-        partie.setzeBockrundenZaehler(neuePartie.bockrundenZaehler());
-        partie.setzeSolistDesLetztenSpiels(neuePartie.solistDesLetztenSpiels().orElse(null));
-        // Abgeschlossenes Spiel in Entity uebernehmen (enthaelt Ergebnis, Punkte usw.)
-        SpielPersistenzAdapter.uebernehmeDomainSpiel(
-            abgeschlossenesSpielEntity, neuePartie.abgeschlosseneSpiele().getLast());
+        partie.setzeBockrundenZaehlerDb(neuePartie.bockrundenZaehler());
+        partie.setzeSolistDesLetztenSpielsDb(neuePartie.solistDesLetztenSpiels().orElse(null));
+        abgeschlossenesSpiel.uebernehmeDomainStand(neuePartie.abgeschlosseneSpiele().getLast());
         if (neuePartie.istBeendet()) {
             partie.markiereAlsBeendet();
             return;
         }
-        // Beim Start eines neuen Spiels: KI-Uebernahme fuer alle Spieler aufheben,
-        // damit reconnectete Spieler wieder selbst spielen koennen
         tisch.spieler().stream()
             .filter(s -> !s.istKi() && s.istKiUebernommen())
             .forEach(s -> {
                 s.hebeKiUebernahmeAuf();
                 spielerRepository.save(s);
             });
-        // Naechstes Spiel als Entity anlegen
         Spiel neuesSpiel = neuePartie.aktuellesSpiel();
-        SpielEntity neuesSpielEntity = SpielEntity.neu(
-            partie.aktuellesSpielNummer() + 1,
-            neuesSpiel.geber(),
-            neuesSpiel.spieltyp(),
-            neuesSpiel.phase()
-        );
-        SpielPersistenzAdapter.uebernehmeDomainSpiel(neuesSpielEntity, neuesSpiel);
-        partie.fuegeSpielHinzu(neuesSpielEntity);
-        LOGGER.info("Naechstes Spiel gestartet [tischId={}, spielNr={}]", tisch.id(), neuesSpielEntity.spielNummer());
+        neuesSpiel.setzeSpielNummer(partie.aktuellesSpielNummer() + 1);
+        partie.fuegeSpielHinzu(neuesSpiel);
+        LOGGER.info("Naechstes Spiel gestartet [tischId={}, spielNr={}]", tisch.id(), neuesSpiel.spielNummer());
     }
 
-    private SpielEntity findeLaufendesSpiel(PartieEntity partie) {
+    private Spiel findeLaufendesSpiel(Partie partie) {
         return partie.spiele().stream()
             .reduce((erstes, zweites) -> zweites)
             .orElse(null);
@@ -384,11 +347,11 @@ public class KiOrchestrierungService {
         List<TischEntity> aktiveTische = tischRepository.findAllByStatusOrderByErstelltAmAsc(TischStatus.IM_SPIEL);
         for (TischEntity tisch : aktiveTische) {
             try {
-                SpielEntity laufendesSpielEntity = findeLaufendesSpiel(tisch.partie());
-                if (laufendesSpielEntity == null) {
+                Spiel spiel = findeLaufendesSpiel(tisch.partie());
+                if (spiel == null) {
                     continue;
                 }
-                Spiel spiel = SpielPersistenzAdapter.zuDomainSpiel(laufendesSpielEntity, tisch.konfiguration().alsSpielregeln());
+                spiel.hydriere(tisch.konfiguration().alsSpielregeln());
                 // Auswertungsphase hat keinen erwarteten Spieler — trotzdem abschliessen,
                 // damit Spiele nicht dauerhaft in AUSWERTUNG haengen bleiben.
                 if (spiel.phase() instanceof Spielphase.Auswertung
@@ -428,10 +391,13 @@ public class KiOrchestrierungService {
             return;
         }
         tisch.partie().spiele().stream()
-            .filter(s -> s.ergebnis() == null)
+            .filter(s -> s.dbErgebnis() == null)
             .reduce((a, b) -> b)
             .ifPresentOrElse(
-                s -> spielRegistry.registriere(tischId, SpielPersistenzAdapter.zuDomainSpiel(s, tisch.konfiguration().alsSpielregeln())),
+                s -> {
+                    s.hydriere(tisch.konfiguration().alsSpielregeln());
+                    spielRegistry.registriere(tischId, s);
+                },
                 () -> spielRegistry.entferne(tischId)
             );
     }

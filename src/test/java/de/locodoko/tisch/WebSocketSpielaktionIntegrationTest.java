@@ -12,7 +12,7 @@ import de.locodoko.partie.Spielphase;
 import de.locodoko.partie.VorbehaltAnsage;
 import de.locodoko.partie.HandJsonEintrag;
 import de.locodoko.tisch.persistenz.PartieRepository;
-import de.locodoko.tisch.persistenz.SpielEntity;
+import de.locodoko.partie.Spiel;
 import de.locodoko.tisch.persistenz.SpielRepository;
 import de.locodoko.tisch.TischEntity;
 import de.locodoko.tisch.TischRepository;
@@ -356,7 +356,7 @@ class WebSocketSpielaktionIntegrationTest {
         webSocketController.verarbeiteArmutAntwort(setup.tischId(), new ArmutAntwortAnfrage(false, List.of()), principal(setup.sessionIds().get(SpielerPosition.SUED)));
 
         // --- Zweiter Einwurf ---
-        // Nach dem ersten Einwurf kontrollierte Haende erneut setzen (dieselbe SpielEntity,
+        // Nach dem ersten Einwurf kontrollierte Haende erneut setzen (dasselbe Spiel,
         // da uebernehmeDomainSpiel in-place aktualisiert und keine neue Entitaet anlegt).
         setzeKontrollierteArmutshaende(setup.partieId());
         nachrichtenSpeicher.leeren();
@@ -449,7 +449,7 @@ class WebSocketSpielaktionIntegrationTest {
 
     private void setzeKontrollierteHaende(UUID partieId, Map<SpielerPosition, List<Karte>> vorgaben) {
         transactionTemplate.executeWithoutResult(status -> {
-            SpielEntity spiel = spielRepository.findAllByPartie_IdOrderBySpielNummerAsc(partieId).getFirst();
+            Spiel spiel = spielRepository.findAllByPartie_IdOrderBySpielNummerAsc(partieId).getFirst();
             Map<SpielerPosition, List<Karte>> verteilung = verteilungMitVorgaben(vorgaben);
             List<HandJsonEintrag> neueHaende = verteilung.entrySet().stream()
                 .map(e -> HandJsonEintrag.aus(e.getKey(), e.getValue()))

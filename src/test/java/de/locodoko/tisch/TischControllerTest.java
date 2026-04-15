@@ -2,8 +2,8 @@ package de.locodoko.tisch;
 
 import tools.jackson.databind.ObjectMapper;
 import de.locodoko.partie.SpielerPosition;
-import de.locodoko.tisch.persistenz.PartieEntity;
-import de.locodoko.tisch.persistenz.SpielEntity;
+import de.locodoko.partie.Partie;
+import de.locodoko.partie.Spiel;
 import de.locodoko.spieler.SpielerEntity;
 import de.locodoko.spieler.SpielerRepository;
 import de.locodoko.tisch.TischEntity;
@@ -69,7 +69,7 @@ class TischControllerTest {
 
         TischEntity gestarteterTisch = TischEntity.neu("Gestartet", bert, TischkonfigurationEmbeddable.standard());
         gestarteterTisch.fuegeSpielerHinzu(bert);
-        gestarteterTisch.setzePartie(PartieEntity.neu(24));
+        gestarteterTisch.setzePartie(Partie.neuePersistenz(24));
         tischRepository.saveAndFlush(gestarteterTisch);
 
         mockMvc.perform(get("/api/tische"))
@@ -165,13 +165,13 @@ class TischControllerTest {
         assertTrue(geladen.spieler().stream().anyMatch(SpielerEntity::istKi),
             "Mindestens ein KI-Spieler muss erzeugt werden, wenn weniger als vier Menschen am Tisch sitzen.");
         assertNotNull(geladen.partie());
-        assertEquals(24, geladen.partie().anzahlSpiele());
+        assertEquals(24, geladen.partie().anzahlSpieleAusDb());
         assertEquals(1, geladen.partie().spiele().size(),
             "Beim Start muss bereits ein echtes erstes Spiel angelegt werden, damit die Tischansicht sofort Handkarten und Phase aus einem stabilen Snapshot lesen kann.");
-        SpielEntity erstesSpiel = geladen.partie().spiele().getFirst();
-        assertEquals(4, erstesSpiel.haende().size(),
+        Spiel erstesSpiel = geladen.partie().spiele().getFirst();
+        assertEquals(4, erstesSpiel.haendeAlsJson().size(),
             "Das erste Spiel muss alle vier Haende enthalten, weil die spielbare Tischansicht ohne nachgelagerten Platzhalter direkt mit echten Karten startet.");
-        assertEquals(10, erstesSpiel.haende().getFirst().karten().size(),
+        assertEquals(10, erstesSpiel.haendeAlsJson().getFirst().karten().size(),
             "Jeder Spieler braucht direkt nach dem Start eine vollstaendige Hand, damit Vorbehalt-Phase und Kartendarstellung denselben serverseitigen Wahrheitsstand sehen.");
     }
 
@@ -270,7 +270,7 @@ class TischControllerTest {
 
         TischEntity tisch = TischEntity.neu("Standtisch", ada, TischkonfigurationEmbeddable.standard());
         tisch.fuegeSpielerHinzu(ada);
-        PartieEntity partie = PartieEntity.neu(16);
+        Partie partie = Partie.neuePersistenz(16);
         partie.setzeGesamtpunktestand(SpielerPosition.SUED, 4);
         partie.setzeGesamtpunktestand(SpielerPosition.WEST, -2);
         partie.setzeGesamtpunktestand(SpielerPosition.NORD, -1);
@@ -293,7 +293,7 @@ class TischControllerTest {
         SpielerEntity ada = spielerRepository.saveAndFlush(SpielerEntity.menschlich("Ada401", "session-401-ada"));
         TischEntity tisch = TischEntity.neu("Tisch401", ada, TischkonfigurationEmbeddable.standard());
         tisch.fuegeSpielerHinzu(ada);
-        tisch.setzePartie(PartieEntity.neu(8));
+        tisch.setzePartie(Partie.neuePersistenz(8));
         TischEntity gespeichert = tischRepository.saveAndFlush(tisch);
 
         mockMvc.perform(get("/api/partien/{id}/stand", gespeichert.partie().id()))
@@ -354,7 +354,7 @@ class TischControllerTest {
 
         TischEntity tisch = TischEntity.neu("AbbruchTisch", ada, TischkonfigurationEmbeddable.standard());
         tisch.fuegeSpielerHinzu(ada);
-        PartieEntity partie = PartieEntity.neu(8);
+        Partie partie = Partie.neuePersistenz(8);
         tisch.setzePartie(partie);
         TischEntity gespeichert = tischRepository.saveAndFlush(tisch);
         UUID tischId = gespeichert.id();
@@ -386,7 +386,7 @@ class TischControllerTest {
 
         TischEntity tisch = TischEntity.neu("NeuePartieTisch", ada, TischkonfigurationEmbeddable.standard());
         tisch.fuegeSpielerHinzu(ada);
-        PartieEntity beendetePartie = PartieEntity.neu(8);
+        Partie beendetePartie = Partie.neuePersistenz(8);
         beendetePartie.markiereAlsBeendet();
         tisch.setzePartie(beendetePartie);
         TischEntity gespeichert = tischRepository.saveAndFlush(tisch);
@@ -418,7 +418,7 @@ class TischControllerTest {
 
         TischEntity tisch = TischEntity.neu("LaufendTisch", ada, TischkonfigurationEmbeddable.standard());
         tisch.fuegeSpielerHinzu(ada);
-        PartieEntity laufendePartie = PartieEntity.neu(8);
+        Partie laufendePartie = Partie.neuePersistenz(8);
         tisch.setzePartie(laufendePartie);
         TischEntity gespeichert = tischRepository.saveAndFlush(tisch);
 

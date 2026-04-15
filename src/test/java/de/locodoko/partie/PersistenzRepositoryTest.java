@@ -1,8 +1,8 @@
 package de.locodoko.partie;
 
-import de.locodoko.tisch.persistenz.PartieEntity;
+import de.locodoko.partie.Partie;
 import de.locodoko.tisch.persistenz.PartieRepository;
-import de.locodoko.tisch.persistenz.SpielEntity;
+import de.locodoko.partie.Spiel;
 import de.locodoko.tisch.persistenz.SpielRepository;
 
 import de.locodoko.tisch.TischEntity;
@@ -79,13 +79,13 @@ class PersistenzRepositoryTest {
         tisch.fuegeSpielerHinzu(gast);
         tisch.fuegeSpielerHinzu(ki);
 
-        PartieEntity partie = PartieEntity.neu(12);
+        Partie partie = Partie.neuePersistenz(12);
         partie.setzeGesamtpunktestand(SpielerPosition.SUED, 3);
         partie.setzeGesamtpunktestand(SpielerPosition.WEST, -1);
         partie.setzeGesamtpunktestand(SpielerPosition.NORD, -1);
         partie.setzeGesamtpunktestand(SpielerPosition.OST, -1);
 
-        SpielEntity spiel = SpielEntity.neu(1, SpielerPosition.SUED, Spieltyp.NORMALSPIEL, Spielphase.GESAMTSTAND_AKTUALISIEREN);
+        Spiel spiel = Spiel.neuePersistenz(1, SpielerPosition.SUED, Spieltyp.NORMALSPIEL, Spielphase.GESAMTSTAND_AKTUALISIEREN);
         spiel.fuegeHandHinzu(HandJsonEintrag.aus(SpielerPosition.SUED, List.of(
             new Karte(Farbe.KREUZ, Kartenwert.DAME, 1),
             new Karte(Farbe.HERZ, Kartenwert.ZEHN, 2)
@@ -119,25 +119,25 @@ class PersistenzRepositoryTest {
             "Die Sitzbelegung muss stabil gespeichert werden, weil Session-, Lobby- und KI-Logik darauf aufbauen.");
         assertNotNull(geladen.erstelltAm());
 
-        PartieEntity geladenePartie = partieRepository.findById(geladen.partie().id()).orElseThrow();
+        Partie geladenePartie = partieRepository.findById(geladen.partie().id()).orElseThrow();
         assertEquals(PartieStatus.BEENDET, geladenePartie.status());
-        assertEquals(3, geladenePartie.gesamtpunktestand().get(SpielerPosition.SUED));
+        assertEquals(3, geladenePartie.gesamtpunktestandAusDb().get(SpielerPosition.SUED));
 
-        SpielEntity geladenesSpiel = spielRepository.findAllByPartie_IdOrderBySpielNummerAsc(geladenePartie.id()).getFirst();
-        assertEquals(Partei.RE, geladenesSpiel.ergebnis().siegerPartei());
-        assertEquals(240, geladenesSpiel.ergebnis().reAugen() + geladenesSpiel.ergebnis().kontraAugen(),
+        Spiel geladenesSpiel = spielRepository.findAllByPartie_IdOrderBySpielNummerAsc(geladenePartie.id()).getFirst();
+        assertEquals(Partei.RE, geladenesSpiel.ergebnisEmbeddable().siegerPartei());
+        assertEquals(240, geladenesSpiel.ergebnisEmbeddable().reAugen() + geladenesSpiel.ergebnisEmbeddable().kontraAugen(),
             "Der Ergebnis-Snapshot muss die 240-Augen-Invariante abbilden, damit spaetere Auswertungen reproduzierbar bleiben.");
-        assertEquals(1, geladenesSpiel.haende().size());
-        assertEquals(1, geladenesSpiel.stiche().size());
-        assertEquals(2, geladenesSpiel.sonderpunkte().size());
+        assertEquals(1, geladenesSpiel.haendeAlsJson().size());
+        assertEquals(1, geladenesSpiel.sticheAlsJson().size());
+        assertEquals(2, geladenesSpiel.sonderpunktEntities().size());
 
-        HandJsonEintrag geladeneHand = geladenesSpiel.haende().stream()
+        HandJsonEintrag geladeneHand = geladenesSpiel.haendeAlsJson().stream()
             .filter(h -> h.spielerPosition() == SpielerPosition.SUED)
             .findFirst().orElseThrow();
         assertEquals(2, geladeneHand.karten().size());
         assertEquals(Kartenwert.ZEHN, geladeneHand.karten().get(1).wert());
 
-        StichJsonEintrag geladenerStich = geladenesSpiel.stiche().getFirst();
+        StichJsonEintrag geladenerStich = geladenesSpiel.sticheAlsJson().getFirst();
         assertEquals(32, geladenerStich.augen());
         assertEquals(4, geladenerStich.gespielteKarten().size());
         assertEquals(Kartenwert.DAME, geladenerStich.gespielteKarten().getLast().wert());
@@ -157,8 +157,8 @@ class PersistenzRepositoryTest {
         tisch.fuegeSpielerHinzu(erstelltVon);
         tisch.fuegeSpielerHinzu(ki);
 
-        PartieEntity partie = PartieEntity.neu(24);
-        SpielEntity spiel = SpielEntity.neu(1, SpielerPosition.WEST, Spieltyp.NORMALSPIEL, new Spielphase.Stichphase(Stich.neu(SpielerPosition.WEST), Set.of(), null));
+        Partie partie = Partie.neuePersistenz(24);
+        Spiel spiel = Spiel.neuePersistenz(1, SpielerPosition.WEST, Spieltyp.NORMALSPIEL, new Spielphase.Stichphase(Stich.neu(SpielerPosition.WEST), Set.of(), null));
         spiel.fuegeStichHinzu(new StichJsonEintrag(
             1, SpielerPosition.WEST, SpielerPosition.WEST, 11,
             List.of(new AktuellerStichKarteEmbeddable(SpielerPosition.WEST, Farbe.HERZ, Kartenwert.AS, 1, 0))
@@ -231,8 +231,8 @@ class PersistenzRepositoryTest {
         tisch.fuegeSpielerHinzu(erstelltVon);
         tisch.fuegeSpielerHinzu(gast);
 
-        PartieEntity partie = PartieEntity.neu(1);
-        SpielEntity spiel = SpielEntity.neu(1, SpielerPosition.SUED, Spieltyp.HOCHZEIT, new Spielphase.Stichphase(Stich.neu(SpielerPosition.SUED), Set.of(), null));
+        Partie partie = Partie.neuePersistenz(1);
+        Spiel spiel = Spiel.neuePersistenz(1, SpielerPosition.SUED, Spieltyp.HOCHZEIT, new Spielphase.Stichphase(Stich.neu(SpielerPosition.SUED), Set.of(), null));
         spiel.fuegeHandHinzu(HandJsonEintrag.aus(SpielerPosition.WEST, List.of(new Karte(Farbe.KREUZ, Kartenwert.DAME, 1))));
         spiel.ersetzeAnsagen(List.of(AnsageEreignisEmbeddable.neu(SpielerPosition.WEST, Ansage.RE)));
         spiel.setzeAktuellenStich(
@@ -248,16 +248,16 @@ class PersistenzRepositoryTest {
         TischEntity gespeichert = tischRepository.saveAndFlush(tisch);
 
         // Spring Data JDBC liest immer direkt aus der DB — kein Cache-Clear noetig
-        SpielEntity geladenesSpiel = spielRepository.findAllByPartie_IdOrderBySpielNummerAsc(gespeichert.partie().id()).getFirst();
-        assertEquals(1, geladenesSpiel.ansagen().size(),
+        Spiel geladenesSpiel = spielRepository.findAllByPartie_IdOrderBySpielNummerAsc(gespeichert.partie().id()).getFirst();
+        assertEquals(1, geladenesSpiel.ansagenAlsEmbeddable().size(),
             "Die Ansagehistorie muss im laufenden Spiel persistiert bleiben, damit Snapshots und Reconnects denselben oeffentlichen Ansagezustand wiederherstellen koennen.");
-        assertEquals(Ansage.RE, geladenesSpiel.ansagen().getFirst().ansage());
+        assertEquals(Ansage.RE, geladenesSpiel.ansagenAlsEmbeddable().getFirst().ansage());
         assertEquals(SpielerPosition.WEST, geladenesSpiel.aktuellerStichAufspielerPosition());
         assertEquals(1, geladenesSpiel.aktuellerStichKarten().size(),
             "Die laufende Stichmitte muss gespeichert werden, damit nach einem Broadcast oder Reload keine bereits ausgespielten Karten verschwinden.");
-        assertEquals(SpielerPosition.WEST, geladenesSpiel.hochzeitSpielerPosition());
-        assertEquals(2, geladenesSpiel.hochzeitGeklaerteStiche());
-        assertEquals(SpielerPosition.NORD, geladenesSpiel.hochzeitPartnerSpielerPosition());
+        assertEquals(SpielerPosition.WEST, geladenesSpiel.hochzeitSpielerPositionDb());
+        assertEquals(2, geladenesSpiel.hochzeitGeklaerteSticheDb());
+        assertEquals(SpielerPosition.NORD, geladenesSpiel.hochzeitPartnerSpielerPositionDb());
     }
 
     private Spielergebnis beispielErgebnis() {

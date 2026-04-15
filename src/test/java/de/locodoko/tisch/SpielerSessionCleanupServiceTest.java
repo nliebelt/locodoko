@@ -3,7 +3,7 @@ package de.locodoko.tisch;
 import de.locodoko.spieler.SpielerEntity;
 import de.locodoko.spieler.SpielerRepository;
 
-import de.locodoko.tisch.persistenz.PartieEntity;
+import de.locodoko.partie.Partie;
 import de.locodoko.tisch.persistenz.PartieRepository;
 import de.locodoko.spieler.SpielerEntity;
 import de.locodoko.spieler.SpielerRepository;
@@ -171,7 +171,7 @@ class SpielerSessionCleanupServiceTest {
      */
     @Test
     void spielerBleibtAnAktivenTischNachSessionAblauf() {
-        PartieEntity partie = PartieEntity.neu(5);
+        Partie partie = Partie.neuePersistenz(5);
         partieRepository.save(partie);
 
         TischEntity tisch = TischEntity.neu("Aktiver Tisch", spieler, TischkonfigurationEmbeddable.standard());

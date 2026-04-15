@@ -10,10 +10,10 @@ import de.locodoko.karten.Spielregeln;
 import de.locodoko.partie.Spiel;
 import de.locodoko.partie.VorbehaltAnsage;
 
-import de.locodoko.tisch.persistenz.PartieEntity;
+import de.locodoko.partie.Partie;
 import de.locodoko.tisch.persistenz.PartieRepository;
 import de.locodoko.partie.PartieStatus;
-import de.locodoko.tisch.persistenz.SpielEntity;
+import de.locodoko.partie.Spiel;
 import de.locodoko.spieler.SpielerEntity;
 import de.locodoko.tisch.TischEntity;
 import de.locodoko.tisch.TischRepository;
@@ -138,14 +138,14 @@ class KiOrchestrierungServiceIntegrationTest {
 
         transactionTemplate.executeWithoutResult(status -> {
             TischEntity tisch = tischRepository.findById(TischId.von(ids.tischId())).orElseThrow();
-            PartieEntity partie = tisch.partie();
+            Partie partie = tisch.partie();
 
             assertEquals(PartieStatus.BEENDET, partie.status(),
                 "Eine Partie mit vier KI-Spielern muss ohne menschliche Eingriffe vollstaendig enden, sonst bleibt das 4x-KI-Akzeptanzkriterium unerfuellt.");
             assertEquals(1, partie.spiele().size());
             assertNotNull(partie.spiele().getFirst().ergebnis(),
                 "Das vollautomatische KI-Spiel braucht ein persistiertes Ergebnis, damit Ergebnis-Overlay und Gesamtstand darauf aufbauen koennen.");
-            assertEquals(0, partie.gesamtpunktestand().values().stream().mapToInt(Integer::intValue).sum(),
+            assertEquals(0, partie.gesamtpunktestandAusDb().values().stream().mapToInt(Integer::intValue).sum(),
                 "Auch vollautomatische KI-Partien muessen die Nullsummen-Invariante des Gesamtstands wahren.");
             PartieStandAntwort stand = PartieStandAntwort.aus(tisch);
             assertNull(stand.laufendesSpiel(),
@@ -167,10 +167,10 @@ class KiOrchestrierungServiceIntegrationTest {
         return tisch;
     }
 
-    private PartieEntity partieMitSpiel(Spiel spiel, int anzahlSpiele) {
-        PartieEntity partie = PartieEntity.neu(anzahlSpiele);
-        SpielEntity spielEntity = SpielEntity.neu(1, spiel.geber(), spiel.spieltyp(), spiel.phase());
-        SpielPersistenzAdapter.uebernehmeDomainSpiel(spielEntity, spiel);
+    private Partie partieMitSpiel(Spiel spiel, int anzahlSpiele) {
+        Partie partie = Partie.neuePersistenz(anzahlSpiele);
+        Spiel spielEntity = Spiel.neuePersistenz(1, spiel.geber(), spiel.spieltyp(), spiel.phase());
+        spielEntity.uebernehmeDomainStand(spiel);
         partie.fuegeSpielHinzu(spielEntity);
         return partie;
     }
@@ -256,7 +256,7 @@ class KiOrchestrierungServiceIntegrationTest {
 
         transactionTemplate.executeWithoutResult(status -> {
             TischEntity tisch = tischRepository.findById(TischId.von(ids.tischId())).orElseThrow();
-            PartieEntity partie = tisch.partie();
+            Partie partie = tisch.partie();
 
             assertEquals(PartieStatus.BEENDET, partie.status(),
                 "Eine DKV-Partie mit vier KI-Spielern muss nach 2 Spielen vollstaendig enden (BUG-5).");
@@ -264,7 +264,7 @@ class KiOrchestrierungServiceIntegrationTest {
                 "Es muessen genau 2 Spiele in der DKV-Partie sein.");
             assertTrue(partie.spiele().stream().allMatch(s -> s.ergebnis() != null),
                 "Alle Spiele muessen ein persistiertes Ergebnis haben.");
-            assertEquals(0, partie.gesamtpunktestand().values().stream().mapToInt(Integer::intValue).sum(),
+            assertEquals(0, partie.gesamtpunktestandAusDb().values().stream().mapToInt(Integer::intValue).sum(),
                 "Der Gesamtpunktestand muss nullsummig bleiben.");
         });
     }

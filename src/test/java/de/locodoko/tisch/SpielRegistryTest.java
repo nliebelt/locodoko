@@ -7,8 +7,8 @@ import de.locodoko.karten.Spielregeln;
 import de.locodoko.partie.Spiel;
 import de.locodoko.partie.Spielphase;
 import de.locodoko.partie.VorbehaltAnsage;
-import de.locodoko.tisch.persistenz.PartieEntity;
-import de.locodoko.tisch.persistenz.SpielEntity;
+import de.locodoko.partie.Partie;
+import de.locodoko.partie.Spiel;
 import de.locodoko.spieler.SpielerEntity;
 import de.locodoko.spieler.SpielerId;
 import org.junit.jupiter.api.BeforeEach;
@@ -338,9 +338,9 @@ class SpielRegistryTest {
         tisch.fuegeSpielerHinzu(SpielerEntity.ki("KI Clara"));
         tisch.fuegeSpielerHinzu(SpielerEntity.ki("KI Dora"));
 
-        PartieEntity partie = PartieEntity.neu(1);
-        SpielEntity spielEntity = SpielEntity.neu(1, laufendesSpiel.geber(), laufendesSpiel.spieltyp(), laufendesSpiel.phase());
-        SpielPersistenzAdapter.uebernehmeDomainSpiel(spielEntity, laufendesSpiel);
+        Partie partie = Partie.neuePersistenz(1);
+        Spiel spielEntity = Spiel.neuePersistenz(1, laufendesSpiel.geber(), laufendesSpiel.spieltyp(), laufendesSpiel.phase());
+        spielEntity.uebernehmeDomainStand(laufendesSpiel);
         partie.fuegeSpielHinzu(spielEntity);
         tisch.setzePartie(partie);
 

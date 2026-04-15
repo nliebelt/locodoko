@@ -10,7 +10,7 @@ import java.util.Objects;
 
 /**
  * Repraesentiert eine Karte im aktuell laufenden Stich.
- * Wird als Teil einer JSON-Liste in der Spalte 'aktueller_stich_karten' von SpielEntity gespeichert.
+ * Wird als Teil einer JSON-Liste in der Spalte 'aktueller_stich_karten' von Spiel gespeichert.
  * Keine JPA-Annotationen — wird per Jackson serialisiert/deserialisiert.
  */
 public class AktuellerStichKarteEmbeddable {

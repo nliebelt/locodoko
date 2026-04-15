@@ -5,7 +5,7 @@ import org.springframework.data.relational.core.mapping.Table;
 
 /**
  * Repraesentiert einen Eintrag im Gesamtpunktestand einer Partie.
- * Child-Entity von PartieEntity (kein eigenes @Id).
+ * Child-Entity von Partie (kein eigenes @Id).
  * Entspricht einem Eintrag in der Map&lt;SpielerPosition, Integer&gt; aus dem JPA-Modell.
  */
 @Table("partie_gesamtpunktestand")

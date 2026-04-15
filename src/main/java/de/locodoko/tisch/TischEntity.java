@@ -1,7 +1,7 @@
 package de.locodoko.tisch;
 
 import de.locodoko.system.AbstraktePersistenzEntity;
-import de.locodoko.tisch.persistenz.PartieEntity;
+import de.locodoko.partie.Partie;
 import de.locodoko.spieler.SpielerEntity;
 
 import de.locodoko.tisch.Tischhintergrund;
@@ -71,7 +71,7 @@ public class TischEntity extends AbstraktePersistenzEntity {
 
     /** Transiente Partie-Referenz (wird in-memory gesetzt). */
     @Transient
-    private PartieEntity partie;
+    private Partie partie;
 
     protected TischEntity() {
     }
@@ -133,7 +133,7 @@ public class TischEntity extends AbstraktePersistenzEntity {
         this.erstelltVonSpielerId = erstelltVon.id();
     }
 
-    public void setzePartie(PartieEntity partie) {
+    public void setzePartie(Partie partie) {
         this.partie = Objects.requireNonNull(partie, "partie darf nicht null sein");
         this.partieId = partie.id();
         this.status = TischStatus.IM_SPIEL.name();
@@ -143,7 +143,7 @@ public class TischEntity extends AbstraktePersistenzEntity {
      * Setzt die transiente Partie-Referenz ohne den Status zu aendern
      * (wird beim Laden aus der Datenbank verwendet).
      */
-    void setzePartieTransient(PartieEntity partie) {
+    void setzePartieTransient(Partie partie) {
         this.partie = partie;
         if (partie != null) {
             this.partieId = partie.id();
@@ -202,7 +202,7 @@ public class TischEntity extends AbstraktePersistenzEntity {
         return List.copyOf(spieler);
     }
 
-    public PartieEntity partie() {
+    public Partie partie() {
         return partie;
     }
 

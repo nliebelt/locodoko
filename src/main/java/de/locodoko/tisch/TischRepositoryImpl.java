@@ -4,7 +4,7 @@ import de.locodoko.partie.PartieId;
 import de.locodoko.spieler.SpielerEntity;
 import de.locodoko.spieler.SpielerId;
 import de.locodoko.spieler.SpielerRepository;
-import de.locodoko.tisch.persistenz.PartieEntity;
+import de.locodoko.partie.Partie;
 import de.locodoko.tisch.persistenz.PartieRepository;
 
 import org.springframework.context.annotation.Primary;
@@ -57,7 +57,7 @@ class TischRepositoryImpl implements TischRepository {
         tisch.spieler().forEach(spielerRepository::save);
 
         // Wenn eine Partie im Arbeitsspeicher gesetzt ist, zuerst Partie speichern
-        PartieEntity partie = tisch.partie();
+        Partie partie = tisch.partie();
         if (partie != null) {
             partieRepository.save(partie);
         }
@@ -192,7 +192,7 @@ class TischRepositoryImpl implements TischRepository {
         if (tisch.partieId() != null) {
             partieRepository.findById(PartieId.von(tisch.partieId())).ifPresent(partie -> {
                 // Spiel-Partie-Rueckreferenz setzen
-                partie.spiele().forEach(spiel -> spiel.setzePartie(partie));
+                partie.spiele().forEach(spiel -> spiel.setzePartieRef(partie));
                 tisch.setzePartieTransient(partie);
             });
         }

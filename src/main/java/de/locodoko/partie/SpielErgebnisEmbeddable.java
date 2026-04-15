@@ -93,7 +93,7 @@ public class SpielErgebnisEmbeddable {
         return spielpunkteOst;
     }
 
-    // Getter/Setter fuer Spring Data JDBC (ohne @Embedded brauchen wir flache Felder direkt in SpielEntity)
+    // Getter/Setter fuer Spring Data JDBC (ohne @Embedded brauchen wir flache Felder direkt in Spiel)
     public void setReAugen(Integer reAugen) { this.reAugen = reAugen; }
     public void setKontraAugen(Integer kontraAugen) { this.kontraAugen = kontraAugen; }
     public void setSiegerPartei(String siegerPartei) { this.siegerPartei = siegerPartei; }

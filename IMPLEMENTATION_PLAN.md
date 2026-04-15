@@ -23,7 +23,7 @@ Schnellstart, Einladungslink, Spring Modulith Modulstruktur.
 
 **Build:** `mvn test` grün (234 Tests, 0 Failures).
 
-**Offene Punkte:** 3 Bugs im Spielbetrieb (BUG-1/BUG-2 behoben), 3 Architektur-Refactorings (R12–R14).
+**Offene Punkte:** 3 Bugs im Spielbetrieb (BUG-1/BUG-2 behoben), 2 Architektur-Refactorings (R12–R13 erledigt, R14 erledigt).
 
 ---
 
@@ -31,7 +31,7 @@ Schnellstart, Einladungslink, Spring Modulith Modulstruktur.
 
 **Zuletzt erledigt (Plan-Run #64):** R13 — Stiche und Hände werden jetzt als JSON-Blob in der `spiel`-Tabelle gespeichert statt über relationale `@MappedCollection`-Tabellen. Neue Typen: `HandJsonEintrag`, `StichJsonEintrag` (in `partie/`). `SpielEntity` nutzt `haende_json`- und `stiche_json`-Spalten. Liquibase-Changeset `012-spielzustand-json.yaml` fügt Spalten hinzu und droppt `hand`, `stich`, `gespielte_karte`-Tabellen. Gelöschte Klassen: `HandEntity`, `StichEntity`, `GespielteKarteEntity`, `HandRepository`, `StichRepository`, `GespielteKarteRepository`. `SpielPersistenzAdapter`, `PartieStandAntwort`, `TischVerwaltungsService` und 4 Tests angepasst. `mvn test` grün (237 Tests).
 
-**Nächster Schritt:** R14 (Entity-Merge: SpielEntity → Spiel, PartieEntity → Partie) ist jetzt entblockt.
+**Nächster Schritt:** Alle Architektur-Refactorings (R12–R14) erledigt. Verbleibend: BUG-3 (Animations-Queue), BUG-4 (Browser-Reload), BUG-5 (DKV-Turnier).
 
 **Offene Fragen:** TischSzene.test.ts und AnimationenService.test.ts laufen nicht wegen pre-existing jsdom/ESM-Kompatibilitätsfehler (ERR_REQUIRE_ASYNC_MODULE).
 
@@ -237,22 +237,17 @@ JSON-Blob in der `spiel`-Zeile persistiert werden statt über relationale
 
 ---
 
-### R14: Entity-Merge (SpielEntity → Spiel, PartieEntity → Partie) [BLOCKED: R13 erledigt, kann gestartet werden]
+### R14: Entity-Merge (SpielEntity → Spiel, PartieEntity → Partie) [x]
 
 **Priorität: Niedrig** — Architektur-Vereinfachung, kein funktionaler Effekt.
 
-**Beschreibung:** Nach JSON-Blob-Umbau (R13) können `SpielEntity` und `PartieEntity` in die
-Domain-Klassen `Spiel` und `Partie` gemergt werden. `@Table` und `@Id` kommen direkt auf die
-Domain-Klasse. `SpielPersistenzAdapter` fällt weg.
+**Beschreibung:** `SpielEntity` und `PartieEntity` in die Domain-Klassen `Spiel` und `Partie`
+gemergt. `@Table`/`@Column`/`@Id` direkt auf den Domain-Klassen. Dual-Field-Ansatz:
+DB-Spaltenfelder neben @Transient-Domain-Feldern, synchronisiert via `hydriere()`/`syncZuPersistenz()`.
+`SpielPersistenzAdapter` entfernt. 237 Tests grün.
 
-**Blocker:** R13 muss zuerst abgeschlossen sein.
-
-**Aufgabe:**
-1. `Spiel` bekommt `@Table("spiel")`, `@Id UUID id`, `@Version Long version`.
-2. `Partie` bekommt `@Table("partie")`, `@Id UUID id`, `@Version Long version`.
-3. `SpielPersistenzAdapter` entfernen, Repositories direkt auf Domain-Klassen umstellen.
-4. Alle Entity-Klassen entfernen.
-5. `ApplicationModulesTest.verify()` + `mvn test` grün.
+**Gelöscht:** `SpielEntity.java`, `PartieEntity.java`, `SpielPersistenzAdapter.java`,
+`persistenz/SpielSonderpunktEntity.java` (verschoben nach `partie/`).
 
 ---
 

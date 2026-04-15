@@ -7,15 +7,14 @@ import de.locodoko.karten.Spieltyp;
 import de.locodoko.partie.Ansage;
 import de.locodoko.partie.AnsageEreignis;
 import de.locodoko.partie.Partei;
+import de.locodoko.partie.Partie;
 import de.locodoko.partie.Spiel;
 import de.locodoko.partie.Spielphase;
 import de.locodoko.partie.Sonderpunkt;
 import de.locodoko.partie.VorbehaltAnsage;
 import de.locodoko.partie.HandJsonEintrag;
 import de.locodoko.partie.StichJsonEintrag;
-import de.locodoko.tisch.persistenz.PartieEntity;
 import de.locodoko.partie.PartieStatus;
-import de.locodoko.tisch.persistenz.SpielEntity;
 import de.locodoko.partie.SpielErgebnisEmbeddable;
 import de.locodoko.spieler.SpielerEntity;
 
@@ -55,22 +54,22 @@ public record PartieStandAntwort(
     }
 
     public static PartieStandAntwort aus(TischEntity tisch, UUID sichtbarerSpielerId, boolean debugModus) {
-        PartieEntity partie = tisch.partie();
+        Partie partie = tisch.partie();
         Spielregeln spielregeln = tisch.konfiguration().alsSpielregeln();
-        SpielEntity laufendesSpiel = partie.spiele().stream()
-            .filter(spiel -> spiel.ergebnis() == null)
+        Spiel laufendesSpiel = partie.spiele().stream()
+            .filter(spiel -> spiel.ergebnisEmbeddable() == null)
             .reduce((erstes, zweites) -> zweites)
             .orElse(null);
-        SpielEntity letztesAbgeschlossenesSpiel = partie.spiele().stream()
-            .filter(spiel -> spiel.ergebnis() != null)
+        Spiel letztesAbgeschlossenesSpiel = partie.spiele().stream()
+            .filter(spiel -> spiel.ergebnisEmbeddable() != null)
             .reduce((erstes, zweites) -> zweites)
             .orElse(null);
         return new PartieStandAntwort(
             partie.id(),
-            partie.status(),
-            partie.anzahlSpiele(),
-            partie.spiele().stream().filter(spiel -> spiel.ergebnis() != null).toList().size(),
-            partie.gesamtpunktestand(),
+            partie.statusAusDb(),
+            partie.anzahlSpieleAusDb(),
+            partie.spiele().stream().filter(spiel -> spiel.ergebnisEmbeddable() != null).toList().size(),
+            partie.gesamtpunktestandAusDb(),
             LetztesSpielergebnisAntwort.aus(letztesAbgeschlossenesSpiel),
             AbgeschlossenerStichAntwort.aus(laufendesSpiel != null ? laufendesSpiel : letztesAbgeschlossenesSpiel),
             LaufendesSpielAntwort.aus(tisch, laufendesSpiel, sichtbarerSpielerId, debugModus)
@@ -92,17 +91,18 @@ public record PartieStandAntwort(
         boolean istBockrunde
     ) {
 
-        static LaufendesSpielAntwort aus(TischEntity tisch, SpielEntity laufendesSpiel, UUID sichtbarerSpielerId, boolean debugModus) {
+        static LaufendesSpielAntwort aus(TischEntity tisch, Spiel laufendesSpiel, UUID sichtbarerSpielerId, boolean debugModus) {
             if (laufendesSpiel == null) {
                 return null;
             }
 
             Map<SpielerPosition, SpielerEntity> spielerNachPosition = spielerNachPosition(tisch);
             SpielerPosition sichtbarePosition = positionVonSpieler(spielerNachPosition, sichtbarerSpielerId);
-            Spiel fachlichesSpiel = SpielPersistenzAdapter.zuDomainSpiel(laufendesSpiel, tisch.konfiguration().alsSpielregeln());
+            laufendesSpiel.hydriere(tisch.konfiguration().alsSpielregeln());
+            Spiel fachlichesSpiel = laufendesSpiel;
             SpielerPosition aktuellerSpieler = aktuellerSpieler(fachlichesSpiel);
             boolean zeigeAlleHaende = debugModus && sichtbarePosition != null;
-            Map<SpielerPosition, Integer> gewonneneStiche = SpielPersistenzAdapter.gewonneneStiche(laufendesSpiel);
+            Map<SpielerPosition, Integer> gewonneneStiche = Spiel.gewonneneStiche(laufendesSpiel);
 
             List<SpielerImSpielAntwort> spieler = new ArrayList<>();
             for (SpielerPosition position : SpielerPosition.standardReihenfolge()) {
@@ -122,7 +122,7 @@ public record PartieStandAntwort(
 
             return new LaufendesSpielAntwort(
                 laufendesSpiel.spielNummer(),
-                laufendesSpiel.spieltyp(),
+                laufendesSpiel.spieltypAusDb(),
                 laufendesSpiel.phasenName(),
                 laufendesSpiel.geberPosition(),
                 aktuellerSpieler,
@@ -136,7 +136,7 @@ public record PartieStandAntwort(
                 fachlichesSpiel.ansagen().ereignisse().stream().map(AnsageEreignisAntwort::aus).toList(),
                 bestimmeMoeglicheAnsagen(fachlichesSpiel, sichtbarePosition, aktuellerSpieler),
                 bestimmeMoeglicheVorbehalte(fachlichesSpiel, sichtbarePosition, aktuellerSpieler),
-                tisch.partie().bockrundenZaehler() > 0
+                tisch.partie().bockrundenZaehlerAusDb() > 0
             );
         }
 
@@ -205,8 +205,8 @@ public record PartieStandAntwort(
                 .orElse(null);
         }
 
-        private static HandJsonEintrag handVon(SpielEntity laufendesSpiel, SpielerPosition position) {
-            return laufendesSpiel.haende().stream()
+        private static HandJsonEintrag handVon(Spiel laufendesSpiel, SpielerPosition position) {
+            return laufendesSpiel.haendeAlsJson().stream()
                 .filter(hand -> hand.spielerPosition() == position)
                 .findFirst()
                 .orElse(null);
@@ -312,11 +312,11 @@ public record PartieStandAntwort(
         List<GespielteKarteAntwort> gespielteKarten
     ) {
 
-        static List<AbgeschlossenerStichAntwort> aus(SpielEntity spiel) {
+        static List<AbgeschlossenerStichAntwort> aus(Spiel spiel) {
             if (spiel == null) {
                 return List.of();
             }
-            return spiel.stiche().stream()
+            return spiel.sticheAlsJson().stream()
                 .map(stich -> new AbgeschlossenerStichAntwort(
                     spiel.spielNummer(),
                     stich.stichNummer(),
@@ -349,12 +349,12 @@ public record PartieStandAntwort(
         Map<Partei, List<SonderpunktEreignisDto>> sonderpunkteProPartei
     ) {
 
-        static LetztesSpielergebnisAntwort aus(SpielEntity spiel) {
-            if (spiel == null || spiel.ergebnis() == null) {
+        static LetztesSpielergebnisAntwort aus(Spiel spiel) {
+            if (spiel == null || spiel.ergebnisEmbeddable() == null) {
                 return null;
             }
 
-            SpielErgebnisEmbeddable ergebnis = spiel.ergebnis();
+            SpielErgebnisEmbeddable ergebnis = spiel.ergebnisEmbeddable();
             EnumMap<Partei, Integer> augenProPartei = new EnumMap<>(Partei.class);
             augenProPartei.put(Partei.RE, ergebnis.reAugen());
             augenProPartei.put(Partei.KONTRA, ergebnis.kontraAugen());
@@ -369,7 +369,7 @@ public record PartieStandAntwort(
             for (Partei partei : Partei.values()) {
                 sonderpunkteProPartei.put(
                     partei,
-                    spiel.sonderpunkte().stream()
+                    spiel.sonderpunktEntities().stream()
                         .filter(sp -> sp.partei() == partei)
                         .map(sp -> new SonderpunktEreignisDto(sp.sonderpunkt(), sp.taeter(), sp.opfer()))
                         .toList()
@@ -383,7 +383,7 @@ public record PartieStandAntwort(
 
             return new LetztesSpielergebnisAntwort(
                 spiel.spielNummer(),
-                spiel.spieltyp(),
+                spiel.spieltypAusDb(),
                 ergebnis.siegerPartei(),
                 ergebnis.spielwert(),
                 dbGrundwert != null ? dbGrundwert : ergebnis.spielwert(),

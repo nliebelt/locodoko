@@ -9,7 +9,7 @@ import java.util.Objects;
 /**
  * JSON-serialisierbarer Eintrag fuer einen abgeschlossenen Stich.
  * Ersetzt die relationalen StichEntity/GespielteKarteEntity-Tabellen — wird als Teil
- * einer JSON-Liste in der Spalte 'stiche_json' von SpielEntity gespeichert.
+ * einer JSON-Liste in der Spalte 'stiche_json' von Spiel gespeichert.
  */
 public class StichJsonEintrag {
 

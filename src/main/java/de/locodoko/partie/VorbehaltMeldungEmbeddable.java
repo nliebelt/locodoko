@@ -8,7 +8,7 @@ import java.util.Objects;
 
 /**
  * Repraesentiert eine Vorbehalt-Meldung eines Spielers.
- * Wird als Teil einer JSON-Liste in der Spalte 'vorbehalte' von SpielEntity gespeichert.
+ * Wird als Teil einer JSON-Liste in der Spalte 'vorbehalte' von Spiel gespeichert.
  * Keine JPA-Annotationen — wird per Jackson serialisiert/deserialisiert.
  */
 public class VorbehaltMeldungEmbeddable {

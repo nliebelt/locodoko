@@ -9,7 +9,7 @@ import java.util.Objects;
 /**
  * JSON-serialisierbarer Eintrag fuer eine Spielerhand.
  * Ersetzt die relationale HandEntity-Tabelle — wird als Teil einer JSON-Liste
- * in der Spalte 'haende_json' von SpielEntity gespeichert.
+ * in der Spalte 'haende_json' von Spiel gespeichert.
  */
 public class HandJsonEintrag {
 

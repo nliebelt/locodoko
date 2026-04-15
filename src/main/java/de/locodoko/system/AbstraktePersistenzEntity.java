@@ -68,12 +68,20 @@ public abstract class AbstraktePersistenzEntity implements Persistable<UUID> {
      * Wird vom AfterConvertCallback aufgerufen, nachdem die Entity aus der DB geladen wurde.
      * Setzt isNew auf false, damit spaetere saves() ein UPDATE erzeugen.
      */
-    void markiereAlsGeladen() {
+    protected void markiereAlsGeladen() {
         this.isNew = false;
     }
 
     public UUID id() {
         return id;
+    }
+
+    protected void setzeId(UUID id) {
+        this.id = id;
+    }
+
+    protected boolean istNeu() {
+        return isNew;
     }
 
     public Instant erstelltAm() {
@@ -85,12 +93,12 @@ public abstract class AbstraktePersistenzEntity implements Persistable<UUID> {
     }
 
     /** Wird vom AuditZeitstempelCallback gesetzt, wenn die Entity neu ist. */
-    void setzeErstelltAm(Instant erstelltAm) {
+    protected void setzeErstelltAm(Instant erstelltAm) {
         this.erstelltAm = erstelltAm;
     }
 
     /** Wird vom AuditZeitstempelCallback bei jedem Speichern gesetzt. */
-    void setzeAktualisiertAm(Instant aktualisiertAm) {
+    protected void setzeAktualisiertAm(Instant aktualisiertAm) {
         this.aktualisiertAm = aktualisiertAm;
     }
 }

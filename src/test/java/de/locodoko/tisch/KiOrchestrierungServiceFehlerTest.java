@@ -13,9 +13,9 @@ import de.locodoko.partie.Ansage;
 import de.locodoko.partie.Spiel;
 import de.locodoko.partie.Spielphase;
 import de.locodoko.partie.VorbehaltAnsage;
-import de.locodoko.tisch.persistenz.PartieEntity;
+import de.locodoko.partie.Partie;
 import de.locodoko.tisch.persistenz.PartieRepository;
-import de.locodoko.tisch.persistenz.SpielEntity;
+import de.locodoko.partie.Spiel;
 import de.locodoko.spieler.SpielerEntity;
 import de.locodoko.tisch.TischEntity;
 import de.locodoko.tisch.TischRepository;
@@ -142,13 +142,13 @@ class KiOrchestrierungServiceFehlerTest {
         // Datenbankstand: Phase muss unveraendert STICHPHASE sein, kein Stich begonnen
         transactionTemplate.executeWithoutResult(status -> {
             TischEntity tisch = tischRepository.findById(TischId.von(tischId)).orElseThrow();
-            SpielEntity laufendesSpiel = tisch.partie().spiele().getLast();
+            Spiel laufendesSpiel = tisch.partie().spiele().getLast();
 
             assertEquals("STICHPHASE", laufendesSpiel.phasenName(),
                 "Die Spielphase muss nach einer KI-Exception unveraendert STICHPHASE sein, " +
                 "weil uebernehmeDomainSpiel() nie aufgerufen wurde und der letzte Datenbankstand gilt.");
 
-            assertEquals(0, laufendesSpiel.stiche().size(),
+            assertEquals(0, laufendesSpiel.sticheAlsJson().size(),
                 "Es darf kein Stich persistiert worden sein, weil die KI-Exception " +
                 "aufgetreten ist bevor uebernehmeDomainSpiel() den neuen Stand schreiben konnte.");
         });
@@ -181,7 +181,7 @@ class KiOrchestrierungServiceFehlerTest {
 
         transactionTemplate.executeWithoutResult(status -> {
             TischEntity tisch = tischRepository.findById(TischId.von(tischId)).orElseThrow();
-            SpielEntity laufendesSpiel = tisch.partie().spiele().getLast();
+            Spiel laufendesSpiel = tisch.partie().spiele().getLast();
 
             assertEquals("VORBEHALT_ANSAGE", laufendesSpiel.phasenName(),
                 "Die Spielphase muss nach einer KI-Exception in der Vorbehaltphase unveraendert " +
@@ -228,11 +228,11 @@ class KiOrchestrierungServiceFehlerTest {
         throw new IllegalStateException("Kein gueltiges Normalspiel nach 100 Versuchen gefunden");
     }
 
-    /** Verpackt ein Domain-Spiel in eine PartieEntity. */
-    private PartieEntity partieMitSpiel(Spiel spiel, int anzahlSpiele) {
-        PartieEntity partie = PartieEntity.neu(anzahlSpiele);
-        SpielEntity spielEntity = SpielEntity.neu(1, spiel.geber(), spiel.spieltyp(), spiel.phase());
-        SpielPersistenzAdapter.uebernehmeDomainSpiel(spielEntity, spiel);
+    /** Verpackt ein Domain-Spiel in eine Partie. */
+    private Partie partieMitSpiel(Spiel spiel, int anzahlSpiele) {
+        Partie partie = Partie.neuePersistenz(anzahlSpiele);
+        Spiel spielEntity = Spiel.neuePersistenz(1, spiel.geber(), spiel.spieltyp(), spiel.phase());
+        spielEntity.uebernehmeDomainStand(spiel);
         partie.fuegeSpielHinzu(spielEntity);
         return partie;
     }

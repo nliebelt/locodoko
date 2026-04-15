@@ -2,12 +2,10 @@ package de.locodoko.tisch;
 
 import de.locodoko.karten.Kartendeck;
 import de.locodoko.partie.SpielerPosition;
-import de.locodoko.tisch.persistenz.PartieEntity;
+import de.locodoko.partie.Partie;
 import de.locodoko.tisch.persistenz.PartieRepository;
 import de.locodoko.partie.PartieStatus;
 import de.locodoko.partie.Spiel;
-import de.locodoko.partie.HandJsonEintrag;
-import de.locodoko.tisch.persistenz.SpielEntity;
 import de.locodoko.spieler.SpielerEntity;
 import de.locodoko.spieler.SpielerId;
 import de.locodoko.spieler.SpielerRepository;
@@ -169,7 +167,7 @@ public class TischVerwaltungsService {
         while (!tisch.istVoll()) {
             tisch.fuegeSpielerHinzu(kiSpielerFabrik.erzeugeNaechstenSpieler());
         }
-        PartieEntity partie = PartieEntity.neu(tisch.konfiguration().anzahlSpiele());
+        Partie partie = Partie.neuePersistenz(tisch.konfiguration().anzahlSpiele());
         partie.fuegeSpielHinzu(erzeugeErstesSpiel(tisch));
         tisch.setzePartie(partie);
         TischEntity gespeicherterTisch = tischRepository.saveAndFlush(tisch);
@@ -203,10 +201,10 @@ public class TischVerwaltungsService {
                 "Neue Partie kann nur an einem laufenden Tisch gestartet werden."
             );
         }
-        if (tisch.partie() != null && tisch.partie().status() == PartieStatus.LAUFEND) {
+        if (tisch.partie() != null && tisch.partie().statusAusDb() == PartieStatus.LAUFEND) {
             return new BestaetigungAntwort("Partie laeuft bereits.");
         }
-        if (tisch.partie() == null || tisch.partie().status() != PartieStatus.BEENDET) {
+        if (tisch.partie() == null || tisch.partie().statusAusDb() != PartieStatus.BEENDET) {
             throw new SpielverwaltungKonfliktException(
                 "PARTIE_NICHT_BEENDET",
                 "Neue Partie kann nur nach vollstaendigem Abschluss der aktuellen Partie gestartet werden."
@@ -218,7 +216,7 @@ public class TischVerwaltungsService {
                 s.hebeKiUebernahmeAuf();
                 spielerRepository.save(s);
             });
-        PartieEntity neuePartie = PartieEntity.neu(tisch.konfiguration().anzahlSpiele());
+        Partie neuePartie = Partie.neuePersistenz(tisch.konfiguration().anzahlSpiele());
         neuePartie.fuegeSpielHinzu(erzeugeErstesSpiel(tisch));
         tisch.setzePartie(neuePartie);
         TischEntity gespeicherterTisch = tischRepository.saveAndFlush(tisch);
@@ -302,7 +300,7 @@ public class TischVerwaltungsService {
         while (!tisch.istVoll()) {
             tisch.fuegeSpielerHinzu(kiSpielerFabrik.erzeugeNaechstenSpieler());
         }
-        PartieEntity partie = PartieEntity.neu(tisch.konfiguration().anzahlSpiele());
+        Partie partie = Partie.neuePersistenz(tisch.konfiguration().anzahlSpiele());
         partie.fuegeSpielHinzu(erzeugeErstesSpiel(tisch));
         tisch.setzePartie(partie);
         TischEntity gespeicherterTisch = tischRepository.saveAndFlush(tisch);
@@ -354,10 +352,10 @@ public class TischVerwaltungsService {
             return;
         }
         tisch.partie().spiele().stream()
-            .filter(s -> s.ergebnis() == null)
+            .filter(s -> s.ergebnisEmbeddable() == null)
             .reduce((a, b) -> b)
             .ifPresentOrElse(
-                s -> spielRegistry.registriere(tischId, SpielPersistenzAdapter.zuDomainSpiel(s, tisch.konfiguration().alsSpielregeln())),
+                s -> { s.hydriere(tisch.konfiguration().alsSpielregeln()); spielRegistry.registriere(tischId, s); },
                 () -> spielRegistry.entferne(tischId)
             );
     }
@@ -428,13 +426,10 @@ public class TischVerwaltungsService {
         }
     }
 
-    private SpielEntity erzeugeErstesSpiel(TischEntity tisch) {
+    private Spiel erzeugeErstesSpiel(TischEntity tisch) {
         Kartendeck kartendeck = Kartendeck.neu(tisch.konfiguration().alsSpielregeln()).gemischt();
         Spiel spiel = Spiel.neu(SpielerPosition.SUED, tisch.konfiguration().alsSpielregeln(), kartendeck).teileKartenAus();
-        SpielEntity spielEntity = SpielEntity.neu(1, spiel.geber(), spiel.spieltyp(), spiel.phase());
-        for (SpielerPosition position : SpielerPosition.standardReihenfolge()) {
-            spielEntity.fuegeHandHinzu(HandJsonEintrag.aus(position, spiel.handVon(position).karten()));
-        }
-        return spielEntity;
+        spiel.setzeSpielNummer(1);
+        return spiel;
     }
 }

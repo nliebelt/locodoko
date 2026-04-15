@@ -57,11 +57,11 @@ public class SpielRegistry {
                 return;
             }
             tisch.partie().spiele().stream()
-                .filter(spiel -> spiel.ergebnis() == null)
+                .filter(spiel -> spiel.ergebnisEmbeddable() == null)
                 .reduce((erstes, zweites) -> zweites)
-                .ifPresent(laufendesSpielEntity -> {
-                    Spiel spiel = SpielPersistenzAdapter.zuDomainSpiel(laufendesSpielEntity, tisch.konfiguration().alsSpielregeln());
-                    spielCache.put(tisch.id(), spiel);
+                .ifPresent(laufendesSpiel -> {
+                    laufendesSpiel.hydriere(tisch.konfiguration().alsSpielregeln());
+                    spielCache.put(tisch.id(), laufendesSpiel);
                     LOGGER.info("SpielRegistry: Spiel fuer Tisch {} aus DB geladen", tisch.id());
                 });
         });

@@ -15,8 +15,8 @@ import de.locodoko.partie.Spielphase;
 import de.locodoko.partie.Sonderpunkt;
 import de.locodoko.partie.SonderpunktEreignis;
 import de.locodoko.partie.StichJsonEintrag;
-import de.locodoko.tisch.persistenz.PartieEntity;
-import de.locodoko.tisch.persistenz.SpielEntity;
+import de.locodoko.partie.Partie;
+import de.locodoko.partie.Spiel;
 import de.locodoko.spieler.SpielerEntity;
 import de.locodoko.tisch.TischEntity;
 import de.locodoko.tisch.TischkonfigurationEmbeddable;
@@ -43,8 +43,8 @@ class PartieStandAntwortTest {
         tisch.fuegeSpielerHinzu(SpielerEntity.menschlich("Clara", "session-clara"));
         tisch.fuegeSpielerHinzu(SpielerEntity.menschlich("Dirk", "session-dirk"));
 
-        PartieEntity partie = PartieEntity.neu(8);
-        SpielEntity spiel = SpielEntity.neu(1, SpielerPosition.SUED, Spieltyp.NORMALSPIEL, Spielphase.GESAMTSTAND_AKTUALISIEREN);
+        Partie partie = Partie.neuePersistenz(8);
+        Spiel spiel = Spiel.neuePersistenz(1, SpielerPosition.SUED, Spieltyp.NORMALSPIEL, Spielphase.GESAMTSTAND_AKTUALISIEREN);
 
         StichJsonEintrag ersterStich = new StichJsonEintrag(1, SpielerPosition.SUED, SpielerPosition.WEST, 26,
             List.of(

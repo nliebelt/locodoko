@@ -7,7 +7,7 @@ import de.locodoko.spieler.SpielerRepository;
 import de.locodoko.tisch.TischEntity;
 import de.locodoko.tisch.TischRepository;
 import de.locodoko.tisch.TischkonfigurationEmbeddable;
-import de.locodoko.tisch.persistenz.PartieEntity;
+import de.locodoko.partie.Partie;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -57,7 +57,7 @@ class VerbindungsabbruchEinzelspielerTest {
         tisch.fuegeSpielerHinzu(ki2);
         tisch.fuegeSpielerHinzu(ki3);
         // setzePartie setzt Status auf IM_SPIEL; tischRepository.save speichert die Partie kaskadiert
-        tisch.setzePartie(PartieEntity.neu(6));
+        tisch.setzePartie(Partie.neuePersistenz(6));
         tischRepository.save(tisch);
     }
 

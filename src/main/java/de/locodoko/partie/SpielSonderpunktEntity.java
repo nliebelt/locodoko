@@ -1,11 +1,7 @@
-package de.locodoko.tisch.persistenz;
+package de.locodoko.partie;
 
 import de.locodoko.system.AbstraktePersistenzEntity;
-import de.locodoko.partie.SpielerPosition;
 
-import de.locodoko.partie.Partei;
-import de.locodoko.partie.Sonderpunkt;
-import de.locodoko.partie.SonderpunktEreignis;
 import org.springframework.data.annotation.Transient;
 import org.springframework.data.relational.core.mapping.Column;
 import org.springframework.data.relational.core.mapping.Table;
@@ -14,7 +10,7 @@ import java.util.Objects;
 
 /**
  * Persistenz-Entity fuer einen Sonderpunkt in einem Spiel.
- * Owned by SpielEntity via @MappedCollection.
+ * Owned by Spiel via @MappedCollection.
  */
 @Table("spiel_sonderpunkt")
 public class SpielSonderpunktEntity extends AbstraktePersistenzEntity {
@@ -33,7 +29,7 @@ public class SpielSonderpunktEntity extends AbstraktePersistenzEntity {
 
     /** Rueckreferenz auf das Spiel (transient, wird in-memory gesetzt). */
     @Transient
-    private SpielEntity spiel;
+    private Spiel spiel;
 
     protected SpielSonderpunktEntity() {
     }
@@ -49,11 +45,11 @@ public class SpielSonderpunktEntity extends AbstraktePersistenzEntity {
         return new SpielSonderpunktEntity(partei, ereignis);
     }
 
-    void setzeSpiel(SpielEntity spiel) {
+    public void setzeSpiel(Spiel spiel) {
         this.spiel = spiel;
     }
 
-    public SpielEntity spiel() {
+    public Spiel spiel() {
         return spiel;
     }
 
