@@ -1,5 +1,7 @@
 package de.locodoko.tisch;
 
+import io.swagger.v3.oas.annotations.media.Schema;
+
 /**
  * Einfache Bestaetigungs-Antwort fuer REST-Endpunkte ohne inhaltliche Nutzdaten.
  *
@@ -8,5 +10,9 @@ package de.locodoko.tisch;
  *
  * @param nachricht  menschenlesbare Erfolgsmeldung
  */
-public record BestaetigungAntwort(String nachricht) {
+@Schema(description = "Einfache Bestaetigungsantwort ohne inhaltliche Nutzdaten.")
+public record BestaetigungAntwort(
+    @Schema(description = "Menschenlesbare Erfolgsmeldung.", example = "Tisch erfolgreich verlassen.")
+    String nachricht
+) {
 }

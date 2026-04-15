@@ -2,6 +2,7 @@ package de.locodoko.tisch;
 
 import de.locodoko.tisch.PartieStandAntwort;
 import de.locodoko.tisch.TischAntwort;
+import io.swagger.v3.oas.annotations.media.Schema;
 
 import java.time.Instant;
 import java.util.UUID;
@@ -13,11 +14,17 @@ import java.util.UUID;
  * gesendet und enthaelt den aktuellen {@link TischAntwort}-Snapshot sowie optional einen
  * {@link PartieStandAntwort} nach dem Spielstart.</p>
  */
+@Schema(description = "WebSocket-Ereignis-Wrapper fuer Tisch-Updates.")
 public record TischEreignisAntwort(
+    @Schema(description = "Zeitpunkt des Ereignisses.", example = "2026-04-15T14:30:00Z")
     Instant timestamp,
+    @Schema(description = "Typ des Tisch-Ereignisses.")
     TischEreignisTyp ereignisTyp,
+    @Schema(description = "ID des betroffenen Tisches.", example = "f47ac10b-58cc-4372-a567-0e02b2c3d479")
     UUID tischId,
+    @Schema(description = "Aktueller Tisch-Snapshot; null bei TISCH_ENTFERNT.")
     TischAntwort tisch,
+    @Schema(description = "Aktueller Partiestand; null falls keine Partie laeuft.")
     PartieStandAntwort partieStand
 ) {
 

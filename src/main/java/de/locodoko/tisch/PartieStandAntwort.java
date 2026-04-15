@@ -17,6 +17,7 @@ import de.locodoko.partie.StichJsonEintrag;
 import de.locodoko.partie.PartieStatus;
 import de.locodoko.partie.SpielErgebnisEmbeddable;
 import de.locodoko.spieler.SpielerEntity;
+import io.swagger.v3.oas.annotations.media.Schema;
 
 import java.util.ArrayList;
 import java.util.EnumMap;
@@ -34,14 +35,23 @@ import java.util.UUID;
  * aktuelle Phase, moegliche Aktionen, Stichmitte, Ansage-Historie, letztes Spielergebnis
  * und die abgeschlossenen Stiche des letzten Spiels.</p>
  */
+@Schema(description = "Snapshot des aktuellen Partiestands fuer REST und WebSocket.")
 public record PartieStandAntwort(
+    @Schema(description = "Eindeutige Partie-ID.", example = "c3d4e5f6-7890-abcd-ef12-34567890abcd")
     UUID partieId,
+    @Schema(description = "Aktueller Status der Partie.")
     PartieStatus status,
+    @Schema(description = "Gesamtanzahl der Spiele in der Partie.", example = "12")
     int anzahlSpiele,
+    @Schema(description = "Anzahl der bereits abgeschlossenen Spiele.", example = "3")
     int gespielteSpiele,
+    @Schema(description = "Gesamtpunktestand pro Spielerposition.")
     Map<SpielerPosition, Integer> gesamtpunktestand,
+    @Schema(description = "Ergebnis des letzten abgeschlossenen Spiels; null falls keines.")
     LetztesSpielergebnisAntwort letztesSpielergebnis,
+    @Schema(description = "Abgeschlossene Stiche des aktuellen oder letzten Spiels.")
     List<AbgeschlossenerStichAntwort> letzteAbgeschlosseneStiche,
+    @Schema(description = "Daten des aktuell laufenden Spiels; null falls keines laeuft.")
     LaufendesSpielAntwort laufendesSpiel
 ) {
 
@@ -76,19 +86,33 @@ public record PartieStandAntwort(
         );
     }
 
+    @Schema(description = "Daten des aktuell laufenden Spiels innerhalb einer Partie.")
     public record LaufendesSpielAntwort(
+        @Schema(description = "Laufende Nummer des Spiels in der Partie.", example = "1")
         int spielNummer,
+        @Schema(description = "Typ des Spiels (Normal, Solo, Hochzeit, etc.).")
         Spieltyp spieltyp,
+        @Schema(description = "Aktuelle Spielphase.", example = "STICHPHASE")
         String phase,
+        @Schema(description = "Position des Gebers.")
         SpielerPosition geber,
+        @Schema(description = "Position des Spielers, der am Zug ist.")
         SpielerPosition aktuellerSpieler,
+        @Schema(description = "Alle Spieler im laufenden Spiel.")
         List<SpielerImSpielAntwort> spieler,
+        @Schema(description = "Karten, die der aktuelle Spieler spielen darf.")
         List<KarteAntwort> spielbareKarten,
+        @Schema(description = "Aktuell in der Stichmitte liegende Karten.")
         List<GespielteKarteAntwort> aktuelleStichmitte,
+        @Schema(description = "Chronologische Historie aller Ansagen im Spiel.")
         List<AnsageEreignisAntwort> ansageHistorie,
+        @Schema(description = "Ansagen, die der aktuelle Spieler machen darf.")
         List<Ansage> moeglicheAnsagen,
+        @Schema(description = "Vorbehalte, die der aktuelle Spieler ansagen darf.")
         List<VorbehaltAnsage> moeglicheVorbehalte,
+        @Schema(description = "Ob die aktuelle Runde eine Bockrunde ist.")
         boolean istBockrunde,
+        @Schema(description = "Position des Spielers, der Schweinchen gemeldet hat; null falls keiner.")
         SpielerPosition schweinchenGemeldetVon
     ) {
 
@@ -215,19 +239,33 @@ public record PartieStandAntwort(
         }
     }
 
+    @Schema(description = "Darstellung eines Spielers im laufenden Spiel.")
     public record SpielerImSpielAntwort(
+        @Schema(description = "Sitzposition des Spielers.")
         SpielerPosition position,
+        @Schema(description = "Eindeutige Spieler-ID.", example = "a1b2c3d4-e5f6-7890-abcd-ef1234567890")
         UUID spielerId,
+        @Schema(description = "Interner Name des Spielers.", example = "Karlchen")
         String name,
+        @Schema(description = "Oeffentlicher Anzeigename.", example = "Karlchen")
         String anzeigeName,
+        @Schema(description = "Avatar-Farbe als Hex-String.", example = "#FF5733")
         String avatarFarbe,
+        @Schema(description = "Ob es sich um einen KI-Spieler handelt.")
         boolean istKi,
+        @Schema(description = "Ob dieser Spieler der anfragende Spieler selbst ist.")
         boolean istSelbst,
+        @Schema(description = "Ob dieser Spieler der aktuelle Geber ist.")
         boolean istGeber,
+        @Schema(description = "Ob dieser Spieler gerade am Zug ist.")
         boolean istAmZug,
+        @Schema(description = "Anzahl verbleibender Handkarten.", example = "10")
         Integer verbleibendeKarten,
+        @Schema(description = "Anzahl gewonnener Stiche in diesem Spiel.", example = "2")
         int gewonneneStiche,
+        @Schema(description = "Partei des Spielers, falls sichtbar.")
         Partei partei,
+        @Schema(description = "Sichtbare Handkarten; null fuer Gegner.")
         List<KarteAntwort> sichtbareHandkarten
     ) {
 
@@ -266,7 +304,17 @@ public record PartieStandAntwort(
         }
     }
 
-    public record KarteAntwort(String id, String farbe, String wert, int exemplarIndex) {
+    @Schema(description = "Darstellung einer einzelnen Spielkarte.")
+    public record KarteAntwort(
+        @Schema(description = "Eindeutige Karten-ID.", example = "HERZ-DAME-0")
+        String id,
+        @Schema(description = "Farbe der Karte.", example = "HERZ")
+        String farbe,
+        @Schema(description = "Wert der Karte.", example = "DAME")
+        String wert,
+        @Schema(description = "Exemplar-Index (0 oder 1 im Doppelkopf-Deck).", example = "0")
+        int exemplarIndex
+    ) {
 
         static KarteAntwort aus(Karte karte) {
             return new KarteAntwort(
@@ -278,7 +326,15 @@ public record PartieStandAntwort(
         }
     }
 
-    public record GespielteKarteAntwort(SpielerPosition spielerPosition, KarteAntwort karte, int reihenfolge) {
+    @Schema(description = "Eine in den Stich gespielte Karte mit Spielerposition und Reihenfolge.")
+    public record GespielteKarteAntwort(
+        @Schema(description = "Position des Spielers, der die Karte gespielt hat.")
+        SpielerPosition spielerPosition,
+        @Schema(description = "Die gespielte Karte.")
+        KarteAntwort karte,
+        @Schema(description = "Reihenfolge innerhalb des Stichs.", example = "1")
+        int reihenfolge
+    ) {
 
         static GespielteKarteAntwort aus(de.locodoko.partie.GespielteKarte gespielteKarte) {
             return new GespielteKarteAntwort(
@@ -302,19 +358,32 @@ public record PartieStandAntwort(
         }
     }
 
-    public record AnsageEreignisAntwort(SpielerPosition spielerPosition, Ansage ansage) {
+    @Schema(description = "Einzelnes Ansage-Ereignis in der Ansage-Historie.")
+    public record AnsageEreignisAntwort(
+        @Schema(description = "Position des ansagenden Spielers.")
+        SpielerPosition spielerPosition,
+        @Schema(description = "Die getaetigte Ansage.")
+        Ansage ansage
+    ) {
 
         static AnsageEreignisAntwort aus(AnsageEreignis ereignis) {
             return new AnsageEreignisAntwort(ereignis.spieler(), ereignis.ansage());
         }
     }
 
+    @Schema(description = "Ein abgeschlossener Stich mit allen gespielten Karten und Ergebnis.")
     public record AbgeschlossenerStichAntwort(
+        @Schema(description = "Nummer des Spiels in der Partie.", example = "1")
         int spielNummer,
+        @Schema(description = "Nummer des Stichs im Spiel.", example = "3")
         int stichNummer,
+        @Schema(description = "Position des aufspielenden Spielers.")
         SpielerPosition aufspielerPosition,
+        @Schema(description = "Position des Stichgewinners.")
         SpielerPosition gewinnerPosition,
+        @Schema(description = "Augenwert des Stichs.", example = "32")
         int augen,
+        @Schema(description = "Alle im Stich gespielten Karten.")
         List<GespielteKarteAntwort> gespielteKarten
     ) {
 
@@ -335,23 +404,39 @@ public record PartieStandAntwort(
         }
     }
 
+    @Schema(description = "Sonderpunkt-Ereignis (z.B. Fuchs gefangen, Karlchen).")
     public record SonderpunktEreignisDto(
+        @Schema(description = "Art des Sonderpunkts.")
         Sonderpunkt art,
+        @Schema(description = "Position des Spielers, der den Sonderpunkt erzielt hat.")
         SpielerPosition taeter,
+        @Schema(description = "Position des betroffenen Gegenspielers.")
         SpielerPosition opfer
     ) {}
 
+    @Schema(description = "Ergebnis des letzten abgeschlossenen Spiels in der Partie.")
     public record LetztesSpielergebnisAntwort(
+        @Schema(description = "Nummer des abgeschlossenen Spiels.", example = "2")
         int spielNummer,
+        @Schema(description = "Typ des Spiels.")
         Spieltyp spieltyp,
+        @Schema(description = "Siegerpartei des Spiels.")
         Partei siegerPartei,
+        @Schema(description = "Gesamter Spielwert inklusive aller Modifikatoren.", example = "4")
         int spielwert,
+        @Schema(description = "Grundwert des Spiels vor Modifikatoren.", example = "2")
         int grundwert,
+        @Schema(description = "Zusatzpunkte durch Absagen.", example = "1")
         int absagePunkte,
+        @Schema(description = "Punkte fuer Sieg gegen die Alten.", example = "1")
         int gegenDieAltenPunkte,
+        @Schema(description = "Multiplikator fuer Solo-Spiele.", example = "1")
         int soloMultiplikator,
+        @Schema(description = "Augen pro Partei (Re/Kontra).")
         Map<Partei, Integer> augenProPartei,
+        @Schema(description = "Spielpunkte pro Spielerposition.")
         Map<SpielerPosition, Integer> spielpunkteProSpieler,
+        @Schema(description = "Sonderpunkte pro Partei.")
         Map<Partei, List<SonderpunktEreignisDto>> sonderpunkteProPartei
     ) {
 

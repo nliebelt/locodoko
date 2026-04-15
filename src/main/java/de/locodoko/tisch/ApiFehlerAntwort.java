@@ -1,5 +1,7 @@
 package de.locodoko.tisch;
 
+import io.swagger.v3.oas.annotations.media.Schema;
+
 /**
  * Strukturierte Fehlerantwort fuer REST-Endpunkte.
  *
@@ -11,5 +13,11 @@ package de.locodoko.tisch;
  * @param fehlerCode  maschinenlesbarer Fehlercode
  * @param nachricht   menschenlesbare Beschreibung des Fehlers
  */
-public record ApiFehlerAntwort(String fehlerCode, String nachricht) {
+@Schema(description = "Strukturierte Fehlerantwort fuer REST-Endpunkte.")
+public record ApiFehlerAntwort(
+    @Schema(description = "Maschinenlesbarer Fehlercode.", example = "SESSION_UNGUELTIG")
+    String fehlerCode,
+    @Schema(description = "Menschenlesbare Fehlerbeschreibung.", example = "Die Spieler-Session ist ungueltig oder abgelaufen.")
+    String nachricht
+) {
 }
