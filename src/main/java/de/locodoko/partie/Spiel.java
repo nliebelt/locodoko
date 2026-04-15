@@ -220,7 +220,9 @@ public final class Spiel {
             SpielerPosition stillesSoloSpieler = erkenneStillesSoloSpieler();
             if (stillesSoloSpieler != null) {
                 return toBuilder()
-                    .trumpfOrdnung(new NormaleTrumpfOrdnung(spielregeln))
+                    .trumpfOrdnung(hatSchweinchen(spielregeln, haende)
+                        ? new SchweinchenTrumpfOrdnung(spielregeln)
+                        : new NormaleTrumpfOrdnung(spielregeln))
                     .spieltyp(Spieltyp.SOLO_TRUMPF)
                     .phase(new Spielphase.Stichphase(Stich.neu(ersterAufspieler), Set.of(), null))
                     .parteien(Parteien.ausSolo(stillesSoloSpieler))
@@ -335,11 +337,15 @@ public final class Spiel {
         Map<SpielerPosition, Hand> neueHaende = kopiereHaende();
         neueHaende.put(spielerPosition, partnerHand.ohneAlle(rueckgabekarten).mitAllen(status.angeboteneTrumpfkarten()));
         neueHaende.put(status.armutSpieler(), handVon(status.armutSpieler()).mitAllen(rueckgabekarten));
+        TrumpfOrdnung neueTrumpfOrdnung = hatSchweinchen(spielregeln, neueHaende)
+            ? new SchweinchenTrumpfOrdnung(spielregeln)
+            : new NormaleTrumpfOrdnung(spielregeln);
         Parteien neueParteien = parteien
             .mitPartei(spielerPosition, Partei.RE)
             .mitOffenenParteienFuerAlle(SpielerPosition.standardReihenfolge());
         SpielerPosition ersterAufspieler = solistAufspieler != null ? solistAufspieler : geber.naechsteImUhrzeigersinn();
         return toBuilder()
+            .trumpfOrdnung(neueTrumpfOrdnung)
             .phase(new Spielphase.Stichphase(Stich.neu(ersterAufspieler), Set.of(), null))
             .haende(neueHaende)
             .parteien(neueParteien)
@@ -711,7 +717,10 @@ public final class Spiel {
         return hoechsterVorbehalt == null ? trumpfOrdnung : switch (hoechsterVorbehalt.ansage()) {
             case SOLO_DAME -> new DamensoloTrumpfOrdnung();
             case SOLO_BUBE -> new BubensoloTrumpfOrdnung();
-            case SOLO_TRUMPF, HOCHZEIT, ARMUT -> new NormaleTrumpfOrdnung(spielregeln);
+            case SOLO_TRUMPF -> new NormaleTrumpfOrdnung(spielregeln);
+            case HOCHZEIT, ARMUT -> hatSchweinchen(spielregeln, haende)
+                ? new SchweinchenTrumpfOrdnung(spielregeln)
+                : new NormaleTrumpfOrdnung(spielregeln);
             case SOLO_TRUMPF_HERZ -> new VariableTrumpfsoloTrumpfOrdnung(Farbe.HERZ, spielregeln);
             case SOLO_TRUMPF_PIK -> new VariableTrumpfsoloTrumpfOrdnung(Farbe.PIK, spielregeln);
             case SOLO_TRUMPF_KREUZ -> new VariableTrumpfsoloTrumpfOrdnung(Farbe.KREUZ, spielregeln);

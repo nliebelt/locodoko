@@ -21,17 +21,17 @@ Hochzeit, Armut, KI (3 Schwierigkeitsgrade), WebSocket, REST-API, Session, Verbi
 Frontend (Phaser 3, AppStore, Szenen-Aufteilung, Animationen, Overlays, Tastatursteuerung),
 Schnellstart, Einladungslink, Spring Modulith Modulstruktur.
 
-**Build:** `mvn test` grün (232 Tests, 0 Failures).
+**Build:** `mvn test` grün (234 Tests, 0 Failures).
 
-**Offene Punkte:** 4 Bugs im Spielbetrieb (BUG-1 behoben), 3 Architektur-Refactorings (R12–R14).
+**Offene Punkte:** 3 Bugs im Spielbetrieb (BUG-1/BUG-2 behoben), 3 Architektur-Refactorings (R12–R14).
 
 ---
 
 ## Notiz
 
-**Zuletzt erledigt (Plan-Run #58):** BUG-1 behoben — in `Spiel.spieleKarte()` wurde `berechneNeuePflichtansagen()` VOR `fortschrittNachVollstaendigemStich()` aufgerufen und verwendete die alten Parteien. Bei Hochzeit-Partner-Bestimmung in einem Stich mit >30 Augen entstand eine Pflichtansage für die falsche Partei (KONTRA statt RE), die niemand erfüllen konnte → KI-Hang. Fix: Reihenfolge getauscht, `berechneNeuePflichtansagen()` erhält jetzt explizit die aktualisierten Parteien als Parameter. Neuer Regressionstest in `HochzeitTest`. `mvn test` grün (232 Tests).
+**Zuletzt erledigt (Plan-Run #59):** BUG-2 behoben — Schweinchen (beide Karo-Asse als höchste Trümpfe) wurde nach `loeseVorbehalteAuf()` verworfen, weil `trumpfOrdnungFuer()` bei HOCHZEIT/ARMUT eine neue `NormaleTrumpfOrdnung` erzeugte statt die `SchweinchenTrumpfOrdnung` beizubehalten. Drei Fix-Stellen: (1) `trumpfOrdnungFuer()` prüft jetzt `hatSchweinchen()` für HOCHZEIT/ARMUT, (2) Stilles-Solo-Pfad in `loeseVorbehalteAuf()` prüft Schweinchen, (3) `nimmArmutAn()` bewertet Schweinchen nach Kartentausch neu. 2 neue Regressionstests (Hochzeit+Schweinchen, Armut-Tausch+Schweinchen). `mvn test` grün (234 Tests).
 
-**Nächster Schritt:** BUG-2 (Schweinchen zeigt keine Wirkung) oder BUG-5 (DKV-Turnier-Preset), dann BUG-3/BUG-4 (Frontend).
+**Nächster Schritt:** BUG-5 (DKV-Turnier-Preset: Spiel schließt nicht ab), dann BUG-3/BUG-4 (Frontend).
 
 **Offene Fragen:** Keine.
 
@@ -70,7 +70,7 @@ Der Event-Flow sieht korrekt aus. Wahrscheinlicher Fehlerort ist
 
 ---
 
-### BUG-2: Schweinchen zeigt keine Wirkung [ ]
+### BUG-2: Schweinchen zeigt keine Wirkung [x]
 
 **Priorität: Hoch** — Spielregel wird nicht korrekt angewendet.
 
