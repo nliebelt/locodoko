@@ -67,9 +67,9 @@ export function ladeKartenBilderVorab(szene: Phaser.Scene): void {
       }
     }
   }
-  // Kartenrücken als separates SVG laden
+  // Kartenrücken als separates JPG laden
   if (!szene.textures.exists(TEXTUR_KARTE_RUECKSEITE)) {
-    szene.load.image(TEXTUR_KARTE_RUECKSEITE, '/assets/cards/card_back.svg');
+    szene.load.image(TEXTUR_KARTE_RUECKSEITE, '/assets/cards/card_back3.png');
   }
 }
 

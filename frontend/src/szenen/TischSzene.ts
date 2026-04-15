@@ -78,10 +78,10 @@ function berechneKartenAbstand(breite: number, hoehe: number): { horizontal: num
 
 function berechneLayout(breite: number, hoehe: number): TischLayout {
   return {
-    SUED: { x: breite * 0.5, y: hoehe * 0.82, kartenX: breite * 0.28, kartenY: hoehe * 0.87, kartenWinkel: 0 },
-    WEST: { x: breite * 0.12, y: hoehe * 0.5, kartenX: breite * 0.06, kartenY: hoehe * 0.37, kartenWinkel: 90 },
-    NORD: { x: breite * 0.5, y: hoehe * 0.18, kartenX: breite * 0.28, kartenY: hoehe * 0.08, kartenWinkel: 0 },
-    OST: { x: breite * 0.88, y: hoehe * 0.5, kartenX: breite * 0.94, kartenY: hoehe * 0.37, kartenWinkel: 90 }
+    SUED: { x: breite * 0.5, y: hoehe * 0.82, kartenX: breite * 0.28, kartenY: hoehe * 0.91, kartenWinkel: 0 },
+    WEST: { x: breite * 0.12, y: hoehe * 0.5, kartenX: breite * 0.03, kartenY: hoehe * 0.37, kartenWinkel: 90 },
+    NORD: { x: breite * 0.5, y: hoehe * 0.18, kartenX: breite * 0.28, kartenY: hoehe * 0.01, kartenWinkel: 0 },
+    OST: { x: breite * 0.88, y: hoehe * 0.5, kartenX: breite * 0.97, kartenY: hoehe * 0.37, kartenWinkel: 90 }
   };
 }
 
@@ -94,21 +94,44 @@ function nameplatePositionFuer(
   hoehe: number
 ): { x: number; y: number } {
   switch (spielerPosition) {
-    case 'NORD': return { x: breite * 0.12, y: hoehe * 0.15 };
-    case 'SUED': return { x: breite * 0.68, y: hoehe * 0.85 };
+    case 'NORD': return { x: breite * 0.5, y: hoehe * 0.15 };  // wird durch inline-Logik überschrieben
+    case 'SUED': return { x: breite * 0.5, y: hoehe * 0.85 };  // wird durch inline-Logik überschrieben
     case 'WEST': return { x: breite * 0.14, y: hoehe * 0.84 };
     case 'OST':  return { x: breite * 0.86, y: hoehe * 0.16 };
   }
 }
 
-// Stich-Stapel: Position des gestapelten Kartenf‌ächers fuer jeden Spieler.
-// SUED/NORD: rechts vom Kartenfaecher. WEST: zwischen Kartenende und Nameplate. OST: zwischen Nameplate und Kartenstapel.
-function stichStapelPositionFuer(position: SpielerPosition, breite: number, hoehe: number): { x: number; y: number } {
+// Stich-Stapel: dynamisch relativ zur tatsaechlichen Kartenstapel-Ausdehnung.
+// SUED/NORD: links/rechts vom horizontalen Faecher (analog Nameplate-Logik, gegenüber).
+// WEST/OST: oberhalb/unterhalb des vertikalen Stapels, gedreht 90°.
+function stichStapelPositionFuer(
+  position: SpielerPosition,
+  breite: number,
+  hoehe: number,
+  kartenAnzahl: number
+): { x: number; y: number; winkel: number } {
+  const kAbstand = berechneKartenAbstand(breite, hoehe);
+  const kGroesse = berechneKartenGroesse(breite);
+  const layout = berechneLayout(breite, hoehe);
+  const abstand = 12;
+
   switch (position) {
-    case 'SUED': return { x: breite * 0.84, y: hoehe * 0.90 };
-    case 'NORD': return { x: breite * 0.84, y: hoehe * 0.10 };
-    case 'WEST': return { x: breite * 0.06, y: hoehe * 0.78 };
-    case 'OST':  return { x: breite * 0.94, y: hoehe * 0.27 };
+    case 'SUED': {
+      const fHalbe = kartenAnzahl > 0 ? ((kartenAnzahl - 1) * kAbstand.horizontal + kGroesse.w) / 2 : 0;
+      return { x: breite / 2 - fHalbe - kGroesse.w / 2 - abstand, y: hoehe * 0.90, winkel: 0 };
+    }
+    case 'NORD': {
+      const fHalbe = kartenAnzahl > 0 ? ((kartenAnzahl - 1) * kAbstand.horizontal + kGroesse.w) / 2 : 0;
+      return { x: breite / 2 + fHalbe + kGroesse.w / 2 + abstand, y: hoehe * 0.10, winkel: 0 };
+    }
+    case 'WEST': {
+      const fanOben = layout.WEST.kartenY - kGroesse.h / 2;
+      return { x: layout.WEST.kartenX, y: fanOben - abstand, winkel: 90 };
+    }
+    case 'OST': {
+      const fanUnten = layout.OST.kartenY + (kartenAnzahl > 0 ? (kartenAnzahl - 1) * kAbstand.vertikal : 0) + kGroesse.h / 2;
+      return { x: layout.OST.kartenX, y: fanUnten + 50, winkel: 90 };
+    }
   }
 }
 
@@ -407,84 +430,11 @@ export class TischSzene extends Phaser.Scene {
     this.aktualisiereHintergrund(modell.tischhintergrund, breite, hoehe);
 
     const ebene = this.add.container(0, 0);
-    ebene.add(this.add.ellipse(mitteX, mitteY, tischBreite, tischHoehe, 0x081c15, 0.32).setStrokeStyle(8, 0xd8f3dc, 0.42));
 
     this.renderStichmitte(ebene, modell, mitteX, mitteY, breite, hoehe);
 
     modell.spieler.forEach((spieler) => {
-      const npPos = nameplatePositionFuer(spieler.position, breite, hoehe);
-      // Nameplate: rechteckig; SUED/NORD horizontal (breit, flach), WEST/OST vertikal (schmal, hoeher)
-      const istHorizontal = spieler.position === 'SUED' || spieler.position === 'NORD';
-      const nameplateBreite = istHorizontal ? Math.max(120, breite * 0.11) : Math.max(120, breite * 0.07);
-      const nameplateHoehe = istHorizontal ? Math.max(54, hoehe * 0.075) : Math.max(80, hoehe * 0.11);
-      // Aktiv-Hervorhebung: goldenes Glow-Rechteck + dicker Rahmen; sonst halbtransparentes Dunkelgruen
-      const rahmenFarbe = spieler.istAktivHervorgehoben ? 0xffe082 : 0xd8f3dc;
-      const rahmenStaerke = spieler.istAktivHervorgehoben ? 4 : 1;
-      const hgFarbe = spieler.istAktivHervorgehoben ? 0x1a4a20 : 0x0d3d1e;
-      if (spieler.istAktivHervorgehoben) {
-        // Aeusserer Glow-Ring
-        ebene.add(
-          this.add.rectangle(npPos.x, npPos.y, nameplateBreite + 10, nameplateHoehe + 10, 0xffe082, 0.18)
-        );
-      }
-      ebene.add(
-        this.add.rectangle(npPos.x, npPos.y, nameplateBreite, nameplateHoehe, hgFarbe, 0.95)
-          .setStrokeStyle(rahmenStaerke, rahmenFarbe, 0.95)
-      );
-      // Name (fett, oben) mit Avatar-Farbkreis
-      const nameSchriftGroesse = Math.round(Math.max(13, breite * 0.012));
-      const avatarRadius = Math.round(nameSchriftGroesse * 0.55);
-      if (spieler.avatarFarbe) {
-        const farbWert = parseInt(spieler.avatarFarbe.replace('#', ''), 16);
-        ebene.add(
-          this.add.circle(
-            npPos.x - Math.round(nameplateBreite * 0.38),
-            npPos.y - Math.round(nameplateHoehe * 0.28),
-            avatarRadius, farbWert, 1
-          )
-        );
-      }
-      ebene.add(this.add.text(npPos.x, npPos.y - Math.round(nameplateHoehe * 0.28), spieler.anzeigeName, {
-        color: '#f8f9fa',
-        fontSize: `${nameSchriftGroesse}px`,
-        fontStyle: 'bold'
-      }).setOrigin(0.5));
-      // Typ-Badge: [Du] / [KI] / [Mensch]
-      const typLabel = spieler.istSelbst ? '[Du]' : spieler.istMensch ? '[Mensch]' : '[KI]';
-      const kleinSchrift = Math.round(Math.max(10, breite * 0.009));
-      ebene.add(this.add.text(npPos.x, npPos.y, typLabel, {
-        color: spieler.istSelbst ? '#ffd166' : '#a3c4a8',
-        fontSize: `${kleinSchrift}px`
-      }).setOrigin(0.5));
-      // Stiche-Zahl + Geber-Badge
-      const sticheText = spieler.istGeber ? `${spieler.stiche} Stiche [G]` : `${spieler.stiche} Stiche`;
-      ebene.add(this.add.text(npPos.x, npPos.y + Math.round(nameplateHoehe * 0.28), sticheText, {
-        color: spieler.istGeber ? '#ffd166' : '#d8f3dc',
-        fontSize: `${kleinSchrift}px`
-      }).setOrigin(0.5));
-      // Partei-Badge: [RE] (gold) / [KONTRA] (blau) wenn bekannt
-      if (spieler.partei) {
-        ebene.add(this.add.text(npPos.x, npPos.y - Math.round(nameplateHoehe * 0.58), `[${spieler.partei}]`, {
-          color: spieler.partei === 'RE' ? '#ffd166' : '#90caf9',
-          fontSize: `${kleinSchrift}px`,
-          fontStyle: 'bold'
-        }).setOrigin(0.5));
-      }
-      // Ansage-Badges: laufende Ansagen (Keine90/60/30/Schwarz) dauerhaft im Nameplate
-      const ansageBadgeLabels: Partial<Record<string, string>> = {
-        KEINE_90: '[K90]', KEINE_60: '[K60]', KEINE_30: '[K30]', SCHWARZ: '[S]'
-      };
-      const spielerAnsagen = modell.ansageHistorie.filter(
-        (a) => a.position === spieler.position && ansageBadgeLabels[a.ansage] !== undefined
-      );
-      if (spielerAnsagen.length > 0) {
-        const badgeText = spielerAnsagen.map((a) => ansageBadgeLabels[a.ansage]).join(' ');
-        ebene.add(this.add.text(npPos.x, npPos.y + Math.round(nameplateHoehe * 0.58), badgeText, {
-          color: '#ff9800',
-          fontSize: `${kleinSchrift}px`,
-          fontStyle: 'bold'
-        }).setOrigin(0.5));
-      }
+      this.renderNameplate(ebene, spieler, modell, layout, breite, hoehe);
       this.renderKartenFaecher(ebene, layout, spieler, modell);
     });
 
@@ -525,12 +475,22 @@ export class TischSzene extends Phaser.Scene {
       if (spieler.stiche <= 0) {
         return;
       }
-      const pos = stichStapelPositionFuer(spieler.position, breite, hoehe);
+      const kartenAnzahl = spieler.sichtbareHandkarten.length > 0
+        ? spieler.sichtbareHandkarten.length
+        : Math.max(spieler.verbleibendeKarten, 0);
+      const pos = stichStapelPositionFuer(spieler.position, breite, hoehe, kartenAnzahl);
       const anzahlSichtbar = Math.min(4, spieler.stiche);
+      const istVertikal = spieler.position === 'SUED' || spieler.position === 'NORD';
 
       for (let i = 0; i < anzahlSichtbar; i++) {
-        const yVersatz = -(anzahlSichtbar - 1 - i) * versatzPx;
-        ebene.add(this.erstelleKartenansicht(pos.x, pos.y + yVersatz, stapelW, stapelH, { verdeckt: true }).setAlpha(0.88));
+        const versatz = -(anzahlSichtbar - 1 - i) * versatzPx;
+        const kx = pos.x + (istVertikal ? 0 : versatz);
+        const ky = pos.y + (istVertikal ? versatz : 0);
+        ebene.add(
+          this.erstelleKartenansicht(kx, ky, stapelW, stapelH, { verdeckt: true })
+            .setAngle(pos.winkel)
+            .setAlpha(0.88)
+        );
       }
 
       const schriftGroesse = Math.round(Math.max(10, breite * 0.009));
@@ -690,6 +650,118 @@ export class TischSzene extends Phaser.Scene {
   }
 
 
+  private renderNameplate(
+    ebene: Phaser.GameObjects.Container,
+    spieler: TischAnsichtModell['spieler'][number],
+    modell: TischAnsichtModell,
+    layout: TischLayout,
+    breite: number,
+    hoehe: number
+  ): void {
+    const npBreite = Math.max(120, breite * 0.11);
+    const npHoehe = Math.max(54, hoehe * 0.075);
+    const kAbstand = berechneKartenAbstand(breite, hoehe);
+    const kGroesse = berechneKartenGroesse(breite);
+    const kartenAnzahl = spieler.sichtbareHandkarten.length > 0
+      ? spieler.sichtbareHandkarten.length
+      : Math.max(spieler.verbleibendeKarten, 0);
+
+    // Position: dynamisch relativ zur tatsaechlichen Faecherausdehnung
+    let pos: { x: number; y: number };
+    if (spieler.position === 'SUED') {
+      const fHalbe = kartenAnzahl > 0 ? ((kartenAnzahl - 1) * kAbstand.horizontal + kGroesse.w) / 2 : 0;
+      pos = {
+        x: Math.min(breite / 2 + fHalbe + npBreite / 2 + 40, breite - npBreite / 2 - 4),
+        y: hoehe * 0.85
+      };
+    } else if (spieler.position === 'NORD') {
+      const fHalbe = kartenAnzahl > 0 ? ((kartenAnzahl - 1) * kAbstand.horizontal + kGroesse.w) / 2 : 0;
+      pos = {
+        x: Math.max(breite / 2 - fHalbe - npBreite / 2 - 20, npBreite / 2 + 4),
+        y: hoehe * 0.15
+      };
+    } else if (spieler.position === 'WEST') {
+      const fanUnten = layout.WEST.kartenY + (kartenAnzahl > 0 ? (kartenAnzahl - 1) * kAbstand.vertikal : 0) + kGroesse.h / 2;
+      pos = {
+        x: Math.max(npBreite / 2 + 4, layout.WEST.kartenX),
+        y: Math.min(fanUnten + npHoehe / 2 + 50, hoehe - npHoehe / 2 - 4)
+      };
+    } else {
+      const fanOben = layout.OST.kartenY - kGroesse.h / 2;
+      pos = {
+        x: Math.min(breite - npBreite / 2 - 4, layout.OST.kartenX),
+        y: Math.max(fanOben - npHoehe / 2 - 12, npHoehe / 2 + 4)
+      };
+    }
+
+    // Box — abgerundete Ecken wie Karten, gleiche Randstaerke und Farbe
+    const radius = Math.max(6, Math.round(npHoehe * 0.15));
+    const aussenRahmen = Math.max(2, Math.round(npHoehe * 0.04)); // ~3px, analog Karte
+    const hgFarbe = spieler.istAktivHervorgehoben ? 0x1a4a20 : 0x0d3d1e;
+    const g = this.add.graphics();
+    // Glow-Ring bei aktivem Spieler
+    if (spieler.istAktivHervorgehoben) {
+      g.fillStyle(0xffe082, 0.18);
+      g.fillRoundedRect(pos.x - npBreite / 2 - 5, pos.y - npHoehe / 2 - 5, npBreite + 10, npHoehe + 10, radius + 3);
+    }
+    // Hintergrund
+    g.fillStyle(hgFarbe, 0.55);
+    g.fillRoundedRect(pos.x - npBreite / 2, pos.y - npHoehe / 2, npBreite, npHoehe, radius);
+    // Äußerer Rand: aktiv = gold, sonst dunkel wie Karte
+    g.lineStyle(aussenRahmen, spieler.istAktivHervorgehoben ? 0xffe082 : 0x111111, spieler.istAktivHervorgehoben ? 1 : 0.9);
+    g.strokeRoundedRect(pos.x - npBreite / 2, pos.y - npHoehe / 2, npBreite, npHoehe, radius);
+    // Innerer heller Rand (wie Karte)
+    g.lineStyle(1, 0xe5e7eb, 0.4);
+    g.strokeRoundedRect(pos.x - npBreite / 2 + aussenRahmen, pos.y - npHoehe / 2 + aussenRahmen, npBreite - aussenRahmen * 2, npHoehe - aussenRahmen * 2, Math.max(3, radius - aussenRahmen));
+    ebene.add(g);
+
+    // Schriftgroessen
+    const nameSchrift = Math.round(Math.max(15, breite * 0.014));
+    const kleinSchrift = Math.round(Math.max(10, breite * 0.009));
+
+    // Avatar-Farbkreis
+    if (spieler.avatarFarbe) {
+      const farbWert = parseInt(spieler.avatarFarbe.replace('#', ''), 16);
+      ebene.add(this.add.circle(
+        pos.x - Math.round(npBreite * 0.38),
+        pos.y - Math.round(npHoehe * 0.22),
+        Math.round(nameSchrift * 0.55), farbWert, 1
+      ));
+    }
+
+    // Zeile 1: Name
+    ebene.add(this.add.text(pos.x, pos.y - Math.round(npHoehe * 0.22), spieler.anzeigeName, {
+      color: '#f8f9fa',
+      fontSize: `${nameSchrift}px`,
+      fontStyle: 'bold'
+    }).setOrigin(0.5));
+
+    // Partei-Badge: oberhalb der Box
+    if (spieler.partei) {
+      ebene.add(this.add.text(pos.x, pos.y - Math.round(npHoehe / 2 + 10), spieler.partei, {
+        color: spieler.partei === 'RE' ? '#ffd166' : '#90caf9',
+        fontSize: `${kleinSchrift}px`,
+        fontStyle: 'bold'
+      }).setOrigin(0.5));
+    }
+
+    // Zeile 2: Typ · Stiche · Geber · Ansagen
+    const typLabel = spieler.istSelbst ? 'Du' : spieler.istMensch ? 'Mensch' : 'KI';
+    const ansageBadges: Partial<Record<string, string>> = {
+      KEINE_90: 'K90', KEINE_60: 'K60', KEINE_30: 'K30', SCHWARZ: 'S'
+    };
+    const ansageSuffix = modell.ansageHistorie
+      .filter((a) => a.position === spieler.position && ansageBadges[a.ansage] !== undefined)
+      .map((a) => ansageBadges[a.ansage])
+      .join(' ');
+    const geberSuffix = spieler.istGeber ? ' G' : '';
+    const zeile2 = `${typLabel} · ${spieler.stiche} Stiche${geberSuffix}${ansageSuffix ? ' · ' + ansageSuffix : ''}`;
+    ebene.add(this.add.text(pos.x, pos.y + Math.round(npHoehe * 0.22), zeile2, {
+      color: spieler.istGeber ? '#ffd166' : '#a3c4a8',
+      fontSize: `${kleinSchrift}px`
+    }).setOrigin(0.5));
+  }
+
   private renderKartenFaecher(
     ebene: Phaser.GameObjects.Container,
     layout: TischLayout,
@@ -708,23 +780,33 @@ export class TischSzene extends Phaser.Scene {
     const kartenAbstand = berechneKartenAbstand(szBreite, szHoehe);
     const auswahlVersatz = Math.round(kgroesse.h * 0.19);  // ≈ 24 bei Kartenhöhe 124
 
+    const istHorizontalesLayout = spieler.position === 'SUED' || spieler.position === 'NORD';
+    const startX = istHorizontalesLayout
+      ? szBreite / 2 - ((kartenAnzahl - 1) * kartenAbstand.horizontal) / 2
+      : position.kartenX;
+    // Faecher-Winkel: [Basiswinkel, Schrittweite] pro Position
+    // NORD/OST: negativer Schritt = gespiegelt; WEST/OST: groessere Schrittweite = breiter gespreizt
+    const [fanBasis, fanSchritt]: [number, number] = {
+      SUED: [-12,  5],
+      NORD: [ 12, -5],
+      WEST: [ 78,  5],
+      OST:  [102, -5],
+    }[spieler.position] as [number, number];
+    // NORD und OST: Index umkehren damit Karten aus Gegner-Perspektive lesbar sind
+    const istGespiegelt = spieler.position === 'NORD' || spieler.position === 'OST';
+    const animationAktiv = this.spielzugAnimationAktiv || (this.animationen?.animationLaeuft ?? false);
+
     for (let index = 0; index < kartenAnzahl; index += 1) {
-      const abstand = spieler.position === 'SUED' || spieler.position === 'NORD'
-        ? index * kartenAbstand.horizontal
-        : index * kartenAbstand.vertikal;
-      const x = (spieler.position === 'SUED' || spieler.position === 'NORD') ? position.kartenX + abstand : position.kartenX;
-      const y = (spieler.position === 'SUED' || spieler.position === 'NORD') ? position.kartenY : position.kartenY + abstand;
-      const winkel = spieler.position === 'SUED'
-        ? -12 + index * 3
-        : spieler.position === 'NORD'
-          ? 12 - index * 3
-          : spieler.position === 'WEST'
-            ? 78 + index * 3
-            : 102 - index * 3;
+      const fanIndex = istGespiegelt ? kartenAnzahl - 1 - index : index;
+      const abstand = istHorizontalesLayout
+        ? fanIndex * kartenAbstand.horizontal
+        : fanIndex * kartenAbstand.vertikal;
+      const x = istHorizontalesLayout ? startX + abstand : position.kartenX;
+      const y = istHorizontalesLayout ? position.kartenY : position.kartenY + abstand;
+      const winkel = fanBasis + fanIndex * fanSchritt;
       const karte = sichtbareHandkarten?.[index];
       const istSpielbar = karte ? modell.spielbareKarten.includes(karte.id) : false;
       const istArmutauswahl = karte ? (armutKarten?.has(karte.id) ?? false) : false;
-      const animationAktiv = this.spielzugAnimationAktiv || (this.animationen?.animationLaeuft ?? false);
       const istInteraktiv = !animationAktiv && (istSpielbar || istArmutauswahl);
       const istAusgewaehlt = karte ? this.ausgewaehlteArmutKarten.has(karte.id) : false;
       // Tastatur-Markierung: die spielbare Karte am aktuellen Index ist visuell hervorgehoben
@@ -873,6 +955,14 @@ export class TischSzene extends Phaser.Scene {
     this.wartendeKartenId = karteId;
     await this.animationen?.animiereKarteAusspielen(kartenobjekte, ziel);
     appStore.spieleKarte(karteId);
+    // Safety-Timeout: Falls das Backend nicht antwortet und synchronisiereAnimationszustand
+    // den Flag nie zuruecksetzt, nach 4s force-resetten damit die Karten nicht dauerhaft gesperrt bleiben.
+    window.setTimeout(() => {
+      if (this.wartendeKartenId === karteId) {
+        this.spielzugAnimationAktiv = false;
+        this.wartendeKartenId = null;
+      }
+    }, 4000);
   }
 
   private async starteFolgeanimationen(vorherigesModell: TischAnsichtModell | null, aktuellesModell: TischAnsichtModell): Promise<void> {
@@ -884,7 +974,11 @@ export class TischSzene extends Phaser.Scene {
     const breite = this.scale.gameSize.width;
     const hoehe = this.scale.gameSize.height;
     const slotPositionen = stichSlotPositionen(breite / 2, hoehe / 2, breite, hoehe);
-    const ziel = stichStapelPositionFuer(abgeschlossenerStich.gewinnerPosition, breite, hoehe);
+    const gewinnSpieler = aktuellesModell.spieler.find((s) => s.position === abgeschlossenerStich.gewinnerPosition);
+    const gewinnKartenAnzahl = gewinnSpieler
+      ? (gewinnSpieler.sichtbareHandkarten.length > 0 ? gewinnSpieler.sichtbareHandkarten.length : Math.max(gewinnSpieler.verbleibendeKarten, 0))
+      : 0;
+    const ziel = stichStapelPositionFuer(abgeschlossenerStich.gewinnerPosition, breite, hoehe, gewinnKartenAnzahl);
     const kgroesse = berechneKartenGroesse(breite);
     const animierteKarten = abgeschlossenerStich.gespielteKarten.map((karte) => {
       const slot = slotPositionen[karte.position];
@@ -1616,8 +1710,21 @@ export class TischSzene extends Phaser.Scene {
     const abstand = Math.round(breite * 0.008);
     const ansagen = modell.moeglicheAnsagen;
     const gesamtBreite = ansagen.length * (btnW + abstand) - abstand;
-    const startX = breite / 2 - gesamtBreite / 2 + btnW / 2;
-    const y = hoehe * 0.70;
+
+    // X-Position: unter dem SUED-Nameplate (analog zu renderNameplate)
+    const npBreite = Math.max(120, breite * 0.11);
+    const npHoehe = Math.max(54, hoehe * 0.075);
+    const suedspieler = modell.spieler.find((s) => s.position === 'SUED');
+    const sKartenAnzahl = suedspieler
+      ? (suedspieler.sichtbareHandkarten.length > 0 ? suedspieler.sichtbareHandkarten.length : Math.max(suedspieler.verbleibendeKarten, 0))
+      : 0;
+    const kAbstand = berechneKartenAbstand(breite, hoehe);
+    const kGroesse = berechneKartenGroesse(breite);
+    const fHalbe = sKartenAnzahl > 0 ? ((sKartenAnzahl - 1) * kAbstand.horizontal + kGroesse.w) / 2 : 0;
+    const npX = Math.min(breite / 2 + fHalbe + npBreite / 2 + 40, breite - npBreite / 2 - 4);
+
+    const startX = npX - gesamtBreite / 2 + btnW / 2;
+    const y = Math.min(hoehe * 0.85 + npHoehe / 2 + btnH / 2 + 8, hoehe - btnH / 2 - 4);
 
     ansagen.forEach((ansage, index) => {
       this.erstellePhaserButton(
