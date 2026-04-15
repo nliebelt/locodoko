@@ -103,9 +103,17 @@ public class KiOrchestrierungService {
                     || laufendesSpiel.phase() instanceof Spielphase.GesamtstandAktualisieren) {
                 LOGGER.info("Spiel abschliessen und naechstes starten [spielNr={}, tischId={}]",
                     laufendesSpielEntity.spielNummer(), tisch.id());
-                Partie partie = rekonstruierePartieDomain(tisch, laufendesSpielEntity, laufendesSpiel);
-                Partie neuePartie = partie.schliesseAktuellesSpielAbUndStarteNaechstes();
-                uebernehmeDomainPartieAbschluss(tisch, laufendesSpielEntity, neuePartie);
+                try {
+                    Partie partie = rekonstruierePartieDomain(tisch, laufendesSpielEntity, laufendesSpiel);
+                    Partie neuePartie = partie.schliesseAktuellesSpielAbUndStarteNaechstes();
+                    uebernehmeDomainPartieAbschluss(tisch, laufendesSpielEntity, neuePartie);
+                } catch (Exception e) {
+                    LOGGER.error(
+                        "Fehler beim Abschliessen von Spiel {} an Tisch {} – Partie bleibt im letzten konsistenten Stand: {}",
+                        laufendesSpielEntity.spielNummer(), tisch.id(), e.getMessage(), e
+                    );
+                    return;
+                }
                 continue;
             }
             SpielerPosition erwarteterSpieler = laufendesSpiel.erwarteterSpieler().orElse(null);
@@ -194,7 +202,14 @@ public class KiOrchestrierungService {
         Spiel laufendesSpiel = SpielPersistenzAdapter.zuDomainSpiel(laufendesSpielEntity, tisch.konfiguration().alsSpielregeln());
         if (!(laufendesSpiel.phase() instanceof Spielphase.Stichphase)) {
             // Nicht-Stichphase: vollstaendige Orchestrierung uebergeben
-            automatisiereTisch(tisch);
+            try {
+                automatisiereTisch(tisch);
+            } catch (Exception e) {
+                LOGGER.error(
+                    "Fehler bei verzoegerter KI-Orchestrierung an Tisch {} – Partie bleibt im letzten konsistenten Stand: {}",
+                    tisch.id(), e.getMessage(), e
+                );
+            }
             return;
         }
         SpielerPosition erwarteterSpieler = laufendesSpiel.erwarteterSpieler().orElse(null);

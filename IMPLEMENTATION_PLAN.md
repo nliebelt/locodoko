@@ -29,9 +29,9 @@ Schnellstart, Einladungslink, Spring Modulith Modulstruktur.
 
 ## Notiz
 
-**Zuletzt erledigt (Plan-Run #59):** BUG-2 behoben — Schweinchen (beide Karo-Asse als höchste Trümpfe) wurde nach `loeseVorbehalteAuf()` verworfen, weil `trumpfOrdnungFuer()` bei HOCHZEIT/ARMUT eine neue `NormaleTrumpfOrdnung` erzeugte statt die `SchweinchenTrumpfOrdnung` beizubehalten. Drei Fix-Stellen: (1) `trumpfOrdnungFuer()` prüft jetzt `hatSchweinchen()` für HOCHZEIT/ARMUT, (2) Stilles-Solo-Pfad in `loeseVorbehalteAuf()` prüft Schweinchen, (3) `nimmArmutAn()` bewertet Schweinchen nach Kartentausch neu. 2 neue Regressionstests (Hochzeit+Schweinchen, Armut-Tausch+Schweinchen). `mvn test` grün (234 Tests).
+**Zuletzt erledigt (Plan-Run #60):** BUG-5 untersucht — DKV-Turnier-Preset Spielabschluss. Domain-Level und Integration-Tests (KiOrchestrierungService mit DKV-Regeln, 2 Spiele, 4 KI-Spieler) bestätigen: Spielablauf funktioniert korrekt. Eigentliche Ursache war fehlende Fehlerbehandlung im AUSWERTUNG-Pfad von `automatisiereTisch()` — Exceptions bei Spielabschluss propagierten unkontrolliert und hängten die Partie permanent. Fix: try-catch um AUSWERTUNG-Block in `automatisiereTisch()` und um ungeschützten `automatisiereTisch()`-Aufruf in `fuehreVerzoegertenKiZugAus()`. 3 neue Tests (2 PartieTest, 1 KiOrchestrierungServiceIntegrationTest). `mvn test` grün (237 Tests).
 
-**Nächster Schritt:** BUG-5 (DKV-Turnier-Preset: Spiel schließt nicht ab), dann BUG-3/BUG-4 (Frontend).
+**Nächster Schritt:** BUG-3 (Animations-Queue-Aufstauung), dann BUG-4 (Browser-Reload).
 
 **Offene Fragen:** Keine.
 
@@ -150,7 +150,7 @@ aber nur bei `shutdown()` gerufen — nicht beim Neuaufbau nach Snapshot.
 
 ---
 
-### BUG-5: DKV-Turnier-Preset: Spiel schließt nicht ab [ ]
+### BUG-5: DKV-Turnier-Preset: Spiel schließt nicht ab [x]
 
 **Priorität: Hoch** — Spiel unbenutzbar mit DKV-Preset.
 

@@ -6,6 +6,8 @@ import de.locodoko.karten.Spielregeln;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class PartieTest {
@@ -147,6 +149,81 @@ class PartieTest {
             Karte karte = aktuellesSpiel.gueltigeKartenFuer(spieler).getFirst();
             aktuellesSpiel = aktuellesSpiel.spieleKarte(spieler, karte);
         }
+        return aktuellesSpiel.werteAus();
+    }
+
+    @Test
+    void dkvRegelnSpielSchlisstKorrektAb() {
+        // BUG-5: DKV-Turnier-Preset (alle Sonderregeln deaktiviert, mit Neunen) —
+        // Spiel muss nach 12 Stichen korrekt ausgewertet und die Partie fortgesetzt werden.
+        Spielregeln dkvRegeln = Spielregeln.dkvRegeln();
+        Partie partie = Partie.neu(2, SpielerPosition.SUED, dkvRegeln);
+
+        // Erstes Spiel durchspielen und abschliessen
+        Kartendeck deck1 = Kartendeck.neu(dkvRegeln).gemischt(new java.util.Random(42));
+        partie = partie.starteNaechstesSpiel(deck1);
+        Spiel erstesSpiel = spieleAutomatischZuEndeMitRegeln(partie.aktuellesSpiel(), dkvRegeln);
+        assertTrue(erstesSpiel.ergebnis().isPresent(),
+            "Das Spiel muss nach Auswertung ein Ergebnis haben.");
+        partie = partie.mitAktuellemSpiel(erstesSpiel);
+        partie = partie.schliesseAktuellesSpielAb();
+
+        assertFalse(partie.istBeendet(),
+            "Die Partie darf nach dem ersten von zwei Spielen nicht beendet sein.");
+        assertEquals(1, partie.abgeschlosseneSpiele().size());
+
+        // Zweites Spiel durchspielen
+        Kartendeck deck2 = Kartendeck.neu(dkvRegeln).gemischt(new java.util.Random(43));
+        partie = partie.starteNaechstesSpiel(deck2);
+        Spiel zweitesSpiel = spieleAutomatischZuEndeMitRegeln(partie.aktuellesSpiel(), dkvRegeln);
+        assertTrue(zweitesSpiel.ergebnis().isPresent());
+        partie = partie.mitAktuellemSpiel(zweitesSpiel);
+        partie = partie.schliesseAktuellesSpielAb();
+
+        assertTrue(partie.istBeendet(),
+            "Die DKV-Partie muss nach dem zweiten Spiel korrekt als beendet markiert sein.");
+        assertEquals(2, partie.abgeschlosseneSpiele().size());
+        assertEquals(0, partie.gesamtpunktestand().values().stream().mapToInt(Integer::intValue).sum(),
+            "Der Gesamtpunktestand muss nullsummig bleiben.");
+    }
+
+    @Test
+    void dkvRegelnSchliesseAbUndStarteNaechstes() {
+        // BUG-5: Kombinierte Methode schliesseAktuellesSpielAbUndStarteNaechstes mit DKV-Regeln
+        Spielregeln dkvRegeln = Spielregeln.dkvRegeln();
+        Partie partie = Partie.neu(3, SpielerPosition.SUED, dkvRegeln);
+        Kartendeck deck = Kartendeck.neu(dkvRegeln).gemischt(new java.util.Random(42));
+        partie = partie.starteNaechstesSpiel(deck);
+
+        // Spiel bis AUSWERTUNG spielen (NICHT werteAus aufrufen — das macht die Methode)
+        Spiel spielInAuswertung = spieleBisAuswertungMitRegeln(partie.aktuellesSpiel(), dkvRegeln);
+        assertInstanceOf(Spielphase.Auswertung.class, spielInAuswertung.phase());
+        partie = partie.mitAktuellemSpiel(spielInAuswertung);
+
+        Partie neuePartie = partie.schliesseAktuellesSpielAbUndStarteNaechstes();
+
+        assertEquals(1, neuePartie.abgeschlosseneSpiele().size(),
+            "Nach dem ersten DKV-Spiel muss genau ein abgeschlossenes Spiel vorliegen.");
+        assertTrue(neuePartie.aktuellesSpielOptional().isPresent(),
+            "Die DKV-Partie muss nach dem Abschluss ein neues laufendes Spiel besitzen.");
+    }
+
+    private Spiel spieleBisAuswertungMitRegeln(Spiel spiel, Spielregeln regeln) {
+        Spiel aktuellesSpiel = spiel.teileKartenAus();
+        while (aktuellesSpiel.naechsterVorbehaltSpieler().isPresent()) {
+            aktuellesSpiel = aktuellesSpiel.meldeGesund(aktuellesSpiel.naechsterVorbehaltSpieler().orElseThrow());
+        }
+        aktuellesSpiel = aktuellesSpiel.loeseVorbehalteAuf();
+        while (aktuellesSpiel.phase() instanceof Spielphase.Stichphase) {
+            SpielerPosition spieler = aktuellesSpiel.aktuellerSpieler().orElseThrow();
+            Karte karte = aktuellesSpiel.gueltigeKartenFuer(spieler).getFirst();
+            aktuellesSpiel = aktuellesSpiel.spieleKarte(spieler, karte);
+        }
+        return aktuellesSpiel;
+    }
+
+    private Spiel spieleAutomatischZuEndeMitRegeln(Spiel spiel, Spielregeln regeln) {
+        Spiel aktuellesSpiel = spieleBisAuswertungMitRegeln(spiel, regeln);
         return aktuellesSpiel.werteAus();
     }
 

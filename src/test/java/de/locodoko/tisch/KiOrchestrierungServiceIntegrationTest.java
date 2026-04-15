@@ -215,6 +215,94 @@ class KiOrchestrierungServiceIntegrationTest {
         return new Karte(farbe, wert, exemplarIndex);
     }
 
+    /**
+     * BUG-5: DKV-Turnier-Preset (alle Sonderregeln deaktiviert, mit Neunen) —
+     * Spiel muss ueber die KI-Orchestrierung korrekt abgeschlossen werden.
+     * Testet mit 2 Spielen um den Uebergang zum naechsten Spiel zu prüfen.
+     */
+    @Test
+    void spieltEineKompletteVierKiPartieMitDkvRegelnZuEnde() {
+        Spielregeln dkvRegeln = Spielregeln.dkvRegeln();
+        UUIDs ids = transactionTemplate.execute(status -> {
+            TischEntity tisch = tischMitSpielernUndRegeln(dkvRegeln, 2);
+            Spiel spiel = gesundesStichspiel(dkvRegeln, verteilungMitVorgabenFuerRegeln(dkvRegeln, Map.of(
+                SpielerPosition.WEST, List.of(
+                    karte(Farbe.KREUZ, Kartenwert.AS, 1),
+                    karte(Farbe.KREUZ, Kartenwert.DAME, 1),
+                    karte(Farbe.PIK, Kartenwert.ZEHN, 1)
+                ),
+                SpielerPosition.NORD, List.of(
+                    karte(Farbe.KREUZ, Kartenwert.ZEHN, 1),
+                    karte(Farbe.KREUZ, Kartenwert.AS, 2),
+                    karte(Farbe.PIK, Kartenwert.AS, 1)
+                ),
+                SpielerPosition.OST, List.of(
+                    karte(Farbe.KREUZ, Kartenwert.KOENIG, 1),
+                    karte(Farbe.KREUZ, Kartenwert.DAME, 2),
+                    karte(Farbe.HERZ, Kartenwert.KOENIG, 1)
+                ),
+                SpielerPosition.SUED, List.of(
+                    karte(Farbe.KREUZ, Kartenwert.NEUN, 1),
+                    karte(Farbe.HERZ, Kartenwert.AS, 1),
+                    karte(Farbe.PIK, Kartenwert.KOENIG, 1)
+                )
+            )));
+            tisch.setzePartie(partieMitSpiel(spiel, 2));
+            TischEntity gespeichert = tischRepository.saveAndFlush(tisch);
+            kiOrchestrierungService.automatisiereTisch(gespeichert);
+            partieRepository.saveAndFlush(gespeichert.partie());
+            return new UUIDs(gespeichert.id(), gespeichert.partie().id());
+        });
+
+        transactionTemplate.executeWithoutResult(status -> {
+            TischEntity tisch = tischRepository.findById(TischId.von(ids.tischId())).orElseThrow();
+            PartieEntity partie = tisch.partie();
+
+            assertEquals(PartieStatus.BEENDET, partie.status(),
+                "Eine DKV-Partie mit vier KI-Spielern muss nach 2 Spielen vollstaendig enden (BUG-5).");
+            assertEquals(2, partie.spiele().size(),
+                "Es muessen genau 2 Spiele in der DKV-Partie sein.");
+            assertTrue(partie.spiele().stream().allMatch(s -> s.ergebnis() != null),
+                "Alle Spiele muessen ein persistiertes Ergebnis haben.");
+            assertEquals(0, partie.gesamtpunktestand().values().stream().mapToInt(Integer::intValue).sum(),
+                "Der Gesamtpunktestand muss nullsummig bleiben.");
+        });
+    }
+
+    private TischEntity tischMitSpielernUndRegeln(Spielregeln spielregeln, int anzahlSpiele) {
+        SpielerEntity erstelltVon = SpielerEntity.ki("KI Ada");
+        TischEntity tisch = TischEntity.neu(
+            "DKV Test",
+            erstelltVon,
+            TischkonfigurationEmbeddable.ausSpielregeln(spielregeln, anzahlSpiele)
+        );
+        tisch.fuegeSpielerHinzu(erstelltVon);
+        tisch.fuegeSpielerHinzu(SpielerEntity.ki("KI Bert"));
+        tisch.fuegeSpielerHinzu(SpielerEntity.ki("KI Clara"));
+        tisch.fuegeSpielerHinzu(SpielerEntity.ki("KI Dora"));
+        return tisch;
+    }
+
+    private Map<SpielerPosition, List<Karte>> verteilungMitVorgabenFuerRegeln(
+        Spielregeln spielregeln,
+        Map<SpielerPosition, List<Karte>> vorgaben
+    ) {
+        List<Karte> restkarten = new ArrayList<>(Kartendeck.neu(spielregeln).karten());
+        int kartenProSpieler = restkarten.size() / 4;
+        EnumMap<SpielerPosition, List<Karte>> haende = new EnumMap<>(SpielerPosition.class);
+        for (SpielerPosition position : SpielerPosition.standardReihenfolge()) {
+            List<Karte> karten = new ArrayList<>(vorgaben.getOrDefault(position, List.of()));
+            karten.forEach(restkarten::remove);
+            haende.put(position, karten);
+        }
+        for (SpielerPosition position : SpielerPosition.standardReihenfolge()) {
+            while (haende.get(position).size() < kartenProSpieler) {
+                haende.get(position).add(restkarten.removeFirst());
+            }
+        }
+        return Map.copyOf(haende);
+    }
+
     private record UUIDs(java.util.UUID tischId, java.util.UUID partieId) {
     }
 }
