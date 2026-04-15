@@ -52,6 +52,8 @@ public class TischkonfigurationEmbeddable {
     private boolean schweinchenAktiv = false;
     private boolean dreissigAugenPflichtAktiv = false;
 
+    private boolean schmeissenAktiv = false;
+
     /** Schwierigkeitsstufe der KI-Gegner. Standard ist STANDARD. */
     private KiSchwierigkeit kiSchwierigkeit = KiSchwierigkeit.STANDARD;
 
@@ -80,6 +82,7 @@ public class TischkonfigurationEmbeddable {
         boolean bockrundenAktiv,
         boolean schweinchenAktiv,
         boolean dreissigAugenPflichtAktiv,
+        boolean schmeissenAktiv,
         KiSchwierigkeit kiSchwierigkeit
     ) {
         this.ohneNeunen = ohneNeunen;
@@ -103,6 +106,7 @@ public class TischkonfigurationEmbeddable {
         this.bockrundenAktiv = bockrundenAktiv;
         this.schweinchenAktiv = schweinchenAktiv;
         this.dreissigAugenPflichtAktiv = dreissigAugenPflichtAktiv;
+        this.schmeissenAktiv = schmeissenAktiv;
         this.kiSchwierigkeit = kiSchwierigkeit;
     }
 
@@ -150,6 +154,7 @@ public class TischkonfigurationEmbeddable {
             spielregeln.bockrundenAktiv(),
             spielregeln.schweinchenAktiv(),
             spielregeln.dreissigAugenPflichtAktiv(),
+            spielregeln.schmeissenAktiv(),
             kiSchwierigkeit
         );
     }
@@ -184,7 +189,8 @@ public class TischkonfigurationEmbeddable {
             hochzeitErlaubt,
             bockrundenAktiv,
             schweinchenAktiv,
-            dreissigAugenPflichtAktiv
+            dreissigAugenPflichtAktiv,
+            schmeissenAktiv
         );
     }
 
@@ -270,6 +276,10 @@ public class TischkonfigurationEmbeddable {
 
     public boolean dreissigAugenPflichtAktiv() {
         return dreissigAugenPflichtAktiv;
+    }
+
+    public boolean schmeissenAktiv() {
+        return schmeissenAktiv;
     }
 
     public KiSchwierigkeit kiSchwierigkeit() {

@@ -14,8 +14,8 @@ import java.util.Optional;
  * Moegliche Vorbehalte, die ein Spieler in der Vorbehalt-Ansage-Phase melden kann.
  *
  * <p>Jeder Spieler meldet entweder {@code GESUND} (kein Vorbehalt) oder einen Vorbehalt
- * (Soli, Hochzeit, Armut). Prioritaeten: Soli (3) > Hochzeit (2) > Armut (1) > Gesund (0).
- * Bei mehreren Soli entscheidet die fruehere Sitzposition. Die Methode
+ * (Schmeissen, Soli, Hochzeit, Armut). Prioritaeten: Schmeissen (4) > Soli (3) > Hochzeit (2) >
+ * Armut (1) > Gesund (0). Bei mehreren Soli entscheidet die fruehere Sitzposition. Die Methode
  * {@link #istZulaessig(Hand, Spielregeln)} prueft, ob der Vorbehalt mit der aktuellen Hand
  * und Tischkonfiguration erlaubt ist.</p>
  */
@@ -103,6 +103,18 @@ public enum VorbehaltAnsage {
             NormaleTrumpfOrdnung trumpfOrdnung = new NormaleTrumpfOrdnung(spielregeln);
             long anzahlTruepfe = hand.karten().stream().filter(trumpfOrdnung::istTrumpf).count();
             return spielregeln.armutAktiv() && anzahlTruepfe <= 3;
+        }
+    },
+    /** Schmeissen bei 5 oder mehr Koenigen. Hoechste Prioritaet — fuehrt zu sofortigem Neu-Austeilen. */
+    SCHMEISSEN(null, 4) {
+        @Override
+        public boolean istZulaessig(Hand hand, Spielregeln spielregeln) {
+            Objects.requireNonNull(hand, "hand darf nicht null sein");
+            Objects.requireNonNull(spielregeln, "spielregeln duerfen nicht null sein");
+            long anzahlKoenige = hand.karten().stream()
+                .filter(karte -> karte.wert() == Kartenwert.KOENIG)
+                .count();
+            return spielregeln.schmeissenAktiv() && anzahlKoenige >= 5;
         }
     };
 

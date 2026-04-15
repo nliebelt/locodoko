@@ -29,19 +29,17 @@ Schnellstart, Einladungslink, Spring Modulith Modulstruktur.
 
 ## Notiz
 
-**Zuletzt erledigt (Plan-Run #67):** M2.4 — Liquibase-Baseline + PostgreSQL komplett implementiert.
-Neue Dateien: `000-baseline.yaml` (konsolidiertes Schema aus 001–009 als einzelnes Changeset),
-`db.changelog-baseline.yaml` (Master-Changelog fuer Frisch-Deployments: Baseline + 010–015),
-`Dockerfile.app` (Multi-Stage-Build: Maven-Build + schlankes JRE-Runtime-Image).
-`docker-compose.yml` um PostgreSQL-Service (`postgres:17-alpine`, Port 5432, Health-Check) und
-App-Service (Prod-Profil, `--profile prod` zum Starten) erweitert.
-`application-prod.properties` nutzt jetzt `db.changelog-baseline.yaml` statt `db.changelog-master.yaml`.
-Dual-Changelog-Strategie: Dev/Tests nutzen weiterhin `db.changelog-master.yaml` (inkrementell 001–015),
-Produktion nutzt `db.changelog-baseline.yaml` (000 + 010–015). Beide Pfade verifiziert und gruen.
-`mvn test` gruen (248 Tests). Kein Docker verfuegbar in CI-Umgebung, PostgreSQL-Integration
-manuell mit `docker compose --profile prod up` testen.
+**Zuletzt erledigt (Plan-Run #68):** SF-1 — Fünf-Könige-Schmeißen vollständig implementiert.
+Neuer `VorbehaltAnsage.SCHMEISSEN` Enum-Wert (Priorität 4, höchste). `Spielregeln.schmeissenAktiv`
+Feld hinzugefügt — aktiv in `locoBlatRegeln()`, deaktiviert in `dkvRegeln()` und `standardRegeln()`.
+`Spiel.loeseVorbehalteAuf()` erkennt SCHMEISSEN als höchsten Vorbehalt und ruft `eingeworfenesSpiel()`
+für sofortiges Neu-Austeilen auf. KI (`StandardKiStrategie`) meldet immer SCHMEISSEN wenn möglich.
+Frontend: `SCHMEISSEN` in VorbehaltAnsage-Typ, Formatierer, Presets und Konfigurationsmodal ergänzt.
+Liquibase-Changeset 016: `schmeissen_aktiv` Boolean-Spalte auf `tisch`-Tabelle.
+5 neue Tests in SpielTest (Schmeißen, Priorität vor Solo, 4 Könige nicht ausreichend, DKV deaktiviert,
+explizit deaktiviert). `mvn test` grün (253 Tests). Frontend build+lint+tests grün.
 
-**Naechster Schritt:** M2.5 (OpenAPI / TypeScript-Typen) oder SF-1 (Fuenf-Koenige-Schmeissen).
+**Nächster Schritt:** M2.5 (OpenAPI / TypeScript-Typen) oder SF-2 (Schweinchen — DKV-konforme implizite Ansage).
 
 **Offene Fragen:** TischSzene.test.ts und AnimationenService.test.ts laufen nicht wegen pre-existing jsdom/ESM-Kompatibilitaetsfehler (ERR_REQUIRE_ASYNC_MODULE).
 
@@ -347,15 +345,15 @@ DB-Spaltenfelder neben @Transient-Domain-Feldern, synchronisiert via `hydriere()
 
 ## Phase SF — Fehlende Spielfeatures
 
-### SF-1: Fünf-Könige-Schmeißen [ ]
+### SF-1: Fünf-Könige-Schmeißen [x]
 
 **Priorität: Niedrig** | **Spec:** `spielablauf.md` (Abschnitt "Schmeißen")
 
-- [ ] **SF-1.1** `Spiel.kannSchmeissen(SpielerPosition)` — prüft ≥5 Könige auf der Hand
-- [ ] **SF-1.2** Vorbehalt-Phase: Schmeißen-Vorbehalt als höchste Priorität (vor Solo) → sofortiges Neu-Austeilen
-- [ ] **SF-1.3** `Spielregeln`: `schmeissenAktiv` Flag (nur Loco-Blatt-Preset, nicht DKV)
-- [ ] **SF-1.4** Frontend: Schmeißen-Button in Vorbehalt-UI
-- [ ] **SF-1.5** Tests: 5 Könige → Schmeißen möglich; 4 Könige → nicht möglich; DKV-Preset → deaktiviert
+- [x] **SF-1.1** `VorbehaltAnsage.SCHMEISSEN.istZulaessig()` — prüft ≥5 Könige auf der Hand
+- [x] **SF-1.2** Vorbehalt-Phase: Schmeißen-Vorbehalt als höchste Priorität (vor Solo) → sofortiges Neu-Austeilen
+- [x] **SF-1.3** `Spielregeln`: `schmeissenAktiv` Flag (nur Loco-Blatt-Preset, nicht DKV)
+- [x] **SF-1.4** Frontend: Schmeißen-Button in Vorbehalt-UI + Konfigurationsmodal
+- [x] **SF-1.5** Tests: 5 Könige → Schmeißen möglich; 4 Könige → nicht möglich; DKV-Preset → deaktiviert
 
 ### SF-2: Schweinchen — DKV-konforme implizite Ansage [ ]
 

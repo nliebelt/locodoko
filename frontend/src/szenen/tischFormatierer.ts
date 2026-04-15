@@ -48,7 +48,8 @@ export function formatiereVorbehalt(vorbehalt: VorbehaltAnsage): string {
     SOLO_TRUMPF_KREUZ: 'Kreuzsolo',
     SOLO_FLEISCHLOS: 'Fleischlos',
     HOCHZEIT: 'Hochzeit',
-    ARMUT: 'Armut'
+    ARMUT: 'Armut',
+    SCHMEISSEN: 'Schmeißen'
   } as Record<VorbehaltAnsage, string>)[vorbehalt];
 }
 

@@ -249,6 +249,7 @@ export class SpielverwaltungsSzene extends Phaser.Scene {
       { feld: 'bockrundenAktiv', label: 'Bockrunden' },
       { feld: 'schweinchenAktiv', label: 'Schweinchen' },
       { feld: 'dreissigAugenPflichtAktiv', label: '30-Augen-Pflicht' },
+      { feld: 'schmeissenAktiv', label: 'Schmeißen (5 Könige)' },
       { feld: 'fuchsGefangenAktiv', label: 'Fuchs gefangen' },
       { feld: 'karlchenAktiv', label: 'Karlchen' },
       { feld: 'doppelkopfAktiv', label: 'Doppelkopf' },

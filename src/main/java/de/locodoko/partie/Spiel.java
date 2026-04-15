@@ -223,6 +223,9 @@ public class Spiel extends AbstraktePersistenzEntity {
     public Spiel loeseVorbehalteAuf() {
         pruefePhase(Spielphase.VorbehaltAufloesung.class, "Vorbehalte aufloesen");
         VorbehaltMeldung hoechsterVorbehalt = hoechsterVorbehalt().orElse(null);
+        if (hoechsterVorbehalt != null && hoechsterVorbehalt.ansage() == VorbehaltAnsage.SCHMEISSEN) {
+            return eingeworfenesSpiel();
+        }
         SpielerPosition ersterAufspieler = solistAufspieler != null ? solistAufspieler : geber.naechsteImUhrzeigersinn();
         if (hoechsterVorbehalt == null) {
             SpielerPosition stillesSoloSpieler = erkenneStillesSoloSpieler();
@@ -559,7 +562,7 @@ public class Spiel extends AbstraktePersistenzEntity {
                 case SOLO_DAME, SOLO_BUBE, SOLO_TRUMPF, SOLO_TRUMPF_HERZ, SOLO_TRUMPF_PIK, SOLO_TRUMPF_KREUZ, SOLO_FLEISCHLOS -> Optional.of(Parteien.ausSolo(hoechster.spielerPosition()));
                 case HOCHZEIT -> Optional.of(hydriereParteienFuerHochzeit(hoechster.spielerPosition()));
                 case ARMUT -> Optional.of(hydriereParteienFuerArmut(hoechster.spielerPosition()));
-                case GESUND -> Optional.empty();
+                case GESUND, SCHMEISSEN -> Optional.empty();
             };
             if (sp.isEmpty()) { return Optional.empty(); }
             basis = sp.get();
@@ -735,7 +738,7 @@ public class Spiel extends AbstraktePersistenzEntity {
             case HOCHZEIT, ARMUT -> hatSchweinchen(spielregeln, haende) ? new SchweinchenTrumpfOrdnung(spielregeln) : new NormaleTrumpfOrdnung(spielregeln);
             case SOLO_TRUMPF_HERZ -> new VariableTrumpfsoloTrumpfOrdnung(Farbe.HERZ, spielregeln); case SOLO_TRUMPF_PIK -> new VariableTrumpfsoloTrumpfOrdnung(Farbe.PIK, spielregeln);
             case SOLO_TRUMPF_KREUZ -> new VariableTrumpfsoloTrumpfOrdnung(Farbe.KREUZ, spielregeln); case SOLO_FLEISCHLOS -> new FleischlosTrumpfOrdnung();
-            case GESUND -> throw new IllegalStateException("GESUND ist kein aufloesbarer Vorbehalt");
+            case GESUND, SCHMEISSEN -> throw new IllegalStateException("GESUND ist kein aufloesbarer Vorbehalt");
         };
     }
 
@@ -743,7 +746,7 @@ public class Spiel extends AbstraktePersistenzEntity {
         return switch (hv.ansage()) {
             case SOLO_DAME, SOLO_BUBE, SOLO_TRUMPF, SOLO_TRUMPF_HERZ, SOLO_TRUMPF_PIK, SOLO_TRUMPF_KREUZ, SOLO_FLEISCHLOS -> Parteien.ausSolo(hv.spielerPosition());
             case HOCHZEIT -> Parteien.ausHochzeit(hv.spielerPosition()); case ARMUT -> Parteien.ausArmut(hv.spielerPosition());
-            case GESUND -> throw new IllegalStateException("GESUND ist kein aufloesbarer Vorbehalt");
+            case GESUND, SCHMEISSEN -> throw new IllegalStateException("GESUND ist kein aufloesbarer Vorbehalt");
         };
     }
 

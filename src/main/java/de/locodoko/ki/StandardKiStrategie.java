@@ -25,6 +25,11 @@ public class StandardKiStrategie implements KiStrategie {
             return VorbehaltAnsage.GESUND;
         }
 
+        // Schmeissen ist immer die beste Wahl — 5 Koenige sind eine katastrophale Hand
+        if (moeglicheVorbehalte.contains(VorbehaltAnsage.SCHMEISSEN)) {
+            return VorbehaltAnsage.SCHMEISSEN;
+        }
+
         VorbehaltAnsage besterSoloVorbehalt = null;
         int besterSoloWert = Integer.MIN_VALUE;
         for (VorbehaltAnsage vorbehalt : List.of(

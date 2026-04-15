@@ -8,24 +8,26 @@ class SpielregelnTest {
 
     @Test
     void locoBlatRegelnAktivierenAlleSonderregeln() {
-        // Stellt sicher dass Bockrunden/Schweinchen/30AP aktiv sind —
+        // Stellt sicher dass Bockrunden/Schweinchen/30AP/Schmeissen aktiv sind —
         // verhindert, dass ein Refactoring diese versehentlich deaktiviert
         Spielregeln regeln = Spielregeln.locoBlatRegeln();
         assertThat(regeln.bockrundenAktiv()).isTrue();
         assertThat(regeln.schweinchenAktiv()).isTrue();
         assertThat(regeln.dreissigAugenPflichtAktiv()).isTrue();
+        assertThat(regeln.schmeissenAktiv()).isTrue();
         assertThat(regeln.ohneNeunen()).isTrue();
         assertThat(regeln.mindestkartenReKontra()).isEqualTo(9);
     }
 
     @Test
-    void dkvRegelnDeaktivierenBockrundenSchweinchenUnd30AP() {
-        // Stellt sicher dass Turnier-Regeln genau die drei Sonderregeln nicht enthalten —
+    void dkvRegelnDeaktivierenBockrundenSchweinchenUnd30APUndSchmeissen() {
+        // Stellt sicher dass Turnier-Regeln genau die vier Sonderregeln nicht enthalten —
         // falsches Preset würde Turniere mit Sonderregeln spielen lassen
         Spielregeln regeln = Spielregeln.dkvRegeln();
         assertThat(regeln.bockrundenAktiv()).isFalse();
         assertThat(regeln.schweinchenAktiv()).isFalse();
         assertThat(regeln.dreissigAugenPflichtAktiv()).isFalse();
+        assertThat(regeln.schmeissenAktiv()).isFalse();
         assertThat(regeln.ohneNeunen()).isFalse();
         assertThat(regeln.mindestkartenReKontra()).isEqualTo(11);
     }

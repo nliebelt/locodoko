@@ -42,6 +42,7 @@ public record TischKonfigurationDto(
     boolean bockrundenAktiv,
     boolean schweinchenAktiv,
     boolean dreissigAugenPflichtAktiv,
+    boolean schmeissenAktiv,
     /** Schwierigkeitsstufe der KI-Gegner. Standard: STANDARD. */
     KiSchwierigkeit kiSchwierigkeit
 ) {
@@ -69,6 +70,7 @@ public record TischKonfigurationDto(
             konfiguration.bockrundenAktiv(),
             konfiguration.schweinchenAktiv(),
             konfiguration.dreissigAugenPflichtAktiv(),
+            konfiguration.schmeissenAktiv(),
             konfiguration.kiSchwierigkeit()
         );
     }
@@ -94,7 +96,8 @@ public record TischKonfigurationDto(
                 hochzeitErlaubt,
                 bockrundenAktiv,
                 schweinchenAktiv,
-                dreissigAugenPflichtAktiv
+                dreissigAugenPflichtAktiv,
+                schmeissenAktiv
             ),
             anzahlSpiele,
             tischhintergrund,

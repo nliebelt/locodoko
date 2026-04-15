@@ -65,6 +65,7 @@ export interface TischKonfigurationDto {
   bockrundenAktiv: boolean;
   schweinchenAktiv: boolean;
   dreissigAugenPflichtAktiv: boolean;
+  schmeissenAktiv: boolean;
   /** Schwierigkeitsstufe der KI-Gegner. Standard: STANDARD. */
   kiSchwierigkeit: KiSchwierigkeit;
 }
@@ -131,7 +132,8 @@ export type VorbehaltAnsage =
   | 'SOLO_TRUMPF_KREUZ'
   | 'SOLO_FLEISCHLOS'
   | 'HOCHZEIT'
-  | 'ARMUT';
+  | 'ARMUT'
+  | 'SCHMEISSEN';
 
 export interface KarteAntwort {
   id: string;

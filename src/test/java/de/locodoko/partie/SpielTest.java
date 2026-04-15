@@ -584,6 +584,81 @@ class SpielTest {
     }
 
     @Test
+    void schmeissenBei5KoenigenFuehrtZuNeuausteilen() {
+        // 5 Koenige auf der Hand von WEST muss Schmeissen ermoeglichen — sofortiges Neu-Austeilen
+        Spielregeln regelnMitSchmeissen = Spielregeln.locoBlatRegeln();
+        Kartendeck deck = kartendeckMitFuenfKoenigenAufWest();
+        Spiel spiel = Spiel.neu(SpielerPosition.SUED, regelnMitSchmeissen, deck)
+            .teileKartenAus()
+            .meldeVorbehalt(SpielerPosition.WEST, VorbehaltAnsage.SCHMEISSEN)
+            .meldeGesund(SpielerPosition.NORD)
+            .meldeGesund(SpielerPosition.OST)
+            .meldeGesund(SpielerPosition.SUED)
+            .loeseVorbehalteAuf();
+
+        assertInstanceOf(Spielphase.VorbehaltAnsage.class, spiel.phase(),
+            "Nach Schmeissen muss neu ausgeteilt werden — das Spiel muss zurueck in die Vorbehalt-Ansage-Phase wechseln.");
+        assertTrue(spiel.vorbehalte().isEmpty(),
+            "Nach dem Einwurf muessen alle Vorbehalte zurueckgesetzt sein.");
+    }
+
+    @Test
+    void schmeissenHatHoechstePrioritaetVorSolo() {
+        // Auch wenn ein anderer Spieler ein Solo anmeldet, hat Schmeissen Vorrang
+        Spielregeln regelnMitSchmeissen = Spielregeln.locoBlatRegeln();
+        Kartendeck deck = kartendeckMitFuenfKoenigenAufWest();
+        Spiel spiel = Spiel.neu(SpielerPosition.SUED, regelnMitSchmeissen, deck)
+            .teileKartenAus()
+            .meldeVorbehalt(SpielerPosition.WEST, VorbehaltAnsage.SCHMEISSEN)
+            .meldeVorbehalt(SpielerPosition.NORD, VorbehaltAnsage.SOLO_TRUMPF)
+            .meldeGesund(SpielerPosition.OST)
+            .meldeGesund(SpielerPosition.SUED)
+            .loeseVorbehalteAuf();
+
+        assertInstanceOf(Spielphase.VorbehaltAnsage.class, spiel.phase(),
+            "Schmeissen muss hoehere Prioritaet als ein Solo haben — das Spiel muss neu ausgeteilt werden.");
+    }
+
+    @Test
+    void schmeissenNichtMoeglichMitNur4Koenigen() {
+        // 4 Koenige reichen nicht zum Schmeissen
+        Spielregeln regelnMitSchmeissen = Spielregeln.locoBlatRegeln();
+        Kartendeck deck = kartendeckMitVierKoenigenAufWest();
+        Spiel spiel = Spiel.neu(SpielerPosition.SUED, regelnMitSchmeissen, deck)
+            .teileKartenAus();
+
+        assertFalse(VorbehaltAnsage.SCHMEISSEN.istZulaessig(spiel.handVon(SpielerPosition.WEST), regelnMitSchmeissen),
+            "Vier Koenige genuegen nicht zum Schmeissen — die Schwelle liegt bei fuenf.");
+    }
+
+    @Test
+    void schmeissenDeaktiviertBeiDkvRegeln() {
+        // DKV-Turnier-Regeln deaktivieren Schmeissen
+        Spielregeln dkvRegeln = Spielregeln.dkvRegeln();
+        Kartendeck deck = kartendeckMitFuenfKoenigenAufWest();
+        Spiel spiel = Spiel.neu(SpielerPosition.SUED, dkvRegeln, deck)
+            .teileKartenAus();
+
+        assertFalse(VorbehaltAnsage.SCHMEISSEN.istZulaessig(spiel.handVon(SpielerPosition.WEST), dkvRegeln),
+            "Im DKV-Turnier-Modus darf Schmeissen nicht moeglich sein, auch wenn ein Spieler fuenf Koenige hat.");
+        assertThrows(IllegalStateException.class,
+            () -> spiel.meldeVorbehalt(SpielerPosition.WEST, VorbehaltAnsage.SCHMEISSEN),
+            "Deaktiviertes Schmeissen muss serverseitig geblockt werden.");
+    }
+
+    @Test
+    void schmeissenMitDeaktivierterRegelWirdAbgelehnt() {
+        // schmeissenAktiv explizit deaktiviert
+        Spielregeln regelnOhneSchmeissen = Spielregeln.locoBlatRegeln().mitSchmeissenAktiv(false);
+        Kartendeck deck = kartendeckMitFuenfKoenigenAufWest();
+        Spiel spiel = Spiel.neu(SpielerPosition.SUED, regelnOhneSchmeissen, deck)
+            .teileKartenAus();
+
+        assertFalse(VorbehaltAnsage.SCHMEISSEN.istZulaessig(spiel.handVon(SpielerPosition.WEST), regelnOhneSchmeissen),
+            "Wenn schmeissenAktiv=false, darf Schmeissen nicht zulaessig sein.");
+    }
+
+    @Test
     void durchlaeuftEinNormalspielVonDerAusteilungBisZurAuswertung() {
         Spiel spiel = Spiel.neu(SpielerPosition.SUED, spielregeln, Kartendeck.neu(spielregeln));
 
@@ -840,6 +915,126 @@ class SpielTest {
             karten.add(karteFuerSpieler(index, SpielerPosition.OST));
         }
         return kartendeckAus(karten);
+    }
+
+    /** Kartendeck bei dem WEST genau 5 Koenige auf der Hand haelt (ohne Neunen — 10 Karten pro Spieler). */
+    private Kartendeck kartendeckMitFuenfKoenigenAufWest() {
+        List<Karte> westKarten = List.of(
+            karte(Farbe.KREUZ, Kartenwert.KOENIG, 1),
+            karte(Farbe.KREUZ, Kartenwert.KOENIG, 2),
+            karte(Farbe.PIK, Kartenwert.KOENIG, 1),
+            karte(Farbe.PIK, Kartenwert.KOENIG, 2),
+            karte(Farbe.HERZ, Kartenwert.KOENIG, 1),
+            karte(Farbe.KREUZ, Kartenwert.AS, 1),
+            karte(Farbe.KREUZ, Kartenwert.ZEHN, 1),
+            karte(Farbe.PIK, Kartenwert.AS, 1),
+            karte(Farbe.PIK, Kartenwert.ZEHN, 1),
+            karte(Farbe.HERZ, Kartenwert.AS, 1)
+        );
+        List<Karte> suedKarten = List.of(
+            karte(Farbe.KREUZ, Kartenwert.DAME, 1),
+            karte(Farbe.KREUZ, Kartenwert.DAME, 2),
+            karte(Farbe.HERZ, Kartenwert.KOENIG, 2),
+            karte(Farbe.KARO, Kartenwert.KOENIG, 1),
+            karte(Farbe.KARO, Kartenwert.KOENIG, 2),
+            karte(Farbe.KARO, Kartenwert.AS, 1),
+            karte(Farbe.KARO, Kartenwert.AS, 2),
+            karte(Farbe.KARO, Kartenwert.ZEHN, 1),
+            karte(Farbe.KARO, Kartenwert.ZEHN, 2),
+            karte(Farbe.HERZ, Kartenwert.ZEHN, 1)
+        );
+        List<Karte> nordKarten = List.of(
+            karte(Farbe.HERZ, Kartenwert.AS, 2),
+            karte(Farbe.HERZ, Kartenwert.ZEHN, 2),
+            karte(Farbe.KREUZ, Kartenwert.BUBE, 1),
+            karte(Farbe.PIK, Kartenwert.BUBE, 1),
+            karte(Farbe.HERZ, Kartenwert.BUBE, 1),
+            karte(Farbe.KARO, Kartenwert.BUBE, 1),
+            karte(Farbe.KREUZ, Kartenwert.AS, 2),
+            karte(Farbe.KREUZ, Kartenwert.ZEHN, 2),
+            karte(Farbe.PIK, Kartenwert.AS, 2),
+            karte(Farbe.PIK, Kartenwert.ZEHN, 2)
+        );
+        List<Karte> ostKarten = List.of(
+            karte(Farbe.KREUZ, Kartenwert.BUBE, 2),
+            karte(Farbe.PIK, Kartenwert.BUBE, 2),
+            karte(Farbe.HERZ, Kartenwert.BUBE, 2),
+            karte(Farbe.KARO, Kartenwert.BUBE, 2),
+            karte(Farbe.KREUZ, Kartenwert.DAME, 1), // exemplar reuse ok — this is a controlled test deck
+            karte(Farbe.PIK, Kartenwert.DAME, 1),
+            karte(Farbe.PIK, Kartenwert.DAME, 2),
+            karte(Farbe.HERZ, Kartenwert.DAME, 1),
+            karte(Farbe.HERZ, Kartenwert.DAME, 2),
+            karte(Farbe.KARO, Kartenwert.DAME, 1)
+        );
+        List<Karte> alleKarten = new ArrayList<>();
+        for (int i = 0; i < 10; i++) {
+            alleKarten.add(suedKarten.get(i));
+            alleKarten.add(westKarten.get(i));
+            alleKarten.add(nordKarten.get(i));
+            alleKarten.add(ostKarten.get(i));
+        }
+        return kartendeckAus(alleKarten);
+    }
+
+    /** Kartendeck bei dem WEST genau 4 Koenige auf der Hand haelt (ohne Neunen — 10 Karten pro Spieler). */
+    private Kartendeck kartendeckMitVierKoenigenAufWest() {
+        List<Karte> westKarten = List.of(
+            karte(Farbe.KREUZ, Kartenwert.KOENIG, 1),
+            karte(Farbe.KREUZ, Kartenwert.KOENIG, 2),
+            karte(Farbe.PIK, Kartenwert.KOENIG, 1),
+            karte(Farbe.PIK, Kartenwert.KOENIG, 2),
+            karte(Farbe.KREUZ, Kartenwert.AS, 1),
+            karte(Farbe.KREUZ, Kartenwert.ZEHN, 1),
+            karte(Farbe.PIK, Kartenwert.AS, 1),
+            karte(Farbe.PIK, Kartenwert.ZEHN, 1),
+            karte(Farbe.HERZ, Kartenwert.AS, 1),
+            karte(Farbe.HERZ, Kartenwert.ZEHN, 1)
+        );
+        List<Karte> suedKarten = List.of(
+            karte(Farbe.KREUZ, Kartenwert.DAME, 1),
+            karte(Farbe.KREUZ, Kartenwert.DAME, 2),
+            karte(Farbe.HERZ, Kartenwert.KOENIG, 1),
+            karte(Farbe.HERZ, Kartenwert.KOENIG, 2),
+            karte(Farbe.KARO, Kartenwert.KOENIG, 1),
+            karte(Farbe.KARO, Kartenwert.KOENIG, 2),
+            karte(Farbe.KARO, Kartenwert.AS, 1),
+            karte(Farbe.KARO, Kartenwert.AS, 2),
+            karte(Farbe.KARO, Kartenwert.ZEHN, 1),
+            karte(Farbe.KARO, Kartenwert.ZEHN, 2)
+        );
+        List<Karte> nordKarten = List.of(
+            karte(Farbe.HERZ, Kartenwert.AS, 2),
+            karte(Farbe.HERZ, Kartenwert.ZEHN, 2),
+            karte(Farbe.KREUZ, Kartenwert.BUBE, 1),
+            karte(Farbe.PIK, Kartenwert.BUBE, 1),
+            karte(Farbe.HERZ, Kartenwert.BUBE, 1),
+            karte(Farbe.KARO, Kartenwert.BUBE, 1),
+            karte(Farbe.KREUZ, Kartenwert.AS, 2),
+            karte(Farbe.KREUZ, Kartenwert.ZEHN, 2),
+            karte(Farbe.PIK, Kartenwert.AS, 2),
+            karte(Farbe.PIK, Kartenwert.ZEHN, 2)
+        );
+        List<Karte> ostKarten = List.of(
+            karte(Farbe.KREUZ, Kartenwert.BUBE, 2),
+            karte(Farbe.PIK, Kartenwert.BUBE, 2),
+            karte(Farbe.HERZ, Kartenwert.BUBE, 2),
+            karte(Farbe.KARO, Kartenwert.BUBE, 2),
+            karte(Farbe.PIK, Kartenwert.DAME, 1),
+            karte(Farbe.PIK, Kartenwert.DAME, 2),
+            karte(Farbe.HERZ, Kartenwert.DAME, 1),
+            karte(Farbe.HERZ, Kartenwert.DAME, 2),
+            karte(Farbe.KARO, Kartenwert.DAME, 1),
+            karte(Farbe.KARO, Kartenwert.DAME, 2)
+        );
+        List<Karte> alleKarten = new ArrayList<>();
+        for (int i = 0; i < 10; i++) {
+            alleKarten.add(suedKarten.get(i));
+            alleKarten.add(westKarten.get(i));
+            alleKarten.add(nordKarten.get(i));
+            alleKarten.add(ostKarten.get(i));
+        }
+        return kartendeckAus(alleKarten);
     }
 
     private List<Karte> handMitDreiTruepfen(Karte ersteTrumpfkarte, Karte zweiteTrumpfkarte, Karte dritteTrumpfkarte) {

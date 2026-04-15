@@ -29,3 +29,5 @@ databaseChangeLog:
       file: db/changelog/014-spieler-profil-statistik.yaml
   - include:
       file: db/changelog/015-zugangsmodus.yaml
+  - include:
+      file: db/changelog/016-schmeissen-aktiv.yaml

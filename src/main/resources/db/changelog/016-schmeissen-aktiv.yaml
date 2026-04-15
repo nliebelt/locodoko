@@ -1,0 +1,14 @@
+databaseChangeLog:
+  - changeSet:
+      id: 016-schmeissen-aktiv
+      author: ralph
+      changes:
+        - addColumn:
+            tableName: tisch
+            columns:
+              - column:
+                  name: schmeissen_aktiv
+                  type: BOOLEAN
+                  defaultValueBoolean: false
+                  constraints:
+                    nullable: false

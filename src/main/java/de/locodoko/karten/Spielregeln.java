@@ -36,7 +36,8 @@ public record Spielregeln(
     boolean hochzeitAktiv,
     boolean bockrundenAktiv,
     boolean schweinchenAktiv,
-    boolean dreissigAugenPflichtAktiv
+    boolean dreissigAugenPflichtAktiv,
+    boolean schmeissenAktiv
 ) {
 
     public Spielregeln {
@@ -54,21 +55,21 @@ public record Spielregeln(
     }
 
     public static Spielregeln standardRegeln() {
-        return new Spielregeln(false, true, 11, 10, 9, 8, 7, true, true, true, true, true, true, true, true, true, false, false, false);
+        return new Spielregeln(false, true, 11, 10, 9, 8, 7, true, true, true, true, true, true, true, true, true, false, false, false, false);
     }
 
     public static Spielregeln ohneNeunenRegeln() {
-        return new Spielregeln(true, true, 9, 8, 7, 6, 5, true, true, true, true, true, true, true, true, true, false, false, false);
+        return new Spielregeln(true, true, 9, 8, 7, 6, 5, true, true, true, true, true, true, true, true, true, false, false, false, false);
     }
 
     /** Loco-Blatt-Regelkatalog: alle Sonderregeln aktiv, immer ohne Neunen (10-Karten-Spiel). */
     public static Spielregeln locoBlatRegeln() {
-        return new Spielregeln(true, true, 9, 8, 7, 6, 5, true, true, true, true, true, true, true, true, true, true, true, true);
+        return new Spielregeln(true, true, 9, 8, 7, 6, 5, true, true, true, true, true, true, true, true, true, true, true, true, true);
     }
 
-    /** DKV-Turnier-Regelkatalog: ohne Bockrunden, Schweinchen und 30-Augen-Pflicht, mit Neunen. */
+    /** DKV-Turnier-Regelkatalog: ohne Bockrunden, Schweinchen, 30-Augen-Pflicht und Schmeissen, mit Neunen. */
     public static Spielregeln dkvRegeln() {
-        return new Spielregeln(false, true, 11, 10, 9, 8, 7, true, true, true, true, true, true, true, true, true, false, false, false);
+        return new Spielregeln(false, true, 11, 10, 9, 8, 7, true, true, true, true, true, true, true, true, true, false, false, false, false);
     }
 
     /** @deprecated Identisch mit {@link #locoBlatRegeln()} — Loco Blatt ist immer ohne Neunen. */
@@ -103,7 +104,8 @@ public record Spielregeln(
             hochzeitAktiv,
             bockrundenAktiv,
             schweinchenAktiv,
-            dreissigAugenPflichtAktiv
+            dreissigAugenPflichtAktiv,
+            schmeissenAktiv
         );
     }
 
@@ -127,7 +129,8 @@ public record Spielregeln(
             hochzeitAktiv,
             bockrundenAktiv,
             schweinchenAktiv,
-            dreissigAugenPflichtAktiv
+            dreissigAugenPflichtAktiv,
+            schmeissenAktiv
         );
     }
 
@@ -151,7 +154,8 @@ public record Spielregeln(
             hochzeitAktiv,
             bockrundenAktiv,
             schweinchenAktiv,
-            dreissigAugenPflichtAktiv
+            dreissigAugenPflichtAktiv,
+            schmeissenAktiv
         );
     }
 
@@ -175,7 +179,8 @@ public record Spielregeln(
             hochzeitAktiv,
             bockrundenAktiv,
             schweinchenAktiv,
-            dreissigAugenPflichtAktiv
+            dreissigAugenPflichtAktiv,
+            schmeissenAktiv
         );
     }
 
@@ -199,7 +204,8 @@ public record Spielregeln(
             hochzeitAktiv,
             bockrundenAktiv,
             schweinchenAktiv,
-            dreissigAugenPflichtAktiv
+            dreissigAugenPflichtAktiv,
+            schmeissenAktiv
         );
     }
 
@@ -223,7 +229,8 @@ public record Spielregeln(
             hochzeitAktiv,
             bockrundenAktiv,
             schweinchenAktiv,
-            dreissigAugenPflichtAktiv
+            dreissigAugenPflichtAktiv,
+            schmeissenAktiv
         );
     }
 
@@ -247,7 +254,8 @@ public record Spielregeln(
             hochzeitAktiv,
             bockrundenAktiv,
             schweinchenAktiv,
-            dreissigAugenPflichtAktiv
+            dreissigAugenPflichtAktiv,
+            schmeissenAktiv
         );
     }
 
@@ -271,7 +279,8 @@ public record Spielregeln(
             hochzeitAktiv,
             bockrundenAktiv,
             schweinchenAktiv,
-            dreissigAugenPflichtAktiv
+            dreissigAugenPflichtAktiv,
+            schmeissenAktiv
         );
     }
 
@@ -295,7 +304,8 @@ public record Spielregeln(
             hochzeitAktiv,
             bockrundenAktiv,
             schweinchenAktiv,
-            dreissigAugenPflichtAktiv
+            dreissigAugenPflichtAktiv,
+            schmeissenAktiv
         );
     }
 
@@ -319,7 +329,8 @@ public record Spielregeln(
             hochzeitAktiv,
             bockrundenAktiv,
             schweinchenAktiv,
-            dreissigAugenPflichtAktiv
+            dreissigAugenPflichtAktiv,
+            schmeissenAktiv
         );
     }
 
@@ -343,7 +354,33 @@ public record Spielregeln(
             hochzeitAktiv,
             bockrundenAktiv,
             schweinchenAktiv,
-            dreissigAugenPflichtAktiv
+            dreissigAugenPflichtAktiv,
+            schmeissenAktiv
+        );
+    }
+
+    public Spielregeln mitSchmeissenAktiv(boolean schmeissenAktiv) {
+        return new Spielregeln(
+            ohneNeunen,
+            zweiteDulleSticht,
+            mindestkartenReKontra,
+            mindestkartenKeine90,
+            mindestkartenKeine60,
+            mindestkartenKeine30,
+            mindestkartenSchwarz,
+            fuchsAktiv,
+            karlchenAktiv,
+            doppelkopfAktiv,
+            armutAktiv,
+            soloDameAktiv,
+            soloBubeAktiv,
+            soloTrumpfAktiv,
+            soloFleischlosAktiv,
+            hochzeitAktiv,
+            bockrundenAktiv,
+            schweinchenAktiv,
+            dreissigAugenPflichtAktiv,
+            schmeissenAktiv
         );
     }
 
