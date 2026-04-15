@@ -25,3 +25,5 @@ databaseChangeLog:
       file: db/changelog/012-spielzustand-json.yaml
   - include:
       file: db/changelog/013-spieler-authentifizierung.yaml
+  - include:
+      file: db/changelog/014-spieler-profil-statistik.yaml

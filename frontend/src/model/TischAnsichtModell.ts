@@ -29,6 +29,8 @@ export interface SpielerAnsicht {
   position: SpielerPosition;
   absolutePosition: BackendSpielerPosition | null;
   name: string;
+  anzeigeName: string;
+  avatarFarbe: string | null;
   istMensch: boolean;
   istSelbst: boolean;
   istErsteller: boolean;
@@ -164,6 +166,8 @@ export function erstelleStandardTischAnsicht(spielerName: string): TischAnsichtM
         position: 'SUED',
         absolutePosition: 'SUED',
         name: spielerName,
+        anzeigeName: spielerName,
+        avatarFarbe: null,
         istMensch: true,
         istSelbst: true,
         istErsteller: true,
@@ -179,6 +183,8 @@ export function erstelleStandardTischAnsicht(spielerName: string): TischAnsichtM
         position: 'WEST',
         absolutePosition: 'WEST',
         name: 'KI West',
+        anzeigeName: 'KI West',
+        avatarFarbe: null,
         istMensch: false,
         istSelbst: false,
         istErsteller: false,
@@ -194,6 +200,8 @@ export function erstelleStandardTischAnsicht(spielerName: string): TischAnsichtM
         position: 'NORD',
         absolutePosition: 'NORD',
         name: 'KI Nord',
+        anzeigeName: 'KI Nord',
+        avatarFarbe: null,
         istMensch: false,
         istSelbst: false,
         istErsteller: false,
@@ -209,6 +217,8 @@ export function erstelleStandardTischAnsicht(spielerName: string): TischAnsichtM
         position: 'OST',
         absolutePosition: 'OST',
         name: 'KI Ost',
+        anzeigeName: 'KI Ost',
+        avatarFarbe: null,
         istMensch: false,
         istSelbst: false,
         istErsteller: false,
@@ -389,6 +399,8 @@ function mappeSpielerAusPartie(
       position,
       absolutePosition: eintrag.position,
       name: eintrag.name,
+      anzeigeName: eintrag.anzeigeName ?? eintrag.name,
+      avatarFarbe: eintrag.avatarFarbe ?? null,
       istMensch: !eintrag.istKi,
       istSelbst: eintrag.istSelbst,
       istErsteller: eintrag.spielerId === tisch.erstelltVonSpielerId,
@@ -598,6 +610,8 @@ function leererPlatz(position: SpielerPosition): SpielerAnsicht {
     position,
     absolutePosition: null,
     name: 'Freier Platz',
+    anzeigeName: 'Freier Platz',
+    avatarFarbe: null,
     istMensch: false,
     istSelbst: false,
     istErsteller: false,
@@ -644,6 +658,8 @@ function mappeLobbySpieler(
     position,
     absolutePosition,
     name: spieler.name,
+    anzeigeName: spieler.name,
+    avatarFarbe: null,
     istMensch: !spieler.istKi,
     istSelbst: istEigenerSpieler,
     istErsteller: spieler.spielerId === tisch.erstelltVonSpielerId,

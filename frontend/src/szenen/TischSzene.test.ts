@@ -397,6 +397,8 @@ function baueSpieler(
     position,
     spielerId: optionen.spielerId ?? `spieler-${position.toLowerCase()}`,
     name,
+    anzeigeName: optionen.anzeigeName ?? name,
+    avatarFarbe: optionen.avatarFarbe ?? null,
     istKi: optionen.istKi ?? position !== 'SUED',
     istSelbst: optionen.istSelbst ?? position === 'SUED',
     istGeber: optionen.istGeber ?? false,

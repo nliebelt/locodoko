@@ -429,9 +429,20 @@ export class TischSzene extends Phaser.Scene {
         this.add.rectangle(npPos.x, npPos.y, nameplateBreite, nameplateHoehe, hgFarbe, 0.95)
           .setStrokeStyle(rahmenStaerke, rahmenFarbe, 0.95)
       );
-      // Name (fett, oben)
+      // Name (fett, oben) mit Avatar-Farbkreis
       const nameSchriftGroesse = Math.round(Math.max(13, breite * 0.012));
-      ebene.add(this.add.text(npPos.x, npPos.y - Math.round(nameplateHoehe * 0.28), spieler.name, {
+      const avatarRadius = Math.round(nameSchriftGroesse * 0.55);
+      if (spieler.avatarFarbe) {
+        const farbWert = parseInt(spieler.avatarFarbe.replace('#', ''), 16);
+        ebene.add(
+          this.add.circle(
+            npPos.x - Math.round(nameplateBreite * 0.38),
+            npPos.y - Math.round(nameplateHoehe * 0.28),
+            avatarRadius, farbWert, 1
+          )
+        );
+      }
+      ebene.add(this.add.text(npPos.x, npPos.y - Math.round(nameplateHoehe * 0.28), spieler.anzeigeName, {
         color: '#f8f9fa',
         fontSize: `${nameSchriftGroesse}px`,
         fontStyle: 'bold'

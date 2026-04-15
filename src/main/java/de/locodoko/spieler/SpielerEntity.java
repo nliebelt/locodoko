@@ -6,6 +6,9 @@ import jakarta.validation.constraints.NotBlank;
 import org.springframework.data.relational.core.mapping.Column;
 import org.springframework.data.relational.core.mapping.Table;
 
+import java.util.List;
+import java.util.concurrent.ThreadLocalRandom;
+
 /**
  * Persistenz-Entity fuer einen Spieler (menschlich oder KI).
  * Aggregate Root: Spieler werden unabhaengig von Tischen und Partien gespeichert.
@@ -50,6 +53,20 @@ public class SpielerEntity extends AbstraktePersistenzEntity {
     @Column("email")
     private String email;
 
+    /** Oeffentlicher Anzeigename (2–20 Zeichen, doppelt erlaubt). Null → name wird verwendet. */
+    @Column("anzeige_name")
+    private String anzeigeName;
+
+    /** Avatar-Farbe als Hex-String (z.B. "#e63946"). Null → zufaellige Standardfarbe. */
+    @Column("avatar_farbe")
+    private String avatarFarbe;
+
+    private static final List<String> AVATAR_FARBEN = List.of(
+        "#e63946", "#457b9d", "#2a9d8f", "#e9c46a", "#f4a261",
+        "#264653", "#6a4c93", "#1982c4", "#8ac926", "#ff595e",
+        "#ffca3a", "#6a0572"
+    );
+
     protected SpielerEntity() {
     }
 
@@ -58,6 +75,7 @@ public class SpielerEntity extends AbstraktePersistenzEntity {
         this.sessionId = pruefeSessionId(sessionId, ki);
         this.ki = ki;
         this.kiUebernommen = false;
+        this.avatarFarbe = zufaelligeFarbe();
     }
 
     public static SpielerEntity menschlich(String name, String sessionId) {
@@ -78,6 +96,7 @@ public class SpielerEntity extends AbstraktePersistenzEntity {
         spieler.benutzername = benutzername;
         spieler.passwortHash = passwortHash;
         spieler.email = email;
+        spieler.avatarFarbe = zufaelligeFarbe();
         return spieler;
     }
 
@@ -90,6 +109,7 @@ public class SpielerEntity extends AbstraktePersistenzEntity {
         spieler.authentifizierungsMethode = AuthentifizierungsMethode.OAUTH2_GOOGLE.name();
         spieler.externalId = externalId;
         spieler.email = email;
+        spieler.avatarFarbe = zufaelligeFarbe();
         return spieler;
     }
 
@@ -157,6 +177,34 @@ public class SpielerEntity extends AbstraktePersistenzEntity {
      */
     public void nullifiziereSessionId() {
         this.sessionId = null;
+    }
+
+    /** Liefert den Anzeigenamen — faellt auf {@link #name()} zurueck wenn nicht gesetzt. */
+    public String anzeigeName() {
+        return anzeigeName != null ? anzeigeName : name;
+    }
+
+    /** Setzt den Anzeigenamen (2–20 Zeichen). */
+    public void setzeAnzeigeName(String anzeigeName) {
+        if (anzeigeName == null || anzeigeName.trim().length() < 2 || anzeigeName.trim().length() > 20) {
+            throw new IllegalArgumentException("anzeigeName muss 2–20 Zeichen lang sein");
+        }
+        this.anzeigeName = anzeigeName.trim();
+    }
+
+    public String avatarFarbe() {
+        return avatarFarbe != null ? avatarFarbe : AVATAR_FARBEN.getFirst();
+    }
+
+    public void setzeAvatarFarbe(String avatarFarbe) {
+        if (avatarFarbe != null && !avatarFarbe.matches("^#[0-9a-fA-F]{6}$")) {
+            throw new IllegalArgumentException("avatarFarbe muss ein gueltiger Hex-Farbwert sein (z.B. #e63946)");
+        }
+        this.avatarFarbe = avatarFarbe;
+    }
+
+    private static String zufaelligeFarbe() {
+        return AVATAR_FARBEN.get(ThreadLocalRandom.current().nextInt(AVATAR_FARBEN.size()));
     }
 
     private static String bereinigeName(String name) {

@@ -1,0 +1,166 @@
+databaseChangeLog:
+  - changeSet:
+      id: 014-spieler-profil-statistik
+      author: locodoko
+      changes:
+        - addColumn:
+            tableName: spieler
+            columns:
+              - column:
+                  name: anzeige_name
+                  type: VARCHAR(20)
+                  constraints:
+                    nullable: true
+              - column:
+                  name: avatar_farbe
+                  type: VARCHAR(7)
+                  constraints:
+                    nullable: true
+
+        - createTable:
+            tableName: spieler_statistik
+            columns:
+              - column:
+                  name: id
+                  type: UUID
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: spieler_id
+                  type: UUID
+                  constraints:
+                    nullable: false
+                    unique: true
+                    foreignKeyName: fk_spieler_statistik_spieler
+                    references: spieler(id)
+              - column:
+                  name: anzahl_spiele
+                  type: INT
+                  defaultValueNumeric: 0
+                  constraints:
+                    nullable: false
+              - column:
+                  name: anzahl_siege
+                  type: INT
+                  defaultValueNumeric: 0
+                  constraints:
+                    nullable: false
+              - column:
+                  name: gesamt_punkte
+                  type: INT
+                  defaultValueNumeric: 0
+                  constraints:
+                    nullable: false
+              - column:
+                  name: fuchs_gefangen
+                  type: INT
+                  defaultValueNumeric: 0
+                  constraints:
+                    nullable: false
+              - column:
+                  name: fuchs_verloren
+                  type: INT
+                  defaultValueNumeric: 0
+                  constraints:
+                    nullable: false
+              - column:
+                  name: karlchen_gespielt
+                  type: INT
+                  defaultValueNumeric: 0
+                  constraints:
+                    nullable: false
+              - column:
+                  name: doppelkoepfe
+                  type: INT
+                  defaultValueNumeric: 0
+                  constraints:
+                    nullable: false
+              - column:
+                  name: solos_siege
+                  type: INT
+                  defaultValueNumeric: 0
+                  constraints:
+                    nullable: false
+              - column:
+                  name: solos_niederlagen
+                  type: INT
+                  defaultValueNumeric: 0
+                  constraints:
+                    nullable: false
+              - column:
+                  name: erstellt_am
+                  type: TIMESTAMP WITH TIME ZONE
+                  defaultValueComputed: CURRENT_TIMESTAMP
+                  constraints:
+                    nullable: false
+              - column:
+                  name: aktualisiert_am
+                  type: TIMESTAMP WITH TIME ZONE
+                  defaultValueComputed: CURRENT_TIMESTAMP
+                  constraints:
+                    nullable: false
+
+        - createTable:
+            tableName: partie_ergebnis
+            columns:
+              - column:
+                  name: id
+                  type: UUID
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: spieler_id
+                  type: UUID
+                  constraints:
+                    nullable: false
+                    foreignKeyName: fk_partie_ergebnis_spieler
+                    references: spieler(id)
+              - column:
+                  name: tisch_name
+                  type: VARCHAR(100)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: datum
+                  type: TIMESTAMP WITH TIME ZONE
+                  constraints:
+                    nullable: false
+              - column:
+                  name: end_punktestand
+                  type: INT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: rangplatz
+                  type: INT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: spielanzahl
+                  type: INT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: erstellt_am
+                  type: TIMESTAMP WITH TIME ZONE
+                  defaultValueComputed: CURRENT_TIMESTAMP
+                  constraints:
+                    nullable: false
+              - column:
+                  name: aktualisiert_am
+                  type: TIMESTAMP WITH TIME ZONE
+                  defaultValueComputed: CURRENT_TIMESTAMP
+                  constraints:
+                    nullable: false
+
+        - createIndex:
+            tableName: partie_ergebnis
+            indexName: idx_partie_ergebnis_spieler_datum
+            columns:
+              - column:
+                  name: spieler_id
+              - column:
+                  name: datum
+                  descending: true

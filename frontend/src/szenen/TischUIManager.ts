@@ -486,7 +486,7 @@ export class TischUIManager {
         const parteiBadge = spieler.partei ? `<span class="ui-badge ui-badge--partei">${spieler.partei}</span>` : '';
         eintrag.innerHTML = `
           <div class="ui-list-item__headline">
-            <strong>${escapeHtml(spieler.name)}</strong>
+            <strong>${escapeHtml(spieler.anzeigeName)}</strong>
             <span class="ui-badge ${spieler.istSelbst ? 'ui-badge--highlight' : ''}">${badge}</span>
           </div>
           <div class="ui-list-item__meta">

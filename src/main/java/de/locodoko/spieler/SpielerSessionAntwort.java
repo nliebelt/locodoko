@@ -15,10 +15,14 @@ import java.util.UUID;
  * @param name           Anzeigename des Spielers
  * @param istKi          {@code true} fuer KI-gesteuerte Spieler (im normalen Flow immer {@code false})
  * @param aktiverTischId ID des Tisches, an dem der Spieler aktuell sitzt; {@code null} falls keiner
+ * @param anzeigeName    oeffentlicher Anzeigename (Fallback: name)
+ * @param avatarFarbe    Avatar-Farbe als Hex-String
  */
-public record SpielerSessionAntwort(UUID spielerId, String name, boolean istKi, UUID aktiverTischId) {
+public record SpielerSessionAntwort(UUID spielerId, String name, boolean istKi, UUID aktiverTischId,
+                                     String anzeigeName, String avatarFarbe) {
 
     public static SpielerSessionAntwort aus(SpielerEntity spieler, UUID aktiverTischId) {
-        return new SpielerSessionAntwort(spieler.id(), spieler.name(), spieler.istKi(), aktiverTischId);
+        return new SpielerSessionAntwort(spieler.id(), spieler.name(), spieler.istKi(), aktiverTischId,
+            spieler.anzeigeName(), spieler.avatarFarbe());
     }
 }

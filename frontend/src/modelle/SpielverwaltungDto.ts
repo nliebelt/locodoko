@@ -15,6 +15,10 @@ export interface SpielerSessionAntwort {
   istKi: boolean;
   /** ID des Tisches, an dem der Spieler aktuell sitzt; null falls keiner. Fuer Session-Recovery. */
   aktiverTischId?: Uuid | null;
+  /** Oeffentlicher Anzeigename (Fallback: name). */
+  anzeigeName?: string;
+  /** Avatar-Farbe als Hex-String. */
+  avatarFarbe?: string;
 }
 
 /** Antwort nach erfolgreicher Registrierung oder Login. */
@@ -137,6 +141,8 @@ export interface SpielerImSpielAntwort {
   position: SpielerPosition;
   spielerId: Uuid | null;
   name: string;
+  anzeigeName: string;
+  avatarFarbe: string | null;
   istKi: boolean;
   istSelbst: boolean;
   istGeber: boolean;

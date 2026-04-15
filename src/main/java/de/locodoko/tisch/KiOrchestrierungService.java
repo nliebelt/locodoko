@@ -11,8 +11,12 @@ import de.locodoko.partie.Ansage;
 import de.locodoko.partie.Partei;
 import de.locodoko.partie.Partie;
 import de.locodoko.partie.Spiel;
+import de.locodoko.partie.Spielergebnis;
 import de.locodoko.partie.Spielphase;
+import de.locodoko.partie.Sonderpunkt;
+import de.locodoko.partie.SonderpunktEreignis;
 import de.locodoko.partie.VorbehaltAnsage;
+import de.locodoko.partie.ereignisse.SpielBeendet;
 import de.locodoko.tisch.persistenz.PartieRepository;
 import de.locodoko.partie.PartieStatus;
 import de.locodoko.spieler.SpielerEntity;
@@ -20,12 +24,14 @@ import de.locodoko.spieler.SpielerRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.EnumMap;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -54,6 +60,7 @@ public class KiOrchestrierungService {
     private final PartieRepository partieRepository;
     private final TischEchtzeitService tischEchtzeitService;
     private final SpielRegistry spielRegistry;
+    private final ApplicationEventPublisher eventPublisher;
     // Zyklische Abhaengigkeit: KiEventAdapter -> KiOrchestrierungService -> KiEventAdapter (Scheduling)
     // @Lazy verzoegert die Instanziierung und verhindert den Startup-Fehler.
     private KiEventAdapter kiEventAdapter;
@@ -64,7 +71,8 @@ public class KiOrchestrierungService {
         TischRepository tischRepository,
         PartieRepository partieRepository,
         TischEchtzeitService tischEchtzeitService,
-        SpielRegistry spielRegistry
+        SpielRegistry spielRegistry,
+        ApplicationEventPublisher eventPublisher
     ) {
         this.kiStrategieFactory = kiStrategieFactory;
         this.spielerRepository = spielerRepository;
@@ -72,6 +80,7 @@ public class KiOrchestrierungService {
         this.partieRepository = partieRepository;
         this.tischEchtzeitService = tischEchtzeitService;
         this.spielRegistry = spielRegistry;
+        this.eventPublisher = eventPublisher;
     }
 
     @Autowired
@@ -105,6 +114,7 @@ public class KiOrchestrierungService {
                     Partie persistentePartie = tisch.partie();
                     persistentePartie.hydriere(tisch.konfiguration().alsSpielregeln());
                     Partie neuePartie = persistentePartie.schliesseAktuellesSpielAbUndStarteNaechstes();
+                    veroeffentlicheSpielBeendet(tisch, laufendesSpiel);
                     uebernehmeDomainPartieAbschluss(tisch, laufendesSpiel, neuePartie);
                 } catch (Exception e) {
                     LOGGER.error(
@@ -323,6 +333,44 @@ public class KiOrchestrierungService {
         return partie.spiele().stream()
             .reduce((erstes, zweites) -> zweites)
             .orElse(null);
+    }
+
+    private void veroeffentlicheSpielBeendet(TischEntity tisch, Spiel abgeschlossenesSpiel) {
+        Spielergebnis ergebnis = abgeschlossenesSpiel.ergebnis().orElse(null);
+        if (ergebnis == null) return;
+
+        Map<SpielerPosition, SpielerEntity> positionZuSpieler = spielerNachPosition(tisch);
+        boolean istSolo = abgeschlossenesSpiel.parteien() != null
+            && abgeschlossenesSpiel.parteien().spielerVon(Partei.RE).size() == 1;
+
+        Map<java.util.UUID, SpielBeendet.SpielerSpielDaten> spielerDaten = new HashMap<>();
+        for (SpielerPosition pos : SpielerPosition.standardReihenfolge()) {
+            SpielerEntity spieler = positionZuSpieler.get(pos);
+            if (spieler == null) continue;
+
+            Partei partei = abgeschlossenesSpiel.parteien().parteiVon(pos);
+            boolean sieger = partei == ergebnis.siegerPartei();
+            int spielpunkte = ergebnis.spielpunkteVon(pos).wert();
+
+            int fuchsGefangen = 0, fuchsVerloren = 0, karlchen = 0, doppelkoepfe = 0;
+            for (var sonderpunkte : ergebnis.sonderpunkteProPartei().values()) {
+                for (SonderpunktEreignis sp : sonderpunkte) {
+                    if (sp.art() == Sonderpunkt.FUCHS_GEFANGEN && sp.taeter() == pos) fuchsGefangen++;
+                    if (sp.art() == Sonderpunkt.FUCHS_GEFANGEN && sp.opfer() == pos) fuchsVerloren++;
+                    if (sp.art() == Sonderpunkt.KARLCHEN && sp.taeter() == pos) karlchen++;
+                    if (sp.art() == Sonderpunkt.DOPPELKOPF && sp.taeter() == pos) doppelkoepfe++;
+                }
+            }
+
+            boolean solist = istSolo && abgeschlossenesSpiel.parteien().spielerVon(Partei.RE).contains(pos);
+            spielerDaten.put(spieler.id(), new SpielBeendet.SpielerSpielDaten(
+                sieger, spielpunkte, fuchsGefangen, fuchsVerloren, karlchen, doppelkoepfe, solist
+            ));
+        }
+
+        eventPublisher.publishEvent(new SpielBeendet(
+            tisch.id(), tisch.name(), abgeschlossenesSpiel.spielNummer(), Map.copyOf(spielerDaten)
+        ));
     }
 
     private Map<SpielerPosition, SpielerEntity> spielerNachPosition(TischEntity tisch) {

@@ -21,19 +21,30 @@ Hochzeit, Armut, KI (3 Schwierigkeitsgrade), WebSocket, REST-API, Session, Verbi
 Frontend (Phaser 3, AppStore, Szenen-Aufteilung, Animationen, Overlays, Tastatursteuerung),
 Schnellstart, Einladungslink, Spring Modulith Modulstruktur.
 
-**Build:** `mvn test` grün (234 Tests, 0 Failures).
+**Build:** `mvn test` grün (237 Tests, 0 Failures).
 
-**Offene Punkte:** 3 Bugs im Spielbetrieb (BUG-1/BUG-2 behoben), 2 Architektur-Refactorings (R12–R13 erledigt, R14 erledigt).
+**Offene Punkte:** M2.2 erledigt. Verbleibend: M2.3–M2.5, SF-1, SF-2.
 
 ---
 
 ## Notiz
 
-**Zuletzt erledigt (Plan-Run #64):** R13 — Stiche und Hände werden jetzt als JSON-Blob in der `spiel`-Tabelle gespeichert statt über relationale `@MappedCollection`-Tabellen. Neue Typen: `HandJsonEintrag`, `StichJsonEintrag` (in `partie/`). `SpielEntity` nutzt `haende_json`- und `stiche_json`-Spalten. Liquibase-Changeset `012-spielzustand-json.yaml` fügt Spalten hinzu und droppt `hand`, `stich`, `gespielte_karte`-Tabellen. Gelöschte Klassen: `HandEntity`, `StichEntity`, `GespielteKarteEntity`, `HandRepository`, `StichRepository`, `GespielteKarteRepository`. `SpielPersistenzAdapter`, `PartieStandAntwort`, `TischVerwaltungsService` und 4 Tests angepasst. `mvn test` grün (237 Tests).
+**Zuletzt erledigt (Plan-Run #65):** M2.2 — Spieler-Profil + Statistiken komplett implementiert.
+Neue Dateien: `SpielerStatistik.java`, `SpielerStatistikRepository.java`, `PartieErgebnisEintrag.java`,
+`PartieErgebnisRepository.java`, `SpielerProfilService.java`, `SpielerProfilAntwort.java`,
+`SpielerProfilController.java`. Liquibase-Changeset `014-spieler-profil-statistik.yaml` erstellt
+Tabellen `spieler_statistik` + `partie_ergebnis` und fuegt `anzeige_name`/`avatar_farbe` Spalten
+zu `spieler` hinzu. `SpielBeendet`-Event angereichert mit Spieler-Statistik-Daten und wird jetzt
+von `KiOrchestrierungService` nach Spielabschluss publiziert. `SpielerProfilService` lauscht via
+`@ApplicationModuleListener(SpielBeendet.class)` und aktualisiert Statistiken. REST-Endpoint
+`GET/PUT /api/spieler/{id}/profil` liefert/aktualisiert Profil mit Statistiken und letzten Partien.
+Frontend: `SpielerImSpielAntwort` um `anzeigeName`/`avatarFarbe` erweitert, Nameplate zeigt
+Avatar-Farbkreis und `anzeigeName`, HUD nutzt `anzeigeName`. `mvn test` gruen (237 Tests).
+Frontend: `npm test` 24/24, `npm run build` + `npm run lint` gruen.
 
-**Nächster Schritt:** Alle Architektur-Refactorings (R12–R14) erledigt. Verbleibend: BUG-3 (Animations-Queue), BUG-4 (Browser-Reload), BUG-5 (DKV-Turnier).
+**Naechster Schritt:** M2.3 (Private Tische + Einladungslinks) oder M2.4 (Liquibase-Baseline + PostgreSQL).
 
-**Offene Fragen:** TischSzene.test.ts und AnimationenService.test.ts laufen nicht wegen pre-existing jsdom/ESM-Kompatibilitätsfehler (ERR_REQUIRE_ASYNC_MODULE).
+**Offene Fragen:** TischSzene.test.ts und AnimationenService.test.ts laufen nicht wegen pre-existing jsdom/ESM-Kompatibilitaetsfehler (ERR_REQUIRE_ASYNC_MODULE).
 
 ---
 
@@ -296,16 +307,16 @@ DB-Spaltenfelder neben @Transient-Domain-Feldern, synchronisiert via `hydriere()
 
 > **Notiz:** SecurityConfig nutzt `permitAll()` für alle Endpoints (Abwärtskompatibilität mit 237 bestehenden Tests). ABAC via `@PreAuthorize` auf spezifische Methoden in späteren Aufgaben. OAuth2-Config nutzt Env-Vars `GOOGLE_CLIENT_ID`/`GOOGLE_CLIENT_SECRET`.
 
-### M2.2: Spieler-Profil + Statistiken [ ]
+### M2.2: Spieler-Profil + Statistiken [x]
 
 **Priorität: Mittel** | **Blockiert durch:** M2.1 | **Spec:** `spieler-profil.md`
 
-- [ ] **M2.2.1** `Spieler`-Entität: `anzeigeName`, `avatarFarbe` + Liquibase-Migration (Changeset 012)
-- [ ] **M2.2.2** `SpielerStatistik`-Tabelle (1:1 mit Spieler, 9 Felder) + Changeset 012
-- [ ] **M2.2.3** `PartieErgebnis`-Tabelle (N:1 mit Spieler, max. 20 Einträge rotiert) + Changeset 012
-- [ ] **M2.2.4** Statistik-Update via `@ApplicationModuleListener(SpielBeendet.class)` in `spieler/`-Modul
-- [ ] **M2.2.5** `GET /api/spieler/{id}/profil` Endpoint
-- [ ] **M2.2.6** Frontend: Avatar + Anzeigename im HUD und Nameplate
+- [x] **M2.2.1** `Spieler`-Entität: `anzeigeName`, `avatarFarbe` + Liquibase-Migration (Changeset 014)
+- [x] **M2.2.2** `SpielerStatistik`-Tabelle (1:1 mit Spieler, 9 Felder) + Changeset 014
+- [x] **M2.2.3** `PartieErgebnis`-Tabelle (N:1 mit Spieler, max. 20 Einträge rotiert) + Changeset 014
+- [x] **M2.2.4** Statistik-Update via `@ApplicationModuleListener(SpielBeendet.class)` in `spieler/`-Modul
+- [x] **M2.2.5** `GET /api/spieler/{id}/profil` Endpoint
+- [x] **M2.2.6** Frontend: Avatar + Anzeigename im HUD und Nameplate
 
 ### M2.3: Private Tische + Einladungslinks [ ]
 
