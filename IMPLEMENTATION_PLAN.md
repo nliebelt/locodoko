@@ -23,23 +23,23 @@ Schnellstart, Einladungslink, Spring Modulith Modulstruktur.
 
 **Build:** `mvn test` grün (248 Tests, 0 Failures).
 
-**Offene Punkte:** M2.4 erledigt. Verbleibend: M2.5, SF-1, SF-2.
+**Offene Punkte:** M2.4 erledigt. Verbleibend: M2.5.
 
 ---
 
 ## Notiz
 
-**Zuletzt erledigt (Plan-Run #68):** SF-1 — Fünf-Könige-Schmeißen vollständig implementiert.
-Neuer `VorbehaltAnsage.SCHMEISSEN` Enum-Wert (Priorität 4, höchste). `Spielregeln.schmeissenAktiv`
-Feld hinzugefügt — aktiv in `locoBlatRegeln()`, deaktiviert in `dkvRegeln()` und `standardRegeln()`.
-`Spiel.loeseVorbehalteAuf()` erkennt SCHMEISSEN als höchsten Vorbehalt und ruft `eingeworfenesSpiel()`
-für sofortiges Neu-Austeilen auf. KI (`StandardKiStrategie`) meldet immer SCHMEISSEN wenn möglich.
-Frontend: `SCHMEISSEN` in VorbehaltAnsage-Typ, Formatierer, Presets und Konfigurationsmodal ergänzt.
-Liquibase-Changeset 016: `schmeissen_aktiv` Boolean-Spalte auf `tisch`-Tabelle.
-5 neue Tests in SpielTest (Schmeißen, Priorität vor Solo, 4 Könige nicht ausreichend, DKV deaktiviert,
-explizit deaktiviert). `mvn test` grün (253 Tests). Frontend build+lint+tests grün.
+**Zuletzt erledigt (Plan-Run #69):** SF-2 — Schweinchen DKV-konforme implizite Ansage.
+Neues Domain-Event `SchweinchenGemeldet(tischId, spielerPosition)` in `partie/ereignisse/`.
+`Spiel.schweinchenGemeldetVon()` erkennt den ersten Karo-As-Spieler aus abgeschlossenen/aktuellem Stich.
+`SpielAktionsService.spieleKarte()` vergleicht Vorher/Nachher und publiziert `SchweinchenGemeldet`.
+`WebSocketBroadcastAdapter` lauscht auf `SchweinchenGemeldet` (Logging).
+Neues Feld `schweinchenGemeldetVon` in `LaufendesSpielAntwort` (Backend + Frontend-DTO).
+Frontend: `TischSzene.ermittleSchweinchenEreignis()` erkennt State-Transition, zeigt pink-farbenes
+Ansage-Banner via `animiereAnsageBanner()`. `TischAnsichtModell` + alle Fixtures aktualisiert.
+`mvn test` grün (253 Tests). Frontend build+lint+tests grün (pre-existing jsdom-Fehler bestehen weiter).
 
-**Nächster Schritt:** M2.5 (OpenAPI / TypeScript-Typen) oder SF-2 (Schweinchen — DKV-konforme implizite Ansage).
+**Nächster Schritt:** M2.5 (OpenAPI / TypeScript-Typen-Synchronisation).
 
 **Offene Fragen:** TischSzene.test.ts und AnimationenService.test.ts laufen nicht wegen pre-existing jsdom/ESM-Kompatibilitaetsfehler (ERR_REQUIRE_ASYNC_MODULE).
 
@@ -355,12 +355,12 @@ DB-Spaltenfelder neben @Transient-Domain-Feldern, synchronisiert via `hydriere()
 - [x] **SF-1.4** Frontend: Schmeißen-Button in Vorbehalt-UI + Konfigurationsmodal
 - [x] **SF-1.5** Tests: 5 Könige → Schmeißen möglich; 4 Könige → nicht möglich; DKV-Preset → deaktiviert
 
-### SF-2: Schweinchen — DKV-konforme implizite Ansage [ ]
+### SF-2: Schweinchen — DKV-konforme implizite Ansage [x]
 
 **Priorität: Mittel** | **Blockiert durch:** BUG-2 (Schweinchen muss erst grundsätzlich funktionieren)
 **Spec:** `schweinchen.md`
 
-- [ ] **SF-2.1** Neues Domain-Event `SchweinchenGemeldet` in `partie/ereignisse/`
-- [ ] **SF-2.2** `SpielAktionsService.spieleKarte()`: Wenn erstes Karo-As gespielt → `SchweinchenGemeldet` publizieren
-- [ ] **SF-2.3** `WebSocketBroadcastAdapter`: lauscht auf `SchweinchenGemeldet` → sendet Banner-Event an Clients
-- [ ] **SF-2.4** Frontend: Schweinchen-Banner erst bei `SchweinchenGemeldet`-Event (nicht beim Austeilen)
+- [x] **SF-2.1** Neues Domain-Event `SchweinchenGemeldet` in `partie/ereignisse/`
+- [x] **SF-2.2** `SpielAktionsService.spieleKarte()`: Wenn erstes Karo-As gespielt → `SchweinchenGemeldet` publizieren
+- [x] **SF-2.3** `WebSocketBroadcastAdapter`: lauscht auf `SchweinchenGemeldet` → sendet Banner-Event an Clients
+- [x] **SF-2.4** Frontend: Schweinchen-Banner erst bei `SchweinchenGemeldet`-Event (nicht beim Austeilen)

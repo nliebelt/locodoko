@@ -336,11 +336,13 @@ export class TischSzene extends Phaser.Scene {
       const hochzeitMeldung = this.ermittleHochzeitEreignis(vorherigerZustand ?? null, zustand);
       const spielankuendigung = this.ermittleSpielankuendigung(vorherigerZustand ?? null, zustand);
       const bockrundeMeldung = this.ermittleBockrundeEreignis(vorherigerZustand ?? null, zustand);
+      const schweinchenMeldung = this.ermittleSchweinchenEreignis(vorherigesModell, modell);
       if (neueAnsagen.length > 0) this.animationen?.reiheEin(() => this.starteAnsageBannerAnimationen(neueAnsagen));
       if (neueSonderpunkte.length > 0) this.animationen?.reiheEin(() => this.starteSonderpunktFeedbackAnimationen(neueSonderpunkte));
       if (hochzeitMeldung) this.animationen?.reiheEin(() => this.zeigeHochzeitEreignis(hochzeitMeldung));
       if (spielankuendigung) this.animationen?.reiheEin(() => this.zeigeSpielankuendigung(spielankuendigung));
       if (bockrundeMeldung) this.animationen?.reiheEin(() => this.zeigeBockrundeEreignis());
+      if (schweinchenMeldung) this.animationen?.reiheEin(() => this.zeigeSchweinchenBanner(schweinchenMeldung));
       // Neues Spielergebnis → erst Gewinner-Flash, dann Modal einblenden (beides in der Queue)
       if (this.erkennteNeuesSpielErgebnis(vorherigesModell, modell) && modell.letztesSpielergebnis) {
         const ergebnisModell = modell;
@@ -1229,6 +1231,35 @@ export class TischSzene extends Phaser.Scene {
     const breite = this.scale.gameSize.width;
     const hoehe = this.scale.gameSize.height;
     await this.animationen?.animiereBockrunde({ x: breite / 2, y: hoehe / 2 });
+  }
+
+  // Erkennt ob Schweinchen gerade gemeldet wurde (erstes Karo-As gespielt)
+  private ermittleSchweinchenEreignis(
+    vorherigesModell: TischAnsichtModell | null,
+    aktuellesModell: TischAnsichtModell
+  ): string | null {
+    if (!aktuellesModell.schweinchenGemeldetVon) {
+      return null;
+    }
+    if (vorherigesModell?.schweinchenGemeldetVon === aktuellesModell.schweinchenGemeldetVon) {
+      return null;
+    }
+    const spieler = aktuellesModell.spieler.find(
+      (s) => s.position === aktuellesModell.schweinchenGemeldetVon
+    );
+    const name = spieler?.name ?? aktuellesModell.schweinchenGemeldetVon;
+    return `${name}: Schweinchen!`;
+  }
+
+  private async zeigeSchweinchenBanner(meldung: string): Promise<void> {
+    const breite = this.scale.gameSize.width;
+    const hoehe = this.scale.gameSize.height;
+    await this.animationen?.animiereAnsageBanner(
+      meldung,
+      { x: breite / 2, y: Math.round(hoehe * 0.18) },
+      undefined,
+      '#ff69b4'
+    );
   }
 
   // Zeigt Siegerpartei, Spielernamen und Spielwert als animierten Flash vor dem Rundenende-Modal

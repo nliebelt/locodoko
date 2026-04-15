@@ -12,6 +12,7 @@ import de.locodoko.partie.Spiel;
 import de.locodoko.partie.VorbehaltAnsage;
 import de.locodoko.partie.ereignisse.NaechsterSpielerErwartet;
 import de.locodoko.partie.ereignisse.PartieAktualisiert;
+import de.locodoko.partie.ereignisse.SchweinchenGemeldet;
 import de.locodoko.partie.ereignisse.VorbehaltErwartet;
 import de.locodoko.spieler.SpielerEntity;
 import de.locodoko.spieler.SpielerId;
@@ -125,6 +126,7 @@ public class SpielAktionsService {
         Spiel laufendesSpiel = ladeLaufendesSpiel(tisch.partie());
         SpielerPosition position = spielerPositionVon(tisch, verwalteterSpieler);
         laufendesSpiel.hydriere(tisch.konfiguration().alsSpielregeln());
+        boolean schweinchenVorher = laufendesSpiel.schweinchenGemeldetVon().isPresent();
         SpielRegistry.KommandoSchluessel schluessel = new SpielRegistry.KommandoSchluessel(
             tischId.wert(), position, "KARTE:" + karteId + ":" + laufendesSpiel.phase().name()
         );
@@ -139,6 +141,9 @@ public class SpielAktionsService {
         }
         partieRepository.saveAndFlush(tisch.partie());
         synchronisiereRegistry(tischId, tisch);
+        if (!schweinchenVorher && laufendesSpiel.schweinchenGemeldetVon().isPresent()) {
+            eventPublisher.publishEvent(new SchweinchenGemeldet(tischId.wert(), laufendesSpiel.schweinchenGemeldetVon().get()));
+        }
         veroeffentlicheEreignisse(tischId, tisch);
         return PartieStandAntwort.aus(tisch, verwalteterSpieler.id());
     }

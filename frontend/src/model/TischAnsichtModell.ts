@@ -137,6 +137,8 @@ export interface TischAnsichtModell {
   /** true, wenn die gesamte Partie (alle Spiele) beendet ist — loest Partie-Ende-Modal aus. */
   partieBeendet: boolean;
   armutAktion: ArmutAktionAnsicht | null;
+  /** Position des Spielers der Schweinchen gemeldet hat (erstes Karo-As gespielt), null wenn nicht gemeldet. */
+  schweinchenGemeldetVon: SpielerPosition | null;
 }
 
 const POSITIONEN: SpielerPosition[] = ['SUED', 'WEST', 'NORD', 'OST'];
@@ -237,7 +239,8 @@ export function erstelleStandardTischAnsicht(spielerName: string): TischAnsichtM
     letzteAbgeschlosseneStiche: [],
     letztesSpielergebnis: null,
     partieBeendet: false,
-    armutAktion: null
+    armutAktion: null,
+    schweinchenGemeldetVon: null
   };
 }
 
@@ -280,7 +283,8 @@ export function erstelleTischAnsichtAusStatus(
       letzteAbgeschlosseneStiche: [],
       letztesSpielergebnis: null,
       partieBeendet: false,
-      armutAktion: null
+      armutAktion: null,
+      schweinchenGemeldetVon: null
     };
   }
 
@@ -332,7 +336,10 @@ export function erstelleTischAnsichtAusStatus(
       spielerAnsichten
     ),
     partieBeendet: partieStand?.status === 'BEENDET',
-    armutAktion: laufendesSpiel ? bestimmeArmutAktion(laufendesSpiel, spielerAnsichten, bezugPosition) : null
+    armutAktion: laufendesSpiel ? bestimmeArmutAktion(laufendesSpiel, spielerAnsichten, bezugPosition) : null,
+    schweinchenGemeldetVon: laufendesSpiel?.schweinchenGemeldetVon
+      ? mappeRelativePosition(laufendesSpiel.schweinchenGemeldetVon, bezugPosition)
+      : null
   };
 }
 

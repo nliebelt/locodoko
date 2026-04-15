@@ -398,6 +398,21 @@ public class Spiel extends AbstraktePersistenzEntity {
     public Set<Partei> pflichtansageAusstehend() { return phase instanceof Spielphase.Stichphase s ? s.pflichtansageAusstehend() : Set.of(); }
     public TrumpfOrdnung trumpfOrdnung() { return trumpfOrdnung; }
     public boolean schweinchenAktiv() { return trumpfOrdnung instanceof SchweinchenTrumpfOrdnung; }
+
+    /** Liefert die Position des Spielers, der das erste Karo-As gespielt hat (implizite Schweinchen-Meldung), oder leer. */
+    public Optional<SpielerPosition> schweinchenGemeldetVon() {
+        if (!schweinchenAktiv()) { return Optional.empty(); }
+        for (Stich stich : abgeschlosseneStiche) {
+            for (GespielteKarte gk : stich.gespielteKarten()) {
+                if (istKaroAs(gk.karte())) { return Optional.of(gk.spieler()); }
+            }
+        }
+        return aktuellerStich().flatMap(stich -> stich.gespielteKarten().stream()
+            .filter(gk -> istKaroAs(gk.karte())).findFirst().map(GespielteKarte::spieler));
+    }
+
+    private static boolean istKaroAs(Karte k) { return k.farbe() == Farbe.KARO && k.wert() == Kartenwert.AS; }
+
     public boolean hatHerzDurchgegangenenStich() { return abgeschlosseneStiche.stream().anyMatch(this::istHerzDurchgegangen); }
 
     // -- Persistenz-Accessor-Methoden --

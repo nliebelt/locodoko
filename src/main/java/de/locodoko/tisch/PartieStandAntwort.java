@@ -88,7 +88,8 @@ public record PartieStandAntwort(
         List<AnsageEreignisAntwort> ansageHistorie,
         List<Ansage> moeglicheAnsagen,
         List<VorbehaltAnsage> moeglicheVorbehalte,
-        boolean istBockrunde
+        boolean istBockrunde,
+        SpielerPosition schweinchenGemeldetVon
     ) {
 
         static LaufendesSpielAntwort aus(TischEntity tisch, Spiel laufendesSpiel, UUID sichtbarerSpielerId, boolean debugModus) {
@@ -136,7 +137,8 @@ public record PartieStandAntwort(
                 fachlichesSpiel.ansagen().ereignisse().stream().map(AnsageEreignisAntwort::aus).toList(),
                 bestimmeMoeglicheAnsagen(fachlichesSpiel, sichtbarePosition, aktuellerSpieler),
                 bestimmeMoeglicheVorbehalte(fachlichesSpiel, sichtbarePosition, aktuellerSpieler),
-                tisch.partie().bockrundenZaehlerAusDb() > 0
+                tisch.partie().bockrundenZaehlerAusDb() > 0,
+                fachlichesSpiel.schweinchenGemeldetVon().orElse(null)
             );
         }
 

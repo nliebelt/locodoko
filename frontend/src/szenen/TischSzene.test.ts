@@ -441,6 +441,7 @@ function baueLaufendesSpiel(optionen: Partial<LaufendesSpielAntwort> = {}): Lauf
     moeglicheAnsagen: [],
     moeglicheVorbehalte: [],
     istBockrunde: false,
+    schweinchenGemeldetVon: null,
     ...optionen
   };
 }

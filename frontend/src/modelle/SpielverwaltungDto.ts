@@ -182,6 +182,7 @@ export interface LaufendesSpielAntwort {
   moeglicheAnsagen: Ansage[];
   moeglicheVorbehalte: VorbehaltAnsage[];
   istBockrunde: boolean;
+  schweinchenGemeldetVon: SpielerPosition | null;
 }
 
 export interface AbgeschlossenerStichAntwort {

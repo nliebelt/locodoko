@@ -1,6 +1,9 @@
 package de.locodoko.tisch;
 
 import de.locodoko.partie.ereignisse.PartieAktualisiert;
+import de.locodoko.partie.ereignisse.SchweinchenGemeldet;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.modulith.events.ApplicationModuleListener;
 import org.springframework.stereotype.Component;
 
@@ -17,12 +20,19 @@ import org.springframework.stereotype.Component;
 @Component
 class WebSocketBroadcastAdapter {
 
+    private static final Logger log = LoggerFactory.getLogger(WebSocketBroadcastAdapter.class);
+
     private final TischRepository tischRepository;
     private final TischEchtzeitService tischEchtzeitService;
 
     WebSocketBroadcastAdapter(TischRepository tischRepository, TischEchtzeitService tischEchtzeitService) {
         this.tischRepository = tischRepository;
         this.tischEchtzeitService = tischEchtzeitService;
+    }
+
+    @ApplicationModuleListener
+    public void beiSchweinchenGemeldet(SchweinchenGemeldet ereignis) {
+        log.info("Schweinchen gemeldet von {} an Tisch {}", ereignis.spielerPosition(), ereignis.tischId());
     }
 
     @ApplicationModuleListener
