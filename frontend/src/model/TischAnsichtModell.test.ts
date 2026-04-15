@@ -51,6 +51,7 @@ describe('erstelleTischAnsichtAusStatus', () => {
     const modell = erstelleTischAnsichtAusStatus('spieler-2', {
       id: 'tisch-1',
       einladungsCode: 'TEST1234',
+      zugangsmodus: 'OFFEN',
       name: 'Abendrunde',
       status: 'WARTEND',
       erstelltVonSpielerId: 'spieler-1',
@@ -75,6 +76,7 @@ describe('erstelleTischAnsichtAusStatus', () => {
     const modell = erstelleTischAnsichtAusStatus('spieler-1', {
       id: 'tisch-1',
       einladungsCode: 'TEST1234',
+      zugangsmodus: 'OFFEN',
       name: 'Abendrunde',
       status: 'IM_SPIEL',
       erstelltVonSpielerId: 'spieler-1',
@@ -184,6 +186,7 @@ describe('erstelleTischAnsichtAusStatus', () => {
     const modell = erstelleTischAnsichtAusStatus('spieler-1', {
       id: 'tisch-1',
       einladungsCode: 'TEST1234',
+      zugangsmodus: 'OFFEN',
       name: 'Abendrunde',
       status: 'IM_SPIEL',
       erstelltVonSpielerId: 'spieler-1',
@@ -298,6 +301,7 @@ describe('erstelleTischAnsichtAusStatus', () => {
     const modell = erstelleTischAnsichtAusStatus('spieler-2', {
       id: 'tisch-7',
       einladungsCode: 'TEST1234',
+      zugangsmodus: 'OFFEN',
       name: 'Rotation',
       status: 'IM_SPIEL',
       erstelltVonSpielerId: 'spieler-1',
@@ -354,6 +358,7 @@ describe('erstelleTischAnsichtAusStatus', () => {
     const modell = erstelleTischAnsichtAusStatus('spieler-2', {
       id: 'tisch-8',
       einladungsCode: 'TEST1234',
+      zugangsmodus: 'OFFEN',
       name: 'Ergebnisrunde',
       status: 'IM_SPIEL',
       erstelltVonSpielerId: 'spieler-1',
@@ -437,6 +442,7 @@ describe('erstelleTischAnsichtAusStatus', () => {
     const angebotModell = erstelleTischAnsichtAusStatus('spieler-1', {
       id: 'tisch-9',
       einladungsCode: 'TEST1234',
+      zugangsmodus: 'OFFEN',
       name: 'Armut',
       status: 'IM_SPIEL',
       erstelltVonSpielerId: 'spieler-1',
@@ -485,6 +491,7 @@ describe('erstelleTischAnsichtAusStatus', () => {
     const antwortModell = erstelleTischAnsichtAusStatus('spieler-2', {
       id: 'tisch-10',
       einladungsCode: 'TEST1234',
+      zugangsmodus: 'OFFEN',
       name: 'Armut',
       status: 'IM_SPIEL',
       erstelltVonSpielerId: 'spieler-1',

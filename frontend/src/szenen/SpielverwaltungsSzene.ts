@@ -233,6 +233,12 @@ export class SpielverwaltungsSzene extends Phaser.Scene {
           <option value="RUND_1">Rund 1</option>
         </select>
       </div>
+      <div class="neo-form-group">
+        <label class="neo-checkbox-label" style="display:flex;align-items:center;gap:8px;cursor:pointer;">
+          <input type="checkbox" id="tisch-privat" data-testid="checkbox-privat">
+          Privater Tisch (nur per Einladungslink betretbar)
+        </label>
+      </div>
       <div class="neo-modal-actions">
         <button id="modal-cancel" class="neo-button neo-button--secondary">Abbrechen</button>
         <button id="modal-submit" class="neo-button neo-button--primary" data-testid="btn-tisch-erstellen">Tisch erstellen</button>
@@ -333,6 +339,7 @@ export class SpielverwaltungsSzene extends Phaser.Scene {
       const rundenSelect = modal.querySelector('#runden-anzahl') as HTMLSelectElement;
       const kiSelect = modal.querySelector('#ki-schwierigkeit') as HTMLSelectElement;
       const hintergrundSelect = modal.querySelector('#tisch-hintergrund') as HTMLSelectElement;
+      const privatCheckbox = modal.querySelector('#tisch-privat') as HTMLInputElement;
 
       const regelKonfig = leseRegelKonfig(presetSelect.value as RegelPresetName);
       const konfig: Partial<TischKonfigurationDto> = {
@@ -342,7 +349,7 @@ export class SpielverwaltungsSzene extends Phaser.Scene {
         tischhintergrund: hintergrundSelect.value as Tischhintergrund,
       };
 
-      void appStore.erstelleKonfiguriertenTisch(nameInput.value, konfig);
+      void appStore.erstelleKonfiguriertenTisch(nameInput.value, konfig, privatCheckbox.checked);
       schliesseModal();
     });
 

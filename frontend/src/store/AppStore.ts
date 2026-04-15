@@ -232,7 +232,7 @@ export class AppStore {
    * Erstellt einen neuen Tisch und überschreibt danach selektiv die gewünschten Konfig-Felder.
    * Strategie: Erst erstellen (Backend-Defaults), dann PATCH der User-Prefs via PUT.
    */
-  async erstelleKonfiguriertenTisch(name: string, konfiguration: Partial<TischKonfigurationDto>): Promise<void> {
+  async erstelleKonfiguriertenTisch(name: string, konfiguration: Partial<TischKonfigurationDto>, privat?: boolean): Promise<void> {
     const tischName = name.trim();
     if (!tischName) {
       this.patch({ meldung: { typ: 'fehler', text: 'Bitte gib einen Tischnamen ein.', fehlerCode: 'ANFRAGE_UNGUELTIG' } });
@@ -240,8 +240,7 @@ export class AppStore {
     }
 
     await this.fuehreMitStatus(async () => {
-      // Erst ohne Konfiguration erstellen, damit Backend-Defaults greifen
-      const tisch = await this.api.erstelleTisch(tischName);
+      const tisch = await this.api.erstelleTisch(tischName, undefined, privat);
       // Dann User-Prefs als vollständige Konfiguration (Defaults + Overrides) zurückschreiben
       const hatOverrides = Object.keys(konfiguration).length > 0;
       if (hatOverrides) {
@@ -293,6 +292,20 @@ export class AppStore {
     this.registriereTischAbos(tischId, null);
     this.patch({ bereich: 'TISCH' });
     this.echtzeit.senden(`/app/tisch/${tischId}/snapshot`);
+  }
+
+  /**
+   * Entfernt einen Spieler vom aktuellen Tisch (Kick durch Gastgeber).
+   * @param spielerId - ID des zu entfernenden Spielers
+   */
+  async kickeSpieler(spielerId: Uuid): Promise<void> {
+    const tischId = this.zustand.aktuellerTisch?.id;
+    if (!tischId) {
+      return;
+    }
+    await this.fuehreMitStatus(async () => {
+      await this.api.kickeSpieler(tischId, spielerId);
+    });
   }
 
   /**

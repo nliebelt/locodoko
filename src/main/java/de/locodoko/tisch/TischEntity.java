@@ -44,6 +44,10 @@ public class TischEntity extends AbstraktePersistenzEntity {
     @Column("einladungs_code")
     private String einladungsCode;
 
+    /** Zugangsmodus: OFFEN (in Lobby sichtbar) oder PRIVAT (nur via Einladungslink). */
+    @Column("zugangsmodus")
+    private String zugangsmodus;
+
     /** Konfiguration direkt als Spalten eingebettet. Bean-Validierung kaskadiert via @Valid. */
     @Valid
     @Embedded.Nullable
@@ -83,6 +87,7 @@ public class TischEntity extends AbstraktePersistenzEntity {
         this.konfiguration = Objects.requireNonNull(konfiguration, "konfiguration darf nicht null sein");
         this.status = TischStatus.WARTEND.name();
         this.einladungsCode = generiereEinladungsCode();
+        this.zugangsmodus = Zugangsmodus.OFFEN.name();
     }
 
     static String generiereEinladungsCode() {
@@ -95,6 +100,12 @@ public class TischEntity extends AbstraktePersistenzEntity {
 
     public static TischEntity neu(String name, SpielerEntity erstelltVon, TischkonfigurationEmbeddable konfiguration) {
         return new TischEntity(name, erstelltVon, konfiguration);
+    }
+
+    public static TischEntity neu(String name, SpielerEntity erstelltVon, TischkonfigurationEmbeddable konfiguration, Zugangsmodus zugangsmodus) {
+        TischEntity tisch = new TischEntity(name, erstelltVon, konfiguration);
+        tisch.zugangsmodus = Objects.requireNonNull(zugangsmodus, "zugangsmodus darf nicht null sein").name();
+        return tisch;
     }
 
     public void fuegeSpielerHinzu(SpielerEntity spielerEntity) {
@@ -184,6 +195,10 @@ public class TischEntity extends AbstraktePersistenzEntity {
 
     public String einladungsCode() {
         return einladungsCode;
+    }
+
+    public Zugangsmodus zugangsmodus() {
+        return zugangsmodus == null ? Zugangsmodus.OFFEN : Zugangsmodus.valueOf(zugangsmodus);
     }
 
     public TischStatus status() {

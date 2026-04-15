@@ -2,6 +2,7 @@ package de.locodoko.tisch;
 
 import de.locodoko.partie.PartieId;
 import de.locodoko.spieler.SpielerEntity;
+import de.locodoko.spieler.SpielerId;
 import de.locodoko.spieler.SpielerSessionService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -14,6 +15,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -194,6 +196,24 @@ public class TischController {
         SpielerEntity spieler = ladeAktivenSpieler(request);
         LOGGER.info("Spieler {} aktualisiert die Konfiguration von Tisch {}", spieler.id(), id);
         return tischVerwaltungsService.aktualisiereKonfiguration(TischId.von(id), spieler, konfiguration);
+    }
+
+    @Operation(summary = "Spieler vom Tisch entfernen", description = "Entfernt einen Spieler vom Tisch. Nur der Gastgeber darf Spieler kicken. Nicht moeglich waehrend einer laufenden Partie.")
+    @ApiResponses({
+        @ApiResponse(responseCode = "200", description = "Spieler erfolgreich entfernt"),
+        @ApiResponse(responseCode = "401", description = "Keine gueltige Spieler-Session oder kein Gastgeber"),
+        @ApiResponse(responseCode = "404", description = "Tisch oder Spieler nicht gefunden"),
+        @ApiResponse(responseCode = "409", description = "Partie laeuft oder Spieler nicht am Tisch")
+    })
+    @DeleteMapping("/{id}/spieler/{spielerId}")
+    public BestaetigungAntwort kickeSpieler(
+        @Parameter(description = "Tisch-ID") @PathVariable UUID id,
+        @Parameter(description = "Spieler-ID des zu entfernenden Spielers") @PathVariable UUID spielerId,
+        HttpServletRequest request
+    ) {
+        SpielerEntity gastgeber = ladeAktivenSpieler(request);
+        LOGGER.info("Gastgeber {} kickt Spieler {} von Tisch {}", gastgeber.id(), spielerId, id);
+        return tischVerwaltungsService.kickeSpieler(TischId.von(id), SpielerId.von(spielerId), gastgeber);
     }
 
     private SpielerEntity ladeAktivenSpieler(HttpServletRequest request) {

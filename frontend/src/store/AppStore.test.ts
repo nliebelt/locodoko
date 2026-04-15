@@ -14,7 +14,7 @@ import type { SpielverwaltungApi } from '../services/SpielverwaltungApi';
 import type { EchtzeitPort, NachrichtenHandler } from '../services/SpielverwaltungEchtzeit';
 import { AppStore } from './AppStore';
 
-class FakeApi implements Pick<SpielverwaltungApi, 'initialisiereSpielerSession' | 'listeTische' | 'erstelleTisch' | 'betreteTisch' | 'betreteTischViaCode' | 'verlasseTisch' | 'starteTisch' | 'starteNeuePartie' | 'aktualisiereTischKonfiguration' | 'ladeTisch' | 'schnellstart' | 'registrieren' | 'einloggen' | 'ausloggen'> {
+class FakeApi implements Pick<SpielverwaltungApi, 'initialisiereSpielerSession' | 'listeTische' | 'erstelleTisch' | 'betreteTisch' | 'betreteTischViaCode' | 'verlasseTisch' | 'starteTisch' | 'starteNeuePartie' | 'aktualisiereTischKonfiguration' | 'ladeTisch' | 'schnellstart' | 'registrieren' | 'einloggen' | 'ausloggen' | 'kickeSpieler'> {
   constructor(
     private readonly spieler: SpielerSessionAntwort,
     private readonly tische: TischListenEintragAntwort[],
@@ -76,6 +76,10 @@ class FakeApi implements Pick<SpielverwaltungApi, 'initialisiereSpielerSession' 
   async ausloggen(): Promise<void> {
     // no-op
   }
+
+  async kickeSpieler(): Promise<{ nachricht: string }> {
+    return { nachricht: 'ok' };
+  }
 }
 
 class FakeEchtzeit implements EchtzeitPort {
@@ -113,6 +117,7 @@ function baueTisch(tischId: Uuid = 'tisch-1'): TischAntwort {
     id: tischId,
     name: 'Testtisch',
     einladungsCode: 'ABCD1234',
+    zugangsmodus: 'OFFEN',
     status: 'WARTEND',
     erstelltVonSpielerId: 'spieler-1',
     partieId: null,

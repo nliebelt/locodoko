@@ -49,6 +49,7 @@ public class TischVerwaltungsService {
     public List<TischListenEintragAntwort> listeOffeneTische() {
         return tischRepository.findAllByStatusOrderByErstelltAmAsc(TischStatus.WARTEND)
             .stream()
+            .filter(tisch -> tisch.zugangsmodus() == Zugangsmodus.OFFEN)
             .map(TischListenEintragAntwort::aus)
             .toList();
     }
@@ -60,7 +61,10 @@ public class TischVerwaltungsService {
         TischkonfigurationEmbeddable konfiguration = anfrage.konfiguration() == null
             ? TischkonfigurationEmbeddable.standard()
             : anfrage.konfiguration().alsEmbeddable();
-        TischEntity tisch = TischEntity.neu(anfrage.name(), verwalteterSpieler, konfiguration);
+        Zugangsmodus zugangsmodus = Boolean.TRUE.equals(anfrage.privat())
+            ? Zugangsmodus.PRIVAT
+            : Zugangsmodus.OFFEN;
+        TischEntity tisch = TischEntity.neu(anfrage.name(), verwalteterSpieler, konfiguration, zugangsmodus);
         tisch.fuegeSpielerHinzu(verwalteterSpieler);
         TischEntity gespeicherterTisch = tischRepository.saveAndFlush(tisch);
         TischAntwort antwort = TischAntwort.aus(gespeicherterTisch);
@@ -127,7 +131,46 @@ public class TischVerwaltungsService {
     }
 
     /**
-     * Bricht eine laufende Partie ab, weil ein Spieler den Tisch willentlich verlassen hat.
+     * Entfernt einen Spieler vom Tisch (Kick). Nur der Gastgeber darf kicken.
+     * Nicht moeglich waehrend einer laufenden Partie.
+     */
+    @Transactional
+    public BestaetigungAntwort kickeSpieler(TischId tischId, SpielerId zielSpielerId, SpielerEntity gastgeber) {
+        SpielerEntity verwalteterGastgeber = ladeSpieler(SpielerId.von(gastgeber.id()));
+        TischEntity tisch = ladeTischEntityMitSperre(tischId);
+
+        if (!tisch.erstelltVon().id().equals(verwalteterGastgeber.id())) {
+            throw new SpielverwaltungKonfliktException(
+                "KICK_NICHT_ERLAUBT",
+                "Nur der Gastgeber darf Spieler vom Tisch entfernen."
+            );
+        }
+        if (zielSpielerId.wert().equals(verwalteterGastgeber.id())) {
+            throw new SpielverwaltungKonfliktException(
+                "KICK_NICHT_ERLAUBT",
+                "Der Gastgeber kann sich nicht selbst kicken."
+            );
+        }
+        pruefeWartendenTisch(tisch, "KICK_IM_SPIEL", "Spieler koennen waehrend einer laufenden Partie nicht gekickt werden.");
+
+        SpielerEntity zielSpieler = tisch.spieler().stream()
+            .filter(s -> zielSpielerId.wert().equals(s.id()))
+            .findFirst()
+            .orElseThrow(() -> new SpielverwaltungNichtGefundenException(
+                "SPIELER_NICHT_AM_TISCH",
+                "Der Spieler sitzt nicht an diesem Tisch."
+            ));
+        tisch.entferneSpieler(zielSpieler);
+        TischEntity gespeicherterTisch = tischRepository.saveAndFlush(tisch);
+        TischAntwort antwort = TischAntwort.aus(gespeicherterTisch);
+        veroeffentlicheTischAktualisierung(
+            TischlisteEreignisAntwort.aktualisiert(listeOffeneTische()),
+            TischEreignisAntwort.aktualisiert(TischEreignisTyp.SPIELER_GEKICKT, antwort)
+        );
+        return new BestaetigungAntwort("Spieler wurde vom Tisch entfernt.");
+    }
+
+    /**
      *
      * <p>Die Partie wird als {@code ABGEBROCHEN} persistiert, alle Spieler am Tisch erhalten
      * ein {@code PARTIE_ABGEBROCHEN}-WebSocket-Event und werden dadurch zur Lobby zurueckgeleitet.
@@ -318,11 +361,12 @@ public class TischVerwaltungsService {
     }
 
     /**
-     * Sucht den aeltesten offenen Tisch mit mindestens einem freien Platz.
+     * Sucht den aeltesten offenen (nicht privaten) Tisch mit mindestens einem freien Platz.
      */
     private Optional<TischEntity> sucheOffenenTisch() {
         return tischRepository.findAllByStatusOrderByErstelltAmAsc(TischStatus.WARTEND)
             .stream()
+            .filter(tisch -> tisch.zugangsmodus() == Zugangsmodus.OFFEN)
             .filter(tisch -> !tisch.istVoll())
             .findFirst();
     }

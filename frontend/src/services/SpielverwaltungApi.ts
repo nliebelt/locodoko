@@ -131,10 +131,10 @@ export class SpielverwaltungApi {
   async ladeTisch(tischId: Uuid): Promise<TischAntwort> {
     return holeJson<TischAntwort>(`/api/tische/${tischId}`);
   }
-  async erstelleTisch(name: string, konfiguration?: Partial<TischKonfigurationDto>): Promise<TischAntwort> {
+  async erstelleTisch(name: string, konfiguration?: Partial<TischKonfigurationDto>, privat?: boolean): Promise<TischAntwort> {
     return holeJson<TischAntwort>('/api/tische', {
       method: 'POST',
-      body: JSON.stringify({ name, konfiguration })
+      body: JSON.stringify({ name, konfiguration, privat: privat ?? false })
     });
   }
 
@@ -185,5 +185,9 @@ export class SpielverwaltungApi {
 
   async ausloggen(): Promise<void> {
     await holeJson<void>('/api/auth/logout', { method: 'POST' });
+  }
+
+  async kickeSpieler(tischId: Uuid, spielerId: Uuid): Promise<BestaetigungAntwort> {
+    return holeJson<BestaetigungAntwort>(`/api/tische/${tischId}/spieler/${spielerId}`, { method: 'DELETE' });
   }
 }

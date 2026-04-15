@@ -75,11 +75,14 @@ export interface SpielerAmTischAntwort {
   istKi: boolean;
 }
 
+export type Zugangsmodus = 'OFFEN' | 'PRIVAT';
+
 export interface TischAntwort {
   id: Uuid;
   name: string;
   einladungsCode: string;
   status: TischStatus;
+  zugangsmodus: Zugangsmodus;
   erstelltVonSpielerId: Uuid;
   spieler: SpielerAmTischAntwort[];
   konfiguration: TischKonfigurationDto;
@@ -223,7 +226,9 @@ export type TischEreignisTyp =
   | 'SPIEL_GESTARTET'
   | 'TISCH_ENTFERNT'
   /** Partie abgebrochen, weil ein Spieler den Tisch willentlich verlassen hat. */
-  | 'PARTIE_ABGEBROCHEN';
+  | 'PARTIE_ABGEBROCHEN'
+  /** Der Gastgeber hat einen Spieler vom Tisch entfernt. */
+  | 'SPIELER_GEKICKT';
 export type PartieEreignisTyp = 'PARTIE_SNAPSHOT' | 'PARTIE_AKTUALISIERT';
 
 export interface TischlisteEreignisAntwort {

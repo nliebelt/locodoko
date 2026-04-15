@@ -29,20 +29,21 @@ Schnellstart, Einladungslink, Spring Modulith Modulstruktur.
 
 ## Notiz
 
-**Zuletzt erledigt (Plan-Run #65):** M2.2 — Spieler-Profil + Statistiken komplett implementiert.
-Neue Dateien: `SpielerStatistik.java`, `SpielerStatistikRepository.java`, `PartieErgebnisEintrag.java`,
-`PartieErgebnisRepository.java`, `SpielerProfilService.java`, `SpielerProfilAntwort.java`,
-`SpielerProfilController.java`. Liquibase-Changeset `014-spieler-profil-statistik.yaml` erstellt
-Tabellen `spieler_statistik` + `partie_ergebnis` und fuegt `anzeige_name`/`avatar_farbe` Spalten
-zu `spieler` hinzu. `SpielBeendet`-Event angereichert mit Spieler-Statistik-Daten und wird jetzt
-von `KiOrchestrierungService` nach Spielabschluss publiziert. `SpielerProfilService` lauscht via
-`@ApplicationModuleListener(SpielBeendet.class)` und aktualisiert Statistiken. REST-Endpoint
-`GET/PUT /api/spieler/{id}/profil` liefert/aktualisiert Profil mit Statistiken und letzten Partien.
-Frontend: `SpielerImSpielAntwort` um `anzeigeName`/`avatarFarbe` erweitert, Nameplate zeigt
-Avatar-Farbkreis und `anzeigeName`, HUD nutzt `anzeigeName`. `mvn test` gruen (237 Tests).
-Frontend: `npm test` 24/24, `npm run build` + `npm run lint` gruen.
+**Zuletzt erledigt (Plan-Run #66):** M2.3 — Private Tische + Einladungslinks komplett implementiert.
+Neue Dateien: `Zugangsmodus.java` (Enum OFFEN/PRIVAT), `EinladungsController.java` (GET /join/{code}
+Redirect-Endpoint). Liquibase-Changeset `015-zugangsmodus.yaml` fuegt `zugangsmodus` VARCHAR(10)
+Spalte zu `tisch`-Tabelle hinzu (Default: OFFEN). `TischEntity` um `zugangsmodus`-Feld erweitert
+mit Factory-Methode fuer privaten Tisch. `TischErstellenAnfrage` um optionales `privat`-Boolean
+erweitert. `TischAntwort` enthaelt jetzt `zugangsmodus`. `TischVerwaltungsService`: Oeffentliche
+Tischliste und Schnellstart-Suche filtern PRIVAT-Tische heraus. Neuer `kickeSpieler()`-Service +
+`DELETE /api/tische/{id}/spieler/{spielerId}` Endpoint — nur Gastgeber darf kicken, nicht
+waehrend laufender Partie. `TischEreignisTyp.SPIELER_GEKICKT` hinzugefuegt.
+Frontend: `Zugangsmodus`-Typ in DTOs, `kickeSpieler()`-API-Methode, AppStore um `kickeSpieler()`
+und `privat`-Parameter bei Tisch-Erstellung erweitert. SpielverwaltungsSzene: "Privater Tisch"
+Checkbox im Konfigurationsmodal. `mvn test` gruen (248 Tests). Frontend: `npm test` 24/24,
+`npm run build` + `npm run lint` gruen.
 
-**Naechster Schritt:** M2.3 (Private Tische + Einladungslinks) oder M2.4 (Liquibase-Baseline + PostgreSQL).
+**Naechster Schritt:** M2.4 (Liquibase-Baseline + PostgreSQL) oder M2.5 (OpenAPI / TypeScript-Typen).
 
 **Offene Fragen:** TischSzene.test.ts und AnimationenService.test.ts laufen nicht wegen pre-existing jsdom/ESM-Kompatibilitaetsfehler (ERR_REQUIRE_ASYNC_MODULE).
 
@@ -318,15 +319,15 @@ DB-Spaltenfelder neben @Transient-Domain-Feldern, synchronisiert via `hydriere()
 - [x] **M2.2.5** `GET /api/spieler/{id}/profil` Endpoint
 - [x] **M2.2.6** Frontend: Avatar + Anzeigename im HUD und Nameplate
 
-### M2.3: Private Tische + Einladungslinks [ ]
+### M2.3: Private Tische + Einladungslinks [x]
 
 **Priorität: Mittel** | **Blockiert durch:** M2.1 | **Spec:** `spieler-profil.md` (Abschnitt "Private Tische")
 
-- [ ] **M2.3.1** `Tisch`-Entität: `zugangsmodus` (OFFEN/PRIVAT) + `einladungsCode` (8 Zeichen) + Changeset 013
-- [ ] **M2.3.2** `GET /join/{code}` → Auto-Beitreten + Redirect zur TischSzene
-- [ ] **M2.3.3** Öffentliche Tischliste filtert PRIVAT-Tische heraus
-- [ ] **M2.3.4** Gastgeber-Kicken: `DELETE /api/tisch/{id}/spieler/{spielerId}` (ABAC: nur Gastgeber)
-- [ ] **M2.3.5** Frontend: "Privat"-Toggle + Einladungslink-Anzeige im Konfigurationsmodal
+- [x] **M2.3.1** `Tisch`-Entität: `zugangsmodus` (OFFEN/PRIVAT) + `einladungsCode` (8 Zeichen) + Changeset 015
+- [x] **M2.3.2** `GET /join/{code}` → Auto-Beitreten + Redirect zur TischSzene
+- [x] **M2.3.3** Öffentliche Tischliste filtert PRIVAT-Tische heraus
+- [x] **M2.3.4** Gastgeber-Kicken: `DELETE /api/tisch/{id}/spieler/{spielerId}` (ABAC: nur Gastgeber)
+- [x] **M2.3.5** Frontend: "Privat"-Toggle + Einladungslink-Anzeige im Konfigurationsmodal
 
 ### M2.4: Liquibase-Baseline + PostgreSQL [ ]
 

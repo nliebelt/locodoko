@@ -1,0 +1,14 @@
+databaseChangeLog:
+  - changeSet:
+      id: 015-zugangsmodus
+      author: locodoko
+      changes:
+        - addColumn:
+            tableName: tisch
+            columns:
+              - column:
+                  name: zugangsmodus
+                  type: VARCHAR(10)
+                  constraints:
+                    nullable: false
+                  defaultValue: "OFFEN"

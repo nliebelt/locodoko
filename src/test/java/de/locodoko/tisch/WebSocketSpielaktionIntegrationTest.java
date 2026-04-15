@@ -576,7 +576,7 @@ class WebSocketSpielaktionIntegrationTest {
         ResponseEntity<TischAntwort> antwort = restTemplate.exchange(
             url("/api/tische"),
             HttpMethod.POST,
-            new HttpEntity<>(new TischErstellenAnfrage(name, null), headers),
+            new HttpEntity<>(new TischErstellenAnfrage(name, null, null), headers),
             TischAntwort.class
         );
         return Objects.requireNonNull(antwort.getBody());
