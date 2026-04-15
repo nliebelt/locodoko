@@ -29,9 +29,9 @@ Schnellstart, Einladungslink, Spring Modulith Modulstruktur.
 
 ## Notiz
 
-**Zuletzt erledigt (Plan-Run #60):** BUG-5 untersucht — DKV-Turnier-Preset Spielabschluss. Domain-Level und Integration-Tests (KiOrchestrierungService mit DKV-Regeln, 2 Spiele, 4 KI-Spieler) bestätigen: Spielablauf funktioniert korrekt. Eigentliche Ursache war fehlende Fehlerbehandlung im AUSWERTUNG-Pfad von `automatisiereTisch()` — Exceptions bei Spielabschluss propagierten unkontrolliert und hängten die Partie permanent. Fix: try-catch um AUSWERTUNG-Block in `automatisiereTisch()` und um ungeschützten `automatisiereTisch()`-Aufruf in `fuehreVerzoegertenKiZugAus()`. 3 neue Tests (2 PartieTest, 1 KiOrchestrierungServiceIntegrationTest). `mvn test` grün (237 Tests).
+**Zuletzt erledigt (Plan-Run #61):** BUG-3 — Animations-Queue-Aufstauung. `AnimationenService` um serielle FIFO-Warteschlange (`reiheEin()`) und `animationLaeuft`-Getter erweitert. `TischSzene` umgebaut: `stichEinziehenLaeuft` und `animationsKette` entfernt, alle Animationen (Stich-Einziehen, Gegner-Karten, Banner, Gewinner-Flash, Modals) durch die zentrale Warteschlange serialisiert. `spielzugAnimationAktiv` bleibt für Doppelklick-Schutz, wird aber für Button-Sperren mit `animationLaeuft` kombiniert. `abbrechen()` setzt Warteschlange zurück. 4 neue Tests (Serialisierung, Fehlerbehandlung, animationLaeuft-Flag, Reset). Frontend: `npm test` grün (24/24), `npm run build` grün, `npm run lint` grün. Backend: `mvn test` grün (237 Tests).
 
-**Nächster Schritt:** BUG-3 (Animations-Queue-Aufstauung), dann BUG-4 (Browser-Reload).
+**Nächster Schritt:** BUG-4 (Browser-Reload zeigt alten State).
 
 **Offene Fragen:** Keine.
 
@@ -96,7 +96,7 @@ Standard-TrumpfOrdnung stattdessen genutzt wird?
 
 ---
 
-### BUG-3: Animations-Queue-Aufstauung (Frontend) [ ]
+### BUG-3: Animations-Queue-Aufstauung (Frontend) [x]
 
 **Priorität: Mittel** — visueller Bug, keine Spiellogik betroffen.
 

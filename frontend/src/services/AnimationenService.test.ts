@@ -242,4 +242,76 @@ describe('AnimationenService', () => {
     expect(aufrufe[0].duration).toBe(0);
     vi.useRealTimers();
   });
+
+  // WARUM: BUG-3 — bei schnellen KI-Zuegen wurden Stich-Einziehen und Karten-Ausspielen parallel
+  // animiert. Die Warteschlange serialisiert Animationen und verhindert die Aufstauung.
+  it('serialisiert eingereihte Animationen — keine parallele Ausfuehrung', async () => {
+    const { szene } = baueTweenSzene();
+    const service = new AnimationenService(szene as never, Infinity);
+    const ablauf: string[] = [];
+
+    const animation1 = service.reiheEin(async () => {
+      ablauf.push('start-1');
+      await Promise.resolve();
+      ablauf.push('ende-1');
+    });
+    const animation2 = service.reiheEin(async () => {
+      ablauf.push('start-2');
+      await Promise.resolve();
+      ablauf.push('ende-2');
+    });
+    const animation3 = service.reiheEin(async () => {
+      ablauf.push('start-3');
+      await Promise.resolve();
+      ablauf.push('ende-3');
+    });
+
+    await Promise.all([animation1, animation2, animation3]);
+
+    // Alle Animationen muessen strikt nacheinander gelaufen sein
+    expect(ablauf).toEqual(['start-1', 'ende-1', 'start-2', 'ende-2', 'start-3', 'ende-3']);
+  });
+
+  // WARUM: Wenn eine eingereihte Animation fehlschlaegt, darf die Kette nicht blockieren.
+  it('faengt Fehler in der Warteschlange ab und fuehrt nachfolgende Animationen aus', async () => {
+    const { szene } = baueTweenSzene();
+    const service = new AnimationenService(szene as never, Infinity);
+    const ablauf: string[] = [];
+
+    await service.reiheEin(async () => { throw new Error('Test-Fehler'); });
+    await service.reiheEin(async () => { ablauf.push('nach-fehler'); });
+
+    expect(ablauf).toEqual(['nach-fehler']);
+  });
+
+  // WARUM: animationLaeuft wird von der TischSzene geprüft um Buttons/Karten zu sperren.
+  it('setzt animationLaeuft waehrend der Warteschlangen-Ausfuehrung', async () => {
+    const { szene } = baueTweenSzene();
+    const service = new AnimationenService(szene as never, Infinity);
+
+    expect(service.animationLaeuft).toBe(false);
+
+    let warLaeuftInAnimation = false;
+    await service.reiheEin(async () => {
+      warLaeuftInAnimation = service.animationLaeuft;
+    });
+
+    expect(warLaeuftInAnimation).toBe(true);
+    expect(service.animationLaeuft).toBe(false);
+  });
+
+  // WARUM: abbrechen() muss die Warteschlange zuruecksetzen, damit bei Szenen-Wechsel keine
+  // veralteten Animationen weiterlaufen.
+  it('setzt die Warteschlange bei abbrechen() zurueck', async () => {
+    const { szene } = baueTweenSzene();
+    const service = new AnimationenService(szene as never, Infinity);
+
+    service.abbrechen();
+
+    expect(service.animationLaeuft).toBe(false);
+    // Nach abbrechen() sollen neue Animationen weiterhin funktionieren
+    const ablauf: string[] = [];
+    await service.reiheEin(async () => { ablauf.push('nach-abbrechen'); });
+    expect(ablauf).toEqual(['nach-abbrechen']);
+  });
 });

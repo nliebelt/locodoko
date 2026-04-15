@@ -38,11 +38,42 @@ export class AnimationenService {
   // Globaler Multiplikator fuer alle Animationsdauern: 1 = normal, 2 = doppelt, Infinity = sofort
   private geschwindigkeitsfaktor: number;
 
+  // Serielle FIFO-Queue: Jede eingereihte Animation wartet auf die vorherige.
+  // Verhindert dass Karten-Ausspielen und Stich-Einziehen parallel laufen.
+  private warteschlange: Promise<void> = Promise.resolve();
+
+  // True solange irgendeine Animation in der Warteschlange laeuft (fuer UI-Sperren).
+  private _animationLaeuft = false;
+
   constructor(
     private readonly szene: Phaser.Scene,
     geschwindigkeitsfaktor = 1
   ) {
     this.geschwindigkeitsfaktor = geschwindigkeitsfaktor;
+  }
+
+  /** Gibt zurueck ob gerade eine Animation in der Warteschlange laeuft. */
+  get animationLaeuft(): boolean {
+    return this._animationLaeuft;
+  }
+
+  /**
+   * Reiht eine Animation ans Ende der seriellen Warteschlange ein.
+   * Fehler werden abgefangen damit ein fehlgeschlagener Schritt die Kette nicht blockiert.
+   * @param fn - Async-Funktion die die eigentliche Animation ausfuehrt
+   */
+  reiheEin(fn: () => Promise<void>): Promise<void> {
+    const versprechen = this.warteschlange.then(() => {
+      this._animationLaeuft = true;
+      return fn();
+    }).catch(() => undefined).finally(() => {
+      // Pruefen ob nach diesem Schritt noch weitere Eintraege in der Kette warten
+      if (this.warteschlange === versprechen) {
+        this._animationLaeuft = false;
+      }
+    });
+    this.warteschlange = versprechen;
+    return versprechen;
   }
 
   /**
@@ -454,7 +485,7 @@ export class AnimationenService {
   }
 
   /**
-   * Stoppt alle laufenden Tweens und Timer sofort.
+   * Stoppt alle laufenden Tweens und Timer sofort und setzt die Warteschlange zurueck.
    * Wird beim Herunterfahren der Szene aufgerufen, um Memory-Leaks zu verhindern.
    */
   abbrechen(): void {
@@ -462,6 +493,8 @@ export class AnimationenService {
     this.laufendeTweens.clear();
     this.laufendenTimer.forEach((timer) => window.clearTimeout(timer));
     this.laufendenTimer.clear();
+    this.warteschlange = Promise.resolve();
+    this._animationLaeuft = false;
   }
 
   // Animiert die Transparenz eines Phaser-Objekts auf einen Zielwert (0=unsichtbar, 1=sichtbar)

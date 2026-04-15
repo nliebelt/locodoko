@@ -187,16 +187,8 @@ export class TischSzene extends Phaser.Scene {
   // Wird waehrend der Austeilen-Animation auf true gesetzt; Karten werden dann unsichtbar gerendert
   private austeilenAktiv = false;
 
-  // Laeuft eine Stich-Einziehen-Animation, wird hier das Promise gespeichert damit
-  // nachfolgende KI-Karten-Animationen erst danach starten koennen.
-  private stichEinziehenLaeuft: Promise<void> | null = null;
-
   // Phaser-Objekte der aktuell sichtbaren Rundenauswertung — werden beim Schliessen zerstoert.
   private rundenauswertungObjekte: Phaser.GameObjects.GameObject[] = [];
-
-  // Sequentielle Kette fuer alle Banner-Animationen (Ansagen, Sonderpunkte, Ankuendigungen).
-  // Jede neue Banner-Animation wird ans Ende gekettet, damit sie nicht parallel auftauchen.
-  private animationsKette: Promise<void> = Promise.resolve();
 
   // Handler fuer Escape-Taste am Rundenende-Modal (wird bei Schliessen entfernt)
   private escapeHandler?: (e: KeyboardEvent) => void;
@@ -286,7 +278,7 @@ export class TischSzene extends Phaser.Scene {
       getPartieEndeModal: () => this.uiManager?.getPartieEndeModal(),
       getEinstellungsModalEl: () => this.uiManager?.getEinstellungsModalEl(),
       isSeitenladeOffen: () => this.uiManager?.isSeitenladeOffen() ?? false,
-      isSpielzugAnimationAktiv: () => this.spielzugAnimationAktiv,
+      isSpielzugAnimationAktiv: () => this.spielzugAnimationAktiv || (this.animationen?.animationLaeuft ?? false),
       isArmutAnnahmeAktiv: () => this.armutAnnahmeAktiv,
       setArmutAnnahmeAktiv: (v) => { this.armutAnnahmeAktiv = v; },
       getTastaturKarteIndex: () => this.tastaturKarteIndex,
@@ -327,27 +319,30 @@ export class TischSzene extends Phaser.Scene {
         void this.starteAusteilen(modell, zustand);
       }
       this.renderTisch(zustand, modell);
-      void this.starteFolgeanimationen(vorherigesModell, modell);
-      void this.starteGegnerKartenAnimationen(vorherigesModell, modell);
-      // Alle Banner-Animationen nacheinander in eine gemeinsame Kette einreihen
+      // Stich-Einziehen und Gegner-Karten-Animationen serialisiert durch die zentrale Warteschlange
+      if (this.ermittleNeuAbgeschlossenenStich(vorherigesModell, modell)) {
+        this.animationen?.reiheEin(() => this.starteFolgeanimationen(vorherigesModell, modell));
+      }
+      this.animationen?.reiheEin(() => this.starteGegnerKartenAnimationen(vorherigesModell, modell));
+      // Alle Banner-Animationen in die gleiche Warteschlange einreihen
       const neueAnsagen = this.ermittleNeueAnsagen(vorherigesModell, modell);
       const neueSonderpunkte = this.ermittleNeueSonderpunkte(vorherigesModell, modell);
       const hochzeitMeldung = this.ermittleHochzeitEreignis(vorherigerZustand ?? null, zustand);
       const spielankuendigung = this.ermittleSpielankuendigung(vorherigerZustand ?? null, zustand);
       const bockrundeMeldung = this.ermittleBockrundeEreignis(vorherigerZustand ?? null, zustand);
-      if (neueAnsagen.length > 0) this.reiheBannerEin(() => this.starteAnsageBannerAnimationen(neueAnsagen));
-      if (neueSonderpunkte.length > 0) this.reiheBannerEin(() => this.starteSonderpunktFeedbackAnimationen(neueSonderpunkte));
-      if (hochzeitMeldung) this.reiheBannerEin(() => this.zeigeHochzeitEreignis(hochzeitMeldung));
-      if (spielankuendigung) this.reiheBannerEin(() => this.zeigeSpielankuendigung(spielankuendigung));
-      if (bockrundeMeldung) this.reiheBannerEin(() => this.zeigeBockrundeEreignis());
+      if (neueAnsagen.length > 0) this.animationen?.reiheEin(() => this.starteAnsageBannerAnimationen(neueAnsagen));
+      if (neueSonderpunkte.length > 0) this.animationen?.reiheEin(() => this.starteSonderpunktFeedbackAnimationen(neueSonderpunkte));
+      if (hochzeitMeldung) this.animationen?.reiheEin(() => this.zeigeHochzeitEreignis(hochzeitMeldung));
+      if (spielankuendigung) this.animationen?.reiheEin(() => this.zeigeSpielankuendigung(spielankuendigung));
+      if (bockrundeMeldung) this.animationen?.reiheEin(() => this.zeigeBockrundeEreignis());
       // Neues Spielergebnis → erst Gewinner-Flash, dann Modal einblenden (beides in der Queue)
       if (this.erkennteNeuesSpielErgebnis(vorherigesModell, modell) && modell.letztesSpielergebnis) {
         const ergebnisModell = modell;
-        this.reiheBannerEin(() => this.zeigeGewinnerFlash(ergebnisModell));
+        this.animationen?.reiheEin(() => this.zeigeGewinnerFlash(ergebnisModell));
         if (modell.partieBeendet) {
-          this.reiheBannerEin(() => { this.zeigePartieEndeModal(ergebnisModell); return Promise.resolve(); });
+          this.animationen?.reiheEin(() => { this.zeigePartieEndeModal(ergebnisModell); return Promise.resolve(); });
         } else {
-          this.reiheBannerEin(() => this.zeigeRundenEndeModal(ergebnisModell));
+          this.animationen?.reiheEin(() => this.zeigeRundenEndeModal(ergebnisModell));
         }
       }
       this.letztesModell = modell;
@@ -710,7 +705,8 @@ export class TischSzene extends Phaser.Scene {
       const karte = sichtbareHandkarten?.[index];
       const istSpielbar = karte ? modell.spielbareKarten.includes(karte.id) : false;
       const istArmutauswahl = karte ? (armutKarten?.has(karte.id) ?? false) : false;
-      const istInteraktiv = !this.spielzugAnimationAktiv && (istSpielbar || istArmutauswahl);
+      const animationAktiv = this.spielzugAnimationAktiv || (this.animationen?.animationLaeuft ?? false);
+      const istInteraktiv = !animationAktiv && (istSpielbar || istArmutauswahl);
       const istAusgewaehlt = karte ? this.ausgewaehlteArmutKarten.has(karte.id) : false;
       // Tastatur-Markierung: die spielbare Karte am aktuellen Index ist visuell hervorgehoben
       const istTastaturMarkiert = spieler.istSelbst
@@ -889,9 +885,6 @@ export class TischSzene extends Phaser.Scene {
 
     const animation = this.animationen?.animiereStichEinziehen(animierteKarten, ziel, abgeschlossenerStich.augen, flashRechteck)
       ?? Promise.resolve();
-    this.stichEinziehenLaeuft = animation.finally(() => {
-      this.stichEinziehenLaeuft = null;
-    });
 
     try {
       await animation;
@@ -914,11 +907,6 @@ export class TischSzene extends Phaser.Scene {
   ): Promise<void> {
     if (!vorherigesModell) {
       return;
-    }
-    // Warten bis eine laufende Stich-Einziehen-Animation abgeschlossen ist,
-    // damit KI-Karten nicht waehrend des Einziehens in die Mitte gleiten.
-    if (this.stichEinziehenLaeuft) {
-      await this.stichEinziehenLaeuft;
     }
     const eigeneSpielerPosition = aktuellesModell.spieler.find((s) => s.istSelbst)?.position;
     const neueGegnerKarten = aktuellesModell.aktuelleStichmitte.filter((eintrag) => {
@@ -1194,12 +1182,6 @@ export class TischSzene extends Phaser.Scene {
     const breite = this.scale.gameSize.width;
     const hoehe = this.scale.gameSize.height;
     await this.animationen?.animiereSoloAnkuendigung(meldung, { x: breite / 2, y: hoehe / 2 });
-  }
-
-  // Reiht eine Banner-Animationsfunktion ans Ende der sequentiellen Kette ein.
-  // Fehler werden abgefangen damit ein fehlgeschlagenes Banner die Kette nicht blockiert.
-  private reiheBannerEin(fn: () => Promise<void>): void {
-    this.animationsKette = this.animationsKette.then(fn).catch(() => undefined);
   }
 
   // Erkennt ob das naechste Spiel eine Bockrunde ist (bockrundenZaehler > 0 beim Spielstart).
@@ -1536,7 +1518,7 @@ export class TischSzene extends Phaser.Scene {
       fontStyle: 'bold'
     }).setOrigin(0.5));
 
-    const deaktiviert = zustand.wirdGeladen || this.spielzugAnimationAktiv;
+    const deaktiviert = zustand.wirdGeladen || this.spielzugAnimationAktiv || (this.animationen?.animationLaeuft ?? false);
     const gridStartX = breite / 2 - btnW / 2 - abstandX / 2;
     const gridStartY = dialogY - dialogH / 2 + titelH + abstandY + btnH / 2;
     optionen.forEach((vorbehalt, index) => {
@@ -1571,7 +1553,7 @@ export class TischSzene extends Phaser.Scene {
       return;
     }
 
-    const deaktiviert = zustand.wirdGeladen || this.spielzugAnimationAktiv;
+    const deaktiviert = zustand.wirdGeladen || this.spielzugAnimationAktiv || (this.animationen?.animationLaeuft ?? false);
     const btnH = Math.round(Math.max(32, hoehe * 0.048));
     const btnW = Math.round(Math.min(110, breite * 0.09));
     const abstand = Math.round(breite * 0.008);
@@ -1610,7 +1592,7 @@ export class TischSzene extends Phaser.Scene {
       return;
     }
     const armutAktion = modell.armutAktion;
-    const deaktiviert = zustand.wirdGeladen || this.spielzugAnimationAktiv;
+    const deaktiviert = zustand.wirdGeladen || this.spielzugAnimationAktiv || (this.animationen?.animationLaeuft ?? false);
     const btnH = Math.round(Math.max(32, hoehe * 0.048));
     const y = hoehe * 0.73;
 
