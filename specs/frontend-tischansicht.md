@@ -88,7 +88,7 @@ Die Tischansicht ist das zentrale Spielfeld. Sie nutzt die **volle Canvas-Fläch
 1. Gewonnene Stiche werden als **kleiner gestapelter Fächer rechts neben dem Kartenfächer** des Gewinners angezeigt.
 2. Bei SUED: Stapel rechts neben der eigenen Hand. Bei den Gegnern: analog zu ihrer Kartenposition.
 3. Der Stapel wächst mit jedem gewonnenen Stich — sichtbarer Fortschritt.
-4. **Letzten Stich umdrehen**: Klick auf den eigenen Stapel (oder dedizierte Taste) deckt die 4 Karten des letzten gewonnenen Stichs kurz auf — wie im echten Doppelkopf erlaubt. Nur der eigene Stapel ist umklappbar.
+4. **Letzten Stich umdrehen**: Klick auf **jeden** Stapel (eigenen oder gegnerischen) oder dedizierte Taste deckt die 4 Karten des letzten gewonnenen Stichs dieses Spielers kurz auf — wie im echten Doppelkopf erlaubt. Nach kurzer Zeit oder erneutem Klick werden sie wieder verdeckt.
 
 ### Floating Action Bar
 

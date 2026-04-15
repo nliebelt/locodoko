@@ -10,11 +10,20 @@
 
 Definition des Datenbankmodells für die persistente Speicherung aller spielrelevanten Daten. Das Modell bildet Tische, Partien, Spiele, Spieler, Hände, Stiche und Konfigurationen ab. 
 
-**Technologie**: Spring Data JDBC (kein JPA/Hibernate) + Liquibase für Schema-Migration + Lombok für Boilerplate-Reduktion.
+**Technologie**: Spring Data JDBC (kein JPA/Hibernate) + Liquibase für Schema-Migration.
+**Ziel-Datenbank**: PostgreSQL (Produktion), H2 In-Memory (Entwicklung/Tests).
 
-**Architektur**: Domain Model = Persistence Model (pragmatisches DDD). Aggregate Roots sind mutable, Value Objects sind immutable.
+**Architektur**: Domain Model = Persistence Model (pragmatisches DDD). `Spiel` und `Partie` tragen
+`@Table` direkt — keine separaten `*Entity`-Klassen (Details: `architektur-ddd.md` Abschnitt R12–R14).
+Stiche und Hände werden als **JSON-Blob** in der `spiel`-Zeile gespeichert — kein relationales
+`@MappedCollection` auf Stich- oder Hand-Tabellen.
 
-Für die Entwicklung wird H2 (In-Memory) verwendet, für die Produktion PostgreSQL.
+### Liquibase-Strategie
+
+- Changesets 001–009 werden in einem **Baseline-Changeset 010** konsolidiert für Frisch-Deployments.
+  Bestehende Instanzen ignorieren Baseline 010 (bereits von 001–009 migriert).
+- Neue Features (Auth, Profil, Statistiken) kommen als Changesets 011+ oben drauf.
+- Format: YAML, Dateien in `src/main/resources/db/changelog/`.
 
 ## Anforderungen
 
@@ -104,6 +113,9 @@ Für die Entwicklung wird H2 (In-Memory) verwendet, für die Produktion PostgreS
 - [x] PostgreSQL-Profil konfiguriert
 - [x] Lombok korrekt eingebunden (`@Getter`, `@RequiredArgsConstructor`, `@Value` für VOs)
 - [x] Code-Review / Plausibilitätsprüfung
+- [ ] Baseline-Changeset 010: konsolidiertes sauberes CREATE-Script (ersetzt 001–009 für Frisch-Deployments)
+- [ ] PostgreSQL-Profil vollständig konfiguriert und gegen echte PostgreSQL-Instanz getestet
+- [ ] Neue Tabellen für Auth + Profil + Statistiken (Changesets 011+, Details: authentifizierung.md, spieler-profil.md)
 
 ## Technische Hinweise
 

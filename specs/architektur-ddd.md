@@ -65,6 +65,18 @@ spieler → (nichts aus der Fachlichkeit)
 
 ### 3. Domain Design (Entities & Value Objects)
 
+**Keine separaten Entity-Klassen (Regel)**
+- Aggregate Roots tragen `@Table`, `@Id`, `@MappedCollection` direkt — kein `*Entity`-Pendant.
+- Persistenz-Infrastruktur-Klassen (Adapter, Mapping-Hilfsobjekte) gehören ins Modul `tisch/`, nicht in `partie/`.
+- `partie/` enthält ausschließlich fachliche Domain-Objekte.
+
+**Persistenz-Strategie für `Spiel` (Entscheidung 2026-04-15)**
+- `Spiel` bleibt **immutable** — SpielBuilder bleibt, kein mutable POJO.
+- Stiche und Hände als **JSON-Blob** in der `spiel`-Zeile (kein relationales `@MappedCollection` auf `stich`/`hand`-Tabellen). Laufender Spielzustand (aktuelle Hand, aktueller Stich, Phase) ist Byte-kompakt als JSON sinnvoller als normalisierte Relationen.
+- Nach Auswertung werden Stiche verworfen — kein Spielverlauf in DB (V1-Kompromiss).
+- `SpielEntity` und `PartieEntity` werden nach dem JSON-Blob-Umbau in `Spiel` und `Partie` gemergt (`@Table` direkt). `SpielPersistenzAdapter` fällt dann weg.
+- Migrationsreihenfolge: **R12** (Entities nach `tisch/`) → **R13** (JSON-Blob) → **R14** (Entity-Merge).
+
 **Aggregate Roots (mutable über Methoden)**
 - Identität & Concurrency: Stabile ID; `@Version Long version` für Optimistic Locking.
 - Kapselung: Interne Entities sind nach außen nur über das Root erreichbar.
@@ -158,6 +170,7 @@ Frontend-Typen und `AppStore` spiegeln die Fachmodelle des Backends (Details: `f
 - [x] `SpielerPosition` liegt in `de.locodoko.partie` (nicht in `karten`).
 - [x] Packages: `tisch/` (nicht `lobby/`), `spieler/` (nicht `session/`), `ki/` top-level.
 - [x] `event_publication`-Tabelle via Liquibase angelegt.
+- [ ] Keine `*Entity`-Klassen in `partie/` — alle in `tisch/` oder direkt gemergt (R12–R14).
 - [x] Frontend-Modelle folgen der fachlichen Struktur des Backends.
 - [x] Aggregate Roots mit `@Table` annotiert, Spring Data JDBC Repositories vorhanden.
 - [x] Liquibase Changesets für alle Schemaänderungen.

@@ -10,6 +10,11 @@
 
 KI-Spieler ersetzen menschliche Spieler und treffen regelbasierte, strategische Entscheidungen. Die KI soll kein zufälliges Verhalten zeigen, sondern nachvollziehbare Strategien anwenden, die auf Doppelkopf-Grundlagen basieren.
 
+## Bekannte Bugs / Offene Punkte
+
+- **Bug (2026-04-15) — KI hängt nach Sonderpunkt-Ereignis:** Nach "Fuchs gefangen" oder "Hochzeit-Partner gefunden" spielt die KI ihren nächsten Zug nicht mehr automatisch. `NaechsterSpielerErwartet`-Event wird nicht ausgelöst oder landet nicht beim `KiEventAdapter`. Zu prüfen: `SpielAktionsService` löst nach Sonderpunkt-Auswertung das Event korrekt aus; `KiEventAdapter` verarbeitet es.
+- **Tuning (2026-04-15) — Solo-Frequenz zu hoch:** Beim Loco-Blatt-Regelset (verschärftes Blatt) melden KI-Spieler zu häufig Solo an, verlieren diese aber meistens. Die Schwellen müssen auf einem verschärften Blatt (mit Schweinchen, 30er-Pflicht, Bockrunden) deutlich konservativer sein. Konkret: Alle Solo-Schwellen um ~15‥20% erhöhen wenn `spielregeln.schweinchenAktiv || spielregeln.dreissigAugenPflichtAktiv`.
+
 ## Anforderungen
 
 ### Kartenwahl
@@ -94,6 +99,8 @@ Kalibrierungsbeispiele:
 - Starke Hand (8 Trümpfe, 3 Damen, 2 Buben, 2 Asse): 8×4 + 2×2 + 3×2 + 2×2 = **46** → Solo
 
 Hintergrund: Vor der Kalibrierung lag die Schwelle bei 34, was dazu führte, dass bereits Durchschnittshände SOLO_TRUMPF triggerten.
+
+> **Offenes Tuning:** Bei aktivem Loco-Blatt-Regelset (Schweinchen + 30er-Pflicht) werden Hände relativ zum Normalspiel ausgeglichener. Die Schwelle soll kontextabhängig auf **52** erhöht werden wenn `spielregeln.schweinchenAktiv || spielregeln.dreissigAugenPflichtAktiv` aktiv ist.
 
 ### SOLO_DAME / SOLO_BUBE
 

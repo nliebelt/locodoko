@@ -34,6 +34,11 @@ im Normalspiel und im Trumpfsolo (nicht in Fleischlos, Damen- oder Bubensolo).
 - Schweinchen greift nicht in `SOLO_DAME`, `SOLO_BUBE`, `SOLO_FLEISCHLOS`.
 - Regel deaktivierbar per `Spielregeln.schweinchenAktiv = false`.
 
+## Bekannte Bugs / Offene Punkte
+
+- **Bug (2026-04-15):** Schweinchen zeigt im Spielbetrieb keine Wirkung — Karo-Asse werden trotz Aktivierung nicht als höchste Trümpfe behandelt. Ursache ungeklärt: möglicher Fehler in `SchweinchenTrumpfOrdnung`-Aktivierung oder Delegation in `Stich`.
+- **DKV-Standardregel (zu implementieren):** Laut offiziellen DKV-Regeln muss der Spieler beim **ersten Ausspielen eines Karo-Asses** explizit „Schweinchen" ansagen. Bis dahin ist die Zuweisung der erhöhten Trumpfränge dem Gegner nicht bekannt. Umsetzung: Server aktiviert `SchweinchenTrumpfOrdnung` beim Austeilen (bleibt so), aber ein neues Domain-Event `SchweinchenGemeldet` wird erst beim ersten gespielten Karo-As publiziert. Das Frontend zeigt das Schweinchen-Banner erst bei diesem Event. Ansageverweigerung (Spieler spielt erstes Karo-As ohne zu melden) ist kein Regelfehler laut DKV — die Ansage ist Pflicht aber nicht blockierend.
+
 ## Definition of Done
 
 - [x] Schweinchen-Erkennung nach `teileKartenAus()` in `Spiel` (oder nach `loeseVorbehalteAuf()`)

@@ -138,4 +138,28 @@ Laufende `Spiel`-Objekte leben in-memory in der `SpielRegistry`. Jeder Tisch hat
 - Alle `public`-Methoden in `AppStore`, Services und Modellen bleiben dokumentiert.
 - Neue Klassen beim Aufteilen von `TischSzene` bekommen TSDoc auf Klassenebene.
 
+---
+
+## OpenAPI / TypeScript-Typen-Synchronisation
+
+Das Backend generiert eine `openapi.json` aus den Response-DTOs. Das Frontend nutzt
+diese als **einzige Source of Truth** für alle API-Typen — kein manuelles Nachpflegen.
+
+### Vorgaben
+
+- `springdoc-openapi-starter-webmvc-ui` in `pom.xml` — generiert `/v3/api-docs` und Swagger-UI.
+- Alle Response-DTOs (Klassen in `tisch/` mit `*Antwort` oder `*Dto` im Namen) erhalten
+  `@Schema`-Annotationen (Beschreibung, Beispielwerte).
+- `openapi.json` wird im Build-Schritt nach `frontend/src/generated/` exportiert
+  (`mvn generate-sources` oder separater `npx openapi-typescript` Schritt).
+- Generierte TypeScript-Typen liegen in `frontend/src/generated/api-types.ts` und werden
+  **nicht manuell bearbeitet** (`.gitattributes` oder Kommentar-Header).
+- Bestehende handgeschriebene Typen in `AppStore` und Services werden schrittweise
+  auf generierte Typen umgestellt. Kein Refactoring-Pflicht auf einmal — Typen koexistieren
+  bis alle umgestellt sind.
+
+### Scope
+
+- Nur **DTOs/Response-Objekte** werden generiert — keine Domain-Objekte (`Spiel`, `Stich`, `Karte`).
+- Keine Code-Generierung für API-Calls (nur Typen) — `SpielverwaltungApi.ts` bleibt handgeschrieben.
 

@@ -48,6 +48,18 @@ Definition des gesamten Spielablaufs einer Doppelkopf-Partie. Eine Partie besteh
 2. Die Parteizugehörigkeit ist zu Beginn des Spiels **geheim** — jeder Spieler kennt nur seine eigene Partei (ob er eine Kreuz-Dame hat oder nicht).
 3. Die Parteien werden im Laufe des Spiels durch Ansagen, Spielverhalten oder das Ausspielen der Kreuz-Dame offenbart.
 
+### Schmeißen (Neuauflage) — Fehlt noch
+
+> **Status: Nicht implementiert**
+
+Ein Spieler darf das Spiel **neu auflegen** (schmeißen) wenn er eine der folgenden Sonderkönstellationen auf der Hand hat. Alle Karten kommen zurück, werden neu gemischt und neu ausgeteilt — der Geber bleibt gleich.
+
+1. **Fünf oder mehr Könige** auf der Hand (bei Normalspiel mit Neunen: 5+ von 8 Spielkönigen; ohne Neunen analog).
+2. **Neun oder mehr Neunen** (nur bei Spiel mit Neunen, also 48-Karten-Deck).
+3. Der Vorbehalt "Schmeißen" gilt als höchster Vorbehalt — vor Solo, Hochzeit, Armut. Wenn ein Spieler schmeißt, wird sofort neu ausgeteilt ohne die anderen Vorbehalte aufzulösen.
+4. Jeder Spieler hat **genau ein Schmeißen-Recht** pro Spiel (nicht pro Partie).
+5. Die Schmeißen-Regel ist nicht part des DKV-Turnier-Regelsets, aber Teil des Loco-Blatt-Presets.
+
 ### Geberrotation bei Solo (Nachgeben)
 
 1. Wenn das abgeschlossene Spiel ein **Solo** war, bleibt der **Geber identisch** mit dem Geber

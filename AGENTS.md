@@ -17,4 +17,23 @@ Build-Befehle und Architektur: siehe CLAUDE.md (wird automatisch geladen).
 - Nach **R7** (TischSzene aufteilen): Bridge-Schnittstelle prüfen ob AppStore-Methode noch gleich heißt
 - Falls Bridge bricht: `vision-loop.spec.ts` auf Tastatur-Input (`ArrowRight` + `Enter`) umstellen
 
+## Bekannte Bugs im Spielbetrieb (2026-04-15)
+
+- **KI hängt nach Fuchs gefangen / Hochzeit-Partner gefunden:** `NaechsterSpielerErwartet`-Event
+  wird nach Sonderpunkt-Auswertung nicht getriggert oder nicht vom `KiEventAdapter` verarbeitet.
+  Zu prüfen: `SpielAktionsService` nach `zieheStichEin()` → Event korrekt publiziert?
+  `KiEventAdapter`-Listener registriert? Tritt reproduzierbar auf wenn Fuchs gefangen wird.
+
+- **Schweinchen zeigt keine Wirkung:** Karo-Asse werden trotz aktivem Schweinchen nicht als
+  höchste Trümpfe behandelt. `SchweinchenTrumpfOrdnung`-Aktivierung in `teileKartenAus()` prüfen.
+
+- **Animations-Queue-Aufstauung:** Bei schnellen KI-Zügen werden plötzlich zwei Stiche
+  gleichzeitig animiert. `AnimationenService` braucht serielle FIFO-Queue.
+
+- **Browser-Reload zeigt alten State:** `Strg+R` zeigt Overlays/Animationen des vorherigen Spiels.
+  AppStore + AnimationenService müssen vor Snapshot-Verarbeitung vollständig resettet werden.
+
+- **DKV-Turnier-Preset: Spiel schließt nicht ab** — reproduzierbar mit DKV-Preset (alle
+  Sonderregeln deaktiviert). Fehler in `Spiel.werteAus()` oder `PunkteRechner`.
+
 <!-- Ralph trägt hier neue Erkenntnisse über den Build-Prozess ein. -->
