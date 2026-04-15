@@ -21,6 +21,7 @@ auslieferbar als einzelnes JAR.
       Ziel-BCs laut `specs/architektur-ddd.md`: `tisch/`, `spieler/` (aktuell: `lobby/`, `session/`)
       + specs/lobby.md, specs/tischkonfiguration.md, specs/datenbankmodell.md,
         specs/spieler-session.md, specs/verbindungsabbruch.md,
+        specs/authentifizierung.md, specs/spieler-profil.md,
         **specs/architektur-ddd.md** (Ziel-Modulstruktur)
 
     - Subagent 2 — Partie/Regeln/Architektur: `src/main/java/de/locodoko/partie/`
