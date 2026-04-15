@@ -1,0 +1,34 @@
+databaseChangeLog:
+  - changeSet:
+      id: 013-spieler-authentifizierung
+      author: locodoko
+      changes:
+        - addColumn:
+            tableName: spieler
+            columns:
+              - column:
+                  name: authentifizierungs_methode
+                  type: VARCHAR(50)
+                  constraints:
+                    nullable: true
+              - column:
+                  name: external_id
+                  type: VARCHAR(255)
+                  constraints:
+                    nullable: true
+              - column:
+                  name: benutzername
+                  type: VARCHAR(20)
+                  constraints:
+                    nullable: true
+                    unique: true
+              - column:
+                  name: passwort_hash
+                  type: VARCHAR(255)
+                  constraints:
+                    nullable: true
+              - column:
+                  name: email
+                  type: VARCHAR(255)
+                  constraints:
+                    nullable: true

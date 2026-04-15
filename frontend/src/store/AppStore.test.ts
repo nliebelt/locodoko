@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type {
+  AuthentifizierungsAntwort,
   PartieEreignisAntwort,
   SpielverwaltungWebSocketFehlerAntwort,
   SpielerSessionAntwort,
@@ -13,7 +14,7 @@ import type { SpielverwaltungApi } from '../services/SpielverwaltungApi';
 import type { EchtzeitPort, NachrichtenHandler } from '../services/SpielverwaltungEchtzeit';
 import { AppStore } from './AppStore';
 
-class FakeApi implements Pick<SpielverwaltungApi, 'initialisiereSpielerSession' | 'listeTische' | 'erstelleTisch' | 'betreteTisch' | 'betreteTischViaCode' | 'verlasseTisch' | 'starteTisch' | 'starteNeuePartie' | 'aktualisiereTischKonfiguration' | 'ladeTisch' | 'schnellstart'> {
+class FakeApi implements Pick<SpielverwaltungApi, 'initialisiereSpielerSession' | 'listeTische' | 'erstelleTisch' | 'betreteTisch' | 'betreteTischViaCode' | 'verlasseTisch' | 'starteTisch' | 'starteNeuePartie' | 'aktualisiereTischKonfiguration' | 'ladeTisch' | 'schnellstart' | 'registrieren' | 'einloggen' | 'ausloggen'> {
   constructor(
     private readonly spieler: SpielerSessionAntwort,
     private readonly tische: TischListenEintragAntwort[],
@@ -62,6 +63,18 @@ class FakeApi implements Pick<SpielverwaltungApi, 'initialisiereSpielerSession' 
 
   async ladeTisch(): Promise<TischAntwort> {
     return this.tisch;
+  }
+
+  async registrieren(): Promise<AuthentifizierungsAntwort> {
+    return { spielerId: this.spieler.spielerId, name: this.spieler.name, authentifizierungsMethode: 'PASSWORT' };
+  }
+
+  async einloggen(): Promise<AuthentifizierungsAntwort> {
+    return { spielerId: this.spieler.spielerId, name: this.spieler.name, authentifizierungsMethode: 'PASSWORT' };
+  }
+
+  async ausloggen(): Promise<void> {
+    // no-op
   }
 }
 

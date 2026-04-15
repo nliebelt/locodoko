@@ -33,31 +33,34 @@ export class BootSzene extends Phaser.Scene {
 
   private async initialisieren(): Promise<void> {
     try {
-      await appStore.initialisieren();
-      // Session-Recovery: Falls der Spieler bereits an einem Tisch sitzt (z.B. nach Tab-Reload),
-      // direkt zur Tischansicht weiterleiten statt zur Lobby.
-      const aktiverTischId = appStore.snapshot().spieler?.aktiverTischId ?? null;
-      if (aktiverTischId) {
-        appStore.reconnecteTisch(aktiverTischId);
-        this.scene.start('TischSzene');
-      } else {
-        // Einladungslink: #join/{code} → automatischer Beitritt
-        const einladungsCode = this.leseEinladungsCodeAusUrl();
-        if (einladungsCode) {
-          window.location.hash = '';
-          try {
-            await appStore.betreteTischViaCode(einladungsCode);
-            this.scene.start('TischSzene');
-            return;
-          } catch {
-            // Fehlgeschlagen (Code ungueltig, Tisch voll etc.) → weiter zur Lobby
+      // Versuche bestehende Session wiederherzustellen (z.B. nach Tab-Reload)
+      try {
+        await appStore.initialisieren();
+        // Session-Recovery: Falls der Spieler bereits an einem Tisch sitzt (z.B. nach Tab-Reload),
+        // direkt zur Tischansicht weiterleiten statt zur Lobby.
+        const aktiverTischId = appStore.snapshot().spieler?.aktiverTischId ?? null;
+        if (aktiverTischId) {
+          appStore.reconnecteTisch(aktiverTischId);
+          this.scene.start('TischSzene');
+        } else {
+          // Einladungslink: #join/{code} → automatischer Beitritt
+          const einladungsCode = this.leseEinladungsCodeAusUrl();
+          if (einladungsCode) {
+            window.location.hash = '';
+            try {
+              await appStore.betreteTischViaCode(einladungsCode);
+              this.scene.start('TischSzene');
+              return;
+            } catch {
+              // Fehlgeschlagen (Code ungueltig, Tisch voll etc.) → weiter zur Lobby
+            }
           }
+          this.scene.start('SpielverwaltungsSzene');
+          void this.time.delayedCall(1000, () => {});
         }
-        this.scene.start('SpielverwaltungsSzene');
-        // Speculative: Add a small delay after starting the next scene to allow Phaser
-        // to potentially process rendering in this headless environment,
-        // as direct element visibility is timing out.
-        void this.time.delayedCall(1000, () => {}); // Wait for 1 second
+      } catch {
+        // Keine gueltige Session → Login-Screen anzeigen
+        this.scene.start('LoginSzene');
       }
     } catch {
       this.statusText?.setText('Initialisierung fehlgeschlagen. Bitte pruefe Backend/Verbindung und lade neu.');

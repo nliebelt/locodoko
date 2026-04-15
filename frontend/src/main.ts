@@ -2,6 +2,7 @@ import Phaser from 'phaser';
 import './styles.css';
 import { appStore } from './anwendung';
 import { BootSzene } from './szenen/BootSzene';
+import { LoginSzene } from './szenen/LoginSzene';
 import { SpielverwaltungsSzene } from './szenen/SpielverwaltungsSzene';
 import { TischSzene } from './szenen/TischSzene';
 
@@ -25,7 +26,7 @@ const spiel = new Phaser.Game({
     width: 1280,
     height: 720
   },
-  scene: [BootSzene, SpielverwaltungsSzene, TischSzene]
+  scene: [BootSzene, LoginSzene, SpielverwaltungsSzene, TischSzene]
 });
 
 window.addEventListener('beforeunload', () => {

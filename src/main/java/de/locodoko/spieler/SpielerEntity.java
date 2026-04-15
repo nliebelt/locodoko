@@ -30,6 +30,26 @@ public class SpielerEntity extends AbstraktePersistenzEntity {
     @Column("ki_uebernommen")
     private boolean kiUebernommen;
 
+    /** Art der Authentifizierung (OAUTH2_GOOGLE, PASSWORT). Null bei Gast-Spielern (alter Flow). */
+    @Column("authentifizierungs_methode")
+    private String authentifizierungsMethode;
+
+    /** OAuth2-Subject-ID (z.B. Google-sub). Null bei Passwort-Auth. */
+    @Column("external_id")
+    private String externalId;
+
+    /** Eindeutiger Benutzername (3–20 Zeichen). Null bei OAuth2-Spielern ohne eigenen Benutzernamen. */
+    @Column("benutzername")
+    private String benutzername;
+
+    /** BCrypt-gehashtes Passwort. Null bei OAuth2 oder Gast. */
+    @Column("passwort_hash")
+    private String passwortHash;
+
+    /** Optionale E-Mail-Adresse. */
+    @Column("email")
+    private String email;
+
     protected SpielerEntity() {
     }
 
@@ -46,6 +66,31 @@ public class SpielerEntity extends AbstraktePersistenzEntity {
 
     public static SpielerEntity ki(String name) {
         return new SpielerEntity(name, null, true);
+    }
+
+    /** Erzeugt einen Spieler via Passwort-Registrierung. Session wird spaeter per {@link #setzeSessionId} gesetzt. */
+    public static SpielerEntity mitPasswort(String benutzername, String passwortHash, String email) {
+        SpielerEntity spieler = new SpielerEntity();
+        spieler.name = bereinigeName(benutzername);
+        spieler.ki = false;
+        spieler.kiUebernommen = false;
+        spieler.authentifizierungsMethode = AuthentifizierungsMethode.PASSWORT.name();
+        spieler.benutzername = benutzername;
+        spieler.passwortHash = passwortHash;
+        spieler.email = email;
+        return spieler;
+    }
+
+    /** Erzeugt oder aktualisiert einen Spieler via OAuth2 (Google). Session wird spaeter per {@link #setzeSessionId} gesetzt. */
+    public static SpielerEntity mitOauth2(String externalId, String email, String name) {
+        SpielerEntity spieler = new SpielerEntity();
+        spieler.name = bereinigeName(name);
+        spieler.ki = false;
+        spieler.kiUebernommen = false;
+        spieler.authentifizierungsMethode = AuthentifizierungsMethode.OAUTH2_GOOGLE.name();
+        spieler.externalId = externalId;
+        spieler.email = email;
+        return spieler;
     }
 
     public void aendereName(String name) {
@@ -77,6 +122,33 @@ public class SpielerEntity extends AbstraktePersistenzEntity {
     /** Hebt die KI-Uebernahme auf — wird beim Spielstart des naechsten Spiels aufgerufen. */
     public void hebeKiUebernahmeAuf() {
         this.kiUebernommen = false;
+    }
+
+    public AuthentifizierungsMethode authentifizierungsMethode() {
+        return authentifizierungsMethode != null
+            ? AuthentifizierungsMethode.valueOf(authentifizierungsMethode)
+            : null;
+    }
+
+    public String externalId() {
+        return externalId;
+    }
+
+    public String benutzername() {
+        return benutzername;
+    }
+
+    public String passwortHash() {
+        return passwortHash;
+    }
+
+    public String email() {
+        return email;
+    }
+
+    /** Setzt die Session-ID (wird nach Login gesetzt, damit der alte Session-Flow weiterhin funktioniert). */
+    public void setzeSessionId(String sessionId) {
+        this.sessionId = sessionId;
     }
 
     /**

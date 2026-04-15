@@ -41,11 +41,13 @@ export interface AppZustand {
   /** true waehrend einer laufenden HTTP-Anfrage (Lade-Indikator). */
   wirdGeladen: boolean;
   /** Aktuell angezeigter Bereich der Anwendung. */
-  bereich: 'SPIELVERWALTUNG' | 'TISCH';
+  bereich: 'LOGIN' | 'SPIELVERWALTUNG' | 'TISCH';
   /** WebSocket-Verbindungsstatus. */
   verbindung: 'offline' | 'verbinde' | 'verbunden' | 'fehler';
   /** true wenn der Debug-Modus aktiv ist (alle Haende sichtbar). */
   debugModus: boolean;
+  /** true wenn der Spieler authentifiziert ist (Login oder Gast-Session). */
+  authentifiziert: boolean;
   /** Session des eingeloggten Spielers; null bis zur Initialisierung. */
   spieler: SpielerSessionAntwort | null;
   /** Aktuelle Tischliste aus dem letzten Snapshot. */
@@ -64,9 +66,10 @@ function erzeugeAnfangszustand(): AppZustand {
   return {
     initialisiert: false,
     wirdGeladen: false,
-    bereich: 'SPIELVERWALTUNG',
+    bereich: 'LOGIN',
     verbindung: 'offline',
     debugModus: false,
+    authentifiziert: false,
     spieler: null,
     tische: [],
     aktuellerTisch: null,
@@ -164,6 +167,44 @@ export class AppStore {
         throw new Error('API-Session-Initialisierung fehlgeschlagen.');
       }
     });
+  }
+
+  /** Registriert einen neuen Spieler mit Benutzername/Passwort und initialisiert die Session. */
+  async registrieren(benutzername: string, passwort: string, email?: string): Promise<void> {
+    await this.fuehreMitStatus(async () => {
+      const antwort = await this.api.registrieren(benutzername, passwort, email);
+      Logger.store('Registrierung erfolgreich', { spielerId: antwort.spielerId });
+      this.patch({ authentifiziert: true, bereich: 'SPIELVERWALTUNG' });
+      await this.initialisieren();
+    });
+  }
+
+  /** Loggt einen Spieler mit Benutzername/Passwort ein und initialisiert die Session. */
+  async einloggen(benutzername: string, passwort: string): Promise<void> {
+    await this.fuehreMitStatus(async () => {
+      const antwort = await this.api.einloggen(benutzername, passwort);
+      Logger.store('Login erfolgreich', { spielerId: antwort.spielerId });
+      this.patch({ authentifiziert: true, bereich: 'SPIELVERWALTUNG' });
+      await this.initialisieren();
+    });
+  }
+
+  /** Loggt den Spieler aus und setzt den Zustand zurueck. */
+  async ausloggen(): Promise<void> {
+    try {
+      await this.api.ausloggen();
+    } catch {
+      // Ignorieren — Session ist serverseitig evtl. bereits ungueltig
+    }
+    this.echtzeit.trennen();
+    this.zustand = erzeugeAnfangszustand();
+    this.veroeffentliche();
+  }
+
+  /** Startet als Gast (alter Session-Flow) ohne Benutzername/Passwort. */
+  async alsGastStarten(): Promise<void> {
+    this.patch({ authentifiziert: true, bereich: 'SPIELVERWALTUNG' });
+    await this.initialisieren();
   }
 
   /** Laedt die Tischliste per REST neu und fordert einen WebSocket-Snapshot an. */

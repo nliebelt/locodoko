@@ -17,6 +17,13 @@ export interface SpielerSessionAntwort {
   aktiverTischId?: Uuid | null;
 }
 
+/** Antwort nach erfolgreicher Registrierung oder Login. */
+export interface AuthentifizierungsAntwort {
+  spielerId: Uuid;
+  name: string;
+  authentifizierungsMethode: string | null;
+}
+
 export interface TischKurzKonfigurationAntwort {
   ohneNeunen: boolean;
   anzahlSpiele: number;

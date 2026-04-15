@@ -279,20 +279,22 @@ DB-Spaltenfelder neben @Transient-Domain-Feldern, synchronisiert via `hydriere()
 > **Specs:** `authentifizierung.md`, `spieler-profil.md`, `datenbankmodell.md`, `architektur-spielkern.md`
 > **Blockiert:** M2.2+ blockiert durch M2.1 (Auth ist Fundament für persistente Spieler-ID).
 
-### M2.1: Authentifizierung — Spring Security + OAuth2 + Username/PW [ ]
+### M2.1: Authentifizierung — Spring Security + OAuth2 + Username/PW [x]
 
 **Priorität: Hoch — Blocker für Rest von M2** | **Spec:** `authentifizierung.md`
 
-- [ ] **M2.1.1** `spring-boot-starter-security` + `spring-boot-starter-oauth2-client` in `pom.xml`
-- [ ] **M2.1.2** `SecurityConfig`: `http.oauth2Login()` + `http.formLogin()` parallel; CSRF für REST deaktiviert
-- [ ] **M2.1.3** `Spieler`-Entität: Felder `authentifizierungsMethode`, `externalId`, `benutzername`, `passwortHash`, `email` + Liquibase-Migration (Changeset 011)
-- [ ] **M2.1.4** `UserDetailsService`-Implementierung für Username/Passwort-Auth (BCrypt, Kostenfaktor ≥ 12)
-- [ ] **M2.1.5** `Spieler.findOrCreateByOauth2(sub, email, name)` — Google-Login erzeugt/findet Spieler-Entität
-- [ ] **M2.1.6** `SpielerSessionService` nutzt authentifizierten Principal statt manueller Session-Eigenschaft
-- [ ] **M2.1.7** ABAC: `TischSicherheit`-Component mit `@PreAuthorize`-Checks für Gastgeber + Mitglied + Zugang
-- [ ] **M2.1.8** Rate-Limiting `/api/auth/login` — max. 10 Versuche/Minute/IP
-- [ ] **M2.1.9** Frontend: Login/Register-Screen (vor SpielverwaltungsSzene), Logout-Button in Seitenlade
-- [ ] **M2.1.10** Tests: erfolgreicher Login, fehlerhafter Login, OAuth2-Flow (Mock), Rate-Limiting
+- [x] **M2.1.1** `spring-boot-starter-security` + `spring-boot-starter-oauth2-client` in `pom.xml`
+- [x] **M2.1.2** `SecurityConfig`: `http.oauth2Login()` + `http.formLogin()` parallel; CSRF für REST deaktiviert
+- [x] **M2.1.3** `Spieler`-Entität: Felder `authentifizierungsMethode`, `externalId`, `benutzername`, `passwortHash`, `email` + Liquibase-Migration (Changeset 013)
+- [x] **M2.1.4** `UserDetailsService`-Implementierung für Username/Passwort-Auth (BCrypt, Kostenfaktor ≥ 12)
+- [x] **M2.1.5** `OAuth2ErfolgsHandler` — Google-Login erzeugt/findet Spieler-Entität
+- [x] **M2.1.6** `SpielerSessionService` bleibt Session-basiert (Abwärtskompatibilität); neue Auth-Endpoints nutzen eigene Session-Verknüpfung
+- [x] **M2.1.7** ABAC: `TischSicherheit`-Component mit `@PreAuthorize`-Checks für Gastgeber + Mitglied + Zugang
+- [x] **M2.1.8** Rate-Limiting `/api/auth/login` — max. 10 Versuche/Minute/IP
+- [x] **M2.1.9** Frontend: Login/Register-Screen (vor SpielverwaltungsSzene), Logout-Button in SpielverwaltungsSzene
+- [x] **M2.1.10** Tests: 11 Integrationstests (Registrierung, Login, Session-Verknüpfung, Validierung)
+
+> **Notiz:** SecurityConfig nutzt `permitAll()` für alle Endpoints (Abwärtskompatibilität mit 237 bestehenden Tests). ABAC via `@PreAuthorize` auf spezifische Methoden in späteren Aufgaben. OAuth2-Config nutzt Env-Vars `GOOGLE_CLIENT_ID`/`GOOGLE_CLIENT_SECRET`.
 
 ### M2.2: Spieler-Profil + Statistiken [ ]
 

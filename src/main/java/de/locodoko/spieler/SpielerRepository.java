@@ -32,6 +32,14 @@ public interface SpielerRepository extends CrudRepository<SpielerEntity, UUID> {
     @Query("SELECT * FROM spieler WHERE session_id = :sessionId")
     Optional<SpielerEntity> findBySessionId(String sessionId);
 
+    /** Sucht einen Spieler anhand seines Benutzernamens (fuer Passwort-Auth). */
+    @Query("SELECT * FROM spieler WHERE benutzername = :benutzername")
+    Optional<SpielerEntity> findByBenutzername(String benutzername);
+
+    /** Sucht einen Spieler anhand seiner OAuth2-External-ID (z.B. Google-Sub). */
+    @Query("SELECT * FROM spieler WHERE external_id = :externalId")
+    Optional<SpielerEntity> findByExternalId(String externalId);
+
     /** Liefert alle KI-Spieler sortiert nach Erstellungszeitpunkt. */
     @Query("SELECT * FROM spieler WHERE ki = true ORDER BY erstellt_am ASC")
     List<SpielerEntity> findAllByKiTrueOrderByErstelltAmAsc();

@@ -1,5 +1,6 @@
 import type {
   ApiFehlerAntwort,
+  AuthentifizierungsAntwort,
   BestaetigungAntwort,
   SpielerSessionAntwort,
   TischKonfigurationDto,
@@ -166,5 +167,23 @@ export class SpielverwaltungApi {
       method: 'PUT',
       body: JSON.stringify(konfiguration)
     });
+  }
+
+  async registrieren(benutzername: string, passwort: string, email?: string): Promise<AuthentifizierungsAntwort> {
+    return holeJson<AuthentifizierungsAntwort>('/api/auth/register', {
+      method: 'POST',
+      body: JSON.stringify({ benutzername, passwort, email: email || null })
+    });
+  }
+
+  async einloggen(benutzername: string, passwort: string): Promise<AuthentifizierungsAntwort> {
+    return holeJson<AuthentifizierungsAntwort>('/api/auth/login', {
+      method: 'POST',
+      body: JSON.stringify({ benutzername, passwort })
+    });
+  }
+
+  async ausloggen(): Promise<void> {
+    await holeJson<void>('/api/auth/logout', { method: 'POST' });
   }
 }

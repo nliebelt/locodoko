@@ -158,6 +158,17 @@ export class SpielverwaltungsSzene extends Phaser.Scene {
       const listeDiv = this.baueTischliste(zustand);
       this.uiContainer.append(listeDiv);
     }
+
+    // 6. Logout-Button
+    const logoutBtn = this.erstelleNeoButton('🚪  Abmelden', 'secondary', () => {
+      void appStore.ausloggen().then(() => {
+        this.scene.start('LoginSzene');
+      });
+    });
+    logoutBtn.dataset['testid'] = 'btn-logout';
+    logoutBtn.style.marginTop = '20px';
+    logoutBtn.style.opacity = '0.7';
+    this.uiContainer.append(logoutBtn);
   }
 
   private erstelleNeoButton(text: string, typ: 'primary' | 'secondary', onClick: () => void): HTMLButtonElement {

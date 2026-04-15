@@ -491,6 +491,7 @@ function baueZustand(optionen: Partial<AppZustand> = {}): AppZustand {
   return {
     initialisiert: true,
     wirdGeladen: false,
+    authentifiziert: true,
     bereich: 'TISCH',
     verbindung: 'verbunden',
     debugModus: false,
