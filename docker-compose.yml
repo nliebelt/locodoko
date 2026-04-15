@@ -1,4 +1,5 @@
 services:
+  # --- Entwicklungsumgebung (Agent-Container) ---
   agent:
     build:
       context: .
@@ -39,3 +40,47 @@ services:
     # Expose a port if the agent runs a local HTTP server or API.
     ports:
       - "8080:8080"
+
+  # --- PostgreSQL-Datenbank (Produktion + lokale Prod-Tests) ---
+  postgres:
+    image: postgres:17-alpine
+    container_name: locodoko-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: locodoko
+      POSTGRES_USER: ${LOCODOKO_DB_USERNAME:-locodoko}
+      POSTGRES_PASSWORD: ${LOCODOKO_DB_PASSWORD:-locodoko}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U locodoko"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  # --- Locodoko-App (Produktion) ---
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile.app
+    image: locodoko-app:latest
+    container_name: locodoko-app
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
+      LOCODOKO_DB_URL: jdbc:postgresql://postgres:5432/locodoko
+      LOCODOKO_DB_USERNAME: ${LOCODOKO_DB_USERNAME:-locodoko}
+      LOCODOKO_DB_PASSWORD: ${LOCODOKO_DB_PASSWORD:-locodoko}
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-disabled}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-disabled}
+    ports:
+      - "8080:8080"
+    profiles:
+      - prod
+
+volumes:
+  pgdata:

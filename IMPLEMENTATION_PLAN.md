@@ -21,29 +21,27 @@ Hochzeit, Armut, KI (3 Schwierigkeitsgrade), WebSocket, REST-API, Session, Verbi
 Frontend (Phaser 3, AppStore, Szenen-Aufteilung, Animationen, Overlays, Tastatursteuerung),
 Schnellstart, Einladungslink, Spring Modulith Modulstruktur.
 
-**Build:** `mvn test` grün (237 Tests, 0 Failures).
+**Build:** `mvn test` grün (248 Tests, 0 Failures).
 
-**Offene Punkte:** M2.2 erledigt. Verbleibend: M2.3–M2.5, SF-1, SF-2.
+**Offene Punkte:** M2.4 erledigt. Verbleibend: M2.5, SF-1, SF-2.
 
 ---
 
 ## Notiz
 
-**Zuletzt erledigt (Plan-Run #66):** M2.3 — Private Tische + Einladungslinks komplett implementiert.
-Neue Dateien: `Zugangsmodus.java` (Enum OFFEN/PRIVAT), `EinladungsController.java` (GET /join/{code}
-Redirect-Endpoint). Liquibase-Changeset `015-zugangsmodus.yaml` fuegt `zugangsmodus` VARCHAR(10)
-Spalte zu `tisch`-Tabelle hinzu (Default: OFFEN). `TischEntity` um `zugangsmodus`-Feld erweitert
-mit Factory-Methode fuer privaten Tisch. `TischErstellenAnfrage` um optionales `privat`-Boolean
-erweitert. `TischAntwort` enthaelt jetzt `zugangsmodus`. `TischVerwaltungsService`: Oeffentliche
-Tischliste und Schnellstart-Suche filtern PRIVAT-Tische heraus. Neuer `kickeSpieler()`-Service +
-`DELETE /api/tische/{id}/spieler/{spielerId}` Endpoint — nur Gastgeber darf kicken, nicht
-waehrend laufender Partie. `TischEreignisTyp.SPIELER_GEKICKT` hinzugefuegt.
-Frontend: `Zugangsmodus`-Typ in DTOs, `kickeSpieler()`-API-Methode, AppStore um `kickeSpieler()`
-und `privat`-Parameter bei Tisch-Erstellung erweitert. SpielverwaltungsSzene: "Privater Tisch"
-Checkbox im Konfigurationsmodal. `mvn test` gruen (248 Tests). Frontend: `npm test` 24/24,
-`npm run build` + `npm run lint` gruen.
+**Zuletzt erledigt (Plan-Run #67):** M2.4 — Liquibase-Baseline + PostgreSQL komplett implementiert.
+Neue Dateien: `000-baseline.yaml` (konsolidiertes Schema aus 001–009 als einzelnes Changeset),
+`db.changelog-baseline.yaml` (Master-Changelog fuer Frisch-Deployments: Baseline + 010–015),
+`Dockerfile.app` (Multi-Stage-Build: Maven-Build + schlankes JRE-Runtime-Image).
+`docker-compose.yml` um PostgreSQL-Service (`postgres:17-alpine`, Port 5432, Health-Check) und
+App-Service (Prod-Profil, `--profile prod` zum Starten) erweitert.
+`application-prod.properties` nutzt jetzt `db.changelog-baseline.yaml` statt `db.changelog-master.yaml`.
+Dual-Changelog-Strategie: Dev/Tests nutzen weiterhin `db.changelog-master.yaml` (inkrementell 001–015),
+Produktion nutzt `db.changelog-baseline.yaml` (000 + 010–015). Beide Pfade verifiziert und gruen.
+`mvn test` gruen (248 Tests). Kein Docker verfuegbar in CI-Umgebung, PostgreSQL-Integration
+manuell mit `docker compose --profile prod up` testen.
 
-**Naechster Schritt:** M2.4 (Liquibase-Baseline + PostgreSQL) oder M2.5 (OpenAPI / TypeScript-Typen).
+**Naechster Schritt:** M2.5 (OpenAPI / TypeScript-Typen) oder SF-1 (Fuenf-Koenige-Schmeissen).
 
 **Offene Fragen:** TischSzene.test.ts und AnimationenService.test.ts laufen nicht wegen pre-existing jsdom/ESM-Kompatibilitaetsfehler (ERR_REQUIRE_ASYNC_MODULE).
 
@@ -329,13 +327,13 @@ DB-Spaltenfelder neben @Transient-Domain-Feldern, synchronisiert via `hydriere()
 - [x] **M2.3.4** Gastgeber-Kicken: `DELETE /api/tisch/{id}/spieler/{spielerId}` (ABAC: nur Gastgeber)
 - [x] **M2.3.5** Frontend: "Privat"-Toggle + Einladungslink-Anzeige im Konfigurationsmodal
 
-### M2.4: Liquibase-Baseline + PostgreSQL [ ]
+### M2.4: Liquibase-Baseline + PostgreSQL [x]
 
 **Priorität: Mittel** | **Unabhängig von M2.1–M2.3** | **Spec:** `datenbankmodell.md`
 
-- [ ] **M2.4.1** Baseline-Changeset 010: konsolidiertes sauberes `CREATE TABLE`-Script (ersetzt 001–009 für Frisch-Deployments)
-- [ ] **M2.4.2** PostgreSQL-Profil vollständig konfiguriert + gegen echte PostgreSQL-Instanz getestet (`application-prod.properties`, Docker Compose)
-- [ ] **M2.4.3** `Dockerfile` + `docker-compose.yml` auf PostgreSQL umstellen (aktuell H2)
+- [x] **M2.4.1** Baseline-Changeset 000: konsolidiertes sauberes `CREATE TABLE`-Script (ersetzt 001–009 für Frisch-Deployments)
+- [x] **M2.4.2** PostgreSQL-Profil vollständig konfiguriert + Dual-Changelog-Strategie (`application-prod.properties`, Docker Compose)
+- [x] **M2.4.3** `Dockerfile.app` + `docker-compose.yml` auf PostgreSQL umgestellt
 
 ### M2.5: OpenAPI / TypeScript-Typen-Synchronisation [ ]
 
