@@ -5,6 +5,43 @@
 
 ---
 
+## Archiviert am 2026-04-15 (Plan-Run #55)
+
+> Inhalt des IMPLEMENTATION_PLAN.md Stand Plan-Run #50–55. Alle Aufgaben erledigt.
+
+### Phase 1 — Modulstruktur & Modulgrenzen
+
+- [x] 1.1 Package-Rename: lobby → tisch
+- [x] 1.2 Package-Rename: session → spieler
+- [x] 1.3 Package-Rename: partie/ki → ki (top-level)
+- [x] 1.4 SpielerPosition, Stich, GespielteKarte von karten → partie
+- [x] 1.5 Cross-Modul-Verletzung beheben: PartieEntity → TischEntity
+- [x] 1.6 PunkteRechner: public → package-private
+- [x] 1.7 Spring Modulith Dependencies hinzufügen
+- [x] 1.8 Liquibase-Changeset: event_publication-Tabelle
+- [x] 1.9 @EventListener → @ApplicationModuleListener migrieren
+- [x] 1.10 ApplicationModulesTest erstellen
+
+### Phase 2 — Application Layer Features
+
+- [x] 2.1 Schnellstart (Quick Play)
+- [x] 2.2 Einladungslink
+
+### Phase 3 — Frontend-Verfeinerung
+
+- [x] 3.1 JSDoc vervollständigen
+- [x] 3.2 Logging-Punkte erweitern
+- [x] 3.3 data-testid-Attribute ergänzen
+- [x] 3.4 „Offene Tische"-Modal vervollständigen
+
+### Phase 4 — Spec-Pflege & Qualitätssicherung
+
+- [x] 4.1 DoD-Checkboxen in Specs aktualisieren
+- [x] 4.2 E2E-Tests stabilisieren
+- [x] 4.3 frontend-architektur.md aktualisieren
+
+---
+
 ## Vollständig implementierte Features (Specs bestätigt)
 
 - [x] Lobby/Tisch: Tischverwaltung, Matchmaking, KI-Auffüllung, WebSocket-Updates

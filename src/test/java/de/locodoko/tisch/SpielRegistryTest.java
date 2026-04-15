@@ -66,6 +66,7 @@ class SpielRegistryTest {
             @Override public boolean existsBySpieler_SessionId(String sessionId) { return false; }
             @Override public long count() { return 0; }
             @Override public boolean existsById(TischId id) { return false; }
+            @Override public Optional<TischEntity> findByEinladungsCode(String code) { return Optional.empty(); }
         };
     }
 

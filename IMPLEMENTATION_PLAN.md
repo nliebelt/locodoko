@@ -1,6 +1,6 @@
 # IMPLEMENTATION_PLAN — Locodoko Doppelkopf
 
-> **Letzte Aktualisierung: 2026-04-14 (Plan-Run #50)**
+> **Letzte Aktualisierung: 2026-04-15 (Plan-Run #57)**
 
 ## Legende
 
@@ -9,7 +9,7 @@
 - [ ] Offen
 - [BLOCKED: ...] Blockiert mit Begründung
 
-Erledigte Features: siehe `IMPLEMENTATION_PLAN_ARCHIVE.md` (Plan-Run #35 und davor).
+Erledigte Features: siehe `IMPLEMENTATION_PLAN_ARCHIVE.md` (Plan-Run #56 und davor).
 
 ---
 
@@ -18,303 +18,21 @@ Erledigte Features: siehe `IMPLEMENTATION_PLAN_ARCHIVE.md` (Plan-Run #35 und dav
 **Kern-Features komplett:** Stichlogik, Trumpfhierarchie, Kartendeck, Punkteberechnung, Ansagen,
 Sonderpunkte, Bockrunden, Schweinchen, 30-Augen-Pflicht, Solo-Nachgeben, alle 7 Solo-Varianten,
 Hochzeit, Armut, KI (3 Schwierigkeitsgrade), WebSocket, REST-API, Session, Verbindungsabbruch,
-Frontend (Phaser 3, AppStore, Szenen-Aufteilung, Animationen, Overlays, Tastatursteuerung).
+Frontend (Phaser 3, AppStore, Szenen-Aufteilung, Animationen, Overlays, Tastatursteuerung),
+Schnellstart, Einladungslink, Spring Modulith Modulstruktur.
 
-**Offene Architektur-Schulden:** Die Modulstruktur entspricht nicht der Ziel-Architektur laut
-`specs/architektur-ddd.md`. Packages heißen noch `lobby/`, `session/`, `partie/ki/` statt
-`tisch/`, `spieler/`, `ki/`. Spring Modulith ist nicht konfiguriert, `@ApplicationModuleListener`
-wird nicht genutzt, `event_publication`-Tabelle fehlt. Cross-Modul-Verletzung in PartieEntity.
+**Build:** `mvn test` grün (231 Tests, 0 Failures).
 
----
-
-## Phase 1 — Modulstruktur & Modulgrenzen
-
-> Voraussetzung für alle weiteren Architektur-Aufgaben.
-> Referenz: `specs/architektur-ddd.md` (Definition of Done)
-
-### 1.1 Package-Rename: lobby → tisch
-
-- [x] Package `de.locodoko.lobby` umbenennen zu `de.locodoko.tisch`
-- [x] Alle Imports in allen Java-Dateien aktualisieren (src/main + src/test)
-- [x] Liquibase-Changesets prüfen (Tabellen- und Spaltennamen bleiben gleich — kein DB-Change nötig)
-- [x] Frontend-API-Pfade prüfen (`/api/tische` etc. — sollten unverändert bleiben)
-
-**Betroffene Klassen (aktuell in `lobby/`):** TischEntity, TischId, TischStatus,
-TischkonfigurationEmbeddable, TischRepository, TischRepositoryImpl, TischController,
-TischVerwaltungsService, SpielAktionsService, SpielPersistenzAdapter, SpielRegistry,
-KiOrchestrierungService, PartieStandAntwort, PartieController, TischEchtzeitService,
-SpielverwaltungWebSocketController, KiEventAdapter, WebSocketBroadcastAdapter,
-SpielverwaltungKonfliktException, ZugriffVerweigertException, FehlerNachricht,
-GlobalerFehlerHandler u.a.
-
-### 1.2 Package-Rename: session → spieler
-
-- [x] Package `de.locodoko.session` umbenennen zu `de.locodoko.spieler`
-- [x] Alle Imports aktualisieren
-- [x] Session-Cookie-Name und HTTP-Session-Logik bleiben unverändert
-
-**Betroffene Klassen (aktuell in `session/`):** SpielerEntity, SpielerId, SpielerRepository,
-SpielerSessionService, SpielerSessionController, VerbindungsabbruchService,
-VerbindungsSessionEreignisListener, SessionCleanupService u.a.
-
-### 1.3 Package-Rename: partie/ki → ki (top-level)
-
-- [x] Package `de.locodoko.partie.ki` verschieben zu `de.locodoko.ki`
-- [x] Alle Imports aktualisieren
-- [x] KiEventAdapter verbleibt in `tisch/` (konsumiert Events, ruft SpielAktionsService auf)
-  ODER wird nach `ki/` verschoben falls `ki/` direkt `SpielAktionsService` aufrufen darf
-  → **Klärung:** Laut Spec darf `ki/` nur `partie/` und `karten/` importieren, NICHT `tisch/`.
-    `KiEventAdapter` muss deshalb in `tisch/` bleiben (er ruft `SpielAktionsService` in `tisch/` auf).
-    Alternativ: `KiEventAdapter` bleibt in `ki/` und ruft eine schmale Interface-Methode auf,
-    die `tisch/` implementiert. Pragmatischer Ansatz für V1: `KiEventAdapter` bleibt in `tisch/`.
-
-**Betroffene Klassen (aktuell in `partie/ki/`):** KiStrategie, StandardKiStrategie,
-LeichteKiStrategie, SchwerKiStrategie, KiStrategieFactory, KiSpielzustand,
-KiSchwierigkeit, KiArmutAntwort.
-
-### 1.4 SpielerPosition, Stich, GespielteKarte von karten → partie verschieben
-
-- [x] `SpielerPosition.java` von `de.locodoko.karten` nach `de.locodoko.partie` verschieben
-- [x] `Stich.java` von `de.locodoko.karten` nach `de.locodoko.partie` verschieben
-- [x] `GespielteKarte.java` von `de.locodoko.karten` nach `de.locodoko.partie` verschieben
-- [x] Alle Imports aktualisieren (betrifft ~30+ Dateien in lobby/tisch, partie, session/spieler, ki)
-- [x] JavaDoc in `TrumpfOrdnung` anpassen (referenziert `Stich` im Kommentar)
-- [x] `Kartendeck.anVierSpielerAusteilen()` refaktoriert: gibt `List<Hand>` statt `Map<SpielerPosition, Hand>` zurück (vermeidet karten→partie-Abhängigkeit)
-- [x] `StichTest` von `karten/` nach `partie/` verschoben (testet Stich, gehört dorthin)
-
-**Begründung:** `SpielerPosition` gehört laut DoD in `partie/`, nicht in `karten/`.
-`Stich` und `GespielteKarte` hängen von `SpielerPosition` ab und enthalten Domain-Logik
-(Stichgewinner-Ermittlung). `karten/` soll reines Shared Kernel sein (nur Value Objects).
-**Abhängigkeitsrichtung bleibt korrekt:** `partie → karten` (Stich nutzt TrumpfOrdnung).
-Keine karten-interne Klasse importiert Stich/GespielteKarte/SpielerPosition.
-
-### 1.5 Cross-Modul-Verletzung beheben: PartieEntity → TischEntity
-
-- [x] `PartieEntity.java` Zeile 3: `import de.locodoko.lobby.TischEntity` entfernen
-- [x] Beziehung nur noch über `TischId` (Foreign Key als UUID), kein direkter Typ-Import
-- [x] Prüfen ob weitere Cross-Modul-Verletzungen existieren (partie → lobby/session Imports)
-
-**Regel:** `partie/` darf nur `karten/` importieren (laut `architektur-ddd.md`).
-
-### 1.6 PunkteRechner: public → package-private
-
-- [x] `public final class PunkteRechner` → `final class PunkteRechner` (Zeile 20, PunkteRechner.java)
-- [x] Sicherstellen dass kein Code außerhalb `de.locodoko.partie` auf PunkteRechner zugreift
-- [x] Tests ggf. ins gleiche Package verschieben (Test-Package muss übereinstimmen)
-
-**Referenz:** `specs/architektur-spielkern.md` — "package-private Utility, kein @Component"
-
-### 1.7 Spring Modulith Dependencies hinzufügen
-
-- [x] `spring-modulith-starter-core` in `pom.xml` (BOM via `spring-modulith-bom`)
-- [x] `spring-modulith-starter-jdbc` in `pom.xml` (Transactional Outbox)
-- [x] Version passend zu Spring Boot 4.0.x wählen (Spring Modulith 2.0.0)
-- [x] `mvn compile` muss erfolgreich sein
-
-### 1.8 Liquibase-Changeset: event_publication-Tabelle
-
-- [x] Changeset `010-event-publication.yaml` erstellen
-- [x] Tabelle `event_publication` mit Spalten laut Spring Modulith Dokumentation:
-      `id UUID PK`, `listener_id TEXT`, `event_type TEXT`, `serialized_event TEXT`,
-      `publication_date TIMESTAMP`, `completion_date TIMESTAMP`
-      (plus `status`, `completion_attempts`, `last_resubmission_date` aus Modulith 2.0.0 Schema)
-- [x] In `db.changelog-master.yaml` einbinden
-- [x] `mvn test` muss grün sein (Liquibase-Migration läuft sauber durch)
-
-### 1.9 @EventListener → @ApplicationModuleListener migrieren
-
-- [x] `KiEventAdapter` (tisch/): `@EventListener` → `@ApplicationModuleListener`
-      (beide Methoden: `beiNaechsterSpielerErwartet`, `beiVorbehaltErwartet`)
-- [x] `WebSocketBroadcastAdapter` (tisch/): `@EventListener` → `@ApplicationModuleListener`
-- [x] `VerbindungsSessionEreignisListener` (spieler/): geprüft — Intra-Modul (Spring WebSocket-Events) → `@EventListener` bleibt
-- [x] Import-Statement von `org.springframework.context.event.EventListener` →
-      `org.springframework.modulith.events.ApplicationModuleListener` aktualisieren
-- [x] Sicherstellen dass Events nach DB-Commit gefeuert werden (Outbox-Semantik)
-- [x] `spring-modulith-events-api` als compile-Dependency hinzugefügt (war nur runtime via starter-jdbc;
-      ohne compile-scope werden `@ApplicationModuleListener`-Annotationen vom Compiler stumm verworfen)
-- [x] `@EnableAsync` zu `LocodokoAnwendung` hinzugefügt (notwendig für `@Async`-Semantik der Listener)
-- [x] `TischEchtzeitService.sendePartieEreignis()` Direkt-Methode ergänzt (kein `planeNachCommit`-Wrapper,
-      da `@ApplicationModuleListener` bereits post-commit läuft)
-- [x] `awaitility` Test-Dependency + WebSocket-Tests auf asynchrone Event-Zustellung angepasst
-- [x] `mvn test` grün (221 Tests)
-
-### 1.10 ApplicationModulesTest erstellen
-
-- [x] Neue Testklasse `de.locodoko.ModulstrukturTest` (oder `ApplicationModulesTest`)
-- [x] `ApplicationModules.of(LocodokoAnwendung.class).verify()` aufrufen
-- [x] Test muss grün sein → bestätigt dass keine verbotenen Cross-Modul-Imports existieren
-- [x] In `mvn test` Lauf enthalten
-- [x] `spring-modulith-starter-test` Dependency in `pom.xml` ergänzt
-- [x] `spieler ↔ tisch` Zyklus aufgelöst: 28 Klassen (WebSocket, Echtzeit, Verbindung, DTOs) von `spieler` nach `tisch` verschoben
-- [x] `SpielerTischAbfrage`-Interface in `spieler` eingeführt (Dependency Inversion für `SpielerSessionService`)
-- [x] `partie.ereignisse` als `@NamedInterface` exponiert (Events sind öffentliche Modul-API)
-- [x] Leeres `session/`-Package entfernt
-- [x] `mvn test` grün (222 Tests)
-
----
-
-## Phase 2 — Application Layer Features
-
-> Neue Features aus `architektur-ddd.md` Sektion 5.
-> Diese sind im Architektur-Spec als Beispiele definiert, aber fachlich sinnvoll.
-
-### 2.1 Schnellstart (Quick Play)
-
-- [x] `TischVerwaltungsService.schnellEinsteigen(SpielerEntity)` implementiert:
-      1. Suche offenen Tisch (`TischStatus.WARTEND`, freier Platz)
-      2. Falls vorhanden: Beitritt mit pessimistischer Sperre
-      3. Sonst: neuen Tisch erstellen + Spieler hinzufügen
-      4. KI auffüllen + Partie starten (alles in einer Transaktion)
-- [x] REST-Endpoint: `POST /api/tische/schnellstart` (gibt TischAntwort zurück)
-- [x] Frontend: Button „Quick Game" auf SpielverwaltungsSzene nutzt serverseitigen Schnellstart
-      (AppStore.erstelleQuickGame → api.schnellstart statt erstelleTisch + starteTisch)
-- [x] Unit-Tests: Neuerstellung ohne offenen Tisch, Beitritt zu bestehendem Tisch, Ablehnung bei Doppel-Tisch
-- [x] E2E-Test: Schnellstart-Flow
-
-### 2.2 Einladungslink
-
-- [x] `TischEntity`: neues Feld `einladungsCode` (8-stellig alphanumerisch, auto-generiert)
-- [x] Liquibase-Changeset: `einladungs_code VARCHAR(8) UNIQUE NOT NULL` in `tisch`-Tabelle
-- [x] `TischVerwaltungsService.beitretenViaCode(code, spielerId)`:
-      Lookup TischId via einladungsCode → `betreteTisch(tischId, spielerId)`
-- [x] REST-Endpoint: `POST /api/tische/beitreten/{code}`
-- [x] Frontend: „Link teilen"-Button in TischSzene, Copy-to-Clipboard
-- [x] Frontend: URL-Route `#join/{code}` → automatischer Beitritt bei BootSzene-Load
-- [x] Unit-Tests: Code-Generierung, Lookup, Case-Insensitivity, Duplikat-Schutz, Ungueltig-Handling
-- [x] E2E-Test: Link-Beitritt-Flow
-
----
-
-## Phase 3 — Frontend-Verfeinerung
-
-### 3.1 JSDoc vervollständigen
-
-- [x] `AppStore.ts`: Klasse + alle öffentlichen Methoden (Klasse + 24/25 Methoden waren vorhanden, `ladeTischName` ergänzt)
-- [x] `TischSzene.ts`: Klasse + kritische Methoden (Klasse + preload/create/shutdown/destroy — alles bereits vorhanden)
-- [x] `SpielverwaltungEchtzeit.ts`: Klasse + alle öffentlichen Methoden (alles bereits vorhanden)
-- [x] `TischAnsichtModell.ts`: Klasse + alle öffentlichen Methoden (Interface + 3 Funktionen — alles bereits vorhanden)
-- [x] `AnimationenService.ts`: Klasse + alle öffentlichen Methoden (Klasse + 10 Methoden — alles bereits vorhanden)
-- [x] `TischInputHandler.ts`: TSDoc auf Klassenebene (bereits vorhanden)
-- [x] `TischUIManager.ts`: TSDoc auf Klassenebene + 3 fehlende Methoden-Docs ergänzt (aktualisiereErgebnis, aktualisiereLetzteStiche, aktualisiereToasts)
-
-**Referenz:** `specs/frontend-architektur.md` (DoD), `specs/architektur-spielkern.md` (Frontend TSDoc)
-
-### 3.2 Logging-Punkte erweitern
-
-- [x] `SpielverwaltungEchtzeit.ts`: Logging bei WebSocket-Verbindung, Reconnect, Nachrichtenempfang
-- [x] `AppStore.ts`: Logging bei Zustandsänderungen (phasenbasiert, nicht pro Frame)
-- [x] `TischSzene.ts`: Logging bei Szenen-Lifecycle (create, destroy) und Fehlern
-- [x] `SpielverwaltungApi.ts`: Logging bei API-Aufrufen (Request/Response/Error)
-- [x] Backend `KiOrchestrierungService`: strukturiertes Logging auf allen Pfaden
-- [x] `application-dev.properties`: Log-Level-Konfiguration für KI-Orchestrierung
-- [x] Test: Logger wird im Prod-Mode nicht aufgerufen
-
-**Referenz:** `specs/frontend-logging.md`
-
-### 3.3 data-testid-Attribute ergänzen
-
-- [x] Prüfen welche data-testids laut `specs/e2e-tests.md` und `specs/frontend-tischansicht.md`
-      noch fehlen — alle 17 Attribute aus dem Spec vorhanden (startscreen, btn-neuer-tisch,
-      btn-offene-tische, btn-session-recovery, tisch-config-modal, input-tischname,
-      btn-tisch-erstellen, tischszene, hud-stichzaehler, hud-spieltyp, hud-btn-einstellungen,
-      einstellungen-modal, btn-spiel-starten, vorbehalt-overlay, floating-action-bar,
-      rundenauswertung-overlay, btn-rundenauswertung-weiter)
-- [x] Tischliste-Einträge: data-testid="tischliste-eintrag", "btn-tisch-beitreten",
-      "btn-tisch-zurueckkehren", "btn-tisch-voll" ergänzt
-
-### 3.4 „Offene Tische"-Modal vervollständigen
-
-- [x] Liste aller offenen Tische mit Name, Spieleranzahl, Status, Regelkonfiguration
-- [x] Echtzeit-Updates via WebSocket (Tische erscheinen/verschwinden) — via `/topic/tische` in AppStore
-- [x] Beitritt-Button pro Tisch
-
-**Referenz:** `specs/lobby.md` Anforderung 1–2, 4, 8
-
----
-
-## Phase 4 — Spec-Pflege & Qualitätssicherung
-
-### 4.1 DoD-Checkboxen in Specs aktualisieren
-
-- [x] `specs/spielablauf.md`: Solo-Nachgeben als `[x]` markieren (ist implementiert)
-- [x] `specs/bockrunden.md`: alle DoD-Items als `[x]` markieren (lt. Archiv erledigt)
-- [x] `specs/dreissig-augen-pflicht.md`: alle DoD-Items als `[x]` markieren (lt. Archiv erledigt)
-- [x] `specs/schweinchen.md`: alle DoD-Items als `[x]` markieren (lt. Archiv erledigt)
-- [x] `specs/frontend-animationen.md`: erledigte Items als `[x]` markieren
-- [x] `specs/frontend-rundenauswertung.md`: erledigte Items als `[x]` markieren
-- [x] `specs/frontend-logging.md`: bereits implementierte Items als `[x]` markieren
-      (logger.ts vorhanden, window.onerror registriert)
-- [x] `specs/e2e-tests.md`: implementierte Tests als `[x]` markieren
-- [x] `specs/architektur-ddd.md`: DoD-Items abhaken sobald Phase 1 abgeschlossen
-
-### 4.2 E2E-Tests stabilisieren
-
-- [x] `partie-gegen-ki.spec.ts`: data-testid-Selektoren, KI-Timing (lt. Archiv weitgehend umgestellt)
-- [x] E2E-Testfall 1 läuft grün gegen `mvn spring-boot:run` (DoD aus `specs/e2e-tests.md`)
-- [x] E2E-Testfall 2 läuft grün gegen `mvn spring-boot:run`
-
-### 4.3 frontend-architektur.md aktualisieren
-
-- [x] Dateistruktur-Sektion auf aktuellen Stand bringen (neue Dateien: TischInputHandler,
-      TischUIManager, tischFormatierer, Kartenansicht, regelPresets, anwendung)
-- [x] LobbySzene → SpielverwaltungsSzene umbenannt (Datenfluss-Diagramm + Tabelle)
-- [x] Kommunikations-Schicht als Service-Schicht reorganisiert (SpielverwaltungApi, -Echtzeit)
-- [x] Datenfluss-Diagramm überprüft und aktualisiert
-- [x] DoD-Checkboxen auf aktuellen Stand gebracht (JSDoc-Tasks aus 3.1 als erledigt markiert)
-- [x] Code-Review / Plausibilitätsprüfung
-
----
-
-## Inkonsistenzen: Entscheidungen Spec vs. Code
-
-| # | Inkonsistenz | Entscheidung | Aufgabe |
-|---|-------------|-------------|---------|
-| I1 | Package `lobby/` statt `tisch/` | **Spec ist Wahrheit** | → 1.1 |
-| I2 | Package `session/` statt `spieler/` | **Spec ist Wahrheit** | → 1.2 |
-| I3 | `partie/ki/` statt top-level `ki/` | **Spec ist Wahrheit** | → 1.3 |
-| I4 | `SpielerPosition` in `karten/` statt `partie/` | **Spec ist Wahrheit** | → 1.4 |
-| I5 | PartieEntity importiert TischEntity | **Code ist falsch** (DoD-Verletzung) | → 1.5 |
-| I6 | PunkteRechner ist `public` statt package-private | **Spec ist Wahrheit** | → 1.6 |
-| I7 | `@EventListener` statt `@ApplicationModuleListener` | **Spec ist Wahrheit** | → 1.9 |
-| I8 | Farbsolo als 3 Enum-Werte vs. 1 parametrisiert | **Code ist Wahrheit** (Spec-DoD bestätigt 3 Typen) | Keine |
-| I9 | spielablauf.md zeigt Solo-Nachgeben als `[ ]` | **Code ist Wahrheit** (implementiert) | → 4.1 |
-| I10 | Diverse Spec-DoDs unchecked obwohl implementiert | **Code ist Wahrheit** | → 4.1 |
-
----
-
-## Priorität & Abhängigkeiten
-
-```
-Phase 1 (Blocking):
-  1.1 ──┐
-  1.2 ──┤
-  1.3 ──┼── 1.7 ── 1.8 ── 1.9 ── 1.10
-  1.4 ──┤
-  1.5 ──┤
-  1.6 ──┘
-
-Phase 2 (nach Phase 1):
-  2.1 (unabhängig)
-  2.2 (unabhängig)
-
-Phase 3 (parallel zu Phase 2):
-  3.1, 3.2, 3.3, 3.4 (alle unabhängig)
-
-Phase 4 (parallel, niedrige Priorität):
-  4.1, 4.2, 4.3 (alle unabhängig)
-```
+**Offene Punkte:** Keine.
 
 ---
 
 ## Notiz
 
-**Zuletzt erledigt (Plan-Run #55):** Task 2.2 — E2E-Test Einladungslink-Flow implementiert.
-`e2e/tests/einladungslink.spec.ts` geschrieben: Spieler 1 erstellt Tisch → liest einladungsCode
-aus AppStore → Spieler 2 (neuer Browser-Kontext, eigene Session) navigiert zu `/#join/{code}` →
-BootSzene parst Hash → automatischer Beitritt → TischSzene erscheint. Test grün (2.2s).
+**Zuletzt erledigt (Plan-Run #57):** Build-Fehler B.1 behoben — `SpielRegistryTest`-Stub implementiert `findByEinladungsCode(String)` mit `return Optional.empty()`. `mvn test` läuft grün (231 Tests).
 
-**Naechster logischer Schritt:**
-Alle Aufgaben erledigt. Kein weiterer offener Task in IMPLEMENTATION_PLAN.md.
+**Nächster Schritt:** Alle bekannten Aufgaben erledigt. Nächste Iteration kann neue Features oder Refactorings beginnen.
 
 **Offene Fragen:** Keine.
+
 
