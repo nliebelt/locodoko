@@ -1,6 +1,6 @@
 # IMPLEMENTATION_PLAN — Locodoko Doppelkopf
 
-> **Letzte Aktualisierung: 2026-04-15 (Plan-Run #58)**
+> **Letzte Aktualisierung: 2026-04-15 (Plan-Run #59)**
 
 ## Legende
 
@@ -21,17 +21,17 @@ Hochzeit, Armut, KI (3 Schwierigkeitsgrade), WebSocket, REST-API, Session, Verbi
 Frontend (Phaser 3, AppStore, Szenen-Aufteilung, Animationen, Overlays, Tastatursteuerung),
 Schnellstart, Einladungslink, Spring Modulith Modulstruktur.
 
-**Build:** `mvn test` grün (231 Tests, 0 Failures).
+**Build:** `mvn test` grün (232 Tests, 0 Failures).
 
-**Offene Punkte:** 5 Bugs im Spielbetrieb, 3 Architektur-Refactorings (R12–R14).
+**Offene Punkte:** 4 Bugs im Spielbetrieb (BUG-1 behoben), 3 Architektur-Refactorings (R12–R14).
 
 ---
 
 ## Notiz
 
-**Zuletzt erledigt (Plan-Run #57):** Build-Fehler B.1 behoben — `SpielRegistryTest`-Stub implementiert `findByEinladungsCode(String)` mit `return Optional.empty()`. `mvn test` läuft grün (231 Tests).
+**Zuletzt erledigt (Plan-Run #58):** BUG-1 behoben — in `Spiel.spieleKarte()` wurde `berechneNeuePflichtansagen()` VOR `fortschrittNachVollstaendigemStich()` aufgerufen und verwendete die alten Parteien. Bei Hochzeit-Partner-Bestimmung in einem Stich mit >30 Augen entstand eine Pflichtansage für die falsche Partei (KONTRA statt RE), die niemand erfüllen konnte → KI-Hang. Fix: Reihenfolge getauscht, `berechneNeuePflichtansagen()` erhält jetzt explizit die aktualisierten Parteien als Parameter. Neuer Regressionstest in `HochzeitTest`. `mvn test` grün (232 Tests).
 
-**Nächster Schritt:** Bugs BUG-1 bis BUG-5 beheben (spielkritisch), dann Architektur-Refactoring R12–R14.
+**Nächster Schritt:** BUG-2 (Schweinchen zeigt keine Wirkung) oder BUG-5 (DKV-Turnier-Preset), dann BUG-3/BUG-4 (Frontend).
 
 **Offene Fragen:** Keine.
 
@@ -39,7 +39,7 @@ Schnellstart, Einladungslink, Spring Modulith Modulstruktur.
 
 ## Phase BF — Bug-Fixes Spielbetrieb
 
-### BUG-1: KI hängt nach Fuchs gefangen / Hochzeit-Partner gefunden [ ]
+### BUG-1: KI hängt nach Fuchs gefangen / Hochzeit-Partner gefunden [x]
 
 **Priorität: Kritisch** — blockiert regulären Spielfluss bei Sonderpunkten und Hochzeit.
 

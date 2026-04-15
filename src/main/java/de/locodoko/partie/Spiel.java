@@ -411,9 +411,14 @@ public final class Spiel {
         List<Stich> neueAbgeschlosseneStiche = new ArrayList<>(abgeschlosseneStiche);
         neueAbgeschlosseneStiche.add(gespielterStich);
 
-        Set<Partei> neuesPflichtansageAusstehend = berechneNeuePflichtansagen(gespielterStich, neueAbgeschlosseneStiche.size());
-
+        // Hochzeit-Fortschritt VOR Pflichtansagen berechnen, damit berechneNeuePflichtansagen
+        // die aktualisierten Parteien verwendet (BUG-1: bei Hochzeit-Partner-Bestimmung aendert
+        // sich die Parteizugehoerigkeit des Stichgewinners, was sonst zu einer Pflichtansage
+        // fuer die falsche Partei fuehrt und die KI blockiert).
         HochzeitFortschritt hochzeitFortschritt = fortschrittNachVollstaendigemStich(gespielterStich, stichphase.hochzeitStatus());
+
+        Set<Partei> neuesPflichtansageAusstehend = berechneNeuePflichtansagen(
+            gespielterStich, neueAbgeschlosseneStiche.size(), hochzeitFortschritt.parteien());
         if (neueAbgeschlosseneStiche.size() == kartenProSpieler()) {
             return neuesSpielMitStichfortschritt(
                 neueHaende,
@@ -439,7 +444,7 @@ public final class Spiel {
      * Spieltyp NORMALSPIEL oder HOCHZEIT, Stich hat mehr als 30 Augen, die gewinnende Partei
      * hat noch keine Grundansage gemacht.</p>
      */
-    private Set<Partei> berechneNeuePflichtansagen(Stich abgeschlossenerStich, int stichNummer) {
+    private Set<Partei> berechneNeuePflichtansagen(Stich abgeschlossenerStich, int stichNummer, Parteien aktuelleParteien) {
         if (!spielregeln.dreissigAugenPflichtAktiv()) {
             return Set.of();
         }
@@ -452,8 +457,8 @@ public final class Spiel {
         if (!abgeschlossenerStich.augen().ueberschreitet(30)) {
             return Set.of();
         }
-        Partei gewinnendePflichtpartei = parteien.parteiVon(abgeschlossenerStich.gewinner(trumpfOrdnung).spieler());
-        if (ansagen.hatGrundansage(gewinnendePflichtpartei, parteien)) {
+        Partei gewinnendePflichtpartei = aktuelleParteien.parteiVon(abgeschlossenerStich.gewinner(trumpfOrdnung).spieler());
+        if (ansagen.hatGrundansage(gewinnendePflichtpartei, aktuelleParteien)) {
             return Set.of();
         }
         EnumSet<Partei> ergebnis = EnumSet.noneOf(Partei.class);

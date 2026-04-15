@@ -206,6 +206,52 @@ class HochzeitTest {
             "KONTRA hat den Stich nicht gewonnen und braucht keine Pflichtansage.");
     }
 
+    @Test
+    void dreissigAugenPflicht_NutztAktualisierteParteien_BeiHochzeitPartnerBestimmung() {
+        // Warum wichtig (BUG-1): Wenn ein fremder Spieler den ersten Stich mit >30 Augen gewinnt
+        // und dadurch Hochzeit-Partner (RE) wird, muss die Pflichtansage fuer RE gelten (die
+        // aktualisierte Partei des Stichgewinners). Vor dem Fix wurde die Pflichtansage mit den
+        // alten Parteien berechnet — der Stichgewinner war dort noch KONTRA. Das fuehrte zu einer
+        // Pflichtansage fuer KONTRA, obwohl der fuehrende Spieler jetzt RE ist. Die KI konnte die
+        // Pflichtansage nicht erfuellen und das Spiel hing.
+        Spielregeln mitPflicht = spielregeln.mitDreissigAugenPflichtAktiv(true);
+
+        // Stich 1: WEST (Hochzeit) spielt niedrigen Trumpf, NORD gewinnt mit Dulle (Herz 10).
+        // NORD wird dadurch Hochzeit-Partner (RE). Gesamt: 4+10+11+10 = 35 Augen (> 30).
+        Karte westKarte = new Karte(Farbe.KARO,  Kartenwert.KOENIG, 1); // 4A, Trumpf
+        Karte nordKarte = new Karte(Farbe.HERZ,  Kartenwert.ZEHN,   1); // 10A, Dulle (hoechster Trumpf)
+        Karte ostKarte  = new Karte(Farbe.KARO,  Kartenwert.AS,     1); // 11A, Trumpf (Fuchs)
+        Karte suedKarte = new Karte(Farbe.KARO,  Kartenwert.ZEHN,   1); // 10A, Trumpf
+
+        Spiel nachStich = spieleViertaKarteImHochzeitStich(
+            mitPflicht,
+            SpielerPosition.WEST,   // Aufspieler und Hochzeit-Spieler
+            westKarte, nordKarte, ostKarte,
+            SpielerPosition.SUED, suedKarte
+        );
+
+        // NORD hat den Stich gewonnen und ist jetzt RE-Partner
+        assertFalse(nachStich.hochzeitStatus().orElseThrow().suchtPartner(),
+            "Nach erstem fremden Stichgewinn darf die Partnersuche nicht mehr aktiv sein.");
+        assertEquals(SpielerPosition.NORD, nachStich.hochzeitStatus().orElseThrow().partner().orElseThrow(),
+            "NORD muss als Hochzeit-Partner eingetragen sein.");
+
+        // Die Pflichtansage muss fuer RE gelten (NORDs AKTUELLE Partei), nicht KONTRA (alte Partei)
+        assertTrue(nachStich.pflichtansageAusstehend().contains(Partei.RE),
+            "Pflichtansage muss fuer RE gelten — NORD ist nach Partnerbestimmung RE, nicht mehr KONTRA.");
+        assertFalse(nachStich.pflichtansageAusstehend().contains(Partei.KONTRA),
+            "KONTRA darf nicht in pflichtansageAusstehend stehen — NORD ist jetzt RE.");
+
+        // NORD fuehrt Stich 2 und muss RE ansagen koennen (Pflichtansage erfuellbar)
+        assertTrue(nachStich.kannAnsagen(SpielerPosition.NORD, Ansage.RE),
+            "NORD (jetzt RE) muss die Pflichtansage RE machen koennen.");
+
+        // Nach der Pflichtansage muss spieleKarte wieder moeglich sein (Spiel nicht blockiert)
+        Spiel nachAnsage = nachStich.sageAn(SpielerPosition.NORD, Ansage.RE);
+        assertTrue(nachAnsage.pflichtansageAusstehend().isEmpty(),
+            "Nach RE-Ansage muss die Pflichtansage erfuellt sein.");
+    }
+
     // --- Hilfsmethoden ---
 
     /**
