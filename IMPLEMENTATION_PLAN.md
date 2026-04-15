@@ -21,25 +21,27 @@ Hochzeit, Armut, KI (3 Schwierigkeitsgrade), WebSocket, REST-API, Session, Verbi
 Frontend (Phaser 3, AppStore, Szenen-Aufteilung, Animationen, Overlays, Tastatursteuerung),
 Schnellstart, Einladungslink, Spring Modulith Modulstruktur.
 
-**Build:** `mvn test` grün (248 Tests, 0 Failures).
+**Build:** `mvn test` grün (254 Tests, 0 Failures).
 
-**Offene Punkte:** M2.4 erledigt. Verbleibend: M2.5.
+**Offene Punkte:** Alle M2-Aufgaben erledigt.
 
 ---
 
 ## Notiz
 
-**Zuletzt erledigt (Plan-Run #69):** SF-2 — Schweinchen DKV-konforme implizite Ansage.
-Neues Domain-Event `SchweinchenGemeldet(tischId, spielerPosition)` in `partie/ereignisse/`.
-`Spiel.schweinchenGemeldetVon()` erkennt den ersten Karo-As-Spieler aus abgeschlossenen/aktuellem Stich.
-`SpielAktionsService.spieleKarte()` vergleicht Vorher/Nachher und publiziert `SchweinchenGemeldet`.
-`WebSocketBroadcastAdapter` lauscht auf `SchweinchenGemeldet` (Logging).
-Neues Feld `schweinchenGemeldetVon` in `LaufendesSpielAntwort` (Backend + Frontend-DTO).
-Frontend: `TischSzene.ermittleSchweinchenEreignis()` erkennt State-Transition, zeigt pink-farbenes
-Ansage-Banner via `animiereAnsageBanner()`. `TischAnsichtModell` + alle Fixtures aktualisiert.
-`mvn test` grün (253 Tests). Frontend build+lint+tests grün (pre-existing jsdom-Fehler bestehen weiter).
+**Zuletzt erledigt (Plan-Run #70):** M2.5 — OpenAPI / TypeScript-Typen-Synchronisation.
+`@Schema`-Annotationen auf allen 26 Response-DTO-Records (17 Top-Level + 9 innere Records).
+`OpenApiKonfiguration` mit Metadaten und 7 Tags. `OpenApiSchemaErweiterung` in `tisch/` fuer
+WebSocket-DTOs und `ApiFehlerAntwort` (nicht direkt in REST-Endpunkten referenziert).
+`OpenApiExportTest` exportiert `/v3/api-docs` nach `target/openapi.json` (32 Schemas, 18 Pfade).
+`openapi-typescript` v7.13 in `frontend/package.json` + `npm run generate-types` Script.
+Generierte Typen: `frontend/src/generated/api-types.ts` (2012 Zeilen).
+Komfort-Re-Exporte: `frontend/src/generated/schema-types.ts` (26 Named Types).
+`SpielverwaltungDto.ts` mit Migrations-JSDoc versehen. ESLint ignoriert `src/generated/`.
+`mvn test` grün (254 Tests). Frontend build+lint+tests grün (pre-existing jsdom-Fehler bestehen weiter).
 
-**Nächster Schritt:** M2.5 (OpenAPI / TypeScript-Typen-Synchronisation).
+**Nächster Schritt:** Alle Milestone-2-Aufgaben abgeschlossen. Naechste Phase unklar —
+moeglicherweise verbleibende Spec-Updates, E2E-Tests oder neue Features.
 
 **Offene Fragen:** TischSzene.test.ts und AnimationenService.test.ts laufen nicht wegen pre-existing jsdom/ESM-Kompatibilitaetsfehler (ERR_REQUIRE_ASYNC_MODULE).
 
@@ -333,13 +335,13 @@ DB-Spaltenfelder neben @Transient-Domain-Feldern, synchronisiert via `hydriere()
 - [x] **M2.4.2** PostgreSQL-Profil vollständig konfiguriert + Dual-Changelog-Strategie (`application-prod.properties`, Docker Compose)
 - [x] **M2.4.3** `Dockerfile.app` + `docker-compose.yml` auf PostgreSQL umgestellt
 
-### M2.5: OpenAPI / TypeScript-Typen-Synchronisation [ ]
+### M2.5: OpenAPI / TypeScript-Typen-Synchronisation [x]
 
 **Priorität: Niedrig** | **Unabhängig** | **Spec:** `architektur-spielkern.md` (Abschnitt "OpenAPI")
 
-- [ ] **M2.5.1** `springdoc-openapi-starter-webmvc-ui` in `pom.xml` + `@Schema`-Annotationen auf Response-DTOs
-- [ ] **M2.5.2** `openapi-typescript` im Frontend-Build: generiert `frontend/src/generated/api-types.ts`
-- [ ] **M2.5.3** Bestehende handgeschriebene DTO-Typen schrittweise auf generierte Typen umstellen
+- [x] **M2.5.1** `springdoc-openapi-starter-webmvc-ui` in `pom.xml` + `@Schema`-Annotationen auf Response-DTOs
+- [x] **M2.5.2** `openapi-typescript` im Frontend-Build: generiert `frontend/src/generated/api-types.ts`
+- [x] **M2.5.3** Bestehende handgeschriebene DTO-Typen schrittweise auf generierte Typen umstellen
 
 ---
 

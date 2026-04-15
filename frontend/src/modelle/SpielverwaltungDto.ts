@@ -1,3 +1,13 @@
+/**
+ * Handgeschriebene DTO-Typen fuer die Locodoko REST- und WebSocket-API.
+ *
+ * MIGRATION: Diese Typen werden schrittweise durch generierte Typen aus
+ * {@code frontend/src/generated/api-types.ts} (via openapi-typescript) ersetzt.
+ * Generierte Typen: {@code import type { ... } from '../generated/schema-types'}
+ *
+ * Solange die Migration laeuft, koexistieren beide Typ-Quellen.
+ * Neue Features sollten bevorzugt die generierten Typen nutzen.
+ */
 export type Uuid = string;
 
 export interface ApiFehlerAntwort {

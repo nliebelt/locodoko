@@ -21,15 +21,6 @@ public class OpenApiKonfiguration {
 
     /**
      * Erzeugt das OpenAPI-Objekt mit Titel, Version, Beschreibung und Tag-Definitionen.
-     *
-     * <p>Tags gruppieren die Endpunkte in der Swagger-UI:
-     * <ul>
-     *   <li>{@code Tische} — Lobby und Tischverwaltung</li>
-     *   <li>{@code Partien} — Aktueller Partiestand</li>
-     *   <li>{@code Session} — Spieler-Session (Registrierung, Name)</li>
-     *   <li>{@code System} — Systemstatus</li>
-     * </ul>
-     * </p>
      */
     @Bean
     public OpenAPI locodokoOpenApi() {
@@ -43,7 +34,10 @@ public class OpenApiKonfiguration {
             .tags(List.of(
                 new Tag().name("Tische").description("Lobby: Tische erstellen, beitreten, verlassen und starten"),
                 new Tag().name("Partien").description("Aktuellen Partiestand abrufen"),
+                new Tag().name("Einladung").description("Oeffentliche Einladungslinks fuer private Tische"),
                 new Tag().name("Session").description("Spieler-Session registrieren, abrufen und Namen aendern"),
+                new Tag().name("Authentifizierung").description("Registrierung und Login"),
+                new Tag().name("Profil").description("Oeffentliches Spieler-Profil mit Statistiken und letzten Partien"),
                 new Tag().name("System").description("Systemstatus und Gesundheitspruefung")
             ));
     }
