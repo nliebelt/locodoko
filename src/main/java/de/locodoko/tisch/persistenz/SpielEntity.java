@@ -5,9 +5,11 @@ import de.locodoko.partie.JsonKonverter;
 import de.locodoko.partie.AktuellerStichKarteEmbeddable;
 import de.locodoko.partie.Ansage;
 import de.locodoko.partie.AnsageEreignisEmbeddable;
+import de.locodoko.partie.HandJsonEintrag;
 import de.locodoko.partie.HandKarteEmbeddable;
 import de.locodoko.partie.SpielErgebnisEmbeddable;
 import de.locodoko.partie.SpielerPosition;
+import de.locodoko.partie.StichJsonEintrag;
 import de.locodoko.partie.VorbehaltMeldungEmbeddable;
 
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -22,7 +24,6 @@ import org.springframework.data.relational.core.mapping.MappedCollection;
 import org.springframework.data.relational.core.mapping.Table;
 
 import java.util.ArrayList;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -30,8 +31,8 @@ import java.util.Objects;
 /**
  * Persistenz-Entity fuer ein einzelnes Doppelkopfspiel.
  * Owned by PartieEntity via @MappedCollection.
- * Besitzt HandEntity (Map nach spieler_position), StichEntity (Map nach stich_nummer)
- * und SpielSonderpunktEntity via @MappedCollection.
+ * Haende und Stiche werden als JSON-Blobs in den Spalten 'haende_json' und 'stiche_json' gespeichert.
+ * SpielSonderpunktEntity bleibt als @MappedCollection erhalten.
  * Komplexe Listen (vorbehalte, ansagen, etc.) werden als JSON-Text gespeichert.
  */
 @Table("spiel")
@@ -133,20 +134,13 @@ public class SpielEntity extends AbstraktePersistenzEntity {
     @Column("spielpunkte_ost")
     private Integer spielpunkteOst;
 
-    /**
-     * Haende der Spieler: Owned by diesem Spiel.
-     * Schluessel = spieler_position (String) — passt zum String-Typ der Spalte.
-     */
-    @MappedCollection(idColumn = "spiel_id", keyColumn = "spieler_position")
-    private Map<String, HandEntity> haendeMap = new LinkedHashMap<>();
+    /** Haende aller Spieler als JSON-Array von HandJsonEintrag. */
+    @Column("haende_json")
+    private String haendeJson;
 
-    /**
-     * Abgeschlossene Stiche: Owned by diesem Spiel.
-     * Schluessel = stich_key (Integer, 0-basierter Index fuer Spring Data JDBC).
-     * Die fachliche Stichnummer ist in StichEntity.stichNummer gespeichert.
-     */
-    @MappedCollection(idColumn = "spiel_id", keyColumn = "stich_key")
-    private Map<Integer, StichEntity> sticheMap = new LinkedHashMap<>();
+    /** Abgeschlossene Stiche als JSON-Array von StichJsonEintrag. */
+    @Column("stiche_json")
+    private String sticheJson;
 
     /**
      * Sonderpunkte: Owned by diesem Spiel.
@@ -163,7 +157,6 @@ public class SpielEntity extends AbstraktePersistenzEntity {
     }
 
     private SpielEntity(int spielNummer, SpielerPosition geberPosition, Spieltyp spieltyp, Spielphase phase) {
-        // spielNummer ist @Transient — wird in PartieEntity.fuegeSpielHinzu als Map-Key gesetzt
         this.spielNummer = spielNummer;
         this.geberPosition = Objects.requireNonNull(geberPosition, "geberPosition darf nicht null sein").name();
         this.spieltyp = Objects.requireNonNull(spieltyp, "spieltyp darf nicht null sein").name();
@@ -183,31 +176,29 @@ public class SpielEntity extends AbstraktePersistenzEntity {
         this.spielNummer = spielNummer;
     }
 
-    public void fuegeHandHinzu(HandEntity hand) {
+    public void fuegeHandHinzu(HandJsonEintrag hand) {
         Objects.requireNonNull(hand, "hand darf nicht null sein");
-        String posName = hand.spielerPosition().name();
-        haendeMap.put(posName, hand);
-        hand.setzeSpielerPosition(posName);
-        hand.setzeSpiel(this);
+        List<HandJsonEintrag> aktuelleHaende = new ArrayList<>(haende());
+        aktuelleHaende.removeIf(h -> h.spielerPosition() == hand.spielerPosition());
+        aktuelleHaende.add(hand);
+        this.haendeJson = JsonKonverter.schreibeAlsJson(aktuelleHaende);
     }
 
-    public void ersetzeHaende(List<HandEntity> neueHaende) {
+    public void ersetzeHaende(List<HandJsonEintrag> neueHaende) {
         Objects.requireNonNull(neueHaende, "neueHaende duerfen nicht null sein");
-        haendeMap.clear();
-        neueHaende.forEach(this::fuegeHandHinzu);
+        this.haendeJson = JsonKonverter.schreibeAlsJson(neueHaende);
     }
 
-    public void fuegeStichHinzu(StichEntity stich) {
+    public void fuegeStichHinzu(StichJsonEintrag stich) {
         Objects.requireNonNull(stich, "stich darf nicht null sein");
-        // Naechster Index (0-basiert fuer @MappedCollection keyColumn)
-        sticheMap.put(sticheMap.size(), stich);
-        stich.setzeSpiel(this);
+        List<StichJsonEintrag> aktuelleStiche = new ArrayList<>(stiche());
+        aktuelleStiche.add(stich);
+        this.sticheJson = JsonKonverter.schreibeAlsJson(aktuelleStiche);
     }
 
-    public void ersetzeStiche(List<StichEntity> neueStiche) {
+    public void ersetzeStiche(List<StichJsonEintrag> neueStiche) {
         Objects.requireNonNull(neueStiche, "neueStiche duerfen nicht null sein");
-        sticheMap.clear();
-        neueStiche.forEach(this::fuegeStichHinzu);
+        this.sticheJson = JsonKonverter.schreibeAlsJson(neueStiche);
     }
 
     public void uebernehmeErgebnis(Spielergebnis spielergebnis) {
@@ -411,16 +402,8 @@ public class SpielEntity extends AbstraktePersistenzEntity {
         return hochzeitStillesSolo;
     }
 
-    public List<HandEntity> haende() {
-        // Aus der Map eine geordnete Liste erstellen (Reihenfolge der SpielerPosition)
-        // Transiente Felder (spielerPositionStr, spiel) aus Map-Key und this setzen
-        return haendeMap.entrySet().stream()
-            .peek(eintrag -> {
-                eintrag.getValue().setzeSpielerPosition(eintrag.getKey());
-                eintrag.getValue().setzeSpiel(this);
-            })
-            .map(Map.Entry::getValue)
-            .toList();
+    public List<HandJsonEintrag> haende() {
+        return JsonKonverter.liesList(haendeJson, new TypeReference<List<HandJsonEintrag>>() {});
     }
 
     public SpielerPosition aktuellerStichAufspielerPosition() {
@@ -431,19 +414,11 @@ public class SpielEntity extends AbstraktePersistenzEntity {
         return JsonKonverter.liesList(aktuellerStichKartenJson, new TypeReference<List<AktuellerStichKarteEmbeddable>>() {});
     }
 
-    public List<StichEntity> stiche() {
-        // Stiche in Einfuegereihenfolge (stich_key) sortiert zurueckgeben
-        List<StichEntity> result = sticheMap.entrySet().stream()
-            .sorted(Map.Entry.comparingByKey())
-            .map(Map.Entry::getValue)
-            .toList();
-        // Transiente Rueckreferenz setzen
-        result.forEach(stich -> stich.setzeSpiel(this));
-        return List.copyOf(result);
+    public List<StichJsonEintrag> stiche() {
+        return JsonKonverter.liesList(sticheJson, new TypeReference<List<StichJsonEintrag>>() {});
     }
 
     public List<SpielSonderpunktEntity> sonderpunkte() {
-        // Transiente Rueckreferenz setzen
         sonderpunkte.forEach(sp -> sp.setzeSpiel(this));
         return List.copyOf(sonderpunkte);
     }

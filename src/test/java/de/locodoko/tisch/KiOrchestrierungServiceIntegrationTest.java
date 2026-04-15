@@ -9,7 +9,7 @@ import de.locodoko.partie.SpielerPosition;
 import de.locodoko.karten.Spielregeln;
 import de.locodoko.partie.Spiel;
 import de.locodoko.partie.VorbehaltAnsage;
-import de.locodoko.tisch.persistenz.HandEntity;
+
 import de.locodoko.tisch.persistenz.PartieEntity;
 import de.locodoko.tisch.persistenz.PartieRepository;
 import de.locodoko.partie.PartieStatus;

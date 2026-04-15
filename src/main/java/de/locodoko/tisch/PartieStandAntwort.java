@@ -11,7 +11,8 @@ import de.locodoko.partie.Spiel;
 import de.locodoko.partie.Spielphase;
 import de.locodoko.partie.Sonderpunkt;
 import de.locodoko.partie.VorbehaltAnsage;
-import de.locodoko.tisch.persistenz.HandEntity;
+import de.locodoko.partie.HandJsonEintrag;
+import de.locodoko.partie.StichJsonEintrag;
 import de.locodoko.tisch.persistenz.PartieEntity;
 import de.locodoko.partie.PartieStatus;
 import de.locodoko.tisch.persistenz.SpielEntity;
@@ -105,7 +106,7 @@ public record PartieStandAntwort(
 
             List<SpielerImSpielAntwort> spieler = new ArrayList<>();
             for (SpielerPosition position : SpielerPosition.standardReihenfolge()) {
-                HandEntity hand = handVon(laufendesSpiel, position);
+                HandJsonEintrag hand = handVon(laufendesSpiel, position);
                 spieler.add(SpielerImSpielAntwort.aus(
                     position,
                     spielerNachPosition.get(position),
@@ -204,7 +205,7 @@ public record PartieStandAntwort(
                 .orElse(null);
         }
 
-        private static HandEntity handVon(SpielEntity laufendesSpiel, SpielerPosition position) {
+        private static HandJsonEintrag handVon(SpielEntity laufendesSpiel, SpielerPosition position) {
             return laufendesSpiel.haende().stream()
                 .filter(hand -> hand.spielerPosition() == position)
                 .findFirst()
@@ -229,7 +230,7 @@ public record PartieStandAntwort(
         static SpielerImSpielAntwort aus(
             SpielerPosition position,
             SpielerEntity spielerEntity,
-            HandEntity hand,
+            HandJsonEintrag hand,
             SpielerPosition sichtbarePosition,
             SpielerPosition aktuellerSpieler,
             SpielerPosition geberPosition,
@@ -281,16 +282,16 @@ public record PartieStandAntwort(
             );
         }
 
-        static GespielteKarteAntwort aus(de.locodoko.tisch.persistenz.GespielteKarteEntity gespielteKarte) {
+        static GespielteKarteAntwort aus(de.locodoko.partie.AktuellerStichKarteEmbeddable karteEmbeddable) {
             return new GespielteKarteAntwort(
-                gespielteKarte.spielerPosition(),
+                karteEmbeddable.spielerPosition(),
                 new KarteAntwort(
-                    "%s-%s-%d".formatted(gespielteKarte.farbe().name(), gespielteKarte.wert().name(), gespielteKarte.exemplarIndex()),
-                    gespielteKarte.farbe().name(),
-                    gespielteKarte.wert().name(),
-                    gespielteKarte.exemplarIndex()
+                    "%s-%s-%d".formatted(karteEmbeddable.farbe().name(), karteEmbeddable.wert().name(), karteEmbeddable.exemplarIndex()),
+                    karteEmbeddable.farbe().name(),
+                    karteEmbeddable.wert().name(),
+                    karteEmbeddable.exemplarIndex()
                 ),
-                gespielteKarte.reihenfolge()
+                karteEmbeddable.reihenfolge()
             );
         }
     }

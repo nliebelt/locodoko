@@ -1,15 +1,9 @@
 package de.locodoko.partie;
 
-import de.locodoko.tisch.persistenz.GespielteKarteEntity;
-import de.locodoko.tisch.persistenz.GespielteKarteRepository;
-import de.locodoko.tisch.persistenz.HandEntity;
-import de.locodoko.tisch.persistenz.HandRepository;
 import de.locodoko.tisch.persistenz.PartieEntity;
 import de.locodoko.tisch.persistenz.PartieRepository;
 import de.locodoko.tisch.persistenz.SpielEntity;
 import de.locodoko.tisch.persistenz.SpielRepository;
-import de.locodoko.tisch.persistenz.StichEntity;
-import de.locodoko.tisch.persistenz.StichRepository;
 
 import de.locodoko.tisch.TischEntity;
 import de.locodoko.tisch.TischRepository;
@@ -69,15 +63,6 @@ class PersistenzRepositoryTest {
     @Autowired
     private SpielRepository spielRepository;
 
-    @Autowired
-    private HandRepository handRepository;
-
-    @Autowired
-    private StichRepository stichRepository;
-
-    @Autowired
-    private GespielteKarteRepository gespielteKarteRepository;
-
     @Test
     void persistiertTischMitKonfigurationSpielernPartieUndStichhistorie() {
         // Spieler muessen vor dem Tisch gespeichert werden (FK-Constraint: tisch.erstellt_von_spieler_id)
@@ -101,17 +86,20 @@ class PersistenzRepositoryTest {
         partie.setzeGesamtpunktestand(SpielerPosition.OST, -1);
 
         SpielEntity spiel = SpielEntity.neu(1, SpielerPosition.SUED, Spieltyp.NORMALSPIEL, Spielphase.GESAMTSTAND_AKTUALISIEREN);
-        spiel.fuegeHandHinzu(HandEntity.neu(SpielerPosition.SUED, List.of(
+        spiel.fuegeHandHinzu(HandJsonEintrag.aus(SpielerPosition.SUED, List.of(
             new Karte(Farbe.KREUZ, Kartenwert.DAME, 1),
             new Karte(Farbe.HERZ, Kartenwert.ZEHN, 2)
         )));
 
-        StichEntity stich = StichEntity.neu(1, SpielerPosition.WEST, SpielerPosition.SUED, 32);
-        stich.fuegeGespielteKarteHinzu(GespielteKarteEntity.neu(SpielerPosition.WEST, new Karte(Farbe.KREUZ, Kartenwert.AS, 1), 0));
-        stich.fuegeGespielteKarteHinzu(GespielteKarteEntity.neu(SpielerPosition.NORD, new Karte(Farbe.KREUZ, Kartenwert.ZEHN, 1), 1));
-        stich.fuegeGespielteKarteHinzu(GespielteKarteEntity.neu(SpielerPosition.OST, new Karte(Farbe.KREUZ, Kartenwert.KOENIG, 2), 2));
-        stich.fuegeGespielteKarteHinzu(GespielteKarteEntity.neu(SpielerPosition.SUED, new Karte(Farbe.KREUZ, Kartenwert.DAME, 1), 3));
-        spiel.fuegeStichHinzu(stich);
+        spiel.fuegeStichHinzu(new StichJsonEintrag(
+            1, SpielerPosition.WEST, SpielerPosition.SUED, 32,
+            List.of(
+                new AktuellerStichKarteEmbeddable(SpielerPosition.WEST, Farbe.KREUZ, Kartenwert.AS, 1, 0),
+                new AktuellerStichKarteEmbeddable(SpielerPosition.NORD, Farbe.KREUZ, Kartenwert.ZEHN, 1, 1),
+                new AktuellerStichKarteEmbeddable(SpielerPosition.OST, Farbe.KREUZ, Kartenwert.KOENIG, 2, 2),
+                new AktuellerStichKarteEmbeddable(SpielerPosition.SUED, Farbe.KREUZ, Kartenwert.DAME, 1, 3)
+            )
+        ));
         spiel.uebernehmeErgebnis(beispielErgebnis());
 
         partie.fuegeSpielHinzu(spiel);
@@ -143,15 +131,16 @@ class PersistenzRepositoryTest {
         assertEquals(1, geladenesSpiel.stiche().size());
         assertEquals(2, geladenesSpiel.sonderpunkte().size());
 
-        HandEntity geladeneHand = handRepository.findBySpiel_IdAndSpielerPosition(geladenesSpiel.id(), SpielerPosition.SUED).orElseThrow();
+        HandJsonEintrag geladeneHand = geladenesSpiel.haende().stream()
+            .filter(h -> h.spielerPosition() == SpielerPosition.SUED)
+            .findFirst().orElseThrow();
         assertEquals(2, geladeneHand.karten().size());
         assertEquals(Kartenwert.ZEHN, geladeneHand.karten().get(1).wert());
 
-        StichEntity geladenerStich = stichRepository.findAllBySpiel_IdOrderByStichNummerAsc(geladenesSpiel.id()).getFirst();
+        StichJsonEintrag geladenerStich = geladenesSpiel.stiche().getFirst();
         assertEquals(32, geladenerStich.augen());
-        assertEquals(4, gespielteKarteRepository.findAllByStich_IdOrderByReihenfolgeAsc(geladenerStich.id()).size());
-        assertEquals(Kartenwert.DAME,
-            gespielteKarteRepository.findAllByStich_IdOrderByReihenfolgeAsc(geladenerStich.id()).getLast().wert());
+        assertEquals(4, geladenerStich.gespielteKarten().size());
+        assertEquals(Kartenwert.DAME, geladenerStich.gespielteKarten().getLast().wert());
 
         assertTrue(spielerRepository.findBySessionId("session-ada").isPresent(),
             "Die Session-basierte Spieleridentifikation braucht eine direkte Repository-Suche, damit dieselbe Person serverseitig wiedererkannt wird.");
@@ -170,9 +159,10 @@ class PersistenzRepositoryTest {
 
         PartieEntity partie = PartieEntity.neu(24);
         SpielEntity spiel = SpielEntity.neu(1, SpielerPosition.WEST, Spieltyp.NORMALSPIEL, new Spielphase.Stichphase(Stich.neu(SpielerPosition.WEST), Set.of(), null));
-        StichEntity stich = StichEntity.neu(1, SpielerPosition.WEST, SpielerPosition.WEST, 11);
-        stich.fuegeGespielteKarteHinzu(GespielteKarteEntity.neu(SpielerPosition.WEST, new Karte(Farbe.HERZ, Kartenwert.AS, 1), 0));
-        spiel.fuegeStichHinzu(stich);
+        spiel.fuegeStichHinzu(new StichJsonEintrag(
+            1, SpielerPosition.WEST, SpielerPosition.WEST, 11,
+            List.of(new AktuellerStichKarteEmbeddable(SpielerPosition.WEST, Farbe.HERZ, Kartenwert.AS, 1, 0))
+        ));
         partie.fuegeSpielHinzu(spiel);
         tisch.setzePartie(partie);
         TischEntity gespeichert = tischRepository.saveAndFlush(tisch);
@@ -184,8 +174,6 @@ class PersistenzRepositoryTest {
         assertEquals(0, partieRepository.count(),
             "Partien muessen mit dem Tisch verschwinden, damit kein historischer Zustand ohne Einstiegspunkt uebrig bleibt.");
         assertEquals(0, spielRepository.count());
-        assertEquals(0, stichRepository.count());
-        assertEquals(0, gespielteKarteRepository.count());
         assertEquals(2, spielerRepository.count(),
             "Spieler bleiben erhalten, weil die Session-Identitaet den Tisch ueberlebt und spaeter neue Tische betreten koennen muss.");
     }
@@ -245,7 +233,7 @@ class PersistenzRepositoryTest {
 
         PartieEntity partie = PartieEntity.neu(1);
         SpielEntity spiel = SpielEntity.neu(1, SpielerPosition.SUED, Spieltyp.HOCHZEIT, new Spielphase.Stichphase(Stich.neu(SpielerPosition.SUED), Set.of(), null));
-        spiel.fuegeHandHinzu(HandEntity.neu(SpielerPosition.WEST, List.of(new Karte(Farbe.KREUZ, Kartenwert.DAME, 1))));
+        spiel.fuegeHandHinzu(HandJsonEintrag.aus(SpielerPosition.WEST, List.of(new Karte(Farbe.KREUZ, Kartenwert.DAME, 1))));
         spiel.ersetzeAnsagen(List.of(AnsageEreignisEmbeddable.neu(SpielerPosition.WEST, Ansage.RE)));
         spiel.setzeAktuellenStich(
             SpielerPosition.WEST,

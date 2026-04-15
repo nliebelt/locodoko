@@ -29,9 +29,9 @@ Schnellstart, Einladungslink, Spring Modulith Modulstruktur.
 
 ## Notiz
 
-**Zuletzt erledigt (Plan-Run #63):** R12 — Entity-Klassen von `partie/` nach `tisch/persistenz/` verschoben. Verschoben: 6 Entity-Klassen (`PartieEntity`, `SpielEntity`, `StichEntity`, `HandEntity`, `GespielteKarteEntity`, `SpielSonderpunktEntity`) + 5 Repositories nach `de.locodoko.tisch.persistenz/` (internes Sub-Package). `AbstraktePersistenzEntity` + 3 Callbacks nach `de.locodoko.system/` (querschnittliche Infrastruktur), da `spieler/SpielerEntity` sie benötigt und `spieler → tisch` einen Zyklus erzeugen würde. Package-private Methoden/Konstruktoren in `JsonKonverter`, `SpielErgebnisEmbeddable` auf `public` geändert (Cross-Package-Zugriff). `ModulstrukturTest.verify()` grün, `mvn test` grün (237 Tests).
+**Zuletzt erledigt (Plan-Run #64):** R13 — Stiche und Hände werden jetzt als JSON-Blob in der `spiel`-Tabelle gespeichert statt über relationale `@MappedCollection`-Tabellen. Neue Typen: `HandJsonEintrag`, `StichJsonEintrag` (in `partie/`). `SpielEntity` nutzt `haende_json`- und `stiche_json`-Spalten. Liquibase-Changeset `012-spielzustand-json.yaml` fügt Spalten hinzu und droppt `hand`, `stich`, `gespielte_karte`-Tabellen. Gelöschte Klassen: `HandEntity`, `StichEntity`, `GespielteKarteEntity`, `HandRepository`, `StichRepository`, `GespielteKarteRepository`. `SpielPersistenzAdapter`, `PartieStandAntwort`, `TischVerwaltungsService` und 4 Tests angepasst. `mvn test` grün (237 Tests).
 
-**Nächster Schritt:** R13 (JSON-Blob für Stiche/Hände) ist jetzt entblockt.
+**Nächster Schritt:** R14 (Entity-Merge: SpielEntity → Spiel, PartieEntity → Partie) ist jetzt entblockt.
 
 **Offene Fragen:** TischSzene.test.ts und AnimationenService.test.ts laufen nicht wegen pre-existing jsdom/ESM-Kompatibilitätsfehler (ERR_REQUIRE_ASYNC_MODULE).
 
@@ -218,7 +218,7 @@ aber laut DoD und Architektur-Spec nach `de.locodoko.tisch/`:
 
 ---
 
-### R13: JSON-Blob für Stiche/Hände [ ]
+### R13: JSON-Blob für Stiche/Hände [x]
 
 **Priorität: Niedrig** — Architektur-Verbesserung, kein funktionaler Effekt.
 
@@ -237,7 +237,7 @@ JSON-Blob in der `spiel`-Zeile persistiert werden statt über relationale
 
 ---
 
-### R14: Entity-Merge (SpielEntity → Spiel, PartieEntity → Partie) [BLOCKED: R13]
+### R14: Entity-Merge (SpielEntity → Spiel, PartieEntity → Partie) [BLOCKED: R13 erledigt, kann gestartet werden]
 
 **Priorität: Niedrig** — Architektur-Vereinfachung, kein funktionaler Effekt.
 

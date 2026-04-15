@@ -1,0 +1,33 @@
+databaseChangeLog:
+  - changeSet:
+      id: 012-spielzustand-json-spalten
+      author: locodoko
+      comment: >
+        R13: Stiche und Haende als JSON-Blob in der spiel-Tabelle statt
+        ueber relationale Tabellen (stich, hand, gespielte_karte).
+      changes:
+        - addColumn:
+            tableName: spiel
+            columns:
+              - column:
+                  name: haende_json
+                  type: TEXT
+                  defaultValue: "[]"
+              - column:
+                  name: stiche_json
+                  type: TEXT
+                  defaultValue: "[]"
+
+  - changeSet:
+      id: 012-drop-relationale-spielzustand-tabellen
+      author: locodoko
+      comment: >
+        Alte relationale Tabellen fuer Stiche, Haende und gespielte Karten
+        entfernen — Daten werden jetzt als JSON in der spiel-Tabelle gespeichert.
+      changes:
+        - dropTable:
+            tableName: gespielte_karte
+        - dropTable:
+            tableName: stich
+        - dropTable:
+            tableName: hand

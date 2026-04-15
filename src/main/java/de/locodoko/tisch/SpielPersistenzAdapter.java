@@ -26,13 +26,12 @@ import de.locodoko.partie.VorbehaltAnsage;
 import de.locodoko.partie.VorbehaltMeldung;
 import de.locodoko.partie.AnsageEreignisEmbeddable;
 import de.locodoko.partie.AktuellerStichKarteEmbeddable;
-import de.locodoko.tisch.persistenz.GespielteKarteEntity;
-import de.locodoko.tisch.persistenz.HandEntity;
+import de.locodoko.partie.HandJsonEintrag;
 import de.locodoko.partie.HandKarteEmbeddable;
 import de.locodoko.tisch.persistenz.SpielEntity;
 import de.locodoko.partie.SpielErgebnisEmbeddable;
 import de.locodoko.tisch.persistenz.SpielSonderpunktEntity;
-import de.locodoko.tisch.persistenz.StichEntity;
+import de.locodoko.partie.StichJsonEintrag;
 import de.locodoko.partie.VorbehaltMeldungEmbeddable;
 
 import java.util.ArrayList;
@@ -121,9 +120,9 @@ final class SpielPersistenzAdapter {
         );
         ziel.ersetzeHaende(SpielerPosition.standardReihenfolge().stream()
             .filter(position -> quelle.haende().containsKey(position))
-            .map(position -> HandEntity.neu(position, quelle.handVon(position).karten()))
+            .map(position -> HandJsonEintrag.aus(position, quelle.handVon(position).karten()))
             .toList());
-        ziel.ersetzeStiche(alsStichEntities(quelle));
+        ziel.ersetzeStiche(alsStichJsonEintraege(quelle));
         quelle.aktuellerStich().ifPresentOrElse(
             stich -> ziel.setzeAktuellenStich(
                 stich.aufspieler(),
@@ -167,7 +166,7 @@ final class SpielPersistenzAdapter {
 
     private static Map<SpielerPosition, Hand> haende(SpielEntity spielEntity) {
         EnumMap<SpielerPosition, Hand> haende = new EnumMap<>(SpielerPosition.class);
-        for (HandEntity hand : spielEntity.haende()) {
+        for (HandJsonEintrag hand : spielEntity.haende()) {
             haende.put(hand.spielerPosition(), new Hand(hand.karten().stream().map(SpielPersistenzAdapter::alsKarte).toList()));
         }
         return Map.copyOf(haende);
@@ -455,10 +454,6 @@ final class SpielPersistenzAdapter {
         return new Karte(karte.farbe(), karte.wert(), karte.exemplarIndex());
     }
 
-    private static Karte alsKarte(GespielteKarteEntity karte) {
-        return new Karte(karte.farbe(), karte.wert(), karte.exemplarIndex());
-    }
-
     private static Karte alsKarte(AktuellerStichKarteEmbeddable karte) {
         return new Karte(karte.farbe(), karte.wert(), karte.exemplarIndex());
     }
@@ -471,37 +466,27 @@ final class SpielPersistenzAdapter {
         );
     }
 
-    private static GespielteKarte alsGespielteKarte(GespielteKarteEntity karte) {
-        return new GespielteKarte(
-            karte.spielerPosition(),
-            alsKarte(karte),
-            karte.reihenfolge()
-        );
-    }
-
-    private static Stich alsStich(StichEntity stichEntity) {
+    private static Stich alsStich(StichJsonEintrag stichEintrag) {
         return Stich.ausPersistiertemStand(
-            stichEntity.aufspielerPosition(),
-            stichEntity.gespielteKarten().stream().map(SpielPersistenzAdapter::alsGespielteKarte).toList()
+            stichEintrag.aufspielerPosition(),
+            stichEintrag.gespielteKarten().stream().map(SpielPersistenzAdapter::alsGespielteKarte).toList()
         );
     }
 
-    private static List<StichEntity> alsStichEntities(Spiel spiel) {
-        List<StichEntity> stiche = new ArrayList<>();
+    private static List<StichJsonEintrag> alsStichJsonEintraege(Spiel spiel) {
+        List<StichJsonEintrag> stiche = new ArrayList<>();
         int index = 1;
         for (Stich stich : spiel.abgeschlosseneStiche()) {
-            StichEntity stichEntity = StichEntity.neu(
+            List<AktuellerStichKarteEmbeddable> gespielteKarten = stich.gespielteKarten().stream()
+                .map(AktuellerStichKarteEmbeddable::aus)
+                .toList();
+            stiche.add(new StichJsonEintrag(
                 index,
                 stich.aufspieler(),
                 stich.gewinner(spiel.trumpfOrdnung()).spieler(),
-                stich.augen().wert()
-            );
-            for (GespielteKarte gespielteKarte : stich.gespielteKarten()) {
-                stichEntity.fuegeGespielteKarteHinzu(
-                    GespielteKarteEntity.neu(gespielteKarte.spieler(), gespielteKarte.karte(), gespielteKarte.reihenfolge())
-                );
-            }
-            stiche.add(stichEntity);
+                stich.augen().wert(),
+                gespielteKarten
+            ));
             index++;
         }
         return List.copyOf(stiche);

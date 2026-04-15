@@ -8,7 +8,7 @@ import de.locodoko.karten.Kartenwert;
 
 /**
  * Repraesentiert eine Karte in einer Spielerhand.
- * Wird als Teil einer JSON-Liste in der Spalte 'karten' von HandEntity gespeichert.
+ * Wird als Teil einer JSON-Liste in HandJsonEintrag gespeichert.
  * Keine JPA-Annotationen — wird per Jackson serialisiert/deserialisiert.
  */
 public class HandKarteEmbeddable {

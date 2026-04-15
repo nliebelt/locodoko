@@ -6,8 +6,8 @@ import de.locodoko.tisch.persistenz.PartieEntity;
 import de.locodoko.tisch.persistenz.PartieRepository;
 import de.locodoko.partie.PartieStatus;
 import de.locodoko.partie.Spiel;
+import de.locodoko.partie.HandJsonEintrag;
 import de.locodoko.tisch.persistenz.SpielEntity;
-import de.locodoko.tisch.persistenz.HandEntity;
 import de.locodoko.spieler.SpielerEntity;
 import de.locodoko.spieler.SpielerId;
 import de.locodoko.spieler.SpielerRepository;
@@ -433,7 +433,7 @@ public class TischVerwaltungsService {
         Spiel spiel = Spiel.neu(SpielerPosition.SUED, tisch.konfiguration().alsSpielregeln(), kartendeck).teileKartenAus();
         SpielEntity spielEntity = SpielEntity.neu(1, spiel.geber(), spiel.spieltyp(), spiel.phase());
         for (SpielerPosition position : SpielerPosition.standardReihenfolge()) {
-            spielEntity.fuegeHandHinzu(HandEntity.neu(position, spiel.handVon(position).karten()));
+            spielEntity.fuegeHandHinzu(HandJsonEintrag.aus(position, spiel.handVon(position).karten()));
         }
         return spielEntity;
     }

@@ -4,6 +4,7 @@ import de.locodoko.karten.Augen;
 import de.locodoko.karten.Farbe;
 import de.locodoko.karten.Karte;
 import de.locodoko.karten.Kartenwert;
+import de.locodoko.partie.AktuellerStichKarteEmbeddable;
 import de.locodoko.partie.SpielerPosition;
 import de.locodoko.karten.Spielregeln;
 import de.locodoko.karten.Spieltyp;
@@ -13,10 +14,10 @@ import de.locodoko.partie.Spielpunkte;
 import de.locodoko.partie.Spielphase;
 import de.locodoko.partie.Sonderpunkt;
 import de.locodoko.partie.SonderpunktEreignis;
+import de.locodoko.partie.StichJsonEintrag;
 import de.locodoko.tisch.persistenz.PartieEntity;
 import de.locodoko.tisch.persistenz.SpielEntity;
 import de.locodoko.spieler.SpielerEntity;
-import de.locodoko.tisch.persistenz.StichEntity;
 import de.locodoko.tisch.TischEntity;
 import de.locodoko.tisch.TischkonfigurationEmbeddable;
 import org.junit.jupiter.api.Test;
@@ -45,33 +46,21 @@ class PartieStandAntwortTest {
         PartieEntity partie = PartieEntity.neu(8);
         SpielEntity spiel = SpielEntity.neu(1, SpielerPosition.SUED, Spieltyp.NORMALSPIEL, Spielphase.GESAMTSTAND_AKTUALISIEREN);
 
-        StichEntity ersterStich = StichEntity.neu(1, SpielerPosition.SUED, SpielerPosition.WEST, 26);
-        ersterStich.fuegeGespielteKarteHinzu(de.locodoko.tisch.persistenz.GespielteKarteEntity.neu(
-            SpielerPosition.SUED, karte(Farbe.KREUZ, Kartenwert.AS, 1), 0
-        ));
-        ersterStich.fuegeGespielteKarteHinzu(de.locodoko.tisch.persistenz.GespielteKarteEntity.neu(
-            SpielerPosition.WEST, karte(Farbe.KARO, Kartenwert.ZEHN, 1), 1
-        ));
-        ersterStich.fuegeGespielteKarteHinzu(de.locodoko.tisch.persistenz.GespielteKarteEntity.neu(
-            SpielerPosition.NORD, karte(Farbe.HERZ, Kartenwert.AS, 1), 2
-        ));
-        ersterStich.fuegeGespielteKarteHinzu(de.locodoko.tisch.persistenz.GespielteKarteEntity.neu(
-            SpielerPosition.OST, karte(Farbe.PIK, Kartenwert.AS, 1), 3
-        ));
+        StichJsonEintrag ersterStich = new StichJsonEintrag(1, SpielerPosition.SUED, SpielerPosition.WEST, 26,
+            List.of(
+                new AktuellerStichKarteEmbeddable(SpielerPosition.SUED, Farbe.KREUZ, Kartenwert.AS, 1, 0),
+                new AktuellerStichKarteEmbeddable(SpielerPosition.WEST, Farbe.KARO, Kartenwert.ZEHN, 1, 1),
+                new AktuellerStichKarteEmbeddable(SpielerPosition.NORD, Farbe.HERZ, Kartenwert.AS, 1, 2),
+                new AktuellerStichKarteEmbeddable(SpielerPosition.OST, Farbe.PIK, Kartenwert.AS, 1, 3)
+            ));
 
-        StichEntity zweiterStich = StichEntity.neu(2, SpielerPosition.WEST, SpielerPosition.SUED, 18);
-        zweiterStich.fuegeGespielteKarteHinzu(de.locodoko.tisch.persistenz.GespielteKarteEntity.neu(
-            SpielerPosition.WEST, karte(Farbe.KREUZ, Kartenwert.ZEHN, 2), 0
-        ));
-        zweiterStich.fuegeGespielteKarteHinzu(de.locodoko.tisch.persistenz.GespielteKarteEntity.neu(
-            SpielerPosition.NORD, karte(Farbe.KREUZ, Kartenwert.KOENIG, 1), 1
-        ));
-        zweiterStich.fuegeGespielteKarteHinzu(de.locodoko.tisch.persistenz.GespielteKarteEntity.neu(
-            SpielerPosition.OST, karte(Farbe.KREUZ, Kartenwert.NEUN, 1), 2
-        ));
-        zweiterStich.fuegeGespielteKarteHinzu(de.locodoko.tisch.persistenz.GespielteKarteEntity.neu(
-            SpielerPosition.SUED, karte(Farbe.KARO, Kartenwert.BUBE, 1), 3
-        ));
+        StichJsonEintrag zweiterStich = new StichJsonEintrag(2, SpielerPosition.WEST, SpielerPosition.SUED, 18,
+            List.of(
+                new AktuellerStichKarteEmbeddable(SpielerPosition.WEST, Farbe.KREUZ, Kartenwert.ZEHN, 2, 0),
+                new AktuellerStichKarteEmbeddable(SpielerPosition.NORD, Farbe.KREUZ, Kartenwert.KOENIG, 1, 1),
+                new AktuellerStichKarteEmbeddable(SpielerPosition.OST, Farbe.KREUZ, Kartenwert.NEUN, 1, 2),
+                new AktuellerStichKarteEmbeddable(SpielerPosition.SUED, Farbe.KARO, Kartenwert.BUBE, 1, 3)
+            ));
 
         spiel.fuegeStichHinzu(ersterStich);
         spiel.fuegeStichHinzu(zweiterStich);

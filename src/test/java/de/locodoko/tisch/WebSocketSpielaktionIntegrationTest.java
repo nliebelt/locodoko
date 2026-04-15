@@ -10,7 +10,7 @@ import de.locodoko.partie.Ansage;
 import de.locodoko.partie.Partei;
 import de.locodoko.partie.Spielphase;
 import de.locodoko.partie.VorbehaltAnsage;
-import de.locodoko.tisch.persistenz.HandEntity;
+import de.locodoko.partie.HandJsonEintrag;
 import de.locodoko.tisch.persistenz.PartieRepository;
 import de.locodoko.tisch.persistenz.SpielEntity;
 import de.locodoko.tisch.persistenz.SpielRepository;
@@ -451,11 +451,10 @@ class WebSocketSpielaktionIntegrationTest {
         transactionTemplate.executeWithoutResult(status -> {
             SpielEntity spiel = spielRepository.findAllByPartie_IdOrderBySpielNummerAsc(partieId).getFirst();
             Map<SpielerPosition, List<Karte>> verteilung = verteilungMitVorgaben(vorgaben);
-            for (HandEntity hand : spiel.haende()) {
-                hand.ersetzeKarten(verteilung.get(hand.spielerPosition()));
-            }
-            // In Spring Data JDBC gibt es kein Flush-Konzept — Aenderungen muessen explizit gespeichert werden.
-            // spielRepository.save() persistiert SpielEntity inkl. aller @MappedCollection-Kinder (haendeMap).
+            List<HandJsonEintrag> neueHaende = verteilung.entrySet().stream()
+                .map(e -> HandJsonEintrag.aus(e.getKey(), e.getValue()))
+                .toList();
+            spiel.ersetzeHaende(neueHaende);
             spielRepository.save(spiel);
         });
     }
