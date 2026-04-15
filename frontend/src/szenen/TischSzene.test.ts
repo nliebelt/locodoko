@@ -1282,6 +1282,34 @@ describe('TischSzene', () => {
     expect(modal.hidden).toBe(true);
   });
 
+  // WARUM: Nach Browser-Reload (F5) darf das Rundenende-Modal nicht erscheinen,
+  // nur weil der Server bereits ein Spielergebnis liefert. Ohne diesen Schutz
+  // wuerde jeder Reload waehrend der Auswertungsphase das Overlay erneut anzeigen.
+  it('zeigt nach Browser-Reload kein Rundenende-Modal fuer bestehendes Spielergebnis', () => {
+    const spielergebnis = {
+      spielNummer: 1,
+      spieltyp: 'NORMALSPIEL' as const,
+      siegerPartei: 'RE' as const,
+      spielwert: 1,
+      grundwert: 1,
+      absagePunkte: 0,
+      gegenDieAltenPunkte: 0,
+      soloMultiplikator: 1,
+      augenProPartei: { RE: 130, KONTRA: 110 },
+      spielpunkteProSpieler: { SUED: 1, WEST: -1, NORD: 1, OST: -1 },
+      sonderpunkteProPartei: { RE: [], KONTRA: [] }
+    };
+    // Szene wird direkt mit Spielergebnis gestartet (simuliert Reload waehrend Auswertung)
+    const zustandMitErgebnis = baueZustand({
+      partieStand: { ...bauePartieStand(null), letztesSpielergebnis: spielergebnis }
+    });
+    baueSzene(zustandMitErgebnis);
+
+    const modal = document.querySelector('.ui-modal-backdrop') as HTMLElement;
+    // Modal muss nach Reload verborgen bleiben — kein falscher Transitionseffekt
+    expect(modal.hidden).toBe(true);
+  });
+
   // WARUM: Ansage-Buttons sind der einzige Weg um Re/Kontra zu melden;
   // fehlen sie, verliert der Spieler moegliche Punkte.
   it('zeigt Ansage-Buttons als Phaser-Objekte wenn Ansagen moeglich sind', () => {

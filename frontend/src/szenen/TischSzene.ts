@@ -294,6 +294,12 @@ export class TischSzene extends Phaser.Scene {
     this.inputHandler.registriere();
 
     this.scale.on(Phaser.Scale.Events.RESIZE, this.handleResize, this);
+    // Initialzustand setzen, damit der erste Store-Callback keine falschen
+    // Transitionen erkennt (z.B. nach Browser-Reload: vorheriger State = null
+    // wuerde Overlays/Animationen des bestehenden Spiels ausloesen).
+    const anfangsZustand = appStore.snapshot();
+    this.letzterZustand = anfangsZustand;
+    this.letztesModell = this.erstelleModell(anfangsZustand);
     this.abmeldenStore = appStore.abonnieren((zustand) => {
       const modell = this.erstelleModell(zustand);
       const vorherigesModell = this.letztesModell;
@@ -1068,11 +1074,14 @@ export class TischSzene extends Phaser.Scene {
     vorherigesModell: TischAnsichtModell | null,
     aktuellesModell: TischAnsichtModell
   ): string[] {
+    if (!vorherigesModell) {
+      return [];
+    }
     const neuesErgebnis = aktuellesModell.letztesSpielergebnis;
     if (!neuesErgebnis) {
       return [];
     }
-    const vorherigeNummer = vorherigesModell?.letztesSpielergebnis?.spielNummer;
+    const vorherigeNummer = vorherigesModell.letztesSpielergebnis?.spielNummer;
     if (vorherigeNummer === neuesErgebnis.spielNummer) {
       return [];
     }
@@ -1190,7 +1199,10 @@ export class TischSzene extends Phaser.Scene {
     vorherigerZustand: AppZustand | null,
     aktuellerZustand: AppZustand
   ): boolean {
-    const vorherigesSpiel = vorherigerZustand?.partieStand?.laufendesSpiel;
+    if (!vorherigerZustand) {
+      return false;
+    }
+    const vorherigesSpiel = vorherigerZustand.partieStand?.laufendesSpiel;
     const aktuellesSpiel = aktuellerZustand.partieStand?.laufendesSpiel;
     if (!aktuellesSpiel?.istBockrunde) {
       return false;
@@ -1237,11 +1249,14 @@ export class TischSzene extends Phaser.Scene {
     vorherigesModell: TischAnsichtModell | null,
     aktuellesModell: TischAnsichtModell
   ): boolean {
+    if (!vorherigesModell) {
+      return false;
+    }
     const neues = aktuellesModell.letztesSpielergebnis;
     if (!neues) {
       return false;
     }
-    return vorherigesModell?.letztesSpielergebnis?.spielNummer !== neues.spielNummer;
+    return vorherigesModell.letztesSpielergebnis?.spielNummer !== neues.spielNummer;
   }
 
   // Baut die Rundenauswertung vollstaendig in Phaser auf und zeigt den HTML-Marker.

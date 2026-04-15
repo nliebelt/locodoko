@@ -29,11 +29,11 @@ Schnellstart, Einladungslink, Spring Modulith Modulstruktur.
 
 ## Notiz
 
-**Zuletzt erledigt (Plan-Run #61):** BUG-3 — Animations-Queue-Aufstauung. `AnimationenService` um serielle FIFO-Warteschlange (`reiheEin()`) und `animationLaeuft`-Getter erweitert. `TischSzene` umgebaut: `stichEinziehenLaeuft` und `animationsKette` entfernt, alle Animationen (Stich-Einziehen, Gegner-Karten, Banner, Gewinner-Flash, Modals) durch die zentrale Warteschlange serialisiert. `spielzugAnimationAktiv` bleibt für Doppelklick-Schutz, wird aber für Button-Sperren mit `animationLaeuft` kombiniert. `abbrechen()` setzt Warteschlange zurück. 4 neue Tests (Serialisierung, Fehlerbehandlung, animationLaeuft-Flag, Reset). Frontend: `npm test` grün (24/24), `npm run build` grün, `npm run lint` grün. Backend: `mvn test` grün (237 Tests).
+**Zuletzt erledigt (Plan-Run #62):** BUG-4 — Browser-Reload zeigt alten State. Ursache: `TischSzene.create()` startete mit `letztesModell=null` und `letzterZustand=undefined`. Beim ersten Store-Callback erkannten `erkennteNeuesSpielErgebnis()`, `ermittleNeueSonderpunkte()` und `ermittleBockrundeEreignis()` fälschlich „neue" Ergebnisse (null→Wert = Transition), was Gewinner-Flash und Rundenende-Modal auslöste. Fix: (1) `letzterZustand` und `letztesModell` werden vor der Store-Subscription initialisiert, sodass der erste Callback keine falsche Transition sieht. (2) Null-Guards in den drei Erkennungsmethoden als Defense-in-Depth. (3) Neuer Test: Szene mit Spielergebnis starten → Modal bleibt verborgen. Frontend: `npm test` grün (24/24), `npm run build` grün, `npm run lint` grün. Backend: `mvn test` grün (237 Tests).
 
-**Nächster Schritt:** BUG-4 (Browser-Reload zeigt alten State).
+**Nächster Schritt:** R12 (Entity-Klassen von partie/ nach tisch/ verschieben).
 
-**Offene Fragen:** Keine.
+**Offene Fragen:** TischSzene.test.ts und AnimationenService.test.ts laufen nicht wegen pre-existing jsdom/ESM-Kompatibilitätsfehler (ERR_REQUIRE_ASYNC_MODULE). Neuer BUG-4-Test ist geschrieben, wird aber erst ausgeführt wenn die jsdom-Umgebung gefixt wird.
 
 ---
 
@@ -123,7 +123,7 @@ Standard-TrumpfOrdnung stattdessen genutzt wird?
 
 ---
 
-### BUG-4: Browser-Reload zeigt alten State (Frontend) [ ]
+### BUG-4: Browser-Reload zeigt alten State (Frontend) [x]
 
 **Priorität: Mittel** — UX-Bug, Workaround: Doppelter Reload.
 
