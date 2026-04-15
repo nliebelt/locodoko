@@ -2,6 +2,12 @@ databaseChangeLog:
   - changeSet:
       id: 004-sonderpunkt-taeter-opfer
       author: locodoko
+      preConditions:
+        - onFail: MARK_RAN
+        - not:
+            - columnExists:
+                tableName: spiel_sonderpunkt
+                columnName: taeter
       changes:
         - addColumn:
             tableName: spiel_sonderpunkt

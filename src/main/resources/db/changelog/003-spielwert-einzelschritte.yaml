@@ -2,6 +2,12 @@ databaseChangeLog:
   - changeSet:
       id: 003-spielwert-einzelschritte
       author: locodoko
+      preConditions:
+        - onFail: MARK_RAN
+        - not:
+            - columnExists:
+                tableName: spiel
+                columnName: grundwert
       changes:
         - addColumn:
             tableName: spiel

@@ -3,6 +3,12 @@ databaseChangeLog:
       id: 002-ki-schwierigkeit
       author: locodoko
       comment: "KI-Schwierigkeitsstufe als konfigurierbare Tischoption (LEICHT/STANDARD/SCHWER)"
+      preConditions:
+        - onFail: MARK_RAN
+        - not:
+            - columnExists:
+                tableName: tisch
+                columnName: ki_schwierigkeit
       changes:
         - addColumn:
             tableName: tisch

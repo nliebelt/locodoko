@@ -2,6 +2,12 @@ databaseChangeLog:
   - changeSet:
       id: 007-pflicht-ansage-ausstehend
       author: locodoko
+      preConditions:
+        - onFail: MARK_RAN
+        - not:
+            - columnExists:
+                tableName: spiel
+                columnName: pflicht_ansage_ausstehend
       changes:
         - addColumn:
             tableName: spiel

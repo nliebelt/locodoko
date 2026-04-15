@@ -2,6 +2,12 @@ databaseChangeLog:
   - changeSet:
       id: 008-schweinchen-aktiv
       author: locodoko
+      preConditions:
+        - onFail: MARK_RAN
+        - not:
+            - columnExists:
+                tableName: spiel
+                columnName: schweinchen_aktiv
       changes:
         - addColumn:
             tableName: spiel

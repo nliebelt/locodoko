@@ -2,6 +2,12 @@ databaseChangeLog:
   - changeSet:
       id: 005-hausregeln-felder
       author: locodoko
+      preConditions:
+        - onFail: MARK_RAN
+        - not:
+            - columnExists:
+                tableName: tisch
+                columnName: bockrunden_aktiv
       changes:
         - addColumn:
             tableName: tisch

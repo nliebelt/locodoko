@@ -2,6 +2,12 @@ databaseChangeLog:
   - changeSet:
       id: 006-bockrunden-zaehler
       author: locodoko
+      preConditions:
+        - onFail: MARK_RAN
+        - not:
+            - columnExists:
+                tableName: partie
+                columnName: bockrunden_zaehler
       changes:
         - addColumn:
             tableName: partie

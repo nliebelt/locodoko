@@ -2,6 +2,11 @@ databaseChangeLog:
   - changeSet:
       id: 001-spieler
       author: locodoko
+      preConditions:
+        - onFail: MARK_RAN
+        - not:
+            - tableExists:
+                tableName: spieler
       changes:
         - createTable:
             tableName: spieler
@@ -49,6 +54,11 @@ databaseChangeLog:
   - changeSet:
       id: 001-partie
       author: locodoko
+      preConditions:
+        - onFail: MARK_RAN
+        - not:
+            - tableExists:
+                tableName: partie
       changes:
         - createTable:
             tableName: partie
@@ -114,6 +124,11 @@ databaseChangeLog:
   - changeSet:
       id: 001-tisch
       author: locodoko
+      preConditions:
+        - onFail: MARK_RAN
+        - not:
+            - tableExists:
+                tableName: tisch
       changes:
         - createTable:
             tableName: tisch
@@ -269,6 +284,11 @@ databaseChangeLog:
   - changeSet:
       id: 001-tisch-spieler
       author: locodoko
+      preConditions:
+        - onFail: MARK_RAN
+        - not:
+            - tableExists:
+                tableName: tisch_spieler
       changes:
         - createTable:
             tableName: tisch_spieler
@@ -300,6 +320,11 @@ databaseChangeLog:
   - changeSet:
       id: 001-spiel
       author: locodoko
+      preConditions:
+        - onFail: MARK_RAN
+        - not:
+            - tableExists:
+                tableName: spiel
       changes:
         - createTable:
             tableName: spiel
@@ -465,6 +490,11 @@ databaseChangeLog:
   - changeSet:
       id: 001-hand
       author: locodoko
+      preConditions:
+        - onFail: MARK_RAN
+        - not:
+            - tableExists:
+                tableName: hand
       changes:
         - createTable:
             tableName: hand
@@ -507,6 +537,11 @@ databaseChangeLog:
   - changeSet:
       id: 001-stich
       author: locodoko
+      preConditions:
+        - onFail: MARK_RAN
+        - not:
+            - tableExists:
+                tableName: stich
       changes:
         - createTable:
             tableName: stich
@@ -567,6 +602,11 @@ databaseChangeLog:
   - changeSet:
       id: 001-gespielte-karte
       author: locodoko
+      preConditions:
+        - onFail: MARK_RAN
+        - not:
+            - tableExists:
+                tableName: gespielte_karte
       changes:
         - createTable:
             tableName: gespielte_karte
@@ -625,6 +665,11 @@ databaseChangeLog:
   - changeSet:
       id: 001-spiel-sonderpunkt
       author: locodoko
+      preConditions:
+        - onFail: MARK_RAN
+        - not:
+            - tableExists:
+                tableName: spiel_sonderpunkt
       changes:
         - createTable:
             tableName: spiel_sonderpunkt

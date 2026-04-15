@@ -2,6 +2,12 @@ databaseChangeLog:
   - changeSet:
       id: 009-solist-position
       author: locodoko
+      preConditions:
+        - onFail: MARK_RAN
+        - not:
+            - columnExists:
+                tableName: partie
+                columnName: solist_des_letzten_spiels
       changes:
         - addColumn:
             tableName: partie
