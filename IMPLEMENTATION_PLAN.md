@@ -181,7 +181,7 @@ Keine karten-interne Klasse importiert Stich/GespielteKarte/SpielerPosition.
 - [x] Frontend: „Link teilen"-Button in TischSzene, Copy-to-Clipboard
 - [x] Frontend: URL-Route `#join/{code}` → automatischer Beitritt bei BootSzene-Load
 - [x] Unit-Tests: Code-Generierung, Lookup, Case-Insensitivity, Duplikat-Schutz, Ungueltig-Handling
-- [ ] E2E-Test: Link-Beitritt-Flow
+- [x] E2E-Test: Link-Beitritt-Flow
 
 ---
 
@@ -308,15 +308,13 @@ Phase 4 (parallel, niedrige Priorität):
 
 ## Notiz
 
-**Zuletzt erledigt (Plan-Run #54):** Task 2.1 — E2E-Test Schnellstart-Flow implementiert.
-`e2e/tests/schnellstart.spec.ts` geschrieben: Start-Screen → Quick-Game-Klick → TischSzene direkt
-(kein Spielstart-Schritt) → Vorbehalt-Phase → Karte spielen → Stich 1/12 prüfen.
-`SpielverwaltungsSzene.ts`: `data-testid="btn-quick-game"` zum Quick-Game-Button ergänzt.
-Frontend-Build, Tests und Lint grün.
+**Zuletzt erledigt (Plan-Run #55):** Task 2.2 — E2E-Test Einladungslink-Flow implementiert.
+`e2e/tests/einladungslink.spec.ts` geschrieben: Spieler 1 erstellt Tisch → liest einladungsCode
+aus AppStore → Spieler 2 (neuer Browser-Kontext, eigene Session) navigiert zu `/#join/{code}` →
+BootSzene parst Hash → automatischer Beitritt → TischSzene erscheint. Test grün (2.2s).
 
 **Naechster logischer Schritt:**
-2.2 E2E-Test: Link-Beitritt-Flow (#join/{code} URL-Route → automatischer Beitritt)
-Neue Testdatei `e2e/tests/einladungslink.spec.ts` schreiben.
+Alle Aufgaben erledigt. Kein weiterer offener Task in IMPLEMENTATION_PLAN.md.
 
 **Offene Fragen:** Keine.
 
