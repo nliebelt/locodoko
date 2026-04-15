@@ -58,6 +58,37 @@ HTTP-Session ohne Account — diese Schicht wird durch Spring Security ergänzt,
 11. Brute-Force-Schutz: Rate-Limiting auf `/api/auth/login` — max. 10 Versuche pro Minute pro IP
     (z.B. via `Bucket4j` oder einfachem `@RateLimiter`).
 
+### Autorisierungs-Modell (ABAC)
+
+Locodoko nutzt **ABAC — Attribute-Based Access Control** via Spring Method Security.
+Zugriffsregeln vergleichen Attribute von Spieler, Ressource und Kontext — keine statischen
+Rollen-Tabellen, keine ACL-Datenbanktabellen.
+
+**Systemrollen** (RBAC-Schicht, einfach):
+- `ROLE_SPIELER` — jeder eingeloggte Account
+- `ROLE_ADMIN` — Moderation (z.B. Tische löschen, Spieler sperren)
+
+**Tisch-bezogene Policies** (ABAC via `@PreAuthorize`):
+
+```java
+// Nur Gastgeber darf kicken / Config ändern:
+@PreAuthorize("@tischSicherheit.istGastgeber(#tischId, authentication)")
+
+// Spieler darf nur seine eigene Position bedienen (bereits via Session):
+@PreAuthorize("@spielSicherheit.istAnPosition(#tischId, authentication)")
+
+// Privater Tisch: nur Mitglieder dürfen Spielzustand sehen:
+@PreAuthorize("@tischSicherheit.hatZugang(#tischId, authentication)")
+```
+
+`TischSicherheit` ist ein `@Component` das die Beziehung `Spieler → ist_gastgeber_von → Tisch`
+direkt aus dem `Tisch`-Aggregat prüft (`tisch.erstelltVonSpielerId == currentSpielerId`).
+Keine eigenen ACL-Tabellen nötig.
+
+**ReBAC-Migration (Zukunft):** Wenn Delegierung (Gastgeber-Rechte übertragen), Zuschauer-Rollen
+oder Ligen/Organisationen nötig werden, ist eine Migration auf ReBAC (z.B. OpenFGA) möglich —
+das `@PreAuthorize`-Interface bleibt gleich, nur das dahinterliegende `@Component` ändert sich.
+
 ### Frontend
 
 12. Neuer Screen **Login/Register** (vor SpielverwaltungsSzene):
