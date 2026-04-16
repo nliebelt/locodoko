@@ -1,6 +1,6 @@
 # IMPLEMENTATION_PLAN — Locodoko Doppelkopf
 
-> **Letzte Aktualisierung: 2026-04-16 (Plan-Run #75)**
+> **Letzte Aktualisierung: 2026-04-16 (Plan-Run #76)**
 
 ## Legende
 
@@ -23,19 +23,18 @@ Schnellstart, Einladungslink, Spring Modulith Modulstruktur.
 
 **Build:** `mvn test` grün (254 Tests, 0 Failures).
 
-**Offene Punkte:** BF-7 (Snapshot-Endpoint), KI-1 (Schwellen-Tuning), ARCH-1–ARCH-3 (typisierte WebSocket-Events).
+**Offene Punkte:** BF-7 (Snapshot-Endpoint), KI-1 (Schwellen-Tuning), ARCH-2–ARCH-3 (SpielAktion Result-Typ, Sonderpunkt-Animationen).
 
 ---
 
 ## Notiz
 
-**Zuletzt erledigt (Plan-Run #74):** BF-6 — Tastatur-Shortcuts für Ansagen und Armut abgeschlossen.
-Implementierung war bereits vollständig in `TischInputHandler.ts` vorhanden (R=Re, K=Kontra, 1-5=Ansagen
-nach Position, A=Armut annehmen, N=Armut ablehnen) — alle mit korrekten Guards (Ansagen nur wenn
-`moeglicheAnsagen.length > 0`, Armut nur wenn `armutAktion.modus === 'ANTWORTEN'`).
-Fehlende Tests für K, A, N in `TischSzene.test.ts` nachgetragen. Build + Lint grün.
+**Zuletzt erledigt (Plan-Run #76):** ARCH-0 + ARCH-1 gemeinsam committed — Race-Condition-Fix und typisierte WebSocket-Events.
+`WebSocketBroadcastAdapter` + `PartieAktualisiert` gelöscht. `PartieEreignisTyp` hat KARTE_GESPIELT,
+KI_ZUG_SEQUENZ, STICH_ABGESCHLOSSEN. `AppStore.verarbeitePartieEreignis()` mit Event-Switch und
+KI-Sequenz-Queue (800ms Delays pro Karte, synthetische Zwischenstände). Build + Lint + 24 Tests grün.
 
-**Nächste offene Aufgaben (priorisiert):** ARCH-0 → ARCH-1 → ARCH-2, dann BF-7, KI-1
+**Nächste offene Aufgaben (priorisiert):** ARCH-2 → ARCH-3, dann BF-7, KI-1
 
 **Offene Fragen:** TischSzene.test.ts und AnimationenService.test.ts laufen nicht wegen pre-existing jsdom/ESM-Kompatibilitaetsfehler (ERR_REQUIRE_ASYNC_MODULE).
 
@@ -52,7 +51,7 @@ Fehlende Tests für K, A, N in `TischSzene.test.ts` nachgetragen. Build + Lint g
 
 ---
 
-### ARCH-0: Aktuelle Änderungen committen [ ]
+### ARCH-0: Aktuelle Änderungen committen [x]
 
 **Priorität: Sofort** — Working-Tree enthält Race-Condition-Fix und KI-Timing-Umbau.
 Muss committed sein bevor ARCH-1 beginnt.
@@ -82,7 +81,7 @@ Muss committed sein bevor ARCH-1 beginnt.
 
 ---
 
-### ARCH-1: Typisierte WebSocket-Events + Infra-Cleanup [ ]
+### ARCH-1: Typisierte WebSocket-Events + Infra-Cleanup [x]
 
 **Priorität: Hoch** | **Blockiert durch:** ARCH-0
 **Spec:** `specs/architektur-domain-events.md` (Abschnitt "Typisierte WebSocket-Events")
