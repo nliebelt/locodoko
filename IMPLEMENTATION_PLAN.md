@@ -1,6 +1,6 @@
 # IMPLEMENTATION_PLAN — Locodoko Doppelkopf
 
-> **Letzte Aktualisierung: 2026-04-15 (Plan-Run #71)**
+> **Letzte Aktualisierung: 2026-04-16 (Plan-Run #73)**
 
 ## Legende
 
@@ -23,36 +23,21 @@ Schnellstart, Einladungslink, Spring Modulith Modulstruktur.
 
 **Build:** `mvn test` grün (254 Tests, 0 Failures).
 
-**Offene Punkte:** BUG-3 und BUG-4 unvollständig (als [x] markiert, aber Fixes fehlen noch). Neue Aufgaben: BF-6 (Tastatur-Shortcuts), BF-7 (Snapshot-Endpoint), KI-1 (Schwellen-Tuning).
+**Offene Punkte:** BF-6 (Tastatur-Shortcuts), BF-7 (Snapshot-Endpoint), KI-1 (Schwellen-Tuning).
 
 ---
 
 ## Notiz
 
-**Zuletzt erledigt (Plan-Run #70):** M2.5 — OpenAPI / TypeScript-Typen-Synchronisation.
-`@Schema`-Annotationen auf allen 26 Response-DTO-Records (17 Top-Level + 9 innere Records).
-`OpenApiKonfiguration` mit Metadaten und 7 Tags. `OpenApiSchemaErweiterung` in `tisch/` fuer
-WebSocket-DTOs und `ApiFehlerAntwort` (nicht direkt in REST-Endpunkten referenziert).
-`OpenApiExportTest` exportiert `/v3/api-docs` nach `target/openapi.json` (32 Schemas, 18 Pfade).
-`openapi-typescript` v7.13 in `frontend/package.json` + `npm run generate-types` Script.
-Generierte Typen: `frontend/src/generated/api-types.ts` (2012 Zeilen).
-Komfort-Re-Exporte: `frontend/src/generated/schema-types.ts` (26 Named Types).
-**Zuletzt erledigt (Plan-Run #72):** BUG-3 — Animations-Queue-Aufstauung behoben.
-`spielzugAnimationAktiv`-Flag aus `TischSzene.ts` entfernt. `spieleKarteMitAnimation()` leitet
-die Karten-Ausspiel-Animation jetzt über `AnimationenService.reiheEin()` — alle Animationspfade
-laufen durch eine einzige serielle FIFO-Queue. Guard auf `!!this.wartendeKartenId || animationLaeuft`
-umgestellt. Pre-existing Lint-Fehler (`tischBreite`/`tischHoehe` ungenutzte Variablen) mitbehoben.
+**Zuletzt erledigt (Plan-Run #73):** BUG-4 — Browser-Reload zeigt alten State behoben.
+`TischSzene.create()` ruft jetzt am Anfang defensiv `this.animationen?.abbrechen()`,
+`this.letzterStichOverlay?.destroy(true)`, `schliesseRundenEndeModal()` und
+`schliessePartieEndeModal()` auf — bevor neue Instanzen aufgebaut werden.
+Verhindert sichtbare Reste aus vorherigem Render-Zyklus wenn `shutdown()` nicht
+rechtzeitig aufgerufen wurde (z.B. schneller scene.start()-Wechsel).
 Frontend build+lint+tests grün.
 
-**5-Agenten-Analyse (Plan-Run #71, 2026-04-15):**
-- BUG-1 (KI hängt), BUG-2 (Schweinchen), BUG-5 (DKV-Preset): Im Code korrekt behoben ✓
-- BUG-3 (Animations-Queue): Erledigt ✓ (Plan-Run #72)
-- BUG-4 (Browser-Reload): AppStore-Reconnect OK, aber `TischSzene.create()` räumt Overlays
-  nicht aktiv auf (kein `resetAllOverlays()`-Aufruf) → unvollständig [~]
-- Neu gefunden: Tastatur-Shortcuts für Ansage/Armut fehlen (BF-6), Session-Recovery-Snapshot-
-  Endpoint fehlt (BF-7), KI-Schwellen-Tuning für Sonderregeln fehlt (KI-1)
-
-**Nächste offene Aufgaben (priorisiert):** BUG-4, BF-6, BF-7, KI-1
+**Nächste offene Aufgaben (priorisiert):** BF-6 (Tastatur-Shortcuts), BF-7 (Snapshot-Endpoint), KI-1 (Schwellen-Tuning)
 
 **Offene Fragen:** TischSzene.test.ts und AnimationenService.test.ts laufen nicht wegen pre-existing jsdom/ESM-Kompatibilitaetsfehler (ERR_REQUIRE_ASYNC_MODULE).
 
@@ -132,7 +117,7 @@ umgestellt. Pre-existing Lint-Fehler (`tischBreite`/`tischHoehe`) mitbehoben.
 
 ---
 
-### BUG-4: Browser-Reload zeigt alten State (Frontend) [~]
+### BUG-4: Browser-Reload zeigt alten State (Frontend) [x]
 
 **Priorität: Mittel** — UX-Bug, Workaround: Doppelter Reload.
 

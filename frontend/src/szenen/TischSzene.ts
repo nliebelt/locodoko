@@ -251,6 +251,15 @@ export class TischSzene extends Phaser.Scene {
    * Der AppStore-Listener reagiert auf jeden State-Update mit Animations- und UI-Aktualisierungen.
    */
   create(): void {
+    // Defensive Bereinigung: Reste aus vorherigem Render-Zyklus schliessen,
+    // falls shutdown() nicht (rechtzeitig) aufgerufen wurde.
+    this.animationen?.abbrechen();
+    this.letzterStichOverlay?.destroy(true);
+    this.letzterStichOverlay = undefined;
+    this.schliesseRundenEndeModal();
+    this.schliessePartieEndeModal();
+    this.wartendeKartenId = null;
+
     const snapshot = appStore.snapshot();
     Logger.szene('TischSzene create', { tischId: snapshot.aktuellerTisch?.id });
     const breite = this.scale.gameSize.width;
