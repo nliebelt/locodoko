@@ -44,6 +44,7 @@ function richteLocalStorageEin(initialeWerte: Record<string, string> = {}): Stor
 const appStoreHarness = vi.hoisted(() => {
   let zustand: unknown;
   let listener: ((wert: unknown) => void) | undefined;
+  let sonderpunkteListener: ((sonderpunkte: unknown[]) => void) | undefined;
 
   return {
     setZustand(neuerZustand: unknown): void {
@@ -52,10 +53,17 @@ const appStoreHarness = vi.hoisted(() => {
     sendeZustand(): void {
       listener?.(structuredClone(zustand));
     },
+    sendeSonderpunkte(sonderpunkte: unknown[]): void {
+      sonderpunkteListener?.(sonderpunkte);
+    },
     store: {
       abonnieren: vi.fn((callback: (wert: unknown) => void) => {
         listener = callback;
         callback(structuredClone(zustand));
+        return vi.fn();
+      }),
+      abonniereSonderpunkte: vi.fn((callback: (sonderpunkte: unknown[]) => void) => {
+        sonderpunkteListener = callback;
         return vi.fn();
       }),
       snapshot: vi.fn(() => structuredClone(zustand)),
@@ -989,7 +997,28 @@ describe('TischSzene', () => {
     vi.useRealTimers();
   });
 
-  // WARUM: Das Ansage-Banner ist der einzige sofortige visuelle Hinweis auf Re/Kontra;
+  // WARUM: ARCH-3 — Live-Sonderpunkt-Feedback nach STICH_ABGESCHLOSSEN-Event; stellt sicher
+  // dass das Banner durch das event-basierte abonniereSonderpunkte ausgeloest wird, nicht mehr
+  // durch State-Diff-Heuristiken. Ohne diese Absicherung koennte das Live-Feedback stumm wegfallen.
+  it('zeigt ein Alpha-Tween-Banner wenn ein STICH_ABGESCHLOSSEN-Sonderpunkt-Event eintrifft', async () => {
+    vi.useFakeTimers();
+    const anfangsZustand = baueZustand({ partieStand: bauePartieStand(baueLaufendesSpiel()) });
+    const { tweens } = baueSzene(anfangsZustand);
+
+    // Sonderpunkt-Event direkt ueber abonniereSonderpunkte feuern (wie AppStore bei STICH_ABGESCHLOSSEN)
+    appStoreHarness.sendeSonderpunkte([{ typ: 'FUCHS_GEFANGEN', gewinner: 'SUED', verlierer: 'NORD' }]);
+
+    // Fade-In Tween (alpha → 1) wurde synchron ausgeloest
+    expect(tweens.add).toHaveBeenCalledTimes(1);
+    expect(tweens.aufrufe[0].alpha).toBe(1);
+    expect(tweens.aufrufe[0].duration).toBe(200);
+
+    await vi.runAllTimersAsync();
+
+    expect(tweens.add).toHaveBeenCalledTimes(2);
+    expect(tweens.aufrufe[1].alpha).toBe(0);
+    vi.useRealTimers();
+  });
   // ohne diese Absicherung koennte das Banner bei State-Updates heimlich wegfallen.
   it('zeigt ein Alpha-Tween-Banner wenn eine neue Ansage eintrifft', async () => {
     vi.useFakeTimers();

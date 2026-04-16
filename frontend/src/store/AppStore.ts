@@ -5,6 +5,7 @@ import type {
   KarteAntwort,
   PartieEreignisAntwort,
   PartieStandAntwort,
+  SonderpunktEreignisAntwortDto,
   SpielverwaltungWebSocketFehlerAntwort,
   SpielerSessionAntwort,
   TischKonfigurationDto,
@@ -108,6 +109,18 @@ export class AppStore {
 
   private _kiSequenzQueue: Array<() => Promise<void>> = [];
   private _kiSequenzLaeuft = false;
+
+  private readonly _sonderpunkteListener = new Set<(sonderpunkte: SonderpunktEreignisAntwortDto[]) => void>();
+
+  /**
+   * Registriert einen Listener fuer Sonderpunkt-Ereignisse (Fuchs gefangen, Karlchen, Doppelkopf).
+   * Wird nach jedem STICH_ABGESCHLOSSEN-Event mit neueSonderpunkte aufgerufen.
+   * @returns Abmelde-Funktion zum Entfernen des Listeners
+   */
+  abonniereSonderpunkte(listener: (sonderpunkte: SonderpunktEreignisAntwortDto[]) => void): () => void {
+    this._sonderpunkteListener.add(listener);
+    return () => this._sonderpunkteListener.delete(listener);
+  }
 
   constructor(
     private readonly api: SpielverwaltungApi,
@@ -616,6 +629,9 @@ export class AppStore {
         break;
       case 'STICH_ABGESCHLOSSEN':
         this.patch({ partieStand: ereignis.partieStand });
+        if (ereignis.neueSonderpunkte?.length) {
+          this._sonderpunkteListener.forEach((l) => l(ereignis.neueSonderpunkte!));
+        }
         break;
       default:
         this.patch({ partieStand: ereignis.partieStand });

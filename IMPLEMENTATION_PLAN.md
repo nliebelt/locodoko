@@ -29,14 +29,14 @@ Schnellstart, Einladungslink, Spring Modulith Modulstruktur.
 
 ## Notiz
 
-**Zuletzt erledigt (Plan-Run #77):** ARCH-2 — `SpielAktion` Result-Typ.
-`Spiel.spieleKarte()` gibt jetzt `SpielAktion(neuerStand, ereignisse)` zurück statt `Spiel`.
-`SpielEreignis` sealed interface mit `KarteGespielt` und `StichAbgeschlossenEreignis`.
-`SpielAktionsService` iteriert Ereignisse direkt: `sendeKarteGespielt()` + `sendeStichAbgeschlossen()` — kein State-Diff mehr.
-`KiOrchestrierungService` und alle Test-Aufrufer auf `.neuerStand()` umgestellt.
+**Zuletzt erledigt (Plan-Run #78):** ARCH-3 — Sonderpunkt-Animationen auf `neueSonderpunkte`.
+`AppStore._sonderpunkteListener` Set + `abonniereSonderpunkte()` empfängt STICH_ABGESCHLOSSEN-Events.
+`TischSzene` subscribt in `create()`, ruft `formatiereEreignisSonderpunkt()` + `starteSonderpunktFeedbackAnimationen()` auf.
+`animiereSonderpunktFeedback()` zeigt goldenes Fade-In/Out-Banner (nicht blockierend, über AnimationenService-Queue).
+Test `zeigt ein Alpha-Tween-Banner wenn ein STICH_ABGESCHLOSSEN-Sonderpunkt-Event eintrifft` grün.
 254 Backend-Tests, 24 Frontend-Tests grün.
 
-**Nächste offene Aufgaben (priorisiert):** ARCH-3, dann BF-7, KI-1
+**Nächste offene Aufgaben (priorisiert):** BF-7, dann KI-1
 
 **Offene Fragen:** TischSzene.test.ts und AnimationenService.test.ts laufen nicht wegen pre-existing jsdom/ESM-Kompatibilitaetsfehler (ERR_REQUIRE_ASYNC_MODULE).
 
@@ -450,7 +450,7 @@ mvn test   # alle Tests grün
 
 ---
 
-### ARCH-3: TischSzene — Sonderpunkt-Animationen auf `neueSonderpunkte` [ ]
+### ARCH-3: TischSzene — Sonderpunkt-Animationen auf `neueSonderpunkte` [x]
 
 **Priorität: Niedrig** | **Blockiert durch:** ARCH-1
 **Spec:** `specs/frontend-animationen.md` (Abschnitt "Sonderpunkt-Anzeige")

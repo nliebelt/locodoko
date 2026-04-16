@@ -23,7 +23,7 @@ import {
   type TischAnsichtModell,
   type SpielerPosition
 } from '../model/TischAnsichtModell';
-import type { KarteAntwort, Tischhintergrund, VorbehaltAnsage } from '../modelle/SpielverwaltungDto';
+import type { KarteAntwort, SonderpunktEreignisAntwortDto, Tischhintergrund, VorbehaltAnsage } from '../modelle/SpielverwaltungDto';
 import { AnimationenService, type AnimierbareKartenobjekte, type RundenauswertungDaten } from '../services/AnimationenService';
 import type { AppZustand } from '../store/AppStore';
 import { TischInputHandler, type TischInputKontext } from './TischInputHandler';
@@ -171,6 +171,8 @@ function istBildHintergrund(bg: Tischhintergrund): boolean {
  */
 export class TischSzene extends Phaser.Scene {
   private abmeldenStore?: () => void;
+
+  private abmeldenSonderpunkte?: () => void;
 
   private letzterZustand?: AppZustand;
 
@@ -362,13 +364,11 @@ export class TischSzene extends Phaser.Scene {
       this.animationen?.reiheEin(() => this.starteGegnerKartenAnimationen(vorherigesModell, modell));
       // Alle Banner-Animationen in die gleiche Warteschlange einreihen
       const neueAnsagen = this.ermittleNeueAnsagen(vorherigesModell, modell);
-      const neueSonderpunkte = this.ermittleNeueSonderpunkte(vorherigesModell, modell);
       const hochzeitMeldung = this.ermittleHochzeitEreignis(vorherigerZustand ?? null, zustand);
       const spielankuendigung = this.ermittleSpielankuendigung(vorherigerZustand ?? null, zustand);
       const bockrundeMeldung = this.ermittleBockrundeEreignis(vorherigerZustand ?? null, zustand);
       const schweinchenMeldung = this.ermittleSchweinchenEreignis(vorherigesModell, modell);
       if (neueAnsagen.length > 0) this.animationen?.reiheEin(() => this.starteAnsageBannerAnimationen(neueAnsagen));
-      if (neueSonderpunkte.length > 0) this.animationen?.reiheEin(() => this.starteSonderpunktFeedbackAnimationen(neueSonderpunkte));
       if (hochzeitMeldung) this.animationen?.reiheEin(() => this.zeigeHochzeitEreignis(hochzeitMeldung));
       if (spielankuendigung) this.animationen?.reiheEin(() => this.zeigeSpielankuendigung(spielankuendigung));
       if (bockrundeMeldung) this.animationen?.reiheEin(() => this.zeigeBockrundeEreignis());
@@ -390,6 +390,12 @@ export class TischSzene extends Phaser.Scene {
       // .then() auf das leere Queue-Item laeuft NACH dem finally-Block (animationLaeuft=false).
       void this.animationen?.reiheEin(() => Promise.resolve())
         ?.then(() => { if (this.letzterZustand) this.renderTisch(this.letzterZustand); });
+    });
+    this.abmeldenSonderpunkte = appStore.abonniereSonderpunkte((sonderpunkte) => {
+      const texte = sonderpunkte.map((sp) => this.formatiereEreignisSonderpunkt(sp));
+      if (texte.length > 0) {
+        this.animationen?.reiheEin(() => this.starteSonderpunktFeedbackAnimationen(texte));
+      }
     });
     // Initialen Zustand nachziehen: sicherstellt dass renderTisch() erst nach vollstaendigem
     // create() laeuft. abonnieren() feuert sofort, aber erst hier ist die Szene vollstaendig
@@ -1196,31 +1202,14 @@ export class TischSzene extends Phaser.Scene {
     }
   }
 
-  // Erkennt neue Sonderpunkte (Fuchs gefangen, Karlchen, Doppelkopf) anhand eines neuen Spielergebnisses
-  private ermittleNeueSonderpunkte(
-    vorherigesModell: TischAnsichtModell | null,
-    aktuellesModell: TischAnsichtModell
-  ): string[] {
-    if (!vorherigesModell) {
-      return [];
-    }
-    const neuesErgebnis = aktuellesModell.letztesSpielergebnis;
-    if (!neuesErgebnis) {
-      return [];
-    }
-    const vorherigeNummer = vorherigesModell.letztesSpielergebnis?.spielNummer;
-    if (vorherigeNummer === neuesErgebnis.spielNummer) {
-      return [];
-    }
-    const spielerNamen = new Map(aktuellesModell.spieler.map((s) => [s.position, s.name] as const));
-    const sonderpunkte: string[] = [];
-    for (const sp of neuesErgebnis.sonderpunkteRe) {
-      sonderpunkte.push(`Re: ${formatiereSonderpunkt(sp, spielerNamen)}`);
-    }
-    for (const sp of neuesErgebnis.sonderpunkteKontra) {
-      sonderpunkte.push(`Kontra: ${formatiereSonderpunkt(sp, spielerNamen)}`);
-    }
-    return sonderpunkte;
+  // Formatiert einen SonderpunktEreignisAntwortDto fuer das Live-Feedback-Banner nach einem Stich
+  private formatiereEreignisSonderpunkt(sp: SonderpunktEreignisAntwortDto): string {
+    const texte: Record<SonderpunktEreignisAntwortDto['typ'], string> = {
+      FUCHS_GEFANGEN: 'Fuchs gefangen!',
+      DOPPELKOPF: 'Doppelkopf!',
+      KARLCHEN: 'Karlchen!'
+    };
+    return texte[sp.typ];
   }
 
   // Zeigt fuer jeden neuen Sonderpunkt kurzes goldenes Feedback-Banner (Fade-In/Out, nicht blockierend)
@@ -1973,6 +1962,8 @@ export class TischSzene extends Phaser.Scene {
     }
     this.abmeldenStore?.();
     this.abmeldenStore = undefined;
+    this.abmeldenSonderpunkte?.();
+    this.abmeldenSonderpunkte = undefined;
     this.animationen?.abbrechen();
     this.animationen = undefined;
     this.rundenauswertungObjekte.forEach((obj) => obj.destroy());
