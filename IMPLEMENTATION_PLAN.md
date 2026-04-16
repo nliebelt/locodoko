@@ -1,6 +1,6 @@
 # IMPLEMENTATION_PLAN — Locodoko Doppelkopf
 
-> **Letzte Aktualisierung: 2026-04-15 (Plan-Run #63)**
+> **Letzte Aktualisierung: 2026-04-15 (Plan-Run #71)**
 
 ## Legende
 
@@ -23,7 +23,7 @@ Schnellstart, Einladungslink, Spring Modulith Modulstruktur.
 
 **Build:** `mvn test` grün (254 Tests, 0 Failures).
 
-**Offene Punkte:** Alle M2-Aufgaben erledigt.
+**Offene Punkte:** BUG-3 und BUG-4 unvollständig (als [x] markiert, aber Fixes fehlen noch). Neue Aufgaben: BF-6 (Tastatur-Shortcuts), BF-7 (Snapshot-Endpoint), KI-1 (Schwellen-Tuning).
 
 ---
 
@@ -37,11 +37,22 @@ WebSocket-DTOs und `ApiFehlerAntwort` (nicht direkt in REST-Endpunkten referenzi
 `openapi-typescript` v7.13 in `frontend/package.json` + `npm run generate-types` Script.
 Generierte Typen: `frontend/src/generated/api-types.ts` (2012 Zeilen).
 Komfort-Re-Exporte: `frontend/src/generated/schema-types.ts` (26 Named Types).
-`SpielverwaltungDto.ts` mit Migrations-JSDoc versehen. ESLint ignoriert `src/generated/`.
-`mvn test` grün (254 Tests). Frontend build+lint+tests grün (pre-existing jsdom-Fehler bestehen weiter).
+**Zuletzt erledigt (Plan-Run #72):** BUG-3 — Animations-Queue-Aufstauung behoben.
+`spielzugAnimationAktiv`-Flag aus `TischSzene.ts` entfernt. `spieleKarteMitAnimation()` leitet
+die Karten-Ausspiel-Animation jetzt über `AnimationenService.reiheEin()` — alle Animationspfade
+laufen durch eine einzige serielle FIFO-Queue. Guard auf `!!this.wartendeKartenId || animationLaeuft`
+umgestellt. Pre-existing Lint-Fehler (`tischBreite`/`tischHoehe` ungenutzte Variablen) mitbehoben.
+Frontend build+lint+tests grün.
 
-**Nächster Schritt:** Alle Milestone-2-Aufgaben abgeschlossen. Naechste Phase unklar —
-moeglicherweise verbleibende Spec-Updates, E2E-Tests oder neue Features.
+**5-Agenten-Analyse (Plan-Run #71, 2026-04-15):**
+- BUG-1 (KI hängt), BUG-2 (Schweinchen), BUG-5 (DKV-Preset): Im Code korrekt behoben ✓
+- BUG-3 (Animations-Queue): Erledigt ✓ (Plan-Run #72)
+- BUG-4 (Browser-Reload): AppStore-Reconnect OK, aber `TischSzene.create()` räumt Overlays
+  nicht aktiv auf (kein `resetAllOverlays()`-Aufruf) → unvollständig [~]
+- Neu gefunden: Tastatur-Shortcuts für Ansage/Armut fehlen (BF-6), Session-Recovery-Snapshot-
+  Endpoint fehlt (BF-7), KI-Schwellen-Tuning für Sonderregeln fehlt (KI-1)
+
+**Nächste offene Aufgaben (priorisiert):** BUG-4, BF-6, BF-7, KI-1
 
 **Offene Fragen:** TischSzene.test.ts und AnimationenService.test.ts laufen nicht wegen pre-existing jsdom/ESM-Kompatibilitaetsfehler (ERR_REQUIRE_ASYNC_MODULE).
 
@@ -112,51 +123,36 @@ Standard-TrumpfOrdnung stattdessen genutzt wird?
 
 **Symptom:** Bei schnellen KI-Zügen werden zwei Stiche gleichzeitig animiert.
 
-**Analyse:** `TischSzene.ts` hat drei unabhängige Animations-Mechanismen:
-- `animationsKette` (Zeile 199): Promise-Chain, wird aber **nur für Banner** genutzt
-  (via `reiheAnimationEin`, Zeile 1202).
-- `spielzugAnimationAktiv` (Zeile 183): Boolean-Flag für Karten-Ausspielen.
-- `stichEinziehenLaeuft` (Zeile 192): Promise für Stich-Einzieh-Animation, wird am
-  Anfang von `spieleKarteAusUndZieheStichEin()` abgewartet (Zeile 920), aber neue
-  KI-Karten-Spielzüge können parallel starten bevor die alte Animation fertig ist.
+**Fix:** `spielzugAnimationAktiv`-Flag entfernt. `spieleKarteMitAnimation()` leitet die
+Karten-Ausspiel-Animation jetzt über `AnimationenService.reiheEin()` — damit läuft kein
+Animationspfad mehr außerhalb der Queue. Guard auf `!!this.wartendeKartenId || animationLaeuft`
+umgestellt. Pre-existing Lint-Fehler (`tischBreite`/`tischHoehe`) mitbehoben.
 
-**Aufgabe:**
-1. Alle Karten-Spiel-Animationen (`spieleKarteAusspielen` + `animiereStichEinziehen`)
-   durch `animationsKette` serialisieren — gleicher Mechanismus wie Banner.
-2. `spielzugAnimationAktiv` und `stichEinziehenLaeuft` durch die zentrale
-   `animationsKette` ersetzen.
-3. `AnimationenService` um eine `warteschlange()` / FIFO-Queue-Methode erweitern, die
-   Animationen serialisiert und bei Szenen-Wechsel abbricht.
-4. Test: KI spielt 3 Karten schnell hintereinander → nur 1 Animation gleichzeitig sichtbar.
-
-**Dateien:** `frontend/src/szenen/TischSzene.ts`, `frontend/src/services/AnimationenService.ts`
+**Dateien:** `frontend/src/szenen/TischSzene.ts`
 
 ---
 
-### BUG-4: Browser-Reload zeigt alten State (Frontend) [x]
+### BUG-4: Browser-Reload zeigt alten State (Frontend) [~]
 
 **Priorität: Mittel** — UX-Bug, Workaround: Doppelter Reload.
 
 **Symptom:** Nach `Strg+R` zeigt der Browser Overlays/Animationen des vorherigen Spiels.
 
-**Analyse:** Bei Seiten-Reload wird die Phaser-Szene neu initialisiert, ein WebSocket-
-Snapshot kommt an. Aber `TischSzene.create()` baut die UI aus dem Snapshot auf, ohne zu
-prüfen ob Overlays (Rundenauswertung, Vorbehalt, Letzter-Stich) aus dem vorherigen
-Render-Zyklus noch sichtbar sind. Das `aufraeumen()` (Zeile 1776) räumt zwar auf, wird
-aber nur bei `shutdown()` gerufen — nicht beim Neuaufbau nach Snapshot.
+**Stand:** `AppStore.verbinde()` setzt den Tischzustand bei eingehendem Snapshot korrekt neu.
+**Noch offen:** `TischSzene.create()` enthält keinen expliziten Overlay-Reset — `letzterStichOverlay`,
+`rundenEndeModal`, `partieEndeModal` können vom vorherigen Render-Zyklus sichtbar bleiben.
+`AnimationenService.abbrechen()` wird in `create()` nicht aufgerufen.
 
-**Aufgabe:**
-1. `TischSzene.create()`: Vor erstem Render explizit alle Overlay-Flags und
-   Animations-Promises zurücksetzen.
-2. `AppStore`: Prüfen ob `verbinde()` / WebSocket-Reconnect einen sauberen Initialzustand
-   setzt. Bei neuem Snapshot den gesamten `aktuellerTisch`-Zustand ersetzen, nicht mergen.
-3. `AnimationenService`: `abbrechen()`-Methode prüfen — bricht sie laufende Tweens ab
-   oder wartet sie auf Abschluss? Bei Reload müssen laufende Animationen sofort gestoppt werden.
-4. Test: Spiel starten, Rundenauswertung-Overlay anzeigen, F5 drücken → Overlay darf
-   nicht sichtbar sein (nur regulärer Tisch-Zustand).
+**Verbleibende Aufgabe:**
+1. `TischSzene.create()`: Vor erstem Render alle Overlay-Referenzen explizit schließen/destroyen
+   und auf `null`/`undefined` setzen (letzterStichOverlay, rundenEndeModal, partieEndeModal,
+   alle Animations-Promises).
+2. `AnimationenService.abbrechen()` am Beginn von `create()` aufrufen, damit laufende Tweens
+   sofort gestoppt werden (nicht erst auf Abschluss warten).
+3. Test: Rundenauswertung-Overlay anzeigen → F5 drücken → Overlay darf nach Reload
+   nicht sichtbar sein.
 
-**Dateien:** `frontend/src/szenen/TischSzene.ts`, `frontend/src/store/AppStore.ts`,
-`frontend/src/services/AnimationenService.ts`
+**Dateien:** `frontend/src/szenen/TischSzene.ts`, `frontend/src/services/AnimationenService.ts`
 
 ---
 
@@ -200,7 +196,72 @@ das Spiel nicht ab.
 
 ---
 
-## Phase R — Architektur-Refactoring (DoD architektur-ddd.md)
+### BF-6: Tastatur-Shortcuts für Ansagen und Armut (Frontend) [ ]
+
+**Priorität: Mittel** | **Spec:** `specs/frontend-tastatursteuerung.md`
+
+**Analyse:** Kartennavigation (ArrowLeft/Right, Enter/Space) und Vorbehalt-Navigation
+(Ziffern + ArrowUp/Down) sind implementiert. Ansage- und Armut-Shortcuts fehlen vollständig.
+
+**Aufgabe:**
+1. Ansage-Shortcuts in `TischSzene.ts` — nur aktiv wenn Ansage-UI sichtbar:
+   - `R` → Re ansagen (wenn erlaubt)
+   - `K` → Kontra ansagen (wenn erlaubt)
+   - `1` → Keine-90, `2` → Keine-60, `3` → Keine-30, `4` → Schwarz
+2. Armut-Shortcuts im Armut-Angebot-Dialog — nur aktiv wenn Dialog offen:
+   - `A` → Armut-Angebot annehmen
+   - `N` → Armut-Angebot ablehnen
+3. Kein Konflikt mit Kartennavigation: Shortcuts nur aktiv wenn das jeweilige
+   UI-Element sichtbar/fokussiert ist.
+4. Tests: `TischSzene.test.ts` erweitern (soweit jsdom/ESM-Umgebung erlaubt).
+
+**Dateien:** `frontend/src/szenen/TischSzene.ts`, `frontend/src/szenen/TischSzene.test.ts`
+
+---
+
+### BF-7: Session-Recovery Snapshot-Endpoint fehlt (Backend + Frontend) [ ]
+
+**Priorität: Mittel** | **Spec:** `specs/verbindungsabbruch.md` (Z. 68)
+
+**Analyse:** `SpielerSessionAntwort.aktiverTischId` ist vorhanden → Frontend erkennt
+beim Seitenaufruf ob ein aktiver Tisch existiert. Beim WebSocket-Reconnect fehlt aber
+ein aktiver Mechanismus: Client muss auf passiven `PartieAktualisiert`-Push warten.
+Laut Spec soll `/app/tisch/{id}/snapshot` einen sofortigen Zustandspush auslösen.
+
+**Aufgabe:**
+1. Backend: STOMP `@MessageMapping("/tisch/{tischId}/snapshot")` implementieren —
+   liest aktuellen `TischEntity`-Zustand, erstellt `PartieAktualisiertDto` und sendet
+   es via `SimpMessagingTemplate` nur an die anfragende Session (nicht broadcast).
+2. Frontend (`AppStore.verbinde()`): Nach WebSocket-Connect und vorhandenem
+   `aktiverTischId` → Snapshot-Anfrage (`/app/tisch/{id}/snapshot`) senden statt
+   nur auf passiven Push zu warten.
+3. Tests: Integration-Test Snapshot-Endpoint; Frontend-Unit-Test für Reconnect-Flow.
+
+**Dateien:** `src/main/java/de/locodoko/tisch/SpielVerwaltungsController.java` (oder
+neuer `SnapshotController`), `frontend/src/store/AppStore.ts`
+
+---
+
+## Phase KI — KI-Verbesserungen
+
+### KI-1: KI-Schwellen-Anpassung für aktive Sonderregeln [ ]
+
+**Priorität: Niedrig** | **Spec:** `specs/ki-strategie.md`
+
+**Analyse:** `StandardKiStrategie` nutzt feste Ansage-Schwellen (Punkte-Grenzwerte für
+Re/Kontra/Keine-90 etc.). Laut `ki-strategie.md` sollen bei aktivem Schweinchen oder
+30-Augen-Pflicht die Schwellen um 15–20% erhöht werden — vorsichtigere Ansage-Strategie,
+da diese Regeln Trumpfverteilung beeinflussen.
+
+**Aufgabe:**
+1. `StandardKiStrategie.ansageEntscheidung()` (oder entsprechende Hilfsmethode):
+   Schwellen-Multiplikator abhängig von `spielZustand.schweinchenAktiv` und
+   `spielZustand.dreissigAugenPflichtAktiv` anpassen (Faktor 1.15–1.20).
+2. Test: KI mit aktivem Schweinchen → höhere Punktzahl nötig für Re-Ansage als ohne.
+
+**Dateien:** `src/main/java/de/locodoko/ki/StandardKiStrategie.java`
+
+---
 
 ### R12: Entity-Klassen von partie/ nach tisch/ verschieben [x]
 

@@ -203,8 +203,6 @@ export class TischSzene extends Phaser.Scene {
 
   private readonly handKartenobjekte = new Map<string, AnimierbareKartenobjekte>();
 
-  private spielzugAnimationAktiv = false;
-
   private wartendeKartenId: string | null = null;
 
   // Wird waehrend der Austeilen-Animation auf true gesetzt; Karten werden dann unsichtbar gerendert
@@ -301,7 +299,7 @@ export class TischSzene extends Phaser.Scene {
       getPartieEndeModal: () => this.uiManager?.getPartieEndeModal(),
       getEinstellungsModalEl: () => this.uiManager?.getEinstellungsModalEl(),
       isSeitenladeOffen: () => this.uiManager?.isSeitenladeOffen() ?? false,
-      isSpielzugAnimationAktiv: () => this.spielzugAnimationAktiv || (this.animationen?.animationLaeuft ?? false),
+      isSpielzugAnimationAktiv: () => !!this.wartendeKartenId || (this.animationen?.animationLaeuft ?? false),
       isArmutAnnahmeAktiv: () => this.armutAnnahmeAktiv,
       setArmutAnnahmeAktiv: (v) => { this.armutAnnahmeAktiv = v; },
       getTastaturKarteIndex: () => this.tastaturKarteIndex,
@@ -425,8 +423,6 @@ export class TischSzene extends Phaser.Scene {
     const layout = berechneLayout(breite, hoehe);
     const mitteX = breite / 2;
     const mitteY = hoehe / 2;
-    const tischBreite = Math.min(breite * 0.76, 980);
-    const tischHoehe = Math.min(hoehe * 0.74, 530);
     this.aktualisiereHintergrund(modell.tischhintergrund, breite, hoehe);
 
     const ebene = this.add.container(0, 0);
@@ -794,7 +790,7 @@ export class TischSzene extends Phaser.Scene {
     }[spieler.position] as [number, number];
     // NORD und OST: Index umkehren damit Karten aus Gegner-Perspektive lesbar sind
     const istGespiegelt = spieler.position === 'NORD' || spieler.position === 'OST';
-    const animationAktiv = this.spielzugAnimationAktiv || (this.animationen?.animationLaeuft ?? false);
+    const animationAktiv = !!this.wartendeKartenId || (this.animationen?.animationLaeuft ?? false);
 
     for (let index = 0; index < kartenAnzahl; index += 1) {
       const fanIndex = istGespiegelt ? kartenAnzahl - 1 - index : index;
@@ -932,14 +928,13 @@ export class TischSzene extends Phaser.Scene {
     const karteLiegtInHand = eigeneSichtbareHand.some((karte) => karte.id === this.wartendeKartenId);
     const karteLiegtImStich = modell.aktuelleStichmitte.some((eintrag) => eintrag.karte.id === this.wartendeKartenId);
     if (!karteLiegtInHand || karteLiegtImStich || zustand.meldung?.typ === 'fehler') {
-      this.spielzugAnimationAktiv = false;
       this.wartendeKartenId = null;
     }
   }
 
   private async spieleKarteMitAnimation(karteId: string): Promise<void> {
     Logger.szene('Karte angeklickt', { karte: karteId });
-    if (this.spielzugAnimationAktiv) {
+    if (this.wartendeKartenId || this.animationen?.animationLaeuft) {
       return;
     }
     const kartenobjekte = this.handKartenobjekte.get(karteId);
@@ -951,18 +946,19 @@ export class TischSzene extends Phaser.Scene {
     const breite = this.scale.gameSize.width;
     const hoehe = this.scale.gameSize.height;
     const ziel = stichSlotPositionen(breite / 2, hoehe / 2, breite, hoehe).SUED;
-    this.spielzugAnimationAktiv = true;
     this.wartendeKartenId = karteId;
-    await this.animationen?.animiereKarteAusspielen(kartenobjekte, ziel);
-    appStore.spieleKarte(karteId);
-    // Safety-Timeout: Falls das Backend nicht antwortet und synchronisiereAnimationszustand
-    // den Flag nie zuruecksetzt, nach 4s force-resetten damit die Karten nicht dauerhaft gesperrt bleiben.
-    window.setTimeout(() => {
-      if (this.wartendeKartenId === karteId) {
-        this.spielzugAnimationAktiv = false;
-        this.wartendeKartenId = null;
-      }
-    }, 4000);
+    // Karten-Ausspiel-Animation über die zentrale Queue serialisieren (verhindert parallele Stich-Animationen)
+    await this.animationen?.reiheEin(async () => {
+      await this.animationen?.animiereKarteAusspielen(kartenobjekte, ziel);
+      appStore.spieleKarte(karteId);
+      // Safety-Timeout: Falls das Backend nicht antwortet, nach 4s force-resetten damit
+      // die Karten nicht dauerhaft gesperrt bleiben.
+      window.setTimeout(() => {
+        if (this.wartendeKartenId === karteId) {
+          this.wartendeKartenId = null;
+        }
+      }, 4000);
+    });
   }
 
   private async starteFolgeanimationen(vorherigesModell: TischAnsichtModell | null, aktuellesModell: TischAnsichtModell): Promise<void> {
@@ -1669,7 +1665,7 @@ export class TischSzene extends Phaser.Scene {
       fontStyle: 'bold'
     }).setOrigin(0.5));
 
-    const deaktiviert = zustand.wirdGeladen || this.spielzugAnimationAktiv || (this.animationen?.animationLaeuft ?? false);
+    const deaktiviert = zustand.wirdGeladen || !!this.wartendeKartenId || (this.animationen?.animationLaeuft ?? false);
     const gridStartX = breite / 2 - btnW / 2 - abstandX / 2;
     const gridStartY = dialogY - dialogH / 2 + titelH + abstandY + btnH / 2;
     optionen.forEach((vorbehalt, index) => {
@@ -1704,7 +1700,7 @@ export class TischSzene extends Phaser.Scene {
       return;
     }
 
-    const deaktiviert = zustand.wirdGeladen || this.spielzugAnimationAktiv || (this.animationen?.animationLaeuft ?? false);
+    const deaktiviert = zustand.wirdGeladen || !!this.wartendeKartenId || (this.animationen?.animationLaeuft ?? false);
     const btnH = Math.round(Math.max(32, hoehe * 0.048));
     const btnW = Math.round(Math.min(110, breite * 0.09));
     const abstand = Math.round(breite * 0.008);
@@ -1756,7 +1752,7 @@ export class TischSzene extends Phaser.Scene {
       return;
     }
     const armutAktion = modell.armutAktion;
-    const deaktiviert = zustand.wirdGeladen || this.spielzugAnimationAktiv || (this.animationen?.animationLaeuft ?? false);
+    const deaktiviert = zustand.wirdGeladen || !!this.wartendeKartenId || (this.animationen?.animationLaeuft ?? false);
     const btnH = Math.round(Math.max(32, hoehe * 0.048));
     const y = hoehe * 0.73;
 
@@ -1943,7 +1939,6 @@ export class TischSzene extends Phaser.Scene {
     this.letzterZustand = undefined;
     this.letztesModell = null;
     this.handKartenobjekte.clear();
-    this.spielzugAnimationAktiv = false;
     this.austeilenAktiv = false;
     this.wartendeKartenId = null;
     this.tastaturKarteIndex = -1;
