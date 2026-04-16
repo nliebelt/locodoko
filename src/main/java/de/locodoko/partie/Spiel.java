@@ -314,7 +314,7 @@ public class Spiel extends AbstraktePersistenzEntity {
         return stichphase.aktuellerStich().gueltigeKarten(handVon(spielerPosition), trumpfOrdnung);
     }
 
-    public Spiel spieleKarte(SpielerPosition spielerPosition, Karte karte) {
+    public SpielAktion spieleKarte(SpielerPosition spielerPosition, Karte karte) {
         if (!(phase instanceof Spielphase.Stichphase stichphase)) { throw new IllegalStateException("Karte spielen ist nur in Phase STICHPHASE erlaubt, war aber " + phase.name()); }
         Objects.requireNonNull(spielerPosition, "spielerPosition darf nicht null sein");
         Objects.requireNonNull(karte, "karte darf nicht null sein");
@@ -323,14 +323,24 @@ public class Spiel extends AbstraktePersistenzEntity {
         Stich gespielterStich = stichphase.aktuellerStich().spieleKarte(spielerPosition, karte, hand, trumpfOrdnung);
         Map<SpielerPosition, Hand> neueHaende = kopiereHaende();
         neueHaende.put(spielerPosition, hand.ohne(karte));
-        if (!gespielterStich.istVollstaendig()) { return neuesSpielMitStichfortschritt(neueHaende, abgeschlosseneStiche, new Spielphase.Stichphase(gespielterStich, stichphase.pflichtansageAusstehend(), stichphase.hochzeitStatus()), parteien); }
+        List<SpielEreignis> ereignisse = new ArrayList<>();
+        ereignisse.add(new SpielEreignis.KarteGespielt(spielerPosition, karte));
+        if (!gespielterStich.istVollstaendig()) {
+            return new SpielAktion(neuesSpielMitStichfortschritt(neueHaende, abgeschlosseneStiche, new Spielphase.Stichphase(gespielterStich, stichphase.pflichtansageAusstehend(), stichphase.hochzeitStatus()), parteien), List.copyOf(ereignisse));
+        }
         List<Stich> neueAbgeschlosseneStiche = new ArrayList<>(abgeschlosseneStiche);
         neueAbgeschlosseneStiche.add(gespielterStich);
         HochzeitFortschritt hf = fortschrittNachVollstaendigemStich(gespielterStich, stichphase.hochzeitStatus());
         Set<Partei> neuesPflichtansageAusstehend = berechneNeuePflichtansagen(gespielterStich, neueAbgeschlosseneStiche.size(), hf.parteien());
-        if (neueAbgeschlosseneStiche.size() == kartenProSpieler()) { return neuesSpielMitStichfortschritt(neueHaende, neueAbgeschlosseneStiche, Spielphase.AUSWERTUNG, hf.parteien()); }
+        List<SonderpunktEreignis> sonderpunkte = new SonderpunktBewerter()
+            .bewerte(List.of(gespielterStich), hf.parteien(), trumpfOrdnung, spielregeln)
+            .values().stream().flatMap(List::stream).toList();
+        ereignisse.add(new SpielEreignis.StichAbgeschlossenEreignis(gespielterStich, sonderpunkte));
+        if (neueAbgeschlosseneStiche.size() == kartenProSpieler()) {
+            return new SpielAktion(neuesSpielMitStichfortschritt(neueHaende, neueAbgeschlosseneStiche, Spielphase.AUSWERTUNG, hf.parteien()), List.copyOf(ereignisse));
+        }
         Stich naechsterStich = Stich.neu(gespielterStich.naechsterAufspieler(trumpfOrdnung));
-        return neuesSpielMitStichfortschritt(neueHaende, neueAbgeschlosseneStiche, new Spielphase.Stichphase(naechsterStich, neuesPflichtansageAusstehend, hf.status()), hf.parteien());
+        return new SpielAktion(neuesSpielMitStichfortschritt(neueHaende, neueAbgeschlosseneStiche, new Spielphase.Stichphase(naechsterStich, neuesPflichtansageAusstehend, hf.status()), hf.parteien()), List.copyOf(ereignisse));
     }
 
     private Set<Partei> berechneNeuePflichtansagen(Stich abgeschlossenerStich, int stichNummer, Parteien aktuelleParteien) {

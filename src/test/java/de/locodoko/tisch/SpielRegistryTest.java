@@ -223,7 +223,7 @@ class SpielRegistryTest {
                         // Echte Domain-Mutation: Karte fuer den aktuellen Spieler spielen.
                         SpielerPosition aktuellerSpieler = s.aktuellerSpieler().orElseThrow();
                         Karte karte = s.gueltigeKartenFuer(aktuellerSpieler).getFirst();
-                        Spiel neu = s.spieleKarte(aktuellerSpieler, karte);
+                        Spiel neu = s.spieleKarte(aktuellerSpieler, karte).neuerStand();
                         return new SpielUndErgebnis<>(neu, neu);
                     });
                     erfolge.incrementAndGet();
@@ -272,7 +272,7 @@ class SpielRegistryTest {
             ausfuehrungsZaehler.incrementAndGet();
             SpielerPosition aktuellerSpieler = s.aktuellerSpieler().orElseThrow();
             Karte karte = s.gueltigeKartenFuer(aktuellerSpieler).getFirst();
-            Spiel neu = s.spieleKarte(aktuellerSpieler, karte);
+            Spiel neu = s.spieleKarte(aktuellerSpieler, karte).neuerStand();
             return new SpielUndErgebnis<>(neu, neu);
         });
 

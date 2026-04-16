@@ -59,7 +59,7 @@ class SpielTest {
             .meldeGesund(SpielerPosition.OST)
             .meldeGesund(SpielerPosition.SUED)
             .loeseVorbehalteAuf()
-            .spieleKarte(SpielerPosition.WEST, ausgespieltesKaro);
+            .spieleKarte(SpielerPosition.WEST, ausgespieltesKaro).neuerStand();
 
         assertEquals(Spieltyp.SOLO_DAME, spiel.spieltyp(),
             "Damensolo muss als eigener Spieltyp aufgeloest werden, damit Stichlogik und Parteibildung dasselbe Regelprofil sehen.");
@@ -212,10 +212,10 @@ class SpielTest {
             .meldeGesund(SpielerPosition.OST)
             .meldeGesund(SpielerPosition.SUED)
             .loeseVorbehalteAuf()
-            .spieleKarte(SpielerPosition.WEST, karte(Farbe.KREUZ, Kartenwert.KOENIG, 1))
-            .spieleKarte(SpielerPosition.NORD, karte(Farbe.KREUZ, Kartenwert.AS, 1))
-            .spieleKarte(SpielerPosition.OST, karte(Farbe.KREUZ, Kartenwert.ZEHN, 1))
-            .spieleKarte(SpielerPosition.SUED, karte(Farbe.KREUZ, Kartenwert.NEUN, 1));
+            .spieleKarte(SpielerPosition.WEST, karte(Farbe.KREUZ, Kartenwert.KOENIG, 1)).neuerStand()
+            .spieleKarte(SpielerPosition.NORD, karte(Farbe.KREUZ, Kartenwert.AS, 1)).neuerStand()
+            .spieleKarte(SpielerPosition.OST, karte(Farbe.KREUZ, Kartenwert.ZEHN, 1)).neuerStand()
+            .spieleKarte(SpielerPosition.SUED, karte(Farbe.KREUZ, Kartenwert.NEUN, 1)).neuerStand();
 
         assertEquals(List.of(SpielerPosition.WEST, SpielerPosition.NORD), spiel.parteien().spielerVon(Partei.RE),
             "Der erste fremde Stichgewinner muss sofort Partner werden, damit Augen und Sonderpunkte der richtigen Partei zufallen.");
@@ -356,7 +356,7 @@ class SpielTest {
         while (spiel.phase() instanceof Spielphase.Stichphase) {
             SpielerPosition aktuellerSpieler = spiel.aktuellerSpieler().orElseThrow();
             Karte naechsteKarte = spiel.gueltigeKartenFuer(aktuellerSpieler).getFirst();
-            spiel = spiel.spieleKarte(aktuellerSpieler, naechsteKarte);
+            spiel = spiel.spieleKarte(aktuellerSpieler, naechsteKarte).neuerStand();
         }
 
         assertEquals(12, spiel.abgeschlosseneStiche().size(),
@@ -691,7 +691,7 @@ class SpielTest {
         while (spiel.phase() instanceof Spielphase.Stichphase) {
             SpielerPosition aktuellerSpieler = spiel.aktuellerSpieler().orElseThrow();
             Karte karte = spiel.gueltigeKartenFuer(aktuellerSpieler).getFirst();
-            spiel = spiel.spieleKarte(aktuellerSpieler, karte);
+            spiel = spiel.spieleKarte(aktuellerSpieler, karte).neuerStand();
         }
 
         assertEquals(12, spiel.abgeschlosseneStiche().size(),
@@ -754,7 +754,7 @@ class SpielTest {
         assertTrue(spiel.ansagen().offenbartParteiVon(SpielerPosition.WEST),
             "Die Grundansage muss im Spielzustand festgehalten werden, damit UIs und Auswertung dieselbe Wahrheit sehen.");
 
-        Spiel spielMitGespielterKarte = spiel.spieleKarte(SpielerPosition.WEST, spiel.gueltigeKartenFuer(SpielerPosition.WEST).getFirst());
+        Spiel spielMitGespielterKarte = spiel.spieleKarte(SpielerPosition.WEST, spiel.gueltigeKartenFuer(SpielerPosition.WEST).getFirst()).neuerStand();
         assertTrue(spielMitGespielterKarte.kannAnsagen(SpielerPosition.NORD, Ansage.KONTRA),
             "Nach dem Ausspiel muss der naechste aktuelle Spieler regelkonform eigene Ansagen taetigen koennen.");
     }
@@ -871,7 +871,7 @@ class SpielTest {
         Spiel aktuellesSpiel = spiel;
         for (Karte karte : List.of(ersteKarte, zweiteKarte, dritteKarte, vierteKarte)) {
             SpielerPosition spieler = aktuellesSpiel.aktuellerSpieler().orElseThrow();
-            aktuellesSpiel = aktuellesSpiel.spieleKarte(spieler, karte);
+            aktuellesSpiel = aktuellesSpiel.spieleKarte(spieler, karte).neuerStand();
         }
         return aktuellesSpiel;
     }

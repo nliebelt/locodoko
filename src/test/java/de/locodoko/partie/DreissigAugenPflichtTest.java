@@ -307,7 +307,7 @@ class DreissigAugenPflichtTest {
             null,
             false,
             null
-        ).spieleKarte(vierterSpieler, karte4);
+        ).spieleKarte(vierterSpieler, karte4).neuerStand();
     }
 
     /**

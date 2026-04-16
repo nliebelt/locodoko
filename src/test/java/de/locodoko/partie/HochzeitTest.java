@@ -153,7 +153,7 @@ class HochzeitTest {
         // Ansage-Zeitfenster (= nur aktueller Spieler) greifen.
         Spiel spiel = hochzeitSpielNachVorbehaltsaufloesung();
         // WEST (Hochzeit-Spieler) spielt erste Karte → NORD wird naechster Spieler (erwarteterSpieler)
-        spiel = spiel.spieleKarte(SpielerPosition.WEST, spiel.gueltigeKartenFuer(SpielerPosition.WEST).getFirst());
+        spiel = spiel.spieleKarte(SpielerPosition.WEST, spiel.gueltigeKartenFuer(SpielerPosition.WEST).getFirst()).neuerStand();
 
         assertTrue(spiel.hochzeitStatus().orElseThrow().suchtPartner(),
             "Hochzeit muss nach dem ersten Zug des Hochzeit-Spielers noch einen Partner suchen.");
@@ -320,7 +320,7 @@ class HochzeitTest {
             null,
             false,
             null
-        ).spieleKarte(vierterSpieler, karte4);
+        ).spieleKarte(vierterSpieler, karte4).neuerStand();
     }
 
     private Kartendeck kartendeckMitVerteiltenHaenden(Map<SpielerPosition, List<Karte>> vorgaben) {

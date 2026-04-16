@@ -53,7 +53,7 @@ public final class Tisch {
     }
 
     public Tisch spieleKarte(SpielerPosition spielerPosition, Karte karte) {
-        return mitAktuellemSpiel(partie.aktuellesSpiel().spieleKarte(spielerPosition, karte));
+        return mitAktuellemSpiel(partie.aktuellesSpiel().spieleKarte(spielerPosition, karte).neuerStand());
     }
 
     public Tisch sageAn(SpielerPosition spielerPosition, Ansage ansage) {

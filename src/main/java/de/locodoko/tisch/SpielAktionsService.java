@@ -8,16 +8,14 @@ import de.locodoko.partie.Partie;
 import de.locodoko.partie.PartieId;
 import de.locodoko.tisch.persistenz.PartieRepository;
 import de.locodoko.partie.PartieStatus;
-import de.locodoko.partie.Parteien;
 import de.locodoko.partie.Spiel;
-import de.locodoko.partie.Stich;
-import de.locodoko.partie.SonderpunktBewerter;
+import de.locodoko.partie.SpielAktion;
+import de.locodoko.partie.SpielEreignis;
+import de.locodoko.partie.SonderpunktEreignis;
 import de.locodoko.partie.VorbehaltAnsage;
 import de.locodoko.partie.ereignisse.NaechsterSpielerErwartet;
 import de.locodoko.partie.ereignisse.SchweinchenGemeldet;
 import de.locodoko.partie.ereignisse.VorbehaltErwartet;
-import de.locodoko.karten.Spielregeln;
-import de.locodoko.karten.TrumpfOrdnung;
 import de.locodoko.spieler.SpielerEntity;
 import de.locodoko.spieler.SpielerId;
 import de.locodoko.spieler.SpielerRepository;
@@ -93,7 +91,7 @@ public class SpielAktionsService {
         }
         partieRepository.saveAndFlush(tisch.partie());
         synchronisiereRegistry(tischId, tisch);
-        veroeffentlicheEreignisse(tisch, 0);
+        veroeffentlicheEreignisse(tisch);
         return PartieStandAntwort.aus(tisch, verwalteterSpieler.id());
     }
 
@@ -122,7 +120,7 @@ public class SpielAktionsService {
         }
         partieRepository.saveAndFlush(tisch.partie());
         synchronisiereRegistry(tischId, tisch);
-        veroeffentlicheEreignisse(tisch, 0);
+        veroeffentlicheEreignisse(tisch);
         return PartieStandAntwort.aus(tisch, verwalteterSpieler.id());
     }
 
@@ -134,18 +132,17 @@ public class SpielAktionsService {
         SpielerPosition position = spielerPositionVon(tisch, verwalteterSpieler);
         laufendesSpiel.hydriere(tisch.konfiguration().alsSpielregeln());
         boolean schweinchenVorher = laufendesSpiel.schweinchenGemeldetVon().isPresent();
-        int stichmitteVorher = laufendesSpiel.aktuellerStich()
-            .map(s -> s.gespielteKarten().size())
-            .orElse(0);
         SpielRegistry.KommandoSchluessel schluessel = new SpielRegistry.KommandoSchluessel(
             tischId.wert(), position, "KARTE:" + karteId + ":" + laufendesSpiel.phase().name()
         );
+        List<SpielEreignis> spielEreignisse;
         try {
-            Spiel aktualisiertesSpiel = spielRegistry.mitSpielGesperrtIdempotent(tischId, laufendesSpiel, schluessel, spiel -> {
-                Spiel neu = spiel.spieleKarte(position, parseKarte(karteId));
-                return new SpielUndErgebnis<>(neu, neu);
+            SpielAktion aktionsErgebnis = spielRegistry.mitSpielGesperrtIdempotent(tischId, laufendesSpiel, schluessel, spiel -> {
+                SpielAktion aktion = spiel.spieleKarte(position, parseKarte(karteId));
+                return new SpielUndErgebnis<>(aktion.neuerStand(), aktion);
             });
-            laufendesSpiel.uebernehmeDomainStand(aktualisiertesSpiel);
+            laufendesSpiel.uebernehmeDomainStand(aktionsErgebnis.neuerStand());
+            spielEreignisse = aktionsErgebnis.ereignisse();
         } catch (IllegalStateException | UngueltigerSpielzugException exception) {
             throw new SpielverwaltungKonfliktException("KARTE_UNGUELTIG", exception.getMessage());
         }
@@ -154,7 +151,7 @@ public class SpielAktionsService {
         if (!schweinchenVorher && laufendesSpiel.schweinchenGemeldetVon().isPresent()) {
             eventPublisher.publishEvent(new SchweinchenGemeldet(tischId.wert(), laufendesSpiel.schweinchenGemeldetVon().get()));
         }
-        veroeffentlicheEreignisse(tisch, stichmitteVorher);
+        veroeffentlicheSpielKarteEreignisse(tisch, spielEreignisse);
         return PartieStandAntwort.aus(tisch, verwalteterSpieler.id());
     }
 
@@ -182,15 +179,24 @@ public class SpielAktionsService {
         }
         partieRepository.saveAndFlush(tisch.partie());
         synchronisiereRegistry(tischId, tisch);
-        veroeffentlicheEreignisse(tisch, 0);
+        veroeffentlicheEreignisse(tisch);
         return PartieStandAntwort.aus(tisch, verwalteterSpieler.id());
     }
 
-    private void veroeffentlicheEreignisse(TischEntity tisch, int stichmitteVorher) {
+    private void veroeffentlicheSpielKarteEreignisse(TischEntity tisch, List<SpielEreignis> ereignisse) {
         if (tisch.partie() == null) {
             return;
         }
-        // KARTE_GESPIELT an alle menschlichen Spieler senden
+        for (SpielEreignis ereignis : ereignisse) {
+            switch (ereignis) {
+                case SpielEreignis.KarteGespielt kg -> sendeKarteGespielt(tisch);
+                case SpielEreignis.StichAbgeschlossenEreignis sa -> sendeStichAbgeschlossen(tisch, sa.sonderpunkte());
+            }
+        }
+        triggereKi(tisch);
+    }
+
+    private void sendeKarteGespielt(TischEntity tisch) {
         tisch.spieler().stream()
             .filter(s -> !s.istKi() && !s.istKiUebernommen() && s.sessionId() != null)
             .forEach(s -> tischEchtzeitService.planeAnBenutzer(
@@ -198,39 +204,36 @@ public class SpielAktionsService {
                 "/queue/partie/" + tisch.partie().id(),
                 PartieEreignisAntwort.karteGespielt(PartieStandAntwort.aus(tisch, s.id()))
             ));
+    }
 
-        // Stich abgeschlossen pruefen (menschlicher Spieler hat die 4. Karte gespielt)
-        if (stichmitteVorher == 3) {
-            Spiel laufendesSpiel = ladeLaufendesSpiel(tisch.partie());
-            int stichmitteNachher = laufendesSpiel.aktuellerStich()
-                .map(s -> s.gespielteKarten().size())
-                .orElse(0);
-            if (stichmitteNachher == 0) {
-                List<Stich> abgeschlosseneStiche = laufendesSpiel.abgeschlosseneStiche();
-                if (!abgeschlosseneStiche.isEmpty()) {
-                    Stich letzterStich = abgeschlosseneStiche.getLast();
-                    Parteien parteien = laufendesSpiel.parteien();
-                    TrumpfOrdnung trumpfOrdnung = laufendesSpiel.trumpfOrdnung();
-                    Spielregeln spielregeln = laufendesSpiel.spielregeln();
-                    var sonderpunktMap = new SonderpunktBewerter().bewerte(
-                        List.of(letzterStich), parteien, trumpfOrdnung, spielregeln
-                    );
-                    List<SonderpunktEreignisAntwort> sonderpunktDtos = sonderpunktMap.values().stream()
-                        .flatMap(List::stream)
-                        .map(sp -> new SonderpunktEreignisAntwort(sp.art().name(), sp.taeter(), sp.opfer()))
-                        .toList();
-                    tisch.spieler().stream()
-                        .filter(s -> !s.istKi() && !s.istKiUebernommen() && s.sessionId() != null)
-                        .forEach(s -> tischEchtzeitService.planeAnBenutzer(
-                            s.sessionId(),
-                            "/queue/partie/" + tisch.partie().id(),
-                            PartieEreignisAntwort.stichAbgeschlossen(PartieStandAntwort.aus(tisch, s.id()), sonderpunktDtos)
-                        ));
-                }
-            }
+    private void sendeStichAbgeschlossen(TischEntity tisch, List<SonderpunktEreignis> sonderpunkte) {
+        List<SonderpunktEreignisAntwort> sonderpunktDtos = sonderpunkte.stream()
+            .map(sp -> new SonderpunktEreignisAntwort(sp.art().name(), sp.taeter(), sp.opfer()))
+            .toList();
+        tisch.spieler().stream()
+            .filter(s -> !s.istKi() && !s.istKiUebernommen() && s.sessionId() != null)
+            .forEach(s -> tischEchtzeitService.planeAnBenutzer(
+                s.sessionId(),
+                "/queue/partie/" + tisch.partie().id(),
+                PartieEreignisAntwort.stichAbgeschlossen(PartieStandAntwort.aus(tisch, s.id()), sonderpunktDtos)
+            ));
+    }
+
+    private void veroeffentlicheEreignisse(TischEntity tisch) {
+        if (tisch.partie() == null) {
+            return;
         }
+        tisch.spieler().stream()
+            .filter(s -> !s.istKi() && !s.istKiUebernommen() && s.sessionId() != null)
+            .forEach(s -> tischEchtzeitService.planeAnBenutzer(
+                s.sessionId(),
+                "/queue/partie/" + tisch.partie().id(),
+                PartieEreignisAntwort.karteGespielt(PartieStandAntwort.aus(tisch, s.id()))
+            ));
+        triggereKi(tisch);
+    }
 
-        // KI-Trigger veroeffentlichen
+    private void triggereKi(TischEntity tisch) {
         if (tisch.partie().statusAusDb() != PartieStatus.BEENDET) {
             tisch.partie().spiele().stream()
                 .filter(s -> s.ergebnisEmbeddable() == null)

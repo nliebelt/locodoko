@@ -147,7 +147,7 @@ class PartieTest {
         while (aktuellesSpiel.phase() instanceof Spielphase.Stichphase) {
             SpielerPosition spieler = aktuellesSpiel.aktuellerSpieler().orElseThrow();
             Karte karte = aktuellesSpiel.gueltigeKartenFuer(spieler).getFirst();
-            aktuellesSpiel = aktuellesSpiel.spieleKarte(spieler, karte);
+            aktuellesSpiel = aktuellesSpiel.spieleKarte(spieler, karte).neuerStand();
         }
         return aktuellesSpiel.werteAus();
     }
@@ -217,7 +217,7 @@ class PartieTest {
         while (aktuellesSpiel.phase() instanceof Spielphase.Stichphase) {
             SpielerPosition spieler = aktuellesSpiel.aktuellerSpieler().orElseThrow();
             Karte karte = aktuellesSpiel.gueltigeKartenFuer(spieler).getFirst();
-            aktuellesSpiel = aktuellesSpiel.spieleKarte(spieler, karte);
+            aktuellesSpiel = aktuellesSpiel.spieleKarte(spieler, karte).neuerStand();
         }
         return aktuellesSpiel;
     }
@@ -236,7 +236,7 @@ class PartieTest {
         while (aktuellesSpiel.phase() instanceof Spielphase.Stichphase) {
             SpielerPosition spieler = aktuellesSpiel.aktuellerSpieler().orElseThrow();
             Karte karte = aktuellesSpiel.gueltigeKartenFuer(spieler).getFirst();
-            aktuellesSpiel = aktuellesSpiel.spieleKarte(spieler, karte);
+            aktuellesSpiel = aktuellesSpiel.spieleKarte(spieler, karte).neuerStand();
         }
         return aktuellesSpiel.werteAus();
     }

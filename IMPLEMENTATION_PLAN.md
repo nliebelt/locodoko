@@ -29,12 +29,14 @@ Schnellstart, Einladungslink, Spring Modulith Modulstruktur.
 
 ## Notiz
 
-**Zuletzt erledigt (Plan-Run #76):** ARCH-0 + ARCH-1 gemeinsam committed — Race-Condition-Fix und typisierte WebSocket-Events.
-`WebSocketBroadcastAdapter` + `PartieAktualisiert` gelöscht. `PartieEreignisTyp` hat KARTE_GESPIELT,
-KI_ZUG_SEQUENZ, STICH_ABGESCHLOSSEN. `AppStore.verarbeitePartieEreignis()` mit Event-Switch und
-KI-Sequenz-Queue (800ms Delays pro Karte, synthetische Zwischenstände). Build + Lint + 24 Tests grün.
+**Zuletzt erledigt (Plan-Run #77):** ARCH-2 — `SpielAktion` Result-Typ.
+`Spiel.spieleKarte()` gibt jetzt `SpielAktion(neuerStand, ereignisse)` zurück statt `Spiel`.
+`SpielEreignis` sealed interface mit `KarteGespielt` und `StichAbgeschlossenEreignis`.
+`SpielAktionsService` iteriert Ereignisse direkt: `sendeKarteGespielt()` + `sendeStichAbgeschlossen()` — kein State-Diff mehr.
+`KiOrchestrierungService` und alle Test-Aufrufer auf `.neuerStand()` umgestellt.
+254 Backend-Tests, 24 Frontend-Tests grün.
 
-**Nächste offene Aufgaben (priorisiert):** ARCH-2 → ARCH-3, dann BF-7, KI-1
+**Nächste offene Aufgaben (priorisiert):** ARCH-3, dann BF-7, KI-1
 
 **Offene Fragen:** TischSzene.test.ts und AnimationenService.test.ts laufen nicht wegen pre-existing jsdom/ESM-Kompatibilitaetsfehler (ERR_REQUIRE_ASYNC_MODULE).
 
@@ -372,7 +374,7 @@ cd frontend && npm run lint             # 0 Fehler
 
 ---
 
-### ARCH-2: Domain — `SpielAktion` Result-Typ [ ]
+### ARCH-2: Domain — `SpielAktion` Result-Typ [x]
 
 **Priorität: Mittel** | **Blockiert durch:** ARCH-1
 **Spec:** `specs/architektur-domain-events.md` (Abschnitt "SpielAktion Result-Typ")

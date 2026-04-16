@@ -196,7 +196,7 @@ public class KiOrchestrierungService {
                 Karte karte = strategie.waehleKarte(zustand);
                 LOGGER.debug("KI spielt Karte [karte={}, spielerId={}]", karte, spielerPosition);
                 String karteId = "%s-%s-%d".formatted(karte.farbe().name(), karte.wert().name(), karte.exemplarIndex());
-                yield new AktionsErgebnis(laufendesSpiel.spieleKarte(spielerPosition, karte), karteId);
+                yield new AktionsErgebnis(laufendesSpiel.spieleKarte(spielerPosition, karte).neuerStand(), karteId);
             }
             default -> new AktionsErgebnis(laufendesSpiel, null);
         };
