@@ -1579,4 +1579,67 @@ describe('TischSzene', () => {
 
     expect(modal.hidden).toBe(false);
   });
+
+  // WARUM: K-Kuerzel ermoeglicht Kontra-Ansage ohne Maus; fehlt es, muessen Spieler
+  // bei der schnellsten Antwort auf Re-Ansagen auf Maus wechseln.
+  it('sagt Kontra per K-Taste an', () => {
+    const zustand = baueZustand({
+      partieStand: bauePartieStand(baueLaufendesSpiel({
+        moeglicheAnsagen: ['KONTRA', 'KEINE_90']
+      }))
+    });
+    baueSzene(zustand);
+
+    feuereTaste('k');
+
+    expect(appStoreHarness.store.sageAnsageAn).toHaveBeenCalledWith('KONTRA');
+  });
+
+  // WARUM: A-Kuerzel nimmt Armut-Angebot an; sichert ab dass der Guard (nur aktiv im
+  // ANTWORTEN-Modus) korrekt greift und beantworteArmut aufgerufen wird.
+  it('nimmt Armut-Angebot per A-Taste an', () => {
+    const zustand = baueZustand({
+      partieStand: bauePartieStand(baueLaufendesSpiel({
+        spieltyp: 'ARMUT',
+        phase: 'ARMUT_TAUSCH',
+        aktuellerSpieler: 'SUED',
+        spielbareKarten: [],
+        spieler: [
+          baueSpieler('SUED', 'Anna', { verbleibendeKarten: 12, sichtbareHandkarten: [] }),
+          baueSpieler('WEST', 'Ben', { verbleibendeKarten: 9, sichtbareHandkarten: null }),
+          baueSpieler('NORD', 'Clara', { verbleibendeKarten: 12, sichtbareHandkarten: null }),
+          baueSpieler('OST', 'Dirk', { verbleibendeKarten: 12, sichtbareHandkarten: null })
+        ]
+      }))
+    });
+    baueSzene(zustand);
+
+    feuereTaste('a');
+
+    expect(appStoreHarness.store.beantworteArmut).toHaveBeenCalledWith(true, []);
+  });
+
+  // WARUM: N-Kuerzel lehnt Armut-Angebot ab; verhindert dass Spieler gezwungen sind
+  // auf Ablehnen-Button zu klicken wenn kein Maus-Zugriff moeglich ist.
+  it('lehnt Armut-Angebot per N-Taste ab', () => {
+    const zustand = baueZustand({
+      partieStand: bauePartieStand(baueLaufendesSpiel({
+        spieltyp: 'ARMUT',
+        phase: 'ARMUT_TAUSCH',
+        aktuellerSpieler: 'SUED',
+        spielbareKarten: [],
+        spieler: [
+          baueSpieler('SUED', 'Anna', { verbleibendeKarten: 12, sichtbareHandkarten: [] }),
+          baueSpieler('WEST', 'Ben', { verbleibendeKarten: 9, sichtbareHandkarten: null }),
+          baueSpieler('NORD', 'Clara', { verbleibendeKarten: 12, sichtbareHandkarten: null }),
+          baueSpieler('OST', 'Dirk', { verbleibendeKarten: 12, sichtbareHandkarten: null })
+        ]
+      }))
+    });
+    baueSzene(zustand);
+
+    feuereTaste('n');
+
+    expect(appStoreHarness.store.beantworteArmut).toHaveBeenCalledWith(false, []);
+  });
 });

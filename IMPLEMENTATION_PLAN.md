@@ -29,15 +29,13 @@ Schnellstart, Einladungslink, Spring Modulith Modulstruktur.
 
 ## Notiz
 
-**Zuletzt erledigt (Plan-Run #73):** BUG-4 — Browser-Reload zeigt alten State behoben.
-`TischSzene.create()` ruft jetzt am Anfang defensiv `this.animationen?.abbrechen()`,
-`this.letzterStichOverlay?.destroy(true)`, `schliesseRundenEndeModal()` und
-`schliessePartieEndeModal()` auf — bevor neue Instanzen aufgebaut werden.
-Verhindert sichtbare Reste aus vorherigem Render-Zyklus wenn `shutdown()` nicht
-rechtzeitig aufgerufen wurde (z.B. schneller scene.start()-Wechsel).
-Frontend build+lint+tests grün.
+**Zuletzt erledigt (Plan-Run #74):** BF-6 — Tastatur-Shortcuts für Ansagen und Armut abgeschlossen.
+Implementierung war bereits vollständig in `TischInputHandler.ts` vorhanden (R=Re, K=Kontra, 1-5=Ansagen
+nach Position, A=Armut annehmen, N=Armut ablehnen) — alle mit korrekten Guards (Ansagen nur wenn
+`moeglicheAnsagen.length > 0`, Armut nur wenn `armutAktion.modus === 'ANTWORTEN'`).
+Fehlende Tests für K, A, N in `TischSzene.test.ts` nachgetragen. Build + Lint grün.
 
-**Nächste offene Aufgaben (priorisiert):** BF-6 (Tastatur-Shortcuts), BF-7 (Snapshot-Endpoint), KI-1 (Schwellen-Tuning)
+**Nächste offene Aufgaben (priorisiert):** BF-7 (Snapshot-Endpoint), KI-1 (Schwellen-Tuning)
 
 **Offene Fragen:** TischSzene.test.ts und AnimationenService.test.ts laufen nicht wegen pre-existing jsdom/ESM-Kompatibilitaetsfehler (ERR_REQUIRE_ASYNC_MODULE).
 
@@ -181,7 +179,7 @@ das Spiel nicht ab.
 
 ---
 
-### BF-6: Tastatur-Shortcuts für Ansagen und Armut (Frontend) [ ]
+### BF-6: Tastatur-Shortcuts für Ansagen und Armut (Frontend) [x]
 
 **Priorität: Mittel** | **Spec:** `specs/frontend-tastatursteuerung.md`
 
