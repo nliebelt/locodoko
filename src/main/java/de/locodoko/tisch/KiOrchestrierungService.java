@@ -23,9 +23,7 @@ import de.locodoko.spieler.SpielerEntity;
 import de.locodoko.spieler.SpielerRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationEventPublisher;
-import org.springframework.context.annotation.Lazy;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -61,9 +59,6 @@ public class KiOrchestrierungService {
     private final TischEchtzeitService tischEchtzeitService;
     private final SpielRegistry spielRegistry;
     private final ApplicationEventPublisher eventPublisher;
-    // Zyklische Abhaengigkeit: KiEventAdapter -> KiOrchestrierungService -> KiEventAdapter (Scheduling)
-    // @Lazy verzoegert die Instanziierung und verhindert den Startup-Fehler.
-    private KiEventAdapter kiEventAdapter;
 
     public KiOrchestrierungService(
         KiStrategieFactory kiStrategieFactory,
@@ -81,11 +76,6 @@ public class KiOrchestrierungService {
         this.tischEchtzeitService = tischEchtzeitService;
         this.spielRegistry = spielRegistry;
         this.eventPublisher = eventPublisher;
-    }
-
-    @Autowired
-    void setzeKiEventAdapter(@Lazy KiEventAdapter kiEventAdapter) {
-        this.kiEventAdapter = kiEventAdapter;
     }
 
     public void automatisiereTisch(TischEntity tisch) {
@@ -145,24 +135,18 @@ public class KiOrchestrierungService {
                 Spielphase phaseVorAktion = laufendesSpiel.phase();
                 Spiel naechsterStand = fuehreKiAktionAus(laufendesSpiel, erwarteterSpieler, strategie);
                 laufendesSpiel.uebernehmeDomainStand(naechsterStand);
-                // Stichphase-Zug: naechsten KI-Zug zeitverzoegert ausloesen, damit jede
-                // KI-Karte einzeln animiert im Frontend erscheint (Timing-Feature).
-                // Nur wenn ein menschlicher Spieler am Tisch sitzt – bei reinen KI-Partien
-                // bleibt der synchrone Durchlauf erhalten.
+                // Stichphase-Zug: nach jedem KI-Zug sofort speichern und an den Client senden,
+                // damit der Client jede Karte mit 800ms Verzoegerung einzeln animieren kann.
+                // Nur bei Tischen mit menschlichen Spielern – bei reinen KI-Partien laueft
+                // die Orchestrierung ohne Zwischensaves durch.
                 boolean hatMenschlichenSpieler = tisch.spieler().stream()
-                    .anyMatch(s -> !s.istKi());
+                    .anyMatch(s -> !s.istKi() && !s.istKiUebernommen());
                 if (hatMenschlichenSpieler
                         && phaseVorAktion instanceof Spielphase.Stichphase
                         && naechsterStand.phase() instanceof Spielphase.Stichphase) {
-                    SpielerPosition naechster = naechsterStand.erwarteterSpieler().orElse(null);
-                    SpielerEntity naechsterSpielerEntity =
-                        naechster != null ? spielerNachPosition(tisch).get(naechster) : null;
-                if (naechsterSpielerEntity != null
-                        && (naechsterSpielerEntity.istKi() || naechsterSpielerEntity.istKiUebernommen())
-                        && !naechster.equals(erwarteterSpieler)) {
-                    kiEventAdapter.planeVerzoegertenKiZug(TischId.von(tisch.id()));
-                    return;
-                }
+                    partieRepository.saveAndFlush(tisch.partie());
+                    synchronisiereRegistry(TischId.von(tisch.id()), tisch);
+                    veroeffentlichePartieStand(tisch);
                 }
             } catch (Exception e) {
                 LOGGER.error(
@@ -177,95 +161,12 @@ public class KiOrchestrierungService {
         throw new IllegalStateException("Die KI-Orchestrierung hat das Sicherheitslimit erreicht.");
     }
 
-    /**
-     * Laedt den Tisch neu aus der Datenbank und fuehrt genau einen verzoegerten KI-Zug aus.
-     * Wird zeitverzoegert von {@link KiEventAdapter#planeVerzoegertenKiZug} aufgerufen, damit
-     * jede KI-Karte einzeln im Frontend animiert werden kann. Falls der naechste Spieler
-     * danach ebenfalls eine KI ist, wird ein weiterer Delay geplant.
-     */
-    @Transactional
-    public void verzoegerteKiAktionAusfuehren(TischId tischId) {
-        TischEntity tisch = tischRepository.findById(tischId).orElse(null);
-        if (tisch == null || tisch.partie() == null || tisch.partie().statusAusDb() == PartieStatus.BEENDET) {
-            return;
-        }
-        fuehreVerzoegertenKiZugAus(tisch);
-        partieRepository.saveAndFlush(tisch.partie());
-        synchronisiereRegistry(tischId, tisch);
-        veroeffentlichePartieStand(tisch);
-    }
-
-    /**
-     * Fuehrt exakt einen KI-Zug in der Stichphase aus. Falls danach erneut eine KI
-     * an der Reihe ist (und Menschen am Tisch sitzen), wird ein weiterer Delay geplant.
-     * Andernfalls wird automatisiereTisch aufgerufen um etwaige Folgephasen abzuschliessen.
-     */
-    private void fuehreVerzoegertenKiZugAus(TischEntity tisch) {
-        if (tisch.partie() == null || tisch.partie().statusAusDb() == PartieStatus.BEENDET) {
-            return;
-        }
-        Spiel laufendesSpiel = findeLaufendesSpiel(tisch.partie());
-        if (laufendesSpiel == null) {
-            return;
-        }
-        laufendesSpiel.hydriere(tisch.konfiguration().alsSpielregeln());
-        if (!(laufendesSpiel.phase() instanceof Spielphase.Stichphase)) {
-            // Nicht-Stichphase: vollstaendige Orchestrierung uebergeben
-            try {
-                automatisiereTisch(tisch);
-            } catch (Exception e) {
-                LOGGER.error(
-                    "Fehler bei verzoegerter KI-Orchestrierung an Tisch {} – Partie bleibt im letzten konsistenten Stand: {}",
-                    tisch.id(), e.getMessage(), e
-                );
-            }
-            return;
-        }
-        SpielerPosition erwarteterSpieler = laufendesSpiel.erwarteterSpieler().orElse(null);
-        if (erwarteterSpieler == null) {
-            return;
-        }
-        SpielerEntity spielerEntity = spielerNachPosition(tisch).get(erwarteterSpieler);
-        if (spielerEntity == null || (!spielerEntity.istKi() && !spielerEntity.istKiUebernommen())) {
-            // Human ist dran – kein KI-Zug
-            return;
-        }
-        LOGGER.info("KI-Spielzug (verzoegert) [spielerId={}, phase=STICHPHASE]", erwarteterSpieler);
-        try {
-            KiStrategie strategie = kiStrategieFactory.erzeuge(tisch.konfiguration().kiSchwierigkeit());
-            Spiel naechsterStand = fuehreKiAktionAus(laufendesSpiel, erwarteterSpieler, strategie);
-            laufendesSpiel.uebernehmeDomainStand(naechsterStand);
-            // Pruefen ob noch eine KI folgt (und Menschen am Tisch sind)
-            boolean hatMenschlichenSpieler = tisch.spieler().stream().anyMatch(s -> !s.istKi());
-            if (hatMenschlichenSpieler && naechsterStand.phase() instanceof Spielphase.Stichphase) {
-                SpielerPosition naechster = naechsterStand.erwarteterSpieler().orElse(null);
-                SpielerEntity naechsterSpielerEntity = naechster != null ? spielerNachPosition(tisch).get(naechster) : null;
-                if (naechsterSpielerEntity != null
-                        && (naechsterSpielerEntity.istKi() || naechsterSpielerEntity.istKiUebernommen())) {
-                    // Wenn derselbe KI-Spieler wieder dran ist (nach Ansage), direkt weiter ohne Delay
-                    if (naechster.equals(erwarteterSpieler)) {
-                        fuehreVerzoegertenKiZugAus(tisch);
-                        return;
-                    }
-                    kiEventAdapter.planeVerzoegertenKiZug(TischId.von(tisch.id()));
-                    return;
-                }
-            }
-            // Naechster ist kein KI-Stichphase-Spieler: vollstaendige Orchestrierung fuer Folgephasen
-            automatisiereTisch(tisch);
-        } catch (Exception e) {
-            LOGGER.error(
-                "KI-Strategie-Fehler (verzoegert) fuer Spieler {} an Tisch {} – Partie bleibt im letzten konsistenten Stand: {}",
-                erwarteterSpieler, tisch.id(), e.getMessage(), e
-            );
-        }
-    }
-
     private Spiel fuehreKiAktionAus(Spiel laufendesSpiel, SpielerPosition spielerPosition, KiStrategie strategie) {
         KiSpielzustand zustand = KiSpielzustand.aus(laufendesSpiel, spielerPosition);
         return switch (laufendesSpiel.phase()) {
             case Spielphase.VorbehaltAnsage _ -> {
                 VorbehaltAnsage vorbehalt = strategie.waehleVorbehalt(zustand);
+                LOGGER.info("KI meldet Vorbehalt [spielerId={}, vorbehalt={}]", spielerPosition, vorbehalt);
                 Spiel spielNachVorbehalt = laufendesSpiel.meldeVorbehalt(spielerPosition, vorbehalt);
                 yield spielNachVorbehalt.phase() instanceof Spielphase.VorbehaltAufloesung
                     ? spielNachVorbehalt.loeseVorbehalteAuf()
@@ -455,7 +356,7 @@ public class KiOrchestrierungService {
         tischEchtzeitService.planePartieEreignis(
             PartieEreignisAntwort.aktualisiert(PartieEreignisTyp.PARTIE_AKTUALISIERT, broadcastStand));
         tisch.spieler().stream()
-            .filter(s -> !s.istKi() && s.sessionId() != null)
+            .filter(s -> !s.istKi() && !s.istKiUebernommen() && s.sessionId() != null)
             .forEach(s -> tischEchtzeitService.planeAnBenutzer(
                 s.sessionId(),
                 "/queue/partie/" + tisch.partie().id(),

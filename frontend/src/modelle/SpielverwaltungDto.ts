@@ -159,6 +159,7 @@ export interface SpielerImSpielAntwort {
   anzeigeName: string;
   avatarFarbe: string | null;
   istKi: boolean;
+  istKiUebernommen: boolean;
   istSelbst: boolean;
   istGeber: boolean;
   istAmZug: boolean;
@@ -191,6 +192,7 @@ export interface LaufendesSpielAntwort {
   ansageHistorie: AnsageEreignisAntwort[];
   moeglicheAnsagen: Ansage[];
   moeglicheVorbehalte: VorbehaltAnsage[];
+  deklarierteVorbehalte: { position: SpielerPosition; ansage: VorbehaltAnsage }[];
   istBockrunde: boolean;
   schweinchenGemeldetVon: SpielerPosition | null;
 }

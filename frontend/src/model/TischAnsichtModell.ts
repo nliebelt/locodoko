@@ -128,6 +128,7 @@ export interface TischAnsichtModell {
   spielbareKarten: string[];
   moeglicheAnsagen: Ansage[];
   moeglicheVorbehalte: VorbehaltAnsage[];
+  deklarierteVorbehalte: { position: SpielerPosition; ansage: VorbehaltAnsage }[];
   spieler: SpielerAnsicht[];
   aktuelleStichmitte: GespielteKarteAnsicht[];
   ansageHistorie: AnsageAnsicht[];
@@ -163,6 +164,7 @@ export function erstelleStandardTischAnsicht(spielerName: string): TischAnsichtM
     spielbareKarten: [],
     moeglicheAnsagen: [],
     moeglicheVorbehalte: [],
+    deklarierteVorbehalte: [],
     spieler: [
       {
         position: 'SUED',
@@ -276,6 +278,7 @@ export function erstelleTischAnsichtAusStatus(
       spielbareKarten: [],
       moeglicheAnsagen: [],
       moeglicheVorbehalte: [],
+      deklarierteVorbehalte: [],
       spieler: [],
       aktuelleStichmitte: [],
       ansageHistorie: [],
@@ -322,6 +325,7 @@ export function erstelleTischAnsichtAusStatus(
     spielbareKarten: laufendesSpiel?.spielbareKarten.map((karte) => karte.id) ?? [],
     moeglicheAnsagen: laufendesSpiel?.moeglicheAnsagen ?? [],
     moeglicheVorbehalte: laufendesSpiel?.moeglicheVorbehalte ?? [],
+    deklarierteVorbehalte: laufendesSpiel?.deklarierteVorbehalte ?? [],
     spieler: spielerAnsichten,
     aktuelleStichmitte: laufendesSpiel ? mappeAktuelleStichmitte(laufendesSpiel.aktuelleStichmitte, laufendesSpiel.spieler, bezugPosition) : [],
     ansageHistorie: laufendesSpiel ? mappeAnsageHistorie(laufendesSpiel.ansageHistorie, laufendesSpiel.spieler, bezugPosition) : [],

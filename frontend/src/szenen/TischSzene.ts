@@ -384,6 +384,12 @@ export class TischSzene extends Phaser.Scene {
         }
       }
       this.letztesModell = modell;
+      // Nach allen Animationen nochmals rendern: verhindert dass Karten dauerhaft grau bleiben,
+      // wenn ein Snapshot-Update (z.B. nach WebSocket-Reconnect) die Karten grau gerendert hat
+      // waehrend eine Animation lief und danach kein weiteres renderTisch() mehr ausgeloest wurde.
+      // .then() auf das leere Queue-Item laeuft NACH dem finally-Block (animationLaeuft=false).
+      void this.animationen?.reiheEin(() => Promise.resolve())
+        ?.then(() => { if (this.letzterZustand) this.renderTisch(this.letzterZustand); });
     });
     // Initialen Zustand nachziehen: sicherstellt dass renderTisch() erst nach vollstaendigem
     // create() laeuft. abonnieren() feuert sofort, aber erst hier ist die Szene vollstaendig
@@ -1093,17 +1099,26 @@ export class TischSzene extends Phaser.Scene {
       const kgroesse = berechneKartenGroesse(breite);
       const kartenAbstand = berechneKartenAbstand(breite, hoehe);
 
+      const istHorizontal = spieler.position === 'SUED' || spieler.position === 'NORD';
+      const istGespiegelt = spieler.position === 'NORD' || spieler.position === 'OST';
+      const startX = istHorizontal
+        ? breite / 2 - ((kartenAnzahl - 1) * kartenAbstand.horizontal) / 2
+        : pos.kartenX;
+      const [fanBasis, fanSchritt]: [number, number] = {
+        SUED: [-12,  5],
+        NORD: [ 12, -5],
+        WEST: [ 78,  5],
+        OST:  [102, -5],
+      }[spieler.position] as [number, number];
+
       for (let index = 0; index < kartenAnzahl; index += 1) {
-        const abstand = (spieler.position === 'SUED' || spieler.position === 'NORD')
-          ? index * kartenAbstand.horizontal
-          : index * kartenAbstand.vertikal;
-        const zielX = (spieler.position === 'SUED' || spieler.position === 'NORD') ? pos.kartenX + abstand : pos.kartenX;
-        const zielY = (spieler.position === 'SUED' || spieler.position === 'NORD') ? pos.kartenY : pos.kartenY + abstand;
-        const winkel = spieler.position === 'SUED'
-          ? -12 + index * 3
-          : spieler.position === 'NORD'
-            ? 12 - index * 3
-            : pos.kartenWinkel;
+        const fanIndex = istGespiegelt ? kartenAnzahl - 1 - index : index;
+        const abstand = istHorizontal
+          ? fanIndex * kartenAbstand.horizontal
+          : fanIndex * kartenAbstand.vertikal;
+        const zielX = istHorizontal ? startX + abstand : pos.kartenX;
+        const zielY = istHorizontal ? pos.kartenY : pos.kartenY + abstand;
+        const winkel = fanBasis + fanIndex * fanSchritt;
 
         // Eigene Karten offen austeilen, gegnerische Karten verdeckt
         const karte = sichtbareHandkarten?.[index];
@@ -1662,7 +1677,13 @@ export class TischSzene extends Phaser.Scene {
     const zeilen = Math.ceil(optionen.length / spalten);
     const dialogW = spalten * btnW + (spalten + 1) * abstandX;
     const titelH = Math.round(hoehe * 0.04);
-    const dialogH = titelH + zeilen * (btnH + abstandY) + abstandY;
+    const zeilenH = Math.round(hoehe * 0.025);
+
+    // Statuszeilen der bereits deklarierten Spieler (alle außer SUED)
+    const andereDeklarationen = modell.deklarierteVorbehalte.filter((d) => d.position !== 'SUED');
+    const statusH = andereDeklarationen.length > 0 ? andereDeklarationen.length * zeilenH + Math.round(zeilenH * 0.5) : 0;
+
+    const dialogH = titelH + statusH + zeilen * (btnH + abstandY) + abstandY;
     const dialogY = Math.round(hoehe * 0.28);
 
     ebene.add(this.add.rectangle(breite / 2, dialogY, dialogW, dialogH, 0x0a2818, 0.97)
@@ -1674,9 +1695,24 @@ export class TischSzene extends Phaser.Scene {
       fontStyle: 'bold'
     }).setOrigin(0.5));
 
+    // Andere Spieler-Deklarationen anzeigen
+    if (andereDeklarationen.length > 0) {
+      const statusStartY = dialogY - dialogH / 2 + titelH + zeilenH * 0.5;
+      andereDeklarationen.forEach((dekl, i) => {
+        const spielerName = modell.spieler.find((s) => s.position === dekl.position)?.name ?? dekl.position;
+        const hatVorbehalt = dekl.ansage !== 'GESUND';
+        const text = `${spielerName}: ${hatVorbehalt ? '⚑ Vorbehalt' : '✓ Gesund'}`;
+        const farbe = hatVorbehalt ? '#ffd700' : '#aaffaa';
+        ebene.add(this.add.text(breite / 2, statusStartY + i * zeilenH, text, {
+          color: farbe,
+          fontSize: `${Math.round(Math.max(11, breite * 0.009))}px`,
+        }).setOrigin(0.5));
+      });
+    }
+
     const deaktiviert = zustand.wirdGeladen || !!this.wartendeKartenId || (this.animationen?.animationLaeuft ?? false);
     const gridStartX = breite / 2 - btnW / 2 - abstandX / 2;
-    const gridStartY = dialogY - dialogH / 2 + titelH + abstandY + btnH / 2;
+    const gridStartY = dialogY - dialogH / 2 + titelH + statusH + abstandY + btnH / 2;
     optionen.forEach((vorbehalt, index) => {
       const spalte = index % spalten;
       const zeile = Math.floor(index / spalten);

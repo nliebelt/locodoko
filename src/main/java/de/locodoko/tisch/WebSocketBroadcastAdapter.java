@@ -45,7 +45,7 @@ class WebSocketBroadcastAdapter {
         tischEchtzeitService.sendePartieEreignis(
             PartieEreignisAntwort.aktualisiert(PartieEreignisTyp.PARTIE_AKTUALISIERT, broadcastStand));
         tisch.spieler().stream()
-            .filter(spieler -> !spieler.istKi() && spieler.sessionId() != null)
+            .filter(spieler -> !spieler.istKi() && !spieler.istKiUebernommen() && spieler.sessionId() != null)
             .forEach(spieler -> tischEchtzeitService.sendeAnBenutzer(
                 spieler.sessionId(),
                 "/queue/partie/" + tisch.partie().id(),

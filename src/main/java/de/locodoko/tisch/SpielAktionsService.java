@@ -11,7 +11,6 @@ import de.locodoko.partie.PartieStatus;
 import de.locodoko.partie.Spiel;
 import de.locodoko.partie.VorbehaltAnsage;
 import de.locodoko.partie.ereignisse.NaechsterSpielerErwartet;
-import de.locodoko.partie.ereignisse.PartieAktualisiert;
 import de.locodoko.partie.ereignisse.SchweinchenGemeldet;
 import de.locodoko.partie.ereignisse.VorbehaltErwartet;
 import de.locodoko.spieler.SpielerEntity;
@@ -32,19 +31,22 @@ public class SpielAktionsService {
     private final SpielerRepository spielerRepository;
     private final SpielRegistry spielRegistry;
     private final ApplicationEventPublisher eventPublisher;
+    private final TischEchtzeitService tischEchtzeitService;
 
     public SpielAktionsService(
         TischRepository tischRepository,
         PartieRepository partieRepository,
         SpielerRepository spielerRepository,
         SpielRegistry spielRegistry,
-        ApplicationEventPublisher eventPublisher
+        ApplicationEventPublisher eventPublisher,
+        TischEchtzeitService tischEchtzeitService
     ) {
         this.tischRepository = tischRepository;
         this.partieRepository = partieRepository;
         this.spielerRepository = spielerRepository;
         this.spielRegistry = spielRegistry;
         this.eventPublisher = eventPublisher;
+        this.tischEchtzeitService = tischEchtzeitService;
     }
 
     @Transactional(readOnly = true)
@@ -177,16 +179,33 @@ public class SpielAktionsService {
     }
 
     /**
-     * Veroeffentlicht Domain Events nach jeder Spielaktion.
+     * Sendet den aktuellen Partiestand (nach menschlicher Aktion, vor KI-Zuegen) direkt an alle
+     * Spieler und loest anschliessend das KI-Trigger-Event aus.
      *
-     * <p>Zuerst wird das passende KI-Trigger-Event synchron veroeffentlicht
-     * ({@link NaechsterSpielerErwartet} oder {@link VorbehaltErwartet}), damit
-     * {@link KiEventAdapter} noch innerhalb derselben Transaktion reagiert.
-     * Danach wird {@link PartieAktualisiert} veroeffentlicht, sodass
-     * {@link WebSocketBroadcastAdapter} den finalen Stand (nach KI-Zuegen) ladet
-     * und per WebSocket sendet.</p>
+     * <p>Der Broadcast wird ueber {@code planeNachCommit} registriert, bevor das KI-Trigger-Event
+     * ({@link NaechsterSpielerErwartet} / {@link VorbehaltErwartet}) veroeffentlicht wird. Da
+     * {@code TransactionSynchronizationManager}-Callbacks in Registrierungsreihenfolge (FIFO)
+     * nach dem Commit ausgefuehrt werden, ist garantiert, dass der WebSocket-Send vor dem
+     * asynchronen KI-Start erfolgt – unabhaengig von der Ausfuehrungs-Reihenfolge asynchroner
+     * Event-Listener ({@link KiEventAdapter}, {@link WebSocketBroadcastAdapter}).
+     * Das Frontend puffert KI-Karten-Updates clientseitig mit 800 ms Verzoegerung.</p>
      */
     private void veroeffentlicheEreignisse(TischId tischId, TischEntity tisch) {
+        // Broadcast des aktuellen Stands (vor KI-Zuegen) direkt einplanen.
+        // Muss VOR publishEvent registriert werden, damit afterCommit-Reihenfolge stimmt.
+        if (tisch.partie() != null) {
+            PartieStandAntwort broadcastStand = PartieStandAntwort.aus(tisch);
+            tischEchtzeitService.planePartieEreignis(
+                PartieEreignisAntwort.aktualisiert(PartieEreignisTyp.PARTIE_AKTUALISIERT, broadcastStand));
+            tisch.spieler().stream()
+                .filter(s -> !s.istKi() && !s.istKiUebernommen() && s.sessionId() != null)
+                .forEach(s -> tischEchtzeitService.planeAnBenutzer(
+                    s.sessionId(),
+                    "/queue/partie/" + tisch.partie().id(),
+                    PartieEreignisAntwort.snapshot(PartieStandAntwort.aus(tisch, s.id()))
+                ));
+        }
+        // KI-Trigger danach veroeffentlichen (laeuft asynchron nach dem Broadcast)
         if (tisch.partie() != null && tisch.partie().statusAusDb() != PartieStatus.BEENDET) {
             tisch.partie().spiele().stream()
                 .filter(s -> s.ergebnisEmbeddable() == null)
@@ -199,7 +218,6 @@ public class SpielAktionsService {
                     }
                 });
         }
-        eventPublisher.publishEvent(new PartieAktualisiert(tischId.wert()));
     }
 
     /**

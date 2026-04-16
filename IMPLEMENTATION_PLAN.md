@@ -1,6 +1,6 @@
 # IMPLEMENTATION_PLAN — Locodoko Doppelkopf
 
-> **Letzte Aktualisierung: 2026-04-16 (Plan-Run #73)**
+> **Letzte Aktualisierung: 2026-04-16 (Plan-Run #75)**
 
 ## Legende
 
@@ -23,7 +23,7 @@ Schnellstart, Einladungslink, Spring Modulith Modulstruktur.
 
 **Build:** `mvn test` grün (254 Tests, 0 Failures).
 
-**Offene Punkte:** BF-6 (Tastatur-Shortcuts), BF-7 (Snapshot-Endpoint), KI-1 (Schwellen-Tuning).
+**Offene Punkte:** BF-7 (Snapshot-Endpoint), KI-1 (Schwellen-Tuning), ARCH-1–ARCH-3 (typisierte WebSocket-Events).
 
 ---
 
@@ -35,9 +35,441 @@ nach Position, A=Armut annehmen, N=Armut ablehnen) — alle mit korrekten Guards
 `moeglicheAnsagen.length > 0`, Armut nur wenn `armutAktion.modus === 'ANTWORTEN'`).
 Fehlende Tests für K, A, N in `TischSzene.test.ts` nachgetragen. Build + Lint grün.
 
-**Nächste offene Aufgaben (priorisiert):** BF-7 (Snapshot-Endpoint), KI-1 (Schwellen-Tuning)
+**Nächste offene Aufgaben (priorisiert):** ARCH-0 → ARCH-1 → ARCH-2, dann BF-7, KI-1
 
 **Offene Fragen:** TischSzene.test.ts und AnimationenService.test.ts laufen nicht wegen pre-existing jsdom/ESM-Kompatibilitaetsfehler (ERR_REQUIRE_ASYNC_MODULE).
+
+---
+
+## Phase ARCH — Architektur-Refactoring: Typisierte WebSocket-Events
+
+> **Spec:** `specs/architektur-domain-events.md`, `specs/websocket-kommunikation.md`
+> **Motivation:** Race-Condition zwischen `WebSocketBroadcastAdapter` und `KiEventAdapter` zeigt
+> grundlegenden Designfehler: drei parallele Broadcast-Pfade, Backend-Animation-Timing (Scheduler),
+> anonyme State-Snapshots ohne Semantik. Ziel: saubere Architektur mit typisierten Domain-Events —
+> Frontend weiß WAS passiert ist, nicht nur WAS sich geändert hat. Keine anonymen Broadcasts mehr
+> (Multiplayer-Datenschutz: jeder Spieler sieht nur seine eigene Hand).
+
+---
+
+### ARCH-0: Aktuelle Änderungen committen [ ]
+
+**Priorität: Sofort** — Working-Tree enthält Race-Condition-Fix und KI-Timing-Umbau.
+Muss committed sein bevor ARCH-1 beginnt.
+
+**Prüfliste vor Commit:**
+1. `mvn test` — alle Tests grün (Ziel: 254 Tests, 0 Failures)
+2. `cd frontend && npm test && npm run build && npm run lint`
+3. Falls Tests rot: Fehler beheben, NICHT mit `--no-verify` committen.
+
+**Was im Working-Tree ist (git status zeigt M):**
+- `AppStore.ts` — `_partieStandQueue` FIFO-Queue, `istKiKartenZug()`, `leerePartieStandQueue()`;
+  nur noch `/user/queue/partie/${partieId}` abonniert (kein `/topic/partie/` mehr)
+- `TischSzene.ts` + `TischSzene.test.ts` — Vorbehalt-Dialog zeigt fremde Vorbehalte, BUG-3/4-Fixes
+- `TischAnsichtModell.ts` + `TischAnsichtModell.test.ts` — Modell-Anpassungen
+- `SpielverwaltungDto.ts` — DTO-Anpassungen
+- `KiEventAdapter.java` — `ScheduledExecutorService` entfernt, ruft `automatisiereTisch()` direkt
+- `KiOrchestrierungService.java` — Mid-Loop `saveAndFlush` + `veroeffentlichePartieStand` nach
+  jeder KI-Stichphase-Karte (bei menschlichen Tischen); `@Lazy KiEventAdapter` Zirkularität entfernt
+- `SpielAktionsService.java` — ruft `tischEchtzeitService.planePartieEreignis` direkt (kein
+  `publishEvent(PartieAktualisiert)` mehr); `veroeffentlicheEreignisse` sendet Stand VOR KI-Zügen
+- `VerbindungsabbruchService.java` — `publishEvent(new PartieAktualisiert(...))` statt direktem Broadcast
+- `PartieStandAntwort.java` — `istKiUebernommen`, `deklarierteVorbehalte` in DTOs
+- `WebSocketBroadcastAdapter.java` — lauscht auf `PartieAktualisiert` (wird in ARCH-1 gelöscht)
+- `specs/frontend-animationen.md`, `specs/ki-strategie.md` — Bug-Dokumentation aktualisiert
+
+**Commit-Message:** `ARCH-0: Race-Condition-Fix + KI-Timing-Umbau (Basis für typisierte Events)`
+
+---
+
+### ARCH-1: Typisierte WebSocket-Events + Infra-Cleanup [ ]
+
+**Priorität: Hoch** | **Blockiert durch:** ARCH-0
+**Spec:** `specs/architektur-domain-events.md` (Abschnitt "Typisierte WebSocket-Events")
+
+**Ziel:** Statt anonymer State-Snapshots sendet der Server typisierte Events. Frontend weiß WAS
+passiert ist und kann Animationen direkt triggern ohne State-Diff-Heuristiken.
+
+#### Neue Enum-Werte in `PartieEreignisTyp.java`
+
+```java
+enum PartieEreignisTyp {
+    SNAPSHOT,            // bestehend — Reconnect/Spielstart, sofort anwenden
+    PARTIE_AKTUALISIERT, // bestehend — wird nach ARCH-1 nicht mehr gesendet (löschen wenn unused)
+    KARTE_GESPIELT,      // neu — eine Karte wurde gespielt (Mensch oder KI-Einzelzug)
+    KI_ZUG_SEQUENZ,      // neu — N KI-Karten en-bloc (für Frontend-Animation-Expansion)
+    STICH_ABGESCHLOSSEN, // neu — Stich vollständig, inkl. Sonderpunkte
+}
+```
+
+#### Neue Felder in `PartieEreignisAntwort.java`
+
+Aktuelle Signatur des record erweitern (nullable Felder via `@Nullable`):
+```java
+record PartieEreignisAntwort(
+    PartieEreignisTyp ereignisTyp,
+    PartieStandAntwort partieStand,
+    @Nullable List<GespielteKarteAntwort> kiKartenSequenz,   // nur bei KI_ZUG_SEQUENZ
+    @Nullable List<SonderpunktEreignisAntwort> neueSonderpunkte // nur bei STICH_ABGESCHLOSSEN
+) { ... }
+```
+
+Neue Factory-Methoden ergänzen:
+```java
+static PartieEreignisAntwort kartGespielt(PartieStandAntwort stand) { ... }
+static PartieEreignisAntwort kiZugSequenz(PartieStandAntwort stand, List<GespielteKarteAntwort> sequenz) { ... }
+static PartieEreignisAntwort stichAbgeschlossen(PartieStandAntwort stand, List<SonderpunktEreignisAntwort> sonderpunkte) { ... }
+```
+
+#### Neue DTOs
+
+`GespielteKarteAntwort.java` (neu, in `de.locodoko.tisch`):
+```java
+record GespielteKarteAntwort(SpielerPosition spielerPosition, String karteId) {}
+```
+
+`SonderpunktEreignisAntwort.java` (neu, in `de.locodoko.tisch`):
+```java
+record SonderpunktEreignisAntwort(String typ, SpielerPosition gewinner, SpielerPosition verlierer) {}
+// typ: "FUCHS_GEFANGEN" | "DOPPELKOPF" | "KARLCHEN"
+```
+
+#### `KiOrchestrierungService.java` — `automatisiereTisch` umbauen
+
+**Vorher (ARCH-0 Stand):** Mid-Loop `saveAndFlush` + `veroeffentlichePartieStand` nach jeder KI-Karte.
+
+**Nachher:**
+1. Vor der Stichphase-Loop: `List<GespielteKarteAntwort> kiKartenSequenz = new ArrayList<>()`
+2. In der Loop: nach `spieleKarte(karte)` → `kiKartenSequenz.add(new GespielteKarteAntwort(position, karteId))`
+3. **Kein** Mid-Loop `saveAndFlush` mehr
+4. Nach der Loop (einmalig): `tischRepository.saveAndFlush(tisch)` + `sendeKiZugSequenz(tisch, kiKartenSequenz)`
+
+Neue Hilfsmethode:
+```java
+private void sendeKiZugSequenz(TischEntity tisch, List<GespielteKarteAntwort> sequenz) {
+    PartieStandAntwort finalStand = PartieStandAntwort.aus(tisch);
+    PartieEreignisAntwort ereignis = PartieEreignisAntwort.kiZugSequenz(finalStand, sequenz);
+    tisch.spieler().stream()
+        .filter(s -> !s.istKi() && !s.istKiUebernommen() && s.sessionId() != null)
+        .forEach(s -> tischEchtzeitService.planeAnBenutzer(
+            s.sessionId(),
+            "/queue/partie/" + tisch.partie().id(),
+            PartieEreignisAntwort.kiZugSequenz(PartieStandAntwort.aus(tisch, s.id()), sequenz)
+        ));
+}
+```
+
+Außerdem: `veroeffentlichePartieStand`-Methode entfernen (war Mid-Loop-Hilfsmethode, nicht mehr nötig).
+
+#### `SpielAktionsService.java` — Stich-Erkennung + Events
+
+In `veroeffentlicheEreignisse(TischEntity tisch, TischEntity vorher)` (Signatur anpassen um `vorher` entgegenzunehmen):
+
+```java
+private void veroeffentlicheEreignisse(TischEntity vorher, TischEntity nachher) {
+    // 1. Karte gespielt
+    tischEchtzeitService.planeAnBenutzer(..., PartieEreignisAntwort.karteGespielt(stand));
+
+    // 2. Stich abgeschlossen?
+    boolean stichVorher = vorher.partie().laufendesSpiel().aktuelleStichmitte().size() == 4;
+    boolean stichNachher = nachher.partie().laufendesSpiel().aktuelleStichmitte().isEmpty();
+    if (stichVorher && stichNachher) {
+        Stich letzterStich = nachher.partie().laufendesSpiel().letzteAbgeschlosseneStiche().getLast();
+        List<SonderpunktEreignisAntwort> sonderpunkte = bewerteStich(letzterStich, nachher);
+        tischEchtzeitService.planeAnBenutzer(..., PartieEreignisAntwort.stichAbgeschlossen(stand, sonderpunkte));
+    }
+}
+```
+
+Hilfsmethode `bewerteStich`: Ruft `SonderpunktBewerter.bewerte(List.of(stich), parteien, trumpfOrdnung, spielregeln)` auf und mappt auf `SonderpunktEreignisAntwort`. Der `SonderpunktBewerter` liegt in `de.locodoko.partie` — Import ist erlaubt (Richtung tisch → partie).
+
+**Wichtig:** Statt `tisch` vor und nach der Aktion separat zu laden: `vorher` = snapshot vor Mutation (deep copy oder relevante Felder), `nachher` = aktueller `tisch` nach `spieleKarte()`.
+
+#### `VerbindungsabbruchService.java` — direktes Senden
+
+Entfernt: `eventPublisher.publishEvent(new PartieAktualisiert(...))`.
+Ersetzt durch (wie BF-7 angestrebt, hier vorgezogen):
+```java
+tisch.spieler().stream()
+    .filter(s -> !s.istKi() && s.sessionId() != null)
+    .forEach(s -> tischEchtzeitService.planeAnBenutzer(
+        s.sessionId(),
+        "/queue/partie/" + tisch.partie().id(),
+        PartieEreignisAntwort.snapshot(PartieStandAntwort.aus(tisch, s.id()))
+    ));
+```
+
+#### `WebSocketBroadcastAdapter.java` — LÖSCHEN
+
+Die Datei vollständig löschen. `PartieAktualisiert.java` ebenfalls löschen (kein Publisher mehr).
+
+Vor dem Löschen sicherstellen:
+- `WebSocketBroadcastAdapter.beiSchweinchenGemeldet` → Schweinchen-Banner wird anders gelöst
+  (ARCH-3 oder BF-7), jetzt einfach weglassen (Log-Zeile entfernt keine Funktion)
+- `WebSocketBroadcastAdapter.beiPartieAktualisiert` → ersetzt durch direkte Calls in
+  `SpielAktionsService` und `KiOrchestrierungService`
+
+#### `TischEchtzeitService.java` — Methoden löschen
+
+Löschen wenn nicht mehr genutzt:
+- `planePartieEreignis(PartieEreignisAntwort)` — war anonymer Topic-Broadcast
+- `sendePartieEreignis(PartieEreignisAntwort)` — synchrone Variante
+
+`planeAnBenutzer` und `sendeAnBenutzer` bleiben.
+
+#### `TischVerwaltungsService.java` — `veroeffentlichePartieAktualisierung` löschen
+
+Falls diese Methode nach ARCH-1 keine Aufrufer mehr hat, löschen.
+
+#### Frontend: `SpielverwaltungDto.ts` erweitern
+
+```typescript
+export interface GespielteKarteAntwort {
+  spielerPosition: SpielerPosition;
+  karteId: string;
+}
+
+export interface SonderpunktEreignisAntwort {
+  typ: 'FUCHS_GEFANGEN' | 'DOPPELKOPF' | 'KARLCHEN';
+  gewinner: SpielerPosition;
+  verlierer?: SpielerPosition;
+}
+
+export interface PartieEreignisAntwort {
+  ereignisTyp: 'SNAPSHOT' | 'PARTIE_AKTUALISIERT' | 'KARTE_GESPIELT' | 'KI_ZUG_SEQUENZ' | 'STICH_ABGESCHLOSSEN';
+  partieStand: PartieStandAntwort;
+  kiKartenSequenz?: GespielteKarteAntwort[];
+  neueSonderpunkte?: SonderpunktEreignisAntwort[];
+}
+```
+
+#### Frontend: `AppStore.ts` — Queue durch Event-Switch ersetzen
+
+**Löschen:**
+- `_partieStandQueue: PartieStandAntwort[]`
+- `_partieStandQueueAktiv: boolean`
+- `_partieStandQueueGeneration: number`
+- `KI_KARTEN_VERZOEGERUNG_MS`
+- `istKiKartenZug(vorher, nachher)`
+- `verarbeiteNaechstenPartieStand()`
+- `leerePartieStandQueue()` — durch `_kiSequenzQueue.length = 0` ersetzen
+
+**Hinzufügen:**
+
+```typescript
+private _kiSequenzQueue: Array<() => Promise<void>> = [];
+private _kiSequenzLaeuft = false;
+
+verarbeitePartieEreignis(ereignis: PartieEreignisAntwort): void {
+  switch (ereignis.ereignisTyp) {
+    case 'SNAPSHOT':
+    case 'PARTIE_AKTUALISIERT':
+      this._zustand = ereignis.partieStand;
+      this._zustandAktualisiert.next(this._zustand);
+      break;
+    case 'KARTE_GESPIELT':
+      this._zustand = ereignis.partieStand;
+      this._zustandAktualisiert.next(this._zustand);
+      break;
+    case 'KI_ZUG_SEQUENZ':
+      this._expandiereKiSequenz(ereignis.kiKartenSequenz!, ereignis.partieStand);
+      break;
+    case 'STICH_ABGESCHLOSSEN':
+      this._zustand = ereignis.partieStand;
+      this._zustandAktualisiert.next(this._zustand);
+      // neueSonderpunkte für TischSzene bereitstellen (ARCH-3)
+      if (ereignis.neueSonderpunkte?.length) {
+        this._letzteNeueSonderpunkte = ereignis.neueSonderpunkte;
+        this._sonderpunkteErhalten.next(ereignis.neueSonderpunkte);
+      }
+      break;
+  }
+}
+
+private _expandiereKiSequenz(
+  sequenz: GespielteKarteAntwort[],
+  finalStand: PartieStandAntwort
+): void {
+  // Für jede KI-Karte außer der letzten: synthetischer Zwischenzustand
+  // Letzte Karte: finalStand
+  // Alle mit KI_KARTEN_VERZOEGERUNG_MS = 800ms Abstand in _kiSequenzQueue einreihen
+  const prevStand = this._zustand;
+  sequenz.forEach((karte, i) => {
+    this._kiSequenzQueue.push(async () => {
+      const stand = i === sequenz.length - 1
+        ? finalStand
+        : this._synthetischerZwischenstand(prevStand, sequenz.slice(0, i + 1));
+      this._zustand = stand;
+      this._zustandAktualisiert.next(stand);
+      await new Promise(r => setTimeout(r, 800));
+    });
+  });
+  this._verarbeiteKiSequenzQueue();
+}
+
+private _synthetischerZwischenstand(
+  basis: PartieStandAntwort,
+  gespielteKarten: GespielteKarteAntwort[]
+): PartieStandAntwort {
+  // aktuelleStichmitte aus basis + gespielteKarten aufbauen
+  // Kartenfelder: { id: karte.karteId, ... } — nur id nötig für Animation
+  // Alle anderen Felder aus basis übernehmen
+  const neueKarten = gespielteKarten.map(k => ({
+    spielerPosition: k.spielerPosition,
+    karte: { id: k.karteId } as KarteAntwort,
+  }));
+  return {
+    ...basis,
+    laufendesSpiel: basis.laufendesSpiel ? {
+      ...basis.laufendesSpiel,
+      aktuelleStichmitte: neueKarten,
+    } : basis.laufendesSpiel,
+  };
+}
+
+private async _verarbeiteKiSequenzQueue(): Promise<void> {
+  if (this._kiSequenzLaeuft) return;
+  this._kiSequenzLaeuft = true;
+  while (this._kiSequenzQueue.length > 0) {
+    const naechste = this._kiSequenzQueue.shift()!;
+    await naechste();
+  }
+  this._kiSequenzLaeuft = false;
+}
+```
+
+Die WebSocket-Subscription in `verbinde()` muss `verarbeitePartieEreignis(ereignis)` aufrufen
+statt des alten `verarbeitePartieStandUpdate(neuerStand)`.
+
+**Achtung:** Die `_zustandAktualisiert`-Subscription in `TischSzene.ts` bleibt unverändert —
+sie reagiert weiterhin auf State-Diffs für Animationen. Der Unterschied ist: Animationen
+für KARTE_GESPIELT / KI_ZUG_SEQUENZ werden durch State-Diffs in der Queue ausgelöst,
+nicht durch explizite Event-Typen in TischSzene (das kommt in ARCH-3).
+
+**Verifikation:**
+```sh
+mvn test                                # 254 Tests grün
+cd frontend && npm test                 # 24/24 Tests grün (2 pre-existing ESM-Fehler ignorieren)
+cd frontend && npm run build            # kein Build-Fehler
+cd frontend && npm run lint             # 0 Fehler
+```
+
+**Dateien Backend:**
+- `src/main/java/de/locodoko/tisch/PartieEreignisTyp.java`
+- `src/main/java/de/locodoko/tisch/PartieEreignisAntwort.java`
+- `src/main/java/de/locodoko/tisch/GespielteKarteAntwort.java` (neu)
+- `src/main/java/de/locodoko/tisch/SonderpunktEreignisAntwort.java` (neu)
+- `src/main/java/de/locodoko/tisch/KiOrchestrierungService.java`
+- `src/main/java/de/locodoko/tisch/SpielAktionsService.java`
+- `src/main/java/de/locodoko/tisch/VerbindungsabbruchService.java`
+- `src/main/java/de/locodoko/tisch/TischEchtzeitService.java`
+- `src/main/java/de/locodoko/tisch/TischVerwaltungsService.java`
+- **DELETE:** `src/main/java/de/locodoko/tisch/WebSocketBroadcastAdapter.java`
+- **DELETE:** `src/main/java/de/locodoko/partie/ereignisse/PartieAktualisiert.java`
+
+**Dateien Frontend:**
+- `frontend/src/modelle/SpielverwaltungDto.ts`
+- `frontend/src/store/AppStore.ts`
+
+---
+
+### ARCH-2: Domain — `SpielAktion` Result-Typ [ ]
+
+**Priorität: Mittel** | **Blockiert durch:** ARCH-1
+**Spec:** `specs/architektur-domain-events.md` (Abschnitt "SpielAktion Result-Typ")
+
+**Ziel:** `Spiel.spieleKarte()` gibt statt `Spiel` ein `SpielAktion`-Objekt zurück, das den
+neuen Spielstand PLUS die dabei entstandenen `SpielEreignis`-Events enthält. Dadurch kann
+`SpielAktionsService` die Ereignisse aus dem Ergebnis lesen statt sie aus dem State-Diff
+zu rekonstruieren.
+
+#### `SpielEreignis.java` — sealed interface (neu in `de.locodoko.partie`)
+
+```java
+sealed interface SpielEreignis permits KarteGespielt, StichAbgeschlossenEreignis {}
+
+record KarteGespielt(SpielerPosition position, Karte karte) implements SpielEreignis {}
+record StichAbgeschlossenEreignis(Stich stich, List<Sonderpunkt> sonderpunkte) implements SpielEreignis {}
+```
+
+#### `SpielAktion.java` — record (neu in `de.locodoko.partie`)
+
+```java
+record SpielAktion(Spiel neuerStand, List<SpielEreignis> ereignisse) {}
+```
+
+#### `Spiel.spieleKarte()` — Rückgabetyp ändern
+
+Aktuell: `Spiel spieleKarte(SpielerPosition, Karte)` → gibt neues `Spiel`-Objekt zurück.
+Neu: `SpielAktion spieleKarte(SpielerPosition, Karte)` → gibt `SpielAktion` zurück.
+
+Intern: Ereignisse sammeln während der Methode läuft:
+```java
+List<SpielEreignis> ereignisse = new ArrayList<>();
+ereignisse.add(new KarteGespielt(position, karte));
+if (neuerStich.istVollstaendig()) {
+    List<Sonderpunkt> sp = SonderpunktBewerter.bewerte(...);
+    ereignisse.add(new StichAbgeschlossenEreignis(neuerStich, sp));
+}
+return new SpielAktion(neuerSpielstand, ereignisse);
+```
+
+#### `SpielAktionsService.java` — Aufrufer anpassen
+
+```java
+SpielAktion aktion = spiel.spieleKarte(position, karte);
+Spiel neuerStand = aktion.neuerStand();
+// Ereignisse aus aktion.ereignisse() extrahieren statt aus State-Diff
+for (SpielEreignis ereignis : aktion.ereignisse()) {
+    switch (ereignis) {
+        case KarteGespielt kg -> sendeKarteGespielt(tisch, kg);
+        case StichAbgeschlossenEreignis sa -> sendeStichAbgeschlossen(tisch, sa);
+    }
+}
+```
+
+`bewerteStich`-Hilfsmethode aus ARCH-1 entfällt (Sonderpunkte kommen jetzt aus Ereignis).
+
+#### Alle Aufrufer von `spieleKarte()` anpassen
+
+Suchen mit: `grep -r "spieleKarte(" src/`  
+Jeder Aufrufer muss `.neuerStand()` aufrufen um das `Spiel`-Objekt zu extrahieren.
+
+**Verifikation:**
+```sh
+mvn test   # alle Tests grün
+```
+
+**Dateien:**
+- `src/main/java/de/locodoko/partie/SpielEreignis.java` (neu)
+- `src/main/java/de/locodoko/partie/SpielAktion.java` (neu)
+- `src/main/java/de/locodoko/partie/Spiel.java`
+- `src/main/java/de/locodoko/tisch/SpielAktionsService.java`
+- Alle weiteren Aufrufer (grep)
+
+---
+
+### ARCH-3: TischSzene — Sonderpunkt-Animationen auf `neueSonderpunkte` [ ]
+
+**Priorität: Niedrig** | **Blockiert durch:** ARCH-1
+**Spec:** `specs/frontend-animationen.md` (Abschnitt "Sonderpunkt-Anzeige")
+
+**Ziel:** Fuchs-gefangen, Karlchen, Doppelkopf-Banner werden durch `neueSonderpunkte` aus
+`STICH_ABGESCHLOSSEN`-Events ausgelöst, nicht mehr durch nachträgliche State-Diff-Berechnung.
+
+**Aufgabe:**
+1. `AppStore._sonderpunkteErhalten: Subject<SonderpunktEreignisAntwort[]>` als Observable
+   in `TischSzene.ts` subscriben.
+2. Nach Stich-Einziehen-Animation: `neueSonderpunkte` aus Event durchgehen,
+   `animiereSoloAnkuendigung()` oder neues `animiereSonderpunkt()` aufrufen.
+3. `animiereSonderpunkt(typ, gewinner)`: Text-Banner mit Sonderpunkt-Name (`'Fuchs gefangen!'`,
+   `'Doppelkopf!'`, `'Karlchen!'`) — selbes Pattern wie `animiereSoloAnkuendigung`.
+4. Test: In `TischSzene.test.ts` einen Stich mit FUCHS_GEFANGEN prüfen.
+
+**Dateien:**
+- `frontend/src/szenen/TischSzene.ts`
+- `frontend/src/store/AppStore.ts` (Observable-Ergänzung)
+- `frontend/src/szenen/TischSzene.test.ts`
 
 ---
 

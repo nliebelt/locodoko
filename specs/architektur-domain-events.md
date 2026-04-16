@@ -78,28 +78,32 @@ Für echten Multiplayer: `KiEventAdapter` und `WebSocketBroadcastAdapter` laufen
 
 ---
 
+## Typisierte WebSocket-Events (ARCH-1 / ARCH-2)
+
+Statt anonymer State-Snapshots sendet der Server typisierte Events über `PartieEreignisTyp`:
+
+| Event-Typ | Wann gesendet | Zusatzdaten |
+|-----------|--------------|-------------|
+| `SNAPSHOT` | Reconnect, Spielstart | — (kompletter Stand) |
+| `KARTE_GESPIELT` | Nach menschlichem Zug (vor KI-Folgezügen) | — |
+| `KI_ZUG_SEQUENZ` | Nach Abschluss aller KI-Folgezüge | `kiKartenSequenz: GespielteKarteAntwort[]` |
+| `STICH_ABGESCHLOSSEN` | Wenn Stich vollständig (4 Karten) | `neueSonderpunkte: SonderpunktEreignisAntwort[]` |
+
+**Kein anonymer Broadcast** — alle Events gehen ausschließlich an `/user/queue/partie/{id}`.
+Das garantiert Multiplayer-Datenschutz: jeder Spieler sieht nur seinen eigenen Partiestand.
+
+**`WebSocketBroadcastAdapter` wird gelöscht** (ARCH-1). Broadcasts erfolgen direkt in
+`SpielAktionsService` und `KiOrchestrierungService` via `TischEchtzeitService.planeAnBenutzer()`.
+
+**`PartieAktualisiert`-Domain-Event wird gelöscht** (ARCH-1). Kein Publisher mehr.
+
 ## WebSocket-Broadcasts als Event-Subscriber
 
-Auch `TischEchtzeitService` wird zum Event-Subscriber, statt direkt aufgerufen zu werden:
+> **Veraltet (vor ARCH-1):** Der `WebSocketBroadcastAdapter` wurde als Event-Subscriber
+> auf `PartieAktualisiert` implementiert. Ab ARCH-1 entfällt dieses Muster — direkte Calls
+> in `SpielAktionsService` und `KiOrchestrierungService` ersetzen ihn.
 
-```java
-@Component
-public class WebSocketBroadcastAdapter {
-
-    @ApplicationModuleListener
-    public void beiSpielAktualisiert(KarteGespielt event) {
-        PartieStandAntwort antwort = partieStandAssembler.erstelle(event.tischId());
-        tischEchtzeitService.sendePartieUpdate(event.tischId(), antwort);
-    }
-
-    @ApplicationModuleListener
-    public void beiStichAbgeschlossen(StichAbgeschlossen event) {
-        // Animationshinweis an Clients senden
-    }
-}
-```
-
-Dadurch hat `SpielAktionsService` keine direkte Abhängigkeit mehr auf `TischEchtzeitService`.
+~~Auch `TischEchtzeitService` wird zum Event-Subscriber, statt direkt aufgerufen zu werden:~~
 
 ---
 
@@ -118,20 +122,41 @@ Für intra-modul-synchrone Events (innerhalb desselben Moduls, selbe Transaktion
 
 ---
 
+## SpielAktion Result-Typ (ARCH-2)
+
+`Spiel.spieleKarte()` gibt ein `SpielAktion`-Objekt zurück statt `Spiel` direkt:
+
+```java
+// de.locodoko.partie
+sealed interface SpielEreignis permits KarteGespielt, StichAbgeschlossenEreignis {}
+record KarteGespielt(SpielerPosition position, Karte karte) implements SpielEreignis {}
+record StichAbgeschlossenEreignis(Stich stich, List<Sonderpunkt> sonderpunkte) implements SpielEreignis {}
+
+record SpielAktion(Spiel neuerStand, List<SpielEreignis> ereignisse) {}
+```
+
+`SpielAktionsService` liest Ereignisse aus dem Ergebnis statt State-Diffs zu berechnen:
+
+```java
+SpielAktion aktion = spiel.spieleKarte(position, karte);
+for (SpielEreignis ereignis : aktion.ereignisse()) {
+    switch (ereignis) {
+        case KarteGespielt kg -> sendeKarteGespielt(tisch, kg);
+        case StichAbgeschlossenEreignis sa -> sendeStichAbgeschlossen(tisch, sa.sonderpunkte());
+    }
+}
+```
+
 ## Reihenfolge der Implementierung
 
-Domain Events werden **nach** dem SpielBuilder und dem Service-Split eingeführt.
-Voraussetzungen:
+Domain Events wurden in folgender Reihenfolge eingeführt:
 
-1. `SpielBuilder` existiert (R1) — Events brauchen saubere `Spiel`-Snapshots
-2. `SpielAktionsService` existiert (R3) — zentraler Ort für `publishEvent()`
-3. `KiOrchestrierungService` ist bereinigt (R4) — "Konkurrenzsituation" mit Events vermeiden
+1. `NaechsterSpielerErwartet` — zentrales Event (erledigt)
+2. `KiEventAdapter` als einziger KI-Aufrufer (erledigt)
+3. `WebSocketBroadcastAdapter` als Event-Subscriber auf `PartieAktualisiert` (erledigt, wird in ARCH-1 gelöscht)
 
-Danach:
-- `NaechsterSpielerErwartet` einführen
-- `KiEventAdapter` als einziger KI-Aufrufer
-- `WebSocketBroadcastAdapter` als einziger Broadcast-Sender
-- Alle `if (isKi())` entfernen
+**ARCH-1** (nächster Schritt): Typisierte WebSocket-Events, `WebSocketBroadcastAdapter` löschen
+**ARCH-2**: `SpielAktion` Result-Typ in `Spiel.spieleKarte()`
 
 ---
 

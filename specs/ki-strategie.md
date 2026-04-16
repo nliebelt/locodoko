@@ -66,10 +66,10 @@ KI-Spieler ersetzen menschliche Spieler und treffen regelbasierte, strategische 
 
 ## KI-Timing (UX)
 
-18. KI-Karten sollen in der **STICHPHASE nicht sofort** gespielt werden, wenn ein menschlicher Spieler am Tisch sitzt — eine künstliche Verzögerung von **800ms** zwischen KI-Zügen macht das Spielgeschehen für den Menschen nachvollziehbar.
-19. Die Verzögerung gilt **nur** wenn sich der nächste Spieler vom aktuellen unterscheidet (keine Verzögerung wenn derselbe KI-Spieler nach einer Ansage noch eine Karte legen muss).
-20. Bei rein-KI-Tischen (kein menschlicher Mitspieler) wird **keine** Verzögerung angewandt — dort läuft die Partie ohne Pause durch.
-21. Technisch: `KiOrchestrierungService` nutzt einen `ScheduledExecutorService` mit `schedule(..., 800, MILLISECONDS)`; verschachtelte Ansagen werden durch rekursiven Aufruf von `fuehreVerzoegertenKiZugAus` ohne weiteren Delay abgearbeitet.
+18. KI-Karten sollen in der **STICHPHASE nicht sofort** erscheinen, wenn ein menschlicher Spieler am Tisch sitzt — eine Verzögerung von **800ms** zwischen KI-Zügen macht das Spielgeschehen für den Menschen nachvollziehbar.
+19. Bei rein-KI-Tischen (kein menschlicher Mitspieler) wird **keine** Verzögerung angewandt — dort läuft die Partie ohne Pause durch.
+20. Technisch (Backend): `KiOrchestrierungService.automatisiereTisch` speichert und broadcastet nach jedem KI-Stichphasenzug sofort den aktuellen Stand (nur wenn Menschen am Tisch sitzen). Alle KI-Züge laufen synchron in einer Schleife durch.
+21. Technisch (Frontend): Der `AppStore` puffert eingehende `PARTIE_AKTUALISIERT`-Snapshots auf `/user/queue/partie/`. Erkennt er genau eine neue KI-Karte in der Stichmitte (Vergleich mit dem zuletzt angewendeten Stand), wartet er 800ms vor der Anwendung. Alle anderen Updates (Mensch spielt, Phasenwechsel, Snapshots nach Reconnect) werden sofort angewendet.
 - Die KI trifft sinnvolle Sonderspiel-Entscheidungen.
 - Ein komplettes Spiel gegen 3 KI-Spieler kann ohne Fehler durchgespielt werden.
 

@@ -111,4 +111,4 @@ Animationen machen das Spielerlebnis lebendig und geben visuelles Feedback zu Sp
 - Sprites für Sonderpunkt-Icons (Fuchs, Kreuz-Bube, Stern)
 - Animations-Queue: Animationen nacheinander abspielen, um Überlappungen zu vermeiden
 - Die Animations-Geschwindigkeit als globaler Multiplikator (1x, 2x, sofort)
-- WebSocket-Events in eine Queue legen und nach Animations-Ende verarbeiten
+- KI-Karten-Updates clientseitig puffern: `AppStore` hält eine FIFO-Queue für eingehende Partie-Snapshots. Erkennt er genau eine neue KI-Karte in `aktuelleStichmitte`, wartet er 800ms vor der Anwendung (via `setTimeout`). Menschliche Züge und Phasenwechsel werden sofort angewendet. Die Queue wird beim Tischverlassen geleert (`leerePartieStandQueue`).

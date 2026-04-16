@@ -106,6 +106,7 @@ describe('erstelleTischAnsichtAusStatus', () => {
         ansageHistorie: [],
         moeglicheAnsagen: [],
         moeglicheVorbehalte: ['GESUND', 'SOLO_TRUMPF'],
+        deklarierteVorbehalte: [],
         istBockrunde: false,
         schweinchenGemeldetVon: null,
         spieler: [
@@ -116,6 +117,7 @@ describe('erstelleTischAnsichtAusStatus', () => {
             anzeigeName: 'Anna',
             avatarFarbe: null,
             istKi: false,
+            istKiUebernommen: false,
             istSelbst: true,
             istGeber: true,
             istAmZug: false,
@@ -131,6 +133,7 @@ describe('erstelleTischAnsichtAusStatus', () => {
             anzeigeName: 'Ben',
             avatarFarbe: null,
             istKi: true,
+            istKiUebernommen: false,
             istSelbst: false,
             istGeber: false,
             istAmZug: true,
@@ -146,6 +149,7 @@ describe('erstelleTischAnsichtAusStatus', () => {
             anzeigeName: 'Clara',
             avatarFarbe: null,
             istKi: true,
+            istKiUebernommen: false,
             istSelbst: false,
             istGeber: false,
             istAmZug: false,
@@ -161,6 +165,7 @@ describe('erstelleTischAnsichtAusStatus', () => {
             anzeigeName: 'Dirk',
             avatarFarbe: null,
             istKi: true,
+            istKiUebernommen: false,
             istSelbst: false,
             istGeber: false,
             istAmZug: false,
@@ -217,6 +222,7 @@ describe('erstelleTischAnsichtAusStatus', () => {
         ansageHistorie: [{ spielerPosition: 'WEST', ansage: 'RE' }],
         moeglicheAnsagen: ['RE'],
         moeglicheVorbehalte: [],
+        deklarierteVorbehalte: [],
         istBockrunde: false,
         schweinchenGemeldetVon: null,
         spieler: [
@@ -227,6 +233,7 @@ describe('erstelleTischAnsichtAusStatus', () => {
             anzeigeName: 'Anna',
             avatarFarbe: null,
             istKi: false,
+            istKiUebernommen: false,
             istSelbst: true,
             istGeber: true,
             istAmZug: true,
@@ -246,6 +253,7 @@ describe('erstelleTischAnsichtAusStatus', () => {
             anzeigeName: 'Ben',
             avatarFarbe: null,
             istKi: true,
+            istKiUebernommen: false,
             istSelbst: false,
             istGeber: false,
             istAmZug: false,
@@ -261,6 +269,7 @@ describe('erstelleTischAnsichtAusStatus', () => {
             anzeigeName: 'Clara',
             avatarFarbe: null,
             istKi: true,
+            istKiUebernommen: false,
             istSelbst: false,
             istGeber: false,
             istAmZug: false,
@@ -276,6 +285,7 @@ describe('erstelleTischAnsichtAusStatus', () => {
             anzeigeName: 'Dirk',
             avatarFarbe: null,
             istKi: true,
+            istKiUebernommen: false,
             istSelbst: false,
             istGeber: false,
             istAmZug: false,
@@ -336,13 +346,14 @@ describe('erstelleTischAnsichtAusStatus', () => {
         ansageHistorie: [{ spielerPosition: 'OST', ansage: 'KONTRA' }],
         moeglicheAnsagen: [],
         moeglicheVorbehalte: [],
+        deklarierteVorbehalte: [],
         istBockrunde: false,
         schweinchenGemeldetVon: null,
         spieler: [
-          { position: 'SUED', spielerId: 'spieler-1', name: 'Anna', anzeigeName: 'Anna', avatarFarbe: null, istKi: false, istSelbst: false, istGeber: true, istAmZug: false, verbleibendeKarten: 10, gewonneneStiche: 0, partei: null, sichtbareHandkarten: null },
-          { position: 'WEST', spielerId: 'spieler-2', name: 'Ben', anzeigeName: 'Ben', avatarFarbe: null, istKi: false, istSelbst: true, istGeber: false, istAmZug: false, verbleibendeKarten: 10, gewonneneStiche: 1, partei: 'RE', sichtbareHandkarten: [{ id: 'KARO-AS-1', farbe: 'KARO', wert: 'AS', exemplarIndex: 1 }] },
-          { position: 'NORD', spielerId: 'spieler-3', name: 'Clara', anzeigeName: 'Clara', avatarFarbe: null, istKi: false, istSelbst: false, istGeber: false, istAmZug: true, verbleibendeKarten: 10, gewonneneStiche: 0, partei: null, sichtbareHandkarten: null },
-          { position: 'OST', spielerId: 'spieler-4', name: 'Dirk', anzeigeName: 'Dirk', avatarFarbe: null, istKi: false, istSelbst: false, istGeber: false, istAmZug: false, verbleibendeKarten: 10, gewonneneStiche: 0, partei: null, sichtbareHandkarten: null }
+          { position: 'SUED', spielerId: 'spieler-1', name: 'Anna', anzeigeName: 'Anna', avatarFarbe: null, istKi: false, istKiUebernommen: false, istSelbst: false, istGeber: true, istAmZug: false, verbleibendeKarten: 10, gewonneneStiche: 0, partei: null, sichtbareHandkarten: null },
+          { position: 'WEST', spielerId: 'spieler-2', name: 'Ben', anzeigeName: 'Ben', avatarFarbe: null, istKi: false, istKiUebernommen: false, istSelbst: true, istGeber: false, istAmZug: false, verbleibendeKarten: 10, gewonneneStiche: 1, partei: 'RE', sichtbareHandkarten: [{ id: 'KARO-AS-1', farbe: 'KARO', wert: 'AS', exemplarIndex: 1 }] },
+          { position: 'NORD', spielerId: 'spieler-3', name: 'Clara', anzeigeName: 'Clara', avatarFarbe: null, istKi: false, istKiUebernommen: false, istSelbst: false, istGeber: false, istAmZug: true, verbleibendeKarten: 10, gewonneneStiche: 0, partei: null, sichtbareHandkarten: null },
+          { position: 'OST', spielerId: 'spieler-4', name: 'Dirk', anzeigeName: 'Dirk', avatarFarbe: null, istKi: false, istKiUebernommen: false, istSelbst: false, istGeber: false, istAmZug: false, verbleibendeKarten: 10, gewonneneStiche: 0, partei: null, sichtbareHandkarten: null }
         ]
       }
     });
@@ -475,13 +486,14 @@ describe('erstelleTischAnsichtAusStatus', () => {
         ansageHistorie: [],
         moeglicheAnsagen: [],
         moeglicheVorbehalte: [],
+        deklarierteVorbehalte: [],
         istBockrunde: false,
         schweinchenGemeldetVon: null,
         spieler: [
-          { position: 'SUED', spielerId: 'spieler-1', name: 'Anna', anzeigeName: 'Anna', avatarFarbe: null, istKi: false, istSelbst: true, istGeber: true, istAmZug: true, verbleibendeKarten: 12, gewonneneStiche: 0, partei: null, sichtbareHandkarten: [{ id: 'HERZ-ZEHN-1', farbe: 'HERZ', wert: 'ZEHN', exemplarIndex: 1 }, { id: 'KARO-KOENIG-1', farbe: 'KARO', wert: 'KOENIG', exemplarIndex: 1 }, { id: 'KREUZ-AS-1', farbe: 'KREUZ', wert: 'AS', exemplarIndex: 1 }] },
-          { position: 'WEST', spielerId: 'spieler-2', name: 'Ben', anzeigeName: 'Ben', avatarFarbe: null, istKi: true, istSelbst: false, istGeber: false, istAmZug: false, verbleibendeKarten: 12, gewonneneStiche: 0, partei: null, sichtbareHandkarten: null },
-          { position: 'NORD', spielerId: 'spieler-3', name: 'Clara', anzeigeName: 'Clara', avatarFarbe: null, istKi: true, istSelbst: false, istGeber: false, istAmZug: false, verbleibendeKarten: 12, gewonneneStiche: 0, partei: null, sichtbareHandkarten: null },
-          { position: 'OST', spielerId: 'spieler-4', name: 'Dirk', anzeigeName: 'Dirk', avatarFarbe: null, istKi: true, istSelbst: false, istGeber: false, istAmZug: false, verbleibendeKarten: 12, gewonneneStiche: 0, partei: null, sichtbareHandkarten: null }
+          { position: 'SUED', spielerId: 'spieler-1', name: 'Anna', anzeigeName: 'Anna', avatarFarbe: null, istKi: false, istKiUebernommen: false, istSelbst: true, istGeber: true, istAmZug: true, verbleibendeKarten: 12, gewonneneStiche: 0, partei: null, sichtbareHandkarten: [{ id: 'HERZ-ZEHN-1', farbe: 'HERZ', wert: 'ZEHN', exemplarIndex: 1 }, { id: 'KARO-KOENIG-1', farbe: 'KARO', wert: 'KOENIG', exemplarIndex: 1 }, { id: 'KREUZ-AS-1', farbe: 'KREUZ', wert: 'AS', exemplarIndex: 1 }] },
+          { position: 'WEST', spielerId: 'spieler-2', name: 'Ben', anzeigeName: 'Ben', avatarFarbe: null, istKi: true, istKiUebernommen: false, istSelbst: false, istGeber: false, istAmZug: false, verbleibendeKarten: 12, gewonneneStiche: 0, partei: null, sichtbareHandkarten: null },
+          { position: 'NORD', spielerId: 'spieler-3', name: 'Clara', anzeigeName: 'Clara', avatarFarbe: null, istKi: true, istKiUebernommen: false, istSelbst: false, istGeber: false, istAmZug: false, verbleibendeKarten: 12, gewonneneStiche: 0, partei: null, sichtbareHandkarten: null },
+          { position: 'OST', spielerId: 'spieler-4', name: 'Dirk', anzeigeName: 'Dirk', avatarFarbe: null, istKi: true, istKiUebernommen: false, istSelbst: false, istGeber: false, istAmZug: false, verbleibendeKarten: 12, gewonneneStiche: 0, partei: null, sichtbareHandkarten: null }
         ]
       }
     });
@@ -525,13 +537,14 @@ describe('erstelleTischAnsichtAusStatus', () => {
         ansageHistorie: [],
         moeglicheAnsagen: [],
         moeglicheVorbehalte: [],
+        deklarierteVorbehalte: [],
         istBockrunde: false,
         schweinchenGemeldetVon: null,
         spieler: [
-          { position: 'SUED', spielerId: 'spieler-1', name: 'Anna', anzeigeName: 'Anna', avatarFarbe: null, istKi: false, istSelbst: false, istGeber: true, istAmZug: false, verbleibendeKarten: 9, gewonneneStiche: 0, partei: null, sichtbareHandkarten: null },
-          { position: 'WEST', spielerId: 'spieler-2', name: 'Ben', anzeigeName: 'Ben', avatarFarbe: null, istKi: false, istSelbst: true, istGeber: false, istAmZug: true, verbleibendeKarten: 12, gewonneneStiche: 0, partei: null, sichtbareHandkarten: [{ id: 'KREUZ-AS-1', farbe: 'KREUZ', wert: 'AS', exemplarIndex: 1 }] },
-          { position: 'NORD', spielerId: 'spieler-3', name: 'Clara', anzeigeName: 'Clara', avatarFarbe: null, istKi: true, istSelbst: false, istGeber: false, istAmZug: false, verbleibendeKarten: 12, gewonneneStiche: 0, partei: null, sichtbareHandkarten: null },
-          { position: 'OST', spielerId: 'spieler-4', name: 'Dirk', anzeigeName: 'Dirk', avatarFarbe: null, istKi: true, istSelbst: false, istGeber: false, istAmZug: false, verbleibendeKarten: 12, gewonneneStiche: 0, partei: null, sichtbareHandkarten: null }
+          { position: 'SUED', spielerId: 'spieler-1', name: 'Anna', anzeigeName: 'Anna', avatarFarbe: null, istKi: false, istKiUebernommen: false, istSelbst: false, istGeber: true, istAmZug: false, verbleibendeKarten: 9, gewonneneStiche: 0, partei: null, sichtbareHandkarten: null },
+          { position: 'WEST', spielerId: 'spieler-2', name: 'Ben', anzeigeName: 'Ben', avatarFarbe: null, istKi: false, istKiUebernommen: false, istSelbst: true, istGeber: false, istAmZug: true, verbleibendeKarten: 12, gewonneneStiche: 0, partei: null, sichtbareHandkarten: [{ id: 'KREUZ-AS-1', farbe: 'KREUZ', wert: 'AS', exemplarIndex: 1 }] },
+          { position: 'NORD', spielerId: 'spieler-3', name: 'Clara', anzeigeName: 'Clara', avatarFarbe: null, istKi: true, istKiUebernommen: false, istSelbst: false, istGeber: false, istAmZug: false, verbleibendeKarten: 12, gewonneneStiche: 0, partei: null, sichtbareHandkarten: null },
+          { position: 'OST', spielerId: 'spieler-4', name: 'Dirk', anzeigeName: 'Dirk', avatarFarbe: null, istKi: true, istKiUebernommen: false, istSelbst: false, istGeber: false, istAmZug: false, verbleibendeKarten: 12, gewonneneStiche: 0, partei: null, sichtbareHandkarten: null }
         ]
       }
     });

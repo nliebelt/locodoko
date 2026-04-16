@@ -60,6 +60,9 @@ export interface AppZustand {
   meldung: UiMeldung | null;
 }
 
+// Verzoegerung zwischen zwei clientseitig gepufferten KI-Kartenzuegen (ms)
+const KI_KARTEN_VERZOEGERUNG_MS = 800;
+
 type Listener = (zustand: AppZustand) => void;
 
 function erzeugeAnfangszustand(): AppZustand {
@@ -103,6 +106,11 @@ export class AppStore {
   private readonly tischAbos: Array<() => void> = [];
 
   private aktuellePartieAbo: Uuid | null = null;
+
+  // Queue fuer clientseitige Pufferung von KI-Karten-Updates (800ms Delay zwischen Zuegen)
+  private readonly _partieStandQueue: PartieStandAntwort[] = [];
+  private _partieStandQueueAktiv = false;
+  private _partieStandQueueGeneration = 0;
 
   constructor(
     private readonly api: SpielverwaltungApi,
@@ -552,13 +560,13 @@ export class AppStore {
 
   private registrierePartieAbos(partieId: Uuid): void {
     this.tischAbos.push(
-      this.echtzeit.abonnieren<PartieEreignisAntwort>(`/topic/partie/${partieId}`, (ereignis) => {
-        Logger.store('Partie-Snapshot', { status: ereignis.partieStand?.status });
-        this.patch({ partieStand: ereignis.partieStand });
-      }),
+      // Persoenliche Snapshots enthalten eigene Handkarten und werden durch die
+      // KI-Karten-Queue mit 800ms Verzoegerung verarbeitet, damit jede KI-Karte
+      // einzeln animiert erscheint. Der anonyme Broadcast (/topic/) wird nicht
+      // benoetigt, da persoenliche Snapshots alle relevanten Informationen enthalten.
       this.echtzeit.abonnieren<PartieEreignisAntwort>(`/user/queue/partie/${partieId}`, (ereignis) => {
-        Logger.store('Partie-Snapshot', { status: ereignis.partieStand?.status });
-        this.patch({ partieStand: ereignis.partieStand });
+        Logger.store('Partie-Snapshot', { typ: ereignis.ereignisTyp, status: ereignis.partieStand?.status });
+        this.verarbeitePartieStandUpdate(ereignis.partieStand);
       })
     );
   }
@@ -603,9 +611,64 @@ export class AppStore {
     }
   }
 
+  /**
+   * Fuegt einen eingehenden Partie-Stand in die Verarbeitungs-Queue ein.
+   * KI-Kartenzuege werden mit KI_KARTEN_VERZOEGERUNG_MS Pause verzoegert,
+   * alle anderen Updates sofort angewendet.
+   */
+  private verarbeitePartieStandUpdate(neuerStand: PartieStandAntwort): void {
+    this._partieStandQueue.push(neuerStand);
+    if (!this._partieStandQueueAktiv) {
+      this._partieStandQueueAktiv = true;
+      this.verarbeiteNaechstenPartieStand();
+    }
+  }
+
+  private verarbeiteNaechstenPartieStand(): void {
+    if (this._partieStandQueue.length === 0) {
+      this._partieStandQueueAktiv = false;
+      return;
+    }
+    const stand = this._partieStandQueue.shift()!;
+    const verzoegert = this.istKiKartenZug(this.zustand.partieStand, stand);
+    const generation = this._partieStandQueueGeneration;
+    const apply = (): void => {
+      if (this._partieStandQueueGeneration !== generation) return;
+      this.patch({ partieStand: stand });
+      this.verarbeiteNaechstenPartieStand();
+    };
+    if (verzoegert) {
+      setTimeout(apply, KI_KARTEN_VERZOEGERUNG_MS);
+    } else {
+      apply();
+    }
+  }
+
+  /**
+   * Prueft ob der Uebergang von vorher nach nachher ein KI-Kartenzug in der Stichphase ist:
+   * genau eine neue Karte in der Stichmitte, und der spielende Spieler ist eine KI.
+   */
+  private istKiKartenZug(vorher: PartieStandAntwort | null, nachher: PartieStandAntwort): boolean {
+    const vorStichmitte = vorher?.laufendesSpiel?.aktuelleStichmitte ?? [];
+    const nachStichmitte = nachher.laufendesSpiel?.aktuelleStichmitte ?? [];
+    if (nachStichmitte.length !== vorStichmitte.length + 1) return false;
+    const neueKarte = nachStichmitte[nachStichmitte.length - 1];
+    if (!neueKarte) return false;
+    const spieler = nachher.laufendesSpiel?.spieler.find((s) => s.position === neueKarte.spielerPosition);
+    return spieler?.istKi === true || spieler?.istKiUebernommen === true;
+  }
+
+  /** Verwirft alle gepufferten Partie-Stand-Updates (z.B. beim Tischverlassen). */
+  private leerePartieStandQueue(): void {
+    this._partieStandQueueGeneration++;
+    this._partieStandQueue.length = 0;
+    this._partieStandQueueAktiv = false;
+  }
+
   private setzeTischAbosZurueck(): void {
     this.tischAbos.splice(0).forEach((abmelden) => abmelden());
     this.aktuellePartieAbo = null;
+    this.leerePartieStandQueue();
   }
 
   private sendeSpielaktion(ziel: string, payload: unknown): void {

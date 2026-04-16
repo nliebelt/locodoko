@@ -37,34 +37,63 @@ Die Echtzeit-Kommunikation zwischen Frontend und Backend erfolgt über WebSocket
 
 ### Server → Client Events
 
-9. **`SpielGestartet`**: Neues Spiel beginnt, Karten werden verteilt.
-   - Payload: `{ spielId, hand[], geber, aufspieler }`
-   - Die eigene Hand wird nur an den jeweiligen Spieler gesendet.
+Alle spielrelevanten Events werden als `PartieEreignisAntwort` über die persönliche Destination
+`/user/queue/partie/{partieId}` gesendet. **Kein anonymer `/topic/`-Broadcast** für Spielstände
+(Datenschutz: jeder Spieler sieht nur seine eigene Hand).
 
-10. **`SpielbrettAktualisiert`**: Aktueller Spielzustand nach jedem Zug.
-    - Payload: `{ aktuellerStich[], werIstDran, ansagen[], phase }`
+#### `PartieEreignisAntwort` — Basis-Payload
 
-11. **`StichGewonnen`**: Ein Stich wurde abgeschlossen.
-    - Payload: `{ stichNummer, karten[], gewinner, augen }`
+```typescript
+interface PartieEreignisAntwort {
+  ereignisTyp: PartieEreignisTyp;
+  partieStand: PartieStandAntwort;           // vollständiger spielerspezifischer Stand
+  kiKartenSequenz?: GespielteKarteAntwort[]; // nur bei KI_ZUG_SEQUENZ
+  neueSonderpunkte?: SonderpunktEreignisAntwort[]; // nur bei STICH_ABGESCHLOSSEN
+}
+```
 
-12. **`AnsageErfolgt`**: Eine Ansage wurde getätigt (Broadcast an alle Spieler).
-    - Payload: `{ ansageTyp, spielerId }`
+#### `PartieEreignisTyp` — Event-Typen
 
-13. **`SonderspielAufgeloest`**: Vorbehalt-Phase abgeschlossen, Spieltyp steht fest.
-    - Payload: `{ spieltyp, soloSpieler (optional) }`
+9. **`SNAPSHOT`**: Kompletter Spielstand nach Reconnect oder Spielstart.
+   - `partieStand`: vollständiger Stand inkl. eigene Hand
+   - Frontend: sofort anwenden, keine Animation (Seite neu gerendert)
 
-14. **`ArmutKartenAngeboten`**: Armut-Spieler bietet Karten an (an potentielle Aufnehmer).
-    - Payload: `{ anzahlKarten, anAktuellenSpieler }`
+10. **`KARTE_GESPIELT`**: Eine Karte wurde gespielt (menschlicher Zug, vor KI-Folgezügen).
+    - `partieStand`: Stand nach der gespielten Karte (KI-Züge noch ausstehend)
+    - Frontend: Animation Karte-gleitet-zur-Mitte, dann auf KI_ZUG_SEQUENZ warten
 
-15. **`SpielBeendet`**: Spiel ist vorbei, Auswertung.
-    - Payload: `{ ergebnis, augenRe, augenKontra, spielpunkte[], sonderpunkte[] }`
+11. **`KI_ZUG_SEQUENZ`**: Alle KI-Folgezüge abgeschlossen (ein oder mehrere KI-Karten).
+    - `partieStand`: finaler Stand nach allen KI-Zügen
+    - `kiKartenSequenz`: Liste der gespielten Karten in Reihenfolge
+    - Frontend: `expandiereKiSequenz()` — synthetische Zwischenzustände mit 800ms Delay
 
-16. **`PartieBeendet`**: Partie ist vorbei, Gesamtauswertung.
-    - Payload: `{ gesamtstand[], gewinner }`
+12. **`STICH_ABGESCHLOSSEN`**: Stich vollständig (4 Karten lagen, jetzt leer).
+    - `partieStand`: Stand nach Stich-Einziehen
+    - `neueSonderpunkte`: Fuchs-gefangen, Doppelkopf, Karlchen (leer wenn keiner)
+    - Frontend: Stich-einziehen-Animation, danach Sonderpunkt-Banner
 
-17. **`FehlerAufgetreten`**: Ungültiger Zug oder Serverfehler.
+13. **`PARTIE_AKTUALISIERT`**: Generischer State-Push (Legacy, ab ARCH-1 nicht mehr gesendet).
+
+#### Zusatz-DTOs
+
+```typescript
+interface GespielteKarteAntwort {
+  spielerPosition: SpielerPosition;  // NORD | SUD | OST | WEST
+  karteId: string;
+}
+
+interface SonderpunktEreignisAntwort {
+  typ: 'FUCHS_GEFANGEN' | 'DOPPELKOPF' | 'KARLCHEN';
+  gewinner: SpielerPosition;
+  verlierer?: SpielerPosition;  // nur bei FUCHS_GEFANGEN
+}
+```
+
+#### Nicht-Spiel-Events (Tisch-Ebene)
+
+14. **`FehlerAufgetreten`**: Ungültiger Zug oder Serverfehler.
     - Payload: `{ fehlerCode, nachricht }`
-    - Wird nur an den betroffenen Spieler gesendet.
+    - Destination: `/user/queue/fehler` — nur an betroffenen Spieler.
 
 ### Allgemein
 
@@ -99,8 +128,10 @@ Die Echtzeit-Kommunikation zwischen Frontend und Backend erfolgt über WebSocket
   - `/app/tisch/{id}/karte` — Karte spielen
   - `/app/tisch/{id}/ansage` — Ansage machen
   - `/app/tisch/{id}/vorbehalt` — Sonderspiel anmelden
-  - `/topic/tisch/{id}` — Broadcast an alle Spieler am Tisch
-  - `/user/queue/hand` — Spielerspezifische Nachrichten
-- `SimpMessagingTemplate` für serverseitiges Event-Senden
-- DTOs für alle Event-Payloads definieren (Serialisierung mit Jackson)
+  - `/app/tisch/{id}/snapshot` — Sofortigen Snapshot anfordern (BF-7)
+  - `/user/queue/partie/{partieId}` — Spielerspezifische Partie-Events (typisiert)
+  - `/user/queue/fehler` — Fehler-Events nur an betroffenen Spieler
+  - ~~`/topic/partie/{id}`~~ — Anonymer Broadcast (ab ARCH-1 gelöscht)
+- `TischEchtzeitService.planeAnBenutzer()` für serverseitiges Event-Senden (nach DB-Commit)
+- `PartieEreignisAntwort` als Basis-DTO für alle Spielstand-Events
 - WebSocket-Interceptor für Session-Validierung

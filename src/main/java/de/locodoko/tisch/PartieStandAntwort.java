@@ -12,6 +12,7 @@ import de.locodoko.partie.Spiel;
 import de.locodoko.partie.Spielphase;
 import de.locodoko.partie.Sonderpunkt;
 import de.locodoko.partie.VorbehaltAnsage;
+import de.locodoko.partie.VorbehaltMeldung;
 import de.locodoko.partie.HandJsonEintrag;
 import de.locodoko.partie.StichJsonEintrag;
 import de.locodoko.partie.PartieStatus;
@@ -110,6 +111,8 @@ public record PartieStandAntwort(
         List<Ansage> moeglicheAnsagen,
         @Schema(description = "Vorbehalte, die der aktuelle Spieler ansagen darf.")
         List<VorbehaltAnsage> moeglicheVorbehalte,
+        @Schema(description = "Bereits deklarierte Vorbehalte der anderen Spieler (nur in der VorbehaltAnsage-Phase).")
+        List<VorbehaltMeldungAntwort> deklarierteVorbehalte,
         @Schema(description = "Ob die aktuelle Runde eine Bockrunde ist.")
         boolean istBockrunde,
         @Schema(description = "Position des Spielers, der Schweinchen gemeldet hat; null falls keiner.")
@@ -161,6 +164,7 @@ public record PartieStandAntwort(
                 fachlichesSpiel.ansagen().ereignisse().stream().map(AnsageEreignisAntwort::aus).toList(),
                 bestimmeMoeglicheAnsagen(fachlichesSpiel, sichtbarePosition, aktuellerSpieler),
                 bestimmeMoeglicheVorbehalte(fachlichesSpiel, sichtbarePosition, aktuellerSpieler),
+                fachlichesSpiel.vorbehalte().stream().map(VorbehaltMeldungAntwort::aus).toList(),
                 tisch.partie().bockrundenZaehlerAusDb() > 0,
                 fachlichesSpiel.schweinchenGemeldetVon().orElse(null)
             );
@@ -253,6 +257,8 @@ public record PartieStandAntwort(
         String avatarFarbe,
         @Schema(description = "Ob es sich um einen KI-Spieler handelt.")
         boolean istKi,
+        @Schema(description = "Ob dieser menschliche Spieler nach Verbindungsabbruch von der KI gesteuert wird.")
+        boolean istKiUebernommen,
         @Schema(description = "Ob dieser Spieler der anfragende Spieler selbst ist.")
         boolean istSelbst,
         @Schema(description = "Ob dieser Spieler der aktuelle Geber ist.")
@@ -293,6 +299,7 @@ public record PartieStandAntwort(
                 spielerEntity == null ? "Unbesetzt" : spielerEntity.anzeigeName(),
                 spielerEntity == null ? null : spielerEntity.avatarFarbe(),
                 spielerEntity != null && spielerEntity.istKi(),
+                spielerEntity != null && spielerEntity.istKiUebernommen(),
                 position == sichtbarePosition,
                 position == geberPosition,
                 position == aktuellerSpieler,
@@ -485,6 +492,17 @@ public record PartieStandAntwort(
                 Map.copyOf(spielpunkteProSpieler),
                 Map.copyOf(sonderpunkteProPartei)
             );
+        }
+    }
+
+    public record VorbehaltMeldungAntwort(
+        @Schema(description = "Position des Spielers, der den Vorbehalt gemeldet hat.")
+        SpielerPosition position,
+        @Schema(description = "Der gemeldete Vorbehalt (z.B. GESUND, SOLO_TRUMPF, HOCHZEIT).")
+        VorbehaltAnsage ansage
+    ) {
+        static VorbehaltMeldungAntwort aus(VorbehaltMeldung meldung) {
+            return new VorbehaltMeldungAntwort(meldung.spielerPosition(), meldung.ansage());
         }
     }
 }

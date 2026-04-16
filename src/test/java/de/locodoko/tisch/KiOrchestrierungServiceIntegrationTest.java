@@ -77,17 +77,13 @@ class KiOrchestrierungServiceIntegrationTest {
             )));
             tisch.setzePartie(partieMitSpiel(spiel, 1));
             TischEntity gespeichert = tischRepository.saveAndFlush(tisch);
-            // Mit menschlichem Spieler: automatisiereTisch spielt NUR den ersten KI-Zug (WEST)
-            // und plant die weiteren Zuege verzoegert. Die naechsten zwei KI-Zuege werden
-            // in Integrationstests synchron ueber verzoegerteKiAktionAusfuehren simuliert.
+            // Mit menschlichem Spieler: automatisiereTisch spielt alle KI-Zuege (WEST, NORD, OST)
+            // synchron durch und broadcastet nach jedem Stichphase-Zug sofort.
+            // Der Client puffert die Updates clientseitig mit 800ms Delay.
             kiOrchestrierungService.automatisiereTisch(gespeichert);
             partieRepository.saveAndFlush(gespeichert.partie());
             return new UUIDs(gespeichert.id(), gespeichert.partie().id());
         });
-
-        // Timing-Mechanismus: in Tests die verzoegerten KI-Zuege synchron ausloesen (NORD, OST)
-        kiOrchestrierungService.verzoegerteKiAktionAusfuehren(TischId.von(ids.tischId()));
-        kiOrchestrierungService.verzoegerteKiAktionAusfuehren(TischId.von(ids.tischId()));
 
         transactionTemplate.executeWithoutResult(status -> {
             TischEntity tisch = tischRepository.findById(TischId.von(ids.tischId())).orElseThrow();

@@ -401,6 +401,7 @@ function baueSpieler(
     anzeigeName: optionen.anzeigeName ?? name,
     avatarFarbe: optionen.avatarFarbe ?? null,
     istKi: optionen.istKi ?? position !== 'SUED',
+    istKiUebernommen: optionen.istKiUebernommen ?? false,
     istSelbst: optionen.istSelbst ?? position === 'SUED',
     istGeber: optionen.istGeber ?? false,
     istAmZug: optionen.istAmZug ?? false,
@@ -440,6 +441,7 @@ function baueLaufendesSpiel(optionen: Partial<LaufendesSpielAntwort> = {}): Lauf
     ansageHistorie: [],
     moeglicheAnsagen: [],
     moeglicheVorbehalte: [],
+    deklarierteVorbehalte: [],
     istBockrunde: false,
     schweinchenGemeldetVon: null,
     ...optionen
