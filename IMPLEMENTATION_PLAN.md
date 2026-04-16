@@ -29,12 +29,13 @@ Schnellstart, Einladungslink, Spring Modulith Modulstruktur.
 
 ## Notiz
 
-**Zuletzt erledigt (Plan-Run #79):** BF-7 — Session-Recovery Snapshot-Endpoint.
-Backend (`/app/tisch/{id}/snapshot` via `SpielverwaltungWebSocketController.sendeTischSnapshot`) und Frontend (`reconnecteTisch()` + `BootSzene`-Aufruf mit `aktiverTischId`) waren bereits vollständig implementiert.
-Fehlend war nur der Integrationstest: `sendetTischSnapshotAnDenAnfragendenBenutzerBeiReconnect` in `WebSocketPublikationIntegrationTest` prüft dass TISCH_SNAPSHOT-Event mit Tisch-Stand und Partie-Stand benutzerbezogen gesendet wird.
-255 Backend-Tests grün.
+**Zuletzt erledigt (Plan-Run #80):** KI-1 — KI-Schwellen-Anpassung für aktive Sonderregeln.
+`StandardKiStrategie.waehleAnsage()` wendet Faktor 1.18 auf alle Ansage-Schwellen an wenn `spielregeln.schweinchenAktiv() || spielregeln.dreissigAugenPflichtAktiv()`.
+`SchwerKiStrategie` war nicht betroffen (überschreibt `ansageSchwelle(Ansage, Partei)` — Multiplikator greift in `waehleAnsage` nach dem Override).
+2 neue Tests in `StandardKiStrategieTest`: Grenzwert-Hand (Stärke 30) ansagt Re mit Standard-Regeln, sagt kein Re mit Loco-Regeln (Schwelle erhöht auf 34).
+257 Backend-Tests grün.
 
-**Nächste offene Aufgaben (priorisiert):** KI-1
+**Nächste offene Aufgaben (priorisiert):** Alle Aufgaben erledigt. Kein weiterer offener Punkt im Plan.
 
 **Offene Fragen:** TischSzene.test.ts und AnimationenService.test.ts laufen nicht wegen pre-existing jsdom/ESM-Kompatibilitaetsfehler (ERR_REQUIRE_ASYNC_MODULE).
 
@@ -658,7 +659,7 @@ neuer `SnapshotController`), `frontend/src/store/AppStore.ts`
 
 ## Phase KI — KI-Verbesserungen
 
-### KI-1: KI-Schwellen-Anpassung für aktive Sonderregeln [ ]
+### KI-1: KI-Schwellen-Anpassung für aktive Sonderregeln [x]
 
 **Priorität: Niedrig** | **Spec:** `specs/ki-strategie.md`
 

@@ -531,6 +531,69 @@ class StandardKiStrategieTest {
             + "damit die KI nicht risikoreich Solo spielt ohne ausreichende Handstärke.");
     }
 
+    @Test
+    void sagtReMitGrenzwertigerHandOhneSchweinchenAn() {
+        // Hand mit Stärke 30 (5 Trümpfe×3 + 2 Asse×3 + 1 Dulle×5 + 1 KreuzDame×4 = 30).
+        // Standard-Schwelle für RE ist 28 → Ansage erwartet.
+        // Wichtig: stellt sicher dass die Basis-Schwelle ohne Schweinchen-Multiplikator gilt.
+        KiSpielzustand zustand = new KiSpielzustand(
+            SpielerPosition.WEST, Spieltyp.NORMALSPIEL,
+            new Spielphase.Stichphase(Stich.neu(SpielerPosition.WEST), Set.of(), null),
+            spielregeln, trumpfOrdnung,
+            new Hand(List.of(
+                karte(Farbe.HERZ, Kartenwert.ZEHN, 1),
+                karte(Farbe.KREUZ, Kartenwert.DAME, 1),
+                karte(Farbe.KREUZ, Kartenwert.BUBE, 1),
+                karte(Farbe.PIK, Kartenwert.BUBE, 1),
+                karte(Farbe.HERZ, Kartenwert.BUBE, 1),
+                karte(Farbe.KREUZ, Kartenwert.AS, 1),
+                karte(Farbe.PIK, Kartenwert.AS, 1)
+            )),
+            Parteien.ausSolo(SpielerPosition.WEST),
+            Ansagen.leer(), List.of(),
+            Stich.neu(SpielerPosition.WEST), null, null,
+            List.of(karte(Farbe.HERZ, Kartenwert.ZEHN, 1)),
+            List.of(Ansage.RE), List.of()
+        );
+
+        assertEquals(Ansage.RE, strategie.waehleAnsage(zustand).orElseThrow(),
+            "Mit Handstärke 30 und Standard-Schwelle 28 soll RE angesagt werden — " +
+            "Basis-Kalibrierung ohne Schweinchen-Multiplikator.");
+    }
+
+    @Test
+    void sagtKeinReBeiGrenzwertigerHandMitSchweinchenAktiv() {
+        // Dieselbe Hand (Stärke 30) mit Schweinchen-aktivem Loco-Regelwerk.
+        // Erhöhte Schwelle: ceil(28 × 1.18) = 34 → 30 < 34 → keine Ansage.
+        // Wichtig: prüft dass die KI bei aktiven Sonderregeln vorsichtiger ansagt,
+        // weil Schweinchen die Trumpfverteilung ausgeglichener macht.
+        Spielregeln locoRegeln = Spielregeln.locoBlatRegeln();
+        NormaleTrumpfOrdnung locoTrumpfOrdnung = new NormaleTrumpfOrdnung(locoRegeln);
+        KiSpielzustand zustand = new KiSpielzustand(
+            SpielerPosition.WEST, Spieltyp.NORMALSPIEL,
+            new Spielphase.Stichphase(Stich.neu(SpielerPosition.WEST), Set.of(), null),
+            locoRegeln, locoTrumpfOrdnung,
+            new Hand(List.of(
+                karte(Farbe.HERZ, Kartenwert.ZEHN, 1),
+                karte(Farbe.KREUZ, Kartenwert.DAME, 1),
+                karte(Farbe.KREUZ, Kartenwert.BUBE, 1),
+                karte(Farbe.PIK, Kartenwert.BUBE, 1),
+                karte(Farbe.HERZ, Kartenwert.BUBE, 1),
+                karte(Farbe.KREUZ, Kartenwert.AS, 1),
+                karte(Farbe.PIK, Kartenwert.AS, 1)
+            )),
+            Parteien.ausSolo(SpielerPosition.WEST),
+            Ansagen.leer(), List.of(),
+            Stich.neu(SpielerPosition.WEST), null, null,
+            List.of(karte(Farbe.HERZ, Kartenwert.ZEHN, 1)),
+            List.of(Ansage.RE), List.of()
+        );
+
+        assertTrue(strategie.waehleAnsage(zustand).isEmpty(),
+            "Mit Handstärke 30 und erhöhter Schwelle 34 (Schweinchen aktiv) darf keine RE angesagt werden — " +
+            "KI soll bei aktiven Sonderregeln vorsichtiger ansagen.");
+    }
+
     private Karte karte(Farbe farbe, Kartenwert wert, int exemplarIndex) {
         return new Karte(farbe, wert, exemplarIndex);
     }

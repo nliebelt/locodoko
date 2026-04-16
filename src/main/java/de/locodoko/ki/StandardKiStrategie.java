@@ -106,8 +106,16 @@ public class StandardKiStrategie implements KiStrategie {
             return Optional.empty();
         }
         int handstaerke = handstaerke(zustand);
+        boolean sonderpunkteAktiv = zustand.spielregeln().schweinchenAktiv()
+            || zustand.spielregeln().dreissigAugenPflichtAktiv();
         for (Ansage ansage : zustand.moeglicheAnsagen().stream().sorted(ANSAGEN_ABSTEIGEND).toList()) {
-            if (handstaerke >= ansageSchwelle(ansage, zustand.eigenePartei().orElseThrow())) {
+            int schwelle = ansageSchwelle(ansage, zustand.eigenePartei().orElseThrow());
+            // Mit Schweinchen oder 30-Augen-Pflicht sind Trumpfverteilungen ausgeglichener —
+            // die KI soll vorsichtiger ansagen und braucht eine stärkere Hand.
+            if (sonderpunkteAktiv) {
+                schwelle = (int) Math.ceil(schwelle * 1.18);
+            }
+            if (handstaerke >= schwelle) {
                 return Optional.of(ansage);
             }
         }
