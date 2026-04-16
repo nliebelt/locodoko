@@ -132,6 +132,35 @@ class WebSocketPublikationIntegrationTest {
         );
     }
 
+    @Test
+    void sendetTischSnapshotAnDenAnfragendenBenutzerBeiReconnect() {
+        String sessionCookie = registriereSpieler("Ada");
+        String sessionId = extrahiereSessionId(sessionCookie);
+
+        TischAntwort tisch = erstelleTisch(sessionCookie, "Reconnect-Tisch");
+        starteTisch(sessionCookie, tisch.id());
+        nachrichtenSpeicher.leeren();
+
+        webSocketController.sendeTischSnapshot(tisch.id(), (Principal) () -> sessionId);
+
+        WebSocketNachrichtGesendet snapshotNachricht = findeBenutzerNachricht(
+            nachrichtenSpeicher.nachrichten(),
+            sessionId,
+            "/queue/tisch/" + tisch.id(),
+            TischEreignisAntwort.class
+        );
+
+        TischEreignisAntwort snapshot = (TischEreignisAntwort) snapshotNachricht.payload();
+        assertEquals(TischEreignisTyp.TISCH_SNAPSHOT, snapshot.ereignisTyp(),
+            "Nach Tab-Reload muss der Snapshot den Typ TISCH_SNAPSHOT haben, damit das Frontend ihn von anderen Tisch-Events unterscheiden kann.");
+        assertEquals(tisch.id(), snapshot.tischId(),
+            "Die Snapshot-Antwort muss die korrekte Tisch-ID enthalten, damit der Client den Zustand dem richtigen Tisch zuordnen kann.");
+        assertNotNull(snapshot.tisch(),
+            "Der Tisch-Snapshot muss den aktuellen Tisch-Stand enthalten, damit Session-Recovery ohne erneuten REST-Aufruf moeglich ist.");
+        assertNotNull(snapshot.partieStand(),
+            "Der Tisch-Snapshot muss den Partie-Stand enthalten, damit die TischSzene nach Tab-Reload sofort den Spielzustand anzeigt.");
+    }
+
     private WebSocketNachrichtGesendet findeNachricht(
         List<WebSocketNachrichtGesendet> nachrichten,
         String ziel,

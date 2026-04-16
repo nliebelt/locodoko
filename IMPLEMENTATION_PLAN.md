@@ -23,20 +23,18 @@ Schnellstart, Einladungslink, Spring Modulith Modulstruktur.
 
 **Build:** `mvn test` grün (254 Tests, 0 Failures).
 
-**Offene Punkte:** BF-7 (Snapshot-Endpoint), KI-1 (Schwellen-Tuning), ARCH-2–ARCH-3 (SpielAktion Result-Typ, Sonderpunkt-Animationen).
+**Offene Punkte:** KI-1 (Schwellen-Tuning).
 
 ---
 
 ## Notiz
 
-**Zuletzt erledigt (Plan-Run #78):** ARCH-3 — Sonderpunkt-Animationen auf `neueSonderpunkte`.
-`AppStore._sonderpunkteListener` Set + `abonniereSonderpunkte()` empfängt STICH_ABGESCHLOSSEN-Events.
-`TischSzene` subscribt in `create()`, ruft `formatiereEreignisSonderpunkt()` + `starteSonderpunktFeedbackAnimationen()` auf.
-`animiereSonderpunktFeedback()` zeigt goldenes Fade-In/Out-Banner (nicht blockierend, über AnimationenService-Queue).
-Test `zeigt ein Alpha-Tween-Banner wenn ein STICH_ABGESCHLOSSEN-Sonderpunkt-Event eintrifft` grün.
-254 Backend-Tests, 24 Frontend-Tests grün.
+**Zuletzt erledigt (Plan-Run #79):** BF-7 — Session-Recovery Snapshot-Endpoint.
+Backend (`/app/tisch/{id}/snapshot` via `SpielverwaltungWebSocketController.sendeTischSnapshot`) und Frontend (`reconnecteTisch()` + `BootSzene`-Aufruf mit `aktiverTischId`) waren bereits vollständig implementiert.
+Fehlend war nur der Integrationstest: `sendetTischSnapshotAnDenAnfragendenBenutzerBeiReconnect` in `WebSocketPublikationIntegrationTest` prüft dass TISCH_SNAPSHOT-Event mit Tisch-Stand und Partie-Stand benutzerbezogen gesendet wird.
+255 Backend-Tests grün.
 
-**Nächste offene Aufgaben (priorisiert):** BF-7, dann KI-1
+**Nächste offene Aufgaben (priorisiert):** KI-1
 
 **Offene Fragen:** TischSzene.test.ts und AnimationenService.test.ts laufen nicht wegen pre-existing jsdom/ESM-Kompatibilitaetsfehler (ERR_REQUIRE_ASYNC_MODULE).
 
@@ -635,7 +633,7 @@ das Spiel nicht ab.
 
 ---
 
-### BF-7: Session-Recovery Snapshot-Endpoint fehlt (Backend + Frontend) [ ]
+### BF-7: Session-Recovery Snapshot-Endpoint fehlt (Backend + Frontend) [x]
 
 **Priorität: Mittel** | **Spec:** `specs/verbindungsabbruch.md` (Z. 68)
 
