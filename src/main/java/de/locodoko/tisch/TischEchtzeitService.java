@@ -34,14 +34,6 @@ public class TischEchtzeitService {
         planeNachCommit(() -> sendeBroadcast("/topic/tisch/" + antwort.tischId(), antwort));
     }
 
-    public void planePartieEreignis(PartieEreignisAntwort antwort) {
-        planeNachCommit(() -> sendeBroadcast("/topic/partie/" + antwort.partieStand().partieId(), antwort));
-    }
-
-    /**
-     * Sendet einen Verbindungsstatus-Wechsel eines Spielers an alle Abonnenten des Tisch-Topics.
-     * Wird nach Commit gesendet, damit der Datenbankzustand konsistent ist.
-     */
     public void planeTischVerbindungsStatus(UUID tischId, VerbindungStatusEreignisAntwort ereignis) {
         planeNachCommit(() -> sendeBroadcast("/topic/tisch/" + tischId, ereignis));
     }
@@ -53,14 +45,6 @@ public class TischEchtzeitService {
 
     public void planeAnBenutzer(String benutzer, String ziel, Object payload) {
         planeNachCommit(() -> sendeAnBenutzer(benutzer, ziel, payload));
-    }
-
-    /**
-     * Sendet einen Partie-Broadcast sofort (ohne planeNachCommit-Wrapper).
-     * Fuer Aufrufer die bereits nach dem DB-Commit laufen (z.B. {@code @ApplicationModuleListener}).
-     */
-    public void sendePartieEreignis(PartieEreignisAntwort antwort) {
-        sendeBroadcast("/topic/partie/" + antwort.partieStand().partieId(), antwort);
     }
 
     private void planeNachCommit(Runnable aktion) {

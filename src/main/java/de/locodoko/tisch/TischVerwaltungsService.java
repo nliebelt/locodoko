@@ -413,8 +413,7 @@ public class TischVerwaltungsService {
     }
 
     private void veroeffentlichePartieAktualisierung(TischEntity tisch) {
-        PartieStandAntwort broadcastStand = PartieStandAntwort.aus(tisch);
-        tischEchtzeitService.planePartieEreignis(PartieEreignisAntwort.aktualisiert(PartieEreignisTyp.PARTIE_AKTUALISIERT, broadcastStand));
+        if (tisch.partie() == null) return;
         tisch.spieler().stream()
             .filter(spieler -> !spieler.istKi() && !spieler.istKiUebernommen() && spieler.sessionId() != null)
             .forEach(spieler -> tischEchtzeitService.planeAnBenutzer(

@@ -244,7 +244,18 @@ export type TischEreignisTyp =
   | 'PARTIE_ABGEBROCHEN'
   /** Der Gastgeber hat einen Spieler vom Tisch entfernt. */
   | 'SPIELER_GEKICKT';
-export type PartieEreignisTyp = 'PARTIE_SNAPSHOT' | 'PARTIE_AKTUALISIERT';
+export type PartieEreignisTyp = 'SNAPSHOT' | 'PARTIE_AKTUALISIERT' | 'KARTE_GESPIELT' | 'KI_ZUG_SEQUENZ' | 'STICH_ABGESCHLOSSEN';
+
+export interface GespielteKarteEreignisAntwort {
+  spielerPosition: SpielerPosition;
+  karteId: string;
+}
+
+export interface SonderpunktEreignisAntwortDto {
+  typ: 'FUCHS_GEFANGEN' | 'DOPPELKOPF' | 'KARLCHEN';
+  gewinner: SpielerPosition;
+  verlierer?: SpielerPosition;
+}
 
 export interface TischlisteEreignisAntwort {
   timestamp: string;
@@ -264,6 +275,8 @@ export interface PartieEreignisAntwort {
   timestamp: string;
   ereignisTyp: PartieEreignisTyp;
   partieStand: PartieStandAntwort;
+  kiKartenSequenz?: GespielteKarteEreignisAntwort[];
+  neueSonderpunkte?: SonderpunktEreignisAntwortDto[];
 }
 
 export interface SpielverwaltungWebSocketFehlerAntwort {

@@ -76,9 +76,11 @@ class WebSocketPublikationIntegrationTest {
             "Gestartete Tische muessen aus der offenen Lobby verschwinden, damit beitretende Clients keinen veralteten Zustand sehen.");
 
         UUID partieId = Objects.requireNonNull(startEreignis.partieStand()).partieId();
-        WebSocketNachrichtGesendet partieNachricht = findeNachricht(nachrichten, "/topic/partie/" + partieId, PartieEreignisAntwort.class, 0);
+        String sessionId = extrahiereSessionId(sessionCookie);
+        WebSocketNachrichtGesendet partieNachricht = findeBenutzerNachricht(
+            nachrichten, sessionId, "/queue/partie/" + partieId, PartieEreignisAntwort.class);
         PartieEreignisAntwort partieEreignis = (PartieEreignisAntwort) partieNachricht.payload();
-        assertEquals(PartieEreignisTyp.PARTIE_AKTUALISIERT, partieEreignis.ereignisTyp());
+        assertEquals(PartieEreignisTyp.SNAPSHOT, partieEreignis.ereignisTyp());
         assertEquals(partieId, partieEreignis.partieStand().partieId());
     }
 

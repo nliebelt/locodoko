@@ -3,11 +3,9 @@ package de.locodoko.tisch;
 import de.locodoko.spieler.SpielerId;
 
 import de.locodoko.spieler.SpielerRepository;
-import de.locodoko.partie.ereignisse.PartieAktualisiert;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -42,7 +40,6 @@ public class VerbindungsabbruchService {
     private final SpielerRepository spielerRepository;
     private final TischEchtzeitService tischEchtzeitService;
     private final KiOrchestrierungService kiOrchestrierungService;
-    private final ApplicationEventPublisher eventPublisher;
 
     /** Konfigurierbare Wartezeit bis zur KI-Übernahme in Sekunden. */
     private final int reconnectTimeoutSekunden;
@@ -55,14 +52,12 @@ public class VerbindungsabbruchService {
             SpielerRepository spielerRepository,
             TischEchtzeitService tischEchtzeitService,
             KiOrchestrierungService kiOrchestrierungService,
-            ApplicationEventPublisher eventPublisher,
             @Value("${locodoko.verbindung.reconnect-timeout-sekunden:120}") int reconnectTimeoutSekunden
     ) {
         this.tischRepository = tischRepository;
         this.spielerRepository = spielerRepository;
         this.tischEchtzeitService = tischEchtzeitService;
         this.kiOrchestrierungService = kiOrchestrierungService;
-        this.eventPublisher = eventPublisher;
         this.reconnectTimeoutSekunden = reconnectTimeoutSekunden;
     }
 
@@ -191,8 +186,16 @@ public class VerbindungsabbruchService {
             kiOrchestrierungService.automatisiereTisch(tisch);
             tischRepository.saveAndFlush(tisch);
 
-            // Aktualisierten Spielzustand an alle Spieler am Tisch senden (via WebSocketBroadcastAdapter)
-            eventPublisher.publishEvent(new PartieAktualisiert(tisch.id()));
+            // Aktualisierten Spielzustand direkt an alle menschlichen Spieler senden
+            if (tisch.partie() != null) {
+                tisch.spieler().stream()
+                    .filter(s -> !s.istKi() && s.sessionId() != null)
+                    .forEach(s -> tischEchtzeitService.planeAnBenutzer(
+                        s.sessionId(),
+                        "/queue/partie/" + tisch.partie().id(),
+                        PartieEreignisAntwort.snapshot(PartieStandAntwort.aus(tisch, s.id()))
+                    ));
+            }
         }
     }
 

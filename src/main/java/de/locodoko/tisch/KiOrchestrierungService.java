@@ -24,10 +24,12 @@ import de.locodoko.spieler.SpielerRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.lang.Nullable;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
 import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.List;
@@ -51,6 +53,8 @@ public class KiOrchestrierungService {
     private static final Logger LOGGER = LoggerFactory.getLogger(KiOrchestrierungService.class);
 
     private static final int MAXIMALE_KI_AKTIONEN = 512;
+
+    private record AktionsErgebnis(Spiel naechsterStand, @Nullable String gespielteKarteId) {}
 
     private final KiStrategieFactory kiStrategieFactory;
     private final SpielerRepository spielerRepository;
@@ -87,6 +91,9 @@ public class KiOrchestrierungService {
         String startPhase = startSpiel != null ? startSpiel.phasenName() : null;
         LOGGER.info("KI-Orchestrierung gestartet [tischId={}, spielphase={}]", tisch.id(), startPhase);
         int anzahlAktionen = 0;
+        List<GespielteKarteAntwort> kiKartenSequenz = new ArrayList<>();
+        boolean hatMenschlichenSpieler = tisch.spieler().stream()
+            .anyMatch(s -> !s.istKi() && !s.istKiUebernommen());
         while (anzahlAktionen++ < MAXIMALE_KI_AKTIONEN) {
             if (tisch.partie().statusAusDb() == PartieStatus.BEENDET) {
                 return;
@@ -120,33 +127,22 @@ public class KiOrchestrierungService {
                 return;
             }
             SpielerEntity spielerEntity = spielerNachPosition(tisch).get(erwarteterSpieler);
-            // Normale KI-Spieler oder menschliche Spieler, deren Steuerung nach einem
-            // Verbindungsabbruch an die KI übergeben wurde, werden weiter orchestriert
             if (spielerEntity == null || (!spielerEntity.istKi() && !spielerEntity.istKiUebernommen())) {
+                if (hatMenschlichenSpieler && !kiKartenSequenz.isEmpty()) {
+                    sendeKiZugSequenz(tisch, kiKartenSequenz);
+                }
                 return;
             }
             LOGGER.info("KI-Spielzug [spielerId={}, phase={}]", erwarteterSpieler, laufendesSpiel.phase());
-            // KI-Strategie-Exceptions abfangen: Die Partie bleibt im letzten konsistenten
-            // Datenbankstand, weil uebernehmeDomainSpiel erst nach dem KI-Aufruf aufgerufen wird.
-            // Ohne diesen Schutz haengt die Partie permanent, weil jeder folgende Aufruf
-            // dieselbe Exception erzeugen wuerde.
             try {
                 KiStrategie strategie = kiStrategieFactory.erzeuge(tisch.konfiguration().kiSchwierigkeit());
                 Spielphase phaseVorAktion = laufendesSpiel.phase();
-                Spiel naechsterStand = fuehreKiAktionAus(laufendesSpiel, erwarteterSpieler, strategie);
-                laufendesSpiel.uebernehmeDomainStand(naechsterStand);
-                // Stichphase-Zug: nach jedem KI-Zug sofort speichern und an den Client senden,
-                // damit der Client jede Karte mit 800ms Verzoegerung einzeln animieren kann.
-                // Nur bei Tischen mit menschlichen Spielern – bei reinen KI-Partien laueft
-                // die Orchestrierung ohne Zwischensaves durch.
-                boolean hatMenschlichenSpieler = tisch.spieler().stream()
-                    .anyMatch(s -> !s.istKi() && !s.istKiUebernommen());
+                AktionsErgebnis aktionsErgebnis = fuehreKiAktionAus(laufendesSpiel, erwarteterSpieler, strategie);
+                laufendesSpiel.uebernehmeDomainStand(aktionsErgebnis.naechsterStand());
                 if (hatMenschlichenSpieler
                         && phaseVorAktion instanceof Spielphase.Stichphase
-                        && naechsterStand.phase() instanceof Spielphase.Stichphase) {
-                    partieRepository.saveAndFlush(tisch.partie());
-                    synchronisiereRegistry(TischId.von(tisch.id()), tisch);
-                    veroeffentlichePartieStand(tisch);
+                        && aktionsErgebnis.gespielteKarteId() != null) {
+                    kiKartenSequenz.add(new GespielteKarteAntwort(erwarteterSpieler, aktionsErgebnis.gespielteKarteId()));
                 }
             } catch (Exception e) {
                 LOGGER.error(
@@ -161,44 +157,48 @@ public class KiOrchestrierungService {
         throw new IllegalStateException("Die KI-Orchestrierung hat das Sicherheitslimit erreicht.");
     }
 
-    private Spiel fuehreKiAktionAus(Spiel laufendesSpiel, SpielerPosition spielerPosition, KiStrategie strategie) {
+    private AktionsErgebnis fuehreKiAktionAus(Spiel laufendesSpiel, SpielerPosition spielerPosition, KiStrategie strategie) {
         KiSpielzustand zustand = KiSpielzustand.aus(laufendesSpiel, spielerPosition);
         return switch (laufendesSpiel.phase()) {
             case Spielphase.VorbehaltAnsage _ -> {
                 VorbehaltAnsage vorbehalt = strategie.waehleVorbehalt(zustand);
                 LOGGER.info("KI meldet Vorbehalt [spielerId={}, vorbehalt={}]", spielerPosition, vorbehalt);
                 Spiel spielNachVorbehalt = laufendesSpiel.meldeVorbehalt(spielerPosition, vorbehalt);
-                yield spielNachVorbehalt.phase() instanceof Spielphase.VorbehaltAufloesung
+                Spiel ergebnis = spielNachVorbehalt.phase() instanceof Spielphase.VorbehaltAufloesung
                     ? spielNachVorbehalt.loeseVorbehalteAuf()
                     : spielNachVorbehalt;
+                yield new AktionsErgebnis(ergebnis, null);
             }
             case Spielphase.ArmutTausch _ -> {
+                Spiel ergebnis;
                 if (laufendesSpiel.armutStatus().filter(status -> status.armutSpieler() == spielerPosition && !status.angebotLiegtVor()).isPresent()) {
-                    yield laufendesSpiel.legeArmutTrumpfkarten(spielerPosition, strategie.waehleArmutAngebot(zustand));
+                    ergebnis = laufendesSpiel.legeArmutTrumpfkarten(spielerPosition, strategie.waehleArmutAngebot(zustand));
+                } else {
+                    KiArmutAntwort armutAntwort = strategie.waehleArmutAntwort(zustand);
+                    ergebnis = armutAntwort.angenommen()
+                        ? laufendesSpiel.nimmArmutAn(spielerPosition, armutAntwort.rueckgabekarten())
+                        : laufendesSpiel.lehneArmutAb(spielerPosition);
                 }
-                KiArmutAntwort armutAntwort = strategie.waehleArmutAntwort(zustand);
-                yield armutAntwort.angenommen()
-                    ? laufendesSpiel.nimmArmutAn(spielerPosition, armutAntwort.rueckgabekarten())
-                    : laufendesSpiel.lehneArmutAb(spielerPosition);
+                yield new AktionsErgebnis(ergebnis, null);
             }
             case Spielphase.Stichphase _ -> {
-                // Pflichtansage hat absoluten Vorrang vor Kartenspielen (dreissigAugenPflicht)
                 if (!laufendesSpiel.pflichtansageAusstehend().isEmpty()) {
                     Partei eigenePartei = laufendesSpiel.parteien().parteiVon(spielerPosition);
                     if (laufendesSpiel.pflichtansageAusstehend().contains(eigenePartei)) {
                         Ansage pflichtansage = eigenePartei == Partei.RE ? Ansage.RE : Ansage.KONTRA;
-                        yield laufendesSpiel.sageAn(spielerPosition, pflichtansage);
+                        yield new AktionsErgebnis(laufendesSpiel.sageAn(spielerPosition, pflichtansage), null);
                     }
                 }
                 Ansage ansage = strategie.waehleAnsage(zustand).orElse(null);
                 if (ansage != null) {
-                    yield laufendesSpiel.sageAn(spielerPosition, ansage);
+                    yield new AktionsErgebnis(laufendesSpiel.sageAn(spielerPosition, ansage), null);
                 }
                 Karte karte = strategie.waehleKarte(zustand);
                 LOGGER.debug("KI spielt Karte [karte={}, spielerId={}]", karte, spielerPosition);
-                yield laufendesSpiel.spieleKarte(spielerPosition, karte);
+                String karteId = "%s-%s-%d".formatted(karte.farbe().name(), karte.wert().name(), karte.exemplarIndex());
+                yield new AktionsErgebnis(laufendesSpiel.spieleKarte(spielerPosition, karte), karteId);
             }
-            default -> laufendesSpiel;
+            default -> new AktionsErgebnis(laufendesSpiel, null);
         };
     }
 
@@ -352,15 +352,22 @@ public class KiOrchestrierungService {
     }
 
     private void veroeffentlichePartieStand(TischEntity tisch) {
-        PartieStandAntwort broadcastStand = PartieStandAntwort.aus(tisch);
-        tischEchtzeitService.planePartieEreignis(
-            PartieEreignisAntwort.aktualisiert(PartieEreignisTyp.PARTIE_AKTUALISIERT, broadcastStand));
         tisch.spieler().stream()
             .filter(s -> !s.istKi() && !s.istKiUebernommen() && s.sessionId() != null)
             .forEach(s -> tischEchtzeitService.planeAnBenutzer(
                 s.sessionId(),
                 "/queue/partie/" + tisch.partie().id(),
                 PartieEreignisAntwort.snapshot(PartieStandAntwort.aus(tisch, s.id()))
+            ));
+    }
+
+    private void sendeKiZugSequenz(TischEntity tisch, List<GespielteKarteAntwort> sequenz) {
+        tisch.spieler().stream()
+            .filter(s -> !s.istKi() && !s.istKiUebernommen() && s.sessionId() != null)
+            .forEach(s -> tischEchtzeitService.planeAnBenutzer(
+                s.sessionId(),
+                "/queue/partie/" + tisch.partie().id(),
+                PartieEreignisAntwort.kiZugSequenz(PartieStandAntwort.aus(tisch, s.id()), sequenz)
             ));
     }
 }

@@ -8,11 +8,16 @@ import de.locodoko.partie.Partie;
 import de.locodoko.partie.PartieId;
 import de.locodoko.tisch.persistenz.PartieRepository;
 import de.locodoko.partie.PartieStatus;
+import de.locodoko.partie.Parteien;
 import de.locodoko.partie.Spiel;
+import de.locodoko.partie.Stich;
+import de.locodoko.partie.SonderpunktBewerter;
 import de.locodoko.partie.VorbehaltAnsage;
 import de.locodoko.partie.ereignisse.NaechsterSpielerErwartet;
 import de.locodoko.partie.ereignisse.SchweinchenGemeldet;
 import de.locodoko.partie.ereignisse.VorbehaltErwartet;
+import de.locodoko.karten.Spielregeln;
+import de.locodoko.karten.TrumpfOrdnung;
 import de.locodoko.spieler.SpielerEntity;
 import de.locodoko.spieler.SpielerId;
 import de.locodoko.spieler.SpielerRepository;
@@ -88,7 +93,7 @@ public class SpielAktionsService {
         }
         partieRepository.saveAndFlush(tisch.partie());
         synchronisiereRegistry(tischId, tisch);
-        veroeffentlicheEreignisse(tischId, tisch);
+        veroeffentlicheEreignisse(tisch, 0);
         return PartieStandAntwort.aus(tisch, verwalteterSpieler.id());
     }
 
@@ -117,7 +122,7 @@ public class SpielAktionsService {
         }
         partieRepository.saveAndFlush(tisch.partie());
         synchronisiereRegistry(tischId, tisch);
-        veroeffentlicheEreignisse(tischId, tisch);
+        veroeffentlicheEreignisse(tisch, 0);
         return PartieStandAntwort.aus(tisch, verwalteterSpieler.id());
     }
 
@@ -129,6 +134,9 @@ public class SpielAktionsService {
         SpielerPosition position = spielerPositionVon(tisch, verwalteterSpieler);
         laufendesSpiel.hydriere(tisch.konfiguration().alsSpielregeln());
         boolean schweinchenVorher = laufendesSpiel.schweinchenGemeldetVon().isPresent();
+        int stichmitteVorher = laufendesSpiel.aktuellerStich()
+            .map(s -> s.gespielteKarten().size())
+            .orElse(0);
         SpielRegistry.KommandoSchluessel schluessel = new SpielRegistry.KommandoSchluessel(
             tischId.wert(), position, "KARTE:" + karteId + ":" + laufendesSpiel.phase().name()
         );
@@ -146,7 +154,7 @@ public class SpielAktionsService {
         if (!schweinchenVorher && laufendesSpiel.schweinchenGemeldetVon().isPresent()) {
             eventPublisher.publishEvent(new SchweinchenGemeldet(tischId.wert(), laufendesSpiel.schweinchenGemeldetVon().get()));
         }
-        veroeffentlicheEreignisse(tischId, tisch);
+        veroeffentlicheEreignisse(tisch, stichmitteVorher);
         return PartieStandAntwort.aus(tisch, verwalteterSpieler.id());
     }
 
@@ -174,47 +182,64 @@ public class SpielAktionsService {
         }
         partieRepository.saveAndFlush(tisch.partie());
         synchronisiereRegistry(tischId, tisch);
-        veroeffentlicheEreignisse(tischId, tisch);
+        veroeffentlicheEreignisse(tisch, 0);
         return PartieStandAntwort.aus(tisch, verwalteterSpieler.id());
     }
 
-    /**
-     * Sendet den aktuellen Partiestand (nach menschlicher Aktion, vor KI-Zuegen) direkt an alle
-     * Spieler und loest anschliessend das KI-Trigger-Event aus.
-     *
-     * <p>Der Broadcast wird ueber {@code planeNachCommit} registriert, bevor das KI-Trigger-Event
-     * ({@link NaechsterSpielerErwartet} / {@link VorbehaltErwartet}) veroeffentlicht wird. Da
-     * {@code TransactionSynchronizationManager}-Callbacks in Registrierungsreihenfolge (FIFO)
-     * nach dem Commit ausgefuehrt werden, ist garantiert, dass der WebSocket-Send vor dem
-     * asynchronen KI-Start erfolgt – unabhaengig von der Ausfuehrungs-Reihenfolge asynchroner
-     * Event-Listener ({@link KiEventAdapter}, {@link WebSocketBroadcastAdapter}).
-     * Das Frontend puffert KI-Karten-Updates clientseitig mit 800 ms Verzoegerung.</p>
-     */
-    private void veroeffentlicheEreignisse(TischId tischId, TischEntity tisch) {
-        // Broadcast des aktuellen Stands (vor KI-Zuegen) direkt einplanen.
-        // Muss VOR publishEvent registriert werden, damit afterCommit-Reihenfolge stimmt.
-        if (tisch.partie() != null) {
-            PartieStandAntwort broadcastStand = PartieStandAntwort.aus(tisch);
-            tischEchtzeitService.planePartieEreignis(
-                PartieEreignisAntwort.aktualisiert(PartieEreignisTyp.PARTIE_AKTUALISIERT, broadcastStand));
-            tisch.spieler().stream()
-                .filter(s -> !s.istKi() && !s.istKiUebernommen() && s.sessionId() != null)
-                .forEach(s -> tischEchtzeitService.planeAnBenutzer(
-                    s.sessionId(),
-                    "/queue/partie/" + tisch.partie().id(),
-                    PartieEreignisAntwort.snapshot(PartieStandAntwort.aus(tisch, s.id()))
-                ));
+    private void veroeffentlicheEreignisse(TischEntity tisch, int stichmitteVorher) {
+        if (tisch.partie() == null) {
+            return;
         }
-        // KI-Trigger danach veroeffentlichen (laeuft asynchron nach dem Broadcast)
-        if (tisch.partie() != null && tisch.partie().statusAusDb() != PartieStatus.BEENDET) {
+        // KARTE_GESPIELT an alle menschlichen Spieler senden
+        tisch.spieler().stream()
+            .filter(s -> !s.istKi() && !s.istKiUebernommen() && s.sessionId() != null)
+            .forEach(s -> tischEchtzeitService.planeAnBenutzer(
+                s.sessionId(),
+                "/queue/partie/" + tisch.partie().id(),
+                PartieEreignisAntwort.karteGespielt(PartieStandAntwort.aus(tisch, s.id()))
+            ));
+
+        // Stich abgeschlossen pruefen (menschlicher Spieler hat die 4. Karte gespielt)
+        if (stichmitteVorher == 3) {
+            Spiel laufendesSpiel = ladeLaufendesSpiel(tisch.partie());
+            int stichmitteNachher = laufendesSpiel.aktuellerStich()
+                .map(s -> s.gespielteKarten().size())
+                .orElse(0);
+            if (stichmitteNachher == 0) {
+                List<Stich> abgeschlosseneStiche = laufendesSpiel.abgeschlosseneStiche();
+                if (!abgeschlosseneStiche.isEmpty()) {
+                    Stich letzterStich = abgeschlosseneStiche.getLast();
+                    Parteien parteien = laufendesSpiel.parteien();
+                    TrumpfOrdnung trumpfOrdnung = laufendesSpiel.trumpfOrdnung();
+                    Spielregeln spielregeln = laufendesSpiel.spielregeln();
+                    var sonderpunktMap = new SonderpunktBewerter().bewerte(
+                        List.of(letzterStich), parteien, trumpfOrdnung, spielregeln
+                    );
+                    List<SonderpunktEreignisAntwort> sonderpunktDtos = sonderpunktMap.values().stream()
+                        .flatMap(List::stream)
+                        .map(sp -> new SonderpunktEreignisAntwort(sp.art().name(), sp.taeter(), sp.opfer()))
+                        .toList();
+                    tisch.spieler().stream()
+                        .filter(s -> !s.istKi() && !s.istKiUebernommen() && s.sessionId() != null)
+                        .forEach(s -> tischEchtzeitService.planeAnBenutzer(
+                            s.sessionId(),
+                            "/queue/partie/" + tisch.partie().id(),
+                            PartieEreignisAntwort.stichAbgeschlossen(PartieStandAntwort.aus(tisch, s.id()), sonderpunktDtos)
+                        ));
+                }
+            }
+        }
+
+        // KI-Trigger veroeffentlichen
+        if (tisch.partie().statusAusDb() != PartieStatus.BEENDET) {
             tisch.partie().spiele().stream()
                 .filter(s -> s.ergebnisEmbeddable() == null)
                 .reduce((a, b) -> b)
                 .ifPresent(laufendesSpiel -> {
                     if ("VORBEHALT_ANSAGE".equals(laufendesSpiel.phasenName())) {
-                        eventPublisher.publishEvent(new VorbehaltErwartet(tischId.wert()));
+                        eventPublisher.publishEvent(new VorbehaltErwartet(tisch.id()));
                     } else {
-                        eventPublisher.publishEvent(new NaechsterSpielerErwartet(tischId.wert()));
+                        eventPublisher.publishEvent(new NaechsterSpielerErwartet(tisch.id()));
                     }
                 });
         }

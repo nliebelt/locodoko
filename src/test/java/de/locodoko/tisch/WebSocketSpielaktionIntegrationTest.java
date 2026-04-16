@@ -88,8 +88,9 @@ class WebSocketSpielaktionIntegrationTest {
         webSocketController.meldeVorbehalt(setup.tischId(), new VorbehaltAnfrage(VorbehaltAnsage.GESUND), principal(setup.sessionIds().get(SpielerPosition.OST)));
         webSocketController.meldeVorbehalt(setup.tischId(), new VorbehaltAnfrage(VorbehaltAnsage.GESUND), principal(setup.sessionIds().get(SpielerPosition.SUED)));
 
-        WebSocketNachrichtGesendet broadcastNachricht = findeLetzteNachricht(
-            "/topic/partie/" + setup.partieId(),
+        WebSocketNachrichtGesendet broadcastNachricht = findeBenutzerNachricht(
+            setup.sessionIds().get(SpielerPosition.WEST),
+            "/queue/partie/" + setup.partieId(),
             PartieEreignisAntwort.class
         );
         PartieEreignisAntwort broadcast = (PartieEreignisAntwort) broadcastNachricht.payload();
@@ -158,8 +159,9 @@ class WebSocketSpielaktionIntegrationTest {
             principal(setup.sessionIds().get(SpielerPosition.OST))
         );
 
-        WebSocketNachrichtGesendet broadcastNachricht = findeLetzteNachricht(
-            "/topic/partie/" + setup.partieId(),
+        WebSocketNachrichtGesendet broadcastNachricht = findeBenutzerNachricht(
+            setup.sessionIds().get(SpielerPosition.WEST),
+            "/queue/partie/" + setup.partieId(),
             PartieEreignisAntwort.class
         );
         PartieEreignisAntwort broadcast = (PartieEreignisAntwort) broadcastNachricht.payload();
@@ -193,8 +195,9 @@ class WebSocketSpielaktionIntegrationTest {
             principal(setup.sessionIds().get(SpielerPosition.WEST))
         );
 
-        WebSocketNachrichtGesendet broadcastNachricht = findeLetzteNachricht(
-            "/topic/partie/" + setup.partieId(),
+        WebSocketNachrichtGesendet broadcastNachricht = findeBenutzerNachricht(
+            setup.sessionIds().get(SpielerPosition.WEST),
+            "/queue/partie/" + setup.partieId(),
             PartieEreignisAntwort.class
         );
         PartieEreignisAntwort broadcast = (PartieEreignisAntwort) broadcastNachricht.payload();
@@ -224,7 +227,7 @@ class WebSocketSpielaktionIntegrationTest {
             principal(setup.sessionIds().get(SpielerPosition.WEST))
         );
         // Auf asynchrone Events des gültigen Zugs warten, bevor der Speicher geleert wird
-        findeLetzteNachricht("/topic/partie/" + setup.partieId(), PartieEreignisAntwort.class);
+        findeBenutzerNachricht(setup.sessionIds().get(SpielerPosition.WEST), "/queue/partie/" + setup.partieId(), PartieEreignisAntwort.class);
         nachrichtenSpeicher.leeren();
 
         SpielverwaltungKonfliktException exception = assertThrows(
@@ -254,8 +257,9 @@ class WebSocketSpielaktionIntegrationTest {
             principal(setup.sessionIds().get(SpielerPosition.WEST))
         );
 
-        WebSocketNachrichtGesendet broadcastNachricht = findeLetzteNachricht(
-            "/topic/partie/" + setup.partieId(),
+        WebSocketNachrichtGesendet broadcastNachricht = findeBenutzerNachricht(
+            setup.sessionIds().get(SpielerPosition.WEST),
+            "/queue/partie/" + setup.partieId(),
             PartieEreignisAntwort.class
         );
         PartieEreignisAntwort broadcast = (PartieEreignisAntwort) broadcastNachricht.payload();
@@ -284,7 +288,7 @@ class WebSocketSpielaktionIntegrationTest {
         setzeKontrollierteStandardhaende(setup.partieId());
         meldeGesundesSpiel(setup);
         // Auf asynchrone Events der Vorbehaltsrunde warten, bevor der Speicher geleert wird
-        findeLetzteNachricht("/topic/partie/" + setup.partieId(), PartieEreignisAntwort.class);
+        findeBenutzerNachricht(setup.sessionIds().get(SpielerPosition.WEST), "/queue/partie/" + setup.partieId(), PartieEreignisAntwort.class);
         nachrichtenSpeicher.leeren();
 
         SpielverwaltungKonfliktException exception = assertThrows(
@@ -326,7 +330,7 @@ class WebSocketSpielaktionIntegrationTest {
         webSocketController.verarbeiteArmutAntwort(setup.tischId(), new ArmutAntwortAnfrage(false, List.of()), principal(setup.sessionIds().get(SpielerPosition.OST)));
         webSocketController.verarbeiteArmutAntwort(setup.tischId(), new ArmutAntwortAnfrage(false, List.of()), principal(setup.sessionIds().get(SpielerPosition.SUED)));
 
-        WebSocketNachrichtGesendet broadcast = findeLetzteNachricht("/topic/partie/" + setup.partieId(), PartieEreignisAntwort.class);
+        WebSocketNachrichtGesendet broadcast = findeBenutzerNachricht(setup.sessionIds().get(SpielerPosition.WEST), "/queue/partie/" + setup.partieId(), PartieEreignisAntwort.class);
         PartieEreignisAntwort ereignis = (PartieEreignisAntwort) broadcast.payload();
 
         assertEquals("VORBEHALT_ANSAGE", ereignis.partieStand().laufendesSpiel().phase(),
@@ -370,7 +374,7 @@ class WebSocketSpielaktionIntegrationTest {
         webSocketController.verarbeiteArmutAntwort(setup.tischId(), new ArmutAntwortAnfrage(false, List.of()), principal(setup.sessionIds().get(SpielerPosition.OST)));
         webSocketController.verarbeiteArmutAntwort(setup.tischId(), new ArmutAntwortAnfrage(false, List.of()), principal(setup.sessionIds().get(SpielerPosition.SUED)));
 
-        WebSocketNachrichtGesendet broadcast = findeLetzteNachricht("/topic/partie/" + setup.partieId(), PartieEreignisAntwort.class);
+        WebSocketNachrichtGesendet broadcast = findeBenutzerNachricht(setup.sessionIds().get(SpielerPosition.WEST), "/queue/partie/" + setup.partieId(), PartieEreignisAntwort.class);
         PartieEreignisAntwort ereignis = (PartieEreignisAntwort) broadcast.payload();
 
         assertEquals("VORBEHALT_ANSAGE", ereignis.partieStand().laufendesSpiel().phase(),
