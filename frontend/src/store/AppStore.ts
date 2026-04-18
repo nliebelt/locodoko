@@ -69,6 +69,11 @@ export class AppStore {
   private readonly _eventListener = new Set<(ereignis: PartieEreignisAntwort) => void>();
   private _eventQueue: PartieEreignisAntwort[] = [];
   private _verarbeiteEventLaeuft = false;
+  private _kiKartenVerzögerungMs = 800;
+
+  setzeKiKartenVerzögerung(ms: number): void {
+    this._kiKartenVerzögerungMs = ms;
+  }
 
   abonniereEvents(listener: (ereignis: PartieEreignisAntwort) => void): () => void {
     this._eventListener.add(listener);
@@ -369,7 +374,9 @@ export class AppStore {
     for (const [i] of sequenz.entries()) {
       const stand = i === sequenz.length - 1 ? finalStand : this._synthetischerZwischenstand(prevStand!, sequenz.slice(0, i + 1));
       this.patch({ partieStand: stand });
-      await new Promise<void>((r) => setTimeout(r, 800));
+      if (this._kiKartenVerzögerungMs > 0) {
+        await new Promise<void>((r) => setTimeout(r, this._kiKartenVerzögerungMs));
+      }
     }
   }
 

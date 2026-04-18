@@ -281,6 +281,8 @@ export class TischSzene extends Phaser.Scene {
     if (bridge) {
       bridge['setzeAnimationsGeschwindigkeit'] = (faktor: number) => {
         this.animationen?.setzeGeschwindigkeitsfaktor(faktor);
+        // KI-Kartensequenz-Delay im AppStore ebenfalls skalieren (hardcoded 800ms umgehen)
+        appStore.setzeKiKartenVerzögerung(faktor === Infinity ? 0 : Math.round(800 / faktor));
       };
       // Phaser-GameLoop von requestAnimationFrame (60fps) auf setTimeout (2fps) umschalten:
       // gibt den Main-Thread frei damit page.waitForFunction schnell pollen kann.
