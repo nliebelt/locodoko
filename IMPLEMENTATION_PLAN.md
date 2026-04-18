@@ -35,6 +35,8 @@ Die Implementierung war bereits in `SpielverwaltungsSzene.ts` und `regelPresets.
 Außerdem behoben: TischSzene.ts auf letzten Commit zurückgesetzt (unfertige Event-Refaktorierung), AppStore.ts-Build-Fehler (unbenutzte Imports/Variablen, leere catch-Blöcke).
 Build/Lint/Tests: grün.
 
+**Plan-Run #82 Beobachtung:** `TischSzene.ts` und `AppStore.ts` im Working-Tree hatten eine unfertige Event-basierte Refaktorierung (neue Event-Typen SPIEL_BEENDET/SPIEL_GESTARTET/ANSAGE_ERFOLGT im AppStore vorhanden, aber TischSzene.ts hatte Syntax-Fehler durch fehlende Methoden-Signaturen). `TischSzene.ts` wurde auf HEAD zurückgesetzt. `AppStore.ts` behält die neuen Event-Typen und `abonniereEvents`-Methode — diese sind korrekt implementiert. `SpielverwaltungDto.ts` enthält bereits `SPIEL_BEENDET`, `SPIEL_GESTARTET`, `ANSAGE_ERFOLGT`, `SCHWEINCHEN_GEMELDET` in `PartieEreignisTyp`. **Offene Frage:** Werden diese Event-Typen vom Backend bereits gesendet? Wenn nicht, wäre das ein nächster Architektur-Schritt (ARCH-4).
+
 **5-Agenten-Analyse (Plan-Run #81):** Drei neue offene Punkte identifiziert:
 1. **SF-3** — Frontend Tischkonfiguration-Presets: Backend hat `locoBlatRegeln()`, `dkvRegeln()`, `ohneNeunenLocoBlatRegeln()`, aber Frontend-Konfigurationsmodal hat keine Preset-Auswahl (kein Dropdown). Mehrfach bestätigt durch Agenten 1, 2 und 4.
 2. **KI-2** — KI-1 hat nur Ansage-Schwellen mit 1.18× skaliert, aber Solo-Bewertungsschwellen (`soloWert()`-Vergleiche in `StandardKiStrategie`) werden bei aktiven Sonderregeln nicht angepasst. `ki-strategie.md` impliziert auch diese Anpassung.
