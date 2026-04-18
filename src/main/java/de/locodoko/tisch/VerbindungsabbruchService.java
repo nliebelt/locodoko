@@ -182,18 +182,21 @@ public class VerbindungsabbruchService {
                     VerbindungStatusEreignisAntwort.kiUebernommen(info.spielerName())
             );
 
+            // Tisch neu laden damit automatisiereTisch() den aktualisierten KI-übernommen-Flag sieht
+            TischEntity aktuellerTisch = tischRepository.findById(TischId.von(tisch.id())).orElse(tisch);
+
             // KI-Orchestrierung auslösen — spielt jetzt für den übernommenen Spieler
-            kiOrchestrierungService.automatisiereTisch(tisch);
-            tischRepository.saveAndFlush(tisch);
+            kiOrchestrierungService.automatisiereTisch(aktuellerTisch);
+            tischRepository.saveAndFlush(aktuellerTisch);
 
             // Aktualisierten Spielzustand direkt an alle menschlichen Spieler senden
-            if (tisch.partie() != null) {
-                tisch.spieler().stream()
+            if (aktuellerTisch.partie() != null) {
+                aktuellerTisch.spieler().stream()
                     .filter(s -> !s.istKi() && s.sessionId() != null)
                     .forEach(s -> tischEchtzeitService.planeAnBenutzer(
                         s.sessionId(),
-                        "/queue/partie/" + tisch.partie().id(),
-                        PartieEreignisAntwort.snapshot(PartieStandAntwort.aus(tisch, s.id()))
+                        "/queue/partie/" + aktuellerTisch.partie().id(),
+                        PartieEreignisAntwort.snapshot(PartieStandAntwort.aus(aktuellerTisch, s.id()))
                     ));
             }
         }
