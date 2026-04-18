@@ -2,7 +2,6 @@ import type {
   Ansage,
   KiSchwierigkeit,
   GespielteKarteEreignisAntwort,
-  KarteAntwort,
   PartieEreignisAntwort,
   PartieStandAntwort,
   SonderpunktEreignisAntwortDto,
@@ -20,46 +19,24 @@ import type {
 import type { SpielverwaltungApi } from '../services/SpielverwaltungApi';
 import { SpielverwaltungFehler } from '../services/SpielverwaltungApi';
 import type { EchtzeitPort } from '../services/SpielverwaltungEchtzeit';
-import { Logger } from '../logger';
 
-/** Anzeige-Meldung fuer den Nutzer (Fehler oder Hinweis). */
 export interface UiMeldung {
-  /** Art der Meldung: Fehler (rot) oder Information (blau). */
   typ: 'fehler' | 'info';
-  /** Anzeigetext der Meldung. */
   text: string;
-  /** Maschinenlesbarer Fehlercode fuer spezifische Behandlung (z.B. 'PARTIE_ABGEBROCHEN'). */
   fehlerCode?: string;
 }
 
-/**
- * Gesamter Anwendungszustand — einzige Quelle der Wahrheit im Frontend.
- *
- * Wird immutabel per `structuredClone` aus dem AppStore herausgegeben.
- * Alle UI-Komponenten lesen ausschliesslich aus diesem Zustand.
- */
 export interface AppZustand {
-  /** true nach erfolgreicher Session-Initialisierung und WebSocket-Verbindung. */
   initialisiert: boolean;
-  /** true waehrend einer laufenden HTTP-Anfrage (Lade-Indikator). */
   wirdGeladen: boolean;
-  /** Aktuell angezeigter Bereich der Anwendung. */
   bereich: 'LOGIN' | 'SPIELVERWALTUNG' | 'TISCH';
-  /** WebSocket-Verbindungsstatus. */
   verbindung: 'offline' | 'verbinde' | 'verbunden' | 'fehler';
-  /** true wenn der Debug-Modus aktiv ist (alle Haende sichtbar). */
   debugModus: boolean;
-  /** true wenn der Spieler authentifiziert ist (Login oder Gast-Session). */
   authentifiziert: boolean;
-  /** Session des eingeloggten Spielers; null bis zur Initialisierung. */
   spieler: SpielerSessionAntwort | null;
-  /** Aktuelle Tischliste aus dem letzten Snapshot. */
   tische: TischListenEintragAntwort[];
-  /** Aktuell geoeffneter Tisch; null in der Lobby. */
   aktuellerTisch: TischAntwort | null;
-  /** Aktueller Partie-Stand; null wenn keine Partie laeuft. */
   partieStand: PartieStandAntwort | null;
-  /** Letzte Nutzer-Meldung (Fehler oder Hinweis); null wenn keine Meldung aktiv. */
   meldung: UiMeldung | null;
 }
 
@@ -81,151 +58,85 @@ function erzeugeAnfangszustand(): AppZustand {
   };
 }
 
-function istBekannterFehler(fehler: unknown): fehler is { message: string } {
-  return Boolean(fehler && typeof fehler === 'object' && 'message' in fehler && typeof fehler.message === 'string');
-}
-
-/**
- * Zentraler Zustandsspeicher der Locodoko-Anwendung.
- *
- * Verwaltet den gesamten AppZustand reaktiv und stellt ihn allen UI-Szenen
- * als immutablen Snapshot bereit. Koordiniert REST-API-Aufrufe (SpielverwaltungApi)
- * und WebSocket-Abonnements (EchtzeitPort) und leitet alle eingehenden Ereignisse
- * als State-Updates weiter.
- *
- * Verwendung: `appStore.abonnieren(listener)` — der Listener wird sofort mit dem
- * aktuellen Zustand aufgerufen und danach bei jeder Zustandsaenderung.
- */
 export class AppStore {
   private zustand: AppZustand = erzeugeAnfangszustand();
-
   private readonly listener = new Set<Listener>();
-
   private readonly gemeinsameAbos: Array<() => void> = [];
-
   private readonly tischAbos: Array<() => void> = [];
-
   private aktuellePartieAbo: Uuid | null = null;
-
   private _kiSequenzQueue: Array<() => Promise<void>> = [];
-  private _kiSequenzLaeuft = false;
-
   private readonly _sonderpunkteListener = new Set<(sonderpunkte: SonderpunktEreignisAntwortDto[]) => void>();
+  private readonly _eventListener = new Set<(ereignis: PartieEreignisAntwort) => void>();
+  private _eventQueue: PartieEreignisAntwort[] = [];
+  private _verarbeiteEventLaeuft = false;
 
-  /**
-   * Registriert einen Listener fuer Sonderpunkt-Ereignisse (Fuchs gefangen, Karlchen, Doppelkopf).
-   * Wird nach jedem STICH_ABGESCHLOSSEN-Event mit neueSonderpunkte aufgerufen.
-   * @returns Abmelde-Funktion zum Entfernen des Listeners
-   */
+  abonniereEvents(listener: (ereignis: PartieEreignisAntwort) => void): () => void {
+    this._eventListener.add(listener);
+    return () => this._eventListener.delete(listener);
+  }
+
   abonniereSonderpunkte(listener: (sonderpunkte: SonderpunktEreignisAntwortDto[]) => void): () => void {
     this._sonderpunkteListener.add(listener);
     return () => this._sonderpunkteListener.delete(listener);
   }
 
-  constructor(
-    private readonly api: SpielverwaltungApi,
-    private readonly echtzeit: EchtzeitPort
-  ) {}
+  constructor(private readonly api: SpielverwaltungApi, private readonly echtzeit: EchtzeitPort) {}
 
-  /**
-   * Registriert einen Listener und ruft ihn sofort mit dem aktuellen Zustand auf.
-   * @param listener - Callback, der bei jeder Zustandsaenderung aufgerufen wird
-   * @returns Abmelde-Funktion zum Entfernen des Listeners
-   */
   abonnieren(listener: Listener): () => void {
     this.listener.add(listener);
     listener(this.snapshot());
     return () => this.listener.delete(listener);
   }
 
-  /**
-   * Gibt einen tiefen Klon des aktuellen Zustands zurueck.
-   * Alle Listener erhalten ebenfalls tiefe Klone — Mutationen haben keinen Effekt.
-   */
   snapshot(): AppZustand {
     return structuredClone(this.zustand);
   }
 
-  /**
-   * Initialisiert die Anwendung: Spieler-Session anlegen, WebSocket verbinden,
-   * gemeinsame Abonnements registrieren und initiale Tischliste laden.
-   * Idempotent: bei bereits initialisiertem Zustand wird nichts getan.
-   * @throws Error bei Verbindungs- oder Session-Fehler (wird als UiMeldung gesetzt)
-   */
   async initialisieren(): Promise<void> {
-    if (this.zustand.initialisiert) {
-      return;
-    }
-
+    if (this.zustand.initialisiert) return;
     await this.fuehreMitStatus(async () => {
       this.patch({ verbindung: 'verbinde' });
       try {
         const spieler = await this.api.initialisiereSpielerSession();
-        Logger.store('Spieler-Session erfolgreich initialisiert', { spielerId: spieler.spielerId });
-        try {
-          await this.echtzeit.verbinde();
-          Logger.store('WebSocket-Verbindung erfolgreich hergestellt');
-          this.registriereGemeinsameAbos();
-          const tische = await this.api.listeTische();
-          Logger.store('Tischliste erfolgreich geladen');
-          this.patch({
-            spieler,
-            tische,
-            initialisiert: true,
-            verbindung: 'verbunden',
-            meldung: null
-          });
-          this.echtzeit.senden('/app/tische/snapshot');
-        } catch (wsFehler) {
-          Logger.store('WebSocket-Verbindungsfehler', { fehler: wsFehler });
-          throw new Error('WebSocket-Verbindung fehlgeschlagen.');
-        }
-      } catch (apiFehler) {
-        Logger.store('API-Session-Initialisierungsfehler', { fehler: apiFehler });
-        throw new Error('API-Session-Initialisierung fehlgeschlagen.');
+        await this.echtzeit.verbinde();
+        this.registriereGemeinsameAbos();
+        const tische = await this.api.listeTische();
+        this.patch({ spieler, tische, initialisiert: true, verbindung: 'verbunden', meldung: null });
+        this.echtzeit.senden('/app/tische/snapshot');
+      } catch {
+        throw new Error('Initialisierung fehlgeschlagen.');
       }
     });
   }
 
-  /** Registriert einen neuen Spieler mit Benutzername/Passwort und initialisiert die Session. */
   async registrieren(benutzername: string, passwort: string, email?: string): Promise<void> {
     await this.fuehreMitStatus(async () => {
-      const antwort = await this.api.registrieren(benutzername, passwort, email);
-      Logger.store('Registrierung erfolgreich', { spielerId: antwort.spielerId });
+      await this.api.registrieren(benutzername, passwort, email);
       this.patch({ authentifiziert: true, bereich: 'SPIELVERWALTUNG' });
       await this.initialisieren();
     });
   }
 
-  /** Loggt einen Spieler mit Benutzername/Passwort ein und initialisiert die Session. */
   async einloggen(benutzername: string, passwort: string): Promise<void> {
     await this.fuehreMitStatus(async () => {
-      const antwort = await this.api.einloggen(benutzername, passwort);
-      Logger.store('Login erfolgreich', { spielerId: antwort.spielerId });
+      await this.api.einloggen(benutzername, passwort);
       this.patch({ authentifiziert: true, bereich: 'SPIELVERWALTUNG' });
       await this.initialisieren();
     });
   }
 
-  /** Loggt den Spieler aus und setzt den Zustand zurueck. */
   async ausloggen(): Promise<void> {
-    try {
-      await this.api.ausloggen();
-    } catch {
-      // Ignorieren — Session ist serverseitig evtl. bereits ungueltig
-    }
+    await this.api.ausloggen().catch(() => undefined);
     this.echtzeit.trennen();
     this.zustand = erzeugeAnfangszustand();
     this.veroeffentliche();
   }
 
-  /** Startet als Gast (alter Session-Flow) ohne Benutzername/Passwort. */
   async alsGastStarten(): Promise<void> {
     this.patch({ authentifiziert: true, bereich: 'SPIELVERWALTUNG' });
     await this.initialisieren();
   }
 
-  /** Laedt die Tischliste per REST neu und fordert einen WebSocket-Snapshot an. */
   async aktualisiereTischliste(): Promise<void> {
     await this.fuehreMitStatus(async () => {
       const tische = await this.api.listeTische();
@@ -234,10 +145,6 @@ export class AppStore {
     });
   }
 
-  /**
-   * Schnellstart: Tritt einem offenen Tisch bei oder erstellt einen neuen.
-   * KI-Spieler werden serverseitig aufgefuellt und die Partie sofort gestartet.
-   */
   async erstelleQuickGame(): Promise<void> {
     await this.fuehreMitStatus(async () => {
       const tisch = await this.api.schnellstart();
@@ -246,41 +153,25 @@ export class AppStore {
     });
   }
 
-  /**
-   * Erstellt einen neuen Tisch und überschreibt danach selektiv die gewünschten Konfig-Felder.
-   * Strategie: Erst erstellen (Backend-Defaults), dann PATCH der User-Prefs via PUT.
-   */
   async erstelleKonfiguriertenTisch(name: string, konfiguration: Partial<TischKonfigurationDto>, privat?: boolean): Promise<void> {
     const tischName = name.trim();
     if (!tischName) {
-      this.patch({ meldung: { typ: 'fehler', text: 'Bitte gib einen Tischnamen ein.', fehlerCode: 'ANFRAGE_UNGUELTIG' } });
+      this.patch({ meldung: { typ: 'fehler', text: 'Tischname leer.', fehlerCode: 'ANFRAGE_UNGUELTIG' } });
       return;
     }
-
     await this.fuehreMitStatus(async () => {
       const tisch = await this.api.erstelleTisch(tischName, undefined, privat);
-      // Dann User-Prefs als vollständige Konfiguration (Defaults + Overrides) zurückschreiben
-      const hatOverrides = Object.keys(konfiguration).length > 0;
-      if (hatOverrides) {
-        const vollstaendig: TischKonfigurationDto = { ...tisch.konfiguration, ...konfiguration };
-        await this.api.aktualisiereTischKonfiguration(tisch.id, vollstaendig);
+      if (Object.keys(konfiguration).length > 0) {
+        await this.api.aktualisiereTischKonfiguration(tisch.id, { ...tisch.konfiguration, ...konfiguration });
       }
       this.oeffneTisch(tisch);
     });
   }
 
-  /**
-   * Erstellt einen neuen Tisch mit dem angegebenen Namen und wechselt zur TischSzene.
-   * @param name - Tischname (wird getrimmt; leer → Fehlermeldung ohne HTTP-Aufruf)
-   */
   async erstelleTisch(name: string): Promise<void> {
     await this.erstelleKonfiguriertenTisch(name, {});
   }
 
-  /**
-   * Tritt einem bestehenden Tisch bei und wechselt zur TischSzene.
-   * @param tischId - ID des beizutretenden Tisches
-   */
   async betreteTisch(tischId: Uuid): Promise<void> {
     await this.fuehreMitStatus(async () => {
       const tisch = await this.api.betreteTisch(tischId);
@@ -288,10 +179,6 @@ export class AppStore {
     });
   }
 
-  /**
-   * Tritt einem Tisch ueber seinen Einladungscode bei und wechselt zur TischSzene.
-   * @param einladungsCode - 8-stelliger alphanumerischer Code
-   */
   async betreteTischViaCode(einladungsCode: string): Promise<void> {
     await this.fuehreMitStatus(async () => {
       const tisch = await this.api.betreteTischViaCode(einladungsCode);
@@ -299,218 +186,95 @@ export class AppStore {
     });
   }
 
-  /**
-   * Session-Recovery nach Tab-Reload: Abonniert den Tisch direkt anhand seiner ID
-   * und fordert einen Snapshot an, ohne erneut beizutreten.
-   * Der Snapshot kommt asynchron via WebSocket und befuellt den Zustand.
-   */
   reconnecteTisch(tischId: Uuid): void {
-    Logger.store('Session-Recovery: Reconnect zu Tisch', { tischId });
     this.setzeTischAbosZurueck();
     this.registriereTischAbos(tischId, null);
     this.patch({ bereich: 'TISCH' });
     this.echtzeit.senden(`/app/tisch/${tischId}/snapshot`);
   }
 
-  /**
-   * Entfernt einen Spieler vom aktuellen Tisch (Kick durch Gastgeber).
-   * @param spielerId - ID des zu entfernenden Spielers
-   */
   async kickeSpieler(spielerId: Uuid): Promise<void> {
     const tischId = this.zustand.aktuellerTisch?.id;
-    if (!tischId) {
-      return;
-    }
-    await this.fuehreMitStatus(async () => {
-      await this.api.kickeSpieler(tischId, spielerId);
-    });
+    if (!tischId) return;
+    await this.fuehreMitStatus(async () => { await this.api.kickeSpieler(tischId, spielerId); });
   }
 
-  /**
-   * Laedt den Namen eines Tisches per REST-API.
-   * Wird fuer die Session-Recovery verwendet, wenn nur die TischId bekannt ist.
-   * @param tischId - ID des Tisches
-   * @returns Name des Tisches
-   */
   async ladeTischName(tischId: Uuid): Promise<string> {
-    const tisch = await this.api.ladeTisch(tischId);
-    return tisch.name;
+    return (await this.api.ladeTisch(tischId)).name;
   }
 
-  /**
-   * Verlaesst den aktuellen Tisch und kehrt zur Lobby zurueck.
-   * Bei laufender Partie wird diese fuer alle Spieler abgebrochen.
-   */
   async verlasseAktuellenTisch(): Promise<void> {
     const tisch = this.zustand.aktuellerTisch;
-    if (!tisch) {
-      return;
-    }
-
+    if (!tisch) return;
     await this.fuehreMitStatus(async () => {
       await this.api.verlasseTisch(tisch.id);
       this.setzeTischAbosZurueck();
       this.patch({ aktuellerTisch: null, partieStand: null, bereich: 'SPIELVERWALTUNG' });
     });
-    // Tischliste separat aktualisieren — wirdGeladen ist hier bereits false,
-    // damit der Erstellen-Button in der SpielverwaltungsSzene sofort aktiv ist.
     void this.aktualisiereTischliste();
   }
 
-  /** Startet die Partie am aktuellen Tisch (nur fuer den Tisch-Ersteller moeglich). */
   async starteAktuellenTisch(): Promise<void> {
     const tisch = this.zustand.aktuellerTisch;
-    if (!tisch) {
-      return;
-    }
-
-    await this.fuehreMitStatus(async () => {
-      await this.api.starteTisch(tisch.id);
-    });
+    if (!tisch) return;
+    await this.fuehreMitStatus(async () => { await this.api.starteTisch(tisch.id); });
   }
 
-  /**
-   * Startet eine neue Partie am aktuellen Tisch nach Ende der vorherigen Partie.
-   * Idempotent: Wenn die Partie bereits laeuft, wird nichts getan.
-   */
   async starteNeuePartie(): Promise<void> {
     const tisch = this.zustand.aktuellerTisch;
-    if (!tisch) {
-      return;
-    }
-    await this.fuehreMitStatus(async () => {
-      await this.api.starteNeuePartie(tisch.id);
-    });
+    if (!tisch) return;
+    await this.fuehreMitStatus(async () => { await this.api.starteNeuePartie(tisch.id); });
   }
 
-  /**
-   * Aendert den Tischhintergrund per REST-API und aktualisiert den lokalen Zustand.
-   * Bei bereits gesetztem Hintergrund wird kein HTTP-Aufruf gemacht.
-   * @param tischhintergrund - Neuer Tischhintergrund (FILZ_GRUEN | HOLZ_DUNKEL | BLAU_GRAFIK)
-   */
   async aktualisiereAktuellenTischhintergrund(tischhintergrund: Tischhintergrund): Promise<void> {
     const tisch = this.zustand.aktuellerTisch;
-    if (!tisch) {
-      this.aktuellerTischIdOderFehler();
-      return;
-    }
-    if (tisch.konfiguration.tischhintergrund === tischhintergrund) {
-      return;
-    }
-
+    if (!tisch) return;
+    if (tisch.konfiguration.tischhintergrund === tischhintergrund) return;
     await this.fuehreMitStatus(async () => {
-      const konfiguration = await this.api.aktualisiereTischKonfiguration(
-        tisch.id,
-        this.aktualisierteKonfiguration(tisch.konfiguration, tischhintergrund)
-      );
-      this.patch({
-        aktuellerTisch: {
-          ...tisch,
-          konfiguration
-        },
-        meldung: null
-      });
+      const konfiguration = await this.api.aktualisiereTischKonfiguration(tisch.id, { ...tisch.konfiguration, tischhintergrund });
+      this.patch({ aktuellerTisch: { ...tisch, konfiguration }, meldung: null });
     });
   }
 
-  /** Aktualisiert die KI-Schwierigkeitsstufe des aktuellen Tisches. */
   async aktualisiereAktuelleKiSchwierigkeit(kiSchwierigkeit: KiSchwierigkeit): Promise<void> {
     const tisch = this.zustand.aktuellerTisch;
-    if (!tisch) {
-      this.aktuellerTischIdOderFehler();
-      return;
-    }
-    if (tisch.konfiguration.kiSchwierigkeit === kiSchwierigkeit) {
-      return;
-    }
-
+    if (!tisch) return;
+    if (tisch.konfiguration.kiSchwierigkeit === kiSchwierigkeit) return;
     await this.fuehreMitStatus(async () => {
-      const konfiguration = await this.api.aktualisiereTischKonfiguration(
-        tisch.id,
-        { ...tisch.konfiguration, kiSchwierigkeit }
-      );
-      this.patch({
-        aktuellerTisch: {
-          ...tisch,
-          konfiguration
-        },
-        meldung: null
-      });
+      const konfiguration = await this.api.aktualisiereTischKonfiguration(tisch.id, { ...tisch.konfiguration, kiSchwierigkeit });
+      this.patch({ aktuellerTisch: { ...tisch, konfiguration }, meldung: null });
     });
   }
 
-  /**
-   * Sendet die Spielaktion "Karte ausspielen" per WebSocket.
-   * @param karteId - ID der auszuspielenden Karte
-   */
   spieleKarte(karteId: string): void {
-    if (!karteId.trim()) {
-      this.patch({ meldung: { typ: 'fehler', text: 'Es wurde keine gueltige Karte ausgewaehlt.', fehlerCode: 'KARTE_UNGUELTIG' } });
-      return;
-    }
-    const tischId = this.aktuellerTischIdOderFehler();
-    if (!tischId) {
-      return;
-    }
-    this.sendeSpielaktion(`/app/tisch/${tischId}/karte`, { karteId });
+    const tischId = this.zustand.aktuellerTisch?.id;
+    if (tischId) this.sendeSpielaktion(`/app/tisch/${tischId}/karte`, { karteId });
   }
 
-  /**
-   * Sendet die Spielaktion "Ansage machen" per WebSocket.
-   * @param ansage - Typ der Ansage (RE, KONTRA, KEINE_90, …)
-   */
   sageAnsageAn(ansage: Ansage): void {
-    const tischId = this.aktuellerTischIdOderFehler();
-    if (!tischId) {
-      return;
-    }
-    this.sendeSpielaktion(`/app/tisch/${tischId}/ansage`, { ansage });
+    const tischId = this.zustand.aktuellerTisch?.id;
+    if (tischId) this.sendeSpielaktion(`/app/tisch/${tischId}/ansage`, { ansage });
   }
 
-  /**
-   * Sendet die Vorbehalt-Ansage per WebSocket.
-   * @param vorbehalt - Vorbehalt-Typ (GESUND, SOLO_*, HOCHZEIT, ARMUT)
-   */
   meldeVorbehalt(vorbehalt: VorbehaltAnsage): void {
-    const tischId = this.aktuellerTischIdOderFehler();
-    if (!tischId) {
-      return;
-    }
-    this.sendeSpielaktion(`/app/tisch/${tischId}/vorbehalt`, { vorbehalt });
+    const tischId = this.zustand.aktuellerTisch?.id;
+    if (tischId) this.sendeSpielaktion(`/app/tisch/${tischId}/vorbehalt`, { vorbehalt });
   }
 
-  /**
-   * Sendet die Antwort auf ein Armut-Angebot per WebSocket.
-   * @param angenommen - true wenn der Spieler die Armut annimmt
-   * @param kartenIds - IDs der zurueckzugebenden Karten (bei Annahme)
-   */
   beantworteArmut(angenommen: boolean, kartenIds: string[]): void {
-    const tischId = this.aktuellerTischIdOderFehler();
-    if (!tischId) {
-      return;
-    }
-    this.sendeSpielaktion(`/app/tisch/${tischId}/armut-antwort`, { angenommen, kartenIds });
+    const tischId = this.zustand.aktuellerTisch?.id;
+    if (tischId) this.sendeSpielaktion(`/app/tisch/${tischId}/armut-antwort`, { angenommen, kartenIds });
   }
 
-  /** Blendet die aktuelle Fehlermeldung oder Hinweismeldung aus. */
-  quittiereMeldung(): void {
-    this.patch({ meldung: null });
-  }
+  quittiereMeldung(): void { this.patch({ meldung: null }); }
 
-  /**
-   * Schaltet den Debug-Modus um und fordert einen neuen Partie-Snapshot an.
-   * Im Debug-Modus sind alle Handkarten aller Spieler sichtbar.
-   */
   toggleDebugModus(): void {
     const debugModus = !this.zustand.debugModus;
     this.patch({ debugModus });
-    this.fordereAktuellenPartieSnapshotAn(debugModus);
+    const partieId = this.zustand.aktuellerTisch?.partieId ?? this.zustand.partieStand?.partieId ?? null;
+    if (partieId) this.echtzeit.senden(debugModus ? `/app/partie/${partieId}/debug-snapshot` : `/app/partie/${partieId}/snapshot`);
   }
 
-  /**
-   * Trennt alle WebSocket-Abonnements und die Verbindung, setzt den Zustand zurueck.
-   * Wird beim App-Teardown oder bei explizitem Logout aufgerufen.
-   */
   trennen(): void {
     this.setzeTischAbosZurueck();
     this.gemeinsameAbos.splice(0).forEach((abmelden) => abmelden());
@@ -520,26 +284,11 @@ export class AppStore {
   }
 
   private registriereGemeinsameAbos(): void {
-    if (this.gemeinsameAbos.length > 0) {
-      return;
-    }
-
+    if (this.gemeinsameAbos.length > 0) return;
     this.gemeinsameAbos.push(
-      this.echtzeit.abonnieren<TischlisteEreignisAntwort>('/topic/tische', (ereignis) => {
-        this.patch({ tische: ereignis.tische });
-      }),
-      this.echtzeit.abonnieren<TischlisteEreignisAntwort>('/user/queue/tische', (ereignis) => {
-        this.patch({ tische: ereignis.tische });
-      }),
-      this.echtzeit.abonnieren<SpielverwaltungWebSocketFehlerAntwort>('/user/queue/fehler', (fehler) => {
-        this.patch({
-          meldung: {
-            typ: 'fehler',
-            text: fehler.nachricht,
-            fehlerCode: fehler.fehlerCode
-          }
-        });
-      })
+      this.echtzeit.abonnieren<TischlisteEreignisAntwort>('/topic/tische', (e) => this.patch({ tische: e.tische })),
+      this.echtzeit.abonnieren<TischlisteEreignisAntwort>('/user/queue/tische', (e) => this.patch({ tische: e.tische })),
+      this.echtzeit.abonnieren<SpielverwaltungWebSocketFehlerAntwort>('/user/queue/fehler', (f) => this.patch({ meldung: { typ: 'fehler', text: f.nachricht, fehlerCode: f.fehlerCode } }))
     );
   }
 
@@ -552,221 +301,110 @@ export class AppStore {
     this.setzeTischAbosZurueck();
     this.aktuellePartieAbo = partieId;
     this.tischAbos.push(
-      this.echtzeit.abonnieren<TischEreignisAntwort>(`/topic/tisch/${tischId}`, (ereignis) => {
-        this.verarbeiteTischEreignis(ereignis);
-      }),
-      this.echtzeit.abonnieren<TischEreignisAntwort>(`/user/queue/tisch/${tischId}`, (ereignis) => {
-        this.verarbeiteTischEreignis(ereignis);
-      })
+      this.echtzeit.abonnieren<TischEreignisAntwort>(`/topic/tisch/${tischId}`, (e) => this.verarbeiteTischEreignis(e)),
+      this.echtzeit.abonnieren<TischEreignisAntwort>(`/user/queue/tisch/${tischId}`, (e) => this.verarbeiteTischEreignis(e))
     );
-
-    if (partieId) {
-      this.registrierePartieAbos(partieId);
-    }
-
+    if (partieId) this.registrierePartieAbos(partieId);
     this.echtzeit.senden(`/app/tisch/${tischId}/snapshot`);
-    this.forderePartieSnapshotAn(partieId, this.zustand.debugModus);
   }
 
   private registrierePartieAbos(partieId: Uuid): void {
-    this.tischAbos.push(
-      this.echtzeit.abonnieren<PartieEreignisAntwort>(`/user/queue/partie/${partieId}`, (ereignis) => {
-        Logger.store('Partie-Ereignis', { typ: ereignis.ereignisTyp, status: ereignis.partieStand?.status });
-        this.verarbeitePartieEreignis(ereignis);
-      })
-    );
-  }
-
-  private fordereAktuellenPartieSnapshotAn(debugModus: boolean): void {
-    this.forderePartieSnapshotAn(this.zustand.aktuellerTisch?.partieId ?? this.zustand.partieStand?.partieId ?? null, debugModus);
-  }
-
-  private forderePartieSnapshotAn(partieId: Uuid | null, debugModus: boolean): void {
-    if (!partieId) {
-      return;
-    }
-    this.echtzeit.senden(debugModus ? `/app/partie/${partieId}/debug-snapshot` : `/app/partie/${partieId}/snapshot`);
+    this.tischAbos.push(this.echtzeit.abonnieren<PartieEreignisAntwort>(`/user/queue/partie/${partieId}`, (e) => this.verarbeitePartieEreignis(e)));
   }
 
   private verarbeiteTischEreignis(ereignis: TischEreignisAntwort): void {
     if (ereignis.ereignisTyp === 'PARTIE_ABGEBROCHEN') {
-      Logger.store('Partie abgebrochen – Zurueck zur Lobby');
       this.setzeTischAbosZurueck();
-      this.patch({
-        aktuellerTisch: null,
-        partieStand: null,
-        bereich: 'SPIELVERWALTUNG',
-        meldung: { typ: 'info', text: 'Die Partie wurde abgebrochen, weil ein Spieler den Tisch verlassen hat.', fehlerCode: 'PARTIE_ABGEBROCHEN' }
-      });
+      this.patch({ aktuellerTisch: null, partieStand: null, bereich: 'SPIELVERWALTUNG', meldung: { typ: 'info', text: 'Partie abgebrochen.', fehlerCode: 'PARTIE_ABGEBROCHEN' } });
       return;
     }
     if (ereignis.ereignisTyp === 'TISCH_ENTFERNT' || !ereignis.tisch) {
-      Logger.store('Zurueck zur Lobby');
       this.setzeTischAbosZurueck();
       this.patch({ aktuellerTisch: null, partieStand: null, bereich: 'SPIELVERWALTUNG' });
       return;
     }
-
-    const bekanntePartieId = this.aktuellePartieAbo;
     const partiestand = ereignis.partieStand ?? this.zustand.partieStand;
-    Logger.store('Tisch-Snapshot', { tischId: ereignis.tisch.id, status: ereignis.tisch.status });
     this.patch({ aktuellerTisch: ereignis.tisch, partieStand: partiestand, bereich: 'TISCH' });
-
-    if (ereignis.tisch.partieId && ereignis.tisch.partieId !== bekanntePartieId) {
-      this.registriereTischAbos(ereignis.tisch.id, ereignis.tisch.partieId);
+    if (ereignis.tisch.partieId && ereignis.tisch.partieId !== this.aktuellePartieAbo) {
+      this.registrierePartieAbos(ereignis.tisch.partieId);
     }
   }
 
   private verarbeitePartieEreignis(ereignis: PartieEreignisAntwort): void {
-    switch (ereignis.ereignisTyp) {
-      case 'SNAPSHOT':
-      case 'PARTIE_AKTUALISIERT':
-      case 'KARTE_GESPIELT':
-        this.patch({ partieStand: ereignis.partieStand });
-        break;
-      case 'KI_ZUG_SEQUENZ':
-        this._expandiereKiSequenz(ereignis.kiKartenSequenz!, ereignis.partieStand);
-        break;
-      case 'STICH_ABGESCHLOSSEN':
-        this.patch({ partieStand: ereignis.partieStand });
-        if (ereignis.neueSonderpunkte?.length) {
-          this._sonderpunkteListener.forEach((l) => l(ereignis.neueSonderpunkte!));
-        }
-        break;
-      default:
-        this.patch({ partieStand: ereignis.partieStand });
-        break;
-    }
+    this._eventQueue.push(ereignis);
+    void this._verarbeiteEventQueue();
   }
 
-  private _expandiereKiSequenz(
-    sequenz: GespielteKarteEreignisAntwort[],
-    finalStand: PartieStandAntwort
-  ): void {
+  private async _verarbeiteEventQueue(): Promise<void> {
+    if (this._verarbeiteEventLaeuft) return;
+    this._verarbeiteEventLaeuft = true;
+    while (this._eventQueue.length > 0) {
+      const ereignis = this._eventQueue.shift()!;
+      this._eventListener.forEach((l) => l(ereignis));
+      switch (ereignis.ereignisTyp) {
+        case 'SNAPSHOT':
+          this.leereKiSequenzQueue();
+          this.patch({ partieStand: ereignis.partieStand });
+          break;
+        case 'PARTIE_AKTUALISIERT':
+        case 'KARTE_GESPIELT':
+        case 'ANSAGE_ERFOLGT':
+        case 'SPIEL_GESTARTET':
+        case 'SPIEL_BEENDET':
+        case 'SCHWEINCHEN_GEMELDET':
+          this.patch({ partieStand: ereignis.partieStand });
+          break;
+        case 'KI_ZUG_SEQUENZ':
+          await this._expandiereKiSequenz(ereignis.kiKartenSequenz!, ereignis.partieStand);
+          break;
+        case 'STICH_ABGESCHLOSSEN':
+          this.patch({ partieStand: ereignis.partieStand });
+          if (ereignis.neueSonderpunkte?.length) this._sonderpunkteListener.forEach((l) => l(ereignis.neueSonderpunkte!));
+          break;
+      }
+    }
+    this._verarbeiteEventLaeuft = false;
+  }
+
+  private async _expandiereKiSequenz(sequenz: GespielteKarteEreignisAntwort[], finalStand: PartieStandAntwort): Promise<void> {
     const prevStand = this.zustand.partieStand;
-    sequenz.forEach((_karte, i) => {
-      this._kiSequenzQueue.push(async () => {
-        const stand =
-          i === sequenz.length - 1
-            ? finalStand
-            : this._synthetischerZwischenstand(prevStand!, sequenz.slice(0, i + 1));
-        this.patch({ partieStand: stand });
-        await new Promise<void>((r) => setTimeout(r, 800));
-      });
+    for (const [i] of sequenz.entries()) {
+      const stand = i === sequenz.length - 1 ? finalStand : this._synthetischerZwischenstand(prevStand!, sequenz.slice(0, i + 1));
+      this.patch({ partieStand: stand });
+      await new Promise<void>((r) => setTimeout(r, 800));
+    }
+  }
+
+  private _synthetischerZwischenstand(basis: PartieStandAntwort, gespielteKarten: GespielteKarteEreignisAntwort[]): PartieStandAntwort {
+    if (!basis.laufendesSpiel) return basis;
+    const kartenInMitte = [...basis.laufendesSpiel.aktuelleStichmitte];
+    const maxReihenfolge = kartenInMitte.reduce((max, k) => Math.max(max, k.reihenfolge ?? 0), 0);
+    gespielteKarten.forEach((k, i) => {
+      if (!kartenInMitte.some((bestehend) => bestehend.spielerPosition === k.spielerPosition)) {
+        const [farbe, wert, idx] = k.karteId.split('-');
+        kartenInMitte.push({
+          spielerPosition: k.spielerPosition,
+          karte: { id: k.karteId, farbe: farbe ?? '', wert: wert ?? '', exemplarIndex: parseInt(idx ?? '0', 10) },
+          reihenfolge: maxReihenfolge + i + 1,
+        });
+      }
     });
-    void this._verarbeiteKiSequenzQueue();
+    return { ...basis, laufendesSpiel: { ...basis.laufendesSpiel, aktuelleStichmitte: kartenInMitte } };
   }
 
-  private _synthetischerZwischenstand(
-    basis: PartieStandAntwort,
-    gespielteKarten: GespielteKarteEreignisAntwort[]
-  ): PartieStandAntwort {
-    const neueKarten = gespielteKarten.map((k) => ({
-      spielerPosition: k.spielerPosition,
-      karte: { id: k.karteId } as KarteAntwort,
-      reihenfolge: gespielteKarten.indexOf(k) + 1,
-    }));
-    return {
-      ...basis,
-      laufendesSpiel: basis.laufendesSpiel
-        ? {
-            ...basis.laufendesSpiel,
-            aktuelleStichmitte: neueKarten,
-          }
-        : basis.laufendesSpiel,
-    };
-  }
-
-  private async _verarbeiteKiSequenzQueue(): Promise<void> {
-    if (this._kiSequenzLaeuft) return;
-    this._kiSequenzLaeuft = true;
-    while (this._kiSequenzQueue.length > 0) {
-      const naechste = this._kiSequenzQueue.shift()!;
-      await naechste();
-    }
-    this._kiSequenzLaeuft = false;
-  }
-
-  /** Verwirft alle gepufferten KI-Sequenz-Steps (z.B. beim Tischverlassen). */
-  private leereKiSequenzQueue(): void {
-    this._kiSequenzQueue.length = 0;
-    this._kiSequenzLaeuft = false;
-  }
-
-  private setzeTischAbosZurueck(): void {
-    this.tischAbos.splice(0).forEach((abmelden) => abmelden());
-    this.aktuellePartieAbo = null;
-    this.leereKiSequenzQueue();
-  }
-
+  private leereKiSequenzQueue(): void { this._kiSequenzQueue.length = 0; }
+  private setzeTischAbosZurueck(): void { this.tischAbos.splice(0).forEach((a) => a()); this.aktuellePartieAbo = null; this.leereKiSequenzQueue(); }
   private sendeSpielaktion(ziel: string, payload: unknown): void {
-    Logger.store('Aktion ausgeloest', { typ: ziel });
-    try {
-      this.patch({ meldung: null });
-      this.echtzeit.senden(ziel, payload);
-    } catch (fehler) {
-      this.patch({ meldung: this.formatiereMeldung(fehler) });
-    }
+    try { this.patch({ meldung: null }); this.echtzeit.senden(ziel, payload); } catch (f) { this.patch({ meldung: this.formatiereMeldung(f) }); }
   }
-
-  private aktuellerTischIdOderFehler(): Uuid | null {
-    const tischId = this.zustand.aktuellerTisch?.id ?? null;
-    if (!tischId) {
-      this.patch({
-        meldung: {
-          typ: 'fehler',
-          text: 'Es ist aktuell kein Tisch geoeffnet.',
-          fehlerCode: 'TISCH_NICHT_AUSGEWAEHLT'
-        }
-      });
-      return null;
-    }
-    return tischId;
-  }
-
-  private patch(aenderungen: Partial<AppZustand>): void {
-    this.zustand = { ...this.zustand, ...aenderungen };
-    this.veroeffentliche();
-  }
-
-  private aktualisierteKonfiguration(
-    konfiguration: TischKonfigurationDto,
-    tischhintergrund: Tischhintergrund
-  ): TischKonfigurationDto {
-    return {
-      ...konfiguration,
-      tischhintergrund
-    };
-  }
-
-  private veroeffentliche(): void {
-    const zustand = this.snapshot();
-    this.listener.forEach((listener) => listener(zustand));
-  }
-
+  private patch(aenderungen: Partial<AppZustand>): void { this.zustand = { ...this.zustand, ...aenderungen }; this.veroeffentliche(); }
+  private veroeffentliche(): void { const zustand = this.snapshot(); this.listener.forEach((l) => l(zustand)); }
   private async fuehreMitStatus<T>(aktion: () => Promise<T>): Promise<T> {
     this.patch({ wirdGeladen: true });
-    try {
-      const ergebnis = await aktion();
-      this.patch({ wirdGeladen: false });
-      return ergebnis;
-    } catch (fehler) {
-      this.patch({
-        wirdGeladen: false,
-        verbindung: this.zustand.initialisiert ? this.zustand.verbindung : 'fehler',
-        meldung: this.formatiereMeldung(fehler)
-      });
-      throw fehler;
-    }
+    try { return await aktion(); } finally { this.patch({ wirdGeladen: false }); }
   }
-
   private formatiereMeldung(fehler: unknown): UiMeldung {
-    if (fehler instanceof SpielverwaltungFehler) {
-      return { typ: 'fehler', text: fehler.message, fehlerCode: fehler.fehlerCode };
-    }
-    if (istBekannterFehler(fehler)) {
-      return { typ: 'fehler', text: fehler.message };
-    }
-    return { typ: 'fehler', text: 'Es ist ein unerwarteter Frontend-Fehler aufgetreten.' };
+    if (fehler instanceof SpielverwaltungFehler) return { typ: 'fehler', text: fehler.message, fehlerCode: fehler.fehlerCode };
+    return { typ: 'fehler', text: 'Unbekannter Fehler.' };
   }
 }

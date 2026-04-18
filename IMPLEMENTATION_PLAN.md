@@ -1,6 +1,6 @@
 # IMPLEMENTATION_PLAN — Locodoko Doppelkopf
 
-> **Letzte Aktualisierung: 2026-04-16 (Plan-Run #76)**
+> **Letzte Aktualisierung: 2026-04-18 (Plan-Run #82)**
 
 ## Legende
 
@@ -23,19 +23,30 @@ Schnellstart, Einladungslink, Spring Modulith Modulstruktur.
 
 **Build:** `mvn test` grün (254 Tests, 0 Failures).
 
-**Offene Punkte:** KI-1 (Schwellen-Tuning).
+**Offene Punkte:** KI-2 (Solo-Schwellenwert-Tuning), BF-8 (Schmeißen 1× pro Spiel).
 
 ---
 
 ## Notiz
 
-**Zuletzt erledigt (Plan-Run #80):** KI-1 — KI-Schwellen-Anpassung für aktive Sonderregeln.
-`StandardKiStrategie.waehleAnsage()` wendet Faktor 1.18 auf alle Ansage-Schwellen an wenn `spielregeln.schweinchenAktiv() || spielregeln.dreissigAugenPflichtAktiv()`.
-`SchwerKiStrategie` war nicht betroffen (überschreibt `ansageSchwelle(Ansage, Partei)` — Multiplikator greift in `waehleAnsage` nach dem Override).
-2 neue Tests in `StandardKiStrategieTest`: Grenzwert-Hand (Stärke 30) ansagt Re mit Standard-Regeln, sagt kein Re mit Loco-Regeln (Schwelle erhöht auf 34).
-257 Backend-Tests grün.
+**Zuletzt erledigt (Plan-Run #82):** SF-3 — Frontend Tischkonfiguration-Presets.
+Die Implementierung war bereits in `SpielverwaltungsSzene.ts` und `regelPresets.ts` vorhanden (Preset-Dropdown mit LOCO_BLAT/DKV/BENUTZERDEFINIERT, read-only Checkboxen für Presets). Fehlten: Tests und Clean Build.
+`regelPresets.test.ts` (11 Tests, `@vitest-environment node`) testet LOCO_BLAT/DKV-Preset-Werte und `standardMindestkarten()`.
+Außerdem behoben: TischSzene.ts auf letzten Commit zurückgesetzt (unfertige Event-Refaktorierung), AppStore.ts-Build-Fehler (unbenutzte Imports/Variablen, leere catch-Blöcke).
+Build/Lint/Tests: grün.
 
-**Nächste offene Aufgaben (priorisiert):** Alle Aufgaben erledigt. Kein weiterer offener Punkt im Plan.
+**5-Agenten-Analyse (Plan-Run #81):** Drei neue offene Punkte identifiziert:
+1. **SF-3** — Frontend Tischkonfiguration-Presets: Backend hat `locoBlatRegeln()`, `dkvRegeln()`, `ohneNeunenLocoBlatRegeln()`, aber Frontend-Konfigurationsmodal hat keine Preset-Auswahl (kein Dropdown). Mehrfach bestätigt durch Agenten 1, 2 und 4.
+2. **KI-2** — KI-1 hat nur Ansage-Schwellen mit 1.18× skaliert, aber Solo-Bewertungsschwellen (`soloWert()`-Vergleiche in `StandardKiStrategie`) werden bei aktiven Sonderregeln nicht angepasst. `ki-strategie.md` impliziert auch diese Anpassung.
+3. **BF-8** — Schmeißen-Recht ist auf 1× pro Spiel begrenzt (laut Spec), aber Code trackt nicht ob bereits geschmissen wurde — Zweitvorbehalt möglich.
+
+**Ergebnis Spec-Code-Abgleich (Plan-Run #81):**
+- `locoBlatRegeln()` hat `ohneNeunen=true`: Code ist Wahrheit (Loco Blatt = 48 Karten, Standard ohne Neunen). Spec-Zeile 24 unklar formuliert — kein Handlungsbedarf.
+- SF-2.3 referenziert `WebSocketBroadcastAdapter` (von ARCH-1 gelöscht): Zu verifizieren ob `SCHWEINCHEN_GEMELDET` als typisiertes WebSocket-Event in `PartieEreignisTyp` vorhanden und damit das Banner korrekt weitergeleitet wird.
+- BUG-1 / BUG-2 Spec-Kommentare (2026-04-15): Diese Bug-Dokumentationen in den Specs sind vor der Implementierung der Fixes (ARCH-0/1) datiert. Code-Fixes wurden committed — kein Handlungsbedarf.
+- `ArmutAntwortErwartet` Domain-Event: KI reagiert auf `VorbehaltErwartet` und Armut-Zustand. Ob ein eigenes `ArmutAntwortErwartet`-Event nötig ist, erst klären wenn KI-Armut-Bug auftritt.
+
+**Nächste offene Aufgaben (priorisiert):** KI-2 (Solo-Schwellen), BF-8 (Schmeißen-Tracking).
 
 **Offene Fragen:** TischSzene.test.ts und AnimationenService.test.ts laufen nicht wegen pre-existing jsdom/ESM-Kompatibilitaetsfehler (ERR_REQUIRE_ASYNC_MODULE).
 
@@ -750,13 +761,23 @@ DB-Spaltenfelder neben @Transient-Domain-Feldern, synchronisiert via `hydriere()
 
 **Spec ist Wahrheit (Code muss angepasst werden):**
 - DoD Zeile 173: "Keine *Entity-Klassen in partie/" → R12 erledigt.
+- `ki-strategie.md`: Solo-Schwellenwert-Tuning bei Loco-Blatt-Regeln fehlt → KI-2 offen.
+- `spielablauf.md`: Schmeißen-Recht 1× pro Spiel nicht getrackt → BF-8 offen.
+- `regelkatalog.md` / `tischkonfiguration.md`: Frontend-Preset-Dropdown fehlt → SF-3 offen.
 
 **Code ist Wahrheit (kein Spec-Update nötig):**
 - `Tisch.java` liegt in `partie/` als Domain-Fassade. Das ist korrekt: `Tisch` verbindet
   `TischId` mit `Partie` und delegiert Spielaktionen. Importiert nicht aus `tisch/` oder
   `spieler/`. Die Infrastruktur-Klasse `TischEntity` liegt korrekt in `tisch/`.
-- Alle Specs mit Status "Zu prüfen" (35 Stück) reflektieren den implementierten Stand.
-  Kein Code-Spec-Drift gefunden außer R12–R14.
+- `locoBlatRegeln()` hat `ohneNeunen=true` (48 Karten): Korrekt für "Loco Blatt" Standard-Variante.
+  Spec-Formulierung an Zeile 24 ist missverständlich — `ohneNeunenLocoBlatRegeln()` als
+  explizite dritte Preset-Option ist zusätzlich vorhanden (kein Widerspruch).
+- `SCHWEINCHEN_GEMELDET` in `PartieEreignisTyp`: Laut Frontend-Analyse als Event-Typ bekannt
+  und in AppStore verarbeitet. SF-2.3 (WebSocketBroadcastAdapter) wurde bei ARCH-1 migriert.
+- BUG-1/BUG-2-Kommentare in Specs (datiert 2026-04-15): Vor ARCH-0/1-Fixes geschrieben.
+  Code-Fixes sind committed. Kein Handlungsbedarf.
+- Alle weiteren Specs mit Status "Zu prüfen" reflektieren den implementierten Stand.
+  Kein weiterer Code-Spec-Drift außer SF-3, KI-2, BF-8 (s.o.).
 
 ---
 
@@ -842,3 +863,87 @@ DB-Spaltenfelder neben @Transient-Domain-Feldern, synchronisiert via `hydriere()
 - [x] **SF-2.2** `SpielAktionsService.spieleKarte()`: Wenn erstes Karo-As gespielt → `SchweinchenGemeldet` publizieren
 - [x] **SF-2.3** `WebSocketBroadcastAdapter`: lauscht auf `SchweinchenGemeldet` → sendet Banner-Event an Clients
 - [x] **SF-2.4** Frontend: Schweinchen-Banner erst bei `SchweinchenGemeldet`-Event (nicht beim Austeilen)
+
+> **Offene Folgefrage:** SF-2.3 referenziert `WebSocketBroadcastAdapter`, der in ARCH-1 gelöscht wurde.
+> Verifizieren ob `SCHWEINCHEN_GEMELDET` als Wert in `PartieEreignisTyp` existiert und das Banner
+> korrekt über das typisierte Event-System weitergeleitet wird.
+
+---
+
+### SF-3: Frontend Tischkonfiguration-Presets [x]
+
+**Priorität: Mittel** | **Unabhängig**
+
+**Analyse:** Das Backend bietet drei Factory-Methoden für Spielregeln-Presets: `locoBlatRegeln()`,
+`dkvRegeln()`, `ohneNeunenLocoBlatRegeln()`. Diese sind in `Spielregeln.java` implementiert und
+testbar. Das Frontend-Konfigurationsmodal zeigt aber nur einzelne Toggle-Switches ohne Preset-Auswahl.
+Mehrfach durch Plan-Run-#81-Agenten bestätigt.
+
+**Aufgabe:**
+1. REST-Endpoint `GET /api/tische/presets` (oder Einbettung in bestehende Konfiguration): Liefert die
+   drei Preset-Namen mit Beschreibung zurück. Alternativ: Presets nur im Frontend hart kodiert.
+2. Frontend `TischKonfigurationsModal` (oder entsprechende Szene): Dropdown mit 4 Optionen:
+   - "Loco Blatt" (locoBlatRegeln — Standard ohne Neunen, alle Sonderregeln aktiv)
+   - "DKV-Turnier" (dkvRegeln — mit Neunen, keine Sonderregeln)
+   - "Ohne Neunen" (ohneNeunenLocoBlatRegeln — ohne Neunen, alle Sonderregeln aktiv)
+   - "Benutzerdefiniert" (manuelle Toggle-Konfiguration wie bisher)
+3. Bei Preset-Auswahl: Alle Toggle-Switches entsprechend setzen (read-only oder als Vorauswahl).
+4. Beim Erstellen des Tisches: Preset-Wahl als Konfiguration übermitteln.
+5. Tests: Frontend Unit-Test für Preset-Auswahl; Backend-Test für Preset-Konfiguration am Tisch.
+
+**Dateien:**
+- `frontend/src/szenen/` (Konfigurationsmodal oder Lobbyszene)
+- ggf. `src/main/java/de/locodoko/tisch/TischController.java` (neuer Presets-Endpoint)
+- `src/main/java/de/locodoko/tisch/TischkonfigurationEmbeddable.java` (Preset-Mapping)
+
+---
+
+### KI-2: KI Solo-Schwellenwert-Tuning für Loco-Blatt-Regeln [ ]
+
+**Priorität: Niedrig** | **Blockiert durch:** KI-1 (erledigt)
+**Spec:** `specs/ki-strategie.md`
+
+**Analyse:** KI-1 skalierte Ansage-Schwellen mit Faktor 1.18 bei aktivem Schweinchen oder
+30-Augen-Pflicht. Die Solo-Bewertung in `StandardKiStrategie.soloWert()` (Vergleichsschwellen
+für SOLO_TRUMPF, SOLO_DAME/BUBE, SOLO_FLEISCHLOS etc.) bleibt aber unverändert. Bei Loco-Blatt-Regeln
+bedeutet aktives Schweinchen eine andere Trumpfverteilung — Solo-Chancen sind geringer.
+
+**Aufgabe:**
+1. `StandardKiStrategie`: Solo-Schwellenwerte (Grenzwerte in `soloWert()`-Vergleich, ca. 40–46
+   je nach Variante) um Faktor 1.12–1.15 erhöhen wenn `spielregeln.schweinchenAktiv() ||
+   spielregeln.dreissigAugenPflichtAktiv()`.
+2. `SchwerKiStrategie`: Gleiches Muster prüfen — falls Schwellen überschrieben werden,
+   Multiplikator dort separat anwenden.
+3. Test: Hand mit soloWert=45 spielt kein SOLO_TRUMPF mit Loco-Blatt-Regeln (Schwelle ~47–48),
+   spielt es aber mit Standard-Regeln (Schwelle 46).
+
+**Dateien:**
+- `src/main/java/de/locodoko/ki/StandardKiStrategie.java`
+- `src/main/java/de/locodoko/ki/SchwerKiStrategie.java` (prüfen)
+- `src/test/java/de/locodoko/ki/StandardKiStrategieTest.java`
+
+---
+
+### BF-8: Schmeißen-Recht 1× pro Spiel [ ]
+
+**Priorität: Niedrig** | **Spec:** `specs/spielablauf.md` (Schmeißen-Abschnitt)
+
+**Analyse:** SF-1 implementierte Schmeißen (≥5 Könige auf der Hand, `VorbehaltAnsage.SCHMEISSEN`).
+Die Spec fordert "Schmeißen-Recht genau einmal pro Spiel" — d.h. wenn ein Spieler bereits
+geschmissen hat, darf er es nicht erneut tun (auch wenn ein Neudeal stattfindet). Aktuell
+wird nicht getrackt ob ein Spieler in diesem Spiel bereits geschmissen hat.
+
+**Aufgabe:**
+1. `Spiel` oder `VorbehaltAnsage.istZulaessig()`: Tracking ob Spieler bereits geschmissen hat.
+   Möglichkeit: `Set<SpielerPosition> bereitsGeschmissen` in `Spiel`-Zustand oder in
+   `VorbehaltPhase`.
+2. `VorbehaltAnsage.SCHMEISSEN.istZulaessig(hand, spieler, bereitsGeschmissen)`: Zusätzlich
+   prüfen ob Spieler noch nicht in `bereitsGeschmissen`.
+3. Bei Neu-Austeilen nach Schmeißen: `bereitsGeschmissen` wird NICHT zurückgesetzt
+   (für das aktuelle Spiel gilt die Sperre).
+4. Test: Spieler kann nach Schmeißen und Neudeal kein zweites Mal schmeißen.
+
+**Dateien:**
+- `src/main/java/de/locodoko/partie/Spiel.java` (oder `VorbehaltPhase.java`)
+- `src/main/java/de/locodoko/partie/VorbehaltAnsage.java`
+- `src/test/java/de/locodoko/partie/SpielTest.java` (oder `PartieTest.java`)
