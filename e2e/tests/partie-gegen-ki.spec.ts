@@ -114,11 +114,10 @@ test.describe('Partie gegen KI', () => {
     // ── 3. Spiel starten ─────────────────────────────────────────────────────
     // Warum: "Spiel starten" fuellt 3 KI-Spieler auf, startet Partie und
     // Vorbehalt-Phase — prueft KI-Auffuellung und Spielstart-Logik.
-    await expect(
-      page.locator('[data-testid="btn-spiel-starten"]'),
-      '"Spiel starten"-Button muss sichtbar sein (Tisch ist WARTEND)',
-    ).toBeVisible({ timeout: 5_000 });
-    await page.locator('[data-testid="btn-spiel-starten"]').click();
+    const startButton = page.locator('[data-testid="btn-spiel-starten"]');
+    await expect(startButton, '"Spiel starten"-Button muss sichtbar sein (Tisch ist WARTEND)').toBeVisible({ timeout: 5_000 });
+    await expect(startButton).toBeEnabled({ timeout: 10_000 });
+    await startButton.click();
 
     // ── 4. Vorbehalt-Phase durchlaufen ───────────────────────────────────────
     // Vorbehalt-Dialog ist Phaser-gerendert (kein HTML-DOM) → per __locodoko-Bridge pruefen.

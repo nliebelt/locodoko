@@ -10,13 +10,20 @@
 
 Die UI-Logik bestimmt, welche Interaktionen dem Spieler wann zur Verfügung stehen. Die Tischansicht verwendet ein hybrides Modell: Spielaktions-Elemente (Vorbehalt, Ansage, Armut, Stich-Feedback, Nameplates) sind in Phaser umgesetzt und rendern auf der Spielfläche. Meta-UI-Elemente (Seitenlade, Einstellungs-Modal, Rundenauswertung) sind als HTML-DOM über dem Canvas implementiert — sie benötigen keine Phaser-Migration da sie funktional vollständig sind und keinen Spielwert-Nutzen einer Migration hätte.
 
-### Grundsatz: Hybride UI
+### Grundsatz: Event-Driven UI
 
-**Spielaktions-UI** (Vorbehalt, Ansage, Armut, Stich-Feedback): Alle Elemente die direkt ins Spielgeschehen eingreifen, werden **auf der Spielfläche** dargestellt — sie dürfen die Karten nicht verdecken und gehören visuell zum Tisch.
+Die UI reagiert nicht mehr auf Zustandsänderungen durch Diffing (Vergleich alter vs. neuer Snapshot), sondern **exklusiv auf dedizierte WebSocket-Push-Events**.
 
-**Meta-UI** (Seitenlade `[≡]`, Einstellungs-Modal `[⚙]`): Informations- und Konfigurationselemente sind als HTML-DOM-Elemente implementiert — sie liegen als CSS-Overlay über dem Phaser-Canvas und werden per JavaScript-Event-Handler gesteuert.
+1. **Reaktive UI (Events):** Modals, Banner, Sonderpunkt-Feedback und Spiel-Übergänge werden *ausschließlich* durch dedizierte Ereignisse aus dem `AppStore.abonniereEvents()`-Stream ausgelöst (z.B. `SPIEL_BEENDET`, `SCHWEINCHEN_GEMELDET`).
+2. **Snapshot-Rendering:** Der `AppStore`-Snapshot ist ausschließlich für den statischen Tisch-Zustand verantwortlich (Karten, Nameplates, Stichmitte). Bei jedem Snapshot-Update ruft die `TischSzene` `renderTisch()` auf, um das Spielfeld synchron zum Backend zu halten.
+3. **UI-Guard:** Um "Springen" zu verhindern, darf `renderTisch()` während aktiver UI-Blocker (z.B. Rundenauswertung-Modal) keine Animationen oder Zustandsübergänge triggern, die mit dem Modal-Zustand kollidieren.
 
-Hinweise die lediglich den Spielzug des Spielers ankündigen (z.B. „Du bist dran") **entfallen ersatzlos** — der aktive Spieler ist durch Nameplate-Hervorhebung erkennbar.
+### Verarbeitung der Ereignisse
+
+- **Kein Raten:** `ermittleNeuesSpiel()`, `ermittleNeuAbgeschlossenenStich()` und vergleichbare Diffing-Methoden in `TischSzene.ts` sind **verboten**. 
+- **Explizite Trigger:** Die Szene implementiert einen Event-Handler, der bei `SPIEL_BEENDET` das entsprechende Modal öffnet.
+- **Synchronisation:** Der Event-Handler sorgt für einen sauberen "Clean Slate" (Animationen abbrechen, HandKarten-Map leeren), bevor die neue Phase visualisiert wird.
+- **Versionierung:** Der `AppStore` prüft eingehende `sequenzNummer` (siehe `architektur-domain-events.md`) und erzwingt bei Lücken einen Snapshot-Refresh.
 
 ## Anforderungen
 

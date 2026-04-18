@@ -6,7 +6,7 @@ ARG USER_GID=1000
 
 # 1. Base Dependencies & Repo Keys
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    sudo curl wget ca-certificates gnupg git procps less unzip zip jq ripgrep chromium \
+    sudo curl wget ca-certificates gnupg git procps less unzip zip jq ripgrep chromium tmux lsof net-tools procps \
     && wget -qO - https://packages.adoptium.net/artifactory/api/gpg/key/public | gpg --dearmor > /usr/share/keyrings/adoptium-keyring.gpg \
     && echo "deb [signed-by=/usr/share/keyrings/adoptium-keyring.gpg] https://packages.adoptium.net/artifactory/deb bookworm main" > /etc/apt/sources.list.d/adoptium.list \
     && curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg | dd of=/usr/share/keyrings/githubcli-archive-keyring.gpg \
@@ -14,7 +14,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && curl -fsSL https://deb.nodesource.com/setup_22.x | bash - \
     && rm -rf /var/lib/apt/lists/*
 
-# 2. Install Dev Tools (Java, Maven, Node, GH CLI)
+    # 2. Install Dev Tools (Java, Maven, Node, GH CLI)
 RUN apt-get update && apt-get install -y --no-install-recommends \
     temurin-25-jdk \
     maven \

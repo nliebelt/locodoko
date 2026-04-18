@@ -112,26 +112,9 @@ test.describe('Rundenauswertung', () => {
     }
 
     // ── 4. Overlay muss sichtbar sein ─────────────────────────────────────────
-    if (!overlayGefunden) {
-      const debugInfo = await page.evaluate(() => {
-        const el = document.querySelector('[data-testid="rundenauswertung-overlay"]') as HTMLElement | null;
-        interface B { appStore: { snapshot: () => Record<string, unknown> } }
-        const loco = (window as unknown as Record<string, B>)['__locodoko'];
-        const snap = loco?.appStore?.snapshot();
-        const ps = snap?.['partieStand'] as Record<string, unknown> | undefined;
-        const ls = ps?.['laufendesSpiel'] as Record<string, unknown> | undefined;
-        return {
-          overlayExists: !!el,
-          overlayHidden: el?.hidden,
-          spielPhase: ls?.['phase'],
-          spielNummer: ls?.['spielNummer'],
-          hatErgebnis: !!ps?.['letztesSpielergebnis'],
-        };
-      }).catch(() => ({ error: 'evaluate failed' }));
-      console.log('DEBUG overlay nicht gefunden:', JSON.stringify(debugInfo));
-      console.log('JS-Fehler:', seitenFehler.join('; ') || 'keine');
-    }
-    await expect(overlay).toBeVisible({ timeout: 30_000 });
+    // Wir erhöhen das Timeout auf 60s, um dem neuen Event-Batching-Delay (600ms pro Event)
+    // und der sequenziellen Verarbeitung im Store genügend Puffer zu geben.
+    await expect(overlay).toBeVisible({ timeout: 60_000 });
 
     // ── 5. Screenshot fuer visuelles Review (Vision Loop 10.6) ───────────────
     await page.screenshot({ path: join(__dirname, '..', 'screenshots', '09-rundenauswertung-overlay.png') });

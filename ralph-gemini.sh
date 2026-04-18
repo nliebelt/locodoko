@@ -19,7 +19,9 @@ set -euo pipefail
 #
 # Environment:
 #   MODEL=gemini-2.5-pro ./ralph-gemini.sh build 10     # Override model
-#   gemini-3.1-pro-preview-0326, gemini-3-flash, gemini-3-deep-think-v1
+#   gemini-3.1-pro-preview-0326, gemini-3-flash, gemini-3-deep-think-v1,
+#   gemini-3.1-flash-lite-preview, gemini-3-flash-preview
+# 
 # Model defaults:
 #   plan  → gemini-2.5-pro          (default for better planning)
 #   build → gemini-2.0-flash        (default for fast/cheap building)
@@ -61,7 +63,7 @@ if [ -n "${MODEL:-}" ]; then
 elif [ "$MODE" = "plan" ]; then
     EFFECTIVE_MODEL="gemini-2.5-pro"
 else
-    EFFECTIVE_MODEL="gemini-2.5-flash-lite" # The "cheap flash model"
+    EFFECTIVE_MODEL="gemini-3.1-flash-lite-preview" # The "cheap flash model"
 fi
 
 # --- Header ---
