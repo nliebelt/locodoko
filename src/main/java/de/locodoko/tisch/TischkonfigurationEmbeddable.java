@@ -111,7 +111,7 @@ public class TischkonfigurationEmbeddable {
     }
 
     public static TischkonfigurationEmbeddable standard() {
-        return ausSpielregeln(Spielregeln.locoBlatRegeln(), 24);
+        return ausSpielregeln(Spielregeln.ohneNeunenRegeln(), 24);
     }
 
     public static TischkonfigurationEmbeddable ausSpielregeln(Spielregeln spielregeln, int anzahlSpiele) {
