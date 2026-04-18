@@ -18,39 +18,43 @@ Silikon oder Fleisch ist, spielt keine Rolle.
 
 ---
 
-## Domain Events
+## Zwei Event-Ebenen
 
-Domain Events beschreiben etwas das **passiert ist** (Vergangenheitsform, Deutsch).
+### 1. Interne Domain Events (`partie.ereignisse.*`)
 
-### Definierte Events
+Werden von Spring Modulith innerhalb des Backends verarbeitet. Nie direkt an das Frontend gesendet.
 
-| Event | Ausgelöst wann | Enthält |
-|-------|---------------|---------|
-| `KarteGespielt` | Nach `Spiel.spieleKarte()` | `tischId`, `spielerPosition`, `karte`, `neuesSpiel` |
-| `StichAbgeschlossen` | Wenn `aktuellerStich.istVollständig()` | `tischId`, `stich`, `gewinner` |
-| `SpielGestartet` | Nach `Partie.starteNaechstesSpiel()` | `tischId`, `spielNummer` |
-| `SpielBeendet` | Nach `Partie.schliesseAktuellesSpielAb()` | `tischId`, `ergebnis` |
-| `PartieBeendet` | Nach letztem Spiel | `tischId`, `gesamtpunktestand` |
-| `NaechsterSpielerErwartet` | Nach jedem vollständigen Spielzug | `tischId`, `spielerPosition`, `erlaubteAktionen` |
-| `VorbehaltErwartet` | In VORBEHALT_ANSAGE-Phase | `tischId`, `spielerPosition` |
-| `ArmutAntwortErwartet` | In ARMUT_TAUSCH-Phase | `tischId`, `spielerPosition` |
+| Event | Ausgelöst durch | Listener |
+|-------|----------------|---------|
+| `NaechsterSpielerErwartet` | `SpielAktionsService` nach Kartenzug | `KiEventAdapter` |
+| `VorbehaltErwartet` | `SpielAktionsService` in VORBEHALT_ANSAGE-Phase | `KiEventAdapter` |
+| `SchweinchenGemeldet` | `SpielAktionsService` bei erster Dullen-Trumpf-Karte | — (noch kein WS-Broadcast) |
+| `SpielBeendet` | `KiOrchestrierungService.veroeffentlicheSpielBeendet()` | — (Seiten-Effekt: WS-Broadcast) |
 
-### Implementierung
+> **TODO:** `SchweinchenGemeldet` wird als Domain Event gepublisht, aber noch nicht
+> als `SCHWEINCHEN_GEMELDET` WebSocket-Ereignis ans Frontend weitergeleitet.
+> Sobald die UI ein Schweinchen-Banner zeigt, muss `KiEventAdapter` (oder ein separater
+> `SchweinchenBroadcaster`) dieses Event in `PartieEreignisAntwort.schweinchen()` umwandeln.
 
-Spring's `ApplicationEventPublisher` — kein externes Framework, keine neue Dependency.
+### 2. WebSocket-Ereignisse (`PartieEreignisTyp`)
 
-```java
-// Im SpielAktionsService nach jeder Mutation:
-eventPublisher.publishEvent(new NaechsterSpielerErwartet(tischId, position, erlaubteAktionen));
-```
+Werden über `/user/queue/partie/{partieId}` an verbundene Clients gesendet.
+Der TypeScript-Typ `PartieEreignisTyp` in `SpielverwaltungDto.ts` ist **kanonisch** —
+er muss jederzeit mit dem Java-Enum `PartieEreignisTyp` übereinstimmen.
 
-Events sind `record`s im Package `de.locodoko.partie.ereignisse`.
+| Typ | Gesendet von | Wann | Frontend-Aktion |
+|-----|-------------|------|----------------|
+| `SNAPSHOT` | `VerbindungsabbruchService`, `TischVerwaltungsService`, `SpielverwaltungWebSocketController` | Beitritt, Reconnect, expliziter `/snapshot`-Request | `leereKiSequenzQueue()` + State ersetzen |
+| `KARTE_GESPIELT` | `SpielAktionsService` | Nach jedem Kartenzug (Mensch oder KI-Einzelkarte) | State patchen |
+| `KI_ZUG_SEQUENZ` | `KiOrchestrierungService` | KI spielt mehrere Karten in einem Stich | Karten mit 800 ms Abstand animieren |
+| `STICH_ABGESCHLOSSEN` | `SpielAktionsService` | Stich vollständig, ggf. Sonderpunkte | State patchen + Sonderpunkt-Listener feuern |
+| `SPIEL_BEENDET` | `KiOrchestrierungService` | Spiel ausgewertet, nächstes gestartet | State patchen (Auswertungs-UI) |
 
 ---
 
 ## KI als Event-Subscriber (Reactive AI)
 
-`KiEventAdapter` reagiert auf `NaechsterSpielerErwartet` — `SpielAktionsService` enthält kein `if (isKi())` mehr:
+`KiEventAdapter` reagiert auf `NaechsterSpielerErwartet` und `VorbehaltErwartet`:
 
 ```java
 @Component
@@ -58,118 +62,66 @@ public class KiEventAdapter {
 
     @ApplicationModuleListener
     public void beiNaechsterSpielerErwartet(NaechsterSpielerErwartet event) {
-        SpielerEntity spieler = spielerRepository.findeAnTisch(event.tischId(), event.position());
-        if (!spieler.isKi()) return;  // Menschen reagieren selbst via WebSocket
+        // Delegiert an KiOrchestrierungService.automatisiereTisch()
+    }
 
-        // KI-Delay nur wenn Mensch am Tisch sitzt
-        boolean menschAmTisch = tischRepository.hatMenschlichenSpieler(event.tischId());
-        if (menschAmTisch) {
-            Thread.sleep(KI_DELAY_MS);  // oder Scheduler
-        }
-
-        KiStrategie ki = kiStrategieFactory.erstelle(spieler.kiSchwierigkeit());
-        Karte karte = ki.waehleKarte(erstelleKiSpielzustand(event));
-        spielAktionsService.karteSpielenFuer(event.tischId(), karte, event.position());
+    @ApplicationModuleListener
+    public void beiVorbehaltErwartet(VorbehaltErwartet event) {
+        // Delegiert an KiOrchestrierungService.automatisiereTisch()
     }
 }
 ```
 
-Für echten Multiplayer: `KiEventAdapter` und `WebSocketBroadcastAdapter` laufen parallel — der Spielkern bemerkt keinen Unterschied.
+`SpielAktionsService` enthält kein `if (isKi())` mehr — ob Mensch oder KI spielt,
+entscheidet ausschließlich der `KiEventAdapter` anhand von `SpielerEntity.isKi()`.
 
 ---
 
-## Typisierte WebSocket-Events (ARCH-1 / ARCH-2)
+## Frontend Event-Verarbeitung
 
-Statt anonymer State-Snapshots sendet der Server typisierte Events über `PartieEreignisTyp`:
+Der `AppStore` puffert eingehende `PartieEreignisAntwort`-Nachrichten in einer Queue
+und verarbeitet sie **seriell** (Lock via `_verarbeiteEventLaeuft`), um Reihenfolge-
+Garantien bei schnell aufeinanderfolgenden KI-Zügen zu gewährleisten.
 
-| Event-Typ | Wann gesendet | Zusatzdaten |
-|-----------|--------------|-------------|
-| `SNAPSHOT` | Reconnect, Spielstart | — (kompletter Stand) |
-| `KARTE_GESPIELT` | Nach menschlichem Zug (vor KI-Folgezügen) | — |
-| `KI_ZUG_SEQUENZ` | Nach Abschluss aller KI-Folgezüge | `kiKartenSequenz: GespielteKarteAntwort[]` |
-| `STICH_ABGESCHLOSSEN` | Wenn Stich vollständig (4 Karten) | `neueSonderpunkte: SonderpunktEreignisAntwort[]` |
+```
+WebSocket-Nachricht
+  → AppStore._eventQueue.push()
+  → _verarbeiteEventQueue() [seriell, async]
+      SNAPSHOT          → leereKiSequenzQueue() + patch(partieStand)
+      KARTE_GESPIELT    → patch(partieStand)
+      SPIEL_BEENDET     → patch(partieStand)
+      KI_ZUG_SEQUENZ    → Karten mit 800 ms Delay animieren, dann patch()
+      STICH_ABGESCHLOSSEN → patch(partieStand) + sonderpunkteListener feuern
+  → AppStore-Listener benachrichtigen
+  → TischSzene re-rendert via aktualisiereUi()
+```
 
-**Kein anonymer Broadcast** — alle Events gehen ausschließlich an `/user/queue/partie/{id}`.
-Das garantiert Multiplayer-Datenschutz: jeder Spieler sieht nur seinen eigenen Partiestand.
-
-**`WebSocketBroadcastAdapter` wird gelöscht** (ARCH-1). Broadcasts erfolgen direkt in
-`SpielAktionsService` und `KiOrchestrierungService` via `TischEchtzeitService.planeAnBenutzer()`.
-
-**`PartieAktualisiert`-Domain-Event wird gelöscht** (ARCH-1). Kein Publisher mehr.
-
-## WebSocket-Broadcasts als Event-Subscriber
-
-> **Veraltet (vor ARCH-1):** Der `WebSocketBroadcastAdapter` wurde als Event-Subscriber
-> auf `PartieAktualisiert` implementiert. Ab ARCH-1 entfällt dieses Muster — direkte Calls
-> in `SpielAktionsService` und `KiOrchestrierungService` ersetzen ihn.
-
-~~Auch `TischEchtzeitService` wird zum Event-Subscriber, statt direkt aufgerufen zu werden:~~
+Daneben können Komponenten via `AppStore.abonniereEvents(listener)` **rohe Events**
+abonnieren — für dedizierte UI-Reaktionen (Modals, Banner), ohne Polling auf Zustandsdiffs.
 
 ---
 
-## Transaktionsgrenzen
+## Geplant (noch nicht implementiert)
 
-`@ApplicationModuleListener` ist der Standard — er entspricht `@TransactionalEventListener(phase = AFTER_COMMIT)` und ist zusätzlich asynchron. Broadcasts und KI-Züge laufen damit immer nach erfolgreichem DB-Commit in eigenen Transaktionen:
+### Sequenznummerierung & Event-Batching
 
-```java
-@ApplicationModuleListener
-public void beiKarteGespielt(KarteGespielt event) {
-    tischEchtzeitService.sendePartieUpdate(...);
+Um Race-Conditions bei verlorenen WebSocket-Frames zu erkennen, ist ein
+`PartieEreignisBatch`-Protokoll geplant:
+
+```typescript
+// Geplant — noch nicht implementiert
+export interface PartieEreignisBatch {
+  sequenzNummer: number;               // Long, strikt ansteigend pro Partie
+  ereignisse: PartieEreignisAntwort[]; // Atomare Liste
+  snapshot?: PartieStandAntwort;       // Korrektur-Snapshot bei Lücken
 }
 ```
 
-Für intra-modul-synchrone Events (innerhalb desselben Moduls, selbe Transaktion) kann `@EventListener` genutzt werden — im Cross-Modul-Kontext ist es verboten.
+**Mechanismus:**
+1. Backend bündelt alle Events pro Transaktion in einem Batch mit monotoner Sequenznummer.
+2. Frontend erkennt Lücken (`N+2` nach `N` → Batch `N+1` verloren).
+3. Frontend fordert automatisch `/snapshot` an (Self-Healing).
+4. Stale Batches (`sequenzNummer ≤ letzteSequenzNummer`) werden verworfen.
 
----
-
-## SpielAktion Result-Typ (ARCH-2)
-
-`Spiel.spieleKarte()` gibt ein `SpielAktion`-Objekt zurück statt `Spiel` direkt:
-
-```java
-// de.locodoko.partie
-sealed interface SpielEreignis permits KarteGespielt, StichAbgeschlossenEreignis {}
-record KarteGespielt(SpielerPosition position, Karte karte) implements SpielEreignis {}
-record StichAbgeschlossenEreignis(Stich stich, List<Sonderpunkt> sonderpunkte) implements SpielEreignis {}
-
-record SpielAktion(Spiel neuerStand, List<SpielEreignis> ereignisse) {}
-```
-
-`SpielAktionsService` liest Ereignisse aus dem Ergebnis statt State-Diffs zu berechnen:
-
-```java
-SpielAktion aktion = spiel.spieleKarte(position, karte);
-for (SpielEreignis ereignis : aktion.ereignisse()) {
-    switch (ereignis) {
-        case KarteGespielt kg -> sendeKarteGespielt(tisch, kg);
-        case StichAbgeschlossenEreignis sa -> sendeStichAbgeschlossen(tisch, sa.sonderpunkte());
-    }
-}
-```
-
-## Reihenfolge der Implementierung
-
-Domain Events wurden in folgender Reihenfolge eingeführt:
-
-1. `NaechsterSpielerErwartet` — zentrales Event (erledigt)
-2. `KiEventAdapter` als einziger KI-Aufrufer (erledigt)
-3. `WebSocketBroadcastAdapter` als Event-Subscriber auf `PartieAktualisiert` (erledigt, wird in ARCH-1 gelöscht)
-
-**ARCH-1** (nächster Schritt): Typisierte WebSocket-Events, `WebSocketBroadcastAdapter` löschen
-**ARCH-2**: `SpielAktion` Result-Typ in `Spiel.spieleKarte()`
-
----
-
-## Ubiquitous Language in Events
-
-Events spiegeln die Domänensprache wider:
-
-```java
-// Richtig (Domänensprache):
-record NaechsterSpielerErwartet(UUID tischId, SpielerPosition position, ...) {}
-record StichAbgeschlossen(UUID tischId, Stich stich, SpielerPosition gewinner) {}
-
-// Falsch (technische Sprache):
-record PlayerTurnEvent(String tableId, String position) {}
-record TrickCompleted(int trickNumber) {}
-```
+Bis zur Implementierung: Verbindungsabbrüche werden durch den bestehenden
+`VerbindungsabbruchService` behandelt (STOMP-Reconnect → SNAPSHOT).

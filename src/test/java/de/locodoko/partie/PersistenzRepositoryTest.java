@@ -150,6 +150,7 @@ class PersistenzRepositoryTest {
 
     @Test
     void loeschtPartienSpieleUndSticheWennEinTischEntferntWird() {
+        long spielerVorTest = spielerRepository.count();
         SpielerEntity erstelltVon = spielerRepository.saveAndFlush(SpielerEntity.menschlich("Ada", "session-loeschen"));
         SpielerEntity ki = spielerRepository.saveAndFlush(SpielerEntity.ki("KI Dora"));
 
@@ -174,7 +175,7 @@ class PersistenzRepositoryTest {
         assertEquals(0, partieRepository.count(),
             "Partien muessen mit dem Tisch verschwinden, damit kein historischer Zustand ohne Einstiegspunkt uebrig bleibt.");
         assertEquals(0, spielRepository.count());
-        assertEquals(2, spielerRepository.count(),
+        assertEquals(spielerVorTest + 2, spielerRepository.count(),
             "Spieler bleiben erhalten, weil die Session-Identitaet den Tisch ueberlebt und spaeter neue Tische betreten koennen muss.");
     }
 

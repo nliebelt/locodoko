@@ -36,9 +36,8 @@ public record PartieEreignisAntwort(
         return new PartieEreignisAntwort(Instant.now(), PartieEreignisTyp.STICH_ABGESCHLOSSEN, partieStand, null, sonderpunkte);
     }
 
-    /** @deprecated Verwende snapshot() oder karteGespielt() stattdessen. */
-    @Deprecated
-    public static PartieEreignisAntwort aktualisiert(PartieEreignisTyp ereignisTyp, PartieStandAntwort partieStand) {
-        return new PartieEreignisAntwort(Instant.now(), ereignisTyp, partieStand, null, null);
+    public static PartieEreignisAntwort spielBeendet(PartieStandAntwort partieStand) {
+        return new PartieEreignisAntwort(Instant.now(), PartieEreignisTyp.SPIEL_BEENDET, partieStand, null, null);
     }
+
 }

@@ -309,7 +309,9 @@ export class AppStore {
   }
 
   private registrierePartieAbos(partieId: Uuid): void {
+    this.aktuellePartieAbo = partieId;
     this.tischAbos.push(this.echtzeit.abonnieren<PartieEreignisAntwort>(`/user/queue/partie/${partieId}`, (e) => this.verarbeitePartieEreignis(e)));
+    this.echtzeit.senden(`/app/partie/${partieId}/snapshot`);
   }
 
   private verarbeiteTischEreignis(ereignis: TischEreignisAntwort): void {
@@ -346,12 +348,8 @@ export class AppStore {
           this.leereKiSequenzQueue();
           this.patch({ partieStand: ereignis.partieStand });
           break;
-        case 'PARTIE_AKTUALISIERT':
         case 'KARTE_GESPIELT':
-        case 'ANSAGE_ERFOLGT':
-        case 'SPIEL_GESTARTET':
         case 'SPIEL_BEENDET':
-        case 'SCHWEINCHEN_GEMELDET':
           this.patch({ partieStand: ereignis.partieStand });
           break;
         case 'KI_ZUG_SEQUENZ':
