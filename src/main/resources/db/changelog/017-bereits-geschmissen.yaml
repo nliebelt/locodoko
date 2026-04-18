@@ -1,0 +1,14 @@
+databaseChangeLog:
+  - changeSet:
+      id: 017-bereits-geschmissen
+      author: ralph
+      changes:
+        - addColumn:
+            tableName: spiel
+            columns:
+              - column:
+                  name: bereits_geschmissen_json
+                  type: VARCHAR(100)
+                  defaultValue: "[]"
+                  constraints:
+                    nullable: false

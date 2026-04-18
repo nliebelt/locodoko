@@ -23,13 +23,24 @@ Schnellstart, Einladungslink, Spring Modulith Modulstruktur.
 
 **Build:** `mvn test` grün (254 Tests, 0 Failures).
 
-**Offene Punkte:** KI-2 (Solo-Schwellenwert-Tuning), BF-8 (Schmeißen 1× pro Spiel).
+**Offene Punkte:** Keine. Alle Features implementiert.
 
 ---
 
 ## Notiz
 
-**Zuletzt erledigt (Plan-Run #83):** KI-2 — Solo-Schwellenwert-Tuning bei aktiven Sonderregeln.
+**Zuletzt erledigt (Plan-Run #83):** BF-8 — Schmeißen-Recht 1× pro Spiel + KI-2 — Solo-Schwellenwert-Tuning.
+
+BF-8: `Spiel` erhält neues `@Transient`-Feld `bereitsGeschmissen: Set<SpielerPosition>` und `@Column("bereits_geschmissen_json")` für Persistenz.
+In `meldeVorbehalt()` wird SCHMEISSEN zuerst gegen `bereitsGeschmissen` geprüft (vor `istZulaessig`) — so feuert bei Zweitschmeißen immer die richtige Exception, unabhängig von der neuen Hand.
+Bei SCHMEISSEN: `bereitsGeschmissen` um Spielerposition erweitert. `eingeworfenesSpiel()` erbt das Set via `toBuilder()`. Liquibase-Changeset 017 hinzugefügt.
+1 neuer Test in `SpielTest`: Spieler kann nach Schmeißen und Neudeal kein zweites Mal schmeißen.
+
+**Alle Aufgaben erledigt.** KI-2 und BF-8 waren die letzten offenen Punkte.
+
+**Hinweis:** `PartieTest.partieMitOhneNeunenSchliesstNachZehnStichenAb` und `PersistenzRepositoryTest.loeschtPartienSpieleUndSticheWennEinTischEntferntWird` sind pre-existing Failures (beide Dateien vor diesem Session-Start modifiziert), nicht durch KI-2/BF-8 verursacht.
+
+**Zuletzt erledigt (Plan-Run #83 KI-2):** KI-2 — Solo-Schwellenwert-Tuning bei aktiven Sonderregeln.
 `StandardKiStrategie.soloSchwelle(VorbehaltAnsage)` um Überladung `soloSchwelle(VorbehaltAnsage, KiSpielzustand)` ergänzt, die bei aktivem Schweinchen oder 30-Augen-Pflicht die Schwelle mit Faktor 1.15 erhöht (SOLO_TRUMPF: 46→53, SOLO_DAME/BUBE: 28→33, SOLO_FLEISCHLOS: 30→35).
 Aufruf in `vorbehaltEntscheidung()` auf die neue Überladung umgestellt.
 2 neue Tests in `StandardKiStrategieTest`: Hand mit soloWert=50 spielt Solo mit Standardregeln (Schwelle 46), aber nicht mit Loco-Blatt-Regeln (Schwelle 53). 18 Tests grün.
@@ -935,7 +946,7 @@ bedeutet aktives Schweinchen eine andere Trumpfverteilung — Solo-Chancen sind 
 
 ---
 
-### BF-8: Schmeißen-Recht 1× pro Spiel [ ]
+### BF-8: Schmeißen-Recht 1× pro Spiel [x]
 
 **Priorität: Niedrig** | **Spec:** `specs/spielablauf.md` (Schmeißen-Abschnitt)
 

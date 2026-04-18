@@ -31,3 +31,5 @@ databaseChangeLog:
       file: db/changelog/015-zugangsmodus.yaml
   - include:
       file: db/changelog/016-schmeissen-aktiv.yaml
+  - include:
+      file: db/changelog/017-bereits-geschmissen.yaml

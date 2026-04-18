@@ -659,6 +659,35 @@ class SpielTest {
     }
 
     @Test
+    void schmeissenNachNeuausteilen_ZweitesSchmeissenWirdAbgelehnt() {
+        // Nach erstem Schmeissen und Neuausteilen darf WEST kein zweites Mal schmeissen,
+        // auch wenn die neue Hand wieder 5+ Koenige enthaelt.
+        // Wichtig: Schutzmechanismus gegen endlose Neuausteile-Schleifen und
+        // Missbrauch des Schmeiss-Rechts durch unguenstige Karten.
+        Spielregeln regeln = Spielregeln.locoBlatRegeln();
+        Kartendeck deck = kartendeckMitFuenfKoenigenAufWest();
+        // Erster Schmeiss-Zyklus
+        Spiel nachErstemSchmeissen = Spiel.neu(SpielerPosition.SUED, regeln, deck)
+            .teileKartenAus()
+            .meldeVorbehalt(SpielerPosition.WEST, VorbehaltAnsage.SCHMEISSEN)
+            .meldeGesund(SpielerPosition.NORD)
+            .meldeGesund(SpielerPosition.OST)
+            .meldeGesund(SpielerPosition.SUED)
+            .loeseVorbehalteAuf();
+
+        // Spiel ist jetzt wieder in VORBEHALT_ANSAGE mit neuen Karten
+        assertInstanceOf(Spielphase.VorbehaltAnsage.class, nachErstemSchmeissen.phase(),
+            "Nach erstem Schmeissen muss Neudeal stattgefunden haben.");
+
+        // Zweites Schmeissen desselben Spielers muss abgelehnt werden
+        Spiel spielNachNeuausteilen = nachErstemSchmeissen;
+        assertThrows(IllegalStateException.class,
+            () -> spielNachNeuausteilen.meldeVorbehalt(SpielerPosition.WEST, VorbehaltAnsage.SCHMEISSEN),
+            "Ein Spieler darf das Schmeiss-Recht pro Spiel nur einmal nutzen — "
+            + "sonst koennte ein Spieler mit schlechter Hand beliebig oft neu austeilen.");
+    }
+
+    @Test
     void durchlaeuftEinNormalspielVonDerAusteilungBisZurAuswertung() {
         Spiel spiel = Spiel.neu(SpielerPosition.SUED, spielregeln, Kartendeck.neu(spielregeln));
 
