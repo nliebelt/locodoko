@@ -29,6 +29,15 @@ Schnellstart, Einladungslink, Spring Modulith Modulstruktur.
 
 ## Notiz
 
+**Zuletzt erledigt (Plan-Run #83):** KI-2 — Solo-Schwellenwert-Tuning bei aktiven Sonderregeln.
+`StandardKiStrategie.soloSchwelle(VorbehaltAnsage)` um Überladung `soloSchwelle(VorbehaltAnsage, KiSpielzustand)` ergänzt, die bei aktivem Schweinchen oder 30-Augen-Pflicht die Schwelle mit Faktor 1.15 erhöht (SOLO_TRUMPF: 46→53, SOLO_DAME/BUBE: 28→33, SOLO_FLEISCHLOS: 30→35).
+Aufruf in `vorbehaltEntscheidung()` auf die neue Überladung umgestellt.
+2 neue Tests in `StandardKiStrategieTest`: Hand mit soloWert=50 spielt Solo mit Standardregeln (Schwelle 46), aber nicht mit Loco-Blatt-Regeln (Schwelle 53). 18 Tests grün.
+
+**Pre-existing Failures:** `PartieTest.partieMitOhneNeunenSchliesstNachZehnStichenAb` und `PersistenzRepositoryTest.loeschtPartienSpieleUndSticheWennEinTischEntferntWird` — beide schon vor dieser Session modifiziert (git M), unverändert von KI-2.
+
+**Nächste offene Aufgabe:** BF-8 — Schmeißen-Recht 1× pro Spiel tracken (`Set<SpielerPosition> bereitsGeschmissen` in `Spiel` oder `VorbehaltPhase`, wird nicht beim Neudeal zurückgesetzt).
+
 **Zuletzt erledigt (Plan-Run #82):** SF-3 — Frontend Tischkonfiguration-Presets.
 Die Implementierung war bereits in `SpielverwaltungsSzene.ts` und `regelPresets.ts` vorhanden (Preset-Dropdown mit LOCO_BLAT/DKV/BENUTZERDEFINIERT, read-only Checkboxen für Presets). Fehlten: Tests und Clean Build.
 `regelPresets.test.ts` (11 Tests, `@vitest-environment node`) testet LOCO_BLAT/DKV-Preset-Werte und `standardMindestkarten()`.
@@ -900,7 +909,7 @@ Mehrfach durch Plan-Run-#81-Agenten bestätigt.
 
 ---
 
-### KI-2: KI Solo-Schwellenwert-Tuning für Loco-Blatt-Regeln [ ]
+### KI-2: KI Solo-Schwellenwert-Tuning für Loco-Blatt-Regeln [x]
 
 **Priorität: Niedrig** | **Blockiert durch:** KI-1 (erledigt)
 **Spec:** `specs/ki-strategie.md`

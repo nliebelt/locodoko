@@ -50,7 +50,7 @@ public class StandardKiStrategie implements KiStrategie {
                 besterSoloVorbehalt = vorbehalt;
             }
         }
-        if (besterSoloVorbehalt != null && besterSoloWert >= soloSchwelle(besterSoloVorbehalt)) {
+        if (besterSoloVorbehalt != null && besterSoloWert >= soloSchwelle(besterSoloVorbehalt, zustand)) {
             return besterSoloVorbehalt;
         }
         if (moeglicheVorbehalte.contains(VorbehaltAnsage.HOCHZEIT)) {
@@ -397,6 +397,21 @@ public class StandardKiStrategie implements KiStrategie {
             case SOLO_FLEISCHLOS -> 30;
             default -> Integer.MAX_VALUE;
         };
+    }
+
+    /**
+     * Wie {@link #soloSchwelle(VorbehaltAnsage)}, erhöht aber die Schwelle um 15 % wenn
+     * Schweinchen oder 30-Augen-Pflicht aktiv sind. Bei diesen Sonderregeln ist die
+     * Trumpfverteilung ausgeglichener — Solo-Ansagen ohne klare Überlegenheit scheitern häufiger.
+     */
+    private int soloSchwelle(VorbehaltAnsage vorbehaltAnsage, KiSpielzustand zustand) {
+        int basis = soloSchwelle(vorbehaltAnsage);
+        boolean sonderpunkteAktiv = zustand.spielregeln().schweinchenAktiv()
+            || zustand.spielregeln().dreissigAugenPflichtAktiv();
+        if (!sonderpunkteAktiv) {
+            return basis;
+        }
+        return (int) Math.ceil(basis * 1.15);
     }
 
     private long anzahlTruepfe(List<Karte> karten, TrumpfOrdnung trumpfOrdnung) {

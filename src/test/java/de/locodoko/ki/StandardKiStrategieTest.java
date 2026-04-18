@@ -594,6 +594,92 @@ class StandardKiStrategieTest {
             "KI soll bei aktiven Sonderregeln vorsichtiger ansagen.");
     }
 
+    @Test
+    void meldetTrumpfsoloBeiGrenzwertHandMitStandardRegeln() {
+        // Hand mit soloWert=50 (9 Trümpfe×4 + 2 Asse×2 + 3 Damen×2 + 2 Buben×2 = 50).
+        // Standard-Schwelle: 46 → 50 ≥ 46 → Solo erwartet.
+        // Wichtig: stellt sicher dass die Basis-Solo-Schwelle ohne Sonderregel-Multiplikator gilt
+        // und die KI bei klarer Trumpfüberlegenheit korrekt Solo ansagt.
+        KiSpielzustand zustand = new KiSpielzustand(
+            SpielerPosition.WEST,
+            Spieltyp.NORMALSPIEL,
+            Spielphase.VORBEHALT_ANSAGE,
+            spielregeln,
+            trumpfOrdnung,
+            new Hand(List.of(
+                karte(Farbe.KREUZ, Kartenwert.DAME, 1),
+                karte(Farbe.PIK, Kartenwert.DAME, 1),
+                karte(Farbe.HERZ, Kartenwert.DAME, 1),
+                karte(Farbe.KREUZ, Kartenwert.BUBE, 1),
+                karte(Farbe.PIK, Kartenwert.BUBE, 1),
+                karte(Farbe.HERZ, Kartenwert.ZEHN, 1),
+                karte(Farbe.KARO, Kartenwert.AS, 1),
+                karte(Farbe.KARO, Kartenwert.ZEHN, 1),
+                karte(Farbe.KARO, Kartenwert.KOENIG, 1),
+                karte(Farbe.KREUZ, Kartenwert.AS, 1),
+                karte(Farbe.PIK, Kartenwert.KOENIG, 1),
+                karte(Farbe.HERZ, Kartenwert.KOENIG, 1)
+            )),
+            null,
+            Ansagen.leer(),
+            List.of(),
+            null,
+            null,
+            null,
+            List.of(),
+            List.of(),
+            List.of(VorbehaltAnsage.GESUND, VorbehaltAnsage.SOLO_TRUMPF)
+        );
+
+        assertEquals(VorbehaltAnsage.SOLO_TRUMPF, strategie.waehleVorbehalt(zustand),
+            "Mit soloWert=50 und Standard-Schwelle 46 soll die KI Solo ansagen — "
+            + "stellt sicher dass Grenzwert-Haende ohne Sonderregeln korrekt als Solo erkannt werden.");
+    }
+
+    @Test
+    void meldetKeinSoloBeiGleicherGrenzwertHandMitLocoBlatRegeln() {
+        // Dieselbe Hand (soloWert=50) mit Loco-Blatt-Regeln (Schweinchen + 30-Augen-Pflicht aktiv).
+        // Erhöhte Solo-Schwelle: ceil(46 × 1.15) = 53 → 50 < 53 → kein Solo.
+        // Wichtig: prüft dass KI-2 Solo-Schwellen bei aktiven Sonderregeln erhöht werden,
+        // weil Schweinchen die Trumpfverteilung ausgeglichener macht und Solo-Chancen reduziert.
+        Spielregeln locoRegeln = Spielregeln.locoBlatRegeln();
+        NormaleTrumpfOrdnung locoTrumpfOrdnung = new NormaleTrumpfOrdnung(locoRegeln);
+        KiSpielzustand zustand = new KiSpielzustand(
+            SpielerPosition.WEST,
+            Spieltyp.NORMALSPIEL,
+            Spielphase.VORBEHALT_ANSAGE,
+            locoRegeln,
+            locoTrumpfOrdnung,
+            new Hand(List.of(
+                karte(Farbe.KREUZ, Kartenwert.DAME, 1),
+                karte(Farbe.PIK, Kartenwert.DAME, 1),
+                karte(Farbe.HERZ, Kartenwert.DAME, 1),
+                karte(Farbe.KREUZ, Kartenwert.BUBE, 1),
+                karte(Farbe.PIK, Kartenwert.BUBE, 1),
+                karte(Farbe.HERZ, Kartenwert.ZEHN, 1),
+                karte(Farbe.KARO, Kartenwert.AS, 1),
+                karte(Farbe.KARO, Kartenwert.ZEHN, 1),
+                karte(Farbe.KARO, Kartenwert.KOENIG, 1),
+                karte(Farbe.KREUZ, Kartenwert.AS, 1),
+                karte(Farbe.PIK, Kartenwert.KOENIG, 1),
+                karte(Farbe.HERZ, Kartenwert.KOENIG, 1)
+            )),
+            null,
+            Ansagen.leer(),
+            List.of(),
+            null,
+            null,
+            null,
+            List.of(),
+            List.of(),
+            List.of(VorbehaltAnsage.GESUND, VorbehaltAnsage.SOLO_TRUMPF)
+        );
+
+        assertEquals(VorbehaltAnsage.GESUND, strategie.waehleVorbehalt(zustand),
+            "Mit soloWert=50 und erhöhter Schwelle 53 (Loco-Blatt, Schweinchen+30er aktiv) "
+            + "darf kein Solo angemeldet werden — KI soll bei Sonderregeln konservativer sein.");
+    }
+
     private Karte karte(Farbe farbe, Kartenwert wert, int exemplarIndex) {
         return new Karte(farbe, wert, exemplarIndex);
     }
