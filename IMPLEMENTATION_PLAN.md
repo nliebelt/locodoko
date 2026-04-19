@@ -1,8 +1,8 @@
 # IMPLEMENTATION_PLAN — Locodoko Doppelkopf
 
 ## Notiz
-- BF-16 umgesetzt: `018-tisch-partie-cascade.yaml` hinzugefügt. Test ist grün.
-- Nächster Schritt: BF-17 (10-Stiche-Spiele).
+- BF-17 erfolgreich abgeschlossen. 10-Stiche-Logik für "ohne Neunen" verifiziert durch neuen Test `OhneNeunenTest`.
+- Nächster Schritt: BF-18 (Schweinchen-Bugfix).
 - Offene Fragen: Die unhandled errors bei `npm test` bestehen weiterhin.
 
 > **Letzte Aktualisierung: 2026-04-19 (Ralph Planning Mode - Plan-Run #84)**
@@ -45,9 +45,9 @@ Ziel: Vollständige typisierte Kommunikation ohne "Snapshot-Zwang" für jede Akt
 - [x] **BF-16** Fix Cascading Delete:
   - Liquibase-Changeset: Foreign Key Constraint für `tisch.partie_id` -> `partie.id` mit `ON DELETE CASCADE` hinzugefügt.
   - `TischVerwaltungsService` weiterhin mit manueller Partie-Löschung für Kompatibilität.
-- [ ] **BF-17** 10-Stiche-Spiele (ohne Neunen):
-  - Test `PartieTest.partieMitOhneNeunenSchliesstNachZehnStichenAb` hinzufügen/fixen.
-  - Sicherstellen, dass `ohneNeunenRegeln()` korrekt 10 Stiche als Endbedingung nutzt.
+- [x] **BF-17** 10-Stiche-Spiele (ohne Neunen):
+  - Test `OhneNeunenTest.partieMitOhneNeunenSchliesstNachZehnStichenAb` hinzugefügt und grün.
+  - `Spiel.neuesSpielMitStichfortschritt` und `Spiel.kartenProSpieler` für Testzugriff geöffnet.
 - [ ] **BF-18** Schweinchen-Bugfix:
   - Sicherstellen, dass `SchweinchenTrumpfOrdnung` im `Spiel` aktiv wird, wenn Karo-Asse auf einer Hand liegen.
   - DKV-Logik: Meldung erst beim Ausspielen.

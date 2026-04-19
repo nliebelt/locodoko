@@ -797,10 +797,10 @@ public class Spiel extends AbstraktePersistenzEntity {
         };
     }
 
-    private int kartenProSpieler() { return kartendeck.karten().size() / SpielerPosition.standardReihenfolge().size(); }
+    public int kartenProSpieler() { return kartendeck.karten().size() / SpielerPosition.standardReihenfolge().size(); }
     private <T extends Spielphase> void pruefePhase(Class<T> erw, String aktion) { if (!erw.isInstance(phase)) throw new IllegalStateException(aktion + " ist nur in Phase " + erw.getSimpleName() + " erlaubt, war aber " + phase.name()); }
 
-    private Spiel neuesSpielMitStichfortschritt(Map<SpielerPosition, Hand> nh, List<Stich> ns, Spielphase np, Parteien npa) {
+    public Spiel neuesSpielMitStichfortschritt(Map<SpielerPosition, Hand> nh, List<Stich> ns, Spielphase np, Parteien npa) {
         return toBuilder().phase(np).haende(nh).parteien(npa).abgeschlosseneStiche(ns).solistAufspieler(null).build();
     }
 
