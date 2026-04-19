@@ -360,6 +360,9 @@ export class AppStore {
             break;
           case 'KARTE_GESPIELT':
           case 'SPIEL_BEENDET':
+          case 'ANSAGE_ERFOLGT':
+          case 'SCHWEINCHEN_GEMELDET':
+          case 'SPIEL_GESTARTET':
             this.patch({ partieStand: ereignis.partieStand });
             break;
           case 'KI_ZUG_SEQUENZ':
