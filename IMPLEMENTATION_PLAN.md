@@ -1,10 +1,10 @@
 # IMPLEMENTATION_PLAN — Locodoko Doppelkopf
 
 ## Notiz
-- SF-5 JSDoc-Offensive: Sämtliche Szenen und TischUIManager dokumentiert.
-- Nächster Schritt: SF-6 Tastatursteuerung in `TischInputHandler.ts` vervollständigen.
+- SF-6 Tastatursteuerung vervollständigt (Ansage-Shortcuts erweitert).
+- Nächster Schritt: SF-7 CSS-Modularisierung.
 
-> **Letzte Aktualisierung: 2026-04-19 (Ralph Planning Mode - Plan-Run #88)**
+> **Letzte Aktualisierung: 2026-04-19 (Ralph Planning Mode - Plan-Run #89)**
 
 ## Zusammenfassung Ist-Zustand
 
@@ -60,7 +60,7 @@ Ziel: Vollständige typisierte Kommunikation ohne "Snapshot-Zwang" für jede Akt
 
 - [x] **SF-4** Ordner-Cleanup: `frontend/src/model/` nach `modelle/` verschieben und alle Imports korrigieren.
 - [x] **SF-5** JSDoc-Offensive: Deutsche JSDoc für alle Klassen/Methoden in `store/`, `szenen/` und `services/` ergänzen. (Erledigt)
-- [ ] **SF-6** Tastatursteuerung: Mapping in `TischInputHandler.ts` vervollständigen (Shortcuts für Solo-Typen, Ansage-Verschärfungen).
+- [x] **SF-6** Tastatursteuerung: Mapping in `TischInputHandler.ts` vervollständigen (Shortcuts für Solo-Typen, Ansage-Verschärfungen).
 - [ ] **SF-7** CSS-Modularisierung: `styles.css` aufteilen (z.B. `base.css`, `lobby.css`, `tisch.css`).
 
 ---

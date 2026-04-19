@@ -199,7 +199,7 @@ export class TischInputHandler {
 
   /**
    * Verarbeitet Ansage-Shortcuts in der Floating Action Bar.
-   * R=Re, K=Kontra, 1-5 fuer die Buttons in Anzeigereihenfolge.
+   * R=Re, K=Kontra, 1-6 fuer die Buttons in Anzeigereihenfolge.
    * Gibt true zurueck wenn eine Taste verarbeitet wurde.
    */
   private verarbeiteAnsageTaste(e: KeyboardEvent, modell: TischAnsichtModell): boolean {
@@ -220,9 +220,9 @@ export class TischInputHandler {
       }
     }
 
-    // 1-5: Ansage nach Position in der angezeigten Liste
+    // 1-6: Ansage nach Position in der angezeigten Liste (inkl. Soli und Verschärfungen)
     const ziffer = parseInt(e.key, 10);
-    if (!isNaN(ziffer) && ziffer >= 1 && ziffer <= ansagen.length) {
+    if (!isNaN(ziffer) && ziffer >= 1 && ziffer <= Math.min(6, ansagen.length)) {
       const ansage = ansagen[ziffer - 1];
       if (ansage) {
         appStore.sageAnsageAn(ansage);
