@@ -9,7 +9,7 @@
  * keine direkte Referenz auf TischSzene.
  */
 import { appStore } from '../anwendung';
-import type { TischAnsichtModell } from '../model/TischAnsichtModell';
+import type { TischAnsichtModell } from '../modelle/TischAnsichtModell';
 import type { AppZustand } from '../store/AppStore';
 
 /**

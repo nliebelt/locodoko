@@ -1,8 +1,8 @@
 # IMPLEMENTATION_PLAN — Locodoko Doppelkopf
 
 ## Notiz
-- BF-19 Spielregeln-Cleanup abgeschlossen: `standardRegeln()` delegiert jetzt an `locoBlatRegeln()`, veraltete Methoden entfernt und `SpielregelnTest` angepasst.
-- Nächster Schritt: SF-4 (Ordner-Cleanup).
+- SF-4 Ordner-Cleanup abgeschlossen: `frontend/src/model/` zu `frontend/src/modelle/` verschoben und alle Imports in `TischInputHandler`, `TischUIManager` und `TischSzene` korrigiert.
+- Nächster Schritt: SF-5 (JSDoc-Offensive).
 - Offene Fragen: Die unhandled errors bei `npm test` bestehen weiterhin.
 
 > **Letzte Aktualisierung: 2026-04-19 (Ralph Planning Mode - Plan-Run #85)**
@@ -59,7 +59,7 @@ Ziel: Vollständige typisierte Kommunikation ohne "Snapshot-Zwang" für jede Akt
 
 ## Phase 3 — Frontend Refactoring & Dokumentation (SF)
 
-- [ ] **SF-4** Ordner-Cleanup: `frontend/src/model/` nach `modelle/` verschieben und alle Imports korrigieren.
+- [x] **SF-4** Ordner-Cleanup: `frontend/src/model/` nach `modelle/` verschieben und alle Imports korrigieren.
 - [ ] **SF-5** JSDoc-Offensive: Deutsche JSDoc für alle Klassen/Methoden in `store/`, `szenen/` und `services/` ergänzen.
 - [ ] **SF-6** Tastatursteuerung: Mapping in `TischInputHandler.ts` vervollständigen (Shortcuts für Solo-Typen, Ansage-Verschärfungen).
 - [ ] **SF-7** CSS-Modularisierung: `styles.css` aufteilen (z.B. `base.css`, `lobby.css`, `tisch.css`).

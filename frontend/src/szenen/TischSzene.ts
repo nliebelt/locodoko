@@ -22,7 +22,7 @@ import {
   type AnsageAnsicht,
   type TischAnsichtModell,
   type SpielerPosition
-} from '../model/TischAnsichtModell';
+} from '../modelle/TischAnsichtModell';
 import type { KarteAntwort, SonderpunktEreignisAntwortDto, Tischhintergrund, VorbehaltAnsage } from '../modelle/SpielverwaltungDto';
 import { AnimationenService, type AnimierbareKartenobjekte, type RundenauswertungDaten } from '../services/AnimationenService';
 import type { AppZustand } from '../store/AppStore';

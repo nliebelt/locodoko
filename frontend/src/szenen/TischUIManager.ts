@@ -1,7 +1,7 @@
 import { appStore } from '../anwendung';
 import {
   type TischAnsichtModell,
-} from '../model/TischAnsichtModell';
+} from '../modelle/TischAnsichtModell';
 import type { KiSchwierigkeit, Tischhintergrund } from '../modelle/SpielverwaltungDto';
 import type { AppZustand } from '../store/AppStore';
 import {
