@@ -13,6 +13,9 @@ import { Logger } from '../logger';
 const STANDARD_SPIELERNAME_PREFIX = 'Spieler';
 const SPIELERNAME_SPEICHER_SCHLUESSEL = 'locodoko-spielername';
 
+/**
+ * Repräsentiert Fehler, die bei API-Aufrufen zur Spielverwaltung auftreten können.
+ */
 export class SpielverwaltungFehler extends Error {
   readonly fehlerCode: string;
 
@@ -23,6 +26,9 @@ export class SpielverwaltungFehler extends Error {
   }
 }
 
+/**
+ * Ruft den lokal gespeicherten Spielernamen aus dem LocalStorage ab.
+ */
 function leseGespeichertenSpielernamen(): string | null {
   if (typeof window === 'undefined') {
     return null;
@@ -31,6 +37,9 @@ function leseGespeichertenSpielernamen(): string | null {
   return window.localStorage.getItem(SPIELERNAME_SPEICHER_SCHLUESSEL);
 }
 
+/**
+ * Speichert den Spielernamen im LocalStorage für zukünftige Sitzungen.
+ */
 function speichereSpielernamen(name: string): void {
   if (typeof window === 'undefined') {
     return;
@@ -39,6 +48,9 @@ function speichereSpielernamen(name: string): void {
   window.localStorage.setItem(SPIELERNAME_SPEICHER_SCHLUESSEL, name);
 }
 
+/**
+ * Generiert einen zufälligen Standard-Spielernamen, falls kein Name gesetzt ist.
+ */
 function generiereStandardSpielernamen(): string {
   const suffix = Math.floor(1000 + Math.random() * 9000);
   return `${STANDARD_SPIELERNAME_PREFIX} ${suffix}`;

@@ -61,8 +61,8 @@ export class SpielverwaltungEchtzeit implements EchtzeitPort {
 
   /**
    * Baut die STOMP-Verbindung auf und wartet auf erfolgreiche Verbindung.
-   * Bei laufendem Verbindungsversuch wird das bestehende Promise zurueckgegeben.
-   * @throws Error wenn die WebSocket-Verbindung fehlschlaegt
+   * Bei laufendem Verbindungsversuch wird das bestehende Promise zurückgegeben.
+   * @throws Error wenn die WebSocket-Verbindung fehlschlägt.
    */
   async verbinde(): Promise<void> {
     if (this.client?.connected) {
@@ -126,14 +126,14 @@ export class SpielverwaltungEchtzeit implements EchtzeitPort {
    * Abonniert ein STOMP-Ziel und ruft den Handler bei jeder Nachricht auf.
    * Die Nachricht wird automatisch aus JSON deserialisiert.
    * @param ziel - STOMP-Topic oder Queue (z.B. `/topic/tische`)
-   * @param handler - Callback mit dem deserialisierten Nachrichtenobjekt
-   * @returns Abmelde-Funktion fuer dieses Abonnement
-   * @throws Error wenn keine aktive STOMP-Verbindung besteht
+   * @param handler - Callback mit dem deserialisierten Nachrichtenobjekt.
+   * @returns Abmelde-Funktion für dieses Abonnement.
+   * @throws Error wenn keine aktive STOMP-Verbindung besteht.
    */
   abonnieren<T>(ziel: string, handler: NachrichtenHandler<T>): () => void {
     const client = this.client;
     if (!client?.connected) {
-      throw new Error(`Die WebSocket-Verbindung ist fuer ${ziel} noch nicht bereit.`);
+      throw new Error(`Die WebSocket-Verbindung ist für ${ziel} noch nicht bereit.`);
     }
 
     Logger.websocket('Subscribed', { topic: ziel });
@@ -148,13 +148,13 @@ export class SpielverwaltungEchtzeit implements EchtzeitPort {
   /**
    * Serialisiert den Payload als JSON und sendet ihn an das STOMP-Ziel.
    * @param ziel - STOMP-Destination (z.B. `/app/tisch/{id}/karte`)
-   * @param payload - Zu sendende Daten (Standard: leeres Objekt)
-   * @throws Error wenn keine aktive STOMP-Verbindung besteht
+   * @param payload - Zu sendende Daten (Standard: leeres Objekt).
+   * @throws Error wenn keine aktive STOMP-Verbindung besteht.
    */
   senden(ziel: string, payload: unknown = {}): void {
     const client = this.client;
     if (!client?.connected) {
-      throw new Error(`Die WebSocket-Verbindung ist fuer ${ziel} nicht aktiv.`);
+      throw new Error(`Die WebSocket-Verbindung ist für ${ziel} nicht aktiv.`);
     }
 
     Logger.websocket('Aktion gesendet', { destination: ziel, body: payload });
@@ -164,7 +164,7 @@ export class SpielverwaltungEchtzeit implements EchtzeitPort {
     });
   }
 
-  /** Deaktiviert den STOMP-Client und setzt alle Verbindungsreferenzen zurueck. */
+  /** Deaktiviert den STOMP-Client und setzt alle Verbindungsreferenzen zurück. */
   trennen(): void {
     this.client?.deactivate();
     this.client = null;

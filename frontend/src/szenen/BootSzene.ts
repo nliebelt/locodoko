@@ -2,6 +2,10 @@ import Phaser from 'phaser';
 import { registriereBasisTexturen, TEXTUR_FILZ } from '../assets/AssetLoader';
 import { appStore } from '../anwendung';
 
+/**
+ * Die erste Szene des Spiels, die für die Initialisierung der Assets,
+ * den AppStore und die Wiederherstellung der Spieler-Session zuständig ist.
+ */
 export class BootSzene extends Phaser.Scene {
   private statusText?: Phaser.GameObjects.Text;
 
@@ -9,6 +13,9 @@ export class BootSzene extends Phaser.Scene {
     super('BootSzene');
   }
 
+  /**
+   * Initialisiert die grafischen Assets und startet die asynchrone Initialisierung der Spielkomponenten.
+   */
   create(): void {
     try {
       registriereBasisTexturen(this);
@@ -31,6 +38,9 @@ export class BootSzene extends Phaser.Scene {
     void this.initialisieren();
   }
 
+  /**
+   * Lädt die Spieler-Session und leitet je nach Status zur Lobby oder Tisch-Szene weiter.
+   */
   private async initialisieren(): Promise<void> {
     try {
       // Versuche bestehende Session wiederherzustellen (z.B. nach Tab-Reload)

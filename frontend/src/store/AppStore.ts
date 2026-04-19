@@ -60,8 +60,9 @@ function erzeugeAnfangszustand(): AppZustand {
 }
 
 /**
- * Zentraler Zustandsspeicher der Anwendung, der die Kommunikation mit dem Backend
- * über API-Aufrufe und WebSocket-Ereignisse verwaltet.
+ * Zentraler Zustandsspeicher der Anwendung.
+ * Verwaltet den App-Zustand, koordiniert API-Aufrufe und WebSocket-Ereignisse,
+ * und benachrichtigt registrierte Listener bei Zustandsänderungen.
  */
 export class AppStore {
   private zustand: AppZustand = erzeugeAnfangszustand();
