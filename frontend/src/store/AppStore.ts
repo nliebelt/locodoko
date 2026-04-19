@@ -59,6 +59,10 @@ function erzeugeAnfangszustand(): AppZustand {
   };
 }
 
+/**
+ * Zentraler Zustandsspeicher der Anwendung, der die Kommunikation mit dem Backend
+ * über API-Aufrufe und WebSocket-Ereignisse verwaltet.
+ */
 export class AppStore {
   private zustand: AppZustand = erzeugeAnfangszustand();
   private readonly listener = new Set<Listener>();
@@ -72,32 +76,63 @@ export class AppStore {
   private _verarbeiteEventLaeuft = false;
   private _kiKartenVerzögerungMs = 800;
 
+  /**
+   * Setzt die Verzögerung für KI-Kartenanimationen.
+   * @param ms Dauer in Millisekunden.
+   */
   setzeKiKartenVerzögerung(ms: number): void {
     this._kiKartenVerzögerungMs = ms;
   }
 
+  /**
+   * Abonniert Partie-Ereignisse.
+   * @param listener Callback-Funktion, die bei Eintreffen eines Ereignisses aufgerufen wird.
+   * @returns Eine Funktion zur Abmeldung des Listeners.
+   */
   abonniereEvents(listener: (ereignis: PartieEreignisAntwort) => void): () => void {
     this._eventListener.add(listener);
     return () => this._eventListener.delete(listener);
   }
 
+  /**
+   * Abonniert Sonderpunkt-Ereignisse.
+   * @param listener Callback-Funktion, die bei neuen Sonderpunkten aufgerufen wird.
+   * @returns Eine Funktion zur Abmeldung des Listeners.
+   */
   abonniereSonderpunkte(listener: (sonderpunkte: SonderpunktEreignisAntwortDto[]) => void): () => void {
     this._sonderpunkteListener.add(listener);
     return () => this._sonderpunkteListener.delete(listener);
   }
 
+  /**
+   * Erstellt eine neue Instanz des AppStore.
+   * @param api API-Service für HTTP-Anfragen.
+   * @param echtzeit Echtzeit-Service für WebSocket-Kommunikation.
+   */
   constructor(private readonly api: SpielverwaltungApi, private readonly echtzeit: EchtzeitPort) {}
 
+  /**
+   * Abonniert Zustandsänderungen des Stores.
+   * @param listener Callback-Funktion, die bei jeder Zustandsänderung aufgerufen wird.
+   * @returns Eine Funktion zur Abmeldung des Listeners.
+   */
   abonnieren(listener: Listener): () => void {
     this.listener.add(listener);
     listener(this.snapshot());
     return () => this.listener.delete(listener);
   }
 
+  /**
+   * Erstellt eine tiefe Kopie des aktuellen Anwendungszustands.
+   * @returns Der aktuelle Zustand.
+   */
   snapshot(): AppZustand {
     return structuredClone(this.zustand);
   }
 
+  /**
+   * Initialisiert die Anwendung (Spielersession, Verbindung, Tischliste).
+   */
   async initialisieren(): Promise<void> {
     if (this.zustand.initialisiert) return;
     await this.fuehreMitStatus(async () => {
@@ -115,6 +150,12 @@ export class AppStore {
     });
   }
 
+  /**
+   * Registriert einen neuen Benutzer.
+   * @param benutzername Benutzername.
+   * @param passwort Passwort.
+   * @param email Optionale E-Mail-Adresse.
+   */
   async registrieren(benutzername: string, passwort: string, email?: string): Promise<void> {
     await this.fuehreMitStatus(async () => {
       await this.api.registrieren(benutzername, passwort, email);
@@ -123,6 +164,11 @@ export class AppStore {
     });
   }
 
+  /**
+   * Loggt einen Benutzer ein.
+   * @param benutzername Benutzername.
+   * @param passwort Passwort.
+   */
   async einloggen(benutzername: string, passwort: string): Promise<void> {
     await this.fuehreMitStatus(async () => {
       await this.api.einloggen(benutzername, passwort);
@@ -131,6 +177,9 @@ export class AppStore {
     });
   }
 
+  /**
+   * Loggt den Benutzer aus.
+   */
   async ausloggen(): Promise<void> {
     await this.api.ausloggen().catch(() => undefined);
     this.echtzeit.trennen();
@@ -138,11 +187,17 @@ export class AppStore {
     this.veroeffentliche();
   }
 
+  /**
+   * Startet die Anwendung als Gast.
+   */
   async alsGastStarten(): Promise<void> {
     this.patch({ authentifiziert: true, bereich: 'SPIELVERWALTUNG' });
     await this.initialisieren();
   }
 
+  /**
+   * Aktualisiert die Liste der verfügbaren Tische.
+   */
   async aktualisiereTischliste(): Promise<void> {
     await this.fuehreMitStatus(async () => {
       const tische = await this.api.listeTische();
@@ -151,6 +206,9 @@ export class AppStore {
     });
   }
 
+  /**
+   * Erstellt ein schnelles Spiel (Quick Game).
+   */
   async erstelleQuickGame(): Promise<void> {
     await this.fuehreMitStatus(async () => {
       const tisch = await this.api.schnellstart();
@@ -159,6 +217,12 @@ export class AppStore {
     });
   }
 
+  /**
+   * Erstellt einen konfigurierten Tisch.
+   * @param name Tischname.
+   * @param konfiguration Tischkonfiguration.
+   * @param privat Ob der Tisch privat sein soll.
+   */
   async erstelleKonfiguriertenTisch(name: string, konfiguration: Partial<TischKonfigurationDto>, privat?: boolean): Promise<void> {
     const tischName = name.trim();
     if (!tischName) {
@@ -174,10 +238,18 @@ export class AppStore {
     });
   }
 
+  /**
+   * Erstellt einen neuen Tisch mit Standardkonfiguration.
+   * @param name Tischname.
+   */
   async erstelleTisch(name: string): Promise<void> {
     await this.erstelleKonfiguriertenTisch(name, {});
   }
 
+  /**
+   * Betritt einen bestehenden Tisch.
+   * @param tischId ID des Tisches.
+   */
   async betreteTisch(tischId: Uuid): Promise<void> {
     await this.fuehreMitStatus(async () => {
       const tisch = await this.api.betreteTisch(tischId);
@@ -185,6 +257,10 @@ export class AppStore {
     });
   }
 
+  /**
+   * Betritt einen Tisch mittels Einladungscode.
+   * @param einladungsCode Einladungscode.
+   */
   async betreteTischViaCode(einladungsCode: string): Promise<void> {
     await this.fuehreMitStatus(async () => {
       const tisch = await this.api.betreteTischViaCode(einladungsCode);
@@ -192,6 +268,10 @@ export class AppStore {
     });
   }
 
+  /**
+   * Stellt die Verbindung zu einem Tisch wieder her.
+   * @param tischId ID des Tisches.
+   */
   reconnecteTisch(tischId: Uuid): void {
     this.setzeTischAbosZurueck();
     this.registriereTischAbos(tischId, null);
@@ -199,16 +279,28 @@ export class AppStore {
     this.echtzeit.senden(`/app/tisch/${tischId}/snapshot`);
   }
 
+  /**
+   * Kickt einen Spieler vom Tisch.
+   * @param spielerId ID des Spielers.
+   */
   async kickeSpieler(spielerId: Uuid): Promise<void> {
     const tischId = this.zustand.aktuellerTisch?.id;
     if (!tischId) return;
     await this.fuehreMitStatus(async () => { await this.api.kickeSpieler(tischId, spielerId); });
   }
 
+  /**
+   * Lädt den Namen eines Tisches.
+   * @param tischId ID des Tisches.
+   * @returns Der Tischname.
+   */
   async ladeTischName(tischId: Uuid): Promise<string> {
     return (await this.api.ladeTisch(tischId)).name;
   }
 
+  /**
+   * Verlässt den aktuell betretenen Tisch.
+   */
   async verlasseAktuellenTisch(): Promise<void> {
     const tisch = this.zustand.aktuellerTisch;
     if (!tisch) return;
@@ -220,18 +312,28 @@ export class AppStore {
     void this.aktualisiereTischliste();
   }
 
+  /**
+   * Startet den aktuell betretenen Tisch.
+   */
   async starteAktuellenTisch(): Promise<void> {
     const tisch = this.zustand.aktuellerTisch;
     if (!tisch) return;
     await this.fuehreMitStatus(async () => { await this.api.starteTisch(tisch.id); });
   }
 
+  /**
+   * Startet eine neue Partie am aktuellen Tisch.
+   */
   async starteNeuePartie(): Promise<void> {
     const tisch = this.zustand.aktuellerTisch;
     if (!tisch) return;
     await this.fuehreMitStatus(async () => { await this.api.starteNeuePartie(tisch.id); });
   }
 
+  /**
+   * Aktualisiert den Tischhintergrund am aktuellen Tisch.
+   * @param tischhintergrund Gewählter Hintergrund.
+   */
   async aktualisiereAktuellenTischhintergrund(tischhintergrund: Tischhintergrund): Promise<void> {
     const tisch = this.zustand.aktuellerTisch;
     if (!tisch) return;
@@ -242,6 +344,10 @@ export class AppStore {
     });
   }
 
+  /**
+   * Aktualisiert die KI-Schwierigkeit am aktuellen Tisch.
+   * @param kiSchwierigkeit Neue Schwierigkeitsstufe.
+   */
   async aktualisiereAktuelleKiSchwierigkeit(kiSchwierigkeit: KiSchwierigkeit): Promise<void> {
     const tisch = this.zustand.aktuellerTisch;
     if (!tisch) return;
@@ -252,28 +358,51 @@ export class AppStore {
     });
   }
 
+  /**
+   * Spielt eine Karte am Tisch aus.
+   * @param karteId ID der Karte.
+   */
   spieleKarte(karteId: string): void {
     const tischId = this.zustand.aktuellerTisch?.id;
     if (tischId) this.sendeSpielaktion(`/app/tisch/${tischId}/karte`, { karteId });
   }
 
+  /**
+   * Gibt eine Ansage ab.
+   * @param ansage Ansagetyp.
+   */
   sageAnsageAn(ansage: Ansage): void {
     const tischId = this.zustand.aktuellerTisch?.id;
     if (tischId) this.sendeSpielaktion(`/app/tisch/${tischId}/ansage`, { ansage });
   }
 
+  /**
+   * Meldet einen Vorbehalt.
+   * @param vorbehalt Vorbehaltstyp.
+   */
   meldeVorbehalt(vorbehalt: VorbehaltAnsage): void {
     const tischId = this.zustand.aktuellerTisch?.id;
     if (tischId) this.sendeSpielaktion(`/app/tisch/${tischId}/vorbehalt`, { vorbehalt });
   }
 
+  /**
+   * Beantwortet eine Armut.
+   * @param angenommen Ob die Armut angenommen wurde.
+   * @param kartenIds IDs der getauschten Karten.
+   */
   beantworteArmut(angenommen: boolean, kartenIds: string[]): void {
     const tischId = this.zustand.aktuellerTisch?.id;
     if (tischId) this.sendeSpielaktion(`/app/tisch/${tischId}/armut-antwort`, { angenommen, kartenIds });
   }
 
+  /**
+   * Quittiert die aktuell angezeigte Meldung.
+   */
   quittiereMeldung(): void { this.patch({ meldung: null }); }
 
+  /**
+   * Schaltet den Debug-Modus um.
+   */
   toggleDebugModus(): void {
     const debugModus = !this.zustand.debugModus;
     this.patch({ debugModus });
@@ -281,6 +410,9 @@ export class AppStore {
     if (partieId) this.echtzeit.senden(debugModus ? `/app/partie/${partieId}/debug-snapshot` : `/app/partie/${partieId}/snapshot`);
   }
 
+  /**
+   * Trennt alle Verbindungen und setzt den Zustand zurück.
+   */
   trennen(): void {
     this.setzeTischAbosZurueck();
     this.gemeinsameAbos.splice(0).forEach((abmelden) => abmelden());
@@ -288,6 +420,7 @@ export class AppStore {
     this.zustand = erzeugeAnfangszustand();
     this.veroeffentliche();
   }
+
 
   private registriereGemeinsameAbos(): void {
     if (this.gemeinsameAbos.length > 0) return;

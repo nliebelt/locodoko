@@ -1,11 +1,10 @@
 # IMPLEMENTATION_PLAN — Locodoko Doppelkopf
 
 ## Notiz
-- SF-4 Ordner-Cleanup abgeschlossen: `frontend/src/model/` zu `frontend/src/modelle/` verschoben und alle Imports in `TischInputHandler`, `TischUIManager` und `TischSzene` korrigiert.
-- Nächster Schritt: SF-5 (JSDoc-Offensive).
-- Offene Fragen: Die unhandled errors bei `npm test` bestehen weiterhin.
+- SF-5 JSDoc-Offensive begonnen: `frontend/src/store/AppStore.ts` vollständig dokumentiert.
+- Nächster Schritt: Restliche Klassen in `store/`, `szenen/` und `services/` dokumentieren.
 
-> **Letzte Aktualisierung: 2026-04-19 (Ralph Planning Mode - Plan-Run #85)**
+> **Letzte Aktualisierung: 2026-04-19 (Ralph Planning Mode - Plan-Run #86)**
 
 ## Zusammenfassung Ist-Zustand
 
@@ -60,7 +59,7 @@ Ziel: Vollständige typisierte Kommunikation ohne "Snapshot-Zwang" für jede Akt
 ## Phase 3 — Frontend Refactoring & Dokumentation (SF)
 
 - [x] **SF-4** Ordner-Cleanup: `frontend/src/model/` nach `modelle/` verschieben und alle Imports korrigieren.
-- [ ] **SF-5** JSDoc-Offensive: Deutsche JSDoc für alle Klassen/Methoden in `store/`, `szenen/` und `services/` ergänzen.
+- [ ] **SF-5** JSDoc-Offensive: Deutsche JSDoc für alle Klassen/Methoden in `store/`, `szenen/` und `services/` ergänzen. (In Arbeit: AppStore erledigt)
 - [ ] **SF-6** Tastatursteuerung: Mapping in `TischInputHandler.ts` vervollständigen (Shortcuts für Solo-Typen, Ansage-Verschärfungen).
 - [ ] **SF-7** CSS-Modularisierung: `styles.css` aufteilen (z.B. `base.css`, `lobby.css`, `tisch.css`).
 
