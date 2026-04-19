@@ -27,6 +27,11 @@ function holeUiRoot(): HTMLElement {
  * Spielverwaltungs-Szene (Start-Screen).
  * Ersetzt die bisherige LobbySzene und bietet Quick Game, Tisch-Erstellung und Tisch-Liste.
  */
+/**
+ * Spielverwaltungs-Szene (Start-Screen).
+ * Ersetzt die bisherige LobbySzene und bietet Quick Game, Tisch-Erstellung und Tisch-Liste.
+ * Die Szene verwaltet die Verbindung zur Lobby, die Auswahl von Tischen und Konfigurationsoptionen.
+ */
 export class SpielverwaltungsSzene extends Phaser.Scene {
   private abmeldenStore?: () => void;
   private boundHandleSceneKeyDown?: (e: KeyboardEvent) => void;

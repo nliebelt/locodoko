@@ -6,6 +6,11 @@ import { appStore } from '../anwendung';
  * Die erste Szene des Spiels, die für die Initialisierung der Assets,
  * den AppStore und die Wiederherstellung der Spieler-Session zuständig ist.
  */
+/**
+ * BootSzene ist der Einstiegspunkt des Phaser-Spiels.
+ * Sie lädt initiale Assets wie Schriften und Texturen und initialisiert die globale Konfiguration,
+ * bevor sie zur LoginSzene weiterleitet.
+ */
 export class BootSzene extends Phaser.Scene {
   private statusText?: Phaser.GameObjects.Text;
 

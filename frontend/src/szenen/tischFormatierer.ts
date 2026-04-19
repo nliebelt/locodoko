@@ -1,6 +1,7 @@
 /**
  * Reine Formatierungs-Hilfsfunktionen fuer die Tischdarstellung.
  * Werden sowohl von TischSzene (Phaser-Rendering) als auch von TischUIManager (DOM) genutzt.
+ * Funktionen sind zustandslos und dienen der einheitlichen Darstellung von Spieldaten.
  */
 import type { Ansage, KarteAntwort, KiSchwierigkeit, Sonderpunkt, SonderpunktEreignis, VorbehaltAnsage } from '../modelle/SpielverwaltungDto';
 

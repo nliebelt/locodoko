@@ -169,6 +169,11 @@ function istBildHintergrund(bg: Tischhintergrund): boolean {
  * Abhaengigkeiten: AppStore (reaktiver Zustand), TischAnsichtModell (Transformation),
  * AnimationenService (Tweens), SpielverwaltungApi/EchtzeitPort (via AppStore).
  */
+/**
+ * Die Hauptszene für das laufende Spiel (Tisch).
+ * Verwaltet den gesamten Spielfluss, das Layout der Karten auf dem Tisch,
+ * die Interaktion mit dem Backend sowie die Animationen der Spielzüge.
+ */
 export class TischSzene extends Phaser.Scene {
   private abmeldenStore?: () => void;
 

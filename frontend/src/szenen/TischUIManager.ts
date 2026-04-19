@@ -72,6 +72,11 @@ export interface TischUIKontext {
  * Abhaengigkeiten werden ueber TischUIKontext injiziert; TischUIManager hat keine direkte
  * Referenz auf TischSzene oder Phaser-Objekte.
  */
+/**
+ * TischUIManager verwaltet die DOM-UI-Elemente innerhalb der Tisch-Szene.
+ * Er kümmert sich um die Erstellung, Aktualisierung und Formatierung von Overlays,
+ * Modalen, Ansagen-Dialogen und Infoleisten.
+ */
 export class TischUIManager {
   // ── Top-Bar ──────────────────────────────────────────────────────────────────
   private hudStichzaehlerEl?: HTMLSpanElement;
