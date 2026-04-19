@@ -54,7 +54,6 @@ fi
 
 ITERATION=0
 ITER_OUTPUT=".ralph-iter.tmp"
-ITER_FORMATTED=".ralph-iter-fmt.tmp"
 LOG_FILE="ralph-gemini-$(date +%Y%m%d-%H%M%S).log"
 
 # --- Model selection ---
@@ -107,8 +106,9 @@ if [ ! -d ".git" ]; then
 fi
 
 # --- Cleanup on exit ---
+# NOTE: ralph-gemini-last-raw.json is intentionally kept for post-run inspection.
 cleanup() {
-    rm -f "$ITER_OUTPUT" "$ITER_FORMATTED"
+    rm -f "$ITER_OUTPUT"
 }
 trap cleanup EXIT
 
@@ -135,7 +135,7 @@ while true; do
         --output-format stream-json \
         2>&1 \
         | grep --line-buffered '^{' \
-        | tee "$ITER_OUTPUT" \
+        | tee "$ITER_OUTPUT" ralph-gemini-last-raw.json \
         | jq --unbuffered -rj '
             if .type == "message" and .role == "assistant" then .content
             elif (.type == "tool_use" or .type == "tool_call") then
@@ -150,19 +150,12 @@ while true; do
               "\nTokens: \(.stats.input_tokens) in / \(.stats.output_tokens) out\n"
             else empty end
           ' 2>/dev/null \
-        | tee "$ITER_FORMATTED" \
         || true
 
-    # Append iteration output to log (human-readable, ANSI codes stripped)
-    {
-        echo "--- Iteration $ITERATION ($MODE) $(date) ---"
-        echo "--- Prompt ($PROMPT_FILE) ---"
-        cat "$PROMPT_FILE"
-        echo ""
-        echo "--- Output ---"
-        sed $'s/\033\\[[0-9;]*[mK]//g' "$ITER_FORMATTED"
-        echo ""
-    } >> "$LOG_FILE"
+    # Append iteration output to log
+    echo "--- Iteration $ITERATION ($MODE) $(date) ---" >> "$LOG_FILE"
+    cat "$ITER_OUTPUT" >> "$LOG_FILE"
+    echo "" >> "$LOG_FILE"
 
     # Check for completion signal (only in assistant messages)
     if jq -e 'select(.type == "message" and .role == "assistant" and (.content | contains("<promise>COMPLETE</promise>")))' "$ITER_OUTPUT" >/dev/null 2>&1; then
