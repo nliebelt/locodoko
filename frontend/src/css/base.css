@@ -1,0 +1,25 @@
+[hidden] {
+  display: none !important;
+  pointer-events: none !important;
+}
+
+html,
+body,
+#app-shell,
+#spiel-root,
+#ui-root {
+  margin: 0;
+  width: 100%;
+  height: 100%;
+}
+
+body {
+  overflow: hidden;
+  font-family: var(--schrift-familie);
+  background: var(--farbe-hintergrund);
+  color: var(--farbe-text-primaer);
+}
+
+canvas {
+  display: block;
+}

@@ -1,0 +1,19 @@
+/* Design-System — CSS Custom Properties (Neo-Brutalism Theme) */
+:root {
+  --farbe-hintergrund: #0d1f12;
+  --farbe-surface: #1a3a24;
+  --farbe-grenze: #2d5a3d;
+  --farbe-grenze-akzent: #f8f9fa;
+  --farbe-text-primaer: #f8f9fa;
+  --farbe-text-sekundaer: #a3c4a8;
+  --farbe-gold: #ffd166;
+  --farbe-blau: #90caf9;
+  --farbe-rot: #ef4444;
+  --farbe-gruen: #4ade80;
+
+  --schrift-familie: 'Space Grotesk', system-ui, sans-serif;
+
+  --schatten-karte: 4px 4px 0 rgba(0, 0, 0, 0.8);
+  --schatten-button: 4px 4px 0 #000;
+  --rahmen-neo: 2px solid var(--farbe-grenze-akzent);
+}

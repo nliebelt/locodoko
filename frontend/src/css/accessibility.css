@@ -1,0 +1,11 @@
+:focus-visible {
+  outline: 2px solid var(--farbe-gold);
+  outline-offset: 2px;
+}
+
+.ui-button:focus-visible,
+.ui-input:focus-visible {
+  outline: 2px solid var(--farbe-gold);
+  outline-offset: 2px;
+  box-shadow: var(--schatten-button), 0 0 0 4px rgba(255, 209, 102, 0.25);
+}
