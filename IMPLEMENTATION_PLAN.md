@@ -1,65 +1,74 @@
 # IMPLEMENTATION_PLAN — Locodoko Doppelkopf
 
-> **Letzte Aktualisierung: 2026-04-18 (Plan-Run #83)**
-
-## Legende
-
-- [x] Erledigt (Code + Tests vorhanden und grün)
-- [~] Teilweise implementiert
-- [ ] Offen
-- [BLOCKED: ...] Blockiert mit Begründung
-
-Erledigte Features: siehe `IMPLEMENTATION_PLAN_ARCHIVE.md`.
-
----
+> **Letzte Aktualisierung: 2026-04-19 (Ralph Planning Mode - Plan-Run #84)**
 
 ## Zusammenfassung Ist-Zustand
 
-**Kern-Features komplett:** Stichlogik, Trumpfhierarchie, Kartendeck, Punkteberechnung, Ansagen,
-Sonderpunkte, Bockrunden, Schweinchen, 30-Augen-Pflicht, Solo-Nachgeben, alle 7 Solo-Varianten,
-Hochzeit, Armut, KI (3 Schwierigkeitsgrade), WebSocket, REST-API, Session, Verbindungsabbruch,
-Frontend (Phaser 3, AppStore, Szenen-Aufteilung, Animationen, Overlays, Tastatursteuerung),
-Schnellstart, Einladungslink, Spring Modulith Modulstruktur, Authentifizierung, Spieler-Profile,
-typisierte WebSocket-Events.
-
-**Build:** `mvn test` grün (254 Tests, 0 Failures).
-
-**Offene Punkte:** Keine. Alle Features implementiert.
+**Features:** Kern-Logik (Stiche, Trumpf, Punkte, Ansagen, Sonderregeln, Sonderspiele) komplett. Frontend mit Phaser 3 und AppStore stabil. KI mit 3 Schwierigkeitsgraden.
+**Offene Baustellen:** WebSocket-Event-Vollständigkeit, Dokumentationslücken (JSDoc), Frontend-Ordnerstruktur-Inkonsistenz, CSS-Monolith, einige unentdeckte Bugs in Sonderregeln (Schweinchen, KI-Hänger).
+**Bekannte Test-Fehler:** 
+- `PersistenzRepositoryTest.loeschtPartienSpieleUndSticheWennEinTischEntferntWird` (fehlende Kaskadierung)
+- `PartieTest.partieMitOhneNeunenSchliesstNachZehnStichenAb` (Existenz/Logik-Check für 10-Stiche-Spiele)
 
 ---
 
-## Notiz
+## Entscheidungen (Spec vs. Code)
 
-**Alle Feature-Aufgaben erledigt (Stand Plan-Run #83).**
-
-Zuletzt implementiert:
-- **BF-8** — Schmeißen-Recht 1× pro Spiel (`bereitsGeschmissen: Set<SpielerPosition>` in `Spiel`, Liquibase Changeset 017)
-- **KI-2** — Solo-Schwellenwert-Tuning bei aktiven Sonderregeln (`soloSchwelle(VorbehaltAnsage, KiSpielzustand)` mit Faktor 1.15)
-- **SF-3** — Frontend Tischkonfiguration-Presets (Preset-Dropdown in `SpielverwaltungsSzene.ts`)
-- **BF-13/14/15** — KI-Animationen letzter Stich, Spielankündigung-Timing, Reconnect-Guard
-
-**Pre-existing Failures (nicht durch aktuelle Änderungen verursacht):**
-- `PartieTest.partieMitOhneNeunenSchliesstNachZehnStichenAb`
-- `PersistenzRepositoryTest.loeschtPartienSpieleUndSticheWennEinTischEntferntWird`
-
-**Offene Frage (ARCH-4):** Werden `SPIEL_BEENDET`, `SPIEL_GESTARTET`, `ANSAGE_ERFOLGT`, `SCHWEINCHEN_GEMELDET` vom Backend bereits als typisierte Events gesendet? `PartieEreignisTyp` und `AppStore.abonniereEvents()` sind vorbereitet, aber unklar ob Backend diese Events aktiv versendet.
+- **Schweinchen:** Die Spec (`specs/schweinchen.md`) fordert DKV-konforme Meldung erst beim Ausspielen. Der Code ist hier unklar oder fehlerhaft. **Entscheidung:** Code wird an Spec angepasst (Meldung via Domain-Event beim ersten Karo-As).
+- **Frontend Dokumentation:** `specs/frontend-architektur.md` fordert durchgängig deutsches JSDoc. Das fehlt aktuell weitgehend. **Entscheidung:** Code wird an Spec angepasst.
+- **Tastatursteuerung:** `specs/frontend-tastatursteuerung.md` listet Shortcuts, die im `TischInputHandler.ts` noch fehlen. **Entscheidung:** Code wird an Spec angepasst.
+- **Ordnerstruktur:** Die Koexistenz von `model/` und `modelle/` ist inkonsistent zur DDD-Vorgabe. **Entscheidung:** Vereinheitlichung auf `modelle/`.
 
 ---
 
-## Nächste Aufgabe: Neue E2E-Tests ausführen und grün bestätigen
+## Phase 1 — WebSocket & Domain Events (ARCH)
 
-Die folgenden Tests wurden neu hinzugefügt und müssen gegen ein laufendes Backend verifiziert werden:
+Ziel: Vollständige typisierte Kommunikation ohne "Snapshot-Zwang" für jede Aktion.
 
-| Datei | Beschreibung |
-|---|---|
-| `e2e/tests/mehrere-runden.spec.ts` | 2 Runden Quick Game (ohneNeunen), BF-13–15 |
-| `e2e/tests/mehrere-runden-ohne-neunen.spec.ts` | 2 Runden via Modal (LOCO_BLAT explizit), /10-Assertion |
+- [ ] **ARCH-4** Neue WebSocket-Events definieren: `ANSAGE_ERFOLGT`, `SCHWEINCHEN_GEMELDET`, `SPIEL_GESTARTET`.
+  - `PartieEreignisTyp` erweitern.
+  - Antwort-DTOs in `de.locodoko.tisch` erstellen.
+- [ ] **ARCH-5** `SpielAktionsService` & `KiOrchestrierungService` anpassen:
+  - Bei Ansagen `ANSAGE_ERFOLGT` senden (statt/zusätzlich zu Snapshot).
+  - Bei Karo-As (Schweinchen) `SCHWEINCHEN_GEMELDET` senden.
+- [ ] **ARCH-6** Frontend `AppStore.ts` anpassen: neue Events abonnieren und Modell-Zustand partiell aktualisieren.
 
-**Außerdem korrigiert** (Assertion war nach CFG-1 falsch):
-- `schnellstart.spec.ts`: `"Stich 1/12"` → `"Stich 1/10"` (standard() = ohneNeunen seit CFG-1)
-- `partie-gegen-ki.spec.ts`: `"Stich 1/12"` → `"Stich 1/10"` (Modal-Default = LOCO_BLAT = ohneNeunen)
+---
 
-Ausführen:
-```sh
-cd e2e && npx playwright test mehrere-runden.spec.ts mehrere-runden-ohne-neunen.spec.ts schnellstart.spec.ts partie-gegen-ki.spec.ts
-```
+## Phase 2 — Bugfixes & Regel-Stabilität (BF)
+
+- [ ] **BF-16** Fix Cascading Delete:
+  - Liquibase-Changeset: Foreign Key Constraint für `tisch.partie_id` -> `partie.id` mit `ON DELETE CASCADE` hinzufügen.
+  - Alternativ: `TischVerwaltungsService.entferneTisch()` um manuelles Löschen der `Partie` ergänzen.
+- [ ] **BF-17** 10-Stiche-Spiele (ohne Neunen):
+  - Test `PartieTest.partieMitOhneNeunenSchliesstNachZehnStichenAb` hinzufügen/fixen.
+  - Sicherstellen, dass `ohneNeunenRegeln()` korrekt 10 Stiche als Endbedingung nutzt.
+- [ ] **BF-18** Schweinchen-Bugfix:
+  - Sicherstellen, dass `SchweinchenTrumpfOrdnung` im `Spiel` aktiv wird, wenn Karo-Asse auf einer Hand liegen.
+  - DKV-Logik: Meldung erst beim Ausspielen.
+- [ ] **BF-19** `Spielregeln.java` Cleanup:
+  - `standardRegeln()` delegiert an `locoBlatRegeln()` (wie im TODO vermerkt).
+  - Veraltete Methoden entfernen.
+
+---
+
+## Phase 3 — Frontend Refactoring & Dokumentation (SF)
+
+- [ ] **SF-4** Ordner-Cleanup: `frontend/src/model/` nach `modelle/` verschieben und alle Imports korrigieren.
+- [ ] **SF-5** JSDoc-Offensive: Deutsche JSDoc für alle Klassen/Methoden in `store/`, `szenen/` und `services/` ergänzen.
+- [ ] **SF-6** Tastatursteuerung: Mapping in `TischInputHandler.ts` vervollständigen (Shortcuts für Solo-Typen, Ansage-Verschärfungen).
+- [ ] **SF-7** CSS-Modularisierung: `styles.css` aufteilen (z.B. `base.css`, `lobby.css`, `tisch.css`).
+
+---
+
+## Phase 4 — KI & Stabilität (KI)
+
+- [ ] **KI-3** KI-Hänger-Audit: Prüfen warum KI nach Sonderereignissen (Hochzeit-Partner gefunden, Fuchs gefangen) manchmal pausiert.
+
+---
+
+## Phase 5 — Verifikation (TEST)
+
+- [ ] `mvn test` (Backend) — Ziel: 100% grün.
+- [ ] `cd frontend && npm run lint` — Ziel: keine Warnungen.
+- [ ] `cd e2e && npx playwright test` — Alle E2E-Tests (inkl. neue Runden-Tests) grün.

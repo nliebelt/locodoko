@@ -54,7 +54,8 @@ fi
 
 ITERATION=0
 ITER_OUTPUT=".ralph-iter.tmp"
-LOG_FILE="ralph-$(date +%Y%m%d-%H%M%S).log"
+ITER_FORMATTED=".ralph-iter-fmt.tmp"
+LOG_FILE="ralph-gemini-$(date +%Y%m%d-%H%M%S).log"
 
 # --- Model selection ---
 # Default models optimized for cost/performance in their respective modes.
@@ -107,7 +108,7 @@ fi
 
 # --- Cleanup on exit ---
 cleanup() {
-    rm -f "$ITER_OUTPUT"
+    rm -f "$ITER_OUTPUT" "$ITER_FORMATTED"
 }
 trap cleanup EXIT
 
@@ -143,12 +144,19 @@ while true; do
               "\nTokens: \(.stats.input_tokens) in / \(.stats.output_tokens) out\n"
             else empty end
           ' 2>/dev/null \
+        | tee "$ITER_FORMATTED" \
         || true
 
-    # Append iteration output to log
-    echo "--- Iteration $ITERATION ($MODE) $(date) ---" >> "$LOG_FILE"
-    cat "$ITER_OUTPUT" >> "$LOG_FILE"
-    echo "" >> "$LOG_FILE"
+    # Append iteration output to log (human-readable, ANSI codes stripped)
+    {
+        echo "--- Iteration $ITERATION ($MODE) $(date) ---"
+        echo "--- Prompt ($PROMPT_FILE) ---"
+        cat "$PROMPT_FILE"
+        echo ""
+        echo "--- Output ---"
+        sed $'s/\033\\[[0-9;]*[mK]//g' "$ITER_FORMATTED"
+        echo ""
+    } >> "$LOG_FILE"
 
     # Check for completion signal (only in assistant messages)
     if jq -e 'select(.type == "message" and .role == "assistant" and (.content | contains("<promise>COMPLETE</promise>")))' "$ITER_OUTPUT" >/dev/null 2>&1; then
