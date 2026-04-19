@@ -36,7 +36,7 @@ class SpielregelnTest {
     void ohneNeunenLocoBlatRegelnSetzenOhneNeunenUndPassendeMindestkarten() {
         // Stellt sicher dass ohneNeunen gesetzt ist und Mindestkarten für 10-Karten-Spiel gelten —
         // falsche Mindestkarten machen Ansagen fast immer unmöglich
-        Spielregeln regeln = Spielregeln.ohneNeunenLocoBlatRegeln();
+        Spielregeln regeln = Spielregeln.locoBlatRegeln();
         assertThat(regeln.ohneNeunen()).isTrue();
         assertThat(regeln.mindestkartenReKontra()).isEqualTo(9);
         assertThat(regeln.mindestkartenKeine90()).isEqualTo(8);

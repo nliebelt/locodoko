@@ -1,11 +1,11 @@
 # IMPLEMENTATION_PLAN — Locodoko Doppelkopf
 
 ## Notiz
-- BF-18 Schweinchen-Bugfix erfolgreich abgeschlossen. `Spiel.java` Switch-Case korrigiert, damit Schweinchen bei Normalspielen korrekt aktiviert wird und in Solo-Spielen inaktiv bleibt.
-- Nächster Schritt: BF-19 (Spielregeln-Cleanup).
+- BF-19 Spielregeln-Cleanup abgeschlossen: `standardRegeln()` delegiert jetzt an `locoBlatRegeln()`, veraltete Methoden entfernt und `SpielregelnTest` angepasst.
+- Nächster Schritt: SF-4 (Ordner-Cleanup).
 - Offene Fragen: Die unhandled errors bei `npm test` bestehen weiterhin.
 
-> **Letzte Aktualisierung: 2026-04-19 (Ralph Planning Mode - Plan-Run #84)**
+> **Letzte Aktualisierung: 2026-04-19 (Ralph Planning Mode - Plan-Run #85)**
 
 ## Zusammenfassung Ist-Zustand
 
@@ -51,7 +51,7 @@ Ziel: Vollständige typisierte Kommunikation ohne "Snapshot-Zwang" für jede Akt
 - [x] **BF-18** Schweinchen-Bugfix:
   - Sicherstellen, dass `SchweinchenTrumpfOrdnung` im `Spiel` aktiv wird, wenn Karo-Asse auf einer Hand liegen.
   - DKV-Logik: Meldung erst beim Ausspielen.
-- [ ] **BF-19** `Spielregeln.java` Cleanup:
+- [x] **BF-19** `Spielregeln.java` Cleanup:
   - `standardRegeln()` delegiert an `locoBlatRegeln()` (wie im TODO vermerkt).
   - Veraltete Methoden entfernen.
 

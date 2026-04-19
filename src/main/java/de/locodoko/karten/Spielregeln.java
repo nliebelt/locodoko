@@ -55,7 +55,7 @@ public record Spielregeln(
     }
 
     public static Spielregeln standardRegeln() {
-        return new Spielregeln(false, true, 11, 10, 9, 8, 7, true, true, true, true, true, true, true, true, true, false, false, false, false);
+        return locoBlatRegeln();
     }
 
     public static Spielregeln ohneNeunenRegeln() {
@@ -70,12 +70,6 @@ public record Spielregeln(
     /** DKV-Turnier-Regelkatalog: ohne Bockrunden, Schweinchen, 30-Augen-Pflicht und Schmeissen, mit Neunen. */
     public static Spielregeln dkvRegeln() {
         return new Spielregeln(false, true, 11, 10, 9, 8, 7, true, true, true, true, true, true, true, true, true, false, false, false, false);
-    }
-
-    /** @deprecated Identisch mit {@link #locoBlatRegeln()} — Loco Blatt ist immer ohne Neunen. */
-    @Deprecated
-    public static Spielregeln ohneNeunenLocoBlatRegeln() {
-        return locoBlatRegeln();
     }
 
     public Spielregeln mitAnsagegrenzen(
