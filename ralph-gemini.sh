@@ -138,8 +138,14 @@ while true; do
         | tee "$ITER_OUTPUT" \
         | jq --unbuffered -rj '
             if .type == "message" and .role == "assistant" then .content
-            elif .type == "tool_use" then "\u001b[36m[→ \(.name): \(.arguments | to_entries | map("\(.key)=\(.value | tostring | .[0:60])") | join(", "))]\u001b[0m\n"
-            elif .type == "tool_result" then "\u001b[32m[✓ \(.status // "ok") \(.output | tostring | .[0:60] | sub("\n"; " "; "g"))]\u001b[0m\n"
+            elif (.type == "tool_use" or .type == "tool_call") then
+              "\u001b[36m[→ \(.name // .function.name // "?"): \((.arguments // .input // .function.arguments // {}) | to_entries | map("\(.key)=\(.value | tostring | .[0:80])") | join(", "))]\u001b[0m\n"
+            elif .type == "tool_result" then
+              if .status == "error" then
+                "\u001b[31m[✗ \(.output // .error // "error" | tostring | .[0:120] | gsub("\n";" "))]\u001b[0m\n"
+              elif .output != null and .output != "" and .output != "null" then
+                "\u001b[32m[✓ \(.output | tostring | .[0:120] | gsub("\n";" "))]\u001b[0m\n"
+              else empty end
             elif .type == "result" then
               "\nTokens: \(.stats.input_tokens) in / \(.stats.output_tokens) out\n"
             else empty end
