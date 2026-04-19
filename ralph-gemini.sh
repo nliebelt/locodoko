@@ -28,13 +28,13 @@ set -euo pipefail
 # ============================================================
 
 # --- Check for uncommitted changes in Git worktree ---
-# if git rev-parse --is-inside-work-tree &>/dev/null; then
-#     if [[ -n "$(git status --porcelain)" ]]; then
-#         echo "FEHLER: Der Git-Worktree ist nicht sauber. Bitte committe oder stash deine Änderungen, bevor du Ralph startest."
-#         echo "Abbruch. Keine Iteration ausgeführt."
-#         exit 1
-#     fi
-# fi
+if git rev-parse --is-inside-work-tree &>/dev/null; then
+    if [[ -n "$(git status --porcelain)" ]]; then
+        echo "FEHLER: Der Git-Worktree ist nicht sauber. Bitte committe oder stash deine Änderungen, bevor du Ralph startest."
+        echo "Abbruch. Keine Iteration ausgeführt."
+        exit 1
+    fi
+fi
 
 MODE="build"
 PROMPT_FILE="PROMPT_build.md"
