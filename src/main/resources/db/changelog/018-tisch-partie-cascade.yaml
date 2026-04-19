@@ -1,0 +1,12 @@
+databaseChangeLog:
+  - changeSet:
+      id: 018-tisch-partie-cascade
+      author: locodoko
+      changes:
+        - addForeignKeyConstraint:
+            baseColumnNames: partie_id
+            baseTableName: tisch
+            constraintName: fk_tisch_partie
+            referencedColumnNames: id
+            referencedTableName: partie
+            onDelete: CASCADE

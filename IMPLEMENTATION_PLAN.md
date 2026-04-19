@@ -1,9 +1,9 @@
 # IMPLEMENTATION_PLAN — Locodoko Doppelkopf
 
 ## Notiz
-- ARCH-6 umgesetzt: `AppStore.ts` verarbeitet jetzt `ANSAGE_ERFOLGT`, `SCHWEINCHEN_GEMELDET` und `SPIEL_GESTARTET`.
-- Nächster Schritt: BF-16 (Fix Cascading Delete).
-- Offene Fragen: Die unhandled errors bei `npm test` scheinen eine Instabilität in der Testumgebung (jsdom/esm) zu sein, unabhängig von den Änderungen. Bitte bei Gelegenheit prüfen.
+- BF-16 umgesetzt: `018-tisch-partie-cascade.yaml` hinzugefügt. Test ist grün.
+- Nächster Schritt: BF-17 (10-Stiche-Spiele).
+- Offene Fragen: Die unhandled errors bei `npm test` bestehen weiterhin.
 
 > **Letzte Aktualisierung: 2026-04-19 (Ralph Planning Mode - Plan-Run #84)**
 
@@ -42,9 +42,9 @@ Ziel: Vollständige typisierte Kommunikation ohne "Snapshot-Zwang" für jede Akt
 
 ## Phase 2 — Bugfixes & Regel-Stabilität (BF)
 
-- [ ] **BF-16** Fix Cascading Delete:
-  - Liquibase-Changeset: Foreign Key Constraint für `tisch.partie_id` -> `partie.id` mit `ON DELETE CASCADE` hinzufügen.
-  - Alternativ: `TischVerwaltungsService.entferneTisch()` um manuelles Löschen der `Partie` ergänzen.
+- [x] **BF-16** Fix Cascading Delete:
+  - Liquibase-Changeset: Foreign Key Constraint für `tisch.partie_id` -> `partie.id` mit `ON DELETE CASCADE` hinzugefügt.
+  - `TischVerwaltungsService` weiterhin mit manueller Partie-Löschung für Kompatibilität.
 - [ ] **BF-17** 10-Stiche-Spiele (ohne Neunen):
   - Test `PartieTest.partieMitOhneNeunenSchliesstNachZehnStichenAb` hinzufügen/fixen.
   - Sicherstellen, dass `ohneNeunenRegeln()` korrekt 10 Stiche als Endbedingung nutzt.

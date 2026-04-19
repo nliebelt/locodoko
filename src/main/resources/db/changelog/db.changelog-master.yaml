@@ -33,3 +33,5 @@ databaseChangeLog:
       file: db/changelog/016-schmeissen-aktiv.yaml
   - include:
       file: db/changelog/017-bereits-geschmissen.yaml
+  - include:
+      file: db/changelog/018-tisch-partie-cascade.yaml
