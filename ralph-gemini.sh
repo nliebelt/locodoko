@@ -54,7 +54,10 @@ fi
 
 ITERATION=0
 ITER_OUTPUT=".ralph-iter.tmp"
-LOG_FILE="ralph-gemini-$(date +%Y%m%d-%H%M%S).log"
+ITER_FORMATTED=".ralph-iter-fmt.tmp"
+TIMESTAMP="$(date +%Y%m%d-%H%M%S)"
+LOG_FILE="ralph-gemini-${TIMESTAMP}.log"
+RAW_FILE="ralph-gemini-${TIMESTAMP}-raw.json"
 
 # --- Model selection ---
 # Default models optimized for cost/performance in their respective modes.
@@ -74,6 +77,7 @@ echo "  Prompt:     $PROMPT_FILE"
 echo "  Max:        $MAX_ITERATIONS Iterationen"
 echo "  Modell:     $EFFECTIVE_MODEL"
 echo "  Log:        $LOG_FILE"
+echo "  Raw JSON:   $RAW_FILE"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 
 # --- Verify prerequisites ---
@@ -106,9 +110,8 @@ if [ ! -d ".git" ]; then
 fi
 
 # --- Cleanup on exit ---
-# NOTE: ralph-gemini-last-raw.json is intentionally kept for post-run inspection.
 cleanup() {
-    rm -f "$ITER_OUTPUT"
+    rm -f "$ITER_OUTPUT" "$ITER_FORMATTED"
 }
 trap cleanup EXIT
 
@@ -135,27 +138,34 @@ while true; do
         --output-format stream-json \
         2>&1 \
         | grep --line-buffered '^{' \
-        | tee "$ITER_OUTPUT" ralph-gemini-last-raw.json \
+        | tee "$ITER_OUTPUT" "$RAW_FILE" \
         | jq --unbuffered -rj '
             if .type == "message" and .role == "assistant" then .content
-            elif (.type == "tool_use" or .type == "tool_call") then
-              "\u001b[36m[→ \(.name // .function.name // "?"): \((.arguments // .input // .function.arguments // {}) | to_entries | map("\(.key)=\(.value | tostring | .[0:80])") | join(", "))]\u001b[0m\n"
+            elif .type == "tool_use" then
+              "\u001b[36m[→ \(.tool_name): \(.parameters | to_entries | map("\(.key)=\(.value | tostring | .[0:80])") | join(", "))]\u001b[0m\n"
             elif .type == "tool_result" then
               if .status == "error" then
                 "\u001b[31m[✗ \(.output // .error // "error" | tostring | .[0:120] | gsub("\n";" "))]\u001b[0m\n"
-              elif .output != null and .output != "" and .output != "null" then
+              elif .output != null and (.output | tostring) != "" and (.output | tostring) != "null" then
                 "\u001b[32m[✓ \(.output | tostring | .[0:120] | gsub("\n";" "))]\u001b[0m\n"
               else empty end
             elif .type == "result" then
               "\nTokens: \(.stats.input_tokens) in / \(.stats.output_tokens) out\n"
             else empty end
           ' 2>/dev/null \
+        | tee "$ITER_FORMATTED" \
         || true
 
-    # Append iteration output to log
-    echo "--- Iteration $ITERATION ($MODE) $(date) ---" >> "$LOG_FILE"
-    cat "$ITER_OUTPUT" >> "$LOG_FILE"
-    echo "" >> "$LOG_FILE"
+    # Append iteration output to log (Prompt + human-readable output, ANSI stripped)
+    {
+        echo "--- Iteration $ITERATION ($MODE) $(date) ---"
+        echo "--- Prompt ($PROMPT_FILE) ---"
+        cat "$PROMPT_FILE"
+        echo ""
+        echo "--- Output ---"
+        sed $'s/\033\\[[0-9;]*[mK]//g' "$ITER_FORMATTED"
+        echo ""
+    } >> "$LOG_FILE"
 
     # Check for completion signal (only in assistant messages)
     if jq -e 'select(.type == "message" and .role == "assistant" and (.content | contains("<promise>COMPLETE</promise>")))' "$ITER_OUTPUT" >/dev/null 2>&1; then
