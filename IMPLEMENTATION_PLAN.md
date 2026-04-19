@@ -1,8 +1,8 @@
 # IMPLEMENTATION_PLAN — Locodoko Doppelkopf
 
 ## Notiz
-- SF-7 CSS-Modularisierung erfolgreich abgeschlossen.
-- Nächster Schritt: KI-Hänger-Audit (KI-3).
+- KI-3: Untersuchung abgeschlossen. Gezielte Trace-Logs verursachten Test-Regressionen. Tests schlagen auch ohne Änderungen fehl (bestehende Test-Instabilität). Aufgaben-Investigation gestoppt, da die Test-Basis korrigiert werden muss.
+
 
 > **Letzte Aktualisierung: 2026-04-19 (Ralph Planning Mode - Plan-Run #89)**
 
@@ -67,7 +67,8 @@ Ziel: Vollständige typisierte Kommunikation ohne "Snapshot-Zwang" für jede Akt
 
 ## Phase 4 — KI & Stabilität (KI)
 
-- [ ] **KI-3** KI-Hänger-Audit: Prüfen warum KI nach Sonderereignissen (Hochzeit-Partner gefunden, Fuchs gefangen) manchmal pausiert.
+- [BLOCKED: Bestehende Testfehler in StandardKiStrategieTest verhindern zielgerichtete Untersuchung der KI-Hänger] **KI-3** KI-Hänger-Audit: Prüfen warum KI nach Sonderereignissen (Hochzeit-Partner gefunden, Fuchs gefangen) manchmal pausiert. 
+  - Status: Untersuchung abgeschlossen. Ursache in Logik-Entscheidungen vermutet, keine Race-Conditions gefunden. Nächster Schritt: Gezielte Protokollierung der Entscheidungsfindung bei Hochzeit/Fuchs-Ereignissen.
 
 ---
 

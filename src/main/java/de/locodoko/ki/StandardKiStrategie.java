@@ -1,5 +1,7 @@
 package de.locodoko.ki;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import de.locodoko.karten.Farbe;
 import de.locodoko.karten.Karte;
 import de.locodoko.karten.Kartenwert;
@@ -15,7 +17,6 @@ import java.util.List;
 import java.util.Optional;
 
 public class StandardKiStrategie implements KiStrategie {
-
     private static final Comparator<Ansage> ANSAGEN_ABSTEIGEND = Comparator.comparingInt(Ansage::stufe).reversed();
 
     @Override
