@@ -141,6 +141,9 @@ while true; do
             elif .type == "message" and .role == "assistant" then .content
             elif .type == "tool_use" then
               "\u001b[36m[→ \(.tool_name): \(.parameters | to_entries | map("\(.key)=\(.value | tostring | .[0:80])") | join(", "))]\u001b[0m\n"
+              + (if .parameters.objective or .parameters.prompt or .parameters.task or .parameters.instruction then
+                  "\u001b[2m  ↳ \(.parameters.objective // .parameters.prompt // .parameters.task // .parameters.instruction | tostring | .[0:200])\u001b[0m\n"
+                else "" end)
             elif .type == "tool_result" then
               if .status == "error" then
                 "\u001b[31m[✗ \(.output // .error // "error" | tostring | .[0:120] | gsub("\n";" "))]\u001b[0m\n"
