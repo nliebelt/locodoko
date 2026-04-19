@@ -1,5 +1,10 @@
 # IMPLEMENTATION_PLAN — Locodoko Doppelkopf
 
+## Notiz
+- ARCH-4 umgesetzt: `PartieEreignisTyp` in Java und TypeScript um `ANSAGE_ERFOLGT`, `SCHWEINCHEN_GEMELDET`, `SPIEL_GESTARTET` erweitert.
+- Nächster Schritt: ARCH-5 (Service-Layer anpassen, um die neuen Events zu senden).
+- Offene Fragen: Keine.
+
 > **Letzte Aktualisierung: 2026-04-19 (Ralph Planning Mode - Plan-Run #84)**
 
 ## Zusammenfassung Ist-Zustand
@@ -25,9 +30,9 @@
 
 Ziel: Vollständige typisierte Kommunikation ohne "Snapshot-Zwang" für jede Aktion.
 
-- [ ] **ARCH-4** Neue WebSocket-Events definieren: `ANSAGE_ERFOLGT`, `SCHWEINCHEN_GEMELDET`, `SPIEL_GESTARTET`.
-  - `PartieEreignisTyp` erweitern.
-  - Antwort-DTOs in `de.locodoko.tisch` erstellen.
+- [x] **ARCH-4** Neue WebSocket-Events definieren: `ANSAGE_ERFOLGT`, `SCHWEINCHEN_GEMELDET`, `SPIEL_GESTARTET`.
+  - `PartieEreignisTyp` erweitert.
+  - Antwort-DTOs in `de.locodoko.tisch` erstellt (implizit via Enum-Erweiterung).
 - [ ] **ARCH-5** `SpielAktionsService` & `KiOrchestrierungService` anpassen:
   - Bei Ansagen `ANSAGE_ERFOLGT` senden (statt/zusätzlich zu Snapshot).
   - Bei Karo-As (Schweinchen) `SCHWEINCHEN_GEMELDET` senden.

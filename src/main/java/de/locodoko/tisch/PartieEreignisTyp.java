@@ -18,5 +18,11 @@ public enum PartieEreignisTyp {
     /** Stich abgeschlossen, ggf. mit Sonderpunkten. */
     STICH_ABGESCHLOSSEN,
     /** Spiel beendet und ausgewertet. */
-    SPIEL_BEENDET
+    SPIEL_BEENDET,
+    /** Eine Ansage wurde gemacht (z.B. Re, Kontra). */
+    ANSAGE_ERFOLGT,
+    /** Ein Schweinchen wurde gemeldet. */
+    SCHWEINCHEN_GEMELDET,
+    /** Das Spiel wurde gestartet. */
+    SPIEL_GESTARTET
 }

@@ -244,7 +244,7 @@ export type TischEreignisTyp =
   | 'PARTIE_ABGEBROCHEN'
   /** Der Gastgeber hat einen Spieler vom Tisch entfernt. */
   | 'SPIELER_GEKICKT';
-export type PartieEreignisTyp = 'SNAPSHOT' | 'KARTE_GESPIELT' | 'KI_ZUG_SEQUENZ' | 'STICH_ABGESCHLOSSEN' | 'SPIEL_BEENDET';
+export type PartieEreignisTyp = 'SNAPSHOT' | 'KARTE_GESPIELT' | 'KI_ZUG_SEQUENZ' | 'STICH_ABGESCHLOSSEN' | 'SPIEL_BEENDET' | 'ANSAGE_ERFOLGT' | 'SCHWEINCHEN_GEMELDET' | 'SPIEL_GESTARTET';
 
 export interface GespielteKarteEreignisAntwort {
   spielerPosition: SpielerPosition;
