@@ -136,7 +136,9 @@ while true; do
         | grep --line-buffered '^{' \
         | tee "$ITER_OUTPUT" \
         | jq --unbuffered -rj '
-            if .type == "message" and .role == "assistant" then .content
+            if .type == "message" and .role == "user" then
+              "\u001b[2m--- Prompt ---\n\(.content)\n---\u001b[0m\n"
+            elif .type == "message" and .role == "assistant" then .content
             elif .type == "tool_use" then
               "\u001b[36m[→ \(.tool_name): \(.parameters | to_entries | map("\(.key)=\(.value | tostring | .[0:80])") | join(", "))]\u001b[0m\n"
             elif .type == "tool_result" then
