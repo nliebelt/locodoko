@@ -43,12 +43,20 @@ class KiEventAdapter {
     }
 
     private void fuehreKiSchritteAus(TischId tischId) {
-        tischRepository.findById(tischId).ifPresent(tisch -> {
-            boolean hatKiGespielt = kiOrchestrierungService.automatisiereTisch(tisch);
-            if (hatKiGespielt) {
-                tischRepository.save(tisch);
-                synchronisiereRegistry(tischId, tisch);
-            }
+        // Lock auf TischId holen, um parallele Orchestrierungen und Race-Conditions
+        // mit menschlichen Aktionen (via SpielAktionsService) zu verhindern.
+        // Da automatisiereTisch() Delays (Thread.sleep) nutzt, ist Serialisierung kritisch.
+        spielRegistry.mitLock(tischId, () -> {
+            // Tisch NEU LADEN nachdem der Lock gehalten wird, damit wir nicht auf einem
+            // veralteten Stand operieren, der waehrend des Wartens auf den Lock in der DB
+            // durch einen menschlichen Spieler geaendert wurde.
+            tischRepository.findById(tischId).ifPresent(tisch -> {
+                boolean hatKiGespielt = kiOrchestrierungService.automatisiereTisch(tisch);
+                if (hatKiGespielt) {
+                    tischRepository.save(tisch);
+                    synchronisiereRegistry(tischId, tisch);
+                }
+            });
         });
     }
 

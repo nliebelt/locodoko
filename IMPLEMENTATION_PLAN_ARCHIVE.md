@@ -236,3 +236,52 @@ Ausstehend — Plan-Run noch nicht ausgeführt.
 - [~] Teilweise implementiert
 - [ ] Offen
 
+---
+
+## Archiviert am 2026-04-18 (Plan-Run #83)
+
+> Inhalt des IMPLEMENTATION_PLAN.md Stand Plan-Run #83. Alle Aufgaben erledigt.
+
+### Phase ARCH — Architektur-Refactoring: Typisierte WebSocket-Events
+
+- [x] **ARCH-0** Race-Condition-Fix + KI-Timing-Umbau committen (Basis für typisierte Events)
+- [x] **ARCH-1** Typisierte WebSocket-Events + Infra-Cleanup (`PartieEreignisTyp`, `PartieEreignisAntwort`, `GespielteKarteAntwort`, `SonderpunktEreignisAntwort`, `KiOrchestrierungService`, `SpielAktionsService`, `VerbindungsabbruchService`, `TischEchtzeitService`; `WebSocketBroadcastAdapter`/`PartieAktualisiert` gelöscht)
+- [x] **ARCH-2** Domain — `SpielAktion` Result-Typ (`SpielEreignis` sealed interface, `SpielAktion` record, `Spiel.spieleKarte()` gibt `SpielAktion` zurück)
+- [x] **ARCH-3** TischSzene — Sonderpunkt-Animationen auf `neueSonderpunkte` (Fuchs, Karlchen, Doppelkopf-Banner via `STICH_ABGESCHLOSSEN`-Event)
+
+### Phase BF — Bug-Fixes Spielbetrieb
+
+- [x] **BUG-1** KI hängt nach Fuchs gefangen / Hochzeit-Partner gefunden
+- [x] **BUG-2** Schweinchen zeigt keine Wirkung
+- [x] **BUG-3** Animations-Queue-Aufstauung (Frontend) — `spielzugAnimationAktiv`-Flag entfernt, `AnimationenService.reiheEin()` genutzt
+- [x] **BUG-4** Browser-Reload zeigt alten State (Frontend) — Overlay-Reset in `TischSzene.create()`
+- [x] **BUG-5** DKV-Turnier-Preset: Spiel schließt nicht ab
+- [x] **BF-6** Tastatur-Shortcuts für Ansagen und Armut (R/K/1-4 für Ansagen, A/N für Armut)
+- [x] **BF-7** Session-Recovery Snapshot-Endpoint (`/app/tisch/{id}/snapshot`)
+- [x] **BF-8** Schmeißen-Recht 1× pro Spiel tracken (`Set<SpielerPosition> bereitsGeschmissen` in `Spiel`, Liquibase Changeset 017)
+
+### Phase KI — KI-Verbesserungen
+
+- [x] **KI-1** KI-Schwellen-Anpassung für aktive Sonderregeln (Ansage-Schwellen ×1.18 bei Schweinchen/30-Augen-Pflicht)
+- [x] **KI-2** KI Solo-Schwellenwert-Tuning für Loco-Blatt-Regeln (`soloSchwelle(VorbehaltAnsage, KiSpielzustand)` mit Faktor 1.15)
+
+### Phase R — Refactoring
+
+- [x] **R12** Entity-Klassen von `partie/` nach `tisch/` verschieben (7 Entity-Klassen)
+- [x] **R13** JSON-Blob für Stiche/Hände (laufender Spielzustand als JSONB in `spiel`-Tabelle)
+- [x] **R14** Entity-Merge (`SpielEntity` → `Spiel`, `PartieEntity` → `Partie`; `SpielPersistenzAdapter` entfernt)
+
+### Phase SF — Fehlende Spielfeatures
+
+- [x] **SF-1** Fünf-Könige-Schmeißen (`VorbehaltAnsage.SCHMEISSEN`, `schmeissenAktiv` Flag, Frontend-Button)
+- [x] **SF-2** Schweinchen — DKV-konforme implizite Ansage (`SchweinchenGemeldet`-Event, Banner)
+- [x] **SF-3** Frontend Tischkonfiguration-Presets (Preset-Dropdown LOCO_BLAT/DKV/BENUTZERDEFINIERT in `SpielverwaltungsSzene.ts`)
+
+### Phase M2 — Milestone 2: Echter Multiplayer
+
+- [x] **M2.1** Authentifizierung — Spring Security + OAuth2 + Username/PW (SecurityConfig, `Spieler`-Entität, BCrypt, OAuth2ErfolgsHandler, Rate-Limiting, Login-Screen)
+- [x] **M2.2** Spieler-Profil + Statistiken (`SpielerStatistik`, `PartieErgebnis`, `GET /api/spieler/{id}/profil`, Avatar/HUD)
+- [x] **M2.3** Private Tische + Einladungslinks (`zugangsmodus`, `einladungsCode`, `GET /join/{code}`, Gastgeber-Kicken)
+- [x] **M2.4** Liquibase-Baseline + PostgreSQL (Baseline Changeset 000, PostgreSQL-Profil, Dockerfile/Docker Compose)
+- [x] **M2.5** OpenAPI / TypeScript-Typen-Synchronisation (springdoc-openapi, openapi-typescript, generierte `api-types.ts`)
+

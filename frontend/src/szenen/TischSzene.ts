@@ -351,14 +351,24 @@ export class TischSzene extends Phaser.Scene {
         this.scene.start('SpielverwaltungsSzene');
         return;
       }
-      // Neues Spiel erkannt: Karten werden unsichtbar gerendert und dann animiert ausgeteilt
-      // Partie-Ende-Modal schliessen, da neue Partie gestartet wurde
-      if (this.ermittleNeuesSpiel(vorherigerZustand, zustand)) {
+      // Neues Spiel erkannt: Karten werden unsichtbar gerendert und dann animiert ausgeteilt.
+      // Partie-Ende-Modal schliessen, da neue Partie gestartet wurde.
+      // Das Austeilen selbst wird erst nach allen laufenden Animationen (Stich-Einziehen,
+      // Gewinner-Flash, Ergebnis-Modal-Intro) in die Warteschlange eingereiht, damit der
+      // letzte Stich vollständig animiert wird bevor die neuen Karten ausgeteilt werden.
+      const neuesSpielErkannt = this.ermittleNeuesSpiel(vorherigerZustand, zustand);
+      if (neuesSpielErkannt) {
         this.schliessePartieEndeModal();
         this.austeilenAktiv = true;
-        void this.starteAusteilen(modell, zustand);
       }
       this.renderTisch(zustand, modell);
+      // Bei neuem Spiel: Spielankuendigung sofort in die Queue einreihen, bevor Kartenanimationen
+      // des neuen Spiels eintreffen koennen — verhindert, dass das Banner hinter KI-Karten-Events
+      // in der Queue landet und zu spaet erscheint.
+      const spielankuendigung = this.ermittleSpielankuendigung(vorherigerZustand ?? null, zustand);
+      if (spielankuendigung && neuesSpielErkannt) {
+        this.animationen?.reiheEin(() => this.zeigeSpielankuendigung(spielankuendigung));
+      }
       // Stich-Einziehen und Gegner-Karten-Animationen serialisiert durch die zentrale Warteschlange
       if (this.ermittleNeuAbgeschlossenenStich(vorherigesModell, modell)) {
         this.animationen?.reiheEin(() => this.starteFolgeanimationen(vorherigesModell, modell));
@@ -367,12 +377,12 @@ export class TischSzene extends Phaser.Scene {
       // Alle Banner-Animationen in die gleiche Warteschlange einreihen
       const neueAnsagen = this.ermittleNeueAnsagen(vorherigesModell, modell);
       const hochzeitMeldung = this.ermittleHochzeitEreignis(vorherigerZustand ?? null, zustand);
-      const spielankuendigung = this.ermittleSpielankuendigung(vorherigerZustand ?? null, zustand);
       const bockrundeMeldung = this.ermittleBockrundeEreignis(vorherigerZustand ?? null, zustand);
       const schweinchenMeldung = this.ermittleSchweinchenEreignis(vorherigesModell, modell);
       if (neueAnsagen.length > 0) this.animationen?.reiheEin(() => this.starteAnsageBannerAnimationen(neueAnsagen));
       if (hochzeitMeldung) this.animationen?.reiheEin(() => this.zeigeHochzeitEreignis(hochzeitMeldung));
-      if (spielankuendigung) this.animationen?.reiheEin(() => this.zeigeSpielankuendigung(spielankuendigung));
+      // Bei laufendem Spiel (kein neuesSpielErkannt) Vorbehalt-Aufloesung-Ankuendigung in Normalreihenfolge
+      if (spielankuendigung && !neuesSpielErkannt) this.animationen?.reiheEin(() => this.zeigeSpielankuendigung(spielankuendigung));
       if (bockrundeMeldung) this.animationen?.reiheEin(() => this.zeigeBockrundeEreignis());
       if (schweinchenMeldung) this.animationen?.reiheEin(() => this.zeigeSchweinchenBanner(schweinchenMeldung));
       // Neues Spielergebnis → erst Gewinner-Flash, dann Modal einblenden (beides in der Queue)
@@ -383,6 +393,16 @@ export class TischSzene extends Phaser.Scene {
           this.animationen?.reiheEin(() => { this.zeigePartieEndeModal(ergebnisModell); return Promise.resolve(); });
         } else {
           this.animationen?.reiheEin(() => this.zeigeRundenEndeModal(ergebnisModell));
+        }
+      }
+      // Austeilen nach allen Animationen einreihen: läuft unsichtbar unter dem Ergebnis-Modal,
+      // sodass die Karten beim Klick auf "Weiter" bereits ausgeteilt sind.
+      if (neuesSpielErkannt) {
+        const aktuellerZustand = zustand;
+        if (this.animationen) {
+          void this.animationen.reiheEin(() => this.starteAusteilen(modell, aktuellerZustand));
+        } else {
+          void this.starteAusteilen(modell, aktuellerZustand);
         }
       }
       this.letztesModell = modell;
@@ -1265,7 +1285,9 @@ export class TischSzene extends Phaser.Scene {
     await this.animationen?.animiereSonderpunktFeedback(meldung, { x: breite / 2, y: hoehe * 0.4 }, 2000);
   }
 
-  // Erkennt wenn der Spieltyp von NORMALSPIEL auf ein Solo oder Hochzeit wechselt (nach Vorbehalt-Aufloesung)
+  // Erkennt wenn eine Spielankuendigung angezeigt werden soll:
+  // (a) Neues Spiel (andere spielNummer) mit besonderem Typ (Solo, Hochzeit, Armut) — unabhaengig vom Vorspiel-Typ
+  // (b) Laufendes Spiel: Uebergang von NORMALSPIEL -> etwas anderes nach Vorbehalt-Aufloesung
   private ermittleSpielankuendigung(
     vorherigerZustand: AppZustand | null,
     aktuellerZustand: AppZustand
@@ -1275,11 +1297,17 @@ export class TischSzene extends Phaser.Scene {
     if (!vorherigesSpiel || !aktuellesSpiel) {
       return null;
     }
-    const vorherigerTyp = vorherigesSpiel.spieltyp;
     const aktuellerTyp = aktuellesSpiel.spieltyp;
-    // Nur bei Uebergang von NORMALSPIEL -> etwas anderes (Solo, Hochzeit, Armut)
-    if (vorherigerTyp === aktuellerTyp || vorherigerTyp !== 'NORMALSPIEL') {
-      return null;
+    const istNeuesSpiel = vorherigesSpiel.spielNummer !== aktuellesSpiel.spielNummer;
+    if (istNeuesSpiel) {
+      // Neues Spiel: Ankuendigung nur bei besonderem Spieltyp (nicht bei Normalspiel)
+      if (aktuellerTyp === 'NORMALSPIEL') return null;
+    } else {
+      // Laufendes Spiel: nur bei Uebergang NORMALSPIEL -> anderer Typ
+      const vorherigerTyp = vorherigesSpiel.spieltyp;
+      if (vorherigerTyp === aktuellerTyp || vorherigerTyp !== 'NORMALSPIEL') {
+        return null;
+      }
     }
     const spieltypLabels: Partial<Record<string, string>> = {
       SOLO_DAME: 'Damensolo',
@@ -1490,6 +1518,14 @@ export class TischSzene extends Phaser.Scene {
 
     // Fokus setzen damit Enter direkt den Button trifft
     setTimeout(() => schliessenButton.focus(), 0);
+
+    // Escape-Taste schliesst das Modal
+    this.escapeHandler = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        this.schliesseRundenEndeModal();
+      }
+    };
+    document.addEventListener('keydown', this.escapeHandler);
 
     // Klick auf Overlay (nicht Button) schliesst ebenfalls
     this.backdropClickHandler = (event: MouseEvent) => {

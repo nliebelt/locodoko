@@ -16,7 +16,9 @@ import de.locodoko.partie.Spielphase;
 import de.locodoko.partie.Sonderpunkt;
 import de.locodoko.partie.SonderpunktEreignis;
 import de.locodoko.partie.VorbehaltAnsage;
+import de.locodoko.partie.ereignisse.NaechsterSpielerErwartet;
 import de.locodoko.partie.ereignisse.SpielBeendet;
+import de.locodoko.partie.ereignisse.VorbehaltErwartet;
 import de.locodoko.partie.PartieStatus;
 import de.locodoko.spieler.SpielerEntity;
 import de.locodoko.spieler.SpielerRepository;
@@ -86,24 +88,15 @@ public class KiOrchestrierungService {
         LOGGER.info("KI-Orchestrierung gestartet [tischId={}, spielphase={}]", tisch.id(), startPhase);
         int anzahlAktionen = 0;
         boolean hatKiGespielt = false;
-        List<GespielteKarteAntwort> kiKartenSequenz = new ArrayList<>();
-        // Verzoegertes SPIEL_BEENDET: erst senden wenn der Mensch tatsaechlich dran ist,
-        // damit aktuellerSpieler im Event korrekt auf den Menschen zeigt (nicht auf KI-Vorbehalt).
-        Spiel ausstehenderSpielAbschluss = null;
+
         boolean hatMenschlichenSpieler = tisch.spieler().stream()
             .anyMatch(s -> !s.istKi() && !s.istKiUebernommen());
         while (anzahlAktionen++ < MAXIMALE_KI_AKTIONEN) {
             if (tisch.partie().statusAusDb() == PartieStatus.BEENDET) {
-                if (ausstehenderSpielAbschluss != null) {
-                    veroeffentlicheSpielBeendet(tisch, ausstehenderSpielAbschluss);
-                }
                 return hatKiGespielt;
             }
             Spiel laufendesSpiel = findeLaufendesSpiel(tisch.partie());
             if (laufendesSpiel == null) {
-                if (ausstehenderSpielAbschluss != null) {
-                    veroeffentlicheSpielBeendet(tisch, ausstehenderSpielAbschluss);
-                }
                 return hatKiGespielt;
             }
             laufendesSpiel.hydriere(tisch.konfiguration().alsSpielregeln());
@@ -112,21 +105,20 @@ public class KiOrchestrierungService {
                 LOGGER.info("Spiel abschliessen und naechstes starten [spielNr={}, tischId={}]",
                     laufendesSpiel.spielNummer(), tisch.id());
                 try {
-                    // Letzten KI-Stichkarten des abgeschlossenen Spiels jetzt senden (vor PartieAbschluss),
-                    // damit der Mensch den abschliessenden KI-Zug sieht (z.B. 4. Karte im letzten Stich).
-                    // Die partieStand hat noch kein Ergebnis fuer das beendete Spiel → kein Rundenauswertungs-Overlay.
-                    if (hatMenschlichenSpieler && !kiKartenSequenz.isEmpty()) {
-                        sendeKiZugSequenz(tisch, kiKartenSequenz);
-                    }
                     Partie persistentePartie = tisch.partie();
                     persistentePartie.hydriere(tisch.konfiguration().alsSpielregeln());
                     Partie neuePartie = persistentePartie.schliesseAktuellesSpielAbUndStarteNaechstes();
                     uebernehmeDomainPartieAbschluss(tisch, laufendesSpiel, neuePartie);
-                    // SPIEL_BEENDET wird nicht sofort gesendet – erst wenn der Mensch dran ist,
-                    // damit aktuellerSpieler im partieStand korrekt gesetzt ist.
-                    ausstehenderSpielAbschluss = laufendesSpiel;
-                    kiKartenSequenz.clear(); // Stale Karten des abgeschlossenen Spiels nicht ins naechste tragen
+                    
                     hatKiGespielt = true;
+                    
+                    // Wenn Menschen am Tisch sind, brechen wir hier ab, um ihnen Zeit fuer die
+                    // Rundenauswertung zu geben. Die naechste Aktion wird via Event getriggert.
+                    if (hatMenschlichenSpieler) {
+                        triggereKi(tisch);
+                        return hatKiGespielt;
+                    }
+                    // Rein virtuelle Tische (KI-only, z.B. in Tests) spielen sofort weiter.
                 } catch (Exception e) {
                     LOGGER.error(
                         "Fehler beim Abschliessen von Spiel {} an Tisch {} – Partie bleibt im letzten konsistenten Stand: {}",
@@ -138,21 +130,10 @@ public class KiOrchestrierungService {
             }
             SpielerPosition erwarteterSpieler = laufendesSpiel.erwarteterSpieler().orElse(null);
             if (erwarteterSpieler == null) {
-                if (ausstehenderSpielAbschluss != null) {
-                    veroeffentlicheSpielBeendet(tisch, ausstehenderSpielAbschluss);
-                }
                 return hatKiGespielt;
             }
             SpielerEntity spielerEntity = spielerNachPosition(tisch).get(erwarteterSpieler);
             if (spielerEntity == null || (!spielerEntity.istKi() && !spielerEntity.istKiUebernommen())) {
-                // SPIEL_BEENDET vor KI_ZUG_SEQUENZ senden: Frontend braucht zuerst den neuen
-                // Spielkontext (Spiel 2), damit die KI-Kartensequenz im richtigen Zustand animiert wird.
-                if (ausstehenderSpielAbschluss != null) {
-                    veroeffentlicheSpielBeendet(tisch, ausstehenderSpielAbschluss);
-                }
-                if (hatMenschlichenSpieler && !kiKartenSequenz.isEmpty()) {
-                    sendeKiZugSequenz(tisch, kiKartenSequenz);
-                }
                 return hatKiGespielt;
             }
             LOGGER.info("KI-Spielzug [spielerId={}, phase={}]", erwarteterSpieler, laufendesSpiel.phase());
@@ -168,10 +149,14 @@ public class KiOrchestrierungService {
                 AktionsErgebnis aktionsErgebnis = fuehreKiAktionAus(laufendesSpiel, erwarteterSpieler, strategie);
                 laufendesSpiel.uebernehmeDomainStand(aktionsErgebnis.naechsterStand());
                 hatKiGespielt = true;
+
+                // KI-Karten sofort broadcasten wenn ein Mensch am Tisch ist,
+                // damit jede Karte einzeln animiert wird und Tricks sauber getrennt bleiben.
                 if (hatMenschlichenSpieler
                         && phaseVorAktion instanceof Spielphase.Stichphase
                         && aktionsErgebnis.gespielteKarteId() != null) {
-                    kiKartenSequenz.add(new GespielteKarteAntwort(erwarteterSpieler, aktionsErgebnis.gespielteKarteId()));
+                    List<GespielteKarteAntwort> sequenz = List.of(new GespielteKarteAntwort(erwarteterSpieler, aktionsErgebnis.gespielteKarteId()));
+                    sendeKiZugSequenz(tisch, sequenz);
                 }
             } catch (Exception e) {
                 LOGGER.error(
@@ -215,11 +200,13 @@ public class KiOrchestrierungService {
                     Partei eigenePartei = laufendesSpiel.parteien().parteiVon(spielerPosition);
                     if (laufendesSpiel.pflichtansageAusstehend().contains(eigenePartei)) {
                         Ansage pflichtansage = eigenePartei == Partei.RE ? Ansage.RE : Ansage.KONTRA;
+                        LOGGER.info("KI meldet Pflichtansage [spielerId={}, ansage={}]", spielerPosition, pflichtansage);
                         yield new AktionsErgebnis(laufendesSpiel.sageAn(spielerPosition, pflichtansage), null);
                     }
                 }
                 Ansage ansage = strategie.waehleAnsage(zustand).orElse(null);
                 if (ansage != null) {
+                    LOGGER.info("KI meldet Ansage [spielerId={}, ansage={}]", spielerPosition, ansage);
                     yield new AktionsErgebnis(laufendesSpiel.sageAn(spielerPosition, ansage), null);
                 }
                 Karte karte = strategie.waehleKarte(zustand);
@@ -245,8 +232,15 @@ public class KiOrchestrierungService {
         abgeschlossenesSpiel.uebernehmeDomainStand(neuePartie.abgeschlosseneSpiele().getLast());
         if (neuePartie.istBeendet()) {
             partie.markiereAlsBeendet();
+            veroeffentlicheSpielBeendet(tisch, abgeschlossenesSpiel);
             return;
         }
+
+        // SPIEL_BEENDET senden, solange das neue Spiel noch nicht in der Liste ist.
+        // So enthaelt der Snapshot im Event das Ergebnis des alten Spiels, aber
+        // noch nicht die neuen Karten/Phase des Folgespiels -> saubere Trennung.
+        veroeffentlicheSpielBeendet(tisch, abgeschlossenesSpiel);
+
         tisch.spieler().stream()
             .filter(s -> !s.istKi() && s.istKiUebernommen())
             .forEach(s -> {
@@ -257,6 +251,19 @@ public class KiOrchestrierungService {
         neuesSpiel.setzeSpielNummer(partie.aktuellesSpielNummer() + 1);
         partie.fuegeSpielHinzu(neuesSpiel);
         LOGGER.info("Naechstes Spiel gestartet [tischId={}, spielNr={}]", tisch.id(), neuesSpiel.spielNummer());
+    }
+
+    private void triggereKi(TischEntity tisch) {
+        if (tisch.partie().statusAusDb() != PartieStatus.BEENDET) {
+            Spiel laufendesSpiel = findeLaufendesSpiel(tisch.partie());
+            if (laufendesSpiel != null) {
+                if ("VORBEHALT_ANSAGE".equals(laufendesSpiel.phasenName())) {
+                    eventPublisher.publishEvent(new VorbehaltErwartet(tisch.id()));
+                } else {
+                    eventPublisher.publishEvent(new NaechsterSpielerErwartet(tisch.id()));
+                }
+            }
+        }
     }
 
     private Spiel findeLaufendesSpiel(Partie partie) {

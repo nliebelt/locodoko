@@ -29,6 +29,8 @@ import de.locodoko.partie.Spielphase;
 @Service
 public class SpielAktionsService {
 
+    private static final org.slf4j.Logger LOGGER = org.slf4j.LoggerFactory.getLogger(SpielAktionsService.class);
+
     private final TischRepository tischRepository;
     private final PartieRepository partieRepository;
     private final SpielerRepository spielerRepository;
@@ -126,6 +128,7 @@ public class SpielAktionsService {
 
     @Transactional
     public PartieStandAntwort spieleKarte(TischId tischId, SpielerEntity spieler, String karteId) {
+        LOGGER.debug("AKTION spieleKarte [tischId={}, spielerId={}, karteId={}]", tischId, spieler.id(), karteId);
         SpielerEntity verwalteterSpieler = ladeSpieler(SpielerId.von(spieler.id()));
         TischEntity tisch = ladeAktivenTischMitSpieler(tischId, verwalteterSpieler);
         Spiel laufendesSpiel = ladeLaufendesSpiel(tisch.partie());
@@ -138,12 +141,15 @@ public class SpielAktionsService {
         List<SpielEreignis> spielEreignisse;
         try {
             SpielAktion aktionsErgebnis = spielRegistry.mitSpielGesperrtIdempotent(tischId, laufendesSpiel, schluessel, spiel -> {
+                LOGGER.trace("Lock erworben (idempotent) fuer Tisch {}, spiele Karte {}", tischId, karteId);
                 SpielAktion aktion = spiel.spieleKarte(position, parseKarte(karteId));
                 return new SpielUndErgebnis<>(aktion.neuerStand(), aktion);
             });
             laufendesSpiel.uebernehmeDomainStand(aktionsErgebnis.neuerStand());
             spielEreignisse = aktionsErgebnis.ereignisse();
+            LOGGER.trace("Domain-Stand uebernommen [events={}]", spielEreignisse.size());
         } catch (IllegalStateException | UngueltigerSpielzugException exception) {
+            LOGGER.warn("Ungueltige Karte gespielt [tischId={}, spieler={}, karte={}]: {}", tischId, position, karteId, exception.getMessage());
             throw new SpielverwaltungKonfliktException("KARTE_UNGUELTIG", exception.getMessage());
         }
         partieRepository.saveAndFlush(tisch.partie());
@@ -152,6 +158,7 @@ public class SpielAktionsService {
             eventPublisher.publishEvent(new SchweinchenGemeldet(tischId.wert(), laufendesSpiel.schweinchenGemeldetVon().get()));
         }
         veroeffentlicheSpielKarteEreignisse(tisch, spielEreignisse);
+        LOGGER.debug("Karte-Aktion abgeschlossen [tischId={}]", tischId);
         return PartieStandAntwort.aus(tisch, verwalteterSpieler.id());
     }
 

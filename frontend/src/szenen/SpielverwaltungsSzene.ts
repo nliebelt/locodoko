@@ -29,6 +29,7 @@ function holeUiRoot(): HTMLElement {
  */
 export class SpielverwaltungsSzene extends Phaser.Scene {
   private abmeldenStore?: () => void;
+  private boundHandleSceneKeyDown?: (e: KeyboardEvent) => void;
 
   private uiContainer?: HTMLDivElement;
 
@@ -66,19 +67,24 @@ export class SpielverwaltungsSzene extends Phaser.Scene {
     });
     
     // Add keyboard listener for scene navigation
-    window.addEventListener('keydown', this.handleSceneKeyDown.bind(this));
+    this.boundHandleSceneKeyDown = this.handleSceneKeyDown.bind(this);
+    window.addEventListener('keydown', this.boundHandleSceneKeyDown);
   }
 
   shutdown(): void {
     this.aufraeumen();
-    // Remove keyboard listener
-    window.removeEventListener('keydown', this.handleSceneKeyDown.bind(this));
+    if (this.boundHandleSceneKeyDown) {
+      window.removeEventListener('keydown', this.boundHandleSceneKeyDown);
+      this.boundHandleSceneKeyDown = undefined;
+    }
   }
 
   destroy(): void {
     this.aufraeumen();
-    // Remove keyboard listener (though shutdown should cover this)
-    window.removeEventListener('keydown', this.handleSceneKeyDown.bind(this));
+    if (this.boundHandleSceneKeyDown) {
+      window.removeEventListener('keydown', this.boundHandleSceneKeyDown);
+      this.boundHandleSceneKeyDown = undefined;
+    }
   }
 
   private baueUi(): void {

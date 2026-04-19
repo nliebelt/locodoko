@@ -19,6 +19,7 @@ import type {
 import type { SpielverwaltungApi } from '../services/SpielverwaltungApi';
 import { SpielverwaltungFehler } from '../services/SpielverwaltungApi';
 import type { EchtzeitPort } from '../services/SpielverwaltungEchtzeit';
+import { Logger } from '../logger';
 
 export interface UiMeldung {
   typ: 'fehler' | 'info';
@@ -320,6 +321,7 @@ export class AppStore {
   }
 
   private verarbeiteTischEreignis(ereignis: TischEreignisAntwort): void {
+    Logger.websocket(`Empfange TischEreignis: ${ereignis.ereignisTyp}`, ereignis);
     if (ereignis.ereignisTyp === 'PARTIE_ABGEBROCHEN') {
       this.setzeTischAbosZurueck();
       this.patch({ aktuellerTisch: null, partieStand: null, bereich: 'SPIELVERWALTUNG', meldung: { typ: 'info', text: 'Partie abgebrochen.', fehlerCode: 'PARTIE_ABGEBROCHEN' } });
@@ -338,6 +340,7 @@ export class AppStore {
   }
 
   private verarbeitePartieEreignis(ereignis: PartieEreignisAntwort): void {
+    Logger.websocket(`Empfange PartieEreignis: ${ereignis.ereignisTyp}`, ereignis);
     this._eventQueue.push(ereignis);
     void this._verarbeiteEventQueue();
   }
@@ -345,38 +348,54 @@ export class AppStore {
   private async _verarbeiteEventQueue(): Promise<void> {
     if (this._verarbeiteEventLaeuft) return;
     this._verarbeiteEventLaeuft = true;
-    while (this._eventQueue.length > 0) {
-      const ereignis = this._eventQueue.shift()!;
-      this._eventListener.forEach((l) => l(ereignis));
-      switch (ereignis.ereignisTyp) {
-        case 'SNAPSHOT':
-          this.leereKiSequenzQueue();
-          this.patch({ partieStand: ereignis.partieStand });
-          break;
-        case 'KARTE_GESPIELT':
-        case 'SPIEL_BEENDET':
-          this.patch({ partieStand: ereignis.partieStand });
-          break;
-        case 'KI_ZUG_SEQUENZ':
-          await this._expandiereKiSequenz(ereignis.kiKartenSequenz!, ereignis.partieStand);
-          break;
-        case 'STICH_ABGESCHLOSSEN':
-          this.patch({ partieStand: ereignis.partieStand });
-          if (ereignis.neueSonderpunkte?.length) this._sonderpunkteListener.forEach((l) => l(ereignis.neueSonderpunkte!));
-          break;
+    try {
+      while (this._eventQueue.length > 0) {
+        const ereignis = this._eventQueue.shift()!;
+        this._eventListener.forEach((l) => l(ereignis));
+        switch (ereignis.ereignisTyp) {
+          case 'SNAPSHOT':
+            this._eventQueue.length = 0;
+            this.leereKiSequenzQueue();
+            this.patch({ partieStand: ereignis.partieStand });
+            break;
+          case 'KARTE_GESPIELT':
+          case 'SPIEL_BEENDET':
+            this.patch({ partieStand: ereignis.partieStand });
+            break;
+          case 'KI_ZUG_SEQUENZ':
+            await this._expandiereKiSequenz(ereignis.kiKartenSequenz!, ereignis.partieStand);
+            break;
+          case 'STICH_ABGESCHLOSSEN':
+            this.patch({ partieStand: ereignis.partieStand });
+            if (ereignis.neueSonderpunkte?.length) this._sonderpunkteListener.forEach((l) => l(ereignis.neueSonderpunkte!));
+            break;
+        }
       }
+    } finally {
+      this._verarbeiteEventLaeuft = false;
     }
-    this._verarbeiteEventLaeuft = false;
   }
 
   private async _expandiereKiSequenz(sequenz: GespielteKarteEreignisAntwort[], finalStand: PartieStandAntwort): Promise<void> {
     const prevStand = this.zustand.partieStand;
     for (const [i] of sequenz.entries()) {
-      const stand = i === sequenz.length - 1 ? finalStand : this._synthetischerZwischenstand(prevStand!, sequenz.slice(0, i + 1));
+      // Immer synthetischen Zwischenstand verwenden, damit die Karte erst sichtbar in die Mitte
+      // fliegt bevor der finale Stand (mit ggf. eingesammeltem Stich) angewendet wird.
+      // Ohne diese Synthese würde die letzte Stich-Karte nie animiert, da finalStand bereits
+      // aktuelleStichmitte = [] enthält.
+      const stand = prevStand !== null
+        ? this._synthetischerZwischenstand(prevStand, sequenz.slice(0, i + 1))
+        : finalStand;
       this.patch({ partieStand: stand });
       if (this._kiKartenVerzögerungMs > 0) {
         await new Promise<void>((r) => setTimeout(r, this._kiKartenVerzögerungMs));
       }
+    }
+    // Finalen Stand nach allen Delays anwenden (loest ggf. Stich-Einziehen-Animation aus).
+    // Guard: reconnecteTisch setzt _verarbeiteEventLaeuft auf false — in dem Fall wurde
+    // bereits ein neuer Snapshot empfangen und finalStand ist veraltet → nicht ueberschreiben.
+    if (this._verarbeiteEventLaeuft) {
+      this.patch({ partieStand: finalStand });
     }
   }
 
@@ -398,7 +417,7 @@ export class AppStore {
   }
 
   private leereKiSequenzQueue(): void { this._kiSequenzQueue.length = 0; }
-  private setzeTischAbosZurueck(): void { this.tischAbos.splice(0).forEach((a) => a()); this.aktuellePartieAbo = null; this.leereKiSequenzQueue(); }
+  private setzeTischAbosZurueck(): void { this.tischAbos.splice(0).forEach((a) => a()); this.aktuellePartieAbo = null; this.leereKiSequenzQueue(); this._eventQueue.length = 0; this._verarbeiteEventLaeuft = false; }
   private sendeSpielaktion(ziel: string, payload: unknown): void {
     try { this.patch({ meldung: null }); this.echtzeit.senden(ziel, payload); } catch (f) { this.patch({ meldung: this.formatiereMeldung(f) }); }
   }

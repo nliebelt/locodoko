@@ -12,11 +12,24 @@
 function log(kategorie: string, msg: string, data?: unknown): void {
   if (!import.meta.env.DEV) return;
   console.log(`[${kategorie}] ${msg}`, data ?? '');
+
+  // Sende Log an Backend (Hardcore-Debug-Modus)
+  fetch('/api/debug/log', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ kategorie, nachricht: msg, daten: data })
+  }).catch(() => { /* ignoriere Fehler beim Log-Versand */ });
 }
 
 function logError(kategorie: string, msg: string, data?: unknown): void {
   if (!import.meta.env.DEV) return;
   console.error(`[${kategorie}] ${msg}`, data ?? '');
+
+  fetch('/api/debug/log', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ kategorie: `${kategorie}_ERROR`, nachricht: msg, daten: data })
+  }).catch(() => { /* ignoriere */ });
 }
 
 export const Logger = {

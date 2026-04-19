@@ -70,7 +70,7 @@ public class SpielverwaltungWebSocketController {
         SpielerEntity spieler = ladeAktivenSpieler(principal);
         TischAntwort tisch = tischVerwaltungsService.ladeTisch(TischId.von(tischId));
         PartieStandAntwort partieStand = tisch.partieId() == null ? null : spielAktionsService.ladePartieStand(PartieId.von(tisch.partieId()), spieler);
-        LOGGER.info("Spieler {} fordert Tisch-Snapshot {} per WebSocket an", spieler.id(), tischId);
+        LOGGER.debug("WS SNAPSHOT [spieler={} ({}), tischId={}]", spieler.anzeigeName(), spieler.id(), tischId);
         tischEchtzeitService.sendeAnBenutzer(
             principal.getName(),
             "/queue/tisch/" + tischId,
@@ -81,7 +81,7 @@ public class SpielverwaltungWebSocketController {
     @MessageMapping("/partie/{partieId}/snapshot")
     public void sendePartieSnapshot(@DestinationVariable UUID partieId, Principal principal) {
         SpielerEntity spieler = ladeAktivenSpieler(principal);
-        LOGGER.info("Spieler {} fordert Partie-Snapshot {} per WebSocket an", spieler.id(), partieId);
+        LOGGER.debug("WS PARTIE-SNAPSHOT [spieler={} ({}), partieId={}]", spieler.anzeigeName(), spieler.id(), partieId);
         tischEchtzeitService.sendeAnBenutzer(
             principal.getName(),
             "/queue/partie/" + partieId,
@@ -92,7 +92,7 @@ public class SpielverwaltungWebSocketController {
     @MessageMapping("/partie/{partieId}/debug-snapshot")
     public void sendePartieDebugSnapshot(@DestinationVariable UUID partieId, Principal principal) {
         SpielerEntity spieler = ladeAktivenSpieler(principal);
-        LOGGER.info("Spieler {} fordert Debug-Partie-Snapshot {} per WebSocket an", spieler.id(), partieId);
+        LOGGER.debug("WS DEBUG-SNAPSHOT [spieler={} ({}), partieId={}]", spieler.anzeigeName(), spieler.id(), partieId);
         tischEchtzeitService.sendeAnBenutzer(
             principal.getName(),
             "/queue/partie/" + partieId,
@@ -103,28 +103,28 @@ public class SpielverwaltungWebSocketController {
     @MessageMapping("/tisch/{tischId}/vorbehalt")
     public void meldeVorbehalt(@DestinationVariable UUID tischId, VorbehaltAnfrage anfrage, Principal principal) {
         SpielerEntity spieler = ladeAktivenSpieler(principal);
-        LOGGER.info("Spieler {} meldet Vorbehalt {} per WebSocket an Tisch {}", spieler.id(), anfrage.vorbehalt(), tischId);
+        LOGGER.debug("WS VORBEHALT [spieler={} ({}), tischId={}, vorbehalt={}]", spieler.anzeigeName(), spieler.id(), tischId, anfrage.vorbehalt());
         spielAktionsService.meldeVorbehalt(TischId.von(tischId), spieler, anfrage.vorbehalt());
     }
 
     @MessageMapping("/tisch/{tischId}/armut-antwort")
     public void verarbeiteArmutAntwort(@DestinationVariable UUID tischId, ArmutAntwortAnfrage anfrage, Principal principal) {
         SpielerEntity spieler = ladeAktivenSpieler(principal);
-        LOGGER.info("Spieler {} beantwortet Armut per WebSocket an Tisch {}", spieler.id(), tischId);
+        LOGGER.debug("WS ARMUT-ANTWORT [spieler={} ({}), tischId={}, angenommen={}]", spieler.anzeigeName(), spieler.id(), tischId, anfrage.angenommen());
         spielAktionsService.verarbeiteArmutAntwort(TischId.von(tischId), spieler, anfrage.kartenIds(), anfrage.angenommen());
     }
 
     @MessageMapping("/tisch/{tischId}/karte")
     public void spieleKarte(@DestinationVariable UUID tischId, KarteSpielenAnfrage anfrage, Principal principal) {
         SpielerEntity spieler = ladeAktivenSpieler(principal);
-        LOGGER.info("Spieler {} spielt Karte {} per WebSocket an Tisch {}", spieler.id(), anfrage.karteId(), tischId);
+        LOGGER.debug("WS KARTE [spieler={} ({}), tischId={}, karte={}]", spieler.anzeigeName(), spieler.id(), tischId, anfrage.karteId());
         spielAktionsService.spieleKarte(TischId.von(tischId), spieler, anfrage.karteId());
     }
 
     @MessageMapping("/tisch/{tischId}/ansage")
     public void sageAn(@DestinationVariable UUID tischId, AnsageAnfrage anfrage, Principal principal) {
         SpielerEntity spieler = ladeAktivenSpieler(principal);
-        LOGGER.info("Spieler {} taetigt Ansage {} per WebSocket an Tisch {}", spieler.id(), anfrage.ansage(), tischId);
+        LOGGER.debug("WS ANSAGE [spieler={} ({}), tischId={}, ansage={}]", spieler.anzeigeName(), spieler.id(), tischId, anfrage.ansage());
         spielAktionsService.sageAn(TischId.von(tischId), spieler, anfrage.ansage());
     }
 

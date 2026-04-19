@@ -153,6 +153,22 @@ public class SpielRegistry {
         }
     }
 
+    /**
+     * Fuehrt eine Aktion unter TischId-bezogenem Lock aus.
+     * Ermoeglicht die Serialisierung von Aktionen (z.B. KI-Orchestrierung), die nicht
+     * direkt ueber die Spiel-Mutationen laufen.
+     */
+    public void mitLock(TischId tischId, Runnable aktion) {
+        UUID id = tischId.wert();
+        ReentrantLock lock = locks.computeIfAbsent(id, k -> new ReentrantLock());
+        lock.lock();
+        try {
+            aktion.run();
+        } finally {
+            lock.unlock();
+        }
+    }
+
     /** Entfernt Spiel, Lock und Kommando-Cache eines beendeten Tisches. */
     public void entferne(TischId tischId) {
         spielCache.remove(tischId.wert());
