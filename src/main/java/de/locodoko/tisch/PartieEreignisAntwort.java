@@ -40,4 +40,15 @@ public record PartieEreignisAntwort(
         return new PartieEreignisAntwort(Instant.now(), PartieEreignisTyp.SPIEL_BEENDET, partieStand, null, null);
     }
 
-}
+    public static PartieEreignisAntwort ansageErfolgt(PartieStandAntwort partieStand) {
+        return new PartieEreignisAntwort(Instant.now(), PartieEreignisTyp.ANSAGE_ERFOLGT, partieStand, null, null);
+    }
+
+    public static PartieEreignisAntwort schweinchenGemeldet(PartieStandAntwort partieStand) {
+        return new PartieEreignisAntwort(Instant.now(), PartieEreignisTyp.SCHWEINCHEN_GEMELDET, partieStand, null, null);
+    }
+
+    public static PartieEreignisAntwort spielGestartet(PartieStandAntwort partieStand) {
+        return new PartieEreignisAntwort(Instant.now(), PartieEreignisTyp.SPIEL_GESTARTET, partieStand, null, null);
+    }
+    }

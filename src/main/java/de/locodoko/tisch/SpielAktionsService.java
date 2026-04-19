@@ -93,7 +93,7 @@ public class SpielAktionsService {
         }
         partieRepository.saveAndFlush(tisch.partie());
         synchronisiereRegistry(tischId, tisch);
-        veroeffentlicheEreignisse(tisch);
+        veroeffentlicheAnsageEreignisse(tisch);
         return PartieStandAntwort.aus(tisch, verwalteterSpieler.id());
     }
 
@@ -122,7 +122,7 @@ public class SpielAktionsService {
         }
         partieRepository.saveAndFlush(tisch.partie());
         synchronisiereRegistry(tischId, tisch);
-        veroeffentlicheEreignisse(tisch);
+        veroeffentlicheAnsageEreignisse(tisch);
         return PartieStandAntwort.aus(tisch, verwalteterSpieler.id());
     }
 
@@ -156,6 +156,7 @@ public class SpielAktionsService {
         synchronisiereRegistry(tischId, tisch);
         if (!schweinchenVorher && laufendesSpiel.schweinchenGemeldetVon().isPresent()) {
             eventPublisher.publishEvent(new SchweinchenGemeldet(tischId.wert(), laufendesSpiel.schweinchenGemeldetVon().get()));
+            veroeffentlicheSchweinchenEreignis(tisch);
         }
         veroeffentlicheSpielKarteEreignisse(tisch, spielEreignisse);
         LOGGER.debug("Karte-Aktion abgeschlossen [tischId={}]", tischId);
@@ -186,8 +187,34 @@ public class SpielAktionsService {
         }
         partieRepository.saveAndFlush(tisch.partie());
         synchronisiereRegistry(tischId, tisch);
-        veroeffentlicheEreignisse(tisch);
+        veroeffentlicheAnsageEreignisse(tisch);
         return PartieStandAntwort.aus(tisch, verwalteterSpieler.id());
+    }
+
+    private void veroeffentlicheAnsageEreignisse(TischEntity tisch) {
+        if (tisch.partie() == null) {
+            return;
+        }
+        tisch.spieler().stream()
+            .filter(s -> !s.istKi() && !s.istKiUebernommen() && s.sessionId() != null)
+            .forEach(s -> tischEchtzeitService.planeAnBenutzer(
+                s.sessionId(),
+                "/queue/partie/" + tisch.partie().id(),
+                PartieEreignisAntwort.ansageErfolgt(PartieStandAntwort.aus(tisch, s.id()))
+            ));
+    }
+
+    private void veroeffentlicheSchweinchenEreignis(TischEntity tisch) {
+        if (tisch.partie() == null) {
+            return;
+        }
+        tisch.spieler().stream()
+            .filter(s -> !s.istKi() && !s.istKiUebernommen() && s.sessionId() != null)
+            .forEach(s -> tischEchtzeitService.planeAnBenutzer(
+                s.sessionId(),
+                "/queue/partie/" + tisch.partie().id(),
+                PartieEreignisAntwort.schweinchenGemeldet(PartieStandAntwort.aus(tisch, s.id()))
+            ));
     }
 
     private void veroeffentlicheSpielKarteEreignisse(TischEntity tisch, List<SpielEreignis> ereignisse) {
