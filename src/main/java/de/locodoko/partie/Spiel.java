@@ -781,7 +781,8 @@ public class Spiel extends AbstraktePersistenzEntity {
 
     private TrumpfOrdnung trumpfOrdnungFuer(VorbehaltMeldung hv) {
         return hv == null ? trumpfOrdnung : switch (hv.ansage()) {
-            case SOLO_DAME -> new DamensoloTrumpfOrdnung(); case SOLO_BUBE -> new BubensoloTrumpfOrdnung(); case SOLO_TRUMPF -> new NormaleTrumpfOrdnung(spielregeln);
+            case SOLO_DAME -> new DamensoloTrumpfOrdnung(); case SOLO_BUBE -> new BubensoloTrumpfOrdnung(); 
+            case SOLO_TRUMPF -> new NormaleTrumpfOrdnung(spielregeln);
             case HOCHZEIT, ARMUT -> hatSchweinchen(spielregeln, haende) ? new SchweinchenTrumpfOrdnung(spielregeln) : new NormaleTrumpfOrdnung(spielregeln);
             case SOLO_TRUMPF_HERZ -> new VariableTrumpfsoloTrumpfOrdnung(Farbe.HERZ, spielregeln); case SOLO_TRUMPF_PIK -> new VariableTrumpfsoloTrumpfOrdnung(Farbe.PIK, spielregeln);
             case SOLO_TRUMPF_KREUZ -> new VariableTrumpfsoloTrumpfOrdnung(Farbe.KREUZ, spielregeln); case SOLO_FLEISCHLOS -> new FleischlosTrumpfOrdnung();

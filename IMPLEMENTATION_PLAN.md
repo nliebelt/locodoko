@@ -1,8 +1,8 @@
 # IMPLEMENTATION_PLAN — Locodoko Doppelkopf
 
 ## Notiz
-- BF-17 erfolgreich abgeschlossen. 10-Stiche-Logik für "ohne Neunen" verifiziert durch neuen Test `OhneNeunenTest`.
-- Nächster Schritt: BF-18 (Schweinchen-Bugfix).
+- BF-18 Schweinchen-Bugfix erfolgreich abgeschlossen. `Spiel.java` Switch-Case korrigiert, damit Schweinchen bei Normalspielen korrekt aktiviert wird und in Solo-Spielen inaktiv bleibt.
+- Nächster Schritt: BF-19 (Spielregeln-Cleanup).
 - Offene Fragen: Die unhandled errors bei `npm test` bestehen weiterhin.
 
 > **Letzte Aktualisierung: 2026-04-19 (Ralph Planning Mode - Plan-Run #84)**
@@ -48,7 +48,7 @@ Ziel: Vollständige typisierte Kommunikation ohne "Snapshot-Zwang" für jede Akt
 - [x] **BF-17** 10-Stiche-Spiele (ohne Neunen):
   - Test `OhneNeunenTest.partieMitOhneNeunenSchliesstNachZehnStichenAb` hinzugefügt und grün.
   - `Spiel.neuesSpielMitStichfortschritt` und `Spiel.kartenProSpieler` für Testzugriff geöffnet.
-- [ ] **BF-18** Schweinchen-Bugfix:
+- [x] **BF-18** Schweinchen-Bugfix:
   - Sicherstellen, dass `SchweinchenTrumpfOrdnung` im `Spiel` aktiv wird, wenn Karo-Asse auf einer Hand liegen.
   - DKV-Logik: Meldung erst beim Ausspielen.
 - [ ] **BF-19** `Spielregeln.java` Cleanup:
