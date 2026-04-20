@@ -13,8 +13,8 @@ import { REGEL_PRESETS, PRESET_BEZEICHNUNGEN, standardMindestkarten } from './re
 describe('LOCO_BLAT-Preset', () => {
   const preset = REGEL_PRESETS.LOCO_BLAT;
 
-  it('aktiviert ohneNeunen (10-Karten-Spiel)', () => {
-    expect(preset.ohneNeunen).toBe(true);
+  it('spielt mit Neunen (12-Karten-Spiel)', () => {
+    expect(preset.ohneNeunen).toBe(false);
   });
 
   it('aktiviert alle Sonderregeln', () => {
@@ -37,13 +37,36 @@ describe('LOCO_BLAT-Preset', () => {
     expect(preset.zweiteDulleSticht).toBe(true);
   });
 
-  it('hat korrekte Ansagegrenzen fuer Ohne-Neunen-Spiel (9/8/7/6/5)', () => {
-    expect(preset.mindestkartenReKontra).toBe(9);
-    expect(preset.mindestkartenKeine90).toBe(8);
-    expect(preset.mindestkartenKeine60).toBe(7);
-    expect(preset.mindestkartenKeine30).toBe(6);
-    expect(preset.mindestkartenSchwarz).toBe(5);
+  it('hat korrekte Ansagegrenzen fuer Mit-Neunen-Spiel (11/10/9/8/7)', () => {
+    expect(preset.mindestkartenReKontra).toBe(11);
+    expect(preset.mindestkartenKeine90).toBe(10);
+    expect(preset.mindestkartenKeine60).toBe(9);
+    expect(preset.mindestkartenKeine30).toBe(8);
+    expect(preset.mindestkartenSchwarz).toBe(7);
   });
+});
+
+describe('OHNE_NEUNEN-Preset', () => {
+    const preset = REGEL_PRESETS.OHNE_NEUNEN;
+  
+    it('aktiviert ohneNeunen (10-Karten-Spiel)', () => {
+      expect(preset.ohneNeunen).toBe(true);
+    });
+  
+    it('aktiviert alle Loco-Sonderregeln', () => {
+      expect(preset.bockrundenAktiv).toBe(true);
+      expect(preset.schweinchenAktiv).toBe(true);
+      expect(preset.dreissigAugenPflichtAktiv).toBe(true);
+      expect(preset.schmeissenAktiv).toBe(true);
+    });
+  
+    it('hat korrekte Ansagegrenzen fuer Ohne-Neunen-Spiel (9/8/7/6/5)', () => {
+      expect(preset.mindestkartenReKontra).toBe(9);
+      expect(preset.mindestkartenKeine90).toBe(8);
+      expect(preset.mindestkartenKeine60).toBe(7);
+      expect(preset.mindestkartenKeine30).toBe(6);
+      expect(preset.mindestkartenSchwarz).toBe(5);
+    });
 });
 
 describe('DKV-Preset', () => {
@@ -92,6 +115,7 @@ describe('standardMindestkarten()', () => {
 describe('PRESET_BEZEICHNUNGEN', () => {
   it('enthaelt lesbare Labels fuer alle Presets', () => {
     expect(PRESET_BEZEICHNUNGEN.LOCO_BLAT).toBe('Loco Blatt');
+    expect(PRESET_BEZEICHNUNGEN.OHNE_NEUNEN).toBe('Ohne Neunen');
     expect(PRESET_BEZEICHNUNGEN.DKV).toBe('DKV-Turnier');
     expect(PRESET_BEZEICHNUNGEN.BENUTZERDEFINIERT).toBe('Benutzerdefiniert');
   });

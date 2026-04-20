@@ -1,12 +1,12 @@
 import type { TischKonfigurationDto } from './SpielverwaltungDto';
 
-export type RegelPresetName = 'LOCO_BLAT' | 'DKV' | 'BENUTZERDEFINIERT';
+export type RegelPresetName = 'LOCO_BLAT' | 'OHNE_NEUNEN' | 'DKV' | 'BENUTZERDEFINIERT';
 
 /** Alle Regelfelder ohne die Tisch-Meta-Felder (Rundenanzahl, Hintergrund, KI). */
 export type RegelFelder = Omit<TischKonfigurationDto, 'anzahlSpiele' | 'tischhintergrund' | 'kiSchwierigkeit'>;
 
 const LOCO_BLAT_REGELN: RegelFelder = {
-    ohneNeunen: true,
+    ohneNeunen: false,
     zweiteDulleSticht: true,
     hochzeitErlaubt: true,
     armutErlaubt: true,
@@ -21,6 +21,16 @@ const LOCO_BLAT_REGELN: RegelFelder = {
     schweinchenAktiv: true,
     dreissigAugenPflichtAktiv: true,
     schmeissenAktiv: true,
+    mindestkartenReKontra: 11,
+    mindestkartenKeine90: 10,
+    mindestkartenKeine60: 9,
+    mindestkartenKeine30: 8,
+    mindestkartenSchwarz: 7,
+};
+
+const OHNE_NEUNEN_REGELN: RegelFelder = {
+    ...LOCO_BLAT_REGELN,
+    ohneNeunen: true,
     mindestkartenReKontra: 9,
     mindestkartenKeine90: 8,
     mindestkartenKeine60: 7,
@@ -44,11 +54,13 @@ const DKV_REGELN: RegelFelder = {
 
 export const REGEL_PRESETS: Record<Exclude<RegelPresetName, 'BENUTZERDEFINIERT'>, RegelFelder> = {
     LOCO_BLAT: LOCO_BLAT_REGELN,
+    OHNE_NEUNEN: OHNE_NEUNEN_REGELN,
     DKV: DKV_REGELN,
 };
 
 export const PRESET_BEZEICHNUNGEN: Record<RegelPresetName, string> = {
     LOCO_BLAT: 'Loco Blatt',
+    OHNE_NEUNEN: 'Ohne Neunen',
     DKV: 'DKV-Turnier',
     BENUTZERDEFINIERT: 'Benutzerdefiniert',
 };

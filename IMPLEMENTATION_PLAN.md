@@ -2,17 +2,17 @@
 
 ## Notiz
 Stand: 2026-04-20
-REGELN-3 erledigt: Solo-Schwellen in `StandardKiStrategie` feingetunt (Faktor 1.13 statt 1.15), um den Zielwert 52 aus `ki-strategie.md` präzise zu treffen. Tests und Javadoc aktualisiert. Phase 3 damit abgeschlossen. Nächster Schritt: Phase 4 (UI-NATIVE-1: Phaser-Migration der Overlays).
+UI-NATIVE-2 erledigt: "Ohne Neunen" Preset hinzugefügt und Loco-Blatt Bugfix (ohneNeunen: false) implementiert. Konfigurationsmodal in `SpielverwaltungsSzene` um das neue Preset erweitert. Tests in `regelPresets.test.ts` aktualisiert und erweitert. Nächster Schritt: UI-NATIVE-3 (Vision Loop für Overlays).
 
 ## Zusammenfassung Ist-Zustand
 - Backend: DDD-Struktur stabil. Event-Triggering für KI nun robust und optimiert.
 - Partie/Regeln: Kernlogik stabil. Hochzeit-Klärung und Sonderpunkte triggern die KI nun korrekt weiter.
-- Frontend: Phaser 3 weit fortgeschritten. Inkonsistenz im Loco-Blatt Preset (ohneNeunen) noch offen.
+- Frontend: Phaser 3 weit fortgeschritten. Preset-Auswahl nun konsistent mit Regelkatalog.
 
 ## Phase 1 — Stabilität & Test-Fixes (STAB)
 - [x] **STAB-1** Test-Suite Stabilisierung: `HochzeitTest` (NoSuchElementException fixen) und `DreissigAugenPflichtTest` repariert.
 - [x] **STAB-1** (Fortsetzung) HochzeitTest: Ursache für leere `restkarten` im Test-Setup identifizieren.
-- [x] **STAB-2** Test-Suite Stabilisierung: `AnsagenTest` und `BockrundenTest` Assertions korrigieren.
+- [x] **STAB-2** Test-Suite Stabilisierung: `AnsagenTest` and `BockrundenTest` Assertions korrigieren.
 - [x] **STAB-3** Integrationstests: `VerbindungsabbruchServiceTest` und `WebSocketPublikationIntegrationTest` (ApplicationContext-Fehler) beheben.
 
 ## Phase 2 — DDD & Architektur (ARCH)
@@ -29,5 +29,5 @@ REGELN-3 erledigt: Solo-Schwellen in `StandardKiStrategie` feingetunt (Faktor 1.
 
 ## Phase 4 — Frontend UI-Migration (UI-NATIVE)
 - [x] **UI-NATIVE-1** HTML-Hybrid-Rückbau: Seitenlade und Einstellungsmenüs vollständig auf Phaser-Container umstellen.
-- [ ] **UI-NATIVE-2** Preset-Auswahl & Bugfix: "Ohne Neunen" Option in Tisch-Konfiguration (Phaser) hinzufügen. Bugfix in `frontend/src/modelle/regelPresets.ts`: Für `LOCO_BLAT_REGELN` ist `ohneNeunen: true` gesetzt. Laut `regelkatalog.md` muss dies `false` sein. Das muss korrigiert werden.
+- [x] **UI-NATIVE-2** Preset-Auswahl & Bugfix: "Ohne Neunen" Option in Tisch-Konfiguration (Phaser) hinzufügen. Bugfix in `frontend/src/modelle/regelPresets.ts`: Für `LOCO_BLAT_REGELN` ist `ohneNeunen: false` gesetzt. Laut `regelkatalog.md` nun korrigiert.
 - [ ] **UI-NATIVE-3** Native UI-Tests: Vision Loop für alle Overlays etablieren.
