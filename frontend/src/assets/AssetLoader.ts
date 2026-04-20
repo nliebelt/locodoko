@@ -43,9 +43,12 @@ export function karteZuDateiname(farbe: string, wert: string): string {
   return `${englischWert}_${englischFarbe}.png`;
 }
 
-// Liefert den eindeutigen Texturschluessel fuer eine aufgedeckte Karte.
 export function texturSchluesselFuerKarte(farbe: string, wert: string): string {
   return `karte-offen-${farbe}-${wert}`;
+}
+
+export function istBildHintergrund(bg: string): boolean {
+  return /^(RECHTECK|OVAL|RUND)_\d+$/.test(bg);
 }
 
 /**

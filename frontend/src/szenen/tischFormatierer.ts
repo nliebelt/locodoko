@@ -5,6 +5,9 @@
  */
 import type { Ansage, KarteAntwort, KiSchwierigkeit, Sonderpunkt, SonderpunktEreignis, VorbehaltAnsage } from '../modelle/SpielverwaltungDto';
 
+export const KARTEN_BREITE = 96;
+export const KARTEN_HOEHE = 144;
+
 export function escapeHtml(s: string): string {
   return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;');
 }

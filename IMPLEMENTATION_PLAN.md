@@ -28,6 +28,6 @@ REGELN-3 erledigt: Solo-Schwellen in `StandardKiStrategie` feingetunt (Faktor 1.
 - [x] **REGELN-3** KI-Strategie Tuning: Die Solo-Schwellen in `StandardKiStrategie.soloSchwelle()` wurden von einem 1.15er auf einen 1.13er Faktor angepasst, um die Zielwerte der Spec (46 -> 52) exakt zu treffen. Dokumentation und Tests wurden entsprechend aktualisiert.
 
 ## Phase 4 — Frontend UI-Migration (UI-NATIVE)
-- [ ] **UI-NATIVE-1** HTML-Hybrid-Rückbau: Seitenlade und Einstellungsmenüs vollständig auf Phaser-Container umstellen.
+- [x] **UI-NATIVE-1** HTML-Hybrid-Rückbau: Seitenlade und Einstellungsmenüs vollständig auf Phaser-Container umstellen.
 - [ ] **UI-NATIVE-2** Preset-Auswahl & Bugfix: "Ohne Neunen" Option in Tisch-Konfiguration (Phaser) hinzufügen. Bugfix in `frontend/src/modelle/regelPresets.ts`: Für `LOCO_BLAT_REGELN` ist `ohneNeunen: true` gesetzt. Laut `regelkatalog.md` muss dies `false` sein. Das muss korrigiert werden.
 - [ ] **UI-NATIVE-3** Native UI-Tests: Vision Loop für alle Overlays etablieren.
