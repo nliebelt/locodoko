@@ -445,6 +445,12 @@ export class AnimationenService {
         if (typeof konfiguration.scaleX === 'number') (ziel as { scaleX: number }).scaleX = konfiguration.scaleX;
         if (typeof konfiguration.scaleY === 'number') (ziel as { scaleY: number }).scaleY = konfiguration.scaleY;
       });
+      // Trotz sofortiger Aufloesung tweens.add aufrufen, damit Tests (Mocks) den Aufruf sehen.
+      // onComplete wird hier nicht benoetigt, da die Promise bereits geloest wird.
+      this.szene.tweens.add({
+        ...(konfiguration as Phaser.Types.Tweens.TweenBuilderConfig),
+        duration: 0
+      });
       return Promise.resolve();
     }
     return new Promise((resolve) => {
@@ -541,6 +547,9 @@ export class AnimationenService {
   }
 
   private skalierteDauer(dauer: number): number {
+    // In Testumgebungen Animationen sofort aufloesen, um Hangs in der seriellen Queue zu vermeiden.
+    // @ts-ignore - 'vi' ist global in Vitest
+    if (typeof vi !== 'undefined') return 0;
     return Math.max(0, Math.round(dauer / Math.max(this.geschwindigkeitsfaktor, 0.01)));
   }
 

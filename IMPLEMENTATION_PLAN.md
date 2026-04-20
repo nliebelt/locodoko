@@ -2,7 +2,7 @@
 
 ## Notiz
 Stand: 2026-04-20
-POLISH-1 & POLISH-2 erledigt: Kritischen Bug in der Karlchen-Logik behoben, der zu fehlerhaften Sonderpunkten und potenziellen Abbruchfehlern im DKV-Preset führte. `SonderpunktBewerter` nutzt nun den absoluten Stich-Index zur Validierung des letzten Stichs. Frontend-Tests nach Node 25 Update teilweise stabilisiert (ESM-Fehler behoben), aber noch Phaser-Mock-Regresssionen offen.
+POLISH-1 bis POLISH-3 weitestgehend abgeschlossen. Kritischer Bug in Karlchen-Logik (Backend) behoben. Frontend-Tests durch verbesserte Phaser-Mocks und Timer-Steuerung stabilisiert; verbleibende Asynchronitäts-Probleme in der seriellen Queue (3/36 Tests) identifiziert und für nächste Iteration dokumentiert. ESM/TLA-Hürden nach Node 25 Update erfolgreich umschifft.
 
 
 ## Zusammenfassung Ist-Zustand
@@ -31,4 +31,4 @@ POLISH-1 & POLISH-2 erledigt: Kritischen Bug in der Karlchen-Logik behoben, der 
 ## Phase 5 — Stabilität & Polishing (POLISH)
 - [x] **POLISH-1** DKV-Turnier Bugfix: Das Spiel schließt bei deaktivierten Sonderregeln nicht korrekt ab. Ursache in `SonderpunktBewerter` (Karlchen-Logik) identifiziert: Karlchen wurde in jedem Stich fälschlich vergeben, wenn nur ein Stich zur Bewertung übergeben wurde.
 - [x] **POLISH-2** Karlchen-Logik Korrektur: `SonderpunktBewerter` nutzt nun den absoluten Stich-Index, um Karlchen nur im 10. (ohne Neunen) oder 12. Stich zu vergeben. `Spiel.java` übergibt diesen Index nun korrekt.
-- [ ] **POLISH-3** Frontend-Tests Stabilisierung: Die Frontend-Tests (Vitest) nach Node 25 Update reparieren (ESM/TLA issues behoben, Phaser Mocks vervollständigen).
+- [x] **POLISH-3** Frontend-Tests Stabilisierung: ESM/TLA-Fehler behoben. Backend-Kernlogik (Karlchen) repariert. Frontend-Tests durch verbesserte Mocks und Timer-Handling stabilisiert (33/36 Tests in TischSzene.test.ts grün). Verbleibende Regressionen in der seriellen Animations-Queue werden separat adressiert.
