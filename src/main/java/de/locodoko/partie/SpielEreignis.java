@@ -11,7 +11,7 @@ import java.util.List;
  * ohne State-Diffs aus zwei Snapshots berechnen zu müssen.</p>
  */
 public sealed interface SpielEreignis
-        permits SpielEreignis.KarteGespielt, SpielEreignis.StichAbgeschlossenEreignis {
+        permits SpielEreignis.KarteGespielt, SpielEreignis.StichAbgeschlossenEreignis, SpielEreignis.SchweinchenGemeldet {
 
     /** Eine Karte wurde von einem Spieler auf den Tisch gelegt. */
     record KarteGespielt(SpielerPosition position, Karte karte) implements SpielEreignis {}
@@ -19,4 +19,7 @@ public sealed interface SpielEreignis
     /** Ein vollständiger Stich wurde abgeschlossen inklusive Sonderpunktauswertung. */
     record StichAbgeschlossenEreignis(Stich stich, List<SonderpunktEreignis> sonderpunkte)
             implements SpielEreignis {}
+
+    /** Das Schweinchen wurde durch Ausspielen des ersten Karo-Asses gemeldet. */
+    record SchweinchenGemeldet(SpielerPosition spielerPosition) implements SpielEreignis {}
 }

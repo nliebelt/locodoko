@@ -323,12 +323,20 @@ public class Spiel extends AbstraktePersistenzEntity {
         Objects.requireNonNull(spielerPosition, "spielerPosition darf nicht null sein");
         Objects.requireNonNull(karte, "karte darf nicht null sein");
         if (!stichphase.pflichtansageAusstehend().isEmpty()) { throw new IllegalStateException("Karte spielen ist erst erlaubt wenn alle ausstehenden Pflichtansagen gemacht wurden: " + stichphase.pflichtansageAusstehend()); }
+        
+        boolean schweinchenVorherGemeldet = schweinchenGemeldetVon().isPresent();
         Hand hand = handVon(spielerPosition);
         Stich gespielterStich = stichphase.aktuellerStich().spieleKarte(spielerPosition, karte, hand, trumpfOrdnung);
         Map<SpielerPosition, Hand> neueHaende = kopiereHaende();
         neueHaende.put(spielerPosition, hand.ohne(karte));
+        
         List<SpielEreignis> ereignisse = new ArrayList<>();
         ereignisse.add(new SpielEreignis.KarteGespielt(spielerPosition, karte));
+        
+        if (!schweinchenVorherGemeldet && istKaroAs(karte) && schweinchenAktiv()) {
+            ereignisse.add(new SpielEreignis.SchweinchenGemeldet(spielerPosition));
+        }
+
         if (!gespielterStich.istVollstaendig()) {
             return new SpielAktion(neuesSpielMitStichfortschritt(neueHaende, abgeschlosseneStiche, new Spielphase.Stichphase(gespielterStich, stichphase.pflichtansageAusstehend(), stichphase.hochzeitStatus()), parteien), List.copyOf(ereignisse));
         }

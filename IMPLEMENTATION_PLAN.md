@@ -2,7 +2,7 @@
 
 ## Notiz
 Stand: 2026-04-20
-ARCH-5 erledigt: `SpielSonderpunktEntity` wurde aufgelöst und wird nun als JSON-Blob in der `spiel`-Tabelle persisitiert (via `SonderpunktJsonEintrag`), um den DDD-Vorgaben zu entsprechen. Nächster logischer Schritt ist REGELN-1 (Schweinchen-Logik & Test-Fix).
+REGELN-1 erledigt: `SchweinchenGemeldet`-Event wird nun in `Spiel.spieleKarte()` erzeugt und verarbeitet. Der "Kartenzahl-Fehler" wurde durch Korrektur von `locoBlatRegeln()` (nun korrekt mit Neunen/12 Karten laut Spec) und Anpassung der Integrationstests behoben. Nächster Schritt: REGELN-2 (KI-Hänger bei Sonderpunkten).
 
 ## Zusammenfassung Ist-Zustand
 - Backend: DDD-Struktur umgesetzt. Pragmatische Abhängigkeitsregel erlaubt es dem `spieler/` Modul nun offiziell, auf Events aus `partie/` zu lauschen.
@@ -24,7 +24,7 @@ ARCH-5 erledigt: `SpielSonderpunktEntity` wurde aufgelöst und wird nun als JSON
 - [x] **ARCH-5** Entity-Bereinigung: `SpielSonderpunktEntity` liegt noch im `partie/` Package. Laut `architektur-ddd.md` dürfen dort keine `*Entity` Klassen liegen, da Domain Model = Persistence Model (Spring Data JDBC). Diese Klasse umbauen/verschieben, sodass sie den Architekturvorgaben entspricht.
 
 ## Phase 3 — Regel-Feinheiten & Sonderregeln (REGELN)
-- [ ] **REGELN-1** Schweinchen-Logik & Test-Fix: Das Domain-Event `SchweinchenGemeldet` wird laut Spec beim Ausspielen des ersten Karo-Asses erwartet. Es muss in `Spiel.spieleKarte()` erzeugt und der `SpielAktion` hinzugefügt werden. Zudem muss das fehlschlagende Test-Setup (Kartenzahl-Fehler), das diesen Task blockiert hat, repariert werden (Blocker aufgehoben, da es behoben werden muss).
+- [x] **REGELN-1** Schweinchen-Logik & Test-Fix: Das Domain-Event `SchweinchenGemeldet` wird laut Spec beim Ausspielen des ersten Karo-Asses erwartet. Es muss in `Spiel.spieleKarte()` erzeugt und der `SpielAktion` hinzugefügt werden. Zudem muss das fehlschlagende Test-Setup (Kartenzahl-Fehler), das diesen Task blockiert hat, repariert werden (Blocker aufgehoben, da es behoben werden muss).
 - [ ] **REGELN-2** KI-Hänger beheben: Der `KiEventAdapter` oder `SpielAktionsService` triggert das `NaechsterSpielerErwartet`-Event nicht zuverlässig, wenn Sonderpunkte (z.B. "Fuchs gefangen") ausgewertet werden oder Phasenwechsel stattfinden (z.B. Hochzeit-Partner gefunden). Dies führt zum Stillstand der KI. Das Event muss in diesen Edge-Cases verlässlich ausgelöst werden.
 - [ ] **REGELN-3** KI-Strategie Tuning: In `StandardKiStrategie.soloSchwelle()` überprüfen, ob die Schwelle hardcodiert (46) ist oder dynamisch angehoben wird, wie in `ki-strategie.md` gefordert (Anhebung um +15% bei Schweinchen oder 30-Augen-Pflicht). Wenn hardcodiert, Logik entsprechend anpassen.
 

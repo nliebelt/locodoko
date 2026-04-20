@@ -362,6 +362,8 @@ public class KiOrchestrierungService {
             switch (ereignis) {
                 case SpielEreignis.KarteGespielt _ -> sendeKarteGespielt(tisch);
                 case SpielEreignis.StichAbgeschlossenEreignis sa -> sendeStichAbgeschlossen(tisch, sa.sonderpunkte());
+                case SpielEreignis.SchweinchenGemeldet _ -> veroeffentlicheSchweinchenEreignis(tisch);
+                default -> LOGGER.trace("Ignoriere Spielereignis: {}", ereignis);
             }
         }
     }

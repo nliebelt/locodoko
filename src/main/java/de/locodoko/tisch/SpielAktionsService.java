@@ -154,10 +154,6 @@ public class SpielAktionsService {
         }
         partieRepository.saveAndFlush(tisch.partie());
         synchronisiereRegistry(tischId, tisch);
-        if (!schweinchenVorher && laufendesSpiel.schweinchenGemeldetVon().isPresent()) {
-            eventPublisher.publishEvent(new SchweinchenGemeldet(tischId.wert(), laufendesSpiel.schweinchenGemeldetVon().get()));
-            veroeffentlicheSchweinchenEreignis(tisch);
-        }
         veroeffentlicheSpielKarteEreignisse(tisch, spielEreignisse);
         LOGGER.debug("Karte-Aktion abgeschlossen [tischId={}]", tischId);
         return PartieStandAntwort.aus(tisch, verwalteterSpieler.id());
@@ -208,6 +204,13 @@ public class SpielAktionsService {
         if (tisch.partie() == null) {
             return;
         }
+        Spiel laufendesSpiel = ladeLaufendesSpiel(tisch.partie());
+        laufendesSpiel.hydriere(tisch.konfiguration().alsSpielregeln());
+        Optional<SpielerPosition> gemeldetVon = laufendesSpiel.schweinchenGemeldetVon();
+        if (gemeldetVon.isPresent()) {
+            eventPublisher.publishEvent(new SchweinchenGemeldet(tisch.id(), gemeldetVon.get()));
+        }
+
         tisch.spieler().stream()
             .filter(s -> !s.istKi() && !s.istKiUebernommen() && s.sessionId() != null)
             .forEach(s -> tischEchtzeitService.planeAnBenutzer(
@@ -225,6 +228,8 @@ public class SpielAktionsService {
             switch (ereignis) {
                 case SpielEreignis.KarteGespielt kg -> sendeKarteGespielt(tisch);
                 case SpielEreignis.StichAbgeschlossenEreignis sa -> sendeStichAbgeschlossen(tisch, sa.sonderpunkte());
+                case SpielEreignis.SchweinchenGemeldet _ -> veroeffentlicheSchweinchenEreignis(tisch);
+                default -> LOGGER.trace("Ignoriere Spielereignis: {}", ereignis);
             }
         }
         triggereKi(tisch);

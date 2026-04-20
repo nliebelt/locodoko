@@ -258,6 +258,40 @@ class SchweinchenTest {
         assertEquals(15, spiel.trumpfOrdnung().trumpfRang(KARO_AS_2));
     }
 
+    @Test
+    void spieleKarteErzeugtSchweinchenGemeldetBeimErstenKaroAs() {
+        // Wichtig: Laut DKV-Regeln wird das Schweinchen erst beim ersten Ausspielen eines
+        // Karo-Asses "gemeldet". Das Domain-Modell muss dieses Ereignis in SpielAktion liefern.
+        Spiel spiel = Spiel.neu(SpielerPosition.SUED, mitSchweinchen,
+                kartendeckMitBeideKaroAsseAnWEST())
+            .teileKartenAus()
+            .meldeGesund(SpielerPosition.WEST)
+            .meldeGesund(SpielerPosition.NORD)
+            .meldeGesund(SpielerPosition.OST)
+            .meldeGesund(SpielerPosition.SUED)
+            .loeseVorbehalteAuf();
+
+        // WEST spielt das erste Karo-As
+        SpielAktion aktion = spiel.spieleKarte(SpielerPosition.WEST, KARO_AS_1);
+
+        assertTrue(aktion.ereignisse().stream()
+            .anyMatch(e -> e instanceof SpielEreignis.SchweinchenGemeldet s 
+                && s.spielerPosition() == SpielerPosition.WEST),
+            "Beim ersten Karo-As muss ein SchweinchenGemeldet-Ereignis erzeugt werden.");
+
+        // NORD spielt eine Karte (kein Karo-As)
+        Karte herzZehn = spiel.handVon(SpielerPosition.NORD).karten().stream()
+                .filter(k -> k.farbe() == Farbe.HERZ && k.wert() == Kartenwert.ZEHN)
+                .findFirst().orElseThrow();
+        SpielAktion aktion2 = aktion.neuerStand().spieleKarte(SpielerPosition.NORD, herzZehn);
+
+        assertFalse(aktion2.ereignisse().stream()
+            .anyMatch(e -> e instanceof SpielEreignis.SchweinchenGemeldet),
+            "Beim zweiten Spieler (kein Karo-As) darf kein SchweinchenGemeldet-Ereignis kommen.");
+            
+        // ... (Optional: Zweites Karo-As pruefen)
+    }
+
     // --- Hilfsmethoden ---
 
     private static final Karte KREUZ_DAME_1 = new Karte(Farbe.KREUZ, Kartenwert.DAME, 1);

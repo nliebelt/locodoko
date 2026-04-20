@@ -110,7 +110,7 @@ class WebSocketSpielaktionIntegrationTest {
                 .findFirst()
                 .orElseThrow()
                 .sichtbareHandkarten()
-                .size() == 10,
+                .size() == 12,
             "Nach einer Spielaktion braucht jeder menschliche Spieler erneut einen benutzerbezogenen Snapshot mit eigener Hand statt eines leeren Broadcast-Stands.");
     }
 
@@ -336,8 +336,8 @@ class WebSocketSpielaktionIntegrationTest {
         assertEquals("VORBEHALT_ANSAGE", ereignis.partieStand().laufendesSpiel().phase(),
             "Wenn niemand die Armut annimmt, muss das Spiel eingeworfen und ein Broadcast mit der neuen Vorbehaltsphase gesendet werden.");
         ereignis.partieStand().laufendesSpiel().spieler().forEach(spieler ->
-            assertEquals(10, spieler.verbleibendeKarten(),
-                "Nach einem Armut-Einwurf muss jeder Spieler wieder 10 Karten erhalten (locoBlatRegeln=ohneNeunen), damit die neue Vorbehaltsrunde auf einem vollstaendigen Deck basiert."));
+            assertEquals(12, spieler.verbleibendeKarten(),
+                "Nach einem Armut-Einwurf muss jeder Spieler wieder 12 Karten erhalten (locoBlatRegeln=mitNeunen), damit die neue Vorbehaltsrunde auf einem vollstaendigen Deck basiert."));
     }
 
     @Test
@@ -479,7 +479,7 @@ class WebSocketSpielaktionIntegrationTest {
             haende.put(position, karten);
         }
         for (SpielerPosition position : SpielerPosition.standardReihenfolge()) {
-            while (haende.get(position).size() < 10) {
+            while (haende.get(position).size() < 12) {
                 haende.get(position).add(restkarten.removeFirst());
             }
         }
@@ -487,7 +487,7 @@ class WebSocketSpielaktionIntegrationTest {
     }
 
     private List<Karte> handMitDreiTruepfen(Karte ersteTrumpfkarte, Karte zweiteTrumpfkarte, Karte dritteTrumpfkarte) {
-        // 3 Trumpfkarten + 7 Nichttruempfe (kein NEUN — locoBlatRegeln=ohneNeunen) = 10 Karten
+        // 3 Trumpfkarten + 9 Nichttruempfe (mit NEUN — locoBlatRegeln=mitNeunen) = 12 Karten
         return List.of(
             ersteTrumpfkarte,
             zweiteTrumpfkarte,
@@ -495,26 +495,30 @@ class WebSocketSpielaktionIntegrationTest {
             karte(Farbe.KREUZ, Kartenwert.AS, 1),
             karte(Farbe.KREUZ, Kartenwert.KOENIG, 1),
             karte(Farbe.KREUZ, Kartenwert.ZEHN, 1),
+            karte(Farbe.KREUZ, Kartenwert.NEUN, 1),
             karte(Farbe.PIK, Kartenwert.AS, 1),
             karte(Farbe.PIK, Kartenwert.KOENIG, 1),
             karte(Farbe.PIK, Kartenwert.ZEHN, 1),
+            karte(Farbe.PIK, Kartenwert.NEUN, 1),
             karte(Farbe.HERZ, Kartenwert.KOENIG, 1)
         );
     }
 
     private List<Karte> gegenhandFuerArmutAnnahme(Karte rueckgabeEins, Karte rueckgabeZwei, Karte rueckgabeDrei) {
-        // 3 Rueckgabekarten + 7 Fuellkarten (kein NEUN — locoBlatRegeln=ohneNeunen) = 10 Karten
+        // 3 Rueckgabekarten + 9 Fuellkarten (mit NEUN — locoBlatRegeln=mitNeunen) = 12 Karten
         return List.of(
             rueckgabeEins,
             rueckgabeZwei,
             rueckgabeDrei,
             karte(Farbe.KREUZ, Kartenwert.KOENIG, 2),
             karte(Farbe.KREUZ, Kartenwert.ZEHN, 2),
+            karte(Farbe.KREUZ, Kartenwert.NEUN, 2),
             karte(Farbe.PIK, Kartenwert.KOENIG, 2),
             karte(Farbe.PIK, Kartenwert.ZEHN, 2),
+            karte(Farbe.PIK, Kartenwert.NEUN, 2),
             karte(Farbe.HERZ, Kartenwert.KOENIG, 2),
-            karte(Farbe.HERZ, Kartenwert.AS, 2),
-            karte(Farbe.KARO, Kartenwert.KOENIG, 1)
+            karte(Farbe.HERZ, Kartenwert.NEUN, 1),
+            karte(Farbe.HERZ, Kartenwert.NEUN, 2)
         );
     }
 

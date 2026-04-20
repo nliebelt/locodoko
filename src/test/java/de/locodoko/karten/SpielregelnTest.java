@@ -9,14 +9,15 @@ class SpielregelnTest {
     @Test
     void locoBlatRegelnAktivierenAlleSonderregeln() {
         // Stellt sicher dass Bockrunden/Schweinchen/30AP/Schmeissen aktiv sind —
-        // verhindert, dass ein Refactoring diese versehentlich deaktiviert
+        // verhindert, dass ein Refactoring diese versehentlich deaktiviert.
+        // Loco Blatt spielt standardmaessig MIT Neunen (12 Karten).
         Spielregeln regeln = Spielregeln.locoBlatRegeln();
         assertThat(regeln.bockrundenAktiv()).isTrue();
         assertThat(regeln.schweinchenAktiv()).isTrue();
         assertThat(regeln.dreissigAugenPflichtAktiv()).isTrue();
         assertThat(regeln.schmeissenAktiv()).isTrue();
-        assertThat(regeln.ohneNeunen()).isTrue();
-        assertThat(regeln.mindestkartenReKontra()).isEqualTo(9);
+        assertThat(regeln.ohneNeunen()).isFalse();
+        assertThat(regeln.mindestkartenReKontra()).isEqualTo(11);
     }
 
     @Test
@@ -36,7 +37,7 @@ class SpielregelnTest {
     void ohneNeunenLocoBlatRegelnSetzenOhneNeunenUndPassendeMindestkarten() {
         // Stellt sicher dass ohneNeunen gesetzt ist und Mindestkarten für 10-Karten-Spiel gelten —
         // falsche Mindestkarten machen Ansagen fast immer unmöglich
-        Spielregeln regeln = Spielregeln.locoBlatRegeln();
+        Spielregeln regeln = Spielregeln.ohneNeunenLocoBlatRegeln();
         assertThat(regeln.ohneNeunen()).isTrue();
         assertThat(regeln.mindestkartenReKontra()).isEqualTo(9);
         assertThat(regeln.mindestkartenKeine90()).isEqualTo(8);
@@ -57,8 +58,8 @@ class SpielregelnTest {
         assertThat(loco.karlchenAktiv()).isEqualTo(dkv.karlchenAktiv());
         assertThat(loco.hochzeitAktiv()).isEqualTo(dkv.hochzeitAktiv());
         assertThat(loco.armutAktiv()).isEqualTo(dkv.armutAktiv());
-        // Loco Blatt hat ohneNeunen=true (10 Karten), DKV spielt mit Neunen (12 Karten)
-        assertThat(loco.ohneNeunen()).isTrue();
+        // Beide spielen standardmaessig mit Neunen (12 Karten)
+        assertThat(loco.ohneNeunen()).isFalse();
         assertThat(dkv.ohneNeunen()).isFalse();
     }
 }

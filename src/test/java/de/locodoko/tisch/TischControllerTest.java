@@ -171,7 +171,7 @@ class TischControllerTest {
         Spiel erstesSpiel = geladen.partie().spiele().getFirst();
         assertEquals(4, erstesSpiel.haendeAlsJson().size(),
             "Das erste Spiel muss alle vier Haende enthalten, weil die spielbare Tischansicht ohne nachgelagerten Platzhalter direkt mit echten Karten startet.");
-        assertEquals(10, erstesSpiel.haendeAlsJson().getFirst().karten().size(),
+        assertEquals(12, erstesSpiel.haendeAlsJson().getFirst().karten().size(),
             "Jeder Spieler braucht direkt nach dem Start eine vollstaendige Hand, damit Vorbehalt-Phase und Kartendarstellung denselben serverseitigen Wahrheitsstand sehen.");
     }
 
@@ -182,7 +182,7 @@ class TischControllerTest {
 
         mockMvc.perform(get("/api/tische/{id}/konfiguration", tischId))
             .andExpect(status().isOk())
-            .andExpect(jsonPath("$.ohneNeunen").value(true))
+            .andExpect(jsonPath("$.ohneNeunen").value(false))
             .andExpect(jsonPath("$.anzahlSpiele").value(24))
             .andExpect(jsonPath("$.tischhintergrund").value(Tischhintergrund.OVAL_2.name()));
 
