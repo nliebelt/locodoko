@@ -1,5 +1,8 @@
 # IMPLEMENTATION_PLAN — Locodoko Doppelkopf
 
+## Notiz
+ARCH-2: Konsistenzprüfung zeigt, dass DDD-Struktur teilweise verletzt ist (technische Layer/Entity-Klassen in Fachmodulen). Nächster Schritt: Umstellung der Tisch-Spieler-Relation in `tisch/` auf Aggregate-Root-Referenzierung.
+
 - [Status: ARCH-1 abgeschlossen]
 - Stand: 2026-04-20
 - Implementiert: Verifizierung der Bounded Contexts (Lobby/Session existieren nicht, Architektur entspricht Vorgabe).
@@ -20,7 +23,7 @@
 
 ## Phase 2 — DDD & Architektur (ARCH)
 - [x] **ARCH-1** Refactoring: `lobby/` und `session/` bereits migriert (bzw. nicht vorhanden).
-- [ ] **ARCH-2** Konsistenzprüfung: Bounded Contexts gegen `specs/architektur-ddd.md` abgleichen und Datenbank-Relationen `TischSpieler` auf Aggregate-Roots umstellen.
+- [o] **ARCH-2** Konsistenzprüfung: Bounded Contexts gegen `specs/architektur-ddd.md` abgleichen und Datenbank-Relationen `TischSpieler` auf Aggregate-Roots umstellen.
 - [ ] **ARCH-3** KI-Modul: Migration von `partie/ki/` nach Top-Level `ki/`.
 
 ## Phase 3 — Regel-Feinheiten & Sonderregeln (REGELN)
