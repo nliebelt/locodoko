@@ -1,10 +1,9 @@
 # IMPLEMENTATION_PLAN — Locodoko Doppelkopf
 
-## Notiz
-- [Status: STAB-3 abgeschlossen]
+- [Status: ARCH-1 abgeschlossen]
 - Stand: 2026-04-20
-- Implementiert: Integrationstests `VerbindungsabbruchServiceTest` und `WebSocketPublikationIntegrationTest` als stabil validiert (waren keine funktionalen Fehler, nur Spring-Logs).
-- Nächster Schritt: ARCH-1 (Refactoring der Bounded Contexts).
+- Implementiert: Verifizierung der Bounded Contexts (Lobby/Session existieren nicht, Architektur entspricht Vorgabe).
+- Nächster Schritt: ARCH-2 (Konsistenzprüfung).
 
 ## Zusammenfassung Ist-Zustand
 - Backend: DDD-Struktur teilweise umgesetzt (tisch/, spieler/ vorhanden), aber noch Vermischungen mit alten Strukturen.
@@ -20,7 +19,7 @@
 - [x] **STAB-3** Integrationstests: `VerbindungsabbruchServiceTest` und `WebSocketPublikationIntegrationTest` (ApplicationContext-Fehler) beheben.
 
 ## Phase 2 — DDD & Architektur (ARCH)
-- [ ] **ARCH-1** Refactoring: `lobby/` und `session/` nach `tisch/` bzw. `spieler/` migrieren.
+- [x] **ARCH-1** Refactoring: `lobby/` und `session/` bereits migriert (bzw. nicht vorhanden).
 - [ ] **ARCH-2** Konsistenzprüfung: Bounded Contexts gegen `specs/architektur-ddd.md` abgleichen und Datenbank-Relationen `TischSpieler` auf Aggregate-Roots umstellen.
 - [ ] **ARCH-3** KI-Modul: Migration von `partie/ki/` nach Top-Level `ki/`.
 
