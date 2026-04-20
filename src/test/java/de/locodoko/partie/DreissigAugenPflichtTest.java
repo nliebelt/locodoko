@@ -30,7 +30,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class DreissigAugenPflichtTest {
 
     private final Spielregeln mitPflicht = Spielregeln.standardRegeln().mitDreissigAugenPflichtAktiv(true);
-    private final Spielregeln ohnePflicht = Spielregeln.standardRegeln();
+    private final Spielregeln ohnePflicht = Spielregeln.standardRegeln().mitDreissigAugenPflichtAktiv(false);
 
     // --- Trigger: Pflichtansage wird gesetzt ---
 

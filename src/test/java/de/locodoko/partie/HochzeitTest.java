@@ -340,7 +340,7 @@ class HochzeitTest {
 
         for (SpielerPosition position : SpielerPosition.standardReihenfolge()) {
             while (haende.get(position).size() < 12) {
-                haende.get(position).add(restkarten.removeFirst());
+                haende.get(position).add(restkarten.remove(0));
             }
         }
 
