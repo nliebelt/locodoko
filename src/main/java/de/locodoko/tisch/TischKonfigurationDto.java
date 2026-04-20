@@ -2,7 +2,7 @@ package de.locodoko.tisch;
 
 import de.locodoko.karten.Spielregeln;
 import de.locodoko.tisch.TischkonfigurationEmbeddable;
-import de.locodoko.ki.KiSchwierigkeit;
+
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.AssertTrue;
 import jakarta.validation.constraints.Min;
@@ -126,7 +126,7 @@ public record TischKonfigurationDto(
             ),
             anzahlSpiele,
             tischhintergrund,
-            kiSchwierigkeit != null ? kiSchwierigkeit : de.locodoko.ki.KiSchwierigkeit.STANDARD
+            kiSchwierigkeit != null ? kiSchwierigkeit : KiSchwierigkeit.STANDARD
         );
     }
 

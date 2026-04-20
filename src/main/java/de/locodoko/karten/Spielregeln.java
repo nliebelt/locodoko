@@ -55,7 +55,7 @@ public record Spielregeln(
     }
 
     public static Spielregeln standardRegeln() {
-        return locoBlatRegeln();
+        return new Spielregeln(false, true, 11, 10, 9, 8, 7, true, true, true, true, true, true, true, true, true, false, false, false, false);
     }
 
     public static Spielregeln ohneNeunenRegeln() {

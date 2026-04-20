@@ -10,10 +10,10 @@ import de.locodoko.spieler.SpielerEntity;
 import de.locodoko.spieler.SpielerId;
 import de.locodoko.spieler.SpielerRepository;
 import org.springframework.stereotype.Service;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.transaction.annotation.Transactional;
 
-import de.locodoko.ki.orchestrierung.KiOrchestrierungService;
-import de.locodoko.ki.orchestrierung.KiSpielerFabrik;
+import de.locodoko.tisch.KiSpielerFabrik;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -25,7 +25,7 @@ public class TischVerwaltungsService {
     private final PartieRepository partieRepository;
     private final SpielerRepository spielerRepository;
     private final KiSpielerFabrik kiSpielerFabrik;
-    private final KiOrchestrierungService kiOrchestrierungService;
+    private final ApplicationEventPublisher eventPublisher;
     private final TischEchtzeitService tischEchtzeitService;
     private final SpielRegistry spielRegistry;
 
@@ -34,7 +34,7 @@ public class TischVerwaltungsService {
         PartieRepository partieRepository,
         SpielerRepository spielerRepository,
         KiSpielerFabrik kiSpielerFabrik,
-        KiOrchestrierungService kiOrchestrierungService,
+        ApplicationEventPublisher eventPublisher,
         TischEchtzeitService tischEchtzeitService,
         SpielRegistry spielRegistry
     ) {
@@ -42,7 +42,7 @@ public class TischVerwaltungsService {
         this.partieRepository = partieRepository;
         this.spielerRepository = spielerRepository;
         this.kiSpielerFabrik = kiSpielerFabrik;
-        this.kiOrchestrierungService = kiOrchestrierungService;
+        this.eventPublisher = eventPublisher;
         this.tischEchtzeitService = tischEchtzeitService;
         this.spielRegistry = spielRegistry;
     }
@@ -216,7 +216,7 @@ public class TischVerwaltungsService {
         partie.fuegeSpielHinzu(erzeugeErstesSpiel(tisch));
         tisch.setzePartie(partie);
         TischEntity gespeicherterTisch = tischRepository.saveAndFlush(tisch);
-        kiOrchestrierungService.automatisiereTisch(gespeicherterTisch);
+        eventPublisher.publishEvent(new KiUebernahmeEreignis(TischId.von(gespeicherterTisch.id())));
         gespeicherterTisch = tischRepository.saveAndFlush(gespeicherterTisch);
         synchronisiereRegistry(tischId, gespeicherterTisch);
         TischAntwort antwort = TischAntwort.aus(gespeicherterTisch);
@@ -265,7 +265,7 @@ public class TischVerwaltungsService {
         neuePartie.fuegeSpielHinzu(erzeugeErstesSpiel(tisch));
         tisch.setzePartie(neuePartie);
         TischEntity gespeicherterTisch = tischRepository.saveAndFlush(tisch);
-        kiOrchestrierungService.automatisiereTisch(gespeicherterTisch);
+        eventPublisher.publishEvent(new KiUebernahmeEreignis(TischId.von(gespeicherterTisch.id())));
         gespeicherterTisch = tischRepository.saveAndFlush(gespeicherterTisch);
         synchronisiereRegistry(tischId, gespeicherterTisch);
         TischAntwort tischAntwort = TischAntwort.aus(gespeicherterTisch);
@@ -349,7 +349,7 @@ public class TischVerwaltungsService {
         partie.fuegeSpielHinzu(erzeugeErstesSpiel(tisch));
         tisch.setzePartie(partie);
         TischEntity gespeicherterTisch = tischRepository.saveAndFlush(tisch);
-        kiOrchestrierungService.automatisiereTisch(gespeicherterTisch);
+        eventPublisher.publishEvent(new KiUebernahmeEreignis(TischId.von(gespeicherterTisch.id())));
         gespeicherterTisch = tischRepository.saveAndFlush(gespeicherterTisch);
         synchronisiereRegistry(TischId.von(gespeicherterTisch.id()), gespeicherterTisch);
         TischAntwort antwort = TischAntwort.aus(gespeicherterTisch);

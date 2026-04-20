@@ -6,6 +6,7 @@ import de.locodoko.spieler.SpielerRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -39,7 +40,7 @@ public class VerbindungsabbruchService {
     private final TischRepository tischRepository;
     private final SpielerRepository spielerRepository;
     private final TischEchtzeitService tischEchtzeitService;
-    private final KiOrchestrierungService kiOrchestrierungService;
+    private final ApplicationEventPublisher eventPublisher;
 
     /** Konfigurierbare Wartezeit bis zur KI-Übernahme in Sekunden. */
     private final int reconnectTimeoutSekunden;
@@ -51,13 +52,13 @@ public class VerbindungsabbruchService {
             TischRepository tischRepository,
             SpielerRepository spielerRepository,
             TischEchtzeitService tischEchtzeitService,
-            KiOrchestrierungService kiOrchestrierungService,
+            ApplicationEventPublisher eventPublisher,
             @Value("${locodoko.verbindung.reconnect-timeout-sekunden:120}") int reconnectTimeoutSekunden
     ) {
         this.tischRepository = tischRepository;
         this.spielerRepository = spielerRepository;
         this.tischEchtzeitService = tischEchtzeitService;
-        this.kiOrchestrierungService = kiOrchestrierungService;
+        this.eventPublisher = eventPublisher;
         this.reconnectTimeoutSekunden = reconnectTimeoutSekunden;
     }
 
@@ -185,8 +186,8 @@ public class VerbindungsabbruchService {
             // Tisch neu laden damit automatisiereTisch() den aktualisierten KI-übernommen-Flag sieht
             TischEntity aktuellerTisch = tischRepository.findById(TischId.von(tisch.id())).orElse(tisch);
 
-            // KI-Orchestrierung auslösen — spielt jetzt für den übernommenen Spieler
-            kiOrchestrierungService.automatisiereTisch(aktuellerTisch);
+            // KI-Orchestrierung über Event auslösen — spielt jetzt für den übernommenen Spieler
+            eventPublisher.publishEvent(new KiUebernahmeEreignis(TischId.von(tisch.id())));
             tischRepository.saveAndFlush(aktuellerTisch);
 
             // Aktualisierten Spielzustand direkt an alle menschlichen Spieler senden

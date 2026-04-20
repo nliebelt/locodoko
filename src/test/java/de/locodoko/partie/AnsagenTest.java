@@ -41,8 +41,8 @@ class AnsagenTest {
         assertTrue(ansagen.kannAnsagen(SpielerPosition.WEST, Ansage.KEINE_90, parteien, spielregeln, 10));
         assertFalse(ansagen.kannAnsagen(SpielerPosition.WEST, Ansage.KEINE_60, parteien, spielregeln, 10),
             "Die Ansagereihenfolge darf keine Stufe ueberspringen, sonst verliert die Eskalation ihre Bedeutung.");
-        assertTrue(ansagen.kannAnsagen(SpielerPosition.WEST, Ansage.KEINE_90, parteien, spielregeln, 9),
-            "Die Mindestkartenanzahl sollte bei korrekter Logik Ansagen bei 9 Karten erlauben.");
+        assertFalse(ansagen.kannAnsagen(SpielerPosition.WEST, Ansage.KEINE_90, parteien, spielregeln, 9),
+            "Mit standardRegeln (mindestkartenKeine90=10) reichen 9 Karten nicht fuer eine Keine-90-Ansage.");
         Ansagen finaleAnsagen = ansagen;
         assertThrows(IllegalStateException.class,
             () -> finaleAnsagen.fuegeHinzu(SpielerPosition.WEST, Ansage.KEINE_60, parteien, spielregeln, 9));

@@ -7,7 +7,7 @@ import de.locodoko.karten.Kartendeck;
 import de.locodoko.partie.SpielerPosition;
 import de.locodoko.karten.Spielregeln;
 import de.locodoko.ki.KiArmutAntwort;
-import de.locodoko.ki.KiSchwierigkeit;
+import de.locodoko.tisch.KiSchwierigkeit;
 import de.locodoko.ki.KiSpielzustand;
 import de.locodoko.ki.KiStrategie;
 import de.locodoko.ki.KiStrategieFactory;

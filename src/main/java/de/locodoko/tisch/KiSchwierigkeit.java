@@ -1,4 +1,4 @@
-package de.locodoko.ki;
+package de.locodoko.tisch;
 
 /**
  * Schwierigkeitsstufen der KI-Gegner.

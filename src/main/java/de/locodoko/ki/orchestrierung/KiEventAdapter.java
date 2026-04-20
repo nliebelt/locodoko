@@ -4,6 +4,7 @@ import de.locodoko.tisch.SpielRegistry;
 import de.locodoko.tisch.TischEntity;
 import de.locodoko.tisch.TischId;
 import de.locodoko.tisch.TischRepository;
+import de.locodoko.tisch.KiUebernahmeEreignis;
 
 import de.locodoko.partie.ereignisse.NaechsterSpielerErwartet;
 import de.locodoko.partie.ereignisse.VorbehaltErwartet;
@@ -45,6 +46,11 @@ class KiEventAdapter {
     @ApplicationModuleListener
     void beiVorbehaltErwartet(VorbehaltErwartet ereignis) {
         fuehreKiSchritteAus(TischId.von(ereignis.tischId()));
+    }
+
+    @ApplicationModuleListener
+    void beiKiUebernahme(KiUebernahmeEreignis ereignis) {
+        fuehreKiSchritteAus(ereignis.tischId());
     }
 
     private void fuehreKiSchritteAus(TischId tischId) {
