@@ -172,7 +172,39 @@ class KiOrchestrierungServiceIntegrationTest {
     }
 
     private Spiel gesundesStichspiel(Spielregeln spielregeln, Map<SpielerPosition, List<Karte>> haende) {
-        Kartendeck deck = Kartendeck.ausKarten(deckReihenfolgeFuerHaende(haende));
+        List<Karte> alleKarten = new ArrayList<>(Kartendeck.neu(spielregeln).karten());
+        List<Karte> bereitsVerwendete = haende.values().stream().flatMap(List::stream).toList();
+        alleKarten.removeAll(bereitsVerwendete);
+
+        Map<SpielerPosition, List<Karte>> volleHaende = new EnumMap<>(SpielerPosition.class);
+        for (SpielerPosition pos : SpielerPosition.standardReihenfolge()) {
+            volleHaende.put(pos, new ArrayList<>(haende.getOrDefault(pos, List.of())));
+        }
+
+        // Auffüllen bis jeder 12 Karten hat
+        for (SpielerPosition pos : SpielerPosition.standardReihenfolge()) {
+            List<Karte> hand = volleHaende.get(pos);
+            while (hand.size() < 12 && !alleKarten.isEmpty()) {
+                hand.add(alleKarten.remove(0));
+            }
+        }
+        
+        // Finales Auffüllen, falls noch Karten im Deck übrig sind (sollte bei 48 Karten nicht passieren, aber zur Sicherheit)
+        int kartenIndex = 0;
+        for (SpielerPosition pos : SpielerPosition.standardReihenfolge()) {
+            List<Karte> hand = volleHaende.get(pos);
+            while (hand.size() < 12 && kartenIndex < alleKarten.size()) {
+                 hand.add(alleKarten.get(kartenIndex++));
+            }
+        }
+
+        // Alle Karten aus den Händen sammeln
+        List<Karte> deckKarten = new ArrayList<>();
+        for (SpielerPosition pos : SpielerPosition.standardReihenfolge()) {
+            deckKarten.addAll(volleHaende.get(pos));
+        }
+
+        Kartendeck deck = Kartendeck.ausKarten(deckKarten);
         Spiel spiel = Spiel.neu(SpielerPosition.SUED, spielregeln, deck).teileKartenAus();
         for (SpielerPosition position : SpielerPosition.imUhrzeigersinnAb(SpielerPosition.WEST)) {
             spiel = spiel.meldeVorbehalt(position, VorbehaltAnsage.GESUND);
@@ -189,8 +221,8 @@ class KiOrchestrierungServiceIntegrationTest {
             haende.put(position, karten);
         }
         for (SpielerPosition position : SpielerPosition.standardReihenfolge()) {
-            while (haende.get(position).size() < 12) {
-                haende.get(position).add(restkarten.removeFirst());
+            while (haende.get(position).size() < 12 && !restkarten.isEmpty()) {
+                haende.get(position).add(restkarten.remove(0));
             }
         }
         return Map.copyOf(haende);
@@ -201,7 +233,10 @@ class KiOrchestrierungServiceIntegrationTest {
         int kartenProSpieler = haende.values().stream().mapToInt(List::size).max().orElse(0);
         for (int index = 0; index < kartenProSpieler; index++) {
             for (SpielerPosition position : SpielerPosition.standardReihenfolge()) {
-                reihenfolge.add(haende.get(position).get(index));
+                List<Karte> hand = haende.get(position);
+                if (index < hand.size()) {
+                    reihenfolge.add(hand.get(index));
+                }
             }
         }
         return List.copyOf(reihenfolge);

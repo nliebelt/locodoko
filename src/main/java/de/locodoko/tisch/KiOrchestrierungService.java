@@ -11,6 +11,8 @@ import de.locodoko.partie.Ansage;
 import de.locodoko.partie.Partei;
 import de.locodoko.partie.Partie;
 import de.locodoko.partie.Spiel;
+import de.locodoko.partie.SpielAktion;
+import de.locodoko.partie.SpielEreignis;
 import de.locodoko.partie.Spielergebnis;
 import de.locodoko.partie.Spielphase;
 import de.locodoko.partie.Sonderpunkt;
@@ -53,7 +55,7 @@ public class KiOrchestrierungService {
 
     private static final int MAXIMALE_KI_AKTIONEN = 512;
 
-    private record AktionsErgebnis(Spiel naechsterStand, @Nullable String gespielteKarteId) {}
+    private record AktionsErgebnis(Spiel naechsterStand, @Nullable String gespielteKarteId, List<SpielEreignis> ereignisse) {}
 
     private final KiStrategieFactory kiStrategieFactory;
     private final SpielerRepository spielerRepository;
@@ -146,15 +148,27 @@ public class KiOrchestrierungService {
 
                 KiStrategie strategie = kiStrategieFactory.erzeuge(tisch.konfiguration().kiSchwierigkeit());
                 Spielphase phaseVorAktion = laufendesSpiel.phase();
+                boolean schweinchenVorher = laufendesSpiel.schweinchenGemeldetVon().isPresent();
+                
                 AktionsErgebnis aktionsErgebnis = fuehreKiAktionAus(laufendesSpiel, erwarteterSpieler, strategie);
                 laufendesSpiel.uebernehmeDomainStand(aktionsErgebnis.naechsterStand());
                 hatKiGespielt = true;
 
-                // KI-Karten sofort broadcasten wenn ein Mensch am Tisch ist,
-                // damit jede Karte einzeln animiert wird und Tricks sauber getrennt bleiben.
+                // Schweinchen-Broadcast bei KI-Zug
+                if (!schweinchenVorher && laufendesSpiel.schweinchenGemeldetVon().isPresent()) {
+                    veroeffentlicheSchweinchenEreignis(tisch);
+                }
+
+                // Domain-Ereignisse broadcasten (Stichabschluss, Sonderpunkte)
+                if (hatMenschlichenSpieler) {
+                    veroeffentlicheSpielKarteEreignisse(tisch, aktionsErgebnis.ereignisse());
+                }
+
+                // KI-Karten sequenz broadcasten für die Animation (nur wenn nicht bereits durch stichAbgeschlossen abgedeckt)
                 if (hatMenschlichenSpieler
                         && phaseVorAktion instanceof Spielphase.Stichphase
-                        && aktionsErgebnis.gespielteKarteId() != null) {
+                        && aktionsErgebnis.gespielteKarteId() != null
+                        && aktionsErgebnis.ereignisse().stream().noneMatch(e -> e instanceof SpielEreignis.StichAbgeschlossenEreignis)) {
                     List<GespielteKarteAntwort> sequenz = List.of(new GespielteKarteAntwort(erwarteterSpieler, aktionsErgebnis.gespielteKarteId()));
                     sendeKiZugSequenz(tisch, sequenz);
                 }
@@ -181,7 +195,7 @@ public class KiOrchestrierungService {
                 Spiel ergebnis = spielNachVorbehalt.phase() instanceof Spielphase.VorbehaltAufloesung
                     ? spielNachVorbehalt.loeseVorbehalteAuf()
                     : spielNachVorbehalt;
-                yield new AktionsErgebnis(ergebnis, null);
+                yield new AktionsErgebnis(ergebnis, null, List.of());
             }
             case Spielphase.ArmutTausch _ -> {
                 Spiel ergebnis;
@@ -193,7 +207,7 @@ public class KiOrchestrierungService {
                         ? laufendesSpiel.nimmArmutAn(spielerPosition, armutAntwort.rueckgabekarten())
                         : laufendesSpiel.lehneArmutAb(spielerPosition);
                 }
-                yield new AktionsErgebnis(ergebnis, null);
+                yield new AktionsErgebnis(ergebnis, null, List.of());
             }
             case Spielphase.Stichphase _ -> {
                 if (!laufendesSpiel.pflichtansageAusstehend().isEmpty()) {
@@ -201,20 +215,21 @@ public class KiOrchestrierungService {
                     if (laufendesSpiel.pflichtansageAusstehend().contains(eigenePartei)) {
                         Ansage pflichtansage = eigenePartei == Partei.RE ? Ansage.RE : Ansage.KONTRA;
                         LOGGER.info("KI meldet Pflichtansage [spielerId={}, ansage={}]", spielerPosition, pflichtansage);
-                        yield new AktionsErgebnis(laufendesSpiel.sageAn(spielerPosition, pflichtansage), null);
+                        yield new AktionsErgebnis(laufendesSpiel.sageAn(spielerPosition, pflichtansage), null, List.of());
                     }
                 }
                 Ansage ansage = strategie.waehleAnsage(zustand).orElse(null);
                 if (ansage != null) {
                     LOGGER.info("KI meldet Ansage [spielerId={}, ansage={}]", spielerPosition, ansage);
-                    yield new AktionsErgebnis(laufendesSpiel.sageAn(spielerPosition, ansage), null);
+                    yield new AktionsErgebnis(laufendesSpiel.sageAn(spielerPosition, ansage), null, List.of());
                 }
                 Karte karte = strategie.waehleKarte(zustand);
                 LOGGER.debug("KI spielt Karte [karte={}, spielerId={}]", karte, spielerPosition);
                 String karteId = "%s-%s-%d".formatted(karte.farbe().name(), karte.wert().name(), karte.exemplarIndex());
-                yield new AktionsErgebnis(laufendesSpiel.spieleKarte(spielerPosition, karte).neuerStand(), karteId);
+                SpielAktion aktion = laufendesSpiel.spieleKarte(spielerPosition, karte);
+                yield new AktionsErgebnis(aktion.neuerStand(), karteId, aktion.ereignisse());
             }
-            default -> new AktionsErgebnis(laufendesSpiel, null);
+            default -> new AktionsErgebnis(laufendesSpiel, null, List.of());
         };
     }
 
@@ -329,6 +344,56 @@ public class KiOrchestrierungService {
                 s.sessionId(),
                 "/queue/partie/" + tisch.partie().id(),
                 PartieEreignisAntwort.kiZugSequenz(PartieStandAntwort.aus(tisch, s.id()), sequenz)
+            ));
+    }
+
+    private void veroeffentlicheSpielKarteEreignisse(TischEntity tisch, List<SpielEreignis> ereignisse) {
+        if (tisch.partie() == null) {
+            return;
+        }
+        for (SpielEreignis ereignis : ereignisse) {
+            switch (ereignis) {
+                case SpielEreignis.KarteGespielt _ -> sendeKarteGespielt(tisch);
+                case SpielEreignis.StichAbgeschlossenEreignis sa -> sendeStichAbgeschlossen(tisch, sa.sonderpunkte());
+            }
+        }
+    }
+
+    private void sendeKarteGespielt(TischEntity tisch) {
+        tisch.spieler().stream()
+            .filter(s -> !s.istKi() && !s.istKiUebernommen() && s.sessionId() != null)
+            .forEach(s -> tischEchtzeitService.planeAnBenutzer(
+                s.sessionId(),
+                "/queue/partie/" + tisch.partie().id(),
+                PartieEreignisAntwort.karteGespielt(PartieStandAntwort.aus(tisch, s.id()))
+            ));
+    }
+
+    private void sendeStichAbgeschlossen(TischEntity tisch, List<SonderpunktEreignis> sonderpunkte) {
+        tisch.spieler().stream()
+            .filter(s -> !s.istKi() && !s.istKiUebernommen() && s.sessionId() != null)
+            .forEach(s -> {
+                List<SonderpunktEreignisAntwort> sonderpunktDtos = sonderpunkte.stream()
+                    .map(sp -> SonderpunktEreignisAntwort.aus(sp, spielerNachPosition(tisch)))
+                    .toList();
+                tischEchtzeitService.planeAnBenutzer(
+                    s.sessionId(),
+                    "/queue/partie/" + tisch.partie().id(),
+                    PartieEreignisAntwort.stichAbgeschlossen(PartieStandAntwort.aus(tisch, s.id()), sonderpunktDtos)
+                );
+            });
+    }
+
+    private void veroeffentlicheSchweinchenEreignis(TischEntity tisch) {
+        if (tisch.partie() == null) {
+            return;
+        }
+        tisch.spieler().stream()
+            .filter(s -> !s.istKi() && !s.istKiUebernommen() && s.sessionId() != null)
+            .forEach(s -> tischEchtzeitService.planeAnBenutzer(
+                s.sessionId(),
+                "/queue/partie/" + tisch.partie().id(),
+                PartieEreignisAntwort.schweinchenGemeldet(PartieStandAntwort.aus(tisch, s.id()))
             ));
     }
 }

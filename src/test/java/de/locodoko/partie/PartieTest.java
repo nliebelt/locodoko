@@ -134,6 +134,36 @@ class PartieTest {
         assertEquals(1, neuePartie.abgeschlosseneSpiele().size());
     }
 
+    @Test
+    void partieMitOhneNeunenSchliesstNachZehnStichenAb() {
+        // BUG-17: Spiele ohne Neunen haben nur 10 Stiche pro Spieler (40 Karten gesamt).
+        // Das Spiel muss nach dem 10. Stich in die Auswertungsphase gehen.
+        Spielregeln ohneNeunen = Spielregeln.ohneNeunenRegeln();
+        Partie partie = Partie.neu(1, SpielerPosition.SUED, ohneNeunen);
+
+        partie = partie.starteNaechstesSpiel(Kartendeck.neu(ohneNeunen));
+        Spiel spiel = partie.aktuellesSpiel().teileKartenAus();
+
+        // Vorbehalte
+        while (spiel.naechsterVorbehaltSpieler().isPresent()) {
+            spiel = spiel.meldeGesund(spiel.naechsterVorbehaltSpieler().get());
+        }
+        spiel = spiel.loeseVorbehalteAuf();
+
+        // 10 Stiche spielen
+        for (int i = 0; i < 10; i++) {
+            assertTrue(spiel.phase() instanceof Spielphase.Stichphase, "Stich " + (i+1) + " sollte in Stichphase sein");
+            for (int j = 0; j < 4; j++) {
+                SpielerPosition aktueller = spiel.aktuellerSpieler().orElseThrow();
+                Karte karte = spiel.gueltigeKartenFuer(aktueller).getFirst();
+                spiel = spiel.spieleKarte(aktueller, karte).neuerStand();
+            }
+        }
+
+        assertInstanceOf(Spielphase.Auswertung.class, spiel.phase(),
+            "Nach 10 Stichen (ohne Neunen) muss das Spiel in die Auswertung gehen.");
+    }
+
     private Spiel spieleSoloZuEnde(Spiel spiel, SpielerPosition solist) {
         Spiel aktuellesSpiel = spiel.teileKartenAus();
         // Solist meldet SOLO_TRUMPF, alle anderen GESUND

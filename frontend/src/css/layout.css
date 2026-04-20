@@ -11,8 +11,29 @@
 #ui-root {
   position: absolute;
   inset: 0;
-  pointer-events: none;
+  pointer-events: none; /* Wichtig: Standardmaeßig Klicks durchlassen zum Phaser-Canvas */
   box-sizing: border-box;
+  z-index: 100;
+}
+
+#ui-root > * {
+  pointer-events: auto; /* Nur direkte Kinder fangen Klicks ab */
+}
+
+/* Toasts und Overlays sollen Klicks nur dort abfangen, wo sie auch sind */
+.ui-toast-stack, .hud-topbar {
+  pointer-events: auto;
+}
+
+.ui-modal-backdrop {
+  pointer-events: auto;
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .hud-topbar {
@@ -21,7 +42,6 @@
   left: 0;
   right: 0;
   height: 40px;
-  pointer-events: auto;
   background: rgba(11, 61, 36, 0.88);
   border-bottom: 1px solid rgba(216, 243, 220, 0.3);
   backdrop-filter: blur(8px);

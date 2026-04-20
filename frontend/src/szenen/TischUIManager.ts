@@ -4,13 +4,6 @@ import {
 } from '../modelle/TischAnsichtModell';
 import type { KiSchwierigkeit, Tischhintergrund } from '../modelle/SpielverwaltungDto';
 import type { AppZustand } from '../store/AppStore';
-import {
-  escapeHtml,
-  formatiereAnsage,
-  formatiereSonderpunkt,
-  kiSchwierigkeitLabel,
-  kuerzelFuerKarte,
-} from './tischFormatierer';
 
 /** Moegliche Animations-Geschwindigkeitsstufen: normal (1x), doppelt (2x), sofort (Infinity). */
 export type AnimationsGeschwindigkeit = 1 | 2 | typeof Infinity;
@@ -48,209 +41,122 @@ function holeUiRoot(): HTMLElement {
   return wurzel;
 }
 
-/**
- * Schnittstelle zwischen TischUIManager und TischSzene.
- * Callbacks fuer Aktionen, die Phaser-Zugriff oder Szenen-State benoetigen.
- */
 export interface TischUIKontext {
-  /** Wechselt zur angegebenen Phaser-Szene. */
   szeneStarten(name: string): void;
-  /** Passt den Phaser-AnimationenService an den neuen Geschwindigkeitsfaktor an. */
   onGeschwindigkeitGeaendert(faktor: AnimationsGeschwindigkeit): void;
-  /** Wird aufgerufen wenn der "Letzte Stiche"-Toggle geklickt wird. */
   onLetzteSticheToggle(): void;
 }
 
 /**
- * Verwaltet den gesamten DOM-basierten UI-Aufbau und die reaktiven DOM-Updates der TischSzene.
- *
- * Verantwortlichkeiten:
- * - Erstellt und verwaltet alle HTML-Elemente (Top-Bar, Seitenlade, Modals, Toast-Stack)
- * - Reagiert auf Zustandsaenderungen mit gezielten DOM-Mutationen
- * - Kapselt Seitenlade- und Einstellungs-Toggle-Logik
- *
- * Abhaengigkeiten werden ueber TischUIKontext injiziert; TischUIManager hat keine direkte
- * Referenz auf TischSzene oder Phaser-Objekte.
- */
-/**
- * TischUIManager verwaltet die DOM-UI-Elemente innerhalb der Tisch-Szene.
- * Er kümmert sich um die Erstellung, Aktualisierung und Formatierung von Overlays,
- * Modalen, Ansagen-Dialogen und Infoleisten.
+ * Verwaltet die DOM-UI-Elemente (Topbar, Modals, Toasts).
+ * Die Seitenlade wurde entfernt, Informationen werden nativ in Phaser gerendert.
  */
 export class TischUIManager {
-  // ── Top-Bar ──────────────────────────────────────────────────────────────────
   private hudStichzaehlerEl?: HTMLSpanElement;
   private hudSpieleInfo?: HTMLSpanElement;
   private hudDebugBtn?: HTMLButtonElement;
 
-  // ── Seitenlade ────────────────────────────────────────────────────────────────
-  private seitenladeEl?: HTMLDivElement;
-  private seitenladeSpielerListe?: HTMLUListElement;
-  private seitenladePunktestandListe?: HTMLUListElement;
-  private seitenladeAnsageHistorie?: HTMLUListElement;
-  private seitenladeLetzteSticheListe?: HTMLUListElement;
-  private seitenladeLetzteStichButton?: HTMLButtonElement;
-  private seitenladeOffen = false;
-
-  // ── Einstellungs-Modal ────────────────────────────────────────────────────────
   private einstellungsModalEl?: HTMLDivElement;
   private tischhintergrundSelect?: HTMLSelectElement;
   private kiSchwierigkeitSelect?: HTMLSelectElement;
 
-  // ── Sonstige Elemente ─────────────────────────────────────────────────────────
-  private ergebnisInhalt?: HTMLDivElement;
   private toastStack?: HTMLDivElement;
   private rundenEndeModal?: HTMLDivElement;
   private partieEndeModal?: HTMLDivElement;
 
-  // ── UI-State ──────────────────────────────────────────────────────────────────
-  private letzteSticheOffen = false;
   private animationsGeschwindigkeit: AnimationsGeschwindigkeit = 1;
 
   constructor(private readonly kontext: TischUIKontext) {}
 
-  // ── Getter fuer externe Zugriffe ──────────────────────────────────────────────
-
   getRundenEndeModal(): HTMLDivElement | undefined { return this.rundenEndeModal; }
   getPartieEndeModal(): HTMLDivElement | undefined { return this.partieEndeModal; }
   getEinstellungsModalEl(): HTMLDivElement | undefined { return this.einstellungsModalEl; }
-  isSeitenladeOffen(): boolean { return this.seitenladeOffen; }
   getAnimationsGeschwindigkeit(): AnimationsGeschwindigkeit { return this.animationsGeschwindigkeit; }
 
-  // ── Toggle-Aktionen ───────────────────────────────────────────────────────────
-
-  /** Oeffnet oder schliesst die Seitenlade (z.B. per Tastenkuerzel I). */
-  togglSeitenlade(): void {
-    this.seitenladeOffen = !this.seitenladeOffen;
-    if (this.seitenladeEl) {
-      if (this.seitenladeOffen) {
-        this.seitenladeEl.classList.add('seitenlade--offen');
-      } else {
-        this.seitenladeEl.classList.remove('seitenlade--offen');
-      }
-    }
-  }
-
-  /** Oeffnet oder schliesst das Einstellungs-Modal (z.B. per Tastenkuerzel S). */
   togglEinstellungen(): void {
-    if (!this.einstellungsModalEl) {
-      return;
-    }
+    if (!this.einstellungsModalEl) return;
     this.einstellungsModalEl.hidden = !this.einstellungsModalEl.hidden;
     if (!this.einstellungsModalEl.hidden) {
-      // Fokus auf ersten Button setzen
       setTimeout(() => {
-        const ersterButton = this.einstellungsModalEl?.querySelector<HTMLButtonElement>('button:not([disabled])');
-        ersterButton?.focus();
+        this.einstellungsModalEl?.querySelector<HTMLButtonElement>('button:not([disabled])')?.focus();
       }, 0);
     }
   }
 
-  // ── DOM-Aufbau ────────────────────────────────────────────────────────────────
-
-  /** Erstellt alle DOM-Elemente des Tisch-UI und registriert Event-Handler. */
   baueUi(): void {
     const uiRoot = holeUiRoot();
     uiRoot.innerHTML = '';
     uiRoot.dataset['testid'] = 'tischszene';
 
-    // ── Top-Bar (40px, oben) ─────────────────────────────────────────────────
+    // Top-Bar
     const topBar = document.createElement('div');
     topBar.className = 'hud-topbar';
     topBar.innerHTML = `
       <div class="hud-topbar__left">
-        <button class="hud-icon-btn" type="button" title="Seitenlade öffnen/schließen" data-seitenlade-toggle>☰</button>
         <span class="hud-topbar__stichzaehler" data-stichzaehler data-testid="hud-stichzaehler"></span>
       </div>
       <div class="hud-topbar__center">
         <span data-spiele-info data-testid="hud-spieltyp"></span>
       </div>
       <div class="hud-topbar__right">
-        <button class="ui-button ui-button--secondary" type="button" data-share-button data-testid="btn-link-teilen" title="Einladungslink kopieren">🔗 Link teilen</button>
+        <button class="ui-button ui-button--secondary" type="button" data-share-button data-testid="btn-link-teilen">🔗 Link teilen</button>
         <button class="ui-button" type="button" data-start-button data-testid="btn-spiel-starten">Spiel starten</button>
-        <button class="hud-icon-btn" type="button" title="Tisch verlassen" data-leave-top-button>&#x2190;</button>
-        <button class="hud-icon-btn" type="button" title="Einstellungen" data-einstellungen-toggle data-testid="hud-btn-einstellungen">⚙</button>
-        <button class="hud-icon-btn" type="button" title="Debug" data-debug-button>🐛</button>
+        <button class="hud-icon-btn" type="button" data-leave-top-button title="Tisch verlassen">&#x2190;</button>
+        <button class="hud-icon-btn" type="button" data-einstellungen-toggle data-testid="hud-btn-einstellungen" title="Einstellungen">⚙</button>
+        <button class="hud-icon-btn" type="button" data-debug-button title="Debug">🐛</button>
       </div>
     `;
 
-    // ── Seitenlade (von links, toggle) ───────────────────────────────────────
-    const seitenlade = document.createElement('div');
-    seitenlade.className = 'seitenlade';
-    seitenlade.innerHTML = `
-      <h3>Spieler am Tisch</h3>
-      <ul class="ui-list" data-sl-spieler></ul>
-      <h3>Punktestand</h3>
-      <ul class="ui-list ui-list--dense" data-sl-punktestand></ul>
-      <h3>Ansagehistorie</h3>
-      <ul class="ui-list ui-list--dense" data-sl-ansagen></ul>
-      <h3>Letzte Stiche</h3>
-      <div class="ui-action-row">
-        <button class="ui-button ui-button--secondary" type="button" data-sl-letzte-stiche-toggle>Letzte Stiche anzeigen</button>
-      </div>
-      <ul class="ui-list ui-list--dense" data-sl-letzte-stiche hidden></ul>
-      <h3>Letzte Auswertung</h3>
-      <div class="ui-action-stack" data-ergebnis></div>
-      <div class="ui-action-row" style="margin-top:auto;padding-top:12px;border-top:1px solid rgba(216,243,220,0.2)">
-        <button class="ui-button ui-button--secondary" type="button" data-lobby-button>Zur Lobby</button>
-        <button class="ui-button ui-button--danger" type="button" data-leave-button>Tisch verlassen</button>
-        <button class="ui-button ui-button--secondary" type="button" data-animationsgeschwindigkeit>Geschw.: 1x</button>
-      </div>
-    `;
-
-    // ── Einstellungs-Modal ────────────────────────────────────────────────────
+    // Einstellungs-Modal
     const einstellungsModal = document.createElement('div');
     einstellungsModal.className = 'einstellungen-backdrop';
-    einstellungsModal.dataset['testid'] = 'einstellungen-modal';
     einstellungsModal.hidden = true;
-    const einstellungsDialog = document.createElement('div');
-    einstellungsDialog.className = 'ui-modal';
-    einstellungsDialog.innerHTML = `
-      <h2>Einstellungen</h2>
-      <div class="ui-section">
-        <span class="ui-hint">Tischhintergrund</span>
-        <select class="ui-input ui-input--select" data-tischhintergrund>
-          <option value="FILZ_GRUEN">Gruener Filz</option>
-          <option value="HOLZ_DUNKEL">Dunkles Holz</option>
-          <option value="BLAU_GRAFIK">Blaue Grafik</option>
-          <option value="RECHTECK_1">Rechteck 1</option>
-          <option value="RECHTECK_2">Rechteck 2</option>
-          <option value="OVAL_1">Oval 1</option>
-          <option value="OVAL_2">Oval 2</option>
-          <option value="RUND_1">Rund 1</option>
-        </select>
-      </div>
-      <div class="ui-section">
-        <span class="ui-hint">KI-Schwierigkeit</span>
-        <select class="ui-input ui-input--select" data-ki-schwierigkeit>
-          <option value="LEICHT">Leicht</option>
-          <option value="STANDARD">Standard</option>
-          <option value="SCHWER">Schwer</option>
-        </select>
-      </div>
-      <div class="ui-action-row">
-        <button class="ui-button" type="button" data-einstellungen-schliessen>Schließen</button>
+    einstellungsModal.innerHTML = `
+      <div class="ui-modal">
+        <h2>Einstellungen</h2>
+        <div class="ui-section">
+          <span class="ui-hint">Tischhintergrund</span>
+          <select class="ui-input ui-input--select" data-tischhintergrund>
+            <option value="FILZ_GRUEN">Gruener Filz</option>
+            <option value="HOLZ_DUNKEL">Dunkles Holz</option>
+            <option value="BLAU_GRAFIK">Blaue Grafik</option>
+            <option value="RECHTECK_1">Rechteck 1</option>
+            <option value="RECHTECK_2">Rechteck 2</option>
+            <option value="OVAL_1">Oval 1</option>
+            <option value="OVAL_2">Oval 2</option>
+            <option value="RUND_1">Rund 1</option>
+          </select>
+        </div>
+        <div class="ui-section">
+          <span class="ui-hint">KI-Schwierigkeit</span>
+          <select class="ui-input ui-input--select" data-ki-schwierigkeit>
+            <option value="LEICHT">Leicht</option>
+            <option value="STANDARD">Standard</option>
+            <option value="SCHWER">Schwer</option>
+          </select>
+        </div>
+        <div class="ui-section">
+          <span class="ui-hint">Animationen</span>
+          <button class="ui-button ui-button--secondary" type="button" data-animationsgeschwindigkeit>Geschw.: 1x</button>
+        </div>
+        <div class="ui-action-row">
+          <button class="ui-button ui-button--secondary" type="button" data-lobby-button>Zur Lobby</button>
+          <button class="ui-button" type="button" data-einstellungen-schliessen>Schließen</button>
+        </div>
       </div>
     `;
-    einstellungsModal.append(einstellungsDialog);
 
-    // ── Toast-Stack (oben rechts) ─────────────────────────────────────────────
     const toastStack = document.createElement('div');
     toastStack.className = 'ui-toast-stack';
 
-    // ── Rundenende-Modal: initial versteckt ────────────────────────────────
     const rundenEndeModal = document.createElement('div');
     rundenEndeModal.className = 'ui-modal-backdrop';
-    rundenEndeModal.dataset['testid'] = 'rundenauswertung-overlay';
     rundenEndeModal.hidden = true;
 
-    // ── Partie-Ende-Modal: initial versteckt ────────────────────────────────
     const partieEndeModal = document.createElement('div');
     partieEndeModal.className = 'ui-modal-backdrop';
-    partieEndeModal.dataset['testid'] = 'partieende-overlay';
     partieEndeModal.hidden = true;
 
-    // ── Marker-Elemente für Phaser-Canvas-Overlays (testid-Anker) ────────────
     const vorbehaltMarker = document.createElement('div');
     vorbehaltMarker.dataset['testid'] = 'vorbehalt-overlay';
     vorbehaltMarker.style.cssText = 'position:absolute;width:0;height:0;overflow:hidden;pointer-events:none';
@@ -258,134 +164,54 @@ export class TischUIManager {
     actionBarMarker.dataset['testid'] = 'floating-action-bar';
     actionBarMarker.style.cssText = 'position:absolute;width:0;height:0;overflow:hidden;pointer-events:none';
 
-    // ── Referenzen auf DOM-Elemente sichern ───────────────────────────────────
-    const hudStichzaehlerEl = topBar.querySelector('[data-stichzaehler]');
-    const hudSpieleInfo = topBar.querySelector('[data-spiele-info]');
-    const hudDebugBtn = topBar.querySelector('[data-debug-button]');
-    const seitenladeSpielerListe = seitenlade.querySelector('[data-sl-spieler]');
-    const seitenladePunktestandListe = seitenlade.querySelector('[data-sl-punktestand]');
-    const seitenladeAnsageHistorie = seitenlade.querySelector('[data-sl-ansagen]');
-    const seitenladeLetzteSticheListe = seitenlade.querySelector('[data-sl-letzte-stiche]');
-    const seitenladeLetzteStichButton = seitenlade.querySelector('[data-sl-letzte-stiche-toggle]');
-    const tischhintergrundSelect = einstellungsDialog.querySelector('[data-tischhintergrund]');
-    const kiSchwierigkeitSelect = einstellungsDialog.querySelector('[data-ki-schwierigkeit]');
-    const geschwindigkeitsButton = seitenlade.querySelector('[data-animationsgeschwindigkeit]');
-    const ergebnisInhalt = seitenlade.querySelector('[data-ergebnis]');
-    const lobbyButton = seitenlade.querySelector('[data-lobby-button]');
-    const leaveButton = seitenlade.querySelector('[data-leave-button]');
-    const startButton = topBar.querySelector('[data-start-button]');
-    const shareButton = topBar.querySelector('[data-share-button]');
-    const leaveTopButton = topBar.querySelector('[data-leave-top-button]');
-    const seitenladeToggleBtn = topBar.querySelector('[data-seitenlade-toggle]');
-    const einstellungenToggleBtn = topBar.querySelector('[data-einstellungen-toggle]');
-    const einstellungenSchliessenBtn = einstellungsDialog.querySelector('[data-einstellungen-schliessen]');
+    uiRoot.append(topBar, einstellungsModal, toastStack, rundenEndeModal, partieEndeModal, vorbehaltMarker, actionBarMarker);
 
-    if (!(hudStichzaehlerEl instanceof HTMLSpanElement)
-      || !(hudSpieleInfo instanceof HTMLSpanElement)
-      || !(hudDebugBtn instanceof HTMLButtonElement)
-      || !(seitenladeSpielerListe instanceof HTMLUListElement)
-      || !(seitenladePunktestandListe instanceof HTMLUListElement)
-      || !(seitenladeAnsageHistorie instanceof HTMLUListElement)
-      || !(seitenladeLetzteSticheListe instanceof HTMLUListElement)
-      || !(seitenladeLetzteStichButton instanceof HTMLButtonElement)
-      || !(tischhintergrundSelect instanceof HTMLSelectElement)
-      || !(kiSchwierigkeitSelect instanceof HTMLSelectElement)
-      || !(geschwindigkeitsButton instanceof HTMLButtonElement)
-      || !(ergebnisInhalt instanceof HTMLDivElement)
-      || !(lobbyButton instanceof HTMLButtonElement)
-      || !(leaveButton instanceof HTMLButtonElement)
-      || !(leaveTopButton instanceof HTMLButtonElement)
-      || !(startButton instanceof HTMLButtonElement)
-      || !(seitenladeToggleBtn instanceof HTMLButtonElement)
-      || !(einstellungenToggleBtn instanceof HTMLButtonElement)
-      || !(einstellungenSchliessenBtn instanceof HTMLButtonElement)) {
-      throw new Error('Tisch-UI konnte nicht aufgebaut werden.');
-    }
+    // Referenzen und Listener
+    this.hudStichzaehlerEl = topBar.querySelector('[data-stichzaehler]') as HTMLSpanElement;
+    this.hudSpieleInfo = topBar.querySelector('[data-spiele-info]') as HTMLSpanElement;
+    this.hudDebugBtn = topBar.querySelector('[data-debug-button]') as HTMLButtonElement;
+    this.einstellungsModalEl = einstellungsModal;
+    this.tischhintergrundSelect = einstellungsModal.querySelector('[data-tischhintergrund]') as HTMLSelectElement;
+    this.kiSchwierigkeitSelect = einstellungsModal.querySelector('[data-ki-schwierigkeit]') as HTMLSelectElement;
+    const geschwindigkeitsButton = einstellungsModal.querySelector('[data-animationsgeschwindigkeit]') as HTMLButtonElement;
+    const lobbyButton = einstellungsModal.querySelector('[data-lobby-button]') as HTMLButtonElement;
+    const startButton = topBar.querySelector('[data-start-button]') as HTMLButtonElement;
+    const shareButton = topBar.querySelector('[data-share-button]') as HTMLButtonElement;
+    const leaveTopButton = topBar.querySelector('[data-leave-top-button]') as HTMLButtonElement;
+    const einstellungenToggleBtn = topBar.querySelector('[data-einstellungen-toggle]') as HTMLButtonElement;
+    const einstellungenSchliessenBtn = einstellungsModal.querySelector('[data-einstellungen-schliessen]') as HTMLButtonElement;
+    this.toastStack = toastStack;
+    this.rundenEndeModal = rundenEndeModal;
+    this.partieEndeModal = partieEndeModal;
 
-    // ── Event-Handler ─────────────────────────────────────────────────────────
+    einstellungenToggleBtn.addEventListener('click', () => this.togglEinstellungen());
+    einstellungenSchliessenBtn.addEventListener('click', () => this.togglEinstellungen());
+    lobbyButton.addEventListener('click', () => this.kontext.szeneStarten('SpielverwaltungsSzene'));
+    startButton.addEventListener('click', () => void appStore.starteAktuellenTisch());
 
-    // Seitenlade togglen
-    seitenladeToggleBtn.addEventListener('click', () => {
-      this.togglSeitenlade();
-    });
-
-    // Einstellungs-Modal oeffnen/schliessen
-    einstellungenToggleBtn.addEventListener('click', () => {
-      if (this.einstellungsModalEl) {
-        this.einstellungsModalEl.hidden = !this.einstellungsModalEl.hidden;
-      }
-    });
-    einstellungenSchliessenBtn.addEventListener('click', () => {
-      if (this.einstellungsModalEl) {
-        this.einstellungsModalEl.hidden = true;
-      }
-    });
-    einstellungsModal.addEventListener('click', (event) => {
-      if (event.target === einstellungsModal && this.einstellungsModalEl) {
-        this.einstellungsModalEl.hidden = true;
-      }
-    });
-
-    // Zur Lobby
-    lobbyButton.addEventListener('click', () => {
-      this.kontext.szeneStarten('SpielverwaltungsSzene');
-    });
-
-    // Tisch verlassen (mit Bestätigungsdialog bei laufendem Spiel)
     const verlasseTisch = (): void => {
-      const zustand = appStore.snapshot();
-      const istImSpiel = zustand.aktuellerTisch?.status === 'IM_SPIEL';
-      if (istImSpiel) {
-        const bestaetigt = window.confirm('Tisch wirklich verlassen? Die laufende Partie wird fuer alle Spieler abgebrochen.');
-        if (!bestaetigt) return;
-      }
+      const istImSpiel = appStore.snapshot().aktuellerTisch?.status === 'IM_SPIEL';
+      if (istImSpiel && !window.confirm('Partie abbrechen und Tisch verlassen?')) return;
       void appStore.verlasseAktuellenTisch();
     };
-    leaveButton.addEventListener('click', verlasseTisch);
     leaveTopButton.addEventListener('click', verlasseTisch);
 
-    // Spiel starten
-    startButton.addEventListener('click', () => {
-      void appStore.starteAktuellenTisch();
-    });
-
-    // Einladungslink teilen
-    if (shareButton instanceof HTMLButtonElement) {
+    if (shareButton) {
       shareButton.addEventListener('click', () => {
-        const tisch = appStore.snapshot().aktuellerTisch;
-        if (!tisch?.einladungsCode) return;
-        const url = `${window.location.origin}#join/${tisch.einladungsCode}`;
+        const code = appStore.snapshot().aktuellerTisch?.einladungsCode;
+        if (!code) return;
+        const url = `${window.location.origin}#join/${code}`;
         void navigator.clipboard.writeText(url).then(() => {
           shareButton.textContent = '✓ Kopiert!';
           setTimeout(() => { shareButton.textContent = '🔗 Link teilen'; }, 2000);
-        }).catch(() => {
-          window.prompt('Einladungslink kopieren:', url);
         });
       });
     }
 
-    // Debug-Toggle
-    hudDebugBtn.addEventListener('click', () => {
-      appStore.toggleDebugModus();
-    });
+    this.hudDebugBtn.addEventListener('click', () => appStore.toggleDebugModus());
+    this.tischhintergrundSelect.addEventListener('change', () => void appStore.aktualisiereAktuellenTischhintergrund(this.tischhintergrundSelect!.value as Tischhintergrund));
+    this.kiSchwierigkeitSelect.addEventListener('change', () => void appStore.aktualisiereAktuelleKiSchwierigkeit(this.kiSchwierigkeitSelect!.value as KiSchwierigkeit));
 
-    // Tischhintergrund aendern
-    tischhintergrundSelect.addEventListener('change', () => {
-      void appStore.aktualisiereAktuellenTischhintergrund(tischhintergrundSelect.value as Tischhintergrund);
-    });
-
-    // KI-Schwierigkeit aendern
-    kiSchwierigkeitSelect.addEventListener('change', () => {
-      void appStore.aktualisiereAktuelleKiSchwierigkeit(kiSchwierigkeitSelect.value as KiSchwierigkeit);
-    });
-
-    // Letzte Stiche in der Seitenlade togglen
-    seitenladeLetzteStichButton.addEventListener('click', () => {
-      this.letzteSticheOffen = !this.letzteSticheOffen;
-      this.kontext.onLetzteSticheToggle();
-    });
-
-    // Animationsgeschwindigkeit wechseln
     geschwindigkeitsButton.addEventListener('click', () => {
       this.animationsGeschwindigkeit = naechsteGeschwindigkeit(this.animationsGeschwindigkeit);
       geschwindigkeitsButton.textContent = geschwindigkeitsLabel(this.animationsGeschwindigkeit);
@@ -393,368 +219,69 @@ export class TischUIManager {
       this.kontext.onGeschwindigkeitGeaendert(this.animationsGeschwindigkeit);
     });
 
-    // ── Felder setzen ─────────────────────────────────────────────────────────
-    this.hudStichzaehlerEl = hudStichzaehlerEl;
-    this.hudSpieleInfo = hudSpieleInfo;
-    this.hudDebugBtn = hudDebugBtn;
-    this.seitenladeEl = seitenlade;
-    this.seitenladeSpielerListe = seitenladeSpielerListe;
-    this.seitenladePunktestandListe = seitenladePunktestandListe;
-    this.seitenladeAnsageHistorie = seitenladeAnsageHistorie;
-    this.seitenladeLetzteSticheListe = seitenladeLetzteSticheListe;
-    this.seitenladeLetzteStichButton = seitenladeLetzteStichButton;
-    this.einstellungsModalEl = einstellungsModal;
-    this.tischhintergrundSelect = tischhintergrundSelect;
-    this.kiSchwierigkeitSelect = kiSchwierigkeitSelect;
-    this.toastStack = toastStack;
-    this.rundenEndeModal = rundenEndeModal;
-    this.partieEndeModal = partieEndeModal;
-    this.ergebnisInhalt = ergebnisInhalt;
-
-    uiRoot.append(topBar, seitenlade, einstellungsModal, toastStack, rundenEndeModal, partieEndeModal, vorbehaltMarker, actionBarMarker);
-
-    // Gespeicherte Animationsgeschwindigkeit laden und anwenden
-    const initialGeschwindigkeit = ladeGeschwindigkeit();
-    if (initialGeschwindigkeit !== 1) {
-      this.animationsGeschwindigkeit = initialGeschwindigkeit;
-      geschwindigkeitsButton.textContent = geschwindigkeitsLabel(initialGeschwindigkeit);
-      this.kontext.onGeschwindigkeitGeaendert(initialGeschwindigkeit);
+    const initialGeschw = ladeGeschwindigkeit();
+    if (initialGeschw !== 1) {
+      this.animationsGeschwindigkeit = initialGeschw;
+      geschwindigkeitsButton.textContent = geschwindigkeitsLabel(initialGeschw);
+      this.kontext.onGeschwindigkeitGeaendert(initialGeschw);
     }
   }
 
-  // ── Reaktive DOM-Updates ──────────────────────────────────────────────────────
-
-  /** Aktualisiert die Top-Bar (Stichzaehler, Spieltyp/Nummer, Buttons). */
   aktualisiereTopBar(modell: TischAnsichtModell, zustand: AppZustand): void {
     const tisch = zustand.aktuellerTisch;
-    if (!tisch) {
-      return;
+    if (!tisch || !this.hudStichzaehlerEl || !this.hudSpieleInfo) return;
+
+    const spiel = zustand.partieStand?.laufendesSpiel;
+    if (spiel) {
+      const stiche = modell.spieler.reduce((sum, s) => sum + s.stiche, 0);
+      this.hudStichzaehlerEl.textContent = `Stich ${stiche}/12`;
+      this.hudSpieleInfo.textContent = `${tisch.name} · Spiel ${spiel.spielNummer}/${zustand.partieStand?.anzahlSpiele ?? '?'} · ${modell.spieltyp ?? spiel.spieltyp}`;
+    } else {
+      this.hudStichzaehlerEl.textContent = '';
+      this.hudSpieleInfo.textContent = `${tisch.name} · ${tisch.status}`;
     }
-    // Stichzaehler links
-    if (this.hudStichzaehlerEl) {
-      const spiel = zustand.partieStand?.laufendesSpiel;
-      if (spiel) {
-        const gesamtStiche = modell.spieler.reduce((summe, s) => summe + s.stiche, 0);
-        this.hudStichzaehlerEl.textContent = `Stich ${gesamtStiche}/12`;
-      } else {
-        this.hudStichzaehlerEl.textContent = '';
-      }
-    }
-    // Spieltyp + Spielnummer in der Mitte
-    if (this.hudSpieleInfo) {
-      const spiel = zustand.partieStand?.laufendesSpiel;
-      if (spiel) {
-        this.hudSpieleInfo.textContent = `${tisch.name} · Spiel ${spiel.spielNummer}/${zustand.partieStand?.anzahlSpiele ?? '?'} · ${modell.spieltyp ?? spiel.spieltyp}`;
-      } else {
-        this.hudSpieleInfo.textContent = `${tisch.name} · ${tisch.status}`;
-      }
-    }
-    // Start-Button
-    const startButtonEl = document.querySelector<HTMLButtonElement>('[data-start-button]');
-    if (startButtonEl) {
+
+    const startBtn = document.querySelector<HTMLButtonElement>('[data-start-button]');
+    if (startBtn) {
       const darfStarten = zustand.spieler?.spielerId === tisch.erstelltVonSpielerId && tisch.status === 'WARTEND';
-      startButtonEl.disabled = zustand.wirdGeladen || !darfStarten;
-      startButtonEl.hidden = tisch.status !== 'WARTEND';
-    }
-    // Link-teilen-Button (nur im Wartezimmer sichtbar)
-    const shareButtonEl = document.querySelector<HTMLButtonElement>('[data-share-button]');
-    if (shareButtonEl) {
-      shareButtonEl.hidden = tisch.status !== 'WARTEND';
-    }
-    // Debug-Button
-    if (this.hudDebugBtn) {
-      this.hudDebugBtn.textContent = zustand.debugModus ? '🐛 AN' : '🐛';
-      this.hudDebugBtn.disabled = zustand.wirdGeladen || !zustand.partieStand;
-      if (zustand.debugModus) {
-        this.hudDebugBtn.classList.add('hud-icon-btn--aktiv');
-      } else {
-        this.hudDebugBtn.classList.remove('hud-icon-btn--aktiv');
-      }
+      startBtn.disabled = zustand.wirdGeladen || !darfStarten;
+      startBtn.hidden = tisch.status !== 'WARTEND';
     }
   }
 
-  /** Aktualisiert die Seitenlade: Spielerliste, Punktestand, Ansagehistorie. */
-  aktualisiereSeitenlade(modell: TischAnsichtModell, zustand: AppZustand): void {
-    const tisch = zustand.aktuellerTisch;
-    if (!tisch) {
-      return;
-    }
-    const kiLabel = kiSchwierigkeitLabel(tisch.konfiguration.kiSchwierigkeit ?? 'STANDARD');
+  aktualisiereSeitenlade(): void {} // Entfernt
+  aktualisiereErgebnis(): void {} // Entfernt
+  aktualisiereLetzteStiche(): void {} // Entfernt
 
-    // Spielerliste
-    if (this.seitenladeSpielerListe) {
-      this.seitenladeSpielerListe.innerHTML = '';
-      modell.spieler.forEach((spieler) => {
-        const eintrag = document.createElement('li');
-        eintrag.className = 'ui-list-item';
-        const badge = spieler.istSelbst ? 'Du' : spieler.istMensch ? 'Mensch' : `KI (${kiLabel})`;
-        const parteiBadge = spieler.partei ? `<span class="ui-badge ui-badge--partei">${spieler.partei}</span>` : '';
-        eintrag.innerHTML = `
-          <div class="ui-list-item__headline">
-            <strong>${escapeHtml(spieler.anzeigeName)}</strong>
-            <span class="ui-badge ${spieler.istSelbst ? 'ui-badge--highlight' : ''}">${badge}</span>
-          </div>
-          <div class="ui-list-item__meta">
-            <span>${spieler.istErsteller ? 'Ersteller' : spieler.statusText}</span>
-            <span>${spieler.istGeber ? 'Geber' : `${spieler.stiche} Stiche`}</span>
-            ${parteiBadge}
-          </div>
-        `;
-        this.seitenladeSpielerListe?.append(eintrag);
-      });
-    }
-
-    // Punktestand
-    this.aktualisierePunktestand(modell);
-
-    // Ansagehistorie
-    this.aktualisiereAnsageHistorie(modell);
-
-    // Leave-Button: auch im IM_SPIEL klickbar (mit Bestätigung)
-    const leaveButtonEl = document.querySelector<HTMLButtonElement>('[data-leave-button]');
-    if (leaveButtonEl) {
-      leaveButtonEl.disabled = zustand.wirdGeladen;
-    }
-  }
-
-  /** Aktualisiert die Einstellungs-Selects (Tischhintergrund, KI-Schwierigkeit). */
   aktualisiereEinstellungsModal(modell: TischAnsichtModell, zustand: AppZustand): void {
     const tisch = zustand.aktuellerTisch;
-    if (!tisch) {
-      return;
-    }
-    const darfKonfigurieren = zustand.spieler?.spielerId === tisch.erstelltVonSpielerId && tisch.status === 'WARTEND';
-    if (this.tischhintergrundSelect) {
-      this.tischhintergrundSelect.value = modell.tischhintergrund;
-      this.tischhintergrundSelect.disabled = zustand.wirdGeladen || !darfKonfigurieren;
-    }
-    if (this.kiSchwierigkeitSelect) {
-      this.kiSchwierigkeitSelect.value = tisch.konfiguration.kiSchwierigkeit ?? 'STANDARD';
-      this.kiSchwierigkeitSelect.disabled = zustand.wirdGeladen || !darfKonfigurieren;
-    }
+    if (!tisch || !this.tischhintergrundSelect || !this.kiSchwierigkeitSelect) return;
+    const darfKonf = zustand.spieler?.spielerId === tisch.erstelltVonSpielerId && tisch.status === 'WARTEND';
+    this.tischhintergrundSelect.value = modell.tischhintergrund;
+    this.tischhintergrundSelect.disabled = zustand.wirdGeladen || !darfKonf;
+    this.kiSchwierigkeitSelect.value = tisch.konfiguration.kiSchwierigkeit ?? 'STANDARD';
+    this.kiSchwierigkeitSelect.disabled = zustand.wirdGeladen || !darfKonf;
   }
 
-  private aktualisiereAnsageHistorie(modell: TischAnsichtModell): void {
-    if (!this.seitenladeAnsageHistorie) {
-      return;
-    }
-    this.seitenladeAnsageHistorie.innerHTML = '';
-    const eintraege = modell.ansageHistorie.slice(-6).reverse();
-    if (eintraege.length === 0) {
-      this.seitenladeAnsageHistorie.append(this.erstelleListenHinweis('Noch keine oeffentliche Ansage.'));
-      return;
-    }
-    eintraege.forEach((eintrag) => {
-      const li = document.createElement('li');
-      li.className = 'ui-list-item ui-list-item--dense';
-      li.innerHTML = `
-        <div class="ui-list-item__headline">
-          <strong>${escapeHtml(eintrag.name)}</strong>
-          <span class="ui-badge">${eintrag.position}</span>
-        </div>
-        <div class="ui-list-item__meta">
-          <span>${formatiereAnsage(eintrag.ansage)}</span>
-        </div>
-      `;
-      this.seitenladeAnsageHistorie?.append(li);
-    });
-  }
-
-  private aktualisierePunktestand(modell: TischAnsichtModell): void {
-    if (!this.seitenladePunktestandListe) {
-      return;
-    }
-    this.seitenladePunktestandListe.innerHTML = '';
-    if (modell.gesamtpunktestand.length === 0) {
-      this.seitenladePunktestandListe.append(this.erstelleListenHinweis('Sobald ein Spiel gewertet wurde, erscheint hier der Stand.'));
-      return;
-    }
-    modell.gesamtpunktestand.forEach((eintrag) => {
-      const li = document.createElement('li');
-      li.className = 'ui-list-item ui-list-item--dense';
-      li.innerHTML = `
-        <div class="ui-list-item__headline">
-          <strong>${escapeHtml(eintrag.name)}</strong>
-          <span class="ui-badge ${eintrag.position === 'SUED' ? 'ui-badge--highlight' : ''}">${eintrag.position}</span>
-        </div>
-        <div class="ui-list-item__meta">
-          <span>${eintrag.punkte} Punkte</span>
-        </div>
-      `;
-      this.seitenladePunktestandListe?.append(li);
-    });
-  }
-
-  /** Aktualisiert die Ergebnis-Sektion in der Seitenlade (Spielwert, Augen, Sonderpunkte). */
-  aktualisiereErgebnis(modell: TischAnsichtModell): void {
-    if (!this.ergebnisInhalt) {
-      return;
-    }
-    this.ergebnisInhalt.innerHTML = '';
-    const ergebnis = modell.letztesSpielergebnis;
-    if (!ergebnis) {
-      this.ergebnisInhalt.append(this.erstelleInfoSektion(
-        'Sobald ein Spiel abgeschlossen ist, erscheint hier die Auswertung mit Augen, Spielwert und Sonderpunkten.'
-      ));
-      return;
-    }
-
-    const sektion = this.erstelleSektion(
-      `Spiel ${ergebnis.spielNummer} · ${ergebnis.spieltyp}`,
-      `Sieger: ${ergebnis.siegerPartei} · Spielwert ${ergebnis.spielwert}`
-    );
-    const augen = document.createElement('div');
-    augen.className = 'ui-grid ui-grid--two';
-    augen.innerHTML = `
-      <div class="ui-stat-card"><span class="ui-hint">Re</span><strong>${ergebnis.augenRe} Augen</strong></div>
-      <div class="ui-stat-card"><span class="ui-hint">Kontra</span><strong>${ergebnis.augenKontra} Augen</strong></div>
-    `;
-    const sonderpunkte = document.createElement('div');
-    sonderpunkte.className = 'ui-list-item ui-list-item--dense';
-    sonderpunkte.innerHTML = `
-      <div class="ui-list-item__headline">
-        <strong>Sonderpunkte</strong>
-        <span class="ui-badge">${ergebnis.siegerPartei}</span>
-      </div>
-      <div class="ui-list-item__meta">
-        <span>Re: ${ergebnis.sonderpunkteRe.length > 0 ? ergebnis.sonderpunkteRe.map((sp) => formatiereSonderpunkt(sp)).join(', ') : 'Keine'}</span>
-        <span>Kontra: ${ergebnis.sonderpunkteKontra.length > 0 ? ergebnis.sonderpunkteKontra.map((sp) => formatiereSonderpunkt(sp)).join(', ') : 'Keine'}</span>
-      </div>
-    `;
-    const punkteListe = document.createElement('ul');
-    punkteListe.className = 'ui-list ui-list--dense';
-    ergebnis.spielpunkte.forEach((eintrag) => {
-      const li = document.createElement('li');
-      li.className = 'ui-list-item ui-list-item--dense';
-      li.innerHTML = `
-        <div class="ui-list-item__headline">
-          <strong>${escapeHtml(eintrag.name)}</strong>
-          <span class="ui-badge ${eintrag.position === 'SUED' ? 'ui-badge--highlight' : ''}">${eintrag.position}</span>
-        </div>
-        <div class="ui-list-item__meta">
-          <span>${eintrag.punkte >= 0 ? '+' : ''}${eintrag.punkte} Spielpunkte</span>
-        </div>
-      `;
-      punkteListe.append(li);
-    });
-    sektion.append(augen, sonderpunkte, punkteListe);
-    this.ergebnisInhalt.append(sektion);
-  }
-
-  /** Aktualisiert die "Letzte Stiche"-Liste in der Seitenlade (Toggle + Inhalt). */
-  aktualisiereLetzteStiche(modell: TischAnsichtModell): void {
-    if (!this.seitenladeLetzteSticheListe || !this.seitenladeLetzteStichButton) {
-      return;
-    }
-    const stiche = modell.letzteAbgeschlosseneStiche.slice(-3).reverse();
-    if (stiche.length === 0) {
-      this.letzteSticheOffen = false;
-      this.seitenladeLetzteStichButton.disabled = true;
-      this.seitenladeLetzteStichButton.textContent = 'Keine letzten Stiche';
-      this.seitenladeLetzteSticheListe.hidden = true;
-      this.seitenladeLetzteSticheListe.innerHTML = '';
-      return;
-    }
-
-    this.seitenladeLetzteStichButton.disabled = false;
-    this.seitenladeLetzteStichButton.textContent = this.letzteSticheOffen
-      ? 'Letzte Stiche ausblenden'
-      : 'Letzte Stiche anzeigen';
-    this.seitenladeLetzteSticheListe.hidden = !this.letzteSticheOffen;
-    this.seitenladeLetzteSticheListe.innerHTML = '';
-    stiche.forEach((stich) => {
-      const li = document.createElement('li');
-      li.className = 'ui-list-item ui-list-item--dense';
-      li.innerHTML = `
-        <div class="ui-list-item__headline">
-          <strong>Stich ${stich.stichNummer} · Spiel ${stich.spielNummer}</strong>
-          <span class="ui-badge">${stich.augen} Augen</span>
-        </div>
-        <div class="ui-list-item__meta">
-          <span>Gewinner: ${stich.gewinnerName}</span>
-          <span>${stich.gespielteKarten.map((karte) => `${karte.name}: ${kuerzelFuerKarte(karte.karte)}`).join(' · ')}</span>
-        </div>
-      `;
-      this.seitenladeLetzteSticheListe?.append(li);
-    });
-  }
-
-  /** Zeigt oder entfernt Toast-Meldungen (Fehler/Info) im oberen Bereich. */
   aktualisiereToasts(zustand: AppZustand): void {
-    if (!this.toastStack) {
-      return;
-    }
+    if (!this.toastStack) return;
     this.toastStack.innerHTML = '';
-    if (!zustand.meldung) {
-      return;
-    }
+    if (!zustand.meldung) return;
     const toast = document.createElement('div');
     toast.className = `ui-toast ${zustand.meldung.typ === 'fehler' ? 'ui-toast--error' : ''}`;
-    toast.dataset['testid'] = zustand.meldung.typ === 'fehler' ? 'fehler-toast' : 'info-toast';
-    toast.innerHTML = `
-      <strong>${zustand.meldung.typ === 'fehler' ? 'Fehler' : 'Info'}</strong>
-      <div>${zustand.meldung.text}</div>
-    `;
+    toast.innerHTML = `<strong>${zustand.meldung.typ === 'fehler' ? 'Fehler' : 'Info'}</strong><div>${zustand.meldung.text}</div>`;
     this.toastStack.append(toast);
   }
 
-  // ── Cleanup ───────────────────────────────────────────────────────────────────
-
-  /** Leert den UI-Root und setzt alle DOM-Referenzen zurueck. */
   aufraeumen(): void {
-    this.seitenladeOffen = false;
-    this.letzteSticheOffen = false;
-    this.animationsGeschwindigkeit = 1;
     const uiRoot = document.getElementById('ui-root');
-    if (uiRoot) {
-      uiRoot.innerHTML = '';
-    }
+    if (uiRoot) uiRoot.innerHTML = '';
     this.hudStichzaehlerEl = undefined;
     this.hudSpieleInfo = undefined;
     this.hudDebugBtn = undefined;
-    this.seitenladeEl = undefined;
-    this.seitenladeSpielerListe = undefined;
-    this.seitenladePunktestandListe = undefined;
-    this.seitenladeAnsageHistorie = undefined;
-    this.seitenladeLetzteSticheListe = undefined;
-    this.seitenladeLetzteStichButton = undefined;
     this.einstellungsModalEl = undefined;
-    this.ergebnisInhalt = undefined;
-    this.tischhintergrundSelect = undefined;
-    this.kiSchwierigkeitSelect = undefined;
     this.toastStack = undefined;
     this.rundenEndeModal = undefined;
     this.partieEndeModal = undefined;
-  }
-
-  // ── DOM-Hilfsmethoden ─────────────────────────────────────────────────────────
-
-  private erstelleSektion(titel: string, beschreibung: string): HTMLDivElement {
-    const sektion = document.createElement('div');
-    sektion.className = 'ui-section';
-    const headline = document.createElement('strong');
-    headline.textContent = titel;
-    const text = document.createElement('span');
-    text.className = 'ui-hint';
-    text.textContent = beschreibung;
-    sektion.append(headline, text);
-    return sektion;
-  }
-
-  private erstelleInfoSektion(text: string): HTMLDivElement {
-    const sektion = document.createElement('div');
-    sektion.className = 'ui-section';
-    const hinweis = document.createElement('span');
-    hinweis.className = 'ui-hint';
-    hinweis.textContent = text;
-    sektion.append(hinweis);
-    return sektion;
-  }
-
-  private erstelleListenHinweis(text: string): HTMLLIElement {
-    const li = document.createElement('li');
-    li.className = 'ui-list-item ui-list-item--dense';
-    li.innerHTML = `<span class="ui-hint">${text}</span>`;
-    return li;
   }
 }

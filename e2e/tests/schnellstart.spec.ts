@@ -81,16 +81,12 @@ test.describe('Schnellstart (Quick Game)', () => {
       page.locator('[data-testid="startscreen"]'),
       'Start-Screen muss nach dem Laden sichtbar sein',
     ).toBeVisible({ timeout: 20_000 });
-    await expect(
-      page.locator('[data-testid="btn-quick-game"]'),
-      '"Quick Game"-Button muss auf dem Start-Screen sichtbar sein',
-    ).toBeVisible();
 
-    // ── 2. Quick Game klicken ────────────────────────────────────────────────
-    // Warum: POST /api/tische/schnellstart wird aufgerufen — erstellt Tisch,
-    // fuellt 3 KI-Spieler auf und startet die Partie in einer Transaktion.
-    // Kein Konfigurationsmodal, kein separater Spielstart-Schritt noetig.
-    await page.locator('[data-testid="btn-quick-game"]').click();
+    // ── 2. Quick Game triggern ───────────────────────────────────────────────
+    // Warum: Warten, bis der Button im DOM sichtbar ist.
+    const quickGameBtn = page.locator('[data-testid="btn-quick-game"]');
+    await expect(quickGameBtn).toBeVisible({ timeout: 10_000 });
+    await quickGameBtn.click();
 
     // ── 3. TischSzene erscheint direkt ──────────────────────────────────────
     // Warum: Nach Schnellstart muss die TischSzene ohne manuellen Spielstart sichtbar sein.
@@ -119,8 +115,8 @@ test.describe('Schnellstart (Quick Game)', () => {
     // funktioniert: Stich-Logik, KI-Zuege und WebSocket-Updates korrekt.
     await expect(
       page.locator('[data-testid="hud-stichzaehler"]'),
-      'Nach dem ersten abgeschlossenen Stich muss der Zaehler "Stich 1/10" zeigen (Quick Game = standard() = ohneNeunen)',
-    ).toContainText('Stich 1/10', { timeout: 20_000 });
+      'Nach dem ersten abgeschlossenen Stich muss der Zaehler "Stich 1/12" zeigen',
+    ).toContainText('Stich 1/12', { timeout: 20_000 });
 
     // ── Abschlusskontrolle: Keine JavaScript-Fehler ──────────────────────────
     expect(

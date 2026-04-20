@@ -316,7 +316,7 @@ export class TischSzene extends Phaser.Scene {
       getRundenEndeModal: () => this.uiManager?.getRundenEndeModal(),
       getPartieEndeModal: () => this.uiManager?.getPartieEndeModal(),
       getEinstellungsModalEl: () => this.uiManager?.getEinstellungsModalEl(),
-      isSeitenladeOffen: () => this.uiManager?.isSeitenladeOffen() ?? false,
+      isSeitenladeOffen: () => false,
       isSpielzugAnimationAktiv: () => !!this.wartendeKartenId || (this.animationen?.animationLaeuft ?? false),
       isArmutAnnahmeAktiv: () => this.armutAnnahmeAktiv,
       setArmutAnnahmeAktiv: (v) => { this.armutAnnahmeAktiv = v; },
@@ -324,7 +324,7 @@ export class TischSzene extends Phaser.Scene {
       setTastaturKarteIndex: (v) => { this.tastaturKarteIndex = v; },
       getTastaturVorbehaltIndex: () => this.tastaturVorbehaltIndex,
       setTastaturVorbehaltIndex: (v) => { this.tastaturVorbehaltIndex = v; },
-      togglSeitenlade: () => { this.uiManager?.togglSeitenlade(); },
+      togglSeitenlade: () => { /* Seitenlade entfernt */ },
       togglEinstellungen: () => { this.uiManager?.togglEinstellungen(); },
       renderTisch: (z, m) => { this.renderTisch(z, m); },
       spieleKarteMitAnimation: (k) => this.spieleKarteMitAnimation(k),
@@ -455,10 +455,7 @@ export class TischSzene extends Phaser.Scene {
 
     if (!this.uiManager) return;
     this.uiManager.aktualisiereTopBar(modell, zustand);
-    this.uiManager.aktualisiereSeitenlade(modell, zustand);
     this.uiManager.aktualisiereEinstellungsModal(modell, zustand);
-    this.uiManager.aktualisiereErgebnis(modell);
-    this.uiManager.aktualisiereLetzteStiche(modell);
     this.uiManager.aktualisiereToasts(zustand);
   }
 
@@ -483,16 +480,7 @@ export class TischSzene extends Phaser.Scene {
     });
 
     this.renderStichStapel(ebene, modell, breite, hoehe);
-
-    // if (modell.gesamtpunktestand.length > 0) {
-    //   const punktetext = modell.gesamtpunktestand
-    //     .map((eintrag) => `${eintrag.name}: ${eintrag.punkte}`)
-    //     .join(' · ');
-    //   ebene.add(this.add.text(mitteX, hoehe * 0.94, `Gesamtstand · ${punktetext}`, {
-    //     color: '#f8f9fa',
-    //     fontSize: `${Math.round(Math.max(14, breite * 0.012))}px`
-    //   }).setOrigin(0.5));
-    // }
+    this.renderHud(ebene, modell, breite, hoehe);
 
     // Phaser-UI: Ansage-Buttons, Armut-Dialog (zuerst); Vorbehalt-Dialog zuletzt (liegt oben)
     if (zustand.partieStand?.laufendesSpiel) {
@@ -502,6 +490,72 @@ export class TischSzene extends Phaser.Scene {
     }
 
     this.tischEbene = ebene;
+  }
+
+  private renderHud(
+    ebene: Phaser.GameObjects.Container,
+    modell: TischAnsichtModell,
+    breite: number,
+    hoehe: number
+  ): void {
+    const hudW = Math.round(breite * 0.16);
+    const hudX = 0;
+    const hudY = 40; // Unter der Topbar
+    const hudH = hoehe - hudY;
+
+    // Hintergrund-Panel für das HUD
+    const bg = this.add.rectangle(hudX + hudW / 2, hudY + hudH / 2, hudW, hudH, 0x000000, 0.3)
+      .setOrigin(0.5);
+    ebene.add(bg);
+
+    let currentY = hudY + 20;
+    const schriftName = Math.round(Math.max(13, breite * 0.010));
+    const schriftInfo = Math.round(Math.max(10, breite * 0.008));
+    const zeilenAbstand = 35;
+
+    // Spielerliste
+    ebene.add(this.add.text(hudX + 15, currentY, 'SPIELER', {
+      color: '#a3c4a8',
+      fontSize: `${schriftInfo}px`,
+      fontStyle: 'bold'
+    }));
+    currentY += 25;
+
+    modell.spieler.forEach((spieler) => {
+      const farbe = spieler.istSelbst ? '#ffd166' : '#f8f9fa';
+      ebene.add(this.add.text(hudX + 15, currentY, spieler.anzeigeName, {
+        color: farbe,
+        fontSize: `${schriftName}px`,
+        fontStyle: spieler.istSelbst ? 'bold' : 'normal'
+      }));
+      const info = `${spieler.stiche} Stiche${spieler.partei ? ' · ' + spieler.partei : ''}`;
+      ebene.add(this.add.text(hudX + 15, currentY + 16, info, {
+        color: '#a3c4a8',
+        fontSize: `${schriftInfo}px`
+      }));
+      currentY += zeilenAbstand + 10;
+    });
+
+    currentY += 20;
+
+    // Punktestand
+    if (modell.gesamtpunktestand.length > 0) {
+      ebene.add(this.add.text(hudX + 15, currentY, 'PUNKTESTAND', {
+        color: '#a3c4a8',
+        fontSize: `${schriftInfo}px`,
+        fontStyle: 'bold'
+      }));
+      currentY += 25;
+
+      modell.gesamtpunktestand.forEach((eintrag) => {
+        const txt = `${eintrag.name}: ${eintrag.punkte >= 0 ? '+' : ''}${eintrag.punkte}`;
+        ebene.add(this.add.text(hudX + 15, currentY, txt, {
+          color: '#f8f9fa',
+          fontSize: `${schriftName}px`
+        }));
+        currentY += 22;
+      });
+    }
   }
 
   private renderStichStapel(

@@ -36,12 +36,40 @@ export class LoginSzene extends Phaser.Scene {
       color: '#a3c4a8'
     }).setOrigin(0.5);
 
+    this.baueSchnellstartButton();
     this.baueUi();
 
     this.abmeldenStore = appStore.abonnieren((zustand) => {
-      if (zustand.bereich === 'SPIELVERWALTUNG' && zustand.authentifiziert) {
+      if (zustand.bereich === 'TISCH') {
+        this.scene.start('TischSzene');
+      } else if (zustand.bereich === 'SPIELVERWALTUNG' && zustand.authentifiziert) {
         this.scene.start('SpielverwaltungsSzene');
       }
+    });
+  }
+
+  private baueSchnellstartButton(): void {
+    const btnBreite = 300;
+    const btnHoehe = 60;
+    const x = 640;
+    const y = 620;
+
+    const bg = this.add.rectangle(x, y, btnBreite, btnHoehe, 0x1a1a2e)
+      .setStrokeStyle(2, 0xa3c4a8)
+      .setInteractive({ useHandCursor: true });
+
+    this.add.text(x, y, '⚡ SCHNELLSTART (KI)', {
+      fontFamily: '"Space Grotesk", sans-serif',
+      fontSize: '24px',
+      fontStyle: 'bold',
+      color: '#f8f9fa'
+    }).setOrigin(0.5);
+
+    bg.on('pointerover', () => bg.setFillStyle(0x2a2a4e));
+    bg.on('pointerout', () => bg.setFillStyle(0x1a1a2e));
+    bg.on('pointerdown', () => {
+      bg.setFillStyle(0x0b3d24);
+      void appStore.erstelleQuickGame();
     });
   }
 
@@ -56,17 +84,18 @@ export class LoginSzene extends Phaser.Scene {
   private baueUi(): void {
     const uiRoot = holeUiRoot();
     uiRoot.innerHTML = '';
+    uiRoot.dataset['testid'] = 'startscreen';
 
-    const container = document.createElement('div');
-    container.className = 'login-container';
-    container.dataset['testid'] = 'login-screen';
-    container.style.display = 'flex';
-    container.style.flexDirection = 'column';
-    container.style.alignItems = 'center';
-    container.style.gap = '16px';
-    container.style.marginTop = '220px';
-    container.style.maxWidth = '400px';
-    container.style.margin = '220px auto 0';
+    const loginContainer = document.createElement('div');
+    loginContainer.className = 'login-container';
+    loginContainer.dataset['testid'] = 'login-screen';
+    loginContainer.style.display = 'flex';
+    loginContainer.style.flexDirection = 'column';
+    loginContainer.style.alignItems = 'center';
+    loginContainer.style.gap = '16px';
+    loginContainer.style.marginTop = '220px';
+    loginContainer.style.maxWidth = '400px';
+    loginContainer.style.margin = '220px auto 0';
 
     // Login-Formular
     const loginBox = document.createElement('div');
@@ -87,7 +116,7 @@ export class LoginSzene extends Phaser.Scene {
              data-testid="login-fehler"></div>
       </div>
     `;
-    container.appendChild(loginBox);
+    loginContainer.appendChild(loginBox);
 
     // Registrierung-Toggle
     const registerToggle = document.createElement('button');
@@ -95,7 +124,7 @@ export class LoginSzene extends Phaser.Scene {
     registerToggle.textContent = 'Noch kein Konto? Registrieren';
     registerToggle.dataset['testid'] = 'btn-register-toggle';
     registerToggle.style.cssText = 'padding:10px 20px;border-radius:8px;cursor:pointer;width:100%;';
-    container.appendChild(registerToggle);
+    loginContainer.appendChild(registerToggle);
 
     // Registrierungs-Formular (initial versteckt)
     const registerBox = document.createElement('div');
@@ -119,37 +148,37 @@ export class LoginSzene extends Phaser.Scene {
              data-testid="register-fehler"></div>
       </div>
     `;
-    container.appendChild(registerBox);
+    loginContainer.appendChild(registerBox);
 
     // Trennlinie
     const trennlinie = document.createElement('div');
     trennlinie.style.cssText = 'width:100%;text-align:center;color:#888;font-size:14px;margin:4px 0;';
     trennlinie.textContent = '— oder —';
-    container.appendChild(trennlinie);
+    loginContainer.appendChild(trennlinie);
 
     // Google OAuth2 Button
     const googleBtn = document.createElement('button');
     googleBtn.className = 'neo-button neo-button--secondary';
-    googleBtn.textContent = '🔑  Mit Google anmelden';
+    googleBtn.textContent = '🔑 Mit Google anmelden';
     googleBtn.dataset['testid'] = 'btn-google-login';
     googleBtn.style.cssText = 'padding:12px 20px;border-radius:8px;cursor:pointer;width:100%;';
     googleBtn.addEventListener('click', () => {
       window.location.href = '/oauth2/authorization/google';
     });
-    container.appendChild(googleBtn);
+    loginContainer.appendChild(googleBtn);
 
     // Gast-Button
     const gastBtn = document.createElement('button');
     gastBtn.className = 'neo-button neo-button--secondary';
-    gastBtn.textContent = '👤  Als Gast spielen';
+    gastBtn.textContent = '👤 Als Gast spielen';
     gastBtn.dataset['testid'] = 'btn-gast';
     gastBtn.style.cssText = 'padding:12px 20px;border-radius:8px;cursor:pointer;width:100%;opacity:0.8;';
     gastBtn.addEventListener('click', () => {
       void appStore.alsGastStarten();
     });
-    container.appendChild(gastBtn);
+    loginContainer.appendChild(gastBtn);
 
-    uiRoot.appendChild(container);
+    uiRoot.appendChild(loginContainer);
 
     // Event-Handler
     registerToggle.addEventListener('click', () => {
