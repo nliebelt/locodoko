@@ -82,17 +82,21 @@ async function meldeVorbehalt(page: Page, vorbehalt: string): Promise<void> {
 test.describe('Vision Loop — UI Screenshots', () => {
   test('Alle wichtigen Spielzustaende screenshotten', async ({ page }) => {
     // ── 1. Lobby ─────────────────────────────────────────────────────────────
+    console.log('Navigating to /...');
     await page.goto('/');
+    console.log('Waiting for Quick Game button...');
     await expect(page.locator('button', { hasText: /Quick Game/i })).toBeVisible({ timeout: 20_000 });
     await page.waitForTimeout(500);
     await screenshot(page, '01-lobby');
 
     // ── 2. Quick Game starten ─────────────────────────────────────────────────
+    console.log('Starting Quick Game...');
     const quickGameBtn = page.locator('button', { hasText: /Quick Game/i });
     if (await quickGameBtn.isVisible()) {
       await quickGameBtn.click();
     } else {
       // Fallback: manuell Tisch erstellen und starten
+      console.log('Fallback: Creating new table...');
       await page.click('button:has-text("Neuen Tisch erstellen")');
       await page.waitForSelector('#tisch-name', { timeout: 5_000 });
       await page.fill('#tisch-name', 'Vision-Loop-Tisch');
@@ -101,54 +105,70 @@ test.describe('Vision Loop — UI Screenshots', () => {
       await page.click('[data-start-button]');
     }
 
-    // ── 3. Vorbehalt-Phase ────────────────────────────────────────────────────
+    await expect(page.locator('[data-testid="tischszene"]')).toBeVisible({ timeout: 20_000 });
+    await page.waitForTimeout(1000); // Warten bis Szene initialisiert
+
+    // ── 3. Overlays screenshotten (bevor das Spiel voranschreitet) ───────────
+    console.log('Opening Seitenlade...');
+    await page.keyboard.press('i');
+    await page.waitForTimeout(500);
+    await screenshot(page, '07-seitenlade-offen');
+    await page.keyboard.press('i');
+    await page.waitForTimeout(200);
+
+    console.log('Opening Einstellungs-Modal...');
+    await page.keyboard.press('s');
+    await page.waitForTimeout(500);
+    await screenshot(page, '08-einstellungen-modal');
+    await page.keyboard.press('Escape'); // Sicherer Schliessen
+    await page.waitForTimeout(400);
+
+    // ── 4. Vorbehalt-Phase ────────────────────────────────────────────────────
+    console.log('Waiting for phase VORBEHALT_ANSAGE...');
     await warteAufPhase(page, 'VORBEHALT_ANSAGE', 20_000);
     await page.waitForTimeout(800); // Austeilen-Animation abwarten
     await screenshot(page, '02-vorbehalt-phase');
 
     // Eigenen Vorbehalt ansagen (GESUND = kein Vorbehalt) — erst wenn Spieler an der Reihe
+    console.log('Waiting for own Vorbehalt choice...');
     await warteAufEigenenVorbehalt(page, 20_000);
+    console.log('Reporting GESUND...');
     await meldeVorbehalt(page, 'GESUND');
     await page.waitForTimeout(500);
 
     // ── 4. Stichphase — eigener Zug ───────────────────────────────────────────
+    console.log('Waiting for own move (STICHPHASE)...');
     await warteAufEigenenZug(page, 20_000);
+    console.log('Taking screenshot 03-stichphase-eigener-zug...');
     await page.waitForTimeout(400);
     await screenshot(page, '03-stichphase-eigener-zug');
 
     // ── 5. Karte ausspielen ───────────────────────────────────────────────────
+    console.log('Playing first card...');
     await spieleErsteHandkarte(page);
     await page.waitForTimeout(2500); // Stich-Animation (1s warten + 600ms einziehen + Puffer)
     await screenshot(page, '04-nach-stich');
 
     // ── 6. Naechster eigener Zug (falls vorhanden) ────────────────────────────
     try {
+      console.log('Waiting for next own move (optional)...');
       await warteAufEigenenZug(page, 8_000);
       await page.waitForTimeout(400);
       await screenshot(page, '05-naechster-zug');
 
       // Noch eine Karte spielen
+      console.log('Playing second card...');
       await spieleErsteHandkarte(page);
       await page.waitForTimeout(2500);
       await screenshot(page, '06-nach-zweitem-stich');
     } catch {
       // Kein eigener Zug mehr in diesem Zeitraum — kein Problem
+      console.log('No second move in time.');
     }
 
-    // ── 7. Seitenlade oeffnen ─────────────────────────────────────────────────
-    await page.click('[data-seitenlade-toggle]').catch(() => {});
-    await page.waitForTimeout(300);
-    await screenshot(page, '07-seitenlade-offen');
-
-    // Seitenlade schliessen
-    await page.click('[data-seitenlade-toggle]').catch(() => {});
-    await page.waitForTimeout(200);
-
-    // ── 8. Einstellungs-Modal ─────────────────────────────────────────────────
-    await page.click('[data-einstellungen-toggle]').catch(() => {});
-    await page.waitForTimeout(300);
-    await screenshot(page, '08-einstellungen-modal');
-    await page.click('[data-einstellungen-toggle]').catch(() => {});
+    // ── 9. Armut-Phase (falls sie auftritt) ──────────────────────────────────
+    // Da Armut selten ist, versuchen wir sie hier nur zu erfassen wenn sie aktiv ist
+    // In einem echten Vision-Loop wuerde man sie evtl. provozieren.
 
     // Ausgabe der Screenshot-Pfade fuer Ralph
     const screenshots = fs.readdirSync(SCREENSHOTS_DIR).filter((f) => f.endsWith('.png'));
@@ -206,6 +226,7 @@ test.describe('Vision Loop — UI Screenshots', () => {
         continue;
       }
       if (zustand.phase === 'ARMUT_TAUSCH') {
+        await screenshot(page, '10-armut-phase');
         await page.keyboard.press('n');
         await page.waitForTimeout(300);
         continue;

@@ -2,12 +2,12 @@
 
 ## Notiz
 Stand: 2026-04-20
-UI-NATIVE-2 erledigt: "Ohne Neunen" Preset hinzugefügt und Loco-Blatt Bugfix (ohneNeunen: false) implementiert. Konfigurationsmodal in `SpielverwaltungsSzene` um das neue Preset erweitert. Tests in `regelPresets.test.ts` aktualisiert und erweitert. Nächster Schritt: UI-NATIVE-3 (Vision Loop für Overlays).
+UI-NATIVE-3 erledigt: Vision Loop für alle Overlays (Seitenlade, Einstellungen, Vorbehalte) etabliert. Tastatur-Shortcuts in Playwright für robuste Steuerung integriert. Kritische Regression in `TischSzene.ts` (gelöschte Table-Rendering-Logik) behoben und mit neuen Phaser-Overlays gemergt. Alle Overlays sind nun visuell verifiziert.
 
 ## Zusammenfassung Ist-Zustand
 - Backend: DDD-Struktur stabil. Event-Triggering für KI nun robust und optimiert.
 - Partie/Regeln: Kernlogik stabil. Hochzeit-Klärung und Sonderpunkte triggern die KI nun korrekt weiter.
-- Frontend: Phaser 3 weit fortgeschritten. Preset-Auswahl nun konsistent mit Regelkatalog.
+- Frontend: Phaser 3 weit fortgeschritten. UI vollständig auf native Phaser-Overlays migriert und visuell verifiziert.
 
 ## Phase 1 — Stabilität & Test-Fixes (STAB)
 - [x] **STAB-1** Test-Suite Stabilisierung: `HochzeitTest` (NoSuchElementException fixen) und `DreissigAugenPflichtTest` repariert.
@@ -30,4 +30,4 @@ UI-NATIVE-2 erledigt: "Ohne Neunen" Preset hinzugefügt und Loco-Blatt Bugfix (o
 ## Phase 4 — Frontend UI-Migration (UI-NATIVE)
 - [x] **UI-NATIVE-1** HTML-Hybrid-Rückbau: Seitenlade und Einstellungsmenüs vollständig auf Phaser-Container umstellen.
 - [x] **UI-NATIVE-2** Preset-Auswahl & Bugfix: "Ohne Neunen" Option in Tisch-Konfiguration (Phaser) hinzufügen. Bugfix in `frontend/src/modelle/regelPresets.ts`: Für `LOCO_BLAT_REGELN` ist `ohneNeunen: false` gesetzt. Laut `regelkatalog.md` nun korrigiert.
-- [ ] **UI-NATIVE-3** Native UI-Tests: Vision Loop für alle Overlays etablieren.
+- [x] **UI-NATIVE-3** Native UI-Tests: Vision Loop für alle Overlays etablieren.
