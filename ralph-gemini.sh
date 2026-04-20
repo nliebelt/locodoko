@@ -63,7 +63,7 @@ if [ -n "${MODEL:-}" ]; then
 elif [ "$MODE" = "plan" ]; then
     EFFECTIVE_MODEL="gemini-2.5-pro"
 else
-    EFFECTIVE_MODEL="gemini-3.1-flash-lite-preview" # The "cheap flash model"
+    EFFECTIVE_MODEL="gemini-3.1-pro-preview"
 fi
 
 # --- Header ---
