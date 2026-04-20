@@ -11,7 +11,7 @@ import java.util.List;
  * ohne State-Diffs aus zwei Snapshots berechnen zu müssen.</p>
  */
 public sealed interface SpielEreignis
-        permits SpielEreignis.KarteGespielt, SpielEreignis.StichAbgeschlossenEreignis, SpielEreignis.SchweinchenGemeldet {
+        permits SpielEreignis.KarteGespielt, SpielEreignis.StichAbgeschlossenEreignis, SpielEreignis.SchweinchenGemeldet, SpielEreignis.HochzeitPartnerGefunden {
 
     /** Eine Karte wurde von einem Spieler auf den Tisch gelegt. */
     record KarteGespielt(SpielerPosition position, Karte karte) implements SpielEreignis {}
@@ -22,4 +22,7 @@ public sealed interface SpielEreignis
 
     /** Das Schweinchen wurde durch Ausspielen des ersten Karo-Asses gemeldet. */
     record SchweinchenGemeldet(SpielerPosition spielerPosition) implements SpielEreignis {}
+
+    /** Der Partner einer Hochzeit wurde gefunden. */
+    record HochzeitPartnerGefunden(SpielerPosition partner) implements SpielEreignis {}
 }

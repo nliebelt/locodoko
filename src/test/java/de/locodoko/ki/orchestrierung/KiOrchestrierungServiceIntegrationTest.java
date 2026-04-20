@@ -43,6 +43,9 @@ class KiOrchestrierungServiceIntegrationTest {
     private KiOrchestrierungService kiOrchestrierungService;
 
     @Autowired
+    private de.locodoko.tisch.SpielAktionsService spielAktionsService;
+
+    @Autowired
     private TischRepository tischRepository;
 
     @Autowired
@@ -55,7 +58,7 @@ class KiOrchestrierungServiceIntegrationTest {
     void spieltKiFolgezuegeBisWiederEinMenschDranIst() {
         Spielregeln spielregeln = Spielregeln.standardRegeln();
         UUIDs ids = transactionTemplate.execute(status -> {
-            TischEntity tisch = tischMitSpielern(false);
+            TischEntity tisch = tischMitSpielernUnique(false);
             Spiel spiel = gesundesStichspiel(spielregeln, verteilungMitVorgaben(Map.of(
                 SpielerPosition.WEST, List.of(
                     karte(Farbe.KREUZ, Kartenwert.AS, 1),
@@ -150,6 +153,17 @@ class KiOrchestrierungServiceIntegrationTest {
             assertNull(stand.laufendesSpiel(),
                 "Nach dem Ende einer Ein-Spiel-Partie darf kein weiteres laufendes Spiel mehr sichtbar sein.");
         });
+    }
+
+    private TischEntity tischMitSpielernUnique(boolean alleKi) {
+        String suffix = java.util.UUID.randomUUID().toString().substring(0, 8);
+        SpielerEntity erstelltVon = alleKi ? SpielerEntity.ki("KI-" + suffix) : SpielerEntity.menschlich("Mensch-" + suffix, "session-" + suffix);
+        TischEntity tisch = TischEntity.neu("Integration " + suffix, erstelltVon, TischkonfigurationEmbeddable.standard());
+        tisch.fuegeSpielerHinzu(erstelltVon);
+        tisch.fuegeSpielerHinzu(SpielerEntity.ki("KI-B-" + suffix));
+        tisch.fuegeSpielerHinzu(SpielerEntity.ki("KI-C-" + suffix));
+        tisch.fuegeSpielerHinzu(SpielerEntity.ki("KI-D-" + suffix));
+        return tisch;
     }
 
     private TischEntity tischMitSpielern(boolean alleKi) {
@@ -335,6 +349,129 @@ class KiOrchestrierungServiceIntegrationTest {
             }
         }
         return Map.copyOf(haende);
+    }
+
+    @Test
+    void spieltKiWeiterNachHochzeitKlaerungDurchMensch() {
+        Spielregeln spielregeln = Spielregeln.standardRegeln();
+        UUIDs ids = transactionTemplate.execute(status -> {
+            TischEntity tisch = tischMitSpielernUnique(false);
+ // SUED ist Mensch
+            // Hochzeit für WEST
+            Spiel spiel = gesundesHochzeitSpiel(spielregeln, verteilungFuerHochzeit(Map.of(
+                SpielerPosition.WEST, List.of(karte(Farbe.KREUZ, Kartenwert.DAME, 1), karte(Farbe.KREUZ, Kartenwert.DAME, 2)),
+                SpielerPosition.SUED, List.of(karte(Farbe.HERZ, Kartenwert.ZEHN, 1)) // Mensch hat Dulle zum Stechen
+            )));
+            tisch.setzePartie(partieMitSpiel(spiel, 1));
+            TischEntity gespeichert = tischRepository.saveAndFlush(tisch);
+            return new UUIDs(gespeichert.id(), gespeichert.partie().id());
+        });
+
+        // 1. WEST (KI) spielt Karte
+        transactionTemplate.executeWithoutResult(status -> {
+            TischEntity tisch = tischRepository.findById(TischId.von(ids.tischId())).orElseThrow();
+            kiOrchestrierungService.automatisiereTisch(tisch);
+            tischRepository.saveAndFlush(tisch);
+        });
+
+        // 2. NORD (KI) und OST (KI) spielen Karten via automatisiereTisch (wird oben mit erledigt)
+        
+        // 3. SUED (Mensch) spielt Karte und klärt Hochzeit (gewinnt Stich)
+        transactionTemplate.executeWithoutResult(status -> {
+            TischEntity tisch = tischRepository.findById(TischId.von(ids.tischId())).orElseThrow();
+            SpielerEntity sued = tisch.spieler().stream().filter(s -> !s.istKi()).findFirst().orElseThrow();
+            
+            // Mensch spielt Dulle
+            spielAktionsService.spieleKarte(TischId.von(ids.tischId()), sued, "HERZ-ZEHN-1");
+        });
+
+        // 4. Verifizieren dass KI weitergespielt hat (Naechster Spieler muss wieder Mensch sein, da KI-Züge durchlaufen)
+        transactionTemplate.executeWithoutResult(status -> {
+            TischEntity tisch = tischRepository.findById(TischId.von(ids.tischId())).orElseThrow();
+            PartieStandAntwort stand = PartieStandAntwort.aus(tisch, tisch.spieler().getFirst().id());
+
+            assertNotNull(stand.laufendesSpiel());
+            assertTrue(stand.laufendesSpiel().hochzeitGeklaert(), "Hochzeit muss geklärt sein.");
+            assertEquals(SpielerPosition.SUED, stand.laufendesSpiel().aktuellerSpieler(),
+                "KI muss nach Hochzeit-Klaerung durch Mensch automatisch weitergespielt haben.");
+        });
+    }
+
+    @Test
+    void spieltKiWeiterNachFuchsGefangenDurchMensch() {
+        Spielregeln spielregeln = Spielregeln.standardRegeln();
+        UUIDs ids = transactionTemplate.execute(status -> {
+            TischEntity tisch = tischMitSpielernUnique(false);
+ // SUED ist Mensch
+            // Fuchs (Karo-As) für WEST
+            Spiel spiel = gesundesStichspiel(spielregeln, verteilungMitVorgaben(Map.of(
+                SpielerPosition.WEST, List.of(karte(Farbe.KARO, Kartenwert.AS, 1)),
+                SpielerPosition.SUED, List.of(karte(Farbe.HERZ, Kartenwert.ZEHN, 1)) // Mensch hat Dulle zum Fangen
+            )));
+            tisch.setzePartie(partieMitSpiel(spiel, 1));
+            TischEntity gespeichert = tischRepository.saveAndFlush(tisch);
+            return new UUIDs(gespeichert.id(), gespeichert.partie().id());
+        });
+
+        // 1. WEST (KI) spielt Fuchs
+        transactionTemplate.executeWithoutResult(status -> {
+            TischEntity tisch = tischRepository.findById(TischId.von(ids.tischId())).orElseThrow();
+            kiOrchestrierungService.automatisiereTisch(tisch);
+            tischRepository.saveAndFlush(tisch);
+        });
+
+        // 2. SUED (Mensch) fängt Fuchs
+        transactionTemplate.executeWithoutResult(status -> {
+            TischEntity tisch = tischRepository.findById(TischId.von(ids.tischId())).orElseThrow();
+            SpielerEntity sued = tisch.spieler().stream().filter(s -> !s.istKi()).findFirst().orElseThrow();
+            spielAktionsService.spieleKarte(TischId.von(ids.tischId()), sued, "HERZ-ZEHN-1");
+        });
+
+        // 3. Verifizieren dass KI weitergespielt hat
+        transactionTemplate.executeWithoutResult(status -> {
+            TischEntity tisch = tischRepository.findById(TischId.von(ids.tischId())).orElseThrow();
+            PartieStandAntwort stand = PartieStandAntwort.aus(tisch, tisch.spieler().getFirst().id());
+
+            assertEquals(SpielerPosition.SUED, stand.laufendesSpiel().aktuellerSpieler(),
+                "KI muss nach Fuchs-Gefangen durch Mensch automatisch weitergespielt haben.");
+        });
+    }
+
+    private Spiel gesundesHochzeitSpiel(Spielregeln spielregeln, Map<SpielerPosition, List<Karte>> haende) {
+        List<Karte> alleKarten = new ArrayList<>(Kartendeck.neu(spielregeln).karten());
+        List<Karte> bereitsVerwendete = haende.values().stream().flatMap(List::stream).toList();
+        for (Karte k : bereitsVerwendete) {
+            alleKarten.remove(k);
+        }
+
+        Map<SpielerPosition, List<Karte>> volleHaende = new EnumMap<>(SpielerPosition.class);
+        for (SpielerPosition pos : SpielerPosition.standardReihenfolge()) {
+            volleHaende.put(pos, new ArrayList<>(haende.getOrDefault(pos, List.of())));
+        }
+
+        int kartenIndex = 0;
+        for (SpielerPosition pos : SpielerPosition.standardReihenfolge()) {
+            List<Karte> hand = volleHaende.get(pos);
+            while (hand.size() < 12 && kartenIndex < alleKarten.size()) {
+                hand.add(alleKarten.get(kartenIndex++));
+            }
+        }
+
+        List<Karte> deckKarten = deckReihenfolgeFuerHaende(volleHaende);
+        Kartendeck deck = Kartendeck.ausKarten(deckKarten);
+        Spiel spiel = Spiel.neu(SpielerPosition.SUED, spielregeln, deck).teileKartenAus();
+        
+        // Vorbehalte melden
+        spiel = spiel.meldeVorbehalt(SpielerPosition.WEST, VorbehaltAnsage.HOCHZEIT);
+        spiel = spiel.meldeVorbehalt(SpielerPosition.NORD, VorbehaltAnsage.GESUND);
+        spiel = spiel.meldeVorbehalt(SpielerPosition.OST, VorbehaltAnsage.GESUND);
+        spiel = spiel.meldeVorbehalt(SpielerPosition.SUED, VorbehaltAnsage.GESUND);
+        
+        return spiel.loeseVorbehalteAuf();
+    }
+
+    private Map<SpielerPosition, List<Karte>> verteilungFuerHochzeit(Map<SpielerPosition, List<Karte>> vorgaben) {
+        return verteilungMitVorgaben(vorgaben);
     }
 
     private record UUIDs(java.util.UUID tischId, java.util.UUID partieId) {

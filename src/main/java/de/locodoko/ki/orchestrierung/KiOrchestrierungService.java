@@ -100,96 +100,104 @@ public class KiOrchestrierungService {
 
         boolean hatMenschlichenSpieler = tisch.spieler().stream()
             .anyMatch(s -> !s.istKi() && !s.istKiUebernommen());
-        while (anzahlAktionen++ < MAXIMALE_KI_AKTIONEN) {
-            if (tisch.partie().statusAusDb() == PartieStatus.BEENDET) {
-                return hatKiGespielt;
-            }
-            Spiel laufendesSpiel = findeLaufendesSpiel(tisch.partie());
-            if (laufendesSpiel == null) {
-                return hatKiGespielt;
-            }
-            laufendesSpiel.hydriere(tisch.konfiguration().alsSpielregeln());
-            if (laufendesSpiel.phase() instanceof Spielphase.Auswertung
-                    || laufendesSpiel.phase() instanceof Spielphase.GesamtstandAktualisieren) {
-                LOGGER.info("Spiel abschliessen und naechstes starten [spielNr={}, tischId={}]",
-                    laufendesSpiel.spielNummer(), tisch.id());
-                try {
-                    Partie persistentePartie = tisch.partie();
-                    persistentePartie.hydriere(tisch.konfiguration().alsSpielregeln());
-                    Partie neuePartie = persistentePartie.schliesseAktuellesSpielAbUndStarteNaechstes();
-                    uebernehmeDomainPartieAbschluss(tisch, laufendesSpiel, neuePartie);
-                    
-                    hatKiGespielt = true;
-                    
-                    // Wenn Menschen am Tisch sind, brechen wir hier ab, um ihnen Zeit fuer die
-                    // Rundenauswertung zu geben. Die naechste Aktion wird via Event getriggert.
-                    if (hatMenschlichenSpieler) {
-                        triggereKi(tisch);
-                        return hatKiGespielt;
+        
+        try {
+            while (anzahlAktionen++ < MAXIMALE_KI_AKTIONEN) {
+                if (tisch.partie().statusAusDb() == PartieStatus.BEENDET) {
+                    break;
+                }
+                Spiel laufendesSpiel = findeLaufendesSpiel(tisch.partie());
+                if (laufendesSpiel == null) {
+                    break;
+                }
+                laufendesSpiel.hydriere(tisch.konfiguration().alsSpielregeln());
+                if (laufendesSpiel.phase() instanceof Spielphase.Auswertung
+                        || laufendesSpiel.phase() instanceof Spielphase.GesamtstandAktualisieren) {
+                    LOGGER.info("Spiel abschliessen und naechstes starten [spielNr={}, tischId={}]",
+                        laufendesSpiel.spielNummer(), tisch.id());
+                    try {
+                        Partie persistentePartie = tisch.partie();
+                        persistentePartie.hydriere(tisch.konfiguration().alsSpielregeln());
+                        Partie neuePartie = persistentePartie.schliesseAktuellesSpielAbUndStarteNaechstes();
+                        uebernehmeDomainPartieAbschluss(tisch, laufendesSpiel, neuePartie);
+                        
+                        hatKiGespielt = true;
+                        
+                        // Wenn Menschen am Tisch sind, brechen wir hier ab, um ihnen Zeit fuer die
+                        // Rundenauswertung zu geben.
+                        if (hatMenschlichenSpieler) {
+                            break;
+                        }
+                        // Rein virtuelle Tische (KI-only, z.B. in Tests) spielen sofort weiter.
+                    } catch (Exception e) {
+                        LOGGER.error(
+                            "Fehler beim Abschliessen von Spiel {} an Tisch {} – Partie bleibt im letzten konsistenten Stand: {}",
+                            laufendesSpiel.spielNummer(), tisch.id(), e.getMessage(), e
+                        );
+                        break;
                     }
-                    // Rein virtuelle Tische (KI-only, z.B. in Tests) spielen sofort weiter.
+                    continue;
+                }
+                SpielerPosition erwarteterSpieler = laufendesSpiel.erwarteterSpieler().orElse(null);
+                if (erwarteterSpieler == null) {
+                    break;
+                }
+                SpielerEntity spielerEntity = spielerNachPosition(tisch).get(erwarteterSpieler);
+                if (spielerEntity == null || (!spielerEntity.istKi() && !spielerEntity.istKiUebernommen())) {
+                    break;
+                }
+                LOGGER.info("KI-Spielzug [spielerId={}, phase={}]", erwarteterSpieler, laufendesSpiel.phase());
+                try {
+                    // Delay für menschliche Tische, um das Frontend nicht zu überfluten
+                    boolean menschAmTisch = tisch.spieler().stream().anyMatch(s -> !s.istKi() && !s.istKiUebernommen());
+                    if (menschAmTisch) {
+                        Thread.sleep(600);
+                    }
+
+                    KiStrategie strategie = kiStrategieFactory.erzeuge(tisch.konfiguration().kiSchwierigkeit());
+                    Spielphase phaseVorAktion = laufendesSpiel.phase();
+                    boolean schweinchenVorher = laufendesSpiel.schweinchenGemeldetVon().isPresent();
+                    
+                    AktionsErgebnis aktionsErgebnis = fuehreKiAktionAus(laufendesSpiel, erwarteterSpieler, strategie);
+                    laufendesSpiel.uebernehmeDomainStand(aktionsErgebnis.naechsterStand());
+                    hatKiGespielt = true;
+
+                    // Schweinchen-Broadcast bei KI-Zug
+                    if (!schweinchenVorher && laufendesSpiel.schweinchenGemeldetVon().isPresent()) {
+                        veroeffentlicheSchweinchenEreignis(tisch);
+                    }
+
+                    // Domain-Ereignisse broadcasten (Stichabschluss, Sonderpunkte)
+                    if (hatMenschlichenSpieler) {
+                        veroeffentlicheSpielKarteEreignisse(tisch, aktionsErgebnis.ereignisse());
+                    }
+
+                    // KI-Karten sequenz broadcasten für die Animation (nur wenn nicht bereits durch stichAbgeschlossen abgedeckt)
+                    if (hatMenschlichenSpieler
+                            && phaseVorAktion instanceof Spielphase.Stichphase
+                            && aktionsErgebnis.gespielteKarteId() != null
+                            && aktionsErgebnis.ereignisse().stream().noneMatch(e -> e instanceof SpielEreignis.StichAbgeschlossenEreignis)) {
+                        List<GespielteKarteAntwort> sequenz = List.of(new GespielteKarteAntwort(erwarteterSpieler, aktionsErgebnis.gespielteKarteId()));
+                        sendeKiZugSequenz(tisch, sequenz);
+                    }
                 } catch (Exception e) {
                     LOGGER.error(
-                        "Fehler beim Abschliessen von Spiel {} an Tisch {} – Partie bleibt im letzten konsistenten Stand: {}",
-                        laufendesSpiel.spielNummer(), tisch.id(), e.getMessage(), e
+                        "CRITICAL KI-CRASH: Spieler {} in Phase {} an Tisch {} – Fehler: {}",
+                        erwarteterSpieler, laufendesSpiel.phase(), tisch.id(), e.getMessage(), e
                     );
-                    return hatKiGespielt;
+                    break;
                 }
-                continue;
             }
-            SpielerPosition erwarteterSpieler = laufendesSpiel.erwarteterSpieler().orElse(null);
-            if (erwarteterSpieler == null) {
-                return hatKiGespielt;
+            if (anzahlAktionen >= MAXIMALE_KI_AKTIONEN) {
+                LOGGER.error("KI-Orchestrierung hat das Sicherheitslimit von {} Aktionen an Tisch {} erreicht – moegliche Endlosschleife.",
+                    MAXIMALE_KI_AKTIONEN, tisch.id());
             }
-            SpielerEntity spielerEntity = spielerNachPosition(tisch).get(erwarteterSpieler);
-            if (spielerEntity == null || (!spielerEntity.istKi() && !spielerEntity.istKiUebernommen())) {
-                return hatKiGespielt;
-            }
-            LOGGER.info("KI-Spielzug [spielerId={}, phase={}]", erwarteterSpieler, laufendesSpiel.phase());
-            try {
-                // Delay für menschliche Tische, um das Frontend nicht zu überfluten
-                boolean menschAmTisch = tisch.spieler().stream().anyMatch(s -> !s.istKi() && !s.istKiUebernommen());
-                if (menschAmTisch) {
-                    Thread.sleep(600);
-                }
-
-                KiStrategie strategie = kiStrategieFactory.erzeuge(tisch.konfiguration().kiSchwierigkeit());
-                Spielphase phaseVorAktion = laufendesSpiel.phase();
-                boolean schweinchenVorher = laufendesSpiel.schweinchenGemeldetVon().isPresent();
-                
-                AktionsErgebnis aktionsErgebnis = fuehreKiAktionAus(laufendesSpiel, erwarteterSpieler, strategie);
-                laufendesSpiel.uebernehmeDomainStand(aktionsErgebnis.naechsterStand());
-                hatKiGespielt = true;
-
-                // Schweinchen-Broadcast bei KI-Zug
-                if (!schweinchenVorher && laufendesSpiel.schweinchenGemeldetVon().isPresent()) {
-                    veroeffentlicheSchweinchenEreignis(tisch);
-                }
-
-                // Domain-Ereignisse broadcasten (Stichabschluss, Sonderpunkte)
-                if (hatMenschlichenSpieler) {
-                    veroeffentlicheSpielKarteEreignisse(tisch, aktionsErgebnis.ereignisse());
-                }
-
-                // KI-Karten sequenz broadcasten für die Animation (nur wenn nicht bereits durch stichAbgeschlossen abgedeckt)
-                if (hatMenschlichenSpieler
-                        && phaseVorAktion instanceof Spielphase.Stichphase
-                        && aktionsErgebnis.gespielteKarteId() != null
-                        && aktionsErgebnis.ereignisse().stream().noneMatch(e -> e instanceof SpielEreignis.StichAbgeschlossenEreignis)) {
-                    List<GespielteKarteAntwort> sequenz = List.of(new GespielteKarteAntwort(erwarteterSpieler, aktionsErgebnis.gespielteKarteId()));
-                    sendeKiZugSequenz(tisch, sequenz);
-                }
-            } catch (Exception e) {
-                LOGGER.error(
-                    "CRITICAL KI-CRASH: Spieler {} in Phase {} an Tisch {} – Fehler: {}",
-                    erwarteterSpieler, laufendesSpiel.phase(), tisch.id(), e.getMessage(), e
-                );
-                return hatKiGespielt;
+        } finally {
+            if (hatKiGespielt && hatMenschlichenSpieler) {
+                triggereKi(tisch);
             }
         }
-        LOGGER.error("KI-Orchestrierung hat das Sicherheitslimit von {} Aktionen an Tisch {} erreicht – moegliche Endlosschleife.",
-            MAXIMALE_KI_AKTIONEN, tisch.id());
-        throw new IllegalStateException("Die KI-Orchestrierung hat das Sicherheitslimit erreicht.");
+        return hatKiGespielt;
     }
 
     private AktionsErgebnis fuehreKiAktionAus(Spiel laufendesSpiel, SpielerPosition spielerPosition, KiStrategie strategie) {
@@ -363,6 +371,7 @@ public class KiOrchestrierungService {
                 case SpielEreignis.KarteGespielt _ -> sendeKarteGespielt(tisch);
                 case SpielEreignis.StichAbgeschlossenEreignis sa -> sendeStichAbgeschlossen(tisch, sa.sonderpunkte());
                 case SpielEreignis.SchweinchenGemeldet _ -> veroeffentlicheSchweinchenEreignis(tisch);
+                case SpielEreignis.HochzeitPartnerGefunden hpg -> LOGGER.info("Hochzeit-Partner gefunden: {} [tischId={}]", hpg.partner(), tisch.id());
                 default -> LOGGER.trace("Ignoriere Spielereignis: {}", ereignis);
             }
         }

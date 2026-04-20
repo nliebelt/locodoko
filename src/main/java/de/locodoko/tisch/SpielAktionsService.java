@@ -94,6 +94,7 @@ public class SpielAktionsService {
         partieRepository.saveAndFlush(tisch.partie());
         synchronisiereRegistry(tischId, tisch);
         veroeffentlicheAnsageEreignisse(tisch);
+        triggereKi(tisch);
         return PartieStandAntwort.aus(tisch, verwalteterSpieler.id());
     }
 
@@ -123,6 +124,7 @@ public class SpielAktionsService {
         partieRepository.saveAndFlush(tisch.partie());
         synchronisiereRegistry(tischId, tisch);
         veroeffentlicheAnsageEreignisse(tisch);
+        triggereKi(tisch);
         return PartieStandAntwort.aus(tisch, verwalteterSpieler.id());
     }
 
@@ -184,6 +186,7 @@ public class SpielAktionsService {
         partieRepository.saveAndFlush(tisch.partie());
         synchronisiereRegistry(tischId, tisch);
         veroeffentlicheAnsageEreignisse(tisch);
+        triggereKi(tisch);
         return PartieStandAntwort.aus(tisch, verwalteterSpieler.id());
     }
 
@@ -229,6 +232,7 @@ public class SpielAktionsService {
                 case SpielEreignis.KarteGespielt kg -> sendeKarteGespielt(tisch);
                 case SpielEreignis.StichAbgeschlossenEreignis sa -> sendeStichAbgeschlossen(tisch, sa.sonderpunkte());
                 case SpielEreignis.SchweinchenGemeldet _ -> veroeffentlicheSchweinchenEreignis(tisch);
+                case SpielEreignis.HochzeitPartnerGefunden hpg -> LOGGER.info("Hochzeit-Partner gefunden: {} [tischId={}]", hpg.partner(), tisch.id());
                 default -> LOGGER.trace("Ignoriere Spielereignis: {}", ereignis);
             }
         }

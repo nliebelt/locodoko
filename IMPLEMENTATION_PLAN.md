@@ -2,13 +2,12 @@
 
 ## Notiz
 Stand: 2026-04-20
-REGELN-1 erledigt: `SchweinchenGemeldet`-Event wird nun in `Spiel.spieleKarte()` erzeugt und verarbeitet. Der "Kartenzahl-Fehler" wurde durch Korrektur von `locoBlatRegeln()` (nun korrekt mit Neunen/12 Karten laut Spec) und Anpassung der Integrationstests behoben. Nächster Schritt: REGELN-2 (KI-Hänger bei Sonderpunkten).
+REGELN-2 erledigt: KI-Hänger bei Sonderpunkten und Phasenwechseln durch Einführung von `HochzeitPartnerGefunden` Event und verlässliches `triggereKi` in `SpielAktionsService` behoben. Orchestrierung optimiert (ein Event am Ende statt pro KI-Zug). Nächster Schritt: REGELN-3 (KI-Strategie Tuning).
 
 ## Zusammenfassung Ist-Zustand
-- Backend: DDD-Struktur umgesetzt. Pragmatische Abhängigkeitsregel erlaubt es dem `spieler/` Modul nun offiziell, auf Events aus `partie/` zu lauschen.
-- Partie/Regeln: Kernlogik stabil. Schweinchen-Event-Generierung fehlt im Kern (`Spiel.spieleKarte`). KI hängt bei bestimmten Sonderpunkten.
-- Frontend: Phaser 3 weit fortgeschritten. Inkonsistenz im Loco-Blatt Preset (ohneNeunen).
-- Kritisch: Der Blocker in REGELN-1 bezüglich instabiler Integrationstests (Kartenzahl-Fehler) muss aktiv gefixt werden, statt ihn zu ignorieren.
+- Backend: DDD-Struktur stabil. Event-Triggering für KI nun robust und optimiert.
+- Partie/Regeln: Kernlogik stabil. Hochzeit-Klärung und Sonderpunkte triggern die KI nun korrekt weiter.
+- Frontend: Phaser 3 weit fortgeschritten. Inkonsistenz im Loco-Blatt Preset (ohneNeunen) noch offen.
 
 ## Phase 1 — Stabilität & Test-Fixes (STAB)
 - [x] **STAB-1** Test-Suite Stabilisierung: `HochzeitTest` (NoSuchElementException fixen) und `DreissigAugenPflichtTest` repariert.
@@ -25,7 +24,7 @@ REGELN-1 erledigt: `SchweinchenGemeldet`-Event wird nun in `Spiel.spieleKarte()`
 
 ## Phase 3 — Regel-Feinheiten & Sonderregeln (REGELN)
 - [x] **REGELN-1** Schweinchen-Logik & Test-Fix: Das Domain-Event `SchweinchenGemeldet` wird laut Spec beim Ausspielen des ersten Karo-Asses erwartet. Es muss in `Spiel.spieleKarte()` erzeugt und der `SpielAktion` hinzugefügt werden. Zudem muss das fehlschlagende Test-Setup (Kartenzahl-Fehler), das diesen Task blockiert hat, repariert werden (Blocker aufgehoben, da es behoben werden muss).
-- [ ] **REGELN-2** KI-Hänger beheben: Der `KiEventAdapter` oder `SpielAktionsService` triggert das `NaechsterSpielerErwartet`-Event nicht zuverlässig, wenn Sonderpunkte (z.B. "Fuchs gefangen") ausgewertet werden oder Phasenwechsel stattfinden (z.B. Hochzeit-Partner gefunden). Dies führt zum Stillstand der KI. Das Event muss in diesen Edge-Cases verlässlich ausgelöst werden.
+- [x] **REGELN-2** KI-Hänger beheben: Der `KiEventAdapter` oder `SpielAktionsService` triggert das `NaechsterSpielerErwartet`-Event nun zuverlässig auch bei Sonderpunkten (z.B. "Fuchs gefangen") oder Phasenwechseln (z.B. Hochzeit-Partner gefunden). Die Orchestrierung wurde optimiert, um redundante Events bei aufeinanderfolgenden KI-Zügen zu vermeiden.
 - [ ] **REGELN-3** KI-Strategie Tuning: In `StandardKiStrategie.soloSchwelle()` überprüfen, ob die Schwelle hardcodiert (46) ist oder dynamisch angehoben wird, wie in `ki-strategie.md` gefordert (Anhebung um +15% bei Schweinchen oder 30-Augen-Pflicht). Wenn hardcodiert, Logik entsprechend anpassen.
 
 ## Phase 4 — Frontend UI-Migration (UI-NATIVE)

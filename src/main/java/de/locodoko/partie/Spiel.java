@@ -342,7 +342,13 @@ public class Spiel extends AbstraktePersistenzEntity {
         }
         List<Stich> neueAbgeschlosseneStiche = new ArrayList<>(abgeschlosseneStiche);
         neueAbgeschlosseneStiche.add(gespielterStich);
-        HochzeitFortschritt hf = fortschrittNachVollstaendigemStich(gespielterStich, stichphase.hochzeitStatus());
+        HochzeitStatus alterHochzeitStatus = stichphase.hochzeitStatus();
+        HochzeitFortschritt hf = fortschrittNachVollstaendigemStich(gespielterStich, alterHochzeitStatus);
+        
+        if (alterHochzeitStatus != null && alterHochzeitStatus.suchtPartner() && hf.status() != null && !hf.status().suchtPartner() && hf.status().partner().isPresent()) {
+            ereignisse.add(new SpielEreignis.HochzeitPartnerGefunden(hf.status().partner().get()));
+        }
+
         Set<Partei> neuesPflichtansageAusstehend = berechneNeuePflichtansagen(gespielterStich, neueAbgeschlosseneStiche.size(), hf.parteien());
         List<SonderpunktEreignis> sonderpunkte = new SonderpunktBewerter()
             .bewerte(List.of(gespielterStich), hf.parteien(), trumpfOrdnung, spielregeln)
