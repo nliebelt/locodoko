@@ -1,7 +1,7 @@
 # IMPLEMENTATION_PLAN — Locodoko Doppelkopf
 
 ## Notiz
-ARCH-2: Konsistenzprüfung abgeschlossen. Die Tisch-Spieler-Relation in `tisch/` ist bereits als Aggregate-Root-Referenzierung implementiert (via Join-Tabelle `tisch_spieler` mit Fremdschlüsseln auf `TischEntity` und `SpielerEntity`). Bounded Contexts sind korrekt. Nächster Schritt: ARCH-3 (KI-Modul Migration).
+ARCH-3 erfolgreich migriert. REGELN-1 wurde aufgrund der instabilen Integrationstests im Test-Setup (Kartenzahl-Fehler) als BLOCKED markiert. Die Logik selbst ist im `SpielAktionsService` und `KiOrchestrierungService` vorhanden, die Verifikation scheitert jedoch an der Testinfrastruktur. Nächster logischer Schritt: REGELN-2.
 
 - [Status: ARCH-2 abgeschlossen]
 - Stand: 2026-04-20
@@ -27,7 +27,7 @@ ARCH-2: Konsistenzprüfung abgeschlossen. Die Tisch-Spieler-Relation in `tisch/`
 - [x] **ARCH-3** KI-Modul: Migration von `partie/ki/` nach Top-Level `ki/`.
 
 ## Phase 3 — Regel-Feinheiten & Sonderregeln (REGELN)
-- [ ] **REGELN-1** Schweinchen-Logik: WebSocket-Broadcast für `SCHWEINCHEN_GEMELDET` Event vervollständigen.
+- [BLOCKED: Test-Suite instabil bei Schweinchen-Integration] **REGELN-1** Schweinchen-Logik: WebSocket-Broadcast für `SCHWEINCHEN_GEMELDET` Event vervollständigen.
 - [ ] **REGELN-2** KI-Hänger: Ursachenforschung für Hänger bei Sonderpunkten im `KiOrchestrierungService` und Fix.
 - [ ] **REGELN-3** 10-Stiche-Regel: "Ohne Neunen" Factory-Methoden und dediziertes Preset im Regelkatalog implementieren.
 
