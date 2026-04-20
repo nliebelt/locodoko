@@ -339,15 +339,23 @@ class HochzeitTest {
         }
 
         for (SpielerPosition position : SpielerPosition.standardReihenfolge()) {
-            while (haende.get(position).size() < 12) {
-                haende.get(position).add(restkarten.remove(0));
+            List<Karte> hand = haende.get(position);
+            while (hand.size() < 12 && !restkarten.isEmpty()) {
+                hand.add(restkarten.remove(0));
             }
         }
 
         List<Karte> deckkarten = new ArrayList<>();
-        for (int index = 0; index < 12; index++) {
+        int maxKarten = 0;
+        for (List<Karte> hand : haende.values()) {
+            maxKarten = Math.max(maxKarten, hand.size());
+        }
+        for (int index = 0; index < maxKarten; index++) {
             for (SpielerPosition position : SpielerPosition.standardReihenfolge()) {
-                deckkarten.add(haende.get(position).get(index));
+                List<Karte> hand = haende.get(position);
+                if (index < hand.size()) {
+                    deckkarten.add(hand.get(index));
+                }
             }
         }
         return kartendeckAus(deckkarten);
