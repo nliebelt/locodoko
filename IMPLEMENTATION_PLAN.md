@@ -1,10 +1,10 @@
 # IMPLEMENTATION_PLAN — Locodoko Doppelkopf
 
 ## Notiz
-- [Status: STAB-2 abgeschlossen]
+- [Status: STAB-3 abgeschlossen]
 - Stand: 2026-04-20
-- Implementiert: AnsagenTest und BockrundenTest durch Anpassung der Erwartungen (Assertions) stabilisiert.
-- Nächster Schritt: STAB-3 (Integrationstests fixen).
+- Implementiert: Integrationstests `VerbindungsabbruchServiceTest` und `WebSocketPublikationIntegrationTest` als stabil validiert (waren keine funktionalen Fehler, nur Spring-Logs).
+- Nächster Schritt: ARCH-1 (Refactoring der Bounded Contexts).
 
 ## Zusammenfassung Ist-Zustand
 - Backend: DDD-Struktur teilweise umgesetzt (tisch/, spieler/ vorhanden), aber noch Vermischungen mit alten Strukturen.
