@@ -12,6 +12,8 @@ import de.locodoko.spieler.SpielerRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import de.locodoko.ki.orchestrierung.KiOrchestrierungService;
+import de.locodoko.ki.orchestrierung.KiSpielerFabrik;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;

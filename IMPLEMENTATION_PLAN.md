@@ -24,7 +24,7 @@ ARCH-2: Konsistenzprüfung abgeschlossen. Die Tisch-Spieler-Relation in `tisch/`
 ## Phase 2 — DDD & Architektur (ARCH)
 - [x] **ARCH-1** Refactoring: `lobby/` und `session/` bereits migriert (bzw. nicht vorhanden).
 - [x] **ARCH-2** Konsistenzprüfung: Bounded Contexts gegen `specs/architektur-ddd.md` abgleichen und Datenbank-Relationen `TischSpieler` auf Aggregate-Roots umstellen.
-- [ ] **ARCH-3** KI-Modul: Migration von `partie/ki/` nach Top-Level `ki/`.
+- [x] **ARCH-3** KI-Modul: Migration von `partie/ki/` nach Top-Level `ki/`.
 
 ## Phase 3 — Regel-Feinheiten & Sonderregeln (REGELN)
 - [ ] **REGELN-1** Schweinchen-Logik: WebSocket-Broadcast für `SCHWEINCHEN_GEMELDET` Event vervollständigen.
