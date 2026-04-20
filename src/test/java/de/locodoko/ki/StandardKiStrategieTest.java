@@ -639,7 +639,7 @@ class StandardKiStrategieTest {
     @Test
     void meldetKeinSoloBeiGleicherGrenzwertHandMitLocoBlatRegeln() {
         // Dieselbe Hand (soloWert=50) mit Loco-Blatt-Regeln (Schweinchen + 30-Augen-Pflicht aktiv).
-        // Erhöhte Solo-Schwelle: ceil(46 × 1.15) = 53 → 50 < 53 → kein Solo.
+        // Erhöhte Solo-Schwelle: ceil(46 × 1.13) = 52 → 50 < 52 → kein Solo.
         // Wichtig: prüft dass KI-2 Solo-Schwellen bei aktiven Sonderregeln erhöht werden,
         // weil Schweinchen die Trumpfverteilung ausgeglichener macht und Solo-Chancen reduziert.
         Spielregeln locoRegeln = Spielregeln.locoBlatRegeln();

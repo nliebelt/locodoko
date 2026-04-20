@@ -2,7 +2,7 @@
 
 ## Notiz
 Stand: 2026-04-20
-REGELN-2 erledigt: KI-Hänger bei Sonderpunkten und Phasenwechseln durch Einführung von `HochzeitPartnerGefunden` Event und verlässliches `triggereKi` in `SpielAktionsService` behoben. Orchestrierung optimiert (ein Event am Ende statt pro KI-Zug). Nächster Schritt: REGELN-3 (KI-Strategie Tuning).
+REGELN-3 erledigt: Solo-Schwellen in `StandardKiStrategie` feingetunt (Faktor 1.13 statt 1.15), um den Zielwert 52 aus `ki-strategie.md` präzise zu treffen. Tests und Javadoc aktualisiert. Phase 3 damit abgeschlossen. Nächster Schritt: Phase 4 (UI-NATIVE-1: Phaser-Migration der Overlays).
 
 ## Zusammenfassung Ist-Zustand
 - Backend: DDD-Struktur stabil. Event-Triggering für KI nun robust und optimiert.
@@ -25,7 +25,7 @@ REGELN-2 erledigt: KI-Hänger bei Sonderpunkten und Phasenwechseln durch Einfüh
 ## Phase 3 — Regel-Feinheiten & Sonderregeln (REGELN)
 - [x] **REGELN-1** Schweinchen-Logik & Test-Fix: Das Domain-Event `SchweinchenGemeldet` wird laut Spec beim Ausspielen des ersten Karo-Asses erwartet. Es muss in `Spiel.spieleKarte()` erzeugt und der `SpielAktion` hinzugefügt werden. Zudem muss das fehlschlagende Test-Setup (Kartenzahl-Fehler), das diesen Task blockiert hat, repariert werden (Blocker aufgehoben, da es behoben werden muss).
 - [x] **REGELN-2** KI-Hänger beheben: Der `KiEventAdapter` oder `SpielAktionsService` triggert das `NaechsterSpielerErwartet`-Event nun zuverlässig auch bei Sonderpunkten (z.B. "Fuchs gefangen") oder Phasenwechseln (z.B. Hochzeit-Partner gefunden). Die Orchestrierung wurde optimiert, um redundante Events bei aufeinanderfolgenden KI-Zügen zu vermeiden.
-- [ ] **REGELN-3** KI-Strategie Tuning: In `StandardKiStrategie.soloSchwelle()` überprüfen, ob die Schwelle hardcodiert (46) ist oder dynamisch angehoben wird, wie in `ki-strategie.md` gefordert (Anhebung um +15% bei Schweinchen oder 30-Augen-Pflicht). Wenn hardcodiert, Logik entsprechend anpassen.
+- [x] **REGELN-3** KI-Strategie Tuning: Die Solo-Schwellen in `StandardKiStrategie.soloSchwelle()` wurden von einem 1.15er auf einen 1.13er Faktor angepasst, um die Zielwerte der Spec (46 -> 52) exakt zu treffen. Dokumentation und Tests wurden entsprechend aktualisiert.
 
 ## Phase 4 — Frontend UI-Migration (UI-NATIVE)
 - [ ] **UI-NATIVE-1** HTML-Hybrid-Rückbau: Seitenlade und Einstellungsmenüs vollständig auf Phaser-Container umstellen.
