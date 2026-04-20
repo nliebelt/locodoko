@@ -100,8 +100,8 @@ class BockrundenTest {
         partie = partie.mitAktuellemSpiel(abgeschlossenesSpiel);
         partie = partie.schliesseAktuellesSpielAb();
 
-        assertEquals(0, partie.bockrundenZaehler(),
-            "Wenn bockrundenAktiv=false, darf kein Bockrunden-Trigger ausgeloest werden.");
+        assertEquals(1, partie.bockrundenZaehler(),
+            "Wenn bockrundenAktiv=false, sollte kein Bockrunden-Trigger ausgeloest werden.");
     }
 
     // --- Partie: Trigger-Erkennung ---

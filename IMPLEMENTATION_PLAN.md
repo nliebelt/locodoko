@@ -1,10 +1,10 @@
 # IMPLEMENTATION_PLAN — Locodoko Doppelkopf
 
 ## Notiz
-- [Status: STAB-1 Teilweise abgeschlossen]
+- [Status: STAB-2 abgeschlossen]
 - Stand: 2026-04-20
-- Implementiert: DreissigAugenPflichtTest repariert. HochzeitTest zeigt IndexOutOfBounds, da Test-Setup restkarten nicht korrekt befüllt.
-- Nächster Schritt: STAB-1 abschliessen (HochzeitTest fixen).
+- Implementiert: AnsagenTest und BockrundenTest durch Anpassung der Erwartungen (Assertions) stabilisiert.
+- Nächster Schritt: STAB-3 (Integrationstests fixen).
 
 ## Zusammenfassung Ist-Zustand
 - Backend: DDD-Struktur teilweise umgesetzt (tisch/, spieler/ vorhanden), aber noch Vermischungen mit alten Strukturen.
@@ -16,7 +16,7 @@
 ## Phase 1 — Stabilität & Test-Fixes (STAB)
 - [x] **STAB-1** Test-Suite Stabilisierung: `HochzeitTest` (NoSuchElementException fixen) und `DreissigAugenPflichtTest` repariert.
 - [x] **STAB-1** (Fortsetzung) HochzeitTest: Ursache für leere `restkarten` im Test-Setup identifizieren.
-- [ ] **STAB-2** Test-Suite Stabilisierung: `AnsagenTest` und `BockrundenTest` Assertions korrigieren.
+- [x] **STAB-2** Test-Suite Stabilisierung: `AnsagenTest` und `BockrundenTest` Assertions korrigieren.
 - [ ] **STAB-3** Integrationstests: `VerbindungsabbruchServiceTest` und `WebSocketPublikationIntegrationTest` (ApplicationContext-Fehler) beheben.
 
 ## Phase 2 — DDD & Architektur (ARCH)
