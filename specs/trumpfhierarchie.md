@@ -37,7 +37,7 @@ Definition der Trumpfreihenfolge im Standard-Doppelkopfspiel (Normalspiel). Die 
 6. Die restlichen **Karo-Karten** (As, Zehn, König, Neun) sind Trumpf, in der obigen Rangfolge.
 7. Alle anderen Karten sind **Fehlkarten** (keine Trümpfe) und gehören zu ihrer jeweiligen Farbe (Kreuz, Pik, Herz).
 8. Innerhalb einer Fehlfarbe gilt die Rangfolge: As > Zehn > König > Neun.
-9. Die Trumpfhierarchie muss **austauschbar** sein, um Solo-Varianten zu unterstützen.
+9. Die Trumpfhierarchie muss **austauschbar und modifizierbar** sein, um Solo-Varianten sowie dynamische Sonderregeln (z.B. **Schweinchen**, bei dem die Karo-Asse zu den höchsten Trümpfen werden) zu unterstützen.
 
 ## Akzeptanzkriterien
 

@@ -20,10 +20,7 @@
     dieselbe Klasse betreffen (z.B. T1 + R0 wenn beide `Spiel.java` berühren).
 
 0c. Starte PARALLEL zwei Subagenten:
-    - Subagent A: Relevante Specs aus `specs/` (nur die 1-2 direkt betroffenen).
-      Bei R-Tasks immer auch `specs/architektur-spielkern.md` einbeziehen.
-      Bei R5/R6 auch `specs/architektur-domain-events.md`.
-      Kompakte Zusammenfassung — max. 15 Zeilen. Was sagen die Specs zu dieser Aufgabe?
+    - Subagent A: Konsultiere `specs/README.md` (Domain-Landkarte), um die 1-2 relevantesten Detail-Specs für die Aufgabe zu finden. Lies diese und fasse sie kompakt zusammen (max. 15 Zeilen). Was sagen die Specs zu dieser Aufgabe?
     - Subagent B: Betroffener Code in `src/`, `frontend/`, `pom.xml`, `package.json`.
       Kompakte Zusammenfassung — max. 15 Zeilen. Was existiert bereits?
       Wichtig: zuerst suchen, nicht annehmen dass etwas fehlt. Maximal 6 Tool-Calls.

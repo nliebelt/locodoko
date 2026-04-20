@@ -46,14 +46,15 @@ de.locodoko.system/    Querschnittlich.
 **Abhängigkeitsrichtung (erlaubt):**
 ```
 tisch → partie, karten, spieler
-ki    → partie, karten          (nur Typen, NICHT tisch)
+ki    → partie, karten          (nur Typen und Events, NICHT tisch)
 partie → karten
-spieler → (nichts aus der Fachlichkeit)
+spieler → partie.ereignisse     (Darf auf Domain-Events lauschen, aber keine interne Logik aufrufen)
 ```
 
 **Cross-Modul-Kommunikation:**
-- Domain Events über `@ApplicationModuleListener` (Spring Modulith) statt `@EventListener`
-- Kein direkter Aufruf von `ki.*` aus `tisch.*` — KI reagiert auf Events
+- Domain Events über `@ApplicationModuleListener` (Spring Modulith) statt `@EventListener`.
+- **Pragmatismus-Regel:** Module dürfen Klassen aus dem Package `de.locodoko.partie.ereignisse` importieren, um auf fachliche Vorkommnisse (z.B. `SpielBeendet`) zu reagieren, ohne dass ein aufwendiger Mapping-Layer gebaut werden muss.
+- Kein direkter Aufruf von `ki.*` aus `tisch.*` — KI reagiert auf Events.
 
 ### 2. Persistenz-Regeln (Spring Data JDBC)
 

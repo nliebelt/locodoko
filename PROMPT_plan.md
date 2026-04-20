@@ -11,38 +11,23 @@ auslieferbar als einzelnes JAR.
     Hintergrundkontext für alle Subagenten: specs/architektur-ddd.md
 
 0b. Starte 5 PARALLELE Subagenten, jeder analysiert einen Bounded Context.
-    Jeder gibt zurück: was implementiert ist, was fehlt, was zwischen Spec und Code
-    inkonsistent ist — max. 20 Zeilen. Zuerst suchen, nicht annehmen dass etwas fehlt.
+    Lies ZUERST `specs/README.md` (Domain-Landkarte), um zu wissen, welche Specs zu welchem Kontext gehören.
+    Jeder Subagent gibt zurück: was implementiert ist, was fehlt, was zwischen Spec und Code inkonsistent ist — max. 20 Zeilen.
+    Zuerst suchen, nicht annehmen dass etwas fehlt.
 
     Specs mit Status "Zu prüfen" immer vollständig lesen. Specs mit Status
     "Aktive Vorgabe" / "Finalisierte Vorgabe" / "Abgeschlossen" nur überfliegen.
 
-    - Subagent 1 — Tisch/Spieler: `src/main/java/de/locodoko/` (alle Packages auflisten!)
-      Ziel-BCs laut `specs/architektur-ddd.md`: `tisch/`, `spieler/` (aktuell: `lobby/`, `session/`)
-      + specs/lobby.md, specs/tischkonfiguration.md, specs/datenbankmodell.md,
-        specs/spieler-session.md, specs/verbindungsabbruch.md,
-        specs/authentifizierung.md, specs/spieler-profil.md,
-        **specs/architektur-ddd.md** (Ziel-Modulstruktur)
-
-    - Subagent 2 — Partie/Regeln/Architektur: `src/main/java/de/locodoko/partie/`
-      + specs/spielablauf.md, specs/stichlogik.md, specs/trumpfhierarchie.md,
-        specs/kartendeck.md, specs/punkteberechnung.md, specs/ansagen.md,
-        specs/sonderpunkte.md, specs/bockrunden.md, specs/schweinchen.md,
-        specs/dreissig-augen-pflicht.md, specs/regelkatalog.md,
-        specs/tischkonfiguration.md,
-        **specs/architektur-spielkern.md** (Zielzustand Spielkern)
-
-    - Subagent 3 — API/Events/KI-Modul: `src/main/java/de/locodoko/` (partie/ki/, system/)
-      Ziel-BC laut `specs/architektur-ddd.md`: `ki/` top-level (aktuell: `partie/ki/`)
-      + specs/websocket-kommunikation.md, specs/rest-api.md, specs/e2e-tests.md,
-        specs/ki-strategie.md,
-        **specs/architektur-domain-events.md** (KI als Event-Subscriber)
-
+    - Subagent 1 — Tisch/Spieler: `src/main/java/de/locodoko/` (alle Packages)
+      Fokus: `tisch/` und `spieler/` vs. zugehörige Specs laut `specs/README.md`
+    - Subagent 2 — Partie/Regeln: `src/main/java/de/locodoko/partie/`
+      Fokus: Spielkern, Regeln vs. zugehörige Specs laut `specs/README.md`
+    - Subagent 3 — API/Events/KI: `src/main/java/de/locodoko/ki/` und Infrastruktur
+      Fokus: KI, Events, API vs. zugehörige Specs laut `specs/README.md`
     - Subagent 4 — Frontend: `frontend/src/`
-      + specs/frontend-*.md, specs/regelkatalog.md
-
-    - Subagent 5 — Sonderspiele/KI: betroffener Code in `src/` und `frontend/`
-      + specs/hochzeit.md, specs/armut.md, specs/solo-*.md, specs/ki-strategie.md
+      Fokus: UI und Animationen vs. Frontend-Specs laut `specs/README.md`
+    - Subagent 5 — Sonderspiele: Betroffener Code in `src/` und `frontend/`
+      Fokus: Sonderspiel-Implementierungen vs. Sonderspiel-Specs laut `specs/README.md`
 
     Warte auf alle 5 Ergebnisse.
 
