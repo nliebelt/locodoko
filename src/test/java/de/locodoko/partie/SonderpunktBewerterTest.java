@@ -41,7 +41,7 @@ class SonderpunktBewerterTest {
                 .spieleKarte(SpielerPosition.SUED, kreuzAs(2), new Hand(List.of(kreuzAs(2))), trumpfOrdnung)
         );
 
-        Map<Partei, List<SonderpunktEreignis>> sonderpunkte = bewerter.bewerte(stiche, parteien, trumpfOrdnung, spielregeln);
+        Map<Partei, List<SonderpunktEreignis>> sonderpunkte = bewerter.bewerte(stiche, parteien, trumpfOrdnung, spielregeln, 10);
 
         List<Sonderpunkt> reArten = sonderpunkte.get(Partei.RE).stream().map(SonderpunktEreignis::art).toList();
         assertEquals(List.of(Sonderpunkt.DOPPELKOPF, Sonderpunkt.FUCHS_GEFANGEN, Sonderpunkt.KARLCHEN), reArten,

@@ -17,6 +17,7 @@
   },
   "devDependencies": {
     "@eslint/js": "^9.23.0",
+    "canvas": "^3.2.3",
     "eslint": "^9.23.0",
     "globals": "^16.0.0",
     "jsdom": "^29.0.1",

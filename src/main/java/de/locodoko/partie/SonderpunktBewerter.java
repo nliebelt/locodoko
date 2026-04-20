@@ -26,14 +26,25 @@ public final class SonderpunktBewerter {
         TrumpfOrdnung trumpfOrdnung,
         Spielregeln spielregeln
     ) {
+        return bewerte(stiche, parteien, trumpfOrdnung, spielregeln, 0);
+    }
+
+    public EnumMap<Partei, List<SonderpunktEreignis>> bewerte(
+        List<Stich> stiche,
+        Parteien parteien,
+        TrumpfOrdnung trumpfOrdnung,
+        Spielregeln spielregeln,
+        int absoluteStartIndex
+    ) {
         Objects.requireNonNull(stiche, "stiche duerfen nicht null sein");
         Objects.requireNonNull(parteien, "parteien duerfen nicht null sein");
         Objects.requireNonNull(trumpfOrdnung, "trumpfOrdnung darf nicht null sein");
         Objects.requireNonNull(spielregeln, "spielregeln duerfen nicht null sein");
 
         EnumMap<Partei, List<SonderpunktEreignis>> sonderpunkte = leereSonderpunktMap();
-        for (int index = 0; index < stiche.size(); index++) {
-            Stich stich = stiche.get(index);
+        for (int i = 0; i < stiche.size(); i++) {
+            int absoluteStichIndex = absoluteStartIndex + i;
+            Stich stich = stiche.get(i);
             GespielteKarte gewinnerKarte = stich.gewinner(trumpfOrdnung);
             SpielerPosition gewinnerPosition = gewinnerKarte.spieler();
             Partei gewinnerPartei = parteien.parteiVon(gewinnerPosition);
@@ -43,8 +54,10 @@ public final class SonderpunktBewerter {
             if (spielregeln.fuchsAktiv()) {
                 bewerteFuechse(stich, gewinnerPosition, gewinnerPartei, parteien, sonderpunkte);
             }
-            if (spielregeln.karlchenAktiv() && index == stiche.size() - 1) {
-                if (istKarlchen(gewinnerKarte)) {
+            if (spielregeln.karlchenAktiv()) {
+                int stichNummer = absoluteStichIndex + 1;
+                int letzterStichNummer = spielregeln.ohneNeunen() ? 10 : 12;
+                if (stichNummer == letzterStichNummer && istKarlchen(gewinnerKarte)) {
                     sonderpunkte.get(gewinnerPartei).add(new SonderpunktEreignis(Sonderpunkt.KARLCHEN, gewinnerPosition, null));
                 }
             }

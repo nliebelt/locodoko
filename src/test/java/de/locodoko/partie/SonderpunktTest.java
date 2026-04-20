@@ -86,7 +86,7 @@ class SonderpunktTest {
             .spieleKarte(SpielerPosition.SUED, kreuzNeun(1), new Hand(List.of(kreuzNeun(1))), trumpfOrdnung);
 
         EnumMap<Partei, List<SonderpunktEreignis>> ergebnis =
-            bewerter.bewerte(List.of(stich), parteien, trumpfOrdnung, spielregeln);
+            bewerter.bewerte(List.of(stich), parteien, trumpfOrdnung, spielregeln, 11);
 
         assertEquals(1, ergebnis.get(Partei.RE).size());
         assertEquals(Sonderpunkt.KARLCHEN, ergebnis.get(Partei.RE).get(0).art());

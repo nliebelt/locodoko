@@ -125,7 +125,7 @@ describe('AnimationenService', () => {
     const { szene, aufrufe, textobjekte } = baueTweenSzene();
     const service = new AnimationenService(szene as never);
 
-    const animation = service.animiereAnsageBanner('Anna\nRe', { x: 640, y: 360 });
+    const animation = service.animiereAnsageBanner('Anna\nRe', { x: 640, y: 360 }, 1500);
 
     // Fade-In Tween (alpha → 1) wird sofort ausgefuehrt
     expect(aufrufe).toHaveLength(1);
@@ -159,7 +159,7 @@ describe('AnimationenService', () => {
     const { szene, aufrufe, textobjekte } = baueTweenSzene();
     const service = new AnimationenService(szene as never);
 
-    const animation = service.animiereSonderpunktFeedback('Re: Fuchs gefangen', { x: 640, y: 360 });
+    const animation = service.animiereSonderpunktFeedback('Re: Fuchs gefangen', { x: 640, y: 360 }, 1000);
 
     // Fade-In Tween (alpha → 1) wird sofort ausgefuehrt
     expect(aufrufe).toHaveLength(1);
@@ -221,10 +221,11 @@ describe('AnimationenService', () => {
     await service.animiereKarteAusspielen({ wurzel }, { x: 100, y: 100 });
     expect(aufrufe[0].duration).toBe(200); // 400ms / 2
 
-    // Faktor Infinity (sofort): Dauern werden 0
+    // Faktor Infinity (sofort): Dauern werden 0 -> Tweens werden uebersprungen (Optimierung)
     service.setzeGeschwindigkeitsfaktor(Infinity);
     await service.animiereKarteAusspielen({ wurzel }, { x: 200, y: 200 });
-    expect(aufrufe[1].duration).toBe(0);
+    expect(aufrufe).toHaveLength(1); // Kein zweiter Tween-Aufruf
+    expect(wurzel).toMatchObject({ x: 200, y: 200 }); // Position wurde trotzdem gesetzt (via direktem Resolve)
   });
 
   it('loest bei Geschwindigkeitsfaktor Infinity alle Animationen sofort auf', async () => {
@@ -235,11 +236,11 @@ describe('AnimationenService', () => {
     // animiereStichEinziehen wartet normalerweise 1000ms — bei Infinity sofort fertig
     const wurzel = baueKartenWurzel() as never;
     const animation = service.animiereStichEinziehen([{ wurzel }], { x: 50, y: 75 }, 14);
-    // Kein Tick noetig: warte(0) kehrt sofort zurueck, Tween mit duration=0 loest sofort auf
+    // Kein Tick noetig: warte(0) kehrt sofort zurueck, Optimierung ueberspringt Tweens
     await animation;
 
-    expect(aufrufe).toHaveLength(5);
-    expect(aufrufe[0].duration).toBe(0);
+    expect(aufrufe).toHaveLength(0); // Alle Tweens uebersprungen
+    expect(wurzel).toMatchObject({ x: 50, y: 75, scaleX: 0.4, scaleY: 0.4 });
     vi.useRealTimers();
   });
 

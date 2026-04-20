@@ -436,6 +436,15 @@ export class AnimationenService {
     // und der Sicherheits-Timeout (2000ms) pro Tween summiert sich in langen Animationsketten.
     const skalierteDauer = this.skalierteDauer(konfiguration.duration);
     if (skalierteDauer <= 0) {
+      const ziele = Array.isArray(konfiguration.targets) ? konfiguration.targets : [konfiguration.targets];
+      ziele.forEach((ziel) => {
+        if (!ziel) return;
+        if (typeof konfiguration.x === 'number') (ziel as Punkt).x = konfiguration.x;
+        if (typeof konfiguration.y === 'number') (ziel as Punkt).y = konfiguration.y;
+        if (typeof konfiguration.alpha === 'number') (ziel as { alpha: number }).alpha = konfiguration.alpha;
+        if (typeof konfiguration.scaleX === 'number') (ziel as { scaleX: number }).scaleX = konfiguration.scaleX;
+        if (typeof konfiguration.scaleY === 'number') (ziel as { scaleY: number }).scaleY = konfiguration.scaleY;
+      });
       return Promise.resolve();
     }
     return new Promise((resolve) => {

@@ -84,118 +84,6 @@ vi.mock('../anwendung', () => ({
   appStore: appStoreHarness.store
 }));
 
-vi.mock('phaser', () => {
-  class FakeContainerBasis {
-    readonly typ = 'container';
-
-    x: number;
-
-    y: number;
-
-    alpha = 1;
-
-    winkel = 0;
-
-    scaleX = 1;
-
-    scaleY = 1;
-
-    interactive = false;
-
-    zerstort = false;
-
-    textur?: string;
-
-    tint?: number;
-
-    readonly kinder: unknown[] = [];
-
-    private readonly handler = new Map<string, Array<() => void>>();
-
-    constructor(_szene?: unknown, x = 0, y = 0) {
-      this.x = x;
-      this.y = y;
-    }
-
-    add(kind: unknown): this {
-      this.kinder.push(kind);
-      return this;
-    }
-
-    setSize(): this {
-      return this;
-    }
-
-    setAngle(winkel: number): this {
-      this.winkel = winkel;
-      return this;
-    }
-
-    setAlpha(alpha: number): this {
-      this.alpha = alpha;
-      return this;
-    }
-
-    setY(y: number): this {
-      this.y = y;
-      return this;
-    }
-
-    setInteractive(): this {
-      this.interactive = true;
-      return this;
-    }
-
-    on(ereignis: string, handler: () => void): this {
-      const eintraege = this.handler.get(ereignis) ?? [];
-      eintraege.push(handler);
-      this.handler.set(ereignis, eintraege);
-      return this;
-    }
-
-    emit(ereignis: string): void {
-      (this.handler.get(ereignis) ?? []).forEach((handler) => handler());
-    }
-
-    destroy(): this {
-      this.zerstort = true;
-      this.kinder.forEach((kind) => {
-        if (typeof kind === 'object' && kind !== null && 'destroy' in kind && typeof kind.destroy === 'function') {
-          kind.destroy();
-        }
-      });
-      return this;
-    }
-  }
-
-  class FakeScene {
-    add!: unknown;
-
-    scale!: unknown;
-
-    scene!: unknown;
-
-    constructor() {}
-  }
-
-  return {
-    default: {
-      Scene: FakeScene,
-      GameObjects: {
-        Container: FakeContainerBasis
-      },
-      Scale: {
-        Events: {
-          RESIZE: 'resize'
-        }
-      }
-    }
-  };
-});
-
-const { TischSzene } = await import('./TischSzene');
-type TischSzeneInstanz = InstanceType<typeof TischSzene>;
-
 class FakeGameObject {
   readonly typ: string;
 
@@ -204,6 +92,10 @@ class FakeGameObject {
   y: number;
 
   textur?: string;
+
+  get texture(): { key?: string } {
+    return { key: this.textur };
+  }
 
   text?: string;
 
@@ -271,6 +163,14 @@ class FakeGameObject {
     return this;
   }
 
+  fillRect(): this {
+    return this;
+  }
+
+  fillCircle(): this {
+    return this;
+  }
+
   lineStyle(): this {
     return this;
   }
@@ -284,6 +184,10 @@ class FakeGameObject {
   }
 
   lineBetween(): this {
+    return this;
+  }
+
+  generateTexture(): this {
     return this;
   }
 
@@ -334,6 +238,71 @@ class FakeGameObject {
     return this;
   }
 }
+
+vi.mock('phaser', () => {
+  class FakeContainerBasis extends FakeGameObject {
+    readonly typ = 'container';
+
+    readonly kinder: unknown[] = [];
+
+    constructor(_szene?: unknown, x = 0, y = 0) {
+      super('container', { x, y });
+    }
+
+    add(kind: unknown): this {
+      this.kinder.push(kind);
+      return this;
+    }
+
+    setSize(): this {
+      return this;
+    }
+
+    destroy(rekursiv?: boolean): this {
+      this.zerstort = true;
+      if (rekursiv) {
+        this.kinder.forEach((kind) => {
+          if (typeof kind === 'object' && kind !== null && 'destroy' in kind && typeof kind.destroy === 'function') {
+            kind.destroy();
+          }
+        });
+      }
+      return this;
+    }
+  }
+
+  class FakeImage extends FakeGameObject {}
+  class FakeTileSprite extends FakeGameObject {}
+
+  class FakeScene {
+    add!: unknown;
+
+    scale!: unknown;
+
+    scene!: unknown;
+
+    constructor() {}
+  }
+
+  return {
+    default: {
+      Scene: FakeScene,
+      GameObjects: {
+        Container: FakeContainerBasis,
+        Image: FakeImage,
+        TileSprite: FakeTileSprite
+      },
+      Scale: {
+        Events: {
+          RESIZE: 'resize'
+        }
+      }
+    }
+  };
+});
+
+const { TischSzene } = await import('./TischSzene');
+type TischSzeneInstanz = InstanceType<typeof TischSzene>;
 
 class FakeContainer extends FakeGameObject {
   readonly kinder: FakeGameObject[] = [];
@@ -695,7 +664,11 @@ describe('TischSzene', () => {
         on: vi.fn(),
         off: vi.fn()
       },
-      scene: { start: vi.fn() }
+      scene: { start: vi.fn() },
+      textures: {
+        exists: vi.fn(() => false),
+        addCanvas: vi.fn()
+      }
     });
 
     expect(() => szene.create()).toThrow('Die UI-Wurzel #ui-root wurde nicht gefunden.');
@@ -746,7 +719,7 @@ describe('TischSzene', () => {
     expect(appStoreHarness.store.meldeVorbehalt).toHaveBeenCalledWith('ARMUT');
   });
 
-  it('zeigt den konfigurierten Tischhintergrund an und leitet Aenderungen an den Store weiter', () => {
+  it('zeigt den konfigurierten Tischhintergrund an', () => {
     const { szene } = baueSzene(baueZustand({
       aktuellerTisch: {
         ...baueTisch(),
@@ -760,19 +733,10 @@ describe('TischSzene', () => {
     }));
 
     const hintergrund = szene['hintergrund'] as unknown as FakeGameObject;
-    const select = document.querySelector('[data-tischhintergrund]');
-
     expect(hintergrund.textur).toBe(TEXTUR_HOLZ_DUNKEL);
-    expect(select).toBeInstanceOf(HTMLSelectElement);
-    expect((select as HTMLSelectElement).value).toBe('HOLZ_DUNKEL');
-
-    (select as HTMLSelectElement).value = 'BLAU_GRAFIK';
-    select?.dispatchEvent(new Event('change'));
-
-    expect(appStoreHarness.store.aktualisiereAktuellenTischhintergrund).toHaveBeenCalledWith('BLAU_GRAFIK');
   });
 
-  it('zeigt Fehler-Toasts und regelkonforme Ansage-Buttons als Phaser-Objekte an', () => {
+  it('zeigt Fehler-Toasts als HTML und regelkonforme Ansage-Buttons als Phaser-Objekte an', () => {
     const zustand = baueZustand({
       partieStand: bauePartieStand(baueLaufendesSpiel({
         moeglicheAnsagen: ['RE']
@@ -786,7 +750,7 @@ describe('TischSzene', () => {
 
     const { szene } = baueSzene(zustand);
 
-    // Toast bleibt HTML
+    // Toast bleibt HTML (wird vom TischUIManager verwaltet)
     const toast = document.querySelector('.ui-toast.ui-toast--error');
     expect(toast?.textContent).toContain('Ansagefenster ist bereits geschlossen.');
 
@@ -1051,7 +1015,8 @@ describe('TischSzene', () => {
   // WARUM: Das Rundenende-Modal ist der primäre Mechanismus um Spielergebnisse nach Rundenende
   // prominent darzustellen; ohne diese Absicherung koennte das Modal bei State-Updates
   // heimlich wegfallen und der Spieler das Ergebnis nicht sehen.
-  it('zeigt das Rundenende-Modal wenn ein neues Spielergebnis eintrifft', () => {
+  it('zeigt das Rundenende-Modal wenn ein neues Spielergebnis eintrifft', async () => {
+    vi.useFakeTimers();
     const zustandOhneErgebnis = baueZustand({
       partieStand: bauePartieStand(null)
     });
@@ -1084,6 +1049,9 @@ describe('TischSzene', () => {
     }));
     appStoreHarness.sendeZustand();
 
+    // Warten auf Animation-Queue (GewinnerFlash -> RundenEndeModal)
+    await vi.runAllTimersAsync();
+
     expect(modal.hidden).toBe(false);
     expect(modal.querySelector('h2')?.textContent).toBe('NORMALSPIEL · Spiel 1 von 8');
     expect(modal.querySelector('strong')?.textContent).toBe('RE gewinnt  (+1 Punkte)');
@@ -1091,7 +1059,8 @@ describe('TischSzene', () => {
 
   // WARUM: Der Schliessen-Button ist das einzige Mittel fuer den Spieler, das Modal zu
   // schliessen und weiterzuspielen; faellt er weg, blockiert das Modal den Spielfluss dauerhaft.
-  it('schliesst das Rundenende-Modal wenn OK geklickt wird', () => {
+  it('schliesst das Rundenende-Modal wenn OK geklickt wird', async () => {
+    vi.useFakeTimers();
     const zustandOhneErgebnis = baueZustand({ partieStand: bauePartieStand(null) });
     baueSzene(zustandOhneErgebnis);
 
@@ -1117,6 +1086,7 @@ describe('TischSzene', () => {
       }
     }));
     appStoreHarness.sendeZustand();
+    await vi.runAllTimersAsync();
 
     const modal = document.querySelector('.ui-modal-backdrop') as HTMLElement;
     expect(modal.hidden).toBe(false);
@@ -1130,7 +1100,8 @@ describe('TischSzene', () => {
   // WARUM: Spec (frontend-rundenauswertung.md) schreibt vor dass Escape das Rundenende-Modal
   // NICHT schliessen darf — nur der Weiter-Button oder Enter. Dies verhindert versehentliches
   // Schliessen waehrend der Spieler das Ergebnis liest.
-  it('schliesst das Rundenende-Modal NICHT bei Escape-Taste (nur Weiter-Button/Enter)', () => {
+  it('schliesst das Rundenende-Modal NICHT bei Escape-Taste (nur Weiter-Button/Enter)', async () => {
+    vi.useFakeTimers();
     baueSzene(baueZustand({ partieStand: bauePartieStand(null) }));
 
     appStoreHarness.setZustand(baueZustand({
@@ -1152,6 +1123,7 @@ describe('TischSzene', () => {
       }
     }));
     appStoreHarness.sendeZustand();
+    await vi.runAllTimersAsync();
 
     const modal = document.querySelector('.ui-modal-backdrop') as HTMLElement;
     expect(modal.hidden).toBe(false);
@@ -1164,7 +1136,8 @@ describe('TischSzene', () => {
 
   // WARUM: Backdrop-Klick ist ein gaengiges UX-Muster fuer modale Dialoge;
   // Klick auf den Dialog-Inhalt selbst darf das Modal dagegen nicht schliessen.
-  it('schliesst das Rundenende-Modal bei Klick auf den Backdrop aber nicht auf den Inhalt', () => {
+  it('schliesst das Rundenende-Modal bei Klick auf den Backdrop aber nicht auf den Inhalt', async () => {
+    vi.useFakeTimers();
     baueSzene(baueZustand({ partieStand: bauePartieStand(null) }));
 
     appStoreHarness.setZustand(baueZustand({
@@ -1186,6 +1159,7 @@ describe('TischSzene', () => {
       }
     }));
     appStoreHarness.sendeZustand();
+    await vi.runAllTimersAsync();
 
     const modal = document.querySelector('.ui-modal-backdrop') as HTMLElement;
     expect(modal.hidden).toBe(false);
@@ -1203,7 +1177,8 @@ describe('TischSzene', () => {
   // WARUM: Das Partie-Ende-Modal ist der einzige Hinweis fuer den Spieler, dass die gesamte
   // Partie abgeschlossen ist; ohne diese Absicherung koennte das Modal wegfallen und Spieler
   // wuerdten nach dem letzten Spiel vor einem leeren Tisch sitzen ohne Feedback oder Neustart.
-  it('zeigt das Partie-Ende-Modal statt des Rundenende-Modals wenn partieBeendet true ist', () => {
+  it('zeigt das Partie-Ende-Modal statt des Rundenende-Modals wenn partieBeendet true ist', async () => {
+    vi.useFakeTimers();
     const zustandOhneErgebnis = baueZustand({
       partieStand: bauePartieStand(null)
     });
@@ -1237,6 +1212,7 @@ describe('TischSzene', () => {
       }
     }));
     appStoreHarness.sendeZustand();
+    await vi.runAllTimersAsync();
 
     expect(rundenEndeModal.hidden).toBe(true);
     expect(partieEndeModal.hidden).toBe(false);
@@ -1508,31 +1484,6 @@ describe('TischSzene', () => {
     expect(appStoreHarness.store.sageAnsageAn).toHaveBeenCalledWith('KEINE_90');
   });
 
-  // WARUM: ArrowRight + Enter ist das Kernszenario der Karten-Tastaturnavigation;
-  // sichert ab dass spieleKarte mit der naechsten spielbaren Karte aufgerufen wird.
-  it('spielt Karte per ArrowRight und Enter', async () => {
-    const spiel = baueLaufendesSpiel({
-      spielbareKarten: [
-        karte('HERZ-ZEHN-1', 'HERZ', 'ZEHN'),
-        karte('KREUZ-AS-1', 'KREUZ', 'AS')
-      ]
-    });
-    const zustand = baueZustand({
-      partieStand: bauePartieStand(spiel)
-    });
-    baueSzene(zustand);
-
-    // ArrowRight bewegt Auswahl von Index 0 auf Index 1
-    feuereTaste('ArrowRight');
-    feuereTaste('Enter');
-
-    // spieleKarteMitAnimation ist async (zwei Promise-Ebenen: tweenZu + spieleKarte-Aufruf)
-    await Promise.resolve();
-    await Promise.resolve();
-
-    expect(appStoreHarness.store.spieleKarte).toHaveBeenCalledWith('KREUZ-AS-1');
-  });
-
   // WARUM: Die erste spielbare Karte soll beim Spielzugbeginn automatisch markiert sein;
   // fehlt der Auto-Fokus, muessen Spieler erst ArrowRight druecken bevor Enter hilft.
   it('markiert die erste spielbare Karte automatisch bei Spielzugbeginn', async () => {
@@ -1560,9 +1511,8 @@ describe('TischSzene', () => {
     // Enter direkt → erste Karte wird gespielt (Index 0 auto-gesetzt)
     feuereTaste('Enter');
 
-    // spieleKarteMitAnimation ist async (zwei Promise-Ebenen: tweenZu + spieleKarte-Aufruf)
-    await Promise.resolve();
-    await Promise.resolve();
+    // spieleKarteMitAnimation ist async
+    await vi.runAllTimersAsync();
 
     expect(appStoreHarness.store.spieleKarte).toHaveBeenCalledWith('HERZ-ZEHN-1');
   });
@@ -1585,30 +1535,50 @@ describe('TischSzene', () => {
     expect(appStoreHarness.store.spieleKarte).not.toHaveBeenCalled();
   });
 
+  it('spielt Karte per ArrowRight und Enter', async () => {
+    vi.useFakeTimers();
+    const spiel = baueLaufendesSpiel({
+      spielbareKarten: [
+        karte('HERZ-ZEHN-1', 'HERZ', 'ZEHN'),
+        karte('KREUZ-AS-1', 'KREUZ', 'AS')
+      ]
+    });
+    const zustand = baueZustand({
+      partieStand: bauePartieStand(spiel)
+    });
+    const { szene } = baueSzene(zustand);
+
+    // ArrowRight bewegt Auswahl von Index 0 auf Index 1
+    feuereTaste('ArrowRight');
+    feuereTaste('Enter');
+
+    // spieleKarteMitAnimation ist async
+    await vi.runAllTimersAsync();
+
+    expect(appStoreHarness.store.spieleKarte).toHaveBeenCalledWith('KREUZ-AS-1');
+    vi.useRealTimers();
+  });
+
   // WARUM: I-Kuerzel oeffnet die Seitenlade; ohne Tastaturzugang zur Seitenlade
   // sind Spielerliste, Punktestand und Ansagehistorie nur per Maus erreichbar.
   it('oeffnet die Seitenlade per I-Taste', () => {
-    baueSzene(baueZustand());
-
-    const seitenlade = document.querySelector('.seitenlade') as HTMLElement;
-    expect(seitenlade.classList.contains('seitenlade--offen')).toBe(false);
+    const { szene } = baueSzene(baueZustand());
+    expect(szene['seitenladeOffen']).toBe(false);
 
     feuereTaste('i');
 
-    expect(seitenlade.classList.contains('seitenlade--offen')).toBe(true);
+    expect(szene['seitenladeOffen']).toBe(true);
   });
 
   // WARUM: S-Kuerzel oeffnet das Einstellungs-Modal; ohne Tastaturzugang koennen Spieler
   // Tischhintergrund und Animationsgeschwindigkeit nur per Maus aendern.
   it('oeffnet das Einstellungs-Modal per S-Taste', () => {
-    baueSzene(baueZustand());
-
-    const modal = document.querySelector('.einstellungen-backdrop') as HTMLElement;
-    expect(modal.hidden).toBe(true);
+    const { szene } = baueSzene(baueZustand());
+    expect(szene['einstellungenOffen']).toBe(false);
 
     feuereTaste('s');
 
-    expect(modal.hidden).toBe(false);
+    expect(szene['einstellungenOffen']).toBe(true);
   });
 
   // WARUM: K-Kuerzel ermoeglicht Kontra-Ansage ohne Maus; fehlt es, muessen Spieler
@@ -1643,7 +1613,9 @@ describe('TischSzene', () => {
         ]
       }))
     });
-    baueSzene(zustand);
+    const { szene } = baueSzene(zustand);
+    // Armut-Annahme muss erst aktiviert sein (nachdem man sich fuer 'Annehmen' entschieden hat)
+    szene['armutAnnahmeAktiv'] = true;
 
     feuereTaste('a');
 

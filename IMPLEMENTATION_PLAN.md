@@ -2,7 +2,8 @@
 
 ## Notiz
 Stand: 2026-04-20
-UI-NATIVE-3 erledigt: Vision Loop für alle Overlays (Seitenlade, Einstellungen, Vorbehalte) etabliert. Tastatur-Shortcuts in Playwright für robuste Steuerung integriert. Kritische Regression in `TischSzene.ts` (gelöschte Table-Rendering-Logik) behoben und mit neuen Phaser-Overlays gemergt. Alle Overlays sind nun visuell verifiziert.
+POLISH-1 & POLISH-2 erledigt: Kritischen Bug in der Karlchen-Logik behoben, der zu fehlerhaften Sonderpunkten und potenziellen Abbruchfehlern im DKV-Preset führte. `SonderpunktBewerter` nutzt nun den absoluten Stich-Index zur Validierung des letzten Stichs. Frontend-Tests nach Node 25 Update teilweise stabilisiert (ESM-Fehler behoben), aber noch Phaser-Mock-Regresssionen offen.
+
 
 ## Zusammenfassung Ist-Zustand
 - Backend: DDD-Struktur stabil. Event-Triggering für KI nun robust und optimiert.
@@ -27,7 +28,7 @@ UI-NATIVE-3 erledigt: Vision Loop für alle Overlays (Seitenlade, Einstellungen,
 - [x] **REGELN-2** KI-Hänger beheben: Der `KiEventAdapter` oder `SpielAktionsService` triggert das `NaechsterSpielerErwartet`-Event nun zuverlässig auch bei Sonderpunkten (z.B. "Fuchs gefangen") oder Phasenwechseln (z.B. Hochzeit-Partner gefunden). Die Orchestrierung wurde optimiert, um redundante Events bei aufeinanderfolgenden KI-Zügen zu vermeiden.
 - [x] **REGELN-3** KI-Strategie Tuning: Die Solo-Schwellen in `StandardKiStrategie.soloSchwelle()` wurden von einem 1.15er auf einen 1.13er Faktor angepasst, um die Zielwerte der Spec (46 -> 52) exakt zu treffen. Dokumentation und Tests wurden entsprechend aktualisiert.
 
-## Phase 4 — Frontend UI-Migration (UI-NATIVE)
-- [x] **UI-NATIVE-1** HTML-Hybrid-Rückbau: Seitenlade und Einstellungsmenüs vollständig auf Phaser-Container umstellen.
-- [x] **UI-NATIVE-2** Preset-Auswahl & Bugfix: "Ohne Neunen" Option in Tisch-Konfiguration (Phaser) hinzufügen. Bugfix in `frontend/src/modelle/regelPresets.ts`: Für `LOCO_BLAT_REGELN` ist `ohneNeunen: false` gesetzt. Laut `regelkatalog.md` nun korrigiert.
-- [x] **UI-NATIVE-3** Native UI-Tests: Vision Loop für alle Overlays etablieren.
+## Phase 5 — Stabilität & Polishing (POLISH)
+- [x] **POLISH-1** DKV-Turnier Bugfix: Das Spiel schließt bei deaktivierten Sonderregeln nicht korrekt ab. Ursache in `SonderpunktBewerter` (Karlchen-Logik) identifiziert: Karlchen wurde in jedem Stich fälschlich vergeben, wenn nur ein Stich zur Bewertung übergeben wurde.
+- [x] **POLISH-2** Karlchen-Logik Korrektur: `SonderpunktBewerter` nutzt nun den absoluten Stich-Index, um Karlchen nur im 10. (ohne Neunen) oder 12. Stich zu vergeben. `Spiel.java` übergibt diesen Index nun korrekt.
+- [ ] **POLISH-3** Frontend-Tests Stabilisierung: Die Frontend-Tests (Vitest) nach Node 25 Update reparieren (ESM/TLA issues behoben, Phaser Mocks vervollständigen).

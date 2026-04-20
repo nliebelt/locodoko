@@ -351,7 +351,7 @@ public class Spiel extends AbstraktePersistenzEntity {
 
         Set<Partei> neuesPflichtansageAusstehend = berechneNeuePflichtansagen(gespielterStich, neueAbgeschlosseneStiche.size(), hf.parteien());
         List<SonderpunktEreignis> sonderpunkte = new SonderpunktBewerter()
-            .bewerte(List.of(gespielterStich), hf.parteien(), trumpfOrdnung, spielregeln)
+            .bewerte(List.of(gespielterStich), hf.parteien(), trumpfOrdnung, spielregeln, neueAbgeschlosseneStiche.size() - 1)
             .values().stream().flatMap(List::stream).toList();
         ereignisse.add(new SpielEreignis.StichAbgeschlossenEreignis(gespielterStich, sonderpunkte));
         if (neueAbgeschlosseneStiche.size() == kartenProSpieler()) {
