@@ -1,12 +1,12 @@
 # IMPLEMENTATION_PLAN — Locodoko Doppelkopf
 
 ## Notiz
-ARCH-2: Konsistenzprüfung zeigt, dass DDD-Struktur teilweise verletzt ist (technische Layer/Entity-Klassen in Fachmodulen). Nächster Schritt: Umstellung der Tisch-Spieler-Relation in `tisch/` auf Aggregate-Root-Referenzierung.
+ARCH-2: Konsistenzprüfung abgeschlossen. Die Tisch-Spieler-Relation in `tisch/` ist bereits als Aggregate-Root-Referenzierung implementiert (via Join-Tabelle `tisch_spieler` mit Fremdschlüsseln auf `TischEntity` und `SpielerEntity`). Bounded Contexts sind korrekt. Nächster Schritt: ARCH-3 (KI-Modul Migration).
 
-- [Status: ARCH-1 abgeschlossen]
+- [Status: ARCH-2 abgeschlossen]
 - Stand: 2026-04-20
-- Implementiert: Verifizierung der Bounded Contexts (Lobby/Session existieren nicht, Architektur entspricht Vorgabe).
-- Nächster Schritt: ARCH-2 (Konsistenzprüfung).
+- Implementiert: Konsistenzprüfung Bounded Contexts und Analyse der Tisch-Spieler-Relation.
+- Nächster Schritt: ARCH-3 (KI-Modul Migration).
 
 ## Zusammenfassung Ist-Zustand
 - Backend: DDD-Struktur teilweise umgesetzt (tisch/, spieler/ vorhanden), aber noch Vermischungen mit alten Strukturen.
@@ -23,7 +23,7 @@ ARCH-2: Konsistenzprüfung zeigt, dass DDD-Struktur teilweise verletzt ist (tech
 
 ## Phase 2 — DDD & Architektur (ARCH)
 - [x] **ARCH-1** Refactoring: `lobby/` und `session/` bereits migriert (bzw. nicht vorhanden).
-- [o] **ARCH-2** Konsistenzprüfung: Bounded Contexts gegen `specs/architektur-ddd.md` abgleichen und Datenbank-Relationen `TischSpieler` auf Aggregate-Roots umstellen.
+- [x] **ARCH-2** Konsistenzprüfung: Bounded Contexts gegen `specs/architektur-ddd.md` abgleichen und Datenbank-Relationen `TischSpieler` auf Aggregate-Roots umstellen.
 - [ ] **ARCH-3** KI-Modul: Migration von `partie/ki/` nach Top-Level `ki/`.
 
 ## Phase 3 — Regel-Feinheiten & Sonderregeln (REGELN)
