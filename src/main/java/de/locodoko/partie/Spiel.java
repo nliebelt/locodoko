@@ -107,8 +107,7 @@ public class Spiel extends AbstraktePersistenzEntity {
     @Column("spielpunkte_ost") private Integer spielpunkteOst;
     @Column("haende_json") private String haendeJson;
     @Column("stiche_json") private String sticheJson;
-    @MappedCollection(idColumn = "spiel_id", keyColumn = "spiel_key")
-    private List<SpielSonderpunktEntity> sonderpunktEntities = new ArrayList<>();
+    @Column("sonderpunkte_json") private String sonderpunkteJson = "[]";
 
     // -- Konstruktoren --
 
@@ -460,7 +459,7 @@ public class Spiel extends AbstraktePersistenzEntity {
     public List<HandJsonEintrag> haendeAlsJson() { return JsonKonverter.liesList(haendeJson, new TypeReference<>() {}); }
     public List<StichJsonEintrag> sticheAlsJson() { return JsonKonverter.liesList(sticheJson, new TypeReference<>() {}); }
     public List<AktuellerStichKarteEmbeddable> aktuellerStichKarten() { return JsonKonverter.liesList(aktuellerStichKartenJson, new TypeReference<>() {}); }
-    public List<SpielSonderpunktEntity> sonderpunktEntities() { sonderpunktEntities.forEach(sp -> sp.setzeSpiel(this)); return List.copyOf(sonderpunktEntities); }
+    public List<SonderpunktJsonEintrag> sonderpunkteAlsJson() { return JsonKonverter.liesList(sonderpunkteJson, new TypeReference<>() {}); }
     public SpielerPosition aktuellerStichAufspielerPosition() { return aktuellerStichAufspielerPositionText != null ? SpielerPosition.valueOf(aktuellerStichAufspielerPositionText) : null; }
     public List<VorbehaltMeldungEmbeddable> vorbehalteAlsEmbeddable() { return JsonKonverter.liesList(vorbehalteJson, new TypeReference<>() {}); }
     public List<AnsageEreignisEmbeddable> ansagenAlsEmbeddable() { return JsonKonverter.liesList(ansagenJson, new TypeReference<>() {}); }
@@ -509,14 +508,13 @@ public class Spiel extends AbstraktePersistenzEntity {
         this.spielpunkteWest = erg.spielpunkteWest();
         this.spielpunkteNord = erg.spielpunkteNord();
         this.spielpunkteOst = erg.spielpunkteOst();
-        sonderpunktEntities.clear();
+        List<SonderpunktJsonEintrag> sonderpunkte = new ArrayList<>();
         for (Map.Entry<Partei, List<SonderpunktEreignis>> eintrag : spielergebnis.sonderpunkteProPartei().entrySet()) {
             for (SonderpunktEreignis ereignis : eintrag.getValue()) {
-                SpielSonderpunktEntity sonderpunktEntity = SpielSonderpunktEntity.neu(eintrag.getKey(), ereignis);
-                sonderpunktEntity.setzeSpiel(this);
-                sonderpunktEntities.add(sonderpunktEntity);
+                sonderpunkte.add(SonderpunktJsonEintrag.aus(eintrag.getKey(), ereignis));
             }
         }
+        this.sonderpunkteJson = JsonKonverter.schreibeAlsJson(sonderpunkte);
     }
 
     public void ersetzeAnsagen(List<AnsageEreignisEmbeddable> neueAnsagen) {
@@ -686,8 +684,9 @@ public class Spiel extends AbstraktePersistenzEntity {
         sp.put(SpielerPosition.SUED, new Spielpunkte(e.spielpunkteSued())); sp.put(SpielerPosition.WEST, new Spielpunkte(e.spielpunkteWest()));
         sp.put(SpielerPosition.NORD, new Spielpunkte(e.spielpunkteNord())); sp.put(SpielerPosition.OST, new Spielpunkte(e.spielpunkteOst()));
         EnumMap<Partei, List<SonderpunktEreignis>> spp = new EnumMap<>(Partei.class);
-        spp.put(Partei.RE, sonderpunktEntities.stream().filter(x -> x.partei() == Partei.RE).map(SpielSonderpunktEntity::alsEreignis).toList());
-        spp.put(Partei.KONTRA, sonderpunktEntities.stream().filter(x -> x.partei() == Partei.KONTRA).map(SpielSonderpunktEntity::alsEreignis).toList());
+        List<SonderpunktJsonEintrag> eintraege = sonderpunkteAlsJson();
+        spp.put(Partei.RE, eintraege.stream().filter(x -> x.partei() == Partei.RE).map(SonderpunktJsonEintrag::ereignis).toList());
+        spp.put(Partei.KONTRA, eintraege.stream().filter(x -> x.partei() == Partei.KONTRA).map(SonderpunktJsonEintrag::ereignis).toList());
         Integer gw = e.grundwert(); Integer abp = e.absagePunkte(); Integer gdap = e.gegenDieAltenPunkte(); Integer sm = e.soloMultiplikator();
         return Optional.of(new Spielergebnis(ap, e.siegerPartei(), new Spielpunkte(e.spielwert()),
             gw != null ? gw : e.spielwert(), abp != null ? abp : 0, gdap != null ? gdap : 0, sm != null ? sm : 1, sp, spp));
@@ -721,15 +720,16 @@ public class Spiel extends AbstraktePersistenzEntity {
         spielwertPunkte = e.spielwert(); grundwertDb = e.grundwert(); absagePunkteDb = e.absagePunkte();
         gegenDieAltenPunkteDb = e.gegenDieAltenPunkte(); soloMultiplikatorDb = e.soloMultiplikator();
         spielpunkteSued = e.spielpunkteSued(); spielpunkteWest = e.spielpunkteWest(); spielpunkteNord = e.spielpunkteNord(); spielpunkteOst = e.spielpunkteOst();
-        sonderpunktEntities.clear();
-        for (var eintrag : se.sonderpunkteProPartei().entrySet()) { for (SonderpunktEreignis er : eintrag.getValue()) { SpielSonderpunktEntity spe = SpielSonderpunktEntity.neu(eintrag.getKey(), er); spe.setzeSpiel(this); sonderpunktEntities.add(spe); } }
+        List<SonderpunktJsonEintrag> sonderpunkte = new ArrayList<>();
+        for (var eintrag : se.sonderpunkteProPartei().entrySet()) { for (SonderpunktEreignis er : eintrag.getValue()) { sonderpunkte.add(SonderpunktJsonEintrag.aus(eintrag.getKey(), er)); } }
+        this.sonderpunkteJson = JsonKonverter.schreibeAlsJson(sonderpunkte);
     }
 
     private void leereErgebnis() {
         reAugen = null; kontraAugen = null; siegerParteiText = null; spielwertPunkte = null;
         grundwertDb = null; absagePunkteDb = null; gegenDieAltenPunkteDb = null; soloMultiplikatorDb = null;
         spielpunkteSued = null; spielpunkteWest = null; spielpunkteNord = null; spielpunkteOst = null;
-        sonderpunktEntities.clear();
+        sonderpunkteJson = "[]";
     }
 
     private List<StichJsonEintrag> alsStichJsonEintraege() {

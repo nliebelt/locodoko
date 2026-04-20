@@ -2,7 +2,7 @@
 
 ## Notiz
 Stand: 2026-04-20
-Die Architektur-Vorgaben in `architektur-ddd.md` wurden pragmatisch gelockert, sodass Module auf Domain-Events (z.B. aus `partie.ereignisse`) lauschen dürfen. Damit ist ARCH-4 erledigt. Der aktuelle Fokus liegt voll auf der Reparatur der KI-Hänger und Sonderregeln im Gameplay (REGELN-1 und REGELN-2).
+ARCH-5 erledigt: `SpielSonderpunktEntity` wurde aufgelöst und wird nun als JSON-Blob in der `spiel`-Tabelle persisitiert (via `SonderpunktJsonEintrag`), um den DDD-Vorgaben zu entsprechen. Nächster logischer Schritt ist REGELN-1 (Schweinchen-Logik & Test-Fix).
 
 ## Zusammenfassung Ist-Zustand
 - Backend: DDD-Struktur umgesetzt. Pragmatische Abhängigkeitsregel erlaubt es dem `spieler/` Modul nun offiziell, auf Events aus `partie/` zu lauschen.
@@ -21,7 +21,7 @@ Die Architektur-Vorgaben in `architektur-ddd.md` wurden pragmatisch gelockert, s
 - [x] **ARCH-2** Konsistenzprüfung: Bounded Contexts gegen `specs/architektur-ddd.md` abgleichen.
 - [x] **ARCH-3** KI-Modul: Migration von `partie/ki/` nach Top-Level `ki/`.
 - [x] **ARCH-4** Abhängigkeitsregel reparieren: *Erledigt durch Anpassung der Specs.* Das `spieler/`-Modul darf nun offiziell auf `partie.ereignisse` lauschen (Pragmatismus-Regel).
-- [ ] **ARCH-5** Entity-Bereinigung: `SpielSonderpunktEntity` liegt noch im `partie/` Package. Laut `architektur-ddd.md` dürfen dort keine `*Entity` Klassen liegen, da Domain Model = Persistence Model (Spring Data JDBC). Diese Klasse umbauen/verschieben, sodass sie den Architekturvorgaben entspricht.
+- [x] **ARCH-5** Entity-Bereinigung: `SpielSonderpunktEntity` liegt noch im `partie/` Package. Laut `architektur-ddd.md` dürfen dort keine `*Entity` Klassen liegen, da Domain Model = Persistence Model (Spring Data JDBC). Diese Klasse umbauen/verschieben, sodass sie den Architekturvorgaben entspricht.
 
 ## Phase 3 — Regel-Feinheiten & Sonderregeln (REGELN)
 - [ ] **REGELN-1** Schweinchen-Logik & Test-Fix: Das Domain-Event `SchweinchenGemeldet` wird laut Spec beim Ausspielen des ersten Karo-Asses erwartet. Es muss in `Spiel.spieleKarte()` erzeugt und der `SpielAktion` hinzugefügt werden. Zudem muss das fehlschlagende Test-Setup (Kartenzahl-Fehler), das diesen Task blockiert hat, repariert werden (Blocker aufgehoben, da es behoben werden muss).

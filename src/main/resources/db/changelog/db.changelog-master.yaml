@@ -35,3 +35,5 @@ databaseChangeLog:
       file: db/changelog/017-bereits-geschmissen.yaml
   - include:
       file: db/changelog/018-tisch-partie-cascade.yaml
+  - include:
+      file: db/changelog/019-spiel-sonderpunkte-json.yaml

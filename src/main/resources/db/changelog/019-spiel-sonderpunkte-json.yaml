@@ -1,0 +1,14 @@
+databaseChangeLog:
+  - changeSet:
+      id: 019-spiel-sonderpunkte-json
+      author: ralph
+      changes:
+        - addColumn:
+            tableName: spiel
+            columns:
+              - column:
+                  name: sonderpunkte_json
+                  type: TEXT
+                  defaultValue: "[]"
+        - dropTable:
+            tableName: spiel_sonderpunkt

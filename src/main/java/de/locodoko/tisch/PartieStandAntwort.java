@@ -467,9 +467,9 @@ public record PartieStandAntwort(
             for (Partei partei : Partei.values()) {
                 sonderpunkteProPartei.put(
                     partei,
-                    spiel.sonderpunktEntities().stream()
+                    spiel.sonderpunkteAlsJson().stream()
                         .filter(sp -> sp.partei() == partei)
-                        .map(sp -> new SonderpunktEreignisDto(sp.sonderpunkt(), sp.taeter(), sp.opfer()))
+                        .map(sp -> new SonderpunktEreignisDto(sp.ereignis().art(), sp.ereignis().taeter(), sp.ereignis().opfer()))
                         .toList()
                 );
             }

@@ -129,7 +129,7 @@ class PersistenzRepositoryTest {
             "Der Ergebnis-Snapshot muss die 240-Augen-Invariante abbilden, damit spaetere Auswertungen reproduzierbar bleiben.");
         assertEquals(1, geladenesSpiel.haendeAlsJson().size());
         assertEquals(1, geladenesSpiel.sticheAlsJson().size());
-        assertEquals(2, geladenesSpiel.sonderpunktEntities().size());
+        assertEquals(2, geladenesSpiel.sonderpunkteAlsJson().size());
 
         HandJsonEintrag geladeneHand = geladenesSpiel.haendeAlsJson().stream()
             .filter(h -> h.spielerPosition() == SpielerPosition.SUED)
