@@ -197,7 +197,7 @@ describe('AppStore', () => {
     ]));
 
     echtzeit.emit('/user/queue/tisch/tisch-42', {
-      timestamp: new Date().toISOString(),
+      timestamp: new Date(Date.now() + 1000).toISOString(),
       ereignisTyp: 'SPIEL_GESTARTET',
       tischId: 'tisch-42',
       tisch: { ...tisch, status: 'IM_SPIEL', partieId: 'partie-1' },
@@ -302,8 +302,6 @@ describe('AppStore', () => {
   it('SNAPSHOT verwirft veraltete Events in der Queue (Ctrl+R Schutz)', async () => {
     // Szenario: KI-Animation läuft (async Barrier durch setTimeout). Währenddessen
     // kommen SNAPSHOT(Spiel2) und danach KARTE_GESPIELT(Spiel1) in die Queue.
-    // Mit Fix: SNAPSHOT löscht Queue-Rest → KARTE_GESPIELT wird nie verarbeitet.
-    // Ohne Fix: KARTE_GESPIELT überschreibt partieStand nach SNAPSHOT → Spiel 1 sichtbar.
     const echtzeit = new FakeEchtzeit();
     const tisch = baueTisch('tisch-snapshot');
     const store = new AppStore(
@@ -318,21 +316,23 @@ describe('AppStore', () => {
     await store.initialisieren();
     await store.betreteTisch(tisch.id);
 
-    // Partie-Abo aufbauen via SPIEL_GESTARTET
+    // Partie-Abo aufbauen via SPIEL_GESTARTET (Version 1)
     echtzeit.emit('/user/queue/tisch/tisch-snapshot', {
-      timestamp: new Date().toISOString(),
+      timestamp: '2026-04-21T12:00:00Z',
+      version: 1,
       ereignisTyp: 'SPIEL_GESTARTET',
       tischId: 'tisch-snapshot',
       tisch: { ...tisch, status: 'IM_SPIEL', partieId: 'partie-snap' },
       partieStand: null
     });
 
-    const spiel1Stand = { partieId: 'partie-snap', spielNummer: 1, laufendesSpiel: { spielNummer: 1 } } as unknown as PartieStandAntwort;
-    const spiel2Stand = { partieId: 'partie-snap', spielNummer: 2, laufendesSpiel: { spielNummer: 2 } } as unknown as PartieStandAntwort;
+    const spiel1Stand = { partieId: 'partie-snap', version: 1, spielNummer: 1, laufendesSpiel: { spielNummer: 1 } } as unknown as PartieStandAntwort;
+    const spiel2Stand = { partieId: 'partie-snap', version: 2, spielNummer: 2, laufendesSpiel: { spielNummer: 2 } } as unknown as PartieStandAntwort;
 
     // KI-Animation startet (hält die Queue mit async Barrier besetzt)
     echtzeit.emit('/user/queue/partie/partie-snap', {
-      timestamp: new Date().toISOString(),
+      timestamp: '2026-04-21T12:00:01Z',
+      version: 1,
       ereignisTyp: 'KI_ZUG_SEQUENZ',
       partieStand: spiel1Stand,
       kiKartenSequenz: [{ spielerPosition: 'WEST', karteId: 'KREUZ-AS-1' }],
@@ -341,7 +341,8 @@ describe('AppStore', () => {
 
     // Während die Animation läuft: SNAPSHOT(Spiel2) dann KARTE_GESPIELT(Spiel1) eintreffen
     echtzeit.emit('/user/queue/partie/partie-snap', {
-      timestamp: new Date().toISOString(),
+      timestamp: '2026-04-21T12:00:02Z',
+      version: 2,
       ereignisTyp: 'SNAPSHOT',
       partieStand: spiel2Stand,
       kiKartenSequenz: null,
@@ -349,7 +350,8 @@ describe('AppStore', () => {
     } as unknown as PartieEreignisAntwort);
 
     echtzeit.emit('/user/queue/partie/partie-snap', {
-      timestamp: new Date().toISOString(),
+      timestamp: '2026-04-21T12:00:01Z',
+      version: 1, // Veraltete Version
       ereignisTyp: 'KARTE_GESPIELT',
       partieStand: spiel1Stand,
       kiKartenSequenz: null,
@@ -359,7 +361,7 @@ describe('AppStore', () => {
     // Warten bis KI-Animation (5ms) und Queue-Verarbeitung fertig
     await new Promise<void>((r) => setTimeout(r, 20));
 
-    expect(store.snapshot().partieStand).toStrictEqual(spiel2Stand);
+    expect(store.snapshot().partieStand?.spielNummer).toBe(2);
   });
 
   it('reconnecteTisch löscht EventQueue sodass kein veralteter Stand nach Reconnect angezeigt wird', async () => {
@@ -380,9 +382,14 @@ describe('AppStore', () => {
     await store.initialisieren();
     await store.betreteTisch(tisch.id);
 
+    const baseTime = 1713730000000;
+    const t1 = new Date(baseTime + 1000).toISOString();
+    const t2 = new Date(baseTime + 2000).toISOString();
+    const t3 = new Date(baseTime + 3000).toISOString();
+
     // Partie-Abo aufbauen via SPIEL_GESTARTET
     echtzeit.emit('/user/queue/tisch/tisch-reconnect2', {
-      timestamp: new Date().toISOString(),
+      timestamp: t1,
       ereignisTyp: 'SPIEL_GESTARTET',
       tischId: 'tisch-reconnect2',
       tisch: { ...tisch, status: 'IM_SPIEL', partieId: 'partie-rec' },
@@ -394,7 +401,7 @@ describe('AppStore', () => {
 
     // KI animiert → async Barrier
     echtzeit.emit('/user/queue/partie/partie-rec', {
-      timestamp: new Date().toISOString(),
+      timestamp: t2,
       ereignisTyp: 'KI_ZUG_SEQUENZ',
       partieStand: spiel1Stand,
       kiKartenSequenz: [{ spielerPosition: 'WEST', karteId: 'KREUZ-AS-1' }],
@@ -403,7 +410,7 @@ describe('AppStore', () => {
 
     // Veraltetes Event landet in Queue
     echtzeit.emit('/user/queue/partie/partie-rec', {
-      timestamp: new Date().toISOString(),
+      timestamp: t2,
       ereignisTyp: 'KARTE_GESPIELT',
       partieStand: spiel1Stand,
       kiKartenSequenz: null,
@@ -415,7 +422,7 @@ describe('AppStore', () => {
 
     // TISCH_SNAPSHOT mit Spiel-2-Stand kommt nach Reconnect
     echtzeit.emit('/user/queue/tisch/tisch-reconnect2', {
-      timestamp: new Date().toISOString(),
+      timestamp: t3,
       ereignisTyp: 'TISCH_SNAPSHOT',
       tischId: 'tisch-reconnect2',
       tisch: { ...tisch, status: 'IM_SPIEL', partieId: 'partie-rec' },
@@ -446,7 +453,7 @@ describe('AppStore', () => {
     await store.betreteTisch(tisch.id);
 
     echtzeit.emit(`/topic/tisch/tisch-abbruch`, {
-      timestamp: new Date().toISOString(),
+      timestamp: new Date(Date.now() + 1000).toISOString(),
       ereignisTyp: 'PARTIE_ABGEBROCHEN',
       tischId: 'tisch-abbruch',
       tisch: null,

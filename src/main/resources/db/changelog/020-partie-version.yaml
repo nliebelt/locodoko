@@ -1,0 +1,14 @@
+databaseChangeLog:
+  - changeSet:
+      id: 020-partie-version
+      author: gemini
+      changes:
+        - addColumn:
+            tableName: partie
+            columns:
+              - column:
+                  name: version
+                  type: BIGINT
+                  defaultValueNumeric: 0
+                  constraints:
+                    nullable: false

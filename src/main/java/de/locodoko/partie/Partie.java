@@ -5,6 +5,7 @@ import de.locodoko.karten.Spielregeln;
 import de.locodoko.system.AbstraktePersistenzEntity;
 
 import org.springframework.data.annotation.Transient;
+import org.springframework.data.annotation.Version;
 import org.springframework.data.relational.core.mapping.Column;
 import org.springframework.data.relational.core.mapping.MappedCollection;
 import org.springframework.data.relational.core.mapping.Table;
@@ -31,6 +32,9 @@ import java.util.Optional;
  */
 @Table("partie")
 public class Partie extends AbstraktePersistenzEntity {
+
+    @Version
+    private Long version;
 
     // ── Domain-Felder (transient, nicht in DB) ──────────────────────────────
     @Transient private int anzahlSpiele;
@@ -88,7 +92,8 @@ public class Partie extends AbstraktePersistenzEntity {
         Spiel aktuellesSpiel,
         Map<SpielerPosition, Integer> gesamtpunktestand,
         int bockrundenZaehler,
-        SpielerPosition solistDesLetztenSpiels
+        SpielerPosition solistDesLetztenSpiels,
+        Long version
     ) {
         super();
         if (anzahlSpiele < 1) {
@@ -105,6 +110,7 @@ public class Partie extends AbstraktePersistenzEntity {
         }
         this.bockrundenZaehler = bockrundenZaehler;
         this.solistDesLetztenSpiels = solistDesLetztenSpiels;
+        this.version = version;
     }
 
     // ── Statische Factory-Methoden ──────────────────────────────────────────
@@ -117,9 +123,10 @@ public class Partie extends AbstraktePersistenzEntity {
         Spiel aktuellesSpiel,
         Map<SpielerPosition, Integer> gesamtpunktestand,
         int bockrundenZaehler,
-        SpielerPosition solistDesLetztenSpiels
+        SpielerPosition solistDesLetztenSpiels,
+        Long version
     ) {
-        return new Partie(anzahlSpiele, spielregeln, naechsterGeber, abgeschlosseneSpiele, aktuellesSpiel, gesamtpunktestand, bockrundenZaehler, solistDesLetztenSpiels);
+        return new Partie(anzahlSpiele, spielregeln, naechsterGeber, abgeschlosseneSpiele, aktuellesSpiel, gesamtpunktestand, bockrundenZaehler, solistDesLetztenSpiels, version);
     }
 
     public static Partie neu(int anzahlSpiele, SpielerPosition ersterGeber, Spielregeln spielregeln) {
@@ -127,7 +134,7 @@ public class Partie extends AbstraktePersistenzEntity {
         for (SpielerPosition position : SpielerPosition.standardReihenfolge()) {
             gesamtpunktestand.put(position, 0);
         }
-        return new Partie(anzahlSpiele, spielregeln, ersterGeber, List.of(), null, gesamtpunktestand, 0, null);
+        return new Partie(anzahlSpiele, spielregeln, ersterGeber, List.of(), null, gesamtpunktestand, 0, null, null);
     }
 
     /** Erstellt eine neue Persistenz-Partie. */
@@ -159,7 +166,8 @@ public class Partie extends AbstraktePersistenzEntity {
             neuesSpiel,
             gesamtpunktestand,
             bockrundenZaehler,
-            null
+            null,
+            version
         );
     }
 
@@ -168,7 +176,7 @@ public class Partie extends AbstraktePersistenzEntity {
         if (aktuellesSpiel == null) {
             throw new IllegalStateException("Es gibt kein aktuelles Spiel");
         }
-        return new Partie(anzahlSpiele, spielregeln, naechsterGeber, abgeschlosseneSpiele, spiel, gesamtpunktestand, bockrundenZaehler, solistDesLetztenSpiels);
+        return new Partie(anzahlSpiele, spielregeln, naechsterGeber, abgeschlosseneSpiele, spiel, gesamtpunktestand, bockrundenZaehler, solistDesLetztenSpiels, version);
     }
 
     public Partie schliesseAktuellesSpielAb() {
@@ -212,7 +220,8 @@ public class Partie extends AbstraktePersistenzEntity {
             null,
             neuerGesamtpunktestand,
             neuerBockrundenZaehler,
-            neuerSolist
+            neuerSolist,
+            version
         );
     }
 
@@ -267,6 +276,10 @@ public class Partie extends AbstraktePersistenzEntity {
 
     public int bockrundenZaehler() {
         return bockrundenZaehler;
+    }
+
+    public Long version() {
+        return version != null ? version : 0L;
     }
 
     public Optional<SpielerPosition> solistDesLetztenSpiels() {

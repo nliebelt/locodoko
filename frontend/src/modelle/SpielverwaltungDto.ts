@@ -3,10 +3,6 @@
  *
  * MIGRATION: Diese Typen werden schrittweise durch generierte Typen aus
  * {@code frontend/src/generated/api-types.ts} (via openapi-typescript) ersetzt.
- * Generierte Typen: {@code import type { ... } from '../generated/schema-types'}
- *
- * Solange die Migration laeuft, koexistieren beide Typ-Quellen.
- * Neue Features sollten bevorzugt die generierten Typen nutzen.
  */
 export type Uuid = string;
 
@@ -23,15 +19,11 @@ export interface SpielerSessionAntwort {
   spielerId: Uuid;
   name: string;
   istKi: boolean;
-  /** ID des Tisches, an dem der Spieler aktuell sitzt; null falls keiner. Fuer Session-Recovery. */
   aktiverTischId?: Uuid | null;
-  /** Oeffentlicher Anzeigename (Fallback: name). */
   anzeigeName?: string;
-  /** Avatar-Farbe als Hex-String. */
   avatarFarbe?: string;
 }
 
-/** Antwort nach erfolgreicher Registrierung oder Login. */
 export interface AuthentifizierungsAntwort {
   spielerId: Uuid;
   name: string;
@@ -52,6 +44,9 @@ export interface TischListenEintragAntwort {
   status: TischStatus;
   kurzKonfiguration: TischKurzKonfigurationAntwort;
 }
+
+export type Tischhintergrund = 'FILZ_GRUEN' | 'FILZ_BLAU' | 'HOLZ_HELL' | 'HOLZ_DUNKEL' | 'BILD_RECHTECK_1' | 'BILD_RECHTECK_2' | 'BILD_OVAL_1' | 'BILD_OVAL_2' | 'BILD_RUND_1';
+export type KiSchwierigkeit = 'LEICHT' | 'STANDARD' | 'PROFI';
 
 export interface TischKonfigurationDto {
   ohneNeunen: boolean;
@@ -76,7 +71,6 @@ export interface TischKonfigurationDto {
   schweinchenAktiv: boolean;
   dreissigAugenPflichtAktiv: boolean;
   schmeissenAktiv: boolean;
-  /** Schwierigkeitsstufe der KI-Gegner. Standard: STANDARD. */
   kiSchwierigkeit: KiSchwierigkeit;
 }
 
@@ -101,49 +95,9 @@ export interface TischAntwort {
 }
 
 export type SpielerPosition = 'NORD' | 'OST' | 'SUED' | 'WEST';
-export type Tischhintergrund = 'FILZ_GRUEN' | 'HOLZ_DUNKEL' | 'BLAU_GRAFIK' | 'RECHTECK_1' | 'RECHTECK_2' | 'OVAL_1' | 'OVAL_2' | 'RUND_1';
-export type KiSchwierigkeit = 'LEICHT' | 'STANDARD' | 'SCHWER';
-export type PartieStatus = 'LAUFEND' | 'BEENDET';
-export type Spieltyp =
-  | 'NORMALSPIEL'
-  | 'HOCHZEIT'
-  | 'ARMUT'
-  | 'SOLO_DAME'
-  | 'SOLO_BUBE'
-  | 'SOLO_TRUMPF'
-  | 'SOLO_TRUMPF_HERZ'
-  | 'SOLO_TRUMPF_PIK'
-  | 'SOLO_TRUMPF_KREUZ'
-  | 'SOLO_FLEISCHLOS';
-export type Spielphase =
-  | 'KARTEN_AUSTEILEN'
-  | 'VORBEHALT_ANSAGE'
-  | 'VORBEHALT_AUFLOESUNG'
-  | 'ARMUT_TAUSCH'
-  | 'STICHPHASE'
-  | 'AUSWERTUNG'
-  | 'GESAMTSTAND_AKTUALISIEREN';
+export type PartieStatus = 'LAUFEND' | 'BEENDET' | 'ABGEBROCHEN';
+export type Spieltyp = 'NORMALSPIEL' | 'HOCHZEIT' | 'ARMUT' | 'SOLO_DAME' | 'SOLO_BUBE' | 'SOLO_FLEISCHLOS' | 'SOLO_TRUMPF' | 'SOLO_FARBE_KREUZ' | 'SOLO_FARBE_PIK' | 'SOLO_FARBE_HERZ' | 'SOLO_FARBE_KARO';
 export type Partei = 'RE' | 'KONTRA';
-export type Ansage = 'RE' | 'KONTRA' | 'KEINE_90' | 'KEINE_60' | 'KEINE_30' | 'SCHWARZ';
-export type Sonderpunkt = 'FUCHS_GEFANGEN' | 'KARLCHEN' | 'DOPPELKOPF';
-export type SpielerPositionTyp = 'SUED' | 'WEST' | 'NORD' | 'OST';
-export interface SonderpunktEreignis {
-  art: Sonderpunkt;
-  taeter: SpielerPositionTyp;
-  opfer: SpielerPositionTyp | null;
-}
-export type VorbehaltAnsage =
-  | 'GESUND'
-  | 'SOLO_DAME'
-  | 'SOLO_BUBE'
-  | 'SOLO_TRUMPF'
-  | 'SOLO_TRUMPF_HERZ'
-  | 'SOLO_TRUMPF_PIK'
-  | 'SOLO_TRUMPF_KREUZ'
-  | 'SOLO_FLEISCHLOS'
-  | 'HOCHZEIT'
-  | 'ARMUT'
-  | 'SCHMEISSEN';
 
 export interface KarteAntwort {
   id: string;
@@ -152,9 +106,20 @@ export interface KarteAntwort {
   exemplarIndex: number;
 }
 
+export interface GespielteKarteAntwort {
+  spielerPosition: SpielerPosition;
+  karte: KarteAntwort;
+  reihenfolge: number;
+}
+
+export interface AnsageEreignisAntwort {
+  spielerPosition: SpielerPosition;
+  ansage: string;
+}
+
 export interface SpielerImSpielAntwort {
   position: SpielerPosition;
-  spielerId: Uuid | null;
+  spielerId: Uuid;
   name: string;
   anzeigeName: string;
   avatarFarbe: string | null;
@@ -169,31 +134,21 @@ export interface SpielerImSpielAntwort {
   sichtbareHandkarten: KarteAntwort[] | null;
 }
 
-export interface GespielteKarteAntwort {
-  spielerPosition: SpielerPosition;
-  karte: KarteAntwort;
-  reihenfolge: number;
-}
-
-export interface AnsageEreignisAntwort {
-  spielerPosition: SpielerPosition;
-  ansage: Ansage;
-}
-
 export interface LaufendesSpielAntwort {
   spielNummer: number;
   spieltyp: Spieltyp;
-  phase: Spielphase;
+  phase: string;
   geber: SpielerPosition;
-  aktuellerSpieler: SpielerPosition | null;
+  aktuellerSpieler: SpielerPosition;
   spieler: SpielerImSpielAntwort[];
   spielbareKarten: KarteAntwort[];
   aktuelleStichmitte: GespielteKarteAntwort[];
   ansageHistorie: AnsageEreignisAntwort[];
-  moeglicheAnsagen: Ansage[];
-  moeglicheVorbehalte: VorbehaltAnsage[];
-  deklarierteVorbehalte: { position: SpielerPosition; ansage: VorbehaltAnsage }[];
+  moeglicheAnsagen: string[];
+  moeglicheVorbehalte: string[];
+  deklarierteVorbehalte: any[];
   istBockrunde: boolean;
+  hochzeitGeklaert: boolean;
   schweinchenGemeldetVon: SpielerPosition | null;
 }
 
@@ -217,11 +172,12 @@ export interface LetztesSpielergebnisAntwort {
   soloMultiplikator: number;
   augenProPartei: Record<Partei, number>;
   spielpunkteProSpieler: Record<SpielerPosition, number>;
-  sonderpunkteProPartei: Record<Partei, SonderpunktEreignis[]>;
+  sonderpunkteProPartei: Record<Partei, any[]>;
 }
 
 export interface PartieStandAntwort {
   partieId: Uuid;
+  version: number;
   status: PartieStatus;
   anzahlSpiele: number;
   gespielteSpiele: number;
@@ -232,18 +188,7 @@ export interface PartieStandAntwort {
 }
 
 export type TischlisteEreignisTyp = 'SNAPSHOT' | 'AKTUALISIERT';
-export type TischEreignisTyp =
-  | 'TISCH_SNAPSHOT'
-  | 'TISCH_ERSTELLT'
-  | 'SPIELER_BEIGETRETEN'
-  | 'SPIELER_VERLASSEN'
-  | 'TISCH_KONFIGURATION_AKTUALISIERT'
-  | 'SPIEL_GESTARTET'
-  | 'TISCH_ENTFERNT'
-  /** Partie abgebrochen, weil ein Spieler den Tisch willentlich verlassen hat. */
-  | 'PARTIE_ABGEBROCHEN'
-  /** Der Gastgeber hat einen Spieler vom Tisch entfernt. */
-  | 'SPIELER_GEKICKT';
+export type TischEreignisTyp = 'TISCH_SNAPSHOT' | 'TISCH_ERSTELLT' | 'SPIELER_BEIGETRETEN' | 'SPIELER_VERLASSEN' | 'TISCH_KONFIGURATION_AKTUALISIERT' | 'SPIEL_GESTARTET' | 'TISCH_ENTFERNT' | 'PARTIE_ABGEBROCHEN' | 'SPIELER_GEKICKT';
 export type PartieEreignisTyp = 'SNAPSHOT' | 'KARTE_GESPIELT' | 'KI_ZUG_SEQUENZ' | 'STICH_ABGESCHLOSSEN' | 'SPIEL_BEENDET' | 'ANSAGE_ERFOLGT' | 'SCHWEINCHEN_GEMELDET' | 'SPIEL_GESTARTET';
 
 export interface GespielteKarteEreignisAntwort {
@@ -271,13 +216,39 @@ export interface TischEreignisAntwort {
   partieStand: PartieStandAntwort | null;
 }
 
-export interface PartieEreignisAntwort {
+// --- Locodoko Unified Architecture: Typsichere Events ---
+
+export interface BasisPartieEreignis {
   timestamp: string;
+  version: number;
   ereignisTyp: PartieEreignisTyp;
   partieStand: PartieStandAntwort;
-  kiKartenSequenz?: GespielteKarteEreignisAntwort[];
-  neueSonderpunkte?: SonderpunktEreignisAntwortDto[];
 }
+
+export interface SnapshotEreignis extends BasisPartieEreignis { ereignisTyp: 'SNAPSHOT'; }
+export interface KarteGespieltEreignis extends BasisPartieEreignis { ereignisTyp: 'KARTE_GESPIELT'; }
+export interface KiZugSequenzEreignis extends BasisPartieEreignis { 
+  ereignisTyp: 'KI_ZUG_SEQUENZ'; 
+  kiKartenSequenz: GespielteKarteEreignisAntwort[];
+}
+export interface StichAbgeschlossenEreignis extends BasisPartieEreignis { 
+  ereignisTyp: 'STICH_ABGESCHLOSSEN'; 
+  neueSonderpunkte: SonderpunktEreignisAntwortDto[];
+}
+export interface SpielBeendetEreignis extends BasisPartieEreignis { ereignisTyp: 'SPIEL_BEENDET'; }
+export interface AnsageErfolgtEreignis extends BasisPartieEreignis { ereignisTyp: 'ANSAGE_ERFOLGT'; }
+export interface SchweinchenGemeldetEreignis extends BasisPartieEreignis { ereignisTyp: 'SCHWEINCHEN_GEMELDET'; }
+export interface SpielGestartetEreignis extends BasisPartieEreignis { ereignisTyp: 'SPIEL_GESTARTET'; }
+
+export type PartieEreignisAntwort = 
+  | SnapshotEreignis 
+  | KarteGespieltEreignis 
+  | KiZugSequenzEreignis 
+  | StichAbgeschlossenEreignis 
+  | SpielBeendetEreignis 
+  | AnsageErfolgtEreignis 
+  | SchweinchenGemeldetEreignis 
+  | SpielGestartetEreignis;
 
 export interface SpielverwaltungWebSocketFehlerAntwort {
   timestamp: string;

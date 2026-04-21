@@ -74,10 +74,21 @@ test.describe('Mehrere Runden gegen KI', () => {
       if (msg.type() === 'error') jsFehler.push(`[console.error] ${msg.text()}`);
     });
 
-    // ── 1. Quick Game starten ─────────────────────────────────────────────
+    // ── 1. Gast-Session starten & Quick Game triggern ────────────────────
     await page.goto('/');
-    await expect(page.locator('button', { hasText: /Quick Game/i })).toBeVisible({ timeout: 20_000 });
-    await page.locator('button', { hasText: /Quick Game/i }).click();
+    
+    // Warten bis die Bridge bereit ist
+    await page.waitForFunction(() => (window as any).__locodoko?.appStore, { timeout: 20_000 });
+    
+    // Als Gast anmelden
+    await page.evaluate(() => (window as any).__locodoko.appStore.alsGastStarten());
+    
+    // Warten bis authentifiziert
+    await page.waitForFunction(() => (window as any).__locodoko.appStore.snapshot().authentifiziert, { timeout: 10_000 });
+    
+    // Quick Game triggern
+    await page.evaluate(() => (window as any).__locodoko.appStore.erstelleQuickGame());
+    
     await expect(page.locator('[data-testid="tischszene"]')).toBeVisible({ timeout: 15_000 });
 
     // ── 2. Animationen beschleunigen ──────────────────────────────────────
@@ -99,8 +110,8 @@ test.describe('Mehrere Runden gegen KI', () => {
       if (!zustand) { await page.waitForTimeout(300); continue; }
 
       // Fortschritt loggen bei Änderungen
-      if (zustand.phase !== letztePhase || zustand.spielNummer !== letzteSpielNummer) {
-        console.log(`[i=${i}] Runde ${abgeschlosseneRunden + 1}/2 | Spiel ${zustand.spielNummer} | Phase=${zustand.phase} | Typ=${zustand.spieltyp}`);
+      if (zustand.phase !== letztePhase || zustand.spielNummer !== letzteSpielNummer || i % 20 === 0) {
+        console.log(`[i=${i}] Runde ${abgeschlosseneRunden + 1}/2 | Spiel ${zustand.spielNummer} | Phase=${zustand.phase} | Vorbehalte=${zustand.moeglicheVorbehalte} | Karten=${zustand.spielbareKarten} | AmZug=${zustand.phase === 'STICHPHASE'}`);
         letztePhase = zustand.phase ?? '';
         letzteSpielNummer = zustand.spielNummer;
       }

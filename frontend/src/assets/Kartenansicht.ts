@@ -83,6 +83,9 @@ export class Kartenansicht extends Phaser.GameObjects.Container {
         .setDisplaySize(Math.round(optionen.breite * 0.84), Math.round(optionen.hoehe * 0.84));
       this.add(this.bild);
     } else {
+      if (textur) {
+        console.warn(`Textur ${textur} nicht gefunden! Nutze Fallback.`, optionen.inhalt);
+      }
       this.renderFallback(szene, optionen.inhalt);
     }
 
@@ -193,8 +196,13 @@ export class Kartenansicht extends Phaser.GameObjects.Container {
   private renderOffeneKarteFallback(szene: Phaser.Scene, farbe: string, wert: string): void {
     const istRot = farbe === 'HERZ' || farbe === 'KARO';
     const farbCode = istRot ? '#d62828' : '#111111';
-    const symbol = ({ KREUZ: '\u2663', PIK: '\u2660', HERZ: '\u2665', KARO: '\u2666' } as Record<string, string>)[farbe] ?? '?';
-    const wertText = ({ AS: 'A', ZEHN: '10', KOENIG: 'K', DAME: 'D', BUBE: 'B', NEUN: '9' } as Record<string, string>)[wert] ?? wert.slice(0, 2);
+    // Mapping fuer Symbole
+    const symbole: Record<string, string> = { KREUZ: '\u2663', PIK: '\u2660', HERZ: '\u2665', KARO: '\u2666' };
+    const symbol = symbole[farbe] ?? farbe.slice(0, 1);
+    // Mapping fuer Werte
+    const kuerzel: Record<string, string> = { AS: 'A', ZEHN: '10', KOENIG: 'K', DAME: 'D', BUBE: 'B', NEUN: '9' };
+    const wertText = kuerzel[wert] ?? wert.slice(0, 2);
+    
     const randX = -this.breite / 2 + Math.round(this.breite * 0.12);
     const randY = -this.hoehe / 2 + Math.round(this.hoehe * 0.08);
     const eckenStil = {

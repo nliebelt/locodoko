@@ -169,6 +169,12 @@ public class SpielRegistry {
         }
     }
 
+    /** Entfernt das laufende Spiel eines Tisches aus dem Cache (z.B. bei Neustart). */
+    public void leere(TischId tischId) {
+        spielCache.remove(tischId.wert());
+        LOGGER.info("SpielRegistry: Cache fuer Tisch {} geleert", tischId);
+    }
+
     /** Entfernt Spiel, Lock und Kommando-Cache eines beendeten Tisches. */
     public void entferne(TischId tischId) {
         spielCache.remove(tischId.wert());

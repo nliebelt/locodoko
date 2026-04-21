@@ -44,7 +44,7 @@ export function karteZuDateiname(farbe: string, wert: string): string {
 }
 
 export function texturSchluesselFuerKarte(farbe: string, wert: string): string {
-  return `karte-offen-${farbe}-${wert}`;
+  return `karte-offen-${farbe.toUpperCase()}-${wert.toUpperCase()}`;
 }
 
 export function istBildHintergrund(bg: string): boolean {

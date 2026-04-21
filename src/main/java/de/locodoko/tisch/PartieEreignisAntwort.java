@@ -6,49 +6,108 @@ import org.springframework.lang.Nullable;
 import java.time.Instant;
 import java.util.List;
 
-@Schema(description = "WebSocket-Ereignis-Wrapper fuer Partie-Updates.")
-public record PartieEreignisAntwort(
+/**
+ * Basis-Interface fuer alle Partie-Ereignisse.
+ * Ermoeglicht typsichere Discriminated Unions in der OpenAPI-Spec.
+ */
+@Schema(
+    description = "Ein Ereignis innerhalb einer laufenden Partie.",
+    oneOf = {
+        PartieEreignisAntwort.Snapshot.class,
+        PartieEreignisAntwort.KarteGespielt.class,
+        PartieEreignisAntwort.KiZugSequenz.class,
+        PartieEreignisAntwort.StichAbgeschlossen.class,
+        PartieEreignisAntwort.SpielBeendet.class,
+        PartieEreignisAntwort.AnsageErfolgt.class,
+        PartieEreignisAntwort.SchweinchenGemeldet.class,
+        PartieEreignisAntwort.SpielGestartet.class
+    }
+)
+public sealed interface PartieEreignisAntwort {
+
     @Schema(description = "Zeitpunkt des Ereignisses.")
-    Instant timestamp,
-    @Schema(description = "Typ des Partie-Ereignisses.")
-    PartieEreignisTyp ereignisTyp,
-    @Schema(description = "Aktueller Partiestand-Snapshot.")
-    PartieStandAntwort partieStand,
-    @Schema(description = "KI-Kartenzug-Sequenz (nur bei KI_ZUG_SEQUENZ).")
-    @Nullable List<GespielteKarteAntwort> kiKartenSequenz,
-    @Schema(description = "Neue Sonderpunkte (nur bei STICH_ABGESCHLOSSEN).")
-    @Nullable List<SonderpunktEreignisAntwort> neueSonderpunkte
-) {
+    Instant timestamp();
 
-    public static PartieEreignisAntwort snapshot(PartieStandAntwort partieStand) {
-        return new PartieEreignisAntwort(Instant.now(), PartieEreignisTyp.SNAPSHOT, partieStand, null, null);
+    @Schema(description = "Aktuelle Sequenznummer/Version der Partie.", example = "42")
+    long version();
+
+    @Schema(description = "Typ des Partie-Ereignisses zur Unterscheidung im Frontend.")
+    PartieEreignisTyp ereignisTyp();
+
+    @Schema(description = "Aktueller Partiestand-Snapshot (Snapshot-in-Event fuer Robustheit).")
+    PartieStandAntwort partieStand();
+
+    // --- Implementierungen (ereignisTyp muss Komponente sein fuer Jackson-Serialisierung) ---
+
+    @Schema(description = "Expliziter Snapshot des gesamten Spielstands.")
+    record Snapshot(Instant timestamp, long version, PartieEreignisTyp ereignisTyp, PartieStandAntwort partieStand) implements PartieEreignisAntwort {}
+
+    @Schema(description = "Ein Spieler (Mensch oder KI-Einzelkarte) hat eine Karte gespielt.")
+    record KarteGespielt(Instant timestamp, long version, PartieEreignisTyp ereignisTyp, PartieStandAntwort partieStand) implements PartieEreignisAntwort {}
+
+    @Schema(description = "Eine Sequenz von KI-Karten wurde gespielt.")
+    record KiZugSequenz(
+        Instant timestamp,
+        long version,
+        PartieEreignisTyp ereignisTyp,
+        PartieStandAntwort partieStand,
+        @Schema(description = "Die Liste der gespielten Karten in zeitlicher Reihenfolge.")
+        List<GespielteKarteAntwort> kiKartenSequenz
+    ) implements PartieEreignisAntwort {}
+
+    @Schema(description = "Ein Stich wurde beendet und eingezogen.")
+    record StichAbgeschlossen(
+        Instant timestamp,
+        long version,
+        PartieEreignisTyp ereignisTyp,
+        PartieStandAntwort partieStand,
+        @Schema(description = "Neue Sonderpunkte, die in diesem Stich erzielt wurden.")
+        List<SonderpunktEreignisAntwort> neueSonderpunkte
+    ) implements PartieEreignisAntwort {}
+
+    @Schema(description = "Ein Einzelspiel wurde beendet (Auswertung abgeschlossen).")
+    record SpielBeendet(Instant timestamp, long version, PartieEreignisTyp ereignisTyp, PartieStandAntwort partieStand) implements PartieEreignisAntwort {}
+
+    @Schema(description = "Ein Spieler hat eine Ansage (Re, Kontra, etc.) getaetigt.")
+    record AnsageErfolgt(Instant timestamp, long version, PartieEreignisTyp ereignisTyp, PartieStandAntwort partieStand) implements PartieEreignisAntwort {}
+
+    @Schema(description = "Ein Spieler hat Schweinchen gemeldet.")
+    record SchweinchenGemeldet(Instant timestamp, long version, PartieEreignisTyp ereignisTyp, PartieStandAntwort partieStand) implements PartieEreignisAntwort {}
+
+    @Schema(description = "Eine neue Partie an diesem Tisch wurde gestartet.")
+    record SpielGestartet(Instant timestamp, long version, PartieEreignisTyp ereignisTyp, PartieStandAntwort partieStand) implements PartieEreignisAntwort {}
+
+    // --- Statische Factory-Methoden ---
+
+    static PartieEreignisAntwort snapshot(PartieStandAntwort stand) {
+        return new Snapshot(Instant.now(), stand.version(), PartieEreignisTyp.SNAPSHOT, stand);
     }
 
-    public static PartieEreignisAntwort karteGespielt(PartieStandAntwort partieStand) {
-        return new PartieEreignisAntwort(Instant.now(), PartieEreignisTyp.KARTE_GESPIELT, partieStand, null, null);
+    static PartieEreignisAntwort karteGespielt(PartieStandAntwort stand) {
+        return new KarteGespielt(Instant.now(), stand.version(), PartieEreignisTyp.KARTE_GESPIELT, stand);
     }
 
-    public static PartieEreignisAntwort kiZugSequenz(PartieStandAntwort partieStand, List<GespielteKarteAntwort> sequenz) {
-        return new PartieEreignisAntwort(Instant.now(), PartieEreignisTyp.KI_ZUG_SEQUENZ, partieStand, sequenz, null);
+    static PartieEreignisAntwort kiZugSequenz(PartieStandAntwort stand, List<GespielteKarteAntwort> sequenz) {
+        return new KiZugSequenz(Instant.now(), stand.version(), PartieEreignisTyp.KI_ZUG_SEQUENZ, stand, sequenz);
     }
 
-    public static PartieEreignisAntwort stichAbgeschlossen(PartieStandAntwort partieStand, List<SonderpunktEreignisAntwort> sonderpunkte) {
-        return new PartieEreignisAntwort(Instant.now(), PartieEreignisTyp.STICH_ABGESCHLOSSEN, partieStand, null, sonderpunkte);
+    static PartieEreignisAntwort stichAbgeschlossen(PartieStandAntwort stand, List<SonderpunktEreignisAntwort> sonderpunkte) {
+        return new StichAbgeschlossen(Instant.now(), stand.version(), PartieEreignisTyp.STICH_ABGESCHLOSSEN, stand, sonderpunkte);
     }
 
-    public static PartieEreignisAntwort spielBeendet(PartieStandAntwort partieStand) {
-        return new PartieEreignisAntwort(Instant.now(), PartieEreignisTyp.SPIEL_BEENDET, partieStand, null, null);
+    static PartieEreignisAntwort spielBeendet(PartieStandAntwort stand) {
+        return new SpielBeendet(Instant.now(), stand.version(), PartieEreignisTyp.SPIEL_BEENDET, stand);
     }
 
-    public static PartieEreignisAntwort ansageErfolgt(PartieStandAntwort partieStand) {
-        return new PartieEreignisAntwort(Instant.now(), PartieEreignisTyp.ANSAGE_ERFOLGT, partieStand, null, null);
+    static PartieEreignisAntwort ansageErfolgt(PartieStandAntwort stand) {
+        return new AnsageErfolgt(Instant.now(), stand.version(), PartieEreignisTyp.ANSAGE_ERFOLGT, stand);
     }
 
-    public static PartieEreignisAntwort schweinchenGemeldet(PartieStandAntwort partieStand) {
-        return new PartieEreignisAntwort(Instant.now(), PartieEreignisTyp.SCHWEINCHEN_GEMELDET, partieStand, null, null);
+    static PartieEreignisAntwort schweinchenGemeldet(PartieStandAntwort stand) {
+        return new SchweinchenGemeldet(Instant.now(), stand.version(), PartieEreignisTyp.SCHWEINCHEN_GEMELDET, stand);
     }
 
-    public static PartieEreignisAntwort spielGestartet(PartieStandAntwort partieStand) {
-        return new PartieEreignisAntwort(Instant.now(), PartieEreignisTyp.SPIEL_GESTARTET, partieStand, null, null);
+    static PartieEreignisAntwort spielGestartet(PartieStandAntwort stand) {
+        return new SpielGestartet(Instant.now(), stand.version(), PartieEreignisTyp.SPIEL_GESTARTET, stand);
     }
-    }
+}

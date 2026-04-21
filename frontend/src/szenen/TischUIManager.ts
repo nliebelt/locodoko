@@ -1,5 +1,3 @@
-import type { AppZustand } from '../store/AppStore';
-
 /** Moegliche Animations-Geschwindigkeitsstufen: normal (1x), doppelt (2x), sofort (Infinity). */
 export type AnimationsGeschwindigkeit = 1 | 2 | typeof Infinity;
 
@@ -43,11 +41,10 @@ export interface TischUIKontext {
 }
 
 /**
- * Verwaltet die DOM-UI-Elemente (Topbar, Modals, Toasts).
+ * Verwaltet die DOM-UI-Elemente (Topbar, Modals).
  * Die Seitenlade wurde entfernt, Informationen werden nativ in Phaser gerendert.
  */
 export class TischUIManager {
-  private toastStack?: HTMLDivElement;
   private rundenEndeModal?: HTMLDivElement;
   private partieEndeModal?: HTMLDivElement;
 
@@ -64,9 +61,6 @@ export class TischUIManager {
     uiRoot.innerHTML = '';
     uiRoot.dataset['testid'] = 'tischszene';
 
-    const toastStack = document.createElement('div');
-    toastStack.className = 'ui-toast-stack';
-
     const rundenEndeModal = document.createElement('div');
     rundenEndeModal.className = 'ui-modal-backdrop';
     rundenEndeModal.hidden = true;
@@ -82,9 +76,25 @@ export class TischUIManager {
     actionBarMarker.dataset['testid'] = 'floating-action-bar';
     actionBarMarker.style.cssText = 'position:absolute;width:0;height:0;overflow:hidden;pointer-events:none';
 
-    uiRoot.append(toastStack, rundenEndeModal, partieEndeModal, vorbehaltMarker, actionBarMarker);
+    // E2E-Marker fuer die Topbar (die jetzt in Phaser gerendert wird)
+    const markerStyle = 'position:absolute;width:1px;height:1px;background:transparent;left:-9999px;top:-9999px;pointer-events:none';
 
-    this.toastStack = toastStack;
+    const stichzaehlerMarker = document.createElement('div');
+    stichzaehlerMarker.dataset['testid'] = 'hud-stichzaehler';
+    stichzaehlerMarker.style.cssText = markerStyle;
+    const spieltypMarker = document.createElement('div');
+    spieltypMarker.dataset['testid'] = 'hud-spieltyp';
+    spieltypMarker.style.cssText = markerStyle;
+    const einstellungenMarker = document.createElement('div');
+    einstellungenMarker.dataset['testid'] = 'hud-btn-einstellungen';
+    einstellungenMarker.style.cssText = markerStyle;
+    const startBtnMarker = document.createElement('div');
+    startBtnMarker.dataset['testid'] = 'btn-spiel-starten';
+    startBtnMarker.style.cssText = markerStyle;
+
+    uiRoot.append(rundenEndeModal, partieEndeModal, vorbehaltMarker, actionBarMarker,
+      stichzaehlerMarker, spieltypMarker, einstellungenMarker, startBtnMarker);
+
     this.rundenEndeModal = rundenEndeModal;
     this.partieEndeModal = partieEndeModal;
 
@@ -101,32 +111,23 @@ export class TischUIManager {
     this.kontext.onGeschwindigkeitGeaendert(this.animationsGeschwindigkeit);
   }
 
-  aktualisiereTopBar(): void {
-    // Top-Bar wird jetzt in Phaser (TischSzene.renderTopBar) gerendert.
+  aktualisiereTopBar(stichZaehler: string, spieltyp: string, startBtnSichtbar: boolean): void {
+    const uiRoot = holeUiRoot();
+    const stich = uiRoot.querySelector('[data-testid="hud-stichzaehler"]');
+    if (stich) stich.textContent = stichZaehler;
+    const typ = uiRoot.querySelector('[data-testid="hud-spieltyp"]');
+    if (typ) typ.textContent = spieltyp;
+    const start = uiRoot.querySelector('[data-testid="btn-spiel-starten"]') as HTMLElement;
+    if (start) start.hidden = !startBtnSichtbar;
   }
 
   aktualisiereSeitenlade(): void {} // Entfernt
   aktualisiereErgebnis(): void {} // Entfernt
   aktualisiereLetzteStiche(): void {} // Entfernt
 
-  aktualisiereEinstellungsModal(): void {
-    // Einstellungen werden jetzt in Phaser (TischSzene.renderEinstellungsModal) gerendert.
-  }
-
-  aktualisiereToasts(zustand: AppZustand): void {
-    if (!this.toastStack) return;
-    this.toastStack.innerHTML = '';
-    if (!zustand.meldung) return;
-    const toast = document.createElement('div');
-    toast.className = `ui-toast ${zustand.meldung.typ === 'fehler' ? 'ui-toast--error' : ''}`;
-    toast.innerHTML = `<strong>${zustand.meldung.typ === 'fehler' ? 'Fehler' : 'Info'}</strong><div>${zustand.meldung.text}</div>`;
-    this.toastStack.append(toast);
-  }
+  aktualisiereEinstellungsModal(): void {}
 
   aufraeumen(): void {
-    const uiRoot = document.getElementById('ui-root');
-    if (uiRoot) uiRoot.innerHTML = '';
-    this.toastStack = undefined;
     this.rundenEndeModal = undefined;
     this.partieEndeModal = undefined;
   }

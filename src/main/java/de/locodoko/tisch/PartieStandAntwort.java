@@ -40,6 +40,8 @@ import java.util.UUID;
 public record PartieStandAntwort(
     @Schema(description = "Eindeutige Partie-ID.", example = "c3d4e5f6-7890-abcd-ef12-34567890abcd")
     UUID partieId,
+    @Schema(description = "Aktuelle Sequenznummer/Version der Partie zur Synchronisation.", example = "42")
+    long version,
     @Schema(description = "Aktueller Status der Partie.")
     PartieStatus status,
     @Schema(description = "Gesamtanzahl der Spiele in der Partie.", example = "12")
@@ -77,6 +79,7 @@ public record PartieStandAntwort(
             .orElse(null);
         return new PartieStandAntwort(
             partie.id(),
+            partie.version(),
             partie.statusAusDb(),
             partie.anzahlSpieleAusDb(),
             partie.spiele().stream().filter(spiel -> spiel.ergebnisEmbeddable() != null).toList().size(),
@@ -85,7 +88,7 @@ public record PartieStandAntwort(
             AbgeschlossenerStichAntwort.aus(laufendesSpiel != null ? laufendesSpiel : letztesAbgeschlossenesSpiel),
             LaufendesSpielAntwort.aus(tisch, laufendesSpiel, sichtbarerSpielerId, debugModus)
         );
-    }
+        }
 
     @Schema(description = "Daten des aktuell laufenden Spiels innerhalb einer Partie.")
     public record LaufendesSpielAntwort(

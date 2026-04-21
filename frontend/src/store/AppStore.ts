@@ -68,14 +68,16 @@ export class AppStore {
   private zustand: AppZustand = erzeugeAnfangszustand();
   private readonly listener = new Set<Listener>();
   private readonly gemeinsameAbos: Array<() => void> = [];
-  private readonly tischAbos: Array<() => void> = [];
+  private tischAbos: Array<() => void> = [];
   private aktuellePartieAbo: Uuid | null = null;
+  private _letztePartieVersion = -1;
   private _kiSequenzQueue: Array<() => Promise<void>> = [];
   private readonly _sonderpunkteListener = new Set<(sonderpunkte: SonderpunktEreignisAntwortDto[]) => void>();
   private readonly _eventListener = new Set<(ereignis: PartieEreignisAntwort) => void>();
   private _eventQueue: PartieEreignisAntwort[] = [];
   private _verarbeiteEventLaeuft = false;
   private _kiKartenVerzögerungMs = 800;
+  private _aktuelleSequenzId = 0;
 
   /**
    * Setzt die Verzögerung für KI-Kartenanimationen.
@@ -466,7 +468,20 @@ export class AppStore {
       this.patch({ aktuellerTisch: null, partieStand: null, bereich: 'SPIELVERWALTUNG' });
       return;
     }
-    const partiestand = ereignis.partieStand ?? this.zustand.partieStand;
+
+    let partiestand = this.zustand.partieStand;
+    if (ereignis.partieStand) {
+      const istSnapshot = ereignis.ereignisTyp === 'TISCH_SNAPSHOT' || ereignis.ereignisTyp === 'SPIEL_GESTARTET';
+      if (this._darfPartieStandAktualisieren(ereignis.partieStand, ereignis.partieStand.version, istSnapshot)) {
+        partiestand = ereignis.partieStand;
+      } else {
+        Logger.websocket('Ignoriere veralteten PartieStand aus TischEreignis', {
+          neu: ereignis.partieStand.version,
+          letzte: this._letztePartieVersion
+        });
+      }
+    }
+
     this.patch({ aktuellerTisch: ereignis.tisch, partieStand: partiestand, bereich: 'TISCH' });
     if (ereignis.tisch.partieId && ereignis.tisch.partieId !== this.aktuellePartieAbo) {
       this.registrierePartieAbos(ereignis.tisch.partieId);
@@ -485,26 +500,51 @@ export class AppStore {
     try {
       while (this._eventQueue.length > 0) {
         const ereignis = this._eventQueue.shift()!;
+        const istSnapshot = ereignis.ereignisTyp === 'SNAPSHOT';
+
+        if (!this._darfPartieStandAktualisieren(ereignis.partieStand, ereignis.version, istSnapshot)) {
+          Logger.websocket('Ignoriere veraltetes PartieEreignis', {
+            typ: ereignis.ereignisTyp,
+            version: ereignis.version,
+            letzte: this._letztePartieVersion
+          });
+          continue;
+        }
+
+        // Falls wir eine Luecke in der Sequenz feststellen, koennten wir hier einen HTTP-Reload triggern.
+        // Aktuell verlassen wir uns darauf, dass WebSockets in-order liefern.
+        if (!istSnapshot && ereignis.version > this._letztePartieVersion + 1) {
+          Logger.warn(`Sequenz-Luecke erkannt! Erwartet ${this._letztePartieVersion + 1}, erhalten ${ereignis.version}`);
+          // TODO: this.reconnecteTisch(this.zustand.aktuellerTisch!.id);
+        }
+
+        this._aktuelleSequenzId++; // Neue Sequenz fuer jedes Event (Animation-Guard)
+        const sequenzIdBeiStart = this._aktuelleSequenzId;
+
+        // Zustand patchen VOR dem Benachrichtigen der Listener (Locodoko Unified Architecture)
+        // AUSNAHME: Bei KI-Sequenzen regelt _expandiereKiSequenz das Patching am Ende selbst.
+        if (ereignis.partieStand && ereignis.ereignisTyp !== 'KI_ZUG_SEQUENZ') {
+          this.patch({ partieStand: ereignis.partieStand });
+        }
+
         this._eventListener.forEach((l) => l(ereignis));
         switch (ereignis.ereignisTyp) {
           case 'SNAPSHOT':
             this._eventQueue.length = 0;
             this.leereKiSequenzQueue();
-            this.patch({ partieStand: ereignis.partieStand });
             break;
           case 'KARTE_GESPIELT':
           case 'SPIEL_BEENDET':
           case 'ANSAGE_ERFOLGT':
           case 'SCHWEINCHEN_GEMELDET':
           case 'SPIEL_GESTARTET':
-            this.patch({ partieStand: ereignis.partieStand });
+            // Patching bereits oben erledigt
             break;
           case 'KI_ZUG_SEQUENZ':
-            await this._expandiereKiSequenz(ereignis.kiKartenSequenz!, ereignis.partieStand);
+            await this._expandiereKiSequenz(ereignis.kiKartenSequenz, ereignis.partieStand, sequenzIdBeiStart);
             break;
           case 'STICH_ABGESCHLOSSEN':
-            this.patch({ partieStand: ereignis.partieStand });
-            if (ereignis.neueSonderpunkte?.length) this._sonderpunkteListener.forEach((l) => l(ereignis.neueSonderpunkte!));
+            if (ereignis.neueSonderpunkte.length) this._sonderpunkteListener.forEach((l) => l(ereignis.neueSonderpunkte));
             break;
         }
       }
@@ -513,13 +553,12 @@ export class AppStore {
     }
   }
 
-  private async _expandiereKiSequenz(sequenz: GespielteKarteEreignisAntwort[], finalStand: PartieStandAntwort): Promise<void> {
+  private async _expandiereKiSequenz(sequenz: GespielteKarteEreignisAntwort[], finalStand: PartieStandAntwort, sequenzId: number): Promise<void> {
     const prevStand = this.zustand.partieStand;
     for (const [i] of sequenz.entries()) {
-      // Immer synthetischen Zwischenstand verwenden, damit die Karte erst sichtbar in die Mitte
-      // fliegt bevor der finale Stand (mit ggf. eingesammeltem Stich) angewendet wird.
-      // Ohne diese Synthese würde die letzte Stich-Karte nie animiert, da finalStand bereits
-      // aktuelleStichmitte = [] enthält.
+      // Wenn in der Zwischenzeit ein SNAPSHOT kam, abbrechen
+      if (this._aktuelleSequenzId !== sequenzId) return;
+
       const stand = prevStand !== null
         ? this._synthetischerZwischenstand(prevStand, sequenz.slice(0, i + 1))
         : finalStand;
@@ -528,10 +567,9 @@ export class AppStore {
         await new Promise<void>((r) => setTimeout(r, this._kiKartenVerzögerungMs));
       }
     }
-    // Finalen Stand nach allen Delays anwenden (loest ggf. Stich-Einziehen-Animation aus).
-    // Guard: reconnecteTisch setzt _verarbeiteEventLaeuft auf false — in dem Fall wurde
-    // bereits ein neuer Snapshot empfangen und finalStand ist veraltet → nicht ueberschreiben.
-    if (this._verarbeiteEventLaeuft) {
+    // Finalen Stand nach allen Delays anwenden.
+    // Guard: Nur patchen, wenn keine neueren Events die Sequenz unterbrochen haben.
+    if (this._aktuelleSequenzId === sequenzId) {
       this.patch({ partieStand: finalStand });
     }
   }
@@ -554,11 +592,52 @@ export class AppStore {
   }
 
   private leereKiSequenzQueue(): void { this._kiSequenzQueue.length = 0; }
-  private setzeTischAbosZurueck(): void { this.tischAbos.splice(0).forEach((a) => a()); this.aktuellePartieAbo = null; this.leereKiSequenzQueue(); this._eventQueue.length = 0; this._verarbeiteEventLaeuft = false; }
+
+  private _darfPartieStandAktualisieren(neuerStand: PartieStandAntwort, neueVersion: number, istSnapshot = false): boolean {
+    const aktuellePartieId = this.zustand.partieStand?.partieId;
+
+    // Wenn neue Partie: immer akzeptieren
+    if (neuerStand.partieId !== aktuellePartieId) {
+      this._letztePartieVersion = neueVersion;
+      return true;
+    }
+
+    // Wir erlauben >= hier, da der Server fuer denselben Zustandsuebergang
+    // (gleiche Version) mehrere Ereignis-Typen schicken kann (z.B. KI-Sequenz + Phase-Change).
+    // Inkrementelle Updates (Events) nur wenn Version neuer oder gleich ist.
+    if (neueVersion >= this._letztePartieVersion) {
+      this._letztePartieVersion = neueVersion;
+      return true;
+    }
+
+    return false;
+  }
+
+  private setzeTischAbosZurueck(): void { 
+    this.tischAbos.splice(0).forEach((a) => a()); 
+    this.aktuellePartieAbo = null; 
+    this._letztePartieVersion = -1;
+    this._aktuelleSequenzId++; // Invaldiert laufende KI-Sequenzen
+    this.leereKiSequenzQueue(); 
+    this._eventQueue.length = 0; 
+    this._verarbeiteEventLaeuft = false; 
+  }
   private sendeSpielaktion(ziel: string, payload: unknown): void {
     try { this.patch({ meldung: null }); this.echtzeit.senden(ziel, payload); } catch (f) { this.patch({ meldung: this.formatiereMeldung(f) }); }
   }
-  private patch(aenderungen: Partial<AppZustand>): void { this.zustand = { ...this.zustand, ...aenderungen }; this.veroeffentliche(); }
+  private patch(aenderungen: Partial<AppZustand>): void {
+    if (aenderungen.partieStand) {
+      const stand = aenderungen.partieStand;
+      const spiel = stand.laufendesSpiel;
+      Logger.websocket('Patching PartieStand', {
+        spielNr: spiel?.spielNummer,
+        phase: spiel?.phase,
+        handkarten: spiel?.spieler?.find(s => s.istSelbst)?.verbleibendeKarten
+      });
+    }
+    this.zustand = { ...this.zustand, ...aenderungen };
+    this.veroeffentliche();
+  }
   private veroeffentliche(): void { const zustand = this.snapshot(); this.listener.forEach((l) => l(zustand)); }
   private async fuehreMitStatus<T>(aktion: () => Promise<T>): Promise<T> {
     this.patch({ wirdGeladen: true });

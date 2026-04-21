@@ -216,6 +216,7 @@ public class TischVerwaltungsService {
         partie.fuegeSpielHinzu(erzeugeErstesSpiel(tisch));
         tisch.setzePartie(partie);
         TischEntity gespeicherterTisch = tischRepository.saveAndFlush(tisch);
+        spielRegistry.leere(TischId.von(gespeicherterTisch.id())); // Cache leeren für sauberen Neustart
         eventPublisher.publishEvent(new KiUebernahmeEreignis(TischId.von(gespeicherterTisch.id())));
         gespeicherterTisch = tischRepository.saveAndFlush(gespeicherterTisch);
         synchronisiereRegistry(tischId, gespeicherterTisch);
@@ -349,6 +350,7 @@ public class TischVerwaltungsService {
         partie.fuegeSpielHinzu(erzeugeErstesSpiel(tisch));
         tisch.setzePartie(partie);
         TischEntity gespeicherterTisch = tischRepository.saveAndFlush(tisch);
+        spielRegistry.leere(TischId.von(gespeicherterTisch.id())); // Cache leeren für sauberen Neustart
         eventPublisher.publishEvent(new KiUebernahmeEreignis(TischId.von(gespeicherterTisch.id())));
         gespeicherterTisch = tischRepository.saveAndFlush(gespeicherterTisch);
         synchronisiereRegistry(TischId.von(gespeicherterTisch.id()), gespeicherterTisch);

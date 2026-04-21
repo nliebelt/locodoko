@@ -1,0 +1,362 @@
+<!DOCTYPE html><html lang="de"><head>
+    <script type="module" src="/@vite/client"></script>
+
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Loco Doko</title>
+    <!-- Space Grotesk — Neo-Brutalism-Schrift fuer das Design-System -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;600;700;900&amp;display=swap" rel="stylesheet">
+  <style type="text/css" data-vite-dev-id="/home/agent/workspace/frontend/src/styles.css">/* Design-System — CSS Custom Properties (Neo-Brutalism Theme) */
+:root {
+  --farbe-hintergrund: #0d1f12;
+  --farbe-surface: #1a3a24;
+  --farbe-grenze: #2d5a3d;
+  --farbe-grenze-akzent: #f8f9fa;
+  --farbe-text-primaer: #f8f9fa;
+  --farbe-text-sekundaer: #a3c4a8;
+  --farbe-gold: #ffd166;
+  --farbe-blau: #90caf9;
+  --farbe-rot: #ef4444;
+  --farbe-gruen: #4ade80;
+
+  --schrift-familie: 'Space Grotesk', system-ui, sans-serif;
+
+  --schatten-karte: 4px 4px 0 rgba(0, 0, 0, 0.8);
+  --schatten-button: 4px 4px 0 #000;
+  --rahmen-neo: 2px solid var(--farbe-grenze-akzent);
+}
+[hidden] {
+  display: none !important;
+  pointer-events: none !important;
+}
+html,
+body,
+#app-shell,
+#spiel-root,
+#ui-root {
+  margin: 0;
+  width: 100%;
+  height: 100%;
+}
+body {
+  overflow: hidden;
+  font-family: var(--schrift-familie);
+  background: var(--farbe-hintergrund);
+  color: var(--farbe-text-primaer);
+}
+canvas {
+  display: block;
+}
+#app-shell {
+  position: relative;
+  overflow: hidden;
+}
+#spiel-root {
+  position: absolute;
+  inset: 0;
+}
+#ui-root {
+  position: absolute;
+  inset: 0;
+  pointer-events: none; /* Wichtig: Standardmaeßig Klicks durchlassen zum Phaser-Canvas */
+  box-sizing: border-box;
+  z-index: 100;
+}
+#ui-root > * {
+  pointer-events: auto; /* Nur direkte Kinder fangen Klicks ab */
+}
+/* Toasts und Overlays sollen Klicks nur dort abfangen, wo sie auch sind */
+.ui-toast-stack, .hud-topbar {
+  pointer-events: auto;
+}
+.ui-modal-backdrop {
+  pointer-events: auto;
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.hud-topbar {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 40px;
+  background: rgba(11, 61, 36, 0.88);
+  border-bottom: 1px solid rgba(216, 243, 220, 0.3);
+  backdrop-filter: blur(8px);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 12px;
+  gap: 8px;
+  z-index: 10;
+}
+.ui-panel,
+.ui-toast {
+  pointer-events: auto;
+  background: rgba(11, 61, 36, 0.9);
+  border: 1px solid rgba(216, 243, 220, 0.35);
+  border-radius: 16px;
+  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.24);
+  backdrop-filter: blur(8px);
+}
+.ui-panel {
+  width: min(380px, 100%);
+  padding: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.ui-panel--compact {
+  width: min(320px, 100%);
+}
+.ui-panel--right {
+  margin-left: auto;
+}
+.ui-panel h1,
+.ui-panel h2,
+.ui-panel h3,
+.ui-panel p,
+.ui-panel ul {
+  margin: 0;
+}
+.ui-panel__muted {
+  color: #d8f3dc;
+  opacity: 0.85;
+  font-size: 0.95rem;
+}
+.ui-form-row,
+.ui-action-row,
+.ui-status-row,
+.ui-list-item__meta {
+  display: flex;
+  gap: 10px;
+}
+.ui-form-row,
+.ui-action-row {
+  flex-wrap: wrap;
+}
+.ui-input,
+.ui-button {
+  border-radius: 4px;
+  border: var(--rahmen-neo);
+  font: inherit;
+}
+.ui-input {
+  flex: 1;
+  min-width: 160px;
+  padding: 10px 12px;
+  background: rgba(255, 255, 255, 0.1);
+  color: #f8f9fa;
+}
+.ui-input--select {
+  appearance: none;
+}
+.ui-input::placeholder {
+  color: rgba(248, 249, 250, 0.72);
+}
+.ui-button {
+  cursor: pointer;
+  padding: 10px 14px;
+  background: #d8f3dc;
+  color: #14361f;
+  font-weight: 700;
+  box-shadow: var(--schatten-button);
+}
+.ui-button--secondary {
+  background: rgba(216, 243, 220, 0.16);
+  color: #f8f9fa;
+}
+.ui-button--danger {
+  background: rgba(220, 53, 69, 0.9);
+  color: #fff;
+}
+.ui-button:disabled {
+  cursor: wait;
+  opacity: 0.6;
+}
+.ui-list {
+  list-style: none;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.ui-list-item {
+  border-radius: 12px;
+  padding: 12px;
+  background: rgba(255, 255, 255, 0.08);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.ui-list-item__headline {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: baseline;
+}
+.ui-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 3px 8px;
+  border-radius: 999px;
+  background: rgba(216, 243, 220, 0.18);
+  color: #d8f3dc;
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.ui-badge--highlight {
+  background: rgba(255, 224, 130, 0.24);
+  color: #ffe082;
+}
+.ui-grid {
+  display: grid;
+  gap: 8px;
+}
+.ui-stat-card {
+  border-radius: 12px;
+  padding: 10px 12px;
+  background: rgba(255, 255, 255, 0.08);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.ui-stat-card strong {
+  font-size: 0.95rem;
+  word-break: break-word;
+}
+.ui-grid--two {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+.ui-badge--partei {
+  background: rgba(255, 255, 255, 0.12);
+}
+.ui-toast {
+  max-width: 320px;
+  padding: 14px 16px;
+}
+.ui-toast--error {
+  border-color: rgba(220, 53, 69, 0.55);
+}
+.ui-hint {
+  font-size: 0.86rem;
+  color: rgba(248, 249, 250, 0.76);
+}
+.ui-action-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.ui-section {
+  border-radius: 12px;
+  padding: 12px;
+  background: rgba(255, 255, 255, 0.08);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.ui-selection {
+  font-size: 0.9rem;
+  color: #d8f3dc;
+  word-break: break-word;
+}
+.ui-list--dense {
+  gap: 8px;
+}
+.ui-list-item--dense {
+  padding: 10px;
+  gap: 6px;
+}
+.ui-modal-backdrop {
+  position: absolute;
+  inset: 0;
+  z-index: 100;
+  pointer-events: auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(4px);
+}
+.ui-rundenauswertung-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 100;
+  pointer-events: none;
+  background: transparent;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding-bottom: 36px;
+}
+.ui-rundenauswertung-overlay > * {
+  pointer-events: auto;
+}
+.ui-modal {
+  max-width: 480px;
+  width: calc(100% - 32px);
+  max-height: calc(100vh - 32px);
+  overflow-y: auto;
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  pointer-events: auto;
+  background: rgba(11, 61, 36, 0.97);
+  border: 1px solid rgba(216, 243, 220, 0.35);
+  border-radius: 20px;
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.48);
+  backdrop-filter: blur(8px);
+}
+.ui-modal h2 {
+  margin: 0;
+}
+@media (max-width: 980px) {
+  .ui-panel,
+  .ui-panel--compact,
+  .ui-panel--right {
+    width: 100%;
+    margin-left: 0;
+  }
+
+  .ui-toast-stack {
+    width: 100%;
+  }
+
+  .ui-toast {
+    max-width: none;
+  }
+
+  .seitenlade {
+    width: 100%;
+  }
+}
+:focus-visible {
+  outline: 2px solid var(--farbe-gold);
+  outline-offset: 2px;
+}
+.ui-button:focus-visible,
+.ui-input:focus-visible {
+  outline: 2px solid var(--farbe-gold);
+  outline-offset: 2px;
+  box-shadow: var(--schatten-button), 0 0 0 4px rgba(255, 209, 102, 0.25);
+}
+</style></head>
+  <body>
+    <div id="app-shell">
+      <div id="spiel-root"><canvas width="1280" height="720" style="width: 1280px; height: 720px; margin-left: 0px; margin-top: 0px;"></canvas></div>
+      <div id="ui-root" aria-live="polite"><div class="spielverwaltung-container" data-testid="startscreen" style="display: flex; flex-direction: column; align-items: center; gap: 20px; margin-top: 240px;"><button class="neo-button neo-button--primary" type="button" data-testid="btn-quick-game">▶  Quick Game</button><button class="neo-button neo-button--secondary" type="button" data-testid="btn-neuer-tisch">+ Neuen Tisch erstellen</button><button class="neo-button neo-button--secondary" type="button" data-testid="btn-offene-tische">⊞  Offene Tische</button><button class="neo-button neo-button--secondary" type="button" data-testid="btn-logout" style="margin-top: 20px; opacity: 0.7;">🚪  Abmelden</button></div></div>
+    </div>
+    <script type="module" src="/src/main.ts"></script>
+  
+
+</body></html>
