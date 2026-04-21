@@ -183,6 +183,15 @@ export class TischSzene extends Phaser.Scene {
   private seitenladeOffen = false;
   private uiDreckig = false;
 
+  /**
+   * Gibt zurück, ob die TischSzene (und der zugrundeliegende AppStore) im Leerlauf ist.
+   */
+  public isIdle(): boolean {
+    const storeIdle = appStore.isIdle();
+    const animationenLaeuft = this.animationen?.animationLaeuft ?? false;
+    return storeIdle && !animationenLaeuft && !this.austeilenAktiv && !this.wartendeKartenId;
+  }
+
   constructor() {
     super('TischSzene');
   }

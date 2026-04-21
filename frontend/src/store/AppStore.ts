@@ -80,6 +80,14 @@ export class AppStore {
   private _aktuelleSequenzId = 0;
 
   /**
+   * Gibt zurück, ob sich der Store im Leerlauf befindet.
+   * Dies ist der Fall, wenn keine Events in der Queue sind und keine Event-Verarbeitung läuft.
+   */
+  isIdle(): boolean {
+    return this._eventQueue.length === 0 && !this._verarbeiteEventLaeuft;
+  }
+
+  /**
    * Setzt die Verzögerung für KI-Kartenanimationen.
    * @param ms Dauer in Millisekunden.
    */

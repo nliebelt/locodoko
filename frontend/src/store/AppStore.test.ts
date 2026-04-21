@@ -396,8 +396,8 @@ describe('AppStore', () => {
       partieStand: null
     });
 
-    const spiel1Stand = { partieId: 'partie-rec', spielNummer: 1, laufendesSpiel: { spielNummer: 1 } } as unknown as PartieStandAntwort;
-    const spiel2Stand = { partieId: 'partie-rec', spielNummer: 2, laufendesSpiel: { spielNummer: 2 } } as unknown as PartieStandAntwort;
+    const spiel1Stand = { partieId: 'partie-rec', version: 1, spielNummer: 1, laufendesSpiel: { spielNummer: 1 } } as unknown as PartieStandAntwort;
+    const spiel2Stand = { partieId: 'partie-rec', version: 2, spielNummer: 2, laufendesSpiel: { spielNummer: 2 } } as unknown as PartieStandAntwort;
 
     // KI animiert → async Barrier
     echtzeit.emit('/user/queue/partie/partie-rec', {
