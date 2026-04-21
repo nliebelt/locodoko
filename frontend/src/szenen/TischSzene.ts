@@ -979,7 +979,7 @@ export class TischSzene extends Phaser.Scene {
     btn.dataset['testid'] = 'btn-rundenauswertung-weiter';
     const sTS = document.createElement('span'); sTS.dataset['testid'] = 'rundenauswertung-spieltyp'; sTS.textContent = daten.spieltypLabel; sTS.hidden = true;
     const mS = document.createElement('span'); mS.dataset['testid'] = 'rundenauswertung-punktemultiplikator'; mS.textContent = e.soloMultiplikator === 3 ? '×3' : '×1'; mS.hidden = true;
-    this.rundenEndeModal.innerHTML = ''; this.rundenEndeModal.className = 'ui-rundenauswertung-overlay'; this.rundenEndeModal.append(btn, sTS, mS); this.rundenEndeModal.hidden = false;
+    this.rundenEndeModal.innerHTML = ''; this.rundenEndeModal.classList.add('ui-rundenauswertung-overlay'); this.rundenEndeModal.append(btn, sTS, mS); this.rundenEndeModal.hidden = false;
     setTimeout(() => btn.focus(), 0);
     this.escapeHandler = (ev: KeyboardEvent) => { if (ev.key === 'Escape') this.schliesseRundenEndeModal(); };
     document.addEventListener('keydown', this.escapeHandler);
@@ -990,6 +990,7 @@ export class TischSzene extends Phaser.Scene {
   private schliesseRundenEndeModal(): void {
     if (!this.rundenEndeModal) return;
     this.rundenEndeModal.hidden = true; this.rundenEndeModal.innerHTML = '';
+    this.rundenEndeModal.classList.remove('ui-rundenauswertung-overlay');
     this.rundenauswertungObjekte.forEach((o) => o.destroy()); this.rundenauswertungObjekte = [];
     if (this.escapeHandler) { document.removeEventListener('keydown', this.escapeHandler); this.escapeHandler = undefined; }
     if (this.backdropClickHandler && this.rundenEndeModal) { this.rundenEndeModal.removeEventListener('click', this.backdropClickHandler); this.backdropClickHandler = undefined; }
@@ -1122,7 +1123,7 @@ export class TischSzene extends Phaser.Scene {
   private aktualisiereKartenNavigationsIndex(m: TischAnsichtModell): void {
     const wE = this.letztesModell?.aktuellerSpieler === 'SUED' && (this.letztesModell?.spielbareKarten.length ?? 0) > 0;
     const iE = m.aktuellerSpieler === 'SUED' && m.spielbareKarten.length > 0;
-    if (!wE && iE) this.tastaturKarteIndex = 0;
+    if ((!wE && iE) || (iE && this.tastaturKarteIndex === -1)) this.tastaturKarteIndex = 0;
     else if (!iE) this.tastaturKarteIndex = -1;
     else if (iE && this.tastaturKarteIndex >= m.spielbareKarten.length) this.tastaturKarteIndex = m.spielbareKarten.length - 1;
   }

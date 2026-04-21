@@ -113,10 +113,13 @@ function erstelleTweenApi() {
   }) };
 }
 
+let aktiveSzene: TischSzene | undefined;
+
 function baueSzene(z: any) {
   document.body.innerHTML = '<div id="ui-root"></div>';
   appStoreHarness.setZustand(z);
   const s = new TischSzene();
+  aktiveSzene = s;
   const t = erstelleTweenApi();
   Object.assign(s, { add: { existing: (o:any)=>o, tileSprite: (x:any,y:any,w:any,h:any,t:any)=>new FakeGameObject('tileSprite',{x,y,breite:w,hoehe:h,textur:t}), container: (x:any,y:any)=>new FakeContainer(), graphics: ()=>new FakeGameObject('graphics'), ellipse: (x:any,y:any,w:any,h:any)=>new FakeGameObject('ellipse',{x,y,breite:w,hoehe:h}), text: (x:any,y:any,t:any)=>new FakeGameObject('text',{x,y,text:t}), circle: (x:any,y:any)=>new FakeGameObject('circle',{x,y}), rectangle: (x:any,y:any,w:any,h:any)=>new FakeGameObject('rectangle',{x,y,breite:w,hoehe:h}), image: (x:any,y:any,t:any)=>new FakeGameObject('image',{x,y,textur:t}) }, scale: { gameSize: { width: 1280, height: 720 }, on: vi.fn(), off: vi.fn() }, scene: { start: vi.fn() }, tweens: t, time: { addEvent: ()=>({remove:()=>{}}) }, textures: { exists: ()=>true, addCanvas: ()=>{} }, game: { loop: { sleep: vi.fn(), wake: vi.fn() } } });
   s.create();
@@ -124,7 +127,7 @@ function baueSzene(z: any) {
 }
 
 beforeEach(() => { vi.clearAllMocks(); vi.useFakeTimers(); Object.defineProperty(globalThis, 'localStorage', { value: richteLocalStorageEin(), configurable: true, writable: true }); });
-afterEach(() => { vi.useRealTimers(); });
+afterEach(() => { aktiveSzene?.shutdown(); aktiveSzene = undefined; vi.useRealTimers(); });
 
 describe('TischSzene', () => {
   it('rendert Karten und reagiert auf Klick', async () => {
@@ -139,10 +142,11 @@ describe('TischSzene', () => {
 
   it('zeigt Rundenende-Modal', async () => {
     const { s } = baueSzene(baueZustand({ partieStand: bauePartieStand(null) }));
-    appStoreHarness.setZustand(baueZustand({ partieStand: { ...bauePartieStand(null), letztesSpielergebnis: { spielNummer: 1, siegerPartei: 'RE', spielwert: 1, augenProPartei: { RE: 130, KONTRA: 110 }, spielpunkteProSpieler: { 'sp-SUED': 1, 'sp-WEST': -1, 'sp-NORD': 1, 'sp-OST': -1 }, sonderpunkteProPartei: { RE: [], KONTRA: [] } } } }));
+    appStoreHarness.setZustand(baueZustand({ partieStand: { ...bauePartieStand(null), letztesSpielergebnis: { spielNummer: 1, siegerPartei: 'RE', spielwert: 1, augenProPartei: { RE: 130, KONTRA: 110 }, spielpunkteProSpieler: { 'sp-SUED': 1, 'sp-WEST': -1, 'sp-NORD': 1, 'sp-OST': -1 }, sonderpunkteProPartei: { RE: [], KONTRA: [] }, augenRe: 130, augenKontra: 110, grundwert: 1, absagePunkte: 0, gegenDieAltenPunkte: 0, soloMultiplikator: 1, sonderpunkteRe: [], sonderpunkteKontra: [], spielpunkte: [{ name: 'Anna', position: 'SUED', punkte: 1 }, { name: 'Ben', position: 'WEST', punkte: -1 }, { name: 'Clara', position: 'NORD', punkte: 1 }, { name: 'Dirk', position: 'OST', punkte: -1 }] } } }));
     appStoreHarness.sendeZustand();
     await vi.runAllTimersAsync();
-    const modal = document.querySelectorAll('.ui-modal-backdrop')[0] as HTMLElement;
+    const modal = document.querySelector('.ui-rundenauswertung-overlay') as HTMLElement;
+    expect(modal).not.toBeNull();
     expect(modal.hidden).toBe(false);
   });
 

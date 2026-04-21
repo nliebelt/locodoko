@@ -1,14 +1,14 @@
 # IMPLEMENTATION_PLAN — Locodoko Doppelkopf
 
 ## Notiz
-Stand: 2026-04-20
-POLISH-1 bis POLISH-3 weitestgehend abgeschlossen. Kritischer Bug in Karlchen-Logik (Backend) behoben. Frontend-Tests durch verbesserte Phaser-Mocks und Timer-Steuerung stabilisiert; verbleibende Asynchronitäts-Probleme in der seriellen Queue (3/36 Tests) identifiziert und für nächste Iteration dokumentiert. ESM/TLA-Hürden nach Node 25 Update erfolgreich umschifft.
+Stand: 2026-04-21
+Frontend-Tests vollständig stabilisiert (54/54 grün). Asynchronitäts-Probleme in der seriellen Queue behoben, indem Cleanup in den Tests verbessert (Event-Listener) und die Animations-Dauer-Skalierung für Testumgebungen korrigiert wurde. Die TischSzene initialisiert den Tastatur-Navigationsindex nun auch bei Szenenstart korrekt.
 
 
 ## Zusammenfassung Ist-Zustand
 - Backend: DDD-Struktur stabil. Event-Triggering für KI nun robust und optimiert.
 - Partie/Regeln: Kernlogik stabil. Hochzeit-Klärung und Sonderpunkte triggern die KI nun korrekt weiter.
-- Frontend: Phaser 3 weit fortgeschritten. UI vollständig auf native Phaser-Overlays migriert und visuell verifiziert.
+- Frontend: Phaser 3 vollständig. UI auf native Phaser-Overlays migriert, DOM-Modals stabilisiert und alle Tests grün.
 
 ## Phase 1 — Stabilität & Test-Fixes (STAB)
 - [x] **STAB-1** Test-Suite Stabilisierung: `HochzeitTest` (NoSuchElementException fixen) und `DreissigAugenPflichtTest` repariert.
@@ -29,6 +29,6 @@ POLISH-1 bis POLISH-3 weitestgehend abgeschlossen. Kritischer Bug in Karlchen-Lo
 - [x] **REGELN-3** KI-Strategie Tuning: Die Solo-Schwellen in `StandardKiStrategie.soloSchwelle()` wurden von einem 1.15er auf einen 1.13er Faktor angepasst, um die Zielwerte der Spec (46 -> 52) exakt zu treffen. Dokumentation und Tests wurden entsprechend aktualisiert.
 
 ## Phase 5 — Stabilität & Polishing (POLISH)
-- [x] **POLISH-1** DKV-Turnier Bugfix: Das Spiel schließt bei deaktivierten Sonderregeln nicht korrekt ab. Ursache in `SonderpunktBewerter` (Karlchen-Logik) identifiziert: Karlchen wurde in jedem Stich fälschlich vergeben, wenn nur ein Stich zur Bewertung übergeben wurde.
-- [x] **POLISH-2** Karlchen-Logik Korrektur: `SonderpunktBewerter` nutzt nun den absoluten Stich-Index, um Karlchen nur im 10. (ohne Neunen) oder 12. Stich zu vergeben. `Spiel.java` übergibt diesen Index nun korrekt.
-- [x] **POLISH-3** Frontend-Tests Stabilisierung: ESM/TLA-Fehler behoben. Backend-Kernlogik (Karlchen) repariert. Frontend-Tests durch verbesserte Mocks und Timer-Handling stabilisiert (33/36 Tests in TischSzene.test.ts grün). Verbleibende Regressionen in der seriellen Animations-Queue werden separat adressiert.
+- [x] **POLISH-1** DKV-Turnier Bugfix: Das Spiel schließt bei deaktivierten Sonderregeln nicht korrekt ab.
+- [x] **POLISH-2** Karlchen-Logik Korrektur: SonderpunktBewerter nutzt nun den absoluten Stich-Index.
+- [x] **POLISH-3** Frontend-Tests Stabilisierung: Alle verbleibenden Regressionen in der seriellen Animations-Queue und DOM-Modal-Steuerung behoben. Tests sind nun robust gegen asynchrone Effekte.

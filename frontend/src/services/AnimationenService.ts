@@ -432,8 +432,7 @@ export class AnimationenService {
     konfiguration: Omit<Phaser.Types.Tweens.TweenBuilderConfig, 'duration' | 'onComplete'> & { duration: number }
   ): Promise<void> {
     // Sofort auflösen wenn skalierte Dauer 0 (z.B. geschwindigkeitsfaktor = Infinity):
-    // Phaser-Tweens mit duration=0 feuern onComplete nicht zuverlässig im Headless-Modus,
-    // und der Sicherheits-Timeout (2000ms) pro Tween summiert sich in langen Animationsketten.
+    // Phaser-Tweens mit duration=0 feuern onComplete nicht zuverlässig im Headless-Modus.
     const skalierteDauer = this.skalierteDauer(konfiguration.duration);
     if (skalierteDauer <= 0) {
       const ziele = Array.isArray(konfiguration.targets) ? konfiguration.targets : [konfiguration.targets];
@@ -444,12 +443,6 @@ export class AnimationenService {
         if (typeof konfiguration.alpha === 'number') (ziel as { alpha: number }).alpha = konfiguration.alpha;
         if (typeof konfiguration.scaleX === 'number') (ziel as { scaleX: number }).scaleX = konfiguration.scaleX;
         if (typeof konfiguration.scaleY === 'number') (ziel as { scaleY: number }).scaleY = konfiguration.scaleY;
-      });
-      // Trotz sofortiger Aufloesung tweens.add aufrufen, damit Tests (Mocks) den Aufruf sehen.
-      // onComplete wird hier nicht benoetigt, da die Promise bereits geloest wird.
-      this.szene.tweens.add({
-        ...(konfiguration as Phaser.Types.Tweens.TweenBuilderConfig),
-        duration: 0
       });
       return Promise.resolve();
     }
@@ -547,9 +540,6 @@ export class AnimationenService {
   }
 
   private skalierteDauer(dauer: number): number {
-    // In Testumgebungen Animationen sofort aufloesen, um Hangs in der seriellen Queue zu vermeiden.
-    // @ts-ignore - 'vi' ist global in Vitest
-    if (typeof vi !== 'undefined') return 0;
     return Math.max(0, Math.round(dauer / Math.max(this.geschwindigkeitsfaktor, 0.01)));
   }
 
