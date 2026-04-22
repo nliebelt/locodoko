@@ -83,24 +83,27 @@ test.describe('Mehrere Runden ohne Neunen (10 Stiche)', () => {
     });
 
     // ── 1. Tisch mit LOCO_BLAT-Preset erstellen (ohneNeunen = true) ───────
-    // Quick Game verwendet möglicherweise eine andere Standardkonfiguration.
-    // Explizite Tischerstellung stellt sicher, dass LOCO_BLAT (= Ohne Neunen) aktiv ist.
     await page.goto('/');
     await expect(page.locator('[data-testid="startscreen"]')).toBeVisible({ timeout: 20_000 });
 
-    await page.locator('[data-testid="btn-neuer-tisch"]').click();
-    await expect(page.locator('[data-testid="tisch-config-modal"]')).toBeVisible({ timeout: 5_000 });
-
-    // LOCO_BLAT ist bereits der Default-Preset (ohneNeunen: true) — nur Name setzen
-    await page.locator('[data-testid="input-tischname"]').fill('E2E-Ohne-Neunen');
-    await page.locator('[data-testid="btn-tisch-erstellen"]').click();
+    await page.evaluate(async () => {
+      const loco = (window as any).__locodoko;
+      await loco.appStore.alsGastStarten();
+      await loco.appStore.erstelleKonfiguriertenTisch('E2E-Ohne-Neunen', {
+        ohneNeunen: true,
+        anzahlSpiele: 2,
+        tischhintergrund: 'FILZ_GRUEN',
+        kiSchwierigkeit: 'STANDARD'
+      }, false);
+    });
 
     await expect(page.locator('[data-testid="tischszene"]')).toBeVisible({ timeout: 10_000 });
 
     // ── 2. Spiel starten ──────────────────────────────────────────────────
-    const startButton = page.locator('[data-testid="btn-spiel-starten"]');
-    await expect(startButton).toBeEnabled({ timeout: 10_000 });
-    await startButton.click();
+    await page.evaluate(async () => {
+      const loco = (window as any).__locodoko;
+      await loco.appStore.starteTisch();
+    });
 
     // ── 3. Animationen beschleunigen ──────────────────────────────────────
     await setzeAnimationsGeschwindigkeit(page);

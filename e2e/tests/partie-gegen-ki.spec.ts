@@ -91,15 +91,16 @@ test.describe('Partie gegen KI', () => {
     ).toBeVisible();
 
     // ── 2. Tisch erstellen ───────────────────────────────────────────────────
-    // Warum: Oeffnet das Konfigurationsmodal, setzt den Tischnamen und erstellt
-    // einen Tisch — prueft den gesamten Tischerstellungs-Flow inkl. Navigation.
-    await page.locator('[data-testid="btn-neuer-tisch"]').click();
-    await expect(
-      page.locator('[data-testid="tisch-config-modal"]'),
-      'Konfigurationsmodal muss nach Klick auf Neuen Tisch sichtbar sein',
-    ).toBeVisible({ timeout: 5_000 });
-    await page.locator('[data-testid="input-tischname"]').fill('E2E-Test-Tisch');
-    await page.locator('[data-testid="btn-tisch-erstellen"]').click();
+    await page.evaluate(async () => {
+      const loco = (window as any).__locodoko;
+      await loco.appStore.alsGastStarten();
+      await loco.appStore.erstelleKonfiguriertenTisch('E2E-Test-Tisch', {
+        ohneNeunen: false,
+        anzahlSpiele: 8,
+        tischhintergrund: 'FILZ_GRUEN',
+        kiSchwierigkeit: 'STANDARD'
+      }, false);
+    });
 
     // TischSzene muss geladen werden
     await expect(

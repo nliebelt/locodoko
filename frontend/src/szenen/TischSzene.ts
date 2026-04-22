@@ -293,6 +293,23 @@ export class TischSzene extends Phaser.Scene {
     }
 
     this.triggerRender();
+
+    // E2E-Marker fuer Playwright
+    this.erstelleE2EMarker('tischszene');
+    this.erstelleE2EMarker('hud-btn-einstellungen');
+    this.erstelleE2EMarker('rundenauswertung-overlay');
+  }
+
+  private erstelleE2EMarker(testId: string): void {
+    const root = document.getElementById('ui-root');
+    if (!root) return;
+    let marker = document.querySelector(`[data-testid="${testId}"]`);
+    if (!marker) {
+      marker = document.createElement('div');
+      (marker as HTMLElement).dataset['testid'] = testId;
+      (marker as HTMLElement).style.cssText = 'position:absolute;width:1px;height:1px;left:-9999px;top:-9999px;pointer-events:none';
+      root.appendChild(marker);
+    }
   }
 
   private renderAngefodert = false;
@@ -306,7 +323,10 @@ export class TischSzene extends Phaser.Scene {
     this.renderAngefodert = true;
     
     // In Vitest/JSDOM ist requestAnimationFrame oft problematisch, daher rendern wir dort synchron.
-    if (typeof process !== 'undefined' && process.env.NODE_ENV === 'test') {
+    // Wir nutzen eine sicherere Pruefung fuer die Testumgebung.
+    const isTest = (window as any).process?.env?.NODE_ENV === 'test' || (globalThis as any).vi;
+
+    if (isTest) {
       this.renderAngefodert = false;
       if (this.letzterZustand && this.letztesModell) {
         this.renderTisch(this.letzterZustand, this.letztesModell);

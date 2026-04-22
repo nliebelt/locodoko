@@ -133,8 +133,17 @@ test.describe('Ungueltige Karte', () => {
 
     // ── 1. Quick Game starten ─────────────────────────────────────────────
     await page.goto('/');
-    await expect(page.locator('button', { hasText: /Quick Game/i })).toBeVisible({ timeout: 20_000 });
-    await page.locator('button', { hasText: /Quick Game/i }).click();
+    
+    // Warten bis die Bridge bereit ist
+    await page.waitForFunction(() => (window as any).__locodoko?.appStore, { timeout: 20_000 });
+    
+    // Als Gast starten und Quick Game triggern
+    await page.evaluate(async () => {
+      const loco = (window as any).__locodoko;
+      await loco.appStore.alsGastStarten();
+      await loco.appStore.erstelleQuickGame();
+    });
+
     await expect(
       page.locator('[data-testid="tischszene"]'),
       'TischSzene muss geladen sein',

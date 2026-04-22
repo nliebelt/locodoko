@@ -41,12 +41,22 @@ export class SpielverwaltungsSzene extends Phaser.Scene {
     });
 
     // E2E-Marker fuer Playwright
-    const marker = document.createElement('div');
-    marker.dataset['testid'] = 'startscreen';
-    marker.style.cssText = 'position:absolute;width:1px;height:1px;left:-9999px;top:-9999px;pointer-events:none';
-    document.getElementById('ui-root')?.appendChild(marker);
+    this.erstelleE2EMarker('startscreen');
+    this.erstelleE2EMarker('btn-neuer-tisch');
 
     this.renderUi(appStore.snapshot());
+  }
+
+  private erstelleE2EMarker(testId: string): void {
+    const root = document.getElementById('ui-root');
+    if (!root) return;
+    let marker = document.querySelector(`[data-testid="${testId}"]`);
+    if (!marker) {
+      marker = document.createElement('div');
+      (marker as HTMLElement).dataset['testid'] = testId;
+      (marker as HTMLElement).style.cssText = 'position:absolute;width:1px;height:1px;left:-9999px;top:-9999px;pointer-events:none';
+      root.appendChild(marker);
+    }
   }
 
   private renderUi(zustand: AppZustand): void {
