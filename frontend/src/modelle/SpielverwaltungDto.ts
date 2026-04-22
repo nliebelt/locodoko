@@ -46,7 +46,7 @@ export interface TischListenEintragAntwort {
 }
 
 export type Tischhintergrund = 'FILZ_GRUEN' | 'FILZ_BLAU' | 'HOLZ_HELL' | 'HOLZ_DUNKEL' | 'BILD_RECHTECK_1' | 'BILD_RECHTECK_2' | 'BILD_OVAL_1' | 'BILD_OVAL_2' | 'BILD_RUND_1';
-export type KiSchwierigkeit = 'LEICHT' | 'STANDARD' | 'PROFI';
+export type KiSchwierigkeit = 'LEICHT' | 'STANDARD' | 'SCHWER';
 
 export interface TischKonfigurationDto {
   ohneNeunen: boolean;
@@ -96,8 +96,11 @@ export interface TischAntwort {
 
 export type SpielerPosition = 'NORD' | 'OST' | 'SUED' | 'WEST';
 export type PartieStatus = 'LAUFEND' | 'BEENDET' | 'ABGEBROCHEN';
-export type Spieltyp = 'NORMALSPIEL' | 'HOCHZEIT' | 'ARMUT' | 'SOLO_DAME' | 'SOLO_BUBE' | 'SOLO_FLEISCHLOS' | 'SOLO_TRUMPF' | 'SOLO_FARBE_KREUZ' | 'SOLO_FARBE_PIK' | 'SOLO_FARBE_HERZ' | 'SOLO_FARBE_KARO';
+export type Spieltyp = 'NORMALSPIEL' | 'HOCHZEIT' | 'ARMUT' | 'SOLO_DAME' | 'SOLO_BUBE' | 'SOLO_FLEISCHLOS' | 'SOLO_TRUMPF' | 'SOLO_TRUMPF_KREUZ' | 'SOLO_TRUMPF_PIK' | 'SOLO_TRUMPF_HERZ' | 'SOLO_FARBE_KARO';
 export type Partei = 'RE' | 'KONTRA';
+export type Ansage = 'RE' | 'KONTRA' | 'KEINE_90' | 'KEINE_60' | 'KEINE_30' | 'SCHWARZ';
+export type VorbehaltAnsage = 'GESUND' | 'SOLO_DAME' | 'SOLO_BUBE' | 'SOLO_TRUMPF' | 'SOLO_TRUMPF_HERZ' | 'SOLO_TRUMPF_PIK' | 'SOLO_TRUMPF_KREUZ' | 'SOLO_FLEISCHLOS' | 'HOCHZEIT' | 'ARMUT' | 'SCHMEISSEN';
+export type Sonderpunkt = 'FUCHS_GEFANGEN' | 'DOPPELKOPF' | 'KARLCHEN';
 
 export interface KarteAntwort {
   id: string;
@@ -114,7 +117,7 @@ export interface GespielteKarteAntwort {
 
 export interface AnsageEreignisAntwort {
   spielerPosition: SpielerPosition;
-  ansage: string;
+  ansage: Ansage;
 }
 
 export interface SpielerImSpielAntwort {
@@ -144,8 +147,8 @@ export interface LaufendesSpielAntwort {
   spielbareKarten: KarteAntwort[];
   aktuelleStichmitte: GespielteKarteAntwort[];
   ansageHistorie: AnsageEreignisAntwort[];
-  moeglicheAnsagen: string[];
-  moeglicheVorbehalte: string[];
+  moeglicheAnsagen: Ansage[];
+  moeglicheVorbehalte: VorbehaltAnsage[];
   deklarierteVorbehalte: any[];
   istBockrunde: boolean;
   hochzeitGeklaert: boolean;
@@ -161,6 +164,12 @@ export interface AbgeschlossenerStichAntwort {
   gespielteKarten: GespielteKarteAntwort[];
 }
 
+export interface SonderpunktEreignis {
+  art: Sonderpunkt;
+  taeter: SpielerPosition;
+  opfer?: SpielerPosition | null;
+}
+
 export interface LetztesSpielergebnisAntwort {
   spielNummer: number;
   spieltyp: Spieltyp;
@@ -172,7 +181,7 @@ export interface LetztesSpielergebnisAntwort {
   soloMultiplikator: number;
   augenProPartei: Record<Partei, number>;
   spielpunkteProSpieler: Record<SpielerPosition, number>;
-  sonderpunkteProPartei: Record<Partei, any[]>;
+  sonderpunkteProPartei: Record<Partei, SonderpunktEreignis[]>;
 }
 
 export interface PartieStandAntwort {

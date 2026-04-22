@@ -98,8 +98,8 @@ const { TischSzene } = await import('./TischSzene');
 
 function karte(id: string, farbe: string, wert: string): KarteAntwort { return { id, farbe, wert, exemplarIndex: 1 }; }
 function baueSpieler(pos: any, name: string, opt: any = {}): SpielerImSpielAntwort { return { position: pos, spielerId: opt.spielerId ?? `sp-${pos}`, name, anzeigeName: name, avatarFarbe: null, istKi: pos !== 'SUED', istKiUebernommen: false, istSelbst: pos === 'SUED', istGeber: false, istAmZug: false, verbleibendeKarten: opt.verbleibendeKarten ?? 0, gewonneneStiche: 0, partei: null, sichtbareHandkarten: opt.sichtbareHandkarten ?? null }; }
-function baueLaufendesSpiel(opt: any = {}): LaufendesSpielAntwort { return { spielNummer: 1, spieltyp: 'NORMALSPIEL', phase: 'STICHPHASE', geber: 'WEST', aktuellerSpieler: 'SUED', spieler: opt.spieler ?? [baueSpieler('SUED', 'Anna', { verbleibendeKarten: 2, sichtbareHandkarten: [karte('H1', 'HERZ', 'ZEHN'), karte('K1', 'KREUZ', 'AS')] }), baueSpieler('WEST', 'Ben'), baueSpieler('NORD', 'Clara'), baueSpieler('OST', 'Dirk')], spielbareKarten: opt.spielbareKarten ?? [karte('H1', 'HERZ', 'ZEHN')], aktuelleStichmitte: [], ansageHistorie: [], moeglicheAnsagen: [], moeglicheVorbehalte: [], deklarierteVorbehalte: [], istBockrunde: false, schweinchenGemeldetVon: null, ...opt }; }
-function bauePartieStand(lauf: any): PartieStandAntwort { return { partieId: 'p1', status: 'LAUFEND', anzahlSpiele: 8, gespielteSpiele: 0, gesamtpunktestand: { SUED: 0, WEST: 0, NORD: 0, OST: 0 }, laufendesSpiel: lauf }; }
+function baueLaufendesSpiel(opt: any = {}): LaufendesSpielAntwort { return { spielNummer: 1, spieltyp: 'NORMALSPIEL', phase: 'STICHPHASE', geber: 'WEST', aktuellerSpieler: 'SUED', spieler: opt.spieler ?? [baueSpieler('SUED', 'Anna', { verbleibendeKarten: 2, sichtbareHandkarten: [karte('H1', 'HERZ', 'ZEHN'), karte('K1', 'KREUZ', 'AS')] }), baueSpieler('WEST', 'Ben'), baueSpieler('NORD', 'Clara'), baueSpieler('OST', 'Dirk')], spielbareKarten: opt.spielbareKarten ?? [karte('H1', 'HERZ', 'ZEHN')], aktuelleStichmitte: [], ansageHistorie: [], moeglicheAnsagen: [], moeglicheVorbehalte: [], deklarierteVorbehalte: [], istBockrunde: false, hochzeitGeklaert: false, schweinchenGemeldetVon: null, ...opt }; }
+function bauePartieStand(lauf: any): PartieStandAntwort { return { partieId: 'p1', version: 1, status: 'LAUFEND', anzahlSpiele: 8, gespielteSpiele: 0, gesamtpunktestand: { SUED: 0, WEST: 0, NORD: 0, OST: 0 }, laufendesSpiel: lauf }; }
 function baueTisch(): TischAntwort { return { id: 't1', name: 'T1', einladungsCode: 'C1', status: 'IM_SPIEL', zugangsmodus: 'OFFEN', erstelltVonSpielerId: 'sp-SUED', partieId: 'p1', konfiguration: { ohneNeunen: false, anzahlSpiele: 8, tischhintergrund: 'FILZ_GRUEN', hochzeitErlaubt: true, armutErlaubt: true, damensoloErlaubt: true, bubensoloErlaubt: true, fleischlosErlaubt: true, trumpfsoloErlaubt: true, zweiteDulleSticht: true, fuchsGefangenAktiv: true, karlchenAktiv: true, doppelkopfAktiv: true, mindestkartenReKontra: 11, mindestkartenKeine90: 10, mindestkartenKeine60: 9, mindestkartenKeine30: 8, mindestkartenSchwarz: 7, bockrundenAktiv: false, schweinchenAktiv: false, dreissigAugenPflichtAktiv: false, schmeissenAktiv: false, kiSchwierigkeit: 'STANDARD' }, spieler: [{ spielerId: 'sp-SUED', name: 'Anna', istKi: false }, { spielerId: 'sp-WEST', name: 'Ben', istKi: true }, { spielerId: 'sp-NORD', name: 'Clara', istKi: true }, { spielerId: 'sp-OST', name: 'Dirk', istKi: true }] }; }
 function baueZustand(opt: any = {}): AppZustand { return { initialisiert: true, wirdGeladen: false, authentifiziert: true, bereich: 'TISCH', verbindung: 'verbunden', debugModus: false, spieler: { spielerId: 'sp-SUED', name: 'Anna', istKi: false }, tische: [], aktuellerTisch: baueTisch(), partieStand: bauePartieStand(baueLaufendesSpiel()), meldung: null, ...opt }; }
 
@@ -141,7 +141,22 @@ describe('TischSzene', () => {
 
   it('zeigt Rundenende-Modal', async () => {
     baueSzene(baueZustand({ partieStand: bauePartieStand(null) }));
-    const neuerStand = { ...bauePartieStand(null), letztesSpielergebnis: { spielNummer: 1, siegerPartei: 'RE', spielwert: 1, augenProPartei: { RE: 130, KONTRA: 110 }, spielpunkteProSpieler: { 'sp-SUED': 1, 'sp-WEST': -1, 'sp-NORD': 1, 'sp-OST': -1 }, sonderpunkteProPartei: { RE: [], KONTRA: [] }, augenRe: 130, augenKontra: 110, grundwert: 1, absagePunkte: 0, gegenDieAltenPunkte: 0, soloMultiplikator: 1, sonderpunkteRe: [], sonderpunkteKontra: [], spielpunkte: [{ name: 'Anna', position: 'SUED', punkte: 1 }, { name: 'Ben', position: 'WEST', punkte: -1 }, { name: 'Clara', position: 'NORD', punkte: 1 }, { name: 'Dirk', position: 'OST', punkte: -1 }] } };
+    const neuerStand = {
+      ...bauePartieStand(null),
+      letztesSpielergebnis: {
+        spielNummer: 1,
+        spieltyp: 'NORMALSPIEL' as const,
+        siegerPartei: 'RE' as const,
+        spielwert: 1,
+        grundwert: 1,
+        absagePunkte: 0,
+        gegenDieAltenPunkte: 0,
+        soloMultiplikator: 1,
+        augenProPartei: { RE: 130, KONTRA: 110 },
+        spielpunkteProSpieler: { SUED: 1, WEST: -1, NORD: 1, OST: -1 },
+        sonderpunkteProPartei: { RE: [], KONTRA: [] }
+      }
+    };
     appStoreHarness.setZustand(baueZustand({ partieStand: neuerStand }));
     appStoreHarness.sendeZustand();
     appStoreHarness.sendeEvent({ ereignisTyp: 'SPIEL_BEENDET', partieStand: neuerStand, timestamp: new Date().toISOString() });

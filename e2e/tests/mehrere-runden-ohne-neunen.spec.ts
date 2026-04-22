@@ -12,7 +12,7 @@
  * Abgedeckte Fixes: BF-13 (letzter Stich animiert), BF-14 (Spielankündigung-Timing),
  * BF-15 (Reconnect-Guard).
  *
- * Voraussetzung: Backend läuft auf localhost:8080
+ * Voraussetzung: Backend läuft auf localhost:8081
  *   cd e2e && npx playwright test mehrere-runden-ohne-neunen.spec.ts
  */
 
@@ -32,6 +32,11 @@ interface SpielZustand {
 }
 
 async function leseSpielZustand(page: Page): Promise<SpielZustand> {
+  await page.waitForFunction(() => {
+    const loco = (window as any).__locodoko;
+    return loco?.appStore?.isIdle() === true;
+  }, { timeout: 10000 }).catch(() => {});
+
   return page.evaluate((): SpielZustand => {
     const overlay = document.querySelector('[data-testid="rundenauswertung-overlay"]') as HTMLElement | null;
     type B = { appStore: { snapshot: () => { partieStand?: { laufendesSpiel?: {

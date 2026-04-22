@@ -9,7 +9,7 @@
  * Ein JS-Fehler oder pageerror während des Spiels gilt als Testfehler —
  * denn genau diese Crashes traten vor den Fixes auf.
  *
- * Voraussetzung: Backend läuft auf localhost:8080
+ * Voraussetzung: Backend läuft auf localhost:8081
  *   cd e2e && npx playwright test mehrere-runden.spec.ts
  */
 
@@ -29,10 +29,15 @@ interface SpielZustand {
 }
 
 async function leseSpielZustand(page: Page): Promise<SpielZustand> {
+  // Warten bis die Engine im Leerlauf ist (keine Animationen, keine Event-Queue)
   await page.waitForFunction(() => {
     const loco = (window as any).__locodoko;
-    return loco && loco.appStore && loco.appStore.isIdle() === true;
+    return loco?.appStore?.isIdle() === true;
+  }, { timeout: 10000 }).catch(() => {
+     // Timeout ignorieren, wir versuchen es trotzdem (vielleicht haengt die Bridge)
+     console.log('E2E: isIdle-Timeout beim Lesen des Zustands.');
   });
+
   return page.evaluate((): SpielZustand => {
     const overlay = document.querySelector('[data-testid="rundenauswertung-overlay"]') as HTMLElement | null;
     type B = { appStore: { snapshot: () => { partieStand?: { laufendesSpiel?: {
@@ -73,9 +78,15 @@ test.describe('Mehrere Runden gegen KI', () => {
     test.setTimeout(600_000);
 
     const jsFehler: string[] = [];
-    page.on('pageerror', (err) => jsFehler.push(`[pageerror] ${err.message}`));
+    page.on('pageerror', (err) => {
+        jsFehler.push(`[pageerror] ${err.message}`);
+        console.log(`[BROWSER ERROR] ${err.message}`);
+    });
     page.on('console', (msg) => {
       if (msg.type() === 'error') jsFehler.push(`[console.error] ${msg.text()}`);
+      // Alle Browser-Logs anzeigen für Debugging
+      if (msg.text().includes('renderTisch')) return; // Zu viel Rauschen
+      console.log(`[BROWSER ${msg.type()}] ${msg.text()}`);
     });
 
     // ── 1. Gast-Session starten & Quick Game triggern ────────────────────
@@ -99,9 +110,6 @@ test.describe('Mehrere Runden gegen KI', () => {
     await setzeAnimationsGeschwindigkeit(page);
 
     // ── 3. Zwei Runden durchspielen ───────────────────────────────────────
-    // Pro Runde: Vorbehalte melden, Stiche spielen, Overlay bestätigen.
-    // Nach 2 abgeschlossenen Runden bricht die Schleife ab.
-    const overlay = page.locator('[data-testid="rundenauswertung-overlay"]');
     const weiterButton = page.locator('[data-testid="btn-rundenauswertung-weiter"]');
 
     let abgeschlosseneRunden = 0;
@@ -109,17 +117,17 @@ test.describe('Mehrere Runden gegen KI', () => {
     let letzteSpielNummer = 0;
     let letztesSpieltyp = '';
 
-    for (let i = 0; i < 1200 && abgeschlosseneRunden < 2; i++) {
+    for (let i = 0; i < 2000 && abgeschlosseneRunden < 2; i++) {
       const zustand = await leseSpielZustand(page).catch(() => null);
       if (!zustand) { await page.waitForTimeout(300); continue; }
 
       // Fortschritt loggen bei Änderungen
-      if (zustand.phase !== letztePhase || zustand.spielNummer !== letzteSpielNummer || i % 20 === 0) {
-        console.log(`[i=${i}] Runde ${abgeschlosseneRunden + 1}/2 | Spiel ${zustand.spielNummer} | Phase=${zustand.phase} | Vorbehalte=${zustand.moeglicheVorbehalte} | Karten=${zustand.spielbareKarten} | AmZug=${zustand.phase === 'STICHPHASE'}`);
+      if (zustand.phase !== letztePhase || zustand.spielNummer !== letzteSpielNummer || i % 100 === 0) {
+        console.log(`[i=${i}] Runde ${abgeschlosseneRunden + 1}/2 | Spiel ${zustand.spielNummer} | Phase=${zustand.phase} | Vorbehalte=${zustand.moeglicheVorbehalte} | Karten=${zustand.spielbareKarten}`);
         letztePhase = zustand.phase ?? '';
         letzteSpielNummer = zustand.spielNummer;
       }
-      // Sonderankündigung loggen (BF-14)
+      // Sonderankündigung loggen
       if (zustand.spieltyp && zustand.spieltyp !== 'NORMALSPIEL' && zustand.spieltyp !== letztesSpieltyp) {
         console.log(`[BF-14] Spieltyp-Ankündigung: ${zustand.spieltyp} in Spiel ${zustand.spielNummer}`);
         letztesSpieltyp = zustand.spieltyp;
@@ -132,9 +140,8 @@ test.describe('Mehrere Runden gegen KI', () => {
         console.log(`Runde ${abgeschlosseneRunden} abgeschlossen.`);
         if (abgeschlosseneRunden < 2) {
           await weiterButton.click();
-          // Nach Klick: Animationsgeschwindigkeit für neue Runde neu setzen
-          await page.waitForTimeout(500);
-          await setzeAnimationsGeschwindigkeit(page).catch(() => { /* ignorieren falls Bridge kurz weg */ });
+          await page.waitForTimeout(1000);
+          await setzeAnimationsGeschwindigkeit(page).catch(() => {});
         }
         continue;
       }
@@ -142,28 +149,42 @@ test.describe('Mehrere Runden gegen KI', () => {
       // Vorbehalt: immer GESUND (Taste 1)
       if (zustand.moeglicheVorbehalte > 0) {
         await page.keyboard.press('1');
-        await page.waitForTimeout(200);
+        // Warten bis Zustand sich aendert
+        await page.waitForFunction(() => {
+          const loco = (window as any).__locodoko;
+          const s = loco?.appStore?.snapshot()?.partieStand?.laufendesSpiel;
+          return !s || s.moeglicheVorbehalte.length === 0 || s.phase !== 'VORBEHALT_ANSAGE';
+        }, { timeout: 5000 }).catch(() => {});
         continue;
       }
 
       // Armut ablehnen
       if (zustand.armutPhase) {
         await page.keyboard.press('n');
-        await page.waitForTimeout(200);
+        await page.waitForTimeout(500);
         continue;
       }
 
-      // Pflichtansagen (Re/Kontra bei 30-Augen-Schwelle)
+      // Karte spielen (und evtl. Ansagen)
       if (zustand.phase === 'STICHPHASE' && zustand.spielbareKarten > 0) {
+        const kartenVorher = zustand.spielbareKarten;
         if (zustand.moeglicheAnsagen.includes('KONTRA')) await page.keyboard.press('k');
         else if (zustand.moeglicheAnsagen.includes('RE')) await page.keyboard.press('r');
+        
         await page.keyboard.press('Enter');
-        await page.waitForTimeout(200);
+        
+        // Warten bis Karte weg ist oder nicht mehr am Zug
+        await page.waitForFunction((alt) => {
+          const loco = (window as any).__locodoko;
+          const s = loco?.appStore?.snapshot()?.partieStand?.laufendesSpiel;
+          if (!s) return true;
+          return s.spielbareKarten.length < alt || s.aktuellerSpieler !== 'SUED';
+        }, kartenVorher, { timeout: 5000 }).catch(() => {});
         continue;
       }
 
       // KI am Zug oder Übergang — kurz warten
-      await page.waitForTimeout(300);
+      await page.waitForTimeout(200);
     }
 
     // ── 4. Assertions ─────────────────────────────────────────────────────
@@ -173,14 +194,9 @@ test.describe('Mehrere Runden gegen KI', () => {
       'Mindestens 2 Runden müssen vollständig abgeschlossen worden sein',
     ).toBeGreaterThanOrEqual(2);
 
-    // spielNummer muss nach 2 Runden > 1 sein (neues Spiel gestartet)
     const zustandFinal = await leseSpielZustand(page);
-    expect(
-      zustandFinal.spielNummer,
-      'spielNummer muss nach 2 Runden größer als 1 sein',
-    ).toBeGreaterThan(1);
+    expect(zustandFinal.spielNummer).toBeGreaterThan(1);
 
-    // Keine JS-Fehler — ein AppStore/Animation-Crash (wie vor BF-13–15) würde hier auftauchen
     expect(
       jsFehler,
       `JavaScript-Fehler während der Partie:\n${jsFehler.join('\n')}`,

@@ -61,7 +61,7 @@ Das `e2e/`-Verzeichnis ist ein eigenständiges npm-Projekt und **nicht** Teil de
 ## Ausführung
 
 ```bash
-# Lokal (setzt laufende Anwendung auf Port 8080 voraus)
+# Lokal (setzt laufende Anwendung auf Port 8081 voraus)
 cd e2e && npx playwright test
 
 # Gegen Testsystem
@@ -215,7 +215,7 @@ export default defineConfig({
   testDir: './tests',
   timeout: 300_000,   // 5 Minuten — nötig wegen KI-Karten-Delay (800ms/Karte × 3 KI × 12 Stiche ≈ 30s reine KI-Zeit)
   use: {
-    baseURL: process.env.BASE_URL ?? 'http://localhost:8080',
+    baseURL: process.env.BASE_URL ?? 'http://localhost:8081',
     headless: true,
     screenshot: 'only-on-failure',
     video: 'retain-on-failure',

@@ -135,21 +135,22 @@ function stichStapelPositionFuer(
   }
 }
 
-function texturFuerTischhintergrund(tischhintergrund: Tischhintergrund): string {
+function texturFuerTischhintergrund(bg: Tischhintergrund): string {
   return ({
     FILZ_GRUEN: TEXTUR_FILZ,
     HOLZ_DUNKEL: TEXTUR_HOLZ_DUNKEL,
-    BLAU_GRAFIK: TEXTUR_BLAU_GRAFIK,
-    RECHTECK_1: TEXTUR_BILD_RECHTECK_1,
-    RECHTECK_2: TEXTUR_BILD_RECHTECK_2,
-    OVAL_1: TEXTUR_BILD_OVAL_1,
-    OVAL_2: TEXTUR_BILD_OVAL_2,
-    RUND_1: TEXTUR_BILD_RUND_1,
-  } as Record<Tischhintergrund, string>)[tischhintergrund];
+    FILZ_BLAU: TEXTUR_BLAU_GRAFIK,
+    BILD_RECHTECK_1: TEXTUR_BILD_RECHTECK_1,
+    BILD_RECHTECK_2: TEXTUR_BILD_RECHTECK_2,
+    BILD_OVAL_1: TEXTUR_BILD_OVAL_1,
+    BILD_OVAL_2: TEXTUR_BILD_OVAL_2,
+    BILD_RUND_1: TEXTUR_BILD_RUND_1,
+    HOLZ_HELL: TEXTUR_HOLZ_DUNKEL // Platzhalter
+  } as Record<Tischhintergrund, string>)[bg];
 }
 
 function istBildHintergrund(bg: Tischhintergrund): boolean {
-  return bg === 'RECHTECK_1' || bg === 'RECHTECK_2' || bg === 'OVAL_1' || bg === 'OVAL_2' || bg === 'RUND_1';
+  return bg === 'BILD_RECHTECK_1' || bg === 'BILD_RECHTECK_2' || bg === 'BILD_OVAL_1' || bg === 'BILD_OVAL_2' || bg === 'BILD_RUND_1';
 }
 
 /**
@@ -181,7 +182,6 @@ export class TischSzene extends Phaser.Scene {
   private letzterStichTimer?: Phaser.Time.TimerEvent;
   private einstellungenOffen = false;
   private seitenladeOffen = false;
-  private uiDreckig = false;
 
   /**
    * Gibt zurück, ob die TischSzene (und der zugrundeliegende AppStore) im Leerlauf ist.
@@ -295,16 +295,31 @@ export class TischSzene extends Phaser.Scene {
     this.triggerRender();
   }
 
+  private renderAngefodert = false;
+
   /** Triggert ein Neu-Rendering des Tisches, sofern keine Animation blockiert. */
   private triggerRender(): void {
-    if (this.animationen?.animationLaeuft || this.austeilenAktiv) {
-      this.uiDreckig = true;
+    if (this.animationen?.animationLaeuft || this.austeilenAktiv || this.renderAngefodert) {
       return;
     }
-    if (this.letzterZustand && this.letztesModell) {
-      this.uiDreckig = false;
-      this.renderTisch(this.letzterZustand, this.letztesModell);
+    
+    this.renderAngefodert = true;
+    
+    // In Vitest/JSDOM ist requestAnimationFrame oft problematisch, daher rendern wir dort synchron.
+    if (typeof process !== 'undefined' && process.env.NODE_ENV === 'test') {
+      this.renderAngefodert = false;
+      if (this.letzterZustand && this.letztesModell) {
+        this.renderTisch(this.letzterZustand, this.letztesModell);
+      }
+      return;
     }
+
+    requestAnimationFrame(() => {
+      this.renderAngefodert = false;
+      if (this.letzterZustand && this.letztesModell) {
+        this.renderTisch(this.letzterZustand, this.letztesModell);
+      }
+    });
   }
 
   private initialisiereZustand(): void {
@@ -315,7 +330,6 @@ export class TischSzene extends Phaser.Scene {
     this.schliessePartieEndeModal();
     this.wartendeKartenId = null;
     this.austeilenAktiv = false;
-    this.uiDreckig = false;
   }
 
   private verarbeitePartieEreignis(ereignis: PartieEreignisAntwort): void {
@@ -483,6 +497,7 @@ export class TischSzene extends Phaser.Scene {
   }
 
   private renderTisch(zustand: AppZustand, modell = this.erstelleModell(zustand)): void {
+    console.count('[TischSzene] renderTisch');
     this.tischEbene?.destroy(true);
     this.handKartenobjekte.clear();
     const breite = this.scale.gameSize.width;
@@ -595,7 +610,7 @@ export class TischSzene extends Phaser.Scene {
     const darfKonf = zustand.spieler?.spielerId === tisch?.erstelltVonSpielerId && tisch?.status === 'WARTEND';
     ebene.add(this.add.text(dialogX, currentY, 'Tischhintergrund', { color: '#d8f3dc', fontSize: `${schriftHint}px` }).setOrigin(0.5));
     currentY += 25;
-    const bgOptionen: Tischhintergrund[] = ['FILZ_GRUEN', 'HOLZ_DUNKEL', 'BLAU_GRAFIK', 'RECHTECK_1', 'RECHTECK_2', 'OVAL_1', 'OVAL_2', 'RUND_1'];
+    const bgOptionen: Tischhintergrund[] = ['FILZ_GRUEN', 'HOLZ_DUNKEL', 'FILZ_BLAU', 'BILD_RECHTECK_1', 'BILD_RECHTECK_2', 'BILD_OVAL_1', 'BILD_OVAL_2', 'BILD_RUND_1'];
     const aktuellerBgIdx = bgOptionen.indexOf(modell.tischhintergrund);
     this.erstellePhaserButton(ebene, dialogX, currentY, dialogW - 60, 34, modell.tischhintergrund.replace(/_/g, ' '), () => {
       const naechsterIdx = (aktuellerBgIdx + 1) % bgOptionen.length;

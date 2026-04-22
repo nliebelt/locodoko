@@ -9,8 +9,8 @@ mkdir -p $LOG_DIR
 
 # 1. Brutale Bereinigung
 cleanup() {
-    echo "Stoppe alle Prozesse auf 8080 und 5173..."
-    fuser -k 8080/tcp 5173/tcp 2>/dev/null
+    echo "Stoppe alle Prozesse auf 8081 und 5173..."
+    fuser -k 8081/tcp 5173/tcp 2>/dev/null
     # Zusätzlich alle Node/Maven Prozesse, die hängen geblieben sein könnten
     pkill -f "spring-boot:run"
     pkill -f "vite"
@@ -20,7 +20,7 @@ cleanup() {
 case "$1" in
   start)
     cleanup
-    echo "Starte Services auf 8080 und 5173..."
+    echo "Starte Services auf 8081 und 5173..."
     
     # Backend
     nohup mvn spring-boot:run > "$BACKEND_LOG" 2>&1 &
@@ -33,7 +33,7 @@ case "$1" in
     ;;
 
   status)
-    echo "Port 8080 (Spring): $(lsof -t -i:8080 >/dev/null && echo 'AKTIV' || echo 'OFFLINE')"
+    echo "Port 8081 (Spring): $(lsof -t -i:8081 >/dev/null && echo 'AKTIV' || echo 'OFFLINE')"
     echo "Port 5173 (Vite):   $(lsof -t -i:5173 >/dev/null && echo 'AKTIV' || echo 'OFFLINE')"
     ;;
 

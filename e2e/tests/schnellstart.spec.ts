@@ -29,7 +29,8 @@ interface LocodokoBridge {
 async function warteAufPhase(page: Page, phase: string, timeoutMs = 20_000): Promise<void> {
   await page.waitForFunction(
     (gesuchtePhase: string) => {
-      const loco = (window as unknown as Record<string, LocodokoBridge>)['__locodoko'];
+      const loco = (window as any).__locodoko;
+      if (loco?.appStore?.isIdle() !== true) return false;
       return loco?.appStore?.snapshot()?.partieStand?.laufendesSpiel?.phase === gesuchtePhase;
     },
     phase,
@@ -40,7 +41,8 @@ async function warteAufPhase(page: Page, phase: string, timeoutMs = 20_000): Pro
 async function warteAufEigenenVorbehalt(page: Page, timeoutMs = 15_000): Promise<void> {
   await page.waitForFunction(
     () => {
-      const loco = (window as unknown as Record<string, LocodokoBridge>)['__locodoko'];
+      const loco = (window as any).__locodoko;
+      if (loco?.appStore?.isIdle() !== true) return false;
       const vorbehalte = loco?.appStore?.snapshot()?.partieStand?.laufendesSpiel?.moeglicheVorbehalte;
       return (vorbehalte?.length ?? 0) > 0;
     },
@@ -51,7 +53,8 @@ async function warteAufEigenenVorbehalt(page: Page, timeoutMs = 15_000): Promise
 async function warteAufEigenenZug(page: Page, timeoutMs = 25_000): Promise<void> {
   await page.waitForFunction(
     () => {
-      const loco = (window as unknown as Record<string, LocodokoBridge>)['__locodoko'];
+      const loco = (window as any).__locodoko;
+      if (loco?.appStore?.isIdle() !== true) return false;
       const spiel = loco?.appStore?.snapshot()?.partieStand?.laufendesSpiel;
       return spiel?.phase === 'STICHPHASE' && (spiel?.spielbareKarten?.length ?? 0) > 0;
     },
@@ -83,10 +86,14 @@ test.describe('Schnellstart (Quick Game)', () => {
     ).toBeVisible({ timeout: 20_000 });
 
     // ── 2. Quick Game triggern ───────────────────────────────────────────────
-    // Warum: Warten, bis der Button im DOM sichtbar ist.
-    const quickGameBtn = page.locator('[data-testid="btn-quick-game"]');
-    await expect(quickGameBtn).toBeVisible({ timeout: 10_000 });
-    await quickGameBtn.click();
+    // Warum: Da die Buttons in Phaser gerendert werden, nutzen wir die JS-Bridge.
+    await page.evaluate(async () => {
+      const loco = (window as any).__locodoko;
+      loco.appStore.alsGastStarten();
+      // Kurze Verzögerung für den Store-Zustandswechsel
+      await new Promise(resolve => setTimeout(resolve, 500));
+      loco.appStore.erstelleQuickGame();
+    });
 
     // ── 3. TischSzene erscheint direkt ──────────────────────────────────────
     // Warum: Nach Schnellstart muss die TischSzene ohne manuellen Spielstart sichtbar sein.

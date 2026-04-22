@@ -194,10 +194,23 @@ public class KiOrchestrierungService {
             }
         } finally {
             if (hatKiGespielt && hatMenschlichenSpieler) {
+                // Finales Status-Update senden, damit der menschliche Spieler sieht, wer am Zug ist.
+                // Dies ist besonders wichtig nach Vorbehalts-Phasen oder Armut-Tausch.
+                sendeAnsageErfolgt(tisch);
                 triggereKi(tisch);
             }
         }
         return hatKiGespielt;
+    }
+
+    private void sendeAnsageErfolgt(TischEntity tisch) {
+        tisch.spieler().stream()
+            .filter(s -> !s.istKi() && !s.istKiUebernommen() && s.sessionId() != null)
+            .forEach(s -> tischEchtzeitService.planeAnBenutzer(
+                s.sessionId(),
+                "/queue/partie/" + tisch.partie().id(),
+                PartieEreignisAntwort.ansageErfolgt(PartieStandAntwort.aus(tisch, s.id()))
+            ));
     }
 
     private AktionsErgebnis fuehreKiAktionAus(Spiel laufendesSpiel, SpielerPosition spielerPosition, KiStrategie strategie) {

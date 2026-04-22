@@ -9,7 +9,7 @@
     "test": "vitest run",
     "lint": "eslint . --max-warnings=0",
     "preview": "vite preview",
-    "generate-types": "openapi-typescript http://localhost:8080/v3/api-docs -o src/generated/api-types.ts"
+    "generate-types": "openapi-typescript http://localhost:8081/v3/api-docs -o src/generated/api-types.ts"
   },
   "dependencies": {
     "@stomp/stompjs": "^7.3.0",

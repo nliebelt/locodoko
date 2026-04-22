@@ -1,7 +1,7 @@
 import { defineConfig } from 'vite';
 
 export default defineConfig(() => {
-  const backendZiel = 'http://127.0.0.1:8080';
+  const backendZiel = 'http://127.0.0.1:8081';
 
   return {
     server: {

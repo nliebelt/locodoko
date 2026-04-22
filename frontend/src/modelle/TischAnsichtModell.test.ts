@@ -33,7 +33,7 @@ describe('erstelleStandardTischAnsicht', () => {
     const modell = erstelleStandardTischAnsicht('Spieler Sued');
 
     expect(modell.debugModus).toBe(false);
-    expect(modell.tischhintergrund).toBe('OVAL_2');
+    expect(modell.tischhintergrund).toBe('BILD_OVAL_2');
     expect(modell.spieler).toHaveLength(4);
     expect(modell.spieler[0]).toMatchObject({ position: 'SUED', name: 'Spieler Sued', istMensch: true, istSelbst: true });
     expect(modell.spieler.slice(1).map((spieler) => spieler.position)).toEqual(['WEST', 'NORD', 'OST']);
@@ -91,6 +91,7 @@ describe('erstelleTischAnsichtAusStatus', () => {
       ]
     }, {
       partieId: 'partie-1',
+      version: 1,
       status: 'LAUFEND',
       anzahlSpiele: 8,
       gespielteSpiele: 0,
@@ -108,6 +109,7 @@ describe('erstelleTischAnsichtAusStatus', () => {
         moeglicheVorbehalte: ['GESUND', 'SOLO_TRUMPF'],
         deklarierteVorbehalte: [],
         istBockrunde: false,
+        hochzeitGeklaert: false,
         schweinchenGemeldetVon: null,
         spieler: [
           {
@@ -207,6 +209,7 @@ describe('erstelleTischAnsichtAusStatus', () => {
       ]
     }, {
       partieId: 'partie-1',
+      version: 1,
       status: 'LAUFEND',
       anzahlSpiele: 8,
       gespielteSpiele: 0,
@@ -224,6 +227,7 @@ describe('erstelleTischAnsichtAusStatus', () => {
         moeglicheVorbehalte: [],
         deklarierteVorbehalte: [],
         istBockrunde: false,
+        hochzeitGeklaert: false,
         schweinchenGemeldetVon: null,
         spieler: [
           {
@@ -328,6 +332,7 @@ describe('erstelleTischAnsichtAusStatus', () => {
       ]
     }, {
       partieId: 'partie-7',
+      version: 1,
       status: 'LAUFEND',
       anzahlSpiele: 8,
       gespielteSpiele: 0,
@@ -348,6 +353,7 @@ describe('erstelleTischAnsichtAusStatus', () => {
         moeglicheVorbehalte: [],
         deklarierteVorbehalte: [],
         istBockrunde: false,
+        hochzeitGeklaert: false,
         schweinchenGemeldetVon: null,
         spieler: [
           { position: 'SUED', spielerId: 'spieler-1', name: 'Anna', anzeigeName: 'Anna', avatarFarbe: null, istKi: false, istKiUebernommen: false, istSelbst: false, istGeber: true, istAmZug: false, verbleibendeKarten: 10, gewonneneStiche: 0, partei: null, sichtbareHandkarten: null },
@@ -387,6 +393,7 @@ describe('erstelleTischAnsichtAusStatus', () => {
       ]
     }, {
       partieId: 'partie-8',
+      version: 1,
       status: 'LAUFEND',
       anzahlSpiele: 8,
       gespielteSpiele: 1,
@@ -471,6 +478,7 @@ describe('erstelleTischAnsichtAusStatus', () => {
       ]
     }, {
       partieId: 'partie-9',
+      version: 1,
       status: 'LAUFEND',
       anzahlSpiele: 8,
       gespielteSpiele: 0,
@@ -488,6 +496,7 @@ describe('erstelleTischAnsichtAusStatus', () => {
         moeglicheVorbehalte: [],
         deklarierteVorbehalte: [],
         istBockrunde: false,
+        hochzeitGeklaert: false,
         schweinchenGemeldetVon: null,
         spieler: [
           { position: 'SUED', spielerId: 'spieler-1', name: 'Anna', anzeigeName: 'Anna', avatarFarbe: null, istKi: false, istKiUebernommen: false, istSelbst: true, istGeber: true, istAmZug: true, verbleibendeKarten: 12, gewonneneStiche: 0, partei: null, sichtbareHandkarten: [{ id: 'HERZ-ZEHN-1', farbe: 'HERZ', wert: 'ZEHN', exemplarIndex: 1 }, { id: 'KARO-KOENIG-1', farbe: 'KARO', wert: 'KOENIG', exemplarIndex: 1 }, { id: 'KREUZ-AS-1', farbe: 'KREUZ', wert: 'AS', exemplarIndex: 1 }] },
@@ -522,6 +531,7 @@ describe('erstelleTischAnsichtAusStatus', () => {
       ]
     }, {
       partieId: 'partie-10',
+      version: 1,
       status: 'LAUFEND',
       anzahlSpiele: 8,
       gespielteSpiele: 0,
@@ -539,6 +549,7 @@ describe('erstelleTischAnsichtAusStatus', () => {
         moeglicheVorbehalte: [],
         deklarierteVorbehalte: [],
         istBockrunde: false,
+        hochzeitGeklaert: false,
         schweinchenGemeldetVon: null,
         spieler: [
           { position: 'SUED', spielerId: 'spieler-1', name: 'Anna', anzeigeName: 'Anna', avatarFarbe: null, istKi: false, istKiUebernommen: false, istSelbst: false, istGeber: true, istAmZug: false, verbleibendeKarten: 9, gewonneneStiche: 0, partei: null, sichtbareHandkarten: null },

@@ -9,7 +9,7 @@
  * das Backend die Aktion korrekt ablehnt, das Frontend den Fehler anzeigt
  * und der Spieler anschliessend eine gueltige Karte spielen kann.
  *
- * Voraussetzung: Backend laeuft auf localhost:8080
+ * Voraussetzung: Backend laeuft auf localhost:8081
  *   cd e2e && npx playwright test ungueltige-karte.spec.ts
  */
 

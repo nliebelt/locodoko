@@ -40,6 +40,12 @@ export class SpielverwaltungsSzene extends Phaser.Scene {
       }
     });
 
+    // E2E-Marker fuer Playwright
+    const marker = document.createElement('div');
+    marker.dataset['testid'] = 'startscreen';
+    marker.style.cssText = 'position:absolute;width:1px;height:1px;left:-9999px;top:-9999px;pointer-events:none';
+    document.getElementById('ui-root')?.appendChild(marker);
+
     this.renderUi(appStore.snapshot());
   }
 
@@ -108,5 +114,7 @@ export class SpielverwaltungsSzene extends Phaser.Scene {
   shutdown(): void {
     this.abmeldenStore?.();
     this.uiElemente.forEach(el => el.destroy());
+    const marker = document.querySelector('[data-testid="startscreen"]');
+    if (marker) marker.remove();
   }
 }

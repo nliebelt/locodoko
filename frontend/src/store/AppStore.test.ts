@@ -203,6 +203,7 @@ describe('AppStore', () => {
       tisch: { ...tisch, status: 'IM_SPIEL', partieId: 'partie-1' },
       partieStand: {
         partieId: 'partie-1',
+        version: 1,
         status: 'LAUFEND',
         anzahlSpiele: 8,
         gespielteSpiele: 0,
@@ -326,8 +327,24 @@ describe('AppStore', () => {
       partieStand: null
     });
 
-    const spiel1Stand = { partieId: 'partie-snap', version: 1, spielNummer: 1, laufendesSpiel: { spielNummer: 1 } } as unknown as PartieStandAntwort;
-    const spiel2Stand = { partieId: 'partie-snap', version: 2, spielNummer: 2, laufendesSpiel: { spielNummer: 2 } } as unknown as PartieStandAntwort;
+    const spiel1Stand = {
+      partieId: 'partie-snap',
+      version: 1,
+      status: 'LAUFEND',
+      anzahlSpiele: 8,
+      gespielteSpiele: 0,
+      gesamtpunktestand: { SUED: 0 },
+      laufendesSpiel: { spielNummer: 1, hochzeitGeklaert: false, schweinchenGemeldetVon: null }
+    } as unknown as PartieStandAntwort;
+    const spiel2Stand = {
+      partieId: 'partie-snap',
+      version: 2,
+      status: 'LAUFEND',
+      anzahlSpiele: 8,
+      gespielteSpiele: 1,
+      gesamtpunktestand: { SUED: 0 },
+      laufendesSpiel: { spielNummer: 2, hochzeitGeklaert: false, schweinchenGemeldetVon: null }
+    } as unknown as PartieStandAntwort;
 
     // KI-Animation startet (hält die Queue mit async Barrier besetzt)
     echtzeit.emit('/user/queue/partie/partie-snap', {
@@ -361,7 +378,7 @@ describe('AppStore', () => {
     // Warten bis KI-Animation (5ms) und Queue-Verarbeitung fertig
     await new Promise<void>((r) => setTimeout(r, 20));
 
-    expect(store.snapshot().partieStand?.spielNummer).toBe(2);
+    expect(store.snapshot().partieStand?.laufendesSpiel?.spielNummer).toBe(2);
   });
 
   it('reconnecteTisch löscht EventQueue sodass kein veralteter Stand nach Reconnect angezeigt wird', async () => {
@@ -396,8 +413,24 @@ describe('AppStore', () => {
       partieStand: null
     });
 
-    const spiel1Stand = { partieId: 'partie-rec', version: 1, spielNummer: 1, laufendesSpiel: { spielNummer: 1 } } as unknown as PartieStandAntwort;
-    const spiel2Stand = { partieId: 'partie-rec', version: 2, spielNummer: 2, laufendesSpiel: { spielNummer: 2 } } as unknown as PartieStandAntwort;
+    const spiel1Stand = {
+      partieId: 'partie-rec',
+      version: 1,
+      status: 'LAUFEND',
+      anzahlSpiele: 8,
+      gespielteSpiele: 0,
+      gesamtpunktestand: { SUED: 0 },
+      laufendesSpiel: { spielNummer: 1, hochzeitGeklaert: false, schweinchenGemeldetVon: null }
+    } as unknown as PartieStandAntwort;
+    const spiel2Stand = {
+      partieId: 'partie-rec',
+      version: 2,
+      status: 'LAUFEND',
+      anzahlSpiele: 8,
+      gespielteSpiele: 1,
+      gesamtpunktestand: { SUED: 0 },
+      laufendesSpiel: { spielNummer: 2, hochzeitGeklaert: false, schweinchenGemeldetVon: null }
+    } as unknown as PartieStandAntwort;
 
     // KI animiert → async Barrier
     echtzeit.emit('/user/queue/partie/partie-rec', {

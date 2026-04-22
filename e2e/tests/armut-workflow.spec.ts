@@ -10,7 +10,7 @@
  * bidirektionalem Kartentausch und Phasenwechseln (VORBEHALT → ARMUT_TAUSCH → STICHPHASE).
  * Ohne E2E-Test koennte der Tausch-Workflow brechen ohne es zu merken.
  *
- * Voraussetzung: Backend laeuft auf localhost:8080
+ * Voraussetzung: Backend laeuft auf localhost:8081
  *   cd e2e && npx playwright test armut-workflow.spec.ts
  */
 

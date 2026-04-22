@@ -479,8 +479,7 @@ export class AppStore {
 
     let partiestand = this.zustand.partieStand;
     if (ereignis.partieStand) {
-      const istSnapshot = ereignis.ereignisTyp === 'TISCH_SNAPSHOT' || ereignis.ereignisTyp === 'SPIEL_GESTARTET';
-      if (this._darfPartieStandAktualisieren(ereignis.partieStand, ereignis.partieStand.version, istSnapshot)) {
+      if (this._darfPartieStandAktualisieren(ereignis.partieStand, ereignis.partieStand.version)) {
         partiestand = ereignis.partieStand;
       } else {
         Logger.websocket('Ignoriere veralteten PartieStand aus TischEreignis', {
@@ -510,7 +509,7 @@ export class AppStore {
         const ereignis = this._eventQueue.shift()!;
         const istSnapshot = ereignis.ereignisTyp === 'SNAPSHOT';
 
-        if (!this._darfPartieStandAktualisieren(ereignis.partieStand, ereignis.version, istSnapshot)) {
+        if (!this._darfPartieStandAktualisieren(ereignis.partieStand, ereignis.version)) {
           Logger.websocket('Ignoriere veraltetes PartieEreignis', {
             typ: ereignis.ereignisTyp,
             version: ereignis.version,
@@ -522,7 +521,7 @@ export class AppStore {
         // Falls wir eine Luecke in der Sequenz feststellen, koennten wir hier einen HTTP-Reload triggern.
         // Aktuell verlassen wir uns darauf, dass WebSockets in-order liefern.
         if (!istSnapshot && ereignis.version > this._letztePartieVersion + 1) {
-          Logger.warn(`Sequenz-Luecke erkannt! Erwartet ${this._letztePartieVersion + 1}, erhalten ${ereignis.version}`);
+          Logger.error(`Sequenz-Luecke erkannt! Erwartet ${this._letztePartieVersion + 1}, erhalten ${ereignis.version}`);
           // TODO: this.reconnecteTisch(this.zustand.aktuellerTisch!.id);
         }
 
@@ -568,7 +567,7 @@ export class AppStore {
       if (this._aktuelleSequenzId !== sequenzId) return;
 
       const stand = prevStand !== null
-        ? this._synthetischerZwischenstand(prevStand, sequenz.slice(0, i + 1))
+        ? this._synthetischerZwischenstand(prevStand, sequenz.slice(0, i + 1), finalStand)
         : finalStand;
       this.patch({ partieStand: stand });
       if (this._kiKartenVerzögerungMs > 0) {
@@ -582,8 +581,8 @@ export class AppStore {
     }
   }
 
-  private _synthetischerZwischenstand(basis: PartieStandAntwort, gespielteKarten: GespielteKarteEreignisAntwort[]): PartieStandAntwort {
-    if (!basis.laufendesSpiel) return basis;
+  private _synthetischerZwischenstand(basis: PartieStandAntwort, gespielteKarten: GespielteKarteEreignisAntwort[], final: PartieStandAntwort): PartieStandAntwort {
+    if (!basis.laufendesSpiel || !final.laufendesSpiel) return basis;
     const kartenInMitte = [...basis.laufendesSpiel.aktuelleStichmitte];
     const maxReihenfolge = kartenInMitte.reduce((max, k) => Math.max(max, k.reihenfolge ?? 0), 0);
     gespielteKarten.forEach((k, i) => {
@@ -596,12 +595,22 @@ export class AppStore {
         });
       }
     });
-    return { ...basis, laufendesSpiel: { ...basis.laufendesSpiel, aktuelleStichmitte: kartenInMitte } };
+    // Wir nehmen die Meta-Daten (Phase, aktueller Spieler etc.) vom finalen Stand,
+    // aber behalten die (synthetische) Stichmitte bei.
+    return { 
+      ...final, 
+      laufendesSpiel: { 
+        ...final.laufendesSpiel, 
+        aktuelleStichmitte: kartenInMitte,
+        // Karten in der Hand muessen wir auch schaetzen, falls sie im finalen Stand schon weg sind
+        spielbareKarten: final.laufendesSpiel.spielbareKarten
+      } 
+    };
   }
 
   private leereKiSequenzQueue(): void { this._kiSequenzQueue.length = 0; }
 
-  private _darfPartieStandAktualisieren(neuerStand: PartieStandAntwort, neueVersion: number, istSnapshot = false): boolean {
+  private _darfPartieStandAktualisieren(neuerStand: PartieStandAntwort, neueVersion: number): boolean {
     const aktuellePartieId = this.zustand.partieStand?.partieId;
 
     // Wenn neue Partie: immer akzeptieren

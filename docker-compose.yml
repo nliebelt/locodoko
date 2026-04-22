@@ -39,7 +39,7 @@ services:
 
     # Expose a port if the agent runs a local HTTP server or API.
     ports:
-      - "8080:8080"
+      - "8081:8081"
       - "5173:5173"
 
   # --- PostgreSQL-Datenbank (Produktion + lokale Prod-Tests) ---
@@ -79,7 +79,7 @@ services:
       GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-disabled}
       GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-disabled}
     ports:
-      - "8080:8080"
+      - "8081:8081"
     profiles:
       - prod
 

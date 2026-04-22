@@ -50,7 +50,7 @@
 
 2b. **Nur bei Frontend-UI-Änderungen** (Dateien in `frontend/src/szenen/`, `frontend/src/assets/`,
     `frontend/src/components/`):
-    - Prüfe zuerst ob das Backend läuft (`curl -s http://localhost:8080/actuator/health`).
+    - Prüfe zuerst ob das Backend läuft (`curl -s http://localhost:8081/actuator/health`).
     - Falls ja: führe Vision Loop aus (`cd e2e && npx playwright test vision-loop.spec.ts --headed`),
       lese alle Screenshots in `e2e/screenshots/` mit dem Read-Tool ein und prüfe visuell auf
       Fehler (Positionen, Alpha-Werte, Überlappungen, fehlende Elemente).

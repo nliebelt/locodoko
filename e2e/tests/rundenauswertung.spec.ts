@@ -4,7 +4,7 @@
  * Prüft ob nach Spielende das Rundenauswertungs-Overlay korrekt erscheint,
  * die wichtigsten Inhalte zeigt und per Button geschlossen werden kann.
  *
- * Voraussetzung: Backend läuft auf localhost:8080
+ * Voraussetzung: Backend läuft auf localhost:8081
  *   cd e2e && npx playwright test rundenauswertung.spec.ts
  */
 
@@ -20,6 +20,11 @@ interface SpielZustand {
   spielNummer: number;
 }
 async function leseSpielZustand(page: Page): Promise<SpielZustand> {
+  await page.waitForFunction(() => {
+    const loco = (window as any).__locodoko;
+    return loco?.appStore?.isIdle() === true;
+  }, { timeout: 10000 }).catch(() => {});
+
   return page.evaluate((): SpielZustand => {
     const el = document.querySelector('[data-testid="rundenauswertung-overlay"]') as HTMLElement | null;
     const overlayVisible = !!el && !el.hidden;

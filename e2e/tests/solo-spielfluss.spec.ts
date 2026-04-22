@@ -12,7 +12,7 @@
  * nicht beobachtbar sind — anderer HUD-Spieltyp, asymmetrische Parteien (1 RE, 3 Kontra)
  * und Geber-Rotation bleibt nach Solo beim selben Geber.
  *
- * Voraussetzung: Backend laeuft auf localhost:8080
+ * Voraussetzung: Backend laeuft auf localhost:8081
  *   cd e2e && npx playwright test solo-spielfluss.spec.ts
  */
 
