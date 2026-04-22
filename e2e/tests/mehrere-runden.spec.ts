@@ -29,6 +29,10 @@ interface SpielZustand {
 }
 
 async function leseSpielZustand(page: Page): Promise<SpielZustand> {
+  await page.waitForFunction(() => {
+    const loco = (window as any).__locodoko;
+    return loco && loco.appStore && loco.appStore.isIdle() === true;
+  });
   return page.evaluate((): SpielZustand => {
     const overlay = document.querySelector('[data-testid="rundenauswertung-overlay"]') as HTMLElement | null;
     type B = { appStore: { snapshot: () => { partieStand?: { laufendesSpiel?: {
