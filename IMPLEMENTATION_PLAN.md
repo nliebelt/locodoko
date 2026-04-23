@@ -16,7 +16,7 @@ Frontend-Architektur auf "Locodoko Unified Architecture" umgebaut. Die E2E-Tests
 Höchste Priorität. Repariert die asynchronen Timing-Probleme in Playwright nach dem Architektur-Umbau.
 
 - [x] **UNIFIED-1 (Frontend)**: Implementiere eine `isIdle()`-Methode im `AppStore.ts` und `TischSzene.ts`.
-- [ ] **UNIFIED-2 (E2E)**: Aktualisiere die Hilfsfunktion `leseSpielZustand` in `e2e/tests/mehrere-runden.spec.ts`. Der E2E-Test darf den Zustand erst zurückgeben, wenn `window.__locodoko.appStore.isIdle() === true` ist.
+- [BLOCKED: E2E Test hängt in STICHPHASE wg. Version-Kollision, braucht UNIFIED-3] **UNIFIED-2 (E2E)**: Aktualisiere die Hilfsfunktion `leseSpielZustand` in `e2e/tests/mehrere-runden.spec.ts`. Der E2E-Test darf den Zustand erst zurückgeben, wenn `window.__locodoko.appStore.isIdle() === true` ist.
 - [ ] **UNIFIED-3 (Backend)**: Optimiere das Event-Bündeln in `SpielAktionsService.java`. Fasse `KI_ZUG_SEQUENZ` und `TISCH_SNAPSHOT` zusammen oder stelle sicher, dass die `@Version` strikt erhöht wird.
 - [ ] **UNIFIED-4 (E2E)**: Repariere `e2e/tests/schnellstart.spec.ts`. Auf die JS-Bridge (`appStore.alsGastStarten()` und `appStore.erstelleQuickGame()`) umstellen.
 - [ ] **UNIFIED-5 (E2E)**: Repariere `e2e/tests/armut-workflow.spec.ts`. Timing-Fixes durch `isIdle()`.

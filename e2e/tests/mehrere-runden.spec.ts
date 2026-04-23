@@ -15,7 +15,7 @@ async function leseSpielZustand(page: Page): Promise<SpielZustand> {
   await page.waitForFunction(() => {
     const loco = (window as any).__locodoko;
     return loco?.appStore?.isIdle() === true;
-  }, { timeout: 10000 }).catch(() => {});
+  }, { timeout: 10000 });
 
   return page.evaluate((): SpielZustand => {
     const loco = (window as any).__locodoko;
@@ -63,11 +63,11 @@ test.describe('Mehrere Runden gegen KI', () => {
     let letztePhase = '';
     let letzteSpielNummer = 0;
 
-    for (let i = 0; i < 1000 && abgeschlosseneRunden < 1; i++) {
+    for (let i = 0; i < 1000 && abgeschlosseneRunden < 2; i++) {
       const zustand = await leseSpielZustand(page);
 
       if (zustand.phase !== letztePhase || zustand.spielNummer !== letzteSpielNummer) {
-        console.log(`[i=${i}] Runde ${abgeschlosseneRunden + 1}/1 | Spiel ${zustand.spielNummer} | Phase=${zustand.phase}`);
+        console.log(`[i=${i}] Runde ${abgeschlosseneRunden + 1}/2 | Spiel ${zustand.spielNummer} | Phase=${zustand.phase}`);
         letztePhase = zustand.phase ?? '';
         letzteSpielNummer = zustand.spielNummer;
       }

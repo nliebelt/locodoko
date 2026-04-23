@@ -68,17 +68,20 @@ public class KiOrchestrierungService {
     private final SpielerRepository spielerRepository;
     private final TischEchtzeitService tischEchtzeitService;
     private final ApplicationEventPublisher eventPublisher;
+    private final de.locodoko.tisch.TischRepository tischRepository;
 
     public KiOrchestrierungService(
         KiStrategieFactory kiStrategieFactory,
         SpielerRepository spielerRepository,
         TischEchtzeitService tischEchtzeitService,
-        ApplicationEventPublisher eventPublisher
+        ApplicationEventPublisher eventPublisher,
+        de.locodoko.tisch.TischRepository tischRepository
     ) {
         this.kiStrategieFactory = kiStrategieFactory;
         this.spielerRepository = spielerRepository;
         this.tischEchtzeitService = tischEchtzeitService;
         this.eventPublisher = eventPublisher;
+        this.tischRepository = tischRepository;
     }
 
     /**
