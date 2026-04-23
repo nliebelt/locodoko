@@ -41,10 +41,8 @@ folgenden Spiele noch doppelt gewertet werden. Der Zähler wird durch bestimmte 
    hat (Spielergebnis: Sieger = RE, Ansage KONTRA vorhanden), erhöht sich der BockrundenZähler
    nach Abschluss des Spiels um 1.
 9. Beide Trigger können im selben Spiel ausgelöst werden (Zähler +2).
-
-### Konfiguration
-
-10. Bockrunden können über die Tischkonfiguration global **aktiviert/deaktiviert** werden.
+10. **Einwurf-Bockrunde**: Wenn ein Spiel eingeworfen wird (z.B. wegen abgelehnter Armut oder Schmeißen), kann optional eine Bockrunde für die nächste Runde ausgelöst werden.
+11. **Konfiguration**: Bockrunden können über die Tischkonfiguration global **aktiviert/deaktiviert** werden (inklusive der Einzeltrigger).
 
 ## Akzeptanzkriterien
 

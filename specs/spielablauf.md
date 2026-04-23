@@ -31,34 +31,37 @@ Definition des gesamten Spielablaufs einer Doppelkopf-Partie. Eine Partie besteh
    | Phase | Name | Beschreibung |
    | ----- | ---- | ------------ |
    | 1 | **Karten austeilen** | Karten werden gemischt und gleichmaessig verteilt |
-   | 2 | **Vorbehalt-Ansage** | Jeder Spieler gibt reihum an, ob er einen Vorbehalt hat (Solo, Hochzeit, Armut) oder „gesund" ist |
-   | 3 | **Vorbehalt-Auflösung** | Hoechster Vorbehalt aufgeloest (Solo > Hochzeit > Armut); kein Vorbehalt: Normalspiel |
+   | 2 | **Vorbehalt-Ansage** | Jeder Spieler gibt reihum an, ob er einen Vorbehalt hat (Solo, Hochzeit, Armut, Schmeißen) oder „gesund" ist |
+   | 3 | **Vorbehalt-Auflösung** | Hoechster Vorbehalt aufgeloest (Schmeißen > Solo > Hochzeit > Armut); kein Vorbehalt: Normalspiel |
    | 4 | **Armut-Tausch** (optional) | Falls Armut angemeldet: Kartentausch wird durchgefuehrt |
    | 5 | **Stichphase** | 12 (bzw. 10) Stiche werden nacheinander gespielt |
    | 6 | **Auswertung** | Augen zaehlen, Sonderpunkte berechnen, Spielpunkte vergeben |
    | 7 | **Gesamtstand aktualisieren** | Spielpunkte zum Partiestand hinzufuegen |
 
 2. Die **Vorbehalt-Reihenfolge** beginnt beim Spieler links vom Geber und geht im Uhrzeigersinn.
-3. **Vorbehalt-Priorität** (absteigend): Solo > Hochzeit > Armut. Bei **mehreren Soli** entscheidet die **Sitzreihenfolge**: Der Spieler, der in der Reihenfolge (links vom Geber ausgehend) zuerst dran ist, darf sein Solo spielen. Es gibt keine Rangfolge zwischen den Solo-Typen.
+3. **Vorbehalt-Priorität** (absteigend): Schmeißen > Solo > Hochzeit > Armut. Bei **mehreren Soli** entscheidet die **Sitzreihenfolge**: Der Spieler, der in der Reihenfolge (links vom Geber ausgehend) zuerst dran ist, darf sein Solo spielen. Es gibt keine Rangfolge zwischen den Solo-Typen.
 4. Wenn kein Spieler einen Vorbehalt hat, wird ein **Normalspiel** gespielt.
 
 ### Parteibildung
 
 1. Im **Normalspiel** bilden die beiden Spieler, die jeweils eine **Kreuz-Dame** besitzen, die **Re-Partei** („die Alten"). Die anderen beiden Spieler bilden die **Kontra-Partei**.
-2. Die Parteizugehörigkeit ist zu Beginn des Spiels **geheim** — jeder Spieler kennt nur seine eigene Partei (ob er eine Kreuz-Dame hat oder nicht).
+2. Die Parteizugehörigkeit ist zu Beginn des Spiels **geheim** — jeder Spieler kennt nur seine eigene Partei (ob er eine Kreuz-Dame hat or nicht).
 3. Die Parteien werden im Laufe des Spiels durch Ansagen, Spielverhalten oder das Ausspielen der Kreuz-Dame offenbart.
 
-### Schmeißen (Neuauflage) — Fehlt noch
+### Schmeißen (Neuauflage)
 
-> **Status: Nicht implementiert**
+Ein Spieler darf das Spiel **neu auflegen** (schmeißen) wenn er eine der folgenden Sonderkonstellationen auf der Hand hat. Alle Karten kommen zurück, werden neu gemischt und neu ausgeteilt — der Geber bleibt gleich. Ein Schmeißen wird als Vorbehalt angemeldet.
 
-Ein Spieler darf das Spiel **neu auflegen** (schmeißen) wenn er eine der folgenden Sonderkönstellationen auf der Hand hat. Alle Karten kommen zurück, werden neu gemischt und neu ausgeteilt — der Geber bleibt gleich.
+| Regel | Bedingung | Status |
+|-------|-----------|--------|
+| **Fünf Könige** | Spieler hat 5 oder mehr Könige auf der Hand. | Implementiert |
+| **Fünf Neunen** | Spieler hat 5 oder mehr Neunen auf der Hand. (Bei 40er Blatt: 4 oder mehr). | Offen |
+| **Wenig Trumpf** | Spieler hat weniger als 2 Trümpfe auf der Hand. | Offen |
 
-1. **Fünf oder mehr Könige** auf der Hand (bei Normalspiel mit Neunen: 5+ von 8 Spielkönigen; ohne Neunen analog).
-2. **Neun oder mehr Neunen** (nur bei Spiel mit Neunen, also 48-Karten-Deck).
-3. Der Vorbehalt "Schmeißen" gilt als höchster Vorbehalt — vor Solo, Hochzeit, Armut. Wenn ein Spieler schmeißt, wird sofort neu ausgeteilt ohne die anderen Vorbehalte aufzulösen.
-4. Jeder Spieler hat **genau ein Schmeißen-Recht** pro Spiel (nicht pro Partie).
-5. Die Schmeißen-Regel ist nicht part des DKV-Turnier-Regelsets, aber Teil des Loco-Blatt-Presets.
+1. Der Vorbehalt "Schmeißen" gilt als höchster Vorbehalt. Wenn ein Spieler schmeißt, wird sofort neu ausgeteilt ohne die anderen Vorbehalte aufzulösen.
+2. Jeder Spieler hat **genau ein Schmeißen-Recht** pro Spiel (nicht pro Partie).
+3. Die Schmeißen-Regel ist nicht Teil des DKV-Turnier-Regelsets, aber Teil des Loco-Blatt-Presets.
+4. Die Schmeißen-Optionen sind in den **Tisch-Einstellungen einzeln konfigurierbar**.
 
 ### Geberrotation bei Solo (Nachgeben)
 

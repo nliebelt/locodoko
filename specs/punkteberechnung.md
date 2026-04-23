@@ -37,37 +37,43 @@ Die Punkteberechnung bestimmt am Ende eines Spiels, welche Partei gewonnen hat u
 10. Verschärfungspunkte werden **nur dann gezählt**, wenn die entsprechende Verschärfung auch tatsächlich **angesagt** wurde (nur Ansage zählt, DKV-konform).
 11. Wurde eine Verschärfung **angesagt und nicht erreicht**, erhält die Gegenpartei die Punkte.
 
-### Gegen-die-Ansage-Punkte
+### Sonderregeln: Gegen die Alten
 
-12. Gewinnt die Kontra-Partei **gegen eine Re-Ansage**, gibt es **+1 Sonderpunkt** („gegen die Alten").
-13. Gewinnt eine Partei gegen eine angesagte Verschärfung, gibt es pro nicht eingetretener Verschärfung **+1 Punkt**.
+12. Gewinnt die Kontra-Partei gegen die Re-Partei (die "Alten"), erhält sie **immer +1 Sonderpunkt**. 
+    - Dies gilt unabhängig davon, ob "Re" oder "Kontra" angesagt wurde.
+    - Begründung: Belohnung für den Sieg gegen die stärkeren Kreuz-Damen.
 
 ### Sonderpunkte-Integration
 
-14. Die Sonderpunkte aus `sonderpunkte.md` (Fuchs, Karlchen, Doppelkopf) werden zum Spielergebnis **addiert**.
+13. Die Sonderpunkte aus `sonderpunkte.md` (Fuchs, Karlchen, Doppelkopf) werden zum Spielergebnis **addiert**.
 
 ### Solo-Bewertung
 
-15. Im Solo-Spiel werden die Spielpunkte für den Solo-Spieler mit **3 multipliziert** (da er alleine spielt, zählt es dreifach).
-16. Die drei Kontra-Spieler erhalten jeweils den einfachen Punkt (positiv oder negativ).
+14. Im Solo-Spiel werden die Spielpunkte für den Solo-Spieler mit **3 multipliziert** (da er alleine spielt, zählt es dreifach).
+15. Die drei Kontra-Spieler erhalten jeweils den einfachen Punkt (positiv oder negativ).
+
+### Transparenz und Herkunft (Point Provenance)
+
+16. Das Backend muss für jeden vergebenen Punkt die **Quelle explizit ausweisen** (z.B. "Grundwert: 1", "Gegen die Alten: 1", "Fuchs gefangen: 1").
+17. Diese Aufschlüsselung muss Teil des `Spielergebnis`-DTOs sein, damit das Frontend sie in der Rundenauswertung detailliert anzeigen kann.
 
 ### Gesamtstand
 
-17. Die Spielpunkte werden am Ende jedes Spiels zum **Partie-Gesamtstand** addiert.
-18. Die Gewinner-Partei erhält positive Punkte, die Verlierer-Partei negative Punkte.
-19. Das Spiel ist ein **Nullsummenspiel**: Die Summe aller Spielpunkte aller Spieler ist immer 0.
+18. Die Spielpunkte werden am Ende jedes Spiels zum **Partie-Gesamtstand** addiert.
+19. Die Gewinner-Partei erhält positive Punkte, die Verlierer-Partei negative Punkte.
+20. Das Spiel ist ein **Nullsummenspiel**: Die Summe aller Spielpunkte aller Spieler ist immer 0.
 
 ## Akzeptanzkriterien
 
 - Re mit 121+ Augen gewinnt, Kontra mit 120+ Augen gewinnt.
 - Der Grundwert ist 1 Spielpunkt.
+- Kontra erhält immer +1 Punkt bei Sieg ("Gegen die Alten").
 - Re-Ansage verdoppelt, Kontra-Ansage verdoppelt, beides vervierfacht.
 - Verschärfungspunkte werden nur bei tatsächlicher Ansage vergeben.
-- Gegen-die-Ansage-Punkte werden korrekt vergeben.
 - Sonderpunkte werden korrekt addiert.
 - Solo-Punkte werden dreifach für den Solo-Spieler berechnet.
 - Die Summe aller Spielerpunkte ist 0 (Nullsumme).
-- Der Gesamtstand akkumuliert korrekt über mehrere Spiele.
+- Jeder Punkt ist mit seiner Herkunft (Label) versehen.
 
 ## Definition of Done
 
@@ -84,6 +90,6 @@ Die Punkteberechnung bestimmt am Ende eines Spiels, welche Partei gewonnen hat u
 
 - **Bounded Context**: Punkteberechnung
 - `PunkteRechner`-Service mit Methode `berechneErgebnis(Spiel)` → `SpielErgebnis`
-- `SpielErgebnis` enthält: Augen pro Partei, Spielpunkte pro Spieler, Sonderpunkte-Aufschlüsselung
+- `SpielErgebnis` enthält: Augen pro Partei, Spielpunkte pro Spieler, Sonderpunkte-Aufschlüsselung inkl. Labels.
 - Die Berechnung ist eine reine Funktion ohne Seiteneffekte (leicht testbar)
 - Partiestand als Aggregate oder Value Object, das nach jedem Spiel aktualisiert wird

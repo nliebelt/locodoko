@@ -14,18 +14,15 @@ Die Locodoko Unified Architecture löst das Synchronisationsproblem zwischen ver
 Jede Partie besitzt eine streng monotone, aufsteigende **Version** (Sequenznummer). Diese Version wird im Backend via `@Version` (Optimistic Locking) verwaltet.
 - Jede API-Antwort (REST) enthält die aktuelle Version.
 - Jedes WebSocket-Ereignis enthält die Version, die **nach** Anwendung des Ereignisses erreicht wurde.
+- **Abgrenzung:** Die Version ist die absolute "Physik-Zeit" der Partie. Eine `stichNummer` reicht nicht zur Synchronisation aus, da zwischen zwei Stichen (oder innerhalb eines Stichs) viele Ereignisse (Ansagen, KI-Züge, Phasenwechsel) stattfinden, die den Zustand mutieren.
 
-### 2. HTTP für Zustand (Snapshots)
-Der vollständige Spielzustand ("Was ist jetzt?") wird ausschließlich über die REST-API geliefert:
-`GET /api/partien/{id}/stand`
-- Wird beim ersten Laden der Tisch-Szene aufgerufen.
-- Dient zur Heilung bei Sequenz-Lücken (Self-Healing).
-
-### 3. WebSockets für Veränderung (Pure Events)
-WebSockets werden ausschließlich für den Push von Ereignissen ("Was ist gerade passiert?") genutzt.
-- Ein Ereignis enthält nur die minimal notwendigen Daten (z. B. `{ spieler: 'NORD', karte: 'HERZ-ZEHN' }`).
-- Ereignisse enthalten **keinen** vollständigen Snapshot mehr.
-- Das Frontend wendet Ereignisse inkrementell auf den lokalen State im `AppStore` an.
+### 2. Quiescence Pattern (isIdle)
+Um asynchrone Abläufe (Animationen, KI-Bedenkzeiten) für externe Beobachter (E2E-Tests, Debug-Tools) deterministisch zu machen, implementiert das Frontend das **Quiescence Pattern**:
+- Der Zustand `isIdle()` ist nur dann `true`, wenn:
+  1. Die **WebSocket-Event-Queue** leer ist.
+  2. Die **Event-Verarbeitung** (async) abgeschlossen ist.
+  3. Der **Animationen-Service** keine laufenden Tweens oder Timer hat.
+- E2E-Tests nutzen diesen Zustand als Synchronisations-Barrier, um Race-Conditions mit noch laufenden Animationen zu verhindern.
 
 ## Event-Verarbeitung & Self-Healing
 

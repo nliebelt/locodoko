@@ -19,9 +19,10 @@ Die Hochzeit ist ein Sonderspiel im Doppelkopf. Ein Spieler, der beide Kreuz-Dam
 5. Stiche, die der Hochzeits-Spieler selbst gewinnt, bevor ein Partner gefunden ist, zählen zu seinen (Re-Partei-)Augen. Er sammelt diese Augen **alleine**.
 6. Es gibt eine **Klarstellungsfrist**: Wird innerhalb der ersten 3 Stiche kein Partner gefunden (d.h. der Hochzeits-Spieler gewinnt alle 3 Stiche selbst), spielt der Hochzeits-Spieler ein **stilles Solo** (Trumpfsolo, alleine gegen die anderen drei).
 7. Der Stich, in dem der Partner gefunden wird, heißt **Klärungsstich** — spätestens der 3. Stich.
-8. Sobald ein Partner gefunden ist, wird dies allen Spielern mitgeteilt.
-9. Die Trumpfhierarchie im Hochzeits-Spiel entspricht dem **Normalspiel**.
-10. Die Hochzeit kann über die Tischkonfiguration **deaktiviert** werden.
+8. **Vereinfachte Ansage-Regel**: Komplexe DKV-Regeln zu verschobenen Ansagefristen für den neuen Partner werden ignoriert. Es gelten die Standard-Fristen basierend auf der Handkartenanzahl zu Beginn des Stichs.
+9. Sobald ein Partner gefunden ist, wird dies allen Spielern mitgeteilt.
+10. Die Trumpfhierarchie im Armut-Spiel entspricht dem **Normalspiel**.
+11. Die Hochzeit kann über die Tischkonfiguration **deaktiviert** werden.
 
 ## Akzeptanzkriterien
 
@@ -47,10 +48,8 @@ Die Hochzeit ist ein Sonderspiel im Doppelkopf. Ein Spieler, der beide Kreuz-Dam
 Findet sich innerhalb der ersten 3 Klärungsstiche kein Partner (d.h. der Hochzeits-Spieler gewinnt alle 3 Stiche selbst), wechselt das Spiel in das **stille Solo**:
 
 - **Definition**: Der Hochzeits-Spieler spielt allein als Re-Partei gegen alle drei anderen Spieler (Kontra-Partei).
-- **Bedingung**: Kein fremder Spieler hat innerhalb der ersten 3 Klärungsstiche einen Stich gewonnen.
-- **Konsequenz**: Das Spiel läuft als Trumpfsolo weiter — die Trumpfhierarchie bleibt unverändert.
-- **Wertung**: Das stille Solo wird wie ein reguläres Solo gewertet. Der Solo-Multiplikator (×3) gilt, zusätzliche Sonderpunkte (Doppelkopf, Fuchs, Karlchen) werden normal verrechnet.
-- **Zustand**: `HochzeitStatus.stillesSolo` wird intern gesetzt; kein neuer Vorbehalt, da die Phase bereits abgeschlossen ist.
+- **Wertung**: Das stille Solo wird wie ein reguläres Solo gewertet. Der **Solo-Multiplikator (×3)** gilt für die Spielpunkte.
+- **Zustand**: `HochzeitStatus.stillesSolo` wird intern gesetzt; die Trumpfhierarchie bleibt die des Normalspiels.
 
 ## Technische Hinweise
 

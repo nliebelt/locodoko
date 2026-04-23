@@ -57,6 +57,20 @@ Backend (Spring Boot)
 
 ---
 
+## JavaScript-Bridge (`window.__locodoko`)
+
+Für automatisierte Tests (E2E) und die Diagnose zur Laufzeit exponiert das Frontend ein globales Bridge-Objekt. Dies ermöglicht den Zugriff auf den internen Zustand der Phaser-Engine und des App-Stores, ohne die Kapselung im Produktivcode zu verletzen.
+
+| Methode / Eigenschaft | Beschreibung |
+|-----------------------|--------------|
+| `appStore`            | Direkter Zugriff auf den `AppStore` (Snapshots, Aktionen) |
+| `szene`               | Referenz auf die aktuell aktive `Phaser.Scene` |
+| `isIdle()`            | Gibt `true` zurück, wenn alle Animationen und Event-Queues verarbeitet sind |
+| `isOverlaySichtbar()` | Prüft die Sichtbarkeit von modalen Overlays (Rundenauswertung) |
+| `setzeAnimationsGeschwindigkeit(f)` | Setzt den globalen Faktor (1, 2, Infinity) |
+
+---
+
 ## Dokumentationsstandard: JSDoc auf Deutsch
 
 Alle kritischen Dateien erhalten JSDoc-Kommentare nach folgendem Muster:

@@ -23,10 +23,11 @@ Die Armut (auch „Trumpfarmut") ist ein Sonderspiel, bei dem ein Spieler mit se
 6. Die zurückgegebenen Karten dürfen beliebig sein (Trumpf oder Fehl).
 7. Nimmt **kein Spieler** die Armut an, wird das Spiel **eingeworfen** (neu gemischt und ausgeteilt).
 8. Es gibt **keine Begrenzung** für die Anzahl der Einwürfe — wird nach dem Einwurf erneut eine Armut verteilt, die niemand annimmt, wird erneut eingeworfen.
-9. Der Kartentausch findet **vor der Stichphase** statt.
-10. Die Trumpfhierarchie im Armut-Spiel entspricht dem **Normalspiel**.
-11. Die Armut kann über die Tischkonfiguration **deaktiviert** werden.
-12. Die Anzahl der zu tauschenden Karten entspricht der Anzahl der Trumpfkarten des Armut-Spielers (maximal 3).
+9. **Bockrunden bei Einwurf**: Optional kann konfiguriert werden, dass jeder Einwurf (aufgrund einer abgelehnten Armut) die Anzahl der verbleibenden Bockrunden in der Partie erhöht (Standard: +1 Bockrunde pro Einwurf).
+10. Der Kartentausch findet **vor der Stichphase** statt.
+11. Die Trumpfhierarchie im Armut-Spiel entspricht dem **Normalspiel**.
+12. Die Armut kann über die Tischkonfiguration **deaktiviert** werden.
+13. Die Anzahl der zu tauschenden Karten entspricht der Anzahl der Trumpfkarten des Armut-Spielers (maximal 3).
 
 ## Akzeptanzkriterien
 

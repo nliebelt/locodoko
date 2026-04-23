@@ -12,13 +12,15 @@ End-to-End-Tests mit Playwright sichern den kritischen Spielpfad ab. Die Tests l
 
 ## Teststrategie
 
-### Tastatur als primäre Eingabe
+### Stabilität durch die JavaScript-Bridge
 
-Playwright kann keine zuverlässigen Klicks auf Phaser-Canvas-Elemente senden (headless Chromium, Hit-Testing). Deshalb gilt:
+In Headless-Umgebungen ohne GPU-Beschleunigung (CI-Pipelines) ist das Rendering von Phaser (WebGL/Canvas) oft zeitverzögert, was Tastatur- und Maussimulationen unzuverlässig macht ("GPU stalls"). 
 
-- **Spielkarten werden per Tastatur** gespielt: `ArrowLeft`/`ArrowRight` + `Enter` (siehe `frontend-tastatursteuerung.md`)
-- **Kein `window.__locodoko.appStore`-Hack mehr** — direkte Tastatureingaben sind sauberer und testen den echten Input-Pfad
-- **Modals und Overlays** (Vorbehalt, Rundenauswertung) sind HTML-DOM und per Tastatur/Text-Selektor prüfbar
+Locodoko nutzt daher das **Bridge Pattern**:
+- **Interaktion**: Statt `page.keyboard.press()` werden Aktionen direkt über die Bridge ausgelöst (z.B. `window.__locodoko.appStore.spieleKarte(id)`). Dies garantiert eine sofortige Verarbeitung in der Engine unabhängig von den FPS.
+- **Synchronisation (Quiescence Pattern)**: Tests warten nicht auf fixe Timeouts, sondern fragen den Zustand `window.__locodoko.appStore.isIdle()` ab. Erst wenn dieser `true` liefert (keine laufenden Animationen, leere Event-Queue), wird der nächste Testschritt ausgeführt.
+
+Die Tastatursteuerung bleibt als sekundärer Pfad für lokale UX-Tests erhalten, für die automatisierte Absicherung der Spiellogik ist die Bridge jedoch die **Single Source of Truth**.
 
 ### `data-testid`-Attribute
 
