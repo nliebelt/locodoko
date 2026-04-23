@@ -87,13 +87,12 @@ public class KiOrchestrierungService {
     /**
      * Fuehrt KI-Zuege aus, bis ein menschlicher Spieler am Zug ist oder das Spiel endet.
      *
-     * @return {@code true} wenn mindestens eine KI-Aktion ausgefuehrt wurde (Zustand geaendert),
-     *         {@code false} wenn der naechste Spieler menschlich ist und nichts geaendert wurde.
+     * @return Der aktuelle Tisch-Stand (ggf. nach Persistenz der KI-Zuege).
      */
-    public boolean automatisiereTisch(TischEntity tisch) {
+    public TischEntity automatisiereTisch(TischEntity tisch) {
         Objects.requireNonNull(tisch, "tisch darf nicht null sein");
         if (tisch.partie() == null || tisch.partie().statusAusDb() == PartieStatus.BEENDET) {
-            return false;
+            return tisch;
         }
         Spiel startSpiel = findeLaufendesSpiel(tisch.partie());
         String startPhase = startSpiel != null ? startSpiel.phasenName() : null;
@@ -124,6 +123,7 @@ public class KiOrchestrierungService {
                         Partie neuePartie = persistentePartie.schliesseAktuellesSpielAbUndStarteNaechstes();
                         uebernehmeDomainPartieAbschluss(tisch, laufendesSpiel, neuePartie);
                         
+                        tisch = tischRepository.save(tisch);
                         hatKiGespielt = true;
                         
                         // Wenn Menschen am Tisch sind, brechen wir hier ab, um ihnen Zeit fuer die
@@ -159,14 +159,24 @@ public class KiOrchestrierungService {
 
                     KiStrategie strategie = kiStrategieFactory.erzeuge(tisch.konfiguration().kiSchwierigkeit());
                     Spielphase phaseVorAktion = laufendesSpiel.phase();
-                    boolean schweinchenVorher = laufendesSpiel.schweinchenGemeldetVon().isPresent();
+                    boolean schweinchenVorHER = laufendesSpiel.schweinchenGemeldetVon().isPresent();
                     
                     AktionsErgebnis aktionsErgebnis = fuehreKiAktionAus(laufendesSpiel, erwarteterSpieler, strategie);
                     laufendesSpiel.uebernehmeDomainStand(aktionsErgebnis.naechsterStand());
                     hatKiGespielt = true;
 
+                    // PERSISTENCE & VERSIONING: Speichern nach jeder Aktion, damit die @Version inkrementiert wird
+                    // und nachfolgende WebSocket-Events konsistente, steigende Versionen haben.
+                    tisch = tischRepository.save(tisch);
+                    laufendesSpiel = findeLaufendesSpiel(tisch.partie());
+                    if (laufendesSpiel != null) {
+                        laufendesSpiel.hydriere(tisch.konfiguration().alsSpielregeln());
+                    } else {
+                        break;
+                    }
+
                     // Schweinchen-Broadcast bei KI-Zug
-                    if (!schweinchenVorher && laufendesSpiel.schweinchenGemeldetVon().isPresent()) {
+                    if (!schweinchenVorHER && laufendesSpiel.schweinchenGemeldetVon().isPresent()) {
                         veroeffentlicheSchweinchenEreignis(tisch);
                     }
 
@@ -199,20 +209,20 @@ public class KiOrchestrierungService {
             if (hatKiGespielt && hatMenschlichenSpieler) {
                 // Finales Status-Update senden, damit der menschliche Spieler sieht, wer am Zug ist.
                 // Dies ist besonders wichtig nach Vorbehalts-Phasen oder Armut-Tausch.
-                sendeAnsageErfolgt(tisch);
+                sendeFinalenSnapshot(tisch);
                 triggereKi(tisch);
             }
         }
-        return hatKiGespielt;
+        return tisch;
     }
 
-    private void sendeAnsageErfolgt(TischEntity tisch) {
+    private void sendeFinalenSnapshot(TischEntity tisch) {
         tisch.spieler().stream()
             .filter(s -> !s.istKi() && !s.istKiUebernommen() && s.sessionId() != null)
             .forEach(s -> tischEchtzeitService.planeAnBenutzer(
                 s.sessionId(),
                 "/queue/partie/" + tisch.partie().id(),
-                PartieEreignisAntwort.ansageErfolgt(PartieStandAntwort.aus(tisch, s.id()))
+                PartieEreignisAntwort.snapshot(PartieStandAntwort.aus(tisch, s.id()))
             ));
     }
 

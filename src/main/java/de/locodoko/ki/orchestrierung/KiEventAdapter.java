@@ -62,10 +62,14 @@ class KiEventAdapter {
             // veralteten Stand operieren, der waehrend des Wartens auf den Lock in der DB
             // durch einen menschlichen Spieler geaendert wurde.
             tischRepository.findById(tischId).ifPresent(tisch -> {
-                boolean hatKiGespielt = kiOrchestrierungService.automatisiereTisch(tisch);
-                if (hatKiGespielt) {
-                    tischRepository.save(tisch);
-                    synchronisiereRegistry(tischId, tisch);
+                long versionVorher = tisch.partie() != null ? tisch.partie().version() : -1;
+                TischEntity aktualisierterTisch = kiOrchestrierungService.automatisiereTisch(tisch);
+                
+                // Falls die KI gespielt hat (erkennbar an der inkrementierten Version),
+                // synchronisieren wir die SpielRegistry mit dem neuen Stand.
+                // Das tischRepository.save() passiert jetzt atomar in automatisiereTisch().
+                if (aktualisierterTisch.partie() != null && aktualisierterTisch.partie().version() > versionVorher) {
+                    synchronisiereRegistry(tischId, aktualisierterTisch);
                 }
             });
         });

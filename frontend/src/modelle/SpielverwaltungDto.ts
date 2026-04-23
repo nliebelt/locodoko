@@ -212,13 +212,11 @@ export interface SonderpunktEreignisAntwortDto {
 }
 
 export interface TischlisteEreignisAntwort {
-  timestamp: string;
   ereignisTyp: TischlisteEreignisTyp;
   tische: TischListenEintragAntwort[];
 }
 
 export interface TischEreignisAntwort {
-  timestamp: string;
   ereignisTyp: TischEreignisTyp;
   tischId: Uuid;
   tisch: TischAntwort | null;
@@ -228,7 +226,6 @@ export interface TischEreignisAntwort {
 // --- Locodoko Unified Architecture: Typsichere Events ---
 
 export interface BasisPartieEreignis {
-  timestamp: string;
   version: number;
   ereignisTyp: PartieEreignisTyp;
   partieStand: PartieStandAntwort;

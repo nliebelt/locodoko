@@ -300,7 +300,10 @@ export class TischSzene extends Phaser.Scene {
       };
       bridge.isOverlaySichtbar = () => {
         const rEnde = this.rundenEndeModal;
-        return !!rEnde && !rEnde.hidden;
+        const pEnde = this.partieEndeModal;
+        const rSichtbar = !!rEnde && !rEnde.hidden;
+        const pSichtbar = !!pEnde && !pEnde.hidden;
+        return rSichtbar || pSichtbar;
       };
     }
 

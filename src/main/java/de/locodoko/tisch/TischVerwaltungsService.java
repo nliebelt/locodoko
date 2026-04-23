@@ -221,10 +221,9 @@ public class TischVerwaltungsService {
         gespeicherterTisch = tischRepository.saveAndFlush(gespeicherterTisch);
         synchronisiereRegistry(tischId, gespeicherterTisch);
         TischAntwort antwort = TischAntwort.aus(gespeicherterTisch);
-        PartieStandAntwort partieStand = PartieStandAntwort.aus(gespeicherterTisch);
         veroeffentlicheTischAktualisierung(
             TischlisteEreignisAntwort.aktualisiert(listeOffeneTische()),
-            TischEreignisAntwort.spielGestartet(antwort, partieStand)
+            TischEreignisAntwort.spielGestartet(antwort, null)
         );
         veroeffentlichePartieAktualisierung(gespeicherterTisch);
         return antwort;
@@ -270,10 +269,9 @@ public class TischVerwaltungsService {
         gespeicherterTisch = tischRepository.saveAndFlush(gespeicherterTisch);
         synchronisiereRegistry(tischId, gespeicherterTisch);
         TischAntwort tischAntwort = TischAntwort.aus(gespeicherterTisch);
-        PartieStandAntwort partieStand = PartieStandAntwort.aus(gespeicherterTisch);
         veroeffentlicheTischAktualisierung(
             TischlisteEreignisAntwort.aktualisiert(listeOffeneTische()),
-            TischEreignisAntwort.spielGestartet(tischAntwort, partieStand)
+            TischEreignisAntwort.spielGestartet(tischAntwort, null)
         );
         veroeffentlichePartieAktualisierung(gespeicherterTisch);
         return new BestaetigungAntwort("Neue Partie gestartet.");
@@ -355,10 +353,9 @@ public class TischVerwaltungsService {
         gespeicherterTisch = tischRepository.saveAndFlush(gespeicherterTisch);
         synchronisiereRegistry(TischId.von(gespeicherterTisch.id()), gespeicherterTisch);
         TischAntwort antwort = TischAntwort.aus(gespeicherterTisch);
-        PartieStandAntwort partieStand = PartieStandAntwort.aus(gespeicherterTisch);
         veroeffentlicheTischAktualisierung(
             TischlisteEreignisAntwort.aktualisiert(listeOffeneTische()),
-            TischEreignisAntwort.spielGestartet(antwort, partieStand)
+            TischEreignisAntwort.spielGestartet(antwort, null)
         );
         veroeffentlichePartieAktualisierung(gespeicherterTisch);
         return antwort;
