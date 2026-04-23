@@ -36,7 +36,7 @@ export class AnimationenService {
   private readonly laufendenTimer = new Set<number>();
 
   // Globaler Multiplikator fuer alle Animationsdauern: 1 = normal, 2 = doppelt, Infinity = sofort
-  private geschwindigkeitsfaktor: number;
+  public geschwindigkeitsfaktor: number;
 
   // Serielle FIFO-Queue: Jede eingereihte Animation wartet auf die vorherige.
   // Verhindert dass Karten-Ausspielen und Stich-Einziehen parallel laufen.

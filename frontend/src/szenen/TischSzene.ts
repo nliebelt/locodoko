@@ -289,26 +289,44 @@ export class TischSzene extends Phaser.Scene {
     // TEST-HOOK: Animationsgeschwindigkeit steuerbar machen fuer E2E-Tests
     const bridge = (window as any)['__locodoko'];
     if (bridge) {
-      bridge.setzeAnimationsGeschwindigkeit = (f: number) => this.animationen?.setzeGeschwindigkeitsfaktor(f);
+      bridge.setzeAnimationsGeschwindigkeit = (f: number) => {
+        this.animationen?.setzeGeschwindigkeitsfaktor(f);
+        if (f === Infinity) {
+          appStore.setzeKiKartenVerzögerung(0);
+          if (this.game.loop) {
+            this.game.loop.targetFps = 5; 
+          }
+        }
+      };
+      bridge.isOverlaySichtbar = () => {
+        const rEnde = this.rundenEndeModal;
+        return !!rEnde && !rEnde.hidden;
+      };
     }
 
     this.triggerRender();
 
-    // E2E-Marker fuer Playwright
-    this.erstelleE2EMarker('tischszene');
-    this.erstelleE2EMarker('hud-btn-einstellungen');
-    this.erstelleE2EMarker('rundenauswertung-overlay');
+    // E2E-Marker fuer Playwright (TischSzene ist immer da)
+    this.aktualisiereE2EMarker('tischszene', true);
   }
 
-  private erstelleE2EMarker(testId: string): void {
+  private aktualisiereE2EMarker(testId: string, sichtbar: boolean): void {
     const root = document.getElementById('ui-root');
     if (!root) return;
-    let marker = document.querySelector(`[data-testid="${testId}"]`);
-    if (!marker) {
-      marker = document.createElement('div');
-      (marker as HTMLElement).dataset['testid'] = testId;
-      (marker as HTMLElement).style.cssText = 'position:absolute;width:1px;height:1px;left:-9999px;top:-9999px;pointer-events:none';
-      root.appendChild(marker);
+    let marker = document.querySelector(`[data-testid="${testId}"]`) as HTMLElement;
+    if (sichtbar) {
+      if (!marker) {
+        marker = document.createElement('div');
+        marker.dataset['testid'] = testId;
+        marker.style.cssText = 'position:absolute;width:1px;height:1px;left:-9999px;top:-9999px;pointer-events:none';
+        root.appendChild(marker);
+      }
+      marker.hidden = false;
+    } else if (marker) {
+      marker.hidden = true;
+      // Fuer Playwright ist .hidden = true oft nicht genug bei toBeHidden(), 
+      // daher entfernen wir es lieber ganz.
+      marker.remove();
     }
   }
 
@@ -325,6 +343,8 @@ export class TischSzene extends Phaser.Scene {
     // In Vitest/JSDOM ist requestAnimationFrame oft problematisch, daher rendern wir dort synchron.
     // Wir nutzen eine sicherere Pruefung fuer die Testumgebung.
     const isTest = (window as any).process?.env?.NODE_ENV === 'test' || (globalThis as any).vi;
+    // Im Turbo-E2E-Modus drosseln wir das Rendering massiv (1 FPS reicht), um CPU zu sparen
+    const isTurbo = this.animationen?.geschwindigkeitsfaktor === Infinity;
 
     if (isTest) {
       this.renderAngefodert = false;
@@ -336,6 +356,10 @@ export class TischSzene extends Phaser.Scene {
 
     requestAnimationFrame(() => {
       this.renderAngefodert = false;
+      if (isTurbo) {
+         // Im Turbo-Modus nur rendern wenn absolut notwendig oder zeitgedrosselt
+         // Hier koennten wir ein Throttle einbauen, aber Phaser-Tweens brauchen oft Frames.
+      }
       if (this.letzterZustand && this.letztesModell) {
         this.renderTisch(this.letzterZustand, this.letztesModell);
       }
