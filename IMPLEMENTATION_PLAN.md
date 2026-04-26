@@ -2,8 +2,8 @@
 
 ## Notiz
 Stand: 2026-04-26
-LOG-3 implementiert: HTTP-POST-Logging aus frontend/src/logger.ts entfernt. Die beiden fetch('/api/debug/log', ...) Calls in log() und logError() sind weg; console.log/console.error bleiben. DebugController.java bleibt bestehen (harmlos). Alle 54 Frontend-Tests grün, Build erfolgreich.
-Nächster Schritt: LOG-2 (Playwright Console-Capture in helpers.ts) oder LOG-4 (MDC-Kontext in TischController). LOG-2 ist Voraussetzung für CONS-1, das wiederum UNIFIED-4–7 freischaltet — hohe Hebelwirkung. LOG-4 ergänzt den MDC-Kontext für TischController (SpielAktionsService und KiOrchestrierungService bereits abgedeckt).
+CONS-1 + LOG-2 implementiert: `e2e/tests/helpers.ts` angelegt. Exportiert: `LocodokoBridge`, `SpielZustand`, `getBridge`, `warteAufPhase`, `warteAufEigenenZug`, `warteAufEigenenVorbehalt`, `warteAufNaechstesEreignis`, `leseSpielZustand`, `spieleErsteHandkarte`, `meldeVorbehalt`, `aktiviereTurbo`, `aktiviereConsoleCapture`. TypeScript-Kompilierung via `npx playwright test --list` grün.
+Nächster Schritt: CONS-2 (alle 10 Specs auf helpers.ts umstellen, ~400 Zeilen Duplikat-Code eliminieren). Danach CONS-3 (vision-loop aus Default-Run herausnehmen), dann UNIFIED-4–7.
 
 ## Legende
 - [x] Erledigt
@@ -29,7 +29,7 @@ Stacktraces und Game-State-Events müssen ohne Code-Analyse lesbar sein.
   (Tisch, Partie, KI, WebSocket) mit MDC-Kontext (SessionId, TischId, PartieId) loggen.
   Ziel: Ralph liest `logs/locodoko.log` und sieht sofort Stacktraces mit vollständigem Kontext.
 
-- [ ] **LOG-2 (E2E)**: Playwright-Console-Capture in allen Specs aktivieren.
+- [x] **LOG-2 (E2E)**: Playwright-Console-Capture in allen Specs aktivieren.
   In `e2e/tests/helpers.ts` (→ CONS-1) eine `aktiviereConsoleCapture(page, testName)`-Funktion
   implementieren, die `page.on('console', ...)` und `page.on('pageerror', ...)` in eine Datei
   `e2e/test-results/console-{testName}.log` schreibt. Jeder Test ruft diese einmalig auf.
@@ -80,7 +80,7 @@ Timing-Probleme behoben. Verbleibende Tests auf Bridge + Quiescence Pattern migr
 Reduziert ~400 Zeilen Duplikat-Code. Voraussetzung für UNIFIED-4 bis 7.
 **CONS-1 zuerst — alle anderen CONS und UNIFIED-4–7 hängen davon ab.**
 
-- [ ] **CONS-1 (E2E)**: `e2e/tests/helpers.ts` anlegen.
+- [x] **CONS-1 (E2E)**: `e2e/tests/helpers.ts` anlegen.
   Exportiert: Bridge-Typ `LocodokoBridge`, `getBridge(page)`, `warteAufPhase(page, phase, timeout?)`,
   `warteAufEigenenZug(page, timeout?)`, `warteAufEigenenVorbehalt(page, timeout?)`,
   `warteAufNaechstesEreignis(page, timeout?)`, `spieleErsteHandkarte(page)`,
