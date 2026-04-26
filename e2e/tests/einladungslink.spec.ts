@@ -10,6 +10,7 @@
  */
 
 import { test, expect, type Page } from '@playwright/test';
+import { getBridge, alsGastStarten, erstelleKonfiguriertenTisch, aktiviereConsoleCapture } from './helpers';
 
 async function leseEinladungsCode(page: Page): Promise<string> {
   const handle = await page.waitForFunction(
@@ -24,34 +25,34 @@ async function leseEinladungsCode(page: Page): Promise<string> {
 }
 
 test.describe('Einladungslink (Link-Beitritt)', () => {
-  test('Spieler betritt Tisch automatisch via #join/{code} URL', async ({ page, browser }) => {
+  test('Spieler betritt Tisch automatisch via #join/{code} URL', async ({ page, browser }, testInfo) => {
     // JavaScript-Fehler in der Browser-Konsole sammeln und am Ende als Fehler werten.
     // Warum: Phaser-Spiele koennen Fehler stumm schlucken — explizite Pruefung notwendig.
+    aktiviereConsoleCapture(page, testInfo.title);
     const jsFehlerSpieler1: string[] = [];
     page.on('console', (msg) => {
       if (msg.type() === 'error') jsFehlerSpieler1.push(`[console.error] ${msg.text()}`);
     });
     page.on('pageerror', (err) => jsFehlerSpieler1.push(`[pageerror] ${err.message}`));
 
-    // ── 1. Spieler 1: Start-Screen laden ────────────────────────────────────
-    // Warum: Stellt sicher dass die Anwendung erreichbar ist und der Start-Screen
-    // korrekt gerendert wird (Session-Cookie, Phaser initialisiert, DOM aufgebaut).
+    // ── 1. Spieler 1: App laden ──────────────────────────────────────────────
+    // Warum: Stellt sicher dass die Anwendung erreichbar ist und die Bridge
+    // (window.__locodoko) bereitsteht.
     await page.goto('/');
-    await expect(
-      page.locator('[data-testid="startscreen"]'),
-      'Start-Screen muss nach dem Laden sichtbar sein',
-    ).toBeVisible({ timeout: 20_000 });
+    await getBridge(page);
 
-    // ── 2. Spieler 1: Tisch erstellen ───────────────────────────────────────
+    // ── 2. Spieler 1: Tisch erstellen (Bridge) ───────────────────────────────
     // Warum: Erstellt einen offenen Tisch (Status WARTEND) mit einem server-generierten
     // Einladungscode. Das Spiel wird NICHT gestartet, damit Spieler 2 beitreten kann.
-    await page.locator('[data-testid="btn-neuer-tisch"]').click();
-    await expect(
-      page.locator('[data-testid="tisch-config-modal"]'),
-      'Konfigurationsmodal muss nach Klick auf "Neuen Tisch erstellen" sichtbar sein',
-    ).toBeVisible({ timeout: 5_000 });
-    await page.locator('[data-testid="input-tischname"]').fill('Einladungslink-Test');
-    await page.locator('[data-testid="btn-tisch-erstellen"]').click();
+    // Die btn-neuer-tisch DOM-Elemente sind ausserhalb des Viewports (Phaser-Positionierung),
+    // daher Bridge-Approach statt UI-Klick.
+    await alsGastStarten(page);
+    await erstelleKonfiguriertenTisch(page, 'Einladungslink-Test', {
+      ohneNeunen: false,
+      anzahlSpiele: 8,
+      tischhintergrund: 'FILZ_GRUEN',
+      kiSchwierigkeit: 'STANDARD',
+    }, false);
 
     await expect(
       page.locator('[data-testid="tischszene"]'),
@@ -73,6 +74,7 @@ test.describe('Einladungslink (Link-Beitritt)', () => {
     });
     const seite2 = await kontext2.newPage();
 
+    aktiviereConsoleCapture(seite2, `${testInfo.title}-spieler2`);
     const jsFehlerSpieler2: string[] = [];
     seite2.on('console', (msg) => {
       if (msg.type() === 'error') jsFehlerSpieler2.push(`[console.error] ${msg.text()}`);

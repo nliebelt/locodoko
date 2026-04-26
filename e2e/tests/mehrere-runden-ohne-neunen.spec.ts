@@ -1,27 +1,27 @@
 import { expect, test } from '@playwright/test';
-import { getBridge, leseSpielZustand, aktiviereTurbo, meldeVorbehalt } from './helpers';
+import { getBridge, leseSpielZustand, aktiviereTurbo, meldeVorbehalt, alsGastStarten, erstelleKonfiguriertenTisch, starteAktuellenTisch, spieleKarte, aktiviereConsoleCapture } from './helpers';
 
 test.describe('Mehrere Runden ohne Neunen (10 Stiche)', () => {
-  test('Zwei vollständige Runden ohne JS-Fehler spielen', async ({ page }) => {
+  test('Zwei vollständige Runden ohne JS-Fehler spielen', async ({ page }, testInfo) => {
+    aktiviereConsoleCapture(page, testInfo.title);
     const jsFehler: string[] = [];
     page.on('pageerror', (err) => jsFehler.push(`[pageerror] ${err.message}`));
 
     await page.goto('/');
     await getBridge(page);
 
-    await page.evaluate(async () => {
-      const loco = (window as any).__locodoko;
-      await loco.appStore.alsGastStarten();
-      await loco.appStore.erstelleKonfiguriertenTisch('E2E-Ohne-Neunen', {
-        ohneNeunen: true,
-        anzahlSpiele: 2,
-        tischhintergrund: 'FILZ_GRUEN',
-        kiSchwierigkeit: 'STANDARD'
-      }, false);
-    });
+    await alsGastStarten(page);
+    await erstelleKonfiguriertenTisch(page, 'E2E-Ohne-Neunen', {
+      ohneNeunen: true,
+      anzahlSpiele: 2,
+      tischhintergrund: 'FILZ_GRUEN',
+      kiSchwierigkeit: 'STANDARD',
+    }, false);
 
     await expect(page.locator('[data-testid="tischszene"]')).toBeVisible({ timeout: 15_000 });
-    await page.evaluate(() => (window as any).__locodoko.appStore.starteAktuellenTisch());
+    // Wenn das Backend KI-Spieler automatisch einbucht und startet (Race Condition),
+    // wird "Der Tisch wurde bereits gestartet" geworfen — sicher ignorieren.
+    await starteAktuellenTisch(page).catch(() => {});
     await aktiviereTurbo(page);
 
     let abgeschlosseneRunden = 0;
@@ -50,7 +50,7 @@ test.describe('Mehrere Runden ohne Neunen (10 Stiche)', () => {
       }
 
       if (zustand.phase === 'STICHPHASE' && zustand.spielbareKarten.length > 0) {
-        await page.evaluate((k) => (window as any).__locodoko.appStore.spieleKarte(k), zustand.spielbareKarten[0]);
+        await spieleKarte(page, zustand.spielbareKarten[0]);
         continue;
       }
 

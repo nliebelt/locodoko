@@ -1,37 +1,33 @@
 import { expect, test } from '@playwright/test';
-import { getBridge, aktiviereTurbo, leseSpielZustand, meldeVorbehalt, warteAufEigenenZug, spieleErsteHandkarte } from './helpers';
+import { getBridge, aktiviereTurbo, leseSpielZustand, meldeVorbehalt, warteAufEigenenVorbehalt, warteAufEigenenZug, spieleErsteHandkarte, alsGastStarten, erstelleKonfiguriertenTisch, starteAktuellenTisch, aktiviereConsoleCapture } from './helpers';
 
 test.describe('Partie gegen KI', () => {
-  test('Erste Partie bis zum ersten abgeschlossenen Stich', async ({ page }) => {
+  test('Erste Partie bis zum ersten abgeschlossenen Stich', async ({ page }, testInfo) => {
+    aktiviereConsoleCapture(page, testInfo.title);
     const jsFehler: string[] = [];
     page.on('pageerror', (err) => jsFehler.push(`[pageerror] ${err.message}`));
 
     await page.goto('/');
     await getBridge(page);
 
-    await page.evaluate(async () => {
-      const loco = (window as any).__locodoko;
-      await loco.appStore.alsGastStarten();
-      await loco.appStore.erstelleKonfiguriertenTisch('E2E-Test-Tisch', {
-        ohneNeunen: false,
-        anzahlSpiele: 8,
-        tischhintergrund: 'FILZ_GRUEN',
-        kiSchwierigkeit: 'STANDARD'
-      }, false);
-    });
+    await alsGastStarten(page);
+    await erstelleKonfiguriertenTisch(page, 'E2E-Test-Tisch', {
+      ohneNeunen: false,
+      anzahlSpiele: 8,
+      tischhintergrund: 'FILZ_GRUEN',
+      kiSchwierigkeit: 'STANDARD',
+    }, false);
 
     await expect(page.locator('[data-testid="tischszene"]')).toBeVisible({ timeout: 15_000 });
 
-    await page.evaluate(async () => {
-      await (window as any).__locodoko.appStore.starteAktuellenTisch();
-    });
+    await starteAktuellenTisch(page);
     await aktiviereTurbo(page);
 
-    // Vorbehalt melden falls vorhanden, dann auf eigenen Zug warten
+    // Warten bis UNSER Vorbehalt-Zug kommt, dann GESUND melden
+    // (moeglicheVorbehalte ist nur > 0 wenn genau wir dran sind)
+    await warteAufEigenenVorbehalt(page, 20_000);
     const zustand = await leseSpielZustand(page);
-    if (zustand.moeglicheVorbehalte.length > 0) {
-      await meldeVorbehalt(page, zustand.moeglicheVorbehalte[0]);
-    }
+    await meldeVorbehalt(page, zustand.moeglicheVorbehalte[0]);
 
     await warteAufEigenenZug(page, 30_000);
     await spieleErsteHandkarte(page);

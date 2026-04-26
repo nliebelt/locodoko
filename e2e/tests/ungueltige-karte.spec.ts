@@ -1,22 +1,25 @@
 import { expect, test } from '@playwright/test';
-import { getBridge, aktiviereTurbo, warteAufEigenenZug } from './helpers';
+import { getBridge, aktiviereTurbo, leseSpielZustand, meldeVorbehalt, warteAufEigenenVorbehalt, warteAufEigenenZug, alsGastStarten, erstelleQuickGame, aktiviereConsoleCapture } from './helpers';
 
 test.describe('Ungueltige Karte', () => {
-  test('Fehler-Toast erscheint bei ungueltiger Karte und Spiel laeuft weiter', async ({ page }) => {
+  test('Fehler-Toast erscheint bei ungueltiger Karte und Spiel laeuft weiter', async ({ page }, testInfo) => {
+    aktiviereConsoleCapture(page, testInfo.title);
     const jsFehler: string[] = [];
     page.on('pageerror', (err) => jsFehler.push(`[pageerror] ${err.message}`));
 
     await page.goto('/');
     await getBridge(page);
 
-    await page.evaluate(async () => {
-      const loco = (window as any).__locodoko;
-      await loco.appStore.alsGastStarten();
-      await loco.appStore.erstelleQuickGame();
-    });
+    await alsGastStarten(page);
+    await erstelleQuickGame(page);
 
     await expect(page.locator('[data-testid="tischszene"]')).toBeVisible({ timeout: 15_000 });
     await aktiviereTurbo(page);
+
+    // Vorbehalt-Phase durchlaufen: warten bis wir dran sind, dann GESUND melden
+    await warteAufEigenenVorbehalt(page, 20_000);
+    const vorbehaltZustand = await leseSpielZustand(page);
+    await meldeVorbehalt(page, vorbehaltZustand.moeglicheVorbehalte[0]);
 
     // Warten auf den ersten Stichphase-Zug
     await warteAufEigenenZug(page, 30_000);

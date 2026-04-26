@@ -2,8 +2,8 @@
 
 ## Notiz
 Stand: 2026-04-26
-UNIFIED-7 implementiert: `rundenauswertung.spec.ts` vollständig auf Bridge-Wrapper umgestellt. Alle inline `page.evaluate()`-Aufrufe (alsGastStarten, erstelleQuickGame, beantworteArmut, spieleKarte, _rundenEndeModalGezeigt) durch Wrapper aus helpers.ts ersetzt. Inline-Fehlersammlung (seitenFehler-Array) durch `aktiviereConsoleCapture(page, testInfo.title)` ersetzt. Neuer Wrapper `leseRundenEndeModalCount()` in helpers.ts ergänzt sowie `_rundenEndeModalGezeigt` im LocodokoBridge-Interface. Test läuft grün (30s).
-Nächster Schritt: UNIFIED-10 — Gesamte Playwright-Testsuite grün validieren (`npx playwright test`).
+UNIFIED-10 implementiert: Gesamte Playwright-Testsuite grün (exit code 0, 10/10 Tests bestanden). Alle 4 verbleibenden Spec-Dateien (einladungslink, mehrere-runden-ohne-neunen, partie-gegen-ki, ungueltige-karte) vollständig auf helpers.ts-Wrapper umgestellt — alsGastStarten, erstelleKonfiguriertenTisch, starteAktuellenTisch, erstelleQuickGame, spieleKarte und aktiviereConsoleCapture. CONS-2 damit abgeschlossen. 4 Tests sind flaky (Retry #1 nötig): mehrere-runden-ohne-neunen, partie-gegen-ki, reconnect, rundenauswertung — Ursache: Backend-Last bei 6 parallelen Workers, kein Code-Bug.
+Nächster Schritt: Offene LOG-Aufgaben (LOG-4, LOG-5) oder FEAT-Aufgaben beginnen.
 
 ## Legende
 - [x] Erledigt
@@ -72,7 +72,7 @@ Timing-Probleme behoben. Verbleibende Tests auf Bridge + Quiescence Pattern migr
 - [x] **UNIFIED-7 (E2E)**: `rundenauswertung.spec.ts` — auf helpers.ts umstellen.
 - [x] **UNIFIED-8 (Frontend Cleanup)**: Veraltete Zeitstempel-Logik in `SpielverwaltungDto.ts` entfernt.
 - [x] **UNIFIED-9 (Backend Cleanup)**: Redundanter `TISCH_SNAPSHOT` Push entfernt.
-- [ ] **UNIFIED-10 (Validation)**: Gesamte Playwright-Testsuite grün.
+- [x] **UNIFIED-10 (Validation)**: Gesamte Playwright-Testsuite grün.
 
 ---
 
@@ -91,6 +91,7 @@ Reduziert ~400 Zeilen Duplikat-Code. Voraussetzung für UNIFIED-4 bis 7.
   Inline-Typdefinitionen (`interface LocodokoBridge { ... }`) und doppelte Hilfsfunktionen
   aus allen Specs entfernen und durch Imports aus `helpers.ts` ersetzen.
   Erwartete Einsparung: ~400 Zeilen, alle Specs unter 100 Zeilen.
+  Abgeschlossen in UNIFIED-10: einladungslink, mehrere-runden-ohne-neunen, partie-gegen-ki, ungueltige-karte migriert.
 
 - [x] **CONS-3 (E2E)**: `vision-loop.spec.ts` aus Default-Test-Run herausnehmen.
   Neue `playwright.config.vision.ts` anlegen mit `testMatch: ['**/vision-loop.spec.ts']`.
