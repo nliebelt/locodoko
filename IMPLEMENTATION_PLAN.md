@@ -2,8 +2,8 @@
 
 ## Notiz
 Stand: 2026-04-26
-UNIFIED-4 implementiert: `schnellstart.spec.ts` auf Bridge-Wrapper umgestellt. Inline-Fehlersammlung (jsFehler-Array + page.on) durch `aktiviereConsoleCapture(page, testInfo.title)` ersetzt. Inline `page.evaluate`-Block für `alsGastStarten`/`erstelleQuickGame` durch Helper-Calls ersetzt. Der `appStore.isIdle()`-Bug war bereits via helpers.ts (preferentiell `loco.isIdle()`) behoben.
-Nächster Schritt: UNIFIED-5 (`armut-workflow.spec.ts` — Timing-Fixes durch `isIdle()` via helpers.ts). Danach UNIFIED-6 und UNIFIED-7.
+UNIFIED-5 implementiert: `armut-workflow.spec.ts` vollständig auf Bridge-Wrapper umgestellt. Inline-Fehlersammlung durch `aktiviereConsoleCapture(page, testInfo.title)` ersetzt. `page.waitForTimeout(100)` durch `warteAufNaechstesEreignis(page)` ersetzt. Vier neue Wrapper in helpers.ts ergänzt: `erstelleKonfiguriertenTisch`, `starteAktuellenTisch`, `spieleKarte`, `beantworteArmut`.
+Nächster Schritt: UNIFIED-6 (`solo-spielfluss.spec.ts` — Timing-Fixes durch `isIdle()` via helpers.ts). Danach UNIFIED-7.
 
 ## Legende
 - [x] Erledigt
@@ -67,7 +67,7 @@ Timing-Probleme behoben. Verbleibende Tests auf Bridge + Quiescence Pattern migr
 - [x] **UNIFIED-4 (E2E)**: `schnellstart.spec.ts` auf Bridge umstellen (`alsGastStarten()`, `erstelleQuickGame()`).
   Außerdem: Zeile 33 — `appStore.isIdle()` durch `window.__locodoko.isIdle()` ersetzen
   (TischSzene-Level prüft auch Animationen, Store-Level prüft nur Event-Queue — Bug).
-- [ ] **UNIFIED-5 (E2E)**: `armut-workflow.spec.ts` — Timing-Fixes durch `isIdle()` (via helpers.ts).
+- [x] **UNIFIED-5 (E2E)**: `armut-workflow.spec.ts` — Timing-Fixes durch `isIdle()` (via helpers.ts).
 - [ ] **UNIFIED-6 (E2E)**: `solo-spielfluss.spec.ts` — Timing-Fixes durch `isIdle()` (via helpers.ts).
 - [ ] **UNIFIED-7 (E2E)**: `rundenauswertung.spec.ts` — auf helpers.ts umstellen.
 - [x] **UNIFIED-8 (Frontend Cleanup)**: Veraltete Zeitstempel-Logik in `SpielverwaltungDto.ts` entfernt.
