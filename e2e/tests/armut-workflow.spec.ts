@@ -1,25 +1,33 @@
 import { expect, test } from '@playwright/test';
-import { getBridge, leseSpielZustand, aktiviereTurbo, meldeVorbehalt } from './helpers';
+import {
+  getBridge,
+  leseSpielZustand,
+  aktiviereTurbo,
+  meldeVorbehalt,
+  alsGastStarten,
+  erstelleKonfiguriertenTisch,
+  starteAktuellenTisch,
+  beantworteArmut,
+  spieleKarte,
+  aktiviereConsoleCapture,
+  warteAufNaechstesEreignis,
+} from './helpers';
 
 test.describe('Armut-Workflow', () => {
-  test('Armut-Tausch wird durchgefuehrt und Spiel laeuft weiter', async ({ page }) => {
-    const jsFehler: string[] = [];
-    page.on('pageerror', (err) => jsFehler.push(`[pageerror] ${err.message}`));
+  test('Armut-Tausch wird durchgefuehrt und Spiel laeuft weiter', async ({ page }, testInfo) => {
+    aktiviereConsoleCapture(page, testInfo.title);
 
     await page.goto('/');
     await getBridge(page);
 
-    await page.evaluate(async () => {
-      const loco = (window as any).__locodoko;
-      await loco.appStore.alsGastStarten();
-      await loco.appStore.erstelleKonfiguriertenTisch('E2E-Armut-Test', {
-        armutErlaubt: true,
-        anzahlSpiele: 6
-      }, false);
-    });
+    await alsGastStarten(page);
+    await erstelleKonfiguriertenTisch(page, 'E2E-Armut-Test', {
+      armutErlaubt: true,
+      anzahlSpiele: 6
+    }, false);
 
     await expect(page.locator('[data-testid="tischszene"]')).toBeVisible({ timeout: 15_000 });
-    await page.evaluate(() => (window as any).__locodoko.appStore.starteAktuellenTisch());
+    await starteAktuellenTisch(page);
     await aktiviereTurbo(page);
 
     let armutGesehen = false;
@@ -56,16 +64,16 @@ test.describe('Armut-Workflow', () => {
       }
 
       if (zustand.phase === 'ARMUT_TAUSCH') {
-        await page.evaluate(() => (window as any).__locodoko.appStore.beantworteArmut(false, []));
+        await beantworteArmut(page, false, []);
         continue;
       }
 
       if (zustand.spielbareKarten.length > 0) {
-        await page.evaluate((k) => (window as any).__locodoko.appStore.spieleKarte(k), zustand.spielbareKarten[0]);
+        await spieleKarte(page, zustand.spielbareKarten[0]);
         continue;
       }
 
-      await page.waitForTimeout(100);
+      await warteAufNaechstesEreignis(page);
     }
 
     if (armutGesehen) {
@@ -74,6 +82,6 @@ test.describe('Armut-Workflow', () => {
       console.log('Armut trat in diesem Lauf nicht auf (kein Armut-Deal zufaellig bekommen).');
     }
 
-    expect(jsFehler).toHaveLength(0);
+    expect(partieBeendet).toBe(true);
   });
 });

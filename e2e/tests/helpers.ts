@@ -127,6 +127,51 @@ export async function leseSpielZustand(page: Page): Promise<SpielZustand> {
   });
 }
 
+export async function alsGastStarten(page: Page): Promise<void> {
+  await page.evaluate(async () => {
+    await (window as any).__locodoko.appStore.alsGastStarten();
+  });
+}
+
+export async function erstelleQuickGame(page: Page): Promise<void> {
+  await page.evaluate(async () => {
+    await (window as any).__locodoko.appStore.erstelleQuickGame();
+  });
+}
+
+export async function erstelleKonfiguriertenTisch(
+  page: Page,
+  name: string,
+  konfiguration: Record<string, unknown>,
+  startenNachErstellung: boolean,
+): Promise<void> {
+  await page.evaluate(
+    async ({ n, k, s }: { n: string; k: Record<string, unknown>; s: boolean }) => {
+      await (window as any).__locodoko.appStore.erstelleKonfiguriertenTisch(n, k, s);
+    },
+    { n: name, k: konfiguration, s: startenNachErstellung },
+  );
+}
+
+export async function starteAktuellenTisch(page: Page): Promise<void> {
+  await page.evaluate(async () => {
+    await (window as any).__locodoko.appStore.starteAktuellenTisch();
+  });
+}
+
+export async function spieleKarte(page: Page, karteId: string): Promise<void> {
+  await page.evaluate((k) => (window as any).__locodoko.appStore.spieleKarte(k), karteId);
+}
+
+export async function beantworteArmut(page: Page, annehmen: boolean, karten: string[]): Promise<void> {
+  await page.evaluate(
+    async ({ a, k }: { a: boolean; k: string[] }) => {
+      await (window as any).__locodoko.appStore.beantworteArmut(a, k);
+    },
+    { a: annehmen, k: karten },
+  );
+}
+
 export async function spieleErsteHandkarte(page: Page): Promise<void> {
   const zustand = await leseSpielZustand(page);
   if (zustand.spielbareKarten.length === 0) {
