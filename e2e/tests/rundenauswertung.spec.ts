@@ -1,19 +1,25 @@
 import { expect, test } from '@playwright/test';
-import { getBridge, leseSpielZustand, aktiviereTurbo, meldeVorbehalt } from './helpers';
+import {
+  alsGastStarten,
+  erstelleQuickGame,
+  getBridge,
+  leseSpielZustand,
+  leseRundenEndeModalCount,
+  aktiviereTurbo,
+  meldeVorbehalt,
+  spieleKarte,
+  beantworteArmut,
+  aktiviereConsoleCapture,
+} from './helpers';
 
 test.describe('Rundenauswertung', () => {
-  test('Rundenauswertungs-Overlay erscheint nach Spielende und kann geschlossen werden', async ({ page }) => {
-    const seitenFehler: string[] = [];
-    page.on('pageerror', (err) => { seitenFehler.push(err.message); });
+  test('Rundenauswertungs-Overlay erscheint nach Spielende und kann geschlossen werden', async ({ page }, testInfo) => {
+    aktiviereConsoleCapture(page, testInfo.title);
 
     await page.goto('/');
     await getBridge(page);
-
-    await page.evaluate(async () => {
-      const loco = (window as any).__locodoko;
-      await loco.appStore.alsGastStarten();
-      await loco.appStore.erstelleQuickGame();
-    });
+    await alsGastStarten(page);
+    await erstelleQuickGame(page);
 
     await expect(page.locator('[data-testid="tischszene"]')).toBeVisible({ timeout: 15_000 });
     await aktiviereTurbo(page);
@@ -42,12 +48,12 @@ test.describe('Rundenauswertung', () => {
       }
 
       if (zustand.phase === 'ARMUT_TAUSCH') {
-        await page.evaluate(() => (window as any).__locodoko.appStore.beantworteArmut(false, []));
+        await beantworteArmut(page, false, []);
         continue;
       }
 
       if (zustand.spielbareKarten.length > 0) {
-        await page.evaluate((k) => (window as any).__locodoko.appStore.spieleKarte(k), zustand.spielbareKarten[0]);
+        await spieleKarte(page, zustand.spielbareKarten[0]);
         continue;
       }
 
@@ -56,10 +62,7 @@ test.describe('Rundenauswertung', () => {
 
     expect(rundeAbgeschlossen, 'Mindestens eine Runde muss abgeschlossen sein').toBe(true);
 
-    // Bridge-Counter: zeigeRundenEndeModal() wurde erfolgreich aufgerufen
-    const modalGezeigt = await page.evaluate(() => (window as any).__locodoko?._rundenEndeModalGezeigt ?? 0);
+    const modalGezeigt = await leseRundenEndeModalCount(page);
     expect(modalGezeigt, 'Rundenauswertungs-Overlay muss nach Spielende angezeigt worden sein').toBeGreaterThan(0);
-
-    expect(seitenFehler).toHaveLength(0);
   });
 });

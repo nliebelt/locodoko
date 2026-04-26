@@ -10,6 +10,7 @@ import * as path from 'path';
 export interface LocodokoBridge {
   isIdle: () => boolean;
   setzeAnimationsGeschwindigkeit: (geschwindigkeit: number) => void;
+  _rundenEndeModalGezeigt?: number;
   appStore: {
     isIdle: () => boolean;
     snapshot: () => {
@@ -193,6 +194,10 @@ export async function aktiviereTurbo(page: Page): Promise<void> {
     { timeout: 15_000 },
   );
   await page.evaluate(() => (window as any).__locodoko.setzeAnimationsGeschwindigkeit(Infinity));
+}
+
+export async function leseRundenEndeModalCount(page: Page): Promise<number> {
+  return page.evaluate(() => (window as any).__locodoko?._rundenEndeModalGezeigt ?? 0);
 }
 
 /**
