@@ -2,8 +2,8 @@
 
 ## Notiz
 Stand: 2026-04-26
-UNIFIED-5 implementiert: `armut-workflow.spec.ts` vollständig auf Bridge-Wrapper umgestellt. Inline-Fehlersammlung durch `aktiviereConsoleCapture(page, testInfo.title)` ersetzt. `page.waitForTimeout(100)` durch `warteAufNaechstesEreignis(page)` ersetzt. Vier neue Wrapper in helpers.ts ergänzt: `erstelleKonfiguriertenTisch`, `starteAktuellenTisch`, `spieleKarte`, `beantworteArmut`.
-Nächster Schritt: UNIFIED-6 (`solo-spielfluss.spec.ts` — Timing-Fixes durch `isIdle()` via helpers.ts). Danach UNIFIED-7.
+UNIFIED-6 implementiert: `solo-spielfluss.spec.ts` vollständig auf Bridge-Wrapper umgestellt. Alle drei inline `page.evaluate()`-Aufrufe (alsGastStarten, erstelleKonfiguriertenTisch, starteAktuellenTisch, spieleKarte) durch Wrapper aus helpers.ts ersetzt. Inline-Fehlersammlung (jsFehler-Array) durch `aktiviereConsoleCapture(page, testInfo.title)` ersetzt. `leseSpielZustand()` wartet intern bereits auf `isIdle()`, daher kein zusätzliches `warteAufNaechstesEreignis()` nötig. Test läuft grün (30s).
+Nächster Schritt: UNIFIED-7 (`rundenauswertung.spec.ts` — auf helpers.ts umstellen).
 
 ## Legende
 - [x] Erledigt
@@ -68,7 +68,7 @@ Timing-Probleme behoben. Verbleibende Tests auf Bridge + Quiescence Pattern migr
   Außerdem: Zeile 33 — `appStore.isIdle()` durch `window.__locodoko.isIdle()` ersetzen
   (TischSzene-Level prüft auch Animationen, Store-Level prüft nur Event-Queue — Bug).
 - [x] **UNIFIED-5 (E2E)**: `armut-workflow.spec.ts` — Timing-Fixes durch `isIdle()` (via helpers.ts).
-- [ ] **UNIFIED-6 (E2E)**: `solo-spielfluss.spec.ts` — Timing-Fixes durch `isIdle()` (via helpers.ts).
+- [x] **UNIFIED-6 (E2E)**: `solo-spielfluss.spec.ts` — Timing-Fixes durch `isIdle()` (via helpers.ts).
 - [ ] **UNIFIED-7 (E2E)**: `rundenauswertung.spec.ts` — auf helpers.ts umstellen.
 - [x] **UNIFIED-8 (Frontend Cleanup)**: Veraltete Zeitstempel-Logik in `SpielverwaltungDto.ts` entfernt.
 - [x] **UNIFIED-9 (Backend Cleanup)**: Redundanter `TISCH_SNAPSHOT` Push entfernt.
