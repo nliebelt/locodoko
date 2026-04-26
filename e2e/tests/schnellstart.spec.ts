@@ -11,21 +11,18 @@
  */
 
 import { test, expect } from '@playwright/test';
-import { warteAufPhase, warteAufEigenenVorbehalt, warteAufEigenenZug } from './helpers';
+import {
+  alsGastStarten,
+  erstelleQuickGame,
+  warteAufPhase,
+  warteAufEigenenVorbehalt,
+  warteAufEigenenZug,
+  aktiviereConsoleCapture,
+} from './helpers';
 
 test.describe('Schnellstart (Quick Game)', () => {
-  test('Quick Game startet sofort Partie gegen KI ohne manuelle Tischkonfiguration', async ({ page }) => {
-    // JavaScript-Fehler in der Browser-Konsole sammeln und am Ende als Fehler werten.
-    // Warum: Phaser-Spiele koennen Fehler stumm schlucken — explizite Pruefung notwendig.
-    const jsFehler: string[] = [];
-    page.on('console', (msg) => {
-      if (msg.type() === 'error') {
-        jsFehler.push(`[console.error] ${msg.text()}`);
-      }
-    });
-    page.on('pageerror', (err) => {
-      jsFehler.push(`[pageerror] ${err.message}`);
-    });
+  test('Quick Game startet sofort Partie gegen KI ohne manuelle Tischkonfiguration', async ({ page }, testInfo) => {
+    aktiviereConsoleCapture(page, testInfo.title);
 
     // ── 1. Start-Screen laden ────────────────────────────────────────────────
     // Warum: Stellt sicher dass die Anwendung erreichbar ist und der Start-Screen
@@ -38,13 +35,8 @@ test.describe('Schnellstart (Quick Game)', () => {
 
     // ── 2. Quick Game triggern ───────────────────────────────────────────────
     // Warum: Da die Buttons in Phaser gerendert werden, nutzen wir die JS-Bridge.
-    // Wir await-en die Bridge-Methoden direkt, da diese im AppStore nun Promises
-    // zurückgeben (Login -> Initialisierung -> Schnellstart-API).
-    await page.evaluate(async () => {
-      const loco = (window as any).__locodoko;
-      await loco.appStore.alsGastStarten();
-      await loco.appStore.erstelleQuickGame();
-    });
+    await alsGastStarten(page);
+    await erstelleQuickGame(page);
 
     // ── 3. TischSzene erscheint direkt ──────────────────────────────────────
     // Warum: Nach Schnellstart muss die TischSzene ohne manuellen Spielstart sichtbar sein.
@@ -75,11 +67,5 @@ test.describe('Schnellstart (Quick Game)', () => {
       page.locator('[data-testid="hud-stichzaehler"]'),
       'Nach dem ersten abgeschlossenen Stich muss der Zaehler "Stich 1/12" zeigen',
     ).toContainText('Stich 1/12', { timeout: 20_000 });
-
-    // ── Abschlusskontrolle: Keine JavaScript-Fehler ──────────────────────────
-    expect(
-      jsFehler,
-      `JavaScript-Fehler sind aufgetreten:\n${jsFehler.join('\n')}`,
-    ).toHaveLength(0);
   });
 });

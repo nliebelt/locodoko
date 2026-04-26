@@ -2,8 +2,8 @@
 
 ## Notiz
 Stand: 2026-04-26
-CONS-3 implementiert: `playwright.config.vision.ts` angelegt (testMatch: vision-loop.spec.ts, headless: false, retries: 0). `playwright.config.ts` um `testIgnore: ['**/vision-loop.spec.ts']` erweitert. vision-loop.spec.ts behält eigene Hilfsfunktionen (keine helpers.ts-Imports nötig).
-Nächster Schritt: UNIFIED-4 (`schnellstart.spec.ts` auf Bridge umstellen, `appStore.isIdle()` → `window.__locodoko.isIdle()` auf Zeile 33). Danach UNIFIED-5–7.
+UNIFIED-4 implementiert: `schnellstart.spec.ts` auf Bridge-Wrapper umgestellt. Inline-Fehlersammlung (jsFehler-Array + page.on) durch `aktiviereConsoleCapture(page, testInfo.title)` ersetzt. Inline `page.evaluate`-Block für `alsGastStarten`/`erstelleQuickGame` durch Helper-Calls ersetzt. Der `appStore.isIdle()`-Bug war bereits via helpers.ts (preferentiell `loco.isIdle()`) behoben.
+Nächster Schritt: UNIFIED-5 (`armut-workflow.spec.ts` — Timing-Fixes durch `isIdle()` via helpers.ts). Danach UNIFIED-6 und UNIFIED-7.
 
 ## Legende
 - [x] Erledigt
@@ -64,7 +64,7 @@ Timing-Probleme behoben. Verbleibende Tests auf Bridge + Quiescence Pattern migr
 - [x] **UNIFIED-1 (Frontend)**: `isIdle()`-Methode in `AppStore.ts` und `TischSzene.ts`.
 - [x] **UNIFIED-2 (E2E)**: `leseSpielZustand` in `mehrere-runden.spec.ts` wartet auf `isIdle()`.
 - [x] **UNIFIED-3 (Backend)**: `@Version` wird strikt inkrementiert, Event-Bündelung optimiert.
-- [ ] **UNIFIED-4 (E2E)**: `schnellstart.spec.ts` auf Bridge umstellen (`alsGastStarten()`, `erstelleQuickGame()`).
+- [x] **UNIFIED-4 (E2E)**: `schnellstart.spec.ts` auf Bridge umstellen (`alsGastStarten()`, `erstelleQuickGame()`).
   Außerdem: Zeile 33 — `appStore.isIdle()` durch `window.__locodoko.isIdle()` ersetzen
   (TischSzene-Level prüft auch Animationen, Store-Level prüft nur Event-Queue — Bug).
 - [ ] **UNIFIED-5 (E2E)**: `armut-workflow.spec.ts` — Timing-Fixes durch `isIdle()` (via helpers.ts).
