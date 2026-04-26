@@ -2,8 +2,8 @@
 
 ## Notiz
 Stand: 2026-04-26
-CONS-2 implementiert: Alle 9 aktiven Specs (außer einladungslink.spec.ts ohne Duplikate und vision-loop.spec.ts) auf helpers.ts umgestellt. Entfernt: inline `interface LocodokoBridge`, `interface SpielZustand`, `leseSpielZustand`, `warteAufPhase`, `warteAufEigenenVorbehalt`, `warteAufEigenenZug`, `aktiviereTurbo`. Ersetzt durch Imports + `getBridge(page)` statt inline waitForFunction. helpers.ts erweitert: `SpielZustand.overlayVisible` + `leseSpielZustand` liefert jetzt `overlayVisible: isOverlaySichtbar()`. reconnect.spec.ts: behält lokale `warteAufNaechstesEreignis` (andere Signatur: gibt string zurück). TypeScript-Kompilierung grün.
-Nächster Schritt: CONS-3 (vision-loop.spec.ts aus Default-Run herausnehmen: playwright.config.vision.ts anlegen, testIgnore in playwright.config.ts). Danach UNIFIED-4–7.
+CONS-3 implementiert: `playwright.config.vision.ts` angelegt (testMatch: vision-loop.spec.ts, headless: false, retries: 0). `playwright.config.ts` um `testIgnore: ['**/vision-loop.spec.ts']` erweitert. vision-loop.spec.ts behält eigene Hilfsfunktionen (keine helpers.ts-Imports nötig).
+Nächster Schritt: UNIFIED-4 (`schnellstart.spec.ts` auf Bridge umstellen, `appStore.isIdle()` → `window.__locodoko.isIdle()` auf Zeile 33). Danach UNIFIED-5–7.
 
 ## Legende
 - [x] Erledigt
@@ -92,7 +92,7 @@ Reduziert ~400 Zeilen Duplikat-Code. Voraussetzung für UNIFIED-4 bis 7.
   aus allen Specs entfernen und durch Imports aus `helpers.ts` ersetzen.
   Erwartete Einsparung: ~400 Zeilen, alle Specs unter 100 Zeilen.
 
-- [ ] **CONS-3 (E2E)**: `vision-loop.spec.ts` aus Default-Test-Run herausnehmen.
+- [x] **CONS-3 (E2E)**: `vision-loop.spec.ts` aus Default-Test-Run herausnehmen.
   Neue `playwright.config.vision.ts` anlegen mit `testMatch: ['**/vision-loop.spec.ts']`.
   Aus `playwright.config.ts` ausschließen (`testIgnore: ['**/vision-loop.spec.ts']`).
   `vision-loop.spec.ts` eigene Hilfsfunktionen belassen (kein Nutzen durch helpers.ts dort).

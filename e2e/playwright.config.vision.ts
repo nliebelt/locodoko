@@ -2,12 +2,12 @@ import { defineConfig, devices } from '@playwright/test';
 
 export default defineConfig({
   testDir: './tests',
-  testIgnore: ['**/vision-loop.spec.ts'],
+  testMatch: ['**/vision-loop.spec.ts'],
   timeout: 360_000,
-  retries: 2,
+  retries: 0,
   use: {
     baseURL: process.env.BASE_URL ?? 'http://localhost:8081',
-    headless: true,
+    headless: false,
     screenshot: 'off',
     video: 'off',
     trace: 'off',
