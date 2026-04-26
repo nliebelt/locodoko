@@ -63,8 +63,10 @@ export class AnimationenService {
    * @param fn - Async-Funktion die die eigentliche Animation ausfuehrt
    */
   reiheEin(fn: () => Promise<void>): Promise<void> {
+    // Sofort als laufend markieren, damit isIdle() auch zwischen reiheEin()-Aufruf
+    // und Mikrotask-Ausführung false zurückgibt (Race-Condition mit SNAPSHOT).
+    this._animationLaeuft = true;
     const versprechen = this.warteschlange.then(() => {
-      this._animationLaeuft = true;
       return fn();
     }).catch(() => undefined).finally(() => {
       // Pruefen ob nach diesem Schritt noch weitere Eintraege in der Kette warten

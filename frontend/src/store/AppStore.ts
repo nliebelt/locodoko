@@ -78,6 +78,7 @@ export class AppStore {
   private _verarbeiteEventLaeuft = false;
   private _kiKartenVerzögerungMs = 800;
   private _aktuelleSequenzId = 0;
+  private _verpassterSpielBeendet: PartieEreignisAntwort | null = null;
 
   /**
    * Gibt zurück, ob sich der Store im Leerlauf befindet.
@@ -102,6 +103,11 @@ export class AppStore {
    */
   abonniereEvents(listener: (ereignis: PartieEreignisAntwort) => void): () => void {
     this._eventListener.add(listener);
+    if (this._verpassterSpielBeendet) {
+      const verpasst = this._verpassterSpielBeendet;
+      this._verpassterSpielBeendet = null;
+      void Promise.resolve().then(() => listener(verpasst));
+    }
     return () => this._eventListener.delete(listener);
   }
 
@@ -438,7 +444,7 @@ export class AppStore {
     this.gemeinsameAbos.push(
       this.echtzeit.abonnieren<TischlisteEreignisAntwort>('/topic/tische', (e) => this.patch({ tische: e.tische })),
       this.echtzeit.abonnieren<TischlisteEreignisAntwort>('/user/queue/tische', (e) => this.patch({ tische: e.tische })),
-      this.echtzeit.abonnieren<SpielverwaltungWebSocketFehlerAntwort>('/user/queue/fehler', (f) => this.patch({ meldung: { typ: 'fehler', text: f.nachricht, fehlerCode: f.fehlerCode } }))
+      this.echtzeit.abonnieren<SpielverwaltungWebSocketFehlerAntwort>('/user/queue/fehler', (f) => this.patch({ meldung: { typ: 'fehler', text: f.nachricht, fehlerCode: f.fehlerCode }, wirdGeladen: false }))
     );
   }
 
@@ -459,8 +465,9 @@ export class AppStore {
   }
 
   private registrierePartieAbos(partieId: Uuid): void {
-    this.aktuellePartieAbo = partieId;
-    this.tischAbos.push(this.echtzeit.abonnieren<PartieEreignisAntwort>(`/user/queue/partie/${partieId}`, (e) => this.verarbeitePartieEreignis(e)));
+    this.tischAbos.push(this.echtzeit.abonnieren<PartieEreignisAntwort>(`/user/queue/partie/${partieId}`, (e) => {
+      this.verarbeitePartieEreignis(e);
+    }));
     this.echtzeit.senden(`/app/partie/${partieId}/snapshot`);
   }
 
@@ -489,7 +496,7 @@ export class AppStore {
       }
     }
 
-    this.patch({ aktuellerTisch: ereignis.tisch, partieStand: partiestand, bereich: 'TISCH' });
+    this.patch({ aktuellerTisch: ereignis.tisch, partieStand: partiestand, bereich: 'TISCH', wirdGeladen: false });
     if (ereignis.tisch.partieId && ereignis.tisch.partieId !== this.aktuellePartieAbo) {
       this.registrierePartieAbos(ereignis.tisch.partieId);
     }
@@ -534,6 +541,13 @@ export class AppStore {
           this.patch({ partieStand: ereignis.partieStand });
         }
 
+        if (ereignis.ereignisTyp === 'SPIEL_BEENDET') {
+          if (this._eventListener.size === 0) {
+            this._verpassterSpielBeendet = ereignis;
+          } else {
+            this._verpassterSpielBeendet = null;
+          }
+        }
         this._eventListener.forEach((l) => l(ereignis));
         switch (ereignis.ereignisTyp) {
           case 'SNAPSHOT':
@@ -630,14 +644,15 @@ export class AppStore {
     return false;
   }
 
-  private setzeTischAbosZurueck(): void { 
-    this.tischAbos.splice(0).forEach((a) => a()); 
-    this.aktuellePartieAbo = null; 
+  private setzeTischAbosZurueck(): void {
+    this.tischAbos.splice(0).forEach((a) => a());
+    this.aktuellePartieAbo = null;
     this._letztePartieVersion = -1;
     this._aktuelleSequenzId++; // Invaldiert laufende KI-Sequenzen
-    this.leereKiSequenzQueue(); 
-    this._eventQueue.length = 0; 
-    this._verarbeiteEventLaeuft = false; 
+    this.leereKiSequenzQueue();
+    this._eventQueue.length = 0;
+    this._verarbeiteEventLaeuft = false;
+    this._verpassterSpielBeendet = null;
   }
   private sendeSpielaktion(ziel: string, payload: unknown): void {
     try { this.patch({ meldung: null }); this.echtzeit.senden(ziel, payload); } catch (f) { this.patch({ meldung: this.formatiereMeldung(f) }); }

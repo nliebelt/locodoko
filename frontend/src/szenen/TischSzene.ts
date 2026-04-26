@@ -173,6 +173,7 @@ export class TischSzene extends Phaser.Scene {
   private readonly handKartenobjekte = new Map<string, AnimierbareKartenobjekte>();
   private wartendeKartenId: string | null = null;
   private austeilenAktiv = false;
+  private _letzterGezeigterSpielBeendet: number | null = null;
   private rundenauswertungObjekte: Phaser.GameObjects.GameObject[] = [];
   private escapeHandler?: (e: KeyboardEvent) => void;
   private backdropClickHandler?: (e: MouseEvent) => void;
@@ -260,7 +261,7 @@ export class TischSzene extends Phaser.Scene {
       this.verarbeitePartieEreignis(e);
       // Re-Sync erst triggern, wenn die Queue dieses Ereignisses durch ist
       void this.animationen?.reiheEin(() => Promise.resolve())
-        .then(() => this.triggerRender());
+        .then(() => { if (this.sys?.displayList) this.triggerRender(); });
     });
 
     // SNAPSHOT-ABO (Statische Ansicht)
@@ -291,11 +292,8 @@ export class TischSzene extends Phaser.Scene {
     if (bridge) {
       bridge.setzeAnimationsGeschwindigkeit = (f: number) => {
         this.animationen?.setzeGeschwindigkeitsfaktor(f);
-        if (f === Infinity) {
+        if (f >= 50) {
           appStore.setzeKiKartenVerzögerung(0);
-          if (this.game.loop) {
-            this.game.loop.targetFps = 5; 
-          }
         }
       };
       bridge.isOverlaySichtbar = () => {
@@ -305,6 +303,8 @@ export class TischSzene extends Phaser.Scene {
         const pSichtbar = !!pEnde && !pEnde.hidden;
         return rSichtbar || pSichtbar;
       };
+      bridge.isIdle = () => this.isIdle();
+      bridge._rundenEndeModalGezeigt = 0;
     }
 
     this.triggerRender();
@@ -346,8 +346,6 @@ export class TischSzene extends Phaser.Scene {
     // In Vitest/JSDOM ist requestAnimationFrame oft problematisch, daher rendern wir dort synchron.
     // Wir nutzen eine sicherere Pruefung fuer die Testumgebung.
     const isTest = (window as any).process?.env?.NODE_ENV === 'test' || (globalThis as any).vi;
-    // Im Turbo-E2E-Modus drosseln wir das Rendering massiv (1 FPS reicht), um CPU zu sparen
-    const isTurbo = this.animationen?.geschwindigkeitsfaktor === Infinity;
 
     if (isTest) {
       this.renderAngefodert = false;
@@ -359,10 +357,7 @@ export class TischSzene extends Phaser.Scene {
 
     requestAnimationFrame(() => {
       this.renderAngefodert = false;
-      if (isTurbo) {
-         // Im Turbo-Modus nur rendern wenn absolut notwendig oder zeitgedrosselt
-         // Hier koennten wir ein Throttle einbauen, aber Phaser-Tweens brauchen oft Frames.
-      }
+      if (!this.sys?.displayList) return; // Szene wurde zwischenzeitlich zerstoert
       if (this.letzterZustand && this.letztesModell) {
         this.renderTisch(this.letzterZustand, this.letztesModell);
       }
@@ -377,6 +372,7 @@ export class TischSzene extends Phaser.Scene {
     this.schliessePartieEndeModal();
     this.wartendeKartenId = null;
     this.austeilenAktiv = false;
+    this._letzterGezeigterSpielBeendet = null;
   }
 
   private verarbeitePartieEreignis(ereignis: PartieEreignisAntwort): void {
@@ -430,8 +426,11 @@ export class TischSzene extends Phaser.Scene {
         this.animationen?.reiheEin(() => this.zeigeSchweinchenBanner(`${name}: Schweinchen!`));
         break;
 
-      case 'SPIEL_BEENDET':
+      case 'SPIEL_BEENDET': {
         const m = this.erstelleModell({ ...appStore.snapshot(), partieStand: ereignis.partieStand });
+        const spielNr = m.letztesSpielergebnis?.spielNummer ?? null;
+        if (spielNr !== null && spielNr === this._letzterGezeigterSpielBeendet) break;
+        this._letzterGezeigterSpielBeendet = spielNr;
         this.animationen?.reiheEin(() => this.zeigeGewinnerFlash(m));
         if (m.partieBeendet) {
           this.animationen?.reiheEin(() => { this.zeigePartieEndeModal(m); return Promise.resolve(); });
@@ -439,9 +438,11 @@ export class TischSzene extends Phaser.Scene {
           this.animationen?.reiheEin(() => this.zeigeRundenEndeModal(m));
         }
         break;
+      }
 
       case 'SNAPSHOT':
-        this.initialisiereZustand();
+        // Ein Snapshot im laufenden Spiel sollte nicht destruktiv sein.
+        // Wir triggern nur ein UI-Update (passiert sowieso via Store-Abo).
         break;
     }
   }
@@ -544,7 +545,6 @@ export class TischSzene extends Phaser.Scene {
   }
 
   private renderTisch(zustand: AppZustand, modell = this.erstelleModell(zustand)): void {
-    console.count('[TischSzene] renderTisch');
     this.tischEbene?.destroy(true);
     this.handKartenobjekte.clear();
     const breite = this.scale.gameSize.width;
@@ -996,7 +996,9 @@ export class TischSzene extends Phaser.Scene {
 
   private async zeigeRundenEndeModal(m: TischAnsichtModell): Promise<void> {
     const e = m.letztesSpielergebnis;
-    if (!this.rundenEndeModal || !e) return;
+    if (!this.rundenEndeModal || !e) {
+      return;
+    }
     const anzahlS = this.letzterZustand?.aktuellerTisch?.konfiguration?.anzahlSpiele;
     const sNMap = new Map(m.spieler.map((s) => [s.position, s.name] as const));
     const bZ: string[] = [`Grundwert: +${e.grundwert}`];
@@ -1010,6 +1012,8 @@ export class TischSzene extends Phaser.Scene {
     const btn = this.erstelleButton('Weiter →', () => this.schliesseRundenEndeModal(), false);
     btn.dataset['testid'] = 'btn-rundenauswertung-weiter';
     this.rundenEndeModal.innerHTML = ''; this.rundenEndeModal.classList.add('ui-rundenauswertung-overlay'); this.rundenEndeModal.append(btn); this.rundenEndeModal.hidden = false;
+    const br = (window as any).__locodoko;
+    if (br) br._rundenEndeModalGezeigt = (br._rundenEndeModalGezeigt ?? 0) + 1;
     setTimeout(() => btn.focus(), 0);
   }
 

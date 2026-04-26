@@ -223,7 +223,7 @@ public class TischVerwaltungsService {
         TischAntwort antwort = TischAntwort.aus(gespeicherterTisch);
         veroeffentlicheTischAktualisierung(
             TischlisteEreignisAntwort.aktualisiert(listeOffeneTische()),
-            TischEreignisAntwort.spielGestartet(antwort, null)
+            TischEreignisAntwort.spielGestartet(antwort, PartieStandAntwort.aus(gespeicherterTisch))
         );
         veroeffentlichePartieAktualisierung(gespeicherterTisch);
         return antwort;
@@ -271,7 +271,7 @@ public class TischVerwaltungsService {
         TischAntwort tischAntwort = TischAntwort.aus(gespeicherterTisch);
         veroeffentlicheTischAktualisierung(
             TischlisteEreignisAntwort.aktualisiert(listeOffeneTische()),
-            TischEreignisAntwort.spielGestartet(tischAntwort, null)
+            TischEreignisAntwort.spielGestartet(tischAntwort, PartieStandAntwort.aus(gespeicherterTisch))
         );
         veroeffentlichePartieAktualisierung(gespeicherterTisch);
         return new BestaetigungAntwort("Neue Partie gestartet.");
@@ -355,7 +355,7 @@ public class TischVerwaltungsService {
         TischAntwort antwort = TischAntwort.aus(gespeicherterTisch);
         veroeffentlicheTischAktualisierung(
             TischlisteEreignisAntwort.aktualisiert(listeOffeneTische()),
-            TischEreignisAntwort.spielGestartet(antwort, null)
+            TischEreignisAntwort.spielGestartet(antwort, PartieStandAntwort.aus(gespeicherterTisch))
         );
         veroeffentlichePartieAktualisierung(gespeicherterTisch);
         return antwort;

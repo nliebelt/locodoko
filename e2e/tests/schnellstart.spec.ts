@@ -87,12 +87,12 @@ test.describe('Schnellstart (Quick Game)', () => {
 
     // ── 2. Quick Game triggern ───────────────────────────────────────────────
     // Warum: Da die Buttons in Phaser gerendert werden, nutzen wir die JS-Bridge.
+    // Wir await-en die Bridge-Methoden direkt, da diese im AppStore nun Promises
+    // zurückgeben (Login -> Initialisierung -> Schnellstart-API).
     await page.evaluate(async () => {
       const loco = (window as any).__locodoko;
-      loco.appStore.alsGastStarten();
-      // Kurze Verzögerung für den Store-Zustandswechsel
-      await new Promise(resolve => setTimeout(resolve, 500));
-      loco.appStore.erstelleQuickGame();
+      await loco.appStore.alsGastStarten();
+      await loco.appStore.erstelleQuickGame();
     });
 
     // ── 3. TischSzene erscheint direkt ──────────────────────────────────────

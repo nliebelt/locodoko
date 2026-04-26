@@ -1,4 +1,32 @@
-import { expect, test } from '@playwright/test';
+import { expect, test, type Page } from '@playwright/test';
+
+interface SpielZustand {
+  overlayVisible: boolean;
+  phase: string | null;
+  moeglicheVorbehalte: string[];
+  spielbareKarten: string[];
+  spieltyp: string | null;
+}
+
+async function leseSpielZustand(page: Page): Promise<SpielZustand> {
+  await page.waitForFunction(() => {
+    const loco = (window as any).__locodoko;
+    if (typeof loco?.isIdle === 'function') return loco.isIdle() === true;
+    return loco?.appStore?.isIdle() === true;
+  }, { timeout: 15_000 });
+
+  return page.evaluate((): SpielZustand => {
+    const loco = (window as any).__locodoko;
+    const spiel = loco?.appStore?.snapshot()?.partieStand?.laufendesSpiel;
+    return {
+      overlayVisible: loco?.isOverlaySichtbar?.() === true,
+      phase: spiel?.phase ?? null,
+      moeglicheVorbehalte: spiel?.moeglicheVorbehalte ?? [],
+      spielbareKarten: spiel?.spielbareKarten?.map((k: any) => k.id) ?? [],
+      spieltyp: spiel?.spieltyp ?? null
+    };
+  });
+}
 
 test.describe('Solo-Spielfluss', () => {
   test('Solo-Runde komplett: HUD-Spieltyp, Rundenauswertung, Geber-Wiederholung', async ({ page }) => {
@@ -27,17 +55,7 @@ test.describe('Solo-Spielfluss', () => {
 
     let soloGefunden = false;
     for (let i = 0; i < 500; i++) {
-      const zustand = await page.evaluate(() => {
-        const loco = (window as any).__locodoko;
-        const spiel = loco?.appStore?.snapshot()?.partieStand?.laufendesSpiel;
-        return {
-          overlayVisible: loco?.isOverlaySichtbar?.() === true,
-          phase: spiel?.phase,
-          moeglicheVorbehalte: spiel?.moeglicheVorbehalte ?? [],
-          spielbareKarten: spiel?.spielbareKarten?.map((k: any) => k.id) ?? [],
-          spieltyp: spiel?.spieltyp
-        };
-      });
+      const zustand = await leseSpielZustand(page);
 
       if (zustand.overlayVisible) break;
       if (zustand.spieltyp && zustand.spieltyp.includes('SOLO')) soloGefunden = true;
@@ -49,9 +67,9 @@ test.describe('Solo-Spielfluss', () => {
       } else if (zustand.phase === 'STICHPHASE' && zustand.spielbareKarten.length > 0) {
         await page.evaluate((k) => (window as any).__locodoko.appStore.spieleKarte(k), zustand.spielbareKarten[0]);
       }
-      await page.waitForTimeout(50);
     }
 
+    expect(soloGefunden, 'Ein Solo-Spieltyp muss waehrend der Partie erkannt worden sein').toBe(true);
     expect(jsFehler).toHaveLength(0);
   });
 });

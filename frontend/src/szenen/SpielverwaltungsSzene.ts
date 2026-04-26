@@ -36,6 +36,8 @@ export class SpielverwaltungsSzene extends Phaser.Scene {
     this.abmeldenStore = appStore.abonnieren((zustand) => {
       this.renderUi(zustand);
       if (zustand.bereich === 'TISCH' && zustand.aktuellerTisch) {
+        this.abmeldenStore?.();
+        this.abmeldenStore = undefined;
         this.scene.start('TischSzene');
       }
     });
