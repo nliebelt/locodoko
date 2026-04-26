@@ -155,8 +155,8 @@ while true; do
     echo "" >> "$LOG_FILE"
 
     # Check for rate limit — schlafe bis zum Reset und wiederhole die Iteration
-    resets_at=$(grep '"overageStatus":"rejected"' "$ITER_OUTPUT" 2>/dev/null \
-        | jq -r '.rate_limit_info.resetsAt // empty' 2>/dev/null | tail -1)
+    resets_at=$(grep '"type":"rate_limit_event"' "$ITER_OUTPUT" 2>/dev/null \
+        | jq -r 'select(.rate_limit_info.status == "rejected") | .rate_limit_info.resetsAt // empty' 2>/dev/null | tail -1)
     if [ -n "$resets_at" ]; then
         now=$(date +%s)
         sleep_secs=$(( resets_at - now + 30 ))  # +30s Puffer
