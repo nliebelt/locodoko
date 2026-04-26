@@ -2,8 +2,8 @@
 
 ## Notiz
 Stand: 2026-04-26
-LOG-1 implementiert: ECS JSON-Logging aktiviert (logs/locodoko.log), MDC-Kontext (tischId) in SpielAktionsService (spieleKarte, meldeVorbehalt, sageAn, verarbeiteArmutAntwort) und KiOrchestrierungService (automatisiereTisch).
-Nächster Schritt: LOG-2 (Playwright Console-Capture) oder LOG-3 (Frontend HTTP-POST-Logging entfernen). LOG-4 ist durch LOG-1 für die zwei wichtigsten Services abgedeckt; TischController-MDC fehlt noch.
+LOG-3 implementiert: HTTP-POST-Logging aus frontend/src/logger.ts entfernt. Die beiden fetch('/api/debug/log', ...) Calls in log() und logError() sind weg; console.log/console.error bleiben. DebugController.java bleibt bestehen (harmlos). Alle 54 Frontend-Tests grün, Build erfolgreich.
+Nächster Schritt: LOG-2 (Playwright Console-Capture in helpers.ts) oder LOG-4 (MDC-Kontext in TischController). LOG-2 ist Voraussetzung für CONS-1, das wiederum UNIFIED-4–7 freischaltet — hohe Hebelwirkung. LOG-4 ergänzt den MDC-Kontext für TischController (SpielAktionsService und KiOrchestrierungService bereits abgedeckt).
 
 ## Legende
 - [x] Erledigt
@@ -36,7 +36,7 @@ Stacktraces und Game-State-Events müssen ohne Code-Analyse lesbar sein.
   Format pro Zeile: `[HH:MM:SS.mmm] [LEVEL] message | data`.
   Ziel: Nach einem fehlgeschlagenen E2E-Test liest Ralph zuerst diese Datei.
 
-- [ ] **LOG-3 (Frontend)**: HTTP-POST-Logging aus `frontend/src/logger.ts` entfernen.
+- [x] **LOG-3 (Frontend)**: HTTP-POST-Logging aus `frontend/src/logger.ts` entfernen.
   Die `fetch('/api/debug/log', ...)` Calls in `log()` und `logError()` streichen.
   Stattdessen: `console.log` / `console.error` bleiben (Playwright fängt sie ab via LOG-2).
   `DebugController.java` kann bestehen bleiben (harmlos) oder ebenfalls entfernt werden.
