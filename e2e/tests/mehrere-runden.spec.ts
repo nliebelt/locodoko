@@ -1,42 +1,5 @@
-import { expect, test, type Page } from '@playwright/test';
-
-interface SpielZustand {
-  phase: string | null;
-  spieltyp: string | null;
-  spielbareKarten: string[];
-  moeglicheVorbehalte: string[];
-  moeglicheAnsagen: string[];
-  armutPhase: boolean;
-}
-
-async function leseSpielZustand(page: Page): Promise<SpielZustand> {
-  await page.waitForFunction(() => {
-    const loco = (window as any).__locodoko;
-    if (typeof loco?.isIdle === 'function') return loco.isIdle() === true;
-    return loco?.appStore?.isIdle() === true;
-  }, { timeout: 15_000 });
-
-  return page.evaluate((): SpielZustand => {
-    const loco = (window as any).__locodoko;
-    const spiel = loco?.appStore?.snapshot()?.partieStand?.laufendesSpiel;
-    return {
-      phase: spiel?.phase ?? null,
-      spieltyp: spiel?.spieltyp ?? null,
-      spielbareKarten: spiel?.spielbareKarten?.map((k: any) => k.id) ?? [],
-      moeglicheVorbehalte: spiel?.moeglicheVorbehalte ?? [],
-      moeglicheAnsagen: spiel?.moeglicheAnsagen ?? [],
-      armutPhase: spiel?.phase === 'ARMUT_TAUSCH',
-    };
-  });
-}
-
-async function aktiviereTurbo(page: Page): Promise<void> {
-  await page.waitForFunction(() => (window as any).__locodoko?.setzeAnimationsGeschwindigkeit, { timeout: 15_000 });
-  await page.evaluate(() => {
-    const loco = (window as any).__locodoko;
-    loco.setzeAnimationsGeschwindigkeit(Infinity);
-  });
-}
+import { expect, test } from '@playwright/test';
+import { getBridge, leseSpielZustand, aktiviereTurbo, meldeVorbehalt } from './helpers';
 
 test.describe('Mehrere Runden gegen KI', () => {
   test('Zwei vollständige Runden ohne JS-Fehler spielen', async ({ page }) => {
@@ -44,7 +7,7 @@ test.describe('Mehrere Runden gegen KI', () => {
     page.on('pageerror', (err) => jsFehler.push(`[pageerror] ${err.message}`));
 
     await page.goto('/');
-    await page.waitForFunction(() => (window as any).__locodoko?.appStore, { timeout: 20_000 });
+    await getBridge(page);
 
     await page.evaluate(async () => {
       const loco = (window as any).__locodoko;
@@ -77,7 +40,7 @@ test.describe('Mehrere Runden gegen KI', () => {
       if (zustand.phase === 'STICHPHASE') warInStichphase = true;
 
       if (zustand.moeglicheVorbehalte.length > 0) {
-        await page.evaluate((v) => (window as any).__locodoko.appStore.meldeVorbehalt(v), zustand.moeglicheVorbehalte[0]);
+        await meldeVorbehalt(page, zustand.moeglicheVorbehalte[0]);
         continue;
       }
 

@@ -10,57 +10,8 @@
  * in einer einzigen Transaktion funktionieren.
  */
 
-import { test, expect, type Page } from '@playwright/test';
-
-interface LocodokoBridge {
-  appStore: {
-    snapshot: () => {
-      partieStand?: {
-        laufendesSpiel?: {
-          phase?: string;
-          spielbareKarten?: unknown[];
-          moeglicheVorbehalte?: unknown[];
-        };
-      };
-    };
-  };
-}
-
-async function warteAufPhase(page: Page, phase: string, timeoutMs = 20_000): Promise<void> {
-  await page.waitForFunction(
-    (gesuchtePhase: string) => {
-      const loco = (window as any).__locodoko;
-      if (loco?.appStore?.isIdle() !== true) return false;
-      return loco?.appStore?.snapshot()?.partieStand?.laufendesSpiel?.phase === gesuchtePhase;
-    },
-    phase,
-    { timeout: timeoutMs }
-  );
-}
-
-async function warteAufEigenenVorbehalt(page: Page, timeoutMs = 15_000): Promise<void> {
-  await page.waitForFunction(
-    () => {
-      const loco = (window as any).__locodoko;
-      if (loco?.appStore?.isIdle() !== true) return false;
-      const vorbehalte = loco?.appStore?.snapshot()?.partieStand?.laufendesSpiel?.moeglicheVorbehalte;
-      return (vorbehalte?.length ?? 0) > 0;
-    },
-    { timeout: timeoutMs }
-  );
-}
-
-async function warteAufEigenenZug(page: Page, timeoutMs = 25_000): Promise<void> {
-  await page.waitForFunction(
-    () => {
-      const loco = (window as any).__locodoko;
-      if (loco?.appStore?.isIdle() !== true) return false;
-      const spiel = loco?.appStore?.snapshot()?.partieStand?.laufendesSpiel;
-      return spiel?.phase === 'STICHPHASE' && (spiel?.spielbareKarten?.length ?? 0) > 0;
-    },
-    { timeout: timeoutMs }
-  );
-}
+import { test, expect } from '@playwright/test';
+import { warteAufPhase, warteAufEigenenVorbehalt, warteAufEigenenZug } from './helpers';
 
 test.describe('Schnellstart (Quick Game)', () => {
   test('Quick Game startet sofort Partie gegen KI ohne manuelle Tischkonfiguration', async ({ page }) => {

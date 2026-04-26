@@ -1,28 +1,5 @@
-import { expect, test, type Page } from '@playwright/test';
-
-interface SpielZustand {
-  phase: string | null;
-  spielbareKarten: string[];
-  moeglicheVorbehalte: string[];
-}
-
-async function leseSpielZustand(page: Page): Promise<SpielZustand> {
-  await page.waitForFunction(() => {
-    const loco = (window as any).__locodoko;
-    if (typeof loco?.isIdle === 'function') return loco.isIdle() === true;
-    return loco?.appStore?.isIdle() === true;
-  }, { timeout: 15_000 });
-
-  return page.evaluate((): SpielZustand => {
-    const loco = (window as any).__locodoko;
-    const spiel = loco?.appStore?.snapshot()?.partieStand?.laufendesSpiel;
-    return {
-      phase: spiel?.phase ?? null,
-      spielbareKarten: spiel?.spielbareKarten?.map((k: any) => k.id) ?? [],
-      moeglicheVorbehalte: spiel?.moeglicheVorbehalte ?? [],
-    };
-  });
-}
+import { expect, test } from '@playwright/test';
+import { getBridge, leseSpielZustand, aktiviereTurbo, meldeVorbehalt } from './helpers';
 
 test.describe('Rundenauswertung', () => {
   test('Rundenauswertungs-Overlay erscheint nach Spielende und kann geschlossen werden', async ({ page }) => {
@@ -30,7 +7,7 @@ test.describe('Rundenauswertung', () => {
     page.on('pageerror', (err) => { seitenFehler.push(err.message); });
 
     await page.goto('/');
-    await page.waitForFunction(() => (window as any).__locodoko?.appStore, { timeout: 20_000 });
+    await getBridge(page);
 
     await page.evaluate(async () => {
       const loco = (window as any).__locodoko;
@@ -39,10 +16,7 @@ test.describe('Rundenauswertung', () => {
     });
 
     await expect(page.locator('[data-testid="tischszene"]')).toBeVisible({ timeout: 15_000 });
-
-    // Turbo: Animationen sofort, KI-Verzögerung 0
-    await page.waitForFunction(() => (window as any).__locodoko?.setzeAnimationsGeschwindigkeit, { timeout: 10_000 });
-    await page.evaluate(() => (window as any).__locodoko.setzeAnimationsGeschwindigkeit(Infinity));
+    await aktiviereTurbo(page);
 
     let warInStichphase = false;
     let rundeAbgeschlossen = false;
@@ -63,7 +37,7 @@ test.describe('Rundenauswertung', () => {
       if (zustand.phase === 'STICHPHASE') warInStichphase = true;
 
       if (zustand.moeglicheVorbehalte.length > 0) {
-        await page.evaluate((v) => (window as any).__locodoko.appStore.meldeVorbehalt(v), zustand.moeglicheVorbehalte[0]);
+        await meldeVorbehalt(page, zustand.moeglicheVorbehalte[0]);
         continue;
       }
 

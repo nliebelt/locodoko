@@ -45,6 +45,7 @@ export interface SpielZustand {
   moeglicheVorbehalte: string[];
   moeglicheAnsagen: string[];
   armutPhase: boolean;
+  overlayVisible: boolean;
 }
 
 /** Wartet bis window.__locodoko.appStore verfügbar ist. */
@@ -121,6 +122,7 @@ export async function leseSpielZustand(page: Page): Promise<SpielZustand> {
       moeglicheVorbehalte: spiel?.moeglicheVorbehalte ?? [],
       moeglicheAnsagen: spiel?.moeglicheAnsagen ?? [],
       armutPhase: spiel?.phase === 'ARMUT_TAUSCH',
+      overlayVisible: (loco as any)?.isOverlaySichtbar?.() === true,
     };
   });
 }

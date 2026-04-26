@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test';
+import { getBridge, aktiviereTurbo, leseSpielZustand, meldeVorbehalt, warteAufEigenenZug, spieleErsteHandkarte } from './helpers';
 
 test.describe('Partie gegen KI', () => {
   test('Erste Partie bis zum ersten abgeschlossenen Stich', async ({ page }) => {
@@ -6,9 +7,8 @@ test.describe('Partie gegen KI', () => {
     page.on('pageerror', (err) => jsFehler.push(`[pageerror] ${err.message}`));
 
     await page.goto('/');
-    
-    await page.waitForFunction(() => (window as any).__locodoko?.appStore, { timeout: 20_000 });
-    
+    await getBridge(page);
+
     await page.evaluate(async () => {
       const loco = (window as any).__locodoko;
       await loco.appStore.alsGastStarten();
@@ -23,42 +23,18 @@ test.describe('Partie gegen KI', () => {
     await expect(page.locator('[data-testid="tischszene"]')).toBeVisible({ timeout: 15_000 });
 
     await page.evaluate(async () => {
-      const loco = (window as any).__locodoko;
-      await loco.appStore.starteAktuellenTisch();
-      if (typeof loco.setzeAnimationsGeschwindigkeit === 'function') {
-        loco.setzeAnimationsGeschwindigkeit(Infinity);
-      }
+      await (window as any).__locodoko.appStore.starteAktuellenTisch();
     });
+    await aktiviereTurbo(page);
 
-    // Wir warten bis SUED an der Reihe ist oder Vorbehalte erwartet werden
-    await page.waitForFunction(() => {
-      const loco = (window as any).__locodoko;
-      const spiel = loco?.appStore?.snapshot()?.partieStand?.laufendesSpiel;
-      return (spiel?.moeglicheVorbehalte?.length ?? 0) > 0 || (spiel?.spielbareKarten?.length ?? 0) > 0;
-    }, { timeout: 30_000 });
+    // Vorbehalt melden falls vorhanden, dann auf eigenen Zug warten
+    const zustand = await leseSpielZustand(page);
+    if (zustand.moeglicheVorbehalte.length > 0) {
+      await meldeVorbehalt(page, zustand.moeglicheVorbehalte[0]);
+    }
 
-    // Vorbehalt melden oder Karte spielen (Bridge!)
-    await page.evaluate(async () => {
-      const loco = (window as any).__locodoko;
-      const spiel = loco.appStore.snapshot().partieStand.laufendesSpiel;
-      if (spiel.moeglicheVorbehalte.length > 0) {
-        await loco.appStore.meldeVorbehalt(spiel.moeglicheVorbehalte[0]);
-      }
-    });
-
-    // Warten bis Stichphase erreicht ist
-    await page.waitForFunction(() => {
-      const loco = (window as any).__locodoko;
-      const spiel = loco?.appStore?.snapshot()?.partieStand?.laufendesSpiel;
-      return spiel?.phase === 'STICHPHASE' && (spiel?.spielbareKarten?.length ?? 0) > 0;
-    }, { timeout: 15_000 });
-
-    // Karte spielen
-    await page.evaluate(async () => {
-      const loco = (window as any).__locodoko;
-      const spiel = loco.appStore.snapshot().partieStand.laufendesSpiel;
-      await loco.appStore.spieleKarte(spiel.spielbareKarten[0].id);
-    });
+    await warteAufEigenenZug(page, 30_000);
+    await spieleErsteHandkarte(page);
 
     // Warten bis der erste Stich abgeschlossen ist (jemand hat Punkte)
     await page.waitForFunction(() => {

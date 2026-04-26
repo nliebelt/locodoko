@@ -15,8 +15,9 @@
  */
 
 import { test, expect, type Page } from '@playwright/test';
+import { getBridge, warteAufPhase, warteAufEigenenVorbehalt, warteAufEigenenZug } from './helpers';
 
-// ── Bridge-Typen ────────────────────────────────────────────────────────
+// ── Reconnect-spezifische Typen ──────────────────────────────────────────
 
 interface LaufendesSpielDto {
   phase: string;
@@ -31,40 +32,6 @@ interface LaufendesSpielDto {
     verbleibendeKarten: number | null;
     sichtbareHandkarten: { id: string }[] | null;
   }[];
-}
-
-// ── Hilfsfunktionen ─────────────────────────────────────────────────────
-
-async function warteAufPhase(page: Page, phase: string, timeoutMs = 15_000): Promise<void> {
-  await page.waitForFunction(
-    (gesuchtePhase: string) => {
-      const loco = (window as unknown as Record<string, { appStore: { snapshot: () => { partieStand?: { laufendesSpiel?: { phase?: string } } } } }>)['__locodoko'];
-      return loco?.appStore?.snapshot()?.partieStand?.laufendesSpiel?.phase === gesuchtePhase;
-    },
-    phase,
-    { timeout: timeoutMs }
-  );
-}
-
-async function warteAufEigenenVorbehalt(page: Page, timeoutMs = 15_000): Promise<void> {
-  await page.waitForFunction(
-    () => {
-      const loco = (window as unknown as Record<string, { appStore: { snapshot: () => { partieStand?: { laufendesSpiel?: { moeglicheVorbehalte?: unknown[] } } } } }>)['__locodoko'];
-      return (loco?.appStore?.snapshot()?.partieStand?.laufendesSpiel?.moeglicheVorbehalte?.length ?? 0) > 0;
-    },
-    { timeout: timeoutMs }
-  );
-}
-
-async function warteAufEigenenZug(page: Page, timeoutMs = 20_000): Promise<void> {
-  await page.waitForFunction(
-    () => {
-      const loco = (window as unknown as Record<string, { appStore: { snapshot: () => { partieStand?: { laufendesSpiel?: { spielbareKarten?: unknown[]; phase?: string } } } } }>)['__locodoko'];
-      const spiel = loco?.appStore?.snapshot()?.partieStand?.laufendesSpiel;
-      return spiel?.phase === 'STICHPHASE' && (spiel?.spielbareKarten?.length ?? 0) > 0;
-    },
-    { timeout: timeoutMs }
-  );
 }
 
 /**
@@ -121,9 +88,7 @@ test.describe('Reconnect', () => {
 
     // ── 1. Quick Game starten ─────────────────────────────────────────────
     await page.goto('/');
-
-    // Warten bis die Bridge bereit ist
-    await page.waitForFunction(() => (window as any).__locodoko?.appStore, { timeout: 20_000 });
+    await getBridge(page);
 
     // Als Gast starten und Quick Game triggern
     await page.evaluate(async () => {

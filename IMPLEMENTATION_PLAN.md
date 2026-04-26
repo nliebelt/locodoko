@@ -2,8 +2,8 @@
 
 ## Notiz
 Stand: 2026-04-26
-CONS-1 + LOG-2 implementiert: `e2e/tests/helpers.ts` angelegt. Exportiert: `LocodokoBridge`, `SpielZustand`, `getBridge`, `warteAufPhase`, `warteAufEigenenZug`, `warteAufEigenenVorbehalt`, `warteAufNaechstesEreignis`, `leseSpielZustand`, `spieleErsteHandkarte`, `meldeVorbehalt`, `aktiviereTurbo`, `aktiviereConsoleCapture`. TypeScript-Kompilierung via `npx playwright test --list` grün.
-Nächster Schritt: CONS-2 (alle 10 Specs auf helpers.ts umstellen, ~400 Zeilen Duplikat-Code eliminieren). Danach CONS-3 (vision-loop aus Default-Run herausnehmen), dann UNIFIED-4–7.
+CONS-2 implementiert: Alle 9 aktiven Specs (außer einladungslink.spec.ts ohne Duplikate und vision-loop.spec.ts) auf helpers.ts umgestellt. Entfernt: inline `interface LocodokoBridge`, `interface SpielZustand`, `leseSpielZustand`, `warteAufPhase`, `warteAufEigenenVorbehalt`, `warteAufEigenenZug`, `aktiviereTurbo`. Ersetzt durch Imports + `getBridge(page)` statt inline waitForFunction. helpers.ts erweitert: `SpielZustand.overlayVisible` + `leseSpielZustand` liefert jetzt `overlayVisible: isOverlaySichtbar()`. reconnect.spec.ts: behält lokale `warteAufNaechstesEreignis` (andere Signatur: gibt string zurück). TypeScript-Kompilierung grün.
+Nächster Schritt: CONS-3 (vision-loop.spec.ts aus Default-Run herausnehmen: playwright.config.vision.ts anlegen, testIgnore in playwright.config.ts). Danach UNIFIED-4–7.
 
 ## Legende
 - [x] Erledigt
@@ -87,7 +87,7 @@ Reduziert ~400 Zeilen Duplikat-Code. Voraussetzung für UNIFIED-4 bis 7.
   `meldeVorbehalt(page, vorbehalt)`, `aktiviereConsoleCapture(page, testName)` (aus LOG-2).
   Kein Spiellogik-Code — nur Bridge-Wrapper und Typen.
 
-- [ ] **CONS-2 (E2E)**: Alle 10 Specs auf `helpers.ts` umstellen.
+- [x] **CONS-2 (E2E)**: Alle 10 Specs auf `helpers.ts` umstellen.
   Inline-Typdefinitionen (`interface LocodokoBridge { ... }`) und doppelte Hilfsfunktionen
   aus allen Specs entfernen und durch Imports aus `helpers.ts` ersetzen.
   Erwartete Einsparung: ~400 Zeilen, alle Specs unter 100 Zeilen.
