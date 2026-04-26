@@ -33,6 +33,7 @@ import de.locodoko.spieler.SpielerEntity;
 import de.locodoko.spieler.SpielerRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.slf4j.MDC;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Service;
@@ -94,15 +95,17 @@ public class KiOrchestrierungService {
         if (tisch.partie() == null || tisch.partie().statusAusDb() == PartieStatus.BEENDET) {
             return tisch;
         }
+        MDC.put("tischId", tisch.id().toString());
+        try {
         Spiel startSpiel = findeLaufendesSpiel(tisch.partie());
         String startPhase = startSpiel != null ? startSpiel.phasenName() : null;
-        LOGGER.info("KI-Orchestrierung gestartet [tischId={}, spielphase={}]", tisch.id(), startPhase);
+        LOGGER.info("KI-Orchestrierung gestartet [spielphase={}]", startPhase);
         int anzahlAktionen = 0;
         boolean hatKiGespielt = false;
 
         boolean hatMenschlichenSpieler = tisch.spieler().stream()
             .anyMatch(s -> !s.istKi() && !s.istKiUebernommen());
-        
+
         try {
             while (anzahlAktionen++ < MAXIMALE_KI_AKTIONEN) {
                 if (tisch.partie().statusAusDb() == PartieStatus.BEENDET) {
@@ -214,6 +217,9 @@ public class KiOrchestrierungService {
             }
         }
         return tisch;
+        } finally {
+            MDC.clear();
+        }
     }
 
     private void sendeFinalenSnapshot(TischEntity tisch) {
