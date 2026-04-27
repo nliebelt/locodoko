@@ -1027,17 +1027,47 @@ export class TischSzene extends Phaser.Scene {
 
   private zeigePartieEndeModal(m: TischAnsichtModell): void {
     if (!this.partieEndeModal) return;
-    const dia = document.createElement('div'); dia.className = 'ui-modal';
+    const e = m.letztesSpielergebnis;
+    const anzahlS = this.letzterZustand?.aktuellerTisch?.konfiguration?.anzahlSpiele;
+    const dia = document.createElement('div'); dia.className = 'ui-modal'; dia.dataset['testid'] = 'partie-ende-modal';
     const tit = document.createElement('h2'); tit.textContent = 'Partie beendet!';
-    const gsL = document.createElement('ul'); gsL.className = 'ui-list ui-list--dense'; 
-    [...m.gesamtpunktestand].sort((a, b) => b.punkte - a.punkte).forEach((ei) => {
-      const li = document.createElement('li'); li.className = 'ui-list-item ui-list-item--dense';
-      li.innerHTML = `<div class="ui-list-item__headline"><strong>${escapeHtml(ei.name)}</strong></div><div class="ui-list-item__meta"><span>${ei.punkte} Pkt</span></div>`;
-      gsL.append(li);
-    });
+    dia.append(tit);
+    if (e) {
+      const sNMap = new Map(m.spieler.map((s) => [s.position, s.name] as const));
+      const spieltypLabel = formatiereVorbehalt(e.spieltyp as VorbehaltAnsage) ?? e.spieltyp;
+      const spielSec = document.createElement('div'); spielSec.className = 'ui-section';
+      const infoP = document.createElement('p'); infoP.style.cssText = 'margin:0;font-size:0.9rem;color:#d8f3dc'; infoP.textContent = `${spieltypLabel} · ${anzahlS ? `Spiel ${e.spielNummer} von ${anzahlS}` : `Spiel ${e.spielNummer}`}`;
+      const siegerP = document.createElement('p'); siegerP.style.cssText = 'margin:0;font-size:0.9rem;color:#90caf9'; siegerP.textContent = `${e.siegerPartei} gewinnt · Re ${e.augenRe}:${e.augenKontra} Kontra Augen`;
+      const reNamen = m.spieler.filter((s) => s.partei === 'RE').map((s) => s.name).join(', ') || '–';
+      const kontraNamen = m.spieler.filter((s) => s.partei === 'KONTRA').map((s) => s.name).join(', ') || '–';
+      const parteienP = document.createElement('p'); parteienP.style.cssText = 'margin:0;font-size:0.8rem;opacity:0.75'; parteienP.textContent = `Re: ${reNamen} | Kontra: ${kontraNamen}`;
+      const bZ: string[] = [`Grundwert: +${e.grundwert}`];
+      if (e.absagePunkte !== 0) bZ.push(`Ansagen: ${e.absagePunkte > 0 ? '+' : ''}${e.absagePunkte}`);
+      if (e.gegenDieAltenPunkte > 0) bZ.push(`Gegen die Alten: +${e.gegenDieAltenPunkte}`);
+      if (e.soloMultiplikator > 1) bZ.push(`Solo-Multiplikator: ×${e.soloMultiplikator}`);
+      const sp = [...e.sonderpunkteRe.map((s) => `Re: ${formatiereSonderpunkt(s, sNMap)}`), ...e.sonderpunkteKontra.map((s) => `Kontra: ${formatiereSonderpunkt(s, sNMap)}`)];
+      if (sp.length > 0) bZ.push(`Sonderpunkte: ${sp.join(', ')}`);
+      const berechnungL = document.createElement('ul'); berechnungL.className = 'ui-list ui-list--dense';
+      bZ.forEach((z) => { const li = document.createElement('li'); li.className = 'ui-list-item ui-list-item--dense'; li.style.fontSize = '0.85rem'; li.textContent = z; berechnungL.append(li); });
+      const punkteL = document.createElement('ul'); punkteL.className = 'ui-list ui-list--dense';
+      e.spielpunkte.forEach((p) => { const li = document.createElement('li'); li.className = 'ui-list-item ui-list-item--dense'; li.innerHTML = `<div class="ui-list-item__headline"><strong>${escapeHtml(p.name)}</strong></div><div class="ui-list-item__meta"><span style="color:${p.punkte >= 0 ? '#4adf7a' : '#ff6b6b'}">${p.punkte > 0 ? '+' : ''}${p.punkte} Pkt</span></div>`; punkteL.append(li); });
+      spielSec.append(infoP, siegerP, parteienP, berechnungL, punkteL);
+      dia.append(spielSec);
+    }
+    const gsSec = document.createElement('div'); gsSec.className = 'ui-section';
+    const gsTit = document.createElement('strong'); gsTit.style.cssText = 'font-size:0.9rem;opacity:0.8'; gsTit.textContent = 'Gesamtstand';
+    const sortedGs = [...m.gesamtpunktestand].sort((a, b) => b.punkte - a.punkte);
+    const maxPkt = sortedGs.length > 0 ? sortedGs[0].punkte : 0;
+    const gsL = document.createElement('ul'); gsL.className = 'ui-list ui-list--dense';
+    sortedGs.forEach((ei) => { const li = document.createElement('li'); li.className = 'ui-list-item ui-list-item--dense'; const istVorne = ei.punkte === maxPkt && maxPkt > 0; li.innerHTML = `<div class="ui-list-item__headline"><strong style="${istVorne ? 'color:#ffd166' : ''}">${escapeHtml(ei.name)}${istVorne ? ' ★' : ''}</strong></div><div class="ui-list-item__meta"><span>${ei.punkte} Pkt</span></div>`; gsL.append(li); });
+    gsSec.append(gsTit, gsL); dia.append(gsSec);
     const aR = document.createElement('div'); aR.className = 'ui-action-row';
-    const vB = this.erstelleButton('Tisch verlassen', () => { this.schliessePartieEndeModal(); void appStore.verlasseAktuellenTisch(); }, false);
-    aR.append(vB); dia.append(tit, gsL, aR); this.partieEndeModal.innerHTML = ''; this.partieEndeModal.append(dia); this.partieEndeModal.hidden = false;
+    const nB = this.erstelleButton('Neue Partie', () => { this.schliessePartieEndeModal(); void appStore.starteNeuePartie(); }, false);
+    nB.dataset['testid'] = 'btn-neue-partie';
+    const vB = this.erstelleButton('Tisch verlassen', () => { this.schliessePartieEndeModal(); void appStore.verlasseAktuellenTisch(); }, false, 'ui-button--secondary');
+    vB.dataset['testid'] = 'btn-tisch-verlassen';
+    aR.append(nB, vB); dia.append(aR); this.partieEndeModal.innerHTML = ''; this.partieEndeModal.append(dia); this.partieEndeModal.hidden = false;
+    setTimeout(() => nB.focus(), 0);
   }
 
   private schliessePartieEndeModal(): void {

@@ -2,8 +2,8 @@
 
 ## Notiz
 Stand: 2026-04-27
-FEAT-3 implementiert: Drei benannte Factory-Methoden in TischkonfigurationEmbeddable — locoBlatRegeln(), dkvRegeln(), ohneNeunenLocoBlatRegeln(). standard() delegiert jetzt zu locoBlatRegeln(). Spielregeln.java hatte alle drei Presets bereits; stales TODO-Kommentar entfernt. 4 neue Unit-Tests in TischkonfigurationEmbeddableTest.java. 285 Backend-Tests grün.
-Nächster Schritt: FEAT-4 (Partie-Ende Modal in TischSzene.ts) oder FEAT-5 (fehlende data-testid-Attribute) oder SPEC-Aufgaben.
+FEAT-4 implementiert: zeigePartieEndeModal in TischSzene.ts ausgearbeitet. Modal zeigt jetzt: (1) Letztes Spiel — Spieltyp, Nummer, Sieger-Partei mit Augenzahl, Re/Kontra-Spielernamen, Berechnungszeilen (Grundwert, Ansagen, Solo-Multiplikator, Sonderpunkte), Punkte pro Spieler. (2) Gesamtstand sortiert nach Punkten, Führender mit ★ in Gold hervorgehoben. (3) Zwei Buttons: "Neue Partie" (starteNeuePartie, data-testid=btn-neue-partie) und "Tisch verlassen" (sekundär, data-testid=btn-tisch-verlassen). data-testid="partie-ende-modal" auf dem Dialog-Element.
+Nächster Schritt: FEAT-5 (fehlende data-testid-Attribute gemäß specs/e2e-tests.md) oder SPEC-Aufgaben.
 
 ## Legende
 - [x] Erledigt
@@ -106,7 +106,7 @@ Reduziert ~400 Zeilen Duplikat-Code. Voraussetzung für UNIFIED-4 bis 7.
 - [x] **FEAT-1 (Backend)**: Schmeißen-Varianten "Fünf Neunen" und "Wenig Trumpf" in `VorbehaltAnsage.java`.
 - [x] **FEAT-2 (Backend)**: Bockrunden-Trigger "Einwurf-Bockrunde" (ausgelöst wenn Spiel geschmissen).
 - [x] **FEAT-3 (Backend)**: `TischkonfigurationEmbeddable` Factory-Methoden für Regel-Presets.
-- [ ] **FEAT-4 (Frontend)**: Partie-Ende Modal in `TischSzene.ts` ausarbeiten und an Event-Loop anbinden.
+- [x] **FEAT-4 (Frontend)**: Partie-Ende Modal in `TischSzene.ts` ausarbeiten und an Event-Loop anbinden.
 - [ ] **FEAT-5 (Frontend)**: Fehlende `data-testid`-Attribute gemäß `specs/e2e-tests.md`.
 
 ---
