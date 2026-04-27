@@ -300,6 +300,47 @@ describe('AppStore', () => {
     ]));
   });
 
+  it('reconnecteTisch setzt partieStand und aktuellerTisch zurück bevor Snapshot eintrifft', async () => {
+    // Wichtig: Ctrl+R während laufendem Spiel → reconnecteTisch() muss alten partieStand
+    // löschen, damit TischSzene nicht mit veralteten Overlay-Daten rendert, bevor der
+    // neue Snapshot eintrifft (verbindungsabbruch.md:70).
+    const echtzeit = new FakeEchtzeit();
+    const tisch = baueTisch('tisch-reconnect-reset');
+    const store = new AppStore(
+      new FakeApi(
+        { spielerId: 'spieler-1', name: 'Nora', istKi: false, aktiverTischId: null },
+        [],
+        tisch
+      ) as SpielverwaltungApi,
+      echtzeit
+    );
+    await store.initialisieren();
+    await store.betreteTisch(tisch.id);
+
+    // Tisch und PartieStand wurden gesetzt
+    echtzeit.emit('/user/queue/tisch/tisch-reconnect-reset', {
+      timestamp: new Date().toISOString(),
+      ereignisTyp: 'TISCH_SNAPSHOT',
+      tischId: 'tisch-reconnect-reset',
+      tisch: { ...tisch, status: 'IM_SPIEL', partieId: 'partie-alt' },
+      partieStand: {
+        partieId: 'partie-alt', version: 5, status: 'LAUFEND',
+        anzahlSpiele: 8, gespielteSpiele: 3,
+        gesamtpunktestand: { SUED: 10 },
+        laufendesSpiel: { spielNummer: 4, hochzeitGeklaert: false, schweinchenGemeldetVon: null }
+      } as unknown as PartieStandAntwort
+    });
+
+    expect(store.snapshot().aktuellerTisch).not.toBeNull();
+    expect(store.snapshot().partieStand).not.toBeNull();
+
+    // Ctrl+R: reconnecteTisch muss State löschen BEVOR der neue Snapshot kommt
+    store.reconnecteTisch('tisch-reconnect-reset');
+
+    expect(store.snapshot().aktuellerTisch).toBeNull();
+    expect(store.snapshot().partieStand).toBeNull();
+  });
+
   it('SNAPSHOT verwirft veraltete Events in der Queue (Ctrl+R Schutz)', async () => {
     // Szenario: KI-Animation läuft (async Barrier durch setTimeout). Währenddessen
     // kommen SNAPSHOT(Spiel2) und danach KARTE_GESPIELT(Spiel1) in die Queue.

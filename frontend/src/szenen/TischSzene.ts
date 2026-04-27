@@ -1286,7 +1286,7 @@ export class TischSzene extends Phaser.Scene {
     this.loeseEigeneKartenAuf();
     this.rundenauswertungObjekte.forEach((o) => o.destroy()); this.tischEbene?.destroy(true);
     this.hintergrund?.destroy(); this.handKartenobjekte.clear();
-    this.versteckeLetztesStichOverlay(); this.schliessePartieEndeModal();
+    this.schliesseRundenEndeModal(); this.versteckeLetztesStichOverlay(); this.schliessePartieEndeModal();
     this.uiManager?.aufraeumen();
   }
 }

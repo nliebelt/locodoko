@@ -295,6 +295,10 @@ export class AppStore {
    * @param tischId ID des Tisches.
    */
   reconnecteTisch(tischId: Uuid): void {
+    // Spiel-State vor Snapshot-Verarbeitung zurücksetzen (verbindungsabbruch.md:70):
+    // aktuellerTisch und partieStand auf null, damit kein alter Overlay-Zustand den
+    // initialen Render der TischSzene kontaminiert, bevor der Snapshot eintrifft.
+    this.patch({ aktuellerTisch: null, partieStand: null });
     this.setzeTischAbosZurueck();
     this.registriereTischAbos(tischId, null);
     this.patch({ bereich: 'TISCH' });
