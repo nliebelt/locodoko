@@ -189,6 +189,32 @@ class PunkteRechnerTest {
         assertEquals(-3, ergebnis.spielpunkteVon(SpielerPosition.SUED).wert());
     }
 
+    @Test
+    void gibtKontraBeimSiegOhneReAnsageDenZusatzpunkt() {
+        Ansagen ansagen = Ansagen.leer();
+
+        Spielergebnis ergebnis = punkteRechner.berechneNormalspielErgebnis(
+            kombiniere(wiederhole(reStich20(), 5), wiederhole(kontraStich20(), 7)),
+            parteien,
+            trumpfOrdnung,
+            ansagen,
+            spielregeln
+        );
+
+        assertEquals(100, ergebnis.augenVon(Partei.RE).wert());
+        assertEquals(140, ergebnis.augenVon(Partei.KONTRA).wert());
+        assertEquals(2, ergebnis.spielwert().wert(),
+            "Gewinnt Kontra ohne Re-Ansage, gibt es 1 Grundpunkt + 1 Punkt gegen die Alten.");
+        assertEquals(1, ergebnis.grundwert(),
+            "Keine Ansagen, Grundwert ist 1.");
+        assertEquals(0, ergebnis.absagePunkte(),
+            "Keine Absagen wurden gemacht.");
+        assertEquals(1, ergebnis.gegenDieAltenPunkte(),
+            "Kontra gewinnt: +1 Punkt gegen-die-Alten — auch ohne Ansage.");
+        assertEquals(2, ergebnis.spielpunkteVon(SpielerPosition.NORD).wert());
+        assertEquals(-2, ergebnis.spielpunkteVon(SpielerPosition.SUED).wert());
+    }
+
     private List<Stich> wiederhole(Stich stich, int anzahl) {
         return java.util.Collections.nCopies(anzahl, stich);
     }

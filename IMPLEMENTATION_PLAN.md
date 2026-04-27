@@ -146,7 +146,7 @@ Spec: `specs/architektur-ddd.md` § „Concurrency (Optimistic Locking)".
 - [x] **FEAT-3 (Backend)**: `TischkonfigurationEmbeddable` Factory-Methoden für Regel-Presets.
 - [x] **FEAT-4 (Frontend)**: Partie-Ende Modal in `TischSzene.ts` ausarbeiten und an Event-Loop anbinden.
 
-- [ ] **BUGFIX-1 (Backend)**: „Gegen die Alten" Sonderpunkt-Berechnung korrigieren.
+- [x] **BUGFIX-1 (Backend)**: „Gegen die Alten" Sonderpunkt-Berechnung korrigieren.
   In `PunkteRechner.bewerteGegenDieAlten()`: die Prüfung auf `ansagen.hatGrundansage(Partei.RE, parteien)`
   entfernen. Laut `specs/punkteberechnung.md` Req. 12 gilt dieser Sonderpunkt immer, wenn die
   Kontra-Partei gewinnt — unabhängig davon ob Re angesagt wurde. Der Code hat aktuell die falsche

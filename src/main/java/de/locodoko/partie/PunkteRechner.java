@@ -63,7 +63,7 @@ final class PunkteRechner {
 
         int grundwert = grundwert(ansagen, parteien);
         int absagePunkte = bewerteAbsagen(siegerPartei, augenProPartei, sticheProPartei, parteien, ansagen);
-        int gegenDieAltenPunkte = bewerteGegenDieAlten(siegerPartei, parteien, ansagen);
+        int gegenDieAltenPunkte = bewerteGegenDieAlten(siegerPartei, parteien);
         int sonderpunkteWert = bewerteSonderpunkte(siegerPartei, sonderpunkteProPartei);
         Spielpunkte spielwert = new Spielpunkte(Math.max(1, grundwert + absagePunkte + gegenDieAltenPunkte + sonderpunkteWert));
 
@@ -128,8 +128,9 @@ final class PunkteRechner {
         };
     }
 
-    private int bewerteGegenDieAlten(Partei siegerPartei, Parteien parteien, Ansagen ansagen) {
-        return siegerPartei == Partei.KONTRA && ansagen.hatGrundansage(Partei.RE, parteien) ? 1 : 0;
+    private int bewerteGegenDieAlten(Partei siegerPartei, Parteien parteien) {
+        boolean istZweiGegenZwei = parteien.spielerVon(Partei.RE).size() == 2;
+        return siegerPartei == Partei.KONTRA && istZweiGegenZwei ? 1 : 0;
     }
 
     private int bewerteSonderpunkte(Partei siegerPartei, Map<Partei, List<SonderpunktEreignis>> sonderpunkteProPartei) {
