@@ -1,18 +1,11 @@
 # IMPLEMENTATION_PLAN — Locodoko Doppelkopf
 
 ## Notiz
-Stand: 2026-04-27 (FEAT-5 abgeschlossen)
+Stand: 2026-04-27 (Plan-Run #56 — nach Spec-Update + vollständiger Codeanalyse)
 
-**Was wurde implementiert:** FEAT-5 — alle fehlenden `data-testid`-Attribute ergänzt:
-- `rundenauswertung-overlay` auf `rundenEndeModal` (TischUIManager.ts)
-- `einstellungen-modal` Marker (TischUIManager.ts)
-- `btn-session-recovery` + `btn-offene-tische` Marker (SpielverwaltungsSzene.ts)
-- `rundenauswertung-spieltyp` + `rundenauswertung-punktemultiplikator` DOM-Elemente im Modal (TischSzene.ts)
+**Fokus:** Quickplay stabil (KI-Bugs, Browser-Reload) → Bockrunden-UI → Multiplayer-Vorbereitung.
 
-**Nächster Schritt:** FEAT-6/7/8 — Detail-Marker (`btn-vorbehalt-{typ}`, `btn-armut-{aktion}`, `btn-ansage-{typ}`) in den teilimplementierten Overlays setzen.
-Danach: FEAT-9 (Tisch-Konfigurations-Modal) oder TEST-1 (Backend Unit-Test Dulle-Verhalten im Herzsolo).
-
-**Offene Fragen:** `btn-offene-tische` und `tisch-config-modal`/`input-tischname`/`btn-tisch-erstellen` sind noch FEAT-9/10-Scope (Elemente existieren noch nicht).
+Alle abgehakten Vorgänger-Items (ARCH-REF-1–7, FEAT-5, SPEC-1/2/5) wurden ins Archiv verschoben.
 
 ## Legende
 - [x] Erledigt
@@ -22,56 +15,88 @@ Danach: FEAT-9 (Tisch-Konfigurations-Modal) oder TEST-1 (Backend Unit-Test Dulle
 
 ---
 
-## Phase 1.8 — Architektur-Bereinigung (ARCH-REF)
-Ziel: Vollendung der "Unified Architecture" — sauberer Event-Fluss, identitätsbasiertes Rendering und sichere DTOs.
+## Phase 1 — Blocking Bugs: Quickplay stabil (BUG)
 
-- [x] ARCH-REF-1 (Backend): Löschung der `SpielRegistry.java`.
-- [x] ARCH-REF-2 (Domain): `@Version` in `Partie.java`.
-- [x] ARCH-REF-3 (Service): Refactoring `SpielAktionsService.java`.
-- [x] ARCH-REF-4 (Events): AFTER_COMMIT-Garantie.
+### BUG-1 (Backend + Frontend): HochzeitPartnerGefunden als WebSocket-Event
+**Root Cause:** `SpielAktionsService.java:221` und `KiOrchestrierungService.java:291` loggen das Domain-Event `HochzeitPartnerGefunden` nur — kein Broadcast. KI-Hänger nach Hochzeit-Klärung ist die direkte Folge.
+- [ ] Backend: `PartieEreignisTyp` um `HOCHZEIT_PARTNER_GEFUNDEN` erweitern
+- [ ] Backend: `KiOrchestrierungService` — analoger Broadcaster wie bei `SchweinchenGemeldet` (Zeile 322–333)
+- [ ] Frontend: `PartieEreignisTyp` in `SpielverwaltungDto.ts` + AppStore-Handler + Banner „Partner gefunden!" (analog Sonderpunkt-Banner)
+- [ ] Validation: `mvn test` + `npm test` + E2E solo-spielfluss oder hochzeit-E2E
 
-- [x] ARCH-REF-5 (Events & Sync): Umstellung auf hybrides Sync-Modell.
-  - Backend: Entfernung von `KI_ZUG_SEQUENZ`. Ergänzung von `spielerPosition` und `karteId` in `KARTE_GESPIELT`.
-  - Backend: Explizites `SPIEL_GESTARTET` Event nach dem Mischen/Austeilen (inkl. Geber-Rotation).
-  - Backend: Implementierung `AKTION_ABGELEHNT` Event für feingranulares Fehler-Feedback.
-  - Backend: `LetztesSpielergebnisAntwort` um `punkteAufschluesselung` (Point Provenance) ergänzen.
-  - Frontend: `AppStore` implementiert eine serielle Queue, die erst animiert (Hints) und dann den State patcht (Snapshots).
-  - Validation: `mvn test` + `cd frontend && npm test` + E2E Suite.
+### BUG-2 (Frontend): Browser-Reload zeigt alten State
+**Root Cause:** `AppStore` wird vor Snapshot-Verarbeitung nicht zurückgesetzt. Overlays und Animations-State des vorherigen Spiels bleiben bestehen (`verbindungsabbruch.md:70` fordert vollständigen Reset).
+- [ ] Frontend: `AppStore.reset()` (oder äquivalent) vor Snapshot-Verarbeitung in Session-Recovery aufrufen
+- [ ] Frontend: `AnimationenService.abbrechen()` sicherstellen (existiert, aber wird nicht immer aufgerufen)
+- [ ] Frontend: alle Overlay-Sichtbarkeiten (`rundenEndeModal`, `partieEndeModal`) auf hidden setzen
+- [ ] Validation: `npm test` + manueller Test: Strg+R während laufendem Spiel
 
-- [x] ARCH-REF-6 (Core & UI): Lifecycle-Verschiebung und Sprite-Persistence.
-  - Backend: `PartieLifecycleService` extrahiert aus `KiOrchestrierungService` (lifecycle-Logik spieler-agnostisch).
-  - Backend: DTO-Filterung verifiziert und durch Test in `PartieStandAntwortTest` abgedeckt.
-  - Frontend: `TischSzene.renderTisch()` auf identitätsbasierte Reconciliation umgestellt (persistent eigene Karten, depth-based Z-order).
-  - Validation: `mvn test` (278/278) + `cd frontend && npm test` (54/54) + Build/Lint grün.
+### BUG-SCHMEISSEN (Backend): Schmeißen-Validierung korrigieren
+**Root Cause:** `VorbehaltAnsage.java` — `SCHMEISSEN_FUENF_NEUNEN` prüft auf 5 (statt 5 mit / 4 ohne Neunen) und `SCHMEISSEN_WENIG_TRUMPF` hat keine Bedingung `< 2 Trümpfe` implementiert.
+- [ ] Backend: `VorbehaltAnsage.istZulaessig()` für `SCHMEISSEN_FUENF_NEUNEN` korrigieren (Spec schweinchen.md:58)
+- [ ] Backend: `VorbehaltAnsage.istZulaessig()` für `SCHMEISSEN_WENIG_TRUMPF` implementieren (Spec:59)
+- [ ] Validation: `mvn test` (neue Unit-Tests für beide Fälle)
 
-- [x] ARCH-REF-7 (Frontend Config): Konfigurierbare Timeouts.
-  - Frontend: Einführung einer `UiKonfiguration` im Store.
-  - Frontend: `kiVerzoegerungMs` aus der Konfiguration lesen statt Hardcoding (800ms Default).
-  - Frontend: JS-Bridge um Methode zum Ändern der Verzögerung erweitern (für E2E).
-  - Validation: `cd frontend && npm test` (54/54) + Build grün.
-
----
-
-## Phase 2 — Spielfeatures & Frontend-UI (FEAT)
-Voraussetzung: ARCH-REF-5 und ARCH-REF-6 sind abgeschlossen.
-
-- [x] FEAT-5 (Frontend): Fehlende `data-testid`-Attribute gemäß `specs/e2e-tests.md`.
-- [~] FEAT-6 (Frontend): Vorbehalt-Auswahl-Overlay (Detail-Marker `btn-vorbehalt-{typ}` fehlen).
-- [~] FEAT-7 (Frontend): Armut-Dialog (Detail-Marker `btn-armut-{aktion}` fehlen).
-- [~] FEAT-8 (Frontend): Floating Action Bar (Detail-Marker `btn-ansage-{typ}` fehlen).
-- [ ] FEAT-9 (Frontend): Tisch-Konfigurations-Modal im Startscreen (HTML-Overlay).
-- [ ] FEAT-10 (Frontend): Offene-Tische-Liste mit 5-Sekunden-Polling im Startscreen.
+### BUG-DKV (Backend): DKV-Preset schließt Spiel nicht ab
+**Root Cause:** Reproduzierbar mit DKV-Preset (alle Sonderregeln false). Fehler in `Spiel.werteAus()` oder `PunkteRechner` — konnte durch Analyse nicht eindeutig lokalisiert werden, muss debuggt werden.
+- [ ] Backend: `Spiel.werteAus()` und `PunkteRechner` mit DKV-Preset durchspielen, Logging aktivieren
+- [ ] Backend: Ursache identifizieren und fixen
+- [ ] Validation: `mvn test` mit DKV-Preset-Integration-Test
 
 ---
 
-## Phase 3 — Spezifikations-Updates & Cleanup (SPEC)
+## Phase 2 — Bockrunden-Frontend (FEAT-BOCK)
 
-- [ ] SPEC-1: `specs/schweinchen.md`: Event `SchweinchenGemeldet` Dokumentation.
-- [ ] SPEC-2: `specs/spielablauf.md`: Phasen-Namen-Abgleich (`AUSWERTUNG` etc.).
-- [x] SPEC-5: `specs/e2e-tests.md`: Quiescence Pattern Dokumentation. (Wurde in architektur-unified.md und architektur-domain-events.md bereits detailliert).
+### FEAT-BOCK-1 (Backend + Frontend): bockrundenZaehler als number statt boolean
+`PartieStandAntwort.java:120` sendet `istBockrunde: boolean` — Spec fordert `bockrundenZaehler: number`.
+- [ ] Backend: `PartieStandAntwort.LaufendesSpielAntwort` — `istBockrunde: boolean` → `bockrundenZaehler: int`
+- [ ] Backend: `PartieStandAntwort.aus()` — `bockrundenZaehlerAusDb()` direkt übergeben (bereits als int vorhanden, `Partie.java:46`)
+- [ ] Frontend: `SpielverwaltungDto.ts:153` — `istBockrunde: boolean` → `bockrundenZaehler: number`
+- [ ] Validation: `mvn test` + `npm test`
+
+### FEAT-BOCK-2 (Frontend): animiereBockrunde() verdrahten
+`AnimationenService.animiereBockrunde()` ist implementiert aber nirgends aufgerufen.
+- [ ] Frontend: `animiereBockrunde(anzahl: number)` — Parameter statt void (N Schafe: 1×🐑, 2×🐑🐑 „Doppelbock!", N×🐑)
+- [ ] Frontend: `TischSzene.ts` im `SPIEL_GESTARTET`-Handler nach Karten-Austeilen-Animation aufrufen wenn `bockrundenZaehler > 0`
+- [ ] Validation: `npm test` + visueller Vision-Loop-Test
 
 ---
 
-## Phase 4 — Test-Coverage (TEST)
+## Phase 3 — E2E-Testbarkeit: Detail-Marker (FEAT)
 
-- [ ] TEST-1 (Backend): Unit-Test für Dulle-Verhalten im Herzsolo (`VariableTrumpfsoloTrumpfOrdnung`).
+- [~] FEAT-6 (Frontend): Vorbehalt-Auswahl-Overlay — `btn-vorbehalt-{typ}` fehlen in `TischSzene.ts:1193` (Phaser-Buttons ohne `dataset.testid`)
+- [~] FEAT-7 (Frontend): Armut-Dialog — `btn-armut-{aktion}` fehlen in `TischSzene.ts:1223–1235`
+- [~] FEAT-8 (Frontend): Floating Action Bar — `btn-ansage-{typ}` fehlen in `TischSzene.ts:1211`
+
+Für alle drei: `erstellePhaserButton()` mit `dataset['testid']`-Zuweisung erweitern.
+
+---
+
+## Phase 4 — Multiplayer-Vorbereitung (FEAT)
+
+### FEAT-NEUE-PARTIE (Backend + Frontend): Neue Partie nach Ende mit Countdown
+Komplett fehlend: nach `PartieLifecycleService.java:55-59` (`markiereAlsBeendet()`) gibt es keinen Autostart.
+- [ ] Backend: `TischEreignisTyp` um `NEUE_PARTIE_GESTARTET` erweitern
+- [ ] Backend: nach Countdown-Ablauf neue Partie automatisch starten (gleiche Spieler, gleiche Konfiguration)
+- [ ] Frontend: Countdown-Overlay im Rundenauswertungs-Screen (10s, abbrechbar durch „Tisch verlassen")
+- [ ] Validation: `mvn test` + `npm test` + E2E
+
+### FEAT-KI-SCHWELLEN (Backend): Solo-Schwellen für Loco-Blatt-Kontext
+`StandardKiStrategie.java:397,418` — keine Erhöhung der Schwellen wenn `schweinchenAktiv || dreissigAugenPflichtAktiv`. Spec (ki-strategie.md) fordert Erhöhung um ca. 13% (46→52 für SOLO_TRUMPF).
+- [ ] Backend: Kontextabhängige Schwellen in `StandardKiStrategie.berechneScore()` implementieren
+- [ ] Validation: `mvn test`
+
+---
+
+## Phase 5 — Offen / Nice-to-Have
+
+- [ ] FEAT-9 (Frontend): Tisch-Konfigurations-Modal im Startscreen (HTML-Overlay)
+- [ ] FEAT-10 (Frontend): Offene-Tische-Liste mit 5-Sekunden-Polling
+- [ ] TEST-1 (Backend): Unit-Test für Dulle-Verhalten im Herzsolo (`VariableTrumpfsoloTrumpfOrdnung`)
+
+---
+
+## Spec-Bereinigung
+
+- [ ] SPEC-SOLO: Widerspruch in `ki-strategie.md` auflösen — Text sagt „15–20%" aber Kalibrierungsbeispiel zeigt 46→52 (= 13%). Code folgt 13%. Text anpassen.
+

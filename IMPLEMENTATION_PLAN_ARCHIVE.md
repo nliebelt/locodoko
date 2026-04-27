@@ -5,7 +5,33 @@
 
 ---
 
-## Archiviert am 2026-04-15 (Plan-Run #55)
+## Archiviert am 2026-04-27 (Plan-Run #56)
+
+> Inhalt des IMPLEMENTATION_PLAN.md Stand Plan-Run #55–56. Alle Aufgaben erledigt oder durch Analyse als erledigt bestätigt.
+
+### Phase 1.8 — Architektur-Bereinigung (ARCH-REF)
+
+- [x] ARCH-REF-1 (Backend): Löschung der `SpielRegistry.java`.
+- [x] ARCH-REF-2 (Domain): `@Version` in `Partie.java`.
+- [x] ARCH-REF-3 (Service): Refactoring `SpielAktionsService.java`.
+- [x] ARCH-REF-4 (Events): AFTER_COMMIT-Garantie.
+- [x] ARCH-REF-5 (Events & Sync): Umstellung auf hybrides Sync-Modell. Entfernung KI_ZUG_SEQUENZ, SPIEL_GESTARTET, AKTION_ABGELEHNT, serielle Frontend-Queue.
+- [x] ARCH-REF-6 (Core & UI): PartieLifecycleService, DTO-Filterung, identitätsbasiertes Rendering.
+- [x] ARCH-REF-7 (Frontend Config): UiKonfiguration, kiVerzoegerungMs, JS-Bridge.
+
+### Phase 2 — Features
+
+- [x] FEAT-5 (Frontend): Fehlende `data-testid`-Attribute gemäß `specs/e2e-tests.md`.
+
+### Phase 3 — Spec-Bereinigung
+
+- [x] SPEC-1: `SchweinchenGemeldet` ist als WebSocket-Event implementiert (`KiOrchestrierungService.java:322–333`). Keine Spec-Änderung nötig.
+- [x] SPEC-2: Phasen-Namen in `Spiel.java` stimmen mit `spielablauf.md` überein (7 Phasen korrekt benannt).
+- [x] SPEC-5: Quiescence Pattern dokumentiert (architektur-unified.md + architektur-domain-events.md).
+
+---
+
+
 
 > Inhalt des IMPLEMENTATION_PLAN.md Stand Plan-Run #50–55. Alle Aufgaben erledigt.
 
