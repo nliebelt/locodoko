@@ -148,13 +148,13 @@ Spec: `specs/architektur-ddd.md` § „Concurrency (Optimistic Locking)".
   Kontra-Partei gewinnt — unabhängig davon ob Re angesagt wurde. Der Code hat aktuell die falsche
   Zusatzbedingung (Zeile ~132). Validation: `mvn test`.
 
-- [ ] **BUGFIX-3 (Backend)**: Schweinchen hat keine Spielwirkung im Spielbetrieb.
+- [x] **BUGFIX-3 (Backend)**: Schweinchen hat keine Spielwirkung im Spielbetrieb.
   Laut `specs/schweinchen.md` (Zeile ~39): „Schweinchen zeigt im Spielbetrieb keine Wirkung —
   Ursache ungeklärt." Die Domain-Klasse `SchweinchenTrumpfOrdnung` und das Event `SchweinchenGemeldet`
-  existieren, aber der Spieleffekt (Kreuz-Ass schlägt Dulle) ist nicht korrekt aktiv.
-  Schritt 1: Diagnosieren in welcher Klasse (`SchweinchenTrumpfOrdnung`, `SpielFactory`, `Partie`)
-  die `schweinchenAktiv`-Konfiguration nicht korrekt weitergereicht wird.
-  Schritt 2: Fix und Validation: `mvn test`.
+  existieren, aber der Spieleffekt (Kreuz-Ass schlägt Dulle) war nicht korrekt aktiv.
+  Ursache: `trumpfRang` für Karo-Asse war in `SchweinchenTrumpfOrdnung` unvollständig implementiert (unterschied keine exemplarIndex).
+  Fix: `trumpfRang` unterscheidet nun exemplarIndex 1 (Rang 14) und 2 (Rang 15).
+  Validation: `mvn test` erfolgreich.
 
 - [ ] **BUGFIX-4 (Backend)**: Spiel schließt nicht ab bei DKV-Preset.
   Laut `specs/regelkatalog.md` (Zeile ~77): Beim DKV-Regelset (`dkvRegeln()`) wird das Spiel
