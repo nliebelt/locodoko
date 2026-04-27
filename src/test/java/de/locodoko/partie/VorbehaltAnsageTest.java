@@ -109,6 +109,33 @@ class VorbehaltAnsageTest {
         assertFalse(VorbehaltAnsage.SCHMEISSEN_FUENF_NEUNEN.istZulaessig(hand, ohneSchmeissen));
     }
 
+    /**
+     * Synthetische Hand: Im echten 40er-Blatt (ohneNeunen=true) gibt es keine Neunen im Deck —
+     * dieser Test ist deshalb in der Praxis nicht erreichbar. Er prueft bewusst nur die
+     * Spec-Verzweigung: bei Ohne-Neunen-Regeln gilt die Schwelle 4 (statt 5).
+     */
+    @Test
+    void schmeissenNeunen_ohneNeunen_vierNeunen_zulaessig() {
+        Spielregeln ohneNeunenMitSchmeissen = Spielregeln.ohneNeunenRegeln().mitSchmeissenAktiv(true);
+        Hand hand = new Hand(List.of(
+            neun(Farbe.KREUZ, 1), neun(Farbe.KREUZ, 2),
+            neun(Farbe.PIK,   1), neun(Farbe.PIK,   2),
+            pikAs(1), pikAs(2), kreuzAs(1), kreuzAs(2), pikKoenig(1), pikKoenig(2)
+        ));
+        assertTrue(VorbehaltAnsage.SCHMEISSEN_FUENF_NEUNEN.istZulaessig(hand, ohneNeunenMitSchmeissen));
+    }
+
+    @Test
+    void schmeissenNeunen_ohneNeunen_dreiNeunen_nichtZulaessig() {
+        Spielregeln ohneNeunenMitSchmeissen = Spielregeln.ohneNeunenRegeln().mitSchmeissenAktiv(true);
+        Hand hand = new Hand(List.of(
+            neun(Farbe.KREUZ, 1), neun(Farbe.KREUZ, 2),
+            neun(Farbe.PIK,   1),
+            pikAs(1), pikAs(2), kreuzAs(1), kreuzAs(2), pikKoenig(1), pikKoenig(2), kreuzZehn(1)
+        ));
+        assertFalse(VorbehaltAnsage.SCHMEISSEN_FUENF_NEUNEN.istZulaessig(hand, ohneNeunenMitSchmeissen));
+    }
+
     // --- SCHMEISSEN_WENIG_TRUMPF ---
 
     @Test

@@ -117,7 +117,7 @@ public enum VorbehaltAnsage {
             return spielregeln.schmeissenAktiv() && anzahlKoenige >= 5;
         }
     },
-    /** Schmeissen bei 5 oder mehr Neunen. Hoechste Prioritaet — fuehrt zu sofortigem Neu-Austeilen. */
+    /** Schmeissen bei 5+ Neunen (48er Blatt) bzw. 4+ Neunen (40er Blatt). Hoechste Prioritaet — fuehrt zu sofortigem Neu-Austeilen. */
     SCHMEISSEN_FUENF_NEUNEN(null, 4) {
         @Override
         public boolean istZulaessig(Hand hand, Spielregeln spielregeln) {
@@ -126,7 +126,8 @@ public enum VorbehaltAnsage {
             long anzahlNeunen = hand.karten().stream()
                 .filter(karte -> karte.wert() == Kartenwert.NEUN)
                 .count();
-            return spielregeln.schmeissenAktiv() && anzahlNeunen >= 5;
+            int schwelle = spielregeln.ohneNeunen() ? 4 : 5;
+            return spielregeln.schmeissenAktiv() && anzahlNeunen >= schwelle;
         }
     },
     /** Schmeissen bei weniger als 2 Truempfen. Hoechste Prioritaet — fuehrt zu sofortigem Neu-Austeilen. */
