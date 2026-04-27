@@ -1,7 +1,7 @@
 # IMPLEMENTATION_PLAN — Locodoko Doppelkopf
 
 ## Notiz
-Stand: 2026-04-27 (Plan-Run #62 — FEAT-6/7/8 implementiert)
+Stand: 2026-04-27 (Plan-Run #63 — Analyse-Durchlauf: 2 neue Bugs, Präzisierungen)
 
 **Was wurde implementiert:**
 
@@ -13,7 +13,7 @@ FEAT-6/7/8 — `data-testid` Marker für Phaser-Buttons (Vorbehalt, Ansage, Armu
 - Cleanup in `renderTisch()` + `aufraeumen()` scoped auf `#ui-root`, damit keine Marker leaken.
 - 58 Tests grün, Build clean.
 
-**Nächster logischer Schritt:** FEAT-NEUE-PARTIE (Backend + Frontend) — automatischer Neustart nach Rundenende mit Countdown.
+**Nächster logischer Schritt:** BUG-KI-HAENGER-FUCHS (Backend) — KI hängt nach Fuchs gefangen, da `triggereKi()` nach Sonderpunkt-Ereignissen nicht aufgerufen wird.
 
 **Offene Fragen:** keine.
 
@@ -52,6 +52,18 @@ FEAT-6/7/8 — `data-testid` Marker für Phaser-Buttons (Vorbehalt, Ansage, Armu
 - [x] Backend: Ursache identifiziert (try-catch fehlend in KiOrchestrierungService)
 - [x] Fix bereits in commit 727f472 vorhanden — kein weiterer Fix nötig
 - [x] Validation: mvn test — 282 Tests grün
+
+### BUG-KI-HAENGER-FUCHS (Backend): KI hängt nach Fuchs gefangen
+**Root Cause:** `KiOrchestrierungService.veroeffentlicheSpielKarteEreignisse()` (Z. 282) ruft `triggereKi()` NICHT auf nach Sonderpunkt-Ereignissen (Fuchs gefangen, Karlchen, Doppelkopf). `triggereKi()` wird nur direkt nach der Kartenphase aufgerufen (Z. 196). Die KI bleibt stehen, da kein Folge-Event den nächsten Zug anstößt.
+- [ ] Backend: In `veroeffentlicheSpielKarteEreignisse()` nach jedem publizierten Sonderpunkt-Ereignis `triggereKi()` aufrufen (analog zu Z. 196 im Kartenspiel-Flow)
+- [ ] Backend: Sicherstellen dass `NaechsterSpielerErwartet`-Event korrekt nach `zieheStichEin()` für alle Stiche ausgelöst wird
+- [ ] Validation: `mvn test` — reproduzierbarer Test-Case mit Fuchs-Stich
+
+### BUG-HERZ-DURCHGEGANGEN (Backend): Bockrunden-Trigger "Herz durchgegangen" zu permissiv
+**Root Cause:** `Spiel.java:787` — Bedingung `gk.karte().farbe() == Farbe.HERZ && !trumpfOrdnung.istTrumpf()` trifft auf ALLE non-trump Herz-Karten zu (Neun, Bube, Dame, König, As). Spec (`bockrunden.md`) fordert: "Herz durchgegangen" nur wenn der Stich ausschließlich aus Herz-As oder Herz-König besteht (keine niedrigen Herzkarten).
+- [ ] Backend: Bedingung in `Spiel.java` um `karte.wert() == Wert.AS || karte.wert() == Wert.KOENIG` ergänzen, sodass nur hochwertige Herzkarten als Trigger zählen
+- [ ] Backend: Bestehende Tests in `BockrundenTest.java` auf neue Semantik prüfen; Test für Herz-Neun-Stich (kein Trigger) hinzufügen
+- [ ] Validation: `mvn test`
 
 ---
 
@@ -92,8 +104,8 @@ Komplett fehlend: nach `PartieLifecycleService.java:55-59` (`markiereAlsBeendet(
 - [ ] Validation: `mvn test` + `npm test` + E2E
 
 ### FEAT-KI-SCHWELLEN (Backend): Solo-Schwellen für Loco-Blatt-Kontext
-`StandardKiStrategie.java:397,418` — keine Erhöhung der Schwellen wenn `schweinchenAktiv || dreissigAugenPflichtAktiv`. Spec (ki-strategie.md) fordert Erhöhung um ca. 13% (46→52 für SOLO_TRUMPF).
-- [ ] Backend: Kontextabhängige Schwellen in `StandardKiStrategie.berechneScore()` implementieren
+`StandardKiStrategie.waehleVorbehalt()` (Z. 55) ruft die veraltete 1-Parameter-Signatur `soloSchwelle(vorbehaltAnsage)` auf, statt die bereits vorhandene 2-Parameter-Version `soloSchwelle(vorbehaltAnsage, zustand)`. Die 2-Param-Version mit 13%-Erhöhung bei `schweinchenAktiv || dreissigAugenPflichtAktiv` (Spec: `ki-strategie.md`, 46→52 für SOLO_TRUMPF) existiert ab Z. 411, wird aber nie gerufen.
+- [ ] Backend: `waehleVorbehalt()` auf `soloSchwelle(vorbehaltAnsage, zustand)` umstellen
 - [ ] Validation: `mvn test`
 
 ---
@@ -102,11 +114,13 @@ Komplett fehlend: nach `PartieLifecycleService.java:55-59` (`markiereAlsBeendet(
 
 - [ ] FEAT-9 (Frontend): Tisch-Konfigurations-Modal im Startscreen (HTML-Overlay)
 - [ ] FEAT-10 (Frontend): Offene-Tische-Liste mit 5-Sekunden-Polling
-- [ ] TEST-1 (Backend): Unit-Test für Dulle-Verhalten im Herzsolo (`VariableTrumpfsoloTrumpfOrdnung`)
+- [ ] TEST-1 (Backend): Unit-Test für Dulle-Verhalten im Herzsolo (`VariableTrumpfsoloTrumpfOrdnung`) — möglicherweise bereits in `SoloTrumpfOrdnungenTest.java:105-106` abgedeckt; erst verifizieren, dann ggf. als erledigt markieren
 
 ---
 
 ## Spec-Bereinigung
 
 - [ ] SPEC-SOLO: Widerspruch in `ki-strategie.md` auflösen — Text sagt „15–20%" aber Kalibrierungsbeispiel zeigt 46→52 (= 13%). Code folgt 13%. Text anpassen.
+- [ ] SPEC-AUTH: `authentifizierung.md` + `spieler-profil.md` — Status auf „Abgeschlossen" aktualisieren. OAuth2, Registrierung, Profil, Statistik, Partie-Verlauf sind zu ~90% im Code vorhanden (`OAuth2Handler`, `AuthentifizierungsController`, `SpielerProfilService`, `SpielerStatistik`, `PartieErgebnisEintrag`).
+- [ ] SPEC-VERBINDUNG: `verbindungsabbruch.md` — Event-Name `NEUE_PARTIE_GESTARTET` ist falsch; tatsächlicher Event-Name im Code ist `SPIEL_GESTARTET` (`PartieEreignisTyp.java`). Spec-Text anpassen.
 
