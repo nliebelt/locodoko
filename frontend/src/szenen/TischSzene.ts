@@ -399,6 +399,13 @@ export class TischSzene extends Phaser.Scene {
         });
         const ankuendigung = this.ermittleSpielankuendigung(ereignis.partieStand);
         if (ankuendigung) this.animationen?.reiheEin(() => this.zeigeSpielankuendigung(ankuendigung));
+        {
+          const bockrundenZaehler = ereignis.partieStand?.laufendesSpiel?.bockrundenZaehler ?? 0;
+          if (bockrundenZaehler > 0) {
+            const pos = { x: this.scale.gameSize.width / 2, y: this.scale.gameSize.height / 2 };
+            this.animationen?.reiheEin(() => this.animationen!.animiereBockrunde(bockrundenZaehler, pos));
+          }
+        }
         break;
 
       case 'KARTE_GESPIELT':

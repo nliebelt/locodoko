@@ -315,4 +315,52 @@ describe('AnimationenService', () => {
     await service.reiheEin(async () => { ablauf.push('nach-abbrechen'); });
     expect(ablauf).toEqual(['nach-abbrechen']);
   });
+
+  // WARUM: animiereBockrunde() ist der einzige visuelle Hinweis auf eine Bockrunde beim Spielstart.
+  // Die Textinhalte muessen je nach Zaehler korrekt variieren, damit Spieler sofort erkennen
+  // ob es eine normale Bockrunde, Doppelbock oder eine gestapelte Bockrunde ist.
+  it('zeigt bei anzahl=1 ein Schaf und "Bockrunde!"', async () => {
+    vi.useFakeTimers();
+    const { szene, textobjekte } = baueTweenSzene();
+    const service = new AnimationenService(szene as never);
+
+    const animation = service.animiereBockrunde(1, { x: 640, y: 360 }, 100);
+    await vi.runAllTimersAsync();
+    await animation;
+
+    expect(textobjekte).toHaveLength(2);
+    expect(textobjekte[0].text).toBe('🐑');
+    expect(textobjekte[1].text).toBe('Bockrunde!');
+    vi.useRealTimers();
+  });
+
+  it('zeigt bei anzahl=2 zwei Schafe und "Doppelbock!"', async () => {
+    vi.useFakeTimers();
+    const { szene, textobjekte } = baueTweenSzene();
+    const service = new AnimationenService(szene as never);
+
+    const animation = service.animiereBockrunde(2, { x: 640, y: 360 }, 100);
+    await vi.runAllTimersAsync();
+    await animation;
+
+    expect(textobjekte).toHaveLength(2);
+    expect(textobjekte[0].text).toBe('🐑🐑');
+    expect(textobjekte[1].text).toBe('Doppelbock!');
+    vi.useRealTimers();
+  });
+
+  it('zeigt bei anzahl>=3 Schaf-Zaehler und "Bockrunde xN"', async () => {
+    vi.useFakeTimers();
+    const { szene, textobjekte } = baueTweenSzene();
+    const service = new AnimationenService(szene as never);
+
+    const animation = service.animiereBockrunde(3, { x: 640, y: 360 }, 100);
+    await vi.runAllTimersAsync();
+    await animation;
+
+    expect(textobjekte).toHaveLength(2);
+    expect(textobjekte[0].text).toBe('🐑×3');
+    expect(textobjekte[1].text).toBe('Bockrunde ×3');
+    vi.useRealTimers();
+  });
 });

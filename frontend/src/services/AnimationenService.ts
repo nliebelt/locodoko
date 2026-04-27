@@ -289,13 +289,16 @@ export class AnimationenService {
 
   /**
    * Bockrunden-Ankuendigung: Ein Schaf faehrt von oben herein, verweilt und faehrt wieder heraus.
+   * @param anzahl - Anzahl der aktiven Bockrunden (1 = Bockrunde, 2 = Doppelbock, ≥3 = Bockrunde ×N)
    * @param position - Zielposition in der Szene (z.B. Bildmitte)
    * @param sichtbarkeitsdauer - Haltezeit in ms (Standard: 2500ms)
    */
-  async animiereBockrunde(position: Punkt, sichtbarkeitsdauer = 2500): Promise<void> {
+  async animiereBockrunde(anzahl: number, position: Punkt, sichtbarkeitsdauer = 2500): Promise<void> {
+    const emojiText = anzahl === 1 ? '🐑' : anzahl === 2 ? '🐑🐑' : `🐑×${anzahl}`;
+    const labelText = anzahl === 1 ? 'Bockrunde!' : anzahl === 2 ? 'Doppelbock!' : `Bockrunde ×${anzahl}`;
     const startY = position.y - 200;
     const schaf = this.szene.add
-      .text(position.x, startY, '🐑', {
+      .text(position.x, startY, emojiText, {
         font: "900 96px 'Space Grotesk', system-ui, sans-serif",
         align: 'center'
       })
@@ -303,7 +306,7 @@ export class AnimationenService {
       .setDepth(115)
       .setAlpha(0);
     const titel = this.szene.add
-      .text(position.x, startY + 90, 'Bockrunde!', {
+      .text(position.x, startY + 90, labelText, {
         font: "900 51px 'Space Grotesk', system-ui, sans-serif",
         color: '#ff6b35',
         stroke: '#000000',
