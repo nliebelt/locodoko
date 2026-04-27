@@ -18,6 +18,16 @@ Silikon oder Fleisch ist, spielt keine Rolle.
 
 ---
 
+## Transaktions-Garantien
+
+**Gesetz:** Domain-Events dürfen niemals vor dem erfolgreichen Datenbank-Commit verarbeitet werden. Alle Listener mit Seiteneffekten (KI-Orchestrierung, WebSocket-Broadcasts) verwenden ausschließlich `@TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)`.
+
+Dies verhindert:
+- KI-Züge, die auf einem noch nicht persistierten Spielstand reagieren
+- WebSocket-Nachrichten, die einen Zustand beschreiben, der bei einem Rollback nie existiert hat
+
+---
+
 ## Zwei Event-Ebenen
 
 ### 1. Interne Domain Events (`partie.ereignisse.*`)
@@ -54,18 +64,19 @@ er muss jederzeit mit dem Java-Enum `PartieEreignisTyp` übereinstimmen.
 
 ## KI als Event-Subscriber (Reactive AI)
 
-`KiEventAdapter` reagiert auf `NaechsterSpielerErwartet` und `VorbehaltErwartet`:
+`KiEventAdapter` reagiert auf `NaechsterSpielerErwartet` und `VorbehaltErwartet`.
+**Pflicht:** Alle Listener nutzen `@TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)`, damit die KI-Orchestrierung erst nach dem Commit des auslösenden Spielzugs startet.
 
 ```java
 @Component
 public class KiEventAdapter {
 
-    @ApplicationModuleListener
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     public void beiNaechsterSpielerErwartet(NaechsterSpielerErwartet event) {
         // Delegiert an KiOrchestrierungService.automatisiereTisch()
     }
 
-    @ApplicationModuleListener
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     public void beiVorbehaltErwartet(VorbehaltErwartet event) {
         // Delegiert an KiOrchestrierungService.automatisiereTisch()
     }
@@ -103,7 +114,7 @@ abonnieren — für dedizierte UI-Reaktionen (Modals, Banner), ohne Polling auf 
 
 ## Geplant (noch nicht implementiert)
 
-### Sequenznummerierung & Event-Batching
+### Sequenznummerierung & Self-Healing
 
 Um Race-Conditions bei verlorenen WebSocket-Frames zu erkennen, ist ein
 `PartieEreignisBatch`-Protokoll geplant:
@@ -118,7 +129,7 @@ export interface PartieEreignisBatch {
 ```
 
 **Mechanismus:**
-1. Backend bündelt alle Events pro Transaktion in einem Batch mit monotoner Sequenznummer.
+1. Backend leitet die `sequenzNummer` aus der DB-Version des Aggregats ab — kein separater In-Memory-Zähler.
 2. Frontend erkennt Lücken (`N+2` nach `N` → Batch `N+1` verloren).
 3. Frontend fordert automatisch `/snapshot` an (Self-Healing).
 4. Stale Batches (`sequenzNummer ≤ letzteSequenzNummer`) werden verworfen.
