@@ -1,0 +1,14 @@
+databaseChangeLog:
+  - changeSet:
+      id: 021-einwurf-zaehler
+      author: ralph
+      changes:
+        - addColumn:
+            tableName: spiel
+            columns:
+              - column:
+                  name: einwurf_zaehler
+                  type: INT
+                  defaultValueNumeric: 0
+                  constraints:
+                    nullable: false

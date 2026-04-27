@@ -173,6 +173,90 @@ class BockrundenTest {
             "Beide Trigger im selben Spiel muessen den Zaehler um 2 erhoehen.");
     }
 
+    // --- Einwurf-Bockrunde ---
+
+    @Test
+    void bockrundenZaehlerWirdNachEinwurfErhoeht() {
+        // Wichtig: Einwurf-Trigger muss bockrundenZaehler auf 1 setzen wenn ein Spiel eingeworfen wurde.
+        Spielergebnis ergebnis = normalspielErgebnis(Partei.RE, 1);
+        Parteien parteien = normalspielParteien();
+        Spiel spiel = Spiel.ausPersistiertemStand(
+            spielregelnMitBockrunden, Kartendeck.neu(spielregelnMitBockrunden), de.locodoko.karten.Spieltyp.NORMALSPIEL,
+            SpielerPosition.SUED, Spielphase.GESAMTSTAND_AKTUALISIEREN,
+            Map.of(), List.of(), parteien, Ansagen.leer(), List.of(), ergebnis, false, null, 1);
+
+        Partie partie = Partie.neu(2, SpielerPosition.SUED, spielregelnMitBockrunden);
+        partie = partie.starteNaechstesSpiel(Kartendeck.neu(spielregelnMitBockrunden));
+        partie = partie.mitAktuellemSpiel(spiel);
+        partie = partie.schliesseAktuellesSpielAb();
+
+        assertEquals(1, partie.bockrundenZaehler(),
+            "Einwurf-Trigger muss bockrundenZaehler um 1 erhoehen.");
+    }
+
+    @Test
+    void bockrundenZaehlerWirdNachZweiEinwuerfenUmZweiErhoeht() {
+        // Wichtig: Jeder Einwurf (Schmeißen oder abgelehnte Armut) addiert +1 zum Zähler.
+        Spielergebnis ergebnis = normalspielErgebnis(Partei.RE, 1);
+        Parteien parteien = normalspielParteien();
+        Spiel spiel = Spiel.ausPersistiertemStand(
+            spielregelnMitBockrunden, Kartendeck.neu(spielregelnMitBockrunden), de.locodoko.karten.Spieltyp.NORMALSPIEL,
+            SpielerPosition.SUED, Spielphase.GESAMTSTAND_AKTUALISIEREN,
+            Map.of(), List.of(), parteien, Ansagen.leer(), List.of(), ergebnis, false, null, 2);
+
+        Partie partie = Partie.neu(2, SpielerPosition.SUED, spielregelnMitBockrunden);
+        partie = partie.starteNaechstesSpiel(Kartendeck.neu(spielregelnMitBockrunden));
+        partie = partie.mitAktuellemSpiel(spiel);
+        partie = partie.schliesseAktuellesSpielAb();
+
+        assertEquals(2, partie.bockrundenZaehler(),
+            "Zwei Einwuerfe im selben Spiel muessen den Zaehler um 2 erhoehen.");
+    }
+
+    @Test
+    void einwurfTriggerIgnoriertWennBockrundenDeaktiviert() {
+        // Wichtig: Einwurf-Trigger darf keinen Effekt haben wenn bockrundenAktiv=false.
+        Spielergebnis ergebnis = normalspielErgebnis(Partei.RE, 1);
+        Parteien parteien = normalspielParteien();
+        Spiel spiel = Spiel.ausPersistiertemStand(
+            spielregelOhneBockrunden, Kartendeck.neu(spielregelOhneBockrunden), de.locodoko.karten.Spieltyp.NORMALSPIEL,
+            SpielerPosition.SUED, Spielphase.GESAMTSTAND_AKTUALISIEREN,
+            Map.of(), List.of(), parteien, Ansagen.leer(), List.of(), ergebnis, false, null, 1);
+
+        Partie partie = Partie.neu(2, SpielerPosition.SUED, spielregelOhneBockrunden);
+        partie = partie.starteNaechstesSpiel(Kartendeck.neu(spielregelOhneBockrunden));
+        partie = partie.mitAktuellemSpiel(spiel);
+        partie = partie.schliesseAktuellesSpielAb();
+
+        assertEquals(0, partie.bockrundenZaehler(),
+            "Einwurf-Trigger darf keinen Effekt haben wenn bockrundenAktiv=false.");
+    }
+
+    @Test
+    void einwurfUndHerzDurchgegangenAddiertSichZuZwei() {
+        // Wichtig: Einwurf-Trigger und Herz-durchgegangen-Trigger koennen zusammen auftreten (+2).
+        Stich herzStich = Stich.ausPersistiertemStand(SpielerPosition.WEST, List.of(
+            new GespielteKarte(SpielerPosition.WEST,  new Karte(Farbe.HERZ, Kartenwert.AS,     1), 1),
+            new GespielteKarte(SpielerPosition.NORD,  new Karte(Farbe.HERZ, Kartenwert.KOENIG, 1), 2),
+            new GespielteKarte(SpielerPosition.OST,   new Karte(Farbe.HERZ, Kartenwert.KOENIG, 2), 3),
+            new GespielteKarte(SpielerPosition.SUED,  new Karte(Farbe.HERZ, Kartenwert.AS,     2), 4)
+        ));
+        Spielergebnis ergebnis = normalspielErgebnis(Partei.RE, 1);
+        Parteien parteien = normalspielParteien();
+        Spiel spiel = Spiel.ausPersistiertemStand(
+            spielregelnMitBockrunden, Kartendeck.neu(spielregelnMitBockrunden), de.locodoko.karten.Spieltyp.NORMALSPIEL,
+            SpielerPosition.SUED, Spielphase.GESAMTSTAND_AKTUALISIEREN,
+            Map.of(), List.of(), parteien, Ansagen.leer(), List.of(herzStich), ergebnis, false, null, 1);
+
+        Partie partie = Partie.neu(2, SpielerPosition.SUED, spielregelnMitBockrunden);
+        partie = partie.starteNaechstesSpiel(Kartendeck.neu(spielregelnMitBockrunden));
+        partie = partie.mitAktuellemSpiel(spiel);
+        partie = partie.schliesseAktuellesSpielAb();
+
+        assertEquals(2, partie.bockrundenZaehler(),
+            "Einwurf + Herz-durchgegangen muessen den Zaehler auf 2 setzen.");
+    }
+
     // --- Partie: Multiplikation + Dekrementierung ---
 
     @Test

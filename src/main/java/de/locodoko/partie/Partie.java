@@ -196,6 +196,7 @@ public class Partie extends AbstraktePersistenzEntity {
                     && spiel.ansagen().hatGrundansage(Partei.KONTRA, spiel.parteien())) {
                 neueTrigger++;
             }
+            neueTrigger += spiel.einwurfZaehler();
         }
 
         int multiplikator = (spielregeln.bockrundenAktiv() && bockrundenZaehler > 0) ? 2 : 1;

@@ -39,3 +39,5 @@ databaseChangeLog:
       file: db/changelog/019-spiel-sonderpunkte-json.yaml
   - include:
       file: db/changelog/020-partie-version.yaml
+  - include:
+      file: db/changelog/021-einwurf-zaehler.yaml

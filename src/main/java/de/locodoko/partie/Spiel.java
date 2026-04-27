@@ -70,6 +70,8 @@ public class Spiel extends AbstraktePersistenzEntity {
     @Transient private SpielerPosition solistAufspieler;
     /** Spieler die in diesem Spiel bereits geschmissen haben — dürfen kein zweites Mal schmeißen. */
     @Transient private Set<SpielerPosition> bereitsGeschmissen = EnumSet.noneOf(SpielerPosition.class);
+    /** Anzahl der Einwürfe (Schmeißen oder abgelehnte Armut) in diesem Spiel — für Einwurf-Bockrunden-Trigger. */
+    @Transient private int einwurfZaehler = 0;
     @Transient private int spielNummer;
     @Transient private Partie partieRef;
 
@@ -91,6 +93,7 @@ public class Spiel extends AbstraktePersistenzEntity {
     @Column("pflicht_ansage_ausstehend") private String pflichtAnsageAusstehendJson = "[]";
     @Column("schweinchen_aktiv") private boolean schweinchenAktivFlag;
     @Column("bereits_geschmissen_json") private String bereitsGeschmisenJson = "[]";
+    @Column("einwurf_zaehler") private int einwurfZaehlerDb = 0;
     @Column("aktueller_stich_aufspieler_position") private String aktuellerStichAufspielerPositionText;
     @Column("aktueller_stich_karten") private String aktuellerStichKartenJson;
     @Column("re_augen") private Integer reAugen;
@@ -168,11 +171,22 @@ public class Spiel extends AbstraktePersistenzEntity {
         List<Stich> abgeschlosseneStiche, Spielergebnis ergebnis,
         boolean schweinchenAktiv, SpielerPosition solistAufspieler
     ) {
+        return ausPersistiertemStand(spielregeln, kartendeck, spieltyp, geber, phase, haende,
+            vorbehalte, parteien, ansagen, abgeschlosseneStiche, ergebnis, schweinchenAktiv, solistAufspieler, 0);
+    }
+
+    public static Spiel ausPersistiertemStand(
+        Spielregeln spielregeln, Kartendeck kartendeck, Spieltyp spieltyp,
+        SpielerPosition geber, Spielphase phase, Map<SpielerPosition, Hand> haende,
+        List<VorbehaltMeldung> vorbehalte, Parteien parteien, Ansagen ansagen,
+        List<Stich> abgeschlosseneStiche, Spielergebnis ergebnis,
+        boolean schweinchenAktiv, SpielerPosition solistAufspieler, int einwurfZaehler
+    ) {
         return new SpielBuilder().spielregeln(spielregeln).kartendeck(kartendeck)
             .trumpfOrdnung(trumpfOrdnungFuerPersistiertenStand(spielregeln, spieltyp, schweinchenAktiv))
             .spieltyp(spieltyp).geber(geber).phase(phase).haende(haende).vorbehalte(vorbehalte)
             .parteien(parteien).ansagen(ansagen).abgeschlosseneStiche(abgeschlosseneStiche)
-            .ergebnis(ergebnis).solistAufspieler(solistAufspieler).build();
+            .ergebnis(ergebnis).solistAufspieler(solistAufspieler).einwurfZaehler(einwurfZaehler).build();
     }
 
     /** Erstellt eine minimale Persistenz-Entity ohne Domain-Felder. */
@@ -442,6 +456,7 @@ public class Spiel extends AbstraktePersistenzEntity {
     private static boolean istKaroAs(Karte k) { return k.farbe() == Farbe.KARO && k.wert() == Kartenwert.AS; }
 
     public boolean hatHerzDurchgegangenenStich() { return abgeschlosseneStiche.stream().anyMatch(this::istHerzDurchgegangen); }
+    public int einwurfZaehler() { return einwurfZaehler; }
 
     // -- Persistenz-Accessor-Methoden --
 
@@ -579,6 +594,7 @@ public class Spiel extends AbstraktePersistenzEntity {
         this.parteien = hydriereParteien().orElse(null);
         this.ergebnis = hydriereErgebnis().orElse(null);
         this.bereitsGeschmissen = hydriereBereitsGeschmissen();
+        this.einwurfZaehler = einwurfZaehlerDb;
     }
 
     private Spielphase hydrierePhase() {
@@ -726,6 +742,7 @@ public class Spiel extends AbstraktePersistenzEntity {
         pflichtAnsageAusstehendJson = JsonKonverter.schreibeAlsJson(pflichtansageAusstehend().stream().map(Enum::name).toList());
         schweinchenAktivFlag = schweinchenAktiv();
         bereitsGeschmisenJson = JsonKonverter.schreibeAlsJson(bereitsGeschmissen.stream().map(Enum::name).toList());
+        einwurfZaehlerDb = einwurfZaehler;
     }
 
     private void syncErgebnis(Spielergebnis se) {
@@ -761,6 +778,7 @@ public class Spiel extends AbstraktePersistenzEntity {
         vorbehalte = quelle.vorbehalte; parteien = quelle.parteien; ansagen = quelle.ansagen;
         abgeschlosseneStiche = quelle.abgeschlosseneStiche; ergebnis = quelle.ergebnis; solistAufspieler = quelle.solistAufspieler;
         bereitsGeschmissen = quelle.bereitsGeschmissen;
+        einwurfZaehler = quelle.einwurfZaehler;
         syncZuPersistenz();
     }
 
@@ -779,6 +797,7 @@ public class Spiel extends AbstraktePersistenzEntity {
             .spieltyp(spieltyp).geber(geber).phase(phase).haende(haende).vorbehalte(vorbehalte)
             .parteien(parteien).ansagen(ansagen).abgeschlosseneStiche(abgeschlosseneStiche)
             .ergebnis(ergebnis).solistAufspieler(solistAufspieler).bereitsGeschmissen(bereitsGeschmissen)
+            .einwurfZaehler(einwurfZaehler)
             .persistenceId(id()).persistenceErstelltAm(erstelltAm()).persistenceAktualisiertAm(aktualisiertAm()).persistenceIsNew(istNeu());
     }
 
@@ -833,7 +852,8 @@ public class Spiel extends AbstraktePersistenzEntity {
         Kartendeck nd = kartendeck.gemischt();
         return toBuilder().kartendeck(nd).trumpfOrdnung(new NormaleTrumpfOrdnung(spielregeln)).spieltyp(Spieltyp.NORMALSPIEL)
             .phase(Spielphase.VORBEHALT_ANSAGE).haende(haendeAusDeck(nd)).vorbehalte(List.of()).parteien(null)
-            .ansagen(Ansagen.leer()).abgeschlosseneStiche(List.of()).ergebnis(null).solistAufspieler(null).build();
+            .ansagen(Ansagen.leer()).abgeschlosseneStiche(List.of()).ergebnis(null).solistAufspieler(null)
+            .einwurfZaehler(einwurfZaehler + 1).build();
     }
 
     private SpielerPosition erkenneStillesSoloSpieler() {
@@ -877,6 +897,7 @@ public class Spiel extends AbstraktePersistenzEntity {
         private Parteien parteien; private Ansagen ansagen; private List<Stich> abgeschlosseneStiche;
         private Spielergebnis ergebnis; private SpielerPosition solistAufspieler;
         private Set<SpielerPosition> bereitsGeschmissen;
+        private int einwurfZaehler;
         private UUID persistenceId; private Instant persistenceErstelltAm; private Instant persistenceAktualisiertAm; private boolean persistenceIsNew = true;
 
         SpielBuilder spielregeln(Spielregeln v) { this.spielregeln = v; return this; }
@@ -893,6 +914,7 @@ public class Spiel extends AbstraktePersistenzEntity {
         SpielBuilder ergebnis(Spielergebnis v) { this.ergebnis = v; return this; }
         SpielBuilder solistAufspieler(SpielerPosition v) { this.solistAufspieler = v; return this; }
         SpielBuilder bereitsGeschmissen(Set<SpielerPosition> v) { this.bereitsGeschmissen = v; return this; }
+        SpielBuilder einwurfZaehler(int v) { this.einwurfZaehler = v; return this; }
         SpielBuilder persistenceId(UUID v) { this.persistenceId = v; return this; }
         SpielBuilder persistenceErstelltAm(Instant v) { this.persistenceErstelltAm = v; return this; }
         SpielBuilder persistenceAktualisiertAm(Instant v) { this.persistenceAktualisiertAm = v; return this; }
@@ -902,6 +924,7 @@ public class Spiel extends AbstraktePersistenzEntity {
             Spiel spiel = new Spiel(spielregeln, kartendeck, trumpfOrdnung, spieltyp, geber, phase,
                 haende, vorbehalte, parteien, ansagen, abgeschlosseneStiche, ergebnis, solistAufspieler);
             if (bereitsGeschmissen != null) { spiel.bereitsGeschmissen = bereitsGeschmissen; }
+            spiel.einwurfZaehler = einwurfZaehler;
             if (persistenceId != null) { spiel.setzeId(persistenceId); spiel.setzeErstelltAm(persistenceErstelltAm); spiel.setzeAktualisiertAm(persistenceAktualisiertAm); if (!persistenceIsNew) spiel.markiereAlsGeladen(); }
             spiel.syncZuPersistenz();
             return spiel;
