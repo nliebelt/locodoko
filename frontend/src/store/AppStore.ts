@@ -27,6 +27,11 @@ export interface UiMeldung {
   fehlerCode?: string;
 }
 
+export interface UiKonfiguration {
+  /** Wartezeit zwischen KI-Kartenzügen in Millisekunden. 0 = kein Delay (z.B. für E2E-Tests). */
+  kiVerzoegerungMs: number;
+}
+
 export interface AppZustand {
   initialisiert: boolean;
   wirdGeladen: boolean;
@@ -39,6 +44,7 @@ export interface AppZustand {
   aktuellerTisch: TischAntwort | null;
   partieStand: PartieStandAntwort | null;
   meldung: UiMeldung | null;
+  uiKonfiguration: UiKonfiguration;
 }
 
 type Listener = (zustand: AppZustand) => void;
@@ -55,7 +61,8 @@ function erzeugeAnfangszustand(): AppZustand {
     tische: [],
     aktuellerTisch: null,
     partieStand: null,
-    meldung: null
+    meldung: null,
+    uiKonfiguration: { kiVerzoegerungMs: 800 }
   };
 }
 
@@ -75,7 +82,6 @@ export class AppStore {
   private readonly _eventListener = new Set<(ereignis: PartieEreignisAntwort) => void>();
   private _eventQueue: PartieEreignisAntwort[] = [];
   private _verarbeiteEventLaeuft = false;
-  private _kiKartenVerzögerungMs = 800;
   private _aktuelleSequenzId = 0;
   private _verpassterSpielBeendet: PartieEreignisAntwort | null = null;
 
@@ -92,7 +98,7 @@ export class AppStore {
    * @param ms Dauer in Millisekunden.
    */
   setzeKiKartenVerzögerung(ms: number): void {
-    this._kiKartenVerzögerungMs = ms;
+    this.patch({ uiKonfiguration: { ...this.zustand.uiKonfiguration, kiVerzoegerungMs: ms } });
   }
 
   /**
@@ -556,10 +562,10 @@ export class AppStore {
             const istKiKarte = prevStand?.laufendesSpiel?.spieler?.find(
               s => s.position === ereignis.spielerPosition
             )?.istKi ?? false;
-            if (istKiKarte && prevStand && this._kiKartenVerzögerungMs > 0) {
+            if (istKiKarte && prevStand && this.zustand.uiKonfiguration.kiVerzoegerungMs > 0) {
               const syntheticStand = this._synthetischerKarteGespielt(prevStand, ereignis);
               this.patch({ partieStand: syntheticStand });
-              await new Promise<void>((r) => setTimeout(r, this._kiKartenVerzögerungMs));
+              await new Promise<void>((r) => setTimeout(r, this.zustand.uiKonfiguration.kiVerzoegerungMs));
             }
             this.patch({ partieStand: ereignis.partieStand });
             break;

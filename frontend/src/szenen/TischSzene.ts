@@ -300,6 +300,7 @@ export class TischSzene extends Phaser.Scene {
           appStore.setzeKiKartenVerzögerung(0);
         }
       };
+      bridge.setzeKiVerzoegerung = (ms: number) => appStore.setzeKiKartenVerzögerung(ms);
       bridge.isOverlaySichtbar = () => {
         const rEnde = this.rundenEndeModal;
         const pEnde = this.partieEndeModal;

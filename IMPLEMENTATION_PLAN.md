@@ -1,9 +1,10 @@
 # IMPLEMENTATION_PLAN — Locodoko Doppelkopf
 
 ## Notiz
-Stand: 2026-04-27 (ARCH-REF-6 abgeschlossen)
+Stand: 2026-04-27 (ARCH-REF-7 abgeschlossen)
 
-**Nächster Schritt:** ARCH-REF-7 (Frontend Config: Konfigurierbare Timeouts).
+**Nächster Schritt:** FEAT-5 (Frontend: Fehlende `data-testid`-Attribute gemäß `specs/e2e-tests.md`).
+Alternativ: FEAT-6/7/8 (Overlays vervollständigen) — diese sind teilweise implementiert.
 
 ## Legende
 - [x] Erledigt
@@ -35,10 +36,11 @@ Ziel: Vollendung der "Unified Architecture" — sauberer Event-Fluss, identität
   - Frontend: `TischSzene.renderTisch()` auf identitätsbasierte Reconciliation umgestellt (persistent eigene Karten, depth-based Z-order).
   - Validation: `mvn test` (278/278) + `cd frontend && npm test` (54/54) + Build/Lint grün.
 
-- [ ] ARCH-REF-7 (Frontend Config): Konfigurierbare Timeouts.
+- [x] ARCH-REF-7 (Frontend Config): Konfigurierbare Timeouts.
   - Frontend: Einführung einer `UiKonfiguration` im Store.
   - Frontend: `kiVerzoegerungMs` aus der Konfiguration lesen statt Hardcoding (800ms Default).
   - Frontend: JS-Bridge um Methode zum Ändern der Verzögerung erweitern (für E2E).
+  - Validation: `cd frontend && npm test` (54/54) + Build grün.
 
 ---
 
