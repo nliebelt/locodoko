@@ -571,6 +571,7 @@ export class TischSzene extends Phaser.Scene {
     }
 
     this.tischEbene?.destroy(true);
+    document.getElementById('ui-root')?.querySelectorAll('[data-testid^="btn-vorbehalt-"],[data-testid^="btn-ansage-"],[data-testid^="btn-armut-"]').forEach(el => el.remove());
     this.handKartenobjekte.clear();
     const breite = this.scale.gameSize.width;
     const hoehe = this.scale.gameSize.height;
@@ -1166,13 +1167,14 @@ export class TischSzene extends Phaser.Scene {
     await this.animationen?.animiereAnsageBanner(m, { x: this.scale.gameSize.width / 2, y: this.scale.gameSize.height * 0.18 }, undefined, '#ff69b4');
   }
 
-  private erstellePhaserButton(ebene: Phaser.GameObjects.Container, x: number, y: number, w: number, h: number, txt: string, hdl: () => void, d = false, s = false, hv = false): void {
+  private erstellePhaserButton(ebene: Phaser.GameObjects.Container, x: number, y: number, w: number, h: number, txt: string, hdl: () => void, d = false, s = false, hv = false, testId?: string): void {
     const hgF = d ? 0x2a2a2a : hv ? 0xffd166 : s ? 0x1a2a1a : 0x1a5a2a;
     const rF = d ? 0x555555 : hv ? 0xf8f9fa : s ? 0x4a7a5a : 0x4adf7a;
     const tF = d ? '#888888' : hv ? '#0d1f12' : '#f8f9fa';
     const bg = this.add.rectangle(x, y, w, h, hgF, d ? 0.5 : 0.92).setStrokeStyle(hv ? 2 : 1, rF, 0.9);
     ebene.add(bg); ebene.add(this.add.text(x, y, txt, { color: tF, fontSize: `${Math.round(Math.max(12, this.scale.gameSize.width * 0.011))}px`, fontStyle: 'bold' }).setOrigin(0.5));
     if (!d) bg.setInteractive({ useHandCursor: true }).on('pointerdown', hdl);
+    if (testId) this.aktualisiereE2EMarker(testId, true);
   }
 
   private renderVorbehaltDialog(ebene: Phaser.GameObjects.Container, modell: TischAnsichtModell, zustand: AppZustand, breite: number, hoehe: number): void {
@@ -1204,7 +1206,7 @@ export class TischSzene extends Phaser.Scene {
     const gX = breite / 2 - bW / 2 - aX / 2;
     const gY = diaY - diaH / 2 + titH + (aDek.length > 0 ? aDek.length * zeiH + Math.round(zeiH * 0.5) : 0) + aY + bH / 2;
     opt.forEach((v, i) => {
-      this.erstellePhaserButton(ebene, gX + (i % spal) * (bW + aX), gY + Math.floor(i / spal) * (bH + aY), bW, bH, formatiereVorbehalt(v), () => appStore.meldeVorbehalt(v), dkt, false, i === this.tastaturVorbehaltIndex);
+      this.erstellePhaserButton(ebene, gX + (i % spal) * (bW + aX), gY + Math.floor(i / spal) * (bH + aY), bW, bH, formatiereVorbehalt(v), () => appStore.meldeVorbehalt(v), dkt, false, i === this.tastaturVorbehaltIndex, `btn-vorbehalt-${v.toLowerCase().replace(/_/g, '-')}`);
     });
   }
 
@@ -1222,7 +1224,7 @@ export class TischSzene extends Phaser.Scene {
     const npX = Math.min(breite / 2 + (kAnz > 0 ? ((kAnz - 1) * kAb.horizontal + kG.w) / 2 : 0) + Math.max(120, breite * 0.11) / 2 + 40, breite - Math.max(120, breite * 0.11) / 2 - 4);
     const stX = npX - (ans.length * (bW + ab) - ab) / 2 + bW / 2;
     const y = Math.min(hoehe * 0.85 + Math.max(54, hoehe * 0.075) / 2 + bH / 2 + 8, hoehe - bH / 2 - 4);
-    ans.forEach((a, i) => { this.erstellePhaserButton(ebene, stX + i * (bW + ab), y, bW, bH, formatiereAnsage(a), () => appStore.sageAnsageAn(a), dkt); });
+    ans.forEach((a, i) => { this.erstellePhaserButton(ebene, stX + i * (bW + ab), y, bW, bH, formatiereAnsage(a), () => appStore.sageAnsageAn(a), dkt, false, false, `btn-ansage-${a.toLowerCase().replace(/_/g, '-')}`); });
   }
 
   private renderArmutBereich(ebene: Phaser.GameObjects.Container, modell: TischAnsichtModell, zustand: AppZustand, breite: number, hoehe: number): void {
@@ -1234,19 +1236,19 @@ export class TischSzene extends Phaser.Scene {
     if (a.modus === 'ANBIETEN') {
       const anz = this.ausgewaehlteArmutKarten.size;
       ebene.add(this.add.text(breite / 2, y - hoehe * 0.032, `Waehle ${a.kartenAnzahl} Trumpfkarte${a.kartenAnzahl === 1 ? '' : 'n'} (${anz}/${a.kartenAnzahl} gewaehlt)`, { color: '#d8f3dc', fontSize: `${Math.round(Math.max(11, breite * 0.010))}px`, align: 'center' }).setOrigin(0.5));
-      this.erstellePhaserButton(ebene, breite / 2, y, Math.round(Math.min(200, breite * 0.17)), bH, 'Trumpfkarten anbieten', () => this.bestaetigeArmut(modell), dkt || anz !== a.kartenAnzahl);
+      this.erstellePhaserButton(ebene, breite / 2, y, Math.round(Math.min(200, breite * 0.17)), bH, 'Trumpfkarten anbieten', () => this.bestaetigeArmut(modell), dkt || anz !== a.kartenAnzahl, false, false, 'btn-armut-anbieten');
     } else if (!this.armutAnnahmeAktiv) {
       const bW = Math.round(Math.min(130, breite * 0.11));
       const ab = Math.round(breite * 0.012);
-      this.erstellePhaserButton(ebene, breite / 2 - bW / 2 - ab / 2, y, bW, bH, 'Annehmen', () => { if (a.kartenAnzahl === 0) appStore.beantworteArmut(true, []); else { this.armutAnnahmeAktiv = true; this.ausgewaehlteArmutKarten.clear(); this.renderTisch(this.letzterZustand ?? appStore.snapshot()); } }, dkt);
-      this.erstellePhaserButton(ebene, breite / 2 + bW / 2 + ab / 2, y, bW, bH, 'Ablehnen', () => { this.armutAnnahmeAktiv = false; this.ausgewaehlteArmutKarten.clear(); appStore.beantworteArmut(false, []); }, dkt, true);
+      this.erstellePhaserButton(ebene, breite / 2 - bW / 2 - ab / 2, y, bW, bH, 'Annehmen', () => { if (a.kartenAnzahl === 0) appStore.beantworteArmut(true, []); else { this.armutAnnahmeAktiv = true; this.ausgewaehlteArmutKarten.clear(); this.renderTisch(this.letzterZustand ?? appStore.snapshot()); } }, dkt, false, false, 'btn-armut-annehmen');
+      this.erstellePhaserButton(ebene, breite / 2 + bW / 2 + ab / 2, y, bW, bH, 'Ablehnen', () => { this.armutAnnahmeAktiv = false; this.ausgewaehlteArmutKarten.clear(); appStore.beantworteArmut(false, []); }, dkt, true, false, 'btn-armut-ablehnen');
     } else {
       const anz = this.ausgewaehlteArmutKarten.size;
       ebene.add(this.add.text(breite / 2, y - hoehe * 0.032, `Waehle ${a.kartenAnzahl} Karte${a.kartenAnzahl === 1 ? '' : 'n'} zurueck (${anz}/${a.kartenAnzahl})`, { color: '#d8f3dc', fontSize: `${Math.round(Math.max(11, breite * 0.010))}px`, align: 'center' }).setOrigin(0.5));
       const bW = Math.round(Math.min(150, breite * 0.13));
       const ab = Math.round(breite * 0.012);
-      this.erstellePhaserButton(ebene, breite / 2 - bW / 2 - ab / 2, y, bW, bH, 'Annahme bestaetigen', () => this.bestaetigeArmut(modell), dkt || anz !== a.kartenAnzahl);
-      this.erstellePhaserButton(ebene, breite / 2 + bW / 2 + ab / 2, y, Math.round(Math.min(100, breite * 0.085)), bH, 'Abbrechen', () => { this.armutAnnahmeAktiv = false; this.ausgewaehlteArmutKarten.clear(); this.renderTisch(this.letzterZustand ?? appStore.snapshot()); }, dkt, true);
+      this.erstellePhaserButton(ebene, breite / 2 - bW / 2 - ab / 2, y, bW, bH, 'Annahme bestaetigen', () => this.bestaetigeArmut(modell), dkt || anz !== a.kartenAnzahl, false, false, 'btn-armut-annahme-bestaetigen');
+      this.erstellePhaserButton(ebene, breite / 2 + bW / 2 + ab / 2, y, Math.round(Math.min(100, breite * 0.085)), bH, 'Abbrechen', () => { this.armutAnnahmeAktiv = false; this.ausgewaehlteArmutKarten.clear(); this.renderTisch(this.letzterZustand ?? appStore.snapshot()); }, dkt, true, false, 'btn-armut-abbrechen');
     }
   }
 
@@ -1294,6 +1296,7 @@ export class TischSzene extends Phaser.Scene {
     this.rundenauswertungObjekte.forEach((o) => o.destroy()); this.tischEbene?.destroy(true);
     this.hintergrund?.destroy(); this.handKartenobjekte.clear();
     this.schliesseRundenEndeModal(); this.versteckeLetztesStichOverlay(); this.schliessePartieEndeModal();
+    document.getElementById('ui-root')?.querySelectorAll('[data-testid^="btn-vorbehalt-"],[data-testid^="btn-ansage-"],[data-testid^="btn-armut-"]').forEach(el => el.remove());
     this.uiManager?.aufraeumen();
   }
 }
