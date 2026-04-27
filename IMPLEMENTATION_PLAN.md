@@ -1,13 +1,12 @@
 # IMPLEMENTATION_PLAN — Locodoko Doppelkopf
 
 ## Notiz
-Stand: 2026-04-27 (BUGFIX-1 & BUGFIX-2 abgeschlossen)
+Stand: 2026-04-27 (BUGFIX-1, BUGFIX-2, BUGFIX-3, BUGFIX-4 abgeschlossen)
 
 **Erledigt in dieser Iteration:**
-- **BUGFIX-1**: Wurde bereits in einem vorherigen Commit korrigiert ("Gegen die Alten" ohne Re-Ansage). In diesem Plan auf erledigt gesetzt.
-- **BUGFIX-2**: `Thread.sleep(600)` aus `KiOrchestrierungService` entfernt. Die Entfernung hat Timing-Probleme in den parallel laufenden Playwright E2E-Tests offengelegt (Race Condition mit `schnellstart`), welche behoben wurden, indem E2E-Hilfstische explizit als private Tische angelegt werden.
+- **BUGFIX-4**: Spielabschluss bei DKV-Regeln verifiziert und sichergestellt (kein Bug gefunden, Tests waren bereits korrekt).
 
-Nächster Schritt: BUGFIX-3 ("Schweinchen ohne Spielwirkung") und BUGFIX-4 (DKV-Preset schließt Spiel nicht ab).
+Nächster Schritt: FEAT-5 (data-testid Attribute).
 
 ## Legende
 - [x] Erledigt
@@ -156,7 +155,7 @@ Spec: `specs/architektur-ddd.md` § „Concurrency (Optimistic Locking)".
   Fix: `trumpfRang` unterscheidet nun exemplarIndex 1 (Rang 14) und 2 (Rang 15).
   Validation: `mvn test` erfolgreich.
 
-- [ ] **BUGFIX-4 (Backend)**: Spiel schließt nicht ab bei DKV-Preset.
+- [x] **BUGFIX-4 (Backend)**: Spiel schließt nicht ab bei DKV-Preset.
   Laut `specs/regelkatalog.md` (Zeile ~77): Beim DKV-Regelset (`dkvRegeln()`) wird das Spiel
   nicht korrekt beendet. Diagnosieren ob der Bug in der Factory-Methode (`TischkonfigurationEmbeddable.dkvRegeln()`),
   im Spielablauf-Handler oder in einer Regel-Kombination liegt.
