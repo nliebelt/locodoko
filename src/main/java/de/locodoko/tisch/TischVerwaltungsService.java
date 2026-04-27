@@ -27,7 +27,6 @@ public class TischVerwaltungsService {
     private final KiSpielerFabrik kiSpielerFabrik;
     private final ApplicationEventPublisher eventPublisher;
     private final TischEchtzeitService tischEchtzeitService;
-    private final SpielRegistry spielRegistry;
 
     public TischVerwaltungsService(
         TischRepository tischRepository,
@@ -35,8 +34,7 @@ public class TischVerwaltungsService {
         SpielerRepository spielerRepository,
         KiSpielerFabrik kiSpielerFabrik,
         ApplicationEventPublisher eventPublisher,
-        TischEchtzeitService tischEchtzeitService,
-        SpielRegistry spielRegistry
+        TischEchtzeitService tischEchtzeitService
     ) {
         this.tischRepository = tischRepository;
         this.partieRepository = partieRepository;
@@ -44,7 +42,6 @@ public class TischVerwaltungsService {
         this.kiSpielerFabrik = kiSpielerFabrik;
         this.eventPublisher = eventPublisher;
         this.tischEchtzeitService = tischEchtzeitService;
-        this.spielRegistry = spielRegistry;
     }
 
     @Transactional(readOnly = true)
@@ -184,7 +181,6 @@ public class TischVerwaltungsService {
             tisch.partie().markiereAlsAbgebrochen();
             partieRepository.saveAndFlush(tisch.partie());
         }
-        spielRegistry.entferne(TischId.von(tischId));
         tischRepository.delete(tisch);
         tischRepository.flush();
         tischEchtzeitService.planeTischliste(TischlisteEreignisAntwort.aktualisiert(listeOffeneTische()));
@@ -216,10 +212,8 @@ public class TischVerwaltungsService {
         partie.fuegeSpielHinzu(erzeugeErstesSpiel(tisch));
         tisch.setzePartie(partie);
         TischEntity gespeicherterTisch = tischRepository.saveAndFlush(tisch);
-        spielRegistry.leere(TischId.von(gespeicherterTisch.id())); // Cache leeren für sauberen Neustart
         eventPublisher.publishEvent(new KiUebernahmeEreignis(TischId.von(gespeicherterTisch.id())));
         gespeicherterTisch = tischRepository.saveAndFlush(gespeicherterTisch);
-        synchronisiereRegistry(tischId, gespeicherterTisch);
         TischAntwort antwort = TischAntwort.aus(gespeicherterTisch);
         veroeffentlicheTischAktualisierung(
             TischlisteEreignisAntwort.aktualisiert(listeOffeneTische()),
@@ -267,7 +261,6 @@ public class TischVerwaltungsService {
         TischEntity gespeicherterTisch = tischRepository.saveAndFlush(tisch);
         eventPublisher.publishEvent(new KiUebernahmeEreignis(TischId.von(gespeicherterTisch.id())));
         gespeicherterTisch = tischRepository.saveAndFlush(gespeicherterTisch);
-        synchronisiereRegistry(tischId, gespeicherterTisch);
         TischAntwort tischAntwort = TischAntwort.aus(gespeicherterTisch);
         veroeffentlicheTischAktualisierung(
             TischlisteEreignisAntwort.aktualisiert(listeOffeneTische()),
@@ -348,10 +341,8 @@ public class TischVerwaltungsService {
         partie.fuegeSpielHinzu(erzeugeErstesSpiel(tisch));
         tisch.setzePartie(partie);
         TischEntity gespeicherterTisch = tischRepository.saveAndFlush(tisch);
-        spielRegistry.leere(TischId.von(gespeicherterTisch.id())); // Cache leeren für sauberen Neustart
         eventPublisher.publishEvent(new KiUebernahmeEreignis(TischId.von(gespeicherterTisch.id())));
         gespeicherterTisch = tischRepository.saveAndFlush(gespeicherterTisch);
-        synchronisiereRegistry(TischId.von(gespeicherterTisch.id()), gespeicherterTisch);
         TischAntwort antwort = TischAntwort.aus(gespeicherterTisch);
         veroeffentlicheTischAktualisierung(
             TischlisteEreignisAntwort.aktualisiert(listeOffeneTische()),
@@ -389,20 +380,6 @@ public class TischVerwaltungsService {
                 "Es wurde kein Tisch mit dem Einladungscode '" + einladungsCode + "' gefunden."
             ));
         return betreteTisch(TischId.von(tisch.id()), spieler);
-    }
-
-    private void synchronisiereRegistry(TischId tischId, TischEntity tisch) {
-        if (tisch.partie() == null) {
-            spielRegistry.entferne(tischId);
-            return;
-        }
-        tisch.partie().spiele().stream()
-            .filter(s -> s.ergebnisEmbeddable() == null)
-            .reduce((a, b) -> b)
-            .ifPresentOrElse(
-                s -> { s.hydriere(tisch.konfiguration().alsSpielregeln()); spielRegistry.registriere(tischId, s); },
-                () -> spielRegistry.entferne(tischId)
-            );
     }
 
     private void veroeffentlicheTischAktualisierung(

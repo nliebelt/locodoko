@@ -36,7 +36,6 @@ public class SpielAktionsService {
     private final TischRepository tischRepository;
     private final PartieRepository partieRepository;
     private final SpielerRepository spielerRepository;
-    private final SpielRegistry spielRegistry;
     private final ApplicationEventPublisher eventPublisher;
     private final TischEchtzeitService tischEchtzeitService;
 
@@ -44,14 +43,12 @@ public class SpielAktionsService {
         TischRepository tischRepository,
         PartieRepository partieRepository,
         SpielerRepository spielerRepository,
-        SpielRegistry spielRegistry,
         ApplicationEventPublisher eventPublisher,
         TischEchtzeitService tischEchtzeitService
     ) {
         this.tischRepository = tischRepository;
         this.partieRepository = partieRepository;
         this.spielerRepository = spielerRepository;
-        this.spielRegistry = spielRegistry;
         this.eventPublisher = eventPublisher;
         this.tischEchtzeitService = tischEchtzeitService;
     }
@@ -100,19 +97,15 @@ public class SpielAktionsService {
             laufendesSpiel.hydriere(tisch.konfiguration().alsSpielregeln());
             int einwurfZaehlerVorher = laufendesSpiel.einwurfZaehler();
             try {
-                Spiel aktualisiertesSpiel = spielRegistry.mitSpielGesperrt(tischId, laufendesSpiel, spiel -> {
-                    Spiel nachVorbehalt = spiel.meldeVorbehalt(position, vorbehalt);
-                    Spiel finales = nachVorbehalt.phase() instanceof Spielphase.VorbehaltAufloesung
-                        ? nachVorbehalt.loeseVorbehalteAuf()
-                        : nachVorbehalt;
-                    return new SpielUndErgebnis<>(finales, finales);
-                });
+                Spiel nachVorbehalt = laufendesSpiel.meldeVorbehalt(position, vorbehalt);
+                Spiel aktualisiertesSpiel = nachVorbehalt.phase() instanceof Spielphase.VorbehaltAufloesung
+                    ? nachVorbehalt.loeseVorbehalteAuf()
+                    : nachVorbehalt;
                 laufendesSpiel.uebernehmeDomainStand(aktualisiertesSpiel);
             } catch (IllegalStateException exception) {
                 throw new SpielverwaltungKonfliktException("VORBEHALT_UNGUELTIG", exception.getMessage());
             }
             partieRepository.saveAndFlush(tisch.partie());
-            synchronisiereRegistry(tischId, tisch);
             if (laufendesSpiel.einwurfZaehler() > einwurfZaehlerVorher) {
                 veroeffentlicheEinwurfEreignisse(tisch);
             } else {
@@ -137,22 +130,18 @@ public class SpielAktionsService {
             laufendesSpiel.hydriere(tisch.konfiguration().alsSpielregeln());
             int einwurfZaehlerVorher = laufendesSpiel.einwurfZaehler();
             try {
-                Spiel aktualisiertesSpiel = spielRegistry.mitSpielGesperrt(tischId, laufendesSpiel, spiel -> {
-                    Spiel neu = spiel.armutStatus()
-                        .filter(status -> position == status.armutSpieler() && !status.angebotLiegtVor())
-                        .map(status -> spiel.legeArmutTrumpfkarten(position, karten))
-                        .orElseGet(() -> angenommen
-                            ? spiel.nimmArmutAn(position, karten)
-                            : spiel.lehneArmutAb(position)
-                        );
-                    return new SpielUndErgebnis<>(neu, neu);
-                });
+                Spiel aktualisiertesSpiel = laufendesSpiel.armutStatus()
+                    .filter(status -> position == status.armutSpieler() && !status.angebotLiegtVor())
+                    .map(status -> laufendesSpiel.legeArmutTrumpfkarten(position, karten))
+                    .orElseGet(() -> angenommen
+                        ? laufendesSpiel.nimmArmutAn(position, karten)
+                        : laufendesSpiel.lehneArmutAb(position)
+                    );
                 laufendesSpiel.uebernehmeDomainStand(aktualisiertesSpiel);
             } catch (IllegalStateException exception) {
                 throw new SpielverwaltungKonfliktException("ARMUT_ANTWORT_UNGUELTIG", exception.getMessage());
             }
             partieRepository.saveAndFlush(tisch.partie());
-            synchronisiereRegistry(tischId, tisch);
             if (laufendesSpiel.einwurfZaehler() > einwurfZaehlerVorher) {
                 veroeffentlicheEinwurfEreignisse(tisch);
             } else {
@@ -175,17 +164,10 @@ public class SpielAktionsService {
             Spiel laufendesSpiel = ladeLaufendesSpiel(tisch.partie());
             SpielerPosition position = spielerPositionVon(tisch, verwalteterSpieler);
             laufendesSpiel.hydriere(tisch.konfiguration().alsSpielregeln());
-            boolean schweinchenVorher = laufendesSpiel.schweinchenGemeldetVon().isPresent();
-            SpielRegistry.KommandoSchluessel schluessel = new SpielRegistry.KommandoSchluessel(
-                tischId.wert(), position, "KARTE:" + karteId + ":" + laufendesSpiel.phase().name()
-            );
             List<SpielEreignis> spielEreignisse;
             try {
-                SpielAktion aktionsErgebnis = spielRegistry.mitSpielGesperrtIdempotent(tischId, laufendesSpiel, schluessel, spiel -> {
-                    LOGGER.trace("Lock erworben (idempotent), spiele Karte {}", karteId);
-                    SpielAktion aktion = spiel.spieleKarte(position, parseKarte(karteId));
-                    return new SpielUndErgebnis<>(aktion.neuerStand(), aktion);
-                });
+                LOGGER.trace("Spiele Karte {}", karteId);
+                SpielAktion aktionsErgebnis = laufendesSpiel.spieleKarte(position, parseKarte(karteId));
                 laufendesSpiel.uebernehmeDomainStand(aktionsErgebnis.neuerStand());
                 spielEreignisse = aktionsErgebnis.ereignisse();
                 LOGGER.trace("Domain-Stand uebernommen [events={}]", spielEreignisse.size());
@@ -194,7 +176,6 @@ public class SpielAktionsService {
                 throw new SpielverwaltungKonfliktException("KARTE_UNGUELTIG", exception.getMessage());
             }
             partieRepository.saveAndFlush(tisch.partie());
-            synchronisiereRegistry(tischId, tisch);
             veroeffentlicheSpielKarteEreignisse(tisch, spielEreignisse);
             LOGGER.debug("Karte-Aktion abgeschlossen");
             return PartieStandAntwort.aus(tisch, verwalteterSpieler.id());
@@ -215,20 +196,13 @@ public class SpielAktionsService {
             Spiel laufendesSpiel = ladeLaufendesSpiel(tisch.partie());
             SpielerPosition position = spielerPositionVon(tisch, verwalteterSpieler);
             laufendesSpiel.hydriere(tisch.konfiguration().alsSpielregeln());
-            SpielRegistry.KommandoSchluessel schluessel = new SpielRegistry.KommandoSchluessel(
-                tischId.wert(), position, "ANSAGE:" + ansage.name() + ":" + laufendesSpiel.phase().name()
-            );
             try {
-                Spiel aktualisiertesSpiel = spielRegistry.mitSpielGesperrtIdempotent(tischId, laufendesSpiel, schluessel, spiel -> {
-                    Spiel neu = spiel.sageAn(position, ansage);
-                    return new SpielUndErgebnis<>(neu, neu);
-                });
+                Spiel aktualisiertesSpiel = laufendesSpiel.sageAn(position, ansage);
                 laufendesSpiel.uebernehmeDomainStand(aktualisiertesSpiel);
             } catch (IllegalStateException exception) {
                 throw new SpielverwaltungKonfliktException("ANSAGE_UNGUELTIG", exception.getMessage());
             }
             partieRepository.saveAndFlush(tisch.partie());
-            synchronisiereRegistry(tischId, tisch);
             veroeffentlicheAnsageEreignisse(tisch);
             triggereKi(tisch);
             return PartieStandAntwort.aus(tisch, verwalteterSpieler.id());
@@ -322,20 +296,6 @@ public class SpielAktionsService {
             ));
     }
 
-    private void veroeffentlicheEreignisse(TischEntity tisch) {
-        if (tisch.partie() == null) {
-            return;
-        }
-        tisch.spieler().stream()
-            .filter(s -> !s.istKi() && !s.istKiUebernommen() && s.sessionId() != null)
-            .forEach(s -> tischEchtzeitService.planeAnBenutzer(
-                s.sessionId(),
-                "/queue/partie/" + tisch.partie().id(),
-                PartieEreignisAntwort.karteGespielt(PartieStandAntwort.aus(tisch, s.id()))
-            ));
-        triggereKi(tisch);
-    }
-
     private void triggereKi(TischEntity tisch) {
         if (tisch.partie().statusAusDb() != PartieStatus.BEENDET) {
             tisch.partie().spiele().stream()
@@ -349,28 +309,6 @@ public class SpielAktionsService {
                     }
                 });
         }
-    }
-
-    /**
-     * Synchronisiert den SpielRegistry-Eintrag nach einem vollstaendigen Aktionszyklus
-     * (Human-Aktion + KI-Zuege). Registriert das aktuell laufende Spiel oder entfernt
-     * den Eintrag, wenn die Partie beendet ist.
-     */
-    private void synchronisiereRegistry(TischId tischId, TischEntity tisch) {
-        if (tisch.partie() == null) {
-            spielRegistry.entferne(tischId);
-            return;
-        }
-        tisch.partie().spiele().stream()
-            .filter(s -> s.ergebnisEmbeddable() == null)
-            .reduce((a, b) -> b)
-            .ifPresentOrElse(
-                s -> {
-                    s.hydriere(tisch.konfiguration().alsSpielregeln());
-                    spielRegistry.registriere(tischId, s);
-                },
-                () -> spielRegistry.entferne(tischId)
-            );
     }
 
     private TischEntity ladeTischFuerPartie(PartieId partieId) {

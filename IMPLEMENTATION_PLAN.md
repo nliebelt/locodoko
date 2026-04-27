@@ -1,17 +1,17 @@
 # IMPLEMENTATION_PLAN — Locodoko Doppelkopf
 
 ## Notiz
-Stand: 2026-04-27 (Aktualisiert nach 5-Agenten-Analyse aller Bounded Contexts — zweiter Durchlauf)
+Stand: 2026-04-27 (ARCH-REF abgeschlossen — DB-only-Pattern vollständig)
+
+**ARCH-REF erledigt:** SpielRegistry.java + SpielUndErgebnis.java + SpielRegistryTest.java gelöscht. SpielAktionsService und TischVerwaltungsService auf direktes DB-Pattern umgestellt (findById → Domain-Aktion → save). KiEventAdapter auf `@TransactionalEventListener(phase=AFTER_COMMIT, propagation=REQUIRES_NEW)` migriert. @Version war bereits in Partie.java vorhanden (ARCH-REF-2 war already done).
 
 **Frontend-Overlays (FEAT-6/7/8):** `renderVorbehaltDialog`, `renderArmutBereich`, `renderAnsageButtons` sind als Phaser-Objekte implementiert. Fehlend sind nur die individuellen DOM-Marker mit `data-testid` für E2E-Testbarkeit. Deshalb [~] statt [ ].
-
-**ARCH-REF:** SpielRegistry.java existiert noch und wird aktiv genutzt. `@TransactionalEventListener(AFTER_COMMIT)` fehlt in KiEventAdapter und TischEchtzeitService. SpielAktionsService (M im git status) ist noch nicht auf DB-only-Pattern umgestellt.
 
 **Neu gefundene Bugs:** BUGFIX-3 (Schweinchen ohne Spielwirkung), BUGFIX-4 (DKV-Preset: Spiel schließt nicht ab).
 
 **Spec-DoD veraltet:** tischkonfiguration.md (SPEC-6) + authentifizierung.md (neu SPEC-8) haben `[ ]`-Checkboxen für längst implementierte Features.
 
-Nächster Schritt: ARCH-REF danach BUGFIX-1 ("Gegen die Alten" Bug, hohe Priorität), dann BUGFIX-2, dann FEAT-5/6/7/8 restliche data-testids.
+Nächster Schritt: BUGFIX-1 ("Gegen die Alten" Bug, hohe Priorität) — dann BUGFIX-2, dann FEAT-5/6/7/8 restliche data-testids.
 
 ## Legende
 - [x] Erledigt
@@ -112,25 +112,25 @@ Reduziert ~400 Zeilen Duplikat-Code. Voraussetzung für UNIFIED-4 bis 7.
 Status: KRITISCH / BLOCKIEREND. Rückbau der In-Memory-Logik gemäß den neuen Architektur-Specs.
 Spec: `specs/architektur-ddd.md` § „Concurrency (Optimistic Locking)".
 
-- [ ] **ARCH-REF-1 (Backend)**: Löschung der `SpielRegistry.java`.
+- [x] **ARCH-REF-1 (Backend)**: Löschung der `SpielRegistry.java`.
   Vollständige Entfernung von `src/main/java/de/locodoko/tisch/SpielRegistry.java`.
   Ersatzlose Streichung der Caches (`spielCache`, `locks`, `kommandoCache`).
   Alle Imports in `SpielAktionsService` und `KiEventAdapter` entfernen.
   Voraussetzung für ARCH-REF-3. Validation: `mvn test`.
 
-- [ ] **ARCH-REF-2 (Domain)**: `@Version` in `Partie.java`.
+- [x] **ARCH-REF-2 (Domain)**: `@Version` in `Partie.java`.
   Einführung von `private Long version` mit `@Version`-Annotation im Aggregate Root `Partie`.
   Entfernung aller manuellen `isNew`-Flags oder Persistable-Hacks.
   Spring Data JDBC wirft `OptimisticLockingFailureException` bei Konflikt → HTTP 409.
   Validation: `mvn test`.
 
-- [ ] **ARCH-REF-3 (Service)**: Refactoring `SpielAktionsService.java`.
+- [x] **ARCH-REF-3 (Service)**: Refactoring `SpielAktionsService.java`.
   Umstellung der Methoden `spieleKarte`, `meldeVorbehalt`, `sageAn`, `verarbeiteArmutAntwort`
   auf linearen DB-Ablauf: 1. `partieRepository.findById(...)` → 2. Aktion auf Domain-Objekt → 3. `partieRepository.save(...)`.
   Entfernung aller Lock- und Registry-Aufrufe. Hängt von ARCH-REF-1 ab.
   Validation: `mvn test` + volle E2E-Suite.
 
-- [ ] **ARCH-REF-4 (Events)**: AFTER_COMMIT-Garantie.
+- [x] **ARCH-REF-4 (Events)**: AFTER_COMMIT-Garantie.
   `KiEventAdapter` und `TischEchtzeitService`: Events dürfen erst nach DB-Commit gefeuert werden.
   `@ApplicationModuleListener` allein reicht nicht — muss auf `@TransactionalEventListener(phase = AFTER_COMMIT)`
   umgestellt werden, damit keine Race Conditions zwischen Event-Delivery und Persistenz entstehen.
