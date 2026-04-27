@@ -1,9 +1,9 @@
 # IMPLEMENTATION_PLAN — Locodoko Doppelkopf
 
 ## Notiz
-Stand: 2026-04-26
-UNIFIED-10 implementiert: Gesamte Playwright-Testsuite grün (exit code 0, 10/10 Tests bestanden). Alle 4 verbleibenden Spec-Dateien (einladungslink, mehrere-runden-ohne-neunen, partie-gegen-ki, ungueltige-karte) vollständig auf helpers.ts-Wrapper umgestellt — alsGastStarten, erstelleKonfiguriertenTisch, starteAktuellenTisch, erstelleQuickGame, spieleKarte und aktiviereConsoleCapture. CONS-2 damit abgeschlossen. 4 Tests sind flaky (Retry #1 nötig): mehrere-runden-ohne-neunen, partie-gegen-ki, reconnect, rundenauswertung — Ursache: Backend-Last bei 6 parallelen Workers, kein Code-Bug.
-Nächster Schritt: Offene LOG-Aufgaben (LOG-4, LOG-5) oder FEAT-Aufgaben beginnen.
+Stand: 2026-04-27
+LOG-4 und LOG-5 implementiert: MDC-Kontext vollständig. TischController hat jetzt MDC.put("tischId", ...) + MDC.clear() in try/finally für alle 8 Methoden mit tischId-Parameter. SpielAktionsService war bereits für die 4 schreibenden Methoden fertig; ladePartieStand-Overloads ergänzt mit MDC.put("partieId", ...). KiOrchestrierungService war bereits fertig. LOG-5: CLAUDE.md um "Debugging-Workflow"-Abschnitt ergänzt (grep-Befehle für tischId/partieId, Playwright-Trace-Hinweis). 267 Backend-Tests grün.
+Nächster Schritt: FEAT-Aufgaben beginnen (FEAT-1: Schmeißen-Varianten, oder FEAT-4: Partie-Ende Modal) oder SPEC-Aufgaben.
 
 ## Legende
 - [x] Erledigt
@@ -43,13 +43,13 @@ Stacktraces und Game-State-Events müssen ohne Code-Analyse lesbar sein.
   Begründung: HTTP-POST pro Log-Eintrag erzeugt Latenz, maskiert Fehler durch `.catch(() => {})`,
   und ist im E2E-Build-Kontext (kein DEV-Flag) ohnehin stumm.
 
-- [ ] **LOG-4 (Backend)**: MDC-Kontext für alle Game-relevanten Operationen setzen.
+- [x] **LOG-4 (Backend)**: MDC-Kontext für alle Game-relevanten Operationen setzen.
   In `TischController`, `SpielAktionsService`, `KiService`: `MDC.put("tischId", ...)` und
   `MDC.put("partieId", ...)` am Anfang jeder Methode, `MDC.clear()` im finally-Block.
   Mit ECS-Format (LOG-1) erscheinen diese Felder automatisch im JSON-Log.
   Ziel: `grep "tischId=abc123" logs/locodoko.log` zeigt den kompletten Spielablauf.
 
-- [ ] **LOG-5 (CLAUDE.md)**: Ralph-Debug-Workflow dokumentieren.
+- [x] **LOG-5 (CLAUDE.md)**: Ralph-Debug-Workflow dokumentieren.
   Abschnitt "Debugging-Workflow" in `CLAUDE.md` ergänzen:
   1. Backend-Fehler: zuerst `logs/locodoko.log` lesen (strukturiertes JSON, grep nach tischId/partieId)
   2. E2E-Fehler: zuerst `e2e/test-results/console-{test}.log` lesen

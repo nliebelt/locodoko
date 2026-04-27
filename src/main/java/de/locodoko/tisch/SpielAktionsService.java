@@ -58,17 +58,32 @@ public class SpielAktionsService {
 
     @Transactional(readOnly = true)
     public PartieStandAntwort ladePartieStand(PartieId partieId) {
-        return PartieStandAntwort.aus(ladeTischFuerPartie(partieId));
+        MDC.put("partieId", partieId.toString());
+        try {
+            return PartieStandAntwort.aus(ladeTischFuerPartie(partieId));
+        } finally {
+            MDC.clear();
+        }
     }
 
     @Transactional(readOnly = true)
     public PartieStandAntwort ladePartieStand(PartieId partieId, SpielerEntity spieler) {
-        return PartieStandAntwort.aus(ladeTischFuerPartie(partieId), spieler.id());
+        MDC.put("partieId", partieId.toString());
+        try {
+            return PartieStandAntwort.aus(ladeTischFuerPartie(partieId), spieler.id());
+        } finally {
+            MDC.clear();
+        }
     }
 
     @Transactional(readOnly = true)
     public PartieStandAntwort ladePartieStand(PartieId partieId, SpielerEntity spieler, boolean debugModus) {
-        return PartieStandAntwort.aus(ladeTischFuerPartie(partieId), spieler.id(), debugModus);
+        MDC.put("partieId", partieId.toString());
+        try {
+            return PartieStandAntwort.aus(ladeTischFuerPartie(partieId), spieler.id(), debugModus);
+        } finally {
+            MDC.clear();
+        }
     }
 
     @Transactional

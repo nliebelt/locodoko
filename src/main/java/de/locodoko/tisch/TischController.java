@@ -24,6 +24,8 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import org.slf4j.MDC;
+
 import java.util.List;
 import java.util.UUID;
 
@@ -94,8 +96,13 @@ public class TischController {
     })
     @GetMapping("/{id}")
     public TischAntwort ladeTisch(@Parameter(description = "Tisch-ID") @PathVariable UUID id) {
-        LOGGER.info("Tisch {} abgefragt", id);
-        return tischVerwaltungsService.ladeTisch(TischId.von(id));
+        MDC.put("tischId", id.toString());
+        try {
+            LOGGER.info("Tisch {} abgefragt", id);
+            return tischVerwaltungsService.ladeTisch(TischId.von(id));
+        } finally {
+            MDC.clear();
+        }
     }
 
     @Operation(summary = "Tisch beitreten", description = "Fuegt den anfragenden Spieler einem bestehenden Tisch hinzu.")
@@ -107,9 +114,14 @@ public class TischController {
     })
     @PostMapping("/{id}/beitreten")
     public TischAntwort betreteTisch(@Parameter(description = "Tisch-ID") @PathVariable UUID id, HttpServletRequest request) {
-        SpielerEntity spieler = ladeAktivenSpieler(request);
-        LOGGER.info("Spieler {} tritt Tisch {} bei", spieler.id(), id);
-        return tischVerwaltungsService.betreteTisch(TischId.von(id), spieler);
+        MDC.put("tischId", id.toString());
+        try {
+            SpielerEntity spieler = ladeAktivenSpieler(request);
+            LOGGER.info("Spieler {} tritt Tisch {} bei", spieler.id(), id);
+            return tischVerwaltungsService.betreteTisch(TischId.von(id), spieler);
+        } finally {
+            MDC.clear();
+        }
     }
 
     @Operation(summary = "Tisch per Einladungscode beitreten", description = "Fuegt den anfragenden Spieler einem Tisch hinzu, der ueber seinen Einladungscode identifiziert wird.")
@@ -134,9 +146,14 @@ public class TischController {
     })
     @PostMapping("/{id}/verlassen")
     public BestaetigungAntwort verlasseTisch(@Parameter(description = "Tisch-ID") @PathVariable UUID id, HttpServletRequest request) {
-        SpielerEntity spieler = ladeAktivenSpieler(request);
-        LOGGER.info("Spieler {} verlaesst Tisch {}", spieler.id(), id);
-        return tischVerwaltungsService.verlasseTisch(TischId.von(id), spieler);
+        MDC.put("tischId", id.toString());
+        try {
+            SpielerEntity spieler = ladeAktivenSpieler(request);
+            LOGGER.info("Spieler {} verlaesst Tisch {}", spieler.id(), id);
+            return tischVerwaltungsService.verlasseTisch(TischId.von(id), spieler);
+        } finally {
+            MDC.clear();
+        }
     }
 
     @Operation(summary = "Spiel starten", description = "Startet das Spiel am Tisch. Fehlende Spieler werden durch KI-Spieler aufgefuellt. Nur der Tischersteller kann starten.")
@@ -148,10 +165,15 @@ public class TischController {
     })
     @PostMapping("/{id}/starten")
     public BestaetigungAntwort starteTisch(@Parameter(description = "Tisch-ID") @PathVariable UUID id, HttpServletRequest request) {
-        SpielerEntity spieler = ladeAktivenSpieler(request);
-        LOGGER.info("Spieler {} startet Tisch {}", spieler.id(), id);
-        TischAntwort antwort = tischVerwaltungsService.starteTisch(TischId.von(id), spieler);
-        return new BestaetigungAntwort("Tisch " + antwort.id() + " wurde gestartet.");
+        MDC.put("tischId", id.toString());
+        try {
+            SpielerEntity spieler = ladeAktivenSpieler(request);
+            LOGGER.info("Spieler {} startet Tisch {}", spieler.id(), id);
+            TischAntwort antwort = tischVerwaltungsService.starteTisch(TischId.von(id), spieler);
+            return new BestaetigungAntwort("Tisch " + antwort.id() + " wurde gestartet.");
+        } finally {
+            MDC.clear();
+        }
     }
 
     @Operation(summary = "Neue Partie starten", description = "Startet eine neue Partie an einem Tisch, dessen letzte Partie beendet ist. Idempotent — kann mehrfach aufgerufen werden.")
@@ -163,9 +185,14 @@ public class TischController {
     })
     @PostMapping("/{id}/neue-partie")
     public BestaetigungAntwort starteNeuePartie(@Parameter(description = "Tisch-ID") @PathVariable UUID id, HttpServletRequest request) {
-        SpielerEntity spieler = ladeAktivenSpieler(request);
-        LOGGER.info("Spieler {} startet neue Partie an Tisch {}", spieler.id(), id);
-        return tischVerwaltungsService.starteNeuePartie(TischId.von(id), spieler);
+        MDC.put("tischId", id.toString());
+        try {
+            SpielerEntity spieler = ladeAktivenSpieler(request);
+            LOGGER.info("Spieler {} startet neue Partie an Tisch {}", spieler.id(), id);
+            return tischVerwaltungsService.starteNeuePartie(TischId.von(id), spieler);
+        } finally {
+            MDC.clear();
+        }
     }
 
     @Operation(summary = "Tischkonfiguration abrufen", description = "Gibt alle Spielregeln des Tisches zurueck (Trumpfreihenfolge, Sonderpunkte, Timeouts etc.).")
@@ -175,8 +202,13 @@ public class TischController {
     })
     @GetMapping("/{id}/konfiguration")
     public TischKonfigurationDto gibKonfiguration(@Parameter(description = "Tisch-ID") @PathVariable UUID id) {
-        LOGGER.info("Konfiguration fuer Tisch {} abgefragt", id);
-        return tischVerwaltungsService.ladeKonfiguration(TischId.von(id));
+        MDC.put("tischId", id.toString());
+        try {
+            LOGGER.info("Konfiguration fuer Tisch {} abgefragt", id);
+            return tischVerwaltungsService.ladeKonfiguration(TischId.von(id));
+        } finally {
+            MDC.clear();
+        }
     }
 
     @Operation(summary = "Tischkonfiguration aktualisieren", description = "Aendert die Spielregeln des Tisches. Nur moeglich, solange noch keine Partie laeuft. Nur der Tischersteller kann die Konfiguration aendern.")
@@ -193,9 +225,14 @@ public class TischController {
         @Valid @RequestBody TischKonfigurationDto konfiguration,
         HttpServletRequest request
     ) {
-        SpielerEntity spieler = ladeAktivenSpieler(request);
-        LOGGER.info("Spieler {} aktualisiert die Konfiguration von Tisch {}", spieler.id(), id);
-        return tischVerwaltungsService.aktualisiereKonfiguration(TischId.von(id), spieler, konfiguration);
+        MDC.put("tischId", id.toString());
+        try {
+            SpielerEntity spieler = ladeAktivenSpieler(request);
+            LOGGER.info("Spieler {} aktualisiert die Konfiguration von Tisch {}", spieler.id(), id);
+            return tischVerwaltungsService.aktualisiereKonfiguration(TischId.von(id), spieler, konfiguration);
+        } finally {
+            MDC.clear();
+        }
     }
 
     @Operation(summary = "Spieler vom Tisch entfernen", description = "Entfernt einen Spieler vom Tisch. Nur der Gastgeber darf Spieler kicken. Nicht moeglich waehrend einer laufenden Partie.")
@@ -211,9 +248,14 @@ public class TischController {
         @Parameter(description = "Spieler-ID des zu entfernenden Spielers") @PathVariable UUID spielerId,
         HttpServletRequest request
     ) {
-        SpielerEntity gastgeber = ladeAktivenSpieler(request);
-        LOGGER.info("Gastgeber {} kickt Spieler {} von Tisch {}", gastgeber.id(), spielerId, id);
-        return tischVerwaltungsService.kickeSpieler(TischId.von(id), SpielerId.von(spielerId), gastgeber);
+        MDC.put("tischId", id.toString());
+        try {
+            SpielerEntity gastgeber = ladeAktivenSpieler(request);
+            LOGGER.info("Gastgeber {} kickt Spieler {} von Tisch {}", gastgeber.id(), spielerId, id);
+            return tischVerwaltungsService.kickeSpieler(TischId.von(id), SpielerId.von(spielerId), gastgeber);
+        } finally {
+            MDC.clear();
+        }
     }
 
     private SpielerEntity ladeAktivenSpieler(HttpServletRequest request) {

@@ -24,6 +24,16 @@ cd e2e && npx playwright test vision-loop.spec.ts --headed
 
 Screenshots landen in `e2e/screenshots/`. Mit dem Read-Tool einlesen und visuell prüfen — kein manueller Screenshot nötig. Nur bei UI-relevanten Änderungen, nicht bei reinen Backend- oder Logik-Fixes.
 
+## Debugging-Workflow
+
+1. **Backend-Fehler**: zuerst `logs/locodoko.log` lesen (strukturiertes JSON)
+   - `grep "tischId=<id>" logs/locodoko.log` — kompletter Spielablauf für einen Tisch
+   - `grep "partieId=<id>" logs/locodoko.log` — Ereignisse einer bestimmten Partie
+   - Stacktraces und MDC-Felder (tischId, partieId) erscheinen automatisch im JSON-Log
+2. **E2E-Fehler**: zuerst `e2e/test-results/console-<testname>.log` lesen (Playwright Console Capture)
+3. **Playwright-Trace**: `e2e/test-results/` enthält `.zip`-Traces → `npx playwright show-trace <datei.zip>`
+4. Erst wenn kein Stacktrace/Hinweis → Source-Code-Analyse
+
 ## Domänensprache
 
 Code, Kommentare, Klassen, Methoden auf **Deutsch**. Fachbegriffe: Stich, Trumpf, Dulle, Fuchs, Karlchen, Re, Kontra, Armut, Hochzeit.
