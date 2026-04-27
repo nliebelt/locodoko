@@ -1,9 +1,9 @@
 # IMPLEMENTATION_PLAN — Locodoko Doppelkopf
 
 ## Notiz
-Stand: 2026-04-27 (ARCH-REF-5 abgeschlossen)
+Stand: 2026-04-27 (ARCH-REF-6 abgeschlossen)
 
-**Nächster Schritt:** ARCH-REF-6 (Core & UI: Lifecycle-Verschiebung und Sprite-Persistence).
+**Nächster Schritt:** ARCH-REF-7 (Frontend Config: Konfigurierbare Timeouts).
 
 ## Legende
 - [x] Erledigt
@@ -29,11 +29,11 @@ Ziel: Vollendung der "Unified Architecture" — sauberer Event-Fluss, identität
   - Frontend: `AppStore` implementiert eine serielle Queue, die erst animiert (Hints) und dann den State patcht (Snapshots).
   - Validation: `mvn test` + `cd frontend && npm test` + E2E Suite.
 
-- [ ] ARCH-REF-6 (Core & UI): Lifecycle-Verschiebung und Sprite-Persistence.
-  - Backend: Verschiebung der "Spiel beenden/starten"-Logik von `KiOrchestrierungService` in `Partie` Aggregat oder `PartieService`.
-  - Backend: Implementierung der DTO-Filterung (Gegner-Karten-IDs maskieren).
-  - Frontend: Umstellung `TischSzene.renderTisch()` auf identitätsbasierte Reconciliation.
-  - Validation: E2E Suite (insb. Vision Loop).
+- [x] ARCH-REF-6 (Core & UI): Lifecycle-Verschiebung und Sprite-Persistence.
+  - Backend: `PartieLifecycleService` extrahiert aus `KiOrchestrierungService` (lifecycle-Logik spieler-agnostisch).
+  - Backend: DTO-Filterung verifiziert und durch Test in `PartieStandAntwortTest` abgedeckt.
+  - Frontend: `TischSzene.renderTisch()` auf identitätsbasierte Reconciliation umgestellt (persistent eigene Karten, depth-based Z-order).
+  - Validation: `mvn test` (278/278) + `cd frontend && npm test` (54/54) + Build/Lint grün.
 
 - [ ] ARCH-REF-7 (Frontend Config): Konfigurierbare Timeouts.
   - Frontend: Einführung einer `UiKonfiguration` im Store.

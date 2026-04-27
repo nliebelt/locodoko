@@ -5,6 +5,7 @@ import de.locodoko.karten.Farbe;
 import de.locodoko.karten.Karte;
 import de.locodoko.karten.Kartenwert;
 import de.locodoko.partie.AktuellerStichKarteEmbeddable;
+import de.locodoko.partie.HandJsonEintrag;
 import de.locodoko.partie.SpielerPosition;
 import de.locodoko.karten.Spielregeln;
 import de.locodoko.karten.Spieltyp;
@@ -104,6 +105,54 @@ class PartieStandAntwortTest {
         assertEquals(2, antwort.letzteAbgeschlosseneStiche().get(1).stichNummer());
         assertEquals(SpielerPosition.SUED, antwort.letzteAbgeschlosseneStiche().get(1).gewinnerPosition());
         assertEquals("KREUZ-ZEHN-2", antwort.letzteAbgeschlosseneStiche().get(1).gespielteKarten().getFirst().karte().id());
+    }
+
+    @Test
+    void maskiertGegnerHandkartenImSnapshot() {
+        // Eigene Handkarten duerfen nie an Gegner verraten werden — serverseitige Maskierung
+        // ist die letzte Verteidigungslinie gegen Client-seitiges Cheating.
+        SpielerEntity anna = SpielerEntity.menschlich("Anna", "session-anna");
+        TischEntity tisch = TischEntity.neu(
+            "Filtert-Karten-Test",
+            anna,
+            TischkonfigurationEmbeddable.ausSpielregeln(Spielregeln.standardRegeln(), 8)
+        );
+        tisch.fuegeSpielerHinzu(anna);
+        tisch.fuegeSpielerHinzu(SpielerEntity.menschlich("Ben", "session-ben"));
+        tisch.fuegeSpielerHinzu(SpielerEntity.menschlich("Clara", "session-clara"));
+        tisch.fuegeSpielerHinzu(SpielerEntity.menschlich("Dirk", "session-dirk"));
+
+        Partie partie = Partie.neuePersistenz(8);
+        Spiel spiel = Spiel.neuePersistenz(1, SpielerPosition.SUED, Spieltyp.NORMALSPIEL, Spielphase.VORBEHALT_ANSAGE);
+
+        List<Karte> annasKarten = List.of(
+            new Karte(Farbe.KREUZ, Kartenwert.DAME, 1),
+            new Karte(Farbe.HERZ, Kartenwert.ZEHN, 1)
+        );
+        spiel.fuegeHandHinzu(HandJsonEintrag.aus(SpielerPosition.SUED, annasKarten));
+        spiel.fuegeHandHinzu(HandJsonEintrag.aus(SpielerPosition.NORD, List.of(
+            new Karte(Farbe.KARO, Kartenwert.AS, 1),
+            new Karte(Farbe.PIK, Kartenwert.KOENIG, 1)
+        )));
+        partie.fuegeSpielHinzu(spiel);
+        tisch.setzePartie(partie);
+
+        PartieStandAntwort antwort = PartieStandAntwort.aus(tisch, anna.id());
+
+        assertNotNull(antwort.laufendesSpiel(), "Laufendes Spiel muss vorhanden sein");
+        var spieler = antwort.laufendesSpiel().spieler();
+
+        var spieSued = spieler.stream().filter(s -> s.position() == SpielerPosition.SUED).findFirst().orElseThrow();
+        assertNotNull(spieSued.sichtbareHandkarten(),
+            "Eigene Handkarten (SUED) muessen fuer den anfragenden Spieler sichtbar sein");
+        assertEquals(2, spieSued.sichtbareHandkarten().size());
+        assertEquals("KREUZ-DAME-1", spieSued.sichtbareHandkarten().getFirst().id());
+
+        var spieNord = spieler.stream().filter(s -> s.position() == SpielerPosition.NORD).findFirst().orElseThrow();
+        assertNull(spieNord.sichtbareHandkarten(),
+            "Gegner-Handkarten duerfen im Snapshot nie als ID/Wert sichtbar sein — nur die Anzahl");
+        assertEquals(2, spieNord.verbleibendeKarten(),
+            "Die Kartenanzahl des Gegners muss korrekt geliefert werden");
     }
 
     private Karte karte(Farbe farbe, Kartenwert wert, int exemplarIndex) {

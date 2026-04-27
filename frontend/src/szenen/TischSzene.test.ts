@@ -131,10 +131,10 @@ afterEach(() => { aktiveSzene?.shutdown(); aktiveSzene = undefined; vi.useRealTi
 describe('TischSzene', () => {
   it('rendert Karten und reagiert auf Klick', async () => {
     const { s } = baueSzene(baueZustand());
-    const ebene = s['tischEbene'] as any;
-    const bilder = ebene.kinder.filter((k:any) => k.typ === 'kartenansicht');
-    expect(bilder.length).toBeGreaterThan(0);
-    bilder[0].emit('pointerdown');
+    // Eigene Karten (SUED) leben seit der Reconciliation in persistenteEigeneKarten, nicht in tischEbene.
+    const eigeneKarten = Array.from((s['persistenteEigeneKarten'] as Map<string, any>).values());
+    expect(eigeneKarten.length).toBeGreaterThan(0);
+    eigeneKarten[0].emit('pointerdown');
     await vi.runAllTimersAsync();
     expect(appStoreHarness.store.spieleKarte).toHaveBeenCalled();
   });

@@ -183,6 +183,10 @@ export class TischSzene extends Phaser.Scene {
   private letzterStichTimer?: Phaser.Time.TimerEvent;
   private einstellungenOffen = false;
   private seitenladeOffen = false;
+  /** Persistente Karten-Sprites fuer die eigene Hand (SUED). Bleiben zwischen renderTisch()-Aufrufen erhalten. */
+  private persistenteEigeneKarten = new Map<string, Kartenansicht>();
+  /** Spielnummer des zuletzt persistierten Kartensatzes — bei Wechsel werden persistente Sprites invalidiert. */
+  private letztePersistierteSpielNummer: number | null = null;
 
   /**
    * Gibt zurück, ob die TischSzene (und der zugrundeliegende AppStore) im Leerlauf ist.
@@ -544,6 +548,13 @@ export class TischSzene extends Phaser.Scene {
   }
 
   private renderTisch(zustand: AppZustand, modell = this.erstelleModell(zustand)): void {
+    // Persistente eigene Karten invalidieren wenn sich die Spielnummer aendert (neues Spiel).
+    const aktuelleSpielNummer = zustand.partieStand?.laufendesSpiel?.spielNummer ?? null;
+    if (aktuelleSpielNummer !== this.letztePersistierteSpielNummer) {
+      this.loeseEigeneKartenAuf();
+      this.letztePersistierteSpielNummer = aktuelleSpielNummer;
+    }
+
     this.tischEbene?.destroy(true);
     this.handKartenobjekte.clear();
     const breite = this.scale.gameSize.width;
@@ -554,6 +565,9 @@ export class TischSzene extends Phaser.Scene {
     this.aktualisiereHintergrund(modell.tischhintergrund, breite, hoehe);
 
     const ebene = this.add.container(0, 0);
+    // tischEbene (depth 3) rendert ueber eigenem Hand (depth 2) und Hintergrund (depth 0).
+    // Overlays (Dialoge) sind Kinder von ebene und ueberdecken dadurch auch persistente Karten. ✓
+    ebene.setDepth(3);
 
     this.renderStichmitte(ebene, modell, mitteX, mitteY, breite, hoehe);
 
@@ -860,6 +874,16 @@ export class TischSzene extends Phaser.Scene {
     const [fB, fS]: [number, number] = { SUED: [-12, 5], NORD: [12, -5], WEST: [78, 5], OST: [102, -5] }[spieler.position] as [number, number];
     const istGesp = spieler.position === 'NORD' || spieler.position === 'OST';
     const animA = !!this.wartendeKartenId || (this.animationen?.animationLaeuft ?? false);
+
+    // Eigene Hand (SUED): Karten-Sprites werden persistiert und wiederverwendet, damit keine Flackern-Artefakte entstehen.
+    if (spieler.istSelbst && sichtbare) {
+      const aktuelleIds = new Set(sichtbare.map((k) => k.id));
+      // Sprites entfernen, die nicht mehr in der Hand sind
+      for (const [id, kA] of this.persistenteEigeneKarten) {
+        if (!aktuelleIds.has(id)) { kA.destroy(); this.persistenteEigeneKarten.delete(id); }
+      }
+    }
+
     for (let i = 0; i < kAnzahl; i++) {
       const fI = istGesp ? kAnzahl - 1 - i : i;
       const ab = istH ? fI * kAb.horizontal : fI * kAb.vertikal;
@@ -873,19 +897,56 @@ export class TischSzene extends Phaser.Scene {
       const istAus = k ? this.ausgewaehlteArmutKarten.has(k.id) : false;
       const istTast = spieler.istSelbst && k !== undefined && this.tastaturKarteIndex >= 0 && modell.spielbareKarten[this.tastaturKarteIndex] === k.id;
       const bV = (istAus || istTast) ? -auswV : 0;
-      const kA = offen ? this.erstelleKartenansicht(x, y + bV, kG.w, kG.h, k ? { karte: k } : {}) : this.erstelleKartenansicht(x, y + bV, kG.w, kG.h, { verdeckt: true });
+
+      let kA: Kartenansicht;
+      let istWiederverwendet = false;
+      if (spieler.istSelbst && k && this.persistenteEigeneKarten.has(k.id)) {
+        // Persistierten Sprite wiederverwenden: Position und Darstellung aktualisieren
+        kA = this.persistenteEigeneKarten.get(k.id)!;
+        kA.setPosition(x, y + bV);
+        istWiederverwendet = true;
+      } else {
+        kA = offen ? this.erstelleKartenansicht(x, y + bV, kG.w, kG.h, k ? { karte: k } : {}) : this.erstelleKartenansicht(x, y + bV, kG.w, kG.h, { verdeckt: true });
+        if (spieler.istSelbst && k) {
+          // Neuen eigenen Sprite im Scene-Root verankern (nicht in tischEbene) und persistent merken.
+          // depth(2): ueber Hintergrund (0), unter tischEbene (3) — Overlays in tischEbene ueberdecken korrekt.
+          kA.setDepth(2);
+          this.persistenteEigeneKarten.set(k.id, kA);
+        } else {
+          ebene.add(kA);
+        }
+      }
+
       kA.setAngle(w).setAlpha(this.austeilenAktiv ? 0 : (offen ? (hatInt && k && !istInt ? 0.45 : 1) : 0.92));
       if (istAus) kA.markiereAuswahl(); else if (istTast) kA.markiereTastaturfokus(); else kA.loescheMarkierung();
-      ebene.add(kA);
+
       if (k) this.handKartenobjekte.set(k.id, { wurzel: kA, bild: kA.bildObjekt });
       if (offen && k && istInt) {
+        // Bestehende Handler entfernen bevor neue angebunden werden (verhindert Akkumulation bei Reconciliation).
+        if (istWiederverwendet) {
+          kA.removeAllListeners?.('pointerover');
+          kA.removeAllListeners?.('pointerout');
+          kA.removeAllListeners?.('pointerdown');
+        }
         kA.setInteractive({ useHandCursor: true });
         const hV = Math.round(kG.h * 0.08);
         kA.on('pointerover', () => kA.setY(y + bV - hV));
         kA.on('pointerout', () => kA.setY(y + bV));
         kA.on('pointerdown', () => { if (istSp) void this.spieleKarteMitAnimation(k.id); else { this.toggleArmutKarte(k.id, modell.armutAktion?.kartenAnzahl ?? 0); this.renderTisch(this.letzterZustand ?? appStore.snapshot()); } });
+      } else if (offen && k && !istInt && istWiederverwendet) {
+        // Reusierter Sprite war vorher interaktiv — Zustand zuruecksetzen.
+        kA.disableInteractive?.();
+        kA.removeAllListeners?.('pointerover');
+        kA.removeAllListeners?.('pointerout');
+        kA.removeAllListeners?.('pointerdown');
       }
     }
+  }
+
+  /** Zerstoert alle persistierten eigenen Karten-Sprites und leert den Cache. */
+  private loeseEigeneKartenAuf(): void {
+    for (const kA of this.persistenteEigeneKarten.values()) kA.destroy();
+    this.persistenteEigeneKarten.clear();
   }
 
   private bestaetigeArmut(modell: TischAnsichtModell): void {
@@ -1193,6 +1254,9 @@ export class TischSzene extends Phaser.Scene {
     const { width: b, height: h } = this.scale.gameSize;
     if (this.hintergrund instanceof Phaser.GameObjects.Image) this.hintergrund.setPosition(b / 2, h / 2).setDisplaySize(b, h);
     else (this.hintergrund as Phaser.GameObjects.TileSprite)?.setPosition(b / 2, h / 2).setSize(b, h);
+    // Persistierte eigene Karten invalidieren: Kartengrösse aendert sich mit dem Fenster.
+    this.loeseEigeneKartenAuf();
+    this.letztePersistierteSpielNummer = null;
     if (this.letzterZustand?.bereich === 'TISCH') this.renderTisch(this.letzterZustand);
   }
 
@@ -1203,6 +1267,7 @@ export class TischSzene extends Phaser.Scene {
     if (this.backdropClickHandler && this.rundenEndeModal) this.rundenEndeModal.removeEventListener('click', this.backdropClickHandler);
     this.abmeldenStore?.(); this.abmeldenSonderpunkte?.();
     this.animationen?.abbrechen(); this.animationen = undefined;
+    this.loeseEigeneKartenAuf();
     this.rundenauswertungObjekte.forEach((o) => o.destroy()); this.tischEbene?.destroy(true);
     this.hintergrund?.destroy(); this.handKartenobjekte.clear();
     this.versteckeLetztesStichOverlay(); this.schliessePartieEndeModal();
