@@ -1,23 +1,18 @@
 # IMPLEMENTATION_PLAN — Locodoko Doppelkopf
 
 ## Notiz
-Stand: 2026-04-27 (Plan-Run #60 — BUG-2 + FEAT-BOCK-1 implementiert)
+Stand: 2026-04-27 (Plan-Run #61 — FEAT-BOCK-2 implementiert)
 
 **Was wurde implementiert:**
 
-BUG-2 — Browser-Reload zeigt alten State:
-- `AppStore.reconnecteTisch()`: `aktuellerTisch: null, partieStand: null` vor Subscription-Aufbau (verbindungsabbruch.md:70).
-- `TischSzene.aufraeumen()`: `schliesseRundenEndeModal()` ergänzt (war fehlend).
-- 1 neuer Test in AppStore.test.ts.
+FEAT-BOCK-2 — `animiereBockrunde(anzahl)` verdrahten:
+- `AnimationenService.animiereBockrunde()`: `anzahl: number` als erster Parameter; Text/Emoji variiert: 1→🐑 Bockrunde!, 2→🐑🐑 Doppelbock!, ≥3→🐑×N Bockrunde ×N.
+- `TischSzene` SPIEL_GESTARTET-Handler: nach Austeilen + Spielankündigung `bockrundenZaehler > 0` prüfen und Animation seriell einreihen.
+- 3 neue Tests in `AnimationenService.test.ts`. 58 Tests grün.
 
-BUG-DKV — Kein echter Bug gefunden: Fix bereits in commit 727f472 (try-catch um AUSWERTUNG-Block in `KiOrchestrierungService`). Als erledigt markiert.
+**Nächster logischer Schritt:** FEAT-6/7/8 — Test-IDs (`data-testid`) für Phaser-Buttons in TischSzene (Vorbehalt, Armut, Ansage).
 
-FEAT-BOCK-1 — `bockrundenZaehler` als int/number statt `istBockrunde` boolean:
-- `PartieStandAntwort.LaufendesSpielAntwort`: `boolean istBockrunde` → `int bockrundenZaehler`.
-- Frontend: `SpielverwaltungDto.ts`, `generated/api-types.ts` angepasst.
-- 2 neue Tests in PartieStandAntwortTest.java.
-
-**Nächster logischer Schritt:** FEAT-BOCK-2 — `AnimationenService.animiereBockrunde(anzahl)` in TischSzene verdrahten.
+**Offene Fragen:** Vision-Loop-Check mit laufendem Backend empfohlen (kein Backend im CI).
 
 **Offene Fragen:** keine.
 
@@ -68,11 +63,11 @@ FEAT-BOCK-1 — `bockrundenZaehler` als int/number statt `istBockrunde` boolean:
 - [x] Frontend: `SpielverwaltungDto.ts:153` — `istBockrunde: boolean` → `bockrundenZaehler: number`
 - [x] Validation: `mvn test` (282 grün) + `npm test` (55 grün) + `npm run build` (clean)
 
-### FEAT-BOCK-2 (Frontend): animiereBockrunde() verdrahten
+### FEAT-BOCK-2 (Frontend): animiereBockrunde() verdrahten ✅
 `AnimationenService.animiereBockrunde()` ist implementiert aber nirgends aufgerufen.
-- [ ] Frontend: `animiereBockrunde(anzahl: number)` — Parameter statt void (N Schafe: 1×🐑, 2×🐑🐑 „Doppelbock!", N×🐑)
-- [ ] Frontend: `TischSzene.ts` im `SPIEL_GESTARTET`-Handler nach Karten-Austeilen-Animation aufrufen wenn `bockrundenZaehler > 0`
-- [ ] Validation: `npm test` + visueller Vision-Loop-Test
+- [x] Frontend: `animiereBockrunde(anzahl: number)` — Parameter statt void (N Schafe: 1×🐑, 2×🐑🐑 „Doppelbock!", N×🐑)
+- [x] Frontend: `TischSzene.ts` im `SPIEL_GESTARTET`-Handler nach Karten-Austeilen-Animation aufrufen wenn `bockrundenZaehler > 0`
+- [x] Validation: `npm test` (58 grün) + visueller Vision-Loop-Test empfohlen (Backend nötig)
 
 ---
 
