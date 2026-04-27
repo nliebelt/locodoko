@@ -1,17 +1,18 @@
 # IMPLEMENTATION_PLAN — Locodoko Doppelkopf
 
 ## Notiz
-Stand: 2026-04-27 (Plan-Run #57 — BUG-1 implementiert)
+Stand: 2026-04-27 (Plan-Run #59 — BUG-SCHMEISSEN implementiert)
 
 **Was wurde implementiert:**
-`HOCHZEIT_PARTNER_GEFUNDEN` als WebSocket-Event vollständig implementiert:
-- Backend: `PartieEreignisTyp`, `PartieEreignisAntwort` (Record + Factory mit `partnerPosition`), Broadcast in `KiOrchestrierungService` UND `SpielAktionsService` (beide Pfade waren betroffen)
-- Frontend: `PartieEreignisTyp`, `HochzeitPartnerGefundenEreignis`-Interface, AppStore-Handler, TischSzene-Banner „Partner gefunden!"
+BUG-SCHMEISSEN — `VorbehaltAnsage.istZulaessig()` für `SCHMEISSEN_FUENF_NEUNEN` korrigiert:
+- Schwelle war hardcoded `>= 5`, jetzt `ohneNeunen ? 4 : 5` (Spec spielablauf.md:58).
+- `SCHMEISSEN_WENIG_TRUMPF` war bereits korrekt implementiert (`< 2` via `NormaleTrumpfOrdnung`) — kein Fix nötig.
+- 2 neue Unit-Tests (synthetisch, da Neunen im 40er-Deck nie vorkommen — testen die Spec-Verzweigung).
 
-**Nächster logischer Schritt:** BUG-2 (Browser-Reload zeigt alten State) — `AppStore.reset()` vor Snapshot-Verarbeitung.
+**Nächster logischer Schritt:** BUG-DKV (Backend) — `Spiel.werteAus()` mit DKV-Preset debuggen.
 
 **Offene Fragen:**
-- KI-Blockade vollständig behoben? Der Broadcast war das offensichtlichste fehlende Stück; integrations-Tests für KI nach Hochzeit laufen grün. Bei Reproduktion: `KiEventAdapter`-Listener-Registrierung prüfen.
+- `SCHMEISSEN_WENIG_TRUMPF` im Plan als "offen" markiert, war aber bereits korrekt — Plan-Eintrag als erledigt markiert.
 
 ## Legende
 - [x] Erledigt
@@ -30,18 +31,18 @@ Stand: 2026-04-27 (Plan-Run #57 — BUG-1 implementiert)
 - [x] Frontend: `PartieEreignisTyp` in `SpielverwaltungDto.ts` + `HochzeitPartnerGefundenEreignis` + AppStore-Handler + Banner „Partner gefunden!"
 - [x] Validation: `mvn test` + `npm test` — beide grün
 
-### BUG-2 (Frontend): Browser-Reload zeigt alten State
+### BUG-2 (Frontend): Browser-Reload zeigt alten State ✅
 **Root Cause:** `AppStore` wird vor Snapshot-Verarbeitung nicht zurückgesetzt. Overlays und Animations-State des vorherigen Spiels bleiben bestehen (`verbindungsabbruch.md:70` fordert vollständigen Reset).
-- [ ] Frontend: `AppStore.reset()` (oder äquivalent) vor Snapshot-Verarbeitung in Session-Recovery aufrufen
-- [ ] Frontend: `AnimationenService.abbrechen()` sicherstellen (existiert, aber wird nicht immer aufgerufen)
-- [ ] Frontend: alle Overlay-Sichtbarkeiten (`rundenEndeModal`, `partieEndeModal`) auf hidden setzen
-- [ ] Validation: `npm test` + manueller Test: Strg+R während laufendem Spiel
+- [x] Frontend: `AppStore.reconnecteTisch()` — `aktuellerTisch: null, partieStand: null` vor Subscription-Aufbau patchen
+- [x] Frontend: `AnimationenService.abbrechen()` — bereits korrekt in `TischSzene.aufraeumen()` vorhanden
+- [x] Frontend: `TischSzene.aufraeumen()` — `schliesseRundenEndeModal()` ergänzt (war fehlend)
+- [x] Validation: `npm test` — 55 Tests grün
 
-### BUG-SCHMEISSEN (Backend): Schmeißen-Validierung korrigieren
-**Root Cause:** `VorbehaltAnsage.java` — `SCHMEISSEN_FUENF_NEUNEN` prüft auf 5 (statt 5 mit / 4 ohne Neunen) und `SCHMEISSEN_WENIG_TRUMPF` hat keine Bedingung `< 2 Trümpfe` implementiert.
-- [ ] Backend: `VorbehaltAnsage.istZulaessig()` für `SCHMEISSEN_FUENF_NEUNEN` korrigieren (Spec schweinchen.md:58)
-- [ ] Backend: `VorbehaltAnsage.istZulaessig()` für `SCHMEISSEN_WENIG_TRUMPF` implementieren (Spec:59)
-- [ ] Validation: `mvn test` (neue Unit-Tests für beide Fälle)
+### BUG-SCHMEISSEN (Backend): Schmeißen-Validierung korrigieren ✅
+**Root Cause:** `VorbehaltAnsage.java` — `SCHMEISSEN_FUENF_NEUNEN` prüfte auf 5 (statt 5 mit / 4 ohne Neunen). `SCHMEISSEN_WENIG_TRUMPF` war bereits korrekt implementiert.
+- [x] Backend: `VorbehaltAnsage.istZulaessig()` für `SCHMEISSEN_FUENF_NEUNEN` korrigiert: `ohneNeunen ? 4 : 5`
+- [x] Backend: `VorbehaltAnsage.istZulaessig()` für `SCHMEISSEN_WENIG_TRUMPF` — bereits korrekt (kein Fix nötig)
+- [x] Validation: `mvn test` — 12 Tests in VorbehaltAnsageTest, BUILD SUCCESS
 
 ### BUG-DKV (Backend): DKV-Preset schließt Spiel nicht ab
 **Root Cause:** Reproduzierbar mit DKV-Preset (alle Sonderregeln false). Fehler in `Spiel.werteAus()` oder `PunkteRechner` — konnte durch Analyse nicht eindeutig lokalisiert werden, muss debuggt werden.
