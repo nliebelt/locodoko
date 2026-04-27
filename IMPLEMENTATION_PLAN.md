@@ -1,18 +1,19 @@
 # IMPLEMENTATION_PLAN — Locodoko Doppelkopf
 
 ## Notiz
-Stand: 2026-04-27 (Plan-Run #61 — FEAT-BOCK-2 implementiert)
+Stand: 2026-04-27 (Plan-Run #62 — FEAT-6/7/8 implementiert)
 
 **Was wurde implementiert:**
 
-FEAT-BOCK-2 — `animiereBockrunde(anzahl)` verdrahten:
-- `AnimationenService.animiereBockrunde()`: `anzahl: number` als erster Parameter; Text/Emoji variiert: 1→🐑 Bockrunde!, 2→🐑🐑 Doppelbock!, ≥3→🐑×N Bockrunde ×N.
-- `TischSzene` SPIEL_GESTARTET-Handler: nach Austeilen + Spielankündigung `bockrundenZaehler > 0` prüfen und Animation seriell einreihen.
-- 3 neue Tests in `AnimationenService.test.ts`. 58 Tests grün.
+FEAT-6/7/8 — `data-testid` Marker für Phaser-Buttons (Vorbehalt, Ansage, Armut):
+- `erstellePhaserButton()`: optionaler `testId?`-Parameter; ruft `aktualisiereE2EMarker()` auf → unsichtbarer DOM-Div als Playwright-Handle.
+- `renderVorbehaltDialog()`: `btn-vorbehalt-{typ}` (z.B. `btn-vorbehalt-solo-trumpf`, `btn-vorbehalt-hochzeit`)
+- `renderAnsageButtons()`: `btn-ansage-{typ}` (z.B. `btn-ansage-re`, `btn-ansage-keine-90`)
+- `renderArmutBereich()`: `btn-armut-anbieten`, `btn-armut-annehmen`, `btn-armut-ablehnen`, `btn-armut-annahme-bestaetigen`, `btn-armut-abbrechen`
+- Cleanup in `renderTisch()` + `aufraeumen()` scoped auf `#ui-root`, damit keine Marker leaken.
+- 58 Tests grün, Build clean.
 
-**Nächster logischer Schritt:** FEAT-6/7/8 — Test-IDs (`data-testid`) für Phaser-Buttons in TischSzene (Vorbehalt, Armut, Ansage).
-
-**Offene Fragen:** Vision-Loop-Check mit laufendem Backend empfohlen (kein Backend im CI).
+**Nächster logischer Schritt:** FEAT-NEUE-PARTIE (Backend + Frontend) — automatischer Neustart nach Rundenende mit Countdown.
 
 **Offene Fragen:** keine.
 
@@ -73,11 +74,11 @@ FEAT-BOCK-2 — `animiereBockrunde(anzahl)` verdrahten:
 
 ## Phase 3 — E2E-Testbarkeit: Detail-Marker (FEAT)
 
-- [~] FEAT-6 (Frontend): Vorbehalt-Auswahl-Overlay — `btn-vorbehalt-{typ}` fehlen in `TischSzene.ts:1193` (Phaser-Buttons ohne `dataset.testid`)
-- [~] FEAT-7 (Frontend): Armut-Dialog — `btn-armut-{aktion}` fehlen in `TischSzene.ts:1223–1235`
-- [~] FEAT-8 (Frontend): Floating Action Bar — `btn-ansage-{typ}` fehlen in `TischSzene.ts:1211`
+- [x] FEAT-6 (Frontend): Vorbehalt-Auswahl-Overlay — `btn-vorbehalt-{typ}` ✅
+- [x] FEAT-7 (Frontend): Armut-Dialog — `btn-armut-{aktion}` ✅
+- [x] FEAT-8 (Frontend): Floating Action Bar — `btn-ansage-{typ}` ✅
 
-Für alle drei: `erstellePhaserButton()` mit `dataset['testid']`-Zuweisung erweitern.
+Für alle drei: `erstellePhaserButton()` mit `testId?`-Parameter; Cleanup in `renderTisch()` + `aufraeumen()`.
 
 ---
 
