@@ -2,8 +2,8 @@
 
 ## Notiz
 Stand: 2026-04-27
-FEAT-2 implementiert: Einwurf-Bockrunde-Trigger in Partie.schliesseAktuellesSpielAb(). Spiel.java erhält neues Feld einwurfZaehler, das bei jedem eingeworfenesSpiel()-Aufruf (Schmeißen oder abgelehnte Armut) inkrementiert wird. DB-Migration 021-einwurf-zaehler.yaml. 4 neue Unit-Tests in BockrundenTest.java. 281 Backend-Tests grün.
-Nächster Schritt: FEAT-3 (TischkonfigurationEmbeddable Factory-Methoden für Regel-Presets) oder FEAT-4 (Partie-Ende Modal) oder SPEC-Aufgaben.
+FEAT-3 implementiert: Drei benannte Factory-Methoden in TischkonfigurationEmbeddable — locoBlatRegeln(), dkvRegeln(), ohneNeunenLocoBlatRegeln(). standard() delegiert jetzt zu locoBlatRegeln(). Spielregeln.java hatte alle drei Presets bereits; stales TODO-Kommentar entfernt. 4 neue Unit-Tests in TischkonfigurationEmbeddableTest.java. 285 Backend-Tests grün.
+Nächster Schritt: FEAT-4 (Partie-Ende Modal in TischSzene.ts) oder FEAT-5 (fehlende data-testid-Attribute) oder SPEC-Aufgaben.
 
 ## Legende
 - [x] Erledigt
@@ -105,7 +105,7 @@ Reduziert ~400 Zeilen Duplikat-Code. Voraussetzung für UNIFIED-4 bis 7.
 
 - [x] **FEAT-1 (Backend)**: Schmeißen-Varianten "Fünf Neunen" und "Wenig Trumpf" in `VorbehaltAnsage.java`.
 - [x] **FEAT-2 (Backend)**: Bockrunden-Trigger "Einwurf-Bockrunde" (ausgelöst wenn Spiel geschmissen).
-- [ ] **FEAT-3 (Backend)**: `TischkonfigurationEmbeddable` Factory-Methoden für Regel-Presets.
+- [x] **FEAT-3 (Backend)**: `TischkonfigurationEmbeddable` Factory-Methoden für Regel-Presets.
 - [ ] **FEAT-4 (Frontend)**: Partie-Ende Modal in `TischSzene.ts` ausarbeiten und an Event-Loop anbinden.
 - [ ] **FEAT-5 (Frontend)**: Fehlende `data-testid`-Attribute gemäß `specs/e2e-tests.md`.
 

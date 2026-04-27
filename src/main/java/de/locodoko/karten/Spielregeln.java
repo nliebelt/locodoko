@@ -12,10 +12,6 @@ package de.locodoko.karten;
  * liefert {@link #ohneNeunenRegeln()}. Einzelne Parameter koennen per {@code mit*}-Methoden
  * unveraendernd ueberschrieben werden (Builder-Stil).</p>
  *
- * <p>TODO(regelkatalog): Neue Factory-Methoden ergaenzen — {@code locoBlatRegeln()} und
- * {@code dkvRegeln()} — gemaess specs/regelkatalog.md. {@code standardRegeln()} kann
- * danach auf {@code locoBlatRegeln()} delegieren.</p>
- *
  */
 public record Spielregeln(
     boolean ohneNeunen,

@@ -111,7 +111,22 @@ public class TischkonfigurationEmbeddable {
     }
 
     public static TischkonfigurationEmbeddable standard() {
+        return locoBlatRegeln();
+    }
+
+    /** Loco-Blatt-Regelkatalog: alle Sonderregeln aktiv, 12-Karten-Spiel, 24 Runden. */
+    public static TischkonfigurationEmbeddable locoBlatRegeln() {
         return ausSpielregeln(Spielregeln.locoBlatRegeln(), 24);
+    }
+
+    /** DKV-Turnier-Regelkatalog: ohne Bockrunden, Schweinchen, 30-Augen-Pflicht und Schmeissen, 24 Runden. */
+    public static TischkonfigurationEmbeddable dkvRegeln() {
+        return ausSpielregeln(Spielregeln.dkvRegeln(), 24);
+    }
+
+    /** Loco-Blatt-Variante ohne Neunen: 10-Karten-Spiel, alle Sonderregeln aktiv, 24 Runden. */
+    public static TischkonfigurationEmbeddable ohneNeunenLocoBlatRegeln() {
+        return ausSpielregeln(Spielregeln.ohneNeunenLocoBlatRegeln(), 24);
     }
 
     public static TischkonfigurationEmbeddable ausSpielregeln(Spielregeln spielregeln, int anzahlSpiele) {
