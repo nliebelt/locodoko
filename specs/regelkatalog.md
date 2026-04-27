@@ -17,11 +17,11 @@ im „Benutzerdefiniert"-Modus überschrieben werden.
 
 ### Loco Blatt (Standard)
 
-Das Hausregelset von Locodoko — vollständiges Spiel mit allen modernen Sonderregeln.
+Das Hausregelset von Locodoko — vollständiges Spiel mit allen modernen Sonderregeln, gespielt **ohne Neunen** (40 Karten).
 
 | Option | Wert |
 | ------ | ---- |
-| `ohneNeunen` | false |
+| `ohneNeunen` | true |
 | `zweiteDulleSticht` | true |
 | `bockrundenAktiv` | true |
 | `schweinchenAktiv` | true |
@@ -59,13 +59,14 @@ Offizielles DKV-Regelwerk (Deutscher Doppelkopf-Verband), ohne Locodoko-Hausrege
 | `soloFleischlosAktiv` | true |
 | `anzahlSpiele` | 24 |
 
-### Ohne Neunen
+### Ohne Neunen / Mit Neunen
 
-Schnellvariante mit 40 statt 48 Karten, sonst wie Loco Blatt.
+> **Hinweis:** Da Loco Blatt jetzt `ohneNeunen: true` ist, ist ein separates „Ohne Neunen"-Preset redundant.
+> Dieser Slot kann alternativ als **„Mit Neunen"** (48-Karten-Variante, sonst wie Loco Blatt) genutzt werden.
 
 | Option | Wert |
 | ------ | ---- |
-| `ohneNeunen` | true |
+| `ohneNeunen` | false |
 | alle anderen | wie Loco Blatt |
 
 ### Benutzerdefiniert
