@@ -11,10 +11,8 @@ package de.locodoko.tisch;
 public enum PartieEreignisTyp {
     /** Vollstaendiger Partiestand-Snapshot (nach Beitritt, Reconnect oder explizitem Request). */
     SNAPSHOT,
-    /** Eine Karte wurde gespielt (Mensch oder KI-Einzelkarte). */
+    /** Eine Karte wurde gespielt (Mensch oder KI). */
     KARTE_GESPIELT,
-    /** KI hat mehrere Karten in Folge gespielt — Liste fuer animierte Wiedergabe. */
-    KI_ZUG_SEQUENZ,
     /** Stich abgeschlossen, ggf. mit Sonderpunkten. */
     STICH_ABGESCHLOSSEN,
     /** Spiel beendet und ausgewertet. */
@@ -24,5 +22,7 @@ public enum PartieEreignisTyp {
     /** Ein Schweinchen wurde gemeldet. */
     SCHWEINCHEN_GEMELDET,
     /** Das Spiel wurde gestartet. */
-    SPIEL_GESTARTET
+    SPIEL_GESTARTET,
+    /** Eine Spieleraktion wurde abgelehnt (z.B. ungueltiger Kartenzug). */
+    AKTION_ABGELEHNT
 }

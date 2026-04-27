@@ -54,15 +54,26 @@ er muss jederzeit mit dem Java-Enum `PartieEreignisTyp` übereinstimmen.
 
 | Typ | Gesendet von | Wann | Frontend-Aktion |
 |-----|-------------|------|----------------|
-| `SNAPSHOT` | `VerbindungsabbruchService`, `TischVerwaltungsService`, `SpielverwaltungWebSocketController` | Beitritt, Reconnect, expliziter `/snapshot`-Request | `leereKiSequenzQueue()` + State ersetzen |
-| `KARTE_GESPIELT` | `SpielAktionsService` | Nach jedem Kartenzug (Mensch oder KI-Einzelkarte) | State patchen |
-| `KI_ZUG_SEQUENZ` | `KiOrchestrierungService` | KI spielt mehrere Karten in einem Stich | Karten mit 800 ms Abstand animieren |
-| `STICH_ABGESCHLOSSEN` | `SpielAktionsService` | Stich vollständig, ggf. Sonderpunkte | State patchen + Sonderpunkt-Listener feuern |
-| `SPIEL_BEENDET` | `KiOrchestrierungService` | Spiel ausgewertet, nächstes gestartet | State patchen (Auswertungs-UI) |
+| `SNAPSHOT` | `VerbindungsabbruchService` | Nach Reconnect | State sofort ersetzen |
+| `SPIEL_GESTARTET` | `Partie`, `SpielAktionsService` | Runde beginnt / Einwurf | Karten-Austeilen Animation |
+| `KARTE_GESPIELT` | `SpielAktionsService`, `KiOrchestrierungService` | Kartenzug | Karte animieren + State patchen |
+| `STICH_ABGESCHLOSSEN` | `SpielAktionsService` | Stich vollständig | Stich-Animation + State patchen |
+| `SPIEL_BEENDET` | `KiOrchestrierungService` | Spiel ausgewertet | Auswertungs-Overlay anzeigen |
 
 ---
 
-## KI als Event-Subscriber (Reactive AI)
+## Frontend Event-Verarbeitung (Sequential Processing)
+
+Um Race-Conditions zwischen Animationen und Zustands-Updates zu vermeiden, nutzt das Frontend eine **serielle Queue**:
+
+1. **Eingang:** Jedes WebSocket-Event landet in der `AppStore._eventQueue`.
+2. **Verarbeitung:** Die Queue wird nacheinander abgearbeitet. Für jedes Event gilt:
+   - **Trigger Animation:** Die `TischSzene` startet die visuelle Darstellung (z.B. Karte fliegt).
+   - **Wait:** Der Queue-Processor wartet auf das Ende der Animation.
+   - **Apply State:** Erst jetzt wird der im Event enthaltene `partieStand` in den Store übernommen und das statische UI-Rendering ausgelöst.
+   - **AI-Delay:** Bei KI-Zügen wird nach der Animation zusätzlich 800ms gewartet, bevor das nächste Event aus der Queue geholt wird.
+
+Dies garantiert, dass Karten nicht "springen" und das Backend-Timing entkoppelt von der UI-Darstellung bleibt.
 
 `KiEventAdapter` reagiert auf `NaechsterSpielerErwartet` und `VorbehaltErwartet`.
 **Pflicht:** Alle Listener nutzen `@TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)`, damit die KI-Orchestrierung erst nach dem Commit des auslösenden Spielzugs startet.

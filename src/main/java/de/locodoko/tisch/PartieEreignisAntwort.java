@@ -1,7 +1,7 @@
 package de.locodoko.tisch;
 
+import de.locodoko.partie.SpielerPosition;
 import io.swagger.v3.oas.annotations.media.Schema;
-import org.springframework.lang.Nullable;
 
 import java.time.Instant;
 import java.util.List;
@@ -15,12 +15,12 @@ import java.util.List;
     oneOf = {
         PartieEreignisAntwort.Snapshot.class,
         PartieEreignisAntwort.KarteGespielt.class,
-        PartieEreignisAntwort.KiZugSequenz.class,
         PartieEreignisAntwort.StichAbgeschlossen.class,
         PartieEreignisAntwort.SpielBeendet.class,
         PartieEreignisAntwort.AnsageErfolgt.class,
         PartieEreignisAntwort.SchweinchenGemeldet.class,
-        PartieEreignisAntwort.SpielGestartet.class
+        PartieEreignisAntwort.SpielGestartet.class,
+        PartieEreignisAntwort.AktionAbgelehnt.class
     }
 )
 public sealed interface PartieEreignisAntwort {
@@ -42,17 +42,16 @@ public sealed interface PartieEreignisAntwort {
     @Schema(description = "Expliziter Snapshot des gesamten Spielstands.")
     record Snapshot(Instant timestamp, long version, PartieEreignisTyp ereignisTyp, PartieStandAntwort partieStand) implements PartieEreignisAntwort {}
 
-    @Schema(description = "Ein Spieler (Mensch oder KI-Einzelkarte) hat eine Karte gespielt.")
-    record KarteGespielt(Instant timestamp, long version, PartieEreignisTyp ereignisTyp, PartieStandAntwort partieStand) implements PartieEreignisAntwort {}
-
-    @Schema(description = "Eine Sequenz von KI-Karten wurde gespielt.")
-    record KiZugSequenz(
+    @Schema(description = "Ein Spieler (Mensch oder KI) hat eine Karte gespielt.")
+    record KarteGespielt(
         Instant timestamp,
         long version,
         PartieEreignisTyp ereignisTyp,
         PartieStandAntwort partieStand,
-        @Schema(description = "Die Liste der gespielten Karten in zeitlicher Reihenfolge.")
-        List<GespielteKarteAntwort> kiKartenSequenz
+        @Schema(description = "Position des spielenden Spielers.")
+        SpielerPosition spielerPosition,
+        @Schema(description = "ID der gespielten Karte im Format FARBE-WERT-INDEX.", example = "KREUZ-AS-1")
+        String karteId
     ) implements PartieEreignisAntwort {}
 
     @Schema(description = "Ein Stich wurde beendet und eingezogen.")
@@ -77,18 +76,24 @@ public sealed interface PartieEreignisAntwort {
     @Schema(description = "Eine neue Partie an diesem Tisch wurde gestartet.")
     record SpielGestartet(Instant timestamp, long version, PartieEreignisTyp ereignisTyp, PartieStandAntwort partieStand) implements PartieEreignisAntwort {}
 
+    @Schema(description = "Eine Spieleraktion wurde abgelehnt (z.B. ungueltiger Kartenzug).")
+    record AktionAbgelehnt(
+        Instant timestamp,
+        long version,
+        PartieEreignisTyp ereignisTyp,
+        PartieStandAntwort partieStand,
+        @Schema(description = "Fehlercode der abgelehnten Aktion.", example = "KARTE_UNGUELTIG")
+        String fehlerCode
+    ) implements PartieEreignisAntwort {}
+
     // --- Statische Factory-Methoden ---
 
     static PartieEreignisAntwort snapshot(PartieStandAntwort stand) {
         return new Snapshot(Instant.now(), stand.version(), PartieEreignisTyp.SNAPSHOT, stand);
     }
 
-    static PartieEreignisAntwort karteGespielt(PartieStandAntwort stand) {
-        return new KarteGespielt(Instant.now(), stand.version(), PartieEreignisTyp.KARTE_GESPIELT, stand);
-    }
-
-    static PartieEreignisAntwort kiZugSequenz(PartieStandAntwort stand, List<GespielteKarteAntwort> sequenz) {
-        return new KiZugSequenz(Instant.now(), stand.version(), PartieEreignisTyp.KI_ZUG_SEQUENZ, stand, sequenz);
+    static PartieEreignisAntwort karteGespielt(PartieStandAntwort stand, SpielerPosition spielerPosition, String karteId) {
+        return new KarteGespielt(Instant.now(), stand.version(), PartieEreignisTyp.KARTE_GESPIELT, stand, spielerPosition, karteId);
     }
 
     static PartieEreignisAntwort stichAbgeschlossen(PartieStandAntwort stand, List<SonderpunktEreignisAntwort> sonderpunkte) {
@@ -109,5 +114,9 @@ public sealed interface PartieEreignisAntwort {
 
     static PartieEreignisAntwort spielGestartet(PartieStandAntwort stand) {
         return new SpielGestartet(Instant.now(), stand.version(), PartieEreignisTyp.SPIEL_GESTARTET, stand);
+    }
+
+    static PartieEreignisAntwort aktionAbgelehnt(PartieStandAntwort stand, String fehlerCode) {
+        return new AktionAbgelehnt(Instant.now(), stand.version(), PartieEreignisTyp.AKTION_ABGELEHNT, stand, fehlerCode);
     }
 }

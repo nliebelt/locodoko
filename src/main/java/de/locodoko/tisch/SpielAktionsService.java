@@ -173,6 +173,13 @@ public class SpielAktionsService {
                 LOGGER.trace("Domain-Stand uebernommen [events={}]", spielEreignisse.size());
             } catch (IllegalStateException | UngueltigerSpielzugException exception) {
                 LOGGER.warn("Ungueltige Karte gespielt [spieler={}, karte={}]: {}", position, karteId, exception.getMessage());
+                if (tisch.partie() != null && verwalteterSpieler.sessionId() != null) {
+                    tischEchtzeitService.planeAnBenutzer(
+                        verwalteterSpieler.sessionId(),
+                        "/queue/partie/" + tisch.partie().id(),
+                        PartieEreignisAntwort.aktionAbgelehnt(PartieStandAntwort.aus(tisch, verwalteterSpieler.id()), "KARTE_UNGUELTIG")
+                    );
+                }
                 throw new SpielverwaltungKonfliktException("KARTE_UNGUELTIG", exception.getMessage());
             }
             partieRepository.saveAndFlush(tisch.partie());
@@ -263,7 +270,7 @@ public class SpielAktionsService {
         }
         for (SpielEreignis ereignis : ereignisse) {
             switch (ereignis) {
-                case SpielEreignis.KarteGespielt kg -> sendeKarteGespielt(tisch);
+                case SpielEreignis.KarteGespielt kg -> sendeKarteGespielt(tisch, kg.position(), kg.karte().karteId());
                 case SpielEreignis.StichAbgeschlossenEreignis sa -> sendeStichAbgeschlossen(tisch, sa.sonderpunkte());
                 case SpielEreignis.SchweinchenGemeldet _ -> veroeffentlicheSchweinchenEreignis(tisch);
                 case SpielEreignis.HochzeitPartnerGefunden hpg -> LOGGER.info("Hochzeit-Partner gefunden: {} [tischId={}]", hpg.partner(), tisch.id());
@@ -273,13 +280,13 @@ public class SpielAktionsService {
         triggereKi(tisch);
     }
 
-    private void sendeKarteGespielt(TischEntity tisch) {
+    private void sendeKarteGespielt(TischEntity tisch, SpielerPosition spielerPosition, String karteId) {
         tisch.spieler().stream()
             .filter(s -> !s.istKi() && !s.istKiUebernommen() && s.sessionId() != null)
             .forEach(s -> tischEchtzeitService.planeAnBenutzer(
                 s.sessionId(),
                 "/queue/partie/" + tisch.partie().id(),
-                PartieEreignisAntwort.karteGespielt(PartieStandAntwort.aus(tisch, s.id()))
+                PartieEreignisAntwort.karteGespielt(PartieStandAntwort.aus(tisch, s.id()), spielerPosition, karteId)
             ));
     }
 

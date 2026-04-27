@@ -452,7 +452,9 @@ public record PartieStandAntwort(
         @Schema(description = "Spielpunkte pro Spielerposition.")
         Map<SpielerPosition, Integer> spielpunkteProSpieler,
         @Schema(description = "Sonderpunkte pro Partei.")
-        Map<Partei, List<SonderpunktEreignisDto>> sonderpunkteProPartei
+        Map<Partei, List<SonderpunktEreignisDto>> sonderpunkteProPartei,
+        @Schema(description = "Aufschluesselung des Spielwerts nach Komponenten (Point Provenance).")
+        List<PunkteKomponenteAntwort> punkteAufschluesselung
     ) {
 
         static LetztesSpielergebnisAntwort aus(Spiel spiel) {
@@ -487,21 +489,41 @@ public record PartieStandAntwort(
             Integer dbGegenDieAltenPunkte = ergebnis.gegenDieAltenPunkte();
             Integer dbSoloMultiplikator = ergebnis.soloMultiplikator();
 
+            int grundwert = dbGrundwert != null ? dbGrundwert : ergebnis.spielwert();
+            int absagePunkte = dbAbsagePunkte != null ? dbAbsagePunkte : 0;
+            int gegenDieAltenPunkte = dbGegenDieAltenPunkte != null ? dbGegenDieAltenPunkte : 0;
+
+            List<PunkteKomponenteAntwort> aufschluesselung = new ArrayList<>();
+            aufschluesselung.add(new PunkteKomponenteAntwort("GRUNDWERT", grundwert));
+            if (absagePunkte != 0) aufschluesselung.add(new PunkteKomponenteAntwort("ABSAGE", absagePunkte));
+            if (gegenDieAltenPunkte != 0) aufschluesselung.add(new PunkteKomponenteAntwort("GEGEN_DIE_ALTEN", gegenDieAltenPunkte));
+            int sonderpunkteWert = ergebnis.spielwert() - grundwert - absagePunkte - gegenDieAltenPunkte;
+            if (sonderpunkteWert != 0) aufschluesselung.add(new PunkteKomponenteAntwort("SONDERPUNKTE", sonderpunkteWert));
+
             return new LetztesSpielergebnisAntwort(
                 spiel.spielNummer(),
                 spiel.spieltypAusDb(),
                 ergebnis.siegerPartei(),
                 ergebnis.spielwert(),
-                dbGrundwert != null ? dbGrundwert : ergebnis.spielwert(),
-                dbAbsagePunkte != null ? dbAbsagePunkte : 0,
-                dbGegenDieAltenPunkte != null ? dbGegenDieAltenPunkte : 0,
+                grundwert,
+                absagePunkte,
+                gegenDieAltenPunkte,
                 dbSoloMultiplikator != null ? dbSoloMultiplikator : 1,
                 Map.copyOf(augenProPartei),
                 Map.copyOf(spielpunkteProSpieler),
-                Map.copyOf(sonderpunkteProPartei)
+                Map.copyOf(sonderpunkteProPartei),
+                List.copyOf(aufschluesselung)
             );
         }
     }
+
+    @Schema(description = "Einzelne Komponente des Spielwerts (Point Provenance).")
+    public record PunkteKomponenteAntwort(
+        @Schema(description = "Typ der Komponente (z.B. GRUNDWERT, ABSAGE, SONDERPUNKTE).", example = "GRUNDWERT")
+        String typ,
+        @Schema(description = "Punkte dieser Komponente.", example = "2")
+        int punkte
+    ) {}
 
     public record VorbehaltMeldungAntwort(
         @Schema(description = "Position des Spielers, der den Vorbehalt gemeldet hat.")

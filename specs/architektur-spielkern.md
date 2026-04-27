@@ -112,7 +112,17 @@ Ungültige Zustandsübergänge werden zur Compile-Zeit verhindert statt zur Lauf
 **`PunkteRechner`** (Modul `partie`) — package-private Utility, kein `@Component`.
 - `Spiel` ruft `new PunkteRechner().berechne(...)` intern auf — Feature Envy vermieden.
 
-**`KiOrchestrierungService`** koordiniert nur: KI-Zug auswählen → Kommando ausführen → persistieren. Spiellogik (Wann ist ein Spiel beendet? Wann startet das nächste?) liegt in `Partie`.
+**`KiOrchestrierungService`** koordiniert nur: KI-Zug auswählen → Kommando ausführen → persistieren. Die KI fungiert als reiner Spieler-Ersatz.
+
+**`Partie-Lebenszyklus`** (Modul `partie` / `tisch`) — Die Logik, wann ein Spiel endet und das nächste beginnt (einschließlich Geber-Rotation), liegt zwingend im Partie-Aggregat oder einem zentralen Service. Diese Logik darf **nicht** von der Anwesenheit von KI-Spielern abhängen, um echten Multiplayer (nur Menschen) zu ermöglichen.
+
+---
+
+## Data Privacy & DTO-Maskierung
+
+Um Spiel-Integrität im Multiplayer zu garantieren, müssen DTOs (insb. `PartieStandAntwort`) serverseitig gefiltert werden:
+- Ein Spieler darf in der Liste `sichtbareHandkarten` der anderen Spieler **nur die Anzahl** der Karten sehen, niemals die `karteId` oder den Kartenwert (außer im expliziten Debug-Modus).
+- Das Backend maskiert diese Daten, bevor sie das `tisch`-Modul verlassen.
 
 ---
 

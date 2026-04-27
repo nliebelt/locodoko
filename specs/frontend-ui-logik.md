@@ -15,7 +15,10 @@ Die UI-Logik bestimmt, welche Interaktionen dem Spieler wann zur Verfügung steh
 Die UI reagiert nicht mehr auf Zustandsänderungen durch Diffing (Vergleich alter vs. neuer Snapshot), sondern **exklusiv auf dedizierte WebSocket-Push-Events**.
 
 1. **Reaktive UI (Events):** Modals, Banner, Sonderpunkt-Feedback und Spiel-Übergänge werden *ausschließlich* durch dedizierte Ereignisse aus dem `AppStore.abonniereEvents()`-Stream ausgelöst (z.B. `SPIEL_BEENDET`, `SCHWEINCHEN_GEMELDET`).
-2. **Snapshot-Rendering:** Der `AppStore`-Snapshot ist ausschließlich für den statischen Tisch-Zustand verantwortlich (Karten, Nameplates, Stichmitte). Bei jedem Snapshot-Update ruft die `TischSzene` `renderTisch()` auf, um das Spielfeld synchron zum Backend zu halten.
+2. **Snapshot-Rendering (Reconciliation):** Der `AppStore`-Snapshot ist für den statischen Tisch-Zustand verantwortlich. Die `TischSzene` implementiert ein **identitätsbasiertes Rendering**:
+   - **Verbot:** Das pauschale Aufrufen von `container.destroy(true)` bei jedem Update ist untersagt.
+   - **Wiederverwendung:** Karten-Objekte (Sprites) werden anhand ihrer `karteId` identifiziert und im Speicher behalten.
+   - **Patching:** Bei einem Zustands-Update werden nur die Eigenschaften (Position, Sichtbarkeit, Textur) bestehender Sprites aktualisiert. Neue Objekte werden nur erzeugt, wenn die ID noch nicht existiert.
 3. **UI-Guard:** Um "Springen" zu verhindern, darf `renderTisch()` während aktiver UI-Blocker (z.B. Rundenauswertung-Modal) keine Animationen oder Zustandsübergänge triggern, die mit dem Modal-Zustand kollidieren.
 
 ### Verarbeitung der Ereignisse

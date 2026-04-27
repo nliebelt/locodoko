@@ -453,13 +453,12 @@ export class TischSzene extends Phaser.Scene {
     const slotPos = stichSlotPositionen(b / 2, h / 2, b, h);
     const kg = berechneKartenGroesse(b);
     const tempK = this.erstelleKartenansicht(layout[pos].kartenX, layout[pos].kartenY, kg.w, kg.h, { verdeckt: true });
-    try { 
-      await this.animationen?.animiereKarteAusspielen({ wurzel: tempK }, slotPos[pos]); 
-    } finally { 
-      tempK.destroy(true); 
+    try {
+      await this.animationen?.animiereKarteAusspielen({ wurzel: tempK }, slotPos[pos]);
+    } finally {
+      tempK.destroy(true);
     }
   }
-
   private async animiereStichEinziehen(stich: any): Promise<void> {
     const { width: b, height: h } = this.scale.gameSize;
     const slotPos = stichSlotPositionen(b / 2, h / 2, b, h);

@@ -1,6 +1,5 @@
 package de.locodoko.ki.orchestrierung;
 
-import de.locodoko.tisch.GespielteKarteAntwort;
 import de.locodoko.tisch.PartieEreignisAntwort;
 import de.locodoko.tisch.PartieStandAntwort;
 import de.locodoko.tisch.SonderpunktEreignisAntwort;
@@ -132,6 +131,7 @@ public class KiOrchestrierungService {
                         // Wenn Menschen am Tisch sind, brechen wir hier ab, um ihnen Zeit fuer die
                         // Rundenauswertung zu geben.
                         if (hatMenschlichenSpieler) {
+                            veroeffentlicheSpielGestartet(tisch);
                             break;
                         }
                         // Rein virtuelle Tische (KI-only, z.B. in Tests) spielen sofort weiter.
@@ -156,7 +156,6 @@ public class KiOrchestrierungService {
                 try {
 
                     KiStrategie strategie = kiStrategieFactory.erzeuge(tisch.konfiguration().kiSchwierigkeit());
-                    Spielphase phaseVorAktion = laufendesSpiel.phase();
                     boolean schweinchenVorHER = laufendesSpiel.schweinchenGemeldetVon().isPresent();
                     
                     AktionsErgebnis aktionsErgebnis = fuehreKiAktionAus(laufendesSpiel, erwarteterSpieler, strategie);
@@ -181,15 +180,6 @@ public class KiOrchestrierungService {
                     // Domain-Ereignisse broadcasten (Stichabschluss, Sonderpunkte)
                     if (hatMenschlichenSpieler) {
                         veroeffentlicheSpielKarteEreignisse(tisch, aktionsErgebnis.ereignisse());
-                    }
-
-                    // KI-Karten sequenz broadcasten für die Animation (nur wenn nicht bereits durch stichAbgeschlossen abgedeckt)
-                    if (hatMenschlichenSpieler
-                            && phaseVorAktion instanceof Spielphase.Stichphase
-                            && aktionsErgebnis.gespielteKarteId() != null
-                            && aktionsErgebnis.ereignisse().stream().noneMatch(e -> e instanceof SpielEreignis.StichAbgeschlossenEreignis)) {
-                        List<GespielteKarteAntwort> sequenz = List.of(new GespielteKarteAntwort(erwarteterSpieler, aktionsErgebnis.gespielteKarteId()));
-                        sendeKiZugSequenz(tisch, sequenz);
                     }
                 } catch (Exception e) {
                     LOGGER.error(
@@ -267,7 +257,7 @@ public class KiOrchestrierungService {
                 }
                 Karte karte = strategie.waehleKarte(zustand);
                 LOGGER.debug("KI spielt Karte [karte={}, spielerId={}]", karte, spielerPosition);
-                String karteId = "%s-%s-%d".formatted(karte.farbe().name(), karte.wert().name(), karte.exemplarIndex());
+                String karteId = karte.karteId();
                 SpielAktion aktion = laufendesSpiel.spieleKarte(spielerPosition, karte);
                 yield new AktionsErgebnis(aktion.neuerStand(), karteId, aktion.ereignisse());
             }
@@ -379,23 +369,13 @@ public class KiOrchestrierungService {
         return Map.copyOf(spielerNachPosition);
     }
 
-    private void sendeKiZugSequenz(TischEntity tisch, List<GespielteKarteAntwort> sequenz) {
-        tisch.spieler().stream()
-            .filter(s -> !s.istKi() && !s.istKiUebernommen() && s.sessionId() != null)
-            .forEach(s -> tischEchtzeitService.planeAnBenutzer(
-                s.sessionId(),
-                "/queue/partie/" + tisch.partie().id(),
-                PartieEreignisAntwort.kiZugSequenz(PartieStandAntwort.aus(tisch, s.id()), sequenz)
-            ));
-    }
-
     private void veroeffentlicheSpielKarteEreignisse(TischEntity tisch, List<SpielEreignis> ereignisse) {
         if (tisch.partie() == null) {
             return;
         }
         for (SpielEreignis ereignis : ereignisse) {
             switch (ereignis) {
-                case SpielEreignis.KarteGespielt _ -> sendeKarteGespielt(tisch);
+                case SpielEreignis.KarteGespielt kg -> sendeKarteGespielt(tisch, kg.position(), kg.karte().karteId());
                 case SpielEreignis.StichAbgeschlossenEreignis sa -> sendeStichAbgeschlossen(tisch, sa.sonderpunkte());
                 case SpielEreignis.SchweinchenGemeldet _ -> veroeffentlicheSchweinchenEreignis(tisch);
                 case SpielEreignis.HochzeitPartnerGefunden hpg -> LOGGER.info("Hochzeit-Partner gefunden: {} [tischId={}]", hpg.partner(), tisch.id());
@@ -404,13 +384,23 @@ public class KiOrchestrierungService {
         }
     }
 
-    private void sendeKarteGespielt(TischEntity tisch) {
+    private void sendeKarteGespielt(TischEntity tisch, SpielerPosition spielerPosition, String karteId) {
         tisch.spieler().stream()
             .filter(s -> !s.istKi() && !s.istKiUebernommen() && s.sessionId() != null)
             .forEach(s -> tischEchtzeitService.planeAnBenutzer(
                 s.sessionId(),
                 "/queue/partie/" + tisch.partie().id(),
-                PartieEreignisAntwort.karteGespielt(PartieStandAntwort.aus(tisch, s.id()))
+                PartieEreignisAntwort.karteGespielt(PartieStandAntwort.aus(tisch, s.id()), spielerPosition, karteId)
+            ));
+    }
+
+    private void veroeffentlicheSpielGestartet(TischEntity tisch) {
+        tisch.spieler().stream()
+            .filter(s -> !s.istKi() && !s.istKiUebernommen() && s.sessionId() != null)
+            .forEach(s -> tischEchtzeitService.planeAnBenutzer(
+                s.sessionId(),
+                "/queue/partie/" + tisch.partie().id(),
+                PartieEreignisAntwort.spielGestartet(PartieStandAntwort.aus(tisch, s.id()))
             ));
     }
 

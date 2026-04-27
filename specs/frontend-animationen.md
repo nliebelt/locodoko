@@ -20,10 +20,10 @@ Animationen machen das Spielerlebnis lebendig und geben visuelles Feedback zu Sp
 
 ### Karte ausspielen
 
-1. Wenn eine Karte gespielt wird, **gleitet** sie vom Kartenfächer des Spielers zur **Tischmitte**.
+1. Wenn ein `KARTE_GESPIELT`-Event empfangen wird, **gleitet** die Karte vom Kartenfächer zur **Tischmitte**.
 2. Die Animation dauert ca. **300–500ms**.
 3. Eigene Karten gleiten von unten nach oben, gegnerische Karten von ihrer jeweiligen Position zur Mitte.
-4. Die Karte wird dabei **umgedreht** (verdeckt → offen), wenn sie von einem Gegner gespielt wird.
+4. Die Karte nutzt die `karteId` aus dem Event, um die korrekte Vorderseite anzuzeigen.
 
 ### Stich einziehen
 
@@ -40,7 +40,7 @@ Animationen machen das Spielerlebnis lebendig und geben visuelles Feedback zu Sp
 
 ### Karten austeilen
 
-8. Beim Spielstart werden die Karten **nacheinander** an die Spielerpositionen verteilt.
+8. Beim `SPIEL_GESTARTET`-Event werden die Karten **nacheinander** an die Spielerpositionen verteilt.
 9. Die Karten kommen aus der **Tischmitte** (Kartenstapel) und gleiten zur jeweiligen Position.
 10. Pro Spieler und Karte dauert die Animation ca. **50–100ms** (insgesamt flüssig, nicht zu langsam).
 11. Eigene Karten werden **aufgedeckt**, gegnerische bleiben **verdeckt**.
@@ -74,7 +74,7 @@ Animationen machen das Spielerlebnis lebendig und geben visuelles Feedback zu Sp
 
 28. Alle Animationen sind **nicht blockierend** — der Spielfluss wird nicht unterbrochen (außer bei notwendigen Pausen wie Stich-Einziehen).
 29. Animationen können über eine Einstellung **beschleunigt** oder **übersprungen** werden (für erfahrene Spieler).
-30. Animationen müssen mit dem **WebSocket-Eventfluss** synchronisiert sein.
+30. Animationen müssen über den **Sequential Processing Pattern** (siehe `architektur-domain-events.md`) mit dem Zustands-Update synchronisiert sein. Der `partieStand` darf erst nach Abschluss der visuellen Bewegung im Store aktiviert werden.
 
 ## Akzeptanzkriterien
 
@@ -111,4 +111,4 @@ Animationen machen das Spielerlebnis lebendig und geben visuelles Feedback zu Sp
 - Sprites für Sonderpunkt-Icons (Fuchs, Kreuz-Bube, Stern)
 - Animations-Queue: Animationen nacheinander abspielen, um Überlappungen zu vermeiden
 - Die Animations-Geschwindigkeit als globaler Multiplikator (1x, 2x, sofort)
-- KI-Timing liegt **exklusiv im Frontend**: Bei `KI_ZUG_SEQUENZ`-Events ruft der `AppStore` `expandiereKiSequenz()` auf — dabei werden synthetische Zwischenzustände für jede KI-Karte erzeugt und mit je **800ms** Abstand animiert (nur bei menschlichen Mitspielern). Menschliche Züge (`KARTE_GESPIELT`), Phasenwechsel und `SNAPSHOT`-Events werden immer sofort angewendet. Das Backend sendet keine künstlichen Delays — es antwortet nach jedem DB-Commit sofort.
+- **KI-Timing (UX):** KI-Aktionen im Frontend werden mit einer variablen Verzögerung (`kiVerzoegerungMs`) abgearbeitet. Standardmäßig 800ms für Menschen, 0ms für E2E-Tests. Der Store steuert dies über die serielle Queue.

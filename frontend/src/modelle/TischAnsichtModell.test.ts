@@ -412,7 +412,8 @@ describe('erstelleTischAnsichtAusStatus', () => {
         sonderpunkteProPartei: {
           RE: [{ art: 'DOPPELKOPF', taeter: 'SUED', opfer: null }],
           KONTRA: [{ art: 'FUCHS_GEFANGEN', taeter: 'NORD', opfer: 'SUED' }]
-        }
+        },
+        punkteAufschluesselung: []
       },
       letzteAbgeschlosseneStiche: [
         {

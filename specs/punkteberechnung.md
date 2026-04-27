@@ -55,7 +55,7 @@ Die Punkteberechnung bestimmt am Ende eines Spiels, welche Partei gewonnen hat u
 ### Transparenz und Herkunft (Point Provenance)
 
 16. Das Backend muss für jeden vergebenen Punkt die **Quelle explizit ausweisen** (z.B. "Grundwert: 1", "Gegen die Alten: 1", "Fuchs gefangen: 1").
-17. Diese Aufschlüsselung muss Teil des `Spielergebnis`-DTOs sein, damit das Frontend sie in der Rundenauswertung detailliert anzeigen kann.
+17. Diese Aufschlüsselung muss Teil des `Spielergebnis`-DTOs sein: `punkteAufschluesselung: { label: string, wert: number }[]`. Das Frontend nutzt diese Liste, um die Rundenauswertung ohne eigene Logik darzustellen.
 
 ### Gesamtstand
 

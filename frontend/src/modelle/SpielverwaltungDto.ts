@@ -170,6 +170,11 @@ export interface SonderpunktEreignis {
   opfer?: SpielerPosition | null;
 }
 
+export interface PunkteKomponenteAntwort {
+  typ: string;
+  punkte: number;
+}
+
 export interface LetztesSpielergebnisAntwort {
   spielNummer: number;
   spieltyp: Spieltyp;
@@ -182,6 +187,7 @@ export interface LetztesSpielergebnisAntwort {
   augenProPartei: Record<Partei, number>;
   spielpunkteProSpieler: Record<SpielerPosition, number>;
   sonderpunkteProPartei: Record<Partei, SonderpunktEreignis[]>;
+  punkteAufschluesselung: PunkteKomponenteAntwort[];
 }
 
 export interface PartieStandAntwort {
@@ -198,7 +204,7 @@ export interface PartieStandAntwort {
 
 export type TischlisteEreignisTyp = 'SNAPSHOT' | 'AKTUALISIERT';
 export type TischEreignisTyp = 'TISCH_SNAPSHOT' | 'TISCH_ERSTELLT' | 'SPIELER_BEIGETRETEN' | 'SPIELER_VERLASSEN' | 'TISCH_KONFIGURATION_AKTUALISIERT' | 'SPIEL_GESTARTET' | 'TISCH_ENTFERNT' | 'PARTIE_ABGEBROCHEN' | 'SPIELER_GEKICKT';
-export type PartieEreignisTyp = 'SNAPSHOT' | 'KARTE_GESPIELT' | 'KI_ZUG_SEQUENZ' | 'STICH_ABGESCHLOSSEN' | 'SPIEL_BEENDET' | 'ANSAGE_ERFOLGT' | 'SCHWEINCHEN_GEMELDET' | 'SPIEL_GESTARTET';
+export type PartieEreignisTyp = 'SNAPSHOT' | 'KARTE_GESPIELT' | 'STICH_ABGESCHLOSSEN' | 'SPIEL_BEENDET' | 'ANSAGE_ERFOLGT' | 'SCHWEINCHEN_GEMELDET' | 'SPIEL_GESTARTET' | 'AKTION_ABGELEHNT';
 
 export interface GespielteKarteEreignisAntwort {
   spielerPosition: SpielerPosition;
@@ -232,11 +238,8 @@ export interface BasisPartieEreignis {
 }
 
 export interface SnapshotEreignis extends BasisPartieEreignis { ereignisTyp: 'SNAPSHOT'; }
-export interface KarteGespieltEreignis extends BasisPartieEreignis { ereignisTyp: 'KARTE_GESPIELT'; }
-export interface KiZugSequenzEreignis extends BasisPartieEreignis { 
-  ereignisTyp: 'KI_ZUG_SEQUENZ'; 
-  kiKartenSequenz: GespielteKarteEreignisAntwort[];
-}
+export interface KarteGespieltEreignis extends BasisPartieEreignis { ereignisTyp: 'KARTE_GESPIELT'; spielerPosition: SpielerPosition; karteId: string; }
+export interface AktionAbgelehntEreignis extends BasisPartieEreignis { ereignisTyp: 'AKTION_ABGELEHNT'; fehlerCode: string; }
 export interface StichAbgeschlossenEreignis extends BasisPartieEreignis { 
   ereignisTyp: 'STICH_ABGESCHLOSSEN'; 
   neueSonderpunkte: SonderpunktEreignisAntwortDto[];
@@ -249,12 +252,12 @@ export interface SpielGestartetEreignis extends BasisPartieEreignis { ereignisTy
 export type PartieEreignisAntwort = 
   | SnapshotEreignis 
   | KarteGespieltEreignis 
-  | KiZugSequenzEreignis 
   | StichAbgeschlossenEreignis 
   | SpielBeendetEreignis 
   | AnsageErfolgtEreignis 
   | SchweinchenGemeldetEreignis 
-  | SpielGestartetEreignis;
+  | SpielGestartetEreignis
+  | AktionAbgelehntEreignis;
 
 export interface SpielverwaltungWebSocketFehlerAntwort {
   timestamp: string;

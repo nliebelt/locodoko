@@ -54,25 +54,31 @@ interface PartieEreignisAntwort {
 
 #### `PartieEreignisTyp` — Event-Typen
 
-9. **`SNAPSHOT`**: Kompletter Spielstand nach Reconnect oder Spielstart.
+9. **`SNAPSHOT`**: Kompletter Spielstand nach Reconnect.
    - `partieStand`: vollständiger Stand inkl. eigene Hand
-   - Frontend: sofort anwenden, keine Animation (Seite neu gerendert)
+   - Frontend: sofort anwenden, keine Animation (Seite neu gerendert).
 
-10. **`KARTE_GESPIELT`**: Eine Karte wurde gespielt (menschlicher Zug, vor KI-Folgezügen).
-    - `partieStand`: Stand nach der gespielten Karte (KI-Züge noch ausstehend)
-    - Frontend: Animation Karte-gleitet-zur-Mitte, dann auf KI_ZUG_SEQUENZ warten
+10. **`SPIEL_GESTARTET`**: Eine neue Runde (Einzelspiel) beginnt.
+    - `partieStand`: Stand mit neuen Handkarten und neuem Geber.
+    - Frontend: triggert die "Karten austeilen"-Animation. Alte Stichmitte und Stiche werden gelöscht.
 
-11. **`KI_ZUG_SEQUENZ`**: Alle KI-Folgezüge abgeschlossen (ein oder mehrere KI-Karten).
-    - `partieStand`: finaler Stand nach allen KI-Zügen
-    - `kiKartenSequenz`: Liste der gespielten Karten in Reihenfolge
-    - Frontend: `expandiereKiSequenz()` — synthetische Zwischenzustände mit 800ms Delay
+11. **`KARTE_GESPIELT`**: Eine Karte wurde gespielt (menschlicher oder KI-Zug).
+    - `partieStand`: Stand nach der gespielten Karte.
+    - `spielerPosition`: Position des Spielers (NORD, SUED, OST, WEST).
+    - `karteId`: Eindeutige ID der Karte (z.B. "HERZ-10-1").
+    - Frontend: Animation der Karte zur Mitte.
 
 12. **`STICH_ABGESCHLOSSEN`**: Stich vollständig (4 Karten lagen, jetzt leer).
     - `partieStand`: Stand nach Stich-Einziehen
     - `neueSonderpunkte`: Fuchs-gefangen, Doppelkopf, Karlchen (leer wenn keiner)
     - Frontend: Stich-einziehen-Animation, danach Sonderpunkt-Banner
 
-13. **`PARTIE_AKTUALISIERT`**: Generischer State-Push (Legacy, ab ARCH-1 nicht mehr gesendet).
+13. **`AKTION_ABGELEHNT`**: Ein vom Spieler gesendeter Spielzug (Karte, Ansage) war ungültig.
+    - `fehlerCode`: Technischer Bezeichner des Fehlers (z.B. "BEDIENPFLICHT_VERLETZT").
+    - `nachricht`: Lesbare Fehlermeldung.
+    - `originalAktion`: Informationen zur abgelehnten Aktion (z.B. `karteId`), damit das Frontend visuelles Feedback (z.B. Schütteln) geben kann.
+
+14. **`PARTIE_AKTUALISIERT`**: Generischer State-Push (Legacy, ab ARCH-1 nicht mehr gesendet).
 
 #### Zusatz-DTOs
 

@@ -31,4 +31,8 @@ public record Karte(Farbe farbe, Kartenwert wert, int exemplarIndex) {
     public boolean gleicheAuspraegungWie(Karte andereKarte) {
         return farbe == andereKarte.farbe() && wert == andereKarte.wert();
     }
+
+    public String karteId() {
+        return "%s-%s-%d".formatted(farbe.name(), wert.name(), exemplarIndex);
+    }
 }

@@ -334,7 +334,11 @@ describe('AppStore', () => {
       anzahlSpiele: 8,
       gespielteSpiele: 0,
       gesamtpunktestand: { SUED: 0 },
-      laufendesSpiel: { spielNummer: 1, hochzeitGeklaert: false, schweinchenGemeldetVon: null }
+      laufendesSpiel: {
+        spielNummer: 1, hochzeitGeklaert: false, schweinchenGemeldetVon: null,
+        spieler: [{ position: 'WEST', istKi: true, istKiUebernommen: false, istSelbst: false }],
+        aktuelleStichmitte: [], spielbareKarten: []
+      }
     } as unknown as PartieStandAntwort;
     const spiel2Stand = {
       partieId: 'partie-snap',
@@ -350,10 +354,10 @@ describe('AppStore', () => {
     echtzeit.emit('/user/queue/partie/partie-snap', {
       timestamp: '2026-04-21T12:00:01Z',
       version: 1,
-      ereignisTyp: 'KI_ZUG_SEQUENZ',
+      ereignisTyp: 'KARTE_GESPIELT',
       partieStand: spiel1Stand,
-      kiKartenSequenz: [{ spielerPosition: 'WEST', karteId: 'KREUZ-AS-1' }],
-      neueSonderpunkte: null
+      spielerPosition: 'WEST',
+      karteId: 'KREUZ-AS-1',
     } as unknown as PartieEreignisAntwort);
 
     // Während die Animation läuft: SNAPSHOT(Spiel2) dann KARTE_GESPIELT(Spiel1) eintreffen
@@ -362,8 +366,6 @@ describe('AppStore', () => {
       version: 2,
       ereignisTyp: 'SNAPSHOT',
       partieStand: spiel2Stand,
-      kiKartenSequenz: null,
-      neueSonderpunkte: null
     } as unknown as PartieEreignisAntwort);
 
     echtzeit.emit('/user/queue/partie/partie-snap', {
@@ -371,8 +373,8 @@ describe('AppStore', () => {
       version: 1, // Veraltete Version
       ereignisTyp: 'KARTE_GESPIELT',
       partieStand: spiel1Stand,
-      kiKartenSequenz: null,
-      neueSonderpunkte: null
+      spielerPosition: 'WEST',
+      karteId: 'KREUZ-AS-1',
     } as unknown as PartieEreignisAntwort);
 
     // Warten bis KI-Animation (5ms) und Queue-Verarbeitung fertig
@@ -420,7 +422,11 @@ describe('AppStore', () => {
       anzahlSpiele: 8,
       gespielteSpiele: 0,
       gesamtpunktestand: { SUED: 0 },
-      laufendesSpiel: { spielNummer: 1, hochzeitGeklaert: false, schweinchenGemeldetVon: null }
+      laufendesSpiel: {
+        spielNummer: 1, hochzeitGeklaert: false, schweinchenGemeldetVon: null,
+        spieler: [{ position: 'WEST', istKi: true, istKiUebernommen: false, istSelbst: false }],
+        aktuelleStichmitte: [], spielbareKarten: []
+      }
     } as unknown as PartieStandAntwort;
     const spiel2Stand = {
       partieId: 'partie-rec',
@@ -435,10 +441,10 @@ describe('AppStore', () => {
     // KI animiert → async Barrier
     echtzeit.emit('/user/queue/partie/partie-rec', {
       timestamp: t2,
-      ereignisTyp: 'KI_ZUG_SEQUENZ',
+      ereignisTyp: 'KARTE_GESPIELT',
       partieStand: spiel1Stand,
-      kiKartenSequenz: [{ spielerPosition: 'WEST', karteId: 'KREUZ-AS-1' }],
-      neueSonderpunkte: null
+      spielerPosition: 'WEST',
+      karteId: 'KREUZ-AS-1',
     } as unknown as PartieEreignisAntwort);
 
     // Veraltetes Event landet in Queue
@@ -446,8 +452,8 @@ describe('AppStore', () => {
       timestamp: t2,
       ereignisTyp: 'KARTE_GESPIELT',
       partieStand: spiel1Stand,
-      kiKartenSequenz: null,
-      neueSonderpunkte: null
+      spielerPosition: 'WEST',
+      karteId: 'KREUZ-AS-1',
     } as unknown as PartieEreignisAntwort);
 
     // Ctrl+R: reconnecteTisch leert die Queue

@@ -8,9 +8,17 @@
 
 ## Kernprinzipien
 
-Die Locodoko Unified Architecture löst das Synchronisationsproblem zwischen verteilten Clients durch eine strikte Trennung von **Zustand (Snapshots)** und **Veränderung (Events)**.
+Die Locodoko Unified Architecture löst das Synchronisationsproblem zwischen verteilten Clients durch eine strikte Trennung von **visueller Animation (Hints)** und **autoritativem Zustand (Snapshots)**.
 
-### 1. Datenbank als einzige Source of Truth
+### 1. Hybrides Synchronisations-Modell (Snapshot + Hint)
+
+Um eine "Dumb UI" (einfache Logik im Frontend) bei gleichzeitig flüssigen Animationen zu ermöglichen, folgt jedes Ereignis diesem Muster:
+1. **Das Event enthält einen Aktions-Hinweis:** (z.B. `spielerPosition`, `karteId`). Dies ist nur für die visuelle Darstellung (Animation) gedacht.
+2. **Das Event enthält den vollständigen autoritativen Snapshot:** (`partieStand`). Dies ist die absolute Wahrheit nach der Aktion.
+3. **Verarbeitungs-Regel:** Das Frontend führt erst die Animation des Hinweises aus. Nach Abschluss (oder bei Fehler/Timeout) überschreibt das Frontend seinen gesamten Zustand hart mit dem mitgelieferten Snapshot. Dies garantiert automatische Selbtheilung bei jedem einzelnen Zug.
+
+### 2. Datenbank als einzige Source of Truth
+... (Rest bleibt)
 
 Die Datenbank ist der einzige persistente Zustandsspeicher. In-Memory-State-Management ist verboten.
 

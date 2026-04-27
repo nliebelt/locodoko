@@ -1,7 +1,7 @@
 import type {
   Ansage,
   KiSchwierigkeit,
-  GespielteKarteEreignisAntwort,
+  KarteGespieltEreignis,
   PartieEreignisAntwort,
   PartieStandAntwort,
   SonderpunktEreignisAntwortDto,
@@ -71,7 +71,6 @@ export class AppStore {
   private tischAbos: Array<() => void> = [];
   private aktuellePartieAbo: Uuid | null = null;
   private _letztePartieVersion = -1;
-  private _kiSequenzQueue: Array<() => Promise<void>> = [];
   private readonly _sonderpunkteListener = new Set<(sonderpunkte: SonderpunktEreignisAntwortDto[]) => void>();
   private readonly _eventListener = new Set<(ereignis: PartieEreignisAntwort) => void>();
   private _eventQueue: PartieEreignisAntwort[] = [];
@@ -533,11 +532,10 @@ export class AppStore {
         }
 
         this._aktuelleSequenzId++; // Neue Sequenz fuer jedes Event (Animation-Guard)
-        const sequenzIdBeiStart = this._aktuelleSequenzId;
 
         // Zustand patchen VOR dem Benachrichtigen der Listener (Locodoko Unified Architecture)
-        // AUSNAHME: Bei KI-Sequenzen regelt _expandiereKiSequenz das Patching am Ende selbst.
-        if (ereignis.partieStand && ereignis.ereignisTyp !== 'KI_ZUG_SEQUENZ') {
+        // AUSNAHME: Bei KARTE_GESPIELT regelt der case-Block das Patching selbst (hint-then-patch).
+        if (ereignis.partieStand && ereignis.ereignisTyp !== 'KARTE_GESPIELT') {
           this.patch({ partieStand: ereignis.partieStand });
         }
 
@@ -552,17 +550,26 @@ export class AppStore {
         switch (ereignis.ereignisTyp) {
           case 'SNAPSHOT':
             this._eventQueue.length = 0;
-            this.leereKiSequenzQueue();
             break;
-          case 'KARTE_GESPIELT':
+          case 'KARTE_GESPIELT': {
+            const prevStand = this.zustand.partieStand;
+            const istKiKarte = prevStand?.laufendesSpiel?.spieler?.find(
+              s => s.position === ereignis.spielerPosition
+            )?.istKi ?? false;
+            if (istKiKarte && prevStand && this._kiKartenVerzögerungMs > 0) {
+              const syntheticStand = this._synthetischerKarteGespielt(prevStand, ereignis);
+              this.patch({ partieStand: syntheticStand });
+              await new Promise<void>((r) => setTimeout(r, this._kiKartenVerzögerungMs));
+            }
+            this.patch({ partieStand: ereignis.partieStand });
+            break;
+          }
           case 'SPIEL_BEENDET':
           case 'ANSAGE_ERFOLGT':
           case 'SCHWEINCHEN_GEMELDET':
           case 'SPIEL_GESTARTET':
+          case 'AKTION_ABGELEHNT':
             // Patching bereits oben erledigt
-            break;
-          case 'KI_ZUG_SEQUENZ':
-            await this._expandiereKiSequenz(ereignis.kiKartenSequenz, ereignis.partieStand, sequenzIdBeiStart);
             break;
           case 'STICH_ABGESCHLOSSEN':
             if (ereignis.neueSonderpunkte.length) this._sonderpunkteListener.forEach((l) => l(ereignis.neueSonderpunkte));
@@ -574,55 +581,26 @@ export class AppStore {
     }
   }
 
-  private async _expandiereKiSequenz(sequenz: GespielteKarteEreignisAntwort[], finalStand: PartieStandAntwort, sequenzId: number): Promise<void> {
-    const prevStand = this.zustand.partieStand;
-    for (const [i] of sequenz.entries()) {
-      // Wenn in der Zwischenzeit ein SNAPSHOT kam, abbrechen
-      if (this._aktuelleSequenzId !== sequenzId) return;
-
-      const stand = prevStand !== null
-        ? this._synthetischerZwischenstand(prevStand, sequenz.slice(0, i + 1), finalStand)
-        : finalStand;
-      this.patch({ partieStand: stand });
-      if (this._kiKartenVerzögerungMs > 0) {
-        await new Promise<void>((r) => setTimeout(r, this._kiKartenVerzögerungMs));
-      }
-    }
-    // Finalen Stand nach allen Delays anwenden.
-    // Guard: Nur patchen, wenn keine neueren Events die Sequenz unterbrochen haben.
-    if (this._aktuelleSequenzId === sequenzId) {
-      this.patch({ partieStand: finalStand });
-    }
-  }
-
-  private _synthetischerZwischenstand(basis: PartieStandAntwort, gespielteKarten: GespielteKarteEreignisAntwort[], final: PartieStandAntwort): PartieStandAntwort {
-    if (!basis.laufendesSpiel || !final.laufendesSpiel) return basis;
-    const kartenInMitte = [...basis.laufendesSpiel.aktuelleStichmitte];
+  private _synthetischerKarteGespielt(prevStand: PartieStandAntwort, ereignis: KarteGespieltEreignis): PartieStandAntwort {
+    if (!prevStand.laufendesSpiel || !ereignis.partieStand.laufendesSpiel) return prevStand;
+    const kartenInMitte = [...prevStand.laufendesSpiel.aktuelleStichmitte];
     const maxReihenfolge = kartenInMitte.reduce((max, k) => Math.max(max, k.reihenfolge ?? 0), 0);
-    gespielteKarten.forEach((k, i) => {
-      if (!kartenInMitte.some((bestehend) => bestehend.spielerPosition === k.spielerPosition)) {
-        const [farbe, wert, idx] = k.karteId.split('-');
-        kartenInMitte.push({
-          spielerPosition: k.spielerPosition,
-          karte: { id: k.karteId, farbe: farbe ?? '', wert: wert ?? '', exemplarIndex: parseInt(idx ?? '0', 10) },
-          reihenfolge: maxReihenfolge + i + 1,
-        });
-      }
-    });
-    // Wir nehmen die Meta-Daten (Phase, aktueller Spieler etc.) vom finalen Stand,
-    // aber behalten die (synthetische) Stichmitte bei.
-    return { 
-      ...final, 
-      laufendesSpiel: { 
-        ...final.laufendesSpiel, 
+    if (!kartenInMitte.some(k => k.spielerPosition === ereignis.spielerPosition)) {
+      const [farbe, wert, idx] = ereignis.karteId.split('-');
+      kartenInMitte.push({
+        spielerPosition: ereignis.spielerPosition,
+        karte: { id: ereignis.karteId, farbe: farbe ?? '', wert: wert ?? '', exemplarIndex: parseInt(idx ?? '0', 10) },
+        reihenfolge: maxReihenfolge + 1,
+      });
+    }
+    return {
+      ...ereignis.partieStand,
+      laufendesSpiel: {
+        ...ereignis.partieStand.laufendesSpiel,
         aktuelleStichmitte: kartenInMitte,
-        // Karten in der Hand muessen wir auch schaetzen, falls sie im finalen Stand schon weg sind
-        spielbareKarten: final.laufendesSpiel.spielbareKarten
-      } 
+      }
     };
   }
-
-  private leereKiSequenzQueue(): void { this._kiSequenzQueue.length = 0; }
 
   private _darfPartieStandAktualisieren(neuerStand: PartieStandAntwort, neueVersion: number): boolean {
     const aktuellePartieId = this.zustand.partieStand?.partieId;
@@ -648,8 +626,7 @@ export class AppStore {
     this.tischAbos.splice(0).forEach((a) => a());
     this.aktuellePartieAbo = null;
     this._letztePartieVersion = -1;
-    this._aktuelleSequenzId++; // Invaldiert laufende KI-Sequenzen
-    this.leereKiSequenzQueue();
+    this._aktuelleSequenzId++; // Invalidiert laufende KI-Animationen
     this._eventQueue.length = 0;
     this._verarbeiteEventLaeuft = false;
     this._verpassterSpielBeendet = null;
