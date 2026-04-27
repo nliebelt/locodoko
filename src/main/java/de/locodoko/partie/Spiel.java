@@ -215,19 +215,19 @@ public class Spiel extends AbstraktePersistenzEntity {
         Objects.requireNonNull(vorbehaltAnsage, "vorbehaltAnsage darf nicht null sein");
         SpielerPosition erwarteterSpieler = naechsterVorbehaltSpieler().orElseThrow(() -> new IllegalStateException("Es werden keine Vorbehalte mehr erwartet"));
         if (spielerPosition != erwarteterSpieler) { throw new IllegalStateException("Vorbehalte muessen in Sitzreihenfolge gemeldet werden; erwartet: " + erwarteterSpieler); }
-        if (vorbehaltAnsage == VorbehaltAnsage.SCHMEISSEN && bereitsGeschmissen.contains(spielerPosition)) { throw new IllegalStateException("Spieler " + spielerPosition + " hat das Schmeiss-Recht in diesem Spiel bereits genutzt"); }
+        if (vorbehaltAnsage.istSchmeissen() && bereitsGeschmissen.contains(spielerPosition)) { throw new IllegalStateException("Spieler " + spielerPosition + " hat das Schmeiss-Recht in diesem Spiel bereits genutzt"); }
         if (!vorbehaltAnsage.istZulaessig(handVon(spielerPosition), spielregeln)) { throw new IllegalStateException("Vorbehalt " + vorbehaltAnsage + " ist fuer " + spielerPosition + " nach den Spielregeln nicht zulaessig"); }
         List<VorbehaltMeldung> neueVorbehalte = new ArrayList<>(vorbehalte);
         neueVorbehalte.add(new VorbehaltMeldung(spielerPosition, vorbehaltAnsage));
         Spielphase naechstePhase = neueVorbehalte.size() == SpielerPosition.standardReihenfolge().size() ? Spielphase.VORBEHALT_AUFLOESUNG : Spielphase.VORBEHALT_ANSAGE;
-        Set<SpielerPosition> neueBereitsGeschmissen = vorbehaltAnsage == VorbehaltAnsage.SCHMEISSEN ? addToSet(bereitsGeschmissen, spielerPosition) : bereitsGeschmissen;
+        Set<SpielerPosition> neueBereitsGeschmissen = vorbehaltAnsage.istSchmeissen() ? addToSet(bereitsGeschmissen, spielerPosition) : bereitsGeschmissen;
         return toBuilder().bereitsGeschmissen(neueBereitsGeschmissen).phase(naechstePhase).vorbehalte(neueVorbehalte).build();
     }
 
     public Spiel loeseVorbehalteAuf() {
         pruefePhase(Spielphase.VorbehaltAufloesung.class, "Vorbehalte aufloesen");
         VorbehaltMeldung hoechsterVorbehalt = hoechsterVorbehalt().orElse(null);
-        if (hoechsterVorbehalt != null && hoechsterVorbehalt.ansage() == VorbehaltAnsage.SCHMEISSEN) {
+        if (hoechsterVorbehalt != null && hoechsterVorbehalt.ansage().istSchmeissen()) {
             return eingeworfenesSpiel();
         }
         SpielerPosition ersterAufspieler = solistAufspieler != null ? solistAufspieler : geber.naechsteImUhrzeigersinn();
@@ -605,7 +605,7 @@ public class Spiel extends AbstraktePersistenzEntity {
                 case SOLO_DAME, SOLO_BUBE, SOLO_TRUMPF, SOLO_TRUMPF_HERZ, SOLO_TRUMPF_PIK, SOLO_TRUMPF_KREUZ, SOLO_FLEISCHLOS -> Optional.of(Parteien.ausSolo(hoechster.spielerPosition()));
                 case HOCHZEIT -> Optional.of(hydriereParteienFuerHochzeit(hoechster.spielerPosition()));
                 case ARMUT -> Optional.of(hydriereParteienFuerArmut(hoechster.spielerPosition()));
-                case GESUND, SCHMEISSEN -> Optional.empty();
+                case GESUND, SCHMEISSEN, SCHMEISSEN_FUENF_NEUNEN, SCHMEISSEN_WENIG_TRUMPF -> Optional.empty();
             };
             if (sp.isEmpty()) { return Optional.empty(); }
             basis = sp.get();
@@ -800,7 +800,7 @@ public class Spiel extends AbstraktePersistenzEntity {
             case HOCHZEIT, ARMUT -> hatSchweinchen(spielregeln, haende) ? new SchweinchenTrumpfOrdnung(spielregeln) : new NormaleTrumpfOrdnung(spielregeln);
             case SOLO_TRUMPF_HERZ -> new VariableTrumpfsoloTrumpfOrdnung(Farbe.HERZ, spielregeln); case SOLO_TRUMPF_PIK -> new VariableTrumpfsoloTrumpfOrdnung(Farbe.PIK, spielregeln);
             case SOLO_TRUMPF_KREUZ -> new VariableTrumpfsoloTrumpfOrdnung(Farbe.KREUZ, spielregeln); case SOLO_FLEISCHLOS -> new FleischlosTrumpfOrdnung();
-            case GESUND, SCHMEISSEN -> throw new IllegalStateException("GESUND ist kein aufloesbarer Vorbehalt");
+            case GESUND, SCHMEISSEN, SCHMEISSEN_FUENF_NEUNEN, SCHMEISSEN_WENIG_TRUMPF -> throw new IllegalStateException("GESUND ist kein aufloesbarer Vorbehalt");
         };
     }
 
@@ -808,7 +808,7 @@ public class Spiel extends AbstraktePersistenzEntity {
         return switch (hv.ansage()) {
             case SOLO_DAME, SOLO_BUBE, SOLO_TRUMPF, SOLO_TRUMPF_HERZ, SOLO_TRUMPF_PIK, SOLO_TRUMPF_KREUZ, SOLO_FLEISCHLOS -> Parteien.ausSolo(hv.spielerPosition());
             case HOCHZEIT -> Parteien.ausHochzeit(hv.spielerPosition()); case ARMUT -> Parteien.ausArmut(hv.spielerPosition());
-            case GESUND, SCHMEISSEN -> throw new IllegalStateException("GESUND ist kein aufloesbarer Vorbehalt");
+            case GESUND, SCHMEISSEN, SCHMEISSEN_FUENF_NEUNEN, SCHMEISSEN_WENIG_TRUMPF -> throw new IllegalStateException("GESUND ist kein aufloesbarer Vorbehalt");
         };
     }
 

@@ -2,8 +2,8 @@
 
 ## Notiz
 Stand: 2026-04-27
-LOG-4 und LOG-5 implementiert: MDC-Kontext vollständig. TischController hat jetzt MDC.put("tischId", ...) + MDC.clear() in try/finally für alle 8 Methoden mit tischId-Parameter. SpielAktionsService war bereits für die 4 schreibenden Methoden fertig; ladePartieStand-Overloads ergänzt mit MDC.put("partieId", ...). KiOrchestrierungService war bereits fertig. LOG-5: CLAUDE.md um "Debugging-Workflow"-Abschnitt ergänzt (grep-Befehle für tischId/partieId, Playwright-Trace-Hinweis). 267 Backend-Tests grün.
-Nächster Schritt: FEAT-Aufgaben beginnen (FEAT-1: Schmeißen-Varianten, oder FEAT-4: Partie-Ende Modal) oder SPEC-Aufgaben.
+FEAT-1 implementiert: SCHMEISSEN_FUENF_NEUNEN (≥5 Neunen) und SCHMEISSEN_WENIG_TRUMPF (<2 Trumpf) als neue VorbehaltAnsage-Enum-Einträge. istSchmeissen()-Helper-Methode ergänzt. Spiel.java-Switches und -Vergleiche auf alle drei Schmeißen-Varianten erweitert. KI schmeißt jetzt auch bei den neuen Varianten. 10 neue Unit-Tests in VorbehaltAnsageTest.java. 277 Backend-Tests grün.
+Nächster Schritt: FEAT-2 (Bockrunden-Trigger "Einwurf-Bockrunde"), FEAT-4 (Partie-Ende Modal) oder SPEC-Aufgaben.
 
 ## Legende
 - [x] Erledigt
@@ -103,7 +103,7 @@ Reduziert ~400 Zeilen Duplikat-Code. Voraussetzung für UNIFIED-4 bis 7.
 
 ## Phase 2 — Spielfeatures & Regel-Erweiterungen (FEAT)
 
-- [ ] **FEAT-1 (Backend)**: Schmeißen-Varianten "Fünf Neunen" und "Wenig Trumpf" in `VorbehaltAnsage.java`.
+- [x] **FEAT-1 (Backend)**: Schmeißen-Varianten "Fünf Neunen" und "Wenig Trumpf" in `VorbehaltAnsage.java`.
 - [ ] **FEAT-2 (Backend)**: Bockrunden-Trigger "Einwurf-Bockrunde" (ausgelöst wenn Spiel geschmissen).
 - [ ] **FEAT-3 (Backend)**: `TischkonfigurationEmbeddable` Factory-Methoden für Regel-Presets.
 - [ ] **FEAT-4 (Frontend)**: Partie-Ende Modal in `TischSzene.ts` ausarbeiten und an Event-Loop anbinden.

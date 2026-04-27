@@ -116,6 +116,29 @@ public enum VorbehaltAnsage {
                 .count();
             return spielregeln.schmeissenAktiv() && anzahlKoenige >= 5;
         }
+    },
+    /** Schmeissen bei 5 oder mehr Neunen. Hoechste Prioritaet — fuehrt zu sofortigem Neu-Austeilen. */
+    SCHMEISSEN_FUENF_NEUNEN(null, 4) {
+        @Override
+        public boolean istZulaessig(Hand hand, Spielregeln spielregeln) {
+            Objects.requireNonNull(hand, "hand darf nicht null sein");
+            Objects.requireNonNull(spielregeln, "spielregeln duerfen nicht null sein");
+            long anzahlNeunen = hand.karten().stream()
+                .filter(karte -> karte.wert() == Kartenwert.NEUN)
+                .count();
+            return spielregeln.schmeissenAktiv() && anzahlNeunen >= 5;
+        }
+    },
+    /** Schmeissen bei weniger als 2 Truempfen. Hoechste Prioritaet — fuehrt zu sofortigem Neu-Austeilen. */
+    SCHMEISSEN_WENIG_TRUMPF(null, 4) {
+        @Override
+        public boolean istZulaessig(Hand hand, Spielregeln spielregeln) {
+            Objects.requireNonNull(hand, "hand darf nicht null sein");
+            Objects.requireNonNull(spielregeln, "spielregeln duerfen nicht null sein");
+            NormaleTrumpfOrdnung trumpfOrdnung = new NormaleTrumpfOrdnung(spielregeln);
+            long anzahlTruepfe = hand.karten().stream().filter(trumpfOrdnung::istTrumpf).count();
+            return spielregeln.schmeissenAktiv() && anzahlTruepfe < 2;
+        }
     };
 
     private final Spieltyp spieltyp;
@@ -128,6 +151,10 @@ public enum VorbehaltAnsage {
 
     public boolean istGesund() {
         return this == GESUND;
+    }
+
+    public boolean istSchmeissen() {
+        return this == SCHMEISSEN || this == SCHMEISSEN_FUENF_NEUNEN || this == SCHMEISSEN_WENIG_TRUMPF;
     }
 
     public int prioritaet() {
