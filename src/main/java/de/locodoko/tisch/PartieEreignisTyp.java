@@ -21,6 +21,8 @@ public enum PartieEreignisTyp {
     ANSAGE_ERFOLGT,
     /** Ein Schweinchen wurde gemeldet. */
     SCHWEINCHEN_GEMELDET,
+    /** Der Hochzeit-Partner wurde gefunden. */
+    HOCHZEIT_PARTNER_GEFUNDEN,
     /** Das Spiel wurde gestartet. */
     SPIEL_GESTARTET,
     /** Eine Spieleraktion wurde abgelehnt (z.B. ungueltiger Kartenzug). */

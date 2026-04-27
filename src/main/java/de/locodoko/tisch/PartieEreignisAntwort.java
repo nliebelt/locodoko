@@ -19,6 +19,7 @@ import java.util.List;
         PartieEreignisAntwort.SpielBeendet.class,
         PartieEreignisAntwort.AnsageErfolgt.class,
         PartieEreignisAntwort.SchweinchenGemeldet.class,
+        PartieEreignisAntwort.HochzeitPartnerGefunden.class,
         PartieEreignisAntwort.SpielGestartet.class,
         PartieEreignisAntwort.AktionAbgelehnt.class
     }
@@ -73,6 +74,16 @@ public sealed interface PartieEreignisAntwort {
     @Schema(description = "Ein Spieler hat Schweinchen gemeldet.")
     record SchweinchenGemeldet(Instant timestamp, long version, PartieEreignisTyp ereignisTyp, PartieStandAntwort partieStand) implements PartieEreignisAntwort {}
 
+    @Schema(description = "Der Hochzeit-Partner wurde gefunden.")
+    record HochzeitPartnerGefunden(
+        Instant timestamp,
+        long version,
+        PartieEreignisTyp ereignisTyp,
+        PartieStandAntwort partieStand,
+        @Schema(description = "Position des gefundenen Partners.")
+        SpielerPosition partnerPosition
+    ) implements PartieEreignisAntwort {}
+
     @Schema(description = "Eine neue Partie an diesem Tisch wurde gestartet.")
     record SpielGestartet(Instant timestamp, long version, PartieEreignisTyp ereignisTyp, PartieStandAntwort partieStand) implements PartieEreignisAntwort {}
 
@@ -110,6 +121,10 @@ public sealed interface PartieEreignisAntwort {
 
     static PartieEreignisAntwort schweinchenGemeldet(PartieStandAntwort stand) {
         return new SchweinchenGemeldet(Instant.now(), stand.version(), PartieEreignisTyp.SCHWEINCHEN_GEMELDET, stand);
+    }
+
+    static PartieEreignisAntwort hochzeitPartnerGefunden(PartieStandAntwort stand, SpielerPosition partnerPosition) {
+        return new HochzeitPartnerGefunden(Instant.now(), stand.version(), PartieEreignisTyp.HOCHZEIT_PARTNER_GEFUNDEN, stand, partnerPosition);
     }
 
     static PartieEreignisAntwort spielGestartet(PartieStandAntwort stand) {

@@ -288,7 +288,7 @@ public class KiOrchestrierungService {
                 case SpielEreignis.KarteGespielt kg -> sendeKarteGespielt(tisch, kg.position(), kg.karte().karteId());
                 case SpielEreignis.StichAbgeschlossenEreignis sa -> sendeStichAbgeschlossen(tisch, sa.sonderpunkte());
                 case SpielEreignis.SchweinchenGemeldet _ -> veroeffentlicheSchweinchenEreignis(tisch);
-                case SpielEreignis.HochzeitPartnerGefunden hpg -> LOGGER.info("Hochzeit-Partner gefunden: {} [tischId={}]", hpg.partner(), tisch.id());
+                case SpielEreignis.HochzeitPartnerGefunden hpg -> veroeffentlicheHochzeitEreignis(tisch, hpg.partner());
                 default -> LOGGER.trace("Ignoriere Spielereignis: {}", ereignis);
             }
         }
@@ -329,6 +329,19 @@ public class KiOrchestrierungService {
                 s.sessionId(),
                 "/queue/partie/" + tisch.partie().id(),
                 PartieEreignisAntwort.schweinchenGemeldet(PartieStandAntwort.aus(tisch, s.id()))
+            ));
+    }
+
+    private void veroeffentlicheHochzeitEreignis(TischEntity tisch, SpielerPosition partnerPosition) {
+        if (tisch.partie() == null) {
+            return;
+        }
+        tisch.spieler().stream()
+            .filter(s -> !s.istKi() && !s.istKiUebernommen() && s.sessionId() != null)
+            .forEach(s -> tischEchtzeitService.planeAnBenutzer(
+                s.sessionId(),
+                "/queue/partie/" + tisch.partie().id(),
+                PartieEreignisAntwort.hochzeitPartnerGefunden(PartieStandAntwort.aus(tisch, s.id()), partnerPosition)
             ));
     }
 }

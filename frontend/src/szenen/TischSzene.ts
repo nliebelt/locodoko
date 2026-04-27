@@ -431,6 +431,13 @@ export class TischSzene extends Phaser.Scene {
         this.animationen?.reiheEin(() => this.zeigeSchweinchenBanner(`${name}: Schweinchen!`));
         break;
 
+      case 'HOCHZEIT_PARTNER_GEFUNDEN': {
+        const partner = this.letztesModell?.spieler.find(s => s.position === e.partnerPosition);
+        const partnerName = partner?.name ?? 'Spieler';
+        this.animationen?.reiheEin(() => this.zeigeSchweinchenBanner(`${partnerName}: Partner gefunden!`));
+        break;
+      }
+
       case 'SPIEL_BEENDET': {
         const m = this.erstelleModell({ ...appStore.snapshot(), partieStand: ereignis.partieStand });
         const spielNr = m.letztesSpielergebnis?.spielNummer ?? null;

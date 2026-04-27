@@ -573,6 +573,7 @@ export class AppStore {
           case 'SPIEL_BEENDET':
           case 'ANSAGE_ERFOLGT':
           case 'SCHWEINCHEN_GEMELDET':
+          case 'HOCHZEIT_PARTNER_GEFUNDEN':
           case 'SPIEL_GESTARTET':
           case 'AKTION_ABGELEHNT':
             // Patching bereits oben erledigt

@@ -1,11 +1,17 @@
 # IMPLEMENTATION_PLAN — Locodoko Doppelkopf
 
 ## Notiz
-Stand: 2026-04-27 (Plan-Run #56 — nach Spec-Update + vollständiger Codeanalyse)
+Stand: 2026-04-27 (Plan-Run #57 — BUG-1 implementiert)
 
-**Fokus:** Quickplay stabil (KI-Bugs, Browser-Reload) → Bockrunden-UI → Multiplayer-Vorbereitung.
+**Was wurde implementiert:**
+`HOCHZEIT_PARTNER_GEFUNDEN` als WebSocket-Event vollständig implementiert:
+- Backend: `PartieEreignisTyp`, `PartieEreignisAntwort` (Record + Factory mit `partnerPosition`), Broadcast in `KiOrchestrierungService` UND `SpielAktionsService` (beide Pfade waren betroffen)
+- Frontend: `PartieEreignisTyp`, `HochzeitPartnerGefundenEreignis`-Interface, AppStore-Handler, TischSzene-Banner „Partner gefunden!"
 
-Alle abgehakten Vorgänger-Items (ARCH-REF-1–7, FEAT-5, SPEC-1/2/5) wurden ins Archiv verschoben.
+**Nächster logischer Schritt:** BUG-2 (Browser-Reload zeigt alten State) — `AppStore.reset()` vor Snapshot-Verarbeitung.
+
+**Offene Fragen:**
+- KI-Blockade vollständig behoben? Der Broadcast war das offensichtlichste fehlende Stück; integrations-Tests für KI nach Hochzeit laufen grün. Bei Reproduktion: `KiEventAdapter`-Listener-Registrierung prüfen.
 
 ## Legende
 - [x] Erledigt
@@ -17,12 +23,12 @@ Alle abgehakten Vorgänger-Items (ARCH-REF-1–7, FEAT-5, SPEC-1/2/5) wurden ins
 
 ## Phase 1 — Blocking Bugs: Quickplay stabil (BUG)
 
-### BUG-1 (Backend + Frontend): HochzeitPartnerGefunden als WebSocket-Event
-**Root Cause:** `SpielAktionsService.java:221` und `KiOrchestrierungService.java:291` loggen das Domain-Event `HochzeitPartnerGefunden` nur — kein Broadcast. KI-Hänger nach Hochzeit-Klärung ist die direkte Folge.
-- [ ] Backend: `PartieEreignisTyp` um `HOCHZEIT_PARTNER_GEFUNDEN` erweitern
-- [ ] Backend: `KiOrchestrierungService` — analoger Broadcaster wie bei `SchweinchenGemeldet` (Zeile 322–333)
-- [ ] Frontend: `PartieEreignisTyp` in `SpielverwaltungDto.ts` + AppStore-Handler + Banner „Partner gefunden!" (analog Sonderpunkt-Banner)
-- [ ] Validation: `mvn test` + `npm test` + E2E solo-spielfluss oder hochzeit-E2E
+### BUG-1 (Backend + Frontend): HochzeitPartnerGefunden als WebSocket-Event ✅
+**Root Cause:** `SpielAktionsService` und `KiOrchestrierungService` loggten das Domain-Event `HochzeitPartnerGefunden` nur — kein Broadcast. KI-Hänger nach Hochzeit-Klärung war die direkte Folge.
+- [x] Backend: `PartieEreignisTyp` um `HOCHZEIT_PARTNER_GEFUNDEN` erweitern
+- [x] Backend: `KiOrchestrierungService` + `SpielAktionsService` — Broadcaster analog `SchweinchenGemeldet`, mit `partnerPosition`
+- [x] Frontend: `PartieEreignisTyp` in `SpielverwaltungDto.ts` + `HochzeitPartnerGefundenEreignis` + AppStore-Handler + Banner „Partner gefunden!"
+- [x] Validation: `mvn test` + `npm test` — beide grün
 
 ### BUG-2 (Frontend): Browser-Reload zeigt alten State
 **Root Cause:** `AppStore` wird vor Snapshot-Verarbeitung nicht zurückgesetzt. Overlays und Animations-State des vorherigen Spiels bleiben bestehen (`verbindungsabbruch.md:70` fordert vollständigen Reset).

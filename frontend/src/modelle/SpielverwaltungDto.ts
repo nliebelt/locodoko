@@ -204,7 +204,7 @@ export interface PartieStandAntwort {
 
 export type TischlisteEreignisTyp = 'SNAPSHOT' | 'AKTUALISIERT';
 export type TischEreignisTyp = 'TISCH_SNAPSHOT' | 'TISCH_ERSTELLT' | 'SPIELER_BEIGETRETEN' | 'SPIELER_VERLASSEN' | 'TISCH_KONFIGURATION_AKTUALISIERT' | 'SPIEL_GESTARTET' | 'TISCH_ENTFERNT' | 'PARTIE_ABGEBROCHEN' | 'SPIELER_GEKICKT';
-export type PartieEreignisTyp = 'SNAPSHOT' | 'KARTE_GESPIELT' | 'STICH_ABGESCHLOSSEN' | 'SPIEL_BEENDET' | 'ANSAGE_ERFOLGT' | 'SCHWEINCHEN_GEMELDET' | 'SPIEL_GESTARTET' | 'AKTION_ABGELEHNT';
+export type PartieEreignisTyp = 'SNAPSHOT' | 'KARTE_GESPIELT' | 'STICH_ABGESCHLOSSEN' | 'SPIEL_BEENDET' | 'ANSAGE_ERFOLGT' | 'SCHWEINCHEN_GEMELDET' | 'HOCHZEIT_PARTNER_GEFUNDEN' | 'SPIEL_GESTARTET' | 'AKTION_ABGELEHNT';
 
 export interface GespielteKarteEreignisAntwort {
   spielerPosition: SpielerPosition;
@@ -247,6 +247,7 @@ export interface StichAbgeschlossenEreignis extends BasisPartieEreignis {
 export interface SpielBeendetEreignis extends BasisPartieEreignis { ereignisTyp: 'SPIEL_BEENDET'; }
 export interface AnsageErfolgtEreignis extends BasisPartieEreignis { ereignisTyp: 'ANSAGE_ERFOLGT'; }
 export interface SchweinchenGemeldetEreignis extends BasisPartieEreignis { ereignisTyp: 'SCHWEINCHEN_GEMELDET'; }
+export interface HochzeitPartnerGefundenEreignis extends BasisPartieEreignis { ereignisTyp: 'HOCHZEIT_PARTNER_GEFUNDEN'; partnerPosition: SpielerPosition; }
 export interface SpielGestartetEreignis extends BasisPartieEreignis { ereignisTyp: 'SPIEL_GESTARTET'; }
 
 export type PartieEreignisAntwort = 
@@ -256,6 +257,7 @@ export type PartieEreignisAntwort =
   | SpielBeendetEreignis 
   | AnsageErfolgtEreignis 
   | SchweinchenGemeldetEreignis 
+  | HochzeitPartnerGefundenEreignis
   | SpielGestartetEreignis
   | AktionAbgelehntEreignis;
 
