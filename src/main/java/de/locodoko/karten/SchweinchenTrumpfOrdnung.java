@@ -34,7 +34,7 @@ public final class SchweinchenTrumpfOrdnung implements TrumpfOrdnung {
     @Override
     public int trumpfRang(Karte karte) {
         if (karte.farbe() == Farbe.KARO && karte.wert() == Kartenwert.AS) {
-            return karte.exemplarIndex() == 1 ? 14 : 15;
+            return 14;
         }
         return basis.trumpfRang(karte);
     }
