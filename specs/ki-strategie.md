@@ -67,8 +67,8 @@ KI-Spieler ersetzen menschliche Spieler und treffen regelbasierte, strategische 
 ## KI-Timing (UX)
 
 18. KI-Karten sollen in der **STICHPHASE nicht sofort** erscheinen, wenn ein menschlicher Spieler am Tisch sitzt — eine Verzögerung von **800ms** zwischen KI-Zügen macht das Spielgeschehen für den Menschen nachvollziehbar. Die Verzögerung liegt **exklusiv im Frontend** — das Backend antwortet immer sofort.
-19. Bei rein-KI-Tischen (kein menschlicher Mitspieler) wird **keine** Animationsverzögerung angewandt — das Frontend animiert die `KI_ZUG_SEQUENZ` ohne Delay.
-20. Technisch (Backend): `KiOrchestrierungService.automatisiereTisch` spielt alle KI-Zuege synchron in einer Schleife durch und sendet für jeden Zug ein individuelles `KARTE_GESPIELT`-Event. Kein `Thread.sleep`, keine künstliche Pause — das Backend antwortet immer sofort nach DB-Commit.
+19. Bei rein-KI-Tischen (kein menschlicher Mitspieler) wird **keine** Animationsverzögerung angewandt — das Frontend animiert ohne Delay.
+20. Technisch (Backend): `KiOrchestrierungService.automatisiereTisch` spielt alle KI-Züge synchron in einer Schleife durch und sendet für jeden Zug ein individuelles `KARTE_GESPIELT`-Event. Kein `Thread.sleep`, keine künstliche Pause — das Backend antwortet immer sofort nach DB-Commit.
 21. Technisch (Frontend): Der `AppStore` verarbeitet eingehende Events in einer Queue. Falls mehrere `KARTE_GESPIELT`-Events von KI-Spielern schnell hintereinander eintreffen, sorgt der Store für einen zeitlichen Abstand von **800ms** (nur wenn Menschen am Tisch sitzen), damit die Animationen für den Nutzer nachvollziehbar bleiben.
 
 - Die KI trifft sinnvolle Sonderspiel-Entscheidungen.

@@ -28,6 +28,23 @@ Dies verhindert:
 
 ---
 
+## Invariante: partieStand trägt immer den Zustand NACH dem Event
+
+**Gesetz:** Jedes WebSocket-Event, das einen `partieStand` enthält, repräsentiert den
+Spielstand **nach** Anwendung des Events — niemals den Zustand davor.
+
+Begründung: Das Frontend operiert während einer laufenden Animation auf dem bereits
+korrekten Endzustand. Eine gespielte Karte liegt im `partieStand` nicht mehr in der Hand
+des Spielers, auch wenn die Animations-Queue sie noch fliegen lässt. Damit ist
+ausgeschlossen, dass ein User auf eine Karte klickt, die aus Sicht des Servers bereits
+verbraucht ist.
+
+Technisch sichergestellt: `tischRepository.save()` in `SpielAktionsService` und
+`KiOrchestrierungService` wird **immer vor** `tischEchtzeitService.planeAnBenutzer()`
+abgeschlossen.
+
+---
+
 ## Zwei Event-Ebenen
 
 ### 1. Interne Domain Events (`partie.ereignisse.*`)
@@ -38,7 +55,11 @@ Werden von Spring Modulith innerhalb des Backends verarbeitet. Nie direkt an das
 |-------|----------------|---------|
 | `NaechsterSpielerErwartet` | `SpielAktionsService` nach Kartenzug | `KiEventAdapter` |
 | `VorbehaltErwartet` | `SpielAktionsService` in VORBEHALT_ANSAGE-Phase | `KiEventAdapter` |
-| `SchweinchenGemeldet` | `SpielAktionsService` bei erster Dullen-Trumpf-Karte | — (noch kein WS-Broadcast) |
+| `SchweinchenGemeldet` | `SpielAktionsService` bei erster Dullen-Trumpf-Karte | — (TODO: WS-Broadcast als `SCHWEINCHEN_GEMELDET`) |
+| `FuchsGefangen` | `SpielAktionsService` nach Stich-Abschluss | — (Sonderpunkt in `neueSonderpunkte` des `STICH_ABGESCHLOSSEN`-Events) |
+| `KarlchenGespielt` | `SpielAktionsService` nach letztem Stich | — (Sonderpunkt in `neueSonderpunkte` des `STICH_ABGESCHLOSSEN`-Events) |
+| `DoppelkopfGestochen` | `SpielAktionsService` nach Stich-Abschluss | — (Sonderpunkt in `neueSonderpunkte` des `STICH_ABGESCHLOSSEN`-Events) |
+| `HochzeitPartnerGefunden` | `Spiel.java` nach Stich-Abschluss | — (TODO: WS-Broadcast als `HOCHZEIT_PARTNER_GEFUNDEN`) |
 | `SpielBeendet` | `KiOrchestrierungService.veroeffentlicheSpielBeendet()` | — (Seiten-Effekt: WS-Broadcast) |
 
 > **TODO:** `SchweinchenGemeldet` wird als Domain Event gepublisht, aber noch nicht
@@ -58,6 +79,7 @@ er muss jederzeit mit dem Java-Enum `PartieEreignisTyp` übereinstimmen.
 | `SPIEL_GESTARTET` | `Partie`, `SpielAktionsService` | Runde beginnt / Einwurf | Karten-Austeilen Animation |
 | `KARTE_GESPIELT` | `SpielAktionsService`, `KiOrchestrierungService` | Kartenzug | Karte animieren + State patchen |
 | `STICH_ABGESCHLOSSEN` | `SpielAktionsService` | Stich vollständig | Stich-Animation + State patchen |
+| `HOCHZEIT_PARTNER_GEFUNDEN` | `KiOrchestrierungService` (via `HochzeitPartnerGefunden`-Domain-Event) | Hochzeits-Partner ermittelt | Banner „Partner gefunden!" + Partei anzeigen |
 | `SPIEL_BEENDET` | `KiOrchestrierungService` | Spiel ausgewertet | Auswertungs-Overlay anzeigen |
 
 ---

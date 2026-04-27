@@ -66,6 +66,44 @@ folgenden Spiele noch doppelt gewertet werden. Der Zähler wird durch bestimmte 
 - [x] Unit-Tests für beide Trigger (einzeln und kombiniert)
 - [x] Deaktivierung per Konfiguration getestet
 
+## Frontend-Anzeige: Bock-Indikator
+
+### DTO-Änderung
+
+`LaufendesSpielAntwort` sendet **`bockrundenZaehler: number`** (Integer ≥ 0) statt des bisherigen
+`istBockrunde: boolean`. Der boolean ist vollständig aus dem Zähler ableitbar (`bockrundenZaehler > 0`).
+
+### Schafe-Animation
+
+Beim `SPIEL_GESTARTET`-Event — **nach** der Karten-Austeilen-Animation — wird
+`AnimationenService.animiereBockrunde(anzahl)` aufgerufen, wenn `bockrundenZaehler > 0`.
+
+| `bockrundenZaehler` | Anzeige |
+|---------------------|---------|
+| 0 | kein Banner |
+| 1 | 🐑 „Bockrunde!" |
+| 2 | 🐑🐑 „Doppelbock!" |
+| ≥ 3 | N × 🐑 „Bockrunde ×N" |
+
+`AnimationenService.animiereBockrunde()` ist bereits implementiert (96px-Emoji, 2,5 s sichtbar).
+Die Methode muss auf einen `anzahl`-Parameter umgestellt und im `SPIEL_GESTARTET`-Handler
+der `TischSzene` verdrahtet werden.
+
+### Akzeptanzkriterien (Frontend)
+
+- Bei `bockrundenZaehler === 0`: kein Banner.
+- Bei `bockrundenZaehler === 1`: ein Schaf + „Bockrunde!" erscheint nach Karten-Austeilen.
+- Bei `bockrundenZaehler === 2`: zwei Schafe + „Doppelbock!" erscheinen.
+- Die Animation läuft seriell in der Animations-Queue (kein Race mit Karten-Austeilen).
+
+### Definition of Done (Frontend)
+
+- [ ] `bockrundenZaehler: number` in `LaufendesSpielAntwort` statt `istBockrunde: boolean`
+- [ ] `animiereBockrunde(anzahl)` in `TischSzene` bei `SPIEL_GESTARTET` verdrahtet
+- [ ] N-Schafe-Darstellung in `AnimationenService.animiereBockrunde()` implementiert
+
+---
+
 ## Technische Hinweise
 
 - **Bounded Context**: Partie

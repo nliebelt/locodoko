@@ -23,7 +23,7 @@ Die Echtzeit-Kommunikation zwischen Frontend und Backend erfolgt über WebSocket
 
 5. **`KarteGespielt`**: Spieler spielt eine Karte aus.
    - Payload: `{ karteId, spielerId }`
-   - Validierung: Server prüft, ob die Karte spielbar ist (Bedienpflicht, am Zug).
+   - Validierung: Server prüft **hart** ob die Karte legal ist (Bedienpflicht, am Zug, Karte in Hand). Bei Verstoß: `AKTION_ABGELEHNT`. **Kein Pfad, auf dem der Client die Legalitätsprüfung ersetzt** — er darf erlaubte Karten als UI-Hint anzeigen (`moeglicheKarten`), aber jeder Zug wird server-seitig re-validiert.
 
 6. **`AnsageGetaetigt`**: Spieler macht eine Ansage (Re, Kontra, Keine 90, etc.).
    - Payload: `{ ansageTyp, spielerId }`
