@@ -16,7 +16,7 @@ test.describe('Mehrere Runden ohne Neunen (10 Stiche)', () => {
       anzahlSpiele: 2,
       tischhintergrund: 'FILZ_GRUEN',
       kiSchwierigkeit: 'STANDARD',
-    }, false);
+    }, true);
 
     await expect(page.locator('[data-testid="tischszene"]')).toBeVisible({ timeout: 15_000 });
     // Wenn das Backend KI-Spieler automatisch einbucht und startet (Race Condition),

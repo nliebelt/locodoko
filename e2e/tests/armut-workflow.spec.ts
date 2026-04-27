@@ -24,7 +24,7 @@ test.describe('Armut-Workflow', () => {
     await erstelleKonfiguriertenTisch(page, 'E2E-Armut-Test', {
       armutErlaubt: true,
       anzahlSpiele: 6
-    }, false);
+    }, true);
 
     await expect(page.locator('[data-testid="tischszene"]')).toBeVisible({ timeout: 15_000 });
     await starteAktuellenTisch(page);

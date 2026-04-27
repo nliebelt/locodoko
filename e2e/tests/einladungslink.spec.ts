@@ -52,7 +52,7 @@ test.describe('Einladungslink (Link-Beitritt)', () => {
       anzahlSpiele: 8,
       tischhintergrund: 'FILZ_GRUEN',
       kiSchwierigkeit: 'STANDARD',
-    }, false);
+    }, true);
 
     await expect(
       page.locator('[data-testid="tischszene"]'),

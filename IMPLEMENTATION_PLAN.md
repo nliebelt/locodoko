@@ -1,17 +1,13 @@
 # IMPLEMENTATION_PLAN — Locodoko Doppelkopf
 
 ## Notiz
-Stand: 2026-04-27 (ARCH-REF abgeschlossen — DB-only-Pattern vollständig)
+Stand: 2026-04-27 (BUGFIX-1 & BUGFIX-2 abgeschlossen)
 
-**ARCH-REF erledigt:** SpielRegistry.java + SpielUndErgebnis.java + SpielRegistryTest.java gelöscht. SpielAktionsService und TischVerwaltungsService auf direktes DB-Pattern umgestellt (findById → Domain-Aktion → save). KiEventAdapter auf `@TransactionalEventListener(phase=AFTER_COMMIT, propagation=REQUIRES_NEW)` migriert. @Version war bereits in Partie.java vorhanden (ARCH-REF-2 war already done).
+**Erledigt in dieser Iteration:**
+- **BUGFIX-1**: Wurde bereits in einem vorherigen Commit korrigiert ("Gegen die Alten" ohne Re-Ansage). In diesem Plan auf erledigt gesetzt.
+- **BUGFIX-2**: `Thread.sleep(600)` aus `KiOrchestrierungService` entfernt. Die Entfernung hat Timing-Probleme in den parallel laufenden Playwright E2E-Tests offengelegt (Race Condition mit `schnellstart`), welche behoben wurden, indem E2E-Hilfstische explizit als private Tische angelegt werden.
 
-**Frontend-Overlays (FEAT-6/7/8):** `renderVorbehaltDialog`, `renderArmutBereich`, `renderAnsageButtons` sind als Phaser-Objekte implementiert. Fehlend sind nur die individuellen DOM-Marker mit `data-testid` für E2E-Testbarkeit. Deshalb [~] statt [ ].
-
-**Neu gefundene Bugs:** BUGFIX-3 (Schweinchen ohne Spielwirkung), BUGFIX-4 (DKV-Preset: Spiel schließt nicht ab).
-
-**Spec-DoD veraltet:** tischkonfiguration.md (SPEC-6) + authentifizierung.md (neu SPEC-8) haben `[ ]`-Checkboxen für längst implementierte Features.
-
-Nächster Schritt: BUGFIX-1 ("Gegen die Alten" Bug, hohe Priorität) — dann BUGFIX-2, dann FEAT-5/6/7/8 restliche data-testids.
+Nächster Schritt: BUGFIX-3 ("Schweinchen ohne Spielwirkung") und BUGFIX-4 (DKV-Preset schließt Spiel nicht ab).
 
 ## Legende
 - [x] Erledigt
@@ -166,7 +162,7 @@ Spec: `specs/architektur-ddd.md` § „Concurrency (Optimistic Locking)".
   im Spielablauf-Handler oder in einer Regel-Kombination liegt.
   Validation: Integrations-Test der DKV-Preset-Konfiguration. `mvn test`.
 
-- [ ] **BUGFIX-2 (Backend)**: `Thread.sleep(600ms)` aus `KiOrchestrierungService.java` entfernen.
+- [x] **BUGFIX-2 (Backend)**: `Thread.sleep(600ms)` aus `KiOrchestrierungService.java` entfernen.
   `specs/ki-strategie.md` schreibt vor: "Kein Thread.sleep, keine künstliche Pause — Backend antwortet
   immer sofort." Der Sleep (Zeile ~160, nur bei Mensch-Tischen) wurde als Animations-Workaround
   eingebaut, ist aber seit Einführung der seriellen AnimationenService-Queue (POLISH-3) nicht mehr

@@ -29,7 +29,7 @@ export interface LocodokoBridge {
     erstelleKonfiguriertenTisch: (
       name: string,
       konfiguration: Record<string, unknown>,
-      startenNachErstellung: boolean,
+      privat: boolean,
     ) => Promise<void>;
     starteAktuellenTisch: () => Promise<void>;
     meldeVorbehalt: (vorbehalt: string) => Promise<void>;
@@ -144,16 +144,16 @@ export async function erstelleKonfiguriertenTisch(
   page: Page,
   name: string,
   konfiguration: Record<string, unknown>,
-  startenNachErstellung: boolean,
-): Promise<void> {
+  privat: boolean,
+  ): Promise<void> {
   await page.evaluate(
-    async ({ n, k, s }: { n: string; k: Record<string, unknown>; s: boolean }) => {
-      await (window as any).__locodoko.appStore.erstelleKonfiguriertenTisch(n, k, s);
+    async ({ n, k, p }: { n: string; k: Record<string, unknown>; p: boolean }) => {
+      const loco = (window as any).__locodoko;
+      await loco.appStore.erstelleKonfiguriertenTisch(n, k, p);
     },
-    { n: name, k: konfiguration, s: startenNachErstellung },
+    { n: name, k: konfiguration, p: privat },
   );
-}
-
+  }
 export async function starteAktuellenTisch(page: Page): Promise<void> {
   await page.evaluate(async () => {
     await (window as any).__locodoko.appStore.starteAktuellenTisch();

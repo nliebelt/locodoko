@@ -23,7 +23,7 @@ test.describe('Solo-Spielfluss', () => {
       damensoloErlaubt: true,
       bubensoloErlaubt: true,
       anzahlSpiele: 1,
-    }, false);
+    }, true);
 
     await expect(page.locator('[data-testid="tischszene"]')).toBeVisible({ timeout: 15_000 });
     await starteAktuellenTisch(page);

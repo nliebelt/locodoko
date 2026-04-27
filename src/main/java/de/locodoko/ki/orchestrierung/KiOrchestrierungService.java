@@ -154,11 +154,6 @@ public class KiOrchestrierungService {
                 }
                 LOGGER.info("KI-Spielzug [spielerId={}, phase={}]", erwarteterSpieler, laufendesSpiel.phase());
                 try {
-                    // Delay für menschliche Tische, um das Frontend nicht zu überfluten
-                    boolean menschAmTisch = tisch.spieler().stream().anyMatch(s -> !s.istKi() && !s.istKiUebernommen());
-                    if (menschAmTisch) {
-                        Thread.sleep(600);
-                    }
 
                     KiStrategie strategie = kiStrategieFactory.erzeuge(tisch.konfiguration().kiSchwierigkeit());
                     Spielphase phaseVorAktion = laufendesSpiel.phase();

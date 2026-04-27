@@ -16,7 +16,7 @@ test.describe('Partie gegen KI', () => {
       anzahlSpiele: 8,
       tischhintergrund: 'FILZ_GRUEN',
       kiSchwierigkeit: 'STANDARD',
-    }, false);
+    }, true);
 
     await expect(page.locator('[data-testid="tischszene"]')).toBeVisible({ timeout: 15_000 });
 
