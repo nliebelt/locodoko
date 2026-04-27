@@ -92,10 +92,10 @@ spieler → partie.ereignisse     (Darf auf Domain-Events lauschen, aber keine i
 - Jedes Aggregat hat eine eigene ID-Klasse: `TischId`, `SpielId`, `PartieId`, `SpielerId`.
 - Details und Converter-Regeln: `architektur-spielkern.md`.
 
-**Concurrency (SpielRegistry)**
-- Laufende `Spiel`-Objekte leben in-memory in der `SpielRegistry` (V1).
-- Jeder Tisch hat einen eigenen `ReentrantLock` — parallele Züge werden serialisiert.
-- Bei Server-Neustart gehen laufende Spiele verloren (V1-Kompromiss, akzeptiert).
+**Concurrency (Optimistic Locking)**
+- Alle Zustandsänderungen laufen ausschließlich über die Datenbank — keine `SpielRegistry`, kein `ReentrantLock`.
+- `@Version Long version` auf dem `Partie`-Aggregat serialisiert konkurrierende Schreibzugriffe: Spring Data JDBC wirft `OptimisticLockingFailureException` bei Konflikt (→ HTTP 409).
+- Kein Spielzustand geht bei Server-Neustart verloren, da die Datenbank die einzige Source of Truth ist.
 
 ### 4. Spring Modulith
 

@@ -55,6 +55,7 @@ Findet sich innerhalb der ersten 3 Klärungsstiche kein Partner (d.h. der Hochze
 
 - **Bounded Context**: Spielregeln
 - Hochzeit als eigene `Spieltyp`-Implementierung
-- Zustand „Partner gesucht" muss während der Stichphase mitgeführt werden
-- Event `PartnerGefunden` auslösen, wenn ein Partner ermittelt wird
+- Zustand „Partner gesucht" wird als Teil der `Spielphase` (JSON-Blob in der `spiel`-Zeile) persistiert — jede Änderung erhöht die `@Version` des `Partie`-Aggregats atomisch.
+- Partnerfindung ist ein atomarer Zustandsübergang in der DB: Beim Klärungsstich werden Partei-Zugehörigkeit und HochzeitStatus in derselben Transaktion geschrieben und die Version inkrementiert.
+- Event `PartnerGefunden` wird erst nach erfolgreichem DB-Commit über `@TransactionalEventListener(phase = AFTER_COMMIT)` ans Frontend gesendet.
 - Die Partnerfindung beeinflusst die Partei-Zugehörigkeit für die Punkteberechnung

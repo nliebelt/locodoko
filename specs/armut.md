@@ -52,7 +52,8 @@ Die Armut (auch „Trumpfarmut") ist ein Sonderspiel, bei dem ein Spieler mit se
 ## Technische Hinweise
 
 - **Bounded Context**: Spielregeln
-- Der Kartentausch ist ein eigener Zustand in der Spielstatemachine (`ARMUT_TAUSCH`)
-- WebSocket-Events für Angebot und Annahme/Ablehnung erforderlich
+- Der Kartentausch ist eine eigene `Spielphase` (`ArmutTausch`) — der Phasenwechsel ist ein atomarer DB-Schreibvorgang, der die `@Version` des `Partie`-Aggregats erhöht.
+- Jeder Teilschritt (Angebot, Annahme/Ablehnung, Kartentausch) landet als vollständiger Zustandsupdate in der DB; kein Teilzustand existiert nur in-memory.
+- WebSocket-Events für Angebot und Annahme/Ablehnung werden erst nach erfolgreichem DB-Commit gesendet (`@TransactionalEventListener(phase = AFTER_COMMIT)`).
 - Die Tauschkarten müssen serverseitig validiert werden (Anzahl, Besitz)
 - Der Armut-Spieler sieht die zurückgegebenen Karten, der aufnehmende Spieler sieht die angebotenen Karten

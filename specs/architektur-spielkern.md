@@ -116,13 +116,16 @@ Ungültige Zustandsübergänge werden zur Compile-Zeit verhindert statt zur Lauf
 
 ---
 
-## SpielRegistry (Concurrency)
+## Concurrency & Optimistic Locking
 
-Laufende `Spiel`-Objekte leben in-memory in der `SpielRegistry`. Jeder Tisch hat einen eigenen `ReentrantLock` — parallele Züge werden serialisiert, ohne sich gegenseitig zu blockieren.
+Alle Zustandsänderungen laufen ausschließlich über die Datenbank. Eine `SpielRegistry`, ein `ReentrantLock` oder andere In-Memory-Synchronisationsmechanismen existieren nicht.
 
-`SpielRegistry` implementiert außerdem einen **Idempotenz-Cache**: Kommt dasselbe Kommando erneut (Netzwerk-Retry), wird das gecachte Ergebnis zurückgegeben statt die Aktion erneut auszuführen.
+**Optimistic Locking via `@Version`**: Das `Partie`-Aggregat trägt ein `@Version Long version`-Feld. Spring Data JDBC inkrementiert diesen Zähler bei jedem `save()` automatisch — kein manueller Eingriff ist erlaubt. Bei konkurrierenden Schreibzugriffen wirft das Framework eine `OptimisticLockingFailureException`, die als HTTP 409 propagiert wird.
 
-> **V1-Scope**: In-Memory. Bei Server-Neustart gehen laufende Spiele verloren (akzeptiert).
+- Jede Zustandsänderung (Kartenzug, Ansage, Phasenwechsel, Sonderspiel-Übergang) erhöht die Version atomisch in der DB um 1.
+- Domain Events und WebSocket-Broadcasts werden erst **nach** erfolgreichem DB-Commit ausgelöst (`@TransactionalEventListener(phase = AFTER_COMMIT)`).
+- Kein Spielzustand geht bei Server-Neustart verloren — die Datenbank ist die einzige Source of Truth.
+- Idempotenz im Frontend: Events mit `version ≤ letzteVersion` werden verworfen; bei Versionslücken fordert das Frontend automatisch einen HTTP-Snapshot an.
 
 ---
 

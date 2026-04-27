@@ -47,7 +47,7 @@ public void beiNaechsterSpielerErwartet(NaechsterSpielerErwartet event) { ... }
 
 ### 4. Quiescence Pattern (isIdle)
 
-Um asynchrone Abläufe (Animationen, KI-Bedenkzeiten) für externe Beobachter (E2E-Tests, Debug-Tools) deterministisch zu machen, implementiert das Frontend das **Quiescence Pattern**:
+Um asynchrone Abläufe (Animationen, frontend-seitige KI-Animationspausen) für externe Beobachter (E2E-Tests, Debug-Tools) deterministisch zu machen, implementiert das Frontend das **Quiescence Pattern**:
 - Der Zustand `isIdle()` ist nur dann `true`, wenn:
   1. Die **WebSocket-Event-Queue** leer ist.
   2. Die **Event-Verarbeitung** (async) abgeschlossen ist.

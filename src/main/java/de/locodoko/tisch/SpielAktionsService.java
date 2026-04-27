@@ -98,6 +98,7 @@ public class SpielAktionsService {
             Spiel laufendesSpiel = ladeLaufendesSpiel(tisch.partie());
             SpielerPosition position = spielerPositionVon(tisch, verwalteterSpieler);
             laufendesSpiel.hydriere(tisch.konfiguration().alsSpielregeln());
+            int einwurfZaehlerVorher = laufendesSpiel.einwurfZaehler();
             try {
                 Spiel aktualisiertesSpiel = spielRegistry.mitSpielGesperrt(tischId, laufendesSpiel, spiel -> {
                     Spiel nachVorbehalt = spiel.meldeVorbehalt(position, vorbehalt);
@@ -112,7 +113,11 @@ public class SpielAktionsService {
             }
             partieRepository.saveAndFlush(tisch.partie());
             synchronisiereRegistry(tischId, tisch);
-            veroeffentlicheAnsageEreignisse(tisch);
+            if (laufendesSpiel.einwurfZaehler() > einwurfZaehlerVorher) {
+                veroeffentlicheEinwurfEreignisse(tisch);
+            } else {
+                veroeffentlicheAnsageEreignisse(tisch);
+            }
             triggereKi(tisch);
             return PartieStandAntwort.aus(tisch, verwalteterSpieler.id());
         } finally {
@@ -130,6 +135,7 @@ public class SpielAktionsService {
             SpielerPosition position = spielerPositionVon(tisch, verwalteterSpieler);
             List<Karte> karten = parseKarten(kartenIds);
             laufendesSpiel.hydriere(tisch.konfiguration().alsSpielregeln());
+            int einwurfZaehlerVorher = laufendesSpiel.einwurfZaehler();
             try {
                 Spiel aktualisiertesSpiel = spielRegistry.mitSpielGesperrt(tischId, laufendesSpiel, spiel -> {
                     Spiel neu = spiel.armutStatus()
@@ -147,7 +153,11 @@ public class SpielAktionsService {
             }
             partieRepository.saveAndFlush(tisch.partie());
             synchronisiereRegistry(tischId, tisch);
-            veroeffentlicheAnsageEreignisse(tisch);
+            if (laufendesSpiel.einwurfZaehler() > einwurfZaehlerVorher) {
+                veroeffentlicheEinwurfEreignisse(tisch);
+            } else {
+                veroeffentlicheAnsageEreignisse(tisch);
+            }
             triggereKi(tisch);
             return PartieStandAntwort.aus(tisch, verwalteterSpieler.id());
         } finally {
@@ -237,6 +247,19 @@ public class SpielAktionsService {
                 s.sessionId(),
                 "/queue/partie/" + tisch.partie().id(),
                 PartieEreignisAntwort.ansageErfolgt(PartieStandAntwort.aus(tisch, s.id()))
+            ));
+    }
+
+    private void veroeffentlicheEinwurfEreignisse(TischEntity tisch) {
+        if (tisch.partie() == null) {
+            return;
+        }
+        tisch.spieler().stream()
+            .filter(s -> !s.istKi() && !s.istKiUebernommen() && s.sessionId() != null)
+            .forEach(s -> tischEchtzeitService.planeAnBenutzer(
+                s.sessionId(),
+                "/queue/partie/" + tisch.partie().id(),
+                PartieEreignisAntwort.spielGestartet(PartieStandAntwort.aus(tisch, s.id()))
             ));
     }
 

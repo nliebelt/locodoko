@@ -23,7 +23,7 @@ Die UI reagiert nicht mehr auf Zustandsänderungen durch Diffing (Vergleich alte
 - **Kein Raten:** `ermittleNeuesSpiel()`, `ermittleNeuAbgeschlossenenStich()` und vergleichbare Diffing-Methoden in `TischSzene.ts` sind **verboten**. 
 - **Explizite Trigger:** Die Szene implementiert einen Event-Handler, der bei `SPIEL_BEENDET` das entsprechende Modal öffnet.
 - **Synchronisation:** Der Event-Handler sorgt für einen sauberen "Clean Slate" (Animationen abbrechen, HandKarten-Map leeren), bevor die neue Phase visualisiert wird.
-- **Versionierung:** Der `AppStore` prüft eingehende `sequenzNummer` (siehe `architektur-domain-events.md`) und erzwingt bei Lücken einen Snapshot-Refresh.
+- **Versionierung:** Der `AppStore` prüft die `version` jedes eingehenden Events — abgeleitet aus dem `@Version`-Feld des Partie-Aggregats im Backend (Optimistic Locking). `version` ist die **einzige Sequenznummer**, kein separater Zähler. Bei Lücken (`E > letzteVersion + 1`) fordert der Store automatisch einen HTTP-Snapshot an (Self-Healing). Stale-Events (`E ≤ letzteVersion`) werden verworfen.
 
 ## Anforderungen
 

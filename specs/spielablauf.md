@@ -108,8 +108,8 @@ Ein Spieler darf das Spiel **neu auflegen** (schmeißen) wenn er eine der folgen
 ## Technische Hinweise
 
 - **Bounded Context**: Spielverwaltung
-- Spring Statemachine für den Spielzustand verwenden
-- Zustände gemäß PRD: `WARTEN_AUF_SPIELER -> SONDERSPIEL_ANSAGE -> (ARMUT_TAUSCH) -> STICH_PHASE -> (NAECHSTER_STICH) -> SPIELENDE -> NAECHSTES_SPIEL -> PARTIEENDE`
+- Spielzustand als `sealed interface SpielPhase` — kein externes State-Machine-Framework; Phasenübergänge sind atomare DB-Schreiboperationen, die die `@Version` erhöhen.
+- Phasen gemäß PRD: `KartenAusteilen → VorbehaltAnsagen → VorbehaltAufloesung → (ArmutTausch) → Stichphase → Auswertung → GesamtstandAktualisieren`
 - `Partie`-Aggregate-Root mit Liste von `Spiel`-Entities
 - `Spiel`-Entity enthält Phase, Geber, aktuelle Stiche, Ergebnis
 - Events bei Phasenübergängen auslösen (für Frontend-Benachrichtigung)

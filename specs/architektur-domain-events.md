@@ -122,17 +122,17 @@ Um Race-Conditions bei verlorenen WebSocket-Frames zu erkennen, ist ein
 ```typescript
 // Geplant — noch nicht implementiert
 export interface PartieEreignisBatch {
-  sequenzNummer: number;               // Long, strikt ansteigend pro Partie
-  ereignisse: PartieEreignisAntwort[]; // Atomare Liste
-  snapshot?: PartieStandAntwort;       // Korrektur-Snapshot bei Lücken
+  version: number;                       // @Version des Partie-Aggregats — einzige Sequenznummer
+  ereignisse: PartieEreignisAntwort[];   // Atomare Liste
+  snapshot?: PartieStandAntwort;         // Korrektur-Snapshot bei Lücken
 }
 ```
 
 **Mechanismus:**
-1. Backend leitet die `sequenzNummer` aus der DB-Version des Aggregats ab — kein separater In-Memory-Zähler.
+1. Backend leitet `version` direkt aus dem `@Version`-Feld des Partie-Aggregats ab — kein separater In-Memory-Zähler.
 2. Frontend erkennt Lücken (`N+2` nach `N` → Batch `N+1` verloren).
 3. Frontend fordert automatisch `/snapshot` an (Self-Healing).
-4. Stale Batches (`sequenzNummer ≤ letzteSequenzNummer`) werden verworfen.
+4. Stale Batches (`version ≤ letzteVersion`) werden verworfen.
 
 Bis zur Implementierung: Verbindungsabbrüche werden durch den bestehenden
 `VerbindungsabbruchService` behandelt (STOMP-Reconnect → SNAPSHOT).

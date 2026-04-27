@@ -66,10 +66,10 @@ KI-Spieler ersetzen menschliche Spieler und treffen regelbasierte, strategische 
 
 ## KI-Timing (UX)
 
-18. KI-Karten sollen in der **STICHPHASE nicht sofort** erscheinen, wenn ein menschlicher Spieler am Tisch sitzt — eine Verzögerung von **800ms** zwischen KI-Zügen macht das Spielgeschehen für den Menschen nachvollziehbar.
-19. Bei rein-KI-Tischen (kein menschlicher Mitspieler) wird **keine** Verzögerung angewandt — dort läuft die Partie ohne Pause durch.
-20. Technisch (Backend): `KiOrchestrierungService.automatisiereTisch` speichert und broadcastet nach jedem KI-Stichphasenzug sofort den aktuellen Stand (nur wenn Menschen am Tisch sitzen). Alle KI-Züge laufen synchron in einer Schleife durch.
-21. Technisch (Frontend): Der `AppStore` puffert eingehende `PARTIE_AKTUALISIERT`-Snapshots auf `/user/queue/partie/`. Erkennt er genau eine neue KI-Karte in der Stichmitte (Vergleich mit dem zuletzt angewendeten Stand), wartet er 800ms vor der Anwendung. Alle anderen Updates (Mensch spielt, Phasenwechsel, Snapshots nach Reconnect) werden sofort angewendet.
+18. KI-Karten sollen in der **STICHPHASE nicht sofort** erscheinen, wenn ein menschlicher Spieler am Tisch sitzt — eine Verzögerung von **800ms** zwischen KI-Zügen macht das Spielgeschehen für den Menschen nachvollziehbar. Die Verzögerung liegt **exklusiv im Frontend** — das Backend antwortet immer sofort.
+19. Bei rein-KI-Tischen (kein menschlicher Mitspieler) wird **keine** Animationsverzögerung angewandt — das Frontend animiert die `KI_ZUG_SEQUENZ` ohne Delay.
+20. Technisch (Backend): `KiOrchestrierungService.automatisiereTisch` spielt alle KI-Züge synchron in einer Schleife durch und sendet anschließend **ein einziges** `KI_ZUG_SEQUENZ`-Event mit der vollständigen Kartenreihenfolge. Kein `Thread.sleep`, keine künstliche Pause — das Backend antwortet immer sofort nach DB-Commit.
+21. Technisch (Frontend): Der `AppStore` verarbeitet `KI_ZUG_SEQUENZ`-Events via `expandiereKiSequenz()`. Dabei werden synthetische Zwischenzustände für jede KI-Karte erzeugt und mit je **800ms** Abstand animiert (nur wenn Menschen am Tisch sitzen). `SNAPSHOT`-Events und menschliche Züge (`KARTE_GESPIELT`) werden immer sofort angewendet.
 - Die KI trifft sinnvolle Sonderspiel-Entscheidungen.
 - Ein komplettes Spiel gegen 3 KI-Spieler kann ohne Fehler durchgespielt werden.
 
