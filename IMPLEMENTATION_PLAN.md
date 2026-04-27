@@ -1,10 +1,18 @@
 # IMPLEMENTATION_PLAN — Locodoko Doppelkopf
 
 ## Notiz
-Stand: 2026-04-27 (ARCH-REF-7 abgeschlossen)
+Stand: 2026-04-27 (FEAT-5 abgeschlossen)
 
-**Nächster Schritt:** FEAT-5 (Frontend: Fehlende `data-testid`-Attribute gemäß `specs/e2e-tests.md`).
-Alternativ: FEAT-6/7/8 (Overlays vervollständigen) — diese sind teilweise implementiert.
+**Was wurde implementiert:** FEAT-5 — alle fehlenden `data-testid`-Attribute ergänzt:
+- `rundenauswertung-overlay` auf `rundenEndeModal` (TischUIManager.ts)
+- `einstellungen-modal` Marker (TischUIManager.ts)
+- `btn-session-recovery` + `btn-offene-tische` Marker (SpielverwaltungsSzene.ts)
+- `rundenauswertung-spieltyp` + `rundenauswertung-punktemultiplikator` DOM-Elemente im Modal (TischSzene.ts)
+
+**Nächster Schritt:** FEAT-6/7/8 — Detail-Marker (`btn-vorbehalt-{typ}`, `btn-armut-{aktion}`, `btn-ansage-{typ}`) in den teilimplementierten Overlays setzen.
+Danach: FEAT-9 (Tisch-Konfigurations-Modal) oder TEST-1 (Backend Unit-Test Dulle-Verhalten im Herzsolo).
+
+**Offene Fragen:** `btn-offene-tische` und `tisch-config-modal`/`input-tischname`/`btn-tisch-erstellen` sind noch FEAT-9/10-Scope (Elemente existieren noch nicht).
 
 ## Legende
 - [x] Erledigt
@@ -47,7 +55,7 @@ Ziel: Vollendung der "Unified Architecture" — sauberer Event-Fluss, identität
 ## Phase 2 — Spielfeatures & Frontend-UI (FEAT)
 Voraussetzung: ARCH-REF-5 und ARCH-REF-6 sind abgeschlossen.
 
-- [ ] FEAT-5 (Frontend): Fehlende `data-testid`-Attribute gemäß `specs/e2e-tests.md`.
+- [x] FEAT-5 (Frontend): Fehlende `data-testid`-Attribute gemäß `specs/e2e-tests.md`.
 - [~] FEAT-6 (Frontend): Vorbehalt-Auswahl-Overlay (Detail-Marker `btn-vorbehalt-{typ}` fehlen).
 - [~] FEAT-7 (Frontend): Armut-Dialog (Detail-Marker `btn-armut-{aktion}` fehlen).
 - [~] FEAT-8 (Frontend): Floating Action Bar (Detail-Marker `btn-ansage-{typ}` fehlen).

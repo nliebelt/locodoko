@@ -63,6 +63,7 @@ export class TischUIManager {
 
     const rundenEndeModal = document.createElement('div');
     rundenEndeModal.className = 'ui-modal-backdrop';
+    rundenEndeModal.dataset['testid'] = 'rundenauswertung-overlay';
     rundenEndeModal.hidden = true;
 
     const partieEndeModal = document.createElement('div');
@@ -91,9 +92,12 @@ export class TischUIManager {
     const startBtnMarker = document.createElement('div');
     startBtnMarker.dataset['testid'] = 'btn-spiel-starten';
     startBtnMarker.style.cssText = markerStyle;
+    const einstellungenModalMarker = document.createElement('div');
+    einstellungenModalMarker.dataset['testid'] = 'einstellungen-modal';
+    einstellungenModalMarker.style.cssText = markerStyle;
 
     uiRoot.append(rundenEndeModal, partieEndeModal, vorbehaltMarker, actionBarMarker,
-      stichzaehlerMarker, spieltypMarker, einstellungenMarker, startBtnMarker);
+      stichzaehlerMarker, spieltypMarker, einstellungenMarker, startBtnMarker, einstellungenModalMarker);
 
     this.rundenEndeModal = rundenEndeModal;
     this.partieEndeModal = partieEndeModal;

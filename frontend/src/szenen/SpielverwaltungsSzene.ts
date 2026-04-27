@@ -45,6 +45,8 @@ export class SpielverwaltungsSzene extends Phaser.Scene {
     // E2E-Marker fuer Playwright
     this.erstelleE2EMarker('startscreen');
     this.erstelleE2EMarker('btn-neuer-tisch');
+    this.erstelleE2EMarker('btn-offene-tische');
+    this.erstelleE2EMarker('btn-session-recovery');
 
     this.renderUi(appStore.snapshot());
   }

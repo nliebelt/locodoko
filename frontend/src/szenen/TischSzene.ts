@@ -1072,7 +1072,15 @@ export class TischSzene extends Phaser.Scene {
     if (this.animationen) this.rundenauswertungObjekte = await this.animationen.animiereRundenauswertung(daten, b, h);
     const btn = this.erstelleButton('Weiter →', () => this.schliesseRundenEndeModal(), false);
     btn.dataset['testid'] = 'btn-rundenauswertung-weiter';
-    this.rundenEndeModal.innerHTML = ''; this.rundenEndeModal.classList.add('ui-rundenauswertung-overlay'); this.rundenEndeModal.append(btn); this.rundenEndeModal.hidden = false;
+    const spieltypEl = document.createElement('span');
+    spieltypEl.dataset['testid'] = 'rundenauswertung-spieltyp';
+    spieltypEl.style.cssText = 'position:absolute;width:1px;height:1px;overflow:hidden;left:-9999px';
+    spieltypEl.textContent = daten.spieltypLabel;
+    const multiplikatorEl = document.createElement('span');
+    multiplikatorEl.dataset['testid'] = 'rundenauswertung-punktemultiplikator';
+    multiplikatorEl.style.cssText = 'position:absolute;width:1px;height:1px;overflow:hidden;left:-9999px';
+    multiplikatorEl.textContent = `\u00d7${e.soloMultiplikator}`;
+    this.rundenEndeModal.innerHTML = ''; this.rundenEndeModal.classList.add('ui-rundenauswertung-overlay'); this.rundenEndeModal.append(btn, spieltypEl, multiplikatorEl); this.rundenEndeModal.hidden = false;
     const br = (window as any).__locodoko;
     if (br) br._rundenEndeModalGezeigt = (br._rundenEndeModalGezeigt ?? 0) + 1;
     setTimeout(() => btn.focus(), 0);
