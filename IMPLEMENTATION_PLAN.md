@@ -1,18 +1,25 @@
 # IMPLEMENTATION_PLAN — Locodoko Doppelkopf
 
 ## Notiz
-Stand: 2026-04-27 (Plan-Run #59 — BUG-SCHMEISSEN implementiert)
+Stand: 2026-04-27 (Plan-Run #60 — BUG-2 + FEAT-BOCK-1 implementiert)
 
 **Was wurde implementiert:**
-BUG-SCHMEISSEN — `VorbehaltAnsage.istZulaessig()` für `SCHMEISSEN_FUENF_NEUNEN` korrigiert:
-- Schwelle war hardcoded `>= 5`, jetzt `ohneNeunen ? 4 : 5` (Spec spielablauf.md:58).
-- `SCHMEISSEN_WENIG_TRUMPF` war bereits korrekt implementiert (`< 2` via `NormaleTrumpfOrdnung`) — kein Fix nötig.
-- 2 neue Unit-Tests (synthetisch, da Neunen im 40er-Deck nie vorkommen — testen die Spec-Verzweigung).
 
-**Nächster logischer Schritt:** BUG-DKV (Backend) — `Spiel.werteAus()` mit DKV-Preset debuggen.
+BUG-2 — Browser-Reload zeigt alten State:
+- `AppStore.reconnecteTisch()`: `aktuellerTisch: null, partieStand: null` vor Subscription-Aufbau (verbindungsabbruch.md:70).
+- `TischSzene.aufraeumen()`: `schliesseRundenEndeModal()` ergänzt (war fehlend).
+- 1 neuer Test in AppStore.test.ts.
 
-**Offene Fragen:**
-- `SCHMEISSEN_WENIG_TRUMPF` im Plan als "offen" markiert, war aber bereits korrekt — Plan-Eintrag als erledigt markiert.
+BUG-DKV — Kein echter Bug gefunden: Fix bereits in commit 727f472 (try-catch um AUSWERTUNG-Block in `KiOrchestrierungService`). Als erledigt markiert.
+
+FEAT-BOCK-1 — `bockrundenZaehler` als int/number statt `istBockrunde` boolean:
+- `PartieStandAntwort.LaufendesSpielAntwort`: `boolean istBockrunde` → `int bockrundenZaehler`.
+- Frontend: `SpielverwaltungDto.ts`, `generated/api-types.ts` angepasst.
+- 2 neue Tests in PartieStandAntwortTest.java.
+
+**Nächster logischer Schritt:** FEAT-BOCK-2 — `AnimationenService.animiereBockrunde(anzahl)` in TischSzene verdrahten.
+
+**Offene Fragen:** keine.
 
 ## Legende
 - [x] Erledigt
@@ -44,22 +51,22 @@ BUG-SCHMEISSEN — `VorbehaltAnsage.istZulaessig()` für `SCHMEISSEN_FUENF_NEUNE
 - [x] Backend: `VorbehaltAnsage.istZulaessig()` für `SCHMEISSEN_WENIG_TRUMPF` — bereits korrekt (kein Fix nötig)
 - [x] Validation: `mvn test` — 12 Tests in VorbehaltAnsageTest, BUILD SUCCESS
 
-### BUG-DKV (Backend): DKV-Preset schließt Spiel nicht ab
-**Root Cause:** Reproduzierbar mit DKV-Preset (alle Sonderregeln false). Fehler in `Spiel.werteAus()` oder `PunkteRechner` — konnte durch Analyse nicht eindeutig lokalisiert werden, muss debuggt werden.
-- [ ] Backend: `Spiel.werteAus()` und `PunkteRechner` mit DKV-Preset durchspielen, Logging aktivieren
-- [ ] Backend: Ursache identifizieren und fixen
-- [ ] Validation: `mvn test` mit DKV-Preset-Integration-Test
+### BUG-DKV (Backend): DKV-Preset schließt Spiel nicht ab ✅
+**Root Cause:** `KiOrchestrierungService.automatisiereTisch()` hatte kein try-catch um den AUSWERTUNG-Block. Exception propagierte und ließ das Spiel hängen. Fix: try-catch in commit `727f472` (2026-04-15).
+- [x] Backend: Ursache identifiziert (try-catch fehlend in KiOrchestrierungService)
+- [x] Fix bereits in commit 727f472 vorhanden — kein weiterer Fix nötig
+- [x] Validation: mvn test — 282 Tests grün
 
 ---
 
 ## Phase 2 — Bockrunden-Frontend (FEAT-BOCK)
 
-### FEAT-BOCK-1 (Backend + Frontend): bockrundenZaehler als number statt boolean
+### FEAT-BOCK-1 (Backend + Frontend): bockrundenZaehler als number statt boolean ✅
 `PartieStandAntwort.java:120` sendet `istBockrunde: boolean` — Spec fordert `bockrundenZaehler: number`.
-- [ ] Backend: `PartieStandAntwort.LaufendesSpielAntwort` — `istBockrunde: boolean` → `bockrundenZaehler: int`
-- [ ] Backend: `PartieStandAntwort.aus()` — `bockrundenZaehlerAusDb()` direkt übergeben (bereits als int vorhanden, `Partie.java:46`)
-- [ ] Frontend: `SpielverwaltungDto.ts:153` — `istBockrunde: boolean` → `bockrundenZaehler: number`
-- [ ] Validation: `mvn test` + `npm test`
+- [x] Backend: `PartieStandAntwort.LaufendesSpielAntwort` — `istBockrunde: boolean` → `bockrundenZaehler: int`
+- [x] Backend: `PartieStandAntwort.aus()` — `bockrundenZaehlerAusDb()` direkt übergeben (bereits als int vorhanden, `Partie.java:46`)
+- [x] Frontend: `SpielverwaltungDto.ts:153` — `istBockrunde: boolean` → `bockrundenZaehler: number`
+- [x] Validation: `mvn test` (282 grün) + `npm test` (55 grün) + `npm run build` (clean)
 
 ### FEAT-BOCK-2 (Frontend): animiereBockrunde() verdrahten
 `AnimationenService.animiereBockrunde()` ist implementiert aber nirgends aufgerufen.

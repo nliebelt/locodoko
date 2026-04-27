@@ -909,7 +909,7 @@ export interface components {
             /** @description Vorbehalte, die der aktuelle Spieler ansagen darf. */
             moeglicheVorbehalte?: ("GESUND" | "SOLO_DAME" | "SOLO_BUBE" | "SOLO_TRUMPF" | "SOLO_TRUMPF_HERZ" | "SOLO_TRUMPF_PIK" | "SOLO_TRUMPF_KREUZ" | "SOLO_FLEISCHLOS" | "HOCHZEIT" | "ARMUT" | "SCHMEISSEN")[];
             /** @description Ob die aktuelle Runde eine Bockrunde ist. */
-            istBockrunde?: boolean;
+            bockrundenZaehler?: number;
             /**
              * @description Position des Spielers, der Schweinchen gemeldet hat; null falls keiner.
              * @enum {string}

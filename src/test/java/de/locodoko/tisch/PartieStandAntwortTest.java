@@ -155,6 +155,68 @@ class PartieStandAntwortTest {
             "Die Kartenanzahl des Gegners muss korrekt geliefert werden");
     }
 
+    @Test
+    void liefertBockrundenZaehlerAusPartie() {
+        // Wichtig: bockrundenZaehler muss den rohen Zaehlerwert liefern, nicht nur boolean —
+        // damit das Frontend die Bockrunden-Animation korrekt stufen kann (1=Bock, 2=Doppelbock).
+        SpielerEntity anna = SpielerEntity.menschlich("Anna", "session-anna");
+        TischEntity tisch = TischEntity.neu(
+            "Bockrunden-Test",
+            anna,
+            TischkonfigurationEmbeddable.ausSpielregeln(Spielregeln.standardRegeln().mitBockrundenAktiv(true), 8)
+        );
+        tisch.fuegeSpielerHinzu(anna);
+        tisch.fuegeSpielerHinzu(SpielerEntity.menschlich("Ben", "session-ben"));
+        tisch.fuegeSpielerHinzu(SpielerEntity.menschlich("Clara", "session-clara"));
+        tisch.fuegeSpielerHinzu(SpielerEntity.menschlich("Dirk", "session-dirk"));
+
+        Partie partie = Partie.neuePersistenz(8);
+        partie.setzeBockrundenZaehlerDb(2);
+        Spiel spiel = Spiel.neuePersistenz(1, SpielerPosition.SUED, Spieltyp.NORMALSPIEL, Spielphase.VORBEHALT_ANSAGE);
+        spiel.fuegeHandHinzu(HandJsonEintrag.aus(SpielerPosition.SUED, List.of()));
+        spiel.fuegeHandHinzu(HandJsonEintrag.aus(SpielerPosition.WEST, List.of()));
+        spiel.fuegeHandHinzu(HandJsonEintrag.aus(SpielerPosition.NORD, List.of()));
+        spiel.fuegeHandHinzu(HandJsonEintrag.aus(SpielerPosition.OST, List.of()));
+        partie.fuegeSpielHinzu(spiel);
+        tisch.setzePartie(partie);
+
+        PartieStandAntwort antwort = PartieStandAntwort.aus(tisch, anna.id());
+
+        assertNotNull(antwort.laufendesSpiel());
+        assertEquals(2, antwort.laufendesSpiel().bockrundenZaehler(),
+            "bockrundenZaehler muss den rohen Wert aus der Partie-DB liefern, nicht einen boolean-Vergleich.");
+    }
+
+    @Test
+    void liefertBockrundenZaehlerNullBeiKeineBockrunde() {
+        // Wichtig: Kein Bockrunden-Wert liefert 0, nicht false.
+        SpielerEntity anna = SpielerEntity.menschlich("Anna", "session-anna");
+        TischEntity tisch = TischEntity.neu(
+            "Keine-Bockrunde-Test",
+            anna,
+            TischkonfigurationEmbeddable.ausSpielregeln(Spielregeln.standardRegeln(), 8)
+        );
+        tisch.fuegeSpielerHinzu(anna);
+        tisch.fuegeSpielerHinzu(SpielerEntity.menschlich("Ben", "session-ben"));
+        tisch.fuegeSpielerHinzu(SpielerEntity.menschlich("Clara", "session-clara"));
+        tisch.fuegeSpielerHinzu(SpielerEntity.menschlich("Dirk", "session-dirk"));
+
+        Partie partie = Partie.neuePersistenz(8);
+        Spiel spiel = Spiel.neuePersistenz(1, SpielerPosition.SUED, Spieltyp.NORMALSPIEL, Spielphase.VORBEHALT_ANSAGE);
+        spiel.fuegeHandHinzu(HandJsonEintrag.aus(SpielerPosition.SUED, List.of()));
+        spiel.fuegeHandHinzu(HandJsonEintrag.aus(SpielerPosition.WEST, List.of()));
+        spiel.fuegeHandHinzu(HandJsonEintrag.aus(SpielerPosition.NORD, List.of()));
+        spiel.fuegeHandHinzu(HandJsonEintrag.aus(SpielerPosition.OST, List.of()));
+        partie.fuegeSpielHinzu(spiel);
+        tisch.setzePartie(partie);
+
+        PartieStandAntwort antwort = PartieStandAntwort.aus(tisch, anna.id());
+
+        assertNotNull(antwort.laufendesSpiel());
+        assertEquals(0, antwort.laufendesSpiel().bockrundenZaehler(),
+            "bockrundenZaehler muss 0 liefern wenn keine Bockrunde aktiv ist.");
+    }
+
     private Karte karte(Farbe farbe, Kartenwert wert, int exemplarIndex) {
         return new Karte(farbe, wert, exemplarIndex);
     }

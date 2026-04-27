@@ -116,8 +116,8 @@ public record PartieStandAntwort(
         List<VorbehaltAnsage> moeglicheVorbehalte,
         @Schema(description = "Bereits deklarierte Vorbehalte der anderen Spieler (nur in der VorbehaltAnsage-Phase).")
         List<VorbehaltMeldungAntwort> deklarierteVorbehalte,
-        @Schema(description = "Ob die aktuelle Runde eine Bockrunde ist.")
-        boolean istBockrunde,
+        @Schema(description = "Anzahl der aktiven Bockrunden (0 = keine Bockrunde).")
+        int bockrundenZaehler,
         @Schema(description = "Ob eine Hochzeit bereits geklaert ist.")
         boolean hochzeitGeklaert,
         @Schema(description = "Position des Spielers, der Schweinchen gemeldet hat; null falls keiner.")
@@ -172,7 +172,7 @@ public record PartieStandAntwort(
                 bestimmeMoeglicheAnsagen(fachlichesSpiel, sichtbarePosition, aktuellerSpieler),
                 bestimmeMoeglicheVorbehalte(fachlichesSpiel, sichtbarePosition, aktuellerSpieler),
                 fachlichesSpiel.vorbehalte().stream().map(VorbehaltMeldungAntwort::aus).toList(),
-                tisch.partie().bockrundenZaehlerAusDb() > 0,
+                tisch.partie().bockrundenZaehlerAusDb(),
                 hochzeitGeklaert,
                 fachlichesSpiel.schweinchenGemeldetVon().orElse(null)
             );

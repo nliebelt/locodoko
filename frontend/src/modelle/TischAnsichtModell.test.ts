@@ -108,7 +108,7 @@ describe('erstelleTischAnsichtAusStatus', () => {
         moeglicheAnsagen: [],
         moeglicheVorbehalte: ['GESUND', 'SOLO_TRUMPF'],
         deklarierteVorbehalte: [],
-        istBockrunde: false,
+        bockrundenZaehler: 0,
         hochzeitGeklaert: false,
         schweinchenGemeldetVon: null,
         spieler: [
@@ -226,7 +226,7 @@ describe('erstelleTischAnsichtAusStatus', () => {
         moeglicheAnsagen: ['RE'],
         moeglicheVorbehalte: [],
         deklarierteVorbehalte: [],
-        istBockrunde: false,
+        bockrundenZaehler: 0,
         hochzeitGeklaert: false,
         schweinchenGemeldetVon: null,
         spieler: [
@@ -352,7 +352,7 @@ describe('erstelleTischAnsichtAusStatus', () => {
         moeglicheAnsagen: [],
         moeglicheVorbehalte: [],
         deklarierteVorbehalte: [],
-        istBockrunde: false,
+        bockrundenZaehler: 0,
         hochzeitGeklaert: false,
         schweinchenGemeldetVon: null,
         spieler: [
@@ -496,7 +496,7 @@ describe('erstelleTischAnsichtAusStatus', () => {
         moeglicheAnsagen: [],
         moeglicheVorbehalte: [],
         deklarierteVorbehalte: [],
-        istBockrunde: false,
+        bockrundenZaehler: 0,
         hochzeitGeklaert: false,
         schweinchenGemeldetVon: null,
         spieler: [
@@ -549,7 +549,7 @@ describe('erstelleTischAnsichtAusStatus', () => {
         moeglicheAnsagen: [],
         moeglicheVorbehalte: [],
         deklarierteVorbehalte: [],
-        istBockrunde: false,
+        bockrundenZaehler: 0,
         hochzeitGeklaert: false,
         schweinchenGemeldetVon: null,
         spieler: [
