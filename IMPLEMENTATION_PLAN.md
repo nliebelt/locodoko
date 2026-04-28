@@ -1,19 +1,16 @@
 # IMPLEMENTATION_PLAN — Locodoko Doppelkopf
 
 ## Notiz
-Stand: 2026-04-28 (Plan-Run #74)
+Stand: 2026-04-28 (Plan-Run #75)
 
-**Was wurde implementiert (Plan-Run #74):**
-- BUG-TRUMPFSOLO-NEUN: `VariableTrumpfsoloTrumpfOrdnung.java` — Neun-Ausschluss-Bedingung von implizitem `|| !` auf explizites Early-Return-Muster umgestellt (`karte.wert() == Kartenwert.NEUN && spielregeln.ohneNeunen()` → return false). Logisch äquivalent, aber klar lesbar und nicht invertierbar.
-- Neuer Test `neunIstKeinTrumpfBeiTrumpfsoloMitOhneNeunenRegeln` in `SoloTrumpfOrdnungenTest` — deckt Herz-Solo + Pik-Solo mit ohneNeunen=true/false ab. 290 Tests grün.
+**Was wurde implementiert (Plan-Run #75):**
+- BUG-DKV-PRESET: Diagnose ergab — Bug lag in der KI-Orchestrierung (bereits in Plan-Run #73 behoben). `Spiel.werteAus()` und `PunkteRechner` sind korrekt. Neuer Regression-Test `spielSchliesstAbMitDkvPreset` in `SpielTest` hinzugefügt. `specs/regelkatalog.md` Bug-Eintrag als behoben markiert. 291 Tests grün.
 
-**Was wurde entdeckt (Plan-Run #73):**
-- FEAT-SCHMEISSEN vollständig implementiert → [x]
-- TASK-AUTH-FORMLOGIN: nur Spec-Update nötig
+**Was wurde entdeckt (Plan-Run #74):**
+- BUG-TRUMPFSOLO-NEUN implementiert → [x]
 - BUG-DKV-PRESET in Phase 1 ergänzt
-- FEAT-SONDERPUNKT-DOMAIN-EVENTS, FEAT-TASTATUR-AUTOFOKUS-SHORTCUTS, FEAT-PRESET-API neu identifiziert
 
-**Nächste Priorität:** BUG-DKV-PRESET (reproduzierbarer Spielabbruch mit DKV-Preset). Dann FEAT-SONDERPUNKT-DOMAIN-EVENTS.
+**Nächste Priorität:** FEAT-SONDERPUNKT-DOMAIN-EVENTS (Backend). Dann Spec-Updates (SPEC-SCHWEINCHEN, SPEC-AUTH, SPEC-SPIELER-PROFIL etc.).
 
 ---
 
@@ -25,13 +22,12 @@ Entscheidung: Code ist fehlerhaft — laut Spec dürfen Neunen bei `ohneNeunen=t
 - [x] Backend: `VariableTrumpfsoloTrumpfOrdnung.java` — Neun-Ausschluss-Bedingung auf `karte.wert() == Kartenwert.NEUN && spielregeln.ohneNeunen()` korrigieren (kein Trumpf wenn Neun UND ohneNeunen aktiv).
 - [x] Validation: neuer Test `neunIstKeinTrumpfBeiTrumpfsoloMitOhneNeunenRegeln`. 290 Tests grün.
 
-### BUG-DKV-PRESET (Backend) ← NEU Plan-Run #73
+### BUG-DKV-PRESET (Backend) ← Plan-Run #73, abgeschlossen Plan-Run #75
 **Problem:** Spiel schließt mit DKV-Turnier-Preset (alle Sonderregeln deaktiviert) nicht korrekt ab. Reproduzierbar.
-Entscheidung: Bug im Code. Spec-Auswertungsregeln gelten auch ohne Sonderregeln.
-Zu prüfen: `Spiel.werteAus()` oder `PunkteRechner` — welcher Codepfad ist bei allen-inaktiv-Kombination anders?
-- [ ] Backend: Ursache in `Spiel.werteAus()` / `PunkteRechner` lokalisieren (Debugging mit DKV-Preset-Testfall).
-- [ ] Backend: Fix + Regression-Test: `SpielTest.spielSchliesstAbMitDkvPreset()`.
-- [ ] Validation: `mvn test`.
+Diagnose (Plan-Run #75): Bug lag in der KI-Orchestrierung, nicht in `Spiel.werteAus()` / `PunkteRechner`. Beide sind korrekt. Bereits durch Plan-Run #73 behoben (`KiOrchestrierungServiceIntegrationTest.spieltEineKompletteVierKiPartieMitDkvRegelnZuEnde` grün).
+- [x] Backend: Ursache lokalisiert — KI-Orchestrierung, nicht PunkteRechner.
+- [x] Backend: Regression-Test: `SpielTest.spielSchliesstAbMitDkvPreset()` — 12 Stiche (48 Karten), 240 Augen, Nullsumme.
+- [x] Validation: 291 Tests grün.
 
 ### BUG-KI-HAENGER-FUCHS (Backend)
 **Problem:** KI bleibt stehen nach Sonderpunkten (Fuchs gefangen etc.).

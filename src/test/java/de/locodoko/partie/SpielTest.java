@@ -1128,6 +1128,49 @@ class SpielTest {
         return new Karte(farbe, wert, exemplarIndex);
     }
 
+    /**
+     * BUG-DKV-PRESET: Regression-Test — DKV-Turnier-Preset muss nach 12 Stichen (48-Karten-Spiel)
+     * korrekt in die Auswertung uebergehen und ein gueltiges Spielergebnis liefern.
+     * Sichert ab dass dkvRegeln() (ohneNeunen=false) ein vollstaendiges Normalspiel ermoeglicht.
+     */
+    @Test
+    void spielSchliesstAbMitDkvPreset() {
+        Spielregeln dkvRegeln = Spielregeln.dkvRegeln();
+        Spiel spiel = Spiel.neu(SpielerPosition.SUED, dkvRegeln, Kartendeck.neu(dkvRegeln));
+
+        spiel = spiel.teileKartenAus();
+        assertEquals(12, spiel.handVon(SpielerPosition.SUED).karten().size(),
+            "DKV spielt mit 48 Karten (ohneNeunen=false): jeder Spieler erhaelt 12 Karten.");
+
+        while (spiel.naechsterVorbehaltSpieler().isPresent()) {
+            spiel = spiel.meldeGesund(spiel.naechsterVorbehaltSpieler().orElseThrow());
+        }
+        spiel = spiel.loeseVorbehalteAuf();
+
+        while (spiel.phase() instanceof Spielphase.Stichphase) {
+            SpielerPosition spieler = spiel.aktuellerSpieler().orElseThrow();
+            spiel = spiel.spieleKarte(spieler, spiel.gueltigeKartenFuer(spieler).getFirst()).neuerStand();
+        }
+
+        assertEquals(12, spiel.abgeschlosseneStiche().size(),
+            "DKV braucht exakt 12 Stiche — bei weniger Stichen ist die Auswertung fehlerhaft (BUG-DKV-PRESET).");
+        assertEquals(Spielphase.AUSWERTUNG, spiel.phase(),
+            "Nach dem 12. Stich muss das Spiel die AUSWERTUNG-Phase erreichen.");
+
+        spiel = spiel.werteAus();
+
+        assertEquals(Spielphase.GESAMTSTAND_AKTUALISIEREN, spiel.phase());
+        Spielergebnis ergebnis = spiel.ergebnis().orElseThrow();
+        assertEquals(240, ergebnis.augenVon(Partei.RE).wert() + ergebnis.augenVon(Partei.KONTRA).wert(),
+            "48-Karten-Spiel hat 240 Augen gesamt.");
+        assertEquals(0,
+            ergebnis.spielpunkteVon(SpielerPosition.SUED).wert()
+            + ergebnis.spielpunkteVon(SpielerPosition.WEST).wert()
+            + ergebnis.spielpunkteVon(SpielerPosition.NORD).wert()
+            + ergebnis.spielpunkteVon(SpielerPosition.OST).wert(),
+            "Spielpunkte muessen nullsummig sein.");
+    }
+
     private Kartendeck kartendeckAus(List<Karte> karten) {
         try {
             java.lang.reflect.Constructor<Kartendeck> konstruktor = Kartendeck.class.getDeclaredConstructor(java.util.Collection.class);

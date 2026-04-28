@@ -75,7 +75,7 @@ Kein Preset — alle Optionen werden individuell vom Gastgeber konfiguriert.
 
 ## Bekannte Bugs / Offene Punkte
 
-- **Bug (2026-04-15) — DKV-Turnier-Regeln: Spiel schließt nicht ab:** Mit dem DKV-Turnier-Preset (`schweinchenAktiv=false`, `bockrundenAktiv=false`, `dreissigAugenPflichtAktiv=false`) wird das Spiel nach dem letzten Stich nicht korrekt abgeschlossen. Vermutlich Fehler in `Spiel.werteAus()` oder `PunkteRechner` bei deaktivierten Sonderregeln — ein Pfad der nur bei allen-Regeln-inaktiv getriggert wird. Zu reproduzieren: Tisch mit DKV-Turnier-Preset erstellen, Partie durchspielen.
+- **Behoben (2026-04-28) — DKV-Turnier-Regeln: Spiel schließt nicht ab:** Der Fehler lag in der KI-Orchestrierung, nicht in `Spiel.werteAus()` oder `PunkteRechner`. Abgesichert durch `KiOrchestrierungServiceIntegrationTest.spieltEineKompletteVierKiPartieMitDkvRegelnZuEnde()` und `SpielTest.spielSchliesstAbMitDkvPreset()`.
 
 ## Anforderungen
 
