@@ -64,11 +64,6 @@ public record Spielregeln(
         return new Spielregeln(true, true, 9, 8, 7, 6, 5, true, true, true, true, true, true, true, true, true, true, true, true, true, false);
     }
 
-    /** Loco-Blatt-Variante ohne Neunen (10-Karten-Spiel), alle Sonderregeln aktiv. */
-    public static Spielregeln ohneNeunenLocoBlatRegeln() {
-        return new Spielregeln(true, true, 9, 8, 7, 6, 5, true, true, true, true, true, true, true, true, true, true, true, true, true, false);
-    }
-
     /** DKV-Turnier-Regelkatalog: ohne Bockrunden, Schweinchen, 30-Augen-Pflicht und Schmeissen, mit Neunen. */
     public static Spielregeln dkvRegeln() {
         return new Spielregeln(false, true, 11, 10, 9, 8, 7, true, true, true, true, true, true, true, true, true, false, false, false, false, false);

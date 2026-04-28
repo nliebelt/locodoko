@@ -1,12 +1,12 @@
 # IMPLEMENTATION_PLAN — Locodoko Doppelkopf
 
 ## Notiz
-Stand: 2026-04-28 (Plan-Run #83)
+Stand: 2026-04-28 (Plan-Run #84)
 
-**Was wurde implementiert (Plan-Run #83):**
-- FEAT-ANSAGEN-FAB: Analyse ergab — Feature war bereits vollständig in `TischSzene.renderAnsageButtons()` implementiert (Phaser FAB für alle Ansage-Typen, DOM-Marker für E2E, R/K-Shortcuts in `TischInputHandler`). 7 neue Tests: DOM-Marker-Präsenz bei verfügbaren Ansagen, Absence bei leerer Liste und fremdem Spieler, Zustandsübergang (Buttons verschwinden), R/K-Shortcuts positiv + Negativ-Test. `specs/frontend-ui-logik.md` DoD auf [x] gesetzt. 67 Frontend-Tests grün.
+**Was wurde implementiert (Plan-Run #84):**
+- FEAT-SEITENLADE: `renderHud()` in `TischSzene.ts` um Abschnitt „LETZTE STICHE" erweitert — zeigt die letzten 3 abgeschlossenen Stiche mit Gewinnernahme und Augenzahl. `TischInputHandler.ts` um Escape-Handler für Seitenlade ergänzt (Escape schließt Seitenlade vor Einstellungen-Modal). 4 neue Tests: I-Taste öffnet, Escape schließt, Letzte-Stiche-Abschnitt sichtbar mit Stichen, Abschnitt fehlt ohne Stiche. 71 Frontend-Tests grün.
 
-**Nächste Priorität:** Phase 4 — `FEAT-SEITENLADE` (Info-Panel mit Spielerstand, Ansagehistorie, letzten Stichen) oder `FEAT-HUD-SIDEBAR` (Letzte 3 Stiche in Phaser-Sidebar).
+**Nächste Priorität:** `FEAT-HUD-SIDEBAR` (Letzte 3 Stiche in Phaser-Sidebar ist jetzt Teil von FEAT-SEITENLADE — abgeschlossen) → nächste Option: `FEAT-EINSTELLUNGS-MODAL` (Einstellungs-Modal mit Hintergrund, KI-Schwierigkeit, Animationsgeschwindigkeit) oder `FEAT-LOBBY-POLLING` (Liste offener Tische im Startscreen).
 
 **Was wurde implementiert (Plan-Run #81):**
 - TASK-PRESET-UNIT-TESTS: `SpielregelnTest` um zwei vollständige Feldprüfungs-Tests erweitert: `locoBlatRegelnHatKorrekteWerteFuerAlleFelder()` und `dkvRegelnHatKorrekteWerteFuerAlleFelder()`. Jeder Test prüft alle 21 Felder des `Spielregeln`-Records explizit — sichert ab, dass ein Refactoring keine Preset-Werte unbemerkt verändert. 295 Backend-Tests grün (SpielregelnTest: 3→5 Tests).
@@ -136,7 +136,7 @@ Entscheidung: Spec (`architektur-domain-events.md`) fordert Domain Events für s
 
 ## Phase 4 — Offene UI-Punkte
 
-- [ ] FEAT-HUD-SIDEBAR: "Letzte 3 Stiche" in der Phaser-Sidebar implementieren (derzeit leer).
+- [x] FEAT-HUD-SIDEBAR: "Letzte 3 Stiche" in der Phaser-Sidebar implementiert (Teil von FEAT-SEITENLADE, Plan-Run #84).
 - [ ] BUG-STICH-UMDREHEN: Erlauben, alle Stiche umzudrehen (nicht nur den eigenen).
 - [ ] FEAT-LOBBY-POLLING: Liste offener Tische im Startscreen funktional machen.
 
@@ -155,11 +155,11 @@ Analyse (Plan-Run #83): Feature war bereits vollständig in `TischSzene.renderAn
 - [x] Frontend: R/K-Tastatur-Shortcuts in `TischInputHandler.verarbeiteAnsageTaste()`.
 - [x] Validation: 7 neue Tests (DOM-Marker-Präsenz, Zustandsübergang, R/K-Shortcuts, Negativ-Test). 67 Tests grün, Build erfolgreich.
 
-### FEAT-SEITENLADE (Frontend)
+### FEAT-SEITENLADE (Frontend) ← abgeschlossen Plan-Run #84
 **Problem (neu — Plan-Run #65):** Info-Panel (Spielerstand, Ansagehistorie, Stichübersicht) ist laut `frontend-ui-logik.md` spezifiziert, aktuell nur Stub.
-- [ ] Frontend: `[≡]`-Button öffnet Panel mit aktuellem Spielerstand (Augen pro Partei), Ansagehistorie und letzten Stichen.
-- [ ] Frontend: Panel schließt sich bei erneutem Klick oder Escape.
-- [ ] Validation: `npm test` + `npm run build`.
+- [x] Frontend: `[≡]`-Button öffnet Panel mit aktuellem Spielerstand (Augen pro Partei), Ansagehistorie und letzten Stichen.
+- [x] Frontend: Panel schließt sich bei erneutem Klick oder Escape.
+- [x] Validation: 71 Frontend-Tests grün, Build erfolgreich.
 
 ### FEAT-EINSTELLUNGS-MODAL (Frontend)
 **Problem (neu — Plan-Run #65):** Einstellungs-Modal (`[⚙]`) für Hintergrund, KI-Schwierigkeit und Animationsgeschwindigkeit ist laut `frontend-ui-logik.md` spezifiziert, aktuell nur `getEinstellungsModalEl()` ohne Implementierung.

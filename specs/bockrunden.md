@@ -99,9 +99,9 @@ der `TischSzene` verdrahtet werden.
 
 ### Definition of Done (Frontend)
 
-- [ ] `bockrundenZaehler: number` in `LaufendesSpielAntwort` statt `istBockrunde: boolean`
-- [ ] `animiereBockrunde(anzahl)` in `TischSzene` bei `SPIEL_GESTARTET` verdrahtet
-- [ ] N-Schafe-Darstellung in `AnimationenService.animiereBockrunde()` implementiert
+- [x] `bockrundenZaehler: number` in `PartieStandAntwort` statt `istBockrunde: boolean`
+- [x] `animiereBockrunde(anzahl)` in `TischSzene` bei `SPIEL_GESTARTET` verdrahtet
+- [x] N-Schafe-Darstellung in `AnimationenService.animiereBockrunde()` implementiert
 
 ---
 

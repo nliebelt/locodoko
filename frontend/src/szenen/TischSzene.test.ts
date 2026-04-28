@@ -264,4 +264,54 @@ describe('TischSzene', () => {
     document.dispatchEvent(new KeyboardEvent('keydown', { key: 'r', bubbles: true }));
     expect(appStoreHarness.store.sageAnsageAn).not.toHaveBeenCalled();
   });
+
+  it('I-Taste oeffnet Seitenlade', () => {
+    // Wichtig: Tastatur-Shortcut muss Seitenlade zuverlaessig toggeln; sonst kein Zugang ohne Maus.
+    const { s } = baueSzene(baueZustand());
+    expect(s['seitenladeOffen']).toBe(false);
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'I', bubbles: true }));
+    expect(s['seitenladeOffen']).toBe(true);
+  });
+
+  it('Escape-Taste schliesst Seitenlade', () => {
+    // Wichtig: Konsistentes Schliessen per Escape verhindert, dass die Seitenlade "haengen bleibt"
+    // und Spieler keine offensichtliche Moeglichkeit haben, sie wieder zu schliessen.
+    const { s } = baueSzene(baueZustand());
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'I', bubbles: true }));
+    expect(s['seitenladeOffen']).toBe(true);
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+    expect(s['seitenladeOffen']).toBe(false);
+  });
+
+  it('Seitenlade zeigt LETZTE STICHE wenn Stiche vorhanden', () => {
+    // Wichtig: Kerninhalt der Seitenlade — Spieler muessen sehen koennen wer welchen Stich gewann.
+    const { s } = baueSzene(baueZustand({
+      partieStand: {
+        ...bauePartieStand(baueLaufendesSpiel()),
+        letzteAbgeschlosseneStiche: [
+          { spielNummer: 1, stichNummer: 1, aufspielerPosition: 'SUED', gewinnerPosition: 'SUED', augen: 25, gespielteKarten: [] },
+          { spielNummer: 1, stichNummer: 2, aufspielerPosition: 'WEST', gewinnerPosition: 'WEST', augen: 14, gespielteKarten: [] }
+        ]
+      }
+    }));
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'I', bubbles: true }));
+    const texte = (s['tischEbene'] as any).kinder
+      .filter((k: any) => k.typ === 'text')
+      .map((k: any) => k.text as string);
+    expect(texte.some((t: string) => t === 'LETZTE STICHE')).toBe(true);
+    expect(texte.some((t: string) => t.includes('25 Augen'))).toBe(true);
+    expect(texte.some((t: string) => t.includes('14 Augen'))).toBe(true);
+  });
+
+  it('Seitenlade zeigt keinen LETZTE-STICHE-Abschnitt ohne Stiche', () => {
+    // Wichtig: Verhindert leeren Abschnitts-Header wenn noch kein Stich gespielt wurde.
+    const { s } = baueSzene(baueZustand({
+      partieStand: { ...bauePartieStand(baueLaufendesSpiel()), letzteAbgeschlosseneStiche: [] }
+    }));
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'I', bubbles: true }));
+    const texte = (s['tischEbene'] as any).kinder
+      .filter((k: any) => k.typ === 'text')
+      .map((k: any) => k.text as string);
+    expect(texte.some((t: string) => t === 'LETZTE STICHE')).toBe(false);
+  });
 });

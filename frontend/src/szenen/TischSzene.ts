@@ -766,6 +766,16 @@ export class TischSzene extends Phaser.Scene {
         currentY += 18;
       });
     }
+    currentY += 15;
+    const letzteStiche = modell.letzteAbgeschlosseneStiche.slice(-3).reverse();
+    if (letzteStiche.length > 0) {
+      ebene.add(this.add.text(hudX + 15, currentY, 'LETZTE STICHE', { color: '#a3c4a8', fontSize: `${schriftInfo}px`, fontStyle: 'bold' }));
+      currentY += 25;
+      letzteStiche.forEach((stich) => {
+        ebene.add(this.add.text(hudX + 15, currentY, `${stich.gewinnerName}: ${stich.augen} Augen`, { color: '#ffd166', fontSize: `${schriftInfo}px` }));
+        currentY += 18;
+      });
+    }
   }
 
   private renderStichStapel(ebene: Phaser.GameObjects.Container, modell: TischAnsichtModell, breite: number, hoehe: number): void {

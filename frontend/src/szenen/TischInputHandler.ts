@@ -101,7 +101,14 @@ export class TischInputHandler {
       return;
     }
 
-    // 5. Einstellungs-Modal (Phaser): Escape schliesst
+    // 5. Seitenlade (Phaser): Escape schliesst
+    if (this.kontext.isSeitenladeOffen() && e.key === 'Escape') {
+      this.kontext.togglSeitenlade();
+      e.preventDefault();
+      return;
+    }
+
+    // 6. Einstellungs-Modal (Phaser): Escape schliesst
     if (this.kontext.isEinstellungenOffen()) {
       if (e.key === 'Escape') {
         this.kontext.togglEinstellungen();

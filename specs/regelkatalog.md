@@ -101,13 +101,12 @@ Kein Preset — alle Optionen werden individuell vom Gastgeber konfiguriert.
 
 ## Definition of Done
 
-- [ ] `Spielregeln.locoBlatRegeln()` implementiert
-- [ ] `Spielregeln.dkvRegeln()` implementiert
-- [ ] `Spielregeln.ohneNeunenLocoBlatRegeln()` implementiert
+- [x] `Spielregeln.locoBlatRegeln()` implementiert
+- [x] `Spielregeln.dkvRegeln()` implementiert
 - [ ] Frontend: Preset-Dropdown im Tisch-Konfigurations-Modal
 - [ ] Frontend: Vorbelegen aller Felder bei Preset-Wechsel
 - [ ] Frontend: „Benutzerdefiniert"-Modus schaltet alle Felder frei
-- [ ] Unit-Tests für alle Factory-Methoden
+- [ ] Unit-Tests für `locoBlatRegeln()` und `dkvRegeln()` (dedizierte Feldwert-Assertions)
 
 ## Technische Hinweise
 

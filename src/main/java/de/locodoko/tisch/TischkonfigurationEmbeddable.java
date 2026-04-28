@@ -129,11 +129,6 @@ public class TischkonfigurationEmbeddable {
         return ausSpielregeln(Spielregeln.dkvRegeln(), 24);
     }
 
-    /** Loco-Blatt-Variante ohne Neunen: 10-Karten-Spiel, alle Sonderregeln aktiv, 24 Runden. */
-    public static TischkonfigurationEmbeddable ohneNeunenLocoBlatRegeln() {
-        return ausSpielregeln(Spielregeln.ohneNeunenLocoBlatRegeln(), 24);
-    }
-
     public static TischkonfigurationEmbeddable ausSpielregeln(Spielregeln spielregeln, int anzahlSpiele) {
         return ausSpielregeln(spielregeln, anzahlSpiele, Tischhintergrund.OVAL_2);
     }

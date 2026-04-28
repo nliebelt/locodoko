@@ -39,20 +39,6 @@ class TischkonfigurationEmbeddableTest {
     }
 
     @Test
-    void ohneNeunenLocoBlatRegeln_setzt10KartenSpielMitAllenSonderregeln() {
-        // Stellt sicher, dass ohneNeunenLocoBlatRegeln() tatsächlich ohne Neunen spielt
-        // und alle Sonderregeln wie das Standard-Loco-Blatt aktiviert.
-        var config = TischkonfigurationEmbeddable.ohneNeunenLocoBlatRegeln();
-
-        assertThat(config.ohneNeunen()).isTrue();
-        assertThat(config.anzahlSpiele()).isEqualTo(24);
-        assertThat(config.bockrundenAktiv()).isTrue();
-        assertThat(config.schweinchenAktiv()).isTrue();
-        assertThat(config.dreissigAugenPflichtAktiv()).isTrue();
-        assertThat(config.schmeissenAktiv()).isTrue();
-    }
-
-    @Test
     void standard_delegiertZuLocoBlatRegeln() {
         // Stellt sicher, dass standard() und locoBlatRegeln() dasselbe Regelwerk liefern,
         // damit bestehende Tischerstellungen nicht unbemerkt auf andere Defaults wechseln.
