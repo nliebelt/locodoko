@@ -17,6 +17,8 @@ public record TischErstellenAnfrage(
     String name,
     @Valid TischKonfigurationDto konfiguration,
     /** Wenn true, wird der Tisch als PRIVAT erstellt (nur via Einladungslink betretbar). */
-    Boolean privat
+    Boolean privat,
+    /** Optionaler Name eines Presets. Wenn angegeben, wird die manuelle 'konfiguration' ignoriert. */
+    String presetName
 ) {
 }

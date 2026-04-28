@@ -59,6 +59,14 @@ public class TischController {
         return tischVerwaltungsService.listeOffeneTische();
     }
 
+    @Operation(summary = "Verfuegbare Regel-Presets abrufen", description = "Gibt eine Liste aller vorkonfigurierten Regelwerke (z.B. Loco-Blatt, DKV) zurueck.")
+    @ApiResponse(responseCode = "200", description = "Liste der Regel-Presets")
+    @GetMapping("/presets")
+    public List<TischPresetAntwort> gibPresets() {
+        LOGGER.info("Regel-Presets abgefragt");
+        return tischVerwaltungsService.gibPresets();
+    }
+
     @Operation(summary = "Neuen Tisch erstellen", description = "Erstellt einen neuen Tisch mit dem angegebenen Namen und der Konfiguration. Der anfragende Spieler wird automatisch Ersteller und Teilnehmer.")
     @ApiResponses({
         @ApiResponse(responseCode = "201", description = "Tisch erfolgreich erstellt"),

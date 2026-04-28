@@ -263,6 +263,29 @@ export class AppStore {
     });
   }
 
+  /** Lädt alle verfügbaren Regel-Presets. */
+  async ladePresets(): Promise<TischPresetAntwort[]> {
+    return this.api.gibPresets();
+  }
+
+  /**
+   * Erstellt einen neuen Tisch basierend auf einem Preset.
+   * @param name Name des Tisches.
+   * @param presetName Technischer Name des Presets.
+   * @param privat Wenn true, wird der Tisch privat erstellt.
+   */
+  async erstelleTischMitPreset(name: string, presetName: string, privat?: boolean): Promise<void> {
+    const tischName = name.trim();
+    if (!tischName) {
+      this.patch({ meldung: { typ: 'fehler', text: 'Tischname leer.', fehlerCode: 'ANFRAGE_UNGUELTIG' } });
+      return;
+    }
+    await this.fuehreMitStatus(async () => {
+      const tisch = await this.api.erstelleTisch(tischName, undefined, privat, presetName);
+      this.oeffneTisch(tisch);
+    });
+  }
+
   /**
    * Erstellt einen neuen Tisch mit Standardkonfiguration.
    * @param name Tischname.

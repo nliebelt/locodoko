@@ -61,9 +61,16 @@ public class TischVerwaltungsService {
     public TischAntwort erstelleTisch(SpielerEntity spieler, TischErstellenAnfrage anfrage) {
         SpielerEntity verwalteterSpieler = ladeSpieler(SpielerId.von(spieler.id()));
         pruefeDassSpielerAnKeinemTischSitzt(verwalteterSpieler);
-        TischkonfigurationEmbeddable konfiguration = anfrage.konfiguration() == null
-            ? TischkonfigurationEmbeddable.standard()
-            : anfrage.konfiguration().alsEmbeddable();
+
+        TischkonfigurationEmbeddable konfiguration;
+        if (anfrage.presetName() != null) {
+            konfiguration = mapPresetToKonfiguration(anfrage.presetName());
+        } else {
+            konfiguration = anfrage.konfiguration() == null
+                ? TischkonfigurationEmbeddable.standard()
+                : anfrage.konfiguration().alsEmbeddable();
+        }
+
         Zugangsmodus zugangsmodus = Boolean.TRUE.equals(anfrage.privat())
             ? Zugangsmodus.PRIVAT
             : Zugangsmodus.OFFEN;
@@ -76,6 +83,34 @@ public class TischVerwaltungsService {
             TischEreignisAntwort.aktualisiert(TischEreignisTyp.TISCH_ERSTELLT, antwort)
         );
         return antwort;
+    }
+
+    private TischkonfigurationEmbeddable mapPresetToKonfiguration(String presetName) {
+        return switch (presetName) {
+            case "LOCO_BLATT" -> TischkonfigurationEmbeddable.locoBlatRegeln();
+            case "DKV_TURNIER" -> TischkonfigurationEmbeddable.dkvRegeln();
+            default -> throw new SpielverwaltungKonfliktException(
+                "UNGUELTIGES_PRESET",
+                "Das gewaehlte Regel-Preset '" + presetName + "' existiert nicht."
+            );
+        };
+    }
+
+    public List<TischPresetAntwort> gibPresets() {
+        return List.of(
+            new TischPresetAntwort(
+                "LOCO_BLATT",
+                "Loco-Blatt (Hausregeln)",
+                "Alle Sonderregeln aktiv, ohne Neunen (40 Karten). Ideal fuer schnelle, dynamische Runden.",
+                TischKonfigurationDto.aus(TischkonfigurationEmbeddable.locoBlatRegeln())
+            ),
+            new TischPresetAntwort(
+                "DKV_TURNIER",
+                "DKV-Turnier",
+                "Offizielle Turnierregeln des Deutschen Doppelkopf-Verbandes. Ohne Sonderpunkte, mit Neunen (48 Karten).",
+                TischKonfigurationDto.aus(TischkonfigurationEmbeddable.dkvRegeln())
+            )
+        );
     }
 
     @Transactional

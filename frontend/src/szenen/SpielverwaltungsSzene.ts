@@ -1,8 +1,9 @@
 import Phaser from 'phaser';
 import { TEXTUR_FILZ } from '../assets/AssetLoader';
 import { appStore } from '../anwendung';
-import type { AppZustand } from '../store/AppStore';
+import { AppStore, type AppZustand } from '../store/AppStore';
 import { PhaserButton } from './PhaserButton';
+import type { TischPresetAntwort } from '../generated/api-types';
 
 /**
  * Spielverwaltungs-Szene (Start-Screen).
@@ -99,14 +100,13 @@ export class SpielverwaltungsSzene extends Phaser.Scene {
     this.uiElemente.push(quickGameBtn);
     currentY += spacing;
 
-    // 3. Neuen Tisch (Platzhalter für echtes Modal)
+    // 3. Neuen Tisch
     const erstelleTischBtn = new PhaserButton(this, {
       x: 640, y: currentY,
       text: '+ Neuen Tisch erstellen',
       typ: 'secondary',
       callback: () => {
-         // TODO: Phaser Modal
-         console.log('Tisch erstellen geklickt');
+        this.zeigeErstelleTischModal();
       }
     });
     this.uiElemente.push(erstelleTischBtn);
@@ -123,6 +123,77 @@ export class SpielverwaltungsSzene extends Phaser.Scene {
       }
     });
     this.uiElemente.push(logoutBtn);
+  }
+
+  private zeigeErstelleTischModal(): void {
+    const appStore = AppStore.instanz();
+    const existing = document.getElementById('erstelle-tisch-modal');
+    if (existing) existing.remove();
+
+    const modal = document.createElement('div');
+    modal.id = 'erstelle-tisch-modal';
+    modal.className = 'modal-backdrop';
+    modal.innerHTML = `
+      <div class="modal-content">
+        <h2>Neuen Tisch erstellen</h2>
+        <div class="form-group">
+          <label for="tisch-name">Name des Tisches</label>
+          <input type="text" id="tisch-name" placeholder="z.B. Gemuetliche Runde" maxlength="100">
+        </div>
+        <div class="form-group">
+          <label for="tisch-preset">Regel-Preset</label>
+          <select id="tisch-preset">
+            <option value="LADEN" disabled selected>Presets werden geladen...</option>
+          </select>
+          <p id="preset-beschreibung" class="hint-text"></p>
+        </div>
+        <div class="form-group checkbox-group">
+          <input type="checkbox" id="tisch-privat">
+          <label for="tisch-privat">Privater Tisch (nur via Link)</label>
+        </div>
+        <div class="modal-actions">
+          <button id="btn-abbrechen" class="btn-secondary">Abbrechen</button>
+          <button id="btn-erstellen" class="btn-primary" disabled>Erstellen</button>
+        </div>
+      </div>
+    `;
+    document.body.appendChild(modal);
+
+    const nameInput = modal.querySelector('#tisch-name') as HTMLInputElement;
+    const presetSelect = modal.querySelector('#tisch-preset') as HTMLSelectElement;
+    const descText = modal.querySelector('#preset-beschreibung') as HTMLParagraphElement;
+    const createBtn = modal.querySelector('#btn-erstellen') as HTMLButtonElement;
+    const cancelBtn = modal.querySelector('#btn-abbrechen') as HTMLButtonElement;
+    const privateCheck = modal.querySelector('#tisch-privat') as HTMLInputElement;
+
+    let presets: TischPresetAntwort[] = [];
+
+    appStore.ladePresets().then(p => {
+      presets = p;
+      presetSelect.innerHTML = p.map(preset => `
+        <option value="${preset.name}">${preset.label}</option>
+      `).join('');
+      if (p.length > 0) {
+        presetSelect.value = p[0].name || '';
+        descText.textContent = p[0].beschreibung || '';
+        createBtn.disabled = false;
+      }
+    }).catch(() => {
+      presetSelect.innerHTML = '<option value="">Fehler beim Laden</option>';
+    });
+
+    presetSelect.addEventListener('change', () => {
+      const selected = presets.find(p => p.name === presetSelect.value);
+      descText.textContent = selected?.beschreibung || '';
+    });
+
+    cancelBtn.onclick = () => modal.remove();
+    createBtn.onclick = () => {
+      const name = nameInput.value.trim();
+      if (!name) return;
+      void appStore.erstelleTischMitPreset(name, presetSelect.value, privateCheck.checked)
+        .then(() => modal.remove());
+    };
   }
 
   shutdown(): void {

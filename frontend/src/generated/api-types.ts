@@ -104,6 +104,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/tische/presets": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Verfuegbare Regel-Presets abrufen
+         * @description Gibt eine Liste aller vorkonfigurierten Regelwerke (z.B. Loco-Blatt, DKV) zurueck.
+         */
+        get: operations["gibPresets"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/tische/{id}/verlassen": {
         parameters: {
             query?: never;
@@ -630,6 +650,7 @@ export interface components {
             name?: string;
             konfiguration?: components["schemas"]["TischKonfigurationDto"];
             privat?: boolean;
+            presetName?: string;
         };
         /** @description Kurzdarstellung eines Spielers am Tisch. */
         SpielerAmTischAntwort: {
@@ -723,6 +744,25 @@ export interface components {
              * @example GAST
              */
             authentifizierungsMethode?: string;
+        };
+        /** @description Informationen ueber ein verfuegbares Regel-Preset */
+        TischPresetAntwort: {
+            /**
+             * @description Technischer Name des Presets (zur Verwendung beim Erstellen)
+             * @example LOCO_BLATT
+             */
+            name?: string;
+            /**
+             * @description Anzeigename fuer die UI
+             * @example Loco-Blatt (Hausregeln)
+             */
+            label?: string;
+            /**
+             * @description Kurze Beschreibung der Regeln
+             * @example Alle Sonderregeln aktiv, ohne Neunen.
+             */
+            beschreibung?: string;
+            konfiguration?: components["schemas"]["TischKonfigurationDto"];
         };
         LoginAnfrage: {
             benutzername?: string;
@@ -1512,6 +1552,26 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["TischListenEintragAntwort"][];
+                };
+            };
+        };
+    };
+    gibPresets: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Liste der Regel-Presets */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["TischPresetAntwort"][];
                 };
             };
         };

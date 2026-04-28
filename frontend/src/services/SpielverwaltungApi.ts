@@ -143,10 +143,15 @@ export class SpielverwaltungApi {
   async ladeTisch(tischId: Uuid): Promise<TischAntwort> {
     return holeJson<TischAntwort>(`/api/tische/${tischId}`);
   }
-  async erstelleTisch(name: string, konfiguration?: Partial<TischKonfigurationDto>, privat?: boolean): Promise<TischAntwort> {
+
+  async gibPresets(): Promise<TischPresetAntwort[]> {
+    return holeJson<TischPresetAntwort[]>('/api/tische/presets');
+  }
+
+  async erstelleTisch(name: string, konfiguration?: Partial<TischKonfigurationDto>, privat?: boolean, presetName?: string): Promise<TischAntwort> {
     return holeJson<TischAntwort>('/api/tische', {
       method: 'POST',
-      body: JSON.stringify({ name, konfiguration, privat: privat ?? false })
+      body: JSON.stringify({ name, konfiguration, privat: privat ?? false, presetName })
     });
   }
 

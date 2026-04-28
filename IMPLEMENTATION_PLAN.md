@@ -1,12 +1,12 @@
 # IMPLEMENTATION_PLAN — Locodoko Doppelkopf
 
 ## Notiz
-Stand: 2026-04-28 (Plan-Run #85)
+Stand: 2026-04-28 (Plan-Run #86)
 
-**Was wurde implementiert (Plan-Run #85):**
-- FEAT-EINSTELLUNGS-MODAL: `renderEinstellungsModal()` in `TischSzene.ts` war bereits vollständig implementiert (Tischhintergrund, KI-Schwierigkeit, Animationsgeschwindigkeit, Zur Lobby, Schließen). Animationsgeschwindigkeit wird über `TischUIManager.zyklusGeschwindigkeit()` in `localStorage` persistiert. 6 neue Tests: S-Taste öffnet und rendert Inhalt, Escape schließt, Backdrop-Klick schließt, KI-Button deaktiviert für Nicht-Ersteller, KI-Button aktiv für Ersteller im WARTEND-Status, Animationsgeschwindigkeit zykliert und speichert localStorage. 77 Frontend-Tests grün.
+**Was wurde implementiert (Plan-Run #86):**
+- FEAT-PRESET-API: Backend-Endpoint `GET /api/tische/presets` liefert verfügbare Regel-Presets (Loco-Blatt, DKV-Turnier). `TischErstellenAnfrage` um `presetName` erweitert; `TischVerwaltungsService.erstelleTisch` nutzt diesen zur Konfiguration. Frontend: `SpielverwaltungApi` und `AppStore` um Preset-Unterstützung ergänzt. `SpielverwaltungsSzene` zeigt nun ein DOM-basiertes Modal zur Tisch-Erstellung mit Preset-Auswahl und Beschreibung. Alle 299 Backend- und 77 Frontend-Tests grün.
 
-**Nächste Priorität:** `BUG-STICH-UMDREHEN` (alle Stiche umdrehen, nicht nur eigenen) oder `FEAT-LOBBY-POLLING` (Liste offener Tische im Startscreen) oder `FEAT-PRESET-API` (REST-Endpoint für Presets).
+**Nächste Priorität:** `BUG-STICH-UMDREHEN` (nur letzten Stich umdrehen erlauben) oder `FEAT-LOBBY-POLLING` (Liste offener Tische reaktiv machen).
 
 **Was wurde implementiert (Plan-Run #81):**
 - TASK-PRESET-UNIT-TESTS: `SpielregelnTest` um zwei vollständige Feldprüfungs-Tests erweitert: `locoBlatRegelnHatKorrekteWerteFuerAlleFelder()` und `dkvRegelnHatKorrekteWerteFuerAlleFelder()`. Jeder Test prüft alle 21 Felder des `Spielregeln`-Records explizit — sichert ab, dass ein Refactoring keine Preset-Werte unbemerkt verändert. 295 Backend-Tests grün (SpielregelnTest: 3→5 Tests).
@@ -179,12 +179,12 @@ Analyse (Plan-Run #83): Feature war bereits vollständig in `TischSzene.renderAn
 - [x] Backend: Bei Schmeißen: Karten neu mischen und verteilen (neue VorbehaltRunde).
 - [x] Validation: Unit-Tests vorhanden.
 
-### FEAT-PRESET-API (Backend) ← NEU Plan-Run #73
+### FEAT-PRESET-API (Backend) ← abgeschlossen Plan-Run #86
 **Problem:** Verfügbare Regel-Presets (locoBlatRegeln, dkvRegeln, ohneNeunenLocoBlatRegeln) existieren nur als Backend-Factory-Methoden. Kein REST-Endpoint zur Auslesung, daher kann das Frontend kein Preset-Dropdown im Tisch-Erstellungs-Dialog anbieten.
-- [ ] Backend: `GET /api/tische/presets` — gibt Liste verfügbarer Preset-Namen mit Beschreibung zurück.
-- [ ] Backend: `POST /api/tische` — akzeptiert optional `presetName` statt manueller Konfiguration.
-- [ ] Frontend (optional): Preset-Dropdown im Tisch-Erstellungs-Dialog.
-- [ ] Validation: `mvn test`.
+- [x] Backend: `GET /api/tische/presets` — gibt Liste verfügbarer Preset-Namen mit Beschreibung zurück.
+- [x] Backend: `POST /api/tische` — akzeptiert optional `presetName` statt manueller Konfiguration.
+- [x] Frontend: Preset-Dropdown im Tisch-Erstellungs-Dialog (DOM-Modal).
+- [x] Validation: `mvn test` + `npm test`.
 
 ### TASK-PRESET-UNIT-TESTS (Backend) ← NEU Plan-Run #79, abgeschlossen Plan-Run #81
 **Problem:** `specs/regelkatalog.md` fordert dedizierte Unit-Tests für `locoBlatRegeln()` und `dkvRegeln()`, die explizit alle Feldwerte prüfen. Bisher nur indirekte Nutzung in SpielTest.
