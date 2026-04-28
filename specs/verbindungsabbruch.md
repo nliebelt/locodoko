@@ -142,7 +142,7 @@ Nach dem Ende einer Partie (alle Spiele gespielt) startet der Tisch automatisch 
 - [x] Nach Partie-Ende startet automatisch neue Partie mit Countdown
 - [x] Alle bestehenden Disconnect/Reconnect-Tests bleiben grün
 - [x] Neue Tests für Session-Recovery, Tisch-Verlassen und Neustart
-- [ ] KI-Übernahme-Timeout deaktiviert für Einzelspieler-Tische (4.18)
+- [x] KI-Übernahme-Timeout deaktiviert für Einzelspieler-Tische (4.18)
 - [ ] Laufende eigene Tische in Spielverwaltungs-Szene mit „Zurückkehren"-Button (4.18)
 
 ---

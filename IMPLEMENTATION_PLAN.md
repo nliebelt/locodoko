@@ -1,7 +1,12 @@
 # IMPLEMENTATION_PLAN — Locodoko Doppelkopf
 
 ## Notiz
-Stand: 2026-04-28 (Plan-Run #76)
+Stand: 2026-04-28 (Plan-Run #77)
+
+**Was wurde implementiert (Plan-Run #77):**
+- SPEC-Updates: `authentifizierung.md` (alle DoD [x]), `spieler-profil.md` (Status → Abgeschlossen, alle DoD [x]), `verbindungsabbruch.md` (KI-Timeout-Einzelspieler [x]), `tischkonfiguration.md` (neue Optionen [x]). `schweinchen.md` war bereits vollständig aktuell.
+
+**Nächste Priorität:** FEAT-BOCK-CONFIG (Backend: `TischKonfiguration` um `herzDurchgegangenNurHoch: boolean` erweitern, Bockrunden-Trigger abhängig davon).
 
 **Was wurde implementiert (Plan-Run #76):**
 - FEAT-SONDERPUNKT-DOMAIN-EVENTS: `FuchsGefangen`, `KarlchenGespielt`, `DoppelkopfGestochen` als Spring ApplicationEvents in `partie.ereignisse.*` eingeführt. Werden nach Stich-Abschluss in `SpielAktionsService` und `KiOrchestrierungService` publiziert. `default`-Case aus versiegelten Interface-Switches entfernt (typsichere Exhaustivitäts-Prüfung). Integrationstest `SonderpunktDomainEreignisTest` mit `@RecordApplicationEvents` — verifiziert FuchsGefangen bei Mensch-Fuchs-Fang. 292 Tests grün.
@@ -170,15 +175,15 @@ Entscheidung: Spec (`architektur-domain-events.md`) fordert Domain Events für s
 **Problem (neu — Plan-Run #65):** `authentifizierung.md` spricht von Username/Passwort parallel zu OAuth2, aber `formLogin` war im Code fraglich.
 **Plan-Run #73:** Passwort-Auth mit Rate-Limiting (10 Versuche/Min) ist bereits aktiv implementiert. Kein Code-Task nötig.
 - [x] Entscheidung: Passwort-Auth (`formLogin` + `LocodokoBenutzerdienst`) ist aktiv. Rate-Limiting bereits vorhanden.
-- [ ] Spec: `specs/authentifizierung.md` — DoD-Status aktualisieren (→ SPEC-AUTH).
+- [x] Spec: `specs/authentifizierung.md` — DoD-Status aktualisieren (→ SPEC-AUTH).
 
 ---
 
 ## Spec-Updates
 - [x] SPEC-SOLO: Text an 25% Anpassung anpassen.
 - [x] SPEC-LOCO: Im Code dokumentiert.
-- [ ] SPEC-SCHWEINCHEN: `specs/schweinchen.md` — bekannten Bug-Eintrag entfernen (BUG-SCHWEINCHEN ist [x]); Gültigkeit für Soli (Solo-Trumpf = AN, andere Soli = AUS) dokumentieren. ← Jetzt fällig.
-- [ ] SPEC-AUTH: `specs/authentifizierung.md` — DoD-Status aktualisieren: Passwort-Auth + OAuth2 + Rate-Limiting sind implementiert (alle [ ] → [x]).
-- [ ] SPEC-SPIELER-PROFIL: `specs/spieler-profil.md` — Status von "Zu implementieren" auf "Abgeschlossen" setzen; DoD-Checkboxen [ ] → [x] (anzeigeName, avatarFarbe, SpielerStatistik, PartieErgebnis vollständig implementiert). ← NEU Plan-Run #73
-- [ ] SPEC-VERBINDUNGSABBRUCH: `specs/verbindungsabbruch.md` — DoD-Punkt "KI-Übernahme-Timeout deaktiviert für Einzelspieler" als [x] markieren (Code prüft bereits `humanPlayerCount == 1`). ← NEU Plan-Run #73
-- [ ] SPEC-TISCHKONFIGURATION: `specs/tischkonfiguration.md` — DoD-Punkt "Neue Optionen ergänzt: bockrundenAktiv..." als [x] markieren (alle Props im Code vorhanden). ← NEU Plan-Run #73
+- [x] SPEC-SCHWEINCHEN: `specs/schweinchen.md` — war bereits vollständig aktuell (kein Bug-Eintrag, Soli-Gültigkeit bereits dokumentiert).
+- [x] SPEC-AUTH: `specs/authentifizierung.md` — DoD-Status aktualisiert: Passwort-Auth + OAuth2 + Rate-Limiting alle [x].
+- [x] SPEC-SPIELER-PROFIL: `specs/spieler-profil.md` — Status → "Abgeschlossen", alle DoD-Checkboxen [x].
+- [x] SPEC-VERBINDUNGSABBRUCH: `specs/verbindungsabbruch.md` — KI-Übernahme-Timeout Einzelspieler als [x] markiert.
+- [x] SPEC-TISCHKONFIGURATION: `specs/tischkonfiguration.md` — "Neue Optionen ergänzt: bockrundenAktiv..." als [x] markiert.

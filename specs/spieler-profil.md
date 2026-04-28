@@ -2,7 +2,7 @@
 
 | Feld           | Wert                                                        |
 |----------------|-------------------------------------------------------------|
-| Status         | Zu implementieren                                           |
+| Status         | Abgeschlossen                                               |
 | Priorität      | Mittel — nach Authentifizierung                             |
 | Abhängigkeiten | authentifizierung.md, datenbankmodell.md                    |
 
@@ -68,16 +68,16 @@ Kein Upload, kein CMS — alles serverside einfach und wartbar.
 
 ## Definition of Done
 
-- [ ] `Spieler`-Entität: `anzeigeName`, `avatarFarbe` Felder + Liquibase-Migration
-- [ ] `SpielerStatistik`-Tabelle in DB (1:1 mit Spieler)
-- [ ] `PartieErgebnis`-Tabelle (N:1 mit Spieler, max. 20 Einträge rotiert)
-- [ ] Statistik-Update nach `SpielBeendet`-Event (via `@ApplicationModuleListener`)
-- [ ] `GET /api/spieler/{id}/profil` Endpoint
-- [ ] `Tisch`-Entität: `zugangsmodus` + `einladungsCode` + Liquibase-Migration
-- [ ] `GET /join/{code}` → Redirect + Auto-Beitreten
-- [ ] Gastgeber-Kicken Endpoint
-- [ ] Frontend: Avatar + Anzeigename im HUD und Nameplate
-- [ ] Frontend: Profil-Ansicht (Statistiken + Verlauf)
+- [x] `Spieler`-Entität: `anzeigeName`, `avatarFarbe` Felder + Liquibase-Migration
+- [x] `SpielerStatistik`-Tabelle in DB (1:1 mit Spieler)
+- [x] `PartieErgebnis`-Tabelle (N:1 mit Spieler, max. 20 Einträge rotiert)
+- [x] Statistik-Update nach `SpielBeendet`-Event (via `@ApplicationModuleListener`)
+- [x] `GET /api/spieler/{id}/profil` Endpoint
+- [x] `Tisch`-Entität: `zugangsmodus` + `einladungsCode` + Liquibase-Migration
+- [x] `GET /join/{code}` → Redirect + Auto-Beitreten
+- [x] Gastgeber-Kicken Endpoint
+- [x] Frontend: Avatar + Anzeigename im HUD und Nameplate
+- [x] Frontend: Profil-Ansicht (Statistiken + Verlauf)
 
 ## Technische Hinweise
 

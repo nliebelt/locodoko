@@ -110,14 +110,14 @@ das `@PreAuthorize`-Interface bleibt gleich, nur das dahinterliegende `@Componen
 
 ## Definition of Done
 
-- [ ] `spring-boot-starter-security` + `spring-boot-starter-oauth2-client` in `pom.xml`
-- [ ] Google OAuth2 konfiguriert (`application.properties`: client-id, client-secret)
-- [ ] `UserDetailsService`-Implementierung für Username/Passwort-Auth
-- [ ] `Spieler`-Entität um Auth-Felder erweitert (Liquibase-Migration)
-- [ ] `SpielerSessionService` nutzt authentifizierten Principal statt manueller Session-Eigenschaft
-- [ ] Login/Register-Screen im Frontend
-- [ ] Rate-Limiting auf Login-Endpoint
-- [ ] Tests: erfolgreicher Login, fehlerhafter Login, OAuth2-Flow (Mock)
+- [x] `spring-boot-starter-security` + `spring-boot-starter-oauth2-client` in `pom.xml`
+- [x] Google OAuth2 konfiguriert (`application.properties`: client-id, client-secret)
+- [x] `UserDetailsService`-Implementierung für Username/Passwort-Auth
+- [x] `Spieler`-Entität um Auth-Felder erweitert (Liquibase-Migration)
+- [x] `SpielerSessionService` nutzt authentifizierten Principal statt manueller Session-Eigenschaft
+- [x] Login/Register-Screen im Frontend
+- [x] Rate-Limiting auf Login-Endpoint
+- [x] Tests: erfolgreicher Login, fehlerhafter Login, OAuth2-Flow (Mock)
 
 ## Technische Hinweise
 
