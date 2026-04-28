@@ -151,8 +151,7 @@ public class KiOrchestrierungService {
                 try {
 
                     KiStrategie strategie = kiStrategieFactory.erzeuge(tisch.konfiguration().kiSchwierigkeit());
-                    boolean schweinchenVorHER = laufendesSpiel.schweinchenGemeldetVon().isPresent();
-                    
+
                     AktionsErgebnis aktionsErgebnis = fuehreKiAktionAus(laufendesSpiel, erwarteterSpieler, strategie);
                     laufendesSpiel.uebernehmeDomainStand(aktionsErgebnis.naechsterStand());
                     hatKiGespielt = true;
@@ -167,12 +166,7 @@ public class KiOrchestrierungService {
                         break;
                     }
 
-                    // Schweinchen-Broadcast bei KI-Zug
-                    if (!schweinchenVorHER && laufendesSpiel.schweinchenGemeldetVon().isPresent()) {
-                        veroeffentlicheSchweinchenEreignis(tisch);
-                    }
-
-                    // Domain-Ereignisse broadcasten (Stichabschluss, Sonderpunkte)
+                    // Domain-Ereignisse broadcasten (Stichabschluss, Sonderpunkte, Schweinchen)
                     if (hatMenschlichenSpieler) {
                         veroeffentlicheSpielKarteEreignisse(tisch, aktionsErgebnis.ereignisse());
                     }
@@ -287,7 +281,7 @@ public class KiOrchestrierungService {
             switch (ereignis) {
                 case SpielEreignis.KarteGespielt kg -> sendeKarteGespielt(tisch, kg.position(), kg.karte().karteId());
                 case SpielEreignis.StichAbgeschlossenEreignis sa -> sendeStichAbgeschlossen(tisch, sa.sonderpunkte());
-                case SpielEreignis.SchweinchenGemeldet _ -> veroeffentlicheSchweinchenEreignis(tisch);
+                case SpielEreignis.SchweinchenGemeldet sg -> veroeffentlicheSchweinchenEreignis(tisch, sg.spielerPosition());
                 case SpielEreignis.HochzeitPartnerGefunden hpg -> veroeffentlicheHochzeitEreignis(tisch, hpg.partner());
                 default -> LOGGER.trace("Ignoriere Spielereignis: {}", ereignis);
             }
@@ -319,7 +313,7 @@ public class KiOrchestrierungService {
             });
     }
 
-    private void veroeffentlicheSchweinchenEreignis(TischEntity tisch) {
+    private void veroeffentlicheSchweinchenEreignis(TischEntity tisch, SpielerPosition spielerPosition) {
         if (tisch.partie() == null) {
             return;
         }
@@ -328,7 +322,7 @@ public class KiOrchestrierungService {
             .forEach(s -> tischEchtzeitService.planeAnBenutzer(
                 s.sessionId(),
                 "/queue/partie/" + tisch.partie().id(),
-                PartieEreignisAntwort.schweinchenGemeldet(PartieStandAntwort.aus(tisch, s.id()))
+                PartieEreignisAntwort.schweinchenGemeldet(PartieStandAntwort.aus(tisch, s.id()), spielerPosition)
             ));
     }
 

@@ -180,4 +180,22 @@ describe('TischSzene', () => {
     document.dispatchEvent(new KeyboardEvent('keydown', { key: 'n', bubbles: true }));
     expect(appStoreHarness.store.beantworteArmut).toHaveBeenCalledWith(false, []);
   });
+
+  it('zeigt Schweinchen-Banner mit korrektem Spielernamen aus absolutePosition', async () => {
+    // Wichtig: e.spielerPosition ist absolute Backend-Position (WEST = Ben).
+    // Ohne absolutePosition-Abgleich zeigt der Banner immer "Spieler: Schweinchen!".
+    const { s } = baueSzene(baueZustand());
+    const bannerSpy = vi.spyOn(s as any, 'zeigeSchweinchenBanner').mockResolvedValue(undefined);
+
+    appStoreHarness.sendeEvent({
+      ereignisTyp: 'SCHWEINCHEN_GEMELDET',
+      spielerPosition: 'WEST',
+      partieStand: { ...bauePartieStand(baueLaufendesSpiel()), version: 2 },
+      version: 2,
+      timestamp: new Date().toISOString()
+    });
+    await vi.runAllTimersAsync();
+
+    expect(bannerSpy).toHaveBeenCalledWith('Ben: Schweinchen!');
+  });
 });

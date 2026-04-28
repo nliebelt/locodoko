@@ -246,7 +246,7 @@ export interface StichAbgeschlossenEreignis extends BasisPartieEreignis {
 }
 export interface SpielBeendetEreignis extends BasisPartieEreignis { ereignisTyp: 'SPIEL_BEENDET'; }
 export interface AnsageErfolgtEreignis extends BasisPartieEreignis { ereignisTyp: 'ANSAGE_ERFOLGT'; }
-export interface SchweinchenGemeldetEreignis extends BasisPartieEreignis { ereignisTyp: 'SCHWEINCHEN_GEMELDET'; }
+export interface SchweinchenGemeldetEreignis extends BasisPartieEreignis { ereignisTyp: 'SCHWEINCHEN_GEMELDET'; spielerPosition: SpielerPosition; }
 export interface HochzeitPartnerGefundenEreignis extends BasisPartieEreignis { ereignisTyp: 'HOCHZEIT_PARTNER_GEFUNDEN'; partnerPosition: SpielerPosition; }
 export interface SpielGestartetEreignis extends BasisPartieEreignis { ereignisTyp: 'SPIEL_GESTARTET'; }
 

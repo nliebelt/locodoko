@@ -72,7 +72,14 @@ public sealed interface PartieEreignisAntwort {
     record AnsageErfolgt(Instant timestamp, long version, PartieEreignisTyp ereignisTyp, PartieStandAntwort partieStand) implements PartieEreignisAntwort {}
 
     @Schema(description = "Ein Spieler hat Schweinchen gemeldet.")
-    record SchweinchenGemeldet(Instant timestamp, long version, PartieEreignisTyp ereignisTyp, PartieStandAntwort partieStand) implements PartieEreignisAntwort {}
+    record SchweinchenGemeldet(
+        Instant timestamp,
+        long version,
+        PartieEreignisTyp ereignisTyp,
+        PartieStandAntwort partieStand,
+        @Schema(description = "Absolute Position des Spielers, der Schweinchen gemeldet hat.")
+        SpielerPosition spielerPosition
+    ) implements PartieEreignisAntwort {}
 
     @Schema(description = "Der Hochzeit-Partner wurde gefunden.")
     record HochzeitPartnerGefunden(
@@ -119,8 +126,8 @@ public sealed interface PartieEreignisAntwort {
         return new AnsageErfolgt(Instant.now(), stand.version(), PartieEreignisTyp.ANSAGE_ERFOLGT, stand);
     }
 
-    static PartieEreignisAntwort schweinchenGemeldet(PartieStandAntwort stand) {
-        return new SchweinchenGemeldet(Instant.now(), stand.version(), PartieEreignisTyp.SCHWEINCHEN_GEMELDET, stand);
+    static PartieEreignisAntwort schweinchenGemeldet(PartieStandAntwort stand, SpielerPosition spielerPosition) {
+        return new SchweinchenGemeldet(Instant.now(), stand.version(), PartieEreignisTyp.SCHWEINCHEN_GEMELDET, stand, spielerPosition);
     }
 
     static PartieEreignisAntwort hochzeitPartnerGefunden(PartieStandAntwort stand, SpielerPosition partnerPosition) {

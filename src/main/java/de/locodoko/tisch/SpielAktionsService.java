@@ -24,7 +24,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
-import java.util.Optional;
 import de.locodoko.partie.Spielphase;
 import org.slf4j.MDC;
 
@@ -244,23 +243,17 @@ public class SpielAktionsService {
             ));
     }
 
-    private void veroeffentlicheSchweinchenEreignis(TischEntity tisch) {
+    private void veroeffentlicheSchweinchenEreignis(TischEntity tisch, SpielerPosition spielerPosition) {
         if (tisch.partie() == null) {
             return;
         }
-        Spiel laufendesSpiel = ladeLaufendesSpiel(tisch.partie());
-        laufendesSpiel.hydriere(tisch.konfiguration().alsSpielregeln());
-        Optional<SpielerPosition> gemeldetVon = laufendesSpiel.schweinchenGemeldetVon();
-        if (gemeldetVon.isPresent()) {
-            eventPublisher.publishEvent(new SchweinchenGemeldet(tisch.id(), gemeldetVon.get()));
-        }
-
+        eventPublisher.publishEvent(new SchweinchenGemeldet(tisch.id(), spielerPosition));
         tisch.spieler().stream()
             .filter(s -> !s.istKi() && !s.istKiUebernommen() && s.sessionId() != null)
             .forEach(s -> tischEchtzeitService.planeAnBenutzer(
                 s.sessionId(),
                 "/queue/partie/" + tisch.partie().id(),
-                PartieEreignisAntwort.schweinchenGemeldet(PartieStandAntwort.aus(tisch, s.id()))
+                PartieEreignisAntwort.schweinchenGemeldet(PartieStandAntwort.aus(tisch, s.id()), spielerPosition)
             ));
     }
 
@@ -285,7 +278,7 @@ public class SpielAktionsService {
             switch (ereignis) {
                 case SpielEreignis.KarteGespielt kg -> sendeKarteGespielt(tisch, kg.position(), kg.karte().karteId());
                 case SpielEreignis.StichAbgeschlossenEreignis sa -> sendeStichAbgeschlossen(tisch, sa.sonderpunkte());
-                case SpielEreignis.SchweinchenGemeldet _ -> veroeffentlicheSchweinchenEreignis(tisch);
+                case SpielEreignis.SchweinchenGemeldet sg -> veroeffentlicheSchweinchenEreignis(tisch, sg.spielerPosition());
                 case SpielEreignis.HochzeitPartnerGefunden hpg -> veroeffentlicheHochzeitEreignis(tisch, hpg.partner());
                 default -> LOGGER.trace("Ignoriere Spielereignis: {}", ereignis);
             }

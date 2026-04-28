@@ -433,10 +433,11 @@ export class TischSzene extends Phaser.Scene {
         }
         break;
 
-      case 'SCHWEINCHEN_GEMELDET':
-        const name = this.letztesModell?.spieler.find(s => s.position === e.spielerPosition)?.name ?? 'Spieler';
+      case 'SCHWEINCHEN_GEMELDET': {
+        const name = this.letztesModell?.spieler.find(s => s.absolutePosition === e.spielerPosition)?.name ?? 'Spieler';
         this.animationen?.reiheEin(() => this.zeigeSchweinchenBanner(`${name}: Schweinchen!`));
         break;
+      }
 
       case 'HOCHZEIT_PARTNER_GEFUNDEN': {
         const partner = this.letztesModell?.spieler.find(s => s.position === e.partnerPosition);
