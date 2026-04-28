@@ -25,6 +25,7 @@ const standardKonfiguration: TischKonfigurationDto = {
   schweinchenAktiv: false,
   dreissigAugenPflichtAktiv: false,
   schmeissenAktiv: false,
+  herzDurchgegangenNurHoch: false,
   kiSchwierigkeit: 'STANDARD' as const
 };
 

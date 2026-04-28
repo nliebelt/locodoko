@@ -41,3 +41,5 @@ databaseChangeLog:
       file: db/changelog/020-partie-version.yaml
   - include:
       file: db/changelog/021-einwurf-zaehler.yaml
+  - include:
+      file: db/changelog/022-herz-durchgegangen-nur-hoch.yaml

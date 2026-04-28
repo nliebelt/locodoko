@@ -71,6 +71,7 @@ export interface TischKonfigurationDto {
   schweinchenAktiv: boolean;
   dreissigAugenPflichtAktiv: boolean;
   schmeissenAktiv: boolean;
+  herzDurchgegangenNurHoch: boolean;
   kiSchwierigkeit: KiSchwierigkeit;
 }
 

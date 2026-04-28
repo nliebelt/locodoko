@@ -461,6 +461,8 @@ export interface components {
             dreissigAugenPflichtAktiv?: boolean;
             /** @description Schmeissen bei schlechtem Blatt erlaubt. */
             schmeissenAktiv?: boolean;
+            /** @description Bockrunde 'Herz durchgegangen' nur bei reinen Herz-As-Stichen ausloesen. */
+            herzDurchgegangenNurHoch?: boolean;
             /**
              * @description Schwierigkeitsstufe der KI-Gegner.
              * @enum {string}

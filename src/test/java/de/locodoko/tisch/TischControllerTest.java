@@ -209,6 +209,7 @@ class TischControllerTest {
             false,
             false,
             false,
+            false,
             KiSchwierigkeit.STANDARD
         );
 
@@ -248,6 +249,7 @@ class TischControllerTest {
             9,
             8,
             7,
+            false,
             false,
             false,
             false,

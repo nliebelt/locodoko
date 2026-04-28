@@ -67,6 +67,8 @@ public record TischKonfigurationDto(
     boolean dreissigAugenPflichtAktiv,
     @Schema(description = "Schmeissen bei schlechtem Blatt erlaubt.")
     boolean schmeissenAktiv,
+    @Schema(description = "Bockrunde 'Herz durchgegangen' nur bei reinen Herz-As-Stichen ausloesen.")
+    boolean herzDurchgegangenNurHoch,
     /** Schwierigkeitsstufe der KI-Gegner. Standard: STANDARD. */
     @Schema(description = "Schwierigkeitsstufe der KI-Gegner.")
     KiSchwierigkeit kiSchwierigkeit
@@ -96,6 +98,7 @@ public record TischKonfigurationDto(
             konfiguration.schweinchenAktiv(),
             konfiguration.dreissigAugenPflichtAktiv(),
             konfiguration.schmeissenAktiv(),
+            konfiguration.herzDurchgegangenNurHoch(),
             konfiguration.kiSchwierigkeit()
         );
     }
@@ -122,7 +125,8 @@ public record TischKonfigurationDto(
                 bockrundenAktiv,
                 schweinchenAktiv,
                 dreissigAugenPflichtAktiv,
-                schmeissenAktiv
+                schmeissenAktiv,
+                herzDurchgegangenNurHoch
             ),
             anzahlSpiele,
             tischhintergrund,

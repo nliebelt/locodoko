@@ -784,7 +784,15 @@ public class Spiel extends AbstraktePersistenzEntity {
 
     // -- Private Hilfsmethoden --
 
-    private boolean istHerzDurchgegangen(Stich s) { return s.istVollstaendig() && s.gespielteKarten().stream().allMatch(gk -> gk.karte().farbe() == Farbe.HERZ && !trumpfOrdnung.istTrumpf(gk.karte())); }
+    private boolean istHerzDurchgegangen(Stich s) {
+        if (!s.istVollstaendig()) return false;
+        boolean alleFehlherz = s.gespielteKarten().stream().allMatch(gk -> gk.karte().farbe() == Farbe.HERZ && !trumpfOrdnung.istTrumpf(gk.karte()));
+        if (!alleFehlherz) return false;
+        if (spielregeln.herzDurchgegangenNurHoch()) {
+            return s.gespielteKarten().stream().allMatch(gk -> gk.karte().wert() == Kartenwert.AS);
+        }
+        return true;
+    }
 
     private Set<SpielerPosition> addToSet(Set<SpielerPosition> set, SpielerPosition pos) {
         EnumSet<SpielerPosition> copy = set.isEmpty() ? EnumSet.noneOf(SpielerPosition.class) : EnumSet.copyOf(set);

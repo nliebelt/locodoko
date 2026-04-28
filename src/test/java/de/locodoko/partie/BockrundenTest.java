@@ -71,6 +71,59 @@ class BockrundenTest {
             "Ein Stich mit einer Nicht-Herz-Karte darf nicht als Herz-durchgegangen zaehlen.");
     }
 
+    @Test
+    void herzDurchgegangenNurHochAkzeptiertReineHerzAsStiche() {
+        // Wichtig: Mit NurHoch=true darf nur ein reiner Herz-As-Stich den Trigger ausloesen,
+        // nicht ein gemischter As/Koenig-Stich.
+        Spielregeln reinherzRegeln = Spielregeln.standardRegeln()
+            .mitBockrundenAktiv(true)
+            .mitHerzDurchgegangenNurHoch(true);
+        Stich reinHerzAsStich = Stich.ausPersistiertemStand(SpielerPosition.WEST, List.of(
+            new GespielteKarte(SpielerPosition.WEST,  new Karte(Farbe.HERZ, Kartenwert.AS, 1), 1),
+            new GespielteKarte(SpielerPosition.NORD,  new Karte(Farbe.HERZ, Kartenwert.AS, 2), 2),
+            new GespielteKarte(SpielerPosition.OST,   new Karte(Farbe.HERZ, Kartenwert.AS, 1), 3),
+            new GespielteKarte(SpielerPosition.SUED,  new Karte(Farbe.HERZ, Kartenwert.AS, 2), 4)
+        ));
+        Spiel spiel = spielMitAbgeschlossenenStichen(reinherzRegeln, List.of(reinHerzAsStich));
+
+        assertTrue(spiel.hatHerzDurchgegangenenStich(),
+            "NurHoch=true: Ein reiner Herz-As-Stich muss als herzDurchgegangen erkannt werden.");
+    }
+
+    @Test
+    void herzDurchgegangenNurHochIgnoriertHerzKoenig() {
+        // Wichtig: Mit NurHoch=true darf ein Stich mit Herz-Koenig den Trigger NICHT ausloesen.
+        Spielregeln nurHochRegeln = Spielregeln.standardRegeln()
+            .mitBockrundenAktiv(true)
+            .mitHerzDurchgegangenNurHoch(true);
+        Stich herzMitKoenigStich = Stich.ausPersistiertemStand(SpielerPosition.WEST, List.of(
+            new GespielteKarte(SpielerPosition.WEST,  new Karte(Farbe.HERZ, Kartenwert.AS,     1), 1),
+            new GespielteKarte(SpielerPosition.NORD,  new Karte(Farbe.HERZ, Kartenwert.KOENIG, 1), 2),
+            new GespielteKarte(SpielerPosition.OST,   new Karte(Farbe.HERZ, Kartenwert.KOENIG, 2), 3),
+            new GespielteKarte(SpielerPosition.SUED,  new Karte(Farbe.HERZ, Kartenwert.AS,     2), 4)
+        ));
+        Spiel spiel = spielMitAbgeschlossenenStichen(nurHochRegeln, List.of(herzMitKoenigStich));
+
+        assertFalse(spiel.hatHerzDurchgegangenenStich(),
+            "NurHoch=true: Ein As/Koenig-Stich darf nicht als herzDurchgegangen zaehlen.");
+    }
+
+    @Test
+    void herzDurchgegangenNurHochFalseAkzeptiertHerzKoenigStich() {
+        // Wichtig: Mit NurHoch=false (Standard) soll As/Koenig-Stich weiterhin als Trigger zaehlen.
+        Spielregeln standardHerzRegeln = Spielregeln.standardRegeln().mitBockrundenAktiv(true);
+        Stich herzMitKoenigStich = Stich.ausPersistiertemStand(SpielerPosition.WEST, List.of(
+            new GespielteKarte(SpielerPosition.WEST,  new Karte(Farbe.HERZ, Kartenwert.AS,     1), 1),
+            new GespielteKarte(SpielerPosition.NORD,  new Karte(Farbe.HERZ, Kartenwert.KOENIG, 1), 2),
+            new GespielteKarte(SpielerPosition.OST,   new Karte(Farbe.HERZ, Kartenwert.KOENIG, 2), 3),
+            new GespielteKarte(SpielerPosition.SUED,  new Karte(Farbe.HERZ, Kartenwert.AS,     2), 4)
+        ));
+        Spiel spiel = spielMitAbgeschlossenenStichen(standardHerzRegeln, List.of(herzMitKoenigStich));
+
+        assertTrue(spiel.hatHerzDurchgegangenenStich(),
+            "NurHoch=false: Ein As/Koenig-Stich muss als herzDurchgegangen zaehlen (Standardverhalten).");
+    }
+
     // --- Partie: bockrundenZaehler Startzustand ---
 
     @Test

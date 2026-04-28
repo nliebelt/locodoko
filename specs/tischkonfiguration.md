@@ -33,6 +33,7 @@ Die Tischkonfiguration definiert das Regelwerk, das an einem bestimmten Tisch gi
    | `karlchenAktiv` | boolean | true | Sonderpunkt „Karlchen" aktiv |
    | `doppelkopfAktiv` | boolean | true | Sonderpunkt „Doppelkopf" aktiv |
    | `bockrundenAktiv` | boolean | true | Bockrunden aktiv (siehe bockrunden.md) |
+   | `herzDurchgegangenNurHoch` | boolean | false | Herz-durchgegangen-Trigger nur bei reinen Herz-As-Stichen (striktere Variante) |
    | `schweinchenAktiv` | boolean | true | Schweinchen aktiv (siehe schweinchen.md) |
    | `dreissigAugenPflichtAktiv` | boolean | true | 30-Augen-Pflicht aktiv (siehe dreissig-augen-pflicht.md) |
    | `ansageGrenzen` | Map | {re: 11, k90: 10, k60: 9, k30: 8, schwarz: 7} | Mindestkartenanzahl für Ansagen |

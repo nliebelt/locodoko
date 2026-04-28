@@ -1,0 +1,14 @@
+databaseChangeLog:
+  - changeSet:
+      id: 022-herz-durchgegangen-nur-hoch
+      author: ralph
+      changes:
+        - addColumn:
+            tableName: tisch
+            columns:
+              - column:
+                  name: herz_durchgegangen_nur_hoch
+                  type: BOOLEAN
+                  defaultValueBoolean: false
+                  constraints:
+                    nullable: false

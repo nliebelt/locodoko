@@ -21,6 +21,7 @@ const LOCO_BLAT_REGELN: RegelFelder = {
     schweinchenAktiv: true,
     dreissigAugenPflichtAktiv: true,
     schmeissenAktiv: true,
+    herzDurchgegangenNurHoch: false,
     mindestkartenReKontra: 11,
     mindestkartenKeine90: 10,
     mindestkartenKeine60: 9,

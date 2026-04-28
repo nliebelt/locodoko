@@ -36,7 +36,8 @@ folgenden Spiele noch doppelt gewertet werden. Der Zähler wird durch bestimmte 
 
 7. **Herz durchgegangen**: Ein Stich, der ausschließlich aus Herz-Farbkarten besteht
    (nur Herz-As oder Herz-König, keine Trümpfe), erhöht den BockrundenZähler nach Abschluss
-   des Spiels um 1.
+   des Spiels um 1. Mit der Option `herzDurchgegangenNurHoch = true` (Tischkonfiguration)
+   wird der Trigger nur ausgelöst, wenn alle Karten im Stich Herz-As sind (striktere Variante).
 8. **Verlorenes Kontra**: Wenn die Kontra-Partei eine Kontra-Grundansage gemacht, aber verloren
    hat (Spielergebnis: Sieger = RE, Ansage KONTRA vorhanden), erhöht sich der BockrundenZähler
    nach Abschluss des Spiels um 1.

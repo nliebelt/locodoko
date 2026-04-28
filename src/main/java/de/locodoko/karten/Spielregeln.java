@@ -33,7 +33,8 @@ public record Spielregeln(
     boolean bockrundenAktiv,
     boolean schweinchenAktiv,
     boolean dreissigAugenPflichtAktiv,
-    boolean schmeissenAktiv
+    boolean schmeissenAktiv,
+    boolean herzDurchgegangenNurHoch
 ) {
 
     public Spielregeln {
@@ -51,26 +52,26 @@ public record Spielregeln(
     }
 
     public static Spielregeln standardRegeln() {
-        return new Spielregeln(false, true, 11, 10, 9, 8, 7, true, true, true, true, true, true, true, true, true, false, false, false, false);
+        return new Spielregeln(false, true, 11, 10, 9, 8, 7, true, true, true, true, true, true, true, true, true, false, false, false, false, false);
     }
 
     public static Spielregeln ohneNeunenRegeln() {
-        return new Spielregeln(true, true, 9, 8, 7, 6, 5, true, true, true, true, true, true, true, true, true, false, false, false, false);
+        return new Spielregeln(true, true, 9, 8, 7, 6, 5, true, true, true, true, true, true, true, true, true, false, false, false, false, false);
     }
 
     /** Loco-Blatt-Regelkatalog: alle Sonderregeln aktiv, ohne Neunen (10-Karten-Spiel). Referenz: specs/regelkatalog.md */
     public static Spielregeln locoBlatRegeln() {
-        return new Spielregeln(true, true, 9, 8, 7, 6, 5, true, true, true, true, true, true, true, true, true, true, true, true, true);
+        return new Spielregeln(true, true, 9, 8, 7, 6, 5, true, true, true, true, true, true, true, true, true, true, true, true, true, false);
     }
 
     /** Loco-Blatt-Variante ohne Neunen (10-Karten-Spiel), alle Sonderregeln aktiv. */
     public static Spielregeln ohneNeunenLocoBlatRegeln() {
-        return new Spielregeln(true, true, 9, 8, 7, 6, 5, true, true, true, true, true, true, true, true, true, true, true, true, true);
+        return new Spielregeln(true, true, 9, 8, 7, 6, 5, true, true, true, true, true, true, true, true, true, true, true, true, true, false);
     }
 
     /** DKV-Turnier-Regelkatalog: ohne Bockrunden, Schweinchen, 30-Augen-Pflicht und Schmeissen, mit Neunen. */
     public static Spielregeln dkvRegeln() {
-        return new Spielregeln(false, true, 11, 10, 9, 8, 7, true, true, true, true, true, true, true, true, true, false, false, false, false);
+        return new Spielregeln(false, true, 11, 10, 9, 8, 7, true, true, true, true, true, true, true, true, true, false, false, false, false, false);
     }
 
     public Spielregeln mitAnsagegrenzen(
@@ -100,7 +101,8 @@ public record Spielregeln(
             bockrundenAktiv,
             schweinchenAktiv,
             dreissigAugenPflichtAktiv,
-            schmeissenAktiv
+            schmeissenAktiv,
+            herzDurchgegangenNurHoch
         );
     }
 
@@ -125,7 +127,8 @@ public record Spielregeln(
             bockrundenAktiv,
             schweinchenAktiv,
             dreissigAugenPflichtAktiv,
-            schmeissenAktiv
+            schmeissenAktiv,
+            herzDurchgegangenNurHoch
         );
     }
 
@@ -150,7 +153,8 @@ public record Spielregeln(
             bockrundenAktiv,
             schweinchenAktiv,
             dreissigAugenPflichtAktiv,
-            schmeissenAktiv
+            schmeissenAktiv,
+            herzDurchgegangenNurHoch
         );
     }
 
@@ -175,7 +179,8 @@ public record Spielregeln(
             bockrundenAktiv,
             schweinchenAktiv,
             dreissigAugenPflichtAktiv,
-            schmeissenAktiv
+            schmeissenAktiv,
+            herzDurchgegangenNurHoch
         );
     }
 
@@ -200,7 +205,8 @@ public record Spielregeln(
             bockrundenAktiv,
             schweinchenAktiv,
             dreissigAugenPflichtAktiv,
-            schmeissenAktiv
+            schmeissenAktiv,
+            herzDurchgegangenNurHoch
         );
     }
 
@@ -225,7 +231,8 @@ public record Spielregeln(
             bockrundenAktiv,
             schweinchenAktiv,
             dreissigAugenPflichtAktiv,
-            schmeissenAktiv
+            schmeissenAktiv,
+            herzDurchgegangenNurHoch
         );
     }
 
@@ -250,7 +257,8 @@ public record Spielregeln(
             bockrundenAktiv,
             schweinchenAktiv,
             dreissigAugenPflichtAktiv,
-            schmeissenAktiv
+            schmeissenAktiv,
+            herzDurchgegangenNurHoch
         );
     }
 
@@ -275,7 +283,8 @@ public record Spielregeln(
             bockrundenAktiv,
             schweinchenAktiv,
             dreissigAugenPflichtAktiv,
-            schmeissenAktiv
+            schmeissenAktiv,
+            herzDurchgegangenNurHoch
         );
     }
 
@@ -300,7 +309,8 @@ public record Spielregeln(
             bockrundenAktiv,
             schweinchenAktiv,
             dreissigAugenPflichtAktiv,
-            schmeissenAktiv
+            schmeissenAktiv,
+            herzDurchgegangenNurHoch
         );
     }
 
@@ -325,7 +335,8 @@ public record Spielregeln(
             bockrundenAktiv,
             schweinchenAktiv,
             dreissigAugenPflichtAktiv,
-            schmeissenAktiv
+            schmeissenAktiv,
+            herzDurchgegangenNurHoch
         );
     }
 
@@ -350,7 +361,8 @@ public record Spielregeln(
             bockrundenAktiv,
             schweinchenAktiv,
             dreissigAugenPflichtAktiv,
-            schmeissenAktiv
+            schmeissenAktiv,
+            herzDurchgegangenNurHoch
         );
     }
 
@@ -375,7 +387,34 @@ public record Spielregeln(
             bockrundenAktiv,
             schweinchenAktiv,
             dreissigAugenPflichtAktiv,
-            schmeissenAktiv
+            schmeissenAktiv,
+            herzDurchgegangenNurHoch
+        );
+    }
+
+    public Spielregeln mitHerzDurchgegangenNurHoch(boolean herzDurchgegangenNurHoch) {
+        return new Spielregeln(
+            ohneNeunen,
+            zweiteDulleSticht,
+            mindestkartenReKontra,
+            mindestkartenKeine90,
+            mindestkartenKeine60,
+            mindestkartenKeine30,
+            mindestkartenSchwarz,
+            fuchsAktiv,
+            karlchenAktiv,
+            doppelkopfAktiv,
+            armutAktiv,
+            soloDameAktiv,
+            soloBubeAktiv,
+            soloTrumpfAktiv,
+            soloFleischlosAktiv,
+            hochzeitAktiv,
+            bockrundenAktiv,
+            schweinchenAktiv,
+            dreissigAugenPflichtAktiv,
+            schmeissenAktiv,
+            herzDurchgegangenNurHoch
         );
     }
 

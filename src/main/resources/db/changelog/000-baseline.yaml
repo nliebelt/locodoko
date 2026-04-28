@@ -306,6 +306,12 @@ databaseChangeLog:
                   defaultValueBoolean: false
                   constraints:
                     nullable: false
+              - column:
+                  name: herz_durchgegangen_nur_hoch
+                  type: BOOLEAN
+                  defaultValueBoolean: false
+                  constraints:
+                    nullable: false
 
         # --- tisch_spieler ---
         - createTable:

@@ -54,6 +54,9 @@ public class TischkonfigurationEmbeddable {
 
     private boolean schmeissenAktiv = false;
 
+    /** Herz-durchgegangen-Bockrunde nur bei reinen Herz-As-Stichen ausloesen (striktere Variante). */
+    private boolean herzDurchgegangenNurHoch = false;
+
     /** Schwierigkeitsstufe der KI-Gegner. Standard ist STANDARD. */
     private KiSchwierigkeit kiSchwierigkeit = KiSchwierigkeit.STANDARD;
 
@@ -83,6 +86,7 @@ public class TischkonfigurationEmbeddable {
         boolean schweinchenAktiv,
         boolean dreissigAugenPflichtAktiv,
         boolean schmeissenAktiv,
+        boolean herzDurchgegangenNurHoch,
         KiSchwierigkeit kiSchwierigkeit
     ) {
         this.ohneNeunen = ohneNeunen;
@@ -107,6 +111,7 @@ public class TischkonfigurationEmbeddable {
         this.schweinchenAktiv = schweinchenAktiv;
         this.dreissigAugenPflichtAktiv = dreissigAugenPflichtAktiv;
         this.schmeissenAktiv = schmeissenAktiv;
+        this.herzDurchgegangenNurHoch = herzDurchgegangenNurHoch;
         this.kiSchwierigkeit = kiSchwierigkeit;
     }
 
@@ -170,6 +175,7 @@ public class TischkonfigurationEmbeddable {
             spielregeln.schweinchenAktiv(),
             spielregeln.dreissigAugenPflichtAktiv(),
             spielregeln.schmeissenAktiv(),
+            spielregeln.herzDurchgegangenNurHoch(),
             kiSchwierigkeit
         );
     }
@@ -205,7 +211,8 @@ public class TischkonfigurationEmbeddable {
             bockrundenAktiv,
             schweinchenAktiv,
             dreissigAugenPflichtAktiv,
-            schmeissenAktiv
+            schmeissenAktiv,
+            herzDurchgegangenNurHoch
         );
     }
 
@@ -295,6 +302,10 @@ public class TischkonfigurationEmbeddable {
 
     public boolean schmeissenAktiv() {
         return schmeissenAktiv;
+    }
+
+    public boolean herzDurchgegangenNurHoch() {
+        return herzDurchgegangenNurHoch;
     }
 
     public KiSchwierigkeit kiSchwierigkeit() {
