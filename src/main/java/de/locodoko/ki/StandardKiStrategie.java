@@ -402,20 +402,28 @@ public class StandardKiStrategie implements KiStrategie {
     }
 
     /**
-     * Wie {@link #soloSchwelle(VorbehaltAnsage)}, erhöht aber die Schwelle um 13 % wenn
-     * Schweinchen oder 30-Augen-Pflicht aktiv sind. Bei diesen Sonderregeln ist die
-     * Trumpfverteilung ausgeglichener — Solo-Ansagen ohne klare Überlegenheit scheitern häufiger.
+     * Wie {@link #soloSchwelle(VorbehaltAnsage)}, wendet aber kontextabhängige Malusse an:
+     * <ul>
+     *   <li>+5 Punkte wenn {@code ohneNeunen} aktiv: weniger Karten auf der Hand bedeuten
+     *       schlechtere Trumpfkontrolle — Sicherheitsmarge nötig.</li>
+     *   <li>+25 % wenn Schweinchen oder 30-Augen-Pflicht aktiv: die Trumpfverteilung wird
+     *       ausgeglichener, Solo-Ansagen ohne klare Überlegenheit scheitern häufiger.</li>
+     * </ul>
      *
-     * <p>Kalibrierung: 46 * 1.13 = 51.98 -> 52 (Trumpfsolo), 28 * 1.13 = 31.64 -> 32 (Dame/Bube).
+     * <p>Kalibrierung: (46+5) * 1.25 = 63.75 -> 64 (Loco-Blatt Trumpfsolo),
+     * 46 * 1.25 = 57.5 -> 58 (nur Sonderregeln), 51 (nur ohneNeunen).
      */
     private int soloSchwelle(VorbehaltAnsage vorbehaltAnsage, KiSpielzustand zustand) {
         int basis = soloSchwelle(vorbehaltAnsage);
+        if (zustand.spielregeln().ohneNeunen()) {
+            basis += 5;
+        }
         boolean sonderpunkteAktiv = zustand.spielregeln().schweinchenAktiv()
             || zustand.spielregeln().dreissigAugenPflichtAktiv();
         if (!sonderpunkteAktiv) {
             return basis;
         }
-        return (int) Math.ceil(basis * 1.13);
+        return (int) Math.ceil(basis * 1.25);
     }
 
     private long anzahlTruepfe(List<Karte> karten, TrumpfOrdnung trumpfOrdnung) {

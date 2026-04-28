@@ -1,15 +1,18 @@
 # IMPLEMENTATION_PLAN — Locodoko Doppelkopf
 
 ## Notiz
-Stand: 2026-04-28 (Plan-Run #70 — Fokus: BUG-DTO-MASKIERUNG)
+Stand: 2026-04-28 (Plan-Run #71 — Fokus: FEAT-KI-SOLO-VORSICHT)
 
 **Was wurde implementiert:**
-- BUG-DTO-MASKIERUNG: Masking-Logik war bereits korrekt implementiert (`sichtbareHandkarten = null` für Fremde, `verbleibendeKarten` immer sichtbar). Fehlte nur der Integrationstest.
-  - Neuer `PartieControllerTest.maskiertGegnerHandkartenImPartieStandViaREST()`: testet vollständigen HTTP-Pfad mit 4 Spielern, echtem Spiel und verteilten Karten.
-  - Assert: SUED (eigene Karten sichtbar mit karteId), NORD (`sichtbareHandkarten = null`, `verbleibendeKarten = 2`).
-  - 287 Tests grün.
+- FEAT-KI-SOLO-VORSICHT: `StandardKiStrategie.soloSchwelle(VorbehaltAnsage, KiSpielzustand)`
+  - Malus-Multiplikator von 13 % auf 25 % erhöht (Sicherheitsmarge bei Schweinchen/30er-Pflicht)
+  - Neuer ohneNeunen-Malus (+5 Punkte auf Basis) bei `spielregeln.ohneNeunen() == true`
+  - Loco-Blatt-Threshold damit: ceil((46+5)×1.25) = 64 (vorher ~52)
+  - Farbsolo-Bewertung war bereits korrekt (nutzt dieselbe soloSchwelle-Methode)
+  - Neuer Test: `meldetKeinSoloBeiGrenzwertHandMitOhneNeunenRegeln` — isolierter ohneNeunen-Malus
+  - Test-Kommentare für Loco-Test aktualisiert. 288 Tests grün.
 
-**Nächste Priorität:** FEAT-KI-SOLO-VORSICHT — `StandardKiStrategie.soloSchwelle` von 13% auf 25% erhöhen; Farbsolo-Bewertung laut `specs/solo-farbsolo.md` (≥46 Punkte Schwelle) ergänzen.
+**Nächste Priorität:** FEAT-SCHWEINCHEN-ANSAGE — `SchweinchenGemeldet`-Event bei erstem Karo-As ausspielen; WebSocket-Nachricht + Frontend-Toast "Schweinchen!". Oder FEAT-BOCK-CONFIG: `herzDurchgegangenNurHoch`-Flag in `TischKonfiguration`.
 
 ---
 
@@ -62,10 +65,10 @@ Entscheidung: Spec ist korrekt — karteId ist nur dem Karteninhaber sichtbar.
 ### FEAT-KI-SOLO-VORSICHT (Backend)
 **Problem:** KI spielt zu viele (verlierende) Soli, besonders ohne Neunen.
 Hinweis (Plan-Run #65): `specs/solo-farbsolo.md` definiert eine 46-Punkte-Schwelle für KI-Farbsolo-Bewertung — prüfen ob diese in `StandardKiStrategie` fehlt (separate Logik von `soloSchwelle`).
-- [ ] Backend: `StandardKiStrategie.java` — `soloSchwelle` Erhöhung von 13% auf 25% (Sicherheitsmarge).
-- [ ] Backend: Zusätzlichen Malus (z.B. +5 Punkte auf Schwelle) einbauen, wenn `ohneNeunen` aktiv ist.
-- [ ] Backend: Farbsolo-Bewertung prüfen — laut `specs/solo-farbsolo.md` soll KI Farbsolo nur spielen wenn ≥46 Punkte in der Farbe zu holen sind. Fehlende Methode ergänzen.
-- [ ] Validation: Beobachtung im Testlauf (Solo-Frequenz prüfen).
+- [x] Backend: `StandardKiStrategie.java` — `soloSchwelle` Multiplikator von 13% auf 25% erhöht.
+- [x] Backend: ohneNeunen-Malus (+5 Punkte) eingebaut wenn `spielregeln.ohneNeunen()` aktiv ist.
+- [x] Backend: Farbsolo-Bewertung geprüft — war bereits korrekt (nutzt dieselbe soloSchwelle-Methode wie SOLO_TRUMPF).
+- [x] Validation: 1 neuer Test (`meldetKeinSoloBeiGrenzwertHandMitOhneNeunenRegeln`). 288 Tests grün.
 
 ### FEAT-SCHWEINCHEN-ANSAGE (Backend)
 **Problem (neu — Plan-Run #65):** DKV-Regel: Wenn ein Spieler das erste Karo-As ausspielt und Schweinchen aktiv ist, soll eine explizite `SCHWEINCHEN_GEMELDET`-Meldung ans Frontend gesendet werden (Anzeige "Schweinchen!").

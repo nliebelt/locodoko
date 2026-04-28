@@ -595,6 +595,50 @@ class StandardKiStrategieTest {
     }
 
     @Test
+    void meldetKeinSoloBeiGrenzwertHandMitOhneNeunenRegeln() {
+        // Hand mit soloWert=50 und ohneNeunenRegeln (ohneNeunen=true, kein Schweinchen/30er).
+        // Erhöhte Solo-Schwelle: 46 + 5 = 51 → 50 < 51 → kein Solo.
+        // Wichtig: stellt sicher dass der ohneNeunen-Malus (+5) isoliert korrekt wirkt —
+        // Spieler haben weniger Karten auf der Hand, Trumpfkontrolle ist geringer.
+        Spielregeln ohneNeunenRegeln = Spielregeln.ohneNeunenRegeln();
+        NormaleTrumpfOrdnung ohneNeunenTrumpfOrdnung = new NormaleTrumpfOrdnung(ohneNeunenRegeln);
+        KiSpielzustand zustand = new KiSpielzustand(
+            SpielerPosition.WEST,
+            Spieltyp.NORMALSPIEL,
+            Spielphase.VORBEHALT_ANSAGE,
+            ohneNeunenRegeln,
+            ohneNeunenTrumpfOrdnung,
+            new Hand(List.of(
+                karte(Farbe.KREUZ, Kartenwert.DAME, 1),
+                karte(Farbe.PIK, Kartenwert.DAME, 1),
+                karte(Farbe.HERZ, Kartenwert.DAME, 1),
+                karte(Farbe.KREUZ, Kartenwert.BUBE, 1),
+                karte(Farbe.PIK, Kartenwert.BUBE, 1),
+                karte(Farbe.HERZ, Kartenwert.ZEHN, 1),
+                karte(Farbe.KARO, Kartenwert.AS, 1),
+                karte(Farbe.KARO, Kartenwert.ZEHN, 1),
+                karte(Farbe.KARO, Kartenwert.KOENIG, 1),
+                karte(Farbe.KREUZ, Kartenwert.AS, 1),
+                karte(Farbe.PIK, Kartenwert.KOENIG, 1),
+                karte(Farbe.HERZ, Kartenwert.KOENIG, 1)
+            )),
+            null,
+            Ansagen.leer(),
+            List.of(),
+            null,
+            null,
+            null,
+            List.of(),
+            List.of(),
+            List.of(VorbehaltAnsage.GESUND, VorbehaltAnsage.SOLO_TRUMPF)
+        );
+
+        assertEquals(VorbehaltAnsage.GESUND, strategie.waehleVorbehalt(zustand),
+            "Mit soloWert=50 und ohneNeunen-Schwelle 51 darf kein Solo angemeldet werden — "
+            + "der ohneNeunen-Malus (+5) soll KI bei 10-Karten-Spiel vorsichtiger machen.");
+    }
+
+    @Test
     void meldetTrumpfsoloBeiGrenzwertHandMitStandardRegeln() {
         // Hand mit soloWert=50 (9 Trümpfe×4 + 2 Asse×2 + 3 Damen×2 + 2 Buben×2 = 50).
         // Standard-Schwelle: 46 → 50 ≥ 46 → Solo erwartet.
@@ -638,9 +682,9 @@ class StandardKiStrategieTest {
 
     @Test
     void meldetKeinSoloBeiGleicherGrenzwertHandMitLocoBlatRegeln() {
-        // Dieselbe Hand (soloWert=50) mit Loco-Blatt-Regeln (Schweinchen + 30-Augen-Pflicht aktiv).
-        // Erhöhte Solo-Schwelle: ceil(46 × 1.13) = 52 → 50 < 52 → kein Solo.
-        // Wichtig: prüft dass KI-2 Solo-Schwellen bei aktiven Sonderregeln erhöht werden,
+        // Dieselbe Hand (soloWert=50) mit Loco-Blatt-Regeln (ohneNeunen + Schweinchen + 30-Augen-Pflicht aktiv).
+        // Erhöhte Solo-Schwelle: ceil((46+5) × 1.25) = ceil(63.75) = 64 → 50 < 64 → kein Solo.
+        // Wichtig: prüft dass KI-Solo-Schwellen bei aktiven Sonderregeln erhöht werden,
         // weil Schweinchen die Trumpfverteilung ausgeglichener macht und Solo-Chancen reduziert.
         Spielregeln locoRegeln = Spielregeln.locoBlatRegeln();
         NormaleTrumpfOrdnung locoTrumpfOrdnung = new NormaleTrumpfOrdnung(locoRegeln);
@@ -676,7 +720,7 @@ class StandardKiStrategieTest {
         );
 
         assertEquals(VorbehaltAnsage.GESUND, strategie.waehleVorbehalt(zustand),
-            "Mit soloWert=50 und erhöhter Schwelle 53 (Loco-Blatt, Schweinchen+30er aktiv) "
+            "Mit soloWert=50 und erhöhter Schwelle 64 (Loco-Blatt: ohneNeunen+Schweinchen+30er) "
             + "darf kein Solo angemeldet werden — KI soll bei Sonderregeln konservativer sein.");
     }
 
