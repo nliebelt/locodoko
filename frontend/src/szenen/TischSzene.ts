@@ -561,6 +561,17 @@ export class TischSzene extends Phaser.Scene {
         typ: zustand.meldung.typ === 'fehler' ? 'fehler' : 'info'
       });
     }
+    // Countdown-Anzeige im Partie-Ende-Modal aktualisieren
+    if (this.partieEndeModal && !this.partieEndeModal.hidden) {
+      const countdownEl = this.partieEndeModal.querySelector<HTMLElement>('[data-testid="countdown-text"]');
+      if (countdownEl) {
+        countdownEl.textContent = this.formatiereCountdownText(zustand.countdownSekunden);
+      }
+      // Modal automatisch schliessen wenn eine neue Partie gestartet wurde (z.B. Auto-Start)
+      if (zustand.partieStand?.laufendesSpiel) {
+        this.schliessePartieEndeModal();
+      }
+    }
   }
 
   private renderTisch(zustand: AppZustand, modell = this.erstelleModell(zustand)): void {
@@ -1146,6 +1157,12 @@ export class TischSzene extends Phaser.Scene {
     const gsL = document.createElement('ul'); gsL.className = 'ui-list ui-list--dense';
     sortedGs.forEach((ei) => { const li = document.createElement('li'); li.className = 'ui-list-item ui-list-item--dense'; const istVorne = ei.punkte === maxPkt && maxPkt > 0; li.innerHTML = `<div class="ui-list-item__headline"><strong style="${istVorne ? 'color:#ffd166' : ''}">${escapeHtml(ei.name)}${istVorne ? ' ★' : ''}</strong></div><div class="ui-list-item__meta"><span>${ei.punkte} Pkt</span></div>`; gsL.append(li); });
     gsSec.append(gsTit, gsL); dia.append(gsSec);
+    const countdownP = document.createElement('p');
+    countdownP.dataset['testid'] = 'countdown-text';
+    countdownP.style.cssText = 'margin:0.5rem 0 0;font-size:0.85rem;opacity:0.7;text-align:center';
+    const aktuellerCountdown = appStore.snapshot().countdownSekunden;
+    countdownP.textContent = this.formatiereCountdownText(aktuellerCountdown);
+    dia.append(countdownP);
     const aR = document.createElement('div'); aR.className = 'ui-action-row';
     const nB = this.erstelleButton('Neue Partie', () => { this.schliessePartieEndeModal(); void appStore.starteNeuePartie(); }, false);
     nB.dataset['testid'] = 'btn-neue-partie';
@@ -1153,6 +1170,11 @@ export class TischSzene extends Phaser.Scene {
     vB.dataset['testid'] = 'btn-tisch-verlassen';
     aR.append(nB, vB); dia.append(aR); this.partieEndeModal.innerHTML = ''; this.partieEndeModal.append(dia); this.partieEndeModal.hidden = false;
     setTimeout(() => nB.focus(), 0);
+  }
+
+  private formatiereCountdownText(sekunden: number | null | undefined): string {
+    if (sekunden == null || sekunden <= 0) return '';
+    return `Neue Partie startet in ${sekunden}…`;
   }
 
   private schliessePartieEndeModal(): void {

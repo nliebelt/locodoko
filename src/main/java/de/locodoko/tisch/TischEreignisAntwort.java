@@ -22,26 +22,28 @@ public record TischEreignisAntwort(
     TischEreignisTyp ereignisTyp,
     @Schema(description = "ID des betroffenen Tisches.", example = "f47ac10b-58cc-4372-a567-0e02b2c3d479")
     UUID tischId,
-    @Schema(description = "Aktueller Tisch-Snapshot; null bei TISCH_ENTFERNT.")
+    @Schema(description = "Aktueller Tisch-Snapshot; null bei TISCH_ENTFERNT und COUNTDOWN_TICK.")
     TischAntwort tisch,
     @Schema(description = "Aktueller Partiestand; null falls keine Partie laeuft.")
-    PartieStandAntwort partieStand
+    PartieStandAntwort partieStand,
+    @Schema(description = "Verbleibende Sekunden; nur bei COUNTDOWN_TICK gesetzt.")
+    Integer verbleibendeSekunden
 ) {
 
     public static TischEreignisAntwort snapshot(TischAntwort tisch, PartieStandAntwort partieStand) {
-        return new TischEreignisAntwort(Instant.now(), TischEreignisTyp.TISCH_SNAPSHOT, tisch.id(), tisch, partieStand);
+        return new TischEreignisAntwort(Instant.now(), TischEreignisTyp.TISCH_SNAPSHOT, tisch.id(), tisch, partieStand, null);
     }
 
     public static TischEreignisAntwort aktualisiert(TischEreignisTyp ereignisTyp, TischAntwort tisch) {
-        return new TischEreignisAntwort(Instant.now(), ereignisTyp, tisch.id(), tisch, null);
+        return new TischEreignisAntwort(Instant.now(), ereignisTyp, tisch.id(), tisch, null, null);
     }
 
     public static TischEreignisAntwort spielGestartet(TischAntwort tisch, PartieStandAntwort partieStand) {
-        return new TischEreignisAntwort(Instant.now(), TischEreignisTyp.SPIEL_GESTARTET, tisch.id(), tisch, partieStand);
+        return new TischEreignisAntwort(Instant.now(), TischEreignisTyp.SPIEL_GESTARTET, tisch.id(), tisch, partieStand, null);
     }
 
     public static TischEreignisAntwort tischEntfernt(UUID tischId) {
-        return new TischEreignisAntwort(Instant.now(), TischEreignisTyp.TISCH_ENTFERNT, tischId, null, null);
+        return new TischEreignisAntwort(Instant.now(), TischEreignisTyp.TISCH_ENTFERNT, tischId, null, null, null);
     }
 
     /**
@@ -49,6 +51,16 @@ public record TischEreignisAntwort(
      * Kein Tisch-Snapshot noetig — alle Spieler werden zur Lobby weitergeleitet.
      */
     public static TischEreignisAntwort partieAbgebrochen(UUID tischId) {
-        return new TischEreignisAntwort(Instant.now(), TischEreignisTyp.PARTIE_ABGEBROCHEN, tischId, null, null);
+        return new TischEreignisAntwort(Instant.now(), TischEreignisTyp.PARTIE_ABGEBROCHEN, tischId, null, null, null);
+    }
+
+    /**
+     * Countdown-Tick vor automatischem Start einer neuen Partie.
+     *
+     * @param tischId              ID des Tisches
+     * @param verbleibendeSekunden verbleibende Sekunden bis zum Auto-Start
+     */
+    public static TischEreignisAntwort countdownTick(UUID tischId, int verbleibendeSekunden) {
+        return new TischEreignisAntwort(Instant.now(), TischEreignisTyp.COUNTDOWN_TICK, tischId, null, null, verbleibendeSekunden);
     }
 }

@@ -29,10 +29,12 @@ public class PartieLifecycleService {
 
     private final TischEchtzeitService tischEchtzeitService;
     private final SpielerRepository spielerRepository;
+    private final PartieCountdownService partieCountdownService;
 
-    public PartieLifecycleService(TischEchtzeitService tischEchtzeitService, SpielerRepository spielerRepository) {
+    public PartieLifecycleService(TischEchtzeitService tischEchtzeitService, SpielerRepository spielerRepository, PartieCountdownService partieCountdownService) {
         this.tischEchtzeitService = tischEchtzeitService;
         this.spielerRepository = spielerRepository;
+        this.partieCountdownService = partieCountdownService;
     }
 
     /**
@@ -55,6 +57,7 @@ public class PartieLifecycleService {
         if (neuePartie.istBeendet()) {
             partie.markiereAlsBeendet();
             veroeffentlicheSpielBeendet(tisch, abgeschlossenesSpiel);
+            partieCountdownService.starteCountdown(tisch.id());
             return;
         }
 

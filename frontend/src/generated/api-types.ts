@@ -1114,7 +1114,7 @@ export interface components {
              * @description Typ des Tisch-Ereignisses.
              * @enum {string}
              */
-            ereignisTyp?: "TISCH_SNAPSHOT" | "TISCH_ERSTELLT" | "SPIELER_BEIGETRETEN" | "SPIELER_VERLASSEN" | "TISCH_KONFIGURATION_AKTUALISIERT" | "SPIEL_GESTARTET" | "TISCH_ENTFERNT" | "PARTIE_ABGEBROCHEN" | "SPIELER_GEKICKT";
+            ereignisTyp?: "TISCH_SNAPSHOT" | "TISCH_ERSTELLT" | "SPIELER_BEIGETRETEN" | "SPIELER_VERLASSEN" | "TISCH_KONFIGURATION_AKTUALISIERT" | "SPIEL_GESTARTET" | "TISCH_ENTFERNT" | "PARTIE_ABGEBROCHEN" | "SPIELER_GEKICKT" | "COUNTDOWN_TICK";
             /**
              * Format: uuid
              * @description ID des betroffenen Tisches.
@@ -1123,6 +1123,11 @@ export interface components {
             tischId?: string;
             tisch?: components["schemas"]["TischAntwort"];
             partieStand?: components["schemas"]["PartieStandAntwort"];
+            /**
+             * Format: int32
+             * @description Verbleibende Sekunden; nur bei COUNTDOWN_TICK gesetzt.
+             */
+            verbleibendeSekunden?: number;
         };
         /** @description WebSocket-Ereignis fuer die globale Tischliste. */
         TischlisteEreignisAntwort: {

@@ -1,12 +1,15 @@
 # IMPLEMENTATION_PLAN — Locodoko Doppelkopf
 
 ## Notiz
-Stand: 2026-04-28 (Plan-Run #81)
+Stand: 2026-04-28 (Plan-Run #82)
+
+**Was wurde implementiert (Plan-Run #82):**
+- FEAT-COUNTDOWN: `TischEreignisTyp.COUNTDOWN_TICK` + `PartieCountdownService` (10s-Timer, 1s-Ticks, konfigurierbarer mit `locodoko.countdown.dauer-sekunden`). `TischVerwaltungsService.starteNeuePartieAutomat()` für serverseitigen Auto-Start. Frontend: `countdownSekunden` in `AppZustand`, `COUNTDOWN_TICK`-Handler in `AppStore`, Countdown-Anzeige im Partie-Ende-Modal, automatisches Modal-Schliessen bei neuem Spiel. 4 neue Unit-Tests in `PartieCountdownServiceTest`. 299 Backend-Tests, 60 Frontend-Tests grün.
+
+**Nächste Priorität:** Phase 4 — UI-Punkte: `FEAT-ANSAGEN-FAB` (Frontend, Floating Action Bar für Re/Kontra) oder `FEAT-SEITENLADE` (Info-Panel).
 
 **Was wurde implementiert (Plan-Run #81):**
 - TASK-PRESET-UNIT-TESTS: `SpielregelnTest` um zwei vollständige Feldprüfungs-Tests erweitert: `locoBlatRegelnHatKorrekteWerteFuerAlleFelder()` und `dkvRegelnHatKorrekteWerteFuerAlleFelder()`. Jeder Test prüft alle 21 Felder des `Spielregeln`-Records explizit — sichert ab, dass ein Refactoring keine Preset-Werte unbemerkt verändert. 295 Backend-Tests grün (SpielregelnTest: 3→5 Tests).
-
-**Nächste Priorität:** FEAT-COUNTDOWN (Phase 3, Backend+Frontend) — nächste größere Aufgabe.
 
 **Was wurde implementiert (Plan-Run #80):**
 - FEAT-TASTATUR-AUTOFOKUS-SHORTCUTS: Codeanalyse ergab — beide Features waren bereits vollständig implementiert. Auto-Fokus in `TischSzene.aktualisiereKartenNavigationsIndex()` (setzt `tastaturKarteIndex=0` beim Spielzug-Beginn), R/K-Shortcuts in `TischInputHandler.verarbeiteAnsageTaste()`. Spec-DoD `frontend-tastatursteuerung.md` auf [x] gesetzt (7 von 9 Punkten; E2E-Tests + manueller Test-Durchlauf offen). 60 Frontend-Tests grün.
@@ -121,11 +124,13 @@ Entscheidung: Spec (`architektur-domain-events.md`) fordert Domain Events für s
 
 ## Phase 3 — Spielfluss-Automatisierung
 
-### FEAT-COUNTDOWN (Backend + Frontend)
-- [ ] Backend: `TischEreignisTyp.COUNTDOWN_TICK` einführen.
-- [ ] Backend: Nach `markiereAlsBeendet()` einen Timer (10s) starten, der jede Sekunde ein Event sendet.
-- [ ] Backend: Bei Ablauf neue Partie automatisch starten.
-- [ ] Frontend: Countdown-Anzeige im Rundenauswertungs-Overlay.
+### FEAT-COUNTDOWN (Backend + Frontend) ← Plan-Run #82
+- [x] Backend: `TischEreignisTyp.COUNTDOWN_TICK` eingeführt.
+- [x] Backend: Nach `markiereAlsBeendet()` startet `PartieCountdownService` einen 10s-Timer, der jede Sekunde ein `COUNTDOWN_TICK`-Event sendet. Konfigurierbar via `locodoko.countdown.dauer-sekunden`.
+- [x] Backend: Bei Ablauf ruft der Countdown `TischVerwaltungsService.starteNeuePartieAutomat()` auf (neue `@Transactional`-Methode ohne Session-Validierung). Duplikate idempotent abgesichert.
+- [x] Frontend: `AppZustand.countdownSekunden` eingeführt; `COUNTDOWN_TICK` in `AppStore.verarbeiteTischEreignis` VOR dem `!tisch`-Check verarbeitet. Countdown wird bei `SPIEL_GESTARTET`, `PARTIE_ABGEBROCHEN`, `TISCH_ENTFERNT` zurückgesetzt.
+- [x] Frontend: Countdown-Anzeige im Partie-Ende-Modal (`„Neue Partie startet in N…"`). Modal schließt sich automatisch wenn neues `laufendesSpiel` verfügbar ist (Auto-Start).
+- [x] Validation: 299 Backend-Tests, 60 Frontend-Tests grün; Build erfolgreich.
 
 ---
 

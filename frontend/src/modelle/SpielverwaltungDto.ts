@@ -204,7 +204,7 @@ export interface PartieStandAntwort {
 }
 
 export type TischlisteEreignisTyp = 'SNAPSHOT' | 'AKTUALISIERT';
-export type TischEreignisTyp = 'TISCH_SNAPSHOT' | 'TISCH_ERSTELLT' | 'SPIELER_BEIGETRETEN' | 'SPIELER_VERLASSEN' | 'TISCH_KONFIGURATION_AKTUALISIERT' | 'SPIEL_GESTARTET' | 'TISCH_ENTFERNT' | 'PARTIE_ABGEBROCHEN' | 'SPIELER_GEKICKT';
+export type TischEreignisTyp = 'TISCH_SNAPSHOT' | 'TISCH_ERSTELLT' | 'SPIELER_BEIGETRETEN' | 'SPIELER_VERLASSEN' | 'TISCH_KONFIGURATION_AKTUALISIERT' | 'SPIEL_GESTARTET' | 'TISCH_ENTFERNT' | 'PARTIE_ABGEBROCHEN' | 'SPIELER_GEKICKT' | 'COUNTDOWN_TICK';
 export type PartieEreignisTyp = 'SNAPSHOT' | 'KARTE_GESPIELT' | 'STICH_ABGESCHLOSSEN' | 'SPIEL_BEENDET' | 'ANSAGE_ERFOLGT' | 'SCHWEINCHEN_GEMELDET' | 'HOCHZEIT_PARTNER_GEFUNDEN' | 'SPIEL_GESTARTET' | 'AKTION_ABGELEHNT';
 
 export interface GespielteKarteEreignisAntwort {
@@ -228,6 +228,7 @@ export interface TischEreignisAntwort {
   tischId: Uuid;
   tisch: TischAntwort | null;
   partieStand: PartieStandAntwort | null;
+  verbleibendeSekunden?: number | null;
 }
 
 // --- Locodoko Unified Architecture: Typsichere Events ---

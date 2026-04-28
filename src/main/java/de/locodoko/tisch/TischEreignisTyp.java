@@ -17,5 +17,7 @@ public enum TischEreignisTyp {
     /** Ein Spieler hat den Tisch waehrend einer laufenden Partie verlassen — Partie abgebrochen. */
     PARTIE_ABGEBROCHEN,
     /** Der Gastgeber hat einen Spieler vom Tisch entfernt. */
-    SPIELER_GEKICKT
+    SPIELER_GEKICKT,
+    /** Countdown-Tick vor automatischem Start einer neuen Partie. */
+    COUNTDOWN_TICK
 }

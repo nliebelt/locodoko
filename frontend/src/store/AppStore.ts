@@ -45,6 +45,8 @@ export interface AppZustand {
   partieStand: PartieStandAntwort | null;
   meldung: UiMeldung | null;
   uiKonfiguration: UiKonfiguration;
+  /** Verbleibende Sekunden des Countdown nach Partie-Ende; null wenn kein Countdown aktiv. */
+  countdownSekunden: number | null;
 }
 
 type Listener = (zustand: AppZustand) => void;
@@ -62,7 +64,8 @@ function erzeugeAnfangszustand(): AppZustand {
     aktuellerTisch: null,
     partieStand: null,
     meldung: null,
-    uiKonfiguration: { kiVerzoegerungMs: 800 }
+    uiKonfiguration: { kiVerzoegerungMs: 800 },
+    countdownSekunden: null
   };
 }
 
@@ -482,14 +485,18 @@ export class AppStore {
 
   private verarbeiteTischEreignis(ereignis: TischEreignisAntwort): void {
     Logger.websocket(`Empfange TischEreignis: ${ereignis.ereignisTyp}`, ereignis);
+    if (ereignis.ereignisTyp === 'COUNTDOWN_TICK') {
+      this.patch({ countdownSekunden: ereignis.verbleibendeSekunden ?? null });
+      return;
+    }
     if (ereignis.ereignisTyp === 'PARTIE_ABGEBROCHEN') {
       this.setzeTischAbosZurueck();
-      this.patch({ aktuellerTisch: null, partieStand: null, bereich: 'SPIELVERWALTUNG', meldung: { typ: 'info', text: 'Partie abgebrochen.', fehlerCode: 'PARTIE_ABGEBROCHEN' } });
+      this.patch({ aktuellerTisch: null, partieStand: null, bereich: 'SPIELVERWALTUNG', meldung: { typ: 'info', text: 'Partie abgebrochen.', fehlerCode: 'PARTIE_ABGEBROCHEN' }, countdownSekunden: null });
       return;
     }
     if (ereignis.ereignisTyp === 'TISCH_ENTFERNT' || !ereignis.tisch) {
       this.setzeTischAbosZurueck();
-      this.patch({ aktuellerTisch: null, partieStand: null, bereich: 'SPIELVERWALTUNG' });
+      this.patch({ aktuellerTisch: null, partieStand: null, bereich: 'SPIELVERWALTUNG', countdownSekunden: null });
       return;
     }
 
@@ -505,7 +512,14 @@ export class AppStore {
       }
     }
 
-    this.patch({ aktuellerTisch: ereignis.tisch, partieStand: partiestand, bereich: 'TISCH', wirdGeladen: false });
+    this.patch({
+      aktuellerTisch: ereignis.tisch,
+      partieStand: partiestand,
+      bereich: 'TISCH',
+      wirdGeladen: false,
+      // Countdown beenden wenn neues Spiel gestartet wird
+      countdownSekunden: ereignis.ereignisTyp === 'SPIEL_GESTARTET' ? null : this.zustand.countdownSekunden
+    });
     if (ereignis.tisch.partieId && ereignis.tisch.partieId !== this.aktuellePartieAbo) {
       this.registrierePartieAbos(ereignis.tisch.partieId);
     }

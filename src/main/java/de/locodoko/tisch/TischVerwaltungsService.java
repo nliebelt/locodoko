@@ -9,6 +9,8 @@ import de.locodoko.partie.Spiel;
 import de.locodoko.spieler.SpielerEntity;
 import de.locodoko.spieler.SpielerId;
 import de.locodoko.spieler.SpielerRepository;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.transaction.annotation.Transactional;
@@ -20,6 +22,8 @@ import java.util.UUID;
 
 @Service
 public class TischVerwaltungsService {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(TischVerwaltungsService.class);
 
     private final TischRepository tischRepository;
     private final PartieRepository partieRepository;
@@ -249,6 +253,35 @@ public class TischVerwaltungsService {
                 "Neue Partie kann nur nach vollstaendigem Abschluss der aktuellen Partie gestartet werden."
             );
         }
+        starteNaechstePartieIntern(tisch);
+        return new BestaetigungAntwort("Neue Partie gestartet.");
+    }
+
+    /**
+     * Startet automatisch eine neue Partie nach Ablauf des Countdowns.
+     * Keine Session-Validierung — wird serverseitig vom {@link PartieCountdownService} aufgerufen.
+     *
+     * @param tischId ID des Tisches, an dem eine neue Partie gestartet werden soll
+     */
+    @Transactional
+    public void starteNeuePartieAutomat(TischId tischId) {
+        TischEntity tisch = ladeTischEntityMitSperre(tischId);
+        if (tisch.status() != TischStatus.IM_SPIEL) {
+            LOGGER.warn("Auto-Start abgebrochen: Tisch nicht IM_SPIEL [tischId={}]", tischId);
+            return;
+        }
+        if (tisch.partie() != null && tisch.partie().statusAusDb() == PartieStatus.LAUFEND) {
+            // Manuell bereits gestartet — kein Auto-Start noetig
+            return;
+        }
+        if (tisch.partie() == null || tisch.partie().statusAusDb() != PartieStatus.BEENDET) {
+            LOGGER.warn("Auto-Start abgebrochen: Partie nicht BEENDET [tischId={}]", tischId);
+            return;
+        }
+        starteNaechstePartieIntern(tisch);
+    }
+
+    private void starteNaechstePartieIntern(TischEntity tisch) {
         tisch.spieler().stream()
             .filter(s -> !s.istKi() && s.istKiUebernommen())
             .forEach(s -> {
@@ -267,7 +300,6 @@ public class TischVerwaltungsService {
             TischEreignisAntwort.spielGestartet(tischAntwort, PartieStandAntwort.aus(gespeicherterTisch))
         );
         veroeffentlichePartieAktualisierung(gespeicherterTisch);
-        return new BestaetigungAntwort("Neue Partie gestartet.");
     }
 
     @Transactional(readOnly = true)
