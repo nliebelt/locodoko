@@ -46,7 +46,11 @@ public final class VariableTrumpfsoloTrumpfOrdnung implements TrumpfOrdnung {
             return true;
         }
         if (karte.farbe() == trumpfFarbe) {
-            return karte.wert() != Kartenwert.NEUN || !spielregeln.ohneNeunen();
+            // Neun ist kein Trumpf wenn ohneNeunen aktiv
+            if (karte.wert() == Kartenwert.NEUN && spielregeln.ohneNeunen()) {
+                return false;
+            }
+            return true;
         }
         // Herz-Zehn ist KEIN Dulle-Sonderfall in variablen Trumpfsoli
         return false;

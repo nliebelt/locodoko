@@ -1,22 +1,37 @@
 # IMPLEMENTATION_PLAN — Locodoko Doppelkopf
 
 ## Notiz
-Stand: 2026-04-28 (Plan-Run #72 — Fokus: FEAT-SCHWEINCHEN-ANSAGE)
+Stand: 2026-04-28 (Plan-Run #74)
 
-**Was wurde implementiert:**
-- FEAT-SCHWEINCHEN-ANSAGE: `spielerPosition` in `PartieEreignisAntwort.SchweinchenGemeldet` ergänzt
-  - Backend: `SchweinchenGemeldet`-Record um `spielerPosition`-Feld erweitert; Factory-Methode angepasst
-  - Backend: `SpielAktionsService.veroeffentlicheSchweinchenEreignis()` vereinfacht (kein Spiel-Reload mehr); Position aus `SpielEreignis.SchweinchenGemeldet` direkt übergeben
-  - Backend: `KiOrchestrierungService` — doppelten Schweinchen-Broadcast beseitigt (proaktiver Check entfernt, nur noch event-basierter Pfad)
-  - Frontend: `SchweinchenGemeldetEreignis` DTO um `spielerPosition` erweitert
-  - Frontend: `TischSzene.ts` Namenssuche auf `absolutePosition` umgestellt (Bugfix: Banner zeigte immer "Spieler:" bei Nicht-SUED-Spielern)
-  - Tests: `PartieEreignisAntwortTest` (Backend), Schweinchen-Banner-Test in `TischSzene.test.ts`. 289 Tests grün.
+**Was wurde implementiert (Plan-Run #74):**
+- BUG-TRUMPFSOLO-NEUN: `VariableTrumpfsoloTrumpfOrdnung.java` — Neun-Ausschluss-Bedingung von implizitem `|| !` auf explizites Early-Return-Muster umgestellt (`karte.wert() == Kartenwert.NEUN && spielregeln.ohneNeunen()` → return false). Logisch äquivalent, aber klar lesbar und nicht invertierbar.
+- Neuer Test `neunIstKeinTrumpfBeiTrumpfsoloMitOhneNeunenRegeln` in `SoloTrumpfOrdnungenTest` — deckt Herz-Solo + Pik-Solo mit ohneNeunen=true/false ab. 290 Tests grün.
 
-**Nächste Priorität:** FEAT-BOCK-CONFIG: `herzDurchgegangenNurHoch`-Flag in `TischKonfiguration`. Oder FEAT-ANSAGEN-FAB (Frontend).
+**Was wurde entdeckt (Plan-Run #73):**
+- FEAT-SCHMEISSEN vollständig implementiert → [x]
+- TASK-AUTH-FORMLOGIN: nur Spec-Update nötig
+- BUG-DKV-PRESET in Phase 1 ergänzt
+- FEAT-SONDERPUNKT-DOMAIN-EVENTS, FEAT-TASTATUR-AUTOFOKUS-SHORTCUTS, FEAT-PRESET-API neu identifiziert
+
+**Nächste Priorität:** BUG-DKV-PRESET (reproduzierbarer Spielabbruch mit DKV-Preset). Dann FEAT-SONDERPUNKT-DOMAIN-EVENTS.
 
 ---
 
 ## Phase 1 — Kern-Stabilität & Spec-Fixes (PRIO)
+
+### BUG-TRUMPFSOLO-NEUN (Backend) ← NEU Plan-Run #73
+**Problem:** `VariableTrumpfsoloTrumpfOrdnung.java` Zeile ~49: Bedingung `karte.wert() != Kartenwert.NEUN || !spielregeln.ohneNeunen()` ist logisch invertiert. Neunen könnten bei aktivem `ohneNeunen=true` fälschlich als Trumpf gewertet werden.
+Entscheidung: Code ist fehlerhaft — laut Spec dürfen Neunen bei `ohneNeunen=true` grundsätzlich nie Trumpf sein.
+- [x] Backend: `VariableTrumpfsoloTrumpfOrdnung.java` — Neun-Ausschluss-Bedingung auf `karte.wert() == Kartenwert.NEUN && spielregeln.ohneNeunen()` korrigieren (kein Trumpf wenn Neun UND ohneNeunen aktiv).
+- [x] Validation: neuer Test `neunIstKeinTrumpfBeiTrumpfsoloMitOhneNeunenRegeln`. 290 Tests grün.
+
+### BUG-DKV-PRESET (Backend) ← NEU Plan-Run #73
+**Problem:** Spiel schließt mit DKV-Turnier-Preset (alle Sonderregeln deaktiviert) nicht korrekt ab. Reproduzierbar.
+Entscheidung: Bug im Code. Spec-Auswertungsregeln gelten auch ohne Sonderregeln.
+Zu prüfen: `Spiel.werteAus()` oder `PunkteRechner` — welcher Codepfad ist bei allen-inaktiv-Kombination anders?
+- [ ] Backend: Ursache in `Spiel.werteAus()` / `PunkteRechner` lokalisieren (Debugging mit DKV-Preset-Testfall).
+- [ ] Backend: Fix + Regression-Test: `SpielTest.spielSchliesstAbMitDkvPreset()`.
+- [ ] Validation: `mvn test`.
 
 ### BUG-KI-HAENGER-FUCHS (Backend)
 **Problem:** KI bleibt stehen nach Sonderpunkten (Fuchs gefangen etc.).
@@ -78,6 +93,14 @@ Entscheidung: Spec ist korrekt, bisher nur implizit.
 - [x] Frontend: `SchweinchenGemeldetEreignis` DTO um `spielerPosition` erweitert; `TischSzene.ts` auf `absolutePosition` umgestellt.
 - [x] Validation: 289 Backend-Tests, 60 Frontend-Tests grün.
 
+### FEAT-SONDERPUNKT-DOMAIN-EVENTS (Backend) ← NEU Plan-Run #73
+**Problem:** `FuchsGefangen`, `KarlchenGespielt`, `DoppelkopfGestochen` existieren nur als Sonderpunkt-Felder in der Snapshot-Antwort, nicht als Domain Events. Dadurch kann der `KiEventAdapter` nicht darauf reagieren — möglicherweise Ursache für KI-Hänger nach Sonderpunkten (trotz BUG-KI-HAENGER-FUCHS-Fix).
+Entscheidung: Spec (`architektur-domain-events.md`) fordert Domain Events für spielrelevante Ereignisse. Code ist unvollständig.
+- [ ] Backend: `SpielEreignis.java` — `FuchsGefangen`, `KarlchenGespielt`, `DoppelkopfGestochen` als neue Sealed-Interface-Records hinzufügen.
+- [ ] Backend: `SpielAktionsService` / `Spiel.java` — Events nach Sonderpunktermittlung publizieren (via `ApplicationEventPublisher`).
+- [ ] Backend: `KiEventAdapter` — falls KI-Reaktion auf Sonderpunkt-Events nötig, Listener registrieren.
+- [ ] Validation: `mvn test`.
+
 ### FEAT-BOCK-CONFIG (Backend)
 **Problem:** "Herz durchgegangen" soll konfigurierbar sein.
 - [ ] Backend: `TischKonfiguration` um `herzDurchgegangenNurHoch: boolean` erweitern.
@@ -100,6 +123,12 @@ Entscheidung: Spec ist korrekt, bisher nur implizit.
 - [ ] FEAT-HUD-SIDEBAR: "Letzte 3 Stiche" in der Phaser-Sidebar implementieren (derzeit leer).
 - [ ] BUG-STICH-UMDREHEN: Erlauben, alle Stiche umzudrehen (nicht nur den eigenen).
 - [ ] FEAT-LOBBY-POLLING: Liste offener Tische im Startscreen funktional machen.
+
+### FEAT-TASTATUR-AUTOFOKUS-SHORTCUTS (Frontend) ← NEU Plan-Run #73
+**Problem:** `frontend-tastatursteuerung.md` fordert (a) automatischen Fokus auf die erste spielbare Karte bei Spielzug-Beginn, und (b) Ansage-Shortcuts `R` (Re) und `K` (Kontra). Beides fehlt in `TischInputHandler.ts`.
+- [ ] Frontend: `TischInputHandler.ts` — bei `NaechsterSpielerErwartet`-Event erste spielbare Karte automatisch fokussieren (Index 0 der spielbaren Karten).
+- [ ] Frontend: `TischInputHandler.ts` — KeyHandler für `R` und `K`: rufen `kannAnsagen()` ab; falls true, senden WebSocket-Message `/ansage`.
+- [ ] Validation: `npm test` + `npm run build`.
 
 ### FEAT-ANSAGEN-FAB (Frontend)
 **Problem (neu — Plan-Run #65):** `frontend-ui-logik.md` fordert eine "Floating Action Bar" für Re/Kontra-Ansagen zwischen Stichmitte und Kartenfächer. Aktuell nur `//TODO`-Kommentar in `TischUIManager.ts`.
@@ -124,21 +153,33 @@ Entscheidung: Spec ist korrekt, bisher nur implizit.
 ## Phase 5 — Backlog (kein aktueller Blocker)
 
 ### FEAT-SCHMEISSEN (Backend)
-**Problem (neu — Plan-Run #65):** `specs/spielablauf.md` definiert Schmeißen-Regeln ("Fünf Neunen", "Wenig Trumpf"), aber nicht implementiert.
-- [ ] Backend: `Vorbehalt.java` / `VorbehaltPhase` — Schmeißen als höchste Priorität (Prio 4) implementieren.
-- [ ] Backend: Zwei Schmeißen-Gründe: `FUENF_NEUNEN` (≥5 Neunen auf Hand) und `WENIG_TRUMPF` (≤2 Trümpfe).
-- [ ] Backend: Bei Schmeißen: Karten neu mischen und verteilen (neue VorbehaltRunde).
-- [ ] Validation: Unit-Tests für beide Schmeißen-Fälle.
+**Problem (neu — Plan-Run #65):** `specs/spielablauf.md` definiert Schmeißen-Regeln ("Fünf Neunen", "Wenig Trumpf").
+**Plan-Run #73:** Bereits vollständig implementiert (3 Varianten: 5+ Könige, 5+ Neunen, ≤2 Trümpfe + Wiederholungsschutz, Priorität 4).
+- [x] Backend: `Vorbehalt.java` / `VorbehaltPhase` — Schmeißen als höchste Priorität (Prio 4) implementiert.
+- [x] Backend: Drei Schmeißen-Gründe: `FUENF_KOENIGE`, `FUENF_NEUNEN`, `WENIG_TRUMPF` + Wiederholungsschutz.
+- [x] Backend: Bei Schmeißen: Karten neu mischen und verteilen (neue VorbehaltRunde).
+- [x] Validation: Unit-Tests vorhanden.
+
+### FEAT-PRESET-API (Backend) ← NEU Plan-Run #73
+**Problem:** Verfügbare Regel-Presets (locoBlatRegeln, dkvRegeln, ohneNeunenLocoBlatRegeln) existieren nur als Backend-Factory-Methoden. Kein REST-Endpoint zur Auslesung, daher kann das Frontend kein Preset-Dropdown im Tisch-Erstellungs-Dialog anbieten.
+- [ ] Backend: `GET /api/tische/presets` — gibt Liste verfügbarer Preset-Namen mit Beschreibung zurück.
+- [ ] Backend: `POST /api/tische` — akzeptiert optional `presetName` statt manueller Konfiguration.
+- [ ] Frontend (optional): Preset-Dropdown im Tisch-Erstellungs-Dialog.
+- [ ] Validation: `mvn test`.
 
 ### TASK-AUTH-FORMLOGIN (Backend)
-**Problem (neu — Plan-Run #65):** `authentifizierung.md` spricht von Username/Passwort parallel zu OAuth2, aber `formLogin` ist im Code disabled. Prüfen ob dies Absicht ist.
-- [ ] Backend: `SecurityConfiguration.java` — `formLogin` und `LocodokoBenutzerdienst` prüfen: ist Passwort-Auth explizit deaktiviert oder vergessen?
-- [ ] Entscheidung dokumentieren (Kommentar im Code oder Spec-Update).
+**Problem (neu — Plan-Run #65):** `authentifizierung.md` spricht von Username/Passwort parallel zu OAuth2, aber `formLogin` war im Code fraglich.
+**Plan-Run #73:** Passwort-Auth mit Rate-Limiting (10 Versuche/Min) ist bereits aktiv implementiert. Kein Code-Task nötig.
+- [x] Entscheidung: Passwort-Auth (`formLogin` + `LocodokoBenutzerdienst`) ist aktiv. Rate-Limiting bereits vorhanden.
+- [ ] Spec: `specs/authentifizierung.md` — DoD-Status aktualisieren (→ SPEC-AUTH).
 
 ---
 
 ## Spec-Updates
 - [x] SPEC-SOLO: Text an 25% Anpassung anpassen.
 - [x] SPEC-LOCO: Im Code dokumentiert.
-- [ ] SPEC-SCHWEINCHEN: `specs/schweinchen.md` — bekannten Bug-Eintrag entfernen sobald BUG-SCHWEINCHEN gefixt ist; Gültigkeit für Soli (Solo-Trumpf = AN, andere Soli = AUS) dokumentieren.
-- [ ] SPEC-AUTH: `specs/authentifizierung.md` — nach TASK-AUTH-FORMLOGIN klären ob Passwort-Auth-Abschnitt entfernt oder aktualisiert werden muss.
+- [ ] SPEC-SCHWEINCHEN: `specs/schweinchen.md` — bekannten Bug-Eintrag entfernen (BUG-SCHWEINCHEN ist [x]); Gültigkeit für Soli (Solo-Trumpf = AN, andere Soli = AUS) dokumentieren. ← Jetzt fällig.
+- [ ] SPEC-AUTH: `specs/authentifizierung.md` — DoD-Status aktualisieren: Passwort-Auth + OAuth2 + Rate-Limiting sind implementiert (alle [ ] → [x]).
+- [ ] SPEC-SPIELER-PROFIL: `specs/spieler-profil.md` — Status von "Zu implementieren" auf "Abgeschlossen" setzen; DoD-Checkboxen [ ] → [x] (anzeigeName, avatarFarbe, SpielerStatistik, PartieErgebnis vollständig implementiert). ← NEU Plan-Run #73
+- [ ] SPEC-VERBINDUNGSABBRUCH: `specs/verbindungsabbruch.md` — DoD-Punkt "KI-Übernahme-Timeout deaktiviert für Einzelspieler" als [x] markieren (Code prüft bereits `humanPlayerCount == 1`). ← NEU Plan-Run #73
+- [ ] SPEC-TISCHKONFIGURATION: `specs/tischkonfiguration.md` — DoD-Punkt "Neue Optionen ergänzt: bockrundenAktiv..." als [x] markieren (alle Props im Code vorhanden). ← NEU Plan-Run #73

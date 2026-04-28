@@ -118,6 +118,31 @@ class SoloTrumpfOrdnungenTest {
     }
 
     @Test
+    void neunIstKeinTrumpfBeiTrumpfsoloMitOhneNeunenRegeln() {
+        // Warum wichtig: Bei ohneNeunen=true darf die Neun der Trumpffarbe nie als Trumpf gewertet
+        // werden. Ohne diesen Test koennte eine logische Invertierung in der Ausschluss-Bedingung
+        // unbemerkt bleiben und Neunen faelschlich als Trumpf einstufen.
+        Spielregeln ohneNeunen = Spielregeln.ohneNeunenRegeln();
+        Spielregeln mitNeunen = Spielregeln.standardRegeln();
+
+        TrumpfOrdnung herzsoloOhneNeunen = new VariableTrumpfsoloTrumpfOrdnung(Farbe.HERZ, ohneNeunen);
+        assertFalse(herzsoloOhneNeunen.istTrumpf(karte(Farbe.HERZ, Kartenwert.NEUN, 1)),
+            "Herz-Neun darf bei ohneNeunen=true kein Trumpf sein.");
+        assertTrue(herzsoloOhneNeunen.istTrumpf(karte(Farbe.HERZ, Kartenwert.KOENIG, 1)),
+            "Herz-Koenig muss auch bei ohneNeunen=true Trumpf bleiben.");
+
+        TrumpfOrdnung herzsoloMitNeunen = new VariableTrumpfsoloTrumpfOrdnung(Farbe.HERZ, mitNeunen);
+        assertTrue(herzsoloMitNeunen.istTrumpf(karte(Farbe.HERZ, Kartenwert.NEUN, 1)),
+            "Herz-Neun muss bei ohneNeunen=false (Standard) Trumpf sein.");
+
+        TrumpfOrdnung piksoloOhneNeunen = new VariableTrumpfsoloTrumpfOrdnung(Farbe.PIK, ohneNeunen);
+        assertFalse(piksoloOhneNeunen.istTrumpf(karte(Farbe.PIK, Kartenwert.NEUN, 1)),
+            "Pik-Neun darf bei ohneNeunen=true im Piksolo kein Trumpf sein.");
+        assertFalse(piksoloOhneNeunen.istTrumpf(karte(Farbe.HERZ, Kartenwert.NEUN, 1)),
+            "Herz-Neun ist im Piksolo sowieso keine Trumpffarbe.");
+    }
+
+    @Test
     void rangordnungImVariablenTrumpfsoloIstKorrekt() {
         // Warum wichtig: Buben und Damen muessen ueber den Farbtrumpfen rangieren.
         // Ohne diesen Test koennten Stiche falsch gewertet werden.
