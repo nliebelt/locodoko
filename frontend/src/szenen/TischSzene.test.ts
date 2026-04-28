@@ -198,4 +198,70 @@ describe('TischSzene', () => {
 
     expect(bannerSpy).toHaveBeenCalledWith('Ben: Schweinchen!');
   });
+
+  it('zeigt Ansage-Buttons (DOM-Marker) wenn moeglicheAnsagen gesetzt sind', () => {
+    // Wichtig: Sichert ab, dass der Spieler die Ansage-Optionen in der FAB sehen kann.
+    baueSzene(baueZustand({
+      partieStand: bauePartieStand(baueLaufendesSpiel({ moeglicheAnsagen: ['RE', 'KONTRA'] }))
+    }));
+    expect(document.querySelector('[data-testid="btn-ansage-re"]')).not.toBeNull();
+    expect(document.querySelector('[data-testid="btn-ansage-kontra"]')).not.toBeNull();
+  });
+
+  it('zeigt keine Ansage-Buttons wenn moeglicheAnsagen leer sind', () => {
+    // Wichtig: Verhindert tote UI-Elemente wenn keine Ansage regelkonform moeglich ist.
+    baueSzene(baueZustand({
+      partieStand: bauePartieStand(baueLaufendesSpiel({ moeglicheAnsagen: [] }))
+    }));
+    expect(document.querySelector('[data-testid^="btn-ansage-"]')).toBeNull();
+  });
+
+  it('zeigt keine Ansage-Buttons wenn ein anderer Spieler am Zug ist', () => {
+    // Wichtig: Verhindert, dass FAB-Buttons fuer fremde Spieler angezeigt werden.
+    baueSzene(baueZustand({
+      partieStand: bauePartieStand(baueLaufendesSpiel({ aktuellerSpieler: 'WEST', moeglicheAnsagen: ['RE'] }))
+    }));
+    expect(document.querySelector('[data-testid^="btn-ansage-"]')).toBeNull();
+  });
+
+  it('entfernt Ansage-Buttons wenn Zustand auf keine Ansagen wechselt', () => {
+    // Wichtig: Nach einer Ansage oder Spielzugwechsel darf kein Geister-Button sichtbar bleiben.
+    baueSzene(baueZustand({
+      partieStand: bauePartieStand(baueLaufendesSpiel({ moeglicheAnsagen: ['RE'] }))
+    }));
+    expect(document.querySelector('[data-testid="btn-ansage-re"]')).not.toBeNull();
+
+    appStoreHarness.setZustand(baueZustand({
+      partieStand: bauePartieStand(baueLaufendesSpiel({ moeglicheAnsagen: [] }))
+    }));
+    appStoreHarness.sendeZustand();
+    expect(document.querySelector('[data-testid="btn-ansage-re"]')).toBeNull();
+  });
+
+  it('R-Taste loest RE-Ansage aus', () => {
+    // Wichtig: Tastatur-Shortcut fuer schnelles Re-Ansagen ohne Maus.
+    baueSzene(baueZustand({
+      partieStand: bauePartieStand(baueLaufendesSpiel({ moeglicheAnsagen: ['RE'] }))
+    }));
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'r', bubbles: true }));
+    expect(appStoreHarness.store.sageAnsageAn).toHaveBeenCalledWith('RE');
+  });
+
+  it('K-Taste loest KONTRA-Ansage aus', () => {
+    // Wichtig: Tastatur-Shortcut fuer schnelles Kontra-Ansagen ohne Maus.
+    baueSzene(baueZustand({
+      partieStand: bauePartieStand(baueLaufendesSpiel({ moeglicheAnsagen: ['KONTRA'] }))
+    }));
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'k', bubbles: true }));
+    expect(appStoreHarness.store.sageAnsageAn).toHaveBeenCalledWith('KONTRA');
+  });
+
+  it('R-Taste loest keine Ansage aus wenn keine Ansagen verfuegbar sind', () => {
+    // Wichtig: Shortcut darf nicht "blind" feuern wenn keine Ansage moeglich ist.
+    baueSzene(baueZustand({
+      partieStand: bauePartieStand(baueLaufendesSpiel({ moeglicheAnsagen: [] }))
+    }));
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'r', bubbles: true }));
+    expect(appStoreHarness.store.sageAnsageAn).not.toHaveBeenCalled();
+  });
 });

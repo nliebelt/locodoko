@@ -1,12 +1,12 @@
 # IMPLEMENTATION_PLAN — Locodoko Doppelkopf
 
 ## Notiz
-Stand: 2026-04-28 (Plan-Run #82)
+Stand: 2026-04-28 (Plan-Run #83)
 
-**Was wurde implementiert (Plan-Run #82):**
-- FEAT-COUNTDOWN: `TischEreignisTyp.COUNTDOWN_TICK` + `PartieCountdownService` (10s-Timer, 1s-Ticks, konfigurierbarer mit `locodoko.countdown.dauer-sekunden`). `TischVerwaltungsService.starteNeuePartieAutomat()` für serverseitigen Auto-Start. Frontend: `countdownSekunden` in `AppZustand`, `COUNTDOWN_TICK`-Handler in `AppStore`, Countdown-Anzeige im Partie-Ende-Modal, automatisches Modal-Schliessen bei neuem Spiel. 4 neue Unit-Tests in `PartieCountdownServiceTest`. 299 Backend-Tests, 60 Frontend-Tests grün.
+**Was wurde implementiert (Plan-Run #83):**
+- FEAT-ANSAGEN-FAB: Analyse ergab — Feature war bereits vollständig in `TischSzene.renderAnsageButtons()` implementiert (Phaser FAB für alle Ansage-Typen, DOM-Marker für E2E, R/K-Shortcuts in `TischInputHandler`). 7 neue Tests: DOM-Marker-Präsenz bei verfügbaren Ansagen, Absence bei leerer Liste und fremdem Spieler, Zustandsübergang (Buttons verschwinden), R/K-Shortcuts positiv + Negativ-Test. `specs/frontend-ui-logik.md` DoD auf [x] gesetzt. 67 Frontend-Tests grün.
 
-**Nächste Priorität:** Phase 4 — UI-Punkte: `FEAT-ANSAGEN-FAB` (Frontend, Floating Action Bar für Re/Kontra) oder `FEAT-SEITENLADE` (Info-Panel).
+**Nächste Priorität:** Phase 4 — `FEAT-SEITENLADE` (Info-Panel mit Spielerstand, Ansagehistorie, letzten Stichen) oder `FEAT-HUD-SIDEBAR` (Letzte 3 Stiche in Phaser-Sidebar).
 
 **Was wurde implementiert (Plan-Run #81):**
 - TASK-PRESET-UNIT-TESTS: `SpielregelnTest` um zwei vollständige Feldprüfungs-Tests erweitert: `locoBlatRegelnHatKorrekteWerteFuerAlleFelder()` und `dkvRegelnHatKorrekteWerteFuerAlleFelder()`. Jeder Test prüft alle 21 Felder des `Spielregeln`-Records explizit — sichert ab, dass ein Refactoring keine Preset-Werte unbemerkt verändert. 295 Backend-Tests grün (SpielregelnTest: 3→5 Tests).
@@ -147,11 +147,13 @@ Analyse (Plan-Run #80): Beide Features waren bereits vollständig implementiert 
 - [x] Frontend: KeyHandler für `R` und `K` (in `TischInputHandler.verarbeiteAnsageTaste()`).
 - [x] Validation: 60 Frontend-Tests grün, Build erfolgreich.
 
-### FEAT-ANSAGEN-FAB (Frontend)
-**Problem (neu — Plan-Run #65):** `frontend-ui-logik.md` fordert eine "Floating Action Bar" für Re/Kontra-Ansagen zwischen Stichmitte und Kartenfächer. Aktuell nur `//TODO`-Kommentar in `TischUIManager.ts`.
-- [ ] Frontend: `TischUIManager.ts` — Floating Action Bar mit Re/Kontra-Buttons implementieren (nur sichtbar wenn `kannAnsagen()` true).
-- [ ] Frontend: Buttons triggern WebSocket-Message `/ansage` mit Ansagetyp.
-- [ ] Validation: `npm test` + `npm run build`.
+### FEAT-ANSAGEN-FAB (Frontend) ← abgeschlossen Plan-Run #83
+**Problem (neu — Plan-Run #65):** `frontend-ui-logik.md` fordert eine "Floating Action Bar" für Re/Kontra-Ansagen zwischen Stichmitte und Kartenfächer.
+Analyse (Plan-Run #83): Feature war bereits vollständig in `TischSzene.renderAnsageButtons()` implementiert (Phaser-Buttons mit DOM-Markern, R/K-Shortcuts in `TischInputHandler.verarbeiteAnsageTaste()`). Nur Tests fehlten.
+- [x] Frontend: `TischSzene.renderAnsageButtons()` — Phaser FAB mit allen Ansage-Typen (Re bis Schwarz), nur sichtbar bei SUED + moeglicheAnsagen > 0.
+- [x] Frontend: Buttons triggern `appStore.sageAnsageAn(a)` → WebSocket `/app/tisch/{id}/ansage`.
+- [x] Frontend: R/K-Tastatur-Shortcuts in `TischInputHandler.verarbeiteAnsageTaste()`.
+- [x] Validation: 7 neue Tests (DOM-Marker-Präsenz, Zustandsübergang, R/K-Shortcuts, Negativ-Test). 67 Tests grün, Build erfolgreich.
 
 ### FEAT-SEITENLADE (Frontend)
 **Problem (neu — Plan-Run #65):** Info-Panel (Spielerstand, Ansagehistorie, Stichübersicht) ist laut `frontend-ui-logik.md` spezifiziert, aktuell nur Stub.
