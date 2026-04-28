@@ -1,9 +1,9 @@
 import Phaser from 'phaser';
 import { TEXTUR_FILZ } from '../assets/AssetLoader';
 import { appStore } from '../anwendung';
-import { AppStore, type AppZustand } from '../store/AppStore';
+import type { AppZustand } from '../store/AppStore';
 import { PhaserButton } from './PhaserButton';
-import type { TischPresetAntwort } from '../generated/api-types';
+import type { TischPresetAntwort } from '../modelle/SpielverwaltungDto';
 
 /**
  * Spielverwaltungs-Szene (Start-Screen).
@@ -126,7 +126,6 @@ export class SpielverwaltungsSzene extends Phaser.Scene {
   }
 
   private zeigeErstelleTischModal(): void {
-    const appStore = AppStore.instanz();
     const existing = document.getElementById('erstelle-tisch-modal');
     if (existing) existing.remove();
 

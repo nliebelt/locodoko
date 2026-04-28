@@ -375,6 +375,50 @@ describe('TischSzene', () => {
     expect(kinder[kiTextIdx - 1].interactive).toBe(true);
   });
 
+  it('Klick auf eigenen Stich-Stapel (SUED) zeigt Overlay', () => {
+    // Wichtig: Grundverhalten — eigene Stiche koennen weiterhin umgedreht werden (Regression-Schutz fuer den Fix).
+    const stich = { spielNummer: 1, stichNummer: 1, aufspielerPosition: 'SUED', gewinnerPosition: 'SUED', augen: 25, gespielteKarten: [{ karte: karte('H1', 'HERZ', 'ZEHN'), spielerPosition: 'SUED' }] };
+    const spielerMitStich = { ...baueSpieler('SUED', 'Anna', { verbleibendeKarten: 0, sichtbareHandkarten: [] }), gewonneneStiche: 2 };
+    const { s } = baueSzene(baueZustand({
+      partieStand: { ...bauePartieStand(baueLaufendesSpiel({ spieler: [spielerMitStich, baueSpieler('WEST', 'Ben'), baueSpieler('NORD', 'Clara'), baueSpieler('OST', 'Dirk')] })), letzteAbgeschlosseneStiche: [stich] }
+    }));
+    expect(s['letzterStichOverlay']).toBeUndefined();
+    const kinder = (s['tischEbene'] as any).kinder;
+    // Stich-HitZone hat breite ≈ stapelW*1.3 ≈ 79 bei 1280px — Buttons haben ≥110px
+    const hitZone = kinder.find((k: any) => k.typ === 'rectangle' && k.interactive === true && k.breite < 100);
+    expect(hitZone).toBeDefined();
+    hitZone.emit('pointerdown');
+    expect(s['letzterStichOverlay']).toBeDefined();
+  });
+
+  it('Klick auf fremden Stich-Stapel (WEST) zeigt Overlay', () => {
+    // Wichtig: Kernfix — alle Spieler duerfen den letzten Stich jedes anderen Spielers umdrehen, nicht nur den eigenen.
+    const stichWest = { spielNummer: 1, stichNummer: 2, aufspielerPosition: 'WEST', gewinnerPosition: 'WEST', augen: 14, gespielteKarten: [{ karte: karte('K1', 'KREUZ', 'AS'), spielerPosition: 'WEST' }] };
+    const westMitStich = { ...baueSpieler('WEST', 'Ben'), gewonneneStiche: 1 };
+    const { s } = baueSzene(baueZustand({
+      partieStand: { ...bauePartieStand(baueLaufendesSpiel({ spieler: [baueSpieler('SUED', 'Anna', { verbleibendeKarten: 0, sichtbareHandkarten: [] }), westMitStich, baueSpieler('NORD', 'Clara'), baueSpieler('OST', 'Dirk')] })), letzteAbgeschlosseneStiche: [stichWest] }
+    }));
+    expect(s['letzterStichOverlay']).toBeUndefined();
+    const kinder = (s['tischEbene'] as any).kinder;
+    // Stich-HitZone hat breite ≈ stapelW*1.3 ≈ 79 bei 1280px — Buttons haben ≥110px
+    const hitZone = kinder.find((k: any) => k.typ === 'rectangle' && k.interactive === true && k.breite < 100);
+    expect(hitZone).toBeDefined();
+    hitZone.emit('pointerdown');
+    expect(s['letzterStichOverlay']).toBeDefined();
+  });
+
+  it('Kein Klick-Handler wenn kein letzter Stich fuer Spieler vorhanden', () => {
+    // Wichtig: Verhindert fehlerhafte Interaktivitaet auf Stich-Stapeln ohne zugehoerigen letzten Stich.
+    const westOhneStich = { ...baueSpieler('WEST', 'Ben'), gewonneneStiche: 2 };
+    const { s } = baueSzene(baueZustand({
+      partieStand: { ...bauePartieStand(baueLaufendesSpiel({ spieler: [baueSpieler('SUED', 'Anna', { verbleibendeKarten: 0, sichtbareHandkarten: [] }), westOhneStich, baueSpieler('NORD', 'Clara'), baueSpieler('OST', 'Dirk')] })), letzteAbgeschlosseneStiche: [] }
+    }));
+    const kinder = (s['tischEbene'] as any).kinder;
+    // Stich-HitZone hat breite ≈ stapelW*1.3 ≈ 79 bei 1280px — Buttons haben ≥110px
+    const hitZones = kinder.filter((k: any) => k.typ === 'rectangle' && k.interactive === true && k.breite < 100);
+    expect(hitZones.length).toBe(0);
+  });
+
   it('Animationsgeschwindigkeit Button zykliert und speichert in localStorage', () => {
     // Wichtig: Persistenz der Animationsgeschwindigkeit ist Kernfunktion; ohne diesen Test koennte localStorage-Schreiben leise wegfallen.
     const { s } = baueSzene(baueZustand());

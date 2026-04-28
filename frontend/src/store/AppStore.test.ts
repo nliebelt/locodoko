@@ -15,7 +15,7 @@ import type { SpielverwaltungApi } from '../services/SpielverwaltungApi';
 import type { EchtzeitPort, NachrichtenHandler } from '../services/SpielverwaltungEchtzeit';
 import { AppStore } from './AppStore';
 
-class FakeApi implements Pick<SpielverwaltungApi, 'initialisiereSpielerSession' | 'listeTische' | 'erstelleTisch' | 'betreteTisch' | 'betreteTischViaCode' | 'verlasseTisch' | 'starteTisch' | 'starteNeuePartie' | 'aktualisiereTischKonfiguration' | 'ladeTisch' | 'schnellstart' | 'registrieren' | 'einloggen' | 'ausloggen' | 'kickeSpieler'> {
+class FakeApi implements Pick<SpielverwaltungApi, 'initialisiereSpielerSession' | 'listeTische' | 'erstelleTisch' | 'betreteTisch' | 'betreteTischViaCode' | 'verlasseTisch' | 'starteTisch' | 'starteNeuePartie' | 'aktualisiereTischKonfiguration' | 'ladeTisch' | 'schnellstart' | 'registrieren' | 'einloggen' | 'ausloggen' | 'kickeSpieler' | 'gibPresets'> {
   constructor(
     private readonly spieler: SpielerSessionAntwort,
     private readonly tische: TischListenEintragAntwort[],
@@ -80,6 +80,10 @@ class FakeApi implements Pick<SpielverwaltungApi, 'initialisiereSpielerSession' 
 
   async kickeSpieler(): Promise<{ nachricht: string }> {
     return { nachricht: 'ok' };
+  }
+
+  async gibPresets(): Promise<[]> {
+    return [];
   }
 }
 

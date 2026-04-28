@@ -268,3 +268,9 @@ export interface SpielverwaltungWebSocketFehlerAntwort {
   fehlerCode: string;
   nachricht: string;
 }
+
+export interface TischPresetAntwort {
+  name?: string;
+  label?: string;
+  beschreibung?: string;
+}

@@ -13,6 +13,7 @@ import type {
   TischEreignisAntwort,
   TischListenEintragAntwort,
   TischlisteEreignisAntwort,
+  TischPresetAntwort,
   Uuid,
   VorbehaltAnsage
 } from '../modelle/SpielverwaltungDto';

@@ -796,13 +796,11 @@ export class TischSzene extends Phaser.Scene {
         ebene.add(this.erstelleKartenansicht(kx, ky, stapelW, stapelH, { verdeckt: true }).setAngle(pos.winkel).setAlpha(0.88));
       }
       ebene.add(this.add.text(pos.x, pos.y + Math.round(stapelH * 0.65), `${spieler.stiche}`, { color: '#ffd166', fontSize: `${Math.round(Math.max(10, breite * 0.009))}px`, fontStyle: 'bold', backgroundColor: '#0d3d1e', padding: { x: 3, y: 1 } }).setOrigin(0.5));
-      if (spieler.istSelbst) {
-        const letzterEigenerStich = modell.letzteAbgeschlosseneStiche.filter((s) => s.gewinnerPosition === 'SUED').at(-1);
-        if (letzterEigenerStich) {
-          const hitZone = this.add.rectangle(pos.x, pos.y, stapelW * 1.3, stapelH * 1.3 + stapelH * 0.65, 0xffffff, 0).setInteractive({ useHandCursor: true });
-          hitZone.on('pointerdown', () => { if (this.letzterStichOverlay) this.versteckeLetztesStichOverlay(); else this.zeigeLetztesStichOverlay(letzterEigenerStich, breite, hoehe); });
-          ebene.add(hitZone);
-        }
+      const letzterStichDesSpielers = modell.letzteAbgeschlosseneStiche.filter((s) => s.gewinnerPosition === spieler.position).at(-1);
+      if (letzterStichDesSpielers) {
+        const hitZone = this.add.rectangle(pos.x, pos.y, stapelW * 1.3, stapelH * 1.3 + stapelH * 0.65, 0xffffff, 0).setInteractive({ useHandCursor: true });
+        hitZone.on('pointerdown', () => { if (this.letzterStichOverlay) this.versteckeLetztesStichOverlay(); else this.zeigeLetztesStichOverlay(letzterStichDesSpielers, breite, hoehe); });
+        ebene.add(hitZone);
       }
     });
   }

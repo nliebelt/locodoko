@@ -6,6 +6,7 @@ import type {
   TischKonfigurationDto,
   TischAntwort,
   TischListenEintragAntwort,
+  TischPresetAntwort,
   Uuid
 } from '../modelle/SpielverwaltungDto';
 import { Logger } from '../logger';
