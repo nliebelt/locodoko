@@ -3,7 +3,15 @@ import { TEXTUR_FILZ } from '../assets/AssetLoader';
 import { appStore } from '../anwendung';
 import type { AppZustand } from '../store/AppStore';
 import { PhaserButton } from './PhaserButton';
-import type { TischPresetAntwort } from '../modelle/SpielverwaltungDto';
+import type { TischListenEintragAntwort, TischPresetAntwort } from '../modelle/SpielverwaltungDto';
+
+function escapiereHtml(str: string): string {
+  return str
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
 
 /**
  * Spielverwaltungs-Szene (Start-Screen).
@@ -12,6 +20,8 @@ import type { TischPresetAntwort } from '../modelle/SpielverwaltungDto';
 export class SpielverwaltungsSzene extends Phaser.Scene {
   private abmeldenStore?: () => void;
   private uiElemente: Phaser.GameObjects.GameObject[] = [];
+  private offeneTischeAufgeklappt = false;
+  private offeneTischeListe: HTMLElement | null = null;
 
   constructor() {
     super('SpielverwaltungsSzene');
@@ -112,7 +122,28 @@ export class SpielverwaltungsSzene extends Phaser.Scene {
     this.uiElemente.push(erstelleTischBtn);
     currentY += spacing;
 
-    // 4. Abmelden
+    // 4. Offene Tische (Toggle)
+    const offeneTischeText = this.offeneTischeAufgeklappt ? '⊞  Offene Tische ▲' : '⊞  Offene Tische ▼';
+    const offeneTischeBtn = new PhaserButton(this, {
+      x: 640, y: currentY,
+      text: offeneTischeText,
+      typ: 'secondary',
+      callback: () => {
+        this.offeneTischeAufgeklappt = !this.offeneTischeAufgeklappt;
+        this.renderUi(appStore.snapshot());
+      }
+    });
+    this.uiElemente.push(offeneTischeBtn);
+    currentY += spacing;
+
+    if (this.offeneTischeAufgeklappt) {
+      this.aktualisiereOffeneTischeListe(zustand.tische, zustand.spieler?.spielerId ?? null, zustand.spieler?.aktiverTischId ?? null);
+    } else {
+      this.offeneTischeListe?.remove();
+      this.offeneTischeListe = null;
+    }
+
+    // 5. Abmelden
     const logoutBtn = new PhaserButton(this, {
       x: 640, y: currentY + 50,
       text: 'Abmelden',
@@ -195,9 +226,91 @@ export class SpielverwaltungsSzene extends Phaser.Scene {
     };
   }
 
+  private aktualisiereOffeneTischeListe(tische: TischListenEintragAntwort[], _spielerId: string | null, aktiverTischId: string | null): void {
+    this.offeneTischeListe?.remove();
+    this.offeneTischeListe = null;
+
+    const root = document.getElementById('ui-root');
+    if (!root) return;
+
+    const wartendeTische = tische.filter(t => t.status === 'WARTEND');
+    const eigeneLaufendeTische = tische.filter(t => t.status === 'IM_SPIEL' && aktiverTischId === t.id);
+
+    const panel = document.createElement('div');
+    panel.id = 'offene-tische-panel';
+    panel.setAttribute('data-testid', 'offene-tische-panel');
+    panel.className = 'ui-panel';
+    panel.style.cssText = 'position:absolute;left:50%;bottom:20px;transform:translateX(-50%);width:min(500px,90%);max-height:240px;overflow-y:auto;';
+
+    if (wartendeTische.length === 0 && eigeneLaufendeTische.length === 0) {
+      const meldung = document.createElement('p');
+      meldung.className = 'ui-panel__muted';
+      meldung.setAttribute('data-testid', 'keine-offenen-tische');
+      meldung.textContent = 'Keine offenen Tische. Starte ein Quick Game!';
+      panel.appendChild(meldung);
+    } else {
+      if (wartendeTische.length > 0) {
+        const ul = document.createElement('ul');
+        ul.className = 'ui-list';
+        for (const tisch of wartendeTische) {
+          ul.appendChild(this.erstelleTischListenEintrag(tisch, 'Beitreten', () => void appStore.betreteTisch(tisch.id)));
+        }
+        panel.appendChild(ul);
+      }
+      if (eigeneLaufendeTische.length > 0) {
+        const ul = document.createElement('ul');
+        ul.className = 'ui-list';
+        for (const tisch of eigeneLaufendeTische) {
+          ul.appendChild(this.erstelleTischListenEintrag(tisch, 'Zurückkehren', () => appStore.reconnecteTisch(tisch.id), true));
+        }
+        panel.appendChild(ul);
+      }
+    }
+
+    root.appendChild(panel);
+    this.offeneTischeListe = panel;
+  }
+
+  private erstelleTischListenEintrag(
+    tisch: TischListenEintragAntwort,
+    buttonText: string,
+    onClick: () => void,
+    hervorgehoben = false
+  ): HTMLElement {
+    const li = document.createElement('li');
+    li.className = 'ui-list-item';
+    li.setAttribute('data-testid', `tisch-eintrag-${tisch.id}`);
+
+    const headline = document.createElement('div');
+    headline.className = 'ui-list-item__headline';
+
+    const name = document.createElement('span');
+    name.textContent = tisch.name;
+
+    const badge = document.createElement('span');
+    badge.className = hervorgehoben ? 'ui-badge ui-badge--highlight' : 'ui-badge';
+    badge.setAttribute('data-testid', `tisch-spieleranzahl-${tisch.id}`);
+    badge.textContent = hervorgehoben ? 'Laufend' : `${tisch.spielerAnzahl}/4`;
+
+    headline.appendChild(name);
+    headline.appendChild(badge);
+
+    const btn = document.createElement('button');
+    btn.className = hervorgehoben ? 'ui-button ui-button--secondary' : 'ui-button';
+    btn.setAttribute('data-testid', `btn-${escapiereHtml(buttonText.toLowerCase().replace(/[äöüß]/g, c => ({ 'ä': 'ae', 'ö': 'oe', 'ü': 'ue', 'ß': 'ss' }[c] ?? c)))}-${tisch.id}`);
+    btn.textContent = buttonText;
+    btn.onclick = onClick;
+
+    li.appendChild(headline);
+    li.appendChild(btn);
+    return li;
+  }
+
   shutdown(): void {
     this.abmeldenStore?.();
     this.uiElemente.forEach(el => el.destroy());
+    this.offeneTischeListe?.remove();
+    this.offeneTischeListe = null;
     const marker = document.querySelector('[data-testid="startscreen"]');
     if (marker) marker.remove();
   }

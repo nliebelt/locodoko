@@ -519,37 +519,56 @@ describe('AppStore', () => {
     expect(store.snapshot().partieStand).toStrictEqual(spiel2Stand);
   });
 
-  it('behandelt PARTIE_ABGEBROCHEN-Event: wechselt zur Spielverwaltung und setzt Info-Meldung', async () => {
-    // Wichtig: Wenn ein Spieler waehrend einer aktiven Partie den Tisch verlaesst,
-    // erhalten alle anderen Spieler ein PARTIE_ABGEBROCHEN-Event. Das Frontend muss
-    // daraufhin zur Spielverwaltung wechseln und eine verstaendliche Meldung anzeigen — kein
-    // stiller Fehler, keine unbemerkte Zustandsinkonsistenz.
+  it('aktualisiert Tischliste reaktiv via WebSocket-Event auf /topic/tische', async () => {
+    // Wichtig: Die Lobby-Liste muss sich in Echtzeit aktualisieren, wenn andere Spieler
+    // Tische erstellen oder verlassen. Der AppStore abonniert /topic/tische und aktualisiert
+    // tische[] direkt — kein REST-Polling nötig.
     const echtzeit = new FakeEchtzeit();
-    const tisch = baueTisch('tisch-abbruch');
+    const store = new AppStore(
+      new FakeApi(
+        { spielerId: 'spieler-1', name: 'Nora', istKi: false, aktiverTischId: null },
+        [{ id: 'tisch-1', name: 'Erster Tisch', spielerAnzahl: 1, status: 'WARTEND', kurzKonfiguration: { ohneNeunen: false, anzahlSpiele: 8 } }],
+        baueTisch()
+      ) as SpielverwaltungApi,
+      echtzeit
+    );
+
+    await store.initialisieren();
+    expect(store.snapshot().tische).toHaveLength(1);
+
+    echtzeit.emit('/topic/tische', {
+      tische: [
+        { id: 'tisch-1', name: 'Erster Tisch', spielerAnzahl: 2, status: 'WARTEND', kurzKonfiguration: { ohneNeunen: false, anzahlSpiele: 8 } },
+        { id: 'tisch-2', name: 'Zweiter Tisch', spielerAnzahl: 1, status: 'WARTEND', kurzKonfiguration: { ohneNeunen: false, anzahlSpiele: 8 } },
+      ]
+    } as TischlisteEreignisAntwort);
+
+    expect(store.snapshot().tische).toHaveLength(2);
+    expect(store.snapshot().tische[0]).toMatchObject({ id: 'tisch-1', spielerAnzahl: 2 });
+    expect(store.snapshot().tische[1]).toMatchObject({ id: 'tisch-2', name: 'Zweiter Tisch' });
+  });
+
+  it('aktualisiert Tischliste via /user/queue/tische wenn kein Broadcast verfuegbar', async () => {
+    // Wichtig: Der Store abonniert auch /user/queue/tische für spielerbezogene Aktualisierungen
+    // (z.B. nach Snapshot-Request). Beide Kanäle müssen die tische[]-Liste aktualisieren.
+    const echtzeit = new FakeEchtzeit();
     const store = new AppStore(
       new FakeApi(
         { spielerId: 'spieler-1', name: 'Nora', istKi: false, aktiverTischId: null },
         [],
-        tisch
+        baueTisch()
       ) as SpielverwaltungApi,
       echtzeit
     );
+
     await store.initialisieren();
-    await store.betreteTisch(tisch.id);
+    expect(store.snapshot().tische).toHaveLength(0);
 
-    echtzeit.emit(`/topic/tisch/tisch-abbruch`, {
-      timestamp: new Date(Date.now() + 1000).toISOString(),
-      ereignisTyp: 'PARTIE_ABGEBROCHEN',
-      tischId: 'tisch-abbruch',
-      tisch: null,
-      partieStand: null
-    });
+    echtzeit.emit('/user/queue/tische', {
+      tische: [{ id: 'tisch-x', name: 'Mein Tisch', spielerAnzahl: 1, status: 'WARTEND', kurzKonfiguration: { ohneNeunen: false, anzahlSpiele: 8 } }]
+    } as TischlisteEreignisAntwort);
 
-    expect(store.snapshot()).toMatchObject({
-      bereich: 'SPIELVERWALTUNG',
-      aktuellerTisch: null,
-      partieStand: null,
-      meldung: { typ: 'info', fehlerCode: 'PARTIE_ABGEBROCHEN' }
-    });
+    expect(store.snapshot().tische).toHaveLength(1);
+    expect(store.snapshot().tische[0]).toMatchObject({ name: 'Mein Tisch' });
   });
 });

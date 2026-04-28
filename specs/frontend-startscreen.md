@@ -89,7 +89,7 @@ Die Spielverwaltungs-Szene ist die **dritte Phaser-Szene** (nach BootSzene, vor 
 3. Jeder Listeneintrag zeigt: Tischname, Anzahl Spieler (z.B. `2/4`), KI-Schwierigkeit.
 4. „Beitreten" / „Zurückkehren" wechselt direkt zur TischSzene.
 5. Wenn keine Tische vorhanden: Hinweistext „Keine offenen Tische. Starte ein Quick Game!".
-6. Die Liste **aktualisiert sich automatisch** alle 5 Sekunden (Polling via REST-API).
+6. Die Liste **aktualisiert sich automatisch in Echtzeit** via WebSocket (Topic `/topic/tische`).
 7. Erneuter Klick auf „⊞ Offene Tische" klappt die Liste wieder ein.
 
 ### Session-Recovery
@@ -113,8 +113,8 @@ Die Spielverwaltungs-Szene ist die **dritte Phaser-Szene** (nach BootSzene, vor 
 - [ ] „▶ Quick Game"-Button: startet sofort Einzelspieler-Tisch gegen 3 KI, wechselt zur TischSzene
 - [ ] „Neuen Tisch erstellen" Modal implementiert (Pflichtfelder: Name, Rundenanzahl, KI-Schwierigkeit)
 - [ ] Tisch-Erstellung schließt Modal und wechselt zur TischSzene
-- [ ] „Offene Tische" Liste implementiert mit Polling (WARTEND + eigene IM_SPIEL-Tische)
-- [ ] „Zurückkehren"-Button für laufende eigene Tische
+- [x] „Offene Tische" Liste implementiert mit WebSocket-Echtzeit-Updates (WARTEND + eigene IM_SPIEL-Tische)
+- [x] „Zurückkehren"-Button für laufende eigene Tische
 - [ ] Session-Recovery-Button implementiert (erscheint wenn aktiverTischId vorhanden)
 - [ ] Keyboard-Navigation (Tab, Enter)
 - [ ] Visuelles Review
@@ -123,7 +123,7 @@ Die Spielverwaltungs-Szene ist die **dritte Phaser-Szene** (nach BootSzene, vor 
 
 - Die bisherige `LobbySzene` wird durch eine neue `SpielVerwaltungsSzene` ersetzt.
 - Tisch-Konfigurations-Modal als HTML-Overlay über der Phaser-Canvas (`#ui-root`).
-- REST-Polling für Tische: `GET /api/tische` alle 5 Sekunden, nur wenn Liste offen ist.
+- WebSocket `/topic/tische` für Echtzeit-Tischlisten-Updates (kein REST-Polling nötig), nur wenn Liste offen ist.
 - Quick Game erstellt einen Tisch mit Standardkonfiguration ohne Modal und startet sofort.
 - Die Tischliste zeigt laufende Tische nur dem Spieler der ihnen bereits zugeordnet ist.
 - Sonderregeln-Konfiguration folgt in einer eigenen Spec-Iteration.
