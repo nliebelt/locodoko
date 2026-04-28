@@ -96,7 +96,7 @@ export interface TischAntwort {
 
 export type SpielerPosition = 'NORD' | 'OST' | 'SUED' | 'WEST';
 export type PartieStatus = 'LAUFEND' | 'BEENDET' | 'ABGEBROCHEN';
-export type Spieltyp = 'NORMALSPIEL' | 'HOCHZEIT' | 'ARMUT' | 'SOLO_DAME' | 'SOLO_BUBE' | 'SOLO_FLEISCHLOS' | 'SOLO_TRUMPF' | 'SOLO_TRUMPF_KREUZ' | 'SOLO_TRUMPF_PIK' | 'SOLO_TRUMPF_HERZ' | 'SOLO_FARBE_KARO';
+export type Spieltyp = 'NORMALSPIEL' | 'HOCHZEIT' | 'ARMUT' | 'SOLO_DAME' | 'SOLO_BUBE' | 'SOLO_FLEISCHLOS' | 'SOLO_TRUMPF' | 'SOLO_TRUMPF_KREUZ' | 'SOLO_TRUMPF_PIK' | 'SOLO_TRUMPF_HERZ';
 export type Partei = 'RE' | 'KONTRA';
 export type Ansage = 'RE' | 'KONTRA' | 'KEINE_90' | 'KEINE_60' | 'KEINE_30' | 'SCHWARZ';
 export type VorbehaltAnsage = 'GESUND' | 'SOLO_DAME' | 'SOLO_BUBE' | 'SOLO_TRUMPF' | 'SOLO_TRUMPF_HERZ' | 'SOLO_TRUMPF_PIK' | 'SOLO_TRUMPF_KREUZ' | 'SOLO_FLEISCHLOS' | 'HOCHZEIT' | 'ARMUT' | 'SCHMEISSEN';

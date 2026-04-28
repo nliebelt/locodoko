@@ -1,19 +1,16 @@
 # IMPLEMENTATION_PLAN — Locodoko Doppelkopf
 
 ## Notiz
-Stand: 2026-04-28 (Plan-Run #67 — Fokus: BUG-SCHWEINCHEN)
+Stand: 2026-04-28 (Plan-Run #68 — Fokus: BUG-FE-SORTIERUNG)
 
 **Was wurde implementiert:**
-- BUG-SCHWEINCHEN: Karo-Asse werden jetzt als höchste Trümpfe behandelt wenn Schweinchen aktiv.
-  - `trumpfOrdnungFuer(SOLO_TRUMPF)` → jetzt `hatSchweinchen()` ? SchweinchenTrumpfOrdnung : NormaleTrumpfOrdnung (vorher immer NormaleTrumpfOrdnung)
-  - `trumpfOrdnungFuer(HOCHZEIT/ARMUT)` → jetzt immer NormaleTrumpfOrdnung (vorher fälschlicherweise Schweinchen aktiv)
-  - `nimmArmutAn()` → jetzt immer NormaleTrumpfOrdnung (kein Schweinchen in Armut nach Kartentausch)
-  - `trumpfOrdnungFuerPersistiertenStand()` → HOCHZEIT/ARMUT liefern jetzt NormaleTrumpfOrdnung
-  - 3 fehlerhafte Tests korrigiert, 2 neue Tests hinzugefügt (stichGewinner, armutDeaktiviert)
-- SPEC-SCHWEINCHEN: specs/schweinchen.md bereinigt (Widerspruch zwischen Beschreibung und Anforderungen behoben, SOLO_TRUMPF korrekt eingeschlossen, Bug-Eintrag entfernt)
-- 283 Tests grün.
+- BUG-FE-SORTIERUNG: Farbsoli (Herz/Pik/Kreuz) werden jetzt korrekt sortiert.
+  - `trumpfRang()` delegiert jetzt an neue `farbsoloTrumpfRang(karte, trumpfFarbe)` für SOLO_TRUMPF_HERZ/PIK/KREUZ (vorher immer `normaleTrumpfRang()` → Herz-Zehn als Dulle an erster Stelle).
+  - Trumpfreihenfolge Farbsolo: Kreuz-Dame > Pik-Dame > Herz-Dame > Karo-Dame > Kreuz-Bube...Karo-Bube > Farbtrümpfe (Ass > Zehn > König > Neun) — keine Dulle.
+  - `SOLO_FARBE_KARO` aus `Spieltyp`-Union entfernt (Dead Code, kein Backend-Enum-Pendant).
+  - 3 neue Tests für Herz-, Pik- und Kreuzsolo in `TischAnsichtModell.test.ts`. 59 Tests grün.
 
-**Nächste Priorität:** BUG-FE-SORTIERUNG (Farbsoli werden wie Normalspiele sortiert), dann BUG-SICHERHEIT-PROFIL (fehlende @PreAuthorize auf SpielerProfilController).
+**Nächste Priorität:** BUG-SICHERHEIT-PROFIL (fehlende @PreAuthorize auf SpielerProfilController), dann BUG-DTO-MASKIERUNG.
 
 ---
 
@@ -43,8 +40,8 @@ Analyse (Plan-Run #65): `SchweinchenTrumpfOrdnung` weist korrekte Ränge 14/15 z
 
 ### BUG-FE-SORTIERUNG (Frontend)
 **Problem:** Farbsoli werden wie Normalspiele sortiert (Herz-10 falsch oben).
-- [ ] Frontend: `TischAnsichtModell.ts` — `istTrumpfFuerSpieltyp()` und `trumpfRang()` für Farbsoli (HERZ, PIK, KREUZ, KARO) implementieren.
-- [ ] Validation: Manueller Test im Farbsolo.
+- [x] Frontend: `TischAnsichtModell.ts` — `farbsoloTrumpfRang()` für SOLO_TRUMPF_HERZ/PIK/KREUZ implementiert. `SOLO_FARBE_KARO` aus Spieltyp-Union entfernt (kein Backend-Enum-Pendant).
+- [x] Validation: 3 neue Tests (Herz-, Pik-, Kreuzsolo). 59 Tests grün, Build + Lint (keine neuen Fehler).
 
 ### BUG-SICHERHEIT-PROFIL (Backend)
 **Problem (neu — Plan-Run #65):** `SpielerProfilController` PUT-Endpoint hat keine Autorisierungsprüfung — jeder Spieler kann fremde Profile überschreiben.

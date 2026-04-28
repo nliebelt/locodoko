@@ -568,4 +568,84 @@ describe('erstelleTischAnsichtAusStatus', () => {
       armutSpielerName: 'Anna'
     });
   });
+
+  it('sortiert Farbsolo-Handkarten korrekt: Damen > Buben > Farbtrümpfe > Fehlfarben, Herz-10 keine Dulle', () => {
+    // Warum wichtig: Im Farbsolo gibt es keine Dulle — Herz-Zehn ist normaler Farbtrumpf (Rang 3),
+    // nicht höchster Trumpf. Dieser Test verhindert, dass normaleTrumpfRang() fälschlich verwendet wird.
+    const baueModell = (spieltyp: 'SOLO_TRUMPF_HERZ' | 'SOLO_TRUMPF_PIK' | 'SOLO_TRUMPF_KREUZ', handkarten: { id: string; farbe: 'KREUZ' | 'PIK' | 'HERZ' | 'KARO'; wert: 'AS' | 'ZEHN' | 'KOENIG' | 'DAME' | 'BUBE' | 'NEUN'; }[]) =>
+      erstelleTischAnsichtAusStatus('spieler-1', {
+        id: 'tisch-x', einladungsCode: 'ABCD', zugangsmodus: 'OFFEN', name: 'Test', status: 'IM_SPIEL',
+        erstelltVonSpielerId: 'spieler-1', partieId: 'partie-x', konfiguration: standardKonfiguration,
+        spieler: [
+          { spielerId: 'spieler-1', name: 'Anna', istKi: false },
+          { spielerId: 'spieler-2', name: 'Ben', istKi: true },
+          { spielerId: 'spieler-3', name: 'Clara', istKi: true },
+          { spielerId: 'spieler-4', name: 'Dirk', istKi: true }
+        ]
+      }, {
+        partieId: 'partie-x', version: 1, status: 'LAUFEND', anzahlSpiele: 8, gespielteSpiele: 0,
+        gesamtpunktestand: { SUED: 0, WEST: 0, NORD: 0, OST: 0 },
+        laufendesSpiel: {
+          spielNummer: 1, spieltyp, phase: 'STICHPHASE', geber: 'SUED', aktuellerSpieler: 'SUED',
+          spielbareKarten: [], aktuelleStichmitte: [], ansageHistorie: [], moeglicheAnsagen: [],
+          moeglicheVorbehalte: [], deklarierteVorbehalte: [], bockrundenZaehler: 0,
+          hochzeitGeklaert: false, schweinchenGemeldetVon: null,
+          spieler: [
+            { position: 'SUED', spielerId: 'spieler-1', name: 'Anna', anzeigeName: 'Anna', avatarFarbe: null,
+              istKi: false, istKiUebernommen: false, istSelbst: true, istGeber: true, istAmZug: true,
+              verbleibendeKarten: handkarten.length, gewonneneStiche: 0, partei: 'RE',
+              sichtbareHandkarten: handkarten.map((k) => ({ ...k, exemplarIndex: 1 })) },
+            { position: 'WEST', spielerId: 'spieler-2', name: 'Ben', anzeigeName: 'Ben', avatarFarbe: null,
+              istKi: true, istKiUebernommen: false, istSelbst: false, istGeber: false, istAmZug: false,
+              verbleibendeKarten: 3, gewonneneStiche: 0, partei: 'KONTRA', sichtbareHandkarten: null },
+            { position: 'NORD', spielerId: 'spieler-3', name: 'Clara', anzeigeName: 'Clara', avatarFarbe: null,
+              istKi: true, istKiUebernommen: false, istSelbst: false, istGeber: false, istAmZug: false,
+              verbleibendeKarten: 3, gewonneneStiche: 0, partei: null, sichtbareHandkarten: null },
+            { position: 'OST', spielerId: 'spieler-4', name: 'Dirk', anzeigeName: 'Dirk', avatarFarbe: null,
+              istKi: true, istKiUebernommen: false, istSelbst: false, istGeber: false, istAmZug: false,
+              verbleibendeKarten: 3, gewonneneStiche: 0, partei: null, sichtbareHandkarten: null }
+          ]
+        }
+      }, false);
+
+    // Herzsolo: Kreuz-Dame (rank 12) > Herz-As (Farbtrumpf, rank 4) > Herz-Zehn (Farbtrumpf, rank 3, KEINE Dulle!) > Kreuz-As (Fehlfarbe)
+    const herzModell = baueModell('SOLO_TRUMPF_HERZ', [
+      { id: 'KREUZ-AS-1', farbe: 'KREUZ', wert: 'AS' },
+      { id: 'HERZ-ZEHN-1', farbe: 'HERZ', wert: 'ZEHN' },
+      { id: 'HERZ-AS-1', farbe: 'HERZ', wert: 'AS' },
+      { id: 'KREUZ-DAME-1', farbe: 'KREUZ', wert: 'DAME' }
+    ]);
+    expect(herzModell.spieler[0].sichtbareHandkarten.map((k) => k.id)).toEqual([
+      'KREUZ-DAME-1', // höchster Trumpf (Dame, rank 12)
+      'HERZ-AS-1',   // Farbtrumpf Ass (rank 4)
+      'HERZ-ZEHN-1', // Farbtrumpf Zehn (rank 3), KEINE Dulle
+      'KREUZ-AS-1'   // Fehlfarbe
+    ]);
+
+    // Piksolo: Herz-Zehn ist Fehlfarbe (keine Dulle), Karo-As ist Fehlfarbe
+    const pikModell = baueModell('SOLO_TRUMPF_PIK', [
+      { id: 'KARO-AS-1', farbe: 'KARO', wert: 'AS' },
+      { id: 'HERZ-ZEHN-1', farbe: 'HERZ', wert: 'ZEHN' },
+      { id: 'KREUZ-DAME-1', farbe: 'KREUZ', wert: 'DAME' },
+      { id: 'PIK-NEUN-1', farbe: 'PIK', wert: 'NEUN' }
+    ]);
+    expect(pikModell.spieler[0].sichtbareHandkarten.map((k) => k.id)).toEqual([
+      'KREUZ-DAME-1', // höchster Trumpf (Dame, rank 12)
+      'PIK-NEUN-1',  // Farbtrumpf Neun (rank 1)
+      'HERZ-ZEHN-1', // Fehlfarbe Herz (fehlFarbRang 3) — KEINE Dulle im Farbsolo
+      'KARO-AS-1'    // Fehlfarbe Karo (fehlFarbRang 4)
+    ]);
+
+    // Kreuzsolo: Kreuz-Koenig ist Farbtrumpf, Herz-Zehn ist Fehlfarbe
+    const kreuzModell = baueModell('SOLO_TRUMPF_KREUZ', [
+      { id: 'HERZ-ZEHN-1', farbe: 'HERZ', wert: 'ZEHN' },
+      { id: 'KARO-DAME-1', farbe: 'KARO', wert: 'DAME' },
+      { id: 'KREUZ-KOENIG-1', farbe: 'KREUZ', wert: 'KOENIG' }
+    ]);
+    expect(kreuzModell.spieler[0].sichtbareHandkarten.map((k) => k.id)).toEqual([
+      'KARO-DAME-1',     // Trumpf (Dame, rank 9)
+      'KREUZ-KOENIG-1',  // Farbtrumpf König (rank 2)
+      'HERZ-ZEHN-1'      // Fehlfarbe — KEINE Dulle im Farbsolo
+    ]);
+  });
 });

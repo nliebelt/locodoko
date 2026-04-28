@@ -732,7 +732,24 @@ function trumpfRang(karte: KarteAntwort, spieltyp: LaufendesSpielAntwort['spielt
   if (spieltyp === 'SOLO_DAME' || spieltyp === 'SOLO_BUBE') {
     return soloTrumpfRang(karte.farbe);
   }
+  if (spieltyp === 'SOLO_TRUMPF_HERZ') return farbsoloTrumpfRang(karte, 'HERZ');
+  if (spieltyp === 'SOLO_TRUMPF_PIK') return farbsoloTrumpfRang(karte, 'PIK');
+  if (spieltyp === 'SOLO_TRUMPF_KREUZ') return farbsoloTrumpfRang(karte, 'KREUZ');
   return normaleTrumpfRang(karte);
+}
+
+// Trumpfrang im Farbsolo: Damen (Kreuz > Pik > Herz > Karo) > Buben > Farbtrümpfe (Ass > Zehn > König > Neun)
+function farbsoloTrumpfRang(karte: KarteAntwort, trumpfFarbe: KarteAntwort['farbe']): number {
+  if (karte.wert === 'DAME') {
+    return ({ KREUZ: 12, PIK: 11, HERZ: 10, KARO: 9 } as Record<KarteAntwort['farbe'], number>)[karte.farbe] ?? 0;
+  }
+  if (karte.wert === 'BUBE') {
+    return ({ KREUZ: 8, PIK: 7, HERZ: 6, KARO: 5 } as Record<KarteAntwort['farbe'], number>)[karte.farbe] ?? 0;
+  }
+  if (karte.farbe === trumpfFarbe) {
+    return ({ AS: 4, ZEHN: 3, KOENIG: 2, NEUN: 1 } as Record<KarteAntwort['wert'], number>)[karte.wert] ?? 0;
+  }
+  return 0;
 }
 
 function soloTrumpfRang(farbe: KarteAntwort['farbe']): number {
