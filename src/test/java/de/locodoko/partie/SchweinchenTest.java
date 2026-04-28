@@ -9,7 +9,6 @@ import de.locodoko.karten.SchweinchenTrumpfOrdnung;
 import de.locodoko.karten.Spielregeln;
 import de.locodoko.karten.TrumpfOrdnung;
 import org.junit.jupiter.api.Test;
-
 import java.util.ArrayList;
 import java.util.EnumMap;
 import java.util.List;
@@ -127,10 +126,10 @@ class SchweinchenTest {
     // --- Solo-Ausschluss ---
 
     @Test
-    void loeseVorbehalteAufVerwirftSchweinchenBeiSolo() {
-        // Wichtig: Bei einem Solo wird eine eigene TrumpfOrdnung gesetzt (z.B. Damensolo,
-        // Bubensolo). Auch wenn vor dem Vorbehalt Schweinchen erkannt wurde, muss die
-        // Solo-TrumpfOrdnung SchweinchenTrumpfOrdnung ersetzen.
+    void soloTrumpfBehältSchweinchenWennSpielerBeideKaroAsseHat() {
+        // Wichtig: Laut Spec gilt Schweinchen auch im Trumpfsolo (SOLO_TRUMPF), nicht nur im
+        // Normalspiel. Wenn der Solo-Spieler beide Karo-Asse haelt, muss SchweinchenTrumpfOrdnung
+        // aktiv bleiben — kein anderes Solo profitiert davon.
         Spiel spiel = Spiel.neu(SpielerPosition.SUED, mitSchweinchen,
                 kartendeckMitBeideKaroAsseAnWEST())
             .teileKartenAus()
@@ -140,18 +139,20 @@ class SchweinchenTest {
             .meldeGesund(SpielerPosition.SUED)
             .loeseVorbehalteAuf();
 
-        assertFalse(spiel.trumpfOrdnung() instanceof SchweinchenTrumpfOrdnung,
-            "Im SOLO_TRUMPF muss die normale TrumpfOrdnung gelten — kein Schweinchen-Vorteil fuer Solo-Spieler.");
+        assertInstanceOf(SchweinchenTrumpfOrdnung.class, spiel.trumpfOrdnung(),
+            "Im SOLO_TRUMPF muss SchweinchenTrumpfOrdnung gelten wenn ein Spieler beide Karo-Asse haelt (Spec: Schweinchen gilt in Normalspiel und Trumpfsolo).");
+        assertTrue(spiel.schweinchenAktiv(),
+            "schweinchenAktiv() muss true sein (bestimmt was in die DB geschrieben wird).");
     }
 
     // --- Schweinchen bei Hochzeit und Armut ---
 
     @Test
-    void schweinchenBleibtAktivNachHochzeitVorbehalt() {
-        // Wichtig: Hochzeit verwendet dieselbe Trumpfhierarchie wie Normalspiel. Wenn ein
-        // anderer Spieler beide Karo-Asse haelt, muss SchweinchenTrumpfOrdnung aktiv bleiben.
-        // Ohne diesen Fix wuerde trumpfOrdnungFuer(HOCHZEIT) eine NormaleTrumpfOrdnung erzeugen
-        // und das Schweinchen stillschweigend deaktivieren.
+    void hochzeitDeaktiviertSchweinchen() {
+        // Wichtig: Laut Spec gilt Schweinchen NICHT bei Hochzeit. Selbst wenn ein anderer
+        // Spieler beide Karo-Asse haelt, muss bei Hochzeit-Vorbehalt NormaleTrumpfOrdnung
+        // verwendet werden. Ohne diesen Fix wuerde trumpfOrdnungFuer(HOCHZEIT) faelschlicherweise
+        // SchweinchenTrumpfOrdnung setzen.
         Spielregeln regeln = mitSchweinchen.mitHochzeitAktiv(true);
         Spiel spiel = Spiel.neu(SpielerPosition.SUED, regeln,
                 kartendeckMitSchweinchenUndHochzeit())
@@ -162,26 +163,25 @@ class SchweinchenTest {
             .meldeGesund(SpielerPosition.SUED)
             .loeseVorbehalteAuf();
 
-        assertInstanceOf(SchweinchenTrumpfOrdnung.class, spiel.trumpfOrdnung(),
-            "Schweinchen muss nach Hochzeit-Vorbehalt aktiv bleiben — gleiche Trumpfhierarchie wie Normalspiel.");
-        assertEquals(14, spiel.trumpfOrdnung().trumpfRang(KARO_AS_1),
-            "Karo-As Exemplar 1 muss Rang 14 haben.");
-        assertEquals(15, spiel.trumpfOrdnung().trumpfRang(KARO_AS_2),
-            "Karo-As Exemplar 2 muss Rang 15 haben.");
+        assertFalse(spiel.trumpfOrdnung() instanceof SchweinchenTrumpfOrdnung,
+            "Bei Hochzeit darf Schweinchen nicht aktiv sein — Spec schliesst Hochzeit und Armut aus.");
+        assertFalse(spiel.schweinchenAktiv(),
+            "schweinchenAktiv() muss false sein damit Persistenz kein Schweinchen wiederhersteilt.");
     }
 
     @Test
-    void schweinchenWirdNachArmutKartentauschNeuBewertet() {
-        // Wichtig: Nach dem Armut-Kartentausch koennen die Karo-Asse den Besitzer wechseln.
-        // Die TrumpfOrdnung muss anhand der neuen Haende aktualisiert werden. Wenn der
-        // Tausch die Schweinchen-Asse zusammenhaelt, bleibt Schweinchen aktiv.
+    void armutDeaktiviertSchweinchen() {
+        // Wichtig: Laut Spec gilt Schweinchen NICHT bei Armut — weder bei Vorbehalt-Aufloesung
+        // noch nach dem Kartentausch. Auch wenn nach dem Tausch ein Spieler beide Karo-Asse haelt,
+        // bleibt NormaleTrumpfOrdnung aktiv. Ohne diesen Fix wuerde nimmArmutAn() bei passendem
+        // Tausch SchweinchenTrumpfOrdnung aktivieren.
         Spielregeln regeln = mitSchweinchen.mitArmutAktiv(true);
         Karte herzBube1 = new Karte(Farbe.HERZ, Kartenwert.BUBE, 1);
         Karte pikAs1 = new Karte(Farbe.PIK, Kartenwert.AS, 1);
         Karte pikAs2 = new Karte(Farbe.PIK, Kartenwert.AS, 2);
 
         // OST hat Armut: nur 2 Truempfe (Herz-Bube + Karo-Bube), rest Fehlkarten
-        // WEST hat beide Karo-Asse → Schweinchen
+        // WEST hat beide Karo-Asse → würde Schweinchen ergeben, aber nicht in Armut
         Kartendeck deck = kartendeckMitVerteiltenHaenden(Map.of(
             SpielerPosition.WEST, List.of(KARO_AS_1, KARO_AS_2, KREUZ_DAME_1),
             SpielerPosition.NORD, List.of(KREUZ_DAME_2),
@@ -192,23 +192,22 @@ class SchweinchenTest {
                 new Karte(Farbe.KREUZ, Kartenwert.KOENIG, 1), new Karte(Farbe.KREUZ, Kartenwert.KOENIG, 2),
                 new Karte(Farbe.PIK, Kartenwert.KOENIG, 1), new Karte(Farbe.PIK, Kartenwert.KOENIG, 2))
         ));
-        Spiel ausgeteilt = Spiel.neu(SpielerPosition.SUED, regeln, deck)
-            .teileKartenAus();
-        assertInstanceOf(SchweinchenTrumpfOrdnung.class, ausgeteilt.trumpfOrdnung(),
-            "Vor Vorbehalt muss Schweinchen aktiv sein (WEST hat beide Karo-Asse).");
-
-        Spiel nachVorbehalten = ausgeteilt
+        Spiel nachVorbehalten = Spiel.neu(SpielerPosition.SUED, regeln, deck)
+            .teileKartenAus()
             .meldeGesund(SpielerPosition.WEST)
             .meldeGesund(SpielerPosition.NORD)
             .meldeVorbehalt(SpielerPosition.OST, VorbehaltAnsage.ARMUT)
             .meldeGesund(SpielerPosition.SUED)
             .loeseVorbehalteAuf();
 
+        assertFalse(nachVorbehalten.trumpfOrdnung() instanceof SchweinchenTrumpfOrdnung,
+            "Bei Armut darf Schweinchen nicht aktiv sein — Spec schliesst Hochzeit und Armut aus.");
+
         // OST bietet seine 2 Truempfe an
         Spiel nachAngebot = nachVorbehalten.legeArmutTrumpfkarten(SpielerPosition.OST,
             List.of(herzBube1, new Karte(Farbe.KARO, Kartenwert.BUBE, 1)));
 
-        // SUED nimmt an (erster Antwort-Spieler im Uhrzeigersinn nach OST), gibt 2 Fehlkarten zurueck
+        // SUED nimmt an, gibt 2 Fehlkarten zurueck
         Hand suedHand = nachAngebot.handVon(SpielerPosition.SUED);
         List<Karte> rueckgabe = suedHand.karten().stream()
             .filter(k -> !nachAngebot.trumpfOrdnung().istTrumpf(k))
@@ -216,9 +215,11 @@ class SchweinchenTest {
             .toList();
         Spiel nachTausch = nachAngebot.nimmArmutAn(SpielerPosition.SUED, rueckgabe);
 
-        // WEST hat weiterhin beide Karo-Asse → Schweinchen bleibt
-        assertInstanceOf(SchweinchenTrumpfOrdnung.class, nachTausch.trumpfOrdnung(),
-            "Nach Armut-Kartentausch muss Schweinchen aktiv bleiben wenn ein Spieler weiterhin beide Karo-Asse hat.");
+        // Auch nach dem Tausch: Armut nutzt nie Schweinchen, egal wer die Karo-Asse hat
+        assertFalse(nachTausch.trumpfOrdnung() instanceof SchweinchenTrumpfOrdnung,
+            "Nach Armut-Kartentausch darf Schweinchen weiterhin nicht aktiv sein — Armut-Spiele nutzen immer NormaleTrumpfOrdnung.");
+        assertFalse(nachTausch.schweinchenAktiv(),
+            "schweinchenAktiv() muss false sein.");
     }
 
     @Test
@@ -256,6 +257,45 @@ class SchweinchenTest {
             "Im laufenden Spiel mit Schweinchen muss Karo-As die Dulle stechen.");
         assertEquals(14, spiel.trumpfOrdnung().trumpfRang(KARO_AS_1));
         assertEquals(15, spiel.trumpfOrdnung().trumpfRang(KARO_AS_2));
+    }
+
+    @Test
+    void stichGewinner_SchweinchenSchlagtDulleUndZweitesSchweinchenSchlagtErstes() {
+        // Wichtig: Kern-Regressionstest fuer den Spielbetrieb. Die SchweinchenTrumpfOrdnung muss
+        // nicht nur korrekte Raenge ausgeben, sondern die Stichlogik (Stich.gewinner()) muss
+        // tatsaechlich den richtigen Gewinner ermitteln. Dieser Test verifiziert den
+        // End-to-End-Pfad von der TrumpfOrdnung bis zur Stich-Entscheidung.
+        TrumpfOrdnung ordnung = new SchweinchenTrumpfOrdnung(mitSchweinchen);
+        Karte kreuzBube1 = new Karte(Farbe.KREUZ, Kartenwert.BUBE, 1);
+        Karte kreuzBube2 = new Karte(Farbe.KREUZ, Kartenwert.BUBE, 2);
+
+        // Fall 1: zweites Schweinchen (Rang 15) schlaegt erstes (Rang 14) und Dulle (Rang 13)
+        Stich stich1 = Stich.neu(SpielerPosition.WEST);
+        stich1 = stich1.spieleKarte(SpielerPosition.WEST, DULLE,
+            new Hand(List.of(DULLE)), ordnung);
+        stich1 = stich1.spieleKarte(SpielerPosition.NORD, KARO_AS_1,
+            new Hand(List.of(KARO_AS_1)), ordnung);
+        stich1 = stich1.spieleKarte(SpielerPosition.OST, kreuzBube1,
+            new Hand(List.of(kreuzBube1)), ordnung);
+        stich1 = stich1.spieleKarte(SpielerPosition.SUED, KARO_AS_2,
+            new Hand(List.of(KARO_AS_2)), ordnung);
+
+        assertEquals(SpielerPosition.SUED, stich1.gewinner(ordnung).spieler(),
+            "Zweites Schweinchen (Rang 15) muss Stich gewinnen — schlaegt erstes Schweinchen (14) und Dulle (13).");
+
+        // Fall 2: erstes Schweinchen (Rang 14) schlaegt Dulle (Rang 13) wenn kein zweites gespielt
+        Stich stich2 = Stich.neu(SpielerPosition.WEST);
+        stich2 = stich2.spieleKarte(SpielerPosition.WEST, DULLE,
+            new Hand(List.of(DULLE)), ordnung);
+        stich2 = stich2.spieleKarte(SpielerPosition.NORD, KARO_AS_1,
+            new Hand(List.of(KARO_AS_1)), ordnung);
+        stich2 = stich2.spieleKarte(SpielerPosition.OST, kreuzBube1,
+            new Hand(List.of(kreuzBube1)), ordnung);
+        stich2 = stich2.spieleKarte(SpielerPosition.SUED, kreuzBube2,
+            new Hand(List.of(kreuzBube2)), ordnung);
+
+        assertEquals(SpielerPosition.NORD, stich2.gewinner(ordnung).spieler(),
+            "Erstes Schweinchen (Rang 14) muss Dulle (Rang 13) schlagen wenn kein zweites Schweinchen gespielt wird.");
     }
 
     @Test

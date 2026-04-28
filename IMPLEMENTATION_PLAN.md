@@ -1,21 +1,19 @@
 # IMPLEMENTATION_PLAN — Locodoko Doppelkopf
 
 ## Notiz
-Stand: 2026-04-28 (Plan-Run #66 — Fokus: FEAT-LOCO-PRESET)
+Stand: 2026-04-28 (Plan-Run #67 — Fokus: BUG-SCHWEINCHEN)
 
 **Was wurde implementiert:**
-- FEAT-6/7/8: Playwright-Marker für UI-Buttons.
-- BUG-1: Hochzeit-Partnerfindung WebSocket-Event.
-- BUG-2: Store-Reset bei Reconnect.
-- BUG-SCHMEISSEN: Korrekte Zählung der Neunen.
-- FEAT-BOCK-1: Zähler statt Boolean in der API.
-- Tisch/Spieler-Kern: Zugangsmodus (OFFEN/PRIVAT), Einladungscode, Statistik, RateLimiting, TischSicherheit (@PreAuthorize) — 90% fertig.
-- AnimationenService: Serielle FIFO-Queue implementiert (Animations-Queue-Aufstauung behoben).
-- Armut/Hochzeit/Solo-Varianten: Alle Trumpfordnungen und Parteien-Logik implementiert.
-- BUG-KI-HAENGER-FUCHS: War bereits in 4f705b1 behoben — als [x] markiert.
-- FEAT-LOCO-PRESET: `locoBlatRegeln()` auf ohneNeunen=true (40 Karten) umgestellt. Alle abhängigen Tests korrigiert. 282 Tests grün.
+- BUG-SCHWEINCHEN: Karo-Asse werden jetzt als höchste Trümpfe behandelt wenn Schweinchen aktiv.
+  - `trumpfOrdnungFuer(SOLO_TRUMPF)` → jetzt `hatSchweinchen()` ? SchweinchenTrumpfOrdnung : NormaleTrumpfOrdnung (vorher immer NormaleTrumpfOrdnung)
+  - `trumpfOrdnungFuer(HOCHZEIT/ARMUT)` → jetzt immer NormaleTrumpfOrdnung (vorher fälschlicherweise Schweinchen aktiv)
+  - `nimmArmutAn()` → jetzt immer NormaleTrumpfOrdnung (kein Schweinchen in Armut nach Kartentausch)
+  - `trumpfOrdnungFuerPersistiertenStand()` → HOCHZEIT/ARMUT liefern jetzt NormaleTrumpfOrdnung
+  - 3 fehlerhafte Tests korrigiert, 2 neue Tests hinzugefügt (stichGewinner, armutDeaktiviert)
+- SPEC-SCHWEINCHEN: specs/schweinchen.md bereinigt (Widerspruch zwischen Beschreibung und Anforderungen behoben, SOLO_TRUMPF korrekt eingeschlossen, Bug-Eintrag entfernt)
+- 283 Tests grün.
 
-**Nächste Priorität:** BUG-SCHWEINCHEN (Karo-Asse mit Schweinchen-Flag werden nicht als höchste Trümpfe gewertet). Startpunkt: `Stich.java`/`StichBewerter.java` und `trumpfOrdnungFuerPersistiertenStand()`. Dann BUG-SICHERHEIT-PROFIL (fehlende @PreAuthorize auf SpielerProfilController).
+**Nächste Priorität:** BUG-FE-SORTIERUNG (Farbsoli werden wie Normalspiele sortiert), dann BUG-SICHERHEIT-PROFIL (fehlende @PreAuthorize auf SpielerProfilController).
 
 ---
 
@@ -36,10 +34,12 @@ Stand: 2026-04-28 (Plan-Run #66 — Fokus: FEAT-LOCO-PRESET)
 
 ### BUG-SCHWEINCHEN (Backend)
 **Problem:** Karo-Asse werden trotz aktivem Schweinchen nicht als höchste Trümpfe behandelt.
-Analyse (Plan-Run #65): `SchweinchenTrumpfOrdnung` weist korrekte Ränge 14/15 zu — der Bug liegt vermutlich in der Stich-Logik, nicht in der Trumpfordnung selbst.
-- [ ] Backend: `Stich.java` / `StichBewerter.java` — prüfen, ob beim Ermitteln des Stichgewinners die aktive `TrumpfOrdnung` (inkl. Schweinchen) tatsächlich verwendet wird. Verdacht: Es wird eine Fallback-Ordnung ohne Schweinchen gezogen.
-- [ ] Backend: `Spiel.java` — `trumpfOrdnungFuerPersistiertenStand()` so anpassen, dass das Schweinchen-Flag nur bei Normalspielen/Hochzeit zieht, nicht bei Soli (Spec: Hochzeit/Armut = AUS, Solo-Trumpf = AN).
-- [ ] Validation: Unit-Test: Stich mit zwei Karo-Assen, Schweinchen aktiv → höchstes Karo-As gewinnt.
+Analyse (Plan-Run #65): `SchweinchenTrumpfOrdnung` weist korrekte Ränge 14/15 zu — der Bug lag in der Spieltyp-Zuordnung, nicht in der Trumpfordnung selbst.
+- [x] Backend: `trumpfOrdnungFuer(SOLO_TRUMPF)` → `hatSchweinchen()` ? SchweinchenTrumpfOrdnung : NormaleTrumpfOrdnung (vorher ignoriert).
+- [x] Backend: `trumpfOrdnungFuer(HOCHZEIT/ARMUT)` → immer NormaleTrumpfOrdnung (vorher fälschlicherweise Schweinchen aktiv).
+- [x] Backend: `nimmArmutAn()` → immer NormaleTrumpfOrdnung nach Kartentausch (Armut nutzt nie Schweinchen).
+- [x] Backend: `trumpfOrdnungFuerPersistiertenStand()` → HOCHZEIT/ARMUT liefern NormaleTrumpfOrdnung.
+- [x] Validation: 3 fehlerhafte Tests korrigiert, 2 neue Tests (Stichgewinner + Armut-Ausschluss). 283 Tests grün.
 
 ### BUG-FE-SORTIERUNG (Frontend)
 **Problem:** Farbsoli werden wie Normalspiele sortiert (Herz-10 falsch oben).

@@ -304,7 +304,7 @@ public class Spiel extends AbstraktePersistenzEntity {
         Map<SpielerPosition, Hand> neueHaende = kopiereHaende();
         neueHaende.put(spielerPosition, partnerHand.ohneAlle(rueckgabekarten).mitAllen(status.angeboteneTrumpfkarten()));
         neueHaende.put(status.armutSpieler(), handVon(status.armutSpieler()).mitAllen(rueckgabekarten));
-        TrumpfOrdnung neueTrumpfOrdnung = hatSchweinchen(spielregeln, neueHaende) ? new SchweinchenTrumpfOrdnung(spielregeln) : new NormaleTrumpfOrdnung(spielregeln);
+        TrumpfOrdnung neueTrumpfOrdnung = new NormaleTrumpfOrdnung(spielregeln);
         Parteien neueParteien = parteien.mitPartei(spielerPosition, Partei.RE).mitOffenenParteienFuerAlle(SpielerPosition.standardReihenfolge());
         SpielerPosition ersterAufspieler = solistAufspieler != null ? solistAufspieler : geber.naechsteImUhrzeigersinn();
         return toBuilder().trumpfOrdnung(neueTrumpfOrdnung).phase(new Spielphase.Stichphase(Stich.neu(ersterAufspieler), Set.of(), null))
@@ -815,8 +815,8 @@ public class Spiel extends AbstraktePersistenzEntity {
     private TrumpfOrdnung trumpfOrdnungFuer(VorbehaltMeldung hv) {
         return hv == null ? trumpfOrdnung : switch (hv.ansage()) {
             case SOLO_DAME -> new DamensoloTrumpfOrdnung(); case SOLO_BUBE -> new BubensoloTrumpfOrdnung(); 
-            case SOLO_TRUMPF -> new NormaleTrumpfOrdnung(spielregeln);
-            case HOCHZEIT, ARMUT -> hatSchweinchen(spielregeln, haende) ? new SchweinchenTrumpfOrdnung(spielregeln) : new NormaleTrumpfOrdnung(spielregeln);
+            case SOLO_TRUMPF -> hatSchweinchen(spielregeln, haende) ? new SchweinchenTrumpfOrdnung(spielregeln) : new NormaleTrumpfOrdnung(spielregeln);
+            case HOCHZEIT, ARMUT -> new NormaleTrumpfOrdnung(spielregeln);
             case SOLO_TRUMPF_HERZ -> new VariableTrumpfsoloTrumpfOrdnung(Farbe.HERZ, spielregeln); case SOLO_TRUMPF_PIK -> new VariableTrumpfsoloTrumpfOrdnung(Farbe.PIK, spielregeln);
             case SOLO_TRUMPF_KREUZ -> new VariableTrumpfsoloTrumpfOrdnung(Farbe.KREUZ, spielregeln); case SOLO_FLEISCHLOS -> new FleischlosTrumpfOrdnung();
             case GESUND, SCHMEISSEN, SCHMEISSEN_FUENF_NEUNEN, SCHMEISSEN_WENIG_TRUMPF -> throw new IllegalStateException("GESUND ist kein aufloesbarer Vorbehalt");
@@ -879,7 +879,8 @@ public class Spiel extends AbstraktePersistenzEntity {
 
     private static TrumpfOrdnung trumpfOrdnungFuerPersistiertenStand(Spielregeln sr, Spieltyp st, boolean sa) {
         return switch (Objects.requireNonNull(st)) {
-            case NORMALSPIEL, HOCHZEIT, ARMUT, SOLO_TRUMPF -> sa ? new SchweinchenTrumpfOrdnung(sr) : new NormaleTrumpfOrdnung(sr);
+            case NORMALSPIEL, SOLO_TRUMPF -> sa ? new SchweinchenTrumpfOrdnung(sr) : new NormaleTrumpfOrdnung(sr);
+            case HOCHZEIT, ARMUT -> new NormaleTrumpfOrdnung(sr);
             case SOLO_TRUMPF_HERZ -> new VariableTrumpfsoloTrumpfOrdnung(Farbe.HERZ, sr); case SOLO_TRUMPF_PIK -> new VariableTrumpfsoloTrumpfOrdnung(Farbe.PIK, sr);
             case SOLO_TRUMPF_KREUZ -> new VariableTrumpfsoloTrumpfOrdnung(Farbe.KREUZ, sr); case SOLO_DAME -> new DamensoloTrumpfOrdnung();
             case SOLO_BUBE -> new BubensoloTrumpfOrdnung(); case SOLO_FLEISCHLOS -> new FleischlosTrumpfOrdnung();
