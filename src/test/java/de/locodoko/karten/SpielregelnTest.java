@@ -34,17 +34,59 @@ class SpielregelnTest {
     }
 
     @Test
-    void ohneNeunenLocoBlatRegelnSetzenOhneNeunenUndPassendeMindestkarten() {
-        // Stellt sicher dass ohneNeunen gesetzt ist und Mindestkarten für 10-Karten-Spiel gelten —
-        // falsche Mindestkarten machen Ansagen fast immer unmöglich
-        Spielregeln regeln = Spielregeln.ohneNeunenLocoBlatRegeln();
+    void locoBlatRegelnHatKorrekteWerteFuerAlleFelder() {
+        // Vollständige Feldprüfung sichert ab, dass ein Refactoring kein einzelnes
+        // Preset-Feld unbemerkt verändert — jedes Feld hat im Loco-Blatt-Kontext eine Bedeutung.
+        Spielregeln regeln = Spielregeln.locoBlatRegeln();
         assertThat(regeln.ohneNeunen()).isTrue();
+        assertThat(regeln.zweiteDulleSticht()).isTrue();
         assertThat(regeln.mindestkartenReKontra()).isEqualTo(9);
         assertThat(regeln.mindestkartenKeine90()).isEqualTo(8);
+        assertThat(regeln.mindestkartenKeine60()).isEqualTo(7);
+        assertThat(regeln.mindestkartenKeine30()).isEqualTo(6);
         assertThat(regeln.mindestkartenSchwarz()).isEqualTo(5);
+        assertThat(regeln.fuchsAktiv()).isTrue();
+        assertThat(regeln.karlchenAktiv()).isTrue();
+        assertThat(regeln.doppelkopfAktiv()).isTrue();
+        assertThat(regeln.armutAktiv()).isTrue();
+        assertThat(regeln.soloDameAktiv()).isTrue();
+        assertThat(regeln.soloBubeAktiv()).isTrue();
+        assertThat(regeln.soloTrumpfAktiv()).isTrue();
+        assertThat(regeln.soloFleischlosAktiv()).isTrue();
+        assertThat(regeln.hochzeitAktiv()).isTrue();
         assertThat(regeln.bockrundenAktiv()).isTrue();
         assertThat(regeln.schweinchenAktiv()).isTrue();
         assertThat(regeln.dreissigAugenPflichtAktiv()).isTrue();
+        assertThat(regeln.schmeissenAktiv()).isTrue();
+        assertThat(regeln.herzDurchgegangenNurHoch()).isFalse();
+    }
+
+    @Test
+    void dkvRegelnHatKorrekteWerteFuerAlleFelder() {
+        // Vollständige Feldprüfung sichert ab, dass das offizielle DKV-Turnier-Preset
+        // exakt die vorgeschriebenen Werte hat — Fehler hier würden Turniere verfälschen.
+        Spielregeln regeln = Spielregeln.dkvRegeln();
+        assertThat(regeln.ohneNeunen()).isFalse();
+        assertThat(regeln.zweiteDulleSticht()).isTrue();
+        assertThat(regeln.mindestkartenReKontra()).isEqualTo(11);
+        assertThat(regeln.mindestkartenKeine90()).isEqualTo(10);
+        assertThat(regeln.mindestkartenKeine60()).isEqualTo(9);
+        assertThat(regeln.mindestkartenKeine30()).isEqualTo(8);
+        assertThat(regeln.mindestkartenSchwarz()).isEqualTo(7);
+        assertThat(regeln.fuchsAktiv()).isTrue();
+        assertThat(regeln.karlchenAktiv()).isTrue();
+        assertThat(regeln.doppelkopfAktiv()).isTrue();
+        assertThat(regeln.armutAktiv()).isTrue();
+        assertThat(regeln.soloDameAktiv()).isTrue();
+        assertThat(regeln.soloBubeAktiv()).isTrue();
+        assertThat(regeln.soloTrumpfAktiv()).isTrue();
+        assertThat(regeln.soloFleischlosAktiv()).isTrue();
+        assertThat(regeln.hochzeitAktiv()).isTrue();
+        assertThat(regeln.bockrundenAktiv()).isFalse();
+        assertThat(regeln.schweinchenAktiv()).isFalse();
+        assertThat(regeln.dreissigAugenPflichtAktiv()).isFalse();
+        assertThat(regeln.schmeissenAktiv()).isFalse();
+        assertThat(regeln.herzDurchgegangenNurHoch()).isFalse();
     }
 
     @Test

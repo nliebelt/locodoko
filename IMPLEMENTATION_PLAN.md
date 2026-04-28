@@ -1,12 +1,15 @@
 # IMPLEMENTATION_PLAN — Locodoko Doppelkopf
 
 ## Notiz
-Stand: 2026-04-28 (Plan-Run #80)
+Stand: 2026-04-28 (Plan-Run #81)
+
+**Was wurde implementiert (Plan-Run #81):**
+- TASK-PRESET-UNIT-TESTS: `SpielregelnTest` um zwei vollständige Feldprüfungs-Tests erweitert: `locoBlatRegelnHatKorrekteWerteFuerAlleFelder()` und `dkvRegelnHatKorrekteWerteFuerAlleFelder()`. Jeder Test prüft alle 21 Felder des `Spielregeln`-Records explizit — sichert ab, dass ein Refactoring keine Preset-Werte unbemerkt verändert. 295 Backend-Tests grün (SpielregelnTest: 3→5 Tests).
+
+**Nächste Priorität:** FEAT-COUNTDOWN (Phase 3, Backend+Frontend) — nächste größere Aufgabe.
 
 **Was wurde implementiert (Plan-Run #80):**
 - FEAT-TASTATUR-AUTOFOKUS-SHORTCUTS: Codeanalyse ergab — beide Features waren bereits vollständig implementiert. Auto-Fokus in `TischSzene.aktualisiereKartenNavigationsIndex()` (setzt `tastaturKarteIndex=0` beim Spielzug-Beginn), R/K-Shortcuts in `TischInputHandler.verarbeiteAnsageTaste()`. Spec-DoD `frontend-tastatursteuerung.md` auf [x] gesetzt (7 von 9 Punkten; E2E-Tests + manueller Test-Durchlauf offen). 60 Frontend-Tests grün.
-
-**Nächste Priorität:** FEAT-COUNTDOWN (Phase 3, Backend+Frontend) oder TASK-PRESET-UNIT-TESTS (Phase 5, Backend-only, schnell).
 
 **Was wurde implementiert (Plan-Run #78):**
 - FEAT-BOCK-CONFIG: `herzDurchgegangenNurHoch: boolean` in `Spielregeln`, `TischkonfigurationEmbeddable`, `TischKonfigurationDto`, Frontend-DTOs. `Spiel.istHerzDurchgegangen()` wertet neue Option aus: `true` → nur Herz-As-Stiche triggern Bockrunde, `false` (Standard) → beliebiger Fehlherz-Stich. Liquibase-Migration 022, Baseline aktualisiert. 3 neue BockrundenTests. Spec-Updates in `bockrunden.md` + `tischkonfiguration.md`. 295 Backend-Tests, 60 Frontend-Tests grün.
@@ -176,10 +179,10 @@ Analyse (Plan-Run #80): Beide Features waren bereits vollständig implementiert 
 - [ ] Frontend (optional): Preset-Dropdown im Tisch-Erstellungs-Dialog.
 - [ ] Validation: `mvn test`.
 
-### TASK-PRESET-UNIT-TESTS (Backend) ← NEU Plan-Run #79
+### TASK-PRESET-UNIT-TESTS (Backend) ← NEU Plan-Run #79, abgeschlossen Plan-Run #81
 **Problem:** `specs/regelkatalog.md` fordert dedizierte Unit-Tests für `locoBlatRegeln()` und `dkvRegeln()`, die explizit alle Feldwerte prüfen. Bisher nur indirekte Nutzung in SpielTest.
-- [ ] Backend: `SpielregelnTest` — je einen Test für `locoBlatRegeln()` und `dkvRegeln()` mit allen relevanten Feld-Assertions.
-- [ ] Validation: `mvn test`.
+- [x] Backend: `SpielregelnTest` — je einen Test für `locoBlatRegeln()` und `dkvRegeln()` mit allen 21 Feld-Assertions.
+- [x] Validation: 295 Backend-Tests grün.
 
 
 **Problem (neu — Plan-Run #65):** `authentifizierung.md` spricht von Username/Passwort parallel zu OAuth2, aber `formLogin` war im Code fraglich.
