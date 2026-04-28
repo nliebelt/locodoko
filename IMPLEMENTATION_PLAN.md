@@ -1,7 +1,10 @@
 # IMPLEMENTATION_PLAN — Locodoko Doppelkopf
 
 ## Notiz
-Stand: 2026-04-28 (Plan-Run #75)
+Stand: 2026-04-28 (Plan-Run #76)
+
+**Was wurde implementiert (Plan-Run #76):**
+- FEAT-SONDERPUNKT-DOMAIN-EVENTS: `FuchsGefangen`, `KarlchenGespielt`, `DoppelkopfGestochen` als Spring ApplicationEvents in `partie.ereignisse.*` eingeführt. Werden nach Stich-Abschluss in `SpielAktionsService` und `KiOrchestrierungService` publiziert. `default`-Case aus versiegelten Interface-Switches entfernt (typsichere Exhaustivitäts-Prüfung). Integrationstest `SonderpunktDomainEreignisTest` mit `@RecordApplicationEvents` — verifiziert FuchsGefangen bei Mensch-Fuchs-Fang. 292 Tests grün.
 
 **Was wurde implementiert (Plan-Run #75):**
 - BUG-DKV-PRESET: Diagnose ergab — Bug lag in der KI-Orchestrierung (bereits in Plan-Run #73 behoben). `Spiel.werteAus()` und `PunkteRechner` sind korrekt. Neuer Regression-Test `spielSchliesstAbMitDkvPreset` in `SpielTest` hinzugefügt. `specs/regelkatalog.md` Bug-Eintrag als behoben markiert. 291 Tests grün.
@@ -10,7 +13,7 @@ Stand: 2026-04-28 (Plan-Run #75)
 - BUG-TRUMPFSOLO-NEUN implementiert → [x]
 - BUG-DKV-PRESET in Phase 1 ergänzt
 
-**Nächste Priorität:** FEAT-SONDERPUNKT-DOMAIN-EVENTS (Backend). Dann Spec-Updates (SPEC-SCHWEINCHEN, SPEC-AUTH, SPEC-SPIELER-PROFIL etc.).
+**Nächste Priorität:** Spec-Updates (SPEC-SCHWEINCHEN, SPEC-AUTH, SPEC-SPIELER-PROFIL etc.). Dann FEAT-BOCK-CONFIG.
 
 ---
 
@@ -89,13 +92,13 @@ Entscheidung: Spec ist korrekt, bisher nur implizit.
 - [x] Frontend: `SchweinchenGemeldetEreignis` DTO um `spielerPosition` erweitert; `TischSzene.ts` auf `absolutePosition` umgestellt.
 - [x] Validation: 289 Backend-Tests, 60 Frontend-Tests grün.
 
-### FEAT-SONDERPUNKT-DOMAIN-EVENTS (Backend) ← NEU Plan-Run #73
+### FEAT-SONDERPUNKT-DOMAIN-EVENTS (Backend) ← Plan-Run #76
 **Problem:** `FuchsGefangen`, `KarlchenGespielt`, `DoppelkopfGestochen` existieren nur als Sonderpunkt-Felder in der Snapshot-Antwort, nicht als Domain Events. Dadurch kann der `KiEventAdapter` nicht darauf reagieren — möglicherweise Ursache für KI-Hänger nach Sonderpunkten (trotz BUG-KI-HAENGER-FUCHS-Fix).
 Entscheidung: Spec (`architektur-domain-events.md`) fordert Domain Events für spielrelevante Ereignisse. Code ist unvollständig.
-- [ ] Backend: `SpielEreignis.java` — `FuchsGefangen`, `KarlchenGespielt`, `DoppelkopfGestochen` als neue Sealed-Interface-Records hinzufügen.
-- [ ] Backend: `SpielAktionsService` / `Spiel.java` — Events nach Sonderpunktermittlung publizieren (via `ApplicationEventPublisher`).
-- [ ] Backend: `KiEventAdapter` — falls KI-Reaktion auf Sonderpunkt-Events nötig, Listener registrieren.
-- [ ] Validation: `mvn test`.
+- [x] Backend: `partie/ereignisse/` — `FuchsGefangen`, `KarlchenGespielt`, `DoppelkopfGestochen` als Spring ApplicationEvent-Records (nicht in sealed SpielEreignis, da in StichAbgeschlossenEreignis.sonderpunkte() bereits enthalten).
+- [x] Backend: `SpielAktionsService.sendeStichAbgeschlossen()` + `KiOrchestrierungService.sendeStichAbgeschlossen()` — Events nach Sonderpunktermittlung via `ApplicationEventPublisher.publishEvent()` publizieren. `default`-Case aus sealed-Interface-Switch entfernt.
+- [x] Backend: Kein KiEventAdapter-Listener nötig (laut spec: `—`).
+- [x] Validation: `SonderpunktDomainEreignisTest` mit `@RecordApplicationEvents`. 292 Tests grün.
 
 ### FEAT-BOCK-CONFIG (Backend)
 **Problem:** "Herz durchgegangen" soll konfigurierbar sein.

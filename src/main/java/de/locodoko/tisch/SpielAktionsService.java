@@ -13,6 +13,9 @@ import de.locodoko.partie.SpielAktion;
 import de.locodoko.partie.SpielEreignis;
 import de.locodoko.partie.SonderpunktEreignis;
 import de.locodoko.partie.VorbehaltAnsage;
+import de.locodoko.partie.ereignisse.DoppelkopfGestochen;
+import de.locodoko.partie.ereignisse.FuchsGefangen;
+import de.locodoko.partie.ereignisse.KarlchenGespielt;
 import de.locodoko.partie.ereignisse.NaechsterSpielerErwartet;
 import de.locodoko.partie.ereignisse.SchweinchenGemeldet;
 import de.locodoko.partie.ereignisse.VorbehaltErwartet;
@@ -280,7 +283,6 @@ public class SpielAktionsService {
                 case SpielEreignis.StichAbgeschlossenEreignis sa -> sendeStichAbgeschlossen(tisch, sa.sonderpunkte());
                 case SpielEreignis.SchweinchenGemeldet sg -> veroeffentlicheSchweinchenEreignis(tisch, sg.spielerPosition());
                 case SpielEreignis.HochzeitPartnerGefunden hpg -> veroeffentlicheHochzeitEreignis(tisch, hpg.partner());
-                default -> LOGGER.trace("Ignoriere Spielereignis: {}", ereignis);
             }
         }
         triggereKi(tisch);
@@ -307,6 +309,13 @@ public class SpielAktionsService {
                 "/queue/partie/" + tisch.partie().id(),
                 PartieEreignisAntwort.stichAbgeschlossen(PartieStandAntwort.aus(tisch, s.id()), sonderpunktDtos)
             ));
+        for (SonderpunktEreignis sp : sonderpunkte) {
+            switch (sp.art()) {
+                case FUCHS_GEFANGEN -> eventPublisher.publishEvent(new FuchsGefangen(tisch.id(), sp.taeter(), sp.opfer()));
+                case KARLCHEN -> eventPublisher.publishEvent(new KarlchenGespielt(tisch.id(), sp.taeter()));
+                case DOPPELKOPF -> eventPublisher.publishEvent(new DoppelkopfGestochen(tisch.id(), sp.taeter()));
+            }
+        }
     }
 
     private void triggereKi(TischEntity tisch) {
