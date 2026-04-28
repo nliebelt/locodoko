@@ -1,7 +1,12 @@
 # IMPLEMENTATION_PLAN — Locodoko Doppelkopf
 
 ## Notiz
-Stand: 2026-04-28 (Plan-Run #86)
+Stand: 2026-04-28 (Plan-Run #87)
+
+**Was wurde implementiert (Plan-Run #87):**
+- BUG-STICH-UMDREHEN: Klick auf jeden Stich-Stapel (alle 4 Spieler, nicht nur SUED) zeigt den letzten Stich dieses Spielers im Overlay. Fix: `if (spieler.istSelbst)`-Guard entfernt, Filter von hardcoded `'SUED'` auf `spieler.position` geändert (`TischSzene.renderStichStapel()`). 3 neue Tests. Build-Fehler von Plan-Run #86 (FEAT-PRESET-API) behoben: `TischPresetAntwort` in `SpielverwaltungDto.ts` ergänzt, Imports korrigiert, `AppStore.instanz()` → modul-globales `appStore`, `FakeApi.gibPresets()` in Tests ergänzt. 80 Frontend-Tests grün, Build erfolgreich.
+
+**Nächste Priorität:** `FEAT-LOBBY-POLLING` (Liste offener Tische im Startscreen reaktiv machen).
 
 **Was wurde implementiert (Plan-Run #86):**
 - FEAT-PRESET-API: Backend-Endpoint `GET /api/tische/presets` liefert verfügbare Regel-Presets (Loco-Blatt, DKV-Turnier). `TischErstellenAnfrage` um `presetName` erweitert; `TischVerwaltungsService.erstelleTisch` nutzt diesen zur Konfiguration. Frontend: `SpielverwaltungApi` und `AppStore` um Preset-Unterstützung ergänzt. `SpielverwaltungsSzene` zeigt nun ein DOM-basiertes Modal zur Tisch-Erstellung mit Preset-Auswahl und Beschreibung. Alle 299 Backend- und 77 Frontend-Tests grün.
@@ -137,7 +142,7 @@ Entscheidung: Spec (`architektur-domain-events.md`) fordert Domain Events für s
 ## Phase 4 — Offene UI-Punkte
 
 - [x] FEAT-HUD-SIDEBAR: "Letzte 3 Stiche" in der Phaser-Sidebar implementiert (Teil von FEAT-SEITENLADE, Plan-Run #84).
-- [ ] BUG-STICH-UMDREHEN: Erlauben, alle Stiche umzudrehen (nicht nur den eigenen).
+- [x] BUG-STICH-UMDREHEN: Erlauben, alle Stiche umzudrehen (nicht nur den eigenen).
 - [ ] FEAT-LOBBY-POLLING: Liste offener Tische im Startscreen funktional machen.
 
 ### FEAT-TASTATUR-AUTOFOKUS-SHORTCUTS (Frontend) ← NEU Plan-Run #73, abgeschlossen Plan-Run #80
