@@ -1,7 +1,7 @@
 # IMPLEMENTATION_PLAN — Locodoko Doppelkopf
 
 ## Notiz
-Stand: 2026-04-28 (Plan-Run #65 — Fokus: Vollanalyse aller 5 Bounded Contexts)
+Stand: 2026-04-28 (Plan-Run #66 — Fokus: FEAT-LOCO-PRESET)
 
 **Was wurde implementiert:**
 - FEAT-6/7/8: Playwright-Marker für UI-Buttons.
@@ -12,6 +12,10 @@ Stand: 2026-04-28 (Plan-Run #65 — Fokus: Vollanalyse aller 5 Bounded Contexts)
 - Tisch/Spieler-Kern: Zugangsmodus (OFFEN/PRIVAT), Einladungscode, Statistik, RateLimiting, TischSicherheit (@PreAuthorize) — 90% fertig.
 - AnimationenService: Serielle FIFO-Queue implementiert (Animations-Queue-Aufstauung behoben).
 - Armut/Hochzeit/Solo-Varianten: Alle Trumpfordnungen und Parteien-Logik implementiert.
+- BUG-KI-HAENGER-FUCHS: War bereits in 4f705b1 behoben — als [x] markiert.
+- FEAT-LOCO-PRESET: `locoBlatRegeln()` auf ohneNeunen=true (40 Karten) umgestellt. Alle abhängigen Tests korrigiert. 282 Tests grün.
+
+**Nächste Priorität:** BUG-SCHWEINCHEN (Karo-Asse mit Schweinchen-Flag werden nicht als höchste Trümpfe gewertet). Startpunkt: `Stich.java`/`StichBewerter.java` und `trumpfOrdnungFuerPersistiertenStand()`. Dann BUG-SICHERHEIT-PROFIL (fehlende @PreAuthorize auf SpielerProfilController).
 
 ---
 
@@ -19,8 +23,16 @@ Stand: 2026-04-28 (Plan-Run #65 — Fokus: Vollanalyse aller 5 Bounded Contexts)
 
 ### BUG-KI-HAENGER-FUCHS (Backend)
 **Problem:** KI bleibt stehen nach Sonderpunkten (Fuchs gefangen etc.).
-- [ ] Backend: `triggereKi()` in `KiOrchestrierungService.veroeffentlicheSpielKarteEreignisse()` nach JEDEM Sonderpunkt-Event aufrufen.
-- [ ] Validation: `mvn test` (reproduzierbarer Testcase vorhanden).
+- [x] Backend: `triggereKi()` wird korrekt via `finally`-Block in `automatisiereTisch()` aufgerufen. Behoben in Commit `4f705b1 REGELN-2`.
+- [x] Validation: `KiOrchestrierungServiceIntegrationTest` — alle 5 Tests grün.
+
+### FEAT-LOCO-PRESET (Backend)
+**Problem:** Code nutzte 48 Karten, Spec fordert 40 (ohne Neunen).
+- [x] Backend: `Spielregeln.locoBlatRegeln()` auf `ohneNeunen = true`, Ansagegrenzen `9,8,7,6,5`.
+- [x] Backend: Kommentar verweist auf `specs/regelkatalog.md`.
+- [x] Spec: `specs/tischkonfiguration.md` — `ohneNeunen` auf `true` korrigiert.
+- [x] Tests: Alle betroffenen Tests angepasst.
+- [x] Validation: `mvn test` — alle 282 Tests grün.
 
 ### BUG-SCHWEINCHEN (Backend)
 **Problem:** Karo-Asse werden trotz aktivem Schweinchen nicht als höchste Trümpfe behandelt.
@@ -28,11 +40,6 @@ Analyse (Plan-Run #65): `SchweinchenTrumpfOrdnung` weist korrekte Ränge 14/15 z
 - [ ] Backend: `Stich.java` / `StichBewerter.java` — prüfen, ob beim Ermitteln des Stichgewinners die aktive `TrumpfOrdnung` (inkl. Schweinchen) tatsächlich verwendet wird. Verdacht: Es wird eine Fallback-Ordnung ohne Schweinchen gezogen.
 - [ ] Backend: `Spiel.java` — `trumpfOrdnungFuerPersistiertenStand()` so anpassen, dass das Schweinchen-Flag nur bei Normalspielen/Hochzeit zieht, nicht bei Soli (Spec: Hochzeit/Armut = AUS, Solo-Trumpf = AN).
 - [ ] Validation: Unit-Test: Stich mit zwei Karo-Assen, Schweinchen aktiv → höchstes Karo-As gewinnt.
-
-### FEAT-LOCO-PRESET (Backend)
-**Problem:** Code nutzt 48 Karten, Spec fordert 40 (ohne Neunen).
-- [ ] Backend: `Spielregeln.java` — `locoBlattRegeln()` auf `ohneNeunen = true` umstellen.
-- [ ] Backend: Kommentar hinzufügen, der auf `specs/regelkatalog.md` verweist.
 
 ### BUG-FE-SORTIERUNG (Frontend)
 **Problem:** Farbsoli werden wie Normalspiele sortiert (Herz-10 falsch oben).

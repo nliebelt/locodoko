@@ -127,7 +127,7 @@ class WebSocketPublikationIntegrationTest {
         assertNotNull(ereignis.partieStand().laufendesSpiel());
         assertTrue(
             ereignis.partieStand().laufendesSpiel().spieler().stream()
-                .allMatch(spieler -> spieler.sichtbareHandkarten() != null && spieler.sichtbareHandkarten().size() == 12),
+                .allMatch(spieler -> spieler.sichtbareHandkarten() != null && spieler.sichtbareHandkarten().size() == 10),
             "Der Debug-Snapshot soll fuer Entwicklungszwecke alle Haende nur benutzerbezogen offenlegen."
         );
     }

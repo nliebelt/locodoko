@@ -12,7 +12,7 @@ class TischkonfigurationEmbeddableTest {
         // und nicht versehentlich auf dkvRegeln() oder eine unvollständige Konfiguration delegiert.
         var config = TischkonfigurationEmbeddable.locoBlatRegeln();
 
-        assertThat(config.ohneNeunen()).isFalse();
+        assertThat(config.ohneNeunen()).isTrue();
         assertThat(config.anzahlSpiele()).isEqualTo(24);
         assertThat(config.bockrundenAktiv()).isTrue();
         assertThat(config.schweinchenAktiv()).isTrue();

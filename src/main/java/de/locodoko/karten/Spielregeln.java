@@ -58,9 +58,9 @@ public record Spielregeln(
         return new Spielregeln(true, true, 9, 8, 7, 6, 5, true, true, true, true, true, true, true, true, true, false, false, false, false);
     }
 
-    /** Loco-Blatt-Regelkatalog: alle Sonderregeln aktiv, mit Neunen (12-Karten-Spiel). */
+    /** Loco-Blatt-Regelkatalog: alle Sonderregeln aktiv, ohne Neunen (10-Karten-Spiel). Referenz: specs/regelkatalog.md */
     public static Spielregeln locoBlatRegeln() {
-        return new Spielregeln(false, true, 11, 10, 9, 8, 7, true, true, true, true, true, true, true, true, true, true, true, true, true);
+        return new Spielregeln(true, true, 9, 8, 7, 6, 5, true, true, true, true, true, true, true, true, true, true, true, true, true);
     }
 
     /** Loco-Blatt-Variante ohne Neunen (10-Karten-Spiel), alle Sonderregeln aktiv. */

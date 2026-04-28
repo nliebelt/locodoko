@@ -10,14 +10,14 @@ class SpielregelnTest {
     void locoBlatRegelnAktivierenAlleSonderregeln() {
         // Stellt sicher dass Bockrunden/Schweinchen/30AP/Schmeissen aktiv sind —
         // verhindert, dass ein Refactoring diese versehentlich deaktiviert.
-        // Loco Blatt spielt standardmaessig MIT Neunen (12 Karten).
+        // Loco Blatt spielt OHNE Neunen (10 Karten). Referenz: specs/regelkatalog.md
         Spielregeln regeln = Spielregeln.locoBlatRegeln();
         assertThat(regeln.bockrundenAktiv()).isTrue();
         assertThat(regeln.schweinchenAktiv()).isTrue();
         assertThat(regeln.dreissigAugenPflichtAktiv()).isTrue();
         assertThat(regeln.schmeissenAktiv()).isTrue();
-        assertThat(regeln.ohneNeunen()).isFalse();
-        assertThat(regeln.mindestkartenReKontra()).isEqualTo(11);
+        assertThat(regeln.ohneNeunen()).isTrue();
+        assertThat(regeln.mindestkartenReKontra()).isEqualTo(9);
     }
 
     @Test
@@ -58,8 +58,8 @@ class SpielregelnTest {
         assertThat(loco.karlchenAktiv()).isEqualTo(dkv.karlchenAktiv());
         assertThat(loco.hochzeitAktiv()).isEqualTo(dkv.hochzeitAktiv());
         assertThat(loco.armutAktiv()).isEqualTo(dkv.armutAktiv());
-        // Beide spielen standardmaessig mit Neunen (12 Karten)
-        assertThat(loco.ohneNeunen()).isFalse();
+        // Beide spielen ohne Neunen (10 Karten), loco hat alle Sonderregeln
+        assertThat(loco.ohneNeunen()).isTrue();
         assertThat(dkv.ohneNeunen()).isFalse();
     }
 }

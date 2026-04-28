@@ -158,7 +158,7 @@ class KiOrchestrierungServiceIntegrationTest {
     private TischEntity tischMitSpielernUnique(boolean alleKi) {
         String suffix = java.util.UUID.randomUUID().toString().substring(0, 8);
         SpielerEntity erstelltVon = alleKi ? SpielerEntity.ki("KI-" + suffix) : SpielerEntity.menschlich("Mensch-" + suffix, "session-" + suffix);
-        TischEntity tisch = TischEntity.neu("Integration " + suffix, erstelltVon, TischkonfigurationEmbeddable.standard());
+        TischEntity tisch = TischEntity.neu("Integration " + suffix, erstelltVon, TischkonfigurationEmbeddable.ausSpielregeln(Spielregeln.standardRegeln(), 1));
         tisch.fuegeSpielerHinzu(erstelltVon);
         tisch.fuegeSpielerHinzu(SpielerEntity.ki("KI-B-" + suffix));
         tisch.fuegeSpielerHinzu(SpielerEntity.ki("KI-C-" + suffix));

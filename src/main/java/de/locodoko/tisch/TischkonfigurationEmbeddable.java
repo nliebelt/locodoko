@@ -114,7 +114,7 @@ public class TischkonfigurationEmbeddable {
         return locoBlatRegeln();
     }
 
-    /** Loco-Blatt-Regelkatalog: alle Sonderregeln aktiv, 12-Karten-Spiel, 24 Runden. */
+    /** Loco-Blatt-Regelkatalog: alle Sonderregeln aktiv, 10-Karten-Spiel ohne Neunen, 24 Runden. Referenz: specs/regelkatalog.md */
     public static TischkonfigurationEmbeddable locoBlatRegeln() {
         return ausSpielregeln(Spielregeln.locoBlatRegeln(), 24);
     }

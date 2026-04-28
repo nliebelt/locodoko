@@ -20,7 +20,7 @@ Die Tischkonfiguration definiert das Regelwerk, das an einem bestimmten Tisch gi
 
    | Option | Typ | Standard (Loco Blatt) | Beschreibung |
    | ------ | --- | --------------------- | ------------ |
-   | `ohneNeunen` | boolean | false | Spiel ohne Neunen (40 statt 48 Karten) |
+   | `ohneNeunen` | boolean | true | Spiel ohne Neunen (40 statt 48 Karten) |
    | `anzahlSpiele` | int | 24 | Anzahl Spiele pro Partie |
    | `hochzeitAktiv` | boolean | true | Hochzeit als Sonderspiel zulassen |
    | `armutAktiv` | boolean | true | Armut als Sonderspiel zulassen |
