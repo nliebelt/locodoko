@@ -1,14 +1,15 @@
 # IMPLEMENTATION_PLAN — Locodoko Doppelkopf
 
 ## Notiz
-Stand: 2026-04-28 (Plan-Run #77)
+Stand: 2026-04-28 (Plan-Run #78)
+
+**Was wurde implementiert (Plan-Run #78):**
+- FEAT-BOCK-CONFIG: `herzDurchgegangenNurHoch: boolean` in `Spielregeln`, `TischkonfigurationEmbeddable`, `TischKonfigurationDto`, Frontend-DTOs. `Spiel.istHerzDurchgegangen()` wertet neue Option aus: `true` → nur Herz-As-Stiche triggern Bockrunde, `false` (Standard) → beliebiger Fehlherz-Stich. Liquibase-Migration 022, Baseline aktualisiert. 3 neue BockrundenTests. Spec-Updates in `bockrunden.md` + `tischkonfiguration.md`. 295 Backend-Tests, 60 Frontend-Tests grün.
+
+**Nächste Priorität:** FEAT-COUNTDOWN (Backend+Frontend) oder FEAT-TASTATUR-AUTOFOKUS-SHORTCUTS (Frontend).
 
 **Was wurde implementiert (Plan-Run #77):**
 - SPEC-Updates: `authentifizierung.md` (alle DoD [x]), `spieler-profil.md` (Status → Abgeschlossen, alle DoD [x]), `verbindungsabbruch.md` (KI-Timeout-Einzelspieler [x]), `tischkonfiguration.md` (neue Optionen [x]). `schweinchen.md` war bereits vollständig aktuell.
-
-**Nächste Priorität:** FEAT-BOCK-CONFIG (Backend: `TischKonfiguration` um `herzDurchgegangenNurHoch: boolean` erweitern, Bockrunden-Trigger abhängig davon).
-
-**Was wurde implementiert (Plan-Run #76):**
 - FEAT-SONDERPUNKT-DOMAIN-EVENTS: `FuchsGefangen`, `KarlchenGespielt`, `DoppelkopfGestochen` als Spring ApplicationEvents in `partie.ereignisse.*` eingeführt. Werden nach Stich-Abschluss in `SpielAktionsService` und `KiOrchestrierungService` publiziert. `default`-Case aus versiegelten Interface-Switches entfernt (typsichere Exhaustivitäts-Prüfung). Integrationstest `SonderpunktDomainEreignisTest` mit `@RecordApplicationEvents` — verifiziert FuchsGefangen bei Mensch-Fuchs-Fang. 292 Tests grün.
 
 **Was wurde implementiert (Plan-Run #75):**
@@ -105,10 +106,10 @@ Entscheidung: Spec (`architektur-domain-events.md`) fordert Domain Events für s
 - [x] Backend: Kein KiEventAdapter-Listener nötig (laut spec: `—`).
 - [x] Validation: `SonderpunktDomainEreignisTest` mit `@RecordApplicationEvents`. 292 Tests grün.
 
-### FEAT-BOCK-CONFIG (Backend)
+### FEAT-BOCK-CONFIG (Backend) ← Plan-Run #78
 **Problem:** "Herz durchgegangen" soll konfigurierbar sein.
-- [ ] Backend: `TischKonfiguration` um `herzDurchgegangenNurHoch: boolean` erweitern.
-- [ ] Backend: `Spiel.java` — Trigger-Bedingung für Bockrunde von dieser Option abhängig machen.
+- [x] Backend: `TischKonfiguration` um `herzDurchgegangenNurHoch: boolean` erweitern.
+- [x] Backend: `Spiel.java` — Trigger-Bedingung für Bockrunde von dieser Option abhängig machen.
 
 ---
 
