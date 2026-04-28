@@ -1,18 +1,15 @@
 # IMPLEMENTATION_PLAN — Locodoko Doppelkopf
 
 ## Notiz
-Stand: 2026-04-28 (Plan-Run #69 — Fokus: BUG-SICHERHEIT-PROFIL)
+Stand: 2026-04-28 (Plan-Run #70 — Fokus: BUG-DTO-MASKIERUNG)
 
 **Was wurde implementiert:**
-- BUG-SICHERHEIT-PROFIL: `SpielerProfilController.aktualisiereProfil()` ist jetzt abgesichert.
-  - Neue Exception `SpielerZugriffVerweigertException` (FEHLER_CODE: `ZUGRIFF_VERWEIGERT`).
-  - `SpielverwaltungExceptionHandler` behandelt sie → HTTP 403.
-  - Controller nutzt `SpielerSessionService.ladeAktivenSpieler(request)` (konsistent mit TischController).
-  - Bei fremdem Profil → 403; ohne Session → 401.
-  - 3 neue Integrationstests: eigenes Profil (200), fremdes Profil (403), keine Session (401). 286 Tests grün.
-  - Wichtige Erkenntnis: `@PreAuthorize` wäre falsch gewesen — Username/Passwort-Login setzt keinen Spring SecurityContext.
+- BUG-DTO-MASKIERUNG: Masking-Logik war bereits korrekt implementiert (`sichtbareHandkarten = null` für Fremde, `verbleibendeKarten` immer sichtbar). Fehlte nur der Integrationstest.
+  - Neuer `PartieControllerTest.maskiertGegnerHandkartenImPartieStandViaREST()`: testet vollständigen HTTP-Pfad mit 4 Spielern, echtem Spiel und verteilten Karten.
+  - Assert: SUED (eigene Karten sichtbar mit karteId), NORD (`sichtbareHandkarten = null`, `verbleibendeKarten = 2`).
+  - 287 Tests grün.
 
-**Nächste Priorität:** BUG-DTO-MASKIERUNG — `karteId` darf in Snapshot-Antwort für fremde Handkarten nicht sichtbar sein.
+**Nächste Priorität:** FEAT-KI-SOLO-VORSICHT — `StandardKiStrategie.soloSchwelle` von 13% auf 25% erhöhen; Farbsolo-Bewertung laut `specs/solo-farbsolo.md` (≥46 Punkte Schwelle) ergänzen.
 
 ---
 
@@ -55,8 +52,8 @@ Entscheidung: Spec ist korrekt (nur eigenes Profil darf geändert werden).
 ### BUG-DTO-MASKIERUNG (Backend)
 **Problem (neu — Plan-Run #65):** `sichtbareHandkarten` in der Snapshot-Antwort darf für andere Spieler keine `karteId` enthalten (sonst können andere Spieler Karten einsehen).
 Entscheidung: Spec ist korrekt — karteId ist nur dem Karteninhaber sichtbar.
-- [ ] Backend: Snapshot-DTO / `PartieStandAntwort` — für fremde Handkarten `karteId = null` setzen (nur Anzahl/Rücken sichtbar).
-- [ ] Validation: Integration-Test: Spieler B erhält Snapshot → `handkarten` von Spieler A haben keine karteId.
+- [x] Backend: `sichtbareHandkarten = null` für fremde Spieler; `verbleibendeKarten` immer sichtbar (bereits korrekt implementiert).
+- [x] Validation: `PartieControllerTest.maskiertGegnerHandkartenImPartieStandViaREST()` — vollständiger HTTP-Pfad. 287 Tests grün.
 
 ---
 
