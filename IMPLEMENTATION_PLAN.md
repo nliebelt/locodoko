@@ -1,12 +1,15 @@
 # IMPLEMENTATION_PLAN — Locodoko Doppelkopf
 
 ## Notiz
-Stand: 2026-04-28 (Plan-Run #78)
+Stand: 2026-04-28 (Plan-Run #80)
+
+**Was wurde implementiert (Plan-Run #80):**
+- FEAT-TASTATUR-AUTOFOKUS-SHORTCUTS: Codeanalyse ergab — beide Features waren bereits vollständig implementiert. Auto-Fokus in `TischSzene.aktualisiereKartenNavigationsIndex()` (setzt `tastaturKarteIndex=0` beim Spielzug-Beginn), R/K-Shortcuts in `TischInputHandler.verarbeiteAnsageTaste()`. Spec-DoD `frontend-tastatursteuerung.md` auf [x] gesetzt (7 von 9 Punkten; E2E-Tests + manueller Test-Durchlauf offen). 60 Frontend-Tests grün.
+
+**Nächste Priorität:** FEAT-COUNTDOWN (Phase 3, Backend+Frontend) oder TASK-PRESET-UNIT-TESTS (Phase 5, Backend-only, schnell).
 
 **Was wurde implementiert (Plan-Run #78):**
 - FEAT-BOCK-CONFIG: `herzDurchgegangenNurHoch: boolean` in `Spielregeln`, `TischkonfigurationEmbeddable`, `TischKonfigurationDto`, Frontend-DTOs. `Spiel.istHerzDurchgegangen()` wertet neue Option aus: `true` → nur Herz-As-Stiche triggern Bockrunde, `false` (Standard) → beliebiger Fehlherz-Stich. Liquibase-Migration 022, Baseline aktualisiert. 3 neue BockrundenTests. Spec-Updates in `bockrunden.md` + `tischkonfiguration.md`. 295 Backend-Tests, 60 Frontend-Tests grün.
-
-**Nächste Priorität:** FEAT-COUNTDOWN (Backend+Frontend) oder FEAT-TASTATUR-AUTOFOKUS-SHORTCUTS (Frontend).
 
 **Was wurde implementiert (Plan-Run #77):**
 - SPEC-Updates: `authentifizierung.md` (alle DoD [x]), `spieler-profil.md` (Status → Abgeschlossen, alle DoD [x]), `verbindungsabbruch.md` (KI-Timeout-Einzelspieler [x]), `tischkonfiguration.md` (neue Optionen [x]). `schweinchen.md` war bereits vollständig aktuell.
@@ -129,11 +132,12 @@ Entscheidung: Spec (`architektur-domain-events.md`) fordert Domain Events für s
 - [ ] BUG-STICH-UMDREHEN: Erlauben, alle Stiche umzudrehen (nicht nur den eigenen).
 - [ ] FEAT-LOBBY-POLLING: Liste offener Tische im Startscreen funktional machen.
 
-### FEAT-TASTATUR-AUTOFOKUS-SHORTCUTS (Frontend) ← NEU Plan-Run #73
-**Problem:** `frontend-tastatursteuerung.md` fordert (a) automatischen Fokus auf die erste spielbare Karte bei Spielzug-Beginn, und (b) Ansage-Shortcuts `R` (Re) und `K` (Kontra). Beides fehlt in `TischInputHandler.ts`.
-- [ ] Frontend: `TischInputHandler.ts` — bei `NaechsterSpielerErwartet`-Event erste spielbare Karte automatisch fokussieren (Index 0 der spielbaren Karten).
-- [ ] Frontend: `TischInputHandler.ts` — KeyHandler für `R` und `K`: rufen `kannAnsagen()` ab; falls true, senden WebSocket-Message `/ansage`.
-- [ ] Validation: `npm test` + `npm run build`.
+### FEAT-TASTATUR-AUTOFOKUS-SHORTCUTS (Frontend) ← NEU Plan-Run #73, abgeschlossen Plan-Run #80
+**Problem:** `frontend-tastatursteuerung.md` fordert (a) automatischen Fokus auf die erste spielbare Karte bei Spielzug-Beginn, und (b) Ansage-Shortcuts `R` (Re) und `K` (Kontra).
+Analyse (Plan-Run #80): Beide Features waren bereits vollständig implementiert — Auto-Fokus in `TischSzene.aktualisiereKartenNavigationsIndex()` (setzt Index auf 0 beim Spielzug-Beginn), R/K-Shortcuts in `TischInputHandler.verarbeiteAnsageTaste()` (prüft `modell.moeglicheAnsagen`). Spec-DoD in `frontend-tastatursteuerung.md` aktualisiert. 60 Frontend-Tests, Build grün.
+- [x] Frontend: Auto-Fokus erste spielbare Karte bei Spielzug-Beginn (in `TischSzene.aktualisiereKartenNavigationsIndex()`).
+- [x] Frontend: KeyHandler für `R` und `K` (in `TischInputHandler.verarbeiteAnsageTaste()`).
+- [x] Validation: 60 Frontend-Tests grün, Build erfolgreich.
 
 ### FEAT-ANSAGEN-FAB (Frontend)
 **Problem (neu — Plan-Run #65):** `frontend-ui-logik.md` fordert eine "Floating Action Bar" für Re/Kontra-Ansagen zwischen Stichmitte und Kartenfächer. Aktuell nur `//TODO`-Kommentar in `TischUIManager.ts`.
@@ -172,7 +176,12 @@ Entscheidung: Spec (`architektur-domain-events.md`) fordert Domain Events für s
 - [ ] Frontend (optional): Preset-Dropdown im Tisch-Erstellungs-Dialog.
 - [ ] Validation: `mvn test`.
 
-### TASK-AUTH-FORMLOGIN (Backend)
+### TASK-PRESET-UNIT-TESTS (Backend) ← NEU Plan-Run #79
+**Problem:** `specs/regelkatalog.md` fordert dedizierte Unit-Tests für `locoBlatRegeln()` und `dkvRegeln()`, die explizit alle Feldwerte prüfen. Bisher nur indirekte Nutzung in SpielTest.
+- [ ] Backend: `SpielregelnTest` — je einen Test für `locoBlatRegeln()` und `dkvRegeln()` mit allen relevanten Feld-Assertions.
+- [ ] Validation: `mvn test`.
+
+
 **Problem (neu — Plan-Run #65):** `authentifizierung.md` spricht von Username/Passwort parallel zu OAuth2, aber `formLogin` war im Code fraglich.
 **Plan-Run #73:** Passwort-Auth mit Rate-Limiting (10 Versuche/Min) ist bereits aktiv implementiert. Kein Code-Task nötig.
 - [x] Entscheidung: Passwort-Auth (`formLogin` + `LocodokoBenutzerdienst`) ist aktiv. Rate-Limiting bereits vorhanden.
@@ -188,3 +197,6 @@ Entscheidung: Spec (`architektur-domain-events.md`) fordert Domain Events für s
 - [x] SPEC-SPIELER-PROFIL: `specs/spieler-profil.md` — Status → "Abgeschlossen", alle DoD-Checkboxen [x].
 - [x] SPEC-VERBINDUNGSABBRUCH: `specs/verbindungsabbruch.md` — KI-Übernahme-Timeout Einzelspieler als [x] markiert.
 - [x] SPEC-TISCHKONFIGURATION: `specs/tischkonfiguration.md` — "Neue Optionen ergänzt: bockrundenAktiv..." als [x] markiert.
+- [x] SPEC-BOCKRUNDEN: `specs/bockrunden.md` — 3 Frontend-DoD-Punkte auf [x] gesetzt; Klassenname `LaufendesSpielAntwort` → `PartieStandAntwort` korrigiert.
+- [x] SPEC-SPIELABLAUF-SCHMEISSEN: `specs/spielablauf.md` — alle DoD-Items bereits [x], kein Update nötig.
+- [x] SPEC-REGELKATALOG: `specs/regelkatalog.md` — `locoBlatRegeln()` + `dkvRegeln()` auf [x]; `ohneNeunenLocoBlatRegeln()` aus Spec + Code + Tests entfernt (war identisch mit `locoBlatRegeln()`). Unit-Test-Item umformuliert: nur noch `locoBlatRegeln()` + `dkvRegeln()` → als TASK-PRESET-UNIT-TESTS in Phase 5 geführt.

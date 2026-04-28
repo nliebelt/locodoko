@@ -2,7 +2,7 @@
 
 | Feld           | Wert                                                       |
 |----------------|------------------------------------------------------------|
-| Status         | Zu prüfen |
+| Status         | In Bearbeitung |
 | Priorität      | Mittel                                                     |
 | Abhängigkeiten | frontend-tischansicht.md, frontend-ui-logik.md, e2e-tests.md |
 
@@ -110,12 +110,12 @@ Die Tastatursteuerung ist bewusst so gestaltet, dass Playwright-Tests ohne Canva
 
 ## Definition of Done
 
-- [ ] Karten-Navigation (ArrowLeft/Right, Enter/Space) implementiert
-- [ ] Auto-Fokus auf erste spielbare Karte bei Spielzug-Beginn
-- [ ] Ansage-Shortcuts (R, K, 1–5) implementiert
-- [ ] Vorbehalt-Navigation (Ziffern, ArrowUp/Down, Enter) implementiert
-- [ ] Armut-Shortcuts (A, N) implementiert
-- [ ] Seitenlade (I) und Einstellungen (S) per Tastatur
-- [ ] Focus-Trap in Modals implementiert
+- [x] Karten-Navigation (ArrowLeft/Right, Enter/Space) implementiert
+- [x] Auto-Fokus auf erste spielbare Karte bei Spielzug-Beginn
+- [x] Ansage-Shortcuts (R, K, 1–5) implementiert
+- [x] Vorbehalt-Navigation (Ziffern, ArrowUp/Down, Enter) implementiert
+- [x] Armut-Shortcuts (A, N) implementiert
+- [x] Seitenlade (I) und Einstellungen (S) per Tastatur
+- [x] Focus-Trap in Modals implementiert
 - [ ] E2E-Tests auf Tastatureingaben umgestellt (kein Canvas-Klick mehr nötig)
 - [ ] Manuelle Test-Durchlauf: Partie vollständig per Tastatur gespielt
