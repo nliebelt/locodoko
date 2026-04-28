@@ -314,4 +314,77 @@ describe('TischSzene', () => {
       .map((k: any) => k.text as string);
     expect(texte.some((t: string) => t === 'LETZTE STICHE')).toBe(false);
   });
+
+  it('S-Taste oeffnet Einstellungs-Modal und rendert Inhalt', () => {
+    // Wichtig: Ohne diesen Test koennte ein Refactoring den S-Shortcut oder den renderEinstellungsModal-Aufruf leise brechen.
+    const { s } = baueSzene(baueZustand());
+    expect(s['einstellungenOffen']).toBe(false);
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'S', bubbles: true }));
+    expect(s['einstellungenOffen']).toBe(true);
+    const texte = (s['tischEbene'] as any).kinder
+      .filter((k: any) => k.typ === 'text')
+      .map((k: any) => k.text as string);
+    expect(texte.some((t: string) => t === 'Einstellungen')).toBe(true);
+    expect(texte.some((t: string) => t === 'Tischhintergrund')).toBe(true);
+    expect(texte.some((t: string) => t === 'KI-Schwierigkeit')).toBe(true);
+  });
+
+  it('Escape-Taste schliesst Einstellungs-Modal', () => {
+    // Wichtig: Ohne Escape-Unterstuetzung kann der Spieler das Modal nicht per Tastatur schliessen.
+    const { s } = baueSzene(baueZustand());
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'S', bubbles: true }));
+    expect(s['einstellungenOffen']).toBe(true);
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+    expect(s['einstellungenOffen']).toBe(false);
+    const texte = (s['tischEbene'] as any).kinder
+      .filter((k: any) => k.typ === 'text')
+      .map((k: any) => k.text as string);
+    expect(texte.some((t: string) => t === 'Einstellungen')).toBe(false);
+  });
+
+  it('Backdrop-Klick schliesst Einstellungs-Modal', () => {
+    // Wichtig: Standard-Modal-Verhalten; ohne diesen Test koennte der Backdrop-Handler unbemerkt entfernt werden.
+    const { s } = baueSzene(baueZustand());
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'S', bubbles: true }));
+    const kinder = (s['tischEbene'] as any).kinder;
+    const backdrop = kinder.find((k: any) => k.typ === 'rectangle' && k.interactive && k.breite === 1280);
+    expect(backdrop).toBeDefined();
+    backdrop.emit('pointerdown');
+    expect(s['einstellungenOffen']).toBe(false);
+  });
+
+  it('KI-Schwierigkeit Button deaktiviert fuer Nicht-Ersteller', () => {
+    // Wichtig: Sicherheitsregel — nur Tischersteller darf KI-Einstellung aendern; sonst koennte jeder Mitspieler die KI verstellen.
+    const fremdTisch = { ...baueTisch(), status: 'WARTEND' as const, erstelltVonSpielerId: 'jemand-anderes' };
+    const { s } = baueSzene(baueZustand({ aktuellerTisch: fremdTisch }));
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'S', bubbles: true }));
+    const kinder = (s['tischEbene'] as any).kinder;
+    const kiTextIdx = kinder.findIndex((k: any) => k.typ === 'text' && k.text === 'STANDARD');
+    expect(kiTextIdx).toBeGreaterThanOrEqual(0);
+    expect(kinder[kiTextIdx - 1].interactive).toBe(false);
+  });
+
+  it('KI-Schwierigkeit Button aktiv fuer Ersteller im WARTEND-Status', () => {
+    // Wichtig: Ersteller muss KI-Schwierigkeit konfigurieren koennen; ohne diesen Test koennte die Bedingung versehentlich immer deaktivieren.
+    const eigenerTisch = { ...baueTisch(), status: 'WARTEND' as const, erstelltVonSpielerId: 'sp-SUED' };
+    const { s } = baueSzene(baueZustand({ aktuellerTisch: eigenerTisch }));
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'S', bubbles: true }));
+    const kinder = (s['tischEbene'] as any).kinder;
+    const kiTextIdx = kinder.findIndex((k: any) => k.typ === 'text' && k.text === 'STANDARD');
+    expect(kiTextIdx).toBeGreaterThanOrEqual(0);
+    expect(kinder[kiTextIdx - 1].interactive).toBe(true);
+  });
+
+  it('Animationsgeschwindigkeit Button zykliert und speichert in localStorage', () => {
+    // Wichtig: Persistenz der Animationsgeschwindigkeit ist Kernfunktion; ohne diesen Test koennte localStorage-Schreiben leise wegfallen.
+    const { s } = baueSzene(baueZustand());
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'S', bubbles: true }));
+    const kinder = (s['tischEbene'] as any).kinder;
+    const geschwTextIdx = kinder.findIndex((k: any) => k.typ === 'text' && typeof k.text === 'string' && (k.text as string).startsWith('Geschw.:'));
+    expect(geschwTextIdx).toBeGreaterThanOrEqual(0);
+    const geschwBg = kinder[geschwTextIdx - 1];
+    expect(geschwBg.interactive).toBe(true);
+    geschwBg.emit('pointerdown');
+    expect(localStorage.getItem('locodoko.animationsgeschwindigkeit')).toBe('2');
+  });
 });

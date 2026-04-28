@@ -126,7 +126,7 @@ Die UI reagiert nicht mehr auf Zustandsänderungen durch Diffing (Vergleich alte
 - [ ] Vorbehalt-Overlay implementiert (alle Optionen, Tastatur-Support, Karten bleiben sichtbar)
 - [ ] Armut-Dialog implementiert (auf Spielfläche)
 - [ ] Seitenlade implementiert
-- [ ] Einstellungs-Modal implementiert
+- [ ] Einstellungs-Modal implementiert (Phaser-Implementierung abgeschlossen Plan-Run #85)
 - [ ] Toast-Notifications implementiert
 - [ ] Rundenende-Overlay integriert (Aufruf nach Spielende)
 - [ ] Alle Aktionen auch per Tastatur auslösbar

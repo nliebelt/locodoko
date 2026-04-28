@@ -1,12 +1,12 @@
 # IMPLEMENTATION_PLAN — Locodoko Doppelkopf
 
 ## Notiz
-Stand: 2026-04-28 (Plan-Run #84)
+Stand: 2026-04-28 (Plan-Run #85)
 
-**Was wurde implementiert (Plan-Run #84):**
-- FEAT-SEITENLADE: `renderHud()` in `TischSzene.ts` um Abschnitt „LETZTE STICHE" erweitert — zeigt die letzten 3 abgeschlossenen Stiche mit Gewinnernahme und Augenzahl. `TischInputHandler.ts` um Escape-Handler für Seitenlade ergänzt (Escape schließt Seitenlade vor Einstellungen-Modal). 4 neue Tests: I-Taste öffnet, Escape schließt, Letzte-Stiche-Abschnitt sichtbar mit Stichen, Abschnitt fehlt ohne Stiche. 71 Frontend-Tests grün.
+**Was wurde implementiert (Plan-Run #85):**
+- FEAT-EINSTELLUNGS-MODAL: `renderEinstellungsModal()` in `TischSzene.ts` war bereits vollständig implementiert (Tischhintergrund, KI-Schwierigkeit, Animationsgeschwindigkeit, Zur Lobby, Schließen). Animationsgeschwindigkeit wird über `TischUIManager.zyklusGeschwindigkeit()` in `localStorage` persistiert. 6 neue Tests: S-Taste öffnet und rendert Inhalt, Escape schließt, Backdrop-Klick schließt, KI-Button deaktiviert für Nicht-Ersteller, KI-Button aktiv für Ersteller im WARTEND-Status, Animationsgeschwindigkeit zykliert und speichert localStorage. 77 Frontend-Tests grün.
 
-**Nächste Priorität:** `FEAT-HUD-SIDEBAR` (Letzte 3 Stiche in Phaser-Sidebar ist jetzt Teil von FEAT-SEITENLADE — abgeschlossen) → nächste Option: `FEAT-EINSTELLUNGS-MODAL` (Einstellungs-Modal mit Hintergrund, KI-Schwierigkeit, Animationsgeschwindigkeit) oder `FEAT-LOBBY-POLLING` (Liste offener Tische im Startscreen).
+**Nächste Priorität:** `BUG-STICH-UMDREHEN` (alle Stiche umdrehen, nicht nur eigenen) oder `FEAT-LOBBY-POLLING` (Liste offener Tische im Startscreen) oder `FEAT-PRESET-API` (REST-Endpoint für Presets).
 
 **Was wurde implementiert (Plan-Run #81):**
 - TASK-PRESET-UNIT-TESTS: `SpielregelnTest` um zwei vollständige Feldprüfungs-Tests erweitert: `locoBlatRegelnHatKorrekteWerteFuerAlleFelder()` und `dkvRegelnHatKorrekteWerteFuerAlleFelder()`. Jeder Test prüft alle 21 Felder des `Spielregeln`-Records explizit — sichert ab, dass ein Refactoring keine Preset-Werte unbemerkt verändert. 295 Backend-Tests grün (SpielregelnTest: 3→5 Tests).
@@ -161,11 +161,11 @@ Analyse (Plan-Run #83): Feature war bereits vollständig in `TischSzene.renderAn
 - [x] Frontend: Panel schließt sich bei erneutem Klick oder Escape.
 - [x] Validation: 71 Frontend-Tests grün, Build erfolgreich.
 
-### FEAT-EINSTELLUNGS-MODAL (Frontend)
+### FEAT-EINSTELLUNGS-MODAL (Frontend) ← abgeschlossen Plan-Run #85
 **Problem (neu — Plan-Run #65):** Einstellungs-Modal (`[⚙]`) für Hintergrund, KI-Schwierigkeit und Animationsgeschwindigkeit ist laut `frontend-ui-logik.md` spezifiziert, aktuell nur `getEinstellungsModalEl()` ohne Implementierung.
-- [ ] Frontend: Einstellungs-Modal mit drei Optionen implementieren.
-- [ ] Frontend: Animationsgeschwindigkeit persistiert in `localStorage` und wird beim Start aus `AppStore` übernommen.
-- [ ] Validation: `npm test` + `npm run build`.
+- [x] Frontend: Einstellungs-Modal mit drei Optionen implementieren.
+- [x] Frontend: Animationsgeschwindigkeit persistiert in `localStorage` und wird beim Start aus `AppStore` übernommen.
+- [x] Validation: `npm test` + `npm run build`.
 
 ---
 
