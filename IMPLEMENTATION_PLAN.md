@@ -1,16 +1,18 @@
 # IMPLEMENTATION_PLAN — Locodoko Doppelkopf
 
 ## Notiz
-Stand: 2026-04-28 (Plan-Run #68 — Fokus: BUG-FE-SORTIERUNG)
+Stand: 2026-04-28 (Plan-Run #69 — Fokus: BUG-SICHERHEIT-PROFIL)
 
 **Was wurde implementiert:**
-- BUG-FE-SORTIERUNG: Farbsoli (Herz/Pik/Kreuz) werden jetzt korrekt sortiert.
-  - `trumpfRang()` delegiert jetzt an neue `farbsoloTrumpfRang(karte, trumpfFarbe)` für SOLO_TRUMPF_HERZ/PIK/KREUZ (vorher immer `normaleTrumpfRang()` → Herz-Zehn als Dulle an erster Stelle).
-  - Trumpfreihenfolge Farbsolo: Kreuz-Dame > Pik-Dame > Herz-Dame > Karo-Dame > Kreuz-Bube...Karo-Bube > Farbtrümpfe (Ass > Zehn > König > Neun) — keine Dulle.
-  - `SOLO_FARBE_KARO` aus `Spieltyp`-Union entfernt (Dead Code, kein Backend-Enum-Pendant).
-  - 3 neue Tests für Herz-, Pik- und Kreuzsolo in `TischAnsichtModell.test.ts`. 59 Tests grün.
+- BUG-SICHERHEIT-PROFIL: `SpielerProfilController.aktualisiereProfil()` ist jetzt abgesichert.
+  - Neue Exception `SpielerZugriffVerweigertException` (FEHLER_CODE: `ZUGRIFF_VERWEIGERT`).
+  - `SpielverwaltungExceptionHandler` behandelt sie → HTTP 403.
+  - Controller nutzt `SpielerSessionService.ladeAktivenSpieler(request)` (konsistent mit TischController).
+  - Bei fremdem Profil → 403; ohne Session → 401.
+  - 3 neue Integrationstests: eigenes Profil (200), fremdes Profil (403), keine Session (401). 286 Tests grün.
+  - Wichtige Erkenntnis: `@PreAuthorize` wäre falsch gewesen — Username/Passwort-Login setzt keinen Spring SecurityContext.
 
-**Nächste Priorität:** BUG-SICHERHEIT-PROFIL (fehlende @PreAuthorize auf SpielerProfilController), dann BUG-DTO-MASKIERUNG.
+**Nächste Priorität:** BUG-DTO-MASKIERUNG — `karteId` darf in Snapshot-Antwort für fremde Handkarten nicht sichtbar sein.
 
 ---
 
@@ -46,8 +48,9 @@ Analyse (Plan-Run #65): `SchweinchenTrumpfOrdnung` weist korrekte Ränge 14/15 z
 ### BUG-SICHERHEIT-PROFIL (Backend)
 **Problem (neu — Plan-Run #65):** `SpielerProfilController` PUT-Endpoint hat keine Autorisierungsprüfung — jeder Spieler kann fremde Profile überschreiben.
 Entscheidung: Spec ist korrekt (nur eigenes Profil darf geändert werden).
-- [ ] Backend: `SpielerProfilController.aktualisiereSpielerprofil()` — `@PreAuthorize("@tischSicherheit.istSpielerSelbst(#spielerId)")` oder analoge ABAC-Prüfung ergänzen.
-- [ ] Validation: `mvn test` + Test mit falschem Spieler-Token ergibt HTTP 403.
+- [x] Backend: Neue `SpielerZugriffVerweigertException`; `SpielverwaltungExceptionHandler` → HTTP 403.
+- [x] Backend: `SpielerProfilController.aktualisiereProfil()` — `SpielerSessionService.ladeAktivenSpieler(request)`, ID-Vergleich, bei Mismatch 403.
+- [x] Validation: 3 Integrationstests (eigenes Profil 200, fremdes Profil 403, keine Session 401). 286 Tests grün.
 
 ### BUG-DTO-MASKIERUNG (Backend)
 **Problem (neu — Plan-Run #65):** `sichtbareHandkarten` in der Snapshot-Antwort darf für andere Spieler keine `karteId` enthalten (sonst können andere Spieler Karten einsehen).

@@ -2,6 +2,7 @@ package de.locodoko.tisch;
 
 import de.locodoko.spieler.SpielerNameAenderungNichtErlaubtException;
 import de.locodoko.spieler.SpielerSessionUngueltigException;
+import de.locodoko.spieler.SpielerZugriffVerweigertException;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -31,6 +32,13 @@ public class SpielverwaltungExceptionHandler {
     public ResponseEntity<ApiFehlerAntwort> behandleUngueltigeSession(SpielerSessionUngueltigException exception) {
         LOGGER.warn("Ungueltige Spieler-Session: {}", exception.getMessage());
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+            .body(new ApiFehlerAntwort(exception.fehlerCode(), exception.getMessage()));
+    }
+
+    @ExceptionHandler(SpielerZugriffVerweigertException.class)
+    public ResponseEntity<ApiFehlerAntwort> behandleZugriffVerweigert(SpielerZugriffVerweigertException exception) {
+        LOGGER.warn("Zugriff verweigert: {}", exception.getMessage());
+        return ResponseEntity.status(HttpStatus.FORBIDDEN)
             .body(new ApiFehlerAntwort(exception.fehlerCode(), exception.getMessage()));
     }
 

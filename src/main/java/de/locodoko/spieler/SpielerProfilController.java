@@ -4,6 +4,7 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -25,11 +26,14 @@ public class SpielerProfilController {
 
     private final SpielerRepository spielerRepository;
     private final SpielerProfilService spielerProfilService;
+    private final SpielerSessionService spielerSessionService;
 
     public SpielerProfilController(SpielerRepository spielerRepository,
-                                    SpielerProfilService spielerProfilService) {
+                                    SpielerProfilService spielerProfilService,
+                                    SpielerSessionService spielerSessionService) {
         this.spielerRepository = spielerRepository;
         this.spielerProfilService = spielerProfilService;
+        this.spielerSessionService = spielerSessionService;
     }
 
     @Operation(summary = "Spieler-Profil abrufen", description = "Gibt das oeffentliche Profil eines Spielers mit Statistiken und letzten Partie-Ergebnissen zurueck.")
@@ -48,16 +52,25 @@ public class SpielerProfilController {
             .orElse(ResponseEntity.notFound().build());
     }
 
-    @Operation(summary = "Spieler-Profil aktualisieren", description = "Aktualisiert Anzeigename und/oder Avatar-Farbe.")
+    @Operation(summary = "Spieler-Profil aktualisieren", description = "Aktualisiert Anzeigename und/oder Avatar-Farbe. Nur der Spieler selbst darf sein eigenes Profil aendern.")
     @ApiResponses({
         @ApiResponse(responseCode = "200", description = "Profil erfolgreich aktualisiert"),
+        @ApiResponse(responseCode = "401", description = "Keine gueltige Spieler-Session"),
+        @ApiResponse(responseCode = "403", description = "Zugriff verweigert — fremdes Profil"),
         @ApiResponse(responseCode = "404", description = "Spieler nicht gefunden")
     })
     @PutMapping("/{id}/profil")
     public ResponseEntity<SpielerProfilAntwort> aktualisiereProfil(
         @PathVariable UUID id,
-        @RequestBody ProfilAktualisierungAnfrage anfrage
+        @RequestBody ProfilAktualisierungAnfrage anfrage,
+        HttpServletRequest request
     ) {
+        SpielerEntity aktiverSpieler = spielerSessionService.ladeAktivenSpieler(request);
+        if (!aktiverSpieler.id().equals(id)) {
+            throw new SpielerZugriffVerweigertException(
+                "Spieler %s darf das Profil von Spieler %s nicht aendern.".formatted(aktiverSpieler.id(), id)
+            );
+        }
         return spielerRepository.findById(id)
             .map(spieler -> {
                 if (anfrage.anzeigeName() != null) {
