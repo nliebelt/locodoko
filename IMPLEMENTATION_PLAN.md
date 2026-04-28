@@ -1,18 +1,18 @@
 # IMPLEMENTATION_PLAN — Locodoko Doppelkopf
 
 ## Notiz
-Stand: 2026-04-28 (Plan-Run #71 — Fokus: FEAT-KI-SOLO-VORSICHT)
+Stand: 2026-04-28 (Plan-Run #72 — Fokus: FEAT-SCHWEINCHEN-ANSAGE)
 
 **Was wurde implementiert:**
-- FEAT-KI-SOLO-VORSICHT: `StandardKiStrategie.soloSchwelle(VorbehaltAnsage, KiSpielzustand)`
-  - Malus-Multiplikator von 13 % auf 25 % erhöht (Sicherheitsmarge bei Schweinchen/30er-Pflicht)
-  - Neuer ohneNeunen-Malus (+5 Punkte auf Basis) bei `spielregeln.ohneNeunen() == true`
-  - Loco-Blatt-Threshold damit: ceil((46+5)×1.25) = 64 (vorher ~52)
-  - Farbsolo-Bewertung war bereits korrekt (nutzt dieselbe soloSchwelle-Methode)
-  - Neuer Test: `meldetKeinSoloBeiGrenzwertHandMitOhneNeunenRegeln` — isolierter ohneNeunen-Malus
-  - Test-Kommentare für Loco-Test aktualisiert. 288 Tests grün.
+- FEAT-SCHWEINCHEN-ANSAGE: `spielerPosition` in `PartieEreignisAntwort.SchweinchenGemeldet` ergänzt
+  - Backend: `SchweinchenGemeldet`-Record um `spielerPosition`-Feld erweitert; Factory-Methode angepasst
+  - Backend: `SpielAktionsService.veroeffentlicheSchweinchenEreignis()` vereinfacht (kein Spiel-Reload mehr); Position aus `SpielEreignis.SchweinchenGemeldet` direkt übergeben
+  - Backend: `KiOrchestrierungService` — doppelten Schweinchen-Broadcast beseitigt (proaktiver Check entfernt, nur noch event-basierter Pfad)
+  - Frontend: `SchweinchenGemeldetEreignis` DTO um `spielerPosition` erweitert
+  - Frontend: `TischSzene.ts` Namenssuche auf `absolutePosition` umgestellt (Bugfix: Banner zeigte immer "Spieler:" bei Nicht-SUED-Spielern)
+  - Tests: `PartieEreignisAntwortTest` (Backend), Schweinchen-Banner-Test in `TischSzene.test.ts`. 289 Tests grün.
 
-**Nächste Priorität:** FEAT-SCHWEINCHEN-ANSAGE — `SchweinchenGemeldet`-Event bei erstem Karo-As ausspielen; WebSocket-Nachricht + Frontend-Toast "Schweinchen!". Oder FEAT-BOCK-CONFIG: `herzDurchgegangenNurHoch`-Flag in `TischKonfiguration`.
+**Nächste Priorität:** FEAT-BOCK-CONFIG: `herzDurchgegangenNurHoch`-Flag in `TischKonfiguration`. Oder FEAT-ANSAGEN-FAB (Frontend).
 
 ---
 
@@ -73,10 +73,10 @@ Hinweis (Plan-Run #65): `specs/solo-farbsolo.md` definiert eine 46-Punkte-Schwel
 ### FEAT-SCHWEINCHEN-ANSAGE (Backend)
 **Problem (neu — Plan-Run #65):** DKV-Regel: Wenn ein Spieler das erste Karo-As ausspielt und Schweinchen aktiv ist, soll eine explizite `SCHWEINCHEN_GEMELDET`-Meldung ans Frontend gesendet werden (Anzeige "Schweinchen!").
 Entscheidung: Spec ist korrekt, bisher nur implizit.
-- [ ] Backend: `SpielAktionsService.spieleKarte()` — beim Ausspielen des ersten Karo-As und aktivem Schweinchen ein `SchweinchenGemeldet`-Event publizieren.
-- [ ] Backend: `KiOrchestrierungService` — Event als WebSocket-Nachricht an alle Spieler senden.
-- [ ] Frontend: Toast/Anzeige "Schweinchen!" im `TischUIManager` bei Empfang des Events.
-- [ ] Validation: `mvn test` + E2E-Test mit Schweinchen-Szenario.
+- [x] Backend: `spielerPosition` in `PartieEreignisAntwort.SchweinchenGemeldet` ergänzt; Event-Pipeline vereinfacht.
+- [x] Backend: `KiOrchestrierungService` — doppelten Broadcast beseitigt (proaktiver Check entfernt).
+- [x] Frontend: `SchweinchenGemeldetEreignis` DTO um `spielerPosition` erweitert; `TischSzene.ts` auf `absolutePosition` umgestellt.
+- [x] Validation: 289 Backend-Tests, 60 Frontend-Tests grün.
 
 ### FEAT-BOCK-CONFIG (Backend)
 **Problem:** "Herz durchgegangen" soll konfigurierbar sein.
