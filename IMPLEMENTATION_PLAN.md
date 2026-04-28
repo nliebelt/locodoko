@@ -1,7 +1,12 @@
 # IMPLEMENTATION_PLAN — Locodoko Doppelkopf
 
 ## Notiz
-Stand: 2026-04-28 (Plan-Run #87)
+Stand: 2026-04-28 (Plan-Run #88)
+
+**Was wurde implementiert (Plan-Run #88):**
+- FEAT-LOBBY-POLLING: `SpielverwaltungsSzene` um „⊞ Offene Tische" Toggle-Button erweitert. Aufgeklapptes DOM-Panel zeigt WARTEND-Tische (Beitreten) und eigene IM_SPIEL-Tische (Zurückkehren). Panel aktualisiert sich reaktiv bei jedem Store-Update — kein REST-Polling nötig, da AppStore bereits `/topic/tische` via WebSocket abonniert (war schon in `registriereGemeinsameAbos()`). 2 neue AppStore-Tests für WebSocket-Tischlisten-Updates. `frontend-startscreen.md` auf WebSocket umgestellt, DoD-Items gesetzt. 81 Frontend-Tests grün, Build + TypeScript-Check erfolgreich.
+
+**Nächste Priorität:** Alle offenen Phase-4-Items abgeschlossen. Phase 5 (Backlog) oder neue Specs prüfen.
 
 **Was wurde implementiert (Plan-Run #87):**
 - BUG-STICH-UMDREHEN: Klick auf jeden Stich-Stapel (alle 4 Spieler, nicht nur SUED) zeigt den letzten Stich dieses Spielers im Overlay. Fix: `if (spieler.istSelbst)`-Guard entfernt, Filter von hardcoded `'SUED'` auf `spieler.position` geändert (`TischSzene.renderStichStapel()`). 3 neue Tests. Build-Fehler von Plan-Run #86 (FEAT-PRESET-API) behoben: `TischPresetAntwort` in `SpielverwaltungDto.ts` ergänzt, Imports korrigiert, `AppStore.instanz()` → modul-globales `appStore`, `FakeApi.gibPresets()` in Tests ergänzt. 80 Frontend-Tests grün, Build erfolgreich.
@@ -143,7 +148,7 @@ Entscheidung: Spec (`architektur-domain-events.md`) fordert Domain Events für s
 
 - [x] FEAT-HUD-SIDEBAR: "Letzte 3 Stiche" in der Phaser-Sidebar implementiert (Teil von FEAT-SEITENLADE, Plan-Run #84).
 - [x] BUG-STICH-UMDREHEN: Erlauben, alle Stiche umzudrehen (nicht nur den eigenen).
-- [ ] FEAT-LOBBY-POLLING: Liste offener Tische im Startscreen funktional machen.
+- [x] FEAT-LOBBY-POLLING: Liste offener Tische im Startscreen funktional machen.
 
 ### FEAT-TASTATUR-AUTOFOKUS-SHORTCUTS (Frontend) ← NEU Plan-Run #73, abgeschlossen Plan-Run #80
 **Problem:** `frontend-tastatursteuerung.md` fordert (a) automatischen Fokus auf die erste spielbare Karte bei Spielzug-Beginn, und (b) Ansage-Shortcuts `R` (Re) und `K` (Kontra).
