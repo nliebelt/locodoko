@@ -660,10 +660,10 @@ export class AppStore {
       return true;
     }
 
-    // Wir erlauben >= hier, da der Server fuer denselben Zustandsuebergang
-    // (gleiche Version) mehrere Ereignis-Typen schicken kann (z.B. KI-Sequenz + Phase-Change).
-    // Inkrementelle Updates (Events) nur wenn Version neuer oder gleich ist.
-    if (neueVersion >= this._letztePartieVersion) {
+    // Wir erlauben nur >, um Idempotenz zu gewaehrleisten.
+    // Wenn der Server fuer denselben Zustandsuebergang mehrere Nachrichten schickt,
+    // ignorieren wir die Duplikate fuer die Animation.
+    if (neueVersion > this._letztePartieVersion) {
       this._letztePartieVersion = neueVersion;
       return true;
     }

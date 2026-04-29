@@ -7,7 +7,7 @@ export default defineConfig({
   retries: 0,
   use: {
     baseURL: process.env.BASE_URL ?? 'http://localhost:8081',
-    headless: false,
+    headless: true,
     screenshot: 'off',
     video: 'off',
     trace: 'off',

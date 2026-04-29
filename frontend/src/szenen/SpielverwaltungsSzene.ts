@@ -1,8 +1,7 @@
 import Phaser from 'phaser';
-import { TEXTUR_FILZ } from '../assets/AssetLoader';
+import { TEXTUR_FILZ, registriereBasisTexturen } from '../assets/AssetLoader';
 import { appStore } from '../anwendung';
 import type { AppZustand } from '../store/AppStore';
-import { PhaserButton } from './PhaserButton';
 import type { TischListenEintragAntwort, TischPresetAntwort } from '../modelle/SpielverwaltungDto';
 
 function escapiereHtml(str: string): string {
@@ -28,6 +27,8 @@ export class SpielverwaltungsSzene extends Phaser.Scene {
   }
 
   create(): void {
+    registriereBasisTexturen(this);
+
     // Hintergrund
     this.add.tileSprite(640, 360, 1280, 720, TEXTUR_FILZ).setAlpha(0.95);
 
@@ -53,88 +54,64 @@ export class SpielverwaltungsSzene extends Phaser.Scene {
       }
     });
 
-    // E2E-Marker fuer Playwright
-    this.erstelleE2EMarker('startscreen');
-    this.erstelleE2EMarker('btn-neuer-tisch');
-    this.erstelleE2EMarker('btn-offene-tische');
-    this.erstelleE2EMarker('btn-session-recovery');
-
+    // UI initial rendern
     this.renderUi(appStore.snapshot());
   }
 
-  private erstelleE2EMarker(testId: string): void {
+  private renderUi(zustand: AppZustand): void {
     const root = document.getElementById('ui-root');
     if (!root) return;
-    let marker = document.querySelector(`[data-testid="${testId}"]`);
-    if (!marker) {
-      marker = document.createElement('div');
-      (marker as HTMLElement).dataset['testid'] = testId;
-      (marker as HTMLElement).style.cssText = 'position:absolute;width:1px;height:1px;left:-9999px;top:-9999px;pointer-events:none';
-      root.appendChild(marker);
+
+    // Bestehenden Container entfernen oder leeren
+    let container = document.querySelector('.spielverwaltung-container') as HTMLElement;
+    if (!container) {
+      container = document.createElement('div');
+      container.className = 'spielverwaltung-container';
+      container.setAttribute('data-testid', 'startscreen');
+      // Zentrierung via CSS oder inline (hier inline für Schnelligkeit, sollte in CSS)
+      container.style.cssText = 'display: flex; flex-direction: column; align-items: center; gap: 20px; margin-top: 240px;';
+      root.appendChild(container);
     }
-  }
-
-  private renderUi(zustand: AppZustand): void {
-    // Alte Elemente entfernen
-    this.uiElemente.forEach(el => el.destroy());
-    this.uiElemente = [];
-
-    let currentY = 300;
-    const spacing = 70;
+    container.innerHTML = '';
 
     // 1. Session-Recovery
     const aktiverTischId = zustand.spieler?.aktiverTischId;
     if (aktiverTischId) {
-      const btn = new PhaserButton(this, {
-        x: 640, y: currentY,
-        text: 'Zurück zum Spiel',
-        typ: 'primary',
-        callback: () => appStore.reconnecteTisch(aktiverTischId)
-      });
-      this.uiElemente.push(btn);
-      currentY += spacing;
-
-      void appStore.ladeTischName(aktiverTischId).then(() => {
-          // Da wir neu rendern, wird der Name beim nächsten Store-Update (oder manuell) gesetzt
-          // Für jetzt reicht der generische Text oder wir triggern ein Re-Render
-      });
+      const btn = document.createElement('button');
+      btn.className = 'ui-button'; // Neo-Button Style
+      btn.setAttribute('data-testid', 'btn-session-recovery');
+      btn.textContent = 'Zurück zum Spiel';
+      btn.onclick = () => void appStore.reconnecteTisch(aktiverTischId);
+      container.appendChild(btn);
     }
 
     // 2. Quick Game
-    const quickGameBtn = new PhaserButton(this, {
-      x: 640, y: currentY,
-      text: '▶  Quick Game',
-      typ: 'primary',
-      callback: () => void appStore.erstelleQuickGame()
-    });
-    this.uiElemente.push(quickGameBtn);
-    currentY += spacing;
+    const quickGameBtn = document.createElement('button');
+    quickGameBtn.className = 'ui-button ui-button--primary';
+    quickGameBtn.setAttribute('data-testid', 'btn-quick-game');
+    quickGameBtn.textContent = '▶  Quick Game';
+    quickGameBtn.onclick = () => void appStore.erstelleQuickGame();
+    container.appendChild(quickGameBtn);
 
     // 3. Neuen Tisch
-    const erstelleTischBtn = new PhaserButton(this, {
-      x: 640, y: currentY,
-      text: '+ Neuen Tisch erstellen',
-      typ: 'secondary',
-      callback: () => {
-        this.zeigeErstelleTischModal();
-      }
-    });
-    this.uiElemente.push(erstelleTischBtn);
-    currentY += spacing;
+    const erstelleTischBtn = document.createElement('button');
+    erstelleTischBtn.className = 'ui-button ui-button--secondary';
+    erstelleTischBtn.setAttribute('data-testid', 'btn-neuer-tisch');
+    erstelleTischBtn.textContent = '+ Neuen Tisch erstellen';
+    erstelleTischBtn.onclick = () => this.zeigeErstelleTischModal();
+    container.appendChild(erstelleTischBtn);
 
     // 4. Offene Tische (Toggle)
     const offeneTischeText = this.offeneTischeAufgeklappt ? '⊞  Offene Tische ▲' : '⊞  Offene Tische ▼';
-    const offeneTischeBtn = new PhaserButton(this, {
-      x: 640, y: currentY,
-      text: offeneTischeText,
-      typ: 'secondary',
-      callback: () => {
-        this.offeneTischeAufgeklappt = !this.offeneTischeAufgeklappt;
-        this.renderUi(appStore.snapshot());
-      }
-    });
-    this.uiElemente.push(offeneTischeBtn);
-    currentY += spacing;
+    const offeneTischeBtn = document.createElement('button');
+    offeneTischeBtn.className = 'ui-button ui-button--secondary';
+    offeneTischeBtn.setAttribute('data-testid', 'btn-offene-tische');
+    offeneTischeBtn.textContent = offeneTischeText;
+    offeneTischeBtn.onclick = () => {
+      this.offeneTischeAufgeklappt = !this.offeneTischeAufgeklappt;
+      this.renderUi(appStore.snapshot());
+    };
+    container.appendChild(offeneTischeBtn);
 
     if (this.offeneTischeAufgeklappt) {
       this.aktualisiereOffeneTischeListe(zustand.tische, zustand.spieler?.spielerId ?? null, zustand.spieler?.aktiverTischId ?? null);
@@ -144,16 +121,16 @@ export class SpielverwaltungsSzene extends Phaser.Scene {
     }
 
     // 5. Abmelden
-    const logoutBtn = new PhaserButton(this, {
-      x: 640, y: currentY + 50,
-      text: 'Abmelden',
-      typ: 'secondary',
-      breite: 200,
-      callback: () => {
-        void appStore.ausloggen().then(() => this.scene.start('LoginSzene'));
-      }
-    });
-    this.uiElemente.push(logoutBtn);
+    const logoutBtn = document.createElement('button');
+    logoutBtn.className = 'ui-button ui-button--secondary';
+    logoutBtn.setAttribute('data-testid', 'btn-logout');
+    logoutBtn.style.marginTop = '20px';
+    logoutBtn.style.opacity = '0.7';
+    logoutBtn.textContent = '🚪  Abmelden';
+    logoutBtn.onclick = () => {
+      void appStore.ausloggen().then(() => this.scene.start('LoginSzene'));
+    };
+    container.appendChild(logoutBtn);
   }
 
   private zeigeErstelleTischModal(): void {
@@ -162,28 +139,28 @@ export class SpielverwaltungsSzene extends Phaser.Scene {
 
     const modal = document.createElement('div');
     modal.id = 'erstelle-tisch-modal';
-    modal.className = 'modal-backdrop';
+    modal.className = 'ui-modal-backdrop';
     modal.innerHTML = `
-      <div class="modal-content">
+      <div class="ui-modal">
         <h2>Neuen Tisch erstellen</h2>
-        <div class="form-group">
-          <label for="tisch-name">Name des Tisches</label>
-          <input type="text" id="tisch-name" placeholder="z.B. Gemuetliche Runde" maxlength="100">
+        <div class="ui-section">
+          <label class="ui-hint" for="tisch-name">Name des Tisches</label>
+          <input type="text" id="tisch-name" class="ui-input" placeholder="z.B. Gemütliche Runde" maxlength="100">
         </div>
-        <div class="form-group">
-          <label for="tisch-preset">Regel-Preset</label>
-          <select id="tisch-preset">
+        <div class="ui-section">
+          <label class="ui-hint" for="tisch-preset">Regel-Preset</label>
+          <select id="tisch-preset" class="ui-input ui-input--select">
             <option value="LADEN" disabled selected>Presets werden geladen...</option>
           </select>
-          <p id="preset-beschreibung" class="hint-text"></p>
+          <p id="preset-beschreibung" class="ui-hint" style="margin-top: 8px;"></p>
         </div>
-        <div class="form-group checkbox-group">
+        <div class="ui-form-row">
           <input type="checkbox" id="tisch-privat">
-          <label for="tisch-privat">Privater Tisch (nur via Link)</label>
+          <label for="tisch-privat" class="ui-selection">Privater Tisch (nur via Link)</label>
         </div>
-        <div class="modal-actions">
-          <button id="btn-abbrechen" class="btn-secondary">Abbrechen</button>
-          <button id="btn-erstellen" class="btn-primary" disabled>Erstellen</button>
+        <div class="ui-action-row">
+          <button id="btn-abbrechen" class="ui-button ui-button--secondary">Abbrechen</button>
+          <button id="btn-erstellen" class="ui-button" disabled>Erstellen</button>
         </div>
       </div>
     `;

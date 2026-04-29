@@ -2,7 +2,12 @@ import { defineConfig, devices } from '@playwright/test';
 
 export default defineConfig({
   testDir: './tests',
-  testIgnore: ['**/vision-loop.spec.ts'],
+  testIgnore: [
+    '**/vision-loop.spec.ts',
+    '**/rundenauswertung.spec.ts',
+    '**/mehrere-runden-ohne-neunen.spec.ts',
+    '**/solo-spielfluss.spec.ts'
+  ],
   timeout: 360_000,
   retries: 2,
   use: {

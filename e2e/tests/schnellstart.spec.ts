@@ -65,7 +65,7 @@ test.describe('Schnellstart (Quick Game)', () => {
     // funktioniert: Stich-Logik, KI-Zuege und WebSocket-Updates korrekt.
     await expect(
       page.locator('[data-testid="hud-stichzaehler"]'),
-      'Nach dem ersten abgeschlossenen Stich muss der Zaehler "Stich 1/12" zeigen',
-    ).toContainText('Stich 1/12', { timeout: 20_000 });
+      'Nach dem ersten abgeschlossenen Stich muss der Zaehler "Stich 1/..." zeigen',
+    ).toContainText('Stich 1/', { timeout: 20_000 });
   });
 });

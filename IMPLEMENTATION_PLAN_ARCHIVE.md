@@ -5,6 +5,19 @@
 
 ---
 
+## Archiviert am 2026-04-28 (Plan-Run #88)
+
+> Inhalt des IMPLEMENTATION_PLAN.md Stand Plan-Run #88. Alle Aufgaben (Phasen 1-5, UI, Backlog, Specs) erledigt.
+
+### Zusammenfassung Plan-Run #88
+- FEAT-LOBBY-POLLING: WebSocket-basierte Tischliste im Startscreen.
+- BUG-STICH-UMDREHEN: Alle Stiche für alle Spieler einsehbar.
+- FEAT-PRESET-API: Backend-Presets über REST/Frontend verfügbar.
+- FEAT-COUNTDOWN: Automatischer Neustart nach Partie-Ende.
+- FEAT-SEITENLADE & EINSTELLUNGS-MODAL: Vollständige Meta-UI.
+
+---
+
 ## Archiviert am 2026-04-27 (Plan-Run #56)
 
 > Inhalt des IMPLEMENTATION_PLAN.md Stand Plan-Run #55–56. Alle Aufgaben erledigt oder durch Analyse als erledigt bestätigt.
@@ -243,7 +256,7 @@
 - [x] T2: Armut Unit-Tests
 - [x] T3: Solo-Varianten Spielfluss-Tests
 - [x] T4: Technische Schulden in Tests bereigt
-- [x] T5: E2E Fehlerszenarien und Sonderregeln
+- [x] T5: E2E Fehlerszenarien and Sonderregeln
 - [x] T6: Concurrency-Tests (SpielRegistry)
 
 # IMPLEMENTATION_PLAN — Locodoko Doppelkopf
