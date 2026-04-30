@@ -1,16 +1,32 @@
 # IMPLEMENTATION_PLAN — Locodoko Doppelkopf
 
 ## Notiz
-Stand: 2026-04-30 (Plan-Run #93 — B3 abgeschlossen)
+Stand: 2026-04-30 (Plan-Run #94 — B4 abgeschlossen)
 
-**Was wurde implementiert:** B3 (Browser-Reload / Reconnect zeigt alten State).
-- `initialisiereZustand()` in `TischSzene.ts` um `armutAnnahmeAktiv`, `ausgewaehlteArmutKarten.clear()`, `letzterStichTimer`-Reset erweitert.
-- Store-Subscriber in `TischSzene.create()` reagiert nun auf `aktuellerTisch: null`-Transition (Übergang von verbundenem → reconnecting): ruft `initialisiereZustand()` auf, bevor der neue Snapshot rendert.
-- 2 neue Tests in `TischSzene.test.ts`.
+**Was wurde implementiert:** B4 (Animations-Queue-Aufstauung bei schnellen KI-Zügen).
 
-**Nächster logischer Schritt:** B4 (Animations-Queue-Aufstauung bei schnellen KI-Zügen) oder F1 (Self-Healing Event-Queue).
+Race Condition behoben: In `AppStore._verarbeiteEventQueue()` wurde State gepatcht BEVOR
+die Event-Listener aufgerufen wurden. Bei `STICH_ABGESCHLOSSEN` bedeutete das:
+`triggerRender()` feuerte mit geleerte Stichmitte, bevor `reiheEin(animiereStichEinziehen)`
+`_animationLaeuft = true` setzen konnte → Ghost-Sprites auf leerem Tisch.
 
-**Offene Fragen:** Kein WebSocket-Auto-Reconnect triggert aktuell `reconnecteTisch()` — der Reconnect-Pfad wird nur manuell (BootSzene/SpielverwaltungsSzene) ausgelöst. Wenn B4 angegangen wird: AppStore Z. 579 TODO-Kommentar prüfen (Sequenz-Lücke → reconnecteTisch aufrufen?).
+**Fix 1 (AppStore.ts):** `_eventListener.forEach()` vor `this.patch()` verschoben.
+`_animationLaeuft` ist jetzt `true` wenn Store-Subscriber `triggerRender()` aufruft.
+Neuer Contract: Listener nutzen `ereignis.partieStand` direkt (nicht `appStore.snapshot()`).
+`try/catch` um Listener: Listener-Fehler blockieren State-Patch nicht mehr.
+
+**Fix 2 (TischSzene.ts):** RAF-Callback prüft `animationLaeuft` erneut vor dem Render —
+verhindert veralteten Render wenn zwischen `triggerRender()`-Aufruf und RAF-Callback
+eine Animation eingereiht wurde.
+
+2 neue Tests in `AppStore.test.ts` (Reihenfolge + Behavior).
+
+**Nächster logischer Schritt:** F1 (Self-Healing Event-Queue — TODO-Kommentar in AppStore.ts
+aktivieren) oder F2 (Armut ANBIETEN-Modus prüfen).
+
+**Offene Fragen:** `_aktuelleSequenzId` wird inkrementiert aber nirgends konsumiert — war
+offenbar als Animation-Guard geplant aber nie fertig implementiert. Könnte für zukünftige
+Optimierungen genutzt werden (abgelaufene Animationen nach Sequenz-Wechsel überspringen).
 
 ---
 
@@ -62,22 +78,11 @@ ignorierte `schweinchenAktiv` — Karo-Asse wurden immer mit Rang 4 sortiert (un
 
 ---
 
-### B4: Animations-Queue-Aufstauung bei schnellen KI-Zügen
+### ~~B4: Animations-Queue-Aufstauung bei schnellen KI-Zügen~~ ✅ ERLEDIGT
 
-**Symptom:** Zwei Stiche werden gleichzeitig animiert, wenn KI-Züge sehr schnell aufeinander folgen.
-
-**Diagnose-Hinweis:** `AnimationenService` hat eine FIFO-Queue (`reiheEin`), aber zwischen
-Event-Verarbeitung und `triggerRender()` könnte ein Re-Render stattfinden, der eine bereits
-animierte Karte in den Endzustand springt, bevor die Animation abgeschlossen ist.
-
-**Zu prüfen:**
-- Spec `architektur-domain-events.md` Z. 29ff: "Render-Update für animierte Karte sperren
-  bis Animation fertig". Ist diese Sperre für `KARTE_GESPIELT`-Events implementiert?
-  (AppStore.ts Z. 586: `KARTE_GESPIELT` wird anders behandelt — prüfen ob das ausreicht)
-- AnimationenService: Kann `loeschWarteschlange()` versehentlich laufende Animationen abbrechen?
-
-**Betroffene Dateien:**
-`AnimationenService.ts`, `AppStore.ts` (KARTE_GESPIELT-Handling), `TischSzene.ts`
+**Ergebnis:** Race Condition in `AppStore._verarbeiteEventQueue()` behoben.
+State-Patch kam vor Event-Listener-Aufruf → `triggerRender()` feuerte ohne `_animationLaeuft = true` Guard.
+Fix: Listener vor Patch + RAF-Callback Guard in `TischSzene.ts`.
 
 ---
 
