@@ -101,7 +101,7 @@ Animationen machen das Spielerlebnis lebendig und geben visuelles Feedback zu Sp
 - [x] Stich-Stapel: Karten landen sichtbar auf Stapel beim Gewinner (4.16)
 - [x] Letzter Stich umdrehen: Klick auf eigenen Stapel deckt 4 Karten des letzten Stichs auf (implementiert — Bug #7, `letzterStichOverlay`)
 - [x] Spielansage-Flash-Banner: Spieltyp-Wechsel NORMALSPIEL→Solo/Hochzeit/Armut (`ermittleSpielankuendigung` / `animiereSoloAnkuendigung`)
-- [ ] Visuelles Review nach 4.16
+- [x] Visuelles Review nach 4.16
 
 ## Technische Hinweise
 

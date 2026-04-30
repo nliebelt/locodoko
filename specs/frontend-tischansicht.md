@@ -136,9 +136,9 @@ Die Tischansicht ist das zentrale Spielfeld. Sie nutzt die **volle Canvas-Fläch
 - [x] Floating Action Bar implementiert
 - [x] Seitenlade implementiert
 - [x] Einstellungs-Modal implementiert
-- [ ] Alle vier Spieler ohne Panel-Überlappung sichtbar
+- [x] Alle vier Spieler ohne Panel-Überlappung sichtbar
 - [x] Debug-Modus mit aufgedeckten Karten funktioniert
-- [ ] Visuelles Review / Plausibilitätsprüfung
+- [x] Visuelles Review / Plausibilitätsprüfung
 
 ## Technische Hinweise
 

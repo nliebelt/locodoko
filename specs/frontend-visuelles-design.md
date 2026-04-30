@@ -137,4 +137,4 @@ Diese Effekte treten **kurz und gezielt** auf, dann kehrt die UI zur Ruhe zurüc
 - [x] Ansage-Banner (Re/Kontra)
 - [x] Solo-Ankündigung
 - [x] Focus-Styles für Keyboard-Navigation
-- [ ] Visuelles Review
+- [x] Visuelles Review
