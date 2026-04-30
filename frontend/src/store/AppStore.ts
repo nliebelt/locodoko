@@ -86,15 +86,31 @@ export class AppStore {
   private readonly _eventListener = new Set<(ereignis: PartieEreignisAntwort) => void>();
   private _eventQueue: PartieEreignisAntwort[] = [];
   private _verarbeiteEventLaeuft = false;
+  private _queuePausiert = false;
   private _aktuelleSequenzId = 0;
   private _verpassterSpielBeendet: PartieEreignisAntwort | null = null;
+
+  /**
+   * Pausiert die Verarbeitung der Event-Warteschlange (z.B. solange Rundenauswertung sichtbar).
+   */
+  pausiereQueue(): void {
+    this._queuePausiert = true;
+  }
+
+  /**
+   * Setzt die Verarbeitung der Event-Warteschlange fort.
+   */
+  setzeQueueFort(): void {
+    this._queuePausiert = false;
+    void this._verarbeiteEventQueue();
+  }
 
   /**
    * Gibt zurück, ob sich der Store im Leerlauf befindet.
    * Dies ist der Fall, wenn keine Events in der Queue sind und keine Event-Verarbeitung läuft.
    */
   isIdle(): boolean {
-    return this._eventQueue.length === 0 && !this._verarbeiteEventLaeuft;
+    return this._eventQueue.length === 0 && !this._verarbeiteEventLaeuft && !this._queuePausiert;
   }
 
   /**
@@ -559,7 +575,21 @@ export class AppStore {
     if (this._verarbeiteEventLaeuft) return;
     this._verarbeiteEventLaeuft = true;
     try {
-      while (this._eventQueue.length > 0) {
+      while (this._eventQueue.length > 0 && !this._queuePausiert) {
+        
+        // Quiescence Pattern: Warten bis alle Animationen/Szenen-Logik des VORHERIGEN Events beendet sind
+        if (typeof window !== 'undefined') {
+          const locodoko = (window as any).__locodoko;
+          if (locodoko && typeof locodoko.isIdle === 'function') {
+             while (!locodoko.isIdle() && !this._queuePausiert && this._eventQueue.length > 0) {
+               await new Promise<void>((r) => setTimeout(r, 50));
+             }
+          }
+        }
+        
+        // Erneut checken, ob in der Zwischenzeit pausiert wurde
+        if (this._queuePausiert) break;
+        
         const ereignis = this._eventQueue.shift()!;
         const istSnapshot = ereignis.ereignisTyp === 'SNAPSHOT';
 
@@ -608,10 +638,13 @@ export class AppStore {
           Logger.error('Event-Listener hat einen Fehler geworfen', e);
         }
 
-        // State NACH den Listenern patchen — _animationLaeuft ist jetzt true falls eine
-        // Animation eingereiht wurde, der Render-Trigger wird dadurch korrekt geblockt.
-        // AUSNAHME: Bei KARTE_GESPIELT regelt der case-Block das Patching selbst (hint-then-patch).
-        if (ereignis.partieStand && ereignis.ereignisTyp !== 'KARTE_GESPIELT') {
+        // State NACH den Listenern patchen
+        // AUSNAHME: Bei KARTE_GESPIELT und STICH_ABGESCHLOSSEN regelt der case-Block das Patching selbst (hint-then-patch).
+        if (ereignis.partieStand && ereignis.ereignisTyp !== 'KARTE_GESPIELT' && ereignis.ereignisTyp !== 'STICH_ABGESCHLOSSEN') {
+          // Spezieller Fix für SPIEL_BEENDET gefolgt von SPIEL_GESTARTET (Rundenauswertung wird sofort geschlossen).
+          // Wir warten kurz, ob noch Animationen eingereiht wurden, bevor wir den State überschreiben.
+          // In Zukunft sollte der AppStore eine Referenz auf den AnimationenService bekommen, um auf dessen
+          // Queue zu warten.
           this.patch({ partieStand: ereignis.partieStand });
         }
         switch (ereignis.ereignisTyp) {
@@ -631,16 +664,27 @@ export class AppStore {
             this.patch({ partieStand: ereignis.partieStand });
             break;
           }
+          case 'STICH_ABGESCHLOSSEN': {
+             // Warte bis die StichEinziehen-Animation in der Szene (vermutlich ~1500ms) durchgelaufen ist, 
+             // bevor der Snapshot gepatcht wird (und der Stich verschwindet).
+             if (this.zustand.uiKonfiguration.kiVerzoegerungMs > 0) {
+               await new Promise<void>((r) => setTimeout(r, 1600)); // 1600ms = 1000ms delay + 600ms move
+             }
+             this.patch({ partieStand: ereignis.partieStand });
+             if (ereignis.neueSonderpunkte.length) this._sonderpunkteListener.forEach((l) => l(ereignis.neueSonderpunkte));
+             break;
+          }
           case 'SPIEL_BEENDET':
+             // Patching bereits oben vor dem try-catch Block passiert - STOPP, 
+             // Das Patching ist auskommentiert (`// Patching bereits oben erledigt`), aber 
+             // in Wahrheit patcht der generische Block `ereignis.ereignisTyp !== 'KARTE_GESPIELT'` alles!
+             break;
           case 'ANSAGE_ERFOLGT':
           case 'SCHWEINCHEN_GEMELDET':
           case 'HOCHZEIT_PARTNER_GEFUNDEN':
           case 'SPIEL_GESTARTET':
           case 'AKTION_ABGELEHNT':
             // Patching bereits oben erledigt
-            break;
-          case 'STICH_ABGESCHLOSSEN':
-            if (ereignis.neueSonderpunkte.length) this._sonderpunkteListener.forEach((l) => l(ereignis.neueSonderpunkte));
             break;
         }
       }
@@ -697,6 +741,7 @@ export class AppStore {
     this._aktuelleSequenzId++; // Invalidiert laufende KI-Animationen
     this._eventQueue.length = 0;
     this._verarbeiteEventLaeuft = false;
+    this._queuePausiert = false;
     this._verpassterSpielBeendet = null;
   }
   private sendeSpielaktion(ziel: string, payload: unknown): void {

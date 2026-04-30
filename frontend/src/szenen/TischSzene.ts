@@ -446,6 +446,28 @@ export class TischSzene extends Phaser.Scene {
           });
           this.animationen?.reiheEin(async () => {
             await this.animiereStichEinziehen(letzterStich);
+            
+            // Sonderpunkte auswerten und animieren
+            const e = ereignis as any;
+            if (e.neueSonderpunkte && e.neueSonderpunkte.length > 0) {
+              const popupTexte = e.neueSonderpunkte.map((sp: any) => {
+                 switch (sp.art) {
+                   case 'FUCHS_GEFANGEN': return 'Fuchs gefangen!';
+                   case 'KARLCHEN': return 'Karlchen!';
+                   case 'DOPPELKOPF': return 'Doppelkopf!';
+                   default: return sp.art;
+                 }
+              });
+              
+              if (popupTexte.length > 0) {
+                const text = popupTexte.join('\\n');
+                const b = this.scale.gameSize.width;
+                const h = this.scale.gameSize.height;
+                const targetPos = nameplatePositionFuer(letzterStich.gewinnerPosition, b, h);
+                // Zeige Sonderpunkt direkt ueber dem Gewinner-Nameplate
+                await this.animationen?.animiereAnsageBanner(text, { x: targetPos.x, y: targetPos.y - 60 }, 1500, '#ffd166');
+              }
+            }
           });
         }
         break;
@@ -483,6 +505,11 @@ export class TischSzene extends Phaser.Scene {
         if (spielNr !== null && spielNr === this._letzterGezeigterSpielBeendet) break;
         this._letzterGezeigterSpielBeendet = spielNr;
         this.animationen?.reiheEin(() => this.zeigeGewinnerFlash(m));
+        
+        // Blockiere die Verarbeitung von Folge-Events (z.B. SPIEL_GESTARTET oder KI-Züge), 
+        // bis der Nutzer das Modal bestätigt hat.
+        appStore.pausiereQueue();
+        
         if (m.partieBeendet) {
           this.animationen?.reiheEin(() => { this.zeigePartieEndeModal(m); return Promise.resolve(); });
         } else {
@@ -1168,6 +1195,9 @@ export class TischSzene extends Phaser.Scene {
     this.rundenEndeModal.classList.remove('ui-rundenauswertung-overlay');
     this.rundenauswertungObjekte.forEach((o) => o.destroy()); this.rundenauswertungObjekte = [];
     if (this.escapeHandler) { document.removeEventListener('keydown', this.escapeHandler); this.escapeHandler = undefined; }
+    
+    // Nach dem Schließen des Modals darf der Store Folge-Events abarbeiten
+    appStore.setzeQueueFort();
   }
 
   private zeigePartieEndeModal(m: TischAnsichtModell): void {
@@ -1229,6 +1259,9 @@ export class TischSzene extends Phaser.Scene {
   private schliessePartieEndeModal(): void {
     if (!this.partieEndeModal) return;
     this.partieEndeModal.hidden = true; this.partieEndeModal.innerHTML = '';
+    
+    // Nach dem Schließen des Modals darf der Store Folge-Events abarbeiten
+    appStore.setzeQueueFort();
   }
 
   private async zeigeSpielankuendigung(m: string): Promise<void> {

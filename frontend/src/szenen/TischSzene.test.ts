@@ -44,7 +44,9 @@ const appStoreHarness = vi.hoisted(() => {
       meldeVorbehalt: vi.fn(),
       beantworteArmut: vi.fn(),
       starteNeuePartie: vi.fn(),
-      quittiereMeldung: vi.fn()
+      quittiereMeldung: vi.fn(),
+      setzeQueueFort: vi.fn(),
+      pausiereQueue: vi.fn()
     }
   };
 });

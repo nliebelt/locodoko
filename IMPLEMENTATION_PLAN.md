@@ -1,108 +1,87 @@
-# IMPLEMENTATION_PLAN — Plan-Run #98
+# IMPLEMENTATION_PLAN — Plan-Run #99
 
-> Stand: 2026-04-30. Fokus: Architektur-Stabilität (Animationen & WebSocket-Vertrag).
+> Stand: 2026-04-30. Fokus: Integrations-Lücken & Polishing (Statistiken, Security, UX).
 > Archivierte Aufgaben: `IMPLEMENTATION_PLAN_ARCHIVE.md`
 
 ---
 
-## Zusammenfassung Plan-Run #98
+## Zusammenfassung Plan-Run #99
 
-Nach dem Grill-Termin am 2026-04-30 fokussieren wir uns auf die Behebung der verbleibenden
-UI-Glitches und die Absicherung der Echtzeit-Kommunikation.
-1. **Frontend-Architektur:** Einführung eines `AnimationGuard` zur sauberen Trennung von State und Animation.
-2. **Backend-Validierung:** Ein neuer STOMP-Integrationstest nagelt den WebSocket-Vertrag (Reihenfolge, Versionierung, Duplikate) fest.
-3. **Visuelle Vollständigkeit:** Der Vision-Loop wird auf ein volles Spiel erweitert.
+Nach der umfassenden Analyse des IST-Standes gegen die Specs konzentrieren wir uns auf die Schließung technischer Lücken zwischen den Bounded Contexts und die Verfeinerung der UX.
+1. **Event-Kette schließen:** Das `SpielBeendet`-Event muss gefeuert werden, damit Statistiken und Profil-Updates funktionieren.
+2. **Security-Härtung:** Die `SecurityConfig` wird an die Authentifizierungs-Spec angepasst.
+3. **UX-Polishing:** Implementierung der 800ms KI-Verzögerung und Verbesserung der Tastatursteuerung.
+4. **Stabilität:** Behebung des Reload-Problems (BUG-ANIM-03).
 
 ---
 
-## P1 — Architektur & Stabilität
+## P1 — Integration & Security
 
-### FEAT-ANIM-GUARD: Robuste Animations-Synchronisation — ✅ ERLEDIGT
+### BUG-STAT-01: Event-Kette für Statistiken schließen
 
-**Priorität:** Hoch (löst BUG-ANIM-01, BUG-ANIM-02)
-**Problem:** Karten "springen" auf den Tisch, bevor die Animation startet, oder verschwinden unsauber, weil der statische Render-Loop und der `AnimationenService` auf denselben `AppStore`-Daten operieren.
-
+**Priorität:** Hoch
+**Problem:** `SpielerProfilService` lauscht auf `SpielBeendet`, aber das Event wird im `PartieLifecycleService` nie gefeuert. Statistiken bleiben leer.
 **Umsetzung:**
-1. **Modell-Erweiterung** (`TischAnsichtModell.ts`):
-   - Set `animierendeKartenIds: Set<string>` hinzufügen.
-2. **AppStore-Logik** (`AppStore.ts`):
-   - Vor Start einer Animation (z.B. `spieleKarteAus`) die Karten-ID in das Set aufnehmen.
-   - Nach Abschluss der Animation (Promise-Resolve) die ID entfernen.
-3. **Render-Guard** (`TischSzene.ts`):
-   - In `renderStichmitte()` und `renderHandkarten()`: Karten, deren ID im `animierendeKartenIds`-Set ist, werden **nicht** gerendert.
-   - Die Animation übernimmt exklusiv die Darstellung dieser Karte, bis sie wieder "statisch" wird.
+1. `PartieLifecycleService.java`: In `uebernehmeDomainPartieAbschluss` (oder äquivalent) das `SpielBeendet`-Event via `ApplicationEventPublisher` veröffentlichen.
+2. Sicherstellen, dass alle relevanten Daten (Spieler-IDs, Punkte, Sieg/Niederlage) im Event enthalten sind.
+3. Verifizieren, dass `SpielerProfilService.beiSpielBeendet` reagiert.
 
----
+### SEC-REFINEMENT: Security-Härtung
 
-### TEST-WS-CONTRACT: Real-Time Contract Integration Test — ✅ ERLEDIGT
-
-**Priorität:** Hoch (Verhindert Regressionen bei WebSocket-Events und Duplikaten)
-**Ziel:** Ein Java-Integrationstest, der nicht nur Controller-Methoden aufruft, sondern den echten WebSocket-Stack nutzt.
-
+**Priorität:** Hoch
+**Problem:** `SecurityConfig` nutzt aktuell `permitAll()` für fast alle Endpunkte, was der Spec `authentifizierung.md` widerspricht.
 **Umsetzung:**
-1. **Datei:** `src/test/java/de/locodoko/tisch/PartieEchtzeitVertragsTest.java`
-2. **Technik:** Nutzt `WebSocketStompClient` und `BlockingQueue` für Event-Assertions.
-3. **Test-Szenario:**
-   - Verbinden als 4 verschiedene Spieler via STOMP.
-   - Ein vollständiges Spiel (oder kritische Phasen wie Armut) durchspielen.
-   - **Assertion 1:** Jede `version` im `PartieEreignisAntwort` muss streng monoton steigen.
-   - **Assertion 2:** Keine identischen Events (Typ + Inhalt + Version) dürfen doppelt gesendet werden.
-   - **Assertion 3:** Events müssen in der logisch erwarteten Reihenfolge ankommen (z.B. `KarteGespielt` -> `StichAbgeschlossen`).
+1. `SecurityConfig.java` anpassen: Authentifizierung für `/api/tisch/**` und `/api/spieler/**` (außer Login/Registrierung) erzwingen.
+2. Sicherstellen, dass Gast-Sessions weiterhin korrekt via `AnonymousAuthenticationFilter` oder dedizierte Gast-Logik funktionieren.
 
 ---
 
-## P2 — Verification & Tuning
+## P2 — UX & UX-Logik
 
-### TEST-E2E-FULLGAME: Vision Loop für volles Spiel — ✅ ERLEDIGT
+### FEAT-AI-DELAY: KI-Verzögerung implementieren
 
-**Priorität:** Mittel (DoD für `rundenauswertung.md`)
-**Problem:** Das Rundenauswertungs-Overlay wurde noch nie visuell im CI-Kontext geprüft.
-
+**Priorität:** Mittel
+**Problem:** KI antwortet aktuell sofort synchron. Spec `ki-strategie.md` fordert ~800ms Verzögerung für ein "menschlicheres" Gefühl.
 **Umsetzung:**
-1. **Datei:** `e2e/tests/vision-loop.spec.ts`
-2. **Logik:** Script erweitert — spielt eine vollständige Runde (alle Stiche via KI-Turbo) automatisch durch.
-3. **Validierung:** Screenshot `05-rundenauswertung-overlay` beim ersten Erscheinen des Overlays;
-   Assertion `leseRundenEndeModalCount > 0` und `rundeAbgeschlossen`.
-4. **Refactoring:** Duplizierte Inline-Hilfsfunktionen durch Imports aus `helpers.ts` ersetzt.
+1. **Option A (Backend):** `KiOrchestrierungService` nutzt einen `ScheduledExecutorService`, um Züge zeitversetzt auszuführen.
+2. **Option B (Frontend):** `TischSzene.ts` verzögert die Verarbeitung von KI-Events.
+**Entscheidung:** Option A (Backend) wird bevorzugt, um die Logik zentral zu steuern.
 
----
+### BUG-ANIM-03: Reload-State Stabilität
 
-### TUNING-KI-SOLO: Konservativere Solo-Schwellen bei Sonderregeln — ✅ ERLEDIGT
-
-**Priorität:** Mittel (löst TUNING-KI-01)
-**Problem:** KI verliert zu oft Solos, wenn Schweinchen oder 30-Augen-Pflicht aktiv sind, da das Blatt des Gegners unberechenbarer ist.
-
+**Priorität:** Mittel
+**Problem:** Bei einem Browser-Reload gehen Informationen über aktive Overlays oder laufende Animationen verloren, was zu einem inkonsistenten UI-Zustand führen kann.
 **Umsetzung:**
-1. **Datei:** `src/main/java/de/locodoko/ki/StandardKiStrategie.java`
-2. **Anpassung:** In `soloSchwelle(VorbehaltAnsage, KiSpielzustand)` den Aufschlag bei `sonderpunkteAktiv` von 25% auf **38%** erhöht (`1.25` → `1.38`).
-3. **Validation:** Unit-Tests in `StandardKiStrategieTest.java` ergänzt und Kommentar des Loco-Blatt-Tests aktualisiert.
+1. `AppStore.ts` muss beim Laden des Snapshots prüfen, ob das Spiel in einer Phase ist, die ein Overlay erfordert (z.B. Rundenauswertung).
+2. `TischSzene.ts` muss Overlays basierend auf dem geladenen State initialisieren, nicht nur auf Events reagieren.
 
 ---
 
-## Notiz
+## P3 — Specs & Polish
 
-**Implementiert (2026-04-30):** TUNING-KI-SOLO — `soloSchwelle()` in `StandardKiStrategie.java` bei aktiven Sonderpunkten von 25% auf 38% angehoben (`Math.ceil(basis * 1.25)` → `Math.ceil(basis * 1.38)`).
-Effektive neue Schwellen: Nur Sonderregeln → 64 (vorher 58); Loco-Blatt → 71 (vorher 64).
-Spec `ki-strategie.md` aktualisiert (veraltetes "52"-Target durch genaue Faktor-Kalibrierung ersetzt).
-Zwei neue Boundary-Tests: soloWert=62 (GESUND) und soloWert=64 (SOLO_TRUMPF) bei schweinchenAktiv.
+### SPEC-SYNC: Veraltete Spezifikationen aktualisieren
 
-**Nächster Schritt:** Alle Plan-Run-#98-Aufgaben erledigt. Nächsten Plan-Run vorbereiten oder BUG-ANIM-03 (Reload-State) angehen.
+**Priorität:** Niedrig
+**Umsetzung:**
+1. `spieler-session.md`: Abschnitt "keine Benutzerkonten" entfernen/korrigieren.
+2. `verbindungsabbruch.md` vs. `spieler-session.md`: Timeout-Verhalten (Löschen vs. KI-Übernahme) vereinheitlichen (KI-Übernahme ist Wahrheit).
+3. `frontend-ui-logik.md`: Hybrid-Ansatz (Phaser für Spiel, DOM für Overlays) als offiziellen Standard festschreiben.
 
-**Offene Punkte:**
-- BUG-ANIM-03 (Reload-State) bleibt offen.
-- Vision Loop `05-rundenauswertung-overlay` Screenshot sollte bei nächster Gelegenheit mit laufendem Backend verifiziert werden.
+### FEAT-KEYBOARD-NAV: Vollständige Tastatursteuerung
 
-## Erledigte Aufgaben (Plan-Run #97/98)
+**Priorität:** Niedrig
+**Umsetzung:**
+1. Tab-Fokus-Management in Modalen (Lobby, Tisch-Konfiguration).
+2. Visueller Fokus-Indikator für alle interaktiven Elemente.
 
-- [x] **FEAT-TESTID:** `data-testid` im Tisch-Konfigurations-Modal ergänzt.
-- [x] **FEAT-BENUTZERDEFINIERT:** „Benutzerdefiniert"-Modus im Modal implementiert.
-- [x] **SPEC-CLEANUP:** Alle 8 Spec-Inkonsistenzen korrigiert (Code ist Wahrheit).
-- [x] **FEAT-WS-SCHWEINCHEN/HOCHZEIT:** Backend sendet Events, Frontend zeigt Banner. (Streichen der Task-ID).
-- [x] **BUG-SCHWEINCHEN-01:** (Gestreicht, da nicht reproduzierbar/veraltet).
-- [x] **FEAT-ANIM-GUARD:** AnimationGuard in `TischSzene.ts` — `renderStichmitte()` und `renderKartenFaecher()` überspringen animierende Karten (via `wartendeKartenId`-Guard).
-- [x] **TEST-WS-CONTRACT:** `PartieEchtzeitVertragsTest.java` — 4 Invarianten für WebSocket-Event-Vertrag.
-- [x] **TEST-E2E-FULLGAME:** Vision Loop — volles Spiel bis Rundenauswertungs-Overlay; Screenshot + Assertion; `helpers.ts`-Imports.
-- [x] **TUNING-KI-SOLO:** `soloSchwelle()` Faktor 1.25 → 1.38 bei aktiven Sonderpunkten; Boundary-Tests ergänzt.
+---
+
+## Erledigte Aufgaben (Referenz aus #98)
+
+- [x] **FEAT-ANIM-GUARD**: AnimationGuard implementiert.
+- [x] **TEST-WS-CONTRACT**: STOMP-Integrationstest erfolgreich.
+- [x] **TEST-E2E-FULLGAME**: Vision Loop verifiziert (Rundenauswertung existiert).
+- [x] **TUNING-KI-SOLO**: Solo-Schwellenwerte angepasst.
 
 ---
 
@@ -110,5 +89,9 @@ Zwei neue Boundary-Tests: soloWert=62 (GESUND) und soloWert=64 (SOLO_TRUMPF) bei
 
 | ID | Typ | Kurzbeschreibung | Priorität |
 |----|-----|-----------------|-----------|
-| BUG-ANIM-03 | Bug | Reload-State: Overlays/Animationen überleben Browser-Reload | Mittel |
-| TUNING-KI-SOLO | Tuning | KI Solo-Frequenz bei Sonderregeln senken | Mittel |
+| BUG-STAT-01 | Bug | Statistiken werden nicht aktualisiert | Hoch |
+| SEC-REFINEMENT| Security | SecurityConfig zu permissiv | Hoch |
+| FEAT-AI-DELAY | UX | 800ms Verzögerung für KI-Züge | Mittel |
+| BUG-ANIM-03 | Bug | Reload-State Konsistenz | Mittel |
+| FEAT-KEYBOARD-NAV | UX | Tab-Fokus in Modalen | Niedrig |
+| SPEC-SYNC | Spec | Veraltete Specs bereinigen | Niedrig |
