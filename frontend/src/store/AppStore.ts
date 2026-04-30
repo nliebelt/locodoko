@@ -581,7 +581,7 @@ export class AppStore {
         if (typeof window !== 'undefined') {
           const locodoko = (window as any).__locodoko;
           if (locodoko && typeof locodoko.isIdle === 'function') {
-             while (!locodoko.isIdle() && !this._queuePausiert && this._eventQueue.length > 0) {
+             while (!locodoko.isIdle(true) && !this._queuePausiert && this._eventQueue.length > 0) {
                await new Promise<void>((r) => setTimeout(r, 50));
              }
           }

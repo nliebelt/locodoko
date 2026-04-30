@@ -197,8 +197,8 @@ export class TischSzene extends Phaser.Scene {
   /**
    * Gibt zurück, ob die TischSzene (und der zugrundeliegende AppStore) im Leerlauf ist.
    */
-  public isIdle(): boolean {
-    const storeIdle = appStore.isIdle();
+  public isIdle(ignoreStore = false): boolean {
+    const storeIdle = ignoreStore ? true : appStore.isIdle();
     const animationenLaeuft = this.animationen?.animationLaeuft ?? false;
     return storeIdle && !animationenLaeuft && !this.austeilenAktiv && !this.wartendeKartenId;
   }
@@ -321,7 +321,7 @@ export class TischSzene extends Phaser.Scene {
         const pSichtbar = !!pEnde && !pEnde.hidden;
         return rSichtbar || pSichtbar;
       };
-      bridge.isIdle = () => this.isIdle();
+      bridge.isIdle = (ignoreStore = false) => this.isIdle(ignoreStore);
       bridge._rundenEndeModalGezeigt = 0;
     }
 
@@ -1101,9 +1101,13 @@ export class TischSzene extends Phaser.Scene {
     const { width: b, height: h } = this.scale.gameSize;
     const ziel = stichSlotPositionen(b / 2, h / 2, b, h).SUED;
     this.wartendeKartenId = id;
+    
+    // API Call SOFORT absetzen (Optimistic UI). 
+    // Dadurch ueberbruecken wir die Netzwerklatenz waehrend die Animation laeuft.
+    appStore.spieleKarte(id);
+    
     await this.animationen?.reiheEin(async () => {
       await this.animationen?.animiereKarteAusspielen(kObj, ziel);
-      appStore.spieleKarte(id);
       window.setTimeout(() => { if (this.wartendeKartenId === id) this.wartendeKartenId = null; }, 4000);
     });
   }
