@@ -67,29 +67,26 @@ UI-Glitches und die Absicherung der Echtzeit-Kommunikation.
 
 ---
 
-### TUNING-KI-SOLO: Konservativere Solo-Schwellen bei Sonderregeln — ⏳ OFFEN
+### TUNING-KI-SOLO: Konservativere Solo-Schwellen bei Sonderregeln — ✅ ERLEDIGT
 
 **Priorität:** Mittel (löst TUNING-KI-01)
 **Problem:** KI verliert zu oft Solos, wenn Schweinchen oder 30-Augen-Pflicht aktiv sind, da das Blatt des Gegners unberechenbarer ist.
 
 **Umsetzung:**
 1. **Datei:** `src/main/java/de/locodoko/ki/StandardKiStrategie.java`
-2. **Anpassung:** In `soloSchwelle(VorbehaltAnsage, KiSpielzustand)` den Aufschlag bei `sonderpunkteAktiv` von 25% auf ~35-40% erhöhen.
-3. **Validation:** Unit-Tests in `StandardKiStrategieTest.java` anpassen/erweitern.
+2. **Anpassung:** In `soloSchwelle(VorbehaltAnsage, KiSpielzustand)` den Aufschlag bei `sonderpunkteAktiv` von 25% auf **38%** erhöht (`1.25` → `1.38`).
+3. **Validation:** Unit-Tests in `StandardKiStrategieTest.java` ergänzt und Kommentar des Loco-Blatt-Tests aktualisiert.
 
 ---
 
 ## Notiz
 
-**Implementiert (2026-04-30):** TEST-E2E-FULLGAME — `vision-loop.spec.ts` spielt jetzt eine vollständige Runde durch:
-1. Turbo-Modus aktiviert (`setzeAnimationsGeschwindigkeit(Infinity)`) nach Quick-Game-Start.
-2. Game-Loop (max. 1500 Iterationen) spielt alle Stiche automatisch: Vorbehalte, Armut-Tausch, Karten.
-3. Overlay-Screenshot (`05-rundenauswertung-overlay`) wird im Loop aufgenommen sobald `_rundenEndeModalGezeigt > 0`.
-4. Assertions: `rundeAbgeschlossen === true` + `leseRundenEndeModalCount > 0`.
-5. Duplizierte Inline-Funktionen aus `vision-loop.spec.ts` durch `helpers.ts`-Imports ersetzt.
-Hinweis: Manueller Vision-Check empfohlen (Backend beim Commit nicht aktiv, Vision Loop nicht ausgeführt).
+**Implementiert (2026-04-30):** TUNING-KI-SOLO — `soloSchwelle()` in `StandardKiStrategie.java` bei aktiven Sonderpunkten von 25% auf 38% angehoben (`Math.ceil(basis * 1.25)` → `Math.ceil(basis * 1.38)`).
+Effektive neue Schwellen: Nur Sonderregeln → 64 (vorher 58); Loco-Blatt → 71 (vorher 64).
+Spec `ki-strategie.md` aktualisiert (veraltetes "52"-Target durch genaue Faktor-Kalibrierung ersetzt).
+Zwei neue Boundary-Tests: soloWert=62 (GESUND) und soloWert=64 (SOLO_TRUMPF) bei schweinchenAktiv.
 
-**Nächster Schritt:** TUNING-KI-SOLO — `soloSchwelle()` in `StandardKiStrategie.java` bei aktiven Sonderpunkten von 25% auf ~35-40% anheben.
+**Nächster Schritt:** Alle Plan-Run-#98-Aufgaben erledigt. Nächsten Plan-Run vorbereiten oder BUG-ANIM-03 (Reload-State) angehen.
 
 **Offene Punkte:**
 - BUG-ANIM-03 (Reload-State) bleibt offen.
@@ -105,6 +102,7 @@ Hinweis: Manueller Vision-Check empfohlen (Backend beim Commit nicht aktiv, Visi
 - [x] **FEAT-ANIM-GUARD:** AnimationGuard in `TischSzene.ts` — `renderStichmitte()` und `renderKartenFaecher()` überspringen animierende Karten (via `wartendeKartenId`-Guard).
 - [x] **TEST-WS-CONTRACT:** `PartieEchtzeitVertragsTest.java` — 4 Invarianten für WebSocket-Event-Vertrag.
 - [x] **TEST-E2E-FULLGAME:** Vision Loop — volles Spiel bis Rundenauswertungs-Overlay; Screenshot + Assertion; `helpers.ts`-Imports.
+- [x] **TUNING-KI-SOLO:** `soloSchwelle()` Faktor 1.25 → 1.38 bei aktiven Sonderpunkten; Boundary-Tests ergänzt.
 
 ---
 

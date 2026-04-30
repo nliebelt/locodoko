@@ -683,7 +683,7 @@ class StandardKiStrategieTest {
     @Test
     void meldetKeinSoloBeiGleicherGrenzwertHandMitLocoBlatRegeln() {
         // Dieselbe Hand (soloWert=50) mit Loco-Blatt-Regeln (ohneNeunen + Schweinchen + 30-Augen-Pflicht aktiv).
-        // Erhöhte Solo-Schwelle: ceil((46+5) × 1.25) = ceil(63.75) = 64 → 50 < 64 → kein Solo.
+        // Erhöhte Solo-Schwelle: ceil((46+5) × 1.38) = ceil(70.38) = 71 → 50 < 71 → kein Solo.
         // Wichtig: prüft dass KI-Solo-Schwellen bei aktiven Sonderregeln erhöht werden,
         // weil Schweinchen die Trumpfverteilung ausgeglichener macht und Solo-Chancen reduziert.
         Spielregeln locoRegeln = Spielregeln.locoBlatRegeln();
@@ -720,8 +720,108 @@ class StandardKiStrategieTest {
         );
 
         assertEquals(VorbehaltAnsage.GESUND, strategie.waehleVorbehalt(zustand),
-            "Mit soloWert=50 und erhöhter Schwelle 64 (Loco-Blatt: ohneNeunen+Schweinchen+30er) "
+            "Mit soloWert=50 und erhöhter Schwelle 71 (Loco-Blatt: ohneNeunen+Schweinchen+30er) "
             + "darf kein Solo angemeldet werden — KI soll bei Sonderregeln konservativer sein.");
+    }
+
+    @Test
+    void meldetKeinSoloBeiHandUnterSchwelleMitSchweinchenAktiv() {
+        // Hand mit soloWert=62 und schweinchenAktiv=true (kein ohneNeunen).
+        // Neue Schwelle: ceil(46 × 1.38) = ceil(63.48) = 64 → 62 < 64 → kein Solo.
+        // Mit altem 1.25-Faktor (Schwelle 58) hätte dieselbe Hand Solo getriggert (62 ≥ 58).
+        // Wichtig: nagelt die erhöhte Schwelle bei aktiven Sonderregeln fest —
+        // KI darf bei Schweinchen nicht mehr mit knapper Trumpfüberlegenheit Solo ansagen.
+        Spielregeln regelnMitSchweinchen = Spielregeln.standardRegeln().mitSchweinchenAktiv(true);
+        NormaleTrumpfOrdnung trumpfOrdnungMitSchweinchen = new NormaleTrumpfOrdnung(regelnMitSchweinchen);
+        KiSpielzustand zustand = new KiSpielzustand(
+            SpielerPosition.WEST,
+            Spieltyp.NORMALSPIEL,
+            Spielphase.VORBEHALT_ANSAGE,
+            regelnMitSchweinchen,
+            trumpfOrdnungMitSchweinchen,
+            new Hand(List.of(
+                // 4 Damen (alle Trumpf): soloWert += 4×4 + 4×2 = 24
+                karte(Farbe.KREUZ, Kartenwert.DAME, 1),
+                karte(Farbe.PIK,   Kartenwert.DAME, 1),
+                karte(Farbe.HERZ,  Kartenwert.DAME, 1),
+                karte(Farbe.KARO,  Kartenwert.DAME, 1),
+                // 3 Buben (alle Trumpf): soloWert += 3×4 + 3×2 = 18
+                karte(Farbe.KREUZ, Kartenwert.BUBE, 1),
+                karte(Farbe.PIK,   Kartenwert.BUBE, 1),
+                karte(Farbe.HERZ,  Kartenwert.BUBE, 1),
+                // Dulle: soloWert += 1×4 = 4
+                karte(Farbe.HERZ,  Kartenwert.ZEHN, 1),
+                // 3 Karo-Trumpf: soloWert += 3×4 + 1×2 = 14 (inkl. Karo-As)
+                karte(Farbe.KARO,  Kartenwert.AS,     1),
+                karte(Farbe.KARO,  Kartenwert.ZEHN,   1),
+                karte(Farbe.KARO,  Kartenwert.KOENIG, 1),
+                // 1 Fehl-As: soloWert += 1×2 = 2
+                karte(Farbe.KREUZ, Kartenwert.AS, 1)
+                // trumpfAnzahl=11, asse=2, damen=4, buben=3 → soloWert = 44+4+8+6 = 62
+            )),
+            null,
+            Ansagen.leer(),
+            List.of(),
+            null,
+            null,
+            null,
+            List.of(),
+            List.of(),
+            List.of(VorbehaltAnsage.GESUND, VorbehaltAnsage.SOLO_TRUMPF)
+        );
+
+        assertEquals(VorbehaltAnsage.GESUND, strategie.waehleVorbehalt(zustand),
+            "Mit soloWert=62 und schweinchenAktiv (Schwelle 64) darf kein Solo angemeldet werden — "
+            + "der erhöhte Sonderregel-Malus soll die KI bei Sonderpunkten deutlich vorsichtiger machen.");
+    }
+
+    @Test
+    void meldetSoloBeiHandGenauAnSchwelleMitSchweinchenAktiv() {
+        // Hand mit soloWert=64 und schweinchenAktiv=true (kein ohneNeunen).
+        // Neue Schwelle: ceil(46 × 1.38) = ceil(63.48) = 64 → 64 ≥ 64 → Solo erwartet.
+        // Wichtig: zeigt dass die KI bei wirklich starken Händen auch mit Sonderregeln Solo ansagt —
+        // die erhöhte Schwelle soll konservativer, nicht risikoavers machen.
+        Spielregeln regelnMitSchweinchen = Spielregeln.standardRegeln().mitSchweinchenAktiv(true);
+        NormaleTrumpfOrdnung trumpfOrdnungMitSchweinchen = new NormaleTrumpfOrdnung(regelnMitSchweinchen);
+        KiSpielzustand zustand = new KiSpielzustand(
+            SpielerPosition.WEST,
+            Spieltyp.NORMALSPIEL,
+            Spielphase.VORBEHALT_ANSAGE,
+            regelnMitSchweinchen,
+            trumpfOrdnungMitSchweinchen,
+            new Hand(List.of(
+                // 4 Damen (alle Trumpf): soloWert += 4×4 + 4×2 = 24
+                karte(Farbe.KREUZ, Kartenwert.DAME, 1),
+                karte(Farbe.PIK,   Kartenwert.DAME, 1),
+                karte(Farbe.HERZ,  Kartenwert.DAME, 1),
+                karte(Farbe.KARO,  Kartenwert.DAME, 1),
+                // 3 Buben (alle Trumpf): soloWert += 3×4 + 3×2 = 18
+                karte(Farbe.KREUZ, Kartenwert.BUBE, 1),
+                karte(Farbe.PIK,   Kartenwert.BUBE, 1),
+                karte(Farbe.HERZ,  Kartenwert.BUBE, 1),
+                // Dulle: soloWert += 1×4 = 4
+                karte(Farbe.HERZ,  Kartenwert.ZEHN, 1),
+                // 4 Karo-Trumpf: soloWert += 4×4 + 1×2 = 18 (inkl. Karo-As)
+                karte(Farbe.KARO,  Kartenwert.AS,     1),
+                karte(Farbe.KARO,  Kartenwert.ZEHN,   1),
+                karte(Farbe.KARO,  Kartenwert.KOENIG, 1),
+                karte(Farbe.KARO,  Kartenwert.NEUN,   1)
+                // trumpfAnzahl=12, asse=1, damen=4, buben=3 → soloWert = 48+2+8+6 = 64
+            )),
+            null,
+            Ansagen.leer(),
+            List.of(),
+            null,
+            null,
+            null,
+            List.of(),
+            List.of(),
+            List.of(VorbehaltAnsage.GESUND, VorbehaltAnsage.SOLO_TRUMPF)
+        );
+
+        assertEquals(VorbehaltAnsage.SOLO_TRUMPF, strategie.waehleVorbehalt(zustand),
+            "Mit soloWert=64 und schweinchenAktiv (Schwelle 64) soll Solo angemeldet werden — "
+            + "eine klar überdurchschnittliche Hand verdient auch mit Sonderregeln ein Solo.");
     }
 
     private Karte karte(Farbe farbe, Kartenwert wert, int exemplarIndex) {
