@@ -30,7 +30,12 @@ import type {
   PartieEreignisAntwort, 
   SonderpunktEreignisAntwortDto, 
   Tischhintergrund, 
-  VorbehaltAnsage 
+  VorbehaltAnsage,
+  KarteGespieltEreignis,
+  SchweinchenGemeldetEreignis,
+  HochzeitPartnerGefundenEreignis,
+  AktionAbgelehntEreignis,
+  AbgeschlossenerStichAntwort
 } from '../modelle/SpielverwaltungDto';
 import { AnimationenService, type AnimierbareKartenobjekte, type RundenauswertungDaten } from '../services/AnimationenService';
 import type { AppZustand } from '../store/AppStore';
@@ -136,21 +141,22 @@ function stichStapelPositionFuer(
 }
 
 function texturFuerTischhintergrund(bg: Tischhintergrund): string {
-  return ({
+  const tex = ({
     FILZ_GRUEN: TEXTUR_FILZ,
     HOLZ_DUNKEL: TEXTUR_HOLZ_DUNKEL,
-    FILZ_BLAU: TEXTUR_BLAU_GRAFIK,
-    BILD_RECHTECK_1: TEXTUR_BILD_RECHTECK_1,
-    BILD_RECHTECK_2: TEXTUR_BILD_RECHTECK_2,
-    BILD_OVAL_1: TEXTUR_BILD_OVAL_1,
-    BILD_OVAL_2: TEXTUR_BILD_OVAL_2,
-    BILD_RUND_1: TEXTUR_BILD_RUND_1,
-    HOLZ_HELL: TEXTUR_HOLZ_DUNKEL // Platzhalter
+    BLAU_GRAFIK: TEXTUR_BLAU_GRAFIK,
+    RECHTECK_1: TEXTUR_BILD_RECHTECK_1,
+    RECHTECK_2: TEXTUR_BILD_RECHTECK_2,
+    OVAL_1: TEXTUR_BILD_OVAL_1,
+    OVAL_2: TEXTUR_BILD_OVAL_2,
+    RUND_1: TEXTUR_BILD_RUND_1
   } as Record<Tischhintergrund, string>)[bg];
+  console.log(`[TischSzene] Hintergrund-Mapping: ${bg} -> ${tex}`);
+  return tex;
 }
 
 function istBildHintergrund(bg: Tischhintergrund): boolean {
-  return bg === 'BILD_RECHTECK_1' || bg === 'BILD_RECHTECK_2' || bg === 'BILD_OVAL_1' || bg === 'BILD_OVAL_2' || bg === 'BILD_RUND_1';
+  return bg === 'RECHTECK_1' || bg === 'RECHTECK_2' || bg === 'OVAL_1' || bg === 'OVAL_2' || bg === 'RUND_1';
 }
 
 /**
@@ -202,6 +208,7 @@ export class TischSzene extends Phaser.Scene {
   }
 
   preload(): void {
+    console.log('[TischSzene] preload: lade Assets...');
     ladeKartenBilderVorab(this);
     ladeHintergrundbilder(this);
   }
@@ -379,6 +386,7 @@ export class TischSzene extends Phaser.Scene {
   }
 
   private initialisiereZustand(): void {
+    console.log('[TischSzene] initialisiereZustand');
     this.animationen?.abbrechen();
     this.letzterStichOverlay?.destroy(true);
     this.letzterStichOverlay = undefined;
@@ -396,11 +404,8 @@ export class TischSzene extends Phaser.Scene {
   private verarbeitePartieEreignis(ereignis: PartieEreignisAntwort): void {
     Logger.szene('Verarbeite PartieEreignis', { typ: ereignis.ereignisTyp });
     
-    // Hilfsfunktion fuer Typ-Sicherheit
-    const e = ereignis as any;
-
     switch (ereignis.ereignisTyp) {
-      case 'SPIEL_GESTARTET':
+      case 'SPIEL_GESTARTET': {
         this.schliesseRundenEndeModal();
         this.schliessePartieEndeModal();
         this.austeilenAktiv = true;
@@ -420,39 +425,52 @@ export class TischSzene extends Phaser.Scene {
           }
         }
         break;
+      }
 
-      case 'KARTE_GESPIELT':
+      case 'KARTE_GESPIELT': {
+        const e = ereignis as KarteGespieltEreignis;
         const eigPos = this.letztesModell?.spieler.find(s => s.istSelbst)?.position;
         if (e.spielerPosition !== eigPos) {
            this.animationen?.reiheEin(() => this.animiereGegnerKarte(e.spielerPosition));
         }
         break;
+      }
 
-      case 'STICH_ABGESCHLOSSEN':
-        if (e.abgeschlossenerStich) {
-          Logger.szene('STICH_ABGESCHLOSSEN Event empfangen', { 
-            gewinner: e.abgeschlossenerStich.gewinnerPosition,
-            kartenAnzahl: e.abgeschlossenerStich.gespielteKarten?.length 
+      case 'STICH_ABGESCHLOSSEN': {
+        const stiche = ereignis.partieStand.letzteAbgeschlosseneStiche;
+        const letzterStich = stiche && stiche.length > 0 ? stiche[stiche.length - 1] : null;
+        if (letzterStich) {
+          Logger.szene('STICH_ABGESCHLOSSEN Event verarbeitet', { 
+            gewinner: letzterStich.gewinnerPosition,
+            kartenAnzahl: letzterStich.gespielteKarten?.length 
           });
           this.animationen?.reiheEin(async () => {
-            await this.animiereStichEinziehen(e.abgeschlossenerStich);
+            await this.animiereStichEinziehen(letzterStich);
           });
         }
         break;
+      }
 
-      case 'ANSAGE_ERFOLGT':
-        if (e.ansage) {
-          this.animationen?.reiheEin(() => this.starteAnsageBannerAnimationen([e.ansage]));
+      case 'ANSAGE_ERFOLGT': {
+        // Da AnsageErfolgtEreignis aktuell keine 'ansage' Eigenschaft im DTO hat (nur partieStand),
+        // nehmen wir die letzte Ansage aus dem Historie-Snapshot.
+        const historie = ereignis.partieStand.laufendesSpiel?.ansageHistorie;
+        const letzteAnsage = historie && historie.length > 0 ? historie[historie.length - 1] : null;
+        if (letzteAnsage) {
+          this.animationen?.reiheEin(() => this.starteAnsageBannerAnimationen([letzteAnsage.ansage]));
         }
         break;
+      }
 
       case 'SCHWEINCHEN_GEMELDET': {
+        const e = ereignis as SchweinchenGemeldetEreignis;
         const name = this.letztesModell?.spieler.find(s => s.absolutePosition === e.spielerPosition)?.name ?? 'Spieler';
         this.animationen?.reiheEin(() => this.zeigeSchweinchenBanner(`${name}: Schweinchen!`));
         break;
       }
 
       case 'HOCHZEIT_PARTNER_GEFUNDEN': {
+        const e = ereignis as HochzeitPartnerGefundenEreignis;
         const partner = this.letztesModell?.spieler.find(s => s.position === e.partnerPosition);
         const partnerName = partner?.name ?? 'Spieler';
         this.animationen?.reiheEin(() => this.zeigeSchweinchenBanner(`${partnerName}: Partner gefunden!`));
@@ -477,6 +495,12 @@ export class TischSzene extends Phaser.Scene {
         // Ein Snapshot im laufenden Spiel sollte nicht destruktiv sein.
         // Wir triggern nur ein UI-Update (passiert sowieso via Store-Abo).
         break;
+
+      case 'AKTION_ABGELEHNT': {
+        const e = ereignis as AktionAbgelehntEreignis;
+        this.toastManager?.zeige({ text: e.fehlerCode, typ: 'fehler' });
+        break;
+      }
     }
   }
 
@@ -492,7 +516,7 @@ export class TischSzene extends Phaser.Scene {
       tempK.destroy(true);
     }
   }
-  private async animiereStichEinziehen(stich: any): Promise<void> {
+  private async animiereStichEinziehen(stich: AbgeschlossenerStichAntwort): Promise<void> {
     const { width: b, height: h } = this.scale.gameSize;
     const slotPos = stichSlotPositionen(b / 2, h / 2, b, h);
     const kg = berechneKartenGroesse(b);
@@ -712,7 +736,7 @@ export class TischSzene extends Phaser.Scene {
     const darfKonf = zustand.spieler?.spielerId === tisch?.erstelltVonSpielerId && tisch?.status === 'WARTEND';
     ebene.add(this.add.text(dialogX, currentY, 'Tischhintergrund', { color: '#d8f3dc', fontSize: `${schriftHint}px` }).setOrigin(0.5));
     currentY += 25;
-    const bgOptionen: Tischhintergrund[] = ['FILZ_GRUEN', 'HOLZ_DUNKEL', 'FILZ_BLAU', 'BILD_RECHTECK_1', 'BILD_RECHTECK_2', 'BILD_OVAL_1', 'BILD_OVAL_2', 'BILD_RUND_1'];
+    const bgOptionen: Tischhintergrund[] = ['FILZ_GRUEN', 'HOLZ_DUNKEL', 'BLAU_GRAFIK', 'RECHTECK_1', 'RECHTECK_2', 'OVAL_1', 'OVAL_2', 'RUND_1'];
     const aktuellerBgIdx = bgOptionen.indexOf(modell.tischhintergrund);
     this.erstellePhaserButton(ebene, dialogX, currentY, dialogW - 60, 34, modell.tischhintergrund.replace(/_/g, ' '), () => {
       const naechsterIdx = (aktuellerBgIdx + 1) % bgOptionen.length;
@@ -855,6 +879,7 @@ export class TischSzene extends Phaser.Scene {
     const slotPos = stichSlotPositionen(mitteX, mitteY, breite, hoehe);
     const kg = berechneKartenGroesse(breite);
     modell.aktuelleStichmitte.forEach((e) => {
+      if (this.wartendeKartenId === e.karte.id) return; // AnimationGuard: Animation übernimmt Rendering
       const s = slotPos[e.position];
       const k = this.erstelleKartenansicht(s.x, s.y, kg.w, kg.h, { karte: e.karte });
       k.setAngle(s.winkel);
@@ -941,6 +966,8 @@ export class TischSzene extends Phaser.Scene {
       const y = istH ? pos.kartenY : pos.kartenY + ab;
       const w = fB + fI * fS;
       const k = sichtbare?.[i];
+      // AnimationGuard: Karte wird exklusiv durch die Animation dargestellt — statischen Render überspringen
+      if (k && this.wartendeKartenId === k.id) continue;
       const istSp = k ? modell.spielbareKarten.includes(k.id) : false;
       const istArm = k ? (armutK?.has(k.id) ?? false) : false;
       const istInt = !animA && (istSp || istArm);
@@ -1303,11 +1330,22 @@ export class TischSzene extends Phaser.Scene {
 
   private aktualisiereHintergrund(bg: Tischhintergrund, b: number, h: number): void {
     const tex = texturFuerTischhintergrund(bg);
+    console.log(`[TischSzene] aktualisiereHintergrund: bg=${bg}, tex=${tex}, istBild=${istBildHintergrund(bg)}`);
     if (istBildHintergrund(bg)) {
-      if (this.hintergrund instanceof Phaser.GameObjects.Image && this.hintergrund.texture.key === tex) { this.hintergrund.setPosition(b / 2, h / 2).setDisplaySize(b, h); return; }
+      if (this.hintergrund instanceof Phaser.GameObjects.Image && this.hintergrund.texture.key === tex) { 
+        console.log(`[TischSzene] Nutze existierendes Image`);
+        this.hintergrund.setPosition(b / 2, h / 2).setDisplaySize(b, h); 
+        return; 
+      }
+      console.log(`[TischSzene] Erstelle neues Image für ${tex}`);
       this.hintergrund?.destroy(); this.hintergrund = this.add.image(b / 2, h / 2, tex).setDisplaySize(b, h).setDepth(0);
     } else {
-      if (this.hintergrund instanceof Phaser.GameObjects.TileSprite && this.hintergrund.texture.key === tex) { this.hintergrund.setPosition(b / 2, h / 2).setSize(b, h); return; }
+      if (this.hintergrund instanceof Phaser.GameObjects.TileSprite && this.hintergrund.texture.key === tex) { 
+        console.log(`[TischSzene] Nutze existierendes TileSprite`);
+        this.hintergrund.setPosition(b / 2, h / 2).setSize(b, h); 
+        return; 
+      }
+      console.log(`[TischSzene] Erstelle neues TileSprite für ${tex}`);
       this.hintergrund?.destroy(); this.hintergrund = this.add.tileSprite(b / 2, h / 2, b, h, tex).setDepth(0);
     }
   }

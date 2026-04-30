@@ -482,4 +482,43 @@ describe('TischSzene', () => {
     expect(zeigeSpy).toHaveBeenCalledWith({ text: 'Karte nicht erlaubt.', typ: 'fehler' });
     expect(appStoreHarness.store.quittiereMeldung).toHaveBeenCalledOnce();
   });
+
+  it('AnimationGuard: Karte in aktuelleStichmitte wird nicht gerendert wenn wartendeKartenId gesetzt ist', () => {
+    // Wichtig: Verhindert Doppel-Rendering — ohne diesen Guard erscheint die Karte SOWOHL als
+    // laufende Animation als auch als statisches Bild in der Stichmitte, was zu einem sichtbaren
+    // "Sprung" führt (z.B. bei Button-Klick während der Tween läuft).
+    const stichKarte = karte('H1', 'HERZ', 'ZEHN');
+    const { s } = baueSzene(baueZustand({
+      partieStand: bauePartieStand(baueLaufendesSpiel({ aktuelleStichmitte: [{ karte: stichKarte, position: 'SUED' }] }))
+    }));
+    const erstelleSpy = vi.spyOn(s as any, 'erstelleKartenansicht');
+    // Animation läuft: wartendeKartenId auf die gespielte Karte setzen
+    s['wartendeKartenId'] = 'H1';
+    // Direkter renderTisch-Aufruf (simuliert Button-Klick während Animation läuft; umgeht triggerRender-Guard)
+    s['renderTisch'](appStoreHarness.store.snapshot(), s['letztesModell']);
+    // erstelleKartenansicht darf für die animierende Karte in der Stichmitte nicht aufgerufen worden sein
+    const stichAufruf = erstelleSpy.mock.calls.find((args: unknown[]) => {
+      const opt = args[4] as { karte?: { farbe: string; wert: string } } | undefined;
+      return opt?.karte?.farbe === 'HERZ' && opt?.karte?.wert === 'ZEHN';
+    });
+    expect(stichAufruf).toBeUndefined();
+  });
+
+  it('AnimationGuard: Position des persistenten Sprites wird nicht überschrieben wenn wartendeKartenId gesetzt ist', () => {
+    // Wichtig: Die Animation verschiebt den Sprite zur Tischmitte. Ohne diesen Guard würde
+    // renderKartenFaecher die Position beim nächsten Render auf die Hand-Position zurücksetzen,
+    // was einen sichtbaren Sprung verursacht.
+    const { s } = baueSzene(baueZustand());
+    const sprite = (s['persistenteEigeneKarten'] as Map<string, { x: number; y: number; setPosition: (x: number, y: number) => unknown }>).get('H1');
+    expect(sprite).toBeDefined();
+    // Animation simulieren: Sprite an fremde Position verschieben
+    sprite.setPosition(600, 300);
+    // wartendeKartenId setzen → AnimationGuard aktiv
+    s['wartendeKartenId'] = 'H1';
+    // Re-render auslösen (direkt, um animationLaeuft-Guard zu umgehen)
+    s['renderTisch'](appStoreHarness.store.snapshot(), s['erstelleModell'](appStoreHarness.store.snapshot()));
+    // Sprite-Position darf nicht auf Hand-Position zurückgesetzt worden sein
+    expect(sprite.x).toBe(600);
+    expect(sprite.y).toBe(300);
+  });
 });
