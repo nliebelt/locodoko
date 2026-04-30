@@ -8,12 +8,12 @@
 ## Notiz
 
 **Was wurde implementiert (diese Iteration):**
-- FEAT-TESTID: 3 `data-testid`-Attribute im Tisch-Konfigurations-Modal hinzugefügt (`tisch-config-modal`, `input-tischname`, `btn-tisch-erstellen`). Frontend-Tests alle grün (88/88).
-- SPEC-01..08: Alle 8 Spec-Inkonsistenzen bereinigt (Schmeißen-Status, KI-Bug-Text, DoD-Checkboxen in regelkatalog/tischansicht/startscreen/visuelles-design/verbindungsabbruch).
+- FEAT-BENUTZERDEFINIERT: „Benutzerdefiniert"-Option im Preset-Select hinzugefügt. Bei Auswahl: Panel mit 16 Bool-Toggles + 5 Ansagegrenzen-Inputs erscheint, vorbelegt aus dem API-Konfigurationsobjekt des zuletzt gewählten Presets. `erstelleKonfiguriertenTisch()` wird aufgerufen. `createBtn`-Validierung auf Name+presetsGeladen umgestellt. `TischPresetAntwort` um `konfiguration?` erweitert. Tests 88/88 grün, Build ok.
+- Spec-DoD: `regelkatalog.md` Zeile 108 und `tischkonfiguration.md` Zeile 65 auf `[x]` gesetzt.
 
 **Nächster logischer Schritt:**
-- VISUAL-REVIEW: Backend starten und Vision Loop ausführen (`cd e2e && npx playwright test vision-loop.spec.ts --headed`). FEAT-TESTID ist jetzt erledigt, daher hat das Modal die richtigen testids.
-- Danach FEAT-BENUTZERDEFINIERT (umfangreichster Task).
+- VISUAL-REVIEW: Backend starten und Vision Loop ausführen. Alle P1-Features (FEAT-TESTID, FEAT-BENUTZERDEFINIERT) sind jetzt erledigt — guter Zeitpunkt für visuellen Abgleich.
+- Danach: Plan-Run als vollständig markieren (`<promise>COMPLETE</promise>`).
 
 **Offene Fragen:**
 - Lint-Fehler im Projekt sind pre-existing (nicht durch diese Iteration verursacht) — 101 Fehler in SpielverwaltungDto.ts, TischSzene.test.ts etc.
@@ -56,7 +56,7 @@ Danach: `cd frontend && npm test && npm run build && npm run lint`
 
 ---
 
-### FEAT-BENUTZERDEFINIERT: „Benutzerdefiniert"-Modus im Tisch-Konfigurations-Modal
+### FEAT-BENUTZERDEFINIERT: „Benutzerdefiniert"-Modus im Tisch-Konfigurations-Modal — ✅ ERLEDIGT
 
 **Priorität:** Mittel
 **Spec-Ref:** `specs/regelkatalog.md` (DoD `[ ]`-Zeilen 106–108), `specs/tischkonfiguration.md`
