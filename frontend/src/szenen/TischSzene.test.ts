@@ -431,4 +431,38 @@ describe('TischSzene', () => {
     geschwBg.emit('pointerdown');
     expect(localStorage.getItem('locodoko.animationsgeschwindigkeit')).toBe('2');
   });
+
+  it('Reconnect: lokaler UI-Zustand wird beim Übergang aktuellerTisch → null zurückgesetzt', () => {
+    // Wichtig: Verhindert dass Overlays/Animationen des vorherigen Spiels nach Reconnect sichtbar
+    // bleiben. Ohne diesen Reset zeigt Strg+R den alten Armut-Dialog oder laufende Animationen.
+    const { s } = baueSzene(baueZustand());
+    // Armut- und Timer-Zustand simulieren, der nach Reconnect verschwinden muss
+    s['armutAnnahmeAktiv'] = true;
+    s['ausgewaehlteArmutKarten'].add('K1');
+    s['ausgewaehlteArmutKarten'].add('H1');
+    s['wartendeKartenId'] = 'K1';
+    s['austeilenAktiv'] = true;
+    // Reconnect: aktuellerTisch → null (wie reconnecteTisch() es patcht)
+    appStoreHarness.setZustand({ ...baueZustand(), aktuellerTisch: null, partieStand: null });
+    appStoreHarness.sendeZustand();
+    expect(s['armutAnnahmeAktiv']).toBe(false);
+    expect(s['ausgewaehlteArmutKarten'].size).toBe(0);
+    expect(s['wartendeKartenId']).toBeNull();
+    expect(s['austeilenAktiv']).toBe(false);
+  });
+
+  it('Reconnect-Guard feuert nicht beim initialen Laden ohne vorherigen Tisch', () => {
+    // Wichtig: Verhindert unnötiges abbrechen() beim ersten Render wenn kein früherer Tisch bekannt war.
+    // letzterZustand ist undefined beim ersten Subscriber-Aufruf → Guard (!zustand.aktuellerTisch && letzterZustand?.aktuellerTisch) ist false.
+    const { s } = baueSzene(baueZustand({ aktuellerTisch: null, partieStand: null }));
+    // Nach initialem Render mit null-Tisch darf armutAnnahmeAktiv nicht fälschlicherweise abgebrochen worden sein
+    expect(s['armutAnnahmeAktiv']).toBe(false);
+    // Jetzt aktuellerTisch setzen, dann wieder auf null → JETZT soll der Guard feuern
+    appStoreHarness.setZustand(baueZustand());
+    appStoreHarness.sendeZustand();
+    s['armutAnnahmeAktiv'] = true;
+    appStoreHarness.setZustand({ ...baueZustand(), aktuellerTisch: null, partieStand: null });
+    appStoreHarness.sendeZustand();
+    expect(s['armutAnnahmeAktiv']).toBe(false);
+  });
 });

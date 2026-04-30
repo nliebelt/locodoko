@@ -1,7 +1,16 @@
 # IMPLEMENTATION_PLAN — Locodoko Doppelkopf
 
 ## Notiz
-Stand: 2026-04-30 (Plan-Run #92 — B2 abgeschlossen)
+Stand: 2026-04-30 (Plan-Run #93 — B3 abgeschlossen)
+
+**Was wurde implementiert:** B3 (Browser-Reload / Reconnect zeigt alten State).
+- `initialisiereZustand()` in `TischSzene.ts` um `armutAnnahmeAktiv`, `ausgewaehlteArmutKarten.clear()`, `letzterStichTimer`-Reset erweitert.
+- Store-Subscriber in `TischSzene.create()` reagiert nun auf `aktuellerTisch: null`-Transition (Übergang von verbundenem → reconnecting): ruft `initialisiereZustand()` auf, bevor der neue Snapshot rendert.
+- 2 neue Tests in `TischSzene.test.ts`.
+
+**Nächster logischer Schritt:** B4 (Animations-Queue-Aufstauung bei schnellen KI-Zügen) oder F1 (Self-Healing Event-Queue).
+
+**Offene Fragen:** Kein WebSocket-Auto-Reconnect triggert aktuell `reconnecteTisch()` — der Reconnect-Pfad wird nur manuell (BootSzene/SpielverwaltungsSzene) ausgelöst. Wenn B4 angegangen wird: AppStore Z. 579 TODO-Kommentar prüfen (Sequenz-Lücke → reconnecteTisch aufrufen?).
 
 ---
 
@@ -42,24 +51,14 @@ ignorierte `schweinchenAktiv` — Karo-Asse wurden immer mit Rang 4 sortiert (un
 
 ---
 
-### B3: Browser-Reload zeigt alten State (Overlays/Animationen des vorherigen Spiels)
+### ~~B3: Browser-Reload zeigt alten State (Overlays/Animationen des vorherigen Spiels)~~ ✅ ERLEDIGT
 
-**Symptom:** Nach `Strg+R` sind Overlays und Animationen des vorherigen Spiels noch sichtbar,
-bevor der neue Snapshot verarbeitet wird.
-
-**Ursache:** `reconnecteTisch()` setzt `partieStand: null` im AppStore, aber
-`AnimationenService` hat noch laufende/geplante Animationen in der FIFO-Queue.
-TischSzene-interne Zustände (`armutAnnahmeAktiv`, `ausgewaehlteArmutKarten`, offene Overlays)
-werden nicht zurückgesetzt bevor der Snapshot rendert.
+**Ergebnis:** Bug lag in `TischSzene.ts`. `initialisiereZustand()` fehlten Resets für `armutAnnahmeAktiv`, `ausgewaehlteArmutKarten` und `letzterStichTimer`. Außerdem wurde `initialisiereZustand()` nie beim In-App-Reconnect aufgerufen.
 
 **Fix:**
-1. In `reconnecteTisch()` (AppStore.ts): `AnimationenService.loeschWarteschlange()` aufrufen.
-2. TischSzene auf `aktuellerTisch: null`-Patch reagieren: interne Overlay-Zustände zurücksetzen
-   (`armutAnnahmeAktiv = false`, `ausgewaehlteArmutKarten.clear()`, offene DOM-Overlays entfernen).
-3. `_letztePartieVersion = -1` beim Reconnect (bereits in `reset()` vorhanden, prüfen ob aufgerufen).
-
-**Betroffene Dateien:**
-`AppStore.ts` (`reconnecteTisch`), `TischSzene.ts` (Reconnect-Handler), `AnimationenService.ts`
+- `initialisiereZustand()` erweitert um `armutAnnahmeAktiv = false`, `ausgewaehlteArmutKarten.clear()`, `letzterStichTimer?.remove(false)`.
+- Store-Subscriber reagiert auf `aktuellerTisch: null`-Transition (Übergang von verbundenem Tisch → Reconnect-Warten) mit Aufruf von `initialisiereZustand()`.
+- Guard: nur bei echter Transition `(letzterZustand?.aktuellerTisch !== null → aktuellerTisch === null)`, nicht beim initialen Laden.
 
 ---
 

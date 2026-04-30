@@ -274,6 +274,12 @@ export class TischSzene extends Phaser.Scene {
         this.scene.start('SpielverwaltungsSzene');
         return;
       }
+      // Reconnect: Übergang von verbundenem Tisch zu null (Warten auf neuen Snapshot).
+      // Alten UI-Zustand vollständig zurücksetzen, damit keine Overlays/Animationen des
+      // vorherigen Spiels sichtbar bleiben, bevor der neue Snapshot verarbeitet wird.
+      if (!zustand.aktuellerTisch && this.letzterZustand?.aktuellerTisch) {
+        this.initialisiereZustand();
+      }
       const modell = this.erstelleModell(zustand);
       this.synchronisiereAnimationszustand(modell, zustand);
       this.letzterZustand = zustand;
@@ -373,6 +379,10 @@ export class TischSzene extends Phaser.Scene {
     this.animationen?.abbrechen();
     this.letzterStichOverlay?.destroy(true);
     this.letzterStichOverlay = undefined;
+    this.letzterStichTimer?.remove(false);
+    this.letzterStichTimer = undefined;
+    this.armutAnnahmeAktiv = false;
+    this.ausgewaehlteArmutKarten.clear();
     this.schliesseRundenEndeModal();
     this.schliessePartieEndeModal();
     this.wartendeKartenId = null;
