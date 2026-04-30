@@ -581,12 +581,8 @@ export class AppStore {
 
         this._aktuelleSequenzId++; // Neue Sequenz fuer jedes Event (Animation-Guard)
 
-        // Zustand patchen VOR dem Benachrichtigen der Listener (Locodoko Unified Architecture)
-        // AUSNAHME: Bei KARTE_GESPIELT regelt der case-Block das Patching selbst (hint-then-patch).
-        if (ereignis.partieStand && ereignis.ereignisTyp !== 'KARTE_GESPIELT') {
-          this.patch({ partieStand: ereignis.partieStand });
-        }
-
+        // SPIEL_BEENDET-Tracking muss vor dem Listener-Aufruf geprueft werden,
+        // da Listener die Groesse des Sets nicht veraendern sollen.
         if (ereignis.ereignisTyp === 'SPIEL_BEENDET') {
           if (this._eventListener.size === 0) {
             this._verpassterSpielBeendet = ereignis;
@@ -594,7 +590,25 @@ export class AppStore {
             this._verpassterSpielBeendet = null;
           }
         }
-        this._eventListener.forEach((l) => l(ereignis));
+
+        // Event-Listener ZUERST aufrufen, bevor der State gepatcht wird.
+        // Listener koennen dabei Animationen einreihen (reiheEin → _animationLaeuft = true),
+        // sodass der anschliessende State-Patch keinen vorzeitigen Render ausloest.
+        // Neuer Contract: Listener duerfen sich NICHT auf appStore.snapshot() verlassen,
+        // sondern muessen ereignis.partieStand direkt verwenden (falls benoetigt).
+        // Exception-Handling: Listener-Fehler duerfen den State-Patch nicht verhindern.
+        try {
+          this._eventListener.forEach((l) => l(ereignis));
+        } catch (e) {
+          Logger.error('Event-Listener hat einen Fehler geworfen', e);
+        }
+
+        // State NACH den Listenern patchen — _animationLaeuft ist jetzt true falls eine
+        // Animation eingereiht wurde, der Render-Trigger wird dadurch korrekt geblockt.
+        // AUSNAHME: Bei KARTE_GESPIELT regelt der case-Block das Patching selbst (hint-then-patch).
+        if (ereignis.partieStand && ereignis.ereignisTyp !== 'KARTE_GESPIELT') {
+          this.patch({ partieStand: ereignis.partieStand });
+        }
         switch (ereignis.ereignisTyp) {
           case 'SNAPSHOT':
             this._eventQueue.length = 0;

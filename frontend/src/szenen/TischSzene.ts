@@ -369,6 +369,9 @@ export class TischSzene extends Phaser.Scene {
     requestAnimationFrame(() => {
       this.renderAngefodert = false;
       if (!this.sys?.displayList) return; // Szene wurde zwischenzeitlich zerstoert
+      // Erneut pruefen: _animationLaeuft koennte zwischen dem reiheEin()-Aufruf
+      // und dem RAF-Callback auf true gesetzt worden sein (z.B. durch nachfolgendes Event).
+      if (this.animationen?.animationLaeuft || this.austeilenAktiv) return;
       if (this.letzterZustand && this.letztesModell) {
         this.renderTisch(this.letzterZustand, this.letztesModell);
       }

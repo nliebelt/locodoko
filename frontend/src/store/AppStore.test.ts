@@ -548,6 +548,162 @@ describe('AppStore', () => {
     expect(store.snapshot().tische[1]).toMatchObject({ id: 'tisch-2', name: 'Zweiter Tisch' });
   });
 
+  it('Event-Listener wird VOR Store-Subscriber aufgerufen (verhindert Ghost-Render bei Animations-Events)', async () => {
+    // WARUM (B4): reiheEin() setzt _animationLaeuft = true synchron im Event-Listener.
+    // Der Store-Subscriber ruft danach triggerRender() auf — der muss geblockt sein.
+    // Falsches Order (Patch vor Listener) lieferte leere Stichmitte ans Render bevor
+    // die Stich-Einzieh-Animation starten konnte (Ghost-Sprites auf leerem Tisch).
+    const echtzeit = new FakeEchtzeit();
+    const tisch = baueTisch('tisch-listener-order');
+    const store = new AppStore(
+      new FakeApi(
+        { spielerId: 'spieler-1', name: 'Nora', istKi: false, aktiverTischId: null },
+        [],
+        tisch
+      ) as SpielverwaltungApi,
+      echtzeit
+    );
+    store.setzeKiKartenVerzögerung(0);
+    await store.initialisieren();
+    await store.betreteTisch(tisch.id);
+
+    // Partie-Abo aufbauen via SPIEL_GESTARTET
+    echtzeit.emit('/user/queue/tisch/tisch-listener-order', {
+      timestamp: '2026-04-30T00:00:00Z',
+      version: 1,
+      ereignisTyp: 'SPIEL_GESTARTET',
+      tischId: 'tisch-listener-order',
+      tisch: { ...tisch, status: 'IM_SPIEL', partieId: 'partie-order' },
+      partieStand: null
+    } as unknown as TischEreignisAntwort);
+
+    const stichStand = {
+      partieId: 'partie-order',
+      version: 1,
+      status: 'LAUFEND',
+      anzahlSpiele: 8,
+      gespielteSpiele: 0,
+      gesamtpunktestand: { SUED: 0 },
+      laufendesSpiel: {
+        spielNummer: 1, hochzeitGeklaert: false, schweinchenGemeldetVon: null,
+        aktuelleStichmitte: [], spielbareKarten: []
+      }
+    } as unknown as PartieStandAntwort;
+
+    const aufrufReihenfolge: string[] = [];
+    let partieVersionBeimListenerAufruf = -1;
+
+    store.abonniereEvents((e) => {
+      if (e.ereignisTyp === 'STICH_ABGESCHLOSSEN') {
+        aufrufReihenfolge.push('event-listener');
+        partieVersionBeimListenerAufruf = store.snapshot().partieStand?.version ?? -1;
+      }
+    });
+    store.abonnieren((z) => {
+      if (z.partieStand?.version === 1) {
+        aufrufReihenfolge.push('store-subscriber');
+      }
+    });
+
+    echtzeit.emit('/user/queue/partie/partie-order', {
+      version: 1,
+      ereignisTyp: 'STICH_ABGESCHLOSSEN',
+      partieStand: stichStand,
+      neueSonderpunkte: [],
+    } as unknown as PartieEreignisAntwort);
+
+    // Microtask-Checkpoint abwarten
+    await Promise.resolve();
+
+    expect(aufrufReihenfolge).toEqual(['event-listener', 'store-subscriber']);
+    // Zum Zeitpunkt des Listener-Aufrufs war der partieStand noch nicht auf Version 1 gepatcht
+    expect(partieVersionBeimListenerAufruf).not.toBe(1);
+  });
+
+  it('STICH_ABGESCHLOSSEN-State ist beim Event-Listener-Aufruf noch nicht im Store sichtbar', async () => {
+    // WARUM (B4): Szenario mit mehreren schnellen KI-Stichs. Wenn der Store-Patch
+    // vor dem Listener käme, würde triggerRender() die geleerte Stichmitte rendern,
+    // bevor animiereStichEinziehen() auch nur gestartet hat (Ghost-Render-Bug).
+    // Dieser Test stellt sicher dass Store-Version beim Listener noch alt ist.
+    const echtzeit = new FakeEchtzeit();
+    const tisch = baueTisch('tisch-stich-order');
+    const store = new AppStore(
+      new FakeApi(
+        { spielerId: 'spieler-1', name: 'Nora', istKi: false, aktiverTischId: null },
+        [],
+        tisch
+      ) as SpielverwaltungApi,
+      echtzeit
+    );
+    store.setzeKiKartenVerzögerung(0);
+    await store.initialisieren();
+    await store.betreteTisch(tisch.id);
+
+    echtzeit.emit('/user/queue/tisch/tisch-stich-order', {
+      timestamp: '2026-04-30T00:00:01Z',
+      version: 1,
+      ereignisTyp: 'SPIEL_GESTARTET',
+      tischId: 'tisch-stich-order',
+      tisch: { ...tisch, status: 'IM_SPIEL', partieId: 'partie-stich' },
+      partieStand: null
+    } as unknown as TischEreignisAntwort);
+
+    // Erster Stand: Version 0 (wird von _darfPartieStandAktualisieren als neue Partie akzeptiert)
+    const standVorStich = {
+      partieId: 'partie-stich',
+      version: 0,
+      status: 'LAUFEND',
+      anzahlSpiele: 8,
+      gespielteSpiele: 0,
+      gesamtpunktestand: { SUED: 0 },
+      laufendesSpiel: {
+        spielNummer: 1, hochzeitGeklaert: false, schweinchenGemeldetVon: null,
+        aktuelleStichmitte: [{ spielerPosition: 'SUED', karte: { id: 'K1', farbe: 'KREUZ', wert: 'AS', exemplarIndex: 1 }, reihenfolge: 1 }],
+        spielbareKarten: []
+      }
+    } as unknown as PartieStandAntwort;
+
+    // Initial-Stand via SNAPSHOT etablieren
+    echtzeit.emit('/user/queue/partie/partie-stich', {
+      version: 0,
+      ereignisTyp: 'SNAPSHOT',
+      partieStand: standVorStich,
+    } as unknown as PartieEreignisAntwort);
+
+    await Promise.resolve();
+    expect(store.snapshot().partieStand?.version).toBe(0);
+
+    const standNachStich = {
+      ...standVorStich,
+      version: 1,
+      laufendesSpiel: { ...standVorStich.laufendesSpiel, aktuelleStichmitte: [], spielbareKarten: [] }
+    } as unknown as PartieStandAntwort;
+
+    let partieStandWaehrendListenerAufruf: PartieStandAntwort | null = null;
+    store.abonniereEvents((e) => {
+      if (e.ereignisTyp === 'STICH_ABGESCHLOSSEN') {
+        partieStandWaehrendListenerAufruf = store.snapshot().partieStand;
+      }
+    });
+
+    echtzeit.emit('/user/queue/partie/partie-stich', {
+      version: 1,
+      ereignisTyp: 'STICH_ABGESCHLOSSEN',
+      partieStand: standNachStich,
+      neueSonderpunkte: [],
+    } as unknown as PartieEreignisAntwort);
+
+    await Promise.resolve();
+
+    // Store-Subscriber hat den neuen Stand (version=1) gesetzt
+    expect(store.snapshot().partieStand?.version).toBe(1);
+    // Aber beim Listener-Aufruf war noch der alte Stand sichtbar (version=0)
+    const standWaehrend = partieStandWaehrendListenerAufruf as PartieStandAntwort | null;
+    expect(standWaehrend?.version).toBe(0);
+    // Und die Stichmitte war beim Listener-Aufruf noch nicht geleert
+    expect(standWaehrend?.laufendesSpiel?.aktuelleStichmitte?.length).toBeGreaterThan(0);
+  });
+
   it('aktualisiert Tischliste via /user/queue/tische wenn kein Broadcast verfuegbar', async () => {
     // Wichtig: Der Store abonniert auch /user/queue/tische für spielerbezogene Aktualisierungen
     // (z.B. nach Snapshot-Request). Beide Kanäle müssen die tische[]-Liste aktualisieren.
