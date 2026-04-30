@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { TEXTUR_FILZ, registriereBasisTexturen } from '../assets/AssetLoader';
+import { TEXTUR_FILZ, registriereBasisTexturen, ladeHintergrundbilder } from '../assets/AssetLoader';
 import { appStore } from '../anwendung';
 import type { AppZustand } from '../store/AppStore';
 import type { TischListenEintragAntwort, TischPresetAntwort, TischKonfigurationDto } from '../modelle/SpielverwaltungDto';
@@ -25,6 +25,10 @@ export class SpielverwaltungsSzene extends Phaser.Scene {
 
   constructor() {
     super('SpielverwaltungsSzene');
+  }
+
+  preload(): void {
+    ladeHintergrundbilder(this);
   }
 
   create(): void {

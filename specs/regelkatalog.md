@@ -73,10 +73,6 @@ Offizielles DKV-Regelwerk (Deutscher Doppelkopf-Verband), ohne Locodoko-Hausrege
 
 Kein Preset — alle Optionen werden individuell vom Gastgeber konfiguriert.
 
-## Bekannte Bugs / Offene Punkte
-
-- **Behoben (2026-04-28) — DKV-Turnier-Regeln: Spiel schließt nicht ab:** Der Fehler lag in der KI-Orchestrierung, nicht in `Spiel.werteAus()` oder `PunkteRechner`. Abgesichert durch `KiOrchestrierungServiceIntegrationTest.spieltEineKompletteVierKiPartieMitDkvRegelnZuEnde()` und `SpielTest.spielSchliesstAbMitDkvPreset()`.
-
 ## Anforderungen
 
 1. Die UI bietet bei der Tisch-Erstellung eine **Preset-Auswahl** an

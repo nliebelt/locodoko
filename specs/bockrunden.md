@@ -127,4 +127,4 @@ der `TischSzene` verdrahtet werden.
 - `partie/Partie.java` — `bockrundenZaehler`-Feld, Multiplikation in `schliesseAktuellesSpielAb()`, beide Trigger
 - `karten/Spielregeln.java` — `bockrundenAktiv` steuert Aktivierung global und pro Trigger
 
-Frontend: `animiereBockrunde(anzahl)` laut DoD verdrahtet; serielle Animations-Queue noch als offener Bug bekannt.
+Frontend: `animiereBockrunde(anzahl)` laut DoD verdrahtet.

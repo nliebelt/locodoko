@@ -78,4 +78,3 @@ Damen-/Buben-/Farb-/Fleischlos-Solo) sind ausgeschlossen.
 - `karten/Spielregeln.java` — `schweinchenAktiv` steuert Aktivierung
 - `partie/Spiel.java` — Erkennung in `teileKartenAus()`; Ausschluss aller Solo-Varianten außer SOLO_TRUMPF
 
-Bekannter Bug (2026-04-15): `SchweinchenTrumpfOrdnung`-Aktivierung in `teileKartenAus()` prüfen — Schweinchen zeigt derzeit keine Wirkung im Spielbetrieb.

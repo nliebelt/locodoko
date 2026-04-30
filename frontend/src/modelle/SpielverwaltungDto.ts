@@ -45,7 +45,7 @@ export interface TischListenEintragAntwort {
   kurzKonfiguration: TischKurzKonfigurationAntwort;
 }
 
-export type Tischhintergrund = 'FILZ_GRUEN' | 'FILZ_BLAU' | 'HOLZ_HELL' | 'HOLZ_DUNKEL' | 'BILD_RECHTECK_1' | 'BILD_RECHTECK_2' | 'BILD_OVAL_1' | 'BILD_OVAL_2' | 'BILD_RUND_1';
+export type Tischhintergrund = 'FILZ_GRUEN' | 'BLAU_GRAFIK' | 'HOLZ_DUNKEL' | 'RECHTECK_1' | 'RECHTECK_2' | 'OVAL_1' | 'OVAL_2' | 'RUND_1';
 export type KiSchwierigkeit = 'LEICHT' | 'STANDARD' | 'SCHWER';
 
 export interface TischKonfigurationDto {

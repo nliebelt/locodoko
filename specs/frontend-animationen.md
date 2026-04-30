@@ -10,12 +10,6 @@
 
 Animationen machen das Spielerlebnis lebendig und geben visuelles Feedback zu Spielaktionen. Diese Spec definiert alle Animationen, die im Spiel auftreten: Karten ausspielen, Stiche einziehen, Karten austeilen, Ansagen und Sonderpunkt-Anzeigen.
 
-## Bekannte Bugs / Offene Punkte
-
-- **Bug (2026-04-15) — Timing-Versatz:** Karten liegen bereits auf dem Tisch bevor die Ausspielen-Animation startet. Die Animation "holt nach" statt vorzülaufen. Ursache: WebSocket-Update aktualisiert `AppStore` sofort, `TischSzene.update()`-Loop rendert den neuen Zustand bevor der `AnimationenService` die Tween-Sequenz startet. Lösung: Karte erst nach Abschluss der Animations-Promise in den Zustand übernehmen, oder Render-Update für diese Karte sperren bis Animation fertig.
-- **Bug (2026-04-15) — Animations-Queue-Aufstauung:** Bei schnellen KI-Zügen stauen sich Animationen auf — plötzlich werden zwei Stiche gleichzeitig dargestellt. `AnimationenService` braucht eine serielle Queue (FIFO) die sicherstellt dass `spieleKarteAus` und `zieheStichEin` immer in Reihe ablaufen, nicht parallel.
-- **Bug (2026-04-15) — Reload-State:** Browser-Reload (`Strg+R`) zeigt Animationen und Overlays des vorherigen Spiels (z.B. Rundenauswertungs-Screen). AppStore und TischSzene müssen beim Snapshot-Load vollständig zurückgesetzt werden — kein Animation-State darf über WebSocket-Reconnect hinaus bestehen bleiben. Siehe auch `verbindungsabbruch.md`.
-
 ## Anforderungen
 
 ### Karte ausspielen

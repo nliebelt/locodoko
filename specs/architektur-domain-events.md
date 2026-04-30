@@ -55,17 +55,12 @@ Werden von Spring Modulith innerhalb des Backends verarbeitet. Nie direkt an das
 |-------|----------------|---------|
 | `NaechsterSpielerErwartet` | `SpielAktionsService` nach Kartenzug | `KiEventAdapter` |
 | `VorbehaltErwartet` | `SpielAktionsService` in VORBEHALT_ANSAGE-Phase | `KiEventAdapter` |
-| `SchweinchenGemeldet` | `SpielAktionsService` bei erster Dullen-Trumpf-Karte | — (TODO: WS-Broadcast als `SCHWEINCHEN_GEMELDET`) |
+| `SchweinchenGemeldet` | `SpielAktionsService` bei erster Dullen-Trumpf-Karte | — (kein WS-Broadcast implementiert) |
 | `FuchsGefangen` | `SpielAktionsService` nach Stich-Abschluss | — (Sonderpunkt in `neueSonderpunkte` des `STICH_ABGESCHLOSSEN`-Events) |
 | `KarlchenGespielt` | `SpielAktionsService` nach letztem Stich | — (Sonderpunkt in `neueSonderpunkte` des `STICH_ABGESCHLOSSEN`-Events) |
 | `DoppelkopfGestochen` | `SpielAktionsService` nach Stich-Abschluss | — (Sonderpunkt in `neueSonderpunkte` des `STICH_ABGESCHLOSSEN`-Events) |
-| `HochzeitPartnerGefunden` | `Spiel.java` nach Stich-Abschluss | — (TODO: WS-Broadcast als `HOCHZEIT_PARTNER_GEFUNDEN`) |
+| `HochzeitPartnerGefunden` | `Spiel.java` nach Stich-Abschluss | — (kein WS-Broadcast implementiert) |
 | `SpielBeendet` | `KiOrchestrierungService.veroeffentlicheSpielBeendet()` | — (Seiten-Effekt: WS-Broadcast) |
-
-> **TODO:** `SchweinchenGemeldet` wird als Domain Event gepublisht, aber noch nicht
-> als `SCHWEINCHEN_GEMELDET` WebSocket-Ereignis ans Frontend weitergeleitet.
-> Sobald die UI ein Schweinchen-Banner zeigt, muss `KiEventAdapter` (oder ein separater
-> `SchweinchenBroadcaster`) dieses Event in `PartieEreignisAntwort.schweinchen()` umwandeln.
 
 ### 2. WebSocket-Ereignisse (`PartieEreignisTyp`)
 

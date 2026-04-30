@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { registriereBasisTexturen, TEXTUR_FILZ } from '../assets/AssetLoader';
+import { registriereBasisTexturen, TEXTUR_FILZ, ladeHintergrundbilder } from '../assets/AssetLoader';
 import { appStore } from '../anwendung';
 
 /**
@@ -16,6 +16,11 @@ export class BootSzene extends Phaser.Scene {
 
   constructor() {
     super('BootSzene');
+  }
+
+  preload(): void {
+    console.log('[BootSzene] preload: lade Hintergruende...');
+    ladeHintergrundbilder(this);
   }
 
   /**

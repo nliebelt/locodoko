@@ -8,6 +8,7 @@ WICHTIG: Die Spezifikationen beschreiben das *Was* und *Warum* (Fachlichkeit und
 Diese Dokumente bilden das Fundament des Projekts und müssen von allen Entwicklern/Agenten verinnerlicht werden:
 - **`methodik-clean-code.md`**: Richtlinien zu Clean Code, DDD-Prinzipien (Ubiquitous Language) und Technikunabhängigkeit.
 - **`architektur-ddd.md`**: Definition der Bounded Contexts (`tisch`, `spieler`, `partie`, `ki`) und der Modulgrenzen (Ziel-Modulstruktur).
+- **`architektur-unified.md`**: Hybrides Snapshot+Hint-Modell, Optimistic Locking, Transaktionsgarantien und Quiescence Pattern.
 - **`datenbankmodell.md`**: Relationales Schema und Persistenzvorgaben (Domain Model = Persistence Model via Spring Data JDBC).
 
 ## 2. Bounded Context: Partie (Spielkern & Regeln)
@@ -32,5 +33,5 @@ Infrastruktur, externe Schnittstellen und die künstliche Intelligenz, die als E
 ## 5. Frontend (Phaser 3 & UI)
 Alle Vorgaben zur visuellen Repräsentation und Nutzerinteraktion im Browser.
 - **Architektur:** `frontend-architektur.md`, `frontend-ui-logik.md`, `frontend-logging.md`.
-- **Szenen & Ansichten:** `frontend-startscreen.md`, `frontend-tischansicht.md`, `frontend-rundenauswertung.md`.
+- **Szenen & Ansichten:** `frontend-startscreen.md`, `frontend-tischansicht.md`, `frontend-rundenauswertung.md`, `rundenauswertung.md`.
 - **UX & Design:** `frontend-visuelles-design.md`, `frontend-animationen.md`, `frontend-tastatursteuerung.md`.
