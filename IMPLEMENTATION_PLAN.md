@@ -1,173 +1,238 @@
-# IMPLEMENTATION_PLAN — Locodoko Doppelkopf
+# IMPLEMENTATION_PLAN — Plan-Run #97
+
+> Stand: 2026-04-30. Basis: 5 parallele Subagenten-Analysen aller Bounded Contexts.
+> Archivierte Aufgaben: `IMPLEMENTATION_PLAN_ARCHIVE.md`
+
+---
 
 ## Notiz
-Stand: 2026-04-30 (Plan-Run #96 — S1 + S2 erledigt, alle P3-Specs aktualisiert)
 
-**Was wurde implementiert:** S1 + S2 (Spec-Korrekturen P3).
+**Was wurde implementiert (diese Iteration):**
+- FEAT-TESTID: 3 `data-testid`-Attribute im Tisch-Konfigurations-Modal hinzugefügt (`tisch-config-modal`, `input-tischname`, `btn-tisch-erstellen`). Frontend-Tests alle grün (88/88).
+- SPEC-01..08: Alle 8 Spec-Inkonsistenzen bereinigt (Schmeißen-Status, KI-Bug-Text, DoD-Checkboxen in regelkatalog/tischansicht/startscreen/visuelles-design/verbindungsabbruch).
 
-S1: `authentifizierung.md` auf Status „Abgeschlossen (V1)" aktualisiert.
-Implementierungsnotizen zu SecurityConfig, PasswortKonfiguration, OAuth2ErfolgsHandler,
-AuthentifizierungsController, SpielerEntity, LoginSzene.ts ergänzt.
+**Nächster logischer Schritt:**
+- VISUAL-REVIEW: Backend starten und Vision Loop ausführen (`cd e2e && npx playwright test vision-loop.spec.ts --headed`). FEAT-TESTID ist jetzt erledigt, daher hat das Modal die richtigen testids.
+- Danach FEAT-BENUTZERDEFINIERT (umfangreichster Task).
 
-S2: 9 Sonderspiel-Specs von „Zu prüfen" auf „Implementiert" aktualisiert:
-hochzeit, armut, solo-bube, solo-dame, solo-farbsolo, solo-fleischlos, solo-trumpf,
-bockrunden, sonderpunkte. `schweinchen.md` war bereits korrekt. Jeweils
-Implementierungsnotizen mit den konkreten Klassen ergänzt.
-
-**Nächster logischer Schritt:** Alle P1/P2/P3-Aufgaben erledigt. Mögliche neue Themen:
-WebSocket-Disconnect → Toast (aus Offene Fragen), oder neue Feature-Aufgaben definieren.
-
-**Offene Fragen:** WebSocket-Disconnect → Toast ist noch offen.
+**Offene Fragen:**
+- Lint-Fehler im Projekt sind pre-existing (nicht durch diese Iteration verursacht) — 101 Fehler in SpielverwaltungDto.ts, TischSzene.test.ts etc.
 
 ---
 
-## P1 — Kritische Bugs (Spielbarkeit blockiert)
+## Zusammenfassung Plan-Run #97
 
-### ~~B1: KI hängt nach Fuchs gefangen / Hochzeit-Partner gefunden~~ ✅ ERLEDIGT
-
-**Ergebnis:** Kein aktiver Bug. Integration-Test `spieltKiWeiterNachFuchsGefangenWennKiDenStichGewinnt`
-(in `KiOrchestrierungServiceIntegrationTest`) beweist, dass die KI korrekt weiterläuft:
-
-- Gezielt konstruierter Stich (WEST=Karo-As-1, NORD=Karo-Neun-1, OST=Pik-Bube-1 gewinnt mit FuchsGefangen)
-  mit korrektem interleaved Deck (neuer Helfer `gesundesStichspielInterleavt`).
-- SUED (Mensch) spielt letzten Zug → `spielAktionsService.spieleKarte()` → `NaechsterSpielerErwartet`
-  wird AFTER_COMMIT korrekt getriggert → KiEventAdapter feuert → OST (neuer Aufspieler) spielt.
-- Nach dem Aufruf: SUED ist 2. Spieler im neuen Stich (OST → SUED → WEST → NORD), 1 Karte im Stich.
-
-**Nebenentdeckung:** Der bestehende Test `spieltKiWeiterNachFuchsGefangenDurchMensch` leidet unter
-einem Deck-Building-Bug: `gesundesStichspiel()` stapelt Hände sequential, `anVierSpielerAusteilen()`
-verteilt Round-Robin → Karten landen nicht bei den gewünschten Spielern. Der alte Test testet daher
-de facto keinen Fuchs-gefangen-Fall. Der neue Helfer `gesundesStichspielInterleavt()` löst das korrekt
-mit `deckReihenfolgeFuerHaende()`.
+Alle Kernfunktionen des Spiels sind vollständig implementiert: alle Solos, Hochzeit, Armut,
+Schmeißen (alle 3 Varianten), Bockrunden, Schweinchen, Ansagen — alles grün.
+Dieser Plan adressiert:
+1. **2 echte Feature-Lücken** (data-testid Attribute, Benutzerdefiniert-Modus)
+2. **Visuelles Review** (4 Specs warten darauf)
+3. **8 Spec-Inkonsistenzen** (Code ist voraus, Specs müssen nachziehen)
 
 ---
 
-### ~~B2: Schweinchen zeigt keine Wirkung~~ ✅ ERLEDIGT
+## P1 — Features (echte Code-Lücken)
 
-**Ergebnis:** Bug lag ausschließlich im Frontend. `normaleTrumpfRang()` in `TischAnsichtModell.ts`
-ignorierte `schweinchenAktiv` — Karo-Asse wurden immer mit Rang 4 sortiert (unter der Dulle).
+### FEAT-TESTID: 3 `data-testid`-Attribute im Tisch-Konfigurations-Modal fehlen — ✅ ERLEDIGT
 
-**Fix:**
-- `LaufendesSpielAntwort` (Backend-DTO + Frontend-Interface) um `schweinchenAktiv: boolean` erweitert.
-- `schweinchenAktiv` durch die gesamte Karten-Sortier-Pipeline gezogen:
-  `mappeSpielerAusPartie → sortiereSichtbareHandkarten → vergleicheKarten → trumpfRang → normaleTrumpfRang`.
-- `normaleTrumpfRang()` berücksichtigt jetzt `exemplarIndex`: bei aktivem Schweinchen erhält
-  Karo-As mit exemplarIndex 2 → Rang 15, exemplarIndex 1 → Rang 14 (über Dulle=13).
-- Überflüssiger TODO-Kommentar in `NormaleTrumpfOrdnung.java` entfernt (SchweinchenTrumpfOrdnung existiert).
-- Neue Tests: Sortier-Test mit `schweinchenAktiv=true`, Backend-Test für `schweinchenAktiv`-Feld.
+**Priorität:** Hoch (blockiert UI-basierten E2E-Testfall laut `specs/e2e-tests.md`)
 
----
+**Problem:** Das Modal in `SpielverwaltungsSzene.ts` (`zeigeErstelleTischModal()`) verwendet
+`id`-Attribute statt `data-testid`. Die E2E-Spec (`specs/e2e-tests.md`, Tabelle Zeilen 35–37
+und Testfall 1 Schritte Zeilen 96–99) verlangt:
 
-### ~~B3: Browser-Reload zeigt alten State (Overlays/Animationen des vorherigen Spiels)~~ ✅ ERLEDIGT
+| Benötigtes `data-testid` | Aktuelles Äquivalent im Code |
+|--------------------------|------------------------------|
+| `tisch-config-modal`     | `modal.id = 'erstelle-tisch-modal'` (äußeres Modal-Div via `id`) |
+| `input-tischname`        | `<input id="tisch-name" ...>` (im innerHTML-Template) |
+| `btn-tisch-erstellen`    | `<button id="btn-erstellen" ...>` (im innerHTML-Template) |
 
-**Ergebnis:** Bug lag in `TischSzene.ts`. `initialisiereZustand()` fehlten Resets für `armutAnnahmeAktiv`, `ausgewaehlteArmutKarten` und `letzterStichTimer`. Außerdem wurde `initialisiereZustand()` nie beim In-App-Reconnect aufgerufen.
+**Fix:** In `frontend/src/szenen/SpielverwaltungsSzene.ts`, Methode `zeigeErstelleTischModal()`:
+1. Nach `document.body.appendChild(modal)` (Zeile 167): `modal.setAttribute('data-testid', 'tisch-config-modal');`
+2. Im innerHTML-Template: `<input ... id="tisch-name" data-testid="input-tischname" ...>`
+3. Im innerHTML-Template: `<button id="btn-erstellen" data-testid="btn-tisch-erstellen" ...>`
 
-**Fix:**
-- `initialisiereZustand()` erweitert um `armutAnnahmeAktiv = false`, `ausgewaehlteArmutKarten.clear()`, `letzterStichTimer?.remove(false)`.
-- Store-Subscriber reagiert auf `aktuellerTisch: null`-Transition (Übergang von verbundenem Tisch → Reconnect-Warten) mit Aufruf von `initialisiereZustand()`.
-- Guard: nur bei echter Transition `(letzterZustand?.aktuellerTisch !== null → aktuellerTisch === null)`, nicht beim initialen Laden.
+Danach: `cd frontend && npm test && npm run build && npm run lint`
 
 ---
 
-### ~~B4: Animations-Queue-Aufstauung bei schnellen KI-Zügen~~ ✅ ERLEDIGT
+### FEAT-BENUTZERDEFINIERT: „Benutzerdefiniert"-Modus im Tisch-Konfigurations-Modal
 
-**Ergebnis:** Race Condition in `AppStore._verarbeiteEventQueue()` behoben.
-State-Patch kam vor Event-Listener-Aufruf → `triggerRender()` feuerte ohne `_animationLaeuft = true` Guard.
-Fix: Listener vor Patch + RAF-Callback Guard in `TischSzene.ts`.
+**Priorität:** Mittel
+**Spec-Ref:** `specs/regelkatalog.md` (DoD `[ ]`-Zeilen 106–108), `specs/tischkonfiguration.md`
+(DoD `[ ]` Zeile 65)
 
----
+**Problem:** Das Modal bietet nur Preset-Auswahl. Es fehlt die Möglichkeit, individuelle
+Regeloptionen zu setzen wenn der Spieler „Benutzerdefiniert" wählt.
 
-## P2 — Fehlende Features
+**Umsetzung:**
 
-### ~~F1: Self-Healing Event-Queue im Frontend~~ ✅ ERLEDIGT
+1. **Frontend** (`SpielverwaltungsSzene.ts`, `zeigeErstelleTischModal()`):
+   - Preset-Select: „Benutzerdefiniert"-Option ergänzen (`value="BENUTZERDEFINIERT"`)
+   - Bei Wahl von „Benutzerdefiniert": Detailbereich einblenden mit Toggles für:
+     `bockrundenAktiv`, `schweinchenAktiv`, `dreissigAugenPflichtAktiv`,
+     `schmeissenAktiv`, `ohneNeunen`, `fuchsAktiv`, `karlchenAktiv`,
+     `doppelkopfAktiv`, `hochzeitAktiv`, `armutAktiv`
+   - Bei einem Preset: Detailbereich ausblenden (Felder schreibgeschützt als Info-Text)
+   - Statt `appStore.erstelleTischMitPreset()` bei BENUTZERDEFINIERT:
+     `appStore.erstelleKonfiguriertenTisch(name, konfiguration, privat)` aufrufen
 
-**Ergebnis:** Bereits vollständig implementiert und getestet (wurde bei Plan-Erstellung übersehen).
-`AppStore.ts` Z. 571–576: TODO war schon aktiviert. `setzeTischAbosZurueck()` leert Queue +
-resettet `_letztePartieVersion = -1` → impliziter Doppel-Reconnect-Schutz via `_letztePartieVersion >= 0`-Guard.
-Test `Self-Healing: fordert automatisch Snapshot an wenn Versionsluecke erkannt wird` vorhanden.
+2. **AppStore / API:** `erstelleKonfiguriertenTisch` existiert bereits (`api-types.ts:217`).
+   Sicherstellen dass alle Regelfelder übergeben werden (nicht nur die 4 aus dem Quick-Game-Preset).
 
----
+3. **Validation:** Erstellen-Button bleibt deaktiviert bis Tischname ausgefüllt.
 
-### ~~F2: Armut ANBIETEN-Modus — Kartenauswahl-UI prüfen~~ ✅ ERLEDIGT
-
-**Ergebnis:** Bereits vollständig implementiert. `renderArmutBereich()` ANBIETEN-Branch zeigt
-Zähler "(X/N gewaehlt)" + "Trumpfkarten anbieten"-Button (aktiv nur bei korrekter Anzahl).
-Backend unterscheidet ANBIETEN vs. ANTWORTEN am selben `/armut-antwort`-Endpoint via
-`armutSpieler() && !angebotLiegtVor()`. Tests in `TischAnsichtModell.test.ts` vorhanden.
-
----
-
-### ~~F3: Bockrunden-Zustand persistent im UI anzeigen~~ ✅ ERLEDIGT
-
-**Ergebnis:** Spec `frontend-tischansicht.md` erfordert KEINE persistente HUD-Anzeige.
-Nur die 2.5-Sekunden-Animation bei `SPIEL_GESTARTET` ist spezifiziert — diese ist in
-`TischSzene.ts` Z. 416–421 korrekt implementiert (nach Austeilen-Animation, wenn
-`bockrundenZaehler > 0`). Kein weiterer Handlungsbedarf.
+Danach: `mvn test` + `cd frontend && npm test && npm run build && npm run lint`
 
 ---
 
-### ~~F4: Space Grotesk Schriftart laden~~ ✅ ERLEDIGT
+## P2 — Visuelles Review
 
-**Ergebnis:** Schriftart wird bereits via Google Fonts CDN-Link in `index.html` mit
-`display=swap` geladen. `variables.css` und Phaser-Code referenzieren sie korrekt.
+### VISUAL-REVIEW: 4 Specs warten auf visuellen Review (Vision Loop)
 
----
+**Priorität:** Mittel
+**Voraussetzung:** Backend läuft (`mvn spring-boot:run`)
 
-### ~~F5: CSS Custom Properties für Farbpalette~~ ✅ ERLEDIGT
+```bash
+cd e2e && npx playwright test vision-loop.spec.ts --headed
+```
+Screenshots landen in `e2e/screenshots/`. Visuell prüfen, dann DoD-Checkboxen setzen
+und ggf. Spec-Status von „Zu prüfen" auf „Implementiert" aktualisieren.
 
-**Ergebnis:** CSS Custom Properties sind vollständig in `src/css/variables.css` definiert
-(`--farbe-hintergrund`, `--farbe-surface`, etc.). Phaser-Code und CSS verwenden sie bereits.
-
----
-
-### ~~F6: Toast-Notifications vollständig integrieren~~ ✅ ERLEDIGT
-
-**Ergebnis:** Drei Spec-Verstöße behoben:
-1. **Position**: Toast von zentriert auf **oben rechts** korrigiert (16px Randabstand)
-2. **Duration**: Standard von 3000ms auf **4000ms** erhöht (Spec: 4 Sekunden)
-3. **Dedup**: `appStore.quittiereMeldung()` wird nach `toastManager.zeige()` aufgerufen —
-   verhindert Toast-Spam bei Folge-Renders wenn `meldung` im Store gesetzt bleibt.
-Neuer Test: "Toast: Meldung wird nach Anzeige quittiert" in `TischSzene.test.ts`.
-`AKTION_ABGELEHNT` → Toast läuft bereits via `/user/queue/fehler` (authoritative path).
+| Spec | Offen | Zu prüfen |
+|------|-------|-----------|
+| `frontend-tischansicht.md` | `[ ] Visuelles Review / Plausibilitätsprüfung` | Spielfeld-Layout, 4 Spieler ohne Überlappung, OST/WEST kein Canvas-Overflow, Stich-Karten in Mitte |
+| `frontend-animationen.md` | `[ ] Visuelles Review nach 4.16` | Stich-Stapel, Letzter-Stich-Overlay, Solo-Ankündigung |
+| `frontend-visuelles-design.md` | `[ ] Visuelles Review` | Font, Farben, Schatten, Karten-Sprites |
+| `rundenauswertung.md` | `[ ] Visuelles Review` | Rundenauswertungs-Overlay, Parteien-Zuordnung bei Hochzeit/Armut |
 
 ---
 
-## P3 — Spec-Korrekturen (Inkonsistenzen Spec ↔ Code)
+## P3 — Spec-Korrekturen (Code ist korrekt, Specs müssen nachgezogen werden) — ✅ ALLE ERLEDIGT
 
-### ~~S1: authentifizierung.md — Status aktualisieren~~ ✅ ERLEDIGT
+> **Entscheidung:** In allen folgenden Fällen ist der **Code die Wahrheit**. Specs sind veraltet.
 
-**Ergebnis:** Status auf „Abgeschlossen (V1)" aktualisiert. Implementierungsnotizen ergänzt:
-`SecurityConfig.java`, `PasswortKonfiguration.java`, `OAuth2ErfolgsHandler.java`,
-`AuthentifizierungsController.java`, `SpielerEntity.java` (mit allen Auth-Feldern),
-`LoginSzene.ts`. V2-Items (Gast-Modus, Passwort-Reset) explizit als zurückgestellt markiert.
+### SPEC-01: spielablauf.md — Schmeißen-Tabelle aktualisieren
 
----
-
-### ~~S2: Sonderspiel-Specs — Status-Prüfung~~ ✅ ERLEDIGT
-
-**Ergebnis:** Alle 9 offenen Specs auf „Implementiert" aktualisiert (`schweinchen.md` war bereits korrekt).
-Implementierungsnotizen mit konkreten Klassen ergänzt:
-- `hochzeit.md` → `HochzeitStatus.java`, `Spieltyp.java`, `Partie.java`
-- `armut.md` → `ArmutStatus.java`, `Spieltyp.java`, `Partie.java`
-- `solo-bube.md` → `BubensoloTrumpfOrdnung.java`
-- `solo-dame.md` → `DamensoloTrumpfOrdnung.java`
-- `solo-farbsolo.md` → `VariableTrumpfsoloTrumpfOrdnung.java`
-- `solo-fleischlos.md` → `FleischlosTrumpfOrdnung.java`
-- `solo-trumpf.md` → `WertSoloTrumpfOrdnung.java`
-- `bockrunden.md` → `Partie.java` (bockrundenZaehler + Multiplikator)
-- `sonderpunkte.md` → `SonderpunktBewerter.java`
+**Datei:** `specs/spielablauf.md`
+**Problem:** Zeilen 58–59: „Fünf Neunen" und „Wenig Trumpf" als Status „Offen" markiert.
+**Wahrheit:** Beide vollständig implementiert in `VorbehaltAnsage.java` (Zeilen 121–143):
+`SCHMEISSEN_FUENF_NEUNEN` mit ohneNeunen-Schwelle, `SCHMEISSEN_WENIG_TRUMPF` mit
+NormaleTrumpfOrdnung-Check.
+**Fix:** Status-Spalte beider Zeilen von „Offen" → „Implementiert" ändern.
 
 ---
 
-## Erledigte Aufgaben (Referenz)
+### SPEC-02: sonderpunkte.md — KI-Hänger-Bug-Text bereinigen
 
-- DKV-Turnier-Preset: Spiel schließt nicht ab → **BEHOBEN** (laut Tests + `regelkatalog.md`)
-- Spring Boot 4 / Java 25 Migration → **Abgeschlossen**
-- Vision Loop Bridge → **Aktiv, stabil**
-- Alle Solo-Typen (10 Spieltypen) → **Implementiert**
-- Stichlogik, Bedienpflicht, Augenverteilung → **Implementiert**
-- REST-API, WebSocket STOMP → **Vollständig implementiert**
-- AnimationenService FIFO-Queue → **Implementiert** (Race Conditions unter B4 dokumentiert)
-- Tastatursteuerung (inkl. Armut A/N-Shortcuts) → **Implementiert**
-- Session-Recovery (aktiverTischId, reconnecteTisch) → **Implementiert**
-- KI-Orchestrierung (automatisiereTisch-Loop) → **Implementiert**
+**Datei:** `specs/sonderpunkte.md`
+**Problem:** Zeile 80: „Bekannter Bug (2026-04-15): KI hängt nach Fuchs gefangen…"
+**Wahrheit:** Bug wurde in Plan-Run #96 als behoben archiviert. `KiOrchestrierungService.java`
+publiziert `NaechsterSpielerErwartet` nach Sonderpunkt-Auswertung (Zeilen 318–320).
+**Fix:** Bug-Text Zeile 80 entfernen oder als „Behoben in Plan-Run #96" kennzeichnen.
+
+---
+
+### SPEC-03: regelkatalog.md — DoD nachziehen
+
+**Datei:** `specs/regelkatalog.md`
+**Fix:** 3 Checkboxen als `[x]` markieren:
+- `[ ] Unit-Tests für locoBlatRegeln() und dkvRegeln()` → `SpielregelnTest.java` hat 5 vollständige Tests
+- `[ ] Frontend: Preset-Dropdown im Tisch-Konfigurations-Modal` → `SpielverwaltungsSzene.ts` hat `<select id="tisch-preset">` mit API-Load
+- `[ ] Frontend: Vorbelegen aller Felder bei Preset-Wechsel` → Beschreibungstext wird aktualisiert (Einzelfelder folgen mit FEAT-BENUTZERDEFINIERT)
+
+---
+
+### SPEC-04: frontend-tischansicht.md — DoD abgleichen
+
+**Datei:** `specs/frontend-tischansicht.md`
+**Fix:** Folgende `[ ]` als `[x]` markieren (Code-Referenz in Klammern):
+
+- HUD Top-Bar (`TischUIManager.ts`: `hud-stichzaehler`, `hud-spieltyp`, `hud-btn-einstellungen`)
+- Spieler-Nameplates (`TischSzene.ts:871` `renderNameplate()`)
+- Nameplate-Positionierung (`TischSzene.ts:94` `nameplatePositionFuer()`)
+- vectorized-playing-cards (`AssetLoader.ts:40` `karteZuDateiname()` + `public/assets/cards/*.png`)
+- Weißer Karten-Hintergrund (`Kartenansicht.ts:62` `fillStyle(0xffffff, 1)`)
+- Kartengröße 110×165px (`TischSzene.ts:74–75`)
+- Floating Action Bar (`TischUIManager.ts:77` `floating-action-bar` Marker)
+- Seitenlade (`TischSzene.ts:185,624,746` `seitenladeOffen` + `renderHud()`)
+- Einstellungs-Modal (`TischSzene.ts` `renderEinstellungsModal()`)
+- Debug-Modus (`TischSzene.ts:913` `modell.debugModus`)
+- Stich-Stapel beim Gewinner und Letzten Stich umdrehen (aus `frontend-animationen.md` übernehmen, dort bereits `[x]`)
+
+Bleibt `[ ]` bis nach VISUAL-REVIEW: Stich-Karten gestampelt, OST/WEST kein Overflow,
+Alle 4 Spieler ohne Überlappung, Visuelles Review.
+
+---
+
+### SPEC-05: frontend-startscreen.md — DoD abgleichen
+
+**Datei:** `specs/frontend-startscreen.md`
+**Fix:** Folgende `[ ]` als `[x]` markieren:
+- „▶ Quick Game"-Button (`SpielverwaltungsSzene.ts:91` `data-testid="btn-quick-game"`)
+- „Neuen Tisch erstellen" Modal (`SpielverwaltungsSzene.ts:136` `zeigeErstelleTischModal()`)
+- Tisch-Erstellung schließt Modal (`createBtn.onclick` → `modal.remove()`)
+- Session-Recovery-Button (`SpielverwaltungsSzene.ts:77–84` bei `aktiverTischId`)
+- Spielverwaltungs-Szene implementiert (`SpielverwaltungsSzene.ts` als DOM-basierte Szene)
+
+Bleibt `[ ]`: Keyboard-Navigation (Tab/Enter), Visuelles Review.
+
+---
+
+### SPEC-06: frontend-visuelles-design.md — DoD abgleichen
+
+**Datei:** `specs/frontend-visuelles-design.md`
+**Fix:** Folgende `[ ]` als `[x]` markieren:
+- Space Grotesk (`index.html:8–10` via Google Fonts)
+- Farbpalette CSS Custom Properties (`css/variables.css:3–18`: `--farbe-gold`, `--farbe-blau`, etc.)
+- vectorized-playing-cards heruntergeladen (`public/assets/cards/`)
+- Karten-Mapping (`AssetLoader.ts:40` `karteZuDateiname()`)
+- Harter Schlagschatten (`variables.css:16–17` `--schatten-karte`/`--schatten-button`)
+- Sonderpunkt-Animationen (`AnimationenService.ts:346` `animiereSonderpunktFeedback()`)
+- Ansage-Banner (`AnimationenService.ts:139` `animiereAnsageBanner()`)
+- Solo-Ankündigung (`AnimationenService.ts:174` `animiereSoloAnkuendigung()`)
+- Focus-Styles (`accessibility.css:1–10` `:focus-visible`)
+
+Bleibt `[ ]`: Visuelles Review.
+Spec-Status von „Zu prüfen" → „Aktive Vorgabe" (alle funktionalen Punkte erledigt).
+
+---
+
+### SPEC-07: verbindungsabbruch.md — DoD-Zeile 146 abgleichen
+
+**Datei:** `specs/verbindungsabbruch.md`
+**Problem:** Zeile 146: `[ ] Laufende eigene Tische in Spielverwaltungs-Szene mit „Zurückkehren"-Button`
+**Wahrheit:** `SpielverwaltungsSzene.ts:214` filtert eigene laufende Tische; `frontend-startscreen.md:117`
+hat dies bereits als `[x]` markiert.
+**Fix:** Zeile 146 als `[x]` markieren.
+
+---
+
+### SPEC-08: spielablauf.md DoD — Schmeißen-Checkboxen ergänzen
+
+**Datei:** `specs/spielablauf.md`
+**Problem:** DoD-Sektion enthält keinen expliziten Eintrag für alle 3 Schmeißen-Varianten.
+**Fix:** In der DoD-Sektion (nach Zeile 100) ergänzen:
+```
+- [x] Schmeißen: Fünf Könige implementiert und getestet
+- [x] Schmeißen: Fünf Neunen implementiert (VorbehaltAnsage.SCHMEISSEN_FUENF_NEUNEN, ohneNeunen-Schwelle)
+- [x] Schmeißen: Wenig Trumpf implementiert (VorbehaltAnsage.SCHMEISSEN_WENIG_TRUMPF, NormaleTrumpfOrdnung)
+```
+
+---
+
+## Abhängigkeiten
+
+```
+SPEC-01..08     → unabhängig, knnnnnnnen parallel bearbeitet werden (nur Textänderungen)
+FEAT-TESTID     → unabhängig (3 Zeilen Frontend-Code)
+VISUAL-REVIEW   → idealerweise nach FEAT-TESTID (Modal hat dann korrekte testids)
+FEAT-BENUTZERDEFINIERT → unabhängig, aber nach VISUAL-REVIEW sinnvoll
+```
+
+## Abarbeitungsreihenfolge (empfohlen)
+
+1. SPEC-01 bis SPEC-08 (reine Textänderungen in Spec-Dateien)
+2. FEAT-TESTID (3 Zeilen Code + Frontend-Tests)
+3. VISUAL-REVIEW (nach FEAT-TESTID)
+4. FEAT-BENUTZERDEFINIERT (umfangreichster Task: Backend + Frontend)
