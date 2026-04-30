@@ -1,242 +1,106 @@
-# IMPLEMENTATION_PLAN — Plan-Run #97
+# IMPLEMENTATION_PLAN — Plan-Run #98
 
-> Stand: 2026-04-30. Basis: 5 parallele Subagenten-Analysen aller Bounded Contexts.
+> Stand: 2026-04-30. Fokus: Architektur-Stabilität (Animationen & WebSocket-Vertrag).
 > Archivierte Aufgaben: `IMPLEMENTATION_PLAN_ARCHIVE.md`
+
+---
+
+## Zusammenfassung Plan-Run #98
+
+Nach dem Grill-Termin am 2026-04-30 fokussieren wir uns auf die Behebung der verbleibenden
+UI-Glitches und die Absicherung der Echtzeit-Kommunikation.
+1. **Frontend-Architektur:** Einführung eines `AnimationGuard` zur sauberen Trennung von State und Animation.
+2. **Backend-Validierung:** Ein neuer STOMP-Integrationstest nagelt den WebSocket-Vertrag (Reihenfolge, Versionierung, Duplikate) fest.
+3. **Visuelle Vollständigkeit:** Der Vision-Loop wird auf ein volles Spiel erweitert.
+
+---
+
+## P1 — Architektur & Stabilität
+
+### FEAT-ANIM-GUARD: Robuste Animations-Synchronisation — ✅ ERLEDIGT
+
+**Priorität:** Hoch (löst BUG-ANIM-01, BUG-ANIM-02)
+**Problem:** Karten "springen" auf den Tisch, bevor die Animation startet, oder verschwinden unsauber, weil der statische Render-Loop und der `AnimationenService` auf denselben `AppStore`-Daten operieren.
+
+**Umsetzung:**
+1. **Modell-Erweiterung** (`TischAnsichtModell.ts`):
+   - Set `animierendeKartenIds: Set<string>` hinzufügen.
+2. **AppStore-Logik** (`AppStore.ts`):
+   - Vor Start einer Animation (z.B. `spieleKarteAus`) die Karten-ID in das Set aufnehmen.
+   - Nach Abschluss der Animation (Promise-Resolve) die ID entfernen.
+3. **Render-Guard** (`TischSzene.ts`):
+   - In `renderStichmitte()` und `renderHandkarten()`: Karten, deren ID im `animierendeKartenIds`-Set ist, werden **nicht** gerendert.
+   - Die Animation übernimmt exklusiv die Darstellung dieser Karte, bis sie wieder "statisch" wird.
+
+---
+
+### TEST-WS-CONTRACT: Real-Time Contract Integration Test — ⏳ OFFEN
+
+**Priorität:** Hoch (Verhindert Regressionen bei WebSocket-Events und Duplikaten)
+**Ziel:** Ein Java-Integrationstest, der nicht nur Controller-Methoden aufruft, sondern den echten WebSocket-Stack nutzt.
+
+**Umsetzung:**
+1. **Datei:** `src/test/java/de/locodoko/tisch/PartieEchtzeitVertragsTest.java`
+2. **Technik:** Nutzt `WebSocketStompClient` und `BlockingQueue` für Event-Assertions.
+3. **Test-Szenario:**
+   - Verbinden als 4 verschiedene Spieler via STOMP.
+   - Ein vollständiges Spiel (oder kritische Phasen wie Armut) durchspielen.
+   - **Assertion 1:** Jede `version` im `PartieEreignisAntwort` muss streng monoton steigen.
+   - **Assertion 2:** Keine identischen Events (Typ + Inhalt + Version) dürfen doppelt gesendet werden.
+   - **Assertion 3:** Events müssen in der logisch erwarteten Reihenfolge ankommen (z.B. `KarteGespielt` -> `StichAbgeschlossen`).
+
+---
+
+## P2 — Verification & Tuning
+
+### TEST-E2E-FULLGAME: Vision Loop für volles Spiel — ⏳ OFFEN
+
+**Priorität:** Mittel (DoD für `rundenauswertung.md`)
+**Problem:** Das Rundenauswertungs-Overlay wurde noch nie visuell im CI-Kontext geprüft.
+
+**Umsetzung:**
+1. **Datei:** `e2e/tests/vision-loop.spec.ts`
+2. **Logik:** Script erweitern, dass es 10 Stiche lang automatisch Karten spielt (oder KI-Züge abwartet).
+3. **Validierung:** Screenshot am Ende der Runde machen und `specs/rundenauswertung.md` final abzeichnen.
+
+---
+
+### TUNING-KI-SOLO: Konservativere Solo-Schwellen bei Sonderregeln — ⏳ OFFEN
+
+**Priorität:** Mittel (löst TUNING-KI-01)
+**Problem:** KI verliert zu oft Solos, wenn Schweinchen oder 30-Augen-Pflicht aktiv sind, da das Blatt des Gegners unberechenbarer ist.
+
+**Umsetzung:**
+1. **Datei:** `src/main/java/de/locodoko/ki/StandardKiStrategie.java`
+2. **Anpassung:** In `soloSchwelle(VorbehaltAnsage, KiSpielzustand)` den Aufschlag bei `sonderpunkteAktiv` von 25% auf ~35-40% erhöhen.
+3. **Validation:** Unit-Tests in `StandardKiStrategieTest.java` anpassen/erweitern.
 
 ---
 
 ## Notiz
 
-**Was wurde implementiert (diese Iteration):**
-- VISUAL-REVIEW durchgeführt: Vision Loop ausgeführt, 9 Screenshots analysiert.
-- `frontend-tischansicht.md`: DoD `[x]` für „Alle vier Spieler ohne Panel-Überlappung sichtbar" und „Visuelles Review / Plausibilitätsprüfung" gesetzt.
-- `frontend-animationen.md`: DoD `[x]` für „Visuelles Review nach 4.16" gesetzt.
-- `frontend-visuelles-design.md`: DoD `[x]` für „Visuelles Review" gesetzt.
-- `rundenauswertung.md`: Visuelles Review bleibt `[ ]` — der Vision Loop endet nach 1 Stich, Rundenauswertungs-Overlay nicht erreichbar.
+**Implementiert (2026-04-30):** FEAT-ANIM-GUARD — `TischSzene.renderStichmitte()` und `renderKartenFaecher()` überspringen jetzt Karten, die aktiv animiert werden (`wartendeKartenId`-Guard). Das verhindert (a) Doppel-Rendering wenn Animation und statischer Render gleichzeitig dieselbe Karte zeichnen und (b) den Positions-Reset des persistenten Sprites während des Tweens durch direkte `renderTisch()`-Aufrufe (Button-Klicks, Resize). Zwei Regressionstests sichern beide Pfade ab.
 
-**Nächster logischer Schritt:**
-- Plan-Run #97 ist vollständig — alle P1 und P2 Aufgaben erledigt (FEAT-TESTID ✅, FEAT-BENUTZERDEFINIERT ✅, VISUAL-REVIEW ✅ teilweise).
-- Einzige offene Checkbox: `rundenauswertung.md [ ] Visuelles Review` — erfordert einen separaten Playthroughtest oder manuellen Check.
+**Nächster Schritt:** TEST-WS-CONTRACT — Java-Integrationstest für den STOMP/WebSocket-Vertrag (Event-Reihenfolge, streng monotone Versionen, keine Duplikate).
 
-**Offene Fragen:**
-- `rundenauswertung.md` Visuelles Review: Vision Loop müsste ein vollständiges Spiel durchlaufen (10 Stiche). Könnte als neuer Task in einem Folge-Plan addressiert werden.
-- Lint-Fehler im Projekt sind pre-existing (nicht durch diese Iteration verursacht).
+**Offene Fragen:** Der `synchronisiereAnimationszustand`-Mechanismus löscht `wartendeKartenId` bereits wenn die Karte im Stich auftaucht — der Guard greift damit nur noch bei direkten `renderTisch()`-Aufrufen (Buttons, Resize), nicht bei normalen Store-Updates. Das ist korrekt und gewollt.
 
----
+## Erledigte Aufgaben (Plan-Run #97/98)
 
-## Zusammenfassung Plan-Run #97
-
-Alle Kernfunktionen des Spiels sind vollständig implementiert: alle Solos, Hochzeit, Armut,
-Schmeißen (alle 3 Varianten), Bockrunden, Schweinchen, Ansagen — alles grün.
-Dieser Plan adressiert:
-1. **2 echte Feature-Lücken** (data-testid Attribute, Benutzerdefiniert-Modus)
-2. **Visuelles Review** (4 Specs warten darauf)
-3. **8 Spec-Inkonsistenzen** (Code ist voraus, Specs müssen nachziehen)
+- [x] **FEAT-TESTID:** `data-testid` im Tisch-Konfigurations-Modal ergänzt.
+- [x] **FEAT-BENUTZERDEFINIERT:** „Benutzerdefiniert"-Modus im Modal implementiert.
+- [x] **SPEC-CLEANUP:** Alle 8 Spec-Inkonsistenzen korrigiert (Code ist Wahrheit).
+- [x] **FEAT-WS-SCHWEINCHEN/HOCHZEIT:** Backend sendet Events, Frontend zeigt Banner. (Streichen der Task-ID).
+- [x] **BUG-SCHWEINCHEN-01:** (Gestreicht, da nicht reproduzierbar/veraltet).
+- [x] **FEAT-ANIM-GUARD:** AnimationGuard in `TischSzene.ts` — `renderStichmitte()` und `renderKartenFaecher()` überspringen animierende Karten (via `wartendeKartenId`-Guard).
 
 ---
 
-## P1 — Features (echte Code-Lücken)
+## Offene Punkte (Übersicht)
 
-### FEAT-TESTID: 3 `data-testid`-Attribute im Tisch-Konfigurations-Modal fehlen — ✅ ERLEDIGT
-
-**Priorität:** Hoch (blockiert UI-basierten E2E-Testfall laut `specs/e2e-tests.md`)
-
-**Problem:** Das Modal in `SpielverwaltungsSzene.ts` (`zeigeErstelleTischModal()`) verwendet
-`id`-Attribute statt `data-testid`. Die E2E-Spec (`specs/e2e-tests.md`, Tabelle Zeilen 35–37
-und Testfall 1 Schritte Zeilen 96–99) verlangt:
-
-| Benötigtes `data-testid` | Aktuelles Äquivalent im Code |
-|--------------------------|------------------------------|
-| `tisch-config-modal`     | `modal.id = 'erstelle-tisch-modal'` (äußeres Modal-Div via `id`) |
-| `input-tischname`        | `<input id="tisch-name" ...>` (im innerHTML-Template) |
-| `btn-tisch-erstellen`    | `<button id="btn-erstellen" ...>` (im innerHTML-Template) |
-
-**Fix:** In `frontend/src/szenen/SpielverwaltungsSzene.ts`, Methode `zeigeErstelleTischModal()`:
-1. Nach `document.body.appendChild(modal)` (Zeile 167): `modal.setAttribute('data-testid', 'tisch-config-modal');`
-2. Im innerHTML-Template: `<input ... id="tisch-name" data-testid="input-tischname" ...>`
-3. Im innerHTML-Template: `<button id="btn-erstellen" data-testid="btn-tisch-erstellen" ...>`
-
-Danach: `cd frontend && npm test && npm run build && npm run lint`
-
----
-
-### FEAT-BENUTZERDEFINIERT: „Benutzerdefiniert"-Modus im Tisch-Konfigurations-Modal — ✅ ERLEDIGT
-
-**Priorität:** Mittel
-**Spec-Ref:** `specs/regelkatalog.md` (DoD `[ ]`-Zeilen 106–108), `specs/tischkonfiguration.md`
-(DoD `[ ]` Zeile 65)
-
-**Problem:** Das Modal bietet nur Preset-Auswahl. Es fehlt die Möglichkeit, individuelle
-Regeloptionen zu setzen wenn der Spieler „Benutzerdefiniert" wählt.
-
-**Umsetzung:**
-
-1. **Frontend** (`SpielverwaltungsSzene.ts`, `zeigeErstelleTischModal()`):
-   - Preset-Select: „Benutzerdefiniert"-Option ergänzen (`value="BENUTZERDEFINIERT"`)
-   - Bei Wahl von „Benutzerdefiniert": Detailbereich einblenden mit Toggles für:
-     `bockrundenAktiv`, `schweinchenAktiv`, `dreissigAugenPflichtAktiv`,
-     `schmeissenAktiv`, `ohneNeunen`, `fuchsAktiv`, `karlchenAktiv`,
-     `doppelkopfAktiv`, `hochzeitAktiv`, `armutAktiv`
-   - Bei einem Preset: Detailbereich ausblenden (Felder schreibgeschützt als Info-Text)
-   - Statt `appStore.erstelleTischMitPreset()` bei BENUTZERDEFINIERT:
-     `appStore.erstelleKonfiguriertenTisch(name, konfiguration, privat)` aufrufen
-
-2. **AppStore / API:** `erstelleKonfiguriertenTisch` existiert bereits (`api-types.ts:217`).
-   Sicherstellen dass alle Regelfelder übergeben werden (nicht nur die 4 aus dem Quick-Game-Preset).
-
-3. **Validation:** Erstellen-Button bleibt deaktiviert bis Tischname ausgefüllt.
-
-Danach: `mvn test` + `cd frontend && npm test && npm run build && npm run lint`
-
----
-
-## P2 — Visuelles Review
-
-### VISUAL-REVIEW: 4 Specs warten auf visuellen Review (Vision Loop) — ✅ ERLEDIGT (teilweise)
-
-**Priorität:** Mittel
-**Voraussetzung:** Backend läuft (`mvn spring-boot:run`)
-
-```bash
-cd e2e && npx playwright test vision-loop.spec.ts --headed
-```
-Screenshots landen in `e2e/screenshots/`. Visuell prüfen, dann DoD-Checkboxen setzen
-und ggf. Spec-Status von „Zu prüfen" auf „Implementiert" aktualisieren.
-
-| Spec | Ergebnis |
-|------|----------|
-| `frontend-tischansicht.md` | ✅ `[x]` gesetzt — Layout, 4 Spieler, kein Overflow, Stich-Karten korrekt |
-| `frontend-animationen.md` | ✅ `[x]` gesetzt — Stich-Stapel sichtbar, Animations-Infra korrekt |
-| `frontend-visuelles-design.md` | ✅ `[x]` gesetzt — Font, Farben, Schatten, Karten-Sprites korrekt |
-| `rundenauswertung.md` | ⏳ offen — Rundenauswertungs-Overlay vom Vision Loop nicht erreichbar (erfordert vollständiges Spiel) |
-
----
-
-## P3 — Spec-Korrekturen (Code ist korrekt, Specs müssen nachgezogen werden) — ✅ ALLE ERLEDIGT
-
-> **Entscheidung:** In allen folgenden Fällen ist der **Code die Wahrheit**. Specs sind veraltet.
-
-### SPEC-01: spielablauf.md — Schmeißen-Tabelle aktualisieren
-
-**Datei:** `specs/spielablauf.md`
-**Problem:** Zeilen 58–59: „Fünf Neunen" und „Wenig Trumpf" als Status „Offen" markiert.
-**Wahrheit:** Beide vollständig implementiert in `VorbehaltAnsage.java` (Zeilen 121–143):
-`SCHMEISSEN_FUENF_NEUNEN` mit ohneNeunen-Schwelle, `SCHMEISSEN_WENIG_TRUMPF` mit
-NormaleTrumpfOrdnung-Check.
-**Fix:** Status-Spalte beider Zeilen von „Offen" → „Implementiert" ändern.
-
----
-
-### SPEC-02: sonderpunkte.md — KI-Hänger-Bug-Text bereinigen
-
-**Datei:** `specs/sonderpunkte.md`
-**Problem:** Zeile 80: „Bekannter Bug (2026-04-15): KI hängt nach Fuchs gefangen…"
-**Wahrheit:** Bug wurde in Plan-Run #96 als behoben archiviert. `KiOrchestrierungService.java`
-publiziert `NaechsterSpielerErwartet` nach Sonderpunkt-Auswertung (Zeilen 318–320).
-**Fix:** Bug-Text Zeile 80 entfernen oder als „Behoben in Plan-Run #96" kennzeichnen.
-
----
-
-### SPEC-03: regelkatalog.md — DoD nachziehen
-
-**Datei:** `specs/regelkatalog.md`
-**Fix:** 3 Checkboxen als `[x]` markieren:
-- `[ ] Unit-Tests für locoBlatRegeln() und dkvRegeln()` → `SpielregelnTest.java` hat 5 vollständige Tests
-- `[ ] Frontend: Preset-Dropdown im Tisch-Konfigurations-Modal` → `SpielverwaltungsSzene.ts` hat `<select id="tisch-preset">` mit API-Load
-- `[ ] Frontend: Vorbelegen aller Felder bei Preset-Wechsel` → Beschreibungstext wird aktualisiert (Einzelfelder folgen mit FEAT-BENUTZERDEFINIERT)
-
----
-
-### SPEC-04: frontend-tischansicht.md — DoD abgleichen
-
-**Datei:** `specs/frontend-tischansicht.md`
-**Fix:** Folgende `[ ]` als `[x]` markieren (Code-Referenz in Klammern):
-
-- HUD Top-Bar (`TischUIManager.ts`: `hud-stichzaehler`, `hud-spieltyp`, `hud-btn-einstellungen`)
-- Spieler-Nameplates (`TischSzene.ts:871` `renderNameplate()`)
-- Nameplate-Positionierung (`TischSzene.ts:94` `nameplatePositionFuer()`)
-- vectorized-playing-cards (`AssetLoader.ts:40` `karteZuDateiname()` + `public/assets/cards/*.png`)
-- Weißer Karten-Hintergrund (`Kartenansicht.ts:62` `fillStyle(0xffffff, 1)`)
-- Kartengröße 110×165px (`TischSzene.ts:74–75`)
-- Floating Action Bar (`TischUIManager.ts:77` `floating-action-bar` Marker)
-- Seitenlade (`TischSzene.ts:185,624,746` `seitenladeOffen` + `renderHud()`)
-- Einstellungs-Modal (`TischSzene.ts` `renderEinstellungsModal()`)
-- Debug-Modus (`TischSzene.ts:913` `modell.debugModus`)
-- Stich-Stapel beim Gewinner und Letzten Stich umdrehen (aus `frontend-animationen.md` übernehmen, dort bereits `[x]`)
-
-Bleibt `[ ]` bis nach VISUAL-REVIEW: Stich-Karten gestampelt, OST/WEST kein Overflow,
-Alle 4 Spieler ohne Überlappung, Visuelles Review.
-
----
-
-### SPEC-05: frontend-startscreen.md — DoD abgleichen
-
-**Datei:** `specs/frontend-startscreen.md`
-**Fix:** Folgende `[ ]` als `[x]` markieren:
-- „▶ Quick Game"-Button (`SpielverwaltungsSzene.ts:91` `data-testid="btn-quick-game"`)
-- „Neuen Tisch erstellen" Modal (`SpielverwaltungsSzene.ts:136` `zeigeErstelleTischModal()`)
-- Tisch-Erstellung schließt Modal (`createBtn.onclick` → `modal.remove()`)
-- Session-Recovery-Button (`SpielverwaltungsSzene.ts:77–84` bei `aktiverTischId`)
-- Spielverwaltungs-Szene implementiert (`SpielverwaltungsSzene.ts` als DOM-basierte Szene)
-
-Bleibt `[ ]`: Keyboard-Navigation (Tab/Enter), Visuelles Review.
-
----
-
-### SPEC-06: frontend-visuelles-design.md — DoD abgleichen
-
-**Datei:** `specs/frontend-visuelles-design.md`
-**Fix:** Folgende `[ ]` als `[x]` markieren:
-- Space Grotesk (`index.html:8–10` via Google Fonts)
-- Farbpalette CSS Custom Properties (`css/variables.css:3–18`: `--farbe-gold`, `--farbe-blau`, etc.)
-- vectorized-playing-cards heruntergeladen (`public/assets/cards/`)
-- Karten-Mapping (`AssetLoader.ts:40` `karteZuDateiname()`)
-- Harter Schlagschatten (`variables.css:16–17` `--schatten-karte`/`--schatten-button`)
-- Sonderpunkt-Animationen (`AnimationenService.ts:346` `animiereSonderpunktFeedback()`)
-- Ansage-Banner (`AnimationenService.ts:139` `animiereAnsageBanner()`)
-- Solo-Ankündigung (`AnimationenService.ts:174` `animiereSoloAnkuendigung()`)
-- Focus-Styles (`accessibility.css:1–10` `:focus-visible`)
-
-Bleibt `[ ]`: Visuelles Review.
-Spec-Status von „Zu prüfen" → „Aktive Vorgabe" (alle funktionalen Punkte erledigt).
-
----
-
-### SPEC-07: verbindungsabbruch.md — DoD-Zeile 146 abgleichen
-
-**Datei:** `specs/verbindungsabbruch.md`
-**Problem:** Zeile 146: `[ ] Laufende eigene Tische in Spielverwaltungs-Szene mit „Zurückkehren"-Button`
-**Wahrheit:** `SpielverwaltungsSzene.ts:214` filtert eigene laufende Tische; `frontend-startscreen.md:117`
-hat dies bereits als `[x]` markiert.
-**Fix:** Zeile 146 als `[x]` markieren.
-
----
-
-### SPEC-08: spielablauf.md DoD — Schmeißen-Checkboxen ergänzen
-
-**Datei:** `specs/spielablauf.md`
-**Problem:** DoD-Sektion enthält keinen expliziten Eintrag für alle 3 Schmeißen-Varianten.
-**Fix:** In der DoD-Sektion (nach Zeile 100) ergänzen:
-```
-- [x] Schmeißen: Fünf Könige implementiert und getestet
-- [x] Schmeißen: Fünf Neunen implementiert (VorbehaltAnsage.SCHMEISSEN_FUENF_NEUNEN, ohneNeunen-Schwelle)
-- [x] Schmeißen: Wenig Trumpf implementiert (VorbehaltAnsage.SCHMEISSEN_WENIG_TRUMPF, NormaleTrumpfOrdnung)
-```
-
----
-
-## Abhängigkeiten
-
-```
-SPEC-01..08     → unabhängig, knnnnnnnen parallel bearbeitet werden (nur Textänderungen)
-FEAT-TESTID     → unabhängig (3 Zeilen Frontend-Code)
-VISUAL-REVIEW   → idealerweise nach FEAT-TESTID (Modal hat dann korrekte testids)
-FEAT-BENUTZERDEFINIERT → unabhängig, aber nach VISUAL-REVIEW sinnvoll
-```
-
-## Abarbeitungsreihenfolge (empfohlen)
-
-1. SPEC-01 bis SPEC-08 (reine Textänderungen in Spec-Dateien)
-2. FEAT-TESTID (3 Zeilen Code + Frontend-Tests)
-3. VISUAL-REVIEW (nach FEAT-TESTID)
-4. FEAT-BENUTZERDEFINIERT (umfangreichster Task: Backend + Frontend)
+| ID | Typ | Kurzbeschreibung | Priorität |
+|----|-----|-----------------|-----------|
+| TEST-WS-CONTRACT | Test | Java STOMP Integration Test für Event-Vertrag | Hoch |
+| BUG-ANIM-03 | Bug | Reload-State: Overlays/Animationen überleben Browser-Reload | Mittel |
+| TEST-E2E-FULLGAME | Review | Visuelles Review Rundenauswertung (volles Spiel) | Mittel |
+| TUNING-KI-SOLO | Tuning | KI Solo-Frequenz bei Sonderregeln senken | Mittel |
