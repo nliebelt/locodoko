@@ -2,7 +2,8 @@ import Phaser from 'phaser';
 import { TEXTUR_FILZ, registriereBasisTexturen } from '../assets/AssetLoader';
 import { appStore } from '../anwendung';
 import type { AppZustand } from '../store/AppStore';
-import type { TischListenEintragAntwort, TischPresetAntwort } from '../modelle/SpielverwaltungDto';
+import type { TischListenEintragAntwort, TischPresetAntwort, TischKonfigurationDto } from '../modelle/SpielverwaltungDto';
+import { REGEL_PRESETS } from '../modelle/regelPresets';
 
 function escapiereHtml(str: string): string {
   return str
@@ -137,6 +138,41 @@ export class SpielverwaltungsSzene extends Phaser.Scene {
     const existing = document.getElementById('erstelle-tisch-modal');
     if (existing) existing.remove();
 
+    const boolFelder: Array<[keyof TischKonfigurationDto, string]> = [
+      ['ohneNeunen', 'Ohne Neunen (10er-Deck)'],
+      ['hochzeitErlaubt', 'Hochzeit erlaubt'],
+      ['armutErlaubt', 'Armut erlaubt'],
+      ['damensoloErlaubt', 'Damen-Solo erlaubt'],
+      ['bubensoloErlaubt', 'Buben-Solo erlaubt'],
+      ['fleischlosErlaubt', 'Fleischlos erlaubt'],
+      ['trumpfsoloErlaubt', 'Trumpf-Solo erlaubt'],
+      ['zweiteDulleSticht', 'Zweite Dulle sticht'],
+      ['fuchsGefangenAktiv', 'Fuchs gefangen'],
+      ['karlchenAktiv', 'Karlchen'],
+      ['doppelkopfAktiv', 'Doppelkopf'],
+      ['bockrundenAktiv', 'Bockrunden aktiv'],
+      ['schweinchenAktiv', 'Schweinchen aktiv'],
+      ['dreissigAugenPflichtAktiv', '30-Augen-Pflichtansage'],
+      ['schmeissenAktiv', 'Schmeißen erlaubt'],
+      ['herzDurchgegangenNurHoch', 'Herz nur bei reinen Herz-As-Stichen'],
+    ];
+
+    const zahlFelder: Array<[keyof TischKonfigurationDto, string, number, number]> = [
+      ['mindestkartenReKontra', 'Re / Kontra', 1, 11],
+      ['mindestkartenKeine90', 'Keine 90', 1, 11],
+      ['mindestkartenKeine60', 'Keine 60', 1, 11],
+      ['mindestkartenKeine30', 'Keine 30', 1, 11],
+      ['mindestkartenSchwarz', 'Schwarz', 1, 11],
+    ];
+
+    const boolHtml = boolFelder.map(([feld, label]) =>
+      `<div class="ui-form-row"><input type="checkbox" id="bd-${feld}" data-field="${feld}"><label for="bd-${feld}" class="ui-selection">${label}</label></div>`
+    ).join('');
+
+    const zahlHtml = zahlFelder.map(([feld, label, min, max]) =>
+      `<div class="ui-form-row" style="gap:8px"><label for="bd-${feld}" class="ui-hint" style="flex:1">${label}</label><input type="number" id="bd-${feld}" data-field="${feld}" class="ui-input" style="width:60px;text-align:center" min="${min}" max="${max}" required></div>`
+    ).join('');
+
     const modal = document.createElement('div');
     modal.id = 'erstelle-tisch-modal';
     modal.className = 'ui-modal-backdrop';
@@ -152,7 +188,13 @@ export class SpielverwaltungsSzene extends Phaser.Scene {
           <select id="tisch-preset" class="ui-input ui-input--select">
             <option value="LADEN" disabled selected>Presets werden geladen...</option>
           </select>
-          <p id="preset-beschreibung" class="ui-hint" style="margin-top: 8px;"></p>
+          <p id="preset-beschreibung" class="ui-hint" style="margin-top:8px"></p>
+        </div>
+        <div id="benutzerdefiniert-panel" class="ui-section" style="display:none;max-height:260px;overflow-y:auto;border-top:1px solid rgba(255,255,255,0.15);padding-top:8px">
+          <p class="ui-hint" style="font-weight:600;margin-bottom:6px">Regeloptionen</p>
+          ${boolHtml}
+          <p class="ui-hint" style="font-weight:600;margin-top:10px;margin-bottom:6px">Ansagegrenzen (Karten auf Hand)</p>
+          ${zahlHtml}
         </div>
         <div class="ui-form-row">
           <input type="checkbox" id="tisch-privat">
@@ -170,37 +212,104 @@ export class SpielverwaltungsSzene extends Phaser.Scene {
     const nameInput = modal.querySelector('#tisch-name') as HTMLInputElement;
     const presetSelect = modal.querySelector('#tisch-preset') as HTMLSelectElement;
     const descText = modal.querySelector('#preset-beschreibung') as HTMLParagraphElement;
+    const panel = modal.querySelector('#benutzerdefiniert-panel') as HTMLDivElement;
     const createBtn = modal.querySelector('#btn-erstellen') as HTMLButtonElement;
     const cancelBtn = modal.querySelector('#btn-abbrechen') as HTMLButtonElement;
     const privateCheck = modal.querySelector('#tisch-privat') as HTMLInputElement;
 
     let presets: TischPresetAntwort[] = [];
+    let letztesPreset: TischPresetAntwort | null = null;
+    let presetsGeladen = false;
+
+    function aktualisiereErstellenBtn(): void {
+      createBtn.disabled = !presetsGeladen || !nameInput.value.trim();
+    }
+
+    function setzeFelder(konfiguration: Partial<TischKonfigurationDto>): void {
+      panel.querySelectorAll<HTMLInputElement>('input[type="checkbox"][data-field]').forEach(cb => {
+        const feld = cb.dataset['field'] as keyof TischKonfigurationDto;
+        const wert = konfiguration[feld];
+        if (typeof wert === 'boolean') cb.checked = wert;
+      });
+      panel.querySelectorAll<HTMLInputElement>('input[type="number"][data-field]').forEach(inp => {
+        const feld = inp.dataset['field'] as keyof TischKonfigurationDto;
+        const wert = konfiguration[feld];
+        if (typeof wert === 'number') inp.value = String(wert);
+      });
+    }
+
+    function leseFelder(): Partial<TischKonfigurationDto> {
+      const konfiguration: Partial<TischKonfigurationDto> = {};
+      panel.querySelectorAll<HTMLInputElement>('input[type="checkbox"][data-field]').forEach(cb => {
+        const feld = cb.dataset['field'] as keyof TischKonfigurationDto;
+        Object.assign(konfiguration, { [feld]: cb.checked });
+      });
+      panel.querySelectorAll<HTMLInputElement>('input[type="number"][data-field]').forEach(inp => {
+        const feld = inp.dataset['field'] as keyof TischKonfigurationDto;
+        const wert = inp.valueAsNumber;
+        if (Number.isFinite(wert) && Number.isInteger(wert)) {
+          Object.assign(konfiguration, { [feld]: wert });
+        }
+      });
+      return konfiguration;
+    }
+
+    function zeigePreset(preset: TischPresetAntwort | null): void {
+      panel.style.display = 'none';
+      descText.style.display = '';
+      descText.textContent = preset?.beschreibung ?? '';
+    }
+
+    function zeigeBenutzerdefiniertPanel(): void {
+      descText.style.display = 'none';
+      panel.style.display = '';
+      const basis: Partial<TischKonfigurationDto> = letztesPreset?.konfiguration ?? REGEL_PRESETS.LOCO_BLAT;
+      setzeFelder(basis);
+    }
 
     appStore.ladePresets().then(p => {
       presets = p;
-      presetSelect.innerHTML = p.map(preset => `
-        <option value="${preset.name}">${preset.label}</option>
-      `).join('');
+      presetSelect.innerHTML = p.map(preset =>
+        `<option value="${preset.name}">${preset.label}</option>`
+      ).join('') + '<option value="BENUTZERDEFINIERT">Benutzerdefiniert</option>';
       if (p.length > 0) {
-        presetSelect.value = p[0].name || '';
-        descText.textContent = p[0].beschreibung || '';
-        createBtn.disabled = false;
+        presetSelect.value = p[0].name ?? '';
+        letztesPreset = p[0];
+        descText.textContent = p[0].beschreibung ?? '';
       }
+      presetsGeladen = true;
+      aktualisiereErstellenBtn();
     }).catch(() => {
       presetSelect.innerHTML = '<option value="">Fehler beim Laden</option>';
     });
 
     presetSelect.addEventListener('change', () => {
-      const selected = presets.find(p => p.name === presetSelect.value);
-      descText.textContent = selected?.beschreibung || '';
+      const wert = presetSelect.value;
+      if (wert === 'BENUTZERDEFINIERT') {
+        zeigeBenutzerdefiniertPanel();
+      } else {
+        letztesPreset = presets.find(p => p.name === wert) ?? null;
+        zeigePreset(letztesPreset);
+      }
     });
+
+    nameInput.addEventListener('input', aktualisiereErstellenBtn);
 
     cancelBtn.onclick = () => modal.remove();
     createBtn.onclick = () => {
       const name = nameInput.value.trim();
       if (!name) return;
-      void appStore.erstelleTischMitPreset(name, presetSelect.value, privateCheck.checked)
-        .then(() => modal.remove());
+      if (presetSelect.value === 'BENUTZERDEFINIERT') {
+        const zahlenGueltig = Array.from(
+          panel.querySelectorAll<HTMLInputElement>('input[type="number"]')
+        ).every(inp => inp.validity.valid);
+        if (!zahlenGueltig) return;
+        void appStore.erstelleKonfiguriertenTisch(name, leseFelder(), privateCheck.checked)
+          .then(() => modal.remove());
+      } else {
+        void appStore.erstelleTischMitPreset(name, presetSelect.value, privateCheck.checked)
+          .then(() => modal.remove());
+      }
     };
   }
 

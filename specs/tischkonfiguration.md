@@ -62,7 +62,7 @@ Die Tischkonfiguration definiert das Regelwerk, das an einem bestimmten Tisch gi
 - [x] Integration mit Spiellogik getestet (aktivierte/deaktivierte Regeln)
 - [x] Code-Review / Plausibilitätsprüfung
 - [x] Neue Optionen ergänzt: `bockrundenAktiv`, `schweinchenAktiv`, `dreissigAugenPflichtAktiv`
-- [ ] Regel-Presets implementiert (Backend-Factory + Frontend-Dropdown, siehe regelkatalog.md)
+- [x] Regel-Presets implementiert (Backend-Factory + Frontend-Dropdown, siehe regelkatalog.md)
 
 ## Technische Hinweise
 

@@ -274,4 +274,5 @@ export interface TischPresetAntwort {
   name?: string;
   label?: string;
   beschreibung?: string;
+  konfiguration?: TischKonfigurationDto;
 }
