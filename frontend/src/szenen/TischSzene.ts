@@ -556,24 +556,29 @@ export class TischSzene extends Phaser.Scene {
     
     // Immer das aktuellste Modell erzeugen, falls letztesModell veraltet ist
     const aModell = this.letztesModell ?? this.erstelleModell(appStore.snapshot());
+    const mStich = aModell.letzteAbgeschlosseneStiche.find(s => s.spielNummer === stich.spielNummer && s.stichNummer === stich.stichNummer);
+    if (!mStich) {
+      Logger.error('Konnte relativen Stich im Modell nicht finden!');
+      return;
+    }
     
-    const gSp = aModell.spieler.find((s) => s.position === stich.gewinnerPosition);
+    const gSp = aModell.spieler.find((s) => s.position === mStich.gewinnerPosition);
     const gKAnz = gSp ? (gSp.sichtbareHandkarten.length > 0 ? gSp.sichtbareHandkarten.length : Math.max(gSp.verbleibendeKarten, 0)) : 0;
-    const ziel = stichStapelPositionFuer(stich.gewinnerPosition, b, h, gKAnz);
+    const ziel = stichStapelPositionFuer(mStich.gewinnerPosition, b, h, gKAnz);
     
     Logger.szene('Starte animiereStichEinziehen', { 
-      zielX: ziel.x, zielY: ziel.y, gewinner: stich.gewinnerPosition, karten: stich.gespielteKarten?.length 
+      zielX: ziel.x, zielY: ziel.y, gewinner: mStich.gewinnerPosition, karten: mStich.gespielteKarten?.length 
     });
 
-    if (!stich.gespielteKarten || stich.gespielteKarten.length === 0) {
+    if (!mStich.gespielteKarten || mStich.gespielteKarten.length === 0) {
       Logger.error('Keine Karten im abgeschlossenen Stich gefunden!');
       return;
     }
 
-    const animK = stich.gespielteKarten.map((k: any) => { 
-      const s = slotPos[k.spielerPosition as SpielerPosition]; 
+    const animK = mStich.gespielteKarten.map((k: any) => { 
+      const s = slotPos[k.position as SpielerPosition]; 
       if (!s) {
-          Logger.error('Keine Slot-Position fuer SpielerPosition gefunden!', { pos: k.spielerPosition });
+          Logger.error('Keine Slot-Position fuer SpielerPosition gefunden!', { pos: k.position });
           // Fallback zur Mitte
           return { wurzel: this.erstelleKartenansicht(b/2, h/2, kg.w, kg.h, { karte: k.karte }) };
       }
@@ -582,12 +587,12 @@ export class TischSzene extends Phaser.Scene {
       return { wurzel: w, bild: w.bildObjekt }; 
     });
     
-    const npPos = nameplatePositionFuer(stich.gewinnerPosition, b, h);
-    const istH = stich.gewinnerPosition === 'SUED' || stich.gewinnerPosition === 'NORD';
+    const npPos = nameplatePositionFuer(mStich.gewinnerPosition, b, h);
+    const istH = mStich.gewinnerPosition === 'SUED' || mStich.gewinnerPosition === 'NORD';
     const flash = this.add.rectangle(npPos.x, npPos.y, istH ? Math.max(120, b * 0.11) : Math.max(80, b * 0.07), istH ? Math.max(54, h * 0.075) : Math.max(80, h * 0.11), 0xffe082, 0.7).setDepth(150).setAlpha(0);
     
     try { 
-      await this.animationen?.animiereStichEinziehen(animK, ziel, stich.augen, flash); 
+      await this.animationen?.animiereStichEinziehen(animK, ziel, mStich.augen, flash); 
     } finally { 
       animK.forEach((k: any) => k.wurzel.destroy()); 
       flash.destroy(); 
@@ -1096,8 +1101,9 @@ export class TischSzene extends Phaser.Scene {
     if (!this.wartendeKartenId) return;
     const sHand = modell.spieler.find((s) => s.istSelbst)?.sichtbareHandkarten ?? [];
     const inHand = sHand.some((k) => k.id === this.wartendeKartenId);
-    const imStich = modell.aktuelleStichmitte.some((e) => e.karte.id === this.wartendeKartenId);
-    if (!inHand || imStich || zustand.meldung?.typ === 'fehler') this.wartendeKartenId = null;
+    if (!inHand && zustand.meldung?.typ === 'fehler') {
+        this.wartendeKartenId = null;
+    }
   }
 
   private async spieleKarteMitAnimation(id: string): Promise<void> {
@@ -1108,13 +1114,19 @@ export class TischSzene extends Phaser.Scene {
     const ziel = stichSlotPositionen(b / 2, h / 2, b, h).SUED;
     this.wartendeKartenId = id;
     
+    // Wir nehmen die Karte manuell aus der Hand, damit sie bei State-Updates
+    // nicht durch renderHandkarten() zerstoert wird, waehrend sie noch animiert.
+    this.persistenteEigeneKarten.delete(id);
+    this.tischEbene?.add(kObj.wurzel); // in die Tisch-Ebene verschieben, damit sie ueber der Hand schwebt
+    
     // API Call SOFORT absetzen (Optimistic UI). 
-    // Dadurch ueberbruecken wir die Netzwerklatenz waehrend die Animation laeuft.
     appStore.spieleKarte(id);
     
     await this.animationen?.reiheEin(async () => {
       await this.animationen?.animiereKarteAusspielen(kObj, ziel);
-      window.setTimeout(() => { if (this.wartendeKartenId === id) this.wartendeKartenId = null; }, 4000);
+      kObj.wurzel.destroy(); // am Ende der Animation manuell zerstoeren
+      if (this.wartendeKartenId === id) this.wartendeKartenId = null;
+      this.triggerRender(); // Rendert die statische Karte (AnimationGuard nun aus)
     });
   }
 
