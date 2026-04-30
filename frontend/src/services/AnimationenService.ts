@@ -89,15 +89,28 @@ export class AnimationenService {
   /**
    * Bewegt Karte (Bild + optionale Beschriftung) per Tween zur Zielpositon.
    * @param kartenobjekte - Zu animierende Spielobjekte der Karte
-   * @param ziel - Zielposition in Spielpixeln
+   * @param ziel - Zielposition in Spielpixeln, inkl. optionalem Winkel
    * @param dauer - Animationsdauer in Millisekunden (Standard: 400ms)
    */
   async animiereKarteAusspielen(
     kartenobjekte: AnimierbareKartenobjekte,
-    ziel: Punkt,
+    ziel: { x: number; y: number; winkel?: number },
     dauer = 400
   ): Promise<void> {
-    await this.tweenZu([kartenobjekte.wurzel, kartenobjekte.beschriftung].filter(istVorhanden), ziel, dauer);
+    const objekte = [kartenobjekte.wurzel, kartenobjekte.beschriftung].filter(istVorhanden);
+    if (objekte.length === 0) return;
+    
+    const tweenConfig: Phaser.Types.Tweens.TweenBuilderConfig = {
+      targets: objekte,
+      x: ziel.x,
+      y: ziel.y,
+      duration: dauer,
+      ease: 'Cubic.Out'
+    };
+    if (ziel.winkel !== undefined) {
+      tweenConfig.angle = ziel.winkel;
+    }
+    await this.animiereTween(tweenConfig);
   }
 
   /**

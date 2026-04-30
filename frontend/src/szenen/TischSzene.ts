@@ -431,7 +431,9 @@ export class TischSzene extends Phaser.Scene {
         const e = ereignis as KarteGespieltEreignis;
         const eigPos = this.letztesModell?.spieler.find(s => s.istSelbst)?.position;
         if (e.spielerPosition !== eigPos) {
-           this.animationen?.reiheEin(() => this.animiereGegnerKarte(e.spielerPosition));
+           this.wartendeKartenId = e.karteId;
+           const verzoegerung = appStore.snapshot().uiKonfiguration.kiVerzoegerungMs || 400;
+           this.animationen?.reiheEin(() => this.animiereGegnerKarte(e.spielerPosition, verzoegerung));
         }
         break;
       }
@@ -531,16 +533,20 @@ export class TischSzene extends Phaser.Scene {
     }
   }
 
-  private async animiereGegnerKarte(pos: SpielerPosition): Promise<void> {
+  private async animiereGegnerKarte(pos: SpielerPosition, dauer = 400): Promise<void> {
     const { width: b, height: h } = this.scale.gameSize;
     const layout = berechneLayout(b, h);
     const slotPos = stichSlotPositionen(b / 2, h / 2, b, h);
     const kg = berechneKartenGroesse(b);
     const tempK = this.erstelleKartenansicht(layout[pos].kartenX, layout[pos].kartenY, kg.w, kg.h, { verdeckt: true });
     try {
-      await this.animationen?.animiereKarteAusspielen({ wurzel: tempK }, slotPos[pos]);
+      await this.animationen?.animiereKarteAusspielen({ wurzel: tempK }, slotPos[pos], dauer);
     } finally {
       tempK.destroy(true);
+      // Guard aufheben, damit die statische (offene) Karte nun gerendert werden kann
+      if (this.wartendeKartenId) {
+        this.wartendeKartenId = null;
+      }
     }
   }
   private async animiereStichEinziehen(stich: AbgeschlossenerStichAntwort): Promise<void> {

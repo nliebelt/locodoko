@@ -652,15 +652,6 @@ export class AppStore {
             this._eventQueue.length = 0;
             break;
           case 'KARTE_GESPIELT': {
-            const prevStand = this.zustand.partieStand;
-            const istKiKarte = prevStand?.laufendesSpiel?.spieler?.find(
-              s => s.position === ereignis.spielerPosition
-            )?.istKi ?? false;
-            if (istKiKarte && prevStand && this.zustand.uiKonfiguration.kiVerzoegerungMs > 0) {
-              const syntheticStand = this._synthetischerKarteGespielt(prevStand, ereignis);
-              this.patch({ partieStand: syntheticStand });
-              await new Promise<void>((r) => setTimeout(r, this.zustand.uiKonfiguration.kiVerzoegerungMs));
-            }
             this.patch({ partieStand: ereignis.partieStand });
             break;
           }
