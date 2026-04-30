@@ -120,6 +120,8 @@ public record PartieStandAntwort(
         int bockrundenZaehler,
         @Schema(description = "Ob eine Hochzeit bereits geklaert ist.")
         boolean hochzeitGeklaert,
+        @Schema(description = "Ob Schweinchen (beide Karo-Asse bei einem Spieler) in diesem Spiel aktiv ist.")
+        boolean schweinchenAktiv,
         @Schema(description = "Position des Spielers, der Schweinchen gemeldet hat; null falls keiner.")
         SpielerPosition schweinchenGemeldetVon
     ) {
@@ -174,6 +176,7 @@ public record PartieStandAntwort(
                 fachlichesSpiel.vorbehalte().stream().map(VorbehaltMeldungAntwort::aus).toList(),
                 tisch.partie().bockrundenZaehlerAusDb(),
                 hochzeitGeklaert,
+                fachlichesSpiel.schweinchenAktiv(),
                 fachlichesSpiel.schweinchenGemeldetVon().orElse(null)
             );
         }

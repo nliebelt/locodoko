@@ -296,7 +296,7 @@ export function erstelleTischAnsichtAusStatus(
     ? bestimmeBezugsPositionAusPartie(laufendesSpiel, spielerId, tisch)
     : bestimmeBezugsPositionAusTisch(spielerId, tisch);
   const spielerAnsichten = laufendesSpiel
-    ? mappeSpielerAusPartie(laufendesSpiel.spieler, tisch, laufendesSpiel.spieltyp, bezugPosition)
+    ? mappeSpielerAusPartie(laufendesSpiel.spieler, tisch, laufendesSpiel.spieltyp, laufendesSpiel.schweinchenAktiv, bezugPosition)
     : mappeSpielerAusTisch(spielerId, tisch, bezugPosition);
 
   const statusText = laufendesSpiel
@@ -401,6 +401,7 @@ function mappeSpielerAusPartie(
   spieler: SpielerImSpielAntwort[],
   tisch: TischAntwort,
   spieltyp: LaufendesSpielAntwort['spieltyp'],
+  schweinchenAktiv: boolean,
   bezugPosition: BackendSpielerPosition
 ): SpielerAnsicht[] {
   const nachPosition = new Map<SpielerPosition, SpielerAnsicht>();
@@ -421,7 +422,7 @@ function mappeSpielerAusPartie(
       statusText: bildeStatusText(eintrag),
       istAktivHervorgehoben: eintrag.istAmZug || eintrag.istSelbst,
       partei: eintrag.partei,
-      sichtbareHandkarten: sortiereSichtbareHandkarten(eintrag.sichtbareHandkarten ?? [], spieltyp)
+      sichtbareHandkarten: sortiereSichtbareHandkarten(eintrag.sichtbareHandkarten ?? [], spieltyp, schweinchenAktiv)
     });
   });
   return POSITIONEN.map((position) => nachPosition.get(position) ?? leererPlatz(position));
@@ -699,15 +700,17 @@ function bildeStatusText(spieler: SpielerImSpielAntwort): string {
 
 function sortiereSichtbareHandkarten(
   handkarten: KarteAntwort[],
-  spieltyp: LaufendesSpielAntwort['spieltyp'] | null
+  spieltyp: LaufendesSpielAntwort['spieltyp'] | null,
+  schweinchenAktiv: boolean
 ): KarteAntwort[] {
-  return [...handkarten].sort((links, rechts) => vergleicheKarten(links, rechts, spieltyp));
+  return [...handkarten].sort((links, rechts) => vergleicheKarten(links, rechts, spieltyp, schweinchenAktiv));
 }
 
 function vergleicheKarten(
   links: KarteAntwort,
   rechts: KarteAntwort,
-  spieltyp: LaufendesSpielAntwort['spieltyp'] | null
+  spieltyp: LaufendesSpielAntwort['spieltyp'] | null,
+  schweinchenAktiv: boolean
 ): number {
   const linksTrumpf = istTrumpfFuerSpieltyp(links, spieltyp);
   const rechtsTrumpf = istTrumpfFuerSpieltyp(rechts, spieltyp);
@@ -716,7 +719,7 @@ function vergleicheKarten(
   }
 
   if (linksTrumpf && rechtsTrumpf) {
-    const rangDifferenz = trumpfRang(rechts, spieltyp) - trumpfRang(links, spieltyp);
+    const rangDifferenz = trumpfRang(rechts, spieltyp, schweinchenAktiv) - trumpfRang(links, spieltyp, schweinchenAktiv);
     return rangDifferenz !== 0 ? rangDifferenz : links.id.localeCompare(rechts.id);
   }
 
@@ -728,14 +731,14 @@ function vergleicheKarten(
   return wertDifferenz !== 0 ? wertDifferenz : links.id.localeCompare(rechts.id);
 }
 
-function trumpfRang(karte: KarteAntwort, spieltyp: LaufendesSpielAntwort['spieltyp'] | null): number {
+function trumpfRang(karte: KarteAntwort, spieltyp: LaufendesSpielAntwort['spieltyp'] | null, schweinchenAktiv: boolean): number {
   if (spieltyp === 'SOLO_DAME' || spieltyp === 'SOLO_BUBE') {
     return soloTrumpfRang(karte.farbe);
   }
   if (spieltyp === 'SOLO_TRUMPF_HERZ') return farbsoloTrumpfRang(karte, 'HERZ');
   if (spieltyp === 'SOLO_TRUMPF_PIK') return farbsoloTrumpfRang(karte, 'PIK');
   if (spieltyp === 'SOLO_TRUMPF_KREUZ') return farbsoloTrumpfRang(karte, 'KREUZ');
-  return normaleTrumpfRang(karte);
+  return normaleTrumpfRang(karte, schweinchenAktiv);
 }
 
 // Trumpfrang im Farbsolo: Damen (Kreuz > Pik > Herz > Karo) > Buben > Farbtrümpfe (Ass > Zehn > König > Neun)
@@ -761,7 +764,10 @@ function soloTrumpfRang(farbe: KarteAntwort['farbe']): number {
   } as Record<KarteAntwort['farbe'], number>)[farbe] ?? 0;
 }
 
-function normaleTrumpfRang(karte: KarteAntwort): number {
+function normaleTrumpfRang(karte: KarteAntwort, schweinchenAktiv: boolean): number {
+  if (schweinchenAktiv && karte.farbe === 'KARO' && karte.wert === 'AS') {
+    return karte.exemplarIndex === 1 ? 14 : 15;
+  }
   const schluessel = `${karte.farbe}-${karte.wert}`;
   return ({
     'KARO-NEUN': 1,

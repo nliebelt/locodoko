@@ -153,6 +153,7 @@ export interface LaufendesSpielAntwort {
   deklarierteVorbehalte: any[];
   bockrundenZaehler: number;
   hochzeitGeklaert: boolean;
+  schweinchenAktiv: boolean;
   schweinchenGemeldetVon: SpielerPosition | null;
 }
 

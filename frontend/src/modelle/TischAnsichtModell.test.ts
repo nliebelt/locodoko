@@ -111,6 +111,7 @@ describe('erstelleTischAnsichtAusStatus', () => {
         deklarierteVorbehalte: [],
         bockrundenZaehler: 0,
         hochzeitGeklaert: false,
+        schweinchenAktiv: false,
         schweinchenGemeldetVon: null,
         spieler: [
           {
@@ -229,6 +230,7 @@ describe('erstelleTischAnsichtAusStatus', () => {
         deklarierteVorbehalte: [],
         bockrundenZaehler: 0,
         hochzeitGeklaert: false,
+        schweinchenAktiv: false,
         schweinchenGemeldetVon: null,
         spieler: [
           {
@@ -355,6 +357,7 @@ describe('erstelleTischAnsichtAusStatus', () => {
         deklarierteVorbehalte: [],
         bockrundenZaehler: 0,
         hochzeitGeklaert: false,
+        schweinchenAktiv: false,
         schweinchenGemeldetVon: null,
         spieler: [
           { position: 'SUED', spielerId: 'spieler-1', name: 'Anna', anzeigeName: 'Anna', avatarFarbe: null, istKi: false, istKiUebernommen: false, istSelbst: false, istGeber: true, istAmZug: false, verbleibendeKarten: 10, gewonneneStiche: 0, partei: null, sichtbareHandkarten: null },
@@ -499,6 +502,7 @@ describe('erstelleTischAnsichtAusStatus', () => {
         deklarierteVorbehalte: [],
         bockrundenZaehler: 0,
         hochzeitGeklaert: false,
+        schweinchenAktiv: false,
         schweinchenGemeldetVon: null,
         spieler: [
           { position: 'SUED', spielerId: 'spieler-1', name: 'Anna', anzeigeName: 'Anna', avatarFarbe: null, istKi: false, istKiUebernommen: false, istSelbst: true, istGeber: true, istAmZug: true, verbleibendeKarten: 12, gewonneneStiche: 0, partei: null, sichtbareHandkarten: [{ id: 'HERZ-ZEHN-1', farbe: 'HERZ', wert: 'ZEHN', exemplarIndex: 1 }, { id: 'KARO-KOENIG-1', farbe: 'KARO', wert: 'KOENIG', exemplarIndex: 1 }, { id: 'KREUZ-AS-1', farbe: 'KREUZ', wert: 'AS', exemplarIndex: 1 }] },
@@ -552,6 +556,7 @@ describe('erstelleTischAnsichtAusStatus', () => {
         deklarierteVorbehalte: [],
         bockrundenZaehler: 0,
         hochzeitGeklaert: false,
+        schweinchenAktiv: false,
         schweinchenGemeldetVon: null,
         spieler: [
           { position: 'SUED', spielerId: 'spieler-1', name: 'Anna', anzeigeName: 'Anna', avatarFarbe: null, istKi: false, istKiUebernommen: false, istSelbst: false, istGeber: true, istAmZug: false, verbleibendeKarten: 9, gewonneneStiche: 0, partei: null, sichtbareHandkarten: null },
@@ -590,7 +595,7 @@ describe('erstelleTischAnsichtAusStatus', () => {
           spielNummer: 1, spieltyp, phase: 'STICHPHASE', geber: 'SUED', aktuellerSpieler: 'SUED',
           spielbareKarten: [], aktuelleStichmitte: [], ansageHistorie: [], moeglicheAnsagen: [],
           moeglicheVorbehalte: [], deklarierteVorbehalte: [], bockrundenZaehler: 0,
-          hochzeitGeklaert: false, schweinchenGemeldetVon: null,
+          hochzeitGeklaert: false, schweinchenAktiv: false, schweinchenGemeldetVon: null,
           spieler: [
             { position: 'SUED', spielerId: 'spieler-1', name: 'Anna', anzeigeName: 'Anna', avatarFarbe: null,
               istKi: false, istKiUebernommen: false, istSelbst: true, istGeber: true, istAmZug: true,
@@ -647,6 +652,61 @@ describe('erstelleTischAnsichtAusStatus', () => {
       'KARO-DAME-1',     // Trumpf (Dame, rank 9)
       'KREUZ-KOENIG-1',  // Farbtrumpf König (rank 2)
       'HERZ-ZEHN-1'      // Fehlfarbe — KEINE Dulle im Farbsolo
+    ]);
+  });
+
+  it('sortiert Handkarten bei aktivem Schweinchen: Karo-As-2 > Karo-As-1 > Dulle > andere Trümpfe', () => {
+    // Warum wichtig: Bei Schweinchen erhalten beide Karo-Asse Rang 14/15 und stehen damit
+    // oberhalb der Dulle (Rang 13). normaleTrumpfRang() muss exemplarIndex berücksichtigen.
+    const modell = erstelleTischAnsichtAusStatus('spieler-1', {
+      id: 'tisch-x', einladungsCode: 'ABCD', zugangsmodus: 'OFFEN', name: 'Test', status: 'IM_SPIEL',
+      erstelltVonSpielerId: 'spieler-1', partieId: 'partie-x',
+      konfiguration: { ...standardKonfiguration, schweinchenAktiv: true },
+      spieler: [
+        { spielerId: 'spieler-1', name: 'Anna', istKi: false },
+        { spielerId: 'spieler-2', name: 'Ben', istKi: true },
+        { spielerId: 'spieler-3', name: 'Clara', istKi: true },
+        { spielerId: 'spieler-4', name: 'Dirk', istKi: true }
+      ]
+    }, {
+      partieId: 'partie-x', version: 1, status: 'LAUFEND', anzahlSpiele: 8, gespielteSpiele: 0,
+      gesamtpunktestand: { SUED: 0, WEST: 0, NORD: 0, OST: 0 },
+      laufendesSpiel: {
+        spielNummer: 1, spieltyp: 'NORMALSPIEL', phase: 'STICHPHASE',
+        geber: 'SUED', aktuellerSpieler: 'SUED',
+        spielbareKarten: [], aktuelleStichmitte: [], ansageHistorie: [],
+        moeglicheAnsagen: [], moeglicheVorbehalte: [], deklarierteVorbehalte: [],
+        bockrundenZaehler: 0, hochzeitGeklaert: false, schweinchenAktiv: true, schweinchenGemeldetVon: null,
+        spieler: [
+          { position: 'SUED', spielerId: 'spieler-1', name: 'Anna', anzeigeName: 'Anna', avatarFarbe: null,
+            istKi: false, istKiUebernommen: false, istSelbst: true, istGeber: true, istAmZug: true,
+            verbleibendeKarten: 4, gewonneneStiche: 0, partei: 'RE',
+            sichtbareHandkarten: [
+              { id: 'KREUZ-DAME-1', farbe: 'KREUZ', wert: 'DAME', exemplarIndex: 1 },
+              { id: 'HERZ-ZEHN-1', farbe: 'HERZ', wert: 'ZEHN', exemplarIndex: 1 },
+              { id: 'KARO-AS-2', farbe: 'KARO', wert: 'AS', exemplarIndex: 2 },
+              { id: 'KARO-AS-1', farbe: 'KARO', wert: 'AS', exemplarIndex: 1 }
+            ]
+          },
+          { position: 'WEST', spielerId: 'spieler-2', name: 'Ben', anzeigeName: 'Ben', avatarFarbe: null,
+            istKi: true, istKiUebernommen: false, istSelbst: false, istGeber: false, istAmZug: false,
+            verbleibendeKarten: 4, gewonneneStiche: 0, partei: null, sichtbareHandkarten: null },
+          { position: 'NORD', spielerId: 'spieler-3', name: 'Clara', anzeigeName: 'Clara', avatarFarbe: null,
+            istKi: true, istKiUebernommen: false, istSelbst: false, istGeber: false, istAmZug: false,
+            verbleibendeKarten: 4, gewonneneStiche: 0, partei: null, sichtbareHandkarten: null },
+          { position: 'OST', spielerId: 'spieler-4', name: 'Dirk', anzeigeName: 'Dirk', avatarFarbe: null,
+            istKi: true, istKiUebernommen: false, istSelbst: false, istGeber: false, istAmZug: false,
+            verbleibendeKarten: 4, gewonneneStiche: 0, partei: null, sichtbareHandkarten: null }
+        ]
+      }
+    });
+
+    const eigenerSpieler = modell.spieler.find((s) => s.istSelbst)!;
+    expect(eigenerSpieler.sichtbareHandkarten.map((k) => k.id)).toEqual([
+      'KARO-AS-2',    // zweites Schweinchen (Rang 15) — höchster Trumpf
+      'KARO-AS-1',    // erstes Schweinchen (Rang 14)
+      'HERZ-ZEHN-1',  // Dulle (Rang 13)
+      'KREUZ-DAME-1'  // Kreuz-Dame (Rang 12)
     ]);
   });
 });

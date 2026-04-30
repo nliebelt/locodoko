@@ -3,6 +3,7 @@ package de.locodoko.tisch;
 import de.locodoko.karten.Augen;
 import de.locodoko.karten.Farbe;
 import de.locodoko.karten.Karte;
+import de.locodoko.karten.Kartendeck;
 import de.locodoko.karten.Kartenwert;
 import de.locodoko.partie.AktuellerStichKarteEmbeddable;
 import de.locodoko.partie.HandJsonEintrag;
@@ -23,12 +24,15 @@ import de.locodoko.tisch.TischEntity;
 import de.locodoko.tisch.TischkonfigurationEmbeddable;
 import org.junit.jupiter.api.Test;
 
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class PartieStandAntwortTest {
 
@@ -215,6 +219,64 @@ class PartieStandAntwortTest {
         assertNotNull(antwort.laufendesSpiel());
         assertEquals(0, antwort.laufendesSpiel().bockrundenZaehler(),
             "bockrundenZaehler muss 0 liefern wenn keine Bockrunde aktiv ist.");
+    }
+
+    @Test
+    void liefertSchweinchenAktivWennEinSpielerBeideKaroAsseHaelt() {
+        // Wichtig: schweinchenAktiv muss als true geliefert werden, wenn ein Spieler
+        // beide Karo-Asse haelt. Das Frontend benoetigt diesen Wert, um Karo-Asse
+        // oberhalb der Dulle in der Handkarten-Sortierung anzuzeigen.
+        Spielregeln regeln = Spielregeln.standardRegeln().mitSchweinchenAktiv(true);
+        SpielerEntity anna = SpielerEntity.menschlich("Anna", "session-anna");
+        TischEntity tisch = TischEntity.neu(
+            "Schweinchen-Test", anna,
+            TischkonfigurationEmbeddable.ausSpielregeln(regeln, 8)
+        );
+        tisch.fuegeSpielerHinzu(anna);
+        tisch.fuegeSpielerHinzu(SpielerEntity.menschlich("Ben", "session-ben"));
+        tisch.fuegeSpielerHinzu(SpielerEntity.menschlich("Clara", "session-clara"));
+        tisch.fuegeSpielerHinzu(SpielerEntity.menschlich("Dirk", "session-dirk"));
+
+        // WEST bekommt beide Karo-Asse — Schweinchen ist aktiv
+        Map<SpielerPosition, List<Karte>> kartenMap = new HashMap<>();
+        kartenMap.put(SpielerPosition.WEST, new ArrayList<>(List.of(karte(Farbe.KARO, Kartenwert.AS, 1), karte(Farbe.KARO, Kartenwert.AS, 2))));
+        kartenMap.put(SpielerPosition.NORD, new ArrayList<>());
+        kartenMap.put(SpielerPosition.OST, new ArrayList<>());
+        kartenMap.put(SpielerPosition.SUED, new ArrayList<>());
+        List<Karte> rest = new ArrayList<>(Kartendeck.neu(regeln).karten());
+        for (List<Karte> h : kartenMap.values()) rest.removeAll(h);
+        for (SpielerPosition pos : SpielerPosition.standardReihenfolge()) {
+            while (kartenMap.get(pos).size() < 12) kartenMap.get(pos).add(rest.remove(0));
+        }
+        List<Karte> deckKarten = new ArrayList<>();
+        for (int i = 0; i < 12; i++) {
+            for (SpielerPosition pos : SpielerPosition.standardReihenfolge()) deckKarten.add(kartenMap.get(pos).get(i));
+        }
+        Kartendeck deck = null;
+        try {
+            var ctor = Kartendeck.class.getDeclaredConstructor(java.util.Collection.class);
+            ctor.setAccessible(true);
+            deck = ctor.newInstance(deckKarten);
+        } catch (Exception e) { /* ignoriert */ }
+
+        Spiel spiel = Spiel.neu(SpielerPosition.SUED, regeln, deck)
+            .teileKartenAus()
+            .meldeGesund(SpielerPosition.WEST)
+            .meldeGesund(SpielerPosition.NORD)
+            .meldeGesund(SpielerPosition.OST)
+            .meldeGesund(SpielerPosition.SUED)
+            .loeseVorbehalteAuf();
+        spiel.syncZuPersistenz();
+
+        Partie partie = Partie.neuePersistenz(8);
+        partie.fuegeSpielHinzu(spiel);
+        tisch.setzePartie(partie);
+
+        PartieStandAntwort antwort = PartieStandAntwort.aus(tisch, anna.id());
+
+        assertNotNull(antwort.laufendesSpiel());
+        assertTrue(antwort.laufendesSpiel().schweinchenAktiv(),
+            "schweinchenAktiv muss true liefern, wenn ein Spieler beide Karo-Asse haelt.");
     }
 
     private Karte karte(Farbe farbe, Kartenwert wert, int exemplarIndex) {
