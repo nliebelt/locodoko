@@ -1,7 +1,7 @@
 # IMPLEMENTATION_PLAN — Locodoko Doppelkopf
 
 ## Notiz
-Stand: 2026-04-30 (Plan-Run #91 — B1 untersucht und abgeschlossen)
+Stand: 2026-04-30 (Plan-Run #92 — B2 abgeschlossen)
 
 ---
 
@@ -26,28 +26,19 @@ mit `deckReihenfolgeFuerHaende()`.
 
 ---
 
-### B2: Schweinchen zeigt keine Wirkung
+### ~~B2: Schweinchen zeigt keine Wirkung~~ ✅ ERLEDIGT
 
-**Symptom:** Karo-Asse werden trotz aktivem Schweinchen nicht als höchste Trümpfe gewertet.
+**Ergebnis:** Bug lag ausschließlich im Frontend. `normaleTrumpfRang()` in `TischAnsichtModell.ts`
+ignorierte `schweinchenAktiv` — Karo-Asse wurden immer mit Rang 4 sortiert (unter der Dulle).
 
-**Diagnose-Hinweis:**
-`hatSchweinchen()` prüft `sr.schweinchenAktiv()` (aus Spielregeln/Config) UND ob ein Spieler
-2 Karo-Asse hat. In `locoBlatRegeln()` ist `schweinchenAktiv=true`.
-`teileKartenAus()` setzt `trumpfOrdnung = new SchweinchenTrumpfOrdnung(...)` wenn Schweinchen
-erkannt. `uebernehmeDomainStand()` → `syncZuPersistenz()` speichert `schweinchenAktivFlag=true`.
-Beim Laden: `hydriere()` restauriert `SchweinchenTrumpfOrdnung` aus `schweinchenAktivFlag`.
-
-**Zu prüfen:**
-- Integration-Test mit kontrollierten Händen (ein Spieler hat beide Karo-Asse), Loco-Blatt-Preset.
-  Prüfen ob `Spiel.schweinchenAktiv()` nach `teileKartenAus()` + save + reload `true` zurückgibt.
-- `SchweinchenTrumpfOrdnung.vergleiche()`: prüfen ob Karo-As tatsächlich Rang 14/15 hat und
-  damit Dulle (höchsten Normaltrumpf) schlägt.
-- Frontend: Schweinchen-Meldungs-Animation vorhanden? `SCHWEINCHEN_GEMELDET`-Event im
-  AppStore vollständig verarbeitet und visuell angezeigt?
-
-**Betroffene Dateien:**
-`Spiel.java` (`teileKartenAus`, `hydriere`, `schweinchenAktiv`),
-`SchweinchenTrumpfOrdnung.java`, `SchweinchenTest.java`, `Bugfix3Test.java`
+**Fix:**
+- `LaufendesSpielAntwort` (Backend-DTO + Frontend-Interface) um `schweinchenAktiv: boolean` erweitert.
+- `schweinchenAktiv` durch die gesamte Karten-Sortier-Pipeline gezogen:
+  `mappeSpielerAusPartie → sortiereSichtbareHandkarten → vergleicheKarten → trumpfRang → normaleTrumpfRang`.
+- `normaleTrumpfRang()` berücksichtigt jetzt `exemplarIndex`: bei aktivem Schweinchen erhält
+  Karo-As mit exemplarIndex 2 → Rang 15, exemplarIndex 1 → Rang 14 (über Dulle=13).
+- Überflüssiger TODO-Kommentar in `NormaleTrumpfOrdnung.java` entfernt (SchweinchenTrumpfOrdnung existiert).
+- Neue Tests: Sortier-Test mit `schweinchenAktiv=true`, Backend-Test für `schweinchenAktiv`-Feld.
 
 ---
 
