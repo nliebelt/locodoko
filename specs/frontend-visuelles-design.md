@@ -2,7 +2,7 @@
 
 | Feld           | Wert                                      |
 |----------------|-------------------------------------------|
-| Status         | Zu prüfen |
+| Status         | Aktive Vorgabe |
 | Priorität      | Hoch                                      |
 | Abhängigkeiten | frontend-tischansicht.md, frontend-animationen.md |
 
@@ -128,13 +128,13 @@ Diese Effekte treten **kurz und gezielt** auf, dann kehrt die UI zur Ruhe zurüc
 
 ## Definition of Done
 
-- [ ] Space Grotesk eingebunden (Google Fonts oder self-hosted)
-- [ ] Farbpalette als CSS Custom Properties definiert (`--farbe-gold`, `--farbe-blau` etc.)
-- [ ] vectorized-playing-cards heruntergeladen und in `frontend/public/assets/cards/` abgelegt
-- [ ] Karten-Mapping implementiert (Doppelkopf → Dateiname)
-- [ ] Harter Schlagschatten auf Karten und Buttons
-- [ ] Sonderpunkt-Animationen (Fuchs, Karlchen, Doppelkopf)
-- [ ] Ansage-Banner (Re/Kontra)
-- [ ] Solo-Ankündigung
-- [ ] Focus-Styles für Keyboard-Navigation
+- [x] Space Grotesk eingebunden (Google Fonts oder self-hosted)
+- [x] Farbpalette als CSS Custom Properties definiert (`--farbe-gold`, `--farbe-blau` etc.)
+- [x] vectorized-playing-cards heruntergeladen und in `frontend/public/assets/cards/` abgelegt
+- [x] Karten-Mapping implementiert (Doppelkopf → Dateiname)
+- [x] Harter Schlagschatten auf Karten und Buttons
+- [x] Sonderpunkt-Animationen (Fuchs, Karlchen, Doppelkopf)
+- [x] Ansage-Banner (Re/Kontra)
+- [x] Solo-Ankündigung
+- [x] Focus-Styles für Keyboard-Navigation
 - [ ] Visuelles Review

@@ -145,7 +145,7 @@ export class SpielverwaltungsSzene extends Phaser.Scene {
         <h2>Neuen Tisch erstellen</h2>
         <div class="ui-section">
           <label class="ui-hint" for="tisch-name">Name des Tisches</label>
-          <input type="text" id="tisch-name" class="ui-input" placeholder="z.B. Gemütliche Runde" maxlength="100">
+          <input type="text" id="tisch-name" data-testid="input-tischname" class="ui-input" placeholder="z.B. Gemütliche Runde" maxlength="100">
         </div>
         <div class="ui-section">
           <label class="ui-hint" for="tisch-preset">Regel-Preset</label>
@@ -160,11 +160,12 @@ export class SpielverwaltungsSzene extends Phaser.Scene {
         </div>
         <div class="ui-action-row">
           <button id="btn-abbrechen" class="ui-button ui-button--secondary">Abbrechen</button>
-          <button id="btn-erstellen" class="ui-button" disabled>Erstellen</button>
+          <button id="btn-erstellen" data-testid="btn-tisch-erstellen" class="ui-button" disabled>Erstellen</button>
         </div>
       </div>
     `;
     document.body.appendChild(modal);
+    modal.setAttribute('data-testid', 'tisch-config-modal');
 
     const nameInput = modal.querySelector('#tisch-name') as HTMLInputElement;
     const presetSelect = modal.querySelector('#tisch-preset') as HTMLSelectElement;

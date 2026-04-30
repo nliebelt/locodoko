@@ -55,8 +55,8 @@ Ein Spieler darf das Spiel **neu auflegen** (schmeißen) wenn er eine der folgen
 | Regel | Bedingung | Status |
 |-------|-----------|--------|
 | **Fünf Könige** | Spieler hat 5 oder mehr Könige auf der Hand. | Implementiert |
-| **Fünf Neunen** | Spieler hat 5 oder mehr Neunen auf der Hand. (Bei 40er Blatt: 4 oder mehr). | Offen |
-| **Wenig Trumpf** | Spieler hat weniger als 2 Trümpfe auf der Hand. | Offen |
+| **Fünf Neunen** | Spieler hat 5 oder mehr Neunen auf der Hand. (Bei 40er Blatt: 4 oder mehr). | Implementiert |
+| **Wenig Trumpf** | Spieler hat weniger als 2 Trümpfe auf der Hand. | Implementiert |
 
 1. Der Vorbehalt "Schmeißen" gilt als höchster Vorbehalt. Wenn ein Spieler schmeißt, wird sofort neu ausgeteilt ohne die anderen Vorbehalte aufzulösen.
 2. Jeder Spieler hat **genau ein Schmeißen-Recht** pro Spiel (nicht pro Partie).
@@ -104,6 +104,9 @@ Ein Spieler darf das Spiel **neu auflegen** (schmeißen) wenn er eine der folgen
 - [x] Code-Review / Plausibilitätsprüfung
 - [x] Solo-Nachgeben: Geber bleibt nach Solo gleich (`Partie.schliesseAktuellesSpielAb`)
 - [x] Solo-Nachgeben: Solist erhält Anspielrecht im Folge-Spiel
+- [x] Schmeißen: Fünf Könige implementiert und getestet
+- [x] Schmeißen: Fünf Neunen implementiert (VorbehaltAnsage.SCHMEISSEN_FUENF_NEUNEN, ohneNeunen-Schwelle)
+- [x] Schmeißen: Wenig Trumpf implementiert (VorbehaltAnsage.SCHMEISSEN_WENIG_TRUMPF, NormaleTrumpfOrdnung)
 
 ## Technische Hinweise
 

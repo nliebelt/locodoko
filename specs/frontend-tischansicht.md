@@ -122,22 +122,22 @@ Die Tischansicht ist das zentrale Spielfeld. Sie nutzt die **volle Canvas-Fläch
 
 ## Definition of Done
 
-- [ ] HUD Top-Bar implementiert (Stichzähler links, Spieltyp Mitte, Icons rechts)
-- [ ] Spieler-Nameplates statt Kreise implementiert
-- [ ] Nameplate-Position: SUED/NORD rechts neben Karten, WEST unterhalb, OST oberhalb
-- [ ] vectorized-playing-cards integriert (Laden, Mapping auf Doppelkopf-Karten)
-- [ ] Weißer Karten-Hintergrund hinter jedem Karten-Sprite
-- [ ] Kartengröße auf 110×165px erhöht
+- [x] HUD Top-Bar implementiert (Stichzähler links, Spieltyp Mitte, Icons rechts)
+- [x] Spieler-Nameplates statt Kreise implementiert
+- [x] Nameplate-Position: SUED/NORD rechts neben Karten, WEST unterhalb, OST oberhalb
+- [x] vectorized-playing-cards integriert (Laden, Mapping auf Doppelkopf-Karten)
+- [x] Weißer Karten-Hintergrund hinter jedem Karten-Sprite
+- [x] Kartengröße auf 110×165px erhöht
 - [ ] Duplikat-Texte und Placeholder-Texte entfernt (kein „Am Zug", kein „Noch keine Karte", kein Titeltext)
 - [ ] OST/WEST vollständig innerhalb des Canvas (kein Overflow)
 - [ ] Stich-Karten gestampelt in Stichmitte (Position nach Spielerrichtung, keine Namen)
-- [ ] Stich-Stapel beim Gewinner sichtbar
-- [ ] Letzten Stich umdrehen funktioniert
-- [ ] Floating Action Bar implementiert
-- [ ] Seitenlade implementiert
-- [ ] Einstellungs-Modal implementiert
+- [x] Stich-Stapel beim Gewinner sichtbar
+- [x] Letzten Stich umdrehen funktioniert
+- [x] Floating Action Bar implementiert
+- [x] Seitenlade implementiert
+- [x] Einstellungs-Modal implementiert
 - [ ] Alle vier Spieler ohne Panel-Überlappung sichtbar
-- [ ] Debug-Modus mit aufgedeckten Karten funktioniert
+- [x] Debug-Modus mit aufgedeckten Karten funktioniert
 - [ ] Visuelles Review / Plausibilitätsprüfung
 
 ## Technische Hinweise

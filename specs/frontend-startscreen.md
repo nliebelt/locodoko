@@ -108,14 +108,14 @@ Die Spielverwaltungs-Szene ist die **dritte Phaser-Szene** (nach BootSzene, vor 
 
 ## Definition of Done
 
-- [ ] Spielverwaltungs-Szene als neue Phaser-Szene implementiert (ersetzt LobbySzene)
+- [x] Spielverwaltungs-Szene als neue Phaser-Szene implementiert (ersetzt LobbySzene)
 - [ ] Logo und Slogan korrekt dargestellt
-- [ ] „▶ Quick Game"-Button: startet sofort Einzelspieler-Tisch gegen 3 KI, wechselt zur TischSzene
-- [ ] „Neuen Tisch erstellen" Modal implementiert (Pflichtfelder: Name, Rundenanzahl, KI-Schwierigkeit)
-- [ ] Tisch-Erstellung schließt Modal und wechselt zur TischSzene
+- [x] „▶ Quick Game"-Button: startet sofort Einzelspieler-Tisch gegen 3 KI, wechselt zur TischSzene
+- [x] „Neuen Tisch erstellen" Modal implementiert (Pflichtfelder: Name, Rundenanzahl, KI-Schwierigkeit)
+- [x] Tisch-Erstellung schließt Modal und wechselt zur TischSzene
 - [x] „Offene Tische" Liste implementiert mit WebSocket-Echtzeit-Updates (WARTEND + eigene IM_SPIEL-Tische)
 - [x] „Zurückkehren"-Button für laufende eigene Tische
-- [ ] Session-Recovery-Button implementiert (erscheint wenn aktiverTischId vorhanden)
+- [x] Session-Recovery-Button implementiert (erscheint wenn aktiverTischId vorhanden)
 - [ ] Keyboard-Navigation (Tab, Enter)
 - [ ] Visuelles Review
 

@@ -77,4 +77,4 @@ Sonderpunkte sind zusätzliche Spielpunkte, die für besondere Ereignisse währe
 - `partie/Partie.java` — ruft `SonderpunktBewerter` bei `schliesseAktuellesSpielAb()` auf
 - `karten/Spielregeln.java` — einzelne Sonderpunkte per Flag aktivierbar/deaktivierbar
 
-Bekannter Bug (2026-04-15): KI hängt nach Fuchs gefangen — `NaechsterSpielerErwartet`-Event wird nach Sonderpunkt-Auswertung möglicherweise nicht korrekt getriggert.
+Behoben in Plan-Run #96: KI hängt nach Fuchs gefangen — `KiOrchestrierungService.java` publiziert `NaechsterSpielerErwartet` nach Sonderpunkt-Auswertung (Zeilen 318–320).

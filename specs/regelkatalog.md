@@ -103,10 +103,10 @@ Kein Preset — alle Optionen werden individuell vom Gastgeber konfiguriert.
 
 - [x] `Spielregeln.locoBlatRegeln()` implementiert
 - [x] `Spielregeln.dkvRegeln()` implementiert
-- [ ] Frontend: Preset-Dropdown im Tisch-Konfigurations-Modal
-- [ ] Frontend: Vorbelegen aller Felder bei Preset-Wechsel
+- [x] Frontend: Preset-Dropdown im Tisch-Konfigurations-Modal
+- [x] Frontend: Vorbelegen aller Felder bei Preset-Wechsel
 - [ ] Frontend: „Benutzerdefiniert"-Modus schaltet alle Felder frei
-- [ ] Unit-Tests für `locoBlatRegeln()` und `dkvRegeln()` (dedizierte Feldwert-Assertions)
+- [x] Unit-Tests für `locoBlatRegeln()` und `dkvRegeln()` (dedizierte Feldwert-Assertions)
 
 ## Technische Hinweise
 
