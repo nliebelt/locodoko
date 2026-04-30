@@ -437,6 +437,100 @@ class KiOrchestrierungServiceIntegrationTest {
         });
     }
 
+    /**
+     * B1-Regression: KI muss nach einem Stich weiterspielen, den eine KI (OST) gewinnt,
+     * wenn SUED (Mensch) als letzter Spieler des Stichs gespielt hat und dabei FuchsGefangen ausgeloest wurde.
+     * Konkret: WEST spielt Karo-As-1 (Fuchs), NORD spielt Karo-Neun-1, OST gewinnt mit Pik-Bube-1 (Fuchs gefangen),
+     * SUED spielt als letztes Karo-Neun-2. OST ist Aufspieler des neuen Stichs und spielt als KI — danach ist
+     * SUED als 2. Spieler im Uhrzeigersinn nach OST dran (OST → SUED → WEST → NORD).
+     */
+    @Test
+    void spieltKiWeiterNachFuchsGefangenWennKiDenStichGewinnt() {
+        Spielregeln spielregeln = Spielregeln.standardRegeln();
+        // WEST (RE via Kreuz-Dame-1) hat Karo-As-1 (Fuchs)
+        // NORD (RE via Kreuz-Dame-2) hat Karo-Neun-1
+        // OST (KONTRA) hat Pik-Bube-1 — gewinnt den Stich, faengt WESTs Fuchs
+        // SUED (KONTRA, Mensch) hat Karo-Neun-2 — spielt letzten, verliert
+        Map<SpielerPosition, List<Karte>> vorgaben = Map.of(
+            SpielerPosition.WEST, List.of(
+                karte(Farbe.KREUZ, Kartenwert.DAME, 1),
+                karte(Farbe.KARO, Kartenwert.AS, 1)
+            ),
+            SpielerPosition.NORD, List.of(
+                karte(Farbe.KREUZ, Kartenwert.DAME, 2),
+                karte(Farbe.KARO, Kartenwert.NEUN, 1)
+            ),
+            SpielerPosition.OST, List.of(
+                karte(Farbe.PIK, Kartenwert.BUBE, 1)
+            ),
+            SpielerPosition.SUED, List.of(
+                karte(Farbe.KARO, Kartenwert.NEUN, 2)
+            )
+        );
+        UUIDs ids = transactionTemplate.execute(status -> {
+            TischEntity tisch = tischMitSpielernUnique(false);
+            // Korrekt interleavtes Deck damit WEST wirklich Karo-As-1 bekommt
+            Spiel domainSpiel = gesundesStichspielInterleavt(spielregeln, vorgaben);
+            // Drei Karten direkt ueber Domain spielen: WEST (Fuchs), NORD (schwaech. Trumpf), OST (staerk. Trumpf, gewinnt)
+            domainSpiel = domainSpiel.spieleKarte(SpielerPosition.WEST, karte(Farbe.KARO, Kartenwert.AS, 1)).neuerStand();
+            domainSpiel = domainSpiel.spieleKarte(SpielerPosition.NORD, karte(Farbe.KARO, Kartenwert.NEUN, 1)).neuerStand();
+            domainSpiel = domainSpiel.spieleKarte(SpielerPosition.OST, karte(Farbe.PIK, Kartenwert.BUBE, 1)).neuerStand();
+            // Jetzt ist SUED (Mensch) dran — Stich hat 3 Karten, OST fuehrt
+            tisch.setzePartie(partieMitSpiel(domainSpiel, 1));
+            TischEntity gespeichert = tischRepository.saveAndFlush(tisch);
+            return new UUIDs(gespeichert.id(), gespeichert.partie().id());
+        });
+
+        // SUED spielt letzte Karte des Stichs → Stich komplett, OST gewinnt, FuchsGefangen (OST faengt WESTs Fuchs)
+        transactionTemplate.executeWithoutResult(status -> {
+            TischEntity tisch = tischRepository.findById(TischId.von(ids.tischId())).orElseThrow();
+            SpielerEntity sued = tisch.spieler().stream().filter(s -> !s.istKi()).findFirst().orElseThrow();
+            spielAktionsService.spieleKarte(TischId.von(ids.tischId()), sued, "KARO-NEUN-2");
+        });
+
+        // Nach spieleKarte muss die KI den Aufspieler-Zug (OST) im neuen Stich automatisch gespielt haben.
+        // Spielreihenfolge im 2. Stich: OST (Aufspieler) → SUED (2., Mensch) → WEST → NORD
+        transactionTemplate.executeWithoutResult(status -> {
+            TischEntity tisch = tischRepository.findById(TischId.von(ids.tischId())).orElseThrow();
+            PartieStandAntwort stand = PartieStandAntwort.aus(tisch, tisch.spieler().getFirst().id());
+
+            assertNotNull(stand.laufendesSpiel(),
+                "Das Spiel muss noch laufen — der zweite Stich hat begonnen.");
+            assertEquals(SpielerPosition.SUED, stand.laufendesSpiel().aktuellerSpieler(),
+                "KI muss nach Fuchs-Gefangen-Stich (OST gewinnt als KI) den Aufspieler-Zug (OST) im neuen Stich " +
+                "ausgeführt haben. Wenn NaechsterSpielerErwartet nicht getriggert wird (B1), ist statt SUED " +
+                "noch OST als Aufspieler erwartet.");
+            assertEquals(1, stand.laufendesSpiel().aktuelleStichmitte().size(),
+                "Im zweiten Stich liegt genau OSTs Aufspieler-Karte; SUED ist jetzt als 2. Spieler dran (B1-Regression).");
+        });
+    }
+
+    /**
+     * Wie {@link #gesundesStichspiel}, aber mit korrekt interleavtem Deck, sodass die vorgegebenen
+     * Karten tatsaechlich bei den zugewiesenen Positionen landen.
+     */
+    private Spiel gesundesStichspielInterleavt(Spielregeln spielregeln, Map<SpielerPosition, List<Karte>> vorgaben) {
+        List<Karte> restkarten = new ArrayList<>(Kartendeck.neu(spielregeln).karten());
+        EnumMap<SpielerPosition, List<Karte>> volleHaende = new EnumMap<>(SpielerPosition.class);
+        for (SpielerPosition pos : SpielerPosition.standardReihenfolge()) {
+            List<Karte> hand = new ArrayList<>(vorgaben.getOrDefault(pos, List.of()));
+            hand.forEach(restkarten::remove);
+            volleHaende.put(pos, hand);
+        }
+        for (SpielerPosition pos : SpielerPosition.standardReihenfolge()) {
+            while (volleHaende.get(pos).size() < 12 && !restkarten.isEmpty()) {
+                volleHaende.get(pos).add(restkarten.removeFirst());
+            }
+        }
+        List<Karte> deckKarten = deckReihenfolgeFuerHaende(volleHaende);
+        Kartendeck deck = Kartendeck.ausKarten(deckKarten);
+        Spiel spiel = Spiel.neu(SpielerPosition.SUED, spielregeln, deck).teileKartenAus();
+        for (SpielerPosition position : SpielerPosition.imUhrzeigersinnAb(SpielerPosition.WEST)) {
+            spiel = spiel.meldeVorbehalt(position, VorbehaltAnsage.GESUND);
+        }
+        return spiel.loeseVorbehalteAuf();
+    }
+
     private Spiel gesundesHochzeitSpiel(Spielregeln spielregeln, Map<SpielerPosition, List<Karte>> haende) {
         List<Karte> alleKarten = new ArrayList<>(Kartendeck.neu(spielregeln).karten());
         List<Karte> bereitsVerwendete = haende.values().stream().flatMap(List::stream).toList();
