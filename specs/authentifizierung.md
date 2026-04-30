@@ -2,7 +2,7 @@
 
 | Feld           | Wert                                                        |
 |----------------|-------------------------------------------------------------|
-| Status         | Zu implementieren                                           |
+| Status         | Abgeschlossen (V1)                                          |
 | Priorität      | Hoch — Blocker für echten Multiplayer                       |
 | Abhängigkeiten | spieler-profil.md, datenbankmodell.md, spieler-session.md   |
 
@@ -127,3 +127,20 @@ das `@PreAuthorize`-Interface bleibt gleich, nur das dahinterliegende `@Componen
 - `SecurityConfig`: `http.oauth2Login()` + `http.formLogin()` parallel konfiguriert.
 - OAuth2 Callback-URL: `/login/oauth2/code/google` (Spring Security Standard).
 - `Spieler.findOrCreateByOauth2(sub, email, name)` — idempotent, safe für parallele Aufrufe.
+
+## Implementierungsnotizen (Stand 2026-04-30)
+
+**V1 vollständig implementiert.** Alle DoD-Punkte erfüllt:
+
+- `SecurityConfig.java` — OAuth2-Login (Google) + Formular-Login parallel konfiguriert;
+  CSRF für SPA deaktiviert; Session-Fixation-Schutz aktiv.
+- `PasswortKonfiguration.java` — `BCryptPasswordEncoder` mit Kostenfaktor 12.
+- `OAuth2ErfolgsHandler.java` — erstellt/findet Spieler per OAuth2-Subject-ID nach
+  erfolgreichem Google-Login.
+- `AuthentifizierungsController.java` — `/api/auth` für Registrierung und Passwort-Login.
+- `SpielerEntity.java` — enthält `authentifizierungsMethode`, `externalId`, `benutzername`,
+  `passwortHash`, `email`; Factory-Methoden `mitPasswort()` und `mitOauth2()`.
+- `LoginSzene.ts` — Frontend-Loginscreen mit Google- und Passwort-Login vor
+  SpielverwaltungsSzene.
+
+**V2-Items (bewusst zurückgestellt):** Gast-Modus, Passwort-Reset.

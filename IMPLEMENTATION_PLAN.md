@@ -132,13 +132,12 @@ Neuer Test: "Toast: Meldung wird nach Anzeige quittiert" in `TischSzene.test.ts`
 
 ## P3 — Spec-Korrekturen (Inkonsistenzen Spec ↔ Code)
 
-### S1: authentifizierung.md — Status aktualisieren
+### ~~S1: authentifizierung.md — Status aktualisieren~~ ✅ ERLEDIGT
 
-**Befund:** `authentifizierung.md` hat Status „Zu implementieren", aber OAuth2 (Google) +
-Passwort-Auth + SpielerEntity sind vollständig implementiert.
-
-**Aktion:** Spec lesen, tatsächlichen Implementierungsumfang prüfen, Status auf
-„Abgeschlossen" oder „Aktive Vorgabe" setzen und Implementierungsnotizen ergänzen.
+**Ergebnis:** Status auf „Abgeschlossen (V1)" aktualisiert. Implementierungsnotizen ergänzt:
+`SecurityConfig.java`, `PasswortKonfiguration.java`, `OAuth2ErfolgsHandler.java`,
+`AuthentifizierungsController.java`, `SpielerEntity.java` (mit allen Auth-Feldern),
+`LoginSzene.ts`. V2-Items (Gast-Modus, Passwort-Reset) explizit als zurückgestellt markiert.
 
 ---
 
