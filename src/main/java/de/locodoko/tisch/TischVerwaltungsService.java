@@ -249,14 +249,17 @@ public class TischVerwaltungsService {
         }
         Partie partie = Partie.neuePersistenz(tisch.konfiguration().anzahlSpiele());
         partie.fuegeSpielHinzu(erzeugeErstesSpiel(tisch));
-        tisch.setzePartie(partie);
+        Partie gespeichertePartie = partieRepository.saveAndFlush(partie);
+        tisch.setzePartie(gespeichertePartie);
         TischEntity gespeicherterTisch = tischRepository.saveAndFlush(tisch);
+        gespeicherterTisch.setzePartieTransient(gespeichertePartie);
         eventPublisher.publishEvent(new KiUebernahmeEreignis(TischId.von(gespeicherterTisch.id())));
         gespeicherterTisch = tischRepository.saveAndFlush(gespeicherterTisch);
+        gespeicherterTisch.setzePartieTransient(gespeichertePartie);
         TischAntwort antwort = TischAntwort.aus(gespeicherterTisch);
         veroeffentlicheTischAktualisierung(
             TischlisteEreignisAntwort.aktualisiert(listeOffeneTische()),
-            TischEreignisAntwort.aktualisiert(TischEreignisTyp.SPIEL_GESTARTET, antwort)
+            TischEreignisAntwort.spielGestartet(antwort, PartieStandAntwort.aus(gespeicherterTisch))
         );
         veroeffentlichePartieAktualisierung(gespeicherterTisch);
         return antwort;
@@ -325,14 +328,17 @@ public class TischVerwaltungsService {
             });
         Partie neuePartie = Partie.neuePersistenz(tisch.konfiguration().anzahlSpiele());
         neuePartie.fuegeSpielHinzu(erzeugeErstesSpiel(tisch));
-        tisch.setzePartie(neuePartie);
+        Partie gespeichertePartie = partieRepository.saveAndFlush(neuePartie);
+        tisch.setzePartie(gespeichertePartie);
         TischEntity gespeicherterTisch = tischRepository.saveAndFlush(tisch);
+        gespeicherterTisch.setzePartieTransient(gespeichertePartie);
         eventPublisher.publishEvent(new KiUebernahmeEreignis(TischId.von(gespeicherterTisch.id())));
         gespeicherterTisch = tischRepository.saveAndFlush(gespeicherterTisch);
+        gespeicherterTisch.setzePartieTransient(gespeichertePartie);
         TischAntwort tischAntwort = TischAntwort.aus(gespeicherterTisch);
         veroeffentlicheTischAktualisierung(
             TischlisteEreignisAntwort.aktualisiert(listeOffeneTische()),
-            TischEreignisAntwort.aktualisiert(TischEreignisTyp.SPIEL_GESTARTET, tischAntwort)
+            TischEreignisAntwort.spielGestartet(tischAntwort, PartieStandAntwort.aus(gespeicherterTisch))
         );
         veroeffentlichePartieAktualisierung(gespeicherterTisch);
     }
@@ -406,14 +412,17 @@ public class TischVerwaltungsService {
         }
         Partie partie = Partie.neuePersistenz(tisch.konfiguration().anzahlSpiele());
         partie.fuegeSpielHinzu(erzeugeErstesSpiel(tisch));
-        tisch.setzePartie(partie);
+        Partie gespeichertePartie = partieRepository.saveAndFlush(partie);
+        tisch.setzePartie(gespeichertePartie);
         TischEntity gespeicherterTisch = tischRepository.saveAndFlush(tisch);
+        gespeicherterTisch.setzePartieTransient(gespeichertePartie);
         eventPublisher.publishEvent(new KiUebernahmeEreignis(TischId.von(gespeicherterTisch.id())));
         gespeicherterTisch = tischRepository.saveAndFlush(gespeicherterTisch);
+        gespeicherterTisch.setzePartieTransient(gespeichertePartie);
         TischAntwort antwort = TischAntwort.aus(gespeicherterTisch);
         veroeffentlicheTischAktualisierung(
             TischlisteEreignisAntwort.aktualisiert(listeOffeneTische()),
-            TischEreignisAntwort.aktualisiert(TischEreignisTyp.SPIEL_GESTARTET, antwort)
+            TischEreignisAntwort.spielGestartet(antwort, PartieStandAntwort.aus(gespeicherterTisch))
         );
         veroeffentlichePartieAktualisierung(gespeicherterTisch);
         return antwort;

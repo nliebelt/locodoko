@@ -563,6 +563,18 @@ export class AppStore {
         const ereignis = this._eventQueue.shift()!;
         const istSnapshot = ereignis.ereignisTyp === 'SNAPSHOT';
 
+        // Bei Versionsluecke (verlorene WebSocket-Nachricht) sofort Snapshot anfordern.
+        // Pruefung MUSS vor _darfPartieStandAktualisieren() erfolgen, da diese Methode
+        // _letztePartieVersion als Seiteneffekt setzt und die Luecke dadurch unsichtbar wuerde.
+        // reconnecteTisch() leert die Queue und setzt State zurueck; das lueckenhafte Event
+        // wird verworfen — der Snapshot liefert den korrekten Stand nach.
+        if (!istSnapshot && this._letztePartieVersion >= 0 && ereignis.version > this._letztePartieVersion + 1) {
+          Logger.error(`Sequenz-Luecke erkannt! Erwartet ${this._letztePartieVersion + 1}, erhalten ${ereignis.version}`);
+          const tischId = this.zustand.aktuellerTisch?.id;
+          if (tischId) this.reconnecteTisch(tischId);
+          return;
+        }
+
         if (!this._darfPartieStandAktualisieren(ereignis.partieStand, ereignis.version)) {
           Logger.websocket('Ignoriere veraltetes PartieEreignis', {
             typ: ereignis.ereignisTyp,
@@ -570,13 +582,6 @@ export class AppStore {
             letzte: this._letztePartieVersion
           });
           continue;
-        }
-
-        // Falls wir eine Luecke in der Sequenz feststellen, koennten wir hier einen HTTP-Reload triggern.
-        // Aktuell verlassen wir uns darauf, dass WebSockets in-order liefern.
-        if (!istSnapshot && ereignis.version > this._letztePartieVersion + 1) {
-          Logger.error(`Sequenz-Luecke erkannt! Erwartet ${this._letztePartieVersion + 1}, erhalten ${ereignis.version}`);
-          // TODO: this.reconnecteTisch(this.zustand.aktuellerTisch!.id);
         }
 
         this._aktuelleSequenzId++; // Neue Sequenz fuer jedes Event (Animation-Guard)

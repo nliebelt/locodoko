@@ -519,6 +519,71 @@ describe('AppStore', () => {
     expect(store.snapshot().partieStand).toStrictEqual(spiel2Stand);
   });
 
+  it('Self-Healing: fordert automatisch Snapshot an wenn Versionsluecke erkannt wird', async () => {
+    // Wichtig: Bei verlorenem WebSocket-Batch (z.B. v2 fehlt, v3 trifft ein) darf der Store
+    // keinen inkonsistenten State anzeigen. reconnecteTisch() wird automatisch aufgerufen,
+    // das lueckenhafte Event verworfen — der Snapshot liefert den korrekten Stand.
+    const echtzeit = new FakeEchtzeit();
+    const tisch = baueTisch('tisch-selfheal');
+    const store = new AppStore(
+      new FakeApi(
+        { spielerId: 'spieler-1', name: 'Nora', istKi: false, aktiverTischId: null },
+        [],
+        tisch
+      ) as SpielverwaltungApi,
+      echtzeit
+    );
+    store.setzeKiKartenVerzögerung(5);
+    await store.initialisieren();
+    await store.betreteTisch(tisch.id);
+
+    const t1 = new Date(1000).toISOString();
+    const t2 = new Date(2000).toISOString();
+    const t3 = new Date(3000).toISOString();
+
+    // Partie-Abo via SPIEL_GESTARTET aufbauen
+    echtzeit.emit('/user/queue/tisch/tisch-selfheal', {
+      timestamp: t1, ereignisTyp: 'SPIEL_GESTARTET',
+      tischId: 'tisch-selfheal',
+      tisch: { ...tisch, status: 'IM_SPIEL', partieId: 'partie-selfheal' },
+      partieStand: null
+    });
+
+    const standV1 = {
+      partieId: 'partie-selfheal', version: 1, status: 'LAUFEND',
+      anzahlSpiele: 8, gespielteSpiele: 0, gesamtpunktestand: { SUED: 0 },
+      laufendesSpiel: { spielNummer: 1, hochzeitGeklaert: false, schweinchenGemeldetVon: null, spieler: [], aktuelleStichmitte: [], spielbareKarten: [] }
+    } as unknown as PartieEreignisAntwort;
+
+    // Version 1 → normal verarbeitet
+    echtzeit.emit('/user/queue/partie/partie-selfheal', {
+      timestamp: t2, ereignisTyp: 'KARTE_GESPIELT', version: 1,
+      partieStand: standV1, spielerPosition: 'WEST', karteId: 'KREUZ-AS-1',
+    } as unknown as PartieEreignisAntwort);
+
+    await new Promise<void>((r) => setTimeout(r, 20));
+
+    const sendungenVorLuecke = echtzeit.sendungen.length;
+
+    // Version 3 ohne Version 2 → Lücke erkannt → reconnect
+    echtzeit.emit('/user/queue/partie/partie-selfheal', {
+      timestamp: t3, ereignisTyp: 'KARTE_GESPIELT', version: 3,
+      partieStand: { ...standV1, version: 3 } as unknown as PartieEreignisAntwort,
+      spielerPosition: 'NORD', karteId: 'PIK-BUBE-1',
+    } as unknown as PartieEreignisAntwort);
+
+    await new Promise<void>((r) => setTimeout(r, 20));
+
+    // Snapshot-Anforderung muss nach der Lueckenerkennung gesendet worden sein
+    expect(echtzeit.sendungen.length).toBeGreaterThan(sendungenVorLuecke);
+    expect(echtzeit.sendungen).toEqual(expect.arrayContaining([
+      expect.objectContaining({ ziel: '/app/tisch/tisch-selfheal/snapshot' })
+    ]));
+
+    // State muss zurueckgesetzt sein (aktuellerTisch null bis Snapshot eintrifft)
+    expect(store.snapshot().aktuellerTisch).toBeNull();
+  });
+
   it('aktualisiert Tischliste reaktiv via WebSocket-Event auf /topic/tische', async () => {
     // Wichtig: Die Lobby-Liste muss sich in Echtzeit aktualisieren, wenn andere Spieler
     // Tische erstellen oder verlassen. Der AppStore abonniert /topic/tische und aktualisiert

@@ -5,6 +5,17 @@
 
 ---
 
+## Archiviert am 2026-04-30 (Plan-Run #96)
+
+> Inhalt des IMPLEMENTATION_PLAN.md Stand Plan-Run #96. Alle Aufgaben (Bugs, Features, Specs) erledigt.
+
+### Zusammenfassung Plan-Run #96
+- P1-BUGS: Alle kritischen Bugs (KI-Hänger, Schweinchen, Reload-State, Animation-Race) behoben.
+- P2-FEATURES: Fehlende UI-Elemente (Armut, Bockrunden-Animation, Toasts, Fonts, CSS) validiert/vervollständigt.
+- P3-SPECS: Alle Sonderspiel-Specs auf "Implementiert" aktualisiert. Authentifizierung-Spec auf "Abgeschlossen".
+
+---
+
 ## Archiviert am 2026-04-28 (Plan-Run #88)
 
 > Inhalt des IMPLEMENTATION_PLAN.md Stand Plan-Run #88. Alle Aufgaben (Phasen 1-5, UI, Backlog, Specs) erledigt.
@@ -295,7 +306,7 @@ Ausstehend — Plan-Run noch nicht ausgeführt.
 - [x] **BUG-3** Animations-Queue-Aufstauung (Frontend) — `spielzugAnimationAktiv`-Flag entfernt, `AnimationenService.reiheEin()` genutzt
 - [x] **BUG-4** Browser-Reload zeigt alten State (Frontend) — Overlay-Reset in `TischSzene.create()`
 - [x] **BUG-5** DKV-Turnier-Preset: Spiel schließt nicht ab
-- [x] **BF-6** Tastatur-Shortcuts für Ansagen und Armut (R/K/1-4 für Ansagen, A/N für Armut)
+- [x] **BF-6** Tastatur-Shortcuts for Ansagen und Armut (R/K/1-4 für Ansagen, A/N für Armut)
 - [x] **BF-7** Session-Recovery Snapshot-Endpoint (`/app/tisch/{id}/snapshot`)
 - [x] **BF-8** Schmeißen-Recht 1× pro Spiel tracken (`Set<SpielerPosition> bereitsGeschmissen` in `Spiel`, Liquibase Changeset 017)
 
