@@ -69,3 +69,13 @@ Damen-/Buben-/Farb-/Fleischlos-Solo) sind ausgeschlossen.
   weitergegeben — kein weiterer Anpassungsbedarf in `Stich` oder `PunkteRechner`.
 - `trumpfOrdnungFuer(HOCHZEIT/ARMUT)` → immer `NormaleTrumpfOrdnung` (kein Schweinchen).
 - `nimmArmutAn()` → immer `NormaleTrumpfOrdnung` nach Kartentausch (kein Schweinchen in Armut).
+
+## Implementierungsnotizen (Stand 2026-04-30)
+
+**Backend vollständig implementiert.**
+
+- `karten/SchweinchenTrumpfOrdnung.java` — Decorator über NormaleTrumpfOrdnung; erhöht Karo-As-Ränge auf 14/15
+- `karten/Spielregeln.java` — `schweinchenAktiv` steuert Aktivierung
+- `partie/Spiel.java` — Erkennung in `teileKartenAus()`; Ausschluss aller Solo-Varianten außer SOLO_TRUMPF
+
+Bekannter Bug (2026-04-15): `SchweinchenTrumpfOrdnung`-Aktivierung in `teileKartenAus()` prüfen — Schweinchen zeigt derzeit keine Wirkung im Spielbetrieb.

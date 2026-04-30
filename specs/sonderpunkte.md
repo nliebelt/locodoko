@@ -2,7 +2,7 @@
 
 | Feld           | Wert                                        |
 |----------------|---------------------------------------------|
-| Status         | Zu prüfen |
+| Status         | Implementiert |
 | Priorität      | Mittel                                      |
 | Abhängigkeiten | kartendeck.md, stichlogik.md, trumpfhierarchie.md |
 
@@ -68,3 +68,13 @@ Sonderpunkte sind zusätzliche Spielpunkte, die für besondere Ereignisse währe
 - Methoden: `pruefeFuchsGefangen(Stich, Parteien)`, `pruefeKarlchen(letzterStich)`, `pruefeDoppelkopf(Stich)`
 - Die Ergebnisse werden an die `Punkteberechnung` übergeben
 - Der Sonderpunkt „Karlchen" erfordert Wissen über den letzten Stich — dieser muss markiert oder erkennbar sein
+
+## Implementierungsnotizen (Stand 2026-04-30)
+
+**Backend vollständig implementiert.**
+
+- `partie/SonderpunktBewerter.java` — analysiert alle Stiche; implementiert Fuchs, Karlchen und Doppelkopf
+- `partie/Partie.java` — ruft `SonderpunktBewerter` bei `schliesseAktuellesSpielAb()` auf
+- `karten/Spielregeln.java` — einzelne Sonderpunkte per Flag aktivierbar/deaktivierbar
+
+Bekannter Bug (2026-04-15): KI hängt nach Fuchs gefangen — `NaechsterSpielerErwartet`-Event wird nach Sonderpunkt-Auswertung möglicherweise nicht korrekt getriggert.

@@ -2,7 +2,7 @@
 
 | Feld           | Wert                                        |
 |----------------|---------------------------------------------|
-| Status         | Zu prüfen |
+| Status         | Implementiert |
 | Priorität      | Mittel                                      |
 | Abhängigkeiten | kartendeck.md, trumpfhierarchie.md, stichlogik.md, spielablauf.md |
 
@@ -59,3 +59,13 @@ Findet sich innerhalb der ersten 3 Klärungsstiche kein Partner (d.h. der Hochze
 - Partnerfindung ist ein atomarer Zustandsübergang in der DB: Beim Klärungsstich werden Partei-Zugehörigkeit und HochzeitStatus in derselben Transaktion geschrieben und die Version inkrementiert.
 - Event `PartnerGefunden` wird erst nach erfolgreichem DB-Commit über `@TransactionalEventListener(phase = AFTER_COMMIT)` ans Frontend gesendet.
 - Die Partnerfindung beeinflusst die Partei-Zugehörigkeit für die Punkteberechnung
+
+## Implementierungsnotizen (Stand 2026-04-30)
+
+**Backend vollständig implementiert.**
+
+- `partie/HochzeitStatus.java` — Zustandsautomat: PARTNER_GESUCHT → PARTNER_GEFUNDEN → STILLES_SOLO
+- `karten/Spieltyp.java` — enthält HOCHZEIT als eigenen Spieltyp
+- `partie/Partie.java` — Klärungsstich-Logik, Partei-Zuweisung nach Partnerfindung
+
+Keine bekannten Lücken; stilles Solo und Klärungsstich-Frist (3 Stiche) sind implementiert.

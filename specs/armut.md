@@ -2,7 +2,7 @@
 
 | Feld           | Wert                                        |
 |----------------|---------------------------------------------|
-| Status         | Zu prüfen |
+| Status         | Implementiert |
 | Priorität      | Mittel                                      |
 | Abhängigkeiten | kartendeck.md, trumpfhierarchie.md, spielablauf.md |
 
@@ -57,3 +57,13 @@ Die Armut (auch „Trumpfarmut") ist ein Sonderspiel, bei dem ein Spieler mit se
 - WebSocket-Events für Angebot und Annahme/Ablehnung werden erst nach erfolgreichem DB-Commit gesendet (`@TransactionalEventListener(phase = AFTER_COMMIT)`).
 - Die Tauschkarten müssen serverseitig validiert werden (Anzahl, Besitz)
 - Der Armut-Spieler sieht die zurückgegebenen Karten, der aufnehmende Spieler sieht die angebotenen Karten
+
+## Implementierungsnotizen (Stand 2026-04-30)
+
+**Backend vollständig implementiert.**
+
+- `partie/ArmutStatus.java` — Zustandsautomat für Angebot, Annahme, Ablehnung und Einwurf
+- `karten/Spieltyp.java` — enthält ARMUT als eigenen Spieltyp
+- `partie/Partie.java` — Kartentausch-Logik und Einwurf-Behandlung
+
+Einwurf-Bockrunden (Anforderung 9) per Konfiguration steuerbar; keine bekannten Lücken.

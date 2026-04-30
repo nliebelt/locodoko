@@ -1,21 +1,23 @@
 # IMPLEMENTATION_PLAN — Locodoko Doppelkopf
 
 ## Notiz
-Stand: 2026-04-30 (Plan-Run #95 — F6 implementiert, F1–F6 alle erledigt)
+Stand: 2026-04-30 (Plan-Run #96 — S1 + S2 erledigt, alle P3-Specs aktualisiert)
 
-**Was wurde implementiert:** F6 (Toast-Notifications spec-konform korrigiert).
+**Was wurde implementiert:** S1 + S2 (Spec-Korrekturen P3).
 
-Drei Spec-Verstöße in `ToastManager.ts` + `TischSzene.ts` behoben:
-1. Toast-Position: zentriert → **oben rechts** (rechte Kante mit 16px Abstand)
-2. Toast-Duration: 3000ms → **4000ms** (Spec: 4 Sekunden)
-3. Dedup-Bug: `appStore.quittiereMeldung()` nach `toastManager.zeige()` → verhindert Toast-Spam.
-Nebenentdeckung: F1–F5 waren bereits vollständig implementiert (Plan-Noten veraltet).
+S1: `authentifizierung.md` auf Status „Abgeschlossen (V1)" aktualisiert.
+Implementierungsnotizen zu SecurityConfig, PasswortKonfiguration, OAuth2ErfolgsHandler,
+AuthentifizierungsController, SpielerEntity, LoginSzene.ts ergänzt.
 
-**Nächster logischer Schritt:** S1 (authentifizierung.md Status aktualisieren) oder S2
-(Sonderspiel-Specs Status-Prüfung). S1 ist schnell (nur Spec lesen + aktualisieren).
+S2: 9 Sonderspiel-Specs von „Zu prüfen" auf „Implementiert" aktualisiert:
+hochzeit, armut, solo-bube, solo-dame, solo-farbsolo, solo-fleischlos, solo-trumpf,
+bockrunden, sonderpunkte. `schweinchen.md` war bereits korrekt. Jeweils
+Implementierungsnotizen mit den konkreten Klassen ergänzt.
 
-**Offene Fragen:** WebSocket-Disconnect → Toast ist noch offen (verbindung-State wird
-in TischSzene nicht für Toast genutzt). Separater Task wenn gewünscht.
+**Nächster logischer Schritt:** Alle P1/P2/P3-Aufgaben erledigt. Mögliche neue Themen:
+WebSocket-Disconnect → Toast (aus Offene Fragen), oder neue Feature-Aufgaben definieren.
+
+**Offene Fragen:** WebSocket-Disconnect → Toast ist noch offen.
 
 ---
 
@@ -141,15 +143,19 @@ Neuer Test: "Toast: Meldung wird nach Anzeige quittiert" in `TischSzene.test.ts`
 
 ---
 
-### S2: Sonderspiel-Specs — Status-Prüfung
+### ~~S2: Sonderspiel-Specs — Status-Prüfung~~ ✅ ERLEDIGT
 
-**Befund:** `hochzeit.md`, `armut.md`, `solo-bube.md`, `solo-dame.md`, `solo-farbsolo.md`,
-`solo-fleischlos.md`, `solo-trumpf.md`, `schweinchen.md`, `bockrunden.md`, `sonderpunkte.md`
-— alle noch Status „Zu prüfen", obwohl Backend ~85% implementiert ist.
-
-**Aktion:** Jede Spec lesen, gegen Code-Implementation gegenchecken, Status aktualisieren.
-Konkrete Lücken (z.B. Frontend-Feedback, Bockrunden-Multiplikation) als eigene Aufgaben
-in P1/P2 eintragen, falls noch nicht geschehen.
+**Ergebnis:** Alle 9 offenen Specs auf „Implementiert" aktualisiert (`schweinchen.md` war bereits korrekt).
+Implementierungsnotizen mit konkreten Klassen ergänzt:
+- `hochzeit.md` → `HochzeitStatus.java`, `Spieltyp.java`, `Partie.java`
+- `armut.md` → `ArmutStatus.java`, `Spieltyp.java`, `Partie.java`
+- `solo-bube.md` → `BubensoloTrumpfOrdnung.java`
+- `solo-dame.md` → `DamensoloTrumpfOrdnung.java`
+- `solo-farbsolo.md` → `VariableTrumpfsoloTrumpfOrdnung.java`
+- `solo-fleischlos.md` → `FleischlosTrumpfOrdnung.java`
+- `solo-trumpf.md` → `WertSoloTrumpfOrdnung.java`
+- `bockrunden.md` → `Partie.java` (bockrundenZaehler + Multiplikator)
+- `sonderpunkte.md` → `SonderpunktBewerter.java`
 
 ---
 

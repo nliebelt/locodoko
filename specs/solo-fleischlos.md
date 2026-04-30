@@ -2,7 +2,7 @@
 
 | Feld           | Wert                                        |
 |----------------|---------------------------------------------|
-| Status         | Zu prüfen |
+| Status         | Implementiert |
 | Priorität      | Mittel                                      |
 | Abhängigkeiten | kartendeck.md, spielablauf.md               |
 
@@ -48,3 +48,11 @@ Beim Fleischlos-Solo gibt es keinen Trumpf. Alle Karten gehören zu ihrer jeweil
 - Eigene Implementierung des `TrumpfOrdnung`-Interfaces, bei der `istTrumpf()` immer `false` zurückgibt
 - Die Stichlogik muss diesen Fall korrekt behandeln: Kein Trumpf bedeutet, dass nur die angefragte Farbe den Stich gewinnen kann
 - Besonderheit: Damen und Buben gehören hier zu ihrer Farbe und stehen in der normalen Rangfolge
+
+## Implementierungsnotizen (Stand 2026-04-30)
+
+**Backend vollständig implementiert.**
+
+- `karten/FleischlosTrumpfOrdnung.java` — `istTrumpf()` gibt immer `false` zurück; 4 vollständige Fehlfarben
+- `karten/Spieltyp.java` — enthält SOLO_FLEISCHLOS als Spieltyp
+- `karten/Spielregeln.java` — Aktivierung über dediziertes Flag; Stichlogik behandelt trumpflose Spiele korrekt

@@ -2,7 +2,7 @@
 
 | Feld           | Wert                                        |
 |----------------|---------------------------------------------|
-| Status         | Zu prüfen |
+| Status         | Implementiert |
 | Priorität      | Mittel                                      |
 | Abhängigkeiten | kartendeck.md, trumpfhierarchie.md, spielablauf.md |
 
@@ -45,3 +45,11 @@ Beim Trumpfsolo gelten die gleichen Trümpfe wie im Normalspiel, aber der Solo-S
 - Das Trumpfsolo kann die gleiche `TrumpfOrdnung` wie das Normalspiel verwenden
 - Der einzige Unterschied zum Normalspiel ist die Parteibildung: Die Partei wird nicht über Kreuz-Damen bestimmt, sondern der Solo-Spieler steht alleine
 - Daher primär ein eigener `Spieltyp` mit entsprechender Partei-Logik, aber gemeinsamer Trumpfordnung
+
+## Implementierungsnotizen (Stand 2026-04-30)
+
+**Backend vollständig implementiert.**
+
+- `karten/WertSoloTrumpfOrdnung.java` — wiederverwendet die normale Trumpfhierarchie für das Trumpfsolo
+- `karten/Spieltyp.java` — enthält SOLO_TRUMPF als Spieltyp
+- `partie/Partie.java` — Partei-Bildung: Solo-Spieler = Re, alle anderen = Kontra (von Anfang an klar)

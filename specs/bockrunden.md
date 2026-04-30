@@ -2,7 +2,7 @@
 
 | Feld           | Wert                                                      |
 |----------------|-----------------------------------------------------------|
-| Status         | Zu prüfen |
+| Status         | Implementiert |
 | Priorität      | Mittel                                                    |
 | Abhängigkeiten | spielablauf.md, punkteberechnung.md, stichlogik.md        |
 
@@ -119,3 +119,12 @@ der `TischSzene` verdrahtet werden.
   (Herz-As oder Herz-König, kein Trumpf gemäß `TrumpfOrdnung`).
 - „Verlorenes Kontra": `ergebnis.siegerPartei() == RE && ansagen.hatGrundansage(KONTRA, parteien)`.
 - Persistenz: `bockrunden_zaehler INTEGER NOT NULL DEFAULT 0` in der `partie`-Tabelle.
+
+## Implementierungsnotizen (Stand 2026-04-30)
+
+**Backend vollständig implementiert.**
+
+- `partie/Partie.java` — `bockrundenZaehler`-Feld, Multiplikation in `schliesseAktuellesSpielAb()`, beide Trigger
+- `karten/Spielregeln.java` — `bockrundenAktiv` steuert Aktivierung global und pro Trigger
+
+Frontend: `animiereBockrunde(anzahl)` laut DoD verdrahtet; serielle Animations-Queue noch als offener Bug bekannt.

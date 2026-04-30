@@ -2,7 +2,7 @@
 
 | Feld           | Wert                                        |
 |----------------|---------------------------------------------|
-| Status         | Zu prüfen |
+| Status         | Implementiert |
 | Priorität      | Mittel                                      |
 | Abhängigkeiten | kartendeck.md, trumpfhierarchie.md, spielablauf.md |
 
@@ -53,3 +53,11 @@ Beim Bubensolo sind ausschließlich die Buben Trumpf. Alle anderen Karten (einsc
 - Eigene Implementierung des `TrumpfOrdnung`-Interfaces für Bubensolo
 - Analog zum Damensolo: 4 vollständige Fehlfarben, nur Buben als Trumpf
 - Damen werden bei der Fehlfarben-Rangfolge eingeordnet (As > Zehn > König > Dame > Neun)
+
+## Implementierungsnotizen (Stand 2026-04-30)
+
+**Backend vollständig implementiert.**
+
+- `karten/BubensoloTrumpfOrdnung.java` — TrumpfOrdnung mit nur Buben als Trumpf, 4 vollständige Fehlfarben
+- `karten/Spieltyp.java` — enthält SOLO_BUBE als Spieltyp
+- `karten/Spielregeln.java` — steuert Aktivierung via soloTrumpfAktiv / dediziertes Flag

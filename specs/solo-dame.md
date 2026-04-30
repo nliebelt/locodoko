@@ -2,7 +2,7 @@
 
 | Feld           | Wert                                        |
 |----------------|---------------------------------------------|
-| Status         | Zu prüfen |
+| Status         | Implementiert |
 | Priorität      | Mittel                                      |
 | Abhängigkeiten | kartendeck.md, trumpfhierarchie.md, spielablauf.md |
 
@@ -53,3 +53,11 @@ Beim Damensolo sind ausschließlich die Damen Trumpf. Alle anderen Karten (einsc
 - Eigene Implementierung des `TrumpfOrdnung`-Interfaces für Damensolo
 - Beim Damensolo gibt es 4 vollständige Fehlfarben (inkl. Karo), da nur Damen Trumpf sind
 - Die Bedienpflicht ändert sich: Karo-As, Karo-Zehn etc. sind Karo-Fehl, nicht Trumpf
+
+## Implementierungsnotizen (Stand 2026-04-30)
+
+**Backend vollständig implementiert.**
+
+- `karten/DamensoloTrumpfOrdnung.java` — TrumpfOrdnung mit nur Damen als Trumpf, 4 vollständige Fehlfarben
+- `karten/Spieltyp.java` — enthält SOLO_DAME als Spieltyp
+- `karten/Spielregeln.java` — steuert Aktivierung; Buben sind Fehlkarten in normaler Rangfolge

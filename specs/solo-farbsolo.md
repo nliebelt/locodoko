@@ -2,7 +2,7 @@
 
 | Feld           | Wert                                                              |
 |----------------|-------------------------------------------------------------------|
-| Status         | Zu prüfen |
+| Status         | Implementiert |
 | Priorität      | Mittel                                                            |
 | Abhängigkeiten | kartendeck.md, trumpfhierarchie.md, spielablauf.md, ki-strategie.md |
 
@@ -62,3 +62,11 @@ Die KI (Standard- und SchwerKiStrategie) bewertet alle drei Farbsolos in der Vor
 - **Bounded Context**: `karten` (Trumpfordnung), `partie` (KI, Spieltyp)
 - `VariableTrumpfsoloTrumpfOrdnung(Farbe trumpfFarbe, Spielregeln spielregeln)` — Parameter bestimmt die Trumpffarbe
 - Im Gegensatz zu Normalspiel und Trumpfsolo gibt es im Farbsolo **keine Dulle** (Herz-Zehn verliert ihre Sonderfunktion wenn Herz Trumpffarbe ist; in Pik/Kreuz-Solo ist sie ohnehin kein Sondertrumpf)
+
+## Implementierungsnotizen (Stand 2026-04-30)
+
+**Backend vollständig implementiert.**
+
+- `karten/VariableTrumpfsoloTrumpfOrdnung.java` — parametrisierte TrumpfOrdnung für Herz-, Pik- und Kreuz-Solo
+- `karten/Spieltyp.java` — enthält SOLO_TRUMPF_HERZ, SOLO_TRUMPF_PIK, SOLO_TRUMPF_KREUZ
+- `karten/Spielregeln.java` — Aktivierung über `soloTrumpfAktiv()`; KI-Bewertung in StandardKiStrategie
