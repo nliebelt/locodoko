@@ -573,6 +573,7 @@ export class TischSzene extends Phaser.Scene {
         text: zustand.meldung.text,
         typ: zustand.meldung.typ === 'fehler' ? 'fehler' : 'info'
       });
+      appStore.quittiereMeldung();
     }
     // Countdown-Anzeige im Partie-Ende-Modal aktualisieren
     if (this.partieEndeModal && !this.partieEndeModal.hidden) {

@@ -1,32 +1,21 @@
 # IMPLEMENTATION_PLAN — Locodoko Doppelkopf
 
 ## Notiz
-Stand: 2026-04-30 (Plan-Run #94 — B4 abgeschlossen)
+Stand: 2026-04-30 (Plan-Run #95 — F6 implementiert, F1–F6 alle erledigt)
 
-**Was wurde implementiert:** B4 (Animations-Queue-Aufstauung bei schnellen KI-Zügen).
+**Was wurde implementiert:** F6 (Toast-Notifications spec-konform korrigiert).
 
-Race Condition behoben: In `AppStore._verarbeiteEventQueue()` wurde State gepatcht BEVOR
-die Event-Listener aufgerufen wurden. Bei `STICH_ABGESCHLOSSEN` bedeutete das:
-`triggerRender()` feuerte mit geleerte Stichmitte, bevor `reiheEin(animiereStichEinziehen)`
-`_animationLaeuft = true` setzen konnte → Ghost-Sprites auf leerem Tisch.
+Drei Spec-Verstöße in `ToastManager.ts` + `TischSzene.ts` behoben:
+1. Toast-Position: zentriert → **oben rechts** (rechte Kante mit 16px Abstand)
+2. Toast-Duration: 3000ms → **4000ms** (Spec: 4 Sekunden)
+3. Dedup-Bug: `appStore.quittiereMeldung()` nach `toastManager.zeige()` → verhindert Toast-Spam.
+Nebenentdeckung: F1–F5 waren bereits vollständig implementiert (Plan-Noten veraltet).
 
-**Fix 1 (AppStore.ts):** `_eventListener.forEach()` vor `this.patch()` verschoben.
-`_animationLaeuft` ist jetzt `true` wenn Store-Subscriber `triggerRender()` aufruft.
-Neuer Contract: Listener nutzen `ereignis.partieStand` direkt (nicht `appStore.snapshot()`).
-`try/catch` um Listener: Listener-Fehler blockieren State-Patch nicht mehr.
+**Nächster logischer Schritt:** S1 (authentifizierung.md Status aktualisieren) oder S2
+(Sonderspiel-Specs Status-Prüfung). S1 ist schnell (nur Spec lesen + aktualisieren).
 
-**Fix 2 (TischSzene.ts):** RAF-Callback prüft `animationLaeuft` erneut vor dem Render —
-verhindert veralteten Render wenn zwischen `triggerRender()`-Aufruf und RAF-Callback
-eine Animation eingereiht wurde.
-
-2 neue Tests in `AppStore.test.ts` (Reihenfolge + Behavior).
-
-**Nächster logischer Schritt:** F1 (Self-Healing Event-Queue — TODO-Kommentar in AppStore.ts
-aktivieren) oder F2 (Armut ANBIETEN-Modus prüfen).
-
-**Offene Fragen:** `_aktuelleSequenzId` wird inkrementiert aber nirgends konsumiert — war
-offenbar als Animation-Guard geplant aber nie fertig implementiert. Könnte für zukünftige
-Optimierungen genutzt werden (abgelaufene Animationen nach Sequenz-Wechsel überspringen).
+**Offene Fragen:** WebSocket-Disconnect → Toast ist noch offen (verbindung-State wird
+in TischSzene nicht für Toast genutzt). Separater Task wenn gewünscht.
 
 ---
 
@@ -88,105 +77,56 @@ Fix: Listener vor Patch + RAF-Callback Guard in `TischSzene.ts`.
 
 ## P2 — Fehlende Features
 
-### F1: Self-Healing Event-Queue im Frontend
+### ~~F1: Self-Healing Event-Queue im Frontend~~ ✅ ERLEDIGT
 
-**Anforderung:** Spec `architektur-domain-events.md` Z. 29:
-> Bei Lücken (`E > letzteVersion + 1`) fordert der Store automatisch einen HTTP-Snapshot an.
-
-**Aktueller Stand:** `AppStore.ts` Z. 577–579: Lücke wird geloggt, aber TODO-Kommentar statt
-echtem Self-Healing: `// TODO: this.reconnecteTisch(this.zustand.aktuellerTisch!.id);`
-
-**Fix:**
-```typescript
-if (!istSnapshot && ereignis.version > this._letztePartieVersion + 1) {
-  Logger.error(`Sequenz-Luecke erkannt! Erwartet ${this._letztePartieVersion + 1}, erhalten ${ereignis.version}`);
-  const tischId = this.zustand.aktuellerTisch?.id;
-  if (tischId) this.reconnecteTisch(tischId);
-  return; // Dieses Event verwerfen, Snapshot wird neu geliefert
-}
-```
-Sicherstellen dass `reconnecteTisch()` idempotent ist und keine Doppel-Reconnects auslöst.
-
-**Betroffene Dateien:** `AppStore.ts`
+**Ergebnis:** Bereits vollständig implementiert und getestet (wurde bei Plan-Erstellung übersehen).
+`AppStore.ts` Z. 571–576: TODO war schon aktiviert. `setzeTischAbosZurueck()` leert Queue +
+resettet `_letztePartieVersion = -1` → impliziter Doppel-Reconnect-Schutz via `_letztePartieVersion >= 0`-Guard.
+Test `Self-Healing: fordert automatisch Snapshot an wenn Versionsluecke erkannt wird` vorhanden.
 
 ---
 
-### F2: Armut ANBIETEN-Modus — Kartenauswahl-UI prüfen
+### ~~F2: Armut ANBIETEN-Modus — Kartenauswahl-UI prüfen~~ ✅ ERLEDIGT
 
-**Anforderung:** Spec `armut.md` vollständig lesen (Status: Zu prüfen). Der Armut-Spieler
-muss im `ANBIETEN`-Modus genau 3 Trumpfkarten auswählen und zum Tausch anbieten.
-
-**Aktueller Stand:** `renderArmutBereich()` zeigt Annehmen/Ablehnen-Buttons im `ANTWORTEN`-Modus.
-Für `ANBIETEN`-Modus: `armutAnnahmeAktiv = false` gesetzt, Karten toggle-fähig via
-`toggleArmutKarte()`. Ob ein "Anbieten"-Bestätigungs-Button und eindeutiger visueller Hinweis
-vorhanden ist, unklar.
-
-**Vorgehen:**
-1. `armut.md` vollständig lesen.
-2. `renderArmutBereich()` + `TischInputHandler.ts` für ANBIETEN-Flow nachverfolgen.
-3. Falls Lücken: UI-Elemente für ANBIETEN ergänzen.
-
-**Betroffene Dateien:** `TischSzene.ts` (`renderArmutBereich`), `TischInputHandler.ts`, `armut.md`
+**Ergebnis:** Bereits vollständig implementiert. `renderArmutBereich()` ANBIETEN-Branch zeigt
+Zähler "(X/N gewaehlt)" + "Trumpfkarten anbieten"-Button (aktiv nur bei korrekter Anzahl).
+Backend unterscheidet ANBIETEN vs. ANTWORTEN am selben `/armut-antwort`-Endpoint via
+`armutSpieler() && !angebotLiegtVor()`. Tests in `TischAnsichtModell.test.ts` vorhanden.
 
 ---
 
-### F3: Bockrunden-Zustand persistent im UI anzeigen
+### ~~F3: Bockrunden-Zustand persistent im UI anzeigen~~ ✅ ERLEDIGT
 
-**Anforderung:** Spec `frontend-tischansicht.md` (Status: Zu prüfen) — prüfen ob eine
-persistente Bockrunden-Anzeige (z.B. Indikator im HUD) gefordert ist.
-
-**Aktueller Stand:** `TischSzene.ts` Z. 403–406: Bockrunden-Animation wird nur beim
-`SPIEL_GESTARTET`-Event kurz eingeblendet. Kein persistenter UI-Indikator erkennbar.
-
-**Vorgehen:**
-1. `frontend-tischansicht.md` vollständig lesen.
-2. Falls HUD-Anzeige gefordert: kleinen Bockrunden-Counter im Tisch-HUD hinzufügen.
-
-**Betroffene Dateien:** `TischSzene.ts`, `frontend-tischansicht.md`
+**Ergebnis:** Spec `frontend-tischansicht.md` erfordert KEINE persistente HUD-Anzeige.
+Nur die 2.5-Sekunden-Animation bei `SPIEL_GESTARTET` ist spezifiziert — diese ist in
+`TischSzene.ts` Z. 416–421 korrekt implementiert (nach Austeilen-Animation, wenn
+`bockrundenZaehler > 0`). Kein weiterer Handlungsbedarf.
 
 ---
 
-### F4: Space Grotesk Schriftart laden
+### ~~F4: Space Grotesk Schriftart laden~~ ✅ ERLEDIGT
 
-**Anforderung:** Spec `frontend-visuelles-design.md` — „Space Grotesk" Schriftart.
-
-**Aktueller Stand:** Schriftart in CSS referenziert, aber nicht in `AssetLoader.ts` oder
-`main.ts` via `document.fonts.load()` oder WebFont-Loader vorgeladen.
-
-**Fix:** In `main.ts` oder `AssetLoader.ts` Space Grotesk via WebFont API vorladen, bevor
-die erste Szene gerendert wird. Font-WOFF2-Datei in `/public/assets/fonts/` ablegen.
-
-**Betroffene Dateien:** `main.ts`, `AssetLoader.ts` (falls vorhanden), CSS
+**Ergebnis:** Schriftart wird bereits via Google Fonts CDN-Link in `index.html` mit
+`display=swap` geladen. `variables.css` und Phaser-Code referenzieren sie korrekt.
 
 ---
 
-### F5: CSS Custom Properties für Farbpalette
+### ~~F5: CSS Custom Properties für Farbpalette~~ ✅ ERLEDIGT
 
-**Anforderung:** Spec `frontend-visuelles-design.md` — Farbpalette als CSS Custom Properties.
-
-**Aktueller Stand:** Hex-Werte sind hardcoded im TypeScript-Code (`TischSzene.ts` etc.).
-
-**Fix:** CSS-Variablen in `src/styles/variables.css` (oder ähnlich) definieren, in Phaser-
-Code über `getComputedStyle(document.documentElement).getPropertyValue('--farbe-xyz')` lesen.
-
-**Betroffene Dateien:** Neue CSS-Datei, `TischSzene.ts` und andere Szenen-Dateien
+**Ergebnis:** CSS Custom Properties sind vollständig in `src/css/variables.css` definiert
+(`--farbe-hintergrund`, `--farbe-surface`, etc.). Phaser-Code und CSS verwenden sie bereits.
 
 ---
 
-### F6: Toast-Notifications vollständig integrieren
+### ~~F6: Toast-Notifications vollständig integrieren~~ ✅ ERLEDIGT
 
-**Anforderung:** Spec `frontend-ui-logik.md` — Toast-Notifications für Fehlermeldungen
-und Spielereignisse.
-
-**Aktueller Stand:** `ToastManager` existiert, ist aber laut Analyse nicht vollständig
-integriert für alle Fehlermeldungen (z.B. WebSocket-Fehler, abgelehnte Aktionen).
-
-**Vorgehen:**
-1. `frontend-ui-logik.md` lesen (Status prüfen).
-2. Offene Integration-Punkte identifizieren.
-3. `AKTION_ABGELEHNT`-Events → Toast; WebSocket-Disconnect → Toast.
-
-**Betroffene Dateien:** `ToastManager.ts`, `AppStore.ts`, `TischSzene.ts`
+**Ergebnis:** Drei Spec-Verstöße behoben:
+1. **Position**: Toast von zentriert auf **oben rechts** korrigiert (16px Randabstand)
+2. **Duration**: Standard von 3000ms auf **4000ms** erhöht (Spec: 4 Sekunden)
+3. **Dedup**: `appStore.quittiereMeldung()` wird nach `toastManager.zeige()` aufgerufen —
+   verhindert Toast-Spam bei Folge-Renders wenn `meldung` im Store gesetzt bleibt.
+Neuer Test: "Toast: Meldung wird nach Anzeige quittiert" in `TischSzene.test.ts`.
+`AKTION_ABGELEHNT` → Toast läuft bereits via `/user/queue/fehler` (authoritative path).
 
 ---
 

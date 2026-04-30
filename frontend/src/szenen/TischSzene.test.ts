@@ -43,7 +43,8 @@ const appStoreHarness = vi.hoisted(() => {
       sageAnsageAn: vi.fn(),
       meldeVorbehalt: vi.fn(),
       beantworteArmut: vi.fn(),
-      starteNeuePartie: vi.fn()
+      starteNeuePartie: vi.fn(),
+      quittiereMeldung: vi.fn()
     }
   };
 });
@@ -120,7 +121,7 @@ function baueSzene(z: any) {
   const s = new (TischSzene as any)();
   aktiveSzene = s;
   const t = erstelleTweenApi();
-  Object.assign(s, { add: { existing: (o:any)=>o, tileSprite: (_x:any,_y:any,w:any,h:any,t:any)=>new FakeGameObject('tileSprite',{x:_x,y:_y,breite:w,hoehe:h,textur:t}), container: (_x:any,_y:any)=>new FakeContainer(), graphics: ()=>new FakeGameObject('graphics'), ellipse: (_x:any,_y:any,w:any,h:any)=>new FakeGameObject('ellipse',{x:_x,y:_y,breite:w,hoehe:h}), text: (_x:any,_y:any,t:any)=>new FakeGameObject('text',{x:_x,y:_y,text:t}), circle: (_x:any,_y:any)=>new FakeGameObject('circle',{x:_x,y:_y}), rectangle: (_x:any,_y:any,w:any,h:any)=>new FakeGameObject('rectangle',{x:_x,y:_y,breite:w,hoehe:h}), image: (_x:any,_y:any,t:any)=>new FakeGameObject('image',{x:_x,y:_y,textur:t}) }, scale: { gameSize: { width: 1280, height: 720 }, on: vi.fn(), off: vi.fn() }, scene: { start: vi.fn() }, tweens: t, time: { addEvent: ()=>({remove:()=>{}}) }, textures: { exists: ()=>true, addCanvas: ()=>{} }, game: { loop: { sleep: vi.fn(), wake: vi.fn() } } });
+  Object.assign(s, { add: { existing: (o:any)=>o, tileSprite: (_x:any,_y:any,w:any,h:any,t:any)=>new FakeGameObject('tileSprite',{x:_x,y:_y,breite:w,hoehe:h,textur:t}), container: (_x:any,_y:any)=>new FakeContainer(), graphics: ()=>new FakeGameObject('graphics'), ellipse: (_x:any,_y:any,w:any,h:any)=>new FakeGameObject('ellipse',{x:_x,y:_y,breite:w,hoehe:h}), text: (_x:any,_y:any,t:any)=>new FakeGameObject('text',{x:_x,y:_y,text:t}), circle: (_x:any,_y:any)=>new FakeGameObject('circle',{x:_x,y:_y}), rectangle: (_x:any,_y:any,w:any,h:any)=>new FakeGameObject('rectangle',{x:_x,y:_y,breite:w,hoehe:h}), image: (_x:any,_y:any,t:any)=>new FakeGameObject('image',{x:_x,y:_y,textur:t}) }, scale: { gameSize: { width: 1280, height: 720 }, on: vi.fn(), off: vi.fn() }, scene: { start: vi.fn() }, tweens: t, time: { addEvent: ()=>({remove:()=>{}}), delayedCall: vi.fn() }, textures: { exists: ()=>true, addCanvas: ()=>{} }, game: { loop: { sleep: vi.fn(), wake: vi.fn() } } });
   s.create();
   return { s, t };
 }
@@ -464,5 +465,21 @@ describe('TischSzene', () => {
     appStoreHarness.setZustand({ ...baueZustand(), aktuellerTisch: null, partieStand: null });
     appStoreHarness.sendeZustand();
     expect(s['armutAnnahmeAktiv']).toBe(false);
+  });
+
+  it('Toast: Meldung wird nach Anzeige quittiert (kein Toast-Spam bei Folge-Renders)', () => {
+    // Wichtig: Ohne quittiereMeldung() wird bei jedem Store-Update (z.B. Karte gespielt) erneut
+    // derselbe Toast gezeigt, weil meldung im Store gesetzt bleibt. quittiereMeldung() muss
+    // exakt einmal nach zeige() aufgerufen werden.
+    const { s } = baueSzene(baueZustand());
+    const zeigeSpy = vi.fn();
+    s['toastManager'] = { zeige: zeigeSpy };
+
+    appStoreHarness.setZustand(baueZustand({ meldung: { typ: 'fehler', text: 'Karte nicht erlaubt.', fehlerCode: 'KARTE_UNGUELTIG' } }));
+    appStoreHarness.sendeZustand();
+
+    expect(zeigeSpy).toHaveBeenCalledOnce();
+    expect(zeigeSpy).toHaveBeenCalledWith({ text: 'Karte nicht erlaubt.', typ: 'fehler' });
+    expect(appStoreHarness.store.quittiereMeldung).toHaveBeenCalledOnce();
   });
 });
