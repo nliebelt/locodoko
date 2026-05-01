@@ -585,6 +585,7 @@ export class TischSzene extends Phaser.Scene {
       }
       const w = this.erstelleKartenansicht(s.x, s.y, kg.w, kg.h, { karte: k.karte }); 
       w.setAngle(s.winkel);
+      w.setDepth(100); // Garantiert Sichtbarkeit ueber dem Tisch und UI
       return { wurzel: w, bild: w.bildObjekt }; 
     });
     
@@ -592,11 +593,15 @@ export class TischSzene extends Phaser.Scene {
     const istH = mStich.gewinnerPosition === 'SUED' || mStich.gewinnerPosition === 'NORD';
     const flash = this.add.rectangle(npPos.x, npPos.y, istH ? Math.max(120, b * 0.11) : Math.max(80, b * 0.07), istH ? Math.max(54, h * 0.075) : Math.max(80, h * 0.11), 0xffe082, 0.7).setDepth(150).setAlpha(0);
     
+    this.stichEinziehenAktiv = true;
+    this.triggerRender(); // Loescht die statischen Karten aus der Mitte (Guard ist aktiv)
+    
     try { 
       await this.animationen?.animiereStichEinziehen(animK, ziel, mStich.augen, flash); 
     } finally { 
       animK.forEach((k: any) => k.wurzel.destroy()); 
       flash.destroy(); 
+      this.stichEinziehenAktiv = false;
     }
   }
 
@@ -913,8 +918,11 @@ export class TischSzene extends Phaser.Scene {
     this.letzterStichOverlay = undefined;
   }
 
+  private stichEinziehenAktiv = false;
+
   private renderStichmitte(ebene: Phaser.GameObjects.Container, modell: TischAnsichtModell, mitteX: number, mitteY: number, breite: number, hoehe: number): void {
-    if (modell.aktuelleStichmitte.length === 0) return;
+    // AnimationGuard: Waehrend der Stich eingezogen wird, uebernehmen die Klone in der Animation das Rendering
+    if (this.stichEinziehenAktiv || modell.aktuelleStichmitte.length === 0) return;
     const slotPos = stichSlotPositionen(mitteX, mitteY, breite, hoehe);
     const kg = berechneKartenGroesse(breite);
     modell.aktuelleStichmitte.forEach((e) => {
