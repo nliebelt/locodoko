@@ -28,6 +28,8 @@ import type {
   Ansage,
   KarteAntwort, 
   PartieEreignisAntwort, 
+  PartieStandAntwort,
+  SpielerImSpielAntwort,
   SonderpunktEreignisAntwortDto, 
   Tischhintergrund, 
   VorbehaltAnsage,
@@ -200,7 +202,7 @@ export class TischSzene extends Phaser.Scene {
   public isIdle(ignoreStore = false): boolean {
     const storeIdle = ignoreStore ? true : appStore.isIdle();
     const animationenLaeuft = this.animationen?.animationLaeuft ?? false;
-    return storeIdle && !animationenLaeuft && !this.austeilenAktiv && !this.wartendeKartenId;
+    return storeIdle && !animationenLaeuft && !this.austeilenAktiv && !this.wartendeKartenId && !this.stichEinziehenAktiv;
   }
 
   constructor() {
@@ -353,9 +355,18 @@ export class TischSzene extends Phaser.Scene {
 
   private renderAngefodert = false;
 
-  /** Triggert ein Neu-Rendering des Tisches, sofern keine Animation blockiert. */
-  private triggerRender(): void {
+  public triggerRender(force = false): void {
+    if (force) {
+      // Force overrides any pending requests and renders immediately synchronously
+      this.renderAngefodert = false;
+      if (this.letzterZustand && this.letztesModell) {
+        this.renderTisch(this.letzterZustand, this.letztesModell);
+      }
+      return;
+    }
+
     if (this.animationen?.animationLaeuft || this.austeilenAktiv || this.renderAngefodert) {
+      this.renderAngefodert = true;
       return;
     }
     
@@ -363,7 +374,7 @@ export class TischSzene extends Phaser.Scene {
     
     // In Vitest/JSDOM ist requestAnimationFrame oft problematisch, daher rendern wir dort synchron.
     // Wir nutzen eine sicherere Pruefung fuer die Testumgebung.
-    const isTest = (window as any).process?.env?.NODE_ENV === 'test' || (globalThis as any).vi;
+    const isTest = (window as { process?: { env?: { NODE_ENV?: string } } }).process?.env?.NODE_ENV === 'test' || (globalThis as { vi?: unknown }).vi;
 
     if (isTest) {
       this.renderAngefodert = false;
@@ -376,9 +387,12 @@ export class TischSzene extends Phaser.Scene {
     requestAnimationFrame(() => {
       this.renderAngefodert = false;
       if (!this.sys?.displayList) return; // Szene wurde zwischenzeitlich zerstoert
-      // Erneut pruefen: _animationLaeuft koennte zwischen dem reiheEin()-Aufruf
+      // Erneut pruefen: _animationLaeuft koennte zwischen dem Aufruf
       // und dem RAF-Callback auf true gesetzt worden sein (z.B. durch nachfolgendes Event).
-      if (this.animationen?.animationLaeuft || this.austeilenAktiv) return;
+      if (this.animationen?.animationLaeuft || this.austeilenAktiv) {
+        this.renderAngefodert = true;
+        return;
+      }
       if (this.letzterZustand && this.letztesModell) {
         this.renderTisch(this.letzterZustand, this.letztesModell);
       }
@@ -547,6 +561,7 @@ export class TischSzene extends Phaser.Scene {
       if (this.wartendeKartenId) {
         this.wartendeKartenId = null;
       }
+      this.triggerRender(true);
     }
   }
   private async animiereStichEinziehen(stich: AbgeschlossenerStichAntwort, partieStandAusEvent: PartieStandAntwort): Promise<void> {
@@ -576,7 +591,7 @@ export class TischSzene extends Phaser.Scene {
       return;
     }
 
-    const animK = mStich.gespielteKarten.map((k: any) => { 
+    const animK = mStich.gespielteKarten.map((k: { position: string, karte: KarteAntwort }) => { 
       const s = slotPos[k.position as SpielerPosition]; 
       if (!s) {
           Logger.error('Keine Slot-Position fuer SpielerPosition gefunden!', { pos: k.position });
@@ -594,7 +609,7 @@ export class TischSzene extends Phaser.Scene {
     const flash = this.add.rectangle(npPos.x, npPos.y, istH ? Math.max(120, b * 0.11) : Math.max(80, b * 0.07), istH ? Math.max(54, h * 0.075) : Math.max(80, h * 0.11), 0xffe082, 0.7).setDepth(150).setAlpha(0);
     
     this.stichEinziehenAktiv = true;
-    this.triggerRender(); // Loescht die statischen Karten aus der Mitte (Guard ist aktiv)
+    this.triggerRender(true); // Loescht die statischen Karten aus der Mitte (Guard ist aktiv)
     
     try { 
       await this.animationen?.animiereStichEinziehen(animK, ziel, mStich.augen, flash); 
@@ -602,10 +617,12 @@ export class TischSzene extends Phaser.Scene {
       animK.forEach((k: any) => k.wurzel.destroy()); 
       flash.destroy(); 
       this.stichEinziehenAktiv = false;
+      // Wieder statisch rendern, falls der Store den State noch nicht gepatcht hat
+      this.triggerRender(true);
     }
   }
 
-  private ermittleSpielankuendigung(stand: any): string | null {
+  private ermittleSpielankuendigung(stand: PartieStandAntwort): string | null {
     const spiel = stand.laufendesSpiel;
     if (!spiel || spiel.spieltyp === 'NORMALSPIEL') return null;
     const labels: Partial<Record<string, string>> = { 
@@ -614,7 +631,7 @@ export class TischSzene extends Phaser.Scene {
       SOLO_FLEISCHLOS: 'Fleischlos', HOCHZEIT: 'Hochzeit', ARMUT: 'Armut' 
     };
     const label = labels[spiel.spieltyp] ?? spiel.spieltyp;
-    const solist = spiel.spieler.find((s: any) => s.partei === 'RE');
+    const solist = spiel.spieler?.find((s: SpielerImSpielAntwort) => s.partei === 'RE');
     return solist ? `${solist.name} spielt ${label}` : label;
   }
 
@@ -1135,7 +1152,7 @@ export class TischSzene extends Phaser.Scene {
       await this.animationen?.animiereKarteAusspielen(kObj, ziel);
       kObj.wurzel.destroy(); // am Ende der Animation manuell zerstoeren
       if (this.wartendeKartenId === id) this.wartendeKartenId = null;
-      this.triggerRender(); // Rendert die statische Karte (AnimationGuard nun aus)
+      this.triggerRender(true); // Rendert die statische Karte (AnimationGuard nun aus)
     });
   }
 
@@ -1215,7 +1232,7 @@ export class TischSzene extends Phaser.Scene {
     multiplikatorEl.style.cssText = 'position:absolute;width:1px;height:1px;overflow:hidden;left:-9999px';
     multiplikatorEl.textContent = `\u00d7${e.soloMultiplikator}`;
     this.rundenEndeModal.innerHTML = ''; this.rundenEndeModal.classList.add('ui-rundenauswertung-overlay'); this.rundenEndeModal.append(btn, spieltypEl, multiplikatorEl); this.rundenEndeModal.hidden = false;
-    const br = (window as any).__locodoko;
+    const br = (window as { __locodoko?: { _rundenEndeModalGezeigt?: number } }).__locodoko;
     if (br) br._rundenEndeModalGezeigt = (br._rundenEndeModalGezeigt ?? 0) + 1;
     setTimeout(() => btn.focus(), 0);
   }

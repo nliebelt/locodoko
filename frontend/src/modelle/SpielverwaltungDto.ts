@@ -150,7 +150,7 @@ export interface LaufendesSpielAntwort {
   ansageHistorie: AnsageEreignisAntwort[];
   moeglicheAnsagen: Ansage[];
   moeglicheVorbehalte: VorbehaltAnsage[];
-  deklarierteVorbehalte: any[];
+  deklarierteVorbehalte: { position: SpielerPosition; ansage: VorbehaltAnsage }[];
   bockrundenZaehler: number;
   hochzeitGeklaert: boolean;
   schweinchenAktiv: boolean;

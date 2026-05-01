@@ -110,7 +110,7 @@ export class AnimationenService {
     if (ziel.winkel !== undefined) {
       tweenConfig.angle = ziel.winkel;
     }
-    await this.animiereTween(tweenConfig);
+    await this.animiereTween(tweenConfig as Omit<Phaser.Types.Tweens.TweenBuilderConfig, 'duration' | 'onComplete'> & { duration: number });
   }
 
   /**
@@ -440,7 +440,6 @@ export class AnimationenService {
        popup.destroy();
      }
    }
-
   // Zentraler Promise-Wrapper für alle Phaser-Tweens — Warum: tweenAlpha/tweenZu/tweenScale
   // teilten identische Registrierungs- und Cleanup-Logik; hier statt dreifach dupliziert.
   // Sicherheits-Timeout: Falls onComplete im Headless-Modus nicht feuert (zerstoertes Target,

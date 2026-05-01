@@ -769,6 +769,68 @@ describe('AppStore', () => {
     expect(standWaehrend?.laufendesSpiel?.aktuelleStichmitte?.length).toBeGreaterThan(0);
   });
 
+  it('haelt die 4. Karte kuenstlich in aktuelleStichmitte wenn KARTE_GESPIELT einen leeren Tisch meldet', async () => {
+    const echtzeit = new FakeEchtzeit();
+    const tischMitPartie = { ...baueTisch('tisch-4'), partieId: 'partie-4' } as TischAntwort;
+    const store = new AppStore(
+      new FakeApi({ spielerId: 'spieler-1', name: 'Nora', istKi: false, aktiverTischId: null }, [], tischMitPartie) as SpielverwaltungApi,
+      echtzeit
+    );
+    store.setzeKiKartenVerzögerung(0);
+    await store.initialisieren();
+    await store.betreteTisch('tisch-4');
+
+    const partieStandVorher = {
+      partieId: 'partie-4', version: 1, status: 'LAUFEND', anzahlSpiele: 8, gespielteSpiele: 0, gesamtpunktestand: { SUED: 0 },
+      laufendesSpiel: {
+        spielNummer: 1, hochzeitGeklaert: false, schweinchenGemeldetVon: null,
+        aktuelleStichmitte: [
+          { spielerPosition: 'SUED', karte: { id: 'K1' }, reihenfolge: 1 },
+          { spielerPosition: 'WEST', karte: { id: 'K2' }, reihenfolge: 2 },
+          { spielerPosition: 'NORD', karte: { id: 'K3' }, reihenfolge: 3 }
+        ],
+        spielbareKarten: []
+      }
+    } as unknown as PartieStandAntwort;
+
+    echtzeit.emit('/user/queue/partie/partie-4', { version: 1, ereignisTyp: 'SNAPSHOT', partieStand: partieStandVorher } as PartieEreignisAntwort);
+    await Promise.resolve();
+
+    // Backend liefert KARTE_GESPIELT und STICH_ABGESCHLOSSEN (beide mit leerer Mitte!)
+    const partieStandNachher = {
+      ...partieStandVorher, version: 2,
+      laufendesSpiel: { ...partieStandVorher.laufendesSpiel, aktuelleStichmitte: [] }
+    } as unknown as PartieStandAntwort;
+
+    let mitteBeiListenerAufruf = -1;
+    store.abonniereEvents((e) => {
+      if (e.ereignisTyp === 'STICH_ABGESCHLOSSEN') {
+        mitteBeiListenerAufruf = store.snapshot().partieStand?.laufendesSpiel?.aktuelleStichmitte.length ?? 0;
+      }
+    });
+
+    // 1. KARTE_GESPIELT (4. Karte von OST)
+    echtzeit.emit('/user/queue/partie/partie-4', {
+      version: 2, ereignisTyp: 'KARTE_GESPIELT', spielerPosition: 'OST', karteId: 'KREUZ-AS-0', partieStand: partieStandNachher
+    } as unknown as PartieEreignisAntwort);
+
+    await Promise.resolve();
+    // Nach KARTE_GESPIELT MUSS die Mitte kuenstlich auf 4 stehen (Synthesizer aktiv)
+    console.log("STATE", JSON.stringify(store.snapshot().partieStand));
+    expect(store.snapshot().partieStand?.laufendesSpiel?.aktuelleStichmitte).toHaveLength(4);
+
+    // 2. STICH_ABGESCHLOSSEN
+    echtzeit.emit('/user/queue/partie/partie-4', {
+      version: 3, ereignisTyp: 'STICH_ABGESCHLOSSEN', partieStand: partieStandNachher, neueSonderpunkte: []
+    } as unknown as PartieEreignisAntwort);
+
+    await Promise.resolve();
+    // Waehrend der Listener laeuft, sind noch alle 4 Karten da (fuer AnimationGuard)
+    expect(mitteBeiListenerAufruf).toBe(4);
+    // Danach ist der Tisch wieder leer
+    expect(store.snapshot().partieStand?.laufendesSpiel?.aktuelleStichmitte).toHaveLength(0);
+  });
+
   it('aktualisiert Tischliste via /user/queue/tische wenn kein Broadcast verfuegbar', async () => {
     // Wichtig: Der Store abonniert auch /user/queue/tische für spielerbezogene Aktualisierungen
     // (z.B. nach Snapshot-Request). Beide Kanäle müssen die tische[]-Liste aktualisieren.

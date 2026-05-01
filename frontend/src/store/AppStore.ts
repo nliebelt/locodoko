@@ -579,7 +579,7 @@ export class AppStore {
         
         // Quiescence Pattern: Warten bis alle Animationen/Szenen-Logik des VORHERIGEN Events beendet sind
         if (typeof window !== 'undefined') {
-          const locodoko = (window as any).__locodoko;
+          const locodoko = (window as { __locodoko?: { isIdle?: (f: boolean) => boolean } }).__locodoko;
           if (locodoko && typeof locodoko.isIdle === 'function') {
              while (!locodoko.isIdle(true) && !this._queuePausiert && this._eventQueue.length > 0) {
                await new Promise<void>((r) => setTimeout(r, 50));
@@ -653,15 +653,6 @@ export class AppStore {
             break;
           case 'KARTE_GESPIELT': {
             const prevStand = this.zustand.partieStand;
-            const istKiKarte = prevStand?.laufendesSpiel?.spieler?.find(
-              s => s.position === ereignis.spielerPosition
-            )?.istKi ?? false;
-            
-            if (istKiKarte && prevStand && this.zustand.uiKonfiguration.kiVerzoegerungMs > 0) {
-               // Die Ausspiel-Animation der KI-Karte wurde durch den Listener soeben getriggert.
-               // Wir warten, bis sie beendet ist, bevor wir die Karte im State statisch sichtbar machen.
-               await new Promise<void>((r) => setTimeout(r, this.zustand.uiKonfiguration.kiVerzoegerungMs));
-            }
             
             // Nutze syntheticStand fuer ALLE Karten. 
             // Wichtig bei der 4. Karte: Das Backend liefert bereits eine leere 'aktuelleStichmitte'.
@@ -676,11 +667,6 @@ export class AppStore {
             break;
           }
           case 'STICH_ABGESCHLOSSEN': {
-             // Warte bis die StichEinziehen-Animation in der Szene (vermutlich ~1500ms) durchgelaufen ist, 
-             // bevor der Snapshot gepatcht wird (und der Stich verschwindet).
-             if (this.zustand.uiKonfiguration.kiVerzoegerungMs > 0) {
-               await new Promise<void>((r) => setTimeout(r, 1600)); // 1600ms = 1000ms delay + 600ms move
-             }
              this.patch({ partieStand: ereignis.partieStand });
              if (ereignis.neueSonderpunkte.length) this._sonderpunkteListener.forEach((l) => l(ereignis.neueSonderpunkte));
              break;
@@ -734,10 +720,9 @@ export class AppStore {
       return true;
     }
 
-    // Wir erlauben nur >, um Idempotenz zu gewaehrleisten.
-    // Wenn der Server fuer denselben Zustandsuebergang mehrere Nachrichten schickt,
-    // ignorieren wir die Duplikate fuer die Animation.
-    if (neueVersion > this._letztePartieVersion) {
+    // Wir erlauben >=, weil mehrere Ereignisse (z.B. KarteGespielt und StichAbgeschlossen)
+    // in derselben Backend-Transaktion entstehen koennen und daher dieselbe Version haben.
+    if (neueVersion >= this._letztePartieVersion) {
       this._letztePartieVersion = neueVersion;
       return true;
     }

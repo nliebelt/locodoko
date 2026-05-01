@@ -514,13 +514,13 @@ describe('TischSzene', () => {
     const sprite = (s['persistenteEigeneKarten'] as Map<string, { x: number; y: number; setPosition: (x: number, y: number) => unknown }>).get('H1');
     expect(sprite).toBeDefined();
     // Animation simulieren: Sprite an fremde Position verschieben
-    sprite.setPosition(600, 300);
+    sprite!.setPosition(600, 300);
     // wartendeKartenId setzen → AnimationGuard aktiv
     s['wartendeKartenId'] = 'H1';
     // Re-render auslösen (direkt, um animationLaeuft-Guard zu umgehen)
     s['renderTisch'](appStoreHarness.store.snapshot(), s['erstelleModell'](appStoreHarness.store.snapshot()));
     // Sprite-Position darf nicht auf Hand-Position zurückgesetzt worden sein
-    expect(sprite.x).toBe(600);
-    expect(sprite.y).toBe(300);
+    expect(sprite!.x).toBe(600);
+    expect(sprite!.y).toBe(300);
   });
 });
