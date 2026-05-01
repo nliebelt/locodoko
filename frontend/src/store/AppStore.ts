@@ -652,7 +652,27 @@ export class AppStore {
             this._eventQueue.length = 0;
             break;
           case 'KARTE_GESPIELT': {
-            this.patch({ partieStand: ereignis.partieStand });
+            const prevStand = this.zustand.partieStand;
+            const istKiKarte = prevStand?.laufendesSpiel?.spieler?.find(
+              s => s.position === ereignis.spielerPosition
+            )?.istKi ?? false;
+            
+            if (istKiKarte && prevStand && this.zustand.uiKonfiguration.kiVerzoegerungMs > 0) {
+               // Die Ausspiel-Animation der KI-Karte wurde durch den Listener soeben getriggert.
+               // Wir warten, bis sie beendet ist, bevor wir die Karte im State statisch sichtbar machen.
+               await new Promise<void>((r) => setTimeout(r, this.zustand.uiKonfiguration.kiVerzoegerungMs));
+            }
+            
+            // Nutze syntheticStand fuer ALLE Karten. 
+            // Wichtig bei der 4. Karte: Das Backend liefert bereits eine leere 'aktuelleStichmitte'.
+            // Durch den Synthesizer zwingen wir die 4. Karte in die Mitte, 
+            // damit sie beim "Stich einziehen" Delay sichtbar bleibt.
+            if (prevStand) {
+              const syntheticStand = this._synthetischerKarteGespielt(prevStand, ereignis);
+              this.patch({ partieStand: syntheticStand });
+            } else {
+              this.patch({ partieStand: ereignis.partieStand });
+            }
             break;
           }
           case 'STICH_ABGESCHLOSSEN': {
