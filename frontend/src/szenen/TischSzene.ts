@@ -447,7 +447,7 @@ export class TischSzene extends Phaser.Scene {
             kartenAnzahl: letzterStich.gespielteKarten?.length 
           });
           this.animationen?.reiheEin(async () => {
-            await this.animiereStichEinziehen(letzterStich);
+            await this.animiereStichEinziehen(letzterStich, ereignis.partieStand);
             
             // Sonderpunkte auswerten und animieren
             const e = ereignis as any;
@@ -549,13 +549,14 @@ export class TischSzene extends Phaser.Scene {
       }
     }
   }
-  private async animiereStichEinziehen(stich: AbgeschlossenerStichAntwort): Promise<void> {
+  private async animiereStichEinziehen(stich: AbgeschlossenerStichAntwort, partieStandAusEvent: PartieStandAntwort): Promise<void> {
     const { width: b, height: h } = this.scale.gameSize;
     const slotPos = stichSlotPositionen(b / 2, h / 2, b, h);
     const kg = berechneKartenGroesse(b);
     
-    // Immer das aktuellste Modell erzeugen, falls letztesModell veraltet ist
-    const aModell = this.letztesModell ?? this.erstelleModell(appStore.snapshot());
+    // Wir muessen das Modell mit dem uebergebenen State (aus dem Event) bauen,
+    // da der AppStore noch den alten State (ohne diesen neuen Stich in der Historie) hat.
+    const aModell = this.erstelleModell({ ...appStore.snapshot(), partieStand: partieStandAusEvent });
     const mStich = aModell.letzteAbgeschlosseneStiche.find(s => s.spielNummer === stich.spielNummer && s.stichNummer === stich.stichNummer);
     if (!mStich) {
       Logger.error('Konnte relativen Stich im Modell nicht finden!');
