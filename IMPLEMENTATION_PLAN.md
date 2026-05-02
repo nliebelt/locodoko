@@ -8,12 +8,15 @@
 ## Notiz
 
 Was wurde implementiert:
-- `TischSzene.ts`: Reload-State Stabilität (BUG-ANIM-03). Im SNAPSHOT-Event-Handler wird erkannt, ob ein abgeschlossenes Spiel (`laufendesSpiel=null + letztesSpielergebnis`) vorliegt. Ein Flag `_zeigeOverlayNachSnapshot` wird gesetzt. Im Store-Abonnement (nach dem Patch, wenn `aktuellerTisch` und das Modell vollständig sind) wird das Rundenauswertungs- oder PartieEnde-Overlay wiederhergestellt und die Queue pausiert.
-- 1 neuer Test: `stellt Rundenende-Modal nach Browser-Reload wieder her (BUG-ANIM-03)`.
+- **REFACTOR-FE-01** — TischSzene SRP aufgelöst:
+  - Neue Datei `frontend/src/szenen/layout.ts`: alle Layout-/Positions-Funktionen extrahiert (`stichSlotPositionen`, `berechneKartenGroesse`, `berechneKartenAbstand`, `berechneLayout`, `nameplatePositionFuer`, `stichStapelPositionFuer`). TischSzene importiert diese jetzt.
+  - `tischFormatierer.ts` erweitert: `formatiereCountdownText`, `formatiereEreignisSonderpunktFeedback` hinzugefügt. Dupliziertes `escapeHtml` aus TischSzene entfernt.
+  - `TischAnsichtModell`: Neues Feld `spielankuendigungstext: string | null` mit Berechnung in `erstelleTischAnsichtAusStatus()`. Private Methode `ermittleSpielankuendigung` aus TischSzene entfernt.
+  - TischSzene.ts von ~1490 auf ~1375 Zeilen reduziert.
 
-Nächster logischer Schritt: **REFACTOR-FE-01** — TischSzene SRP: Fachliche Selektoren und Positonsberechnungen aus der ~1500-Zeilen-Szene extrahieren. Option B (Dumb Scene, Smart State) + Funktionales Layout in `layout.ts`.
+Nächster logischer Schritt: **REFACTOR-FE-02** — Magic Strings durch Typensicherheit ersetzen (`'SUED'`, `'RE'`, `'NORMALSPIEL'` etc. durch TypeScript-Unions aus `SpielverwaltungDto.ts` absichern).
 
-Offene Fragen: Pre-existing TypeScript-Fehler in AppStore.ts Zeile 545 (`_darfPartieStandAktualisieren` mit 3 statt 2 Argumenten) — war schon vor dieser Iteration fehlerhaft.
+Offene Fragen: Pre-existing TypeScript-Fehler in AppStore.ts Zeile 545 und TischSzene.test.ts Zeile 190 — waren schon vor dieser Iteration fehlerhaft.
 
 ---
 
@@ -58,14 +61,11 @@ Nach der umfassenden Analyse des IST-Standes gegen die Specs konzentrieren wir u
 **Status:** Erledigt (2026-05-02)
 **Fix:** `TischSzene.ts`: Neues Flag `_zeigeOverlayNachSnapshot`. Im SNAPSHOT-Event-Handler wird `laufendesSpiel===null && letztesSpielergebnis!==null` erkannt. Das Overlay (Rundenauswertung oder PartieEnde) wird im Store-Abonnement erst gezeigt, wenn `aktuellerTisch` und das vollständige Modell verfügbar sind.
 
-### REFACTOR-FE-01: TischSzene SRP auflösen (God Object)
+### ~~REFACTOR-FE-01~~: TischSzene SRP auflösen (God Object) ✅
 
 **Priorität:** Mittel
-**Problem:** `TischSzene.ts` umfasst fast 1500 Zeilen und vermischt Phaser-Rendering, Positionsberechnungen und Fachlogik-Auswertungen (z.B. `ermittleSpielankuendigung`). Das verletzt das Single Responsibility Principle laut `methodik-clean-code.md`.
-**Umsetzung (Architektur-Entscheidungen aus Plan-Run #99):**
-1. **Dumb Scene, Smart State (Option B):** Extrahiere alle rein fachlichen Selektoren und String-Formatierer aus der Szene. Diese Logik wandert *komplett* in das `TischAnsichtModell` (oder dazugehörige Selektoren). Das View-Modell bereitet die Daten mundgerecht vor (z.B. `spielankuendigungstext: "Anna spielt Damensolo"`), sodass die `TischSzene` nur noch rendert.
-2. **Funktionales Layout:** Lagere die Positions- und Layout-Berechnung (z.B. `stichSlotPositionen`, `berechneLayout`, `berechneKartenGroesse`) in zustandslose, reine Utility-Funktionen (`export function...`) in einer neuen Datei (z.B. `layout.ts`) aus. Kein stateful Service.
-3. Ziel: `TischSzene` orchestriert nur noch Phaser-Objekte und reagiert dumm auf den injizierten Zustand.
+**Status:** Erledigt (2026-05-02)
+**Fix:** Neue `layout.ts` mit allen Layout-/Positions-Funktionen. `tischFormatierer.ts` um `formatiereCountdownText` und `formatiereEreignisSonderpunktFeedback` erweitert. `spielankuendigungstext` ins `TischAnsichtModell` verschoben. TischSzene auf ~1375 Zeilen reduziert.
 
 ### REFACTOR-FE-02: Magic Strings durch Typensicherheit ersetzen
 

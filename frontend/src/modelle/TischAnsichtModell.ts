@@ -138,6 +138,8 @@ export interface TischAnsichtModell {
   /** true, wenn die gesamte Partie (alle Spiele) beendet ist — loest Partie-Ende-Modal aus. */
   partieBeendet: boolean;
   armutAktion: ArmutAktionAnsicht | null;
+  /** Ankündigungstext für Sonderspiele (z.B. "Anna spielt Damensolo"), null bei Normalspiel oder kein laufendes Spiel. */
+  spielankuendigungstext: string | null;
   /** Position des Spielers der Schweinchen gemeldet hat (erstes Karo-As gespielt), null wenn nicht gemeldet. */
   schweinchenGemeldetVon: SpielerPosition | null;
 }
@@ -242,7 +244,8 @@ export function erstelleStandardTischAnsicht(spielerName: string): TischAnsichtM
     letztesSpielergebnis: null,
     partieBeendet: false,
     armutAktion: null,
-    schweinchenGemeldetVon: null
+    schweinchenGemeldetVon: null,
+    spielankuendigungstext: null
   };
 }
 
@@ -287,7 +290,8 @@ export function erstelleTischAnsichtAusStatus(
       letztesSpielergebnis: null,
       partieBeendet: false,
       armutAktion: null,
-      schweinchenGemeldetVon: null
+      schweinchenGemeldetVon: null,
+      spielankuendigungstext: null
     };
   }
 
@@ -343,8 +347,25 @@ export function erstelleTischAnsichtAusStatus(
     armutAktion: laufendesSpiel ? bestimmeArmutAktion(laufendesSpiel, spielerAnsichten, bezugPosition) : null,
     schweinchenGemeldetVon: laufendesSpiel?.schweinchenGemeldetVon
       ? mappeRelativePosition(laufendesSpiel.schweinchenGemeldetVon, bezugPosition)
-      : null
+      : null,
+    spielankuendigungstext: berechneSpielerankuendigungstext(laufendesSpiel)
   };
+}
+
+/**
+ * Berechnet den Anzeigetext fuer ein Sonderspiel (z.B. "Anna spielt Damensolo").
+ * Gibt null zurueck bei Normalspiel oder wenn kein Spiel laeuft.
+ */
+function berechneSpielerankuendigungstext(spiel: LaufendesSpielAntwort | null | undefined): string | null {
+  if (!spiel || spiel.spieltyp === 'NORMALSPIEL') return null;
+  const labels: Partial<Record<string, string>> = {
+    SOLO_DAME: 'Damensolo', SOLO_BUBE: 'Bubensolo', SOLO_TRUMPF: 'Karosolo',
+    SOLO_TRUMPF_HERZ: 'Herzsolo', SOLO_TRUMPF_PIK: 'Piksolo', SOLO_TRUMPF_KREUZ: 'Kreuzsolo',
+    SOLO_FLEISCHLOS: 'Fleischlos', HOCHZEIT: 'Hochzeit', ARMUT: 'Armut'
+  };
+  const label = labels[spiel.spieltyp] ?? spiel.spieltyp;
+  const solist = spiel.spieler?.find((s: SpielerImSpielAntwort) => s.partei === 'RE');
+  return solist ? `${solist.name} spielt ${label}` : label;
 }
 
 /**

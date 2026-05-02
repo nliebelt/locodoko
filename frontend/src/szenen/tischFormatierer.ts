@@ -3,7 +3,7 @@
  * Werden sowohl von TischSzene (Phaser-Rendering) als auch von TischUIManager (DOM) genutzt.
  * Funktionen sind zustandslos und dienen der einheitlichen Darstellung von Spieldaten.
  */
-import type { Ansage, KarteAntwort, KiSchwierigkeit, Sonderpunkt, SonderpunktEreignis, VorbehaltAnsage } from '../modelle/SpielverwaltungDto';
+import type { Ansage, KarteAntwort, KiSchwierigkeit, Sonderpunkt, SonderpunktEreignis, SonderpunktEreignisAntwortDto, VorbehaltAnsage } from '../modelle/SpielverwaltungDto';
 
 export const KARTEN_BREITE = 96;
 export const KARTEN_HOEHE = 144;
@@ -80,4 +80,15 @@ export function formatiereSonderpunkt(ereignis: SonderpunktEreignis, spielerName
 /** Lesbares Label fuer die KI-Schwierigkeitsstufe (fuer Badges und Anzeige). */
 export function kiSchwierigkeitLabel(schwierigkeit: KiSchwierigkeit): string {
   return ({ LEICHT: 'Leicht', STANDARD: 'Standard', SCHWER: 'Schwer' } as Record<KiSchwierigkeit, string>)[schwierigkeit] ?? 'Standard';
+}
+
+/** Kurzes Feedback-Label fuer ein Sonderpunkt-Ereignis in der Animations-Queue. */
+export function formatiereEreignisSonderpunktFeedback(sp: SonderpunktEreignisAntwortDto): string {
+  return ({ FUCHS_GEFANGEN: 'Fuchs gefangen!', DOPPELKOPF: 'Doppelkopf!', KARLCHEN: 'Karlchen!' } as Record<string, string>)[sp.typ] ?? sp.typ;
+}
+
+/** Countdown-Text fuer das Partie-Ende-Modal. Leerstring wenn kein aktiver Countdown. */
+export function formatiereCountdownText(sekunden: number | null | undefined): string {
+  if (sekunden == null || sekunden <= 0) return '';
+  return `Neue Partie startet in ${sekunden}…`;
 }

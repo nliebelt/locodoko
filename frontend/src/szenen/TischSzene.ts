@@ -29,8 +29,6 @@ import type {
   KarteAntwort, 
   PartieEreignisAntwort, 
   PartieStandAntwort,
-  SpielerImSpielAntwort,
-  SonderpunktEreignisAntwortDto, 
   Tischhintergrund, 
   VorbehaltAnsage,
   KarteGespieltEreignis,
@@ -48,99 +46,19 @@ import {
   formatiereAnsage,
   formatiereVorbehalt,
   formatiereSonderpunkt,
+  formatiereCountdownText,
+  formatiereEreignisSonderpunktFeedback,
+  escapeHtml,
 } from './tischFormatierer';
-
-function escapeHtml(s: string): string {
-  return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;');
-}
-
-interface TischLayoutEintrag {
-  x: number;
-  y: number;
-  kartenX: number;
-  kartenY: number;
-  kartenWinkel: number;
-}
-
-type TischLayout = Record<SpielerPosition, TischLayoutEintrag>;
-
-function stichSlotPositionen(
-  mitteX: number, mitteY: number, breite: number, hoehe: number
-): Record<SpielerPosition, { x: number; y: number; winkel: number }> {
-  const versatzY = Math.round(hoehe * 0.15);
-  const versatzX = Math.round(breite * 0.103);
-  return {
-    SUED: { x: mitteX,           y: mitteY + versatzY, winkel: -4 },
-    WEST: { x: mitteX - versatzX, y: mitteY,            winkel:  6 },
-    NORD: { x: mitteX,           y: mitteY - versatzY, winkel:  3 },
-    OST:  { x: mitteX + versatzX, y: mitteY,            winkel: -5 }
-  };
-}
-
-function berechneKartenGroesse(breite: number): { w: number; h: number } {
-  const w = Math.round(Math.min(110, breite * 0.086));
-  return { w, h: Math.round(w * (165 / 110)) };
-}
-
-function berechneKartenAbstand(breite: number, hoehe: number): { horizontal: number; vertikal: number } {
-  return {
-    horizontal: Math.max(22, Math.round(breite * 0.022)),
-    vertikal: Math.max(12, Math.round(hoehe * 0.022))
-  };
-}
-
-function berechneLayout(breite: number, hoehe: number): TischLayout {
-  return {
-    SUED: { x: breite * 0.5, y: hoehe * 0.82, kartenX: breite * 0.28, kartenY: hoehe * 0.91, kartenWinkel: 0 },
-    WEST: { x: breite * 0.12, y: hoehe * 0.5, kartenX: breite * 0.03, kartenY: hoehe * 0.37, kartenWinkel: 90 },
-    NORD: { x: breite * 0.5, y: hoehe * 0.18, kartenX: breite * 0.28, kartenY: hoehe * 0.01, kartenWinkel: 0 },
-    OST: { x: breite * 0.88, y: hoehe * 0.5, kartenX: breite * 0.97, kartenY: hoehe * 0.37, kartenWinkel: 90 }
-  };
-}
-
-function nameplatePositionFuer(
-  spielerPosition: SpielerPosition,
-  breite: number,
-  hoehe: number
-): { x: number; y: number } {
-  switch (spielerPosition) {
-    case 'NORD': return { x: breite * 0.5, y: hoehe * 0.15 };
-    case 'SUED': return { x: breite * 0.5, y: hoehe * 0.85 };
-    case 'WEST': return { x: breite * 0.14, y: hoehe * 0.84 };
-    case 'OST':  return { x: breite * 0.86, y: hoehe * 0.16 };
-  }
-}
-
-function stichStapelPositionFuer(
-  position: SpielerPosition,
-  breite: number,
-  hoehe: number,
-  kartenAnzahl: number
-): { x: number; y: number; winkel: number } {
-  const kAbstand = berechneKartenAbstand(breite, hoehe);
-  const kGroesse = berechneKartenGroesse(breite);
-  const layout = berechneLayout(breite, hoehe);
-  const abstand = 12;
-
-  switch (position) {
-    case 'SUED': {
-      const fHalbe = kartenAnzahl > 0 ? ((kartenAnzahl - 1) * kAbstand.horizontal + kGroesse.w) / 2 : 0;
-      return { x: breite / 2 - fHalbe - kGroesse.w / 2 - abstand, y: hoehe * 0.90, winkel: 0 };
-    }
-    case 'NORD': {
-      const fHalbe = kartenAnzahl > 0 ? ((kartenAnzahl - 1) * kAbstand.horizontal + kGroesse.w) / 2 : 0;
-      return { x: breite / 2 + fHalbe + kGroesse.w / 2 + abstand, y: hoehe * 0.10, winkel: 0 };
-    }
-    case 'WEST': {
-      const fanOben = layout.WEST.kartenY - kGroesse.h / 2;
-      return { x: layout.WEST.kartenX, y: fanOben - abstand, winkel: 90 };
-    }
-    case 'OST': {
-      const fanUnten = layout.OST.kartenY + (kartenAnzahl > 0 ? (kartenAnzahl - 1) * kAbstand.vertikal : 0) + kGroesse.h / 2;
-      return { x: layout.OST.kartenX, y: fanUnten + 50, winkel: 90 };
-    }
-  }
-}
+import {
+  type TischLayout,
+  stichSlotPositionen,
+  berechneKartenGroesse,
+  berechneKartenAbstand,
+  berechneLayout,
+  nameplatePositionFuer,
+  stichStapelPositionFuer,
+} from './layout';
 
 function texturFuerTischhintergrund(bg: Tischhintergrund): string {
   const tex = ({
@@ -315,7 +233,7 @@ export class TischSzene extends Phaser.Scene {
     this.abmeldenStore = () => { originalAbmelden?.(); abmeldenEvents(); };
 
     this.abmeldenSonderpunkte = appStore.abonniereSonderpunkte((sp) => {
-      const texte = sp.map((s) => this.formatiereEreignisSonderpunkt(s));
+      const texte = sp.map((s) => formatiereEreignisSonderpunktFeedback(s));
       if (texte.length > 0) this.animationen?.reiheEin(() => this.starteSonderpunktFeedbackAnimationen(texte));
     });
 
@@ -443,7 +361,7 @@ export class TischSzene extends Phaser.Scene {
           await this.starteAusteilen(modellG, { ...appStore.snapshot(), partieStand: ereignis.partieStand });
           this.austeilenAktiv = false;
         });
-        const ankuendigung = this.ermittleSpielankuendigung(ereignis.partieStand);
+        const ankuendigung = modellG.spielankuendigungstext;
         if (ankuendigung) this.animationen?.reiheEin(() => this.zeigeSpielankuendigung(ankuendigung));
         {
           const bockrundenZaehler = ereignis.partieStand?.laufendesSpiel?.bockrundenZaehler ?? 0;
@@ -646,19 +564,6 @@ export class TischSzene extends Phaser.Scene {
     }
   }
 
-  private ermittleSpielankuendigung(stand: PartieStandAntwort): string | null {
-    const spiel = stand.laufendesSpiel;
-    if (!spiel || spiel.spieltyp === 'NORMALSPIEL') return null;
-    const labels: Partial<Record<string, string>> = { 
-      SOLO_DAME: 'Damensolo', SOLO_BUBE: 'Bubensolo', SOLO_TRUMPF: 'Karosolo', 
-      SOLO_TRUMPF_HERZ: 'Herzsolo', SOLO_TRUMPF_PIK: 'Piksolo', SOLO_TRUMPF_KREUZ: 'Kreuzsolo', 
-      SOLO_FLEISCHLOS: 'Fleischlos', HOCHZEIT: 'Hochzeit', ARMUT: 'Armut' 
-    };
-    const label = labels[spiel.spieltyp] ?? spiel.spieltyp;
-    const solist = spiel.spieler?.find((s: SpielerImSpielAntwort) => s.partei === 'RE');
-    return solist ? `${solist.name} spielt ${label}` : label;
-  }
-
   private get rundenEndeModal(): HTMLDivElement | undefined { return this.uiManager?.getRundenEndeModal(); }
   private get partieEndeModal(): HTMLDivElement | undefined { return this.uiManager?.getPartieEndeModal(); }
 
@@ -688,7 +593,7 @@ export class TischSzene extends Phaser.Scene {
     if (this.partieEndeModal && !this.partieEndeModal.hidden) {
       const countdownEl = this.partieEndeModal.querySelector<HTMLElement>('[data-testid="countdown-text"]');
       if (countdownEl) {
-        countdownEl.textContent = this.formatiereCountdownText(zustand.countdownSekunden);
+        countdownEl.textContent = formatiereCountdownText(zustand.countdownSekunden);
       }
       // Modal automatisch schliessen wenn eine neue Partie gestartet wurde (z.B. Auto-Start)
       if (zustand.partieStand?.laufendesSpiel) {
@@ -1215,10 +1120,6 @@ export class TischSzene extends Phaser.Scene {
     }
   }
 
-  private formatiereEreignisSonderpunkt(sp: SonderpunktEreignisAntwortDto): string {
-    return { FUCHS_GEFANGEN: 'Fuchs gefangen!', DOPPELKOPF: 'Doppelkopf!', KARLCHEN: 'Karlchen!' }[sp.typ];
-  }
-
   private async starteSonderpunktFeedbackAnimationen(texte: string[]): Promise<void> {
     for (const t of texte) { await this.animationen?.animiereSonderpunktFeedback(t, { x: this.scale.gameSize.width / 2, y: this.scale.gameSize.height / 2 }); }
   }
@@ -1312,7 +1213,7 @@ export class TischSzene extends Phaser.Scene {
     countdownP.dataset['testid'] = 'countdown-text';
     countdownP.style.cssText = 'margin:0.5rem 0 0;font-size:0.85rem;opacity:0.7;text-align:center';
     const aktuellerCountdown = appStore.snapshot().countdownSekunden;
-    countdownP.textContent = this.formatiereCountdownText(aktuellerCountdown);
+    countdownP.textContent = formatiereCountdownText(aktuellerCountdown);
     dia.append(countdownP);
     const aR = document.createElement('div'); aR.className = 'ui-action-row';
     const nB = this.erstelleButton('Neue Partie', () => { this.schliessePartieEndeModal(); void appStore.starteNeuePartie(); }, false);
@@ -1321,11 +1222,6 @@ export class TischSzene extends Phaser.Scene {
     vB.dataset['testid'] = 'btn-tisch-verlassen';
     aR.append(nB, vB); dia.append(aR); this.partieEndeModal.innerHTML = ''; this.partieEndeModal.append(dia); this.partieEndeModal.hidden = false;
     setTimeout(() => nB.focus(), 0);
-  }
-
-  private formatiereCountdownText(sekunden: number | null | undefined): string {
-    if (sekunden == null || sekunden <= 0) return '';
-    return `Neue Partie startet in ${sekunden}…`;
   }
 
   private schliessePartieEndeModal(): void {
