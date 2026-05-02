@@ -142,6 +142,8 @@ export class SpielverwaltungsSzene extends Phaser.Scene {
     const existing = document.getElementById('erstelle-tisch-modal');
     if (existing) existing.remove();
 
+    const ausloesendElement = document.activeElement as HTMLElement | null;
+
     const boolFelder: Array<[keyof TischKonfigurationDto, string]> = [
       ['ohneNeunen', 'Ohne Neunen (10er-Deck)'],
       ['hochzeitErlaubt', 'Hochzeit erlaubt'],
@@ -181,8 +183,8 @@ export class SpielverwaltungsSzene extends Phaser.Scene {
     modal.id = 'erstelle-tisch-modal';
     modal.className = 'ui-modal-backdrop';
     modal.innerHTML = `
-      <div class="ui-modal">
-        <h2>Neuen Tisch erstellen</h2>
+      <div class="ui-modal" role="dialog" aria-modal="true" aria-labelledby="erstelle-tisch-modal-titel">
+        <h2 id="erstelle-tisch-modal-titel">Neuen Tisch erstellen</h2>
         <div class="ui-section">
           <label class="ui-hint" for="tisch-name">Name des Tisches</label>
           <input type="text" id="tisch-name" data-testid="input-tischname" class="ui-input" placeholder="z.B. Gemütliche Runde" maxlength="100">
@@ -224,6 +226,41 @@ export class SpielverwaltungsSzene extends Phaser.Scene {
     let presets: TischPresetAntwort[] = [];
     let letztesPreset: TischPresetAntwort | null = null;
     let presetsGeladen = false;
+
+    // Auto-Fokus auf erstes interaktives Element
+    nameInput.focus();
+
+    // Tab-Trap + Escape-Handler für das Modal
+    const modalKeyHandler = (e: KeyboardEvent): void => {
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        schliesse();
+        return;
+      }
+      if (e.key === 'Tab') {
+        const focusable = modal.querySelectorAll<HTMLElement>(
+          'button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
+        );
+        const first = focusable[0];
+        const last = focusable[focusable.length - 1];
+        if (e.shiftKey) {
+          if (document.activeElement === first) {
+            last?.focus();
+            e.preventDefault();
+          }
+        } else if (document.activeElement === last) {
+          first?.focus();
+          e.preventDefault();
+        }
+      }
+    };
+    document.addEventListener('keydown', modalKeyHandler);
+
+    function schliesse(): void {
+      document.removeEventListener('keydown', modalKeyHandler);
+      modal.remove();
+      ausloesendElement?.focus();
+    }
 
     function aktualisiereErstellenBtn(): void {
       createBtn.disabled = !presetsGeladen || !nameInput.value.trim();
@@ -299,7 +336,7 @@ export class SpielverwaltungsSzene extends Phaser.Scene {
 
     nameInput.addEventListener('input', aktualisiereErstellenBtn);
 
-    cancelBtn.onclick = () => modal.remove();
+    cancelBtn.onclick = () => schliesse();
     createBtn.onclick = () => {
       const name = nameInput.value.trim();
       if (!name) return;
@@ -309,10 +346,10 @@ export class SpielverwaltungsSzene extends Phaser.Scene {
         ).every(inp => inp.validity.valid);
         if (!zahlenGueltig) return;
         void appStore.erstelleKonfiguriertenTisch(name, leseFelder(), privateCheck.checked)
-          .then(() => modal.remove());
+          .then(() => schliesse());
       } else {
         void appStore.erstelleTischMitPreset(name, presetSelect.value, privateCheck.checked)
-          .then(() => modal.remove());
+          .then(() => schliesse());
       }
     };
   }

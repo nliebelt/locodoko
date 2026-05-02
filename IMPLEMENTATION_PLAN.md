@@ -8,14 +8,12 @@
 ## Notiz
 
 Was wurde implementiert:
-- **SPEC-SYNC** — Veraltete Specs bereinigt:
-  - `spieler-session.md`: „keine Benutzerkonten"-Aussage entfernt; Anforderung 9 auf KI-Übernahme korrigiert; technischer Hinweis auf Spring-Security-Auth aktualisiert.
-  - `verbindungsabbruch.md`: BUG-ANIM-03-Referenz entfernt (behoben); Status Stabil.
-  - `frontend-ui-logik.md`: Technische Hinweise (Hybrid-Modell) korrigiert — Meta-UI ist DOM-basiert via TischUIManager; Status Stabil.
+- **FEAT-KEYBOARD-NAV** — Keyboard-Navigation für Lobby-Modal vollständig:
+  - `SpielverwaltungsSzene.ts`: `zeigeErstelleTischModal()` erhält Auto-Fokus (erstes Element), Tab-Trap, Escape-Handler, Focus-Return zum auslösenden Element.
+  - ARIA: `role="dialog"`, `aria-modal="true"`, `aria-labelledby` auf `.ui-modal`.
+  - `accessibility.css`: Expliziter `:focus-visible`-Stil für `input[type="checkbox"]` und `input[type="radio"]` (gold outline + glow).
 
-Nächster logischer Schritt: **FEAT-KEYBOARD-NAV** — Tab-Fokus-Management in Modalen (Lobby, Tisch-Konfiguration) und visueller Fokus-Indikator für alle interaktiven Elemente.
-
-Offene Fragen: Pre-existing TypeScript-Fehler in AppStore.ts Zeile 545 und TischSzene.test.ts Zeile 190 — unverändert vorhanden, nicht durch diese Iteration verursacht.
+Nächster logischer Schritt: Alle offenen Aufgaben erledigt. Plan-Run #99 abgeschlossen.
 
 Offene Fragen: Pre-existing TypeScript-Fehler in AppStore.ts Zeile 545 und TischSzene.test.ts Zeile 190 — unverändert vorhanden, nicht durch diese Iteration verursacht.
 
@@ -84,12 +82,11 @@ Nach der umfassenden Analyse des IST-Standes gegen die Specs konzentrieren wir u
 **Status:** Erledigt (2026-05-02)
 **Fix:** `spieler-session.md`: „keine Benutzerkonten"-Aussage entfernt, Anforderung 9 (KI-Übernahme statt Entfernen) korrigiert, technischer Hinweis auf Spring-Security aktualisiert. `verbindungsabbruch.md`: BUG-ANIM-03-Referenz entfernt (behoben). `frontend-ui-logik.md`: Widerspruch in Technische Hinweise behoben — Meta-UI-Elemente sind DOM-basiert (TischUIManager), Hybrid-Ansatz offiziell festgeschrieben. Alle drei Specs Status → Stabil.
 
-### FEAT-KEYBOARD-NAV: Vollständige Tastatursteuerung
+### ~~FEAT-KEYBOARD-NAV~~: Vollständige Tastatursteuerung ✅
 
 **Priorität:** Niedrig
-**Umsetzung:**
-1. Tab-Fokus-Management in Modalen (Lobby, Tisch-Konfiguration).
-2. Visueller Fokus-Indikator für alle interaktiven Elemente.
+**Status:** Erledigt (2026-05-02)
+**Fix:** `SpielverwaltungsSzene.zeigeErstelleTischModal()`: Auto-Fokus auf erstes Element, Tab-Trap, Escape-Handler, Focus-Return zum Auslöser. ARIA-Attribute (`role="dialog"`, `aria-modal`, `aria-labelledby`). `accessibility.css`: Expliziter `:focus-visible` für Checkbox und Radio.
 
 ---
 
