@@ -501,6 +501,7 @@ export class TischSzene extends Phaser.Scene {
     const slotPos = stichSlotPositionen(b / 2, h / 2, b, h);
     const kg = berechneKartenGroesse(b);
     const tempK = this.erstelleKartenansicht(layout[pos].kartenX, layout[pos].kartenY, kg.w, kg.h, { verdeckt: true });
+    tempK.setDepth(10); // Über tischEbene (depth 3) sichtbar
     try {
       await this.animationen?.animiereKarteAusspielen({ wurzel: tempK }, slotPos[pos], dauer);
     } finally {
