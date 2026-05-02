@@ -99,6 +99,10 @@ public class KiOrchestrierungService {
         LOGGER.info("KI-Orchestrierung gestartet [spielphase={}]", startPhase);
         int anzahlAktionen = 0;
         boolean hatKiGespielt = false;
+        // Merker: Wurde in dieser Runde ein Spielübergang (Rundenende → neues Spiel) durchgeführt?
+        // Falls ja, sendet die finally-Block keinen Snapshot, weil SPIEL_GESTARTET den Stand bereits enthält
+        // und der Snapshot sonst die ANSAGE_ERFOLGT-Events des nachfolgenden KI-Zugs aus der Queue löscht.
+        boolean spielUebergegangen = false;
 
         boolean hatMenschlichenSpieler = tisch.spieler().stream()
             .anyMatch(s -> !s.istKi() && !s.istKiUebernommen());
@@ -129,6 +133,7 @@ public class KiOrchestrierungService {
                         // Wenn Menschen am Tisch sind, brechen wir hier ab, um ihnen Zeit fuer die
                         // Rundenauswertung zu geben.
                         if (hatMenschlichenSpieler) {
+                            spielUebergegangen = true;
                             partieLifecycleService.veroeffentlicheSpielGestartet(tisch);
                             break;
                         }
@@ -195,9 +200,11 @@ public class KiOrchestrierungService {
             }
         } finally {
             if (hatKiGespielt && hatMenschlichenSpieler) {
-                // Finales Status-Update senden, damit der menschliche Spieler sieht, wer am Zug ist.
-                // Dies ist besonders wichtig nach Vorbehalts-Phasen oder Armut-Tausch.
-                sendeFinalenSnapshot(tisch);
+                // Nach Spielübergang kein Snapshot: SPIEL_GESTARTET enthält den Stand bereits.
+                // Ein Snapshot hier würde nachfolgende ANSAGE_ERFOLGT-Events (KI-Vorbehalte) aus der Queue löschen.
+                if (!spielUebergegangen) {
+                    sendeFinalenSnapshot(tisch);
+                }
                 triggereKi(tisch);
             }
         }
