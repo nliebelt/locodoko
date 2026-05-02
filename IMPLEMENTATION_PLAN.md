@@ -8,15 +8,17 @@
 ## Notiz
 
 Was wurde implementiert:
-- **REFACTOR-FE-01** — TischSzene SRP aufgelöst:
-  - Neue Datei `frontend/src/szenen/layout.ts`: alle Layout-/Positions-Funktionen extrahiert (`stichSlotPositionen`, `berechneKartenGroesse`, `berechneKartenAbstand`, `berechneLayout`, `nameplatePositionFuer`, `stichStapelPositionFuer`). TischSzene importiert diese jetzt.
-  - `tischFormatierer.ts` erweitert: `formatiereCountdownText`, `formatiereEreignisSonderpunktFeedback` hinzugefügt. Dupliziertes `escapeHtml` aus TischSzene entfernt.
-  - `TischAnsichtModell`: Neues Feld `spielankuendigungstext: string | null` mit Berechnung in `erstelleTischAnsichtAusStatus()`. Private Methode `ermittleSpielankuendigung` aus TischSzene entfernt.
-  - TischSzene.ts von ~1490 auf ~1375 Zeilen reduziert.
+- **REFACTOR-FE-02** — Magic Strings durch typsichere Konstanten ersetzt:
+  - `SpielverwaltungDto.ts`: Neue Konstanten `SPIELER_POSITION`, `PARTEI`, `SPIELTYP` mit `as const satisfies Record<...>`.
+  - `TischAnsichtModell.ts`: Konstanten importiert und re-exportiert; alle 12 String-Literale (Vergleiche, Fallbacks, Arrays) ersetzt.
+  - `TischSzene.ts`: ~20 Vergleiche (`=== 'SUED'`, `=== 'RE'` etc.) auf Konstanten umgestellt.
+  - `TischInputHandler.ts`: 8 Vergleiche und API-Aufrufe ersetzt.
+  - `AnimationenService.ts`: `siegerPartei`-Feld in `RundenauswertungDaten` auf `Partei`-Typ geändert.
+  - `layout.ts`: `case`-Literale in switch-Statements ersetzt.
 
-Nächster logischer Schritt: **REFACTOR-FE-02** — Magic Strings durch Typensicherheit ersetzen (`'SUED'`, `'RE'`, `'NORMALSPIEL'` etc. durch TypeScript-Unions aus `SpielverwaltungDto.ts` absichern).
+Nächster logischer Schritt: **SPEC-SYNC** — Veraltete Specs bereinigen (spieler-session.md, verbindungsabbruch.md, frontend-ui-logik.md). Oder **FEAT-KEYBOARD-NAV** für Tastatursteuerung in Modalen.
 
-Offene Fragen: Pre-existing TypeScript-Fehler in AppStore.ts Zeile 545 und TischSzene.test.ts Zeile 190 — waren schon vor dieser Iteration fehlerhaft.
+Offene Fragen: Pre-existing TypeScript-Fehler in AppStore.ts Zeile 545 und TischSzene.test.ts Zeile 190 — unverändert vorhanden, nicht durch diese Iteration verursacht.
 
 ---
 
@@ -67,13 +69,11 @@ Nach der umfassenden Analyse des IST-Standes gegen die Specs konzentrieren wir u
 **Status:** Erledigt (2026-05-02)
 **Fix:** Neue `layout.ts` mit allen Layout-/Positions-Funktionen. `tischFormatierer.ts` um `formatiereCountdownText` und `formatiereEreignisSonderpunktFeedback` erweitert. `spielankuendigungstext` ins `TischAnsichtModell` verschoben. TischSzene auf ~1375 Zeilen reduziert.
 
-### REFACTOR-FE-02: Magic Strings durch Typensicherheit ersetzen
+### ~~REFACTOR-FE-02~~: Magic Strings durch Typensicherheit ersetzen ✅
 
 **Priorität:** Mittel
-**Problem:** Im Frontend, insb. in der `TischSzene.ts`, werden fachliche Konstrukte (`'SUED'`, `'RE'`, `'NORMALSPIEL'`, `'KONTRA'`) über 60-mal als "Magic Strings" hardcodiert verwendet. Dies verletzt Abschnitt 2 der `methodik-clean-code.md`.
-**Umsetzung:**
-1. Nutze die bereits in `SpielverwaltungDto.ts` definierten TypeScript-Unions (`SpielerPosition`, `Partei`, `Spieltyp`).
-2. Erstelle zentrale Konstanten/Enums für diese Werte, gegen die anstelle von String-Literalen geprüft wird, um Refactorings und Autovervollständigung sicherzustellen.
+**Status:** Erledigt (2026-05-02)
+**Fix:** `SPIELER_POSITION`, `PARTEI`, `SPIELTYP` Konstanten in `SpielverwaltungDto.ts` angelegt (`as const satisfies`). In `TischAnsichtModell.ts` re-exportiert. Alle ~40 String-Literal-Vergleiche und Fallbacks in TischSzene, TischInputHandler, AnimationenService, layout.ts ersetzt. 94/94 Tests grün.
 
 ---
 
