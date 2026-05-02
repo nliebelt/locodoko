@@ -2,13 +2,13 @@
 
 | Feld           | Wert                                        |
 |----------------|---------------------------------------------|
-| Status         | Zu prüfen |
+| Status         | Stabil |
 | Priorität      | Hoch                                        |
 | Abhängigkeiten | Keine                                       |
 
 ## Beschreibung
 
-In der V1 gibt es keine Benutzerkonten. Spieler identifizieren sich durch Eingabe eines Namens und werden über eine serverseitig geführte Session erkannt. Diese Spec definiert, wie Spieler identifiziert, Sessions verwaltet und KI-Spieler von menschlichen Spielern unterschieden werden.
+Spieler registrieren sich mit einem Anzeigenamen und werden über eine serverseitig geführte Session erkannt. Die Authentifizierung erfolgt über Spring Security (Session-Cookie). Diese Spec definiert, wie Spieler identifiziert, Sessions verwaltet und KI-Spieler von menschlichen Spielern unterschieden werden.
 
 ## Anforderungen
 
@@ -20,7 +20,7 @@ In der V1 gibt es keine Benutzerkonten. Spieler identifizieren sich durch Eingab
 6. KI-Spieler erhalten automatisch generierte Namen (z.B. „KI Anna", „KI Bob", „KI Clara").
 7. Der Spielername muss **nicht eindeutig** sein (verschiedene Spieler können den gleichen Namen haben).
 8. Eine Session hat ein konfigurierbares **Timeout** (Standard: 60 Minuten Inaktivität).
-9. Nach Session-Timeout wird der Spieler aus aktiven Tischen entfernt (siehe `verbindungsabbruch.md`).
+9. Nach Session-Timeout übernimmt die KI den Spieler in laufenden Spielen (siehe `verbindungsabbruch.md`); der Spieler kann sich ab der nächsten Runde wieder einloggen.
 10. Der Spieler kann seinen **Namen ändern**, solange er keinem Tisch zugeordnet ist.
 
 ## Akzeptanzkriterien
@@ -49,5 +49,5 @@ In der V1 gibt es keine Benutzerkonten. Spieler identifizieren sich durch Eingab
 - `Spieler`-Entity mit: id, name, sessionId, istKI, erstelltAm
 - Session-Cookie: HttpOnly, Secure (in Produktion), SameSite=Strict
 - KI-Spieler-Factory für automatische Namensgenerierung
-- Kein Authentifizierungsmechanismus (V1) — Session-Cookie reicht zur Identifikation
+- Authentifizierung via Spring Security; Session-Cookie als Identifikationsträger
 - Session-Validierung als Filter/Interceptor implementieren

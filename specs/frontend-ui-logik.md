@@ -2,7 +2,7 @@
 
 | Feld           | Wert                                                                                    |
 |----------------|-----------------------------------------------------------------------------------------|
-| Status         | Zu prüfen |
+| Status         | Stabil |
 | Priorität      | Hoch                                                                                    |
 | Abhängigkeiten | frontend-tischansicht.md, websocket-kommunikation.md, stichlogik.md, ansagen.md, frontend-tastatursteuerung.md |
 
@@ -138,5 +138,5 @@ Die UI reagiert nicht mehr auf Zustandsänderungen durch Diffing (Vergleich alte
 - Karten-Grayout: Alpha-Wert reduzieren (z.B. 0.45) oder Tint setzen.
 - Hover-Effekt: `pointerover`/`pointerout`-Events mit Y-Verschiebung (-10px).
 - Floating Action Bar als Phaser-Container oder eigener UI-Layer, gebunden an Canvas-Koordinaten.
-- Seitenlade, Modal-Dialoge und Overlays als Phaser-Layer/Container über dem Spielfeld.
+- **Hybrid-Rendering:** Spielaktions-Elemente (Karten, Vorbehalt-Overlay, Armut-Overlay, Floating-Bar) sind als Phaser-Layer/Container umgesetzt. Meta-UI-Elemente (Seitenlade, Einstellungs-Modal, Rundenauswertung, Toast-Notifications) sind als HTML-DOM-Overlays über dem Canvas implementiert (`TischUIManager`, CSS-Klassen `ui-modal-backdrop` etc.).
 - Kein Modal kann per Escape geschlossen werden wenn eine spielrelevante Entscheidung aussteht.
