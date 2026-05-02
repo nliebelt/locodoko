@@ -542,7 +542,7 @@ export class AppStore {
 
     let partiestand = this.zustand.partieStand;
     if (ereignis.partieStand) {
-      if (this._darfPartieStandAktualisieren(ereignis.partieStand, ereignis.partieStand.version)) {
+      if (this._darfPartieStandAktualisieren(ereignis.partieStand, ereignis.partieStand.version, ereignis.ereignisTyp)) {
         partiestand = ereignis.partieStand;
       } else {
         Logger.websocket('Ignoriere veralteten PartieStand aus TischEreignis', {
