@@ -626,6 +626,18 @@ export class AppStore {
           }
         }
 
+        // KI-Verzögerung: Menschlicheres Spielgefühl bei KI-Kartenzügen (nur wenn Menschen am Tisch sind).
+        // kiVerzoegerungMs = 0 deaktiviert den Delay (z.B. in E2E-Tests).
+        if (ereignis.ereignisTyp === 'KARTE_GESPIELT' && this.zustand.uiKonfiguration.kiVerzoegerungMs > 0) {
+          const spielerImSpiel = this.zustand.partieStand?.laufendesSpiel?.spieler ?? [];
+          const istKiZug = spielerImSpiel.find(s => s.position === ereignis.spielerPosition)?.istKi ?? false;
+          const hatMenschlicheSpieler = spielerImSpiel.some(s => !s.istKi);
+          if (istKiZug && hatMenschlicheSpieler) {
+            await new Promise<void>((r) => setTimeout(r, this.zustand.uiKonfiguration.kiVerzoegerungMs));
+            if (this._queuePausiert) break;
+          }
+        }
+
         // Event-Listener ZUERST aufrufen, bevor der State gepatcht wird.
         // Listener koennen dabei Animationen einreihen (reiheEin → _animationLaeuft = true),
         // sodass der anschliessende State-Patch keinen vorzeitigen Render ausloest.

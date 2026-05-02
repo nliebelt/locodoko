@@ -8,14 +8,13 @@
 ## Notiz
 
 Was wurde implementiert:
-- `SecurityConfig.java`: `anyRequest().permitAll()` durch `anyRequest().authenticated()` ersetzt.
-- Alle bekannten Game-Endpunkte explizit als `permitAll()` deklariert (`/api/spieler/**`, `/api/tische/**`, `/api/partien/**`, `/join/**`, `/api/system/**`, `/api/debug/**`).
-- Sicherheitsmodell dokumentiert: Game-APIs werden auf Controller-/Interceptor-Ebene via `SpielerSessionService` gesichert; Spring Security schützt nur unbekannte Pfade.
-- Gast-Sessions (altes Session-Modell via `/api/spieler/session`) bleiben unverändert funktionsfähig.
+- `AppStore.ts`: 800ms KI-Verzögerung in `_verarbeiteEventQueue` implementiert. Bei `KARTE_GESPIELT`-Events eines KI-Spielers (`istKi: true`) und wenn Menschen am Tisch sitzen, wird `kiVerzoegerungMs` (Standard: 800ms) gewartet. `setzeKiKartenVerzögerung(0)` deaktiviert den Delay (für E2E-Tests).
+- Spec-Korrektur: Delay ist Frontend-Verantwortung (AppStore), nicht Backend — entgegen dem alten Plan wurde Option B (Frontend) umgesetzt, da `ki-strategie.md` dies klar vorschreibt.
+- 2 neue Tests hinzugefügt: Delay greift für KI-Züge, Delay=0 deaktiviert ihn.
 
-Nächster logischer Schritt: **FEAT-AI-DELAY** — 800ms KI-Verzögerung im `KiOrchestrierungService` implementieren (Option A: Backend, ScheduledExecutorService).
+Nächster logischer Schritt: **BUG-ANIM-03** — Reload-State Stabilität: `AppStore.ts` und `TischSzene.ts` müssen beim Snapshot-Laden Overlays (Rundenauswertung) initialisieren.
 
-Offene Fragen: Keine.
+Offene Fragen: Pre-existing TypeScript-Fehler in AppStore.ts Zeile 545 (`_darfPartieStandAktualisieren` mit 3 statt 2 Argumenten) — war schon vor dieser Iteration fehlerhaft.
 
 ---
 
@@ -48,14 +47,11 @@ Nach der umfassenden Analyse des IST-Standes gegen die Specs konzentrieren wir u
 
 ## P2 — UX, UX-Logik & Clean Code
 
-### FEAT-AI-DELAY: KI-Verzögerung implementieren
+### ~~FEAT-AI-DELAY~~: KI-Verzögerung implementieren ✅
 
 **Priorität:** Mittel
-**Problem:** KI antwortet aktuell sofort synchron. Spec `ki-strategie.md` fordert ~800ms Verzögerung für ein "menschlicheres" Gefühl.
-**Umsetzung:**
-1. **Option A (Backend):** `KiOrchestrierungService` nutzt einen `ScheduledExecutorService`, um Züge zeitversetzt auszuführen.
-2. **Option B (Frontend):** `TischSzene.ts` verzögert die Verarbeitung von KI-Events.
-**Entscheidung:** Option A (Backend) wird bevorzugt, um die Logik zentral zu steuern.
+**Status:** Erledigt (2026-05-02)
+**Fix:** 800ms Delay in `AppStore._verarbeiteEventQueue` implementiert (Option B Frontend, laut `ki-strategie.md`). Bei KI-`KARTE_GESPIELT`-Events mit menschlichen Mitspielern wird `kiVerzoegerungMs` gewartet. `setzeKiKartenVerzögerung(0)` für Tests.
 
 ### BUG-ANIM-03: Reload-State Stabilität
 

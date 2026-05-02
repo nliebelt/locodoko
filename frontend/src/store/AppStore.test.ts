@@ -831,6 +831,99 @@ describe('AppStore', () => {
     expect(store.snapshot().partieStand?.laufendesSpiel?.aktuelleStichmitte).toHaveLength(0);
   });
 
+  it('verzoegert KI-Kartenzuege um kiVerzoegerungMs wenn Menschen am Tisch sind', async () => {
+    // Wichtig: Ohne Delay spielt die KI Karten sofort, was Animationen überspringt und
+    // das Spielgefühl zerstört. Dieser Test stellt sicher, dass der Delay wirklich greift
+    // und der State während der Wartezeit eingefroren bleibt.
+    const echtzeit = new FakeEchtzeit();
+    const tischMitPartie = { ...baueTisch('tisch-ki-delay'), partieId: 'partie-ki' } as TischAntwort;
+    const store = new AppStore(
+      new FakeApi({ spielerId: 'spieler-1', name: 'Nora', istKi: false, aktiverTischId: null }, [], tischMitPartie) as SpielverwaltungApi,
+      echtzeit
+    );
+    store.setzeKiKartenVerzögerung(30);
+    await store.initialisieren();
+    await store.betreteTisch('tisch-ki-delay');
+
+    const initialStand = {
+      partieId: 'partie-ki', version: 1, status: 'LAUFEND', anzahlSpiele: 8, gespielteSpiele: 0,
+      gesamtpunktestand: {},
+      laufendesSpiel: {
+        spielNummer: 1, hochzeitGeklaert: false, schweinchenGemeldetVon: null, schweinchenAktiv: false,
+        spieler: [
+          { position: 'SUED', istKi: false, istSelbst: true, name: 'Nora', spielerId: 'spieler-1', anzeigeName: 'Nora' },
+          { position: 'WEST', istKi: true, istSelbst: false, name: 'KI-West', spielerId: 'ki-1', anzeigeName: 'KI-West' },
+        ],
+        aktuelleStichmitte: [], spielbareKarten: [], geber: 'SUED', aktuellerSpieler: 'WEST',
+        ansageHistorie: [], moeglicheAnsagen: [], moeglicheVorbehalte: [], deklarierteVorbehalte: [], bockrundenZaehler: 0,
+      }
+    } as unknown as PartieStandAntwort;
+
+    echtzeit.emit('/user/queue/partie/partie-ki', {
+      version: 1, ereignisTyp: 'SNAPSHOT', partieStand: initialStand
+    } as PartieEreignisAntwort);
+    await new Promise<void>((r) => setTimeout(r, 10)); // SNAPSHOT verarbeiten lassen
+
+    expect(store.snapshot().partieStand?.version).toBe(1);
+
+    const nachKiKarte = { ...initialStand, version: 2 } as unknown as PartieStandAntwort;
+    echtzeit.emit('/user/queue/partie/partie-ki', {
+      version: 2, ereignisTyp: 'KARTE_GESPIELT', spielerPosition: 'WEST', karteId: 'KREUZ-AS-0',
+      partieStand: nachKiKarte
+    } as unknown as PartieEreignisAntwort);
+
+    // Nach einem Microtask: State noch nicht aktualisiert — Delay (30ms) läuft noch
+    await Promise.resolve();
+    expect(store.snapshot().partieStand?.version).toBe(1);
+
+    // Nach dem Delay: State muss aktualisiert sein
+    await new Promise<void>((r) => setTimeout(r, 80));
+    expect(store.snapshot().partieStand?.version).toBe(2);
+  });
+
+  it('verzichtet auf KI-Delay wenn kiVerzoegerungMs = 0', async () => {
+    // Wichtig: Tests und E2E-Szenarien müssen schnell durchlaufen können.
+    // setzeKiKartenVerzögerung(0) muss den Delay vollständig deaktivieren.
+    const echtzeit = new FakeEchtzeit();
+    const tischMitPartie = { ...baueTisch('tisch-ki-nodelay'), partieId: 'partie-ki-nd' } as TischAntwort;
+    const store = new AppStore(
+      new FakeApi({ spielerId: 'spieler-1', name: 'Nora', istKi: false, aktiverTischId: null }, [], tischMitPartie) as SpielverwaltungApi,
+      echtzeit
+    );
+    store.setzeKiKartenVerzögerung(0);
+    await store.initialisieren();
+    await store.betreteTisch('tisch-ki-nodelay');
+
+    const initialStand = {
+      partieId: 'partie-ki-nd', version: 1, status: 'LAUFEND', anzahlSpiele: 8, gespielteSpiele: 0,
+      gesamtpunktestand: {},
+      laufendesSpiel: {
+        spielNummer: 1, hochzeitGeklaert: false, schweinchenGemeldetVon: null, schweinchenAktiv: false,
+        spieler: [
+          { position: 'SUED', istKi: false, istSelbst: true, name: 'Nora', spielerId: 'spieler-1', anzeigeName: 'Nora' },
+          { position: 'WEST', istKi: true, istSelbst: false, name: 'KI-West', spielerId: 'ki-1', anzeigeName: 'KI-West' },
+        ],
+        aktuelleStichmitte: [], spielbareKarten: [], geber: 'SUED', aktuellerSpieler: 'WEST',
+        ansageHistorie: [], moeglicheAnsagen: [], moeglicheVorbehalte: [], deklarierteVorbehalte: [], bockrundenZaehler: 0,
+      }
+    } as unknown as PartieStandAntwort;
+
+    echtzeit.emit('/user/queue/partie/partie-ki-nd', {
+      version: 1, ereignisTyp: 'SNAPSHOT', partieStand: initialStand
+    } as PartieEreignisAntwort);
+    await new Promise<void>((r) => setTimeout(r, 10));
+
+    const nachKiKarte = { ...initialStand, version: 2 } as unknown as PartieStandAntwort;
+    echtzeit.emit('/user/queue/partie/partie-ki-nd', {
+      version: 2, ereignisTyp: 'KARTE_GESPIELT', spielerPosition: 'WEST', karteId: 'KREUZ-AS-0',
+      partieStand: nachKiKarte
+    } as unknown as PartieEreignisAntwort);
+
+    // Mit Delay=0: State sofort (nach Microtask-Queue) aktualisiert
+    await new Promise<void>((r) => setTimeout(r, 10));
+    expect(store.snapshot().partieStand?.version).toBe(2);
+  });
+
   it('aktualisiert Tischliste via /user/queue/tische wenn kein Broadcast verfuegbar', async () => {
     // Wichtig: Der Store abonniert auch /user/queue/tische für spielerbezogene Aktualisierungen
     // (z.B. nach Snapshot-Request). Beide Kanäle müssen die tische[]-Liste aktualisieren.
