@@ -36,7 +36,7 @@ Nach der umfassenden Analyse des IST-Standes gegen die Specs konzentrieren wir u
 
 ---
 
-## P2 — UX & UX-Logik
+## P2 — UX, UX-Logik & Clean Code
 
 ### FEAT-AI-DELAY: KI-Verzögerung implementieren
 
@@ -54,6 +54,23 @@ Nach der umfassenden Analyse des IST-Standes gegen die Specs konzentrieren wir u
 **Umsetzung:**
 1. `AppStore.ts` muss beim Laden des Snapshots prüfen, ob das Spiel in einer Phase ist, die ein Overlay erfordert (z.B. Rundenauswertung).
 2. `TischSzene.ts` muss Overlays basierend auf dem geladenen State initialisieren, nicht nur auf Events reagieren.
+
+### REFACTOR-FE-01: TischSzene SRP auflösen (God Object)
+
+**Priorität:** Mittel
+**Problem:** `TischSzene.ts` umfasst fast 1500 Zeilen und vermischt Phaser-Rendering, Positionsberechnungen und Fachlogik-Auswertungen (z.B. `ermittleSpielankuendigung`). Das verletzt das Single Responsibility Principle laut `methodik-clean-code.md`.
+**Umsetzung (Architektur-Entscheidungen aus Plan-Run #99):**
+1. **Dumb Scene, Smart State (Option B):** Extrahiere alle rein fachlichen Selektoren und String-Formatierer aus der Szene. Diese Logik wandert *komplett* in das `TischAnsichtModell` (oder dazugehörige Selektoren). Das View-Modell bereitet die Daten mundgerecht vor (z.B. `spielankuendigungstext: "Anna spielt Damensolo"`), sodass die `TischSzene` nur noch rendert.
+2. **Funktionales Layout:** Lagere die Positions- und Layout-Berechnung (z.B. `stichSlotPositionen`, `berechneLayout`, `berechneKartenGroesse`) in zustandslose, reine Utility-Funktionen (`export function...`) in einer neuen Datei (z.B. `layout.ts`) aus. Kein stateful Service.
+3. Ziel: `TischSzene` orchestriert nur noch Phaser-Objekte und reagiert dumm auf den injizierten Zustand.
+
+### REFACTOR-FE-02: Magic Strings durch Typensicherheit ersetzen
+
+**Priorität:** Mittel
+**Problem:** Im Frontend, insb. in der `TischSzene.ts`, werden fachliche Konstrukte (`'SUED'`, `'RE'`, `'NORMALSPIEL'`, `'KONTRA'`) über 60-mal als "Magic Strings" hardcodiert verwendet. Dies verletzt Abschnitt 2 der `methodik-clean-code.md`.
+**Umsetzung:**
+1. Nutze die bereits in `SpielverwaltungDto.ts` definierten TypeScript-Unions (`SpielerPosition`, `Partei`, `Spieltyp`).
+2. Erstelle zentrale Konstanten/Enums für diese Werte, gegen die anstelle von String-Literalen geprüft wird, um Refactorings und Autovervollständigung sicherzustellen.
 
 ---
 
