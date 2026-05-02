@@ -298,11 +298,16 @@ export class TischSzene extends Phaser.Scene {
       return;
     }
 
-    if (this.animationen?.animationLaeuft || this.austeilenAktiv || this.renderAngefodert) {
-      this.renderAngefodert = true;
+    // Waehrend Animation/Austeilen laeuft: kein Render einplanen.
+    // Die Re-Sync-Logik (reiheEin(...).then(triggerRender)) stellt sicher,
+    // dass nach Ende aller Animationen ein Render ausgeloest wird.
+    if (this.animationen?.animationLaeuft || this.austeilenAktiv) {
       return;
     }
-    
+
+    // renderAngefodert=true bedeutet: ein rAF ist bereits eingeplant — kein Duplikat noetig.
+    if (this.renderAngefodert) return;
+
     this.renderAngefodert = true;
     
     // In Vitest/JSDOM ist requestAnimationFrame oft problematisch, daher rendern wir dort synchron.
@@ -320,10 +325,9 @@ export class TischSzene extends Phaser.Scene {
     requestAnimationFrame(() => {
       this.renderAngefodert = false;
       if (!this.sys?.displayList) return; // Szene wurde zwischenzeitlich zerstoert
-      // Erneut pruefen: _animationLaeuft koennte zwischen dem Aufruf
-      // und dem RAF-Callback auf true gesetzt worden sein (z.B. durch nachfolgendes Event).
+      // Race-Condition: Animation koennte zwischen triggerRender() und dem rAF gestartet sein.
+      // In diesem Fall: nicht rendern. Die Re-Sync-Logik triggert nach Animationsende erneut.
       if (this.animationen?.animationLaeuft || this.austeilenAktiv) {
-        this.renderAngefodert = true;
         return;
       }
       if (this.letzterZustand && this.letztesModell) {
@@ -1083,7 +1087,11 @@ export class TischSzene extends Phaser.Scene {
       await this.animationen?.animiereKarteAusspielen(kObj, ziel);
       kObj.wurzel.destroy(); // am Ende der Animation manuell zerstoeren
       if (this.wartendeKartenId === id) this.wartendeKartenId = null;
-      this.triggerRender(true); // Rendert die statische Karte (AnimationGuard nun aus)
+      // Kein triggerRender(true) hier: Der KARTE_GESPIELT-Event ist bereits in der Queue
+      // und wird verarbeitet, sobald wartendeKartenId=null den Quiescence-Guard aufhebt.
+      // Das State-Patch des Events loest den Render mit dem korrekten Zustand aus
+      // (Karte in der Mitte, nicht mehr in der Hand) — verhindert das kurzzeitige
+      // Zurueck-Rendern der Karte in die Hand bei der alten triggerRender(true)-Variante.
     });
   }
 
