@@ -169,6 +169,37 @@ describe('TischSzene', () => {
     expect(modal.hidden).toBe(false);
   });
 
+  it('stellt Rundenende-Modal nach Browser-Reload wieder her (BUG-ANIM-03)', async () => {
+    // Wichtig: Stellt sicher, dass nach einem Page-Reload das Rundenauswertungs-Overlay
+    // auch ohne erneutes SPIEL_BEENDET-Event erscheint, wenn der Backend-Snapshot einen
+    // abgeschlossenen Spielstand (laufendesSpiel=null + letztesSpielergebnis) liefert.
+    baueSzene(baueZustand({ partieStand: null }));
+    const ergebnis = {
+      spielNummer: 2,
+      spieltyp: 'NORMALSPIEL' as const,
+      siegerPartei: 'KONTRA' as const,
+      spielwert: 1,
+      grundwert: 1,
+      absagePunkte: 0,
+      gegenDieAltenPunkte: 0,
+      soloMultiplikator: 1,
+      augenProPartei: { RE: 110, KONTRA: 130 },
+      spielpunkteProSpieler: { SUED: -1, WEST: 1, NORD: -1, OST: 1 },
+      sonderpunkteProPartei: { RE: [], KONTRA: [] }
+    };
+    const partieStandNachSpiel: PartieStandAntwort = { ...bauePartieStand(null), letztesSpielergebnis: ergebnis };
+    // Partie-SNAPSHOT-Event: Backend liefert den Stand nach Reconnect (kein SPIEL_BEENDET)
+    appStoreHarness.sendeEvent({ ereignisTyp: 'SNAPSHOT', partieStand: partieStandNachSpiel, version: 1 });
+    // Store-Update: AppStore patcht State nachdem das Event verarbeitet wurde
+    appStoreHarness.setZustand(baueZustand({ partieStand: partieStandNachSpiel }));
+    appStoreHarness.sendeZustand();
+    await vi.runAllTimersAsync();
+    const modal = document.querySelector('.ui-rundenauswertung-overlay') as HTMLElement;
+    expect(modal).not.toBeNull();
+    expect(modal.hidden).toBe(false);
+  });
+
+
   it('spielt Karte per Tastatur', async () => {
     baueSzene(baueZustand({ partieStand: bauePartieStand(baueLaufendesSpiel({ spielbareKarten: [karte('H1','H','Z'), karte('K1','K','A')] })) }));
     await vi.runAllTimersAsync(); // Animationen abwarten

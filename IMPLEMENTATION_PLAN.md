@@ -8,11 +8,10 @@
 ## Notiz
 
 Was wurde implementiert:
-- `AppStore.ts`: 800ms KI-Verzögerung in `_verarbeiteEventQueue` implementiert. Bei `KARTE_GESPIELT`-Events eines KI-Spielers (`istKi: true`) und wenn Menschen am Tisch sitzen, wird `kiVerzoegerungMs` (Standard: 800ms) gewartet. `setzeKiKartenVerzögerung(0)` deaktiviert den Delay (für E2E-Tests).
-- Spec-Korrektur: Delay ist Frontend-Verantwortung (AppStore), nicht Backend — entgegen dem alten Plan wurde Option B (Frontend) umgesetzt, da `ki-strategie.md` dies klar vorschreibt.
-- 2 neue Tests hinzugefügt: Delay greift für KI-Züge, Delay=0 deaktiviert ihn.
+- `TischSzene.ts`: Reload-State Stabilität (BUG-ANIM-03). Im SNAPSHOT-Event-Handler wird erkannt, ob ein abgeschlossenes Spiel (`laufendesSpiel=null + letztesSpielergebnis`) vorliegt. Ein Flag `_zeigeOverlayNachSnapshot` wird gesetzt. Im Store-Abonnement (nach dem Patch, wenn `aktuellerTisch` und das Modell vollständig sind) wird das Rundenauswertungs- oder PartieEnde-Overlay wiederhergestellt und die Queue pausiert.
+- 1 neuer Test: `stellt Rundenende-Modal nach Browser-Reload wieder her (BUG-ANIM-03)`.
 
-Nächster logischer Schritt: **BUG-ANIM-03** — Reload-State Stabilität: `AppStore.ts` und `TischSzene.ts` müssen beim Snapshot-Laden Overlays (Rundenauswertung) initialisieren.
+Nächster logischer Schritt: **REFACTOR-FE-01** — TischSzene SRP: Fachliche Selektoren und Positonsberechnungen aus der ~1500-Zeilen-Szene extrahieren. Option B (Dumb Scene, Smart State) + Funktionales Layout in `layout.ts`.
 
 Offene Fragen: Pre-existing TypeScript-Fehler in AppStore.ts Zeile 545 (`_darfPartieStandAktualisieren` mit 3 statt 2 Argumenten) — war schon vor dieser Iteration fehlerhaft.
 
@@ -53,13 +52,11 @@ Nach der umfassenden Analyse des IST-Standes gegen die Specs konzentrieren wir u
 **Status:** Erledigt (2026-05-02)
 **Fix:** 800ms Delay in `AppStore._verarbeiteEventQueue` implementiert (Option B Frontend, laut `ki-strategie.md`). Bei KI-`KARTE_GESPIELT`-Events mit menschlichen Mitspielern wird `kiVerzoegerungMs` gewartet. `setzeKiKartenVerzögerung(0)` für Tests.
 
-### BUG-ANIM-03: Reload-State Stabilität
+### ~~BUG-ANIM-03~~: Reload-State Stabilität ✅
 
 **Priorität:** Mittel
-**Problem:** Bei einem Browser-Reload gehen Informationen über aktive Overlays oder laufende Animationen verloren, was zu einem inkonsistenten UI-Zustand führen kann.
-**Umsetzung:**
-1. `AppStore.ts` muss beim Laden des Snapshots prüfen, ob das Spiel in einer Phase ist, die ein Overlay erfordert (z.B. Rundenauswertung).
-2. `TischSzene.ts` muss Overlays basierend auf dem geladenen State initialisieren, nicht nur auf Events reagieren.
+**Status:** Erledigt (2026-05-02)
+**Fix:** `TischSzene.ts`: Neues Flag `_zeigeOverlayNachSnapshot`. Im SNAPSHOT-Event-Handler wird `laufendesSpiel===null && letztesSpielergebnis!==null` erkannt. Das Overlay (Rundenauswertung oder PartieEnde) wird im Store-Abonnement erst gezeigt, wenn `aktuellerTisch` und das vollständige Modell verfügbar sind.
 
 ### REFACTOR-FE-01: TischSzene SRP auflösen (God Object)
 
@@ -115,6 +112,6 @@ Nach der umfassenden Analyse des IST-Standes gegen die Specs konzentrieren wir u
 | BUG-STAT-01 | Bug | Statistiken werden nicht aktualisiert | Hoch | ✅ |
 | SEC-REFINEMENT| Security | SecurityConfig zu permissiv | Hoch | ✅ |
 | FEAT-AI-DELAY | UX | 800ms Verzögerung für KI-Züge | Mittel |
-| BUG-ANIM-03 | Bug | Reload-State Konsistenz | Mittel |
+| BUG-ANIM-03 | Bug | Reload-State Konsistenz | Mittel | ✅ |
 | FEAT-KEYBOARD-NAV | UX | Tab-Fokus in Modalen | Niedrig |
 | SPEC-SYNC | Spec | Veraltete Specs bereinigen | Niedrig |

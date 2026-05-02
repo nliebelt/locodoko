@@ -182,6 +182,7 @@ export class TischSzene extends Phaser.Scene {
   private wartendeKartenId: string | null = null;
   private austeilenAktiv = false;
   private _letzterGezeigterSpielBeendet: number | null = null;
+  private _zeigeOverlayNachSnapshot: { spielNummer: number; partieBeendet: boolean } | null = null;
   private rundenauswertungObjekte: Phaser.GameObjects.GameObject[] = [];
   private escapeHandler?: (e: KeyboardEvent) => void;
   private backdropClickHandler?: (e: MouseEvent) => void;
@@ -294,6 +295,18 @@ export class TischSzene extends Phaser.Scene {
       this.letzterZustand = zustand;
       this.letztesModell = modell;
       this.aktualisiereUi(zustand, modell);
+
+      // Overlay nach Reload wiederherstellen: erst wenn aktuellerTisch und letztesSpielergebnis gesetzt sind.
+      if (this._zeigeOverlayNachSnapshot && zustand.aktuellerTisch && modell.letztesSpielergebnis) {
+        const { partieBeendet } = this._zeigeOverlayNachSnapshot;
+        this._zeigeOverlayNachSnapshot = null;
+        appStore.pausiereQueue();
+        if (partieBeendet) {
+          this.animationen?.reiheEin(() => { this.zeigePartieEndeModal(modell); return Promise.resolve(); });
+        } else {
+          this.animationen?.reiheEin(() => this.zeigeRundenEndeModal(modell));
+        }
+      }
       
       this.triggerRender();
     });
@@ -413,6 +426,7 @@ export class TischSzene extends Phaser.Scene {
     this.wartendeKartenId = null;
     this.austeilenAktiv = false;
     this._letzterGezeigterSpielBeendet = null;
+    this._zeigeOverlayNachSnapshot = null;
   }
 
   private verarbeitePartieEreignis(ereignis: PartieEreignisAntwort): void {
@@ -534,10 +548,20 @@ export class TischSzene extends Phaser.Scene {
         break;
       }
 
-      case 'SNAPSHOT':
-        // Ein Snapshot im laufenden Spiel sollte nicht destruktiv sein.
-        // Wir triggern nur ein UI-Update (passiert sowieso via Store-Abo).
+      case 'SNAPSHOT': {
+        // Nach einem Reload: Overlay für abgeschlossenes Spiel wiederherstellen.
+        // laufendesSpiel === null + letztesSpielergebnis vorhanden → Rundenauswertung war aktiv.
+        // Das Modell wird erst im Store-Abo aufgebaut (aktuellerTisch kann hier noch null sein).
+        const ps = ereignis.partieStand;
+        if (ps && !ps.laufendesSpiel && ps.letztesSpielergebnis) {
+          const spielNr = ps.letztesSpielergebnis.spielNummer;
+          if (spielNr !== this._letzterGezeigterSpielBeendet) {
+            this._letzterGezeigterSpielBeendet = spielNr;
+            this._zeigeOverlayNachSnapshot = { spielNummer: spielNr, partieBeendet: ps.status === 'BEENDET' };
+          }
+        }
         break;
+      }
 
       case 'AKTION_ABGELEHNT': {
         const e = ereignis as AktionAbgelehntEreignis;
