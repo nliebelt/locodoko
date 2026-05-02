@@ -1,3 +1,4 @@
+import { SPIELER_POSITION, PARTEI, SPIELTYP } from '../modelle/SpielverwaltungDto';
 import type {
   AbgeschlossenerStichAntwort,
   Ansage,
@@ -19,6 +20,7 @@ import type {
 
 /** Relative Sitzposition eines Spielers aus Sicht des eigenen Spielers (SUED = ich). */
 export type SpielerPosition = 'SUED' | 'WEST' | 'NORD' | 'OST';
+export { SPIELER_POSITION, PARTEI, SPIELTYP };
 
 /**
  * View-Repraesentation eines einzelnen Spielers am Tisch.
@@ -144,8 +146,8 @@ export interface TischAnsichtModell {
   schweinchenGemeldetVon: SpielerPosition | null;
 }
 
-const POSITIONEN: SpielerPosition[] = ['SUED', 'WEST', 'NORD', 'OST'];
-const ABSOLUTE_POSITIONEN: BackendSpielerPosition[] = ['SUED', 'WEST', 'NORD', 'OST'];
+const POSITIONEN: SpielerPosition[] = [SPIELER_POSITION.SUED, SPIELER_POSITION.WEST, SPIELER_POSITION.NORD, SPIELER_POSITION.OST];
+const ABSOLUTE_POSITIONEN: BackendSpielerPosition[] = [SPIELER_POSITION.SUED, SPIELER_POSITION.WEST, SPIELER_POSITION.NORD, SPIELER_POSITION.OST];
 
 /**
  * Erzeugt ein Platzhalter-TischAnsichtModell fuer die Wartezeit vor dem ersten Spiel.
@@ -169,8 +171,8 @@ export function erstelleStandardTischAnsicht(spielerName: string): TischAnsichtM
     deklarierteVorbehalte: [],
     spieler: [
       {
-        position: 'SUED',
-        absolutePosition: 'SUED',
+        position: SPIELER_POSITION.SUED,
+        absolutePosition: SPIELER_POSITION.SUED,
         name: spielerName,
         anzeigeName: spielerName,
         avatarFarbe: null,
@@ -186,8 +188,8 @@ export function erstelleStandardTischAnsicht(spielerName: string): TischAnsichtM
         sichtbareHandkarten: []
       },
       {
-        position: 'WEST',
-        absolutePosition: 'WEST',
+        position: SPIELER_POSITION.WEST,
+        absolutePosition: SPIELER_POSITION.WEST,
         name: 'KI West',
         anzeigeName: 'KI West',
         avatarFarbe: null,
@@ -203,8 +205,8 @@ export function erstelleStandardTischAnsicht(spielerName: string): TischAnsichtM
         sichtbareHandkarten: []
       },
       {
-        position: 'NORD',
-        absolutePosition: 'NORD',
+        position: SPIELER_POSITION.NORD,
+        absolutePosition: SPIELER_POSITION.NORD,
         name: 'KI Nord',
         anzeigeName: 'KI Nord',
         avatarFarbe: null,
@@ -220,8 +222,8 @@ export function erstelleStandardTischAnsicht(spielerName: string): TischAnsichtM
         sichtbareHandkarten: []
       },
       {
-        position: 'OST',
-        absolutePosition: 'OST',
+        position: SPIELER_POSITION.OST,
+        absolutePosition: SPIELER_POSITION.OST,
         name: 'KI Ost',
         anzeigeName: 'KI Ost',
         avatarFarbe: null,
@@ -357,14 +359,14 @@ export function erstelleTischAnsichtAusStatus(
  * Gibt null zurueck bei Normalspiel oder wenn kein Spiel laeuft.
  */
 function berechneSpielerankuendigungstext(spiel: LaufendesSpielAntwort | null | undefined): string | null {
-  if (!spiel || spiel.spieltyp === 'NORMALSPIEL') return null;
+  if (!spiel || spiel.spieltyp === SPIELTYP.NORMALSPIEL) return null;
   const labels: Partial<Record<string, string>> = {
     SOLO_DAME: 'Damensolo', SOLO_BUBE: 'Bubensolo', SOLO_TRUMPF: 'Karosolo',
     SOLO_TRUMPF_HERZ: 'Herzsolo', SOLO_TRUMPF_PIK: 'Piksolo', SOLO_TRUMPF_KREUZ: 'Kreuzsolo',
     SOLO_FLEISCHLOS: 'Fleischlos', HOCHZEIT: 'Hochzeit', ARMUT: 'Armut'
   };
   const label = labels[spiel.spieltyp] ?? spiel.spieltyp;
-  const solist = spiel.spieler?.find((s: SpielerImSpielAntwort) => s.partei === 'RE');
+  const solist = spiel.spieler?.find((s: SpielerImSpielAntwort) => s.partei === PARTEI.RE);
   return solist ? `${solist.name} spielt ${label}` : label;
 }
 
@@ -415,7 +417,7 @@ function bestimmeBezugsPositionAusPartie(
 
 function bestimmeBezugsPositionAusTisch(spielerId: string | null, tisch: TischAntwort): BackendSpielerPosition {
   const eigenerIndex = spielerId ? tisch.spieler.findIndex((spieler) => spieler.spielerId === spielerId) : -1;
-  return ABSOLUTE_POSITIONEN[eigenerIndex] ?? 'SUED';
+  return ABSOLUTE_POSITIONEN[eigenerIndex] ?? SPIELER_POSITION.SUED;
 }
 
 function mappeSpielerAusPartie(
@@ -456,7 +458,7 @@ function mappeSpielerAusTisch(
 ): SpielerAnsicht[] {
   const nachPosition = new Map<SpielerPosition, SpielerAnsicht>();
   tisch.spieler.forEach((spieler, index) => {
-    const absolutePosition = ABSOLUTE_POSITIONEN[index] ?? 'SUED';
+    const absolutePosition = ABSOLUTE_POSITIONEN[index] ?? SPIELER_POSITION.SUED;
     const position = mappeRelativePositionOhneNull(absolutePosition, bezugPosition);
     nachPosition.set(position, mappeLobbySpieler(position, absolutePosition, spieler, tisch, spielerId));
   });
@@ -501,7 +503,7 @@ function mappeGesamtpunktestand(
     .map((spieler) => ({
       position: spieler.position,
       name: spieler.name,
-      punkte: gesamtpunktestand[spieler.absolutePosition ?? 'SUED'] ?? 0
+      punkte: gesamtpunktestand[spieler.absolutePosition ?? SPIELER_POSITION.SUED] ?? 0
     }));
 }
 
@@ -513,7 +515,7 @@ function mappeLetzteAbgeschlosseneStiche(
   const nameNachPosition = new Map(
     spielerAnsichten
       .filter((spieler) => spieler.absolutePosition !== null)
-      .map((spieler) => [spieler.absolutePosition ?? 'SUED', spieler.name] as const)
+      .map((spieler) => [spieler.absolutePosition ?? SPIELER_POSITION.SUED, spieler.name] as const)
   );
   return stiche.map((stich) => ({
     spielNummer: stich.spielNummer,
@@ -567,7 +569,7 @@ function mappeSpielpunkte(
     .map((spieler) => ({
       position: spieler.position,
       name: spieler.name,
-      punkte: spielpunkte[spieler.absolutePosition ?? 'SUED'] ?? 0
+      punkte: spielpunkte[spieler.absolutePosition ?? SPIELER_POSITION.SUED] ?? 0
     }));
 }
 
@@ -576,11 +578,11 @@ function bestimmeArmutAktion(
   spielerAnsichten: SpielerAnsicht[],
   bezugPosition: BackendSpielerPosition
 ): ArmutAktionAnsicht | null {
-  if (laufendesSpiel.phase !== 'ARMUT_TAUSCH' || mappeRelativePosition(laufendesSpiel.aktuellerSpieler, bezugPosition) !== 'SUED') {
+  if (laufendesSpiel.phase !== 'ARMUT_TAUSCH' || mappeRelativePosition(laufendesSpiel.aktuellerSpieler, bezugPosition) !== SPIELER_POSITION.SUED) {
     return null;
   }
 
-  const eigenerSpieler = spielerAnsichten.find((spieler) => spieler.istSelbst) ?? spielerAnsichten.find((spieler) => spieler.position === 'SUED');
+  const eigenerSpieler = spielerAnsichten.find((spieler) => spieler.istSelbst) ?? spielerAnsichten.find((spieler) => spieler.position === SPIELER_POSITION.SUED);
   if (!eigenerSpieler) {
     return null;
   }
@@ -620,7 +622,7 @@ function mappeRelativePositionOhneNull(
   position: BackendSpielerPosition,
   bezugPosition: BackendSpielerPosition
 ): SpielerPosition {
-  return mappeRelativePosition(position, bezugPosition) ?? 'SUED';
+  return mappeRelativePosition(position, bezugPosition) ?? SPIELER_POSITION.SUED;
 }
 
 function mappeRelativePosition(

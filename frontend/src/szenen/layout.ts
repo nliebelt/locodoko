@@ -3,6 +3,7 @@
  * Alle Funktionen sind reine Utility-Funktionen ohne Seiteneffekte.
  */
 import type { SpielerPosition } from '../modelle/TischAnsichtModell';
+import { SPIELER_POSITION } from '../modelle/TischAnsichtModell';
 
 export interface TischLayoutEintrag {
   x: number;
@@ -54,10 +55,10 @@ export function nameplatePositionFuer(
   hoehe: number
 ): { x: number; y: number } {
   switch (spielerPosition) {
-    case 'NORD': return { x: breite * 0.5, y: hoehe * 0.15 };
-    case 'SUED': return { x: breite * 0.5, y: hoehe * 0.85 };
-    case 'WEST': return { x: breite * 0.14, y: hoehe * 0.84 };
-    case 'OST':  return { x: breite * 0.86, y: hoehe * 0.16 };
+    case SPIELER_POSITION.NORD: return { x: breite * 0.5, y: hoehe * 0.15 };
+    case SPIELER_POSITION.SUED: return { x: breite * 0.5, y: hoehe * 0.85 };
+    case SPIELER_POSITION.WEST: return { x: breite * 0.14, y: hoehe * 0.84 };
+    case SPIELER_POSITION.OST:  return { x: breite * 0.86, y: hoehe * 0.16 };
   }
 }
 
@@ -73,19 +74,19 @@ export function stichStapelPositionFuer(
   const abstand = 12;
 
   switch (position) {
-    case 'SUED': {
+    case SPIELER_POSITION.SUED: {
       const fHalbe = kartenAnzahl > 0 ? ((kartenAnzahl - 1) * kAbstand.horizontal + kGroesse.w) / 2 : 0;
       return { x: breite / 2 - fHalbe - kGroesse.w / 2 - abstand, y: hoehe * 0.90, winkel: 0 };
     }
-    case 'NORD': {
+    case SPIELER_POSITION.NORD: {
       const fHalbe = kartenAnzahl > 0 ? ((kartenAnzahl - 1) * kAbstand.horizontal + kGroesse.w) / 2 : 0;
       return { x: breite / 2 + fHalbe + kGroesse.w / 2 + abstand, y: hoehe * 0.10, winkel: 0 };
     }
-    case 'WEST': {
+    case SPIELER_POSITION.WEST: {
       const fanOben = layout.WEST.kartenY - kGroesse.h / 2;
       return { x: layout.WEST.kartenX, y: fanOben - abstand, winkel: 90 };
     }
-    case 'OST': {
+    case SPIELER_POSITION.OST: {
       const fanUnten = layout.OST.kartenY + (kartenAnzahl > 0 ? (kartenAnzahl - 1) * kAbstand.vertikal : 0) + kGroesse.h / 2;
       return { x: layout.OST.kartenX, y: fanUnten + 50, winkel: 90 };
     }

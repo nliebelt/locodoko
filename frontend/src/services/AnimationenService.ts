@@ -1,4 +1,6 @@
 import type Phaser from 'phaser';
+import { PARTEI } from '../modelle/SpielverwaltungDto';
+import type { Partei } from '../modelle/SpielverwaltungDto';
 
 /**
  * Phaser-Spielobjekte, die gemeinsam als Karte animiert werden koennen:
@@ -576,7 +578,7 @@ export class AnimationenService {
     const TIEFE = 300;
     const FARBE_RE = '#ffd166';
     const FARBE_KONTRA = '#90caf9';
-    const siegerFarbe = daten.siegerPartei === 'RE' ? FARBE_RE : FARBE_KONTRA;
+    const siegerFarbe = daten.siegerPartei === PARTEI.RE ? FARBE_RE : FARBE_KONTRA;
     const FONT = "'Space Grotesk', system-ui, sans-serif";
 
     const fuege = <T extends Phaser.GameObjects.GameObject>(obj: T): T => {
@@ -781,7 +783,7 @@ export class AnimationenService {
 export interface RundenauswertungDaten {
   spieltypLabel: string;
   spielNummerText: string;
-  siegerPartei: 'RE' | 'KONTRA';
+  siegerPartei: Partei;
   spielwert: number;
   reSpielerNamen: string;
   kontraSpielerNamen: string;

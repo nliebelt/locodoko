@@ -20,6 +20,8 @@ import { Logger } from '../logger';
 import {
   erstelleTischAnsichtAusStatus,
   istTrumpfFuerSpieltyp,
+  SPIELER_POSITION,
+  PARTEI,
   type AbgeschlossenerStichAnsicht,
   type TischAnsichtModell,
   type SpielerPosition
@@ -547,7 +549,7 @@ export class TischSzene extends Phaser.Scene {
     });
     
     const npPos = nameplatePositionFuer(mStich.gewinnerPosition, b, h);
-    const istH = mStich.gewinnerPosition === 'SUED' || mStich.gewinnerPosition === 'NORD';
+    const istH = mStich.gewinnerPosition === SPIELER_POSITION.SUED || mStich.gewinnerPosition === SPIELER_POSITION.NORD;
     const flash = this.add.rectangle(npPos.x, npPos.y, istH ? Math.max(120, b * 0.11) : Math.max(80, b * 0.07), istH ? Math.max(54, h * 0.075) : Math.max(80, h * 0.11), 0xffe082, 0.7).setDepth(150).setAlpha(0);
     
     this.stichEinziehenAktiv = true;
@@ -816,7 +818,7 @@ export class TischSzene extends Phaser.Scene {
       const kartenAnzahl = spieler.sichtbareHandkarten.length > 0 ? spieler.sichtbareHandkarten.length : Math.max(spieler.verbleibendeKarten, 0);
       const pos = stichStapelPositionFuer(spieler.position, breite, hoehe, kartenAnzahl);
       const anzahlSichtbar = Math.min(4, spieler.stiche);
-      const istVertikal = spieler.position === 'SUED' || spieler.position === 'NORD';
+      const istVertikal = spieler.position === SPIELER_POSITION.SUED || spieler.position === SPIELER_POSITION.NORD;
       for (let i = 0; i < anzahlSichtbar; i++) {
         const versatz = -(anzahlSichtbar - 1 - i) * versatzPx;
         const kx = pos.x + (istVertikal ? 0 : versatz);
@@ -893,13 +895,13 @@ export class TischSzene extends Phaser.Scene {
     const kG = berechneKartenGroesse(breite);
     const kAnzahl = spieler.sichtbareHandkarten.length > 0 ? spieler.sichtbareHandkarten.length : Math.max(spieler.verbleibendeKarten, 0);
     let pos: { x: number; y: number };
-    if (spieler.position === 'SUED') {
+    if (spieler.position === SPIELER_POSITION.SUED) {
       const fH = kAnzahl > 0 ? ((kAnzahl - 1) * kAb.horizontal + kG.w) / 2 : 0;
       pos = { x: Math.min(breite / 2 + fH + npW / 2 + 40, breite - npW / 2 - 4), y: hoehe * 0.85 };
-    } else if (spieler.position === 'NORD') {
+    } else if (spieler.position === SPIELER_POSITION.NORD) {
       const fH = kAnzahl > 0 ? ((kAnzahl - 1) * kAb.horizontal + kG.w) / 2 : 0;
       pos = { x: Math.max(breite / 2 - fH - npW / 2 - 20, npW / 2 + 4), y: hoehe * 0.15 };
-    } else if (spieler.position === 'WEST') {
+    } else if (spieler.position === SPIELER_POSITION.WEST) {
       const fU = layout.WEST.kartenY + (kAnzahl > 0 ? (kAnzahl - 1) * kAb.vertikal : 0) + kG.h / 2;
       pos = { x: Math.max(npW / 2 + 4, layout.WEST.kartenX), y: Math.min(fU + npH / 2 + 50, hoehe - npH / 2 - 4) };
     } else {
@@ -920,7 +922,7 @@ export class TischSzene extends Phaser.Scene {
     const kS = Math.round(Math.max(10, breite * 0.009));
     if (spieler.avatarFarbe) { ebene.add(this.add.circle(pos.x - npW * 0.38, pos.y - npH * 0.22, nS * 0.55, parseInt(spieler.avatarFarbe.replace('#', ''), 16), 1)); }
     ebene.add(this.add.text(pos.x, pos.y - npH * 0.22, spieler.anzeigeName, { color: '#f8f9fa', fontSize: `${nS}px`, fontStyle: 'bold' }).setOrigin(0.5));
-    if (spieler.partei) { ebene.add(this.add.text(pos.x, pos.y - npH / 2 - 10, spieler.partei, { color: spieler.partei === 'RE' ? '#ffd166' : '#90caf9', fontSize: `${kS}px`, fontStyle: 'bold' }).setOrigin(0.5)); }
+    if (spieler.partei) { ebene.add(this.add.text(pos.x, pos.y - npH / 2 - 10, spieler.partei, { color: spieler.partei === PARTEI.RE ? '#ffd166' : '#90caf9', fontSize: `${kS}px`, fontStyle: 'bold' }).setOrigin(0.5)); }
     const ansageBadges: Partial<Record<string, string>> = { KEINE_90: 'K90', KEINE_60: 'K60', KEINE_30: 'K30', SCHWARZ: 'S' };
     const ansSuf = modell.ansageHistorie.filter((a) => a.position === spieler.position && ansageBadges[a.ansage] !== undefined).map((a) => ansageBadges[a.ansage]).join(' ');
     ebene.add(this.add.text(pos.x, pos.y + npH * 0.22, `${spieler.istSelbst ? 'Du' : spieler.istMensch ? 'Mensch' : 'KI'} · ${spieler.stiche} Stiche${spieler.istGeber ? ' G' : ''}${ansSuf ? ' · ' + ansSuf : ''}`, { color: spieler.istGeber ? '#ffd166' : '#a3c4a8', fontSize: `${kS}px` }).setOrigin(0.5));
@@ -937,10 +939,10 @@ export class TischSzene extends Phaser.Scene {
     const kG = berechneKartenGroesse(szB);
     const kAb = berechneKartenAbstand(szB, szH);
     const auswV = Math.round(kG.h * 0.19);
-    const istH = spieler.position === 'SUED' || spieler.position === 'NORD';
+    const istH = spieler.position === SPIELER_POSITION.SUED || spieler.position === SPIELER_POSITION.NORD;
     const stX = istH ? szB / 2 - ((kAnzahl - 1) * kAb.horizontal) / 2 : pos.kartenX;
     const [fB, fS]: [number, number] = { SUED: [-12, 5], NORD: [12, -5], WEST: [78, 5], OST: [102, -5] }[spieler.position] as [number, number];
-    const istGesp = spieler.position === 'NORD' || spieler.position === 'OST';
+    const istGesp = spieler.position === SPIELER_POSITION.NORD || spieler.position === SPIELER_POSITION.OST;
     const animA = !!this.wartendeKartenId || (this.animationen?.animationLaeuft ?? false);
 
     // Eigene Hand (SUED): Karten-Sprites werden persistiert und wiederverwendet, damit keine Flackern-Artefakte entstehen.
@@ -1028,14 +1030,14 @@ export class TischSzene extends Phaser.Scene {
 
   private ermittleArmutAuswahl(modell: TischAnsichtModell, handkarten: KarteAntwort[]): Set<string> | null {
     const a = modell.armutAktion;
-    if (!a || modell.aktuellerSpieler !== 'SUED') return null;
+    if (!a || modell.aktuellerSpieler !== SPIELER_POSITION.SUED) return null;
     if (a.modus === 'ANTWORTEN' && !this.armutAnnahmeAktiv) return null;
     const ids = a.modus === 'ANBIETEN' ? handkarten.filter((k) => istTrumpfFuerSpieltyp(k, modell.spieltyp)).map((k) => k.id) : handkarten.map((k) => k.id);
     return new Set(ids);
   }
 
   private synchronisiereAktionZustand(modell: TischAnsichtModell): void {
-    if (!modell.armutAktion || modell.aktuellerSpieler !== 'SUED') { this.armutAnnahmeAktiv = false; this.ausgewaehlteArmutKarten.clear(); return; }
+    if (!modell.armutAktion || modell.aktuellerSpieler !== SPIELER_POSITION.SUED) { this.armutAnnahmeAktiv = false; this.ausgewaehlteArmutKarten.clear(); return; }
     if (modell.armutAktion.modus === 'ANBIETEN') this.armutAnnahmeAktiv = false;
     const eigeneHand = modell.spieler.find((s) => s.istSelbst)?.sichtbareHandkarten ?? [];
     const sichtbareIds = new Set(eigeneHand.map((k) => k.id));
@@ -1093,10 +1095,10 @@ export class TischSzene extends Phaser.Scene {
       const kAnz = s.sichtbareHandkarten.length > 0 ? s.sichtbareHandkarten.length : Math.max(s.verbleibendeKarten, 0);
       const kg = berechneKartenGroesse(b);
       const kAb = berechneKartenAbstand(b, h);
-      const istH = s.position === 'SUED' || s.position === 'NORD';
+      const istH = s.position === SPIELER_POSITION.SUED || s.position === SPIELER_POSITION.NORD;
       const stX = istH ? b / 2 - ((kAnz - 1) * kAb.horizontal) / 2 : layout[s.position].kartenX;
       const [fB, fS]: [number, number] = { SUED: [-12, 5], NORD: [12, -5], WEST: [78, 5], OST: [102, -5] }[s.position] as [number, number];
-      const istG = s.position === 'NORD' || s.position === 'OST';
+      const istG = s.position === SPIELER_POSITION.NORD || s.position === SPIELER_POSITION.OST;
       for (let i = 0; i < kAnz; i++) {
         const fI = istG ? kAnz - 1 - i : i;
         const w = fB + fI * fS;
@@ -1115,7 +1117,7 @@ export class TischSzene extends Phaser.Scene {
     // Wir nehmen an, dass das Event-Handling die Ansage passend zuordnet (vereinfacht fuer Banner)
     for (const a of neue) {
       const { width: b, height: h } = this.scale.gameSize;
-      const f = a === 'RE' ? '#ffd166' : a === 'KONTRA' ? '#90caf9' : '#ffffff';
+      const f = a === PARTEI.RE ? '#ffd166' : a === PARTEI.KONTRA ? '#90caf9' : '#ffffff';
       await this.animationen?.animiereAnsageBanner(formatiereAnsage(a), { x: b / 2, y: h * 0.18 }, undefined, f);
     }
   }
@@ -1128,7 +1130,7 @@ export class TischSzene extends Phaser.Scene {
     const e = m.letztesSpielergebnis;
     if (!e) return;
     const { width: b, height: h } = this.scale.gameSize;
-    await this.animationen?.animiereGewinnerFlash(`${e.siegerPartei} gewinnt!`, m.spieler.filter((s) => s.partei === e.siegerPartei).map((s) => s.name).join(', '), `+${e.spielwert} Punkte`, e.siegerPartei === 'RE' ? '#ffd166' : '#90caf9', { x: b / 2, y: h / 2 });
+    await this.animationen?.animiereGewinnerFlash(`${e.siegerPartei} gewinnt!`, m.spieler.filter((s) => s.partei === e.siegerPartei).map((s) => s.name).join(', '), `+${e.spielwert} Punkte`, e.siegerPartei === PARTEI.RE ? '#ffd166' : '#90caf9', { x: b / 2, y: h / 2 });
   }
 
   private async zeigeRundenEndeModal(m: TischAnsichtModell): Promise<void> {
@@ -1143,7 +1145,7 @@ export class TischSzene extends Phaser.Scene {
     if (e.gegenDieAltenPunkte > 0) bZ.push(`Gegen die Alten: +${e.gegenDieAltenPunkte}`);
     const sp = [...e.sonderpunkteRe.map((s) => `Re: ${formatiereSonderpunkt(s, sNMap)}`), ...e.sonderpunkteKontra.map((s) => `Kontra: ${formatiereSonderpunkt(s, sNMap)}`)];
     if (sp.length > 0) bZ.push(`Sonderpunkte: +${sp.length}`);
-    const daten: RundenauswertungDaten = { spieltypLabel: formatiereVorbehalt(e.spieltyp as VorbehaltAnsage) ?? e.spieltyp, spielNummerText: anzahlS ? `Spiel ${e.spielNummer} von ${anzahlS}` : `Spiel ${e.spielNummer}`, siegerPartei: e.siegerPartei, spielwert: e.spielwert, reSpielerNamen: m.spieler.filter((s) => s.partei === 'RE').map((s) => s.name).join(', ') || '–', kontraSpielerNamen: m.spieler.filter((s) => s.partei === 'KONTRA').map((s) => s.name).join(', ') || '–', augenRe: e.augenRe, augenKontra: e.augenKontra, berechnungZeilen: bZ, spielpunkte: e.spielpunkte.map((p) => ({ name: p.name, punkte: p.punkte, istSelbst: p.position === 'SUED' })), gesamtstand: m.gesamtpunktestand.map((p) => ({ name: p.name, punkte: p.punkte })) };
+    const daten: RundenauswertungDaten = { spieltypLabel: formatiereVorbehalt(e.spieltyp as VorbehaltAnsage) ?? e.spieltyp, spielNummerText: anzahlS ? `Spiel ${e.spielNummer} von ${anzahlS}` : `Spiel ${e.spielNummer}`, siegerPartei: e.siegerPartei, spielwert: e.spielwert, reSpielerNamen: m.spieler.filter((s) => s.partei === PARTEI.RE).map((s) => s.name).join(', ') || '–', kontraSpielerNamen: m.spieler.filter((s) => s.partei === PARTEI.KONTRA).map((s) => s.name).join(', ') || '–', augenRe: e.augenRe, augenKontra: e.augenKontra, berechnungZeilen: bZ, spielpunkte: e.spielpunkte.map((p) => ({ name: p.name, punkte: p.punkte, istSelbst: p.position === SPIELER_POSITION.SUED })), gesamtstand: m.gesamtpunktestand.map((p) => ({ name: p.name, punkte: p.punkte })) };
     const { width: b, height: h } = this.scale.gameSize;
     if (this.animationen) this.rundenauswertungObjekte = await this.animationen.animiereRundenauswertung(daten, b, h);
     const btn = this.erstelleButton('Weiter →', () => this.schliesseRundenEndeModal(), false);
@@ -1186,8 +1188,8 @@ export class TischSzene extends Phaser.Scene {
       const spielSec = document.createElement('div'); spielSec.className = 'ui-section';
       const infoP = document.createElement('p'); infoP.style.cssText = 'margin:0;font-size:0.9rem;color:#d8f3dc'; infoP.textContent = `${spieltypLabel} · ${anzahlS ? `Spiel ${e.spielNummer} von ${anzahlS}` : `Spiel ${e.spielNummer}`}`;
       const siegerP = document.createElement('p'); siegerP.style.cssText = 'margin:0;font-size:0.9rem;color:#90caf9'; siegerP.textContent = `${e.siegerPartei} gewinnt · Re ${e.augenRe}:${e.augenKontra} Kontra Augen`;
-      const reNamen = m.spieler.filter((s) => s.partei === 'RE').map((s) => s.name).join(', ') || '–';
-      const kontraNamen = m.spieler.filter((s) => s.partei === 'KONTRA').map((s) => s.name).join(', ') || '–';
+      const reNamen = m.spieler.filter((s) => s.partei === PARTEI.RE).map((s) => s.name).join(', ') || '–';
+      const kontraNamen = m.spieler.filter((s) => s.partei === PARTEI.KONTRA).map((s) => s.name).join(', ') || '–';
       const parteienP = document.createElement('p'); parteienP.style.cssText = 'margin:0;font-size:0.8rem;opacity:0.75'; parteienP.textContent = `Re: ${reNamen} | Kontra: ${kontraNamen}`;
       const bZ: string[] = [`Grundwert: +${e.grundwert}`];
       if (e.absagePunkte !== 0) bZ.push(`Ansagen: ${e.absagePunkte > 0 ? '+' : ''}${e.absagePunkte}`);
@@ -1251,7 +1253,7 @@ export class TischSzene extends Phaser.Scene {
   }
 
   private renderVorbehaltDialog(ebene: Phaser.GameObjects.Container, modell: TischAnsichtModell, zustand: AppZustand, breite: number, hoehe: number): void {
-    if (modell.aktuellerSpieler !== 'SUED' || modell.moeglicheVorbehalte.length === 0) return;
+    if (modell.aktuellerSpieler !== SPIELER_POSITION.SUED || modell.moeglicheVorbehalte.length === 0) return;
     const opt = modell.moeglicheVorbehalte;
     const bH = Math.round(Math.max(32, hoehe * 0.048));
     const bW = Math.round(Math.min(130, breite * 0.11));
@@ -1262,7 +1264,7 @@ export class TischSzene extends Phaser.Scene {
     const diaW = spal * bW + (spal + 1) * aX;
     const titH = Math.round(hoehe * 0.04);
     const zeiH = Math.round(hoehe * 0.025);
-    const aDek = modell.deklarierteVorbehalte.filter((d) => d.position !== 'SUED');
+    const aDek = modell.deklarierteVorbehalte.filter((d) => d.position !== SPIELER_POSITION.SUED);
     const diaH = titH + (aDek.length > 0 ? aDek.length * zeiH + Math.round(zeiH * 0.5) : 0) + zeil * (bH + aY) + aY;
     const diaY = Math.round(hoehe * 0.28);
     ebene.add(this.add.rectangle(breite / 2, diaY, diaW, diaH, 0x0a2818, 0.97).setStrokeStyle(2, 0x4adf7a, 0.7));
@@ -1284,13 +1286,13 @@ export class TischSzene extends Phaser.Scene {
   }
 
   private renderAnsageButtons(ebene: Phaser.GameObjects.Container, modell: TischAnsichtModell, zustand: AppZustand, breite: number, hoehe: number): void {
-    if (modell.aktuellerSpieler !== 'SUED' || modell.moeglicheAnsagen.length === 0) return;
+    if (modell.aktuellerSpieler !== SPIELER_POSITION.SUED || modell.moeglicheAnsagen.length === 0) return;
     const dkt = zustand.wirdGeladen || !!this.wartendeKartenId || (this.animationen?.animationLaeuft ?? false);
     const bH = Math.round(Math.max(32, hoehe * 0.048));
     const bW = Math.round(Math.min(110, breite * 0.09));
     const ab = Math.round(breite * 0.008);
     const ans = modell.moeglicheAnsagen;
-    const sP = modell.spieler.find((s) => s.position === 'SUED');
+    const sP = modell.spieler.find((s) => s.position === SPIELER_POSITION.SUED);
     const kAnz = sP ? (sP.sichtbareHandkarten.length > 0 ? sP.sichtbareHandkarten.length : Math.max(sP.verbleibendeKarten, 0)) : 0;
     const kAb = berechneKartenAbstand(breite, hoehe);
     const kG = berechneKartenGroesse(breite);
@@ -1301,7 +1303,7 @@ export class TischSzene extends Phaser.Scene {
   }
 
   private renderArmutBereich(ebene: Phaser.GameObjects.Container, modell: TischAnsichtModell, zustand: AppZustand, breite: number, hoehe: number): void {
-    if (!modell.armutAktion || modell.aktuellerSpieler !== 'SUED') return;
+    if (!modell.armutAktion || modell.aktuellerSpieler !== SPIELER_POSITION.SUED) return;
     const a = modell.armutAktion;
     const dkt = zustand.wirdGeladen || !!this.wartendeKartenId || (this.animationen?.animationLaeuft ?? false);
     const bH = Math.round(Math.max(32, hoehe * 0.048));
@@ -1352,8 +1354,8 @@ export class TischSzene extends Phaser.Scene {
   }
 
   private aktualisiereKartenNavigationsIndex(m: TischAnsichtModell): void {
-    const wE = this.letztesModell?.aktuellerSpieler === 'SUED' && (this.letztesModell?.spielbareKarten.length ?? 0) > 0;
-    const iE = m.aktuellerSpieler === 'SUED' && m.spielbareKarten.length > 0;
+    const wE = this.letztesModell?.aktuellerSpieler === SPIELER_POSITION.SUED && (this.letztesModell?.spielbareKarten.length ?? 0) > 0;
+    const iE = m.aktuellerSpieler === SPIELER_POSITION.SUED && m.spielbareKarten.length > 0;
     if ((!wE && iE) || (iE && this.tastaturKarteIndex === -1)) this.tastaturKarteIndex = 0;
     else if (!iE) this.tastaturKarteIndex = -1;
     else if (iE && this.tastaturKarteIndex >= m.spielbareKarten.length) this.tastaturKarteIndex = m.spielbareKarten.length - 1;

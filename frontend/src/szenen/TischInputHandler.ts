@@ -1,5 +1,6 @@
 import { appStore } from '../anwendung';
 import {
+  SPIELER_POSITION, PARTEI,
   type TischAnsichtModell,
 } from '../modelle/TischAnsichtModell';
 import type { AppZustand } from '../store/AppStore';
@@ -57,14 +58,14 @@ export class TischInputHandler {
     }
 
     // 1. Vorbehalt-Dialog hat absoluten Vorrang — keine anderen Shortcuts moeglich
-    const vorbehaltAktiv = modell.aktuellerSpieler === 'SUED' && modell.moeglicheVorbehalte.length > 0;
+    const vorbehaltAktiv = modell.aktuellerSpieler === SPIELER_POSITION.SUED && modell.moeglicheVorbehalte.length > 0;
     if (vorbehaltAktiv) {
       this.verarbeiteVorbehaltTaste(e, modell);
       return;
     }
 
     // 2. Armut-Antwort-Shortcuts (Annehmen / Ablehnen) — direkt ohne DOM-Button-Suche
-    if (modell.aktuellerSpieler === 'SUED'
+    if (modell.aktuellerSpieler === SPIELER_POSITION.SUED
         && modell.armutAktion?.modus === 'ANTWORTEN'
         && !this.kontext.isArmutAnnahmeAktiv()) {
       if (e.key === 'a' || e.key === 'A') {
@@ -131,14 +132,14 @@ export class TischInputHandler {
     }
 
     // 7. Ansage-Kuerzel (nur moeglich wenn am Zug und Karten vorhanden)
-    if (modell.aktuellerSpieler === 'SUED' && modell.moeglicheAnsagen.length > 0) {
+    if (modell.aktuellerSpieler === SPIELER_POSITION.SUED && modell.moeglicheAnsagen.length > 0) {
       if (this.verarbeiteAnsageTaste(e, modell)) {
         return;
       }
     }
 
     // 8. Kartennavigation (nur moeglich wenn am Zug)
-    if (modell.aktuellerSpieler === 'SUED' && modell.spielbareKarten.length > 0) {
+    if (modell.aktuellerSpieler === SPIELER_POSITION.SUED && modell.spielbareKarten.length > 0) {
       this.verarbeiteKartenTaste(e, modell);
     }
   }
@@ -170,14 +171,14 @@ export class TischInputHandler {
 
   private verarbeiteAnsageTaste(e: KeyboardEvent, modell: TischAnsichtModell): boolean {
     if (e.key === 'r' || e.key === 'R') {
-      if (modell.moeglicheAnsagen.includes('RE')) {
-        void appStore.sageAnsageAn('RE');
+      if (modell.moeglicheAnsagen.includes(PARTEI.RE)) {
+        void appStore.sageAnsageAn(PARTEI.RE);
         return true;
       }
     }
     if (e.key === 'k' || e.key === 'K') {
-      if (modell.moeglicheAnsagen.includes('KONTRA')) {
-        void appStore.sageAnsageAn('KONTRA');
+      if (modell.moeglicheAnsagen.includes(PARTEI.KONTRA)) {
+        void appStore.sageAnsageAn(PARTEI.KONTRA);
         return true;
       }
     }

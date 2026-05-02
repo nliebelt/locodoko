@@ -103,6 +103,32 @@ export type Ansage = 'RE' | 'KONTRA' | 'KEINE_90' | 'KEINE_60' | 'KEINE_30' | 'S
 export type VorbehaltAnsage = 'GESUND' | 'SOLO_DAME' | 'SOLO_BUBE' | 'SOLO_TRUMPF' | 'SOLO_TRUMPF_HERZ' | 'SOLO_TRUMPF_PIK' | 'SOLO_TRUMPF_KREUZ' | 'SOLO_FLEISCHLOS' | 'HOCHZEIT' | 'ARMUT' | 'SCHMEISSEN';
 export type Sonderpunkt = 'FUCHS_GEFANGEN' | 'DOPPELKOPF' | 'KARLCHEN';
 
+// Typsichere Konstanten fuer die zentralen Enum-artigen Werte
+export const SPIELER_POSITION = {
+  SUED: 'SUED',
+  NORD: 'NORD',
+  OST: 'OST',
+  WEST: 'WEST',
+} as const satisfies Record<SpielerPosition, SpielerPosition>;
+
+export const PARTEI = {
+  RE: 'RE',
+  KONTRA: 'KONTRA',
+} as const satisfies Record<Partei, Partei>;
+
+export const SPIELTYP = {
+  NORMALSPIEL: 'NORMALSPIEL',
+  HOCHZEIT: 'HOCHZEIT',
+  ARMUT: 'ARMUT',
+  SOLO_DAME: 'SOLO_DAME',
+  SOLO_BUBE: 'SOLO_BUBE',
+  SOLO_FLEISCHLOS: 'SOLO_FLEISCHLOS',
+  SOLO_TRUMPF: 'SOLO_TRUMPF',
+  SOLO_TRUMPF_KREUZ: 'SOLO_TRUMPF_KREUZ',
+  SOLO_TRUMPF_PIK: 'SOLO_TRUMPF_PIK',
+  SOLO_TRUMPF_HERZ: 'SOLO_TRUMPF_HERZ',
+} as const satisfies Record<Spieltyp, Spieltyp>;
+
 export interface KarteAntwort {
   id: string;
   farbe: string;
