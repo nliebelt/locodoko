@@ -69,7 +69,7 @@ public class PartieLifecycleService {
         abgeschlossenesSpiel.uebernehmeDomainStand(neuePartie.abgeschlosseneSpiele().getLast());
         if (neuePartie.istBeendet()) {
             partie.markiereAlsBeendet();
-            veroeffentlicheSpielBeendet(tisch, abgeschlossenesSpiel);
+            veroeffentlicheSpielBeendet(tisch, abgeschlossenesSpiel, true);
             partieCountdownService.starteCountdown(tisch.id());
             return;
         }
@@ -77,7 +77,7 @@ public class PartieLifecycleService {
         // SPIEL_BEENDET senden, bevor das neue Spiel an die Liste gehaengt wird —
         // damit der Snapshot im Event nur das Ergebnis des alten Spiels zeigt,
         // nicht schon die neuen Karten des Folgespiels.
-        veroeffentlicheSpielBeendet(tisch, abgeschlossenesSpiel);
+        veroeffentlicheSpielBeendet(tisch, abgeschlossenesSpiel, false);
 
         tisch.spieler().stream()
             .filter(s -> !s.istKi() && s.istKiUebernommen())
@@ -117,7 +117,7 @@ public class PartieLifecycleService {
         return Map.copyOf(result);
     }
 
-    private void veroeffentlicheSpielBeendet(TischEntity tisch, Spiel abgeschlossenesSpiel) {
+    private void veroeffentlicheSpielBeendet(TischEntity tisch, Spiel abgeschlossenesSpiel, boolean partieBeendet) {
         Spielergebnis ergebnis = abgeschlossenesSpiel.ergebnis().orElse(null);
         if (ergebnis == null) return;
 
@@ -133,6 +133,7 @@ public class PartieLifecycleService {
         // Domain-Event fuer Statistiken (NEU)
         Map<UUID, SpielBeendet.SpielerSpielDaten> spielerDaten = new HashMap<>();
         Map<SpielerPosition, SpielerEntity> positionZuSpieler = spielerNachPosition(tisch);
+        Map<SpielerPosition, Integer> kumulativePunkte = tisch.partie().gesamtpunktestandAusDb();
         
         Parteien parteien;
         try {
@@ -165,9 +166,11 @@ public class PartieLifecycleService {
                 .count();
 
             boolean istSolist = abgeschlossenesSpiel.spieltyp().name().startsWith("SOLO") && playerPartei == Partei.RE;
+            int kumulativePunktestand = kumulativePunkte.getOrDefault(pos, 0);
 
             spielerDaten.put(spieler.id(), new SpielBeendet.SpielerSpielDaten(
-                sieger, spielpunkte, fuchsGefangen, fuchsVerloren, karlchenGespielt, doppelkoepfe, istSolist
+                sieger, spielpunkte, fuchsGefangen, fuchsVerloren, karlchenGespielt, doppelkoepfe, istSolist,
+                kumulativePunktestand
             ));
         }
 
@@ -175,7 +178,8 @@ public class PartieLifecycleService {
             tisch.id(),
             tisch.name(),
             abgeschlossenesSpiel.spielNummer(),
-            spielerDaten
+            spielerDaten,
+            partieBeendet
         ));
     }
 }

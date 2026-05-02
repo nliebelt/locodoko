@@ -42,10 +42,10 @@ class SpielerStatistikIntegrationTest {
         // When: SpielBeendet Event wird gefeuert (in Transaktion, damit AfterCommit-Listener greift)
         transactionTemplate.executeWithoutResult(status -> {
             SpielBeendet.SpielerSpielDaten daten = new SpielBeendet.SpielerSpielDaten(
-                true, 3, 1, 0, 1, 0, false
+                true, 3, 1, 0, 1, 0, false, 3
             );
             SpielBeendet event = new SpielBeendet(
-                UUID.randomUUID(), "TestTisch", 1, Map.of(spielerId, daten)
+                UUID.randomUUID(), "TestTisch", 1, Map.of(spielerId, daten), false
             );
             eventPublisher.publishEvent(event);
         });

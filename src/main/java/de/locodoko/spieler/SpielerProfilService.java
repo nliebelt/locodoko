@@ -7,6 +7,7 @@ import org.springframework.modulith.events.ApplicationModuleListener;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
@@ -36,7 +37,10 @@ public class SpielerProfilService {
     /** Aktualisiert Statistiken aller beteiligten menschlichen Spieler nach einem Spiel. */
     @ApplicationModuleListener
     void beiSpielBeendet(SpielBeendet ereignis) {
-        LOGGER.info("SpielBeendet empfangen [tischId={}, spielNr={}]", ereignis.tischId(), ereignis.spielNummer());
+        LOGGER.info("SpielBeendet empfangen [tischId={}, spielNr={}, partieBeendet={}]",
+            ereignis.tischId(), ereignis.spielNummer(), ereignis.partieBeendet());
+
+        Map<UUID, Integer> kumulativePunkte = new java.util.HashMap<>();
         for (Map.Entry<UUID, SpielBeendet.SpielerSpielDaten> eintrag : ereignis.spielerDaten().entrySet()) {
             UUID spielerId = eintrag.getKey();
             SpielBeendet.SpielerSpielDaten daten = eintrag.getValue();
@@ -44,7 +48,12 @@ public class SpielerProfilService {
             spielerRepository.findById(spielerId).ifPresent(spieler -> {
                 if (spieler.istKi()) return;
                 aktualisiereStatistik(spielerId, daten);
+                kumulativePunkte.put(spielerId, daten.kumulativePartiePunkte());
             });
+        }
+
+        if (ereignis.partieBeendet() && !kumulativePunkte.isEmpty()) {
+            speicherePartieErgebnis(ereignis.tischName(), ereignis.spielNummer(), kumulativePunkte);
         }
     }
 
@@ -70,5 +79,32 @@ public class SpielerProfilService {
             daten.istSolist()
         );
         statistikRepository.save(statistik);
+    }
+
+    /**
+     * Speichert ein Partie-Ergebnis fuer jeden Spieler und rotiert aelteste Eintraege
+     * wenn mehr als {@link PartieErgebnisEintrag#MAXIMALE_EINTRAEGE} vorhanden sind.
+     *
+     * <p>Rangplatz: 1 = hoechster Punktestand. Bei Gleichstand erhaelt der erste
+     * Spieler in der Map-Reihenfolge den besseren Rang.</p>
+     */
+    private void speicherePartieErgebnis(String tischName, int spielanzahl,
+                                         Map<UUID, Integer> kumulativePunkteProSpieler) {
+        List<Map.Entry<UUID, Integer>> gerankt = kumulativePunkteProSpieler.entrySet().stream()
+            .sorted(Map.Entry.<UUID, Integer>comparingByValue().reversed())
+            .toList();
+
+        for (int i = 0; i < gerankt.size(); i++) {
+            UUID spielerId = gerankt.get(i).getKey();
+            int endPunktestand = gerankt.get(i).getValue();
+            int rangplatz = i + 1;
+
+            if (partieErgebnisRepository.zaehleProSpieler(spielerId) >= PartieErgebnisEintrag.MAXIMALE_EINTRAEGE) {
+                partieErgebnisRepository.loescheAeltestenEintrag(spielerId);
+            }
+            partieErgebnisRepository.save(
+                PartieErgebnisEintrag.erstelle(spielerId, tischName, endPunktestand, rangplatz, spielanzahl)
+            );
+        }
     }
 }
