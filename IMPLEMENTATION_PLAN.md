@@ -8,15 +8,14 @@
 ## Notiz
 
 Was wurde implementiert:
-- **REFACTOR-FE-02** — Magic Strings durch typsichere Konstanten ersetzt:
-  - `SpielverwaltungDto.ts`: Neue Konstanten `SPIELER_POSITION`, `PARTEI`, `SPIELTYP` mit `as const satisfies Record<...>`.
-  - `TischAnsichtModell.ts`: Konstanten importiert und re-exportiert; alle 12 String-Literale (Vergleiche, Fallbacks, Arrays) ersetzt.
-  - `TischSzene.ts`: ~20 Vergleiche (`=== 'SUED'`, `=== 'RE'` etc.) auf Konstanten umgestellt.
-  - `TischInputHandler.ts`: 8 Vergleiche und API-Aufrufe ersetzt.
-  - `AnimationenService.ts`: `siegerPartei`-Feld in `RundenauswertungDaten` auf `Partei`-Typ geändert.
-  - `layout.ts`: `case`-Literale in switch-Statements ersetzt.
+- **SPEC-SYNC** — Veraltete Specs bereinigt:
+  - `spieler-session.md`: „keine Benutzerkonten"-Aussage entfernt; Anforderung 9 auf KI-Übernahme korrigiert; technischer Hinweis auf Spring-Security-Auth aktualisiert.
+  - `verbindungsabbruch.md`: BUG-ANIM-03-Referenz entfernt (behoben); Status Stabil.
+  - `frontend-ui-logik.md`: Technische Hinweise (Hybrid-Modell) korrigiert — Meta-UI ist DOM-basiert via TischUIManager; Status Stabil.
 
-Nächster logischer Schritt: **SPEC-SYNC** — Veraltete Specs bereinigen (spieler-session.md, verbindungsabbruch.md, frontend-ui-logik.md). Oder **FEAT-KEYBOARD-NAV** für Tastatursteuerung in Modalen.
+Nächster logischer Schritt: **FEAT-KEYBOARD-NAV** — Tab-Fokus-Management in Modalen (Lobby, Tisch-Konfiguration) und visueller Fokus-Indikator für alle interaktiven Elemente.
+
+Offene Fragen: Pre-existing TypeScript-Fehler in AppStore.ts Zeile 545 und TischSzene.test.ts Zeile 190 — unverändert vorhanden, nicht durch diese Iteration verursacht.
 
 Offene Fragen: Pre-existing TypeScript-Fehler in AppStore.ts Zeile 545 und TischSzene.test.ts Zeile 190 — unverändert vorhanden, nicht durch diese Iteration verursacht.
 
@@ -79,13 +78,11 @@ Nach der umfassenden Analyse des IST-Standes gegen die Specs konzentrieren wir u
 
 ## P3 — Specs & Polish
 
-### SPEC-SYNC: Veraltete Spezifikationen aktualisieren
+### ~~SPEC-SYNC~~: Veraltete Spezifikationen aktualisieren ✅
 
 **Priorität:** Niedrig
-**Umsetzung:**
-1. `spieler-session.md`: Abschnitt "keine Benutzerkonten" entfernen/korrigieren.
-2. `verbindungsabbruch.md` vs. `spieler-session.md`: Timeout-Verhalten (Löschen vs. KI-Übernahme) vereinheitlichen (KI-Übernahme ist Wahrheit).
-3. `frontend-ui-logik.md`: Hybrid-Ansatz (Phaser für Spiel, DOM für Overlays) als offiziellen Standard festschreiben.
+**Status:** Erledigt (2026-05-02)
+**Fix:** `spieler-session.md`: „keine Benutzerkonten"-Aussage entfernt, Anforderung 9 (KI-Übernahme statt Entfernen) korrigiert, technischer Hinweis auf Spring-Security aktualisiert. `verbindungsabbruch.md`: BUG-ANIM-03-Referenz entfernt (behoben). `frontend-ui-logik.md`: Widerspruch in Technische Hinweise behoben — Meta-UI-Elemente sind DOM-basiert (TischUIManager), Hybrid-Ansatz offiziell festgeschrieben. Alle drei Specs Status → Stabil.
 
 ### FEAT-KEYBOARD-NAV: Vollständige Tastatursteuerung
 
