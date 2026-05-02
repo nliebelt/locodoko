@@ -229,6 +229,7 @@
   z-index: 100;
   pointer-events: none;
   background: transparent;
+  backdrop-filter: none;
   display: flex;
   align-items: flex-end;
   justify-content: center;
