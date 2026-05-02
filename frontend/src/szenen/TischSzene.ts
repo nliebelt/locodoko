@@ -1136,6 +1136,10 @@ export class TischSzene extends Phaser.Scene {
   private async zeigeRundenEndeModal(m: TischAnsichtModell): Promise<void> {
     const e = m.letztesSpielergebnis;
     if (!this.rundenEndeModal || !e) {
+      // Sicherheitsnetz: Queue wurde in verarbeitePartieEreignis pausiert.
+      // Falls kein Modal angezeigt werden kann, Queue wieder freigeben.
+      Logger.szene('zeigeRundenEndeModal: kein Modal oder kein Spielergebnis — Queue wird fortgesetzt', { hatModal: !!this.rundenEndeModal, hatErgebnis: !!e });
+      appStore.setzeQueueFort();
       return;
     }
     const anzahlS = this.letzterZustand?.aktuellerTisch?.konfiguration?.anzahlSpiele;

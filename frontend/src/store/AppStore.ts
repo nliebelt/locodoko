@@ -517,6 +517,10 @@ export class AppStore {
   }
 
   private registrierePartieAbos(partieId: Uuid): void {
+    // aktuellePartieAbo MUSS hier gesetzt werden, damit verarbeiteTischEreignis
+    // bei nachfolgenden TischEreignissen mit derselben partieId NICHT erneut
+    // registrierePartieAbos aufruft und doppelte Subscriptions erzeugt.
+    this.aktuellePartieAbo = partieId;
     this.tischAbos.push(this.echtzeit.abonnieren<PartieEreignisAntwort>(`/user/queue/partie/${partieId}`, (e) => {
       this.verarbeitePartieEreignis(e);
     }));
