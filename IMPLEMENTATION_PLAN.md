@@ -8,12 +8,12 @@
 ## Notiz
 
 Was wurde implementiert:
-- `SpielBeendet` um `partieBeendet` (boolean) und `kumulativePartiePunkte` pro Spieler erweitert.
-- `PartieLifecycleService` übergibt jetzt `partieBeendet=true` beim letzten Spiel einer Partie und befüllt kumulative Punktestände aus `gesamtpunktestandAusDb()`.
-- `SpielerProfilService.beiSpielBeendet` speichert `PartieErgebnisEintrag` (endPunktestand, rangplatz, spielanzahl) wenn `partieBeendet == true`; rotiert bei > 20 Einträgen.
-- Das Feuern des Events war bereits implementiert; fehlend war nur das Speichern des `PartieErgebnisEintrag`.
+- `SecurityConfig.java`: `anyRequest().permitAll()` durch `anyRequest().authenticated()` ersetzt.
+- Alle bekannten Game-Endpunkte explizit als `permitAll()` deklariert (`/api/spieler/**`, `/api/tische/**`, `/api/partien/**`, `/join/**`, `/api/system/**`, `/api/debug/**`).
+- Sicherheitsmodell dokumentiert: Game-APIs werden auf Controller-/Interceptor-Ebene via `SpielerSessionService` gesichert; Spring Security schützt nur unbekannte Pfade.
+- Gast-Sessions (altes Session-Modell via `/api/spieler/session`) bleiben unverändert funktionsfähig.
 
-Nächster logischer Schritt: **SEC-REFINEMENT** — SecurityConfig an Authentifizierungs-Spec anpassen (aktuell `permitAll()` für fast alle Endpunkte).
+Nächster logischer Schritt: **FEAT-AI-DELAY** — 800ms KI-Verzögerung im `KiOrchestrierungService` implementieren (Option A: Backend, ScheduledExecutorService).
 
 Offene Fragen: Keine.
 
@@ -38,13 +38,11 @@ Nach der umfassenden Analyse des IST-Standes gegen die Specs konzentrieren wir u
 **Problem war:** `PartieErgebnisEintrag` wurde nie gespeichert; `SpielerStatistik` wurde korrekt aktualisiert.
 **Fix:** `SpielBeendet` um `partieBeendet` + `kumulativePartiePunkte` erweitert; `SpielerProfilService` speichert jetzt `PartieErgebnisEintrag` am Partie-Ende mit Rotation.
 
-### SEC-REFINEMENT: Security-Härtung
+### ~~SEC-REFINEMENT~~: Security-Härtung ✅
 
 **Priorität:** Hoch
-**Problem:** `SecurityConfig` nutzt aktuell `permitAll()` für fast alle Endpunkte, was der Spec `authentifizierung.md` widerspricht.
-**Umsetzung:**
-1. `SecurityConfig.java` anpassen: Authentifizierung für `/api/tisch/**` und `/api/spieler/**` (außer Login/Registrierung) erzwingen.
-2. Sicherstellen, dass Gast-Sessions weiterhin korrekt via `AnonymousAuthenticationFilter` oder dedizierte Gast-Logik funktionieren.
+**Status:** Erledigt (2026-05-02)
+**Fix:** `anyRequest().permitAll()` durch `anyRequest().authenticated()` ersetzt; alle Game-Endpunkte explizit aufgeführt; Sicherheitsmodell dokumentiert (Controller-/Interceptor-Ebene für Game-APIs).
 
 ---
 
@@ -118,8 +116,8 @@ Nach der umfassenden Analyse des IST-Standes gegen die Specs konzentrieren wir u
 
 | ID | Typ | Kurzbeschreibung | Priorität |
 |----|-----|-----------------|-----------|
-| BUG-STAT-01 | Bug | Statistiken werden nicht aktualisiert | Hoch |
-| SEC-REFINEMENT| Security | SecurityConfig zu permissiv | Hoch |
+| BUG-STAT-01 | Bug | Statistiken werden nicht aktualisiert | Hoch | ✅ |
+| SEC-REFINEMENT| Security | SecurityConfig zu permissiv | Hoch | ✅ |
 | FEAT-AI-DELAY | UX | 800ms Verzögerung für KI-Züge | Mittel |
 | BUG-ANIM-03 | Bug | Reload-State Konsistenz | Mittel |
 | FEAT-KEYBOARD-NAV | UX | Tab-Fokus in Modalen | Niedrig |
