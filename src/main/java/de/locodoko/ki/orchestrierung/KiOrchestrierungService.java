@@ -171,7 +171,15 @@ public class KiOrchestrierungService {
 
                     // Domain-Ereignisse broadcasten (Stichabschluss, Sonderpunkte, Schweinchen)
                     if (hatMenschlichenSpieler) {
-                        veroeffentlicheSpielKarteEreignisse(tisch, aktionsErgebnis.ereignisse());
+                        if (aktionsErgebnis.ereignisse().isEmpty()) {
+                            // Keine Karte gespielt (z.B. Ansage, Pflichtansage, Vorbehalt, Armut).
+                            // Version wurde trotzdem inkrementiert — ohne Event entsteht eine Versions-Lücke
+                            // im Frontend, die reconnecteTisch() auslöst und alle Animationen abbricht.
+                            // ANSAGE_ERFOLGT sichert die Versions-Kontinuität und zeigt ggf. das Ansage-Banner.
+                            sendeAnsageErfolgt(tisch);
+                        } else {
+                            veroeffentlicheSpielKarteEreignisse(tisch, aktionsErgebnis.ereignisse());
+                        }
                     }
                 } catch (Exception e) {
                     LOGGER.error(
@@ -274,6 +282,19 @@ public class KiOrchestrierungService {
         return partie.spiele().stream()
             .reduce((erstes, zweites) -> zweites)
             .orElse(null);
+    }
+
+    private void sendeAnsageErfolgt(TischEntity tisch) {
+        if (tisch.partie() == null) {
+            return;
+        }
+        tisch.spieler().stream()
+            .filter(s -> !s.istKi() && !s.istKiUebernommen() && s.sessionId() != null)
+            .forEach(s -> tischEchtzeitService.planeAnBenutzer(
+                s.sessionId(),
+                "/queue/partie/" + tisch.partie().id(),
+                PartieEreignisAntwort.ansageErfolgt(PartieStandAntwort.aus(tisch, s.id()))
+            ));
     }
 
     private void veroeffentlicheSpielKarteEreignisse(TischEntity tisch, List<SpielEreignis> ereignisse) {
