@@ -1180,7 +1180,11 @@ export class TischSzene extends Phaser.Scene {
   }
 
   private zeigePartieEndeModal(m: TischAnsichtModell): void {
-    if (!this.partieEndeModal) return;
+    if (!this.partieEndeModal) {
+      Logger.szene('zeigePartieEndeModal: kein Modal — Queue wird fortgesetzt');
+      appStore.setzeQueueFort();
+      return;
+    }
     const e = m.letztesSpielergebnis;
     const anzahlS = this.letzterZustand?.aktuellerTisch?.konfiguration?.anzahlSpiele;
     const dia = document.createElement('div'); dia.className = 'ui-modal'; dia.dataset['testid'] = 'partie-ende-modal';
