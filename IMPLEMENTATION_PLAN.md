@@ -5,6 +5,20 @@
 
 ---
 
+## Notiz
+
+Was wurde implementiert:
+- `SpielBeendet` um `partieBeendet` (boolean) und `kumulativePartiePunkte` pro Spieler erweitert.
+- `PartieLifecycleService` übergibt jetzt `partieBeendet=true` beim letzten Spiel einer Partie und befüllt kumulative Punktestände aus `gesamtpunktestandAusDb()`.
+- `SpielerProfilService.beiSpielBeendet` speichert `PartieErgebnisEintrag` (endPunktestand, rangplatz, spielanzahl) wenn `partieBeendet == true`; rotiert bei > 20 Einträgen.
+- Das Feuern des Events war bereits implementiert; fehlend war nur das Speichern des `PartieErgebnisEintrag`.
+
+Nächster logischer Schritt: **SEC-REFINEMENT** — SecurityConfig an Authentifizierungs-Spec anpassen (aktuell `permitAll()` für fast alle Endpunkte).
+
+Offene Fragen: Keine.
+
+---
+
 ## Zusammenfassung Plan-Run #99
 
 Nach der umfassenden Analyse des IST-Standes gegen die Specs konzentrieren wir uns auf die Schließung technischer Lücken zwischen den Bounded Contexts und die Verfeinerung der UX.
@@ -17,14 +31,12 @@ Nach der umfassenden Analyse des IST-Standes gegen die Specs konzentrieren wir u
 
 ## P1 — Integration & Security
 
-### BUG-STAT-01: Event-Kette für Statistiken schließen
+### ~~BUG-STAT-01~~: Event-Kette für Statistiken schließen ✅
 
 **Priorität:** Hoch
-**Problem:** `SpielerProfilService` lauscht auf `SpielBeendet`, aber das Event wird im `PartieLifecycleService` nie gefeuert. Statistiken bleiben leer.
-**Umsetzung:**
-1. `PartieLifecycleService.java`: In `uebernehmeDomainPartieAbschluss` (oder äquivalent) das `SpielBeendet`-Event via `ApplicationEventPublisher` veröffentlichen.
-2. Sicherstellen, dass alle relevanten Daten (Spieler-IDs, Punkte, Sieg/Niederlage) im Event enthalten sind.
-3. Verifizieren, dass `SpielerProfilService.beiSpielBeendet` reagiert.
+**Status:** Erledigt (2026-05-02)
+**Problem war:** `PartieErgebnisEintrag` wurde nie gespeichert; `SpielerStatistik` wurde korrekt aktualisiert.
+**Fix:** `SpielBeendet` um `partieBeendet` + `kumulativePartiePunkte` erweitert; `SpielerProfilService` speichert jetzt `PartieErgebnisEintrag` am Partie-Ende mit Rotation.
 
 ### SEC-REFINEMENT: Security-Härtung
 
