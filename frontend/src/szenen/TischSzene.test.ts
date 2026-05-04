@@ -185,7 +185,8 @@ describe('TischSzene', () => {
       soloMultiplikator: 1,
       augenProPartei: { RE: 110, KONTRA: 130 },
       spielpunkteProSpieler: { SUED: -1, WEST: 1, NORD: -1, OST: 1 },
-      sonderpunkteProPartei: { RE: [], KONTRA: [] }
+      sonderpunkteProPartei: { RE: [], KONTRA: [] },
+      punkteAufschluesselung: []
     };
     const partieStandNachSpiel: PartieStandAntwort = { ...bauePartieStand(null), letztesSpielergebnis: ergebnis };
     // Partie-SNAPSHOT-Event: Backend liefert den Stand nach Reconnect (kein SPIEL_BEENDET)

@@ -1,111 +1,80 @@
-# IMPLEMENTATION_PLAN — Plan-Run #99
+# IMPLEMENTATION_PLAN — Plan-Run #100
 
-> Stand: 2026-04-30. Fokus: Integrations-Lücken & Polishing (Statistiken, Security, UX).
-> Archivierte Aufgaben: `IMPLEMENTATION_PLAN_ARCHIVE.md`
+> Stand: 2026-05-04. Fokus: DOM-Eliminierung (Phaser-native UI), Quick Play & Rundenauswertung 2.0.
 
----
-
-## Notiz
-
-Was wurde implementiert:
-- **FEAT-KEYBOARD-NAV** — Keyboard-Navigation für Lobby-Modal vollständig:
-  - `SpielverwaltungsSzene.ts`: `zeigeErstelleTischModal()` erhält Auto-Fokus (erstes Element), Tab-Trap, Escape-Handler, Focus-Return zum auslösenden Element.
-  - ARIA: `role="dialog"`, `aria-modal="true"`, `aria-labelledby` auf `.ui-modal`.
-  - `accessibility.css`: Expliziter `:focus-visible`-Stil für `input[type="checkbox"]` und `input[type="radio"]` (gold outline + glow).
-
-Nächster logischer Schritt: Alle offenen Aufgaben erledigt. Plan-Run #99 abgeschlossen.
-
-Offene Fragen: Pre-existing TypeScript-Fehler in AppStore.ts Zeile 545 und TischSzene.test.ts Zeile 190 — unverändert vorhanden, nicht durch diese Iteration verursacht.
+Dieses Jubiläums-Run verfolgt die Strategie „Phaser, Phaser, Phaser“. Ziel ist die vollständige Entfernung von HTML-DOM-Manipulationen aus den Szenen und die Umsetzung einer rein Canvas-basierten UI inkl. moderner Features.
 
 ---
 
-## Zusammenfassung Plan-Run #99
+## Legende
 
-Nach der umfassenden Analyse des IST-Standes gegen die Specs konzentrieren wir uns auf die Schließung technischer Lücken zwischen den Bounded Contexts und die Verfeinerung der UX.
-1. **Event-Kette schließen:** Das `SpielBeendet`-Event muss gefeuert werden, damit Statistiken und Profil-Updates funktionieren.
-2. **Security-Härtung:** Die `SecurityConfig` wird an die Authentifizierungs-Spec angepasst.
-3. **UX-Polishing:** Implementierung der 800ms KI-Verzögerung und Verbesserung der Tastatursteuerung.
-4. **Stabilität:** Behebung des Reload-Problems (BUG-ANIM-03).
+- [ ] Offen
+- [~] In Arbeit
+- [x] Erledigt
 
 ---
 
-## P1 — Integration & Security
+## P1 — Backend & Daten-Grundlage
 
-### ~~BUG-STAT-01~~: Event-Kette für Statistiken schließen ✅
+### FEAT-POINT-LABELS: Transparente Punkteberechnung
+- [ ] **Backend:** `de.locodoko.partie.PunkteRechner` erweitern, um für jeden Punktwert ein fachliches Label zu liefern (z.B. „Gegen die Alten", „Fuchs gefangen").
+- [ ] **DTO:** `punkteAufschluesselung` in `LetztesSpielergebnisAntwort` vollständig befüllen.
 
-**Priorität:** Hoch
-**Status:** Erledigt (2026-05-02)
-**Problem war:** `PartieErgebnisEintrag` wurde nie gespeichert; `SpielerStatistik` wurde korrekt aktualisiert.
-**Fix:** `SpielBeendet` um `partieBeendet` + `kumulativePartiePunkte` erweitert; `SpielerProfilService` speichert jetzt `PartieErgebnisEintrag` am Partie-Ende mit Rotation.
-
-### ~~SEC-REFINEMENT~~: Security-Härtung ✅
-
-**Priorität:** Hoch
-**Status:** Erledigt (2026-05-02)
-**Fix:** `anyRequest().permitAll()` durch `anyRequest().authenticated()` ersetzt; alle Game-Endpunkte explizit aufgeführt; Sicherheitsmodell dokumentiert (Controller-/Interceptor-Ebene für Game-APIs).
+### FEAT-QUICK-PLAY-SYNC:
+- [ ] **Frontend:** `appStore.erstelleQuickGame()` verifizieren, dass es den `/api/tische/schnellstart` Endpunkt korrekt nutzt.
+- [ ] **Frontend:** Lade-Status im Store während des Schnellstarts setzen.
 
 ---
 
-## P2 — UX, UX-Logik & Clean Code
+## P2 — Phaser UI Komponenten (Scaffolding)
 
-### ~~FEAT-AI-DELAY~~: KI-Verzögerung implementieren ✅
+### FEAT-PHASER-MODAL: Basis-Komponente für Dialoge
+- [ ] Neue Klasse `PhaserModal` (Container):
+  - Abdunkelnder Backdrop (Rectangle mit Interactive blocker).
+  - Zentriertes Panel im Neo-Brutalism Style (Harter Rahmen, Schatten).
+  - Titel, Content-Bereich (flexibel) und Action-Buttons.
+  - Fokus-Management (Tastatur-Navigation innerhalb des Modals).
 
-**Priorität:** Mittel
-**Status:** Erledigt (2026-05-02)
-**Fix:** 800ms Delay in `AppStore._verarbeiteEventQueue` implementiert (Option B Frontend, laut `ki-strategie.md`). Bei KI-`KARTE_GESPIELT`-Events mit menschlichen Mitspielern wird `kiVerzoegerungMs` gewartet. `setzeKiKartenVerzögerung(0)` für Tests.
-
-### ~~BUG-ANIM-03~~: Reload-State Stabilität ✅
-
-**Priorität:** Mittel
-**Status:** Erledigt (2026-05-02)
-**Fix:** `TischSzene.ts`: Neues Flag `_zeigeOverlayNachSnapshot`. Im SNAPSHOT-Event-Handler wird `laufendesSpiel===null && letztesSpielergebnis!==null` erkannt. Das Overlay (Rundenauswertung oder PartieEnde) wird im Store-Abonnement erst gezeigt, wenn `aktuellerTisch` und das vollständige Modell verfügbar sind.
-
-### ~~REFACTOR-FE-01~~: TischSzene SRP auflösen (God Object) ✅
-
-**Priorität:** Mittel
-**Status:** Erledigt (2026-05-02)
-**Fix:** Neue `layout.ts` mit allen Layout-/Positions-Funktionen. `tischFormatierer.ts` um `formatiereCountdownText` und `formatiereEreignisSonderpunktFeedback` erweitert. `spielankuendigungstext` ins `TischAnsichtModell` verschoben. TischSzene auf ~1375 Zeilen reduziert.
-
-### ~~REFACTOR-FE-02~~: Magic Strings durch Typensicherheit ersetzen ✅
-
-**Priorität:** Mittel
-**Status:** Erledigt (2026-05-02)
-**Fix:** `SPIELER_POSITION`, `PARTEI`, `SPIELTYP` Konstanten in `SpielverwaltungDto.ts` angelegt (`as const satisfies`). In `TischAnsichtModell.ts` re-exportiert. Alle ~40 String-Literal-Vergleiche und Fallbacks in TischSzene, TischInputHandler, AnimationenService, layout.ts ersetzt. 94/94 Tests grün.
+### FEAT-PHASER-LIST: Scrollbare Listen
+- [ ] Implementierung einer scrollbaren Liste (`PhaserList`) mit Masking für:
+  - Tischliste in der SpielverwaltungsSzene.
+  - Punkte-Aufschlüsselung im Auswertungs-Modal.
 
 ---
 
-## P3 — Specs & Polish
+## P3 — Refactoring & Feature-Rollout
 
-### ~~SPEC-SYNC~~: Veraltete Spezifikationen aktualisieren ✅
+### REFACTOR-LOBBY: SpielverwaltungsSzene rein Phaser
+- [ ] Entfernung aller DOM-Elemente in `SpielverwaltungsSzene.ts`.
+- [ ] Haupt-Navigation (Quick Play, Neuer Tisch, Offene Tische) via `PhaserButton`.
+- [ ] „Tisch erstellen"-Modal als `PhaserModal` umsetzen.
+  - *Hinweis:* Für Texteingaben wird Phaser's `add.dom('input')` deklarativ genutzt, um native Tastatur-Interaktion zu behalten, aber ohne manuelles DOM-Gefriemel.
 
-**Priorität:** Niedrig
-**Status:** Erledigt (2026-05-02)
-**Fix:** `spieler-session.md`: „keine Benutzerkonten"-Aussage entfernt, Anforderung 9 (KI-Übernahme statt Entfernen) korrigiert, technischer Hinweis auf Spring-Security aktualisiert. `verbindungsabbruch.md`: BUG-ANIM-03-Referenz entfernt (behoben). `frontend-ui-logik.md`: Widerspruch in Technische Hinweise behoben — Meta-UI-Elemente sind DOM-basiert (TischUIManager), Hybrid-Ansatz offiziell festgeschrieben. Alle drei Specs Status → Stabil.
+### REFACTOR-EVALUATION: Rundenauswertung 2.0
+- [ ] Re-Implementierung des Rundenende-Modals als `PhaserModal`.
+- [ ] Dynamische Anzeige der `punkteAufschluesselung` aus dem Backend.
+- [ ] **Polishing:** „Count-up" Animation der Punkte und Akzentfarben für Parteien.
 
-### ~~FEAT-KEYBOARD-NAV~~: Vollständige Tastatursteuerung ✅
-
-**Priorität:** Niedrig
-**Status:** Erledigt (2026-05-02)
-**Fix:** `SpielverwaltungsSzene.zeigeErstelleTischModal()`: Auto-Fokus auf erstes Element, Tab-Trap, Escape-Handler, Focus-Return zum Auslöser. ARIA-Attribute (`role="dialog"`, `aria-modal`, `aria-labelledby`). `accessibility.css`: Expliziter `:focus-visible` für Checkbox und Radio.
-
----
-
-## Erledigte Aufgaben (Referenz aus #98)
-
-- [x] **FEAT-ANIM-GUARD**: AnimationGuard implementiert.
-- [x] **TEST-WS-CONTRACT**: STOMP-Integrationstest erfolgreich.
-- [x] **TEST-E2E-FULLGAME**: Vision Loop verifiziert (Rundenauswertung existiert).
-- [x] **TUNING-KI-SOLO**: Solo-Schwellenwerte angepasst.
+### REFACTOR-UI-CLEANUP: DOM Elimination
+- [ ] **TischUIManager:** Vollsändige Entfernung der DOM-Abhängigkeiten.
+- [ ] **ToastManager:** Review und ggf. finale Bereinigung (sollte bereits rein Phaser sein).
+- [ ] **E2E-Tests:** Umstellung der Playwright-Tests auf die JavaScript-Bridge (`window.__locodoko`), da `data-testid` im Canvas nicht mehr direkt selektierbar ist.
 
 ---
 
-## Offene Punkte (Übersicht)
+## Akzeptanzkriterien
 
-| ID | Typ | Kurzbeschreibung | Priorität |
-|----|-----|-----------------|-----------|
-| BUG-STAT-01 | Bug | Statistiken werden nicht aktualisiert | Hoch | ✅ |
-| SEC-REFINEMENT| Security | SecurityConfig zu permissiv | Hoch | ✅ |
-| FEAT-AI-DELAY | UX | 800ms Verzögerung für KI-Züge | Mittel |
-| BUG-ANIM-03 | Bug | Reload-State Konsistenz | Mittel | ✅ |
-| FEAT-KEYBOARD-NAV | UX | Tab-Fokus in Modalen | Niedrig |
-| SPEC-SYNC | Spec | Veraltete Specs bereinigen | Niedrig |
+1.  **Kein DOM-Code:** In `SpielverwaltungsSzene.ts`, `TischSzene.ts` und `TischUIManager.ts` finden sich keine `document.createElement` Aufrufe mehr.
+2.  **Quick Play:** Ein Klick auf „Quick Game" startet sofort eine Partie (Join -> Fill -> Start).
+3.  **Transparenz:** Die Rundenauswertung zeigt eine detaillierte Liste der Punkteherkunft.
+4.  **Stabilität:** Alle 94+ Unit-Tests und die migrierten E2E-Tests sind grün.
+
+---
+
+## TODO Liste
+
+- [ ] Task 1: Backend Punkte-Labels implementieren & DTO befüllen.
+- [ ] Task 2: `PhaserModal` & `PhaserList` Scaffolding.
+- [ ] Task 3: `SpielverwaltungsSzene` auf Phaser-native umstellen.
+- [ ] Task 4: `Rundenauswertung` auf Phaser-native umstellen.
+- [ ] Task 5: `TischUIManager` und E2E-Bridge Migration.

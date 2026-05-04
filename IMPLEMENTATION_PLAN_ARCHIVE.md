@@ -1,5 +1,24 @@
 # IMPLEMENTATION_PLAN — Archiv erledigter Aufgaben
 
+---
+
+## Archiviert am 2026-05-04 (Plan-Run #99)
+
+> Fokus: Integrations-Lücken & Polishing (Statistiken, Security, UX). Alle Aufgaben erledigt.
+
+### Zusammenfassung Plan-Run #99
+- **BUG-STAT-01:** Event-Kette für Statistiken geschlossen (`SpielBeendet` erweitert, Profil-Updates).
+- **SEC-REFINEMENT:** Security-Härtung (`anyRequest().authenticated()`, Game-Endpunkte explizit).
+- **FEAT-AI-DELAY:** 800ms KI-Verzögerung im Frontend implementiert.
+- **BUG-ANIM-03:** Reload-State Stabilität verbessert (Snapshot-Handling).
+- **REFACTOR-FE-01:** TischSzene SRP auflösen (Auslagerung in `layout.ts`, `tischFormatierer.ts`).
+- **REFACTOR-FE-02:** Magic Strings durch typensichere Konstanten (`SPIELER_POSITION`, `PARTEI`, `SPIELTYP`) ersetzt.
+- **SPEC-SYNC:** Veraltete Spezifikationen (`spieler-session.md`, `verbindungsabbruch.md`, `frontend-ui-logik.md`) aktualisiert.
+- **FEAT-KEYBOARD-NAV:** Tastatursteuerung für Lobby-Modal (Focus-Trap, ARIA).
+
+---
+
+
 > Aus `IMPLEMENTATION_PLAN.md` ausgelagert am 2026-04-11.
 > Vollständig implementiert und getestet. Nur zur Referenz.
 
@@ -389,3 +408,77 @@ Die Architektur wurde erfolgreich auf Event-Versionierung umgestellt. Nun müsse
 - [ ] **UNIFIED-8 (Frontend Cleanup)**: Bereinige `frontend/src/modelle/SpielverwaltungDto.ts`. Entferne eventuelle Altlasten der alten Zeitstempel-Logik und stelle sicher, dass alle Event-Interfaces strikt den neuen Discriminated Unions entsprechen.
 - [ ] **UNIFIED-9 (Backend Cleanup)**: Entferne den redundanten `TISCH_SNAPSHOT` Push via WebSocket im `TischController` / `SpielverwaltungWebSocketController`, der direkt nach einem `PARTIE_SNAPSHOT` gesendet wird. Ein einzelner Snapshot beim Reconnect reicht aus.
 - [ ] **UNIFIED-10 (Validation)**: Führe die gesamte Playwright-Testsuite (`npm run test` im `e2e` Ordner) mehrfach aus und stelle sicher, dass 100% der Tests ohne "Flakiness" oder Timeouts bestehen.
+# IMPLEMENTATION_PLAN — Plan-Run #100
+
+> Stand: 2026-05-04. Fokus: DOM-Eliminierung (Phaser-native UI), Quick Play & Rundenauswertung 2.0.
+
+Dieses Jubiläums-Run verfolgt die Strategie „Phaser, Phaser, Phaser“. Ziel ist die vollständige Entfernung von HTML-DOM-Manipulationen aus den Szenen und die Umsetzung einer rein Canvas-basierten UI inkl. moderner Features.
+
+---
+
+## P1 — Backend & Daten-Grundlage
+
+### FEAT-POINT-LABELS: Transparente Punkteberechnung
+- [ ] **Backend:** `de.locodoko.partie.PunkteRechner` erweitern, um für jeden Punktwert ein fachliches Label zu liefern (z.B. „Gegen die Alten", „Fuchs gefangen").
+- [ ] **DTO:** `punkteAufschluesselung` in `LetztesSpielergebnisAntwort` vollständig befüllen.
+
+### FEAT-QUICK-PLAY-SYNC:
+- [ ] **Frontend:** `appStore.erstelleQuickGame()` (bereits vorhanden) verifizieren, dass es den `/api/tische/schnellstart` Endpunkt korrekt nutzt.
+- [ ] **Frontend:** Lade-Status im Store während des Schnellstarts setzen.
+
+---
+
+## P2 — Phaser UI Komponenten (Scaffolding)
+
+### FEAT-PHASER-MODAL: Basis-Komponente für Dialoge
+- [ ] Neue Klasse `PhaserModal` (Container):
+  - Abdunkelnder Backdrop (Rectangle).
+  - Zentriertes Panel mit Neo-Brutalism Style (Harter Rahmen, Schatten).
+  - Title, Content-Bereich und Action-Buttons.
+  - Fokus-Management (Tastatur-Support).
+
+### FEAT-PHASER-LIST: Scrollbare Listen
+- [ ] Implementierung einer einfachen scrollbaren Liste (Container + Mask + Scroll-Handler) für die Tischliste und Punkte-Aufschlüsselung.
+
+---
+
+## P3 — Refactoring & Feature-Rollout
+
+### REFACTOR-LOBBY: SpielverwaltungsSzene rein Phaser
+- [ ] Entfernung von `renderUi()` (DOM-basiert).
+- [ ] Umsetzung der Haupt-Buttons (Quick Play, Neuer Tisch, Offene Tische) als `PhaserButton`.
+- [ ] Implementierung des „Tisch erstellen" Modals in Phaser unter Nutzung von `PhaserModal`.
+  - Herausforderung: Formular-Inputs. Lösung: Nutzung von Phaser's `add.dom()` nur für `<input>`-Elemente, aber ohne manuelle `document.createElement`-Logik im Code (deklarativer Ansatz).
+
+### REFACTOR-EVALUATION: Rundenauswertung 2.0
+- [ ] Re-Implementierung des Rundenende-Modals in Phaser.
+- [ ] Anzeige der detaillierten `punkteAufschluesselung`.
+- [ ] **Polishing:** „Count-up" Animation der Punkte und Akzentfarben für RE/KONTRA.
+
+### REFACTOR-UI-CLEANUP: DOM Elimination
+- [ ] **TischUIManager:** Vollsändige Entfernung aller `document.getElementById('ui-root')` Aufrufe.
+- [ ] **E2E-Tests:** Umstellung der Playwright-Selektoren von `data-testid` (DOM) auf die JavaScript-Bridge (`window.__locodoko`).
+- [ ] **ToastManager:** Verifizieren, dass keine DOM-Reste vorhanden sind (bereits weitgehend Phaser).
+
+---
+
+## Akzeptanzkriterien
+
+1.  **Kein DOM-Code:** In `SpielverwaltungsSzene.ts`, `TischSzene.ts` und `TischUIManager.ts` finden sich keine `createElement` oder `innerHTML` Aufrufe mehr.
+2.  **Quick Play:** Ein Klick auf „Quick Game" startet sofort eine Partie gegen 3 KIs ohne Zwischen-Modal.
+3.  **Transparenz:** Die Rundenauswertung listet jeden einzelnen Punkt mit Label auf.
+4.  **Stabilität:** Alle 94+ Tests sind grün; E2E-Tests nutzen die Bridge für die Interaktion.
+
+---
+
+## TODO Liste
+
+- [ ] Task 1: Backend Punkte-Labels implementieren & DTO befüllen.
+- [ ] Task 2: `PhaserModal` & `PhaserList` Scaffolding.
+- [ ] Task 3: `SpielverwaltungsSzene` auf Phaser-native umstellen.
+- [ ] Task 4: `Rundenauswertung` auf Phaser-native umstellen.
+- [ ] Task 5: `TischUIManager` und `TischInputHandler` bereinigen.
+- [ ] Task 6: E2E-Tests (Bridge-basiert) fixen.
+
+--- End of Run #99 ---
+
