@@ -21,6 +21,7 @@ export type SpieleventTyp =
   | 'FuchsGefangen'
   | 'KarlchenGespielt'
   | 'DoppelkopfGestochen'
+  | 'HochzeitPartnerGefunden'
   | 'SpielBeendet';
 
 export interface SpieleventPayload {
@@ -51,6 +52,7 @@ export class FlashTextManager {
       case 'FuchsGefangen':             this.fuchsGefangen(payload.spielerName); break;
       case 'KarlchenGespielt':          this.karlchenGespielt(payload.spielerName); break;
       case 'DoppelkopfGestochen':       this.doppelkopfGestochen(); break;
+      case 'HochzeitPartnerGefunden':   this.hochzeitPartnerGefunden(payload.spielerName); break;
       case 'SpielBeendet':              this.spielBeendet(); break;
     }
   }
@@ -368,6 +370,51 @@ export class FlashTextManager {
     (this.szene.cameras as any)?.main?.shake?.(400, 0.01);
     this.verwalteteObjekte.push(container);
     const destroyTimer = this.szene.time.delayedCall(3500, () => {
+      foilTimer.remove(false);
+      this.szene.tweens.add({
+        targets: container, alpha: 0, duration: 200,
+        onComplete: () => {
+          if ((container as unknown as { active: boolean }).active) container.destroy(true);
+        },
+      });
+    });
+    this.verwalteteTimers.push(destroyTimer);
+  }
+
+  private hochzeitPartnerGefunden(partnerName?: string): void {
+    const cx = this.cx(), cy = this.cy();
+    const container = this.szene.add.container(cx, cy);
+    container.setDepth(50);
+    const bg = this.szene.add.graphics();
+    bg.fillStyle(CARD_BG_DARK, 0.95);
+    bg.fillRoundedRect(-145, -72, 290, 144, 8);
+    bg.lineStyle(3, FARBE_GOLD, 1);
+    bg.strokeRoundedRect(-145, -72, 290, 144, 8);
+    const emoji = this.szene.add.text(0, -50, '💍', { fontSize: '26px' }).setOrigin(0.5);
+    const hauptText = this.szene.add.text(0, -16, 'HOCHZEIT!', {
+      fontFamily: FONT_FAMILY_FALLBACK, fontSize: `${FONT_LG}px`, color: FARBE_GOLD_CSS,
+      stroke: '#7a5000', strokeThickness: 4,
+    }).setOrigin(0.5);
+    const subLabel = partnerName
+      ? `PARTNER: ${partnerName.toUpperCase().slice(0, 12)}`
+      : 'PARTNER GEFUNDEN';
+    const subText = this.szene.add.text(0, 30, subLabel, {
+      fontFamily: FONT_FAMILY_FALLBACK, fontSize: `${FONT_XS}px`, color: FARBE_GOLD_CSS,
+    }).setOrigin(0.5);
+    container.add([bg, emoji, hauptText, subText]);
+    const foilTimer = this.foilShimmer(hauptText);
+    container.setScale(0, 0);
+    this.szene.tweens.add({
+      targets: container,
+      scaleX: [0, 1.25, 0.9, 1.08, 1], scaleY: [0, 1.25, 0.9, 1.08, 1],
+      angle: [-30, 10, -4, 2, 0], ease: 'Back.Out', duration: 600,
+    });
+    this.shockwaveRing(cx, cy, FARBE_GOLD, 0);
+    this.shockwaveRing(cx, cy, FARBE_GOLD, 150);
+    this.konfetti(cx, cy, 60, [0xffd700, 0xffaacc, 0xffffff, 0xff88ff]);
+    this.cameraFlash(255, 215, 0, 200);
+    this.verwalteteObjekte.push(container);
+    const destroyTimer = this.szene.time.delayedCall(3000, () => {
       foilTimer.remove(false);
       this.szene.tweens.add({
         targets: container, alpha: 0, duration: 200,

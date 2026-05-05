@@ -458,7 +458,7 @@ export class TischSzene extends Phaser.Scene {
       case 'HOCHZEIT_PARTNER_GEFUNDEN': {
         const e = ereignis as HochzeitPartnerGefundenEreignis;
         const partner = this.letztesModell?.spieler.find(s => s.position === e.partnerPosition);
-        this.flashTextManager?.zeigeSpielevent('SchweinchenGemeldet', { spielerName: partner?.name ?? 'Spieler' });
+        this.flashTextManager?.zeigeSpielevent('HochzeitPartnerGefunden', { spielerName: partner?.name ?? 'Spieler' });
         break;
       }
 
