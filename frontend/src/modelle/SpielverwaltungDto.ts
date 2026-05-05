@@ -100,7 +100,7 @@ export type PartieStatus = 'LAUFEND' | 'BEENDET' | 'ABGEBROCHEN';
 export type Spieltyp = 'NORMALSPIEL' | 'HOCHZEIT' | 'ARMUT' | 'SOLO_DAME' | 'SOLO_BUBE' | 'SOLO_FLEISCHLOS' | 'SOLO_TRUMPF' | 'SOLO_TRUMPF_KREUZ' | 'SOLO_TRUMPF_PIK' | 'SOLO_TRUMPF_HERZ';
 export type Partei = 'RE' | 'KONTRA';
 export type Ansage = 'RE' | 'KONTRA' | 'KEINE_90' | 'KEINE_60' | 'KEINE_30' | 'SCHWARZ';
-export type VorbehaltAnsage = 'GESUND' | 'SOLO_DAME' | 'SOLO_BUBE' | 'SOLO_TRUMPF' | 'SOLO_TRUMPF_HERZ' | 'SOLO_TRUMPF_PIK' | 'SOLO_TRUMPF_KREUZ' | 'SOLO_FLEISCHLOS' | 'HOCHZEIT' | 'ARMUT' | 'SCHMEISSEN';
+export type VorbehaltAnsage = 'GESUND' | 'SOLO_DAME' | 'SOLO_BUBE' | 'SOLO_TRUMPF' | 'SOLO_TRUMPF_HERZ' | 'SOLO_TRUMPF_PIK' | 'SOLO_TRUMPF_KREUZ' | 'SOLO_FLEISCHLOS' | 'HOCHZEIT' | 'ARMUT' | 'SCHMEISSEN' | 'SCHMEISSEN_FUENF_NEUNEN' | 'SCHMEISSEN_WENIG_TRUMPF';
 export type Sonderpunkt = 'FUCHS_GEFANGEN' | 'DOPPELKOPF' | 'KARLCHEN';
 
 // Typsichere Konstanten fuer die zentralen Enum-artigen Werte

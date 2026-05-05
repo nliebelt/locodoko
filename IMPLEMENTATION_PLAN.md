@@ -5,6 +5,7 @@
 ## Notiz
 
 **Was wurde implementiert (Run #107)?**
+- Task 20 (FEAT-SCHMEISSEN-FRONTEND): TypeScript-Typ `VorbehaltAnsage` um `'SCHMEISSEN_FUENF_NEUNEN'` und `'SCHMEISSEN_WENIG_TRUMPF'` erweitert. `formatiereVorbehalt()` in `tischFormatierer.ts` um Labels ergänzt. Der Vorbehalt-Dialog rendert alle `moeglicheVorbehalte` vom Server automatisch — Backend liefert die Schmeissen-Varianten bereits korrekt (via `istZulaessig()`), sobald `schmeissenAktiv=true` und Kartenhand-Bedingung erfüllt. Kein weiterer Frontend-Code nötig.
 - Task 19 (FIX-ARMUT-BESTIMMUNG): Armut-Spieler wird jetzt direkt vom Server geliefert.
   - `PartieStandAntwort.java` (`LaufendesSpielAntwort` Record): Neues Feld `armutSpielerPosition: SpielerPosition | null` ergänzt. Wird aus `laufendesSpiel.armutStatus().map(ArmutStatus::armutSpieler).orElse(null)` befüllt — exakt der Backend-Domainwert statt Heuristik.
   - `SpielverwaltungDto.ts`: `armutSpielerPosition?: SpielerPosition | null` (optional, damit alte Test-Payloads nicht brechen).
@@ -12,7 +13,7 @@
   - Tests angepasst: `TischAnsichtModell.test.ts` (beide Armut-Szenarien), `TischSzene.test.ts` (lehnt-Armut-ab-Test).
 - 94 Unit-Tests und Build grün. 90 pre-existing ESLint `any`-Fehler unverändert.
 
-**Nächster logischer Schritt:** Task 20 (FEAT-SCHMEISSEN-FRONTEND) — Schmeissen-Button im Vorbehalt-Dialog.
+**Nächster logischer Schritt:** Task 6 (FEAT-POINT-LABELS) — Backend Punkte-Labels + DTO, oder Task 7 (PhaserModal + PhaserList Basis-Komponenten).
 
 **Offene Fragen:**
 - 90 pre-existing ESLint `any`-Fehler in AppStore.ts und TischSzene.ts — Cleanup-Task ausstehend.
@@ -267,4 +268,4 @@ Backend: `bereitsGeschmissen Set`, `VorbehaltAnsage.SCHMEISSEN_WENIG_TRUMPF`, `i
 - [x] Task 17: FIX-HOCHZEIT-ANIMATION — Dedizierte Hochzeit-FlashText-Animation statt SchweinchenGemeldet-Style
 - [x] Task 18: FIX-E2E-TESTIDS — 19 fehlende data-testid-Attribute ergänzen
 - [x] Task 19: FIX-ARMUT-BESTIMMUNG — Armut-Spieler direkt vom Server empfangen, Angebots-Status anzeigen
-- [ ] Task 20: FEAT-SCHMEISSEN-FRONTEND — Schmeissen-Button im Vorbehalt-Dialog
+- [x] Task 20: FEAT-SCHMEISSEN-FRONTEND — Schmeissen-Button im Vorbehalt-Dialog
