@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import { FONT_FAMILY } from '../ui/designTokens';
 
 export interface ButtonOptionen {
   x: number;
@@ -30,9 +31,8 @@ export class PhaserButton extends Phaser.GameObjects.Container {
     hintergrund.setStrokeStyle(2, 0xf8f9fa);
 
     const textObj = scene.add.text(0, 0, text, {
-      fontFamily: '"Space Grotesk", sans-serif',
+      fontFamily: FONT_FAMILY,
       fontSize: '20px',
-      fontStyle: 'bold',
       color: textFarbe
     }).setOrigin(0.5);
 

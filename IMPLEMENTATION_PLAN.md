@@ -114,7 +114,7 @@
 - [ ] Fokus-Management (Tastatur-Navigation).
 
 ### FEAT-PHASER-LIST: Scrollbare Listen
-- [ ] `PhaserList` mit Masking — für Tischliste und Spielprotokoll.
+- [x] `PhaserList` mit Masking — für Tischliste und Spielprotokoll.
 
 ### REFACTOR-LOBBY: SpielverwaltungsSzene rein Phaser
 - [ ] Entfernung aller DOM-Elemente in `SpielverwaltungsSzene.ts` (`appendChild`, `innerHTML`, `querySelector` — bestätigt durch Analyse).
