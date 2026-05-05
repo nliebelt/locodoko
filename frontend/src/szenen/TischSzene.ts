@@ -612,6 +612,7 @@ export class TischSzene extends Phaser.Scene {
   }
 
   private renderTisch(zustand: AppZustand, modell = this.erstelleModell(zustand)): void {
+    if (this.sys && !this.sys.displayList) return; // Szene wurde zwischenzeitlich zerstoert
     // Persistente eigene Karten invalidieren wenn sich die Spielnummer aendert (neues Spiel).
     const aktuelleSpielNummer = zustand.partieStand?.laufendesSpiel?.spielNummer ?? null;
     if (aktuelleSpielNummer !== this.letztePersistierteSpielNummer) {
