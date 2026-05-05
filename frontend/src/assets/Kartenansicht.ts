@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-
+import { FONT_FAMILY } from '../ui/designTokens';
 import { TEXTUR_KARTE_RUECKSEITE, texturSchluesselFuerKarte } from './AssetLoader';
 
 type Karteninhalt =
@@ -206,18 +206,18 @@ export class Kartenansicht extends Phaser.GameObjects.Container {
     const randX = -this.breite / 2 + Math.round(this.breite * 0.12);
     const randY = -this.hoehe / 2 + Math.round(this.hoehe * 0.08);
     const eckenStil = {
-      fontFamily: 'Space Grotesk, system-ui, sans-serif',
+      fontFamily: FONT_FAMILY,
       fontSize: `${Math.max(14, Math.round(this.breite * 0.16))}px`,
       fontStyle: '700',
       color: farbCode
     };
     const symbolStil = {
-      fontFamily: 'Space Grotesk, system-ui, sans-serif',
+      fontFamily: FONT_FAMILY,
       fontSize: `${Math.max(18, Math.round(this.breite * 0.21))}px`,
       color: farbCode
     };
     const mitteStil = {
-      fontFamily: 'Space Grotesk, system-ui, sans-serif',
+      fontFamily: FONT_FAMILY,
       fontSize: `${Math.max(44, Math.round(this.breite * 0.5))}px`,
       color: farbCode
     };

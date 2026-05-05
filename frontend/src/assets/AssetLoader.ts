@@ -266,17 +266,17 @@ function erzeugeKartenTextur(szene: Phaser.Scene, farbe: string, wert: string): 
   ctx.fillStyle = farbwert;
 
   // Wert oben links
-  ctx.font = 'bold 15px Arial, sans-serif';
+  ctx.font = '10px "Press Start 2P"';
   ctx.textAlign = 'left';
   ctx.textBaseline = 'top';
-  ctx.fillText(wertText, 6, 5);
+  ctx.fillText(wertText, 6, 6);
 
   // Farbsymbol unter dem Wert oben links
-  ctx.font = '14px Arial, sans-serif';
-  ctx.fillText(symbol, 6, 22);
+  ctx.font = '10px "Press Start 2P"';
+  ctx.fillText(symbol, 6, 20);
 
   // Grosses Farbsymbol in der Kartenmitte
-  ctx.font = '44px Arial, sans-serif';
+  ctx.font = '32px "Press Start 2P"';
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
   ctx.fillText(symbol, BREITE / 2, HOEHE / 2);
@@ -286,12 +286,12 @@ function erzeugeKartenTextur(szene: Phaser.Scene, farbe: string, wert: string): 
   ctx.translate(BREITE, HOEHE);
   ctx.rotate(Math.PI);
   ctx.fillStyle = farbwert;
-  ctx.font = 'bold 15px Arial, sans-serif';
+  ctx.font = '10px "Press Start 2P"';
   ctx.textAlign = 'left';
   ctx.textBaseline = 'top';
-  ctx.fillText(wertText, 6, 5);
-  ctx.font = '14px Arial, sans-serif';
-  ctx.fillText(symbol, 6, 22);
+  ctx.fillText(wertText, 6, 6);
+  ctx.font = '10px "Press Start 2P"';
+  ctx.fillText(symbol, 6, 20);
   ctx.restore();
 
   // Canvas als Phaser-Textur registrieren

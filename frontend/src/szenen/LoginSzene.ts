@@ -2,6 +2,7 @@ import Phaser from 'phaser';
 import { TEXTUR_FILZ } from '../assets/AssetLoader';
 import { appStore } from '../anwendung';
 import { PhaserButton } from './PhaserButton';
+import { FONT_FAMILY } from '../ui/designTokens';
 
 /**
  * Login-Screen in Phaser.
@@ -18,14 +19,14 @@ export class LoginSzene extends Phaser.Scene {
     this.add.tileSprite(640, 360, 1280, 720, TEXTUR_FILZ).setAlpha(0.95);
 
     this.add.text(640, 100, 'LOCO DOKO', {
-      fontFamily: '"Space Grotesk", sans-serif',
-      fontSize: '80px',
+      fontFamily: FONT_FAMILY,
+      fontSize: '60px',
       color: '#f8f9fa'
     }).setOrigin(0.5).setShadow(3, 3, '#000', 0);
 
     this.add.text(640, 170, 'Dullen. Füchse. Wahnsinn.', {
-      fontFamily: '"Space Grotesk", sans-serif',
-      fontSize: '24px',
+      fontFamily: FONT_FAMILY,
+      fontSize: '20px',
       color: '#a3c4a8'
     }).setOrigin(0.5);
 
@@ -70,8 +71,8 @@ export class LoginSzene extends Phaser.Scene {
     });
 
     this.add.text(640, 280, 'Wähle deinen Zugang:', {
-      fontFamily: '"Space Grotesk", sans-serif',
-      fontSize: '20px',
+      fontFamily: FONT_FAMILY,
+      fontSize: '16px',
       color: '#f8f9fa'
     }).setOrigin(0.5);
   }

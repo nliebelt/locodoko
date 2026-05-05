@@ -160,7 +160,7 @@ export class Nameplate extends Phaser.GameObjects.Container {
       this.kronenIcon = this.szene.add.text(
         0, -HOEHE / 2 - 10,
         '♛',
-        { fontSize: '14px', fontFamily: 'monospace', color: '#ffd700' }
+        { fontSize: '14px', fontFamily: FONT_FAMILY, color: '#ffd700' }
       ).setOrigin(0.5, 0.5);
       this.add(this.kronenIcon);
       this.kronenTween = this.szene.tweens.add({

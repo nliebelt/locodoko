@@ -1,13 +1,14 @@
-# IMPLEMENTATION_PLAN — Plan-Run #102
+# IMPLEMENTATION_PLAN — Plan-Run #109
 
-> Stand: 2026-05-05. Fokus: Balatro-Design-System — Flash-Text-Verdrahtung, Nameplate Event-Mapping, Spielprotokoll-Integration, und neu entdeckte Frontend-Lücken.
+> Stand: 2026-05-05. Fokus: Rundenauswertung als PhaserModal (Task 9), dann DOM Elimination (Task 10).
 
 ## Notiz
 
-**Was wurde implementiert (Run #108)?**
-- Task 6 (FEAT-POINT-LABELS): `PunkteKomponenteAntwort` in `PartieStandAntwort.java` um Feld `label: String` erweitert. Deutsche Labels: "Grundwert", "Absagen", "Gegen die Alten", "Sonderpunkte". TypeScript-Interface `PunkteKomponenteAntwort` in `SpielverwaltungDto.ts` entsprechend um `label: string` ergänzt. 305 Backend- und 94 Frontend-Tests grün.
+**Was wurde implementiert (Run #109)?**
+- Task 7 (FEAT-PHASER-COMPONENTS): `PhaserModal` + `PhaserList` Basis-Komponenten mit Keyboard-Navigation, Fokus-Trap, Action-Buttons. 2 neue Commits.
+- Task 8 (REFACTOR-LOBBY): `SpielverwaltungsSzene` vollständig auf Phaser migriert. Vision Loop bestätigt: Balatro-Design korrekt (Buttons, Modal, Nameplates, Spielprotokoll). 94 Frontend-Tests grün.
 
-**Nächster logischer Schritt:** Task 7 (PhaserModal + PhaserList Basis-Komponenten) — Voraussetzung für Task 8 (REFACTOR-LOBBY) und Task 9 (REFACTOR-EVALUATION).
+**Nächster logischer Schritt:** Task 9 (REFACTOR-EVALUATION: Rundenauswertung 2.0 als `PhaserModal`) — baut auf PhaserModal auf, visuelle Aufwertung mit Count-up-Animation.
 
 **Offene Fragen:**
 - 90 pre-existing ESLint `any`-Fehler in AppStore.ts und TischSzene.ts — Cleanup-Task ausstehend.
@@ -245,9 +246,9 @@ Backend: `bereitsGeschmissen Set`, `VorbehaltAnsage.SCHMEISSEN_WENIG_TRUMPF`, `i
 
 **P4 (Plan #100):**
 - [x] Task 6: Backend Punkte-Labels + DTO (`FEAT-POINT-LABELS`)
-- [ ] Task 7: `PhaserModal` + `PhaserList` Basis-Komponenten
-- [ ] Task 8: `SpielverwaltungsSzene` Phaser-native (`REFACTOR-LOBBY`)
-- [ ] Task 9: Rundenauswertung 2.0 als `PhaserModal` (`REFACTOR-EVALUATION`)
+- [x] Task 7: `PhaserModal` + `PhaserList` Basis-Komponenten
+- [x] Task 8: `SpielverwaltungsSzene` Phaser-native (`REFACTOR-LOBBY`)
+- [~] Task 9: Rundenauswertung 2.0 als `PhaserModal` (`REFACTOR-EVALUATION`) ← IN ARBEIT
 - [ ] Task 10: DOM Elimination + E2E-Bridge (`REFACTOR-UI-CLEANUP`)
 
 **P5 (Bereits bekannte Aufgaben):**

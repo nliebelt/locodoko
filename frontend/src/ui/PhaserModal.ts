@@ -9,7 +9,7 @@ export interface PhaserModalOptionen {
   titel?: string;
   onClose?: () => void;
   zeigeSchliessenButton?: boolean;
-  aktionen?: ButtonOptionen[];
+  aktionen?: Omit<ButtonOptionen, 'x' | 'y'>[];
 }
 
 export class PhaserModal extends Phaser.GameObjects.Container {

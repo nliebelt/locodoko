@@ -1,4 +1,5 @@
 import type Phaser from 'phaser';
+import { FONT_FAMILY } from '../ui/designTokens';
 
 export interface ToastOptionen {
   text: string;
@@ -30,9 +31,9 @@ export class ToastManager {
     hintergrund.setStrokeStyle(2, 0xffffff, 1);
 
     const textObj = this.scene.add.text(0, 0, text, {
-      fontSize: '18px',
+      fontSize: '14px',
       color: '#ffffff',
-      fontFamily: '"Space Grotesk", Arial, sans-serif',
+      fontFamily: FONT_FAMILY,
       align: 'center',
       wordWrap: { width: toastBreite - 20 }
     });

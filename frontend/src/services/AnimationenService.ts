@@ -1,6 +1,7 @@
 import type Phaser from 'phaser';
 import { PARTEI } from '../modelle/SpielverwaltungDto';
 import type { Partei } from '../modelle/SpielverwaltungDto';
+import { FONT_FAMILY } from '../ui/designTokens';
 
 /**
  * Phaser-Spielobjekte, die gemeinsam als Karte animiert werden koennen:
@@ -159,8 +160,8 @@ export class AnimationenService {
   ): Promise<void> {
     const bannerobjekt = this.szene.add
       .text(position.x, position.y, text, {
-        // 3vw bei 1280px Breite ≈ 38px; auf 40px gerundet fuer scharfe Darstellung
-        font: "900 40px 'Space Grotesk', system-ui, sans-serif",
+        fontFamily: FONT_FAMILY,
+        fontSize: '28px',
         color: textFarbe,
         stroke: '#000000',
         strokeThickness: 6,
@@ -195,8 +196,8 @@ export class AnimationenService {
     const startY = position.y - 160;
     const bannerobjekt = this.szene.add
       .text(position.x, startY, text, {
-        // 4vw bei 1280px Breite ≈ 51px
-        font: "900 51px 'Space Grotesk', system-ui, sans-serif",
+        fontFamily: FONT_FAMILY,
+        fontSize: '38px',
         color: '#f8f9fa',
         stroke: '#000000',
         strokeThickness: 8,
@@ -243,7 +244,8 @@ export class AnimationenService {
     const startY = position.y - 200;
     const parteiLabel = this.szene.add
       .text(position.x, startY, parteiText, {
-        font: "900 56px 'Space Grotesk', system-ui, sans-serif",
+        fontFamily: FONT_FAMILY,
+        fontSize: '42px',
         color: farbe,
         stroke: '#000000',
         strokeThickness: 8,
@@ -254,7 +256,8 @@ export class AnimationenService {
       .setAlpha(0);
     const namenLabel = this.szene.add
       .text(position.x, startY + 68, namenText, {
-        font: "700 28px 'Space Grotesk', system-ui, sans-serif",
+        fontFamily: FONT_FAMILY,
+        fontSize: '18px',
         color: '#f8f9fa',
         stroke: '#000000',
         strokeThickness: 5,
@@ -265,7 +268,8 @@ export class AnimationenService {
       .setAlpha(0);
     const punkteLabel = this.szene.add
       .text(position.x, startY + 108, punkteText, {
-        font: "900 36px 'Space Grotesk', system-ui, sans-serif",
+        fontFamily: FONT_FAMILY,
+        fontSize: '24px',
         color: '#ffffff',
         stroke: '#000000',
         strokeThickness: 6,
@@ -314,7 +318,8 @@ export class AnimationenService {
     const startY = position.y - 200;
     const schaf = this.szene.add
       .text(position.x, startY, emojiText, {
-        font: "900 96px 'Space Grotesk', system-ui, sans-serif",
+        fontFamily: FONT_FAMILY,
+        fontSize: '48px',
         align: 'center'
       })
       .setOrigin(0.5, 0.5)
@@ -322,7 +327,8 @@ export class AnimationenService {
       .setAlpha(0);
     const titel = this.szene.add
       .text(position.x, startY + 90, labelText, {
-        font: "900 51px 'Space Grotesk', system-ui, sans-serif",
+        fontFamily: FONT_FAMILY,
+        fontSize: '38px',
         color: '#ff6b35',
         stroke: '#000000',
         strokeThickness: 8,
@@ -365,7 +371,8 @@ export class AnimationenService {
   ): Promise<void> {
     const feedbackobjekt = this.szene.add
       .text(position.x, position.y, text, {
-        fontSize: '32px',
+        fontFamily: FONT_FAMILY,
+        fontSize: '22px',
         color: '#ffd700',
         stroke: '#000000',
         strokeThickness: 5,
@@ -384,7 +391,6 @@ export class AnimationenService {
   }
 
   /**
-   /**
     * Zieht alle Karten eines abgeschlossenen Stichs zur Gewinner-Position ein.
     * Wartet zuerst eine konfigurierbare Zeit, damit Spieler den Stich sehen koennen.
     * @param kartenobjekte - Alle vier Kartenobjekte des Stichs
@@ -428,7 +434,8 @@ export class AnimationenService {
 
      // "+X Augen" Popup am Ziel einblenden
      const popup = this.szene.add.text(ziel.x, ziel.y - 40, `+${augenzahl} Augen`, {
-       font: "bold 24px 'Space Grotesk', sans-serif",
+       fontFamily: FONT_FAMILY,
+       fontSize: '18px',
        color: '#ffd166',
        stroke: '#000000',
        strokeThickness: 4
@@ -451,7 +458,7 @@ export class AnimationenService {
     konfiguration: Omit<Phaser.Types.Tweens.TweenBuilderConfig, 'duration' | 'onComplete'> & { duration: number }
   ): Promise<void> {
     // Sofort auflösen wenn skalierte Dauer 0 (z.B. geschwindigkeitsfaktor = Infinity):
-    // Phaser-Tweens mit duration=0 feuern onComplete nicht zuverlässig im Headless-Modus.
+    // Phaser-Tweens with duration=0 feuern onComplete nicht zuverlässig im Headless-Modus.
     const skalierteDauer = this.skalierteDauer(konfiguration.duration);
     if (skalierteDauer <= 0) {
       const ziele = Array.isArray(konfiguration.targets) ? konfiguration.targets : [konfiguration.targets];
@@ -579,7 +586,7 @@ export class AnimationenService {
     const FARBE_RE = '#ffd166';
     const FARBE_KONTRA = '#90caf9';
     const siegerFarbe = daten.siegerPartei === PARTEI.RE ? FARBE_RE : FARBE_KONTRA;
-    const FONT = "'Space Grotesk', system-ui, sans-serif";
+    const FONT = FONT_FAMILY;
 
     const fuege = <T extends Phaser.GameObjects.GameObject>(obj: T): T => {
       objekte.push(obj);
@@ -598,7 +605,7 @@ export class AnimationenService {
     // ── 2. Spieltyp + Nummer ──────────────────────────────────────────────
     const kopf = fuege(
       this.szene.add.text(cx, y, `${daten.spieltypLabel}  ·  ${daten.spielNummerText}`, {
-        font: `500 18px ${FONT}`, color: '#7a9aaa',
+        fontFamily: FONT, fontSize: '14px', color: '#7a9aaa',
       }).setOrigin(0.5, 0).setDepth(TIEFE + 1).setAlpha(0)
     );
     await this.tweenAlpha(kopf, 1, 250);
@@ -607,7 +614,7 @@ export class AnimationenService {
     // ── 3. Sieger-Banner (Scale-Bounce) ───────────────────────────────────
     const sieger = fuege(
       this.szene.add.text(cx, y, `${daten.siegerPartei} gewinnt!`, {
-        font: `900 54px ${FONT}`, color: siegerFarbe,
+        fontFamily: FONT, fontSize: '42px', color: siegerFarbe,
         stroke: '#000000', strokeThickness: 7,
       }).setOrigin(0.5, 0).setDepth(TIEFE + 1).setAlpha(0).setScale(0.5)
     );
@@ -623,7 +630,7 @@ export class AnimationenService {
     const kontraZeile = `KONTRA: ${daten.kontraSpielerNamen}  (${daten.augenKontra} Augen)`;
     const parteien = fuege(
       this.szene.add.text(cx, y, `${reZeile}    ·    ${kontraZeile}`, {
-        font: `400 16px ${FONT}`, color: '#99bbcc', align: 'center',
+        fontFamily: FONT, fontSize: '11px', color: '#99bbcc', align: 'center',
       }).setOrigin(0.5, 0).setDepth(TIEFE + 1).setAlpha(0)
     );
     await this.tweenAlpha(parteien, 1, 220);
@@ -640,7 +647,7 @@ export class AnimationenService {
     // ── 5. Punkte-Berechnung: Zeilen nacheinander ─────────────────────────
     const berLabel = fuege(
       this.szene.add.text(cx, y, 'Punkte-Berechnung', {
-        font: `500 13px ${FONT}`, color: '#557766',
+        fontFamily: FONT, fontSize: '10px', color: '#557766',
       }).setOrigin(0.5, 0).setDepth(TIEFE + 1).setAlpha(0)
     );
     await this.tweenAlpha(berLabel, 1, 130);
@@ -649,7 +656,7 @@ export class AnimationenService {
     for (const zeile of daten.berechnungZeilen) {
       const zobj = fuege(
         this.szene.add.text(cx, y, zeile, {
-          font: `400 16px ${FONT}`, color: '#aabbcc',
+          fontFamily: FONT, fontSize: '13px', color: '#aabbcc',
         }).setOrigin(0.5, 0).setDepth(TIEFE + 1).setAlpha(0)
       );
       await this.tweenAlpha(zobj, 1, 120);
@@ -661,7 +668,7 @@ export class AnimationenService {
     // ── 6. Gesamt-Flipper ─────────────────────────────────────────────────
     const gesamtObj = fuege(
       this.szene.add.text(cx, y, 'Gesamt:  +0', {
-        font: `900 26px ${FONT}`, color: '#e8f0e8',
+        fontFamily: FONT, fontSize: '20px', color: '#e8f0e8',
       }).setOrigin(0.5, 0).setDepth(TIEFE + 1).setAlpha(0)
     );
     await this.tweenAlpha(gesamtObj, 1, 150);
@@ -679,7 +686,7 @@ export class AnimationenService {
     // ── 7. Spielpunkte pro Spieler mit Flipper ────────────────────────────
     const spLabel = fuege(
       this.szene.add.text(cx, y, 'Spielpunkte', {
-        font: `500 13px ${FONT}`, color: '#557766',
+        fontFamily: FONT, fontSize: '10px', color: '#557766',
       }).setOrigin(0.5, 0).setDepth(TIEFE + 1).setAlpha(0)
     );
     await this.tweenAlpha(spLabel, 1, 130);
@@ -692,14 +699,14 @@ export class AnimationenService {
     for (const eintrag of daten.spielpunkte) {
       const nameObj = fuege(
         this.szene.add.text(linkX, y, eintrag.istSelbst ? `▸ ${eintrag.name}` : eintrag.name, {
-          font: `${eintrag.istSelbst ? 700 : 400} 18px ${FONT}`,
+          fontFamily: FONT, fontSize: '14px',
           color: eintrag.istSelbst ? '#f0f4f0' : '#99aabb',
         }).setOrigin(0, 0).setDepth(TIEFE + 1).setAlpha(0)
       );
       const pfx = eintrag.punkte >= 0 ? '+' : '';
       const punkteObj = fuege(
         this.szene.add.text(rechtsX, y, `${pfx}0`, {
-          font: `700 18px ${FONT}`,
+          fontFamily: FONT, fontSize: '14px',
           color: eintrag.punkte >= 0 ? '#7edd94' : '#ff8877',
         }).setOrigin(1, 0).setDepth(TIEFE + 1).setAlpha(0)
       );
@@ -720,7 +727,7 @@ export class AnimationenService {
       .join('  ·  ');
     const gsObj = fuege(
       this.szene.add.text(cx, y, `Gesamtstand: ${gsText}`, {
-        font: `400 13px ${FONT}`, color: '#557766',
+        fontFamily: FONT, fontSize: '9px', color: '#557766',
       }).setOrigin(0.5, 0).setDepth(TIEFE + 1).setAlpha(0)
     );
     await this.tweenAlpha(gsObj, 1, 200);

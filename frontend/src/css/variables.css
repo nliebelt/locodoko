@@ -1,4 +1,12 @@
 /* Design-System — CSS Custom Properties (Neo-Brutalism Theme) */
+@font-face {
+  font-family: 'Press Start 2P';
+  src: url('/assets/fonts/PressStart2P-Regular.ttf') format('truetype');
+  font-weight: normal;
+  font-style: normal;
+  font-display: block;
+}
+
 :root {
   --farbe-hintergrund: #0d1f12;
   --farbe-surface: #1a3a24;
@@ -11,7 +19,7 @@
   --farbe-rot: #ef4444;
   --farbe-gruen: #4ade80;
 
-  --schrift-familie: 'Space Grotesk', system-ui, sans-serif;
+  --schrift-familie: 'Press Start 2P', 'Space Grotesk', system-ui, sans-serif;
 
   --schatten-karte: 4px 4px 0 rgba(0, 0, 0, 0.8);
   --schatten-button: 4px 4px 0 #000;

@@ -47,6 +47,7 @@ import { ToastManager } from './ToastManager';
 import { FlashTextManager } from '../ui/FlashTextManager';
 import { Nameplate, ansageBadgeTyp, type NameplateDaten } from '../ui/Nameplate';
 import { SpielprotokollOverlay } from '../ui/SpielprotokollOverlay';
+import { FONT_FAMILY } from '../ui/designTokens';
 import {
   formatiereAnsage,
   formatiereVorbehalt,
@@ -678,7 +679,7 @@ export class TischSzene extends Phaser.Scene {
     const stichAnzahl = modell.spieler.reduce((sum, s) => sum + s.stiche, 0);
     const maxStiche = zustand.aktuellerTisch?.konfiguration.ohneNeunen ? 10 : 12;
     const stichInfo = modell.spieltyp ? `Stich ${stichAnzahl}/${maxStiche}` : '';
-    ebene.add(this.add.text(15, barH / 2, stichInfo, { color: '#a3c4a8', fontSize: `${schriftM}px`, fontStyle: 'bold' }).setOrigin(0, 0.5));
+    ebene.add(this.add.text(15, barH / 2, stichInfo, { fontFamily: FONT_FAMILY, color: '#a3c4a8', fontSize: `${schriftM}px` }).setOrigin(0, 0.5));
     const tisch = zustand.aktuellerTisch;
     const spiel = zustand.partieStand?.laufendesSpiel;
     let zentrumsText = tisch?.name ?? '';
@@ -688,21 +689,21 @@ export class TischSzene extends Phaser.Scene {
     } else if (tisch) {
       zentrumsText += ` · ${tisch.status}`;
     }
-    ebene.add(this.add.text(breite / 2, barH / 2, zentrumsText, { color: '#f8f9fa', fontSize: `${schriftM}px`, fontStyle: 'bold' }).setOrigin(0.5));
+    ebene.add(this.add.text(breite / 2, barH / 2, zentrumsText, { fontFamily: FONT_FAMILY, color: '#f8f9fa', fontSize: `${schriftM}px` }).setOrigin(0.5));
     let rightX = breite - 15;
-    const debugIcon = this.add.text(rightX, barH / 2, '🐛', { fontSize: `${iconSize}px` }).setOrigin(1, 0.5).setInteractive({ useHandCursor: true });
+    const debugIcon = this.add.text(rightX, barH / 2, '🐛', { fontFamily: FONT_FAMILY, fontSize: `${iconSize}px` }).setOrigin(1, 0.5).setInteractive({ useHandCursor: true });
     debugIcon.on('pointerdown', () => appStore.toggleDebugModus());
     rightX -= 35;
-    const settingsIcon = this.add.text(rightX, barH / 2, '⚙', { fontSize: `${iconSize}px` }).setOrigin(1, 0.5).setInteractive({ useHandCursor: true });
+    const settingsIcon = this.add.text(rightX, barH / 2, '⚙', { fontFamily: FONT_FAMILY, fontSize: `${iconSize}px` }).setOrigin(1, 0.5).setInteractive({ useHandCursor: true });
     settingsIcon.on('pointerdown', () => { this.einstellungenOffen = !this.einstellungenOffen; this.renderTisch(zustand, modell); });
     rightX -= 35;
-    const sidebarIcon = this.add.text(rightX, barH / 2, '≡', { fontSize: `${iconSize}px` }).setOrigin(1, 0.5).setInteractive({ useHandCursor: true });
+    const sidebarIcon = this.add.text(rightX, barH / 2, '≡', { fontFamily: FONT_FAMILY, fontSize: `${iconSize}px` }).setOrigin(1, 0.5).setInteractive({ useHandCursor: true });
     sidebarIcon.on('pointerdown', () => { this.seitenladeOffen = !this.seitenladeOffen; this.renderTisch(zustand, modell); });
     rightX -= 35;
-    const protokollIcon = this.add.text(rightX, barH / 2, '📋', { fontSize: `${iconSize}px` }).setOrigin(1, 0.5).setAlpha(this.spielprotokollOverlay ? 1 : 0.6).setInteractive({ useHandCursor: true });
+    const protokollIcon = this.add.text(rightX, barH / 2, '📋', { fontFamily: FONT_FAMILY, fontSize: `${iconSize}px` }).setOrigin(1, 0.5).setAlpha(this.spielprotokollOverlay ? 1 : 0.6).setInteractive({ useHandCursor: true });
     protokollIcon.on('pointerdown', () => { this.toggleSpielprotokoll(modell, zustand); });
     rightX -= 35;
-    const leaveIcon = this.add.text(rightX, barH / 2, '←', { fontSize: `${iconSize}px`, color: '#ef4444' }).setOrigin(1, 0.5).setInteractive({ useHandCursor: true });
+    const leaveIcon = this.add.text(rightX, barH / 2, '←', { fontFamily: FONT_FAMILY, fontSize: `${iconSize}px`, color: '#ef4444' }).setOrigin(1, 0.5).setInteractive({ useHandCursor: true });
     leaveIcon.on('pointerdown', () => {
       const istImSpiel = appStore.snapshot().aktuellerTisch?.status === 'IM_SPIEL';
       if (istImSpiel && !window.confirm('Partie abbrechen und Tisch verlassen?')) return;
@@ -740,11 +741,11 @@ export class TischSzene extends Phaser.Scene {
     const schriftHint = Math.round(Math.max(11, breite * 0.009));
     const zeilenAbstand = 70;
     let currentY = dialogY - dialogH / 2 + 40;
-    ebene.add(this.add.text(dialogX, currentY, 'Einstellungen', { color: '#f8f9fa', fontSize: `${schriftH2}px`, fontStyle: 'bold' }).setOrigin(0.5));
+    ebene.add(this.add.text(dialogX, currentY, 'Einstellungen', { fontFamily: FONT_FAMILY, color: '#f8f9fa', fontSize: `${schriftH2}px` }).setOrigin(0.5));
     currentY += 50;
     const tisch = zustand.aktuellerTisch;
     const darfKonf = zustand.spieler?.spielerId === tisch?.erstelltVonSpielerId && tisch?.status === 'WARTEND';
-    ebene.add(this.add.text(dialogX, currentY, 'Tischhintergrund', { color: '#d8f3dc', fontSize: `${schriftHint}px` }).setOrigin(0.5));
+    ebene.add(this.add.text(dialogX, currentY, 'Tischhintergrund', { fontFamily: FONT_FAMILY, color: '#d8f3dc', fontSize: `${schriftHint}px` }).setOrigin(0.5));
     currentY += 25;
     const bgOptionen: Tischhintergrund[] = ['FILZ_GRUEN', 'HOLZ_DUNKEL', 'BLAU_GRAFIK', 'RECHTECK_1', 'RECHTECK_2', 'OVAL_1', 'OVAL_2', 'RUND_1'];
     const aktuellerBgIdx = bgOptionen.indexOf(modell.tischhintergrund);
@@ -753,7 +754,7 @@ export class TischSzene extends Phaser.Scene {
       void appStore.aktualisiereAktuellenTischhintergrund(bgOptionen[naechsterIdx]);
     }, zustand.wirdGeladen || !darfKonf, true);
     currentY += zeilenAbstand - 20;
-    ebene.add(this.add.text(dialogX, currentY, 'KI-Schwierigkeit', { color: '#d8f3dc', fontSize: `${schriftHint}px` }).setOrigin(0.5));
+    ebene.add(this.add.text(dialogX, currentY, 'KI-Schwierigkeit', { fontFamily: FONT_FAMILY, color: '#d8f3dc', fontSize: `${schriftHint}px` }).setOrigin(0.5));
     currentY += 25;
     const kiOptionen: Array<'LEICHT' | 'STANDARD' | 'SCHWER'> = ['LEICHT', 'STANDARD', 'SCHWER'];
     const aktuelleKi = tisch?.konfiguration.kiSchwierigkeit ?? 'STANDARD';
@@ -763,7 +764,7 @@ export class TischSzene extends Phaser.Scene {
       void appStore.aktualisiereAktuelleKiSchwierigkeit(kiOptionen[naechsterIdx]);
     }, zustand.wirdGeladen || !darfKonf, true);
     currentY += zeilenAbstand - 20;
-    ebene.add(this.add.text(dialogX, currentY, 'Animationen', { color: '#d8f3dc', fontSize: `${schriftHint}px` }).setOrigin(0.5));
+    ebene.add(this.add.text(dialogX, currentY, 'Animationen', { fontFamily: FONT_FAMILY, color: '#d8f3dc', fontSize: `${schriftHint}px` }).setOrigin(0.5));
     currentY += 25;
     const geschw = this.uiManager?.getAnimationsGeschwindigkeit() ?? 1;
     const label = geschw === Infinity ? 'Geschw.: sofort' : `Geschw.: ${geschw}x`;
@@ -787,40 +788,40 @@ export class TischSzene extends Phaser.Scene {
     const schriftName = Math.round(Math.max(13, breite * 0.010));
     const schriftInfo = Math.round(Math.max(10, breite * 0.008));
     const zeilenAbstand = 35;
-    ebene.add(this.add.text(hudX + 15, currentY, 'SPIELER', { color: '#a3c4a8', fontSize: `${schriftInfo}px`, fontStyle: 'bold' }));
+    ebene.add(this.add.text(hudX + 15, currentY, 'SPIELER', { fontFamily: FONT_FAMILY, color: '#a3c4a8', fontSize: `${schriftInfo}px` }));
     currentY += 25;
     modell.spieler.forEach((spieler) => {
       const farbe = spieler.istSelbst ? '#ffd166' : '#f8f9fa';
-      ebene.add(this.add.text(hudX + 15, currentY, spieler.anzeigeName, { color: farbe, fontSize: `${schriftName}px`, fontStyle: spieler.istSelbst ? 'bold' : 'normal' }));
+      ebene.add(this.add.text(hudX + 15, currentY, spieler.anzeigeName, { fontFamily: FONT_FAMILY, color: farbe, fontSize: `${schriftName}px`, fontStyle: spieler.istSelbst ? 'bold' : 'normal' }));
       const info = `${spieler.stiche} Stiche${spieler.partei ? ' · ' + spieler.partei : ''}`;
-      ebene.add(this.add.text(hudX + 15, currentY + 16, info, { color: '#a3c4a8', fontSize: `${schriftInfo}px` }));
+      ebene.add(this.add.text(hudX + 15, currentY + 16, info, { fontFamily: FONT_FAMILY, color: '#a3c4a8', fontSize: `${schriftInfo}px` }));
       currentY += zeilenAbstand + 10;
     });
     currentY += 10;
     if (modell.gesamtpunktestand.length > 0) {
-      ebene.add(this.add.text(hudX + 15, currentY, 'PUNKTESTAND', { color: '#a3c4a8', fontSize: `${schriftInfo}px`, fontStyle: 'bold' }));
+      ebene.add(this.add.text(hudX + 15, currentY, 'PUNKTESTAND', { fontFamily: FONT_FAMILY, color: '#a3c4a8', fontSize: `${schriftInfo}px` }));
       currentY += 25;
       modell.gesamtpunktestand.forEach((eintrag) => {
-        ebene.add(this.add.text(hudX + 15, currentY, `${eintrag.name}: ${eintrag.punkte >= 0 ? '+' : ''}${eintrag.punkte}`, { color: '#f8f9fa', fontSize: `${schriftName}px` }));
+        ebene.add(this.add.text(hudX + 15, currentY, `${eintrag.name}: ${eintrag.punkte >= 0 ? '+' : ''}${eintrag.punkte}`, { fontFamily: FONT_FAMILY, color: '#f8f9fa', fontSize: `${schriftName}px` }));
         currentY += 22;
       });
     }
     currentY += 15;
     if (modell.ansageHistorie.length > 0) {
-      ebene.add(this.add.text(hudX + 15, currentY, 'HISTORIE', { color: '#a3c4a8', fontSize: `${schriftInfo}px`, fontStyle: 'bold' }));
+      ebene.add(this.add.text(hudX + 15, currentY, 'HISTORIE', { fontFamily: FONT_FAMILY, color: '#a3c4a8', fontSize: `${schriftInfo}px` }));
       currentY += 25;
       modell.ansageHistorie.slice(-6).reverse().forEach((ansage) => {
-        ebene.add(this.add.text(hudX + 15, currentY, `${ansage.name}: ${formatiereAnsage(ansage.ansage)}`, { color: '#d8f3dc', fontSize: `${schriftInfo}px` }));
+        ebene.add(this.add.text(hudX + 15, currentY, `${ansage.name}: ${formatiereAnsage(ansage.ansage)}`, { fontFamily: FONT_FAMILY, color: '#d8f3dc', fontSize: `${schriftInfo}px` }));
         currentY += 18;
       });
     }
     currentY += 15;
     const letzteStiche = modell.letzteAbgeschlosseneStiche.slice(-3).reverse();
     if (letzteStiche.length > 0) {
-      ebene.add(this.add.text(hudX + 15, currentY, 'LETZTE STICHE', { color: '#a3c4a8', fontSize: `${schriftInfo}px`, fontStyle: 'bold' }));
+      ebene.add(this.add.text(hudX + 15, currentY, 'LETZTE STICHE', { fontFamily: FONT_FAMILY, color: '#a3c4a8', fontSize: `${schriftInfo}px` }));
       currentY += 25;
       letzteStiche.forEach((stich) => {
-        ebene.add(this.add.text(hudX + 15, currentY, `${stich.gewinnerName}: ${stich.augen} Augen`, { color: '#ffd166', fontSize: `${schriftInfo}px` }));
+        ebene.add(this.add.text(hudX + 15, currentY, `${stich.gewinnerName}: ${stich.augen} Augen`, { fontFamily: FONT_FAMILY, color: '#ffd166', fontSize: `${schriftInfo}px` }));
         currentY += 18;
       });
     }
@@ -843,7 +844,7 @@ export class TischSzene extends Phaser.Scene {
         const ky = pos.y + (istVertikal ? versatz : 0);
         ebene.add(this.erstelleKartenansicht(kx, ky, stapelW, stapelH, { verdeckt: true }).setAngle(pos.winkel).setAlpha(0.88));
       }
-      ebene.add(this.add.text(pos.x, pos.y + Math.round(stapelH * 0.65), `${spieler.stiche}`, { color: '#ffd166', fontSize: `${Math.round(Math.max(10, breite * 0.009))}px`, fontStyle: 'bold', backgroundColor: '#0d3d1e', padding: { x: 3, y: 1 } }).setOrigin(0.5));
+      ebene.add(this.add.text(pos.x, pos.y + Math.round(stapelH * 0.65), `${spieler.stiche}`, { fontFamily: FONT_FAMILY, color: '#ffd166', fontSize: `${Math.round(Math.max(10, breite * 0.009))}px`, backgroundColor: '#0d3d1e', padding: { x: 3, y: 1 } }).setOrigin(0.5));
       const letzterStichDesSpielers = modell.letzteAbgeschlosseneStiche.filter((s) => s.gewinnerPosition === spieler.position).at(-1);
       if (letzterStichDesSpielers) {
         const hitZone = this.add.rectangle(pos.x, pos.y, stapelW * 1.3, stapelH * 1.3 + stapelH * 0.65, 0xffffff, 0).setInteractive({ useHandCursor: true });
@@ -864,7 +865,7 @@ export class TischSzene extends Phaser.Scene {
     backdrop.on('pointerdown', () => this.versteckeLetztesStichOverlay());
     container.add(backdrop);
     container.add(this.add.rectangle(breite / 2, hoehe / 2, panelW, panelH, 0x0a2818, 0.97).setStrokeStyle(2, 0x4adf7a, 0.7));
-    container.add(this.add.text(breite / 2, hoehe / 2 - panelH * 0.38, `Letzter Stich — ${stich.augen} Augen`, { color: '#ffd166', fontSize: `${Math.round(Math.max(12, breite * 0.011))}px`, fontStyle: 'bold' }).setOrigin(0.5));
+    container.add(this.add.text(breite / 2, hoehe / 2 - panelH * 0.38, `Letzter Stich — ${stich.augen} Augen`, { fontFamily: FONT_FAMILY, color: '#ffd166', fontSize: `${Math.round(Math.max(12, breite * 0.011))}px` }).setOrigin(0.5));
     const startX = breite / 2 - ((stich.gespielteKarten.length - 1) * kAbstand) / 2;
     stich.gespielteKarten.forEach((e, i) => {
       const ansicht = this.erstelleKartenansicht(startX + i * kAbstand, hoehe / 2 + panelH * 0.05, kgroesse.w, kgroesse.h, { karte: e.karte });
@@ -872,7 +873,7 @@ export class TischSzene extends Phaser.Scene {
       container.add(ansicht);
       this.tweens.add({ targets: ansicht, scaleX: 1, duration: 150, ease: 'Cubic.Out', delay: i * 60 });
     });
-    container.add(this.add.text(breite / 2, hoehe / 2 + panelH * 0.44, 'Klick zum Schliessen', { color: '#a3c4a8', fontSize: `${Math.round(Math.max(10, breite * 0.009))}px` }).setOrigin(0.5));
+    container.add(this.add.text(breite / 2, hoehe / 2 + panelH * 0.44, 'Klick zum Schliessen', { fontFamily: FONT_FAMILY, color: '#a3c4a8', fontSize: `${Math.round(Math.max(10, breite * 0.009))}px` }).setOrigin(0.5));
     this.letzterStichOverlay = container;
     this.letzterStichTimer = this.time.addEvent({ delay: 4000, callback: () => this.versteckeLetztesStichOverlay(), callbackScope: this });
   }
@@ -1316,7 +1317,7 @@ export class TischSzene extends Phaser.Scene {
     const rF = d ? 0x555555 : hv ? 0xf8f9fa : s ? 0x4a7a5a : 0x4adf7a;
     const tF = d ? '#888888' : hv ? '#0d1f12' : '#f8f9fa';
     const bg = this.add.rectangle(x, y, w, h, hgF, d ? 0.5 : 0.92).setStrokeStyle(hv ? 2 : 1, rF, 0.9);
-    ebene.add(bg); ebene.add(this.add.text(x, y, txt, { color: tF, fontSize: `${Math.round(Math.max(12, this.scale.gameSize.width * 0.011))}px`, fontStyle: 'bold' }).setOrigin(0.5));
+    ebene.add(bg); ebene.add(this.add.text(x, y, txt, { fontFamily: FONT_FAMILY, color: tF, fontSize: `${Math.round(Math.max(12, this.scale.gameSize.width * 0.011))}px` }).setOrigin(0.5));
     if (!d) bg.setInteractive({ useHandCursor: true }).on('pointerdown', hdl);
     if (testId) this.aktualisiereE2EMarker(testId, true);
   }
@@ -1337,13 +1338,13 @@ export class TischSzene extends Phaser.Scene {
     const diaH = titH + (aDek.length > 0 ? aDek.length * zeiH + Math.round(zeiH * 0.5) : 0) + zeil * (bH + aY) + aY;
     const diaY = Math.round(hoehe * 0.28);
     ebene.add(this.add.rectangle(breite / 2, diaY, diaW, diaH, 0x0a2818, 0.97).setStrokeStyle(2, 0x4adf7a, 0.7));
-    ebene.add(this.add.text(breite / 2, diaY - diaH / 2 + titH * 0.5, 'Vorbehalt ansagen', { color: '#f8f9fa', fontSize: `${Math.round(Math.max(13, breite * 0.012))}px`, fontStyle: 'bold' }).setOrigin(0.5));
+    ebene.add(this.add.text(breite / 2, diaY - diaH / 2 + titH * 0.5, 'Vorbehalt ansagen', { fontFamily: FONT_FAMILY, color: '#f8f9fa', fontSize: `${Math.round(Math.max(13, breite * 0.012))}px` }).setOrigin(0.5));
     if (aDek.length > 0) {
       const sY = diaY - diaH / 2 + titH + zeiH * 0.5;
       aDek.forEach((d, i) => {
         const sN = modell.spieler.find((s) => s.position === d.position)?.name ?? d.position;
         const hV = d.ansage !== 'GESUND';
-        ebene.add(this.add.text(breite / 2, sY + i * zeiH, `${sN}: ${hV ? '⚑ Vorbehalt' : '✓ Gesund'}`, { color: hV ? '#ffd700' : '#aaffaa', fontSize: `${Math.round(Math.max(11, breite * 0.009))}px` }).setOrigin(0.5));
+        ebene.add(this.add.text(breite / 2, sY + i * zeiH, `${sN}: ${hV ? '⚑ Vorbehalt' : '✓ Gesund'}`, { fontFamily: FONT_FAMILY, color: hV ? '#ffd700' : '#aaffaa', fontSize: `${Math.round(Math.max(11, breite * 0.009))}px` }).setOrigin(0.5));
       });
     }
     const dkt = zustand.wirdGeladen || !!this.wartendeKartenId || (this.animationen?.animationLaeuft ?? false);
@@ -1379,7 +1380,7 @@ export class TischSzene extends Phaser.Scene {
     const y = hoehe * 0.73;
     if (a.modus === 'ANBIETEN') {
       const anz = this.ausgewaehlteArmutKarten.size;
-      ebene.add(this.add.text(breite / 2, y - hoehe * 0.032, `Waehle ${a.kartenAnzahl} Trumpfkarte${a.kartenAnzahl === 1 ? '' : 'n'} (${anz}/${a.kartenAnzahl} gewaehlt)`, { color: '#d8f3dc', fontSize: `${Math.round(Math.max(11, breite * 0.010))}px`, align: 'center' }).setOrigin(0.5));
+      ebene.add(this.add.text(breite / 2, y - hoehe * 0.032, `Waehle ${a.kartenAnzahl} Trumpfkarte${a.kartenAnzahl === 1 ? '' : 'n'} (${anz}/${a.kartenAnzahl} gewaehlt)`, { fontFamily: FONT_FAMILY, color: '#d8f3dc', fontSize: `${Math.round(Math.max(11, breite * 0.010))}px`, align: 'center' }).setOrigin(0.5));
       this.erstellePhaserButton(ebene, breite / 2, y, Math.round(Math.min(200, breite * 0.17)), bH, 'Trumpfkarten anbieten', () => this.bestaetigeArmut(modell), dkt || anz !== a.kartenAnzahl, false, false, 'btn-armut-anbieten');
     } else if (!this.armutAnnahmeAktiv) {
       const bW = Math.round(Math.min(130, breite * 0.11));
@@ -1388,7 +1389,7 @@ export class TischSzene extends Phaser.Scene {
       this.erstellePhaserButton(ebene, breite / 2 + bW / 2 + ab / 2, y, bW, bH, 'Ablehnen', () => { this.armutAnnahmeAktiv = false; this.ausgewaehlteArmutKarten.clear(); appStore.beantworteArmut(false, []); }, dkt, true, false, 'btn-armut-ablehnen');
     } else {
       const anz = this.ausgewaehlteArmutKarten.size;
-      ebene.add(this.add.text(breite / 2, y - hoehe * 0.032, `Waehle ${a.kartenAnzahl} Karte${a.kartenAnzahl === 1 ? '' : 'n'} zurueck (${anz}/${a.kartenAnzahl})`, { color: '#d8f3dc', fontSize: `${Math.round(Math.max(11, breite * 0.010))}px`, align: 'center' }).setOrigin(0.5));
+      ebene.add(this.add.text(breite / 2, y - hoehe * 0.032, `Waehle ${a.kartenAnzahl} Karte${a.kartenAnzahl === 1 ? '' : 'n'} zurueck (${anz}/${a.kartenAnzahl})`, { fontFamily: FONT_FAMILY, color: '#d8f3dc', fontSize: `${Math.round(Math.max(11, breite * 0.010))}px`, align: 'center' }).setOrigin(0.5));
       const bW = Math.round(Math.min(150, breite * 0.13));
       const ab = Math.round(breite * 0.012);
       this.erstellePhaserButton(ebene, breite / 2 - bW / 2 - ab / 2, y, bW, bH, 'Annahme bestaetigen', () => this.bestaetigeArmut(modell), dkt || anz !== a.kartenAnzahl, false, false, 'btn-armut-annahme-bestaetigen');

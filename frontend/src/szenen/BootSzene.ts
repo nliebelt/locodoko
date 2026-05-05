@@ -1,11 +1,8 @@
 import Phaser from 'phaser';
 import { registriereBasisTexturen, TEXTUR_FILZ, ladeHintergrundbilder } from '../assets/AssetLoader';
 import { appStore } from '../anwendung';
+import { FONT_FAMILY } from '../ui/designTokens';
 
-/**
- * Die erste Szene des Spiels, die für die Initialisierung der Assets,
- * den AppStore und die Wiederherstellung der Spieler-Session zuständig ist.
- */
 /**
  * BootSzene ist der Einstiegspunkt des Phaser-Spiels.
  * Sie lädt initiale Assets wie Schriften und Texturen und initialisiert die globale Konfiguration,
@@ -21,9 +18,11 @@ export class BootSzene extends Phaser.Scene {
   preload(): void {
     console.log('[BootSzene] preload: lade Hintergruende...');
     ladeHintergrundbilder(this);
-    // Press Start 2P lokal laden (OFL-Lizenz) — asynchron, verfügbar bis TischSzene startet
-    const font = new FontFace('Press Start 2P', "url('/assets/fonts/PressStart2P-Regular.ttf')");
-    void font.load().then(f => document.fonts.add(f));
+    
+    // Wir lassen Phaser wissen, dass wir eine externe Schriftart verwenden wollen.
+    // Da sie in CSS definiert ist, muessen wir sicherstellen, dass sie geladen ist,
+    // bevor Phaser Texte rendert, um "Flickering" oder falsche Fonts zu vermeiden.
+    this.add.text(-100, -100, 'preload', { fontFamily: FONT_FAMILY }).setAlpha(0);
   }
 
   /**
@@ -35,20 +34,29 @@ export class BootSzene extends Phaser.Scene {
     } catch (error) {
       console.error('[BootSzene TEXTURE ERROR]', error);
       this.statusText?.setText('Fehler bei der Textur-Initialisierung. Bitte pruefe Logs.');
-      return; // Stop execution if texture loading fails
+      return; 
     }
     this.add.tileSprite(640, 360, 1280, 720, TEXTUR_FILZ).setTint(0x0d5f34);
+    
     this.add.text(640, 280, 'Loco Doko', {
+      fontFamily: FONT_FAMILY,
       color: '#f8f9fa',
-      fontSize: '42px',
-      fontStyle: 'bold'
+      fontSize: '42px'
     }).setOrigin(0.5);
-    this.statusText = this.add.text(640, 360, 'Initialisiere Spieler-Session und Verbindung ...', {
+
+    this.statusText = this.add.text(640, 360, 'Initialisiere Spieler-Session...', {
+      fontFamily: FONT_FAMILY,
       color: '#d8f3dc',
-      fontSize: '22px',
+      fontSize: '18px',
       align: 'center'
     }).setOrigin(0.5);
-    void this.initialisieren();
+
+    // Warte darauf, dass der Browser die Schriften fertig geladen hat
+    document.fonts.ready.then(() => {
+      void this.initialisieren();
+    }).catch(() => {
+      void this.initialisieren(); // Fallback falls API fehlschlaegt
+    });
   }
 
   /**

@@ -3,8 +3,11 @@ import Phaser from 'phaser';
 export interface PhaserListOptionen {
   breite: number;
   hoehe: number;
-  worldX?: number; // Globale X-Koordinate fuer die Maske, falls in einem Container verschachtelt
-  worldY?: number; // Globale Y-Koordinate fuer die Maske
+  worldX?: number;
+  worldY?: number;
+  items?: unknown[];
+  elementHoehe?: number;
+  renderElement?: (item: unknown, container: Phaser.GameObjects.Container) => void;
 }
 
 export class PhaserList extends Phaser.GameObjects.Container {
@@ -25,15 +28,22 @@ export class PhaserList extends Phaser.GameObjects.Container {
     this.maskGraphics = scene.make.graphics();
     this.maskGraphics.fillStyle(0xffffff);
 
-    // Die Maske benoetigt absolute (Welt-)Koordinaten. 
-    // Wenn worldX/worldY uebergeben wurden, nehmen wir diese, sonst nehmen wir x/y an.
     const mX = optionen.worldX !== undefined ? optionen.worldX : x;
     const mY = optionen.worldY !== undefined ? optionen.worldY : y;
     
-    // Wir nehmen an, dass die Maske zentriert ueber der Liste liegt
     this.maskGraphics.fillRect(mX - optionen.breite / 2, mY - optionen.hoehe / 2, optionen.breite, optionen.hoehe);
     const mask = this.maskGraphics.createGeometryMask();
     this.listContainer.setMask(mask);
+
+    if (optionen.items && optionen.renderElement && optionen.elementHoehe !== undefined) {
+      const eH = optionen.elementHoehe;
+      this.totalListHeight = optionen.items.length * eH;
+      optionen.items.forEach((item, index) => {
+        const itemContainer = scene.add.container(0, index * eH + eH / 2 - optionen.hoehe / 2);
+        optionen.renderElement!(item, itemContainer);
+        this.listContainer.add(itemContainer);
+      });
+    }
 
     this.onWheel = (_p: unknown, _g: unknown, _dX: number, deltaY: number) => {
       this.scrollYOffset -= deltaY * 0.5;
