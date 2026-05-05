@@ -22,21 +22,28 @@ Die Tischkonfiguration definiert das Regelwerk, das an einem bestimmten Tisch gi
    | ------ | --- | --------------------- | ------------ |
    | `ohneNeunen` | boolean | true | Spiel ohne Neunen (40 statt 48 Karten) |
    | `anzahlSpiele` | int | 24 | Anzahl Spiele pro Partie |
-   | `hochzeitAktiv` | boolean | true | Hochzeit als Sonderspiel zulassen |
-   | `armutAktiv` | boolean | true | Armut als Sonderspiel zulassen |
-   | `soloDameAktiv` | boolean | true | Damensolo zulassen |
-   | `soloBubeAktiv` | boolean | true | Bubensolo zulassen |
-   | `soloFleischlosAktiv` | boolean | true | Fleischlos zulassen |
-   | `soloTrumpfAktiv` | boolean | true | Trumpfsolo zulassen |
+   | `hochzeitErlaubt` | boolean | true | Hochzeit als Sonderspiel zulassen |
+   | `armutErlaubt` | boolean | true | Armut als Sonderspiel zulassen |
+   | `damensoloErlaubt` | boolean | true | Damensolo zulassen |
+   | `bubensoloErlaubt` | boolean | true | Bubensolo zulassen |
+   | `fleischlosErlaubt` | boolean | true | Fleischlos zulassen |
+   | `trumpfsoloErlaubt` | boolean | true | Trumpfsolo zulassen |
    | `zweiteDulleSticht` | boolean | true | Zweite Dulle sticht die erste |
-   | `fuchsAktiv` | boolean | true | Sonderpunkt „Fuchs gefangen" aktiv |
+   | `fuchsGefangenAktiv` | boolean | true | Sonderpunkt „Fuchs gefangen" aktiv |
    | `karlchenAktiv` | boolean | true | Sonderpunkt „Karlchen" aktiv |
    | `doppelkopfAktiv` | boolean | true | Sonderpunkt „Doppelkopf" aktiv |
-   | `bockrundenAktiv` | boolean | true | Bockrunden aktiv (siehe bockrunden.md) |
+   | `bockrundenAktiv` | boolean | false | Bockrunden aktiv (siehe bockrunden.md) |
    | `herzDurchgegangenNurHoch` | boolean | false | Herz-durchgegangen-Trigger nur bei reinen Herz-As-Stichen (striktere Variante) |
-   | `schweinchenAktiv` | boolean | true | Schweinchen aktiv (siehe schweinchen.md) |
-   | `dreissigAugenPflichtAktiv` | boolean | true | 30-Augen-Pflicht aktiv (siehe dreissig-augen-pflicht.md) |
-   | `ansageGrenzen` | Map | {re: 11, k90: 10, k60: 9, k30: 8, schwarz: 7} | Mindestkartenanzahl für Ansagen |
+   | `schweinchenAktiv` | boolean | false | Schweinchen aktiv (siehe schweinchen.md) |
+   | `dreissigAugenPflichtAktiv` | boolean | false | 30-Augen-Pflicht aktiv (siehe dreissig-augen-pflicht.md) |
+   | `schmeissenAktiv` | boolean | false | Schmeissen aktiv (siehe regelkatalog.md) |
+   | `mindestkartenReKontra` | int | 11 | Mindestkartenanzahl für Re/Kontra-Ansage |
+   | `mindestkartenKeine90` | int | 10 | Mindestkartenanzahl für Keine 90-Ansage |
+   | `mindestkartenKeine60` | int | 9 | Mindestkartenanzahl für Keine 60-Ansage |
+   | `mindestkartenKeine30` | int | 8 | Mindestkartenanzahl für Keine 30-Ansage |
+   | `mindestkartenSchwarz` | int | 7 | Mindestkartenanzahl für Schwarz-Ansage |
+   | `kiSchwierigkeit` | enum | STANDARD | KI-Schwierigkeitsstufe (EINFACH, STANDARD, SCHWER) |
+   | `tischhintergrund` | enum | FILZ_GRUEN | Tisch-Hintergrund-Design |
 
 6. Es gibt benannte **Regel-Presets** die alle Optionen auf einmal vorbelegen
    (Details in regelkatalog.md): **Loco Blatt** (Standard), **DKV-Turnier**, **Ohne Neunen**,
