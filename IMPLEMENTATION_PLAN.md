@@ -110,8 +110,8 @@
 - [ ] **Frontend:** Lade-Status im Store während Schnellstart setzen.
 
 ### FEAT-PHASER-MODAL: Basis-Komponente für Dialoge
-- [ ] Neue Klasse `PhaserModal` (Container): Backdrop, Panel im Balatro-Stil (`designTokens.ts`), Titel, Content, Action-Buttons.
-- [ ] Fokus-Management (Tastatur-Navigation).
+- [x] Neue Klasse `PhaserModal` (Container): Backdrop, Panel im Balatro-Stil (`designTokens.ts`), Titel, Content, Action-Buttons.
+- [x] Fokus-Management (Tastatur-Navigation).
 
 ### FEAT-PHASER-LIST: Scrollbare Listen
 - [x] `PhaserList` mit Masking — für Tischliste und Spielprotokoll.
@@ -262,4 +262,6 @@ Backend: `bereitsGeschmissen Set`, `VorbehaltAnsage.SCHMEISSEN_WENIG_TRUMPF`, `i
 - [x] Task 17: FIX-HOCHZEIT-ANIMATION — Dedizierte Hochzeit-FlashText-Animation statt SchweinchenGemeldet-Style
 - [x] Task 18: FIX-E2E-TESTIDS — 19 fehlende data-testid-Attribute ergänzen
 - [x] Task 19: FIX-ARMUT-BESTIMMUNG — Armut-Spieler direkt vom Server empfangen, Angebots-Status anzeigen
+- [x] Task 20: FEAT-SCHMEISSEN-FRONTEND — Schmeissen-Button im Vorbehalt-Dialog
+eigen
 - [x] Task 20: FEAT-SCHMEISSEN-FRONTEND — Schmeissen-Button im Vorbehalt-Dialog

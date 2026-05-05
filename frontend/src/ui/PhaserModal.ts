@@ -1,5 +1,7 @@
 import Phaser from 'phaser';
 import { PANEL_BG, BORDER_PANEL, FONT_FAMILY } from './designTokens';
+import { PhaserButton } from '../szenen/PhaserButton';
+import type { FocusableElement, ButtonOptionen } from '../szenen/PhaserButton';
 
 export interface PhaserModalOptionen {
   breite?: number;
@@ -7,10 +9,13 @@ export interface PhaserModalOptionen {
   titel?: string;
   onClose?: () => void;
   zeigeSchliessenButton?: boolean;
+  aktionen?: ButtonOptionen[];
 }
 
 export class PhaserModal extends Phaser.GameObjects.Container {
   protected contentContainer: Phaser.GameObjects.Container;
+  private focusableElements: FocusableElement[] = [];
+  private focusIndex: number = -1;
 
   constructor(scene: Phaser.Scene, x: number, y: number, optionen: PhaserModalOptionen = {}) {
     super(scene, x, y);
@@ -20,7 +25,8 @@ export class PhaserModal extends Phaser.GameObjects.Container {
       hoehe = 300,
       titel = '',
       onClose,
-      zeigeSchliessenButton = false
+      zeigeSchliessenButton = false,
+      aktionen = []
     } = optionen;
 
     // Backdrop: cover the whole screen, centered around x,y
@@ -69,16 +75,72 @@ export class PhaserModal extends Phaser.GameObjects.Container {
     this.contentContainer = scene.add.container(0, 0);
     this.add(this.contentContainer);
 
-    // Setup Keyboard Focus Trap (Escape = close)
-    if (onClose) {
-      const escKey = scene.input.keyboard?.addKey(Phaser.Input.Keyboard.KeyCodes.ESC);
-      if (escKey) {
-        escKey.on('down', onClose);
-        this.on('destroy', () => escKey.removeListener('down'));
-      }
+    // Aktionen (Buttons am unteren Rand)
+    if (aktionen.length > 0) {
+      const startX = -((aktionen.length - 1) * 160) / 2;
+      aktionen.forEach((akt, index) => {
+        const btnOpt = { ...akt, x: startX + index * 160, y: hoehe / 2 - 40, breite: akt.breite || 140, hoehe: akt.hoehe || 40 };
+        const btn = new PhaserButton(scene, btnOpt);
+        this.add(btn);
+        this.addFocusable(btn);
+      });
     }
 
+    // Setup Keyboard Focus Trap
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Tab') {
+        e.preventDefault();
+        this.cycleFocus(e.shiftKey ? -1 : 1);
+      } else if (e.key === 'Enter') {
+        e.preventDefault();
+        this.triggerFocus();
+      } else if (e.key === 'Escape' && onClose) {
+        e.preventDefault();
+        onClose();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+
+    this.on('destroy', () => {
+      window.removeEventListener('keydown', handleKeyDown);
+    });
+
     scene.add.existing(this);
+
+    if (this.focusableElements.length > 0) {
+      this.setFocusIndex(0);
+    }
+  }
+
+  public addFocusable(elem: FocusableElement): void {
+    this.focusableElements.push(elem);
+    if (this.focusIndex === -1) {
+      this.setFocusIndex(0);
+    }
+  }
+
+  private cycleFocus(direction: number): void {
+    if (this.focusableElements.length === 0) return;
+    let nextIndex = (this.focusIndex + direction) % this.focusableElements.length;
+    if (nextIndex < 0) nextIndex = this.focusableElements.length - 1;
+    this.setFocusIndex(nextIndex);
+  }
+
+  private setFocusIndex(index: number): void {
+    if (this.focusIndex >= 0 && this.focusIndex < this.focusableElements.length) {
+      this.focusableElements[this.focusIndex].setFocus(false);
+    }
+    this.focusIndex = index;
+    if (this.focusIndex >= 0 && this.focusIndex < this.focusableElements.length) {
+      this.focusableElements[this.focusIndex].setFocus(true);
+    }
+  }
+
+  private triggerFocus(): void {
+    if (this.focusIndex >= 0 && this.focusIndex < this.focusableElements.length) {
+      this.focusableElements[this.focusIndex].trigger();
+    }
   }
 
   public getContentContainer(): Phaser.GameObjects.Container {
