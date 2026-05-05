@@ -4,21 +4,19 @@
 
 ## Notiz
 
-**Was wurde implementiert (Run #104)?**
-- Task 5 (FEAT-SPIELPROTOKOLL): SpielprotokollOverlay vollständig in TischSzene.ts eingebunden:
-  - Import von `SpielprotokollOverlay` ergänzt
-  - Privates Feld `spielprotokollOverlay?: SpielprotokollOverlay` hinzugefügt
-  - `toggleSpielprotokoll(modell, zustand)` Methode: erstellt/zerstört Overlay on-demand; liest `zustand.spielProtokollEintraege` aus AppStore
-  - `renderTopBar`: 📋-Button hinzugefügt (Alpha 0.6 wenn geschlossen, 1.0 wenn offen)
-  - `aufraeumen`: Overlay wird beim Szenen-Destroy korrekt aufgeräumt
+**Was wurde implementiert (Run #105)?**
+- Task 17 (FIX-HOCHZEIT-ANIMATION): Dedizierte `HochzeitPartnerGefunden`-Animation in `FlashTextManager.ts`:
+  - Neuer Typ `'HochzeitPartnerGefunden'` in `SpieleventTyp` Union ergänzt
+  - `private hochzeitPartnerGefunden(partnerName?)`: Gold-Animation mit 💍-Emoji, Foil-Shimmer, zwei Shockwave-Ringen, Konfetti (Gold/Rose/Weiß), Camera-Flash — analog zu `doppelkopfGestochen`
+  - In `TischSzene.ts`: `HOCHZEIT_PARTNER_GEFUNDEN`-Case auf `'HochzeitPartnerGefunden'` umgestellt (vorher fälschlicherweise `'SchweinchenGemeldet'`)
 - 94 Unit-Tests und Build grün. 90 pre-existing ESLint `any`-Fehler unverändert.
 - Vision Loop übersprungen (Backend nicht aktiv). Manueller Check empfohlen.
 
-**Nächster logischer Schritt:** Task 17 (FIX-HOCHZEIT-ANIMATION) — dedizierte Hochzeit-FlashText-Animation in FlashTextManager.ts statt SchweinchenGemeldet-Style.
+**Nächster logischer Schritt:** Task 18 (FIX-E2E-TESTIDS) — 19 fehlende `data-testid`-Attribute ergänzen.
 
 **Offene Fragen:**
 - 90 pre-existing ESLint `any`-Fehler in AppStore.ts und TischSzene.ts — Cleanup-Task ausstehend.
-- Protokoll-Persistenz über Szenen-Wechsel: AppStore-basiert, sollte automatisch funktionieren (nicht explizit verifiziert).
+- Hochzeit-Nameplate: Kein Herz-Label implementiert (WebSocket-Snapshot müsste `spieltyp: 'HOCHZEIT'` liefern — noch nicht geprüft).
 
 ---
 
@@ -266,7 +264,7 @@ Backend: `bereitsGeschmissen Set`, `VorbehaltAnsage.SCHMEISSEN_WENIG_TRUMPF`, `i
 
 **P6 (Neu entdeckt, Plan-Run #102):**
 - [x] Task 16: FEAT-VERDRAHTUNG — Flash-Text (3 fehlende Events) + Nameplate Event-Mapping in TischSzene
-- [ ] Task 17: FIX-HOCHZEIT-ANIMATION — Dedizierte Hochzeit-FlashText-Animation statt SchweinchenGemeldet-Style
+- [x] Task 17: FIX-HOCHZEIT-ANIMATION — Dedizierte Hochzeit-FlashText-Animation statt SchweinchenGemeldet-Style
 - [ ] Task 18: FIX-E2E-TESTIDS — 19 fehlende data-testid-Attribute ergänzen
 - [ ] Task 19: FIX-ARMUT-BESTIMMUNG — Armut-Spieler direkt vom Server empfangen, Angebots-Status anzeigen
 - [ ] Task 20: FEAT-SCHMEISSEN-FRONTEND — Schmeissen-Button im Vorbehalt-Dialog
