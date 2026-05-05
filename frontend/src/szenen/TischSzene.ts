@@ -46,6 +46,7 @@ import { TischUIManager, type TischUIKontext } from './TischUIManager';
 import { ToastManager } from './ToastManager';
 import { FlashTextManager } from '../ui/FlashTextManager';
 import { Nameplate, ansageBadgeTyp, type NameplateDaten } from '../ui/Nameplate';
+import { SpielprotokollOverlay } from '../ui/SpielprotokollOverlay';
 import {
   formatiereAnsage,
   formatiereVorbehalt,
@@ -113,6 +114,7 @@ export class TischSzene extends Phaser.Scene {
   private tastaturVorbehaltIndex = 0;
   private letzterStichOverlay?: Phaser.GameObjects.Container;
   private letzterStichTimer?: Phaser.Time.TimerEvent;
+  private spielprotokollOverlay?: SpielprotokollOverlay;
   private einstellungenOffen = false;
   private seitenladeOffen = false;
   /** Persistente Karten-Sprites fuer die eigene Hand (SUED). Bleiben zwischen renderTisch()-Aufrufen erhalten. */
@@ -697,6 +699,9 @@ export class TischSzene extends Phaser.Scene {
     const sidebarIcon = this.add.text(rightX, barH / 2, '≡', { fontSize: `${iconSize}px` }).setOrigin(1, 0.5).setInteractive({ useHandCursor: true });
     sidebarIcon.on('pointerdown', () => { this.seitenladeOffen = !this.seitenladeOffen; this.renderTisch(zustand, modell); });
     rightX -= 35;
+    const protokollIcon = this.add.text(rightX, barH / 2, '📋', { fontSize: `${iconSize}px` }).setOrigin(1, 0.5).setAlpha(this.spielprotokollOverlay ? 1 : 0.6).setInteractive({ useHandCursor: true });
+    protokollIcon.on('pointerdown', () => { this.toggleSpielprotokoll(modell, zustand); });
+    rightX -= 35;
     const leaveIcon = this.add.text(rightX, barH / 2, '←', { fontSize: `${iconSize}px`, color: '#ef4444' }).setOrigin(1, 0.5).setInteractive({ useHandCursor: true });
     leaveIcon.on('pointerdown', () => {
       const istImSpiel = appStore.snapshot().aktuellerTisch?.status === 'IM_SPIEL';
@@ -877,6 +882,21 @@ export class TischSzene extends Phaser.Scene {
     this.letzterStichTimer = undefined;
     this.letzterStichOverlay?.destroy(true);
     this.letzterStichOverlay = undefined;
+  }
+
+  private toggleSpielprotokoll(modell: TischAnsichtModell, zustand: AppZustand): void {
+    if (this.spielprotokollOverlay) {
+      this.spielprotokollOverlay.destroy(true);
+      this.spielprotokollOverlay = undefined;
+      return;
+    }
+    const { width: breite, height: hoehe } = this.scale.gameSize;
+    this.spielprotokollOverlay = new SpielprotokollOverlay(
+      this, breite / 2, hoehe / 2, breite, hoehe,
+      zustand.spielProtokollEintraege,
+      modell,
+      () => { this.spielprotokollOverlay = undefined; }
+    );
   }
 
   private stichEinziehenAktiv = false;
@@ -1433,6 +1453,7 @@ export class TischSzene extends Phaser.Scene {
     this.rundenauswertungObjekte.forEach((o) => o.destroy()); this.tischEbene?.destroy(true);
     this.hintergrund?.destroy(); this.handKartenobjekte.clear();
     this.schliesseRundenEndeModal(); this.versteckeLetztesStichOverlay(); this.schliessePartieEndeModal();
+    this.spielprotokollOverlay?.destroy(true); this.spielprotokollOverlay = undefined;
     document.getElementById('ui-root')?.querySelectorAll('[data-testid^="btn-vorbehalt-"],[data-testid^="btn-ansage-"],[data-testid^="btn-armut-"]').forEach(el => el.remove());
     this.uiManager?.aufraeumen();
   }

@@ -4,21 +4,21 @@
 
 ## Notiz
 
-**Was wurde implementiert (Run #103)?**
-- Task 16 (FEAT-VERDRAHTUNG): 3 fehlende FlashText-Events verdrahtet in TischSzene.ts:
-  - `STICH_ABGESCHLOSSEN` → `FlashTextManager.zeigeSpielevent('StichAbgeschlossen')` + nach Stich-Animation `NaechsterSpielerErwartet` mit Gewinner-Name
-  - `SPIEL_GESTARTET` → `VorbehaltErwartet` wenn Phase = VORBEHALT_ANSAGE
-- Erkenntnis: Alle Nameplate-States (amZug, geber, vorbehalt, teamfarbe, ansage, shake) waren bereits vollständig via `aktualisiereNameplate()` implementiert — Plan-Beschreibung war veraltet.
-- `NaechsterSpielerErwartet` und `VorbehaltErwartet` sind interne Spring-Events (KI-Orchestrierung), keine WebSocket-Events → werden aus bestehenden Events abgeleitet.
-- AppStore.ts: `SpielerPosition` import ergänzt, `prevStand` vor dem Patch definiert (Spielprotokoll-Fix aus Task 5).
-- SpielprotokollOverlay.ts: TypeScript-Fehler behoben (unused vars, any-Typen).
+**Was wurde implementiert (Run #104)?**
+- Task 5 (FEAT-SPIELPROTOKOLL): SpielprotokollOverlay vollständig in TischSzene.ts eingebunden:
+  - Import von `SpielprotokollOverlay` ergänzt
+  - Privates Feld `spielprotokollOverlay?: SpielprotokollOverlay` hinzugefügt
+  - `toggleSpielprotokoll(modell, zustand)` Methode: erstellt/zerstört Overlay on-demand; liest `zustand.spielProtokollEintraege` aus AppStore
+  - `renderTopBar`: 📋-Button hinzugefügt (Alpha 0.6 wenn geschlossen, 1.0 wenn offen)
+  - `aufraeumen`: Overlay wird beim Szenen-Destroy korrekt aufgeräumt
+- 94 Unit-Tests und Build grün. 90 pre-existing ESLint `any`-Fehler unverändert.
+- Vision Loop übersprungen (Backend nicht aktiv). Manueller Check empfohlen.
 
-**Nächster logischer Schritt:** Task 5 (Spielprotokoll Overlay-Integration in TischSzene) — Button „Protokoll", Tabelle rendern, Scrolling.
+**Nächster logischer Schritt:** Task 17 (FIX-HOCHZEIT-ANIMATION) — dedizierte Hochzeit-FlashText-Animation in FlashTextManager.ts statt SchweinchenGemeldet-Style.
 
 **Offene Fragen:**
-- Vision Loop wurde nicht ausgeführt (Backend nicht aktiv). Manueller Check empfohlen.
-- 90 pre-existing ESLint `any`-Fehler in AppStore.ts und TischSzene.ts — nicht durch diesen Run eingeführt, sollten in einem Cleanup-Task behoben werden.
-- SpielprotokollOverlay ist noch nicht in TischSzene eingebunden (Task 5 offen).
+- 90 pre-existing ESLint `any`-Fehler in AppStore.ts und TischSzene.ts — Cleanup-Task ausstehend.
+- Protokoll-Persistenz über Szenen-Wechsel: AppStore-basiert, sollte automatisch funktionieren (nicht explizit verifiziert).
 
 ---
 
@@ -248,7 +248,7 @@ Backend: `bereitsGeschmissen Set`, `VorbehaltAnsage.SCHMEISSEN_WENIG_TRUMPF`, `i
 - [x] Task 4: `Nameplate`-Klasse implementieren — Klasse fertig, Event-Mapping vollständig (Task 16 erledigt)
 
 **P3 (Spielprotokoll):**
-- [~] Task 5: Spielprotokoll-State im AppStore ✓; Overlay-Integration in TischSzene fehlt noch
+- [x] Task 5: Spielprotokoll vollständig — State im AppStore + Overlay-Integration in TischSzene (📋-Button, Scrolling, Cleanup)
 
 **P4 (Plan #100):**
 - [ ] Task 6: Backend Punkte-Labels + DTO (`FEAT-POINT-LABELS`)
