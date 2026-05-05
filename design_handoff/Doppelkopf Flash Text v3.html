@@ -1,0 +1,863 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Doppelkopf – Balatro Style v3</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=DM+Sans:wght@400;600&display=swap" rel="stylesheet">
+
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+image-rendering: pixelated;
+
+:root {
+  --bg:      #1a1020;
+  --bg2:     #221530;
+  --bg3:     #2d1d40;
+  --border:  #4a2d6a;
+  --text:    #f0e6ff;
+  --muted:   #7a5a9a;
+  --gold:    #ffd700;
+  --red:     #ff4455;
+  --blue:    #44aaff;
+  --green:   #44ff88;
+  --fox:     #ff8833;
+  --pink:    #ff55cc;
+  --cyan:    #33ffee;
+  --outline: 4px;
+  font-family: 'Press Start 2P', monospace;
+}
+
+html, body { width: 100%; min-height: 100vh; background: #1a1020; color: #f0e6ff; overflow-x: hidden; }
+#root { min-height: 100vh; }
+
+/* ── pixel grid bg ── */
+body::before {
+  content: '';
+  position: fixed; inset: 0; pointer-events: none; z-index: 0;
+  background-image:
+    linear-gradient(rgba(255,255,255,0.015) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,0.015) 1px, transparent 1px);
+  background-size: 32px 32px;
+}
+
+/* ── Header ── */
+.site-header {
+  position: relative; z-index: 10;
+  padding: 24px 32px 20px;
+  border-bottom: 4px solid #4a2d6a;
+  display: flex; align-items: center; justify-content: space-between;
+  background: #221530;
+}
+.site-header h1 {
+  font-size: 11px; color: #ffd700;
+  text-shadow: 0 0 12px #ffd700, 3px 3px 0 #7a5000;
+  letter-spacing: 0.06em; line-height: 1.6;
+}
+.site-header p { font-size: 7px; color: #7a5a9a; margin-top: 6px; line-height: 1.8; font-family: 'DM Sans', sans-serif; }
+.header-badge {
+  font-size: 8px; color: #1a1020; background: #ffd700;
+  padding: 6px 12px; border-radius: 4px;
+  text-shadow: none; box-shadow: 3px 3px 0 #7a5000;
+}
+
+/* ── Grid ── */
+.grid {
+  position: relative; z-index: 1;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(420px, 1fr));
+  gap: 4px; padding: 4px;
+  background: #4a2d6a;
+}
+.section-label {
+  grid-column: 1 / -1;
+  padding: 20px 20px 10px;
+  font-size: 8px; color: #7a5a9a;
+  letter-spacing: 0.12em; text-transform: uppercase;
+  background: #1a1020;
+  border-bottom: 2px solid #4a2d6a;
+}
+
+/* ── Card ── */
+.card {
+  background: #221530;
+  border: 3px solid #4a2d6a;
+  border-radius: 8px;
+  display: flex; flex-direction: column;
+  overflow: hidden;
+  position: relative;
+}
+/* corner accents */
+.card::before, .card::after {
+  content: '';
+  position: absolute; width: 12px; height: 12px;
+  border: 3px solid #4a2d6a;
+  pointer-events: none; z-index: 5;
+}
+.card::before { top: -3px; left: -3px; border-right: none; border-bottom: none; border-radius: 8px 0 0 0; }
+.card::after  { bottom: -3px; right: -3px; border-left: none; border-top: none; border-radius: 0 0 8px 0; }
+
+.card-header {
+  padding: 14px 16px 12px;
+  border-bottom: 3px solid #4a2d6a;
+  background: #2d1d40;
+}
+.event-name {
+  font-size: 7px; color: #7a5a9a; margin-bottom: 6px; letter-spacing: 0.08em;
+}
+.event-name span { color: #33ffee; text-shadow: 0 0 8px #33ffee; }
+.card-title { font-size: 9px; color: #f0e6ff; line-height: 1.6; margin-bottom: 4px; }
+.card-desc { font-size: 7px; color: #7a5a9a; line-height: 1.8; font-family: 'DM Sans', sans-serif; font-size: 11px; font-weight: 400; }
+
+/* badge */
+.badge {
+  display: inline-block; font-size: 7px;
+  padding: 4px 10px; border-radius: 4px;
+  color: #1a1020; font-weight: 700;
+  margin-bottom: 8px;
+  box-shadow: 2px 2px 0 rgba(0,0,0,0.5);
+}
+.b-gold  { background: #ffd700;  box-shadow: 2px 2px 0 #7a5000; }
+.b-red   { background: #ff4455;   box-shadow: 2px 2px 0 #880022; }
+.b-blue  { background: #44aaff;  box-shadow: 2px 2px 0 #005599; }
+.b-green { background: #44ff88; box-shadow: 2px 2px 0 #006633; }
+.b-fox   { background: #ff8833;   box-shadow: 2px 2px 0 #884400; }
+.b-pink  { background: #ff55cc;  box-shadow: 2px 2px 0 #880066; }
+.b-cyan  { background: #33ffee;  box-shadow: 2px 2px 0 #006655; }
+
+/* payload */
+.payload-row {
+  padding: 8px 16px 10px;
+  border-bottom: 2px solid #4a2d6a;
+  display: flex; gap: 6px; flex-wrap: wrap;
+  background: #1a1020;
+}
+.payload-chip {
+  font-size: 7px; background: #2d1d40;
+  border: 2px solid #4a2d6a; color: #7a5a9a;
+  padding: 3px 8px; border-radius: 3px;
+}
+.payload-chip b { color: #33ffee; }
+
+/* ── Stage ── */
+.card-stage {
+  height: 210px; position: relative;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; user-select: none;
+  overflow: hidden;
+  background: radial-gradient(ellipse at center, #2a1545 0%, #0d0816 100%);
+}
+.card-stage::after {
+  content: '▶ PLAY';
+  position: absolute; bottom: 8px; right: 10px;
+  font-size: 6px; color: #7a5a9a;
+  opacity: 0; transition: opacity 0.15s;
+}
+.card-stage:hover::after { opacity: 1; }
+
+/* scanlines */
+.card-stage::before {
+  content: '';
+  position: absolute; inset: 0; pointer-events: none; z-index: 20;
+  background: repeating-linear-gradient(
+    0deg, transparent, transparent 2px,
+    rgba(0,0,0,0.18) 2px, rgba(0,0,0,0.18) 4px
+  );
+}
+
+/* ── Code ── */
+.code-block {
+  background: #1a1020; border-top: 3px solid #4a2d6a;
+  padding: 14px 16px; font-size: 9px;
+  color: #9988cc; line-height: 1.8;
+  overflow-x: auto; white-space: pre; flex: 1;
+  font-family: 'Press Start 2P', monospace;
+}
+.ck { color: #cc88ff; }
+.cs { color: #44ff88; }
+.cn { color: #ff8833; }
+.cf { color: #ffd700; }
+.cc { color: #7a5a9a; }
+.ce { color: #33ffee; text-shadow: 0 0 6px #33ffee; }
+
+/* ═══════════════════════════════
+   BALATRO FLASH TEXT STYLES
+═══════════════════════════════ */
+
+/* Base pixel text */
+.bt {
+  font-family: 'Press Start 2P', monospace;
+  text-align: center; line-height: 1.3;
+  position: relative; z-index: 10;
+  image-rendering: pixelated;
+}
+.bt-xl { font-size: 28px; }
+.bt-lg { font-size: 20px; }
+.bt-md { font-size: 14px; }
+.bt-sm { font-size: 10px; }
+.bt-xs { font-size: 8px; }
+
+/* Pixel text shadow (hard offset = balatro style) */
+.shadow-gold  { text-shadow: 4px 4px 0 #7a5000, 0 0 20px #ffd700, 0 0 40px rgba(255,215,0,0.3); }
+.shadow-red   { text-shadow: 4px 4px 0 #880022, 0 0 20px #ff4455; }
+.shadow-green { text-shadow: 4px 4px 0 #006633, 0 0 20px #44ff88; }
+.shadow-fox   { text-shadow: 4px 4px 0 #884400, 0 0 20px #ff8833; }
+.shadow-pink  { text-shadow: 4px 4px 0 #880066, 0 0 20px #ff55cc; }
+.shadow-cyan  { text-shadow: 4px 4px 0 #006655, 0 0 20px #33ffee; }
+.shadow-blue  { text-shadow: 4px 4px 0 #005599, 0 0 20px #44aaff; }
+
+/* Outline box */
+.bt-box {
+  border: 4px solid currentColor;
+  border-radius: 6px;
+  padding: 10px 20px 8px;
+  box-shadow: 4px 4px 0 rgba(0,0,0,0.8), 0 0 20px currentColor, inset 0 0 20px rgba(255,255,255,0.04);
+}
+
+/* ── KEYFRAMES ── */
+
+/* Card flip */
+@keyframes kCardFlip {
+  0%   { transform: perspective(600px) rotateY(90deg) scale(0.8); opacity: 0; }
+  45%  { transform: perspective(600px) rotateY(-8deg) scale(1.04); opacity: 1; }
+  70%  { transform: perspective(600px) rotateY(4deg) scale(0.99); }
+  100% { transform: perspective(600px) rotateY(0deg) scale(1); opacity: 1; }
+}
+
+/* Scale Punch */
+@keyframes kPunch {
+  0%   { transform: scale(0.05); opacity: 0; }
+  55%  { transform: scale(1.22); opacity: 1; }
+  75%  { transform: scale(0.92); }
+  90%  { transform: scale(1.06); }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+/* Screen shake */
+@keyframes kShake {
+  0%,100% { transform: translate(0,0) rotate(0deg); }
+  10% { transform: translate(-6px, -4px) rotate(-1deg); }
+  20% { transform: translate(6px, 4px) rotate(1deg); }
+  30% { transform: translate(-5px, 3px) rotate(-0.5deg); }
+  40% { transform: translate(5px, -3px) rotate(0.5deg); }
+  50% { transform: translate(-4px, 2px) rotate(-0.3deg); }
+  60% { transform: translate(4px, -2px) rotate(0.3deg); }
+  70% { transform: translate(-2px, 1px); }
+  80% { transform: translate(2px, -1px); }
+  90% { transform: translate(-1px, 0); }
+}
+
+/* Foil shimmer */
+@keyframes kFoil {
+  0%   { background-position: 0% 50%; }
+  50%  { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+/* Stamp */
+@keyframes kStamp {
+  0%   { transform: translateY(-80px) scale(1.4) rotate(-3deg); opacity: 0; }
+  55%  { transform: translateY(6px) scale(0.97) rotate(1deg); opacity: 1; }
+  75%  { transform: translateY(-3px) scale(1.02) rotate(-0.5deg); }
+  100% { transform: translateY(0) scale(1) rotate(0deg); opacity: 1; }
+}
+
+/* Score fly */
+@keyframes kScore {
+  0%   { transform: translateY(30px) scale(0.6); opacity: 0; }
+  45%  { transform: translateY(-8px) scale(1.15); opacity: 1; }
+  70%  { transform: translateY(3px) scale(0.97); }
+  100% { transform: translateY(0) scale(1); opacity: 1; }
+}
+
+/* Neon blink */
+@keyframes kNeon {
+  0%   { opacity: 0; transform: scaleX(0.7); filter: blur(8px); }
+  50%  { opacity: 1; transform: scaleX(1.02); filter: blur(0); }
+  100% { opacity: 1; transform: scaleX(1); }
+}
+@keyframes kNeonPulse {
+  0%,100% { opacity: 1; }
+  50%     { opacity: 0.55; }
+}
+
+/* Shock ring */
+@keyframes kRing {
+  0%   { transform: scale(0.1); opacity: 1; }
+  100% { transform: scale(5); opacity: 0; }
+}
+
+/* Bounce spin */
+@keyframes kBounceSpin {
+  0%   { transform: scale(0) rotate(-30deg); opacity: 0; }
+  50%  { transform: scale(1.25) rotate(10deg); opacity: 1; }
+  70%  { transform: scale(0.9) rotate(-4deg); }
+  85%  { transform: scale(1.08) rotate(2deg); }
+  100% { transform: scale(1) rotate(0deg); opacity: 1; }
+}
+
+/* Slide right */
+@keyframes kSlide {
+  0%   { transform: translateX(-70px); opacity: 0; }
+  55%  { transform: translateX(5px); opacity: 1; }
+  100% { transform: translateX(0); opacity: 1; }
+}
+
+/* Zoom blur */
+@keyframes kZoom {
+  0%   { transform: scale(5); opacity: 0; filter: blur(24px); }
+  50%  { transform: scale(0.94); opacity: 1; filter: blur(0); }
+  72%  { transform: scale(1.04); }
+  100% { transform: scale(1); }
+}
+
+.a-flip    { animation: kCardFlip 0.55s cubic-bezier(0.22,1,0.36,1) forwards; }
+.a-punch   { animation: kPunch 0.5s cubic-bezier(0.22,1,0.36,1) forwards; }
+.a-stamp   { animation: kStamp 0.45s cubic-bezier(0.34,1.56,0.64,1) forwards; }
+.a-score   { animation: kScore 0.4s cubic-bezier(0.34,1.56,0.64,1) forwards; }
+.a-neon    { animation: kNeon 0.45s ease-out forwards, kNeonPulse 0.9s 0.45s ease-in-out infinite; }
+.a-bounce  { animation: kBounceSpin 0.6s cubic-bezier(0.22,1,0.36,1) forwards; }
+.a-slide   { animation: kSlide 0.4s cubic-bezier(0.22,1,0.36,1) forwards; }
+.a-zoom    { animation: kZoom 0.52s cubic-bezier(0.16,1,0.3,1) forwards; }
+.a-shake   { animation: kShake 0.45s ease-out; }
+
+/* Shock ring */
+.s-ring {
+  position: absolute; border-radius: 50%;
+  border: 4px solid currentColor;
+  width: 60px; height: 60px;
+  left: 50%; top: 50%; margin: -30px 0 0 -30px;
+  pointer-events: none; z-index: 15;
+}
+.s-ring.go { animation: kRing 0.55s ease-out forwards; }
+
+/* ── FOIL ── */
+.foil-text {
+  background: linear-gradient(
+    105deg,
+    #ffd700 0%, #ff88ff 20%, #44ffee 40%,
+    #ffd700 60%, #ff8833 80%, #44aaff 100%
+  );
+  background-size: 300% 300%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: kFoil 2.5s ease-in-out infinite;
+  filter: drop-shadow(0 0 12px rgba(255,215,0,0.6));
+}
+
+/* ── FOX LETTERS ── */
+.fox-l {
+  display: inline-block; opacity: 0;
+  transform: translateY(-40px) rotate(-20deg);
+  transition: transform 0.3s cubic-bezier(0.34,1.56,0.64,1), opacity 0.25s;
+}
+.fox-l.on { opacity: 1; transform: translateY(0) rotate(0deg); }
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel" src="tweaks-panel.jsx"></script>
+<script type="text/babel">
+const { useState, useEffect, useRef, useCallback } = React;
+
+/* ── utils ── */
+function useReplay() {
+  const [k, setK] = useState(0);
+  const go = useCallback(() => setK(v => v+1), []);
+  return [k, go];
+}
+
+/* Confetti */
+function Confetti({ trig, colors }) {
+  const ref = useRef(null);
+  const raf = useRef(null);
+  useEffect(() => {
+    if (!trig) return;
+    const cv = ref.current; if (!cv) return;
+    const ctx = cv.getContext('2d');
+    const W = cv.width = cv.offsetWidth, H = cv.height = cv.offsetHeight;
+    const pts = Array.from({length:70}, () => ({
+      x: W/2+(Math.random()-.5)*60, y: H/2,
+      vx: (Math.random()-.5)*16, vy: -(Math.random()*12+5),
+      w: Math.random()*10+4, h: Math.random()*5+2,
+      color: colors[Math.floor(Math.random()*colors.length)],
+      rot: Math.random()*Math.PI*2, rv: (Math.random()-.5)*.35, a: 1,
+    }));
+    let f=0;
+    const draw=()=>{
+      ctx.clearRect(0,0,W,H);
+      pts.forEach(p=>{
+        p.x+=p.vx; p.y+=p.vy; p.vy+=.45; p.rot+=p.rv; p.a-=.015;
+        if(p.a<=0)return;
+        ctx.save(); ctx.globalAlpha=p.a; ctx.translate(p.x,p.y); ctx.rotate(p.rot);
+        ctx.fillStyle=p.color; ctx.fillRect(-p.w/2,-p.h/2,p.w,p.h); ctx.restore();
+      });
+      if(++f<130) raf.current=requestAnimationFrame(draw);
+    };
+    cancelAnimationFrame(raf.current); draw();
+    return ()=>cancelAnimationFrame(raf.current);
+  }, [trig]);
+  return <canvas ref={ref} style={{position:'absolute',inset:0,width:'100%',height:'100%',pointerEvents:'none',zIndex:8}} />;
+}
+
+/* Shock rings */
+function Rings({trig, color, count=1}) {
+  const [rings, setRings] = useState([]);
+  useEffect(()=>{
+    if(!trig) return;
+    const ids = Array.from({length:count},(_,i)=>trig*100+i);
+    setRings(r=>[...r,...ids]);
+    setTimeout(()=>setRings(r=>r.filter(x=>!ids.includes(x))),700);
+  },[trig]);
+  return <>{rings.map(id=><div key={id} className="s-ring go" style={{color,animationDelay: rings.indexOf(id)*120+'ms'}} />)}</>;
+}
+
+/* Wrapper that shakes on trigger */
+function Shakeable({trig, children, doShake=true}) {
+  const [shaking, setShaking] = useState(false);
+  useEffect(()=>{
+    if(!trig||!doShake) return;
+    setShaking(true);
+    const t=setTimeout(()=>setShaking(false),500);
+    return ()=>clearTimeout(t);
+  },[trig]);
+  return <div style={{width:'100%',height:'100%',display:'flex',alignItems:'center',justifyContent:'center'}}
+    className={shaking?'a-shake':''}>{children}</div>;
+}
+
+/* Card flip wrapper — every event gets a flip-in card */
+function FlipCard({trig, color, children}) {
+  return (
+    <div key={trig} style={{position:'relative',zIndex:10}}>
+      {trig>0 && (
+        <div className="a-flip" style={{
+          background:'#2d1d40', border:`3px solid ${color}`,
+          borderRadius:8, padding:'12px 20px 10px',
+          boxShadow:`4px 4px 0 rgba(0,0,0,0.7), 0 0 20px ${color}44`,
+          display:'flex',flexDirection:'column',alignItems:'center',gap:6,
+          minWidth:160,
+        }}>
+          {children}
+        </div>
+      )}
+      {trig===0 && <div style={{color:'#7a5a9a',fontSize:8,fontFamily:"'Press Start 2P',monospace"}}>▶ PLAY</div>}
+    </div>
+  );
+}
+
+/* Code */
+function Code({c}) {
+  return <pre className="code-block" dangerouslySetInnerHTML={{__html:c}} />;
+}
+function PayChip({field,sample}) {
+  return <span className="payload-chip"><b>{field}</b>{sample?`: ${sample}`:''}</span>;
+}
+
+/* ── CARD WRAPPER ── */
+function Card({eventName, badge, bclass, title, desc, payload, stage, code}) {
+  return (
+    <div className="card">
+      <div className="card-header">
+        <span className={`badge b-${bclass}`}>{badge}</span>
+        <div className="event-name"><span>{eventName}</span></div>
+        <div className="card-title">{title}</div>
+        <div className="card-desc">{desc}</div>
+      </div>
+      {payload && <div className="payload-row">{payload.map((p,i)=><PayChip key={i} {...p}/>)}</div>}
+      {stage}
+      <Code c={code} />
+    </div>
+  );
+}
+
+/* ══════════════════════
+   STAGES
+══════════════════════ */
+
+/* SpielGestartet */
+function S_SpielGestartet({spd}) {
+  const [k,go]=useReplay();
+  const d=(380/spd).toFixed(0)+'ms';
+  return (
+    <div className="card-stage" onClick={go}>
+      <Shakeable trig={k} doShake={false}>
+        <FlipCard trig={k} color="#33ffee">
+          <div key={k} className="bt bt-xs shadow-cyan" style={{color:'#33ffee',letterSpacing:'0.06em',animationDuration:d}}>SPIEL</div>
+          <div key={k+'b'} className="bt bt-md a-stamp shadow-cyan" style={{color:'#33ffee',opacity:0,animationFillMode:'forwards',animationDelay:'80ms',animationDuration:d}}>STARTET</div>
+          <div className="bt bt-xs" style={{color:'#7a5a9a',marginTop:4}}>TISCH BEREIT</div>
+        </FlipCard>
+      </Shakeable>
+    </div>
+  );
+}
+
+/* NaechsterSpielerErwartet */
+function S_Naechster({spd}) {
+  const [k,go]=useReplay();
+  const names=['SPIELER 1','SPIELER 2','SPIELER 3','SPIELER 4'];
+  const [i,setI]=useState(0);
+  const d=(400/spd).toFixed(0)+'ms';
+  const click=()=>{setI(v=>(v+1)%names.length);go();};
+  return (
+    <div className="card-stage" onClick={click}>
+      <Shakeable trig={k} doShake={false}>
+        <FlipCard trig={k} color="#44aaff">
+          <div className="bt bt-xs" style={{color:'#7a5a9a'}}>AM ZUG</div>
+          <div key={k} className="bt bt-sm a-punch shadow-blue" style={{color:'#44aaff',animationDuration:d}}>{names[i]}</div>
+        </FlipCard>
+      </Shakeable>
+    </div>
+  );
+}
+
+/* VorbehaltErwartet */
+function S_Vorbehalt({spd}) {
+  const [k,go]=useReplay();
+  const d=(450/spd).toFixed(0)+'ms';
+  return (
+    <div className="card-stage" onClick={go}>
+      <Shakeable trig={k} doShake={false}>
+        <FlipCard trig={k} color="#44aaff">
+          <div key={k} className="bt bt-sm a-neon shadow-blue" style={{color:'#44aaff',animationDuration:d}}>VORBEHALT?</div>
+          <div className="bt bt-xs" style={{color:'#7a5a9a',marginTop:4}}>SPIELER AM ZUG</div>
+        </FlipCard>
+      </Shakeable>
+    </div>
+  );
+}
+
+/* StichAbgeschlossen */
+function S_Stich({spd}) {
+  const [k,go]=useReplay();
+  const vals=['+1','+2','+3'];
+  const [i,setI]=useState(0);
+  const d=(360/spd).toFixed(0)+'ms';
+  const click=()=>{setI(v=>(v+1)%vals.length);go();};
+  return (
+    <div className="card-stage" onClick={click}>
+      <Shakeable trig={k} doShake={false}>
+        <FlipCard trig={k} color="#44ff88">
+          <div key={k} className="bt bt-xl a-score shadow-green" style={{color:'#44ff88',animationDuration:d}}>{vals[i]}</div>
+          <div className="bt bt-xs" style={{color:'#7a5a9a'}}>STICH</div>
+        </FlipCard>
+      </Shakeable>
+    </div>
+  );
+}
+
+/* SchweinchenGemeldet */
+function S_Schweinchen({spd}) {
+  const [k,go]=useReplay();
+  const d=(600/spd).toFixed(0)+'ms';
+  return (
+    <div className="card-stage" onClick={go}>
+      <Rings trig={k} color="#ff55cc" count={2} />
+      <Shakeable trig={k} doShake={true}>
+        <FlipCard trig={k} color="#ff55cc">
+          <div key={k} className="bt bt-xl a-bounce" style={{animationDuration:d,lineHeight:1}}>🐷</div>
+          <div key={k+'t'} className="bt bt-sm a-stamp shadow-pink" style={{color:'#ff55cc',opacity:0,animationFillMode:'forwards',animationDelay:'100ms',animationDuration:d}}>SCHWEINCHEN!</div>
+          <div className="bt bt-xs" style={{color:'#7a5a9a',marginTop:2}}>GEMELDET</div>
+        </FlipCard>
+      </Shakeable>
+    </div>
+  );
+}
+
+/* FuchsGefangen */
+function FoxL({ch,delay}) {
+  const ref=useRef(null);
+  useEffect(()=>{const t=setTimeout(()=>ref.current?.classList.add('on'),delay);return()=>clearTimeout(t);},[delay]);
+  return <span ref={ref} className="fox-l">{ch}</span>;
+}
+function S_Fuchs({spd}) {
+  const [k,go]=useReplay();
+  const gap=Math.round(70/spd);
+  return (
+    <div className="card-stage" onClick={go}>
+      <Confetti trig={k} colors={['#ff8833','#ffd700','#ffffff','#ff5500']} />
+      <Shakeable trig={k} doShake={true}>
+        <FlipCard trig={k} color="#ff8833">
+          <div style={{fontFamily:"'Press Start 2P',monospace",fontSize:28,color:'#ff8833',
+            textShadow:'4px 4px 0 #884400, 0 0 20px #ff8833',lineHeight:1.2}}>
+            {'FUCHS'.split('').map((c,i)=><FoxL key={i} ch={c} delay={i*gap}/>)}
+          </div>
+          <div className="bt bt-xs" style={{color:'#7a5a9a',marginTop:6}}>GEFANGEN · +1</div>
+        </FlipCard>
+      </Shakeable>
+    </div>
+  );
+}
+
+/* KarlchenGespielt */
+function S_Karlchen({spd}) {
+  const [k,go]=useReplay();
+  const d=(560/spd).toFixed(0)+'ms';
+  return (
+    <div className="card-stage" onClick={go}>
+      <Rings trig={k} color="#ffd700" count={2} />
+      <Shakeable trig={k} doShake={true}>
+        <FlipCard trig={k} color="#ffd700">
+          <div key={k} className="bt bt-lg a-bounce shadow-gold" style={{color:'#ffd700',animationDuration:d}}>KARLCHEN</div>
+          <div className="bt bt-xs" style={{color:'#7a5a9a',marginTop:4}}>LETZTER STICH · +1</div>
+        </FlipCard>
+      </Shakeable>
+    </div>
+  );
+}
+
+/* DoppelkopfGestochen — FOIL */
+function S_Doppelkopf({spd}) {
+  const [k,go]=useReplay();
+  const d=(580/spd).toFixed(0)+'ms';
+  return (
+    <div className="card-stage" onClick={go}
+      style={{background:'radial-gradient(ellipse at center, #2a1030 0%, #0d0816 100%)'}}>
+      <Confetti trig={k} colors={['#ffd700','#ff88ff','#44ffee','#ff8833','#ffffff']} />
+      <Rings trig={k} color="#ffd700" count={3} />
+      <Shakeable trig={k} doShake={true}>
+        {k>0 && (
+          <div key={k} className="a-zoom" style={{textAlign:'center',zIndex:10,animationDuration:d}}>
+            <div className="bt bt-xl bt-box foil-text" style={{borderColor:'#ffd700',boxShadow:'4px 4px 0 #7a5000, 0 0 40px rgba(255,215,0,0.5)'}}>
+              DOPPEL<br/>KOPF
+            </div>
+            <div className="bt bt-xs" style={{color:'#ffd700',marginTop:8,textShadow:'2px 2px 0 #7a5000'}}>GESTOCHEN · +2</div>
+          </div>
+        )}
+        {k===0 && <div style={{color:'#7a5a9a',fontSize:8,fontFamily:"'Press Start 2P',monospace"}}>▶ PLAY</div>}
+      </Shakeable>
+    </div>
+  );
+}
+
+/* SpielBeendet — FOIL */
+function S_SpielBeendet({spd}) {
+  const [k,go]=useReplay();
+  const d=(540/spd).toFixed(0)+'ms';
+  return (
+    <div className="card-stage" onClick={go}
+      style={{background:'radial-gradient(ellipse at center, #0d2a15 0%, #070d0a 100%)'}}>
+      <Confetti trig={k} colors={['#44ff88','#ffd700','#ffffff','#44ffee','#ff88ff']} />
+      <Rings trig={k} color="#44ff88" count={2} />
+      <Shakeable trig={k} doShake={true}>
+        {k>0 && (
+          <div key={k} className="a-zoom" style={{textAlign:'center',zIndex:10,animationDuration:d}}>
+            <div className="bt bt-xl bt-box foil-text" style={{borderColor:'#44ff88',boxShadow:'4px 4px 0 #006633, 0 0 40px rgba(68,255,136,0.5)'}}>
+              GEWONNEN
+            </div>
+            <div className="bt bt-xs" style={{color:'#44ff88',marginTop:8,textShadow:'2px 2px 0 #006633'}}>SPIEL BEENDET</div>
+          </div>
+        )}
+        {k===0 && <div style={{color:'#7a5a9a',fontSize:8,fontFamily:"'Press Start 2P',monospace"}}>▶ PLAY</div>}
+      </Shakeable>
+    </div>
+  );
+}
+
+/* ── CODE SNIPPETS ── */
+const C = {
+spielGestartet:`<span class="cc">// SpielGestartet { tischId }</span>
+scene.events.on(<span class="ce">'SpielGestartet'</span>, () => {
+  <span class="ck">const</span> card = <span class="cf">showFlipCard</span>({
+    lines: [<span class="cs">'SPIEL'</span>, <span class="cs">'STARTET'</span>],
+    color: <span class="cn">0x33ffee</span>, duration: <span class="cn">380</span>
+  });
+  <span class="ck">this</span>.<span class="cf">tweens</span>.<span class="cf">add</span>({
+    targets: card,
+    ease: <span class="cs">'Back.Out'</span>,
+    <span class="cc">// rotateY: 90→0 via custom tween prop</span>
+    duration: <span class="cn">550</span>
+  });
+});`,
+naechster:`<span class="cc">// NaechsterSpielerErwartet { tischId }</span>
+scene.events.on(<span class="ce">'NaechsterSpielerErwartet'</span>, () => {
+  <span class="ck">const</span> name = <span class="cf">getPlayerName</span>();
+  <span class="cf">showFlipCard</span>({ lines: [<span class="cs">'AM ZUG'</span>, name],
+    color: <span class="cn">0x44aaff</span> });
+  <span class="ck">this</span>.<span class="cf">tweens</span>.<span class="cf">add</span>({
+    targets: text,
+    scaleX: [<span class="cn">0.05</span>,<span class="cn">1.22</span>,<span class="cn">0.92</span>,<span class="cn">1</span>],
+    ease: <span class="cs">'Back.Out'</span>, duration: <span class="cn">400</span>,
+  });
+});`,
+vorbehalt:`<span class="cc">// VorbehaltErwartet { tischId }</span>
+scene.events.on(<span class="ce">'VorbehaltErwartet'</span>, () => {
+  <span class="ck">const</span> t = <span class="cf">showPixelText</span>(<span class="cs">'VORBEHALT?'</span>);
+  t.<span class="cf">setShadow</span>(<span class="cn">0</span>,<span class="cn">0</span>,<span class="cs">'#44aaff'</span>,<span class="cn">18</span>,<span class="cn">true</span>);
+  <span class="ck">this</span>.<span class="cf">tweens</span>.<span class="cf">add</span>({
+    targets: t, alpha: { from:<span class="cn">0.5</span>, to:<span class="cn">1</span> },
+    yoyo:<span class="cn">true</span>, repeat:-<span class="cn">1</span>, duration:<span class="cn">650</span>
+  });
+});`,
+stich:`<span class="cc">// StichAbgeschlossen { tischId, punkte }</span>
+scene.events.on(<span class="ce">'StichAbgeschlossen'</span>, ({punkte}) => {
+  <span class="ck">const</span> t = <span class="cf">showPixelText</span>(<span class="cs">\`+\${punkte}\`</span>);
+  <span class="ck">this</span>.<span class="cf">tweens</span>.<span class="cf">add</span>({
+    targets: t,
+    y: cy - <span class="cn">60</span>,
+    scaleX:[<span class="cn">0.6</span>,<span class="cn">1.15</span>,<span class="cn">1</span>],
+    scaleY:[<span class="cn">0.6</span>,<span class="cn">1.15</span>,<span class="cn">1</span>],
+    alpha:{ from:<span class="cn">0</span>, to:<span class="cn">1</span> },
+    ease:<span class="cs">'Back.Out(2)'</span>, duration:<span class="cn">360</span>,
+  });
+});`,
+schweinchen:`<span class="cc">// SchweinchenGemeldet { tischId, spielerPosition }</span>
+scene.events.on(<span class="ce">'SchweinchenGemeldet'</span>, ({spielerPosition}) => {
+  <span class="cf">showFlipCard</span>({ emoji:<span class="cs">'🐷'</span>, text:<span class="cs">'SCHWEINCHEN!'</span>,
+    color:<span class="cn">0xff55cc</span> });
+  <span class="cf">spawnRings</span>(cx, cy, <span class="cn">0xff55cc</span>, <span class="cn">2</span>);
+  <span class="ck">this</span>.<span class="cf">cameras</span>.main.<span class="cf">shake</span>(<span class="cn">350</span>, <span class="cn">0.007</span>);
+});`,
+fuchs:`<span class="cc">// FuchsGefangen { tischId, taeter, opfer }</span>
+scene.events.on(<span class="ce">'FuchsGefangen'</span>, ({taeter, opfer}) => {
+  <span class="cs">'FUCHS'</span>.<span class="cf">split</span>(<span class="cs">''</span>).<span class="cf">forEach</span>((ch, i) => {
+    <span class="ck">const</span> l = <span class="cf">pixelLetter</span>(ch, startX+i*<span class="cn">52</span>);
+    <span class="ck">this</span>.<span class="cf">tweens</span>.<span class="cf">add</span>({
+      targets: l, y: cy, alpha:<span class="cn">1</span>, angle:[-<span class="cn">20</span>,<span class="cn">0</span>],
+      delay: i*<span class="cn">70</span>, duration:<span class="cn">280</span>, ease:<span class="cs">'Back.Out'</span>
+    });
+  });
+  emitter.<span class="cf">explode</span>(<span class="cn">40</span>, cx, cy);
+  <span class="ck">this</span>.<span class="cf">cameras</span>.main.<span class="cf">shake</span>(<span class="cn">300</span>,<span class="cn">0.006</span>);
+});`,
+karlchen:`<span class="cc">// KarlchenGespielt { tischId, taeter }</span>
+scene.events.on(<span class="ce">'KarlchenGespielt'</span>, ({taeter}) => {
+  <span class="cf">showFlipCard</span>({text:<span class="cs">'KARLCHEN'</span>, color:<span class="cn">0xffd700</span>});
+  <span class="ck">this</span>.<span class="cf">tweens</span>.<span class="cf">add</span>({
+    targets: card,
+    scaleX:[<span class="cn">0</span>,<span class="cn">1.25</span>,<span class="cn">0.9</span>,<span class="cn">1.08</span>,<span class="cn">1</span>],
+    angle: [<span class="cn">-30</span>,<span class="cn">10</span>,<span class="cn">-4</span>,<span class="cn">2</span>,<span class="cn">0</span>],
+    ease:<span class="cs">'Back.Out'</span>, duration:<span class="cn">560</span>,
+  });
+  <span class="cf">spawnRings</span>(cx,cy,<span class="cn">0xffd700</span>,<span class="cn">2</span>);
+  <span class="ck">this</span>.<span class="cf">cameras</span>.main.<span class="cf">shake</span>(<span class="cn">300</span>,<span class="cn">0.006</span>);
+});`,
+doppelkopf:`<span class="cc">// DoppelkopfGestochen { tischId, gewinner }</span>
+scene.events.on(<span class="ce">'DoppelkopfGestochen'</span>, ({gewinner}) => {
+  <span class="cc">// Foil-Shader via RenderTexture + tint cycling</span>
+  <span class="ck">const</span> t = <span class="cf">showFoilText</span>(<span class="cs">'DOPPELKOPF'</span>);
+  <span class="ck">this</span>.<span class="cf">tweens</span>.<span class="cf">add</span>({
+    targets: t, scaleX:[<span class="cn">5</span>,<span class="cn">1</span>], scaleY:[<span class="cn">5</span>,<span class="cn">1</span>],
+    alpha:{from:<span class="cn">0</span>,to:<span class="cn">1</span>}, ease:<span class="cs">'Expo.Out'</span>, duration:<span class="cn">580</span>
+  });
+  emitter.<span class="cf">explode</span>(<span class="cn">70</span>,cx,cy);
+  <span class="ck">this</span>.<span class="cf">cameras</span>.main.<span class="cf">flash</span>(<span class="cn">300</span>,<span class="cn">255</span>,<span class="cn">215</span>,<span class="cn">0</span>);
+  <span class="ck">this</span>.<span class="cf">cameras</span>.main.<span class="cf">shake</span>(<span class="cn">400</span>,<span class="cn">0.01</span>);
+});`,
+spielBeendet:`<span class="cc">// SpielBeendet { tischId, spielerDaten, partieBeendet }</span>
+scene.events.on(<span class="ce">'SpielBeendet'</span>, ({spielerDaten, partieBeendet}) => {
+  <span class="cc">// Foil text + mega konfetti</span>
+  <span class="ck">const</span> t = <span class="cf">showFoilText</span>(<span class="cs">'GEWONNEN'</span>);
+  <span class="ck">this</span>.<span class="cf">tweens</span>.<span class="cf">add</span>({
+    targets: t, scaleX:[<span class="cn">5</span>,<span class="cn">1</span>],
+    ease:<span class="cs">'Expo.Out'</span>, duration:<span class="cn">540</span>
+  });
+  emitter.<span class="cf">explode</span>(<span class="cn">100</span>,cx,cy);
+  <span class="ck">this</span>.<span class="cf">cameras</span>.main.<span class="cf">flash</span>(<span class="cn">400</span>,<span class="cn">100</span>,<span class="cn">255</span>,<span class="cn">150</span>);
+  <span class="ck">this</span>.<span class="cf">cameras</span>.main.<span class="cf">shake</span>(<span class="cn">500</span>,<span class="cn">0.012</span>);
+  <span class="ck">if</span> (partieBeendet) <span class="cf">showPartieScreen</span>(spielerDaten);
+});`,
+};
+
+/* ── APP ── */
+function App() {
+  const {useTweaks, TweaksPanel, TweakSection, TweakSlider} = window;
+  const [tweaks, setTweak] = useTweaks(/*EDITMODE-BEGIN*/{"speed":1.0}/*EDITMODE-END*/);
+  const s = tweaks.speed;
+
+  return (
+    <div style={{minHeight:'100vh'}}>
+      <TweaksPanel>
+        <TweakSection label="Animationsgeschwindigkeit" />
+        <TweakSlider label="Speed" id="speed" min={0.3} max={3} step={0.1} value={s} onChange={v=>setTweak('speed',v)} />
+        <div style={{fontSize:7,color:'#7a5a9a',marginTop:6,fontFamily:"'Press Start 2P',monospace",lineHeight:1.8}}>
+          {s<0.7?'ZEITLUPE':s>2?'TURBO':s>1.4?'SCHNELL':'NORMAL'}
+        </div>
+      </TweaksPanel>
+
+      <header className="site-header">
+        <div>
+          <h1>DOPPELKOPF</h1>
+          <h1 style={{color:'#f0e6ff',textShadow:'3px 3px 0 #330022'}}>FLASH TEXT v3</h1>
+          <p>Balatro Style · Press Start 2P · Foil · Screen Shake · Card Flip · 9 Events</p>
+        </div>
+        <span className="header-badge">BALATRO</span>
+      </header>
+
+      <div className="grid">
+
+        <div className="section-label">// SPIELABLAUF</div>
+
+        <Card eventName="SpielGestartet" badge="NEU" bclass="cyan"
+          title="Card Flip — Slide Banner"
+          desc="Karte flippt via rotateY(90°→0°) herein. Schnell, clean, kein Screen Shake — kommt jede Runde."
+          payload={[{field:'tischId',sample:'"tisch-01"'}]}
+          stage={<S_SpielGestartet spd={s}/>} code={C.spielGestartet}/>
+
+        <Card eventName="NaechsterSpielerErwartet" badge="TURN" bclass="blue"
+          title="Card Flip + Scale Punch"
+          desc="Spielername per Karten-Flip. Scale Punch gedämpft — passiert jede Runde, darf nicht nerven."
+          payload={[{field:'tischId'}]}
+          stage={<S_Naechster spd={s}/>} code={C.naechster}/>
+
+        <Card eventName="VorbehaltErwartet" badge="INPUT" bclass="blue"
+          title="Card Flip + Neon Blink"
+          desc="Pulsierender Pixel-Text mit harter Neon-Shadow. Signalisiert: Spieler muss handeln."
+          payload={[{field:'tischId'}]}
+          stage={<S_Vorbehalt spd={s}/>} code={C.vorbehalt}/>
+
+        <Card eventName="StichAbgeschlossen" badge="STICH" bclass="green"
+          title="Card Flip + Score Fly-Up"
+          desc="Pixel-Zahl springt aus dem Stich. Balatro-Style: harte 4px-Shadow, kein Blur."
+          payload={[{field:'tischId'}]}
+          stage={<S_Stich spd={s}/>} code={C.stich}/>
+
+        <div className="section-label">// SONDERPUNKTE</div>
+
+        <Card eventName="SchweinchenGemeldet" badge="SCHWEIN" bclass="pink"
+          title="Card Flip + Wobble + Screen Shake"
+          desc="Emoji bounced mit Rotation, doppelter Shockwave-Ring, Camera Shake. Selten genug für Maximal-Drama."
+          payload={[{field:'spielerPosition',sample:'2'}]}
+          stage={<S_Schweinchen spd={s}/>} code={C.schweinchen}/>
+
+        <Card eventName="FuchsGefangen" badge="FUCHS" bclass="fox"
+          title="Letter Drop + Konfetti + Screen Shake"
+          desc="Buchstaben fallen einzeln mit Rotation, Konfetti-Burst, Camera Shake. Top-Moment verdient es."
+          payload={[{field:'taeter'},{field:'opfer'}]}
+          stage={<S_Fuchs spd={s}/>} code={C.fuchs}/>
+
+        <Card eventName="KarlchenGespielt" badge="KARLCHEN" bclass="gold"
+          title="Card Flip + Bounce Spin + Doppel-Ring"
+          desc="Übertriebener Bounce mit Rotation und zwei Shockwave-Ringen. Goldene Hard-Shadow."
+          payload={[{field:'taeter',sample:'"Spieler 1"'}]}
+          stage={<S_Karlchen spd={s}/>} code={C.karlchen}/>
+
+        <div className="section-label">// SPIELHÖHEPUNKTE</div>
+
+        <Card eventName="DoppelkopfGestochen" badge="DK ★★★" bclass="gold"
+          title="FOIL TEXT + Zoom Blur + 3× Ring + Konfetti + Camera Flash"
+          desc="Holographic Foil-Shimmer auf dem Text (Rainbow-Gradient animiert). Stärkster Effekt — für den Namen des Spiels selbst."
+          payload={[{field:'gewinner',sample:'"Spieler 3"'}]}
+          stage={<S_Doppelkopf spd={s}/>} code={C.doppelkopf}/>
+
+        <Card eventName="SpielBeendet" badge="ENDE ★★★" bclass="green"
+          title="FOIL TEXT + Zoom Blur + 2× Ring + Mega-Konfetti + Camera Flash"
+          desc="Foil-Shimmer in Grün/Gold. Konfetti mit 70 Partikeln. Screen Flash + Shake. partieBeendet → Partie-Screen."
+          payload={[{field:'spielNummer'},{field:'spielerDaten'},{field:'partieBeendet',sample:'false'}]}
+          stage={<S_SpielBeendet spd={s}/>} code={C.spielBeendet}/>
+
+      </div>
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+</script>
+</body>
+</html>

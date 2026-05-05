@@ -1,0 +1,509 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Doppelkopf – Icon Palette</title>
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=DM+Sans:wght@400;600;700&display=swap" rel="stylesheet">
+
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html, body {
+  min-height: 100vh; background: #120e1a; color: #ede0ff;
+  font-family: 'DM Sans', sans-serif; overflow-x: hidden;
+}
+#root { min-height: 100vh; }
+
+body::before {
+  content: ''; position: fixed; inset: 0; pointer-events: none; z-index: 0;
+  background-image:
+    linear-gradient(rgba(255,255,255,0.01) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,0.01) 1px, transparent 1px);
+  background-size: 32px 32px;
+}
+
+.hdr {
+  position: relative; z-index: 10; padding: 24px 36px 20px;
+  border-bottom: 3px solid #3d2860; background: #1c1428;
+  display: flex; align-items: center; justify-content: space-between;
+}
+.hdr h1 { font-family: 'Press Start 2P', monospace; font-size: 11px; color: #ffd700; text-shadow: 3px 3px 0 #7a5000; line-height: 1.6; }
+.hdr p { font-size: 11px; color: #6a4a8a; margin-top: 6px; }
+.hdr-tag { font-family: 'Press Start 2P', monospace; font-size: 8px; color: #120e1a; background: #ffd700; padding: 6px 14px; border-radius: 4px; box-shadow: 3px 3px 0 #7a5000; }
+
+.content { position: relative; z-index: 1; padding: 32px 36px; display: flex; flex-direction: column; gap: 40px; }
+
+.section-title {
+  font-size: 10px; font-weight: 700; letter-spacing: 0.14em;
+  text-transform: uppercase; color: #6a4a8a; margin-bottom: 16px;
+  font-family: 'Press Start 2P', monospace;
+}
+
+/* Icon grid */
+.icon-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+  gap: 3px; background: #3d2860;
+  border: 3px solid #3d2860; border-radius: 8px; overflow: hidden;
+}
+.icon-cell {
+  background: #120e1a; padding: 20px 12px 14px;
+  display: flex; flex-direction: column; align-items: center; gap: 10px;
+  cursor: pointer; transition: background 0.15s; position: relative;
+}
+.icon-cell:hover { background: #1c1428; }
+.icon-cell:hover .copy-hint { opacity: 1; }
+.icon-name { font-size: 10px; color: #6a4a8a; text-align: center; font-weight: 600; line-height: 1.4; }
+.icon-key  { font-family: 'Press Start 2P', monospace; font-size: 7px; color: #3d2860; text-align: center; margin-top: 2px; }
+.copy-hint {
+  position: absolute; top: 6px; right: 8px;
+  font-size: 9px; color: #33ffee; opacity: 0; transition: opacity 0.15s;
+  font-weight: 700;
+}
+.copy-toast {
+  position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
+  background: #1c1428; border: 2px solid #33ffee; color: #33ffee;
+  font-family: 'Press Start 2P', monospace; font-size: 9px;
+  padding: 10px 20px; border-radius: 6px;
+  box-shadow: 4px 4px 0 rgba(0,0,0,0.5);
+  z-index: 999; pointer-events: none;
+  animation: toastIn 0.2s ease-out;
+}
+@keyframes toastIn {
+  from { opacity: 0; transform: translateX(-50%) translateY(8px); }
+  to   { opacity: 1; transform: translateX(-50%) translateY(0); }
+}
+
+/* Size preview row */
+.size-row { display: flex; gap: 24px; align-items: flex-end; flex-wrap: wrap; }
+.size-item { display: flex; flex-direction: column; align-items: center; gap: 8px; }
+.size-label { font-size: 10px; color: #6a4a8a; font-weight: 600; }
+
+/* Export panel */
+.export-panel {
+  background: #1c1428; border: 3px solid #3d2860; border-radius: 8px;
+  padding: 20px 24px;
+}
+.export-title { font-family: 'Press Start 2P', monospace; font-size: 9px; color: #33ffee; margin-bottom: 14px; }
+.export-code {
+  background: #0a0612; border: 2px solid #3d2860; border-radius: 4px;
+  padding: 14px 16px; font-family: 'Press Start 2P', monospace;
+  font-size: 8.5px; color: #9988cc; line-height: 1.9;
+  overflow-x: auto; white-space: pre;
+}
+.btn-row { display: flex; gap: 10px; margin-top: 16px; flex-wrap: wrap; }
+.btn {
+  font-family: 'Press Start 2P', monospace; font-size: 8px;
+  padding: 10px 18px; border-radius: 4px; cursor: pointer;
+  border: 2px solid; transition: transform 0.1s;
+}
+.btn:active { transform: translate(2px, 2px); }
+.btn-cyan  { background: #33ffee; color: #120e1a; border-color: #006655; box-shadow: 3px 3px 0 #006655; }
+.btn-gold  { background: #ffd700; color: #120e1a; border-color: #7a5000; box-shadow: 3px 3px 0 #7a5000; }
+.btn-muted { background: #1c1428; color: #6a4a8a; border-color: #3d2860; box-shadow: 3px 3px 0 #0a0612; }
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel" src="tweaks-panel.jsx"></script>
+<script type="text/babel">
+const { useState, useCallback, useEffect } = React;
+
+/* ══════════════════════════════════════
+   SVG ICONS
+══════════════════════════════════════ */
+const ICONS = {
+
+  /* ── Kartenfarben (Suits) ── */
+  kreuz: {
+    label: 'Kreuz', key: 'suit_clubs', group: 'Suits',
+    color: '#ede0ff',
+    svg: `<svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <circle cx="20" cy="13" r="7" fill="currentColor"/>
+      <circle cx="11" cy="22" r="7" fill="currentColor"/>
+      <circle cx="29" cy="22" r="7" fill="currentColor"/>
+      <rect x="17" y="22" width="6" height="10" fill="currentColor"/>
+      <rect x="12" y="30" width="16" height="4" rx="2" fill="currentColor"/>
+    </svg>`,
+  },
+  pik: {
+    label: 'Pik', key: 'suit_spades', group: 'Suits',
+    color: '#ede0ff',
+    svg: `<svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M20 4 L34 22 Q34 30 20 28 Q6 30 6 22 Z" fill="currentColor"/>
+      <circle cx="20" cy="22" r="7" fill="currentColor"/>
+      <rect x="17" y="26" width="6" height="8" fill="currentColor"/>
+      <rect x="12" y="32" width="16" height="4" rx="2" fill="currentColor"/>
+    </svg>`,
+  },
+  herz: {
+    label: 'Herz', key: 'suit_hearts', group: 'Suits',
+    color: '#ff4455',
+    svg: `<svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M20 34 C20 34 4 22 4 13 C4 8 8 4 13 4 C16 4 19 6 20 8 C21 6 24 4 27 4 C32 4 36 8 36 13 C36 22 20 34 20 34Z" fill="currentColor"/>
+    </svg>`,
+  },
+  karo: {
+    label: 'Karo', key: 'suit_diamonds', group: 'Suits',
+    color: '#ff4455',
+    svg: `<svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M20 3 L37 20 L20 37 L3 20 Z" fill="currentColor"/>
+    </svg>`,
+  },
+
+  /* ── Sonderkarten ── */
+  fuchs: {
+    label: 'Fuchs (♦A)', key: 'card_fox', group: 'Sonderkarten',
+    color: '#ff8833',
+    svg: `<svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <!-- Karo -->
+      <path d="M20 4 L32 20 L20 36 L8 20 Z" fill="currentColor" opacity="0.3"/>
+      <!-- A -->
+      <text x="20" y="26" text-anchor="middle" font-family="serif" font-weight="900" font-size="22" fill="currentColor">A</text>
+      <!-- Kleine Ohren -->
+      <path d="M6 6 L12 14 L4 14 Z" fill="currentColor"/>
+      <path d="M34 6 L28 14 L36 14 Z" fill="currentColor"/>
+    </svg>`,
+  },
+  karlchen: {
+    label: 'Karlchen (♣J)', key: 'card_karlchen', group: 'Sonderkarten',
+    color: '#ffd700',
+    svg: `<svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <!-- Kreuz mini -->
+      <circle cx="20" cy="8" r="4" fill="currentColor" opacity="0.4"/>
+      <circle cx="14" cy="14" r="4" fill="currentColor" opacity="0.4"/>
+      <circle cx="26" cy="14" r="4" fill="currentColor" opacity="0.4"/>
+      <rect x="18" y="14" width="4" height="6" fill="currentColor" opacity="0.4"/>
+      <!-- J -->
+      <text x="20" y="34" text-anchor="middle" font-family="serif" font-weight="900" font-size="24" fill="currentColor">J</text>
+    </svg>`,
+  },
+  dulle: {
+    label: 'Dulle (♥10)', key: 'card_dulle', group: 'Sonderkarten',
+    color: '#ff4455',
+    svg: `<svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <!-- Herz mini -->
+      <path d="M20 14 C20 14 12 9 12 5 C12 3 14 1 16 1 C18 1 20 3 20 3 C20 3 22 1 24 1 C26 1 28 3 28 5 C28 9 20 14 20 14Z" fill="currentColor" opacity="0.4"/>
+      <!-- 10 -->
+      <text x="20" y="34" text-anchor="middle" font-family="serif" font-weight="900" font-size="20" fill="currentColor">10</text>
+    </svg>`,
+  },
+  schweinchen: {
+    label: 'Schweinchen (♦J)', key: 'card_pig', group: 'Sonderkarten',
+    color: '#ff55cc',
+    svg: `<svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <!-- Pig face -->
+      <ellipse cx="20" cy="22" rx="13" ry="11" fill="currentColor"/>
+      <ellipse cx="20" cy="25" rx="7" ry="5" fill="#120e1a" opacity="0.3"/>
+      <circle cx="18" cy="25" r="2" fill="#120e1a" opacity="0.6"/>
+      <circle cx="22" cy="25" r="2" fill="#120e1a" opacity="0.6"/>
+      <!-- Ears -->
+      <ellipse cx="11" cy="14" rx="5" ry="6" fill="currentColor"/>
+      <ellipse cx="29" cy="14" rx="5" ry="6" fill="currentColor"/>
+      <!-- Eyes -->
+      <circle cx="15" cy="19" r="2.5" fill="#120e1a"/>
+      <circle cx="25" cy="19" r="2.5" fill="#120e1a"/>
+      <circle cx="16" cy="18" r="1" fill="white"/>
+      <circle cx="26" cy="18" r="1" fill="white"/>
+    </svg>`,
+  },
+
+  /* ── Ansagen / Badges ── */
+  re: {
+    label: 'RE', key: 'badge_re', group: 'Ansagen',
+    color: '#ffd700',
+    svg: `<svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <rect x="2" y="2" width="36" height="36" rx="6" fill="currentColor"/>
+      <text x="20" y="27" text-anchor="middle" font-family="'Press Start 2P', monospace" font-size="14" font-weight="900" fill="#120e1a">RE</text>
+    </svg>`,
+  },
+  kontra: {
+    label: 'KONTRA', key: 'badge_kontra', group: 'Ansagen',
+    color: '#ff4455',
+    svg: `<svg viewBox="0 0 56 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <rect x="2" y="2" width="52" height="36" rx="6" fill="currentColor"/>
+      <text x="28" y="27" text-anchor="middle" font-family="'Press Start 2P', monospace" font-size="11" font-weight="900" fill="#ede0ff">KON</text>
+    </svg>`,
+  },
+  keine9: {
+    label: 'Keine 9', key: 'badge_keine9', group: 'Ansagen',
+    color: '#44aaff',
+    svg: `<svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <rect x="2" y="2" width="36" height="36" rx="6" stroke="currentColor" stroke-width="3" fill="none"/>
+      <text x="20" y="26" text-anchor="middle" font-family="serif" font-weight="900" font-size="20" fill="currentColor">9</text>
+      <!-- Durchgestrichen -->
+      <line x1="6" y1="6" x2="34" y2="34" stroke="currentColor" stroke-width="3" stroke-linecap="round"/>
+    </svg>`,
+  },
+  schwarz: {
+    label: 'Schwarz', key: 'badge_schwarz', group: 'Ansagen',
+    color: '#ede0ff',
+    svg: `<svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <rect x="2" y="2" width="36" height="36" rx="6" fill="#0a0612" stroke="currentColor" stroke-width="3"/>
+      <circle cx="20" cy="20" r="8" fill="currentColor"/>
+      <!-- Skull dots -->
+      <circle cx="17" cy="18" r="2" fill="#0a0612"/>
+      <circle cx="23" cy="18" r="2" fill="#0a0612"/>
+      <rect x="15" y="23" width="10" height="2" rx="1" fill="#0a0612"/>
+    </svg>`,
+  },
+
+  /* ── Spielstatus ── */
+  stich: {
+    label: 'Stich', key: 'ui_trick', group: 'Spielstatus',
+    color: '#44ff88',
+    svg: `<svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <!-- Stack of 4 cards -->
+      <rect x="4" y="14" width="22" height="28" rx="3" fill="#221530" stroke="currentColor" stroke-width="2.5" transform="rotate(-12 4 14)"/>
+      <rect x="6" y="12" width="22" height="28" rx="3" fill="#221530" stroke="currentColor" stroke-width="2.5" transform="rotate(-4 6 12)"/>
+      <rect x="8" y="10" width="22" height="28" rx="3" fill="#221530" stroke="currentColor" stroke-width="2.5" transform="rotate(4 8 10)"/>
+      <rect x="10" y="8" width="22" height="28" rx="3" fill="#1c1428" stroke="currentColor" stroke-width="2.5" transform="rotate(12 10 8)"/>
+    </svg>`,
+  },
+  score: {
+    label: 'Score', key: 'ui_score', group: 'Spielstatus',
+    color: '#44ff88',
+    svg: `<svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <circle cx="20" cy="20" r="17" fill="none" stroke="currentColor" stroke-width="3"/>
+      <text x="20" y="26" text-anchor="middle" font-family="'Press Start 2P', monospace" font-size="14" fill="currentColor">+</text>
+    </svg>`,
+  },
+  timer: {
+    label: 'Timer', key: 'ui_timer', group: 'Spielstatus',
+    color: '#33ffee',
+    svg: `<svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <circle cx="20" cy="22" r="15" fill="none" stroke="currentColor" stroke-width="3"/>
+      <line x1="20" y1="22" x2="20" y2="11" stroke="currentColor" stroke-width="3" stroke-linecap="round"/>
+      <line x1="20" y1="22" x2="28" y2="26" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/>
+      <rect x="15" y="3" width="10" height="4" rx="2" fill="currentColor"/>
+      <line x1="30" y1="8" x2="33" y2="5" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/>
+    </svg>`,
+  },
+  spieler: {
+    label: 'Spieler', key: 'ui_player', group: 'Spielstatus',
+    color: '#44aaff',
+    svg: `<svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <circle cx="20" cy="13" r="8" fill="currentColor"/>
+      <path d="M4 38 C4 28 36 28 36 38" fill="currentColor"/>
+    </svg>`,
+  },
+  gewonnen: {
+    label: 'Gewonnen', key: 'ui_win', group: 'Spielstatus',
+    color: '#44ff88',
+    svg: `<svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <!-- Trophy -->
+      <rect x="14" y="30" width="12" height="4" rx="2" fill="currentColor"/>
+      <rect x="10" y="34" width="20" height="4" rx="2" fill="currentColor"/>
+      <path d="M10 8 L10 22 Q10 30 20 30 Q30 30 30 22 L30 8 Z" fill="currentColor"/>
+      <path d="M10 12 Q4 12 4 18 Q4 24 10 22" stroke="currentColor" stroke-width="3" fill="none" stroke-linecap="round"/>
+      <path d="M30 12 Q36 12 36 18 Q36 24 30 22" stroke="currentColor" stroke-width="3" fill="none" stroke-linecap="round"/>
+      <!-- Star -->
+      <path d="M20 12 L21.5 16.5 L26 16.5 L22.5 19 L24 23.5 L20 21 L16 23.5 L17.5 19 L14 16.5 L18.5 16.5 Z" fill="#120e1a"/>
+    </svg>`,
+  },
+  verloren: {
+    label: 'Verloren', key: 'ui_lose', group: 'Spielstatus',
+    color: '#ff4455',
+    svg: `<svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <circle cx="20" cy="20" r="17" fill="none" stroke="currentColor" stroke-width="3"/>
+      <line x1="12" y1="12" x2="28" y2="28" stroke="currentColor" stroke-width="4" stroke-linecap="round"/>
+      <line x1="28" y1="12" x2="12" y2="28" stroke="currentColor" stroke-width="4" stroke-linecap="round"/>
+    </svg>`,
+  },
+
+  /* ── Flash Text Labels ── */
+  doppelkopf_badge: {
+    label: 'DK Badge', key: 'flash_dk', group: 'Flash Labels',
+    color: '#ffd700',
+    svg: `<svg viewBox="0 0 80 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <rect x="2" y="2" width="76" height="36" rx="6" fill="#120e1a" stroke="currentColor" stroke-width="3"/>
+      <rect x="2" y="2" width="76" height="36" rx="6" fill="currentColor" opacity="0.08"/>
+      <text x="40" y="27" text-anchor="middle" font-family="'Press Start 2P', monospace" font-size="11" fill="currentColor">DK!</text>
+    </svg>`,
+  },
+  fuchs_badge: {
+    label: 'Fuchs Badge', key: 'flash_fox', group: 'Flash Labels',
+    color: '#ff8833',
+    svg: `<svg viewBox="0 0 80 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <rect x="2" y="2" width="76" height="36" rx="6" fill="#120e1a" stroke="currentColor" stroke-width="3"/>
+      <text x="40" y="27" text-anchor="middle" font-family="'Press Start 2P', monospace" font-size="9" fill="currentColor">FUCHS</text>
+    </svg>`,
+  },
+  karlchen_badge: {
+    label: 'Karlchen Badge', key: 'flash_karl', group: 'Flash Labels',
+    color: '#ffd700',
+    svg: `<svg viewBox="0 0 96 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <rect x="2" y="2" width="92" height="36" rx="6" fill="#120e1a" stroke="currentColor" stroke-width="3"/>
+      <text x="48" y="27" text-anchor="middle" font-family="'Press Start 2P', monospace" font-size="8" fill="currentColor">KARLCHEN</text>
+    </svg>`,
+  },
+};
+
+/* ── Group order ── */
+const GROUPS = ['Suits', 'Sonderkarten', 'Ansagen', 'Spielstatus', 'Flash Labels'];
+
+/* ── SVG to data URL ── */
+function svgToDataUrl(svgStr, color) {
+  const colored = svgStr.replace(/currentColor/g, color);
+  const encoded = encodeURIComponent(colored);
+  return `data:image/svg+xml,${encoded}`;
+}
+
+/* ── Copy SVG to clipboard ── */
+async function copySvg(svgStr, color, key) {
+  const colored = svgStr.replace(/currentColor/g, color);
+  try { await navigator.clipboard.writeText(colored); } catch(e) {}
+  return key;
+}
+
+/* ── Phaser load snippet ── */
+function phaserSnippet(key, color, svgStr) {
+  const colored = svgStr.replace(/currentColor/g, color).replace(/\n\s*/g, ' ').trim();
+  const dataUrl = `data:image/svg+xml,${encodeURIComponent(colored)}`;
+  return `// Phaser 3 — SVG als Textur laden\nthis.load.svg('${key}', '${dataUrl}',\n  { width: 64, height: 64 });\n\n// Dann verwenden:\nthis.add.image(x, y, '${key}').setScale(2);`;
+}
+
+/* ── ICON CELL ── */
+function IconCell({ icon, size, onCopy }) {
+  const [copied, setCopied] = useState(false);
+  const handleClick = async () => {
+    await copySvg(icon.svg, icon.color, icon.key);
+    setCopied(true);
+    onCopy(icon.key);
+    setTimeout(() => setCopied(false), 1500);
+  };
+  const imgSrc = svgToDataUrl(icon.svg, icon.color);
+  return (
+    <div className="icon-cell" onClick={handleClick} title={`Klicken = SVG kopieren`}>
+      <span className="copy-hint">{copied ? '✓' : 'COPY'}</span>
+      <img src={imgSrc} width={size} height={size} style={{ imageRendering: 'pixelated' }} alt={icon.label} />
+      <div className="icon-name">{icon.label}</div>
+      <div className="icon-key">{icon.key}</div>
+    </div>
+  );
+}
+
+/* ── APP ── */
+function App() {
+  const { useTweaks, TweaksPanel, TweakSection, TweakSlider } = window;
+  const [tweaks, setTweak] = useTweaks(/*EDITMODE-BEGIN*/{"iconSize": 48}/*EDITMODE-END*/);
+  const size = tweaks.iconSize;
+
+  const [toast, setToast] = useState(null);
+  const [selectedIcon, setSelectedIcon] = useState(null);
+
+  const handleCopy = (key) => {
+    setToast(`SVG kopiert: ${key}`);
+    setTimeout(() => setToast(null), 2000);
+  };
+
+  const selected = selectedIcon ? Object.values(ICONS).find(i => i.key === selectedIcon) : null;
+
+  return (
+    <div style={{ minHeight: '100vh' }}>
+      <TweaksPanel>
+        <TweakSection label="Icon Größe" />
+        <TweakSlider label="Größe" id="iconSize" min={24} max={96} step={8} value={size} onChange={v => setTweak('iconSize', v)} />
+      </TweaksPanel>
+
+      {toast && <div className="copy-toast">{toast}</div>}
+
+      <div className="hdr">
+        <div>
+          <h1>DOPPELKOPF ICONS</h1>
+          <p>{Object.keys(ICONS).length} Icons · Klicken = SVG kopieren · Phaser 3 ready</p>
+        </div>
+        <span className="hdr-tag">ICON LAB</span>
+      </div>
+
+      <div className="content">
+
+        {/* All icons grouped */}
+        {GROUPS.map(group => {
+          const groupIcons = Object.values(ICONS).filter(i => i.group === group);
+          if (!groupIcons.length) return null;
+          return (
+            <div key={group}>
+              <div className="section-title">{group}</div>
+              <div className="icon-grid">
+                {groupIcons.map(icon => (
+                  <IconCell key={icon.key} icon={icon} size={size} onCopy={(k) => { handleCopy(k); setSelectedIcon(k); }} />
+                ))}
+              </div>
+            </div>
+          );
+        })}
+
+        {/* Size preview */}
+        <div>
+          <div className="section-title">Größenvergleich — alle Suits</div>
+          <div className="size-row">
+            {[16,24,32,48,64,96].map(s => (
+              <div className="size-item" key={s}>
+                <img src={svgToDataUrl(ICONS.herz.svg, ICONS.herz.color)} width={s} height={s} style={{ imageRendering: 'pixelated' }} alt="herz" />
+                <div className="size-label">{s}px</div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Export / Phaser snippet */}
+        <div className="export-panel">
+          <div className="export-title">PHASER 3 EXPORT</div>
+          {selected ? (
+            <>
+              <div style={{ fontSize: 12, color: '#6a4a8a', marginBottom: 12, fontFamily: 'DM Sans' }}>
+                Ausgewählt: <strong style={{ color: '#ede0ff' }}>{selected.label}</strong> — Key: <code style={{ color: '#33ffee', fontFamily: 'monospace' }}>{selected.key}</code>
+              </div>
+              <pre className="export-code">{phaserSnippet(selected.key, selected.color, selected.svg)}</pre>
+            </>
+          ) : (
+            <div style={{ fontSize: 12, color: '#6a4a8a', fontFamily: 'DM Sans', padding: '8px 0' }}>
+              Ein Icon anklicken → Phaser 3 Load-Snippet erscheint hier
+            </div>
+          )}
+          <div className="btn-row">
+            <button className="btn btn-cyan" onClick={() => {
+              const allSvgs = Object.values(ICONS).map(i => {
+                const colored = i.svg.replace(/currentColor/g, i.color);
+                return `<!-- ${i.key} -->\n${colored}`;
+              }).join('\n\n');
+              navigator.clipboard.writeText(allSvgs).catch(()=>{});
+              setToast('Alle SVGs kopiert!');
+              setTimeout(() => setToast(null), 2000);
+            }}>ALLE SVGs KOPIEREN</button>
+            <button className="btn btn-gold" onClick={() => {
+              const phaser = Object.values(ICONS).map(i => {
+                const colored = i.svg.replace(/currentColor/g, i.color).replace(/\n\s*/g, ' ').trim();
+                const url = `data:image/svg+xml,${encodeURIComponent(colored)}`;
+                return `this.load.svg('${i.key}', '${url}', { width: 64, height: 64 });`;
+              }).join('\n');
+              navigator.clipboard.writeText(phaser).catch(()=>{});
+              setToast('Phaser preload() kopiert!');
+              setTimeout(() => setToast(null), 2000);
+            }}>PHASER PRELOAD() KOPIEREN</button>
+            <button className="btn btn-muted" onClick={() => {
+              const manifest = JSON.stringify(
+                Object.values(ICONS).reduce((acc, i) => ({ ...acc, [i.key]: { label: i.label, group: i.group, color: i.color } }), {}),
+                null, 2
+              );
+              navigator.clipboard.writeText(manifest).catch(()=>{});
+              setToast('JSON Manifest kopiert!');
+              setTimeout(() => setToast(null), 2000);
+            }}>JSON MANIFEST</button>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+</script>
+</body>
+</html>

@@ -1,0 +1,702 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Doppelkopf – Nameplates</title>
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=DM+Sans:wght@400;600;700&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { min-height: 100vh; background: #0f0b16; color: #ede0ff; font-family: 'DM Sans', sans-serif; }
+#root { min-height: 100vh; }
+
+body::before {
+  content: ''; position: fixed; inset: 0; pointer-events: none; z-index: 0;
+  background-image:
+    linear-gradient(rgba(255,255,255,0.012) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,0.012) 1px, transparent 1px);
+  background-size: 32px 32px;
+}
+
+/* ── Header ── */
+.hdr {
+  position: relative; z-index: 10;
+  padding: 22px 36px 18px; border-bottom: 3px solid #3d2860;
+  background: #1c1428;
+  display: flex; align-items: center; justify-content: space-between;
+}
+.hdr h1 { font-family: 'Press Start 2P', monospace; font-size: 11px; color: #ffd700; text-shadow: 3px 3px 0 #7a5000; }
+.hdr p { font-size: 12px; color: #6a4a8a; margin-top: 6px; }
+.hdr-tag { font-family: 'Press Start 2P', monospace; font-size: 8px; background: #ffd700; color: #0f0b16; padding: 6px 14px; border-radius: 4px; box-shadow: 3px 3px 0 #7a5000; }
+
+/* ── Controls bar ── */
+.controls {
+  position: relative; z-index: 10;
+  padding: 14px 36px; border-bottom: 2px solid #3d2860;
+  background: #120e1a;
+  display: flex; gap: 12px; flex-wrap: wrap; align-items: center;
+}
+.ctrl-label { font-family: 'Press Start 2P', monospace; font-size: 8px; color: #6a4a8a; margin-right: 4px; }
+.ctrl-btn {
+  font-family: 'Press Start 2P', monospace; font-size: 8px;
+  padding: 7px 14px; border-radius: 4px; cursor: pointer;
+  border: 2px solid; transition: transform 0.1s, box-shadow 0.1s;
+}
+.ctrl-btn:active { transform: translate(2px,2px); box-shadow: none !important; }
+.cb-off  { background: #1c1428; color: #6a4a8a; border-color: #3d2860; box-shadow: 2px 2px 0 #0a0612; }
+.cb-on   { background: #ffd700; color: #0f0b16; border-color: #7a5000; box-shadow: 2px 2px 0 #7a5000; }
+.cb-re   { background: #ffd700; color: #0f0b16; border-color: #7a5000; box-shadow: 2px 2px 0 #7a5000; }
+.cb-kt   { background: #ff4455; color: #ede0ff; border-color: #880022; box-shadow: 2px 2px 0 #880022; }
+.cb-sep  { width: 1px; height: 28px; background: #3d2860; margin: 0 4px; }
+
+/* ── Main layout ── */
+.main {
+  position: relative; z-index: 1;
+  padding: 40px 36px; display: flex; flex-direction: column; gap: 56px;
+}
+
+/* ── Variant label ── */
+.variant-label {
+  font-family: 'Press Start 2P', monospace; font-size: 9px;
+  color: #6a4a8a; margin-bottom: 20px; display: flex; align-items: center; gap: 16px;
+}
+.variant-label span { color: #33ffee; }
+
+/* ── Table mockup ── */
+.table-wrap {
+  display: flex; flex-direction: column; align-items: center; gap: 0;
+}
+.table-row { display: flex; justify-content: center; gap: 0; }
+.table-center {
+  width: 320px; height: 180px;
+  border-radius: 80px; border: 3px solid #3d2860;
+  background: radial-gradient(ellipse at center, #1a1030 0%, #0a0612 100%);
+  display: flex; align-items: center; justify-content: center;
+  position: relative;
+}
+.table-center-text {
+  font-family: 'Press Start 2P', monospace; font-size: 8px; color: #3d2860;
+  text-align: center; line-height: 2;
+}
+
+/* ── Divider ── */
+.divider { height: 2px; background: #3d2860; margin: 0 -36px; }
+
+/* ════════════════════════════════════
+   NAMEPLATE COMPONENTS (inline styles mostly)
+   3 variants built in React
+════════════════════════════════════ */
+
+/* shared animations */
+@keyframes npGlow {
+  0%,100% { box-shadow: 0 0 8px currentColor, 0 0 20px currentColor; }
+  50%      { box-shadow: 0 0 16px currentColor, 0 0 40px currentColor, 0 0 60px currentColor; }
+}
+@keyframes npPulseRing {
+  0%   { transform: scale(1); opacity: 0.8; }
+  100% { transform: scale(1.6); opacity: 0; }
+}
+@keyframes badgeIn {
+  0%   { transform: scale(0) rotate(-20deg); opacity: 0; }
+  60%  { transform: scale(1.2) rotate(4deg); opacity: 1; }
+  80%  { transform: scale(0.93) rotate(-2deg); }
+  100% { transform: scale(1) rotate(0deg); opacity: 1; }
+}
+@keyframes npTurnBlink {
+  0%,100% { opacity: 1; }
+  50%     { opacity: 0.4; }
+}
+@keyframes crownFloat {
+  0%,100% { transform: translateY(0); }
+  50%     { transform: translateY(-3px); }
+}
+@keyframes slideInBadge {
+  0%   { transform: translateX(20px); opacity: 0; }
+  60%  { transform: translateX(-3px); opacity: 1; }
+  100% { transform: translateX(0); opacity: 1; }
+}
+@keyframes vorbehaltPulse {
+  0%,100% { opacity: 0.5; transform: scale(1); }
+  50%     { opacity: 1; transform: scale(1.05); }
+}
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel" src="tweaks-panel.jsx"></script>
+<script type="text/babel">
+const { useState, useEffect, useRef } = React;
+
+/* ── Player state ── */
+const INIT_PLAYERS = [
+  { id: 0, name: 'DU',       pos: 'bottom', team: 're',     isMe: true,  isKI: false, isGeber: false, isTurn: true,  hasRe: false, hasKontra: false, vorbehalt: false },
+  { id: 1, name: 'Links',    pos: 'left',   team: 'kontra', isMe: false, isKI: true,  isGeber: false, isTurn: false, hasRe: false, hasKontra: false, vorbehalt: false },
+  { id: 2, name: 'Oben',     pos: 'top',    team: 're',     isMe: false, isKI: true,  isGeber: true,  isTurn: false, hasRe: false, hasKontra: false, vorbehalt: false },
+  { id: 3, name: 'Rechts',   pos: 'right',  team: 'kontra', isMe: false, isKI: true,  isGeber: false, isTurn: false, hasRe: false, hasKontra: false, vorbehalt: false },
+];
+
+/* ── SVG Icons ── */
+const CrownSVG = ({size=16, color='#ffd700'}) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+    <path d="M2 18h20l-3-10-4 6-3-8-3 8-4-6z" fill={color}/>
+    <rect x="2" y="18" width="20" height="3" rx="1.5" fill={color}/>
+  </svg>
+);
+const KISvg = ({size=10, color='#33ffee'}) => (
+  <svg width={size} height={size} viewBox="0 0 16 16" fill="none">
+    <rect x="2" y="4" width="12" height="9" rx="2" stroke={color} strokeWidth="1.5" fill="none"/>
+    <circle cx="6" cy="8.5" r="1.2" fill={color}/>
+    <circle cx="10" cy="8.5" r="1.2" fill={color}/>
+    <rect x="5" y="11" width="6" height="1" rx="0.5" fill={color}/>
+    <line x1="5" y1="4" x2="5" y2="2" stroke={color} strokeWidth="1.5" strokeLinecap="round"/>
+    <line x1="8" y1="4" x2="8" y2="1.5" stroke={color} strokeWidth="1.5" strokeLinecap="round"/>
+    <line x1="11" y1="4" x2="11" y2="2" stroke={color} strokeWidth="1.5" strokeLinecap="round"/>
+  </svg>
+);
+const CardBackSVG = ({size=14, color='#ffd700'}) => (
+  <svg width={size} height={size} viewBox="0 0 20 28" fill="none">
+    <rect x="1" y="1" width="18" height="26" rx="3" stroke={color} strokeWidth="2" fill="#120e1a"/>
+    <rect x="3" y="3" width="14" height="22" rx="2" stroke={color} strokeWidth="1" fill="none" opacity="0.4"/>
+    <line x1="10" y1="3" x2="10" y2="25" stroke={color} strokeWidth="1" opacity="0.3"/>
+    <line x1="3" y1="14" x2="17" y2="14" stroke={color} strokeWidth="1" opacity="0.3"/>
+  </svg>
+);
+
+/* ──────────────────────────────────────
+   VARIANT A — Compact Pill
+   Horizontal pill, badges float right
+────────────────────────────────────── */
+function NameplateA({ player, animate }) {
+  const isActive = player.isTurn;
+  const hasAnsage = player.hasRe || player.hasKontra;
+  const accentColor = player.team === 're' ? '#ffd700' : '#ff4455';
+  const teamShadow = player.team === 're' ? '3px 3px 0 #7a5000' : '3px 3px 0 #880022';
+
+  return (
+    <div style={{
+      position: 'relative',
+      display: 'inline-flex', alignItems: 'center',
+      gap: 0,
+      filter: isActive ? `drop-shadow(0 0 8px ${accentColor})` : 'none',
+      transition: 'filter 0.3s',
+    }}>
+      {/* Crown above for Geber */}
+      {player.isGeber && (
+        <div style={{
+          position: 'absolute', top: -18, left: '50%', transform: 'translateX(-50%)',
+          animation: 'crownFloat 2s ease-in-out infinite',
+        }}>
+          <CrownSVG size={14} color="#ffd700" />
+        </div>
+      )}
+
+      {/* Main pill */}
+      <div style={{
+        display: 'flex', alignItems: 'center', gap: 8,
+        background: isActive ? '#1c1428' : '#120e1a',
+        border: `3px solid ${isActive ? accentColor : '#3d2860'}`,
+        borderRadius: 8,
+        padding: '8px 12px 7px',
+        minWidth: 120,
+        boxShadow: isActive
+          ? `4px 4px 0 rgba(0,0,0,0.8), 0 0 0 0 ${accentColor}`
+          : '4px 4px 0 rgba(0,0,0,0.8)',
+        transition: 'border-color 0.2s, background 0.2s',
+        animation: isActive ? 'npGlow 1.6s ease-in-out infinite' : 'none',
+        color: accentColor,
+      }}>
+        {/* KI badge */}
+        {player.isKI && (
+          <div style={{ opacity: 0.7 }}><KISvg size={11} color="#33ffee" /></div>
+        )}
+
+        {/* Name */}
+        <div style={{
+          fontFamily: "'Press Start 2P', monospace",
+          fontSize: 9, color: isActive ? '#ede0ff' : '#9a7abf',
+          letterSpacing: '0.04em', lineHeight: 1,
+          animation: isActive ? 'npTurnBlink 1.2s ease-in-out infinite' : 'none',
+          textShadow: isActive ? `1px 1px 0 #0a0612` : 'none',
+        }}>{player.name}</div>
+
+        {/* Vorbehalt dot */}
+        {player.vorbehalt && (
+          <div style={{
+            width: 6, height: 6, borderRadius: '50%',
+            background: '#44aaff', boxShadow: '0 0 6px #44aaff',
+            animation: 'vorbehaltPulse 0.9s ease-in-out infinite',
+          }} />
+        )}
+      </div>
+
+      {/* RE / KONTRA badge — animiert dazu */}
+      {hasAnsage && (
+        <div style={{
+          marginLeft: 6,
+          fontFamily: "'Press Start 2P', monospace",
+          fontSize: 8,
+          background: player.hasRe ? '#ffd700' : '#ff4455',
+          color: '#0f0b16',
+          padding: '5px 9px 4px',
+          borderRadius: 5,
+          boxShadow: player.hasRe ? '3px 3px 0 #7a5000' : '3px 3px 0 #880022',
+          animation: animate ? 'badgeIn 0.5s cubic-bezier(0.22,1,0.36,1) forwards' : 'none',
+          textShadow: 'none',
+        }}>
+          {player.hasRe ? 'RE' : 'KON'}
+        </div>
+      )}
+
+      {/* Turn pulse ring */}
+      {isActive && (
+        <div style={{
+          position: 'absolute', inset: -6,
+          borderRadius: 12, border: `2px solid ${accentColor}`,
+          animation: 'npPulseRing 1.4s ease-out infinite',
+          pointerEvents: 'none',
+        }} />
+      )}
+    </div>
+  );
+}
+
+/* ──────────────────────────────────────
+   VARIANT B — Card Style
+   Taller card, team color fills top strip
+────────────────────────────────────── */
+function NameplateB({ player, animate }) {
+  const isActive = player.isTurn;
+  const accentColor = player.team === 're' ? '#ffd700' : '#ff4455';
+  const hasAnsage = player.hasRe || player.hasKontra;
+
+  return (
+    <div style={{
+      position: 'relative',
+      width: 110,
+      filter: isActive ? `drop-shadow(0 0 10px ${accentColor})` : 'none',
+      transition: 'filter 0.3s',
+    }}>
+      {/* Geber crown */}
+      {player.isGeber && (
+        <div style={{
+          position: 'absolute', top: -20, left: '50%', transform: 'translateX(-50%)',
+          animation: 'crownFloat 2s ease-in-out infinite', zIndex: 5,
+        }}>
+          <CrownSVG size={16} color="#ffd700" />
+        </div>
+      )}
+
+      {/* Card body */}
+      <div style={{
+        border: `3px solid ${isActive ? accentColor : '#3d2860'}`,
+        borderRadius: 8,
+        overflow: 'hidden',
+        boxShadow: `4px 4px 0 rgba(0,0,0,0.8)`,
+        transition: 'border-color 0.25s',
+        animation: isActive ? 'npGlow 1.6s ease-in-out infinite' : 'none',
+        color: accentColor,
+      }}>
+        {/* Team color strip */}
+        <div style={{
+          background: accentColor,
+          height: 5,
+          boxShadow: `0 2px 8px ${accentColor}88`,
+        }} />
+
+        {/* Main body */}
+        <div style={{
+          background: isActive ? '#1c1428' : '#120e1a',
+          padding: '10px 10px 8px',
+          display: 'flex', flexDirection: 'column', gap: 6, alignItems: 'center',
+          transition: 'background 0.2s',
+        }}>
+          {/* Name row */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+            {player.isKI && <KISvg size={10} color="#33ffee" />}
+            <div style={{
+              fontFamily: "'Press Start 2P', monospace",
+              fontSize: 8, color: isActive ? '#ede0ff' : '#9a7abf',
+              textAlign: 'center', lineHeight: 1.3,
+              animation: isActive ? 'npTurnBlink 1.2s ease-in-out infinite' : 'none',
+            }}>{player.name}</div>
+          </div>
+
+          {/* Badge row */}
+          <div style={{ display: 'flex', gap: 4, alignItems: 'center', minHeight: 22 }}>
+            {/* Team indicator dot */}
+            <div style={{
+              width: 8, height: 8, borderRadius: 2,
+              background: accentColor,
+              boxShadow: `0 0 6px ${accentColor}`,
+            }} />
+
+            {/* RE/KONTRA badge */}
+            {hasAnsage && (
+              <div style={{
+                fontFamily: "'Press Start 2P', monospace", fontSize: 7,
+                background: player.hasRe ? '#ffd700' : '#ff4455',
+                color: '#0f0b16', padding: '3px 7px 2px',
+                borderRadius: 3,
+                boxShadow: player.hasRe ? '2px 2px 0 #7a5000' : '2px 2px 0 #880022',
+                animation: animate ? 'badgeIn 0.5s cubic-bezier(0.22,1,0.36,1) forwards' : 'none',
+              }}>
+                {player.hasRe ? 'RE' : 'KON'}
+              </div>
+            )}
+
+            {/* Vorbehalt */}
+            {player.vorbehalt && (
+              <div style={{
+                fontFamily: "'Press Start 2P', monospace", fontSize: 6,
+                color: '#44aaff', border: '1px solid #44aaff',
+                padding: '2px 5px', borderRadius: 2,
+                animation: 'vorbehaltPulse 0.9s ease-in-out infinite',
+              }}>?</div>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Active ring */}
+      {isActive && (
+        <div style={{
+          position: 'absolute', inset: -8,
+          borderRadius: 14, border: `2px solid ${accentColor}`,
+          animation: 'npPulseRing 1.5s ease-out infinite',
+          pointerEvents: 'none',
+        }} />
+      )}
+    </div>
+  );
+}
+
+/* ──────────────────────────────────────
+   VARIANT C — HUD Bar
+   Wide horizontal bar, team color left accent
+────────────────────────────────────── */
+function NameplateC({ player, animate }) {
+  const isActive = player.isTurn;
+  const accentColor = player.team === 're' ? '#ffd700' : '#ff4455';
+  const accentDark = player.team === 're' ? '#7a5000' : '#880022';
+  const hasAnsage = player.hasRe || player.hasKontra;
+
+  return (
+    <div style={{
+      position: 'relative',
+      display: 'flex', alignItems: 'stretch',
+      filter: isActive ? `drop-shadow(0 0 8px ${accentColor})` : 'none',
+      transition: 'filter 0.3s',
+    }}>
+      {/* Geber crown */}
+      {player.isGeber && (
+        <div style={{
+          position: 'absolute', top: -18, left: 12,
+          animation: 'crownFloat 2s ease-in-out infinite',
+        }}>
+          <CrownSVG size={13} color="#ffd700" />
+        </div>
+      )}
+
+      {/* Left accent bar */}
+      <div style={{
+        width: 5, borderRadius: '6px 0 0 6px',
+        background: accentColor,
+        boxShadow: `0 0 12px ${accentColor}`,
+        flexShrink: 0,
+        animation: isActive ? 'npGlow 1.4s ease-in-out infinite' : 'none',
+        color: accentColor,
+      }} />
+
+      {/* Main bar */}
+      <div style={{
+        display: 'flex', alignItems: 'center', gap: 10,
+        background: isActive ? '#1e1530' : '#120e1a',
+        border: `3px solid ${isActive ? accentColor : '#3d2860'}`,
+        borderLeft: 'none',
+        borderRadius: '0 6px 6px 0',
+        padding: '8px 14px 7px 12px',
+        minWidth: 160,
+        transition: 'border-color 0.2s, background 0.2s',
+        boxShadow: '4px 4px 0 rgba(0,0,0,0.8)',
+      }}>
+
+        {/* Name + KI */}
+        <div style={{ flex: 1 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            <div style={{
+              fontFamily: "'Press Start 2P', monospace",
+              fontSize: 9, color: isActive ? '#ede0ff' : '#9a7abf',
+              animation: isActive ? 'npTurnBlink 1.2s ease-in-out infinite' : 'none',
+            }}>{player.name}</div>
+            {player.isKI && (
+              <div style={{ opacity: 0.65 }}><KISvg size={10} color="#33ffee" /></div>
+            )}
+          </div>
+          {/* Vorbehalt sub-label */}
+          {player.vorbehalt && (
+            <div style={{
+              fontFamily: "'Press Start 2P', monospace", fontSize: 6,
+              color: '#44aaff', marginTop: 4,
+              animation: 'vorbehaltPulse 0.9s ease-in-out infinite',
+            }}>VORBEHALT?</div>
+          )}
+        </div>
+
+        {/* Right side: RE/KONTRA + optional geber icon */}
+        <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+          {player.isGeber && (
+            <div style={{ opacity: 0.6 }}><CardBackSVG size={13} color={accentColor} /></div>
+          )}
+          {hasAnsage && (
+            <div style={{
+              fontFamily: "'Press Start 2P', monospace", fontSize: 8,
+              background: player.hasRe ? '#ffd700' : '#ff4455',
+              color: '#0f0b16',
+              padding: '5px 10px 4px',
+              borderRadius: 4,
+              boxShadow: `3px 3px 0 ${accentDark}`,
+              animation: animate ? 'slideInBadge 0.4s cubic-bezier(0.22,1,0.36,1) forwards' : 'none',
+            }}>
+              {player.hasRe ? 'RE' : 'KON'}
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Active ring */}
+      {isActive && (
+        <div style={{
+          position: 'absolute', inset: -7, borderRadius: 12,
+          border: `2px solid ${accentColor}`,
+          animation: 'npPulseRing 1.5s ease-out infinite',
+          pointerEvents: 'none',
+        }} />
+      )}
+    </div>
+  );
+}
+
+/* ──────────────────────────────────────
+   TABLE PREVIEW — shows all 4 players around a table
+────────────────────────────────────── */
+function TablePreview({ players, VariantComp, animate }) {
+  const top    = players.find(p => p.pos === 'top');
+  const bottom = players.find(p => p.pos === 'bottom');
+  const left   = players.find(p => p.pos === 'left');
+  const right  = players.find(p => p.pos === 'right');
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10 }}>
+      {/* Top player */}
+      <VariantComp player={top} animate={animate} />
+
+      {/* Middle row */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+        <VariantComp player={left} animate={animate} />
+
+        {/* Table surface */}
+        <div style={{
+          width: 240, height: 140, borderRadius: 60,
+          border: '3px solid #3d2860',
+          background: 'radial-gradient(ellipse at center, #1a1030 0%, #0a0612 100%)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          position: 'relative',
+        }}>
+          {/* Stich placeholder */}
+          {[
+            { top: '30%', left: '40%', rot: -8 },
+            { top: '36%', left: '48%', rot: 5 },
+            { top: '28%', left: '52%', rot: -3 },
+            { top: '32%', left: '44%', rot: 12 },
+          ].map((s, i) => (
+            <div key={i} style={{
+              position: 'absolute', top: s.top, left: s.left,
+              width: 28, height: 40, borderRadius: 3,
+              border: '2px solid #3d2860',
+              background: '#1c1428',
+              transform: `rotate(${s.rot}deg)`,
+            }} />
+          ))}
+          <div style={{ fontFamily: "'Press Start 2P', monospace", fontSize: 7, color: '#3d2860', zIndex: 2, textAlign: 'center', lineHeight: 2 }}>
+            TISCH<br/>STICH
+          </div>
+        </div>
+
+        <VariantComp player={right} animate={animate} />
+      </div>
+
+      {/* Bottom player */}
+      <VariantComp player={bottom} animate={animate} />
+    </div>
+  );
+}
+
+/* ── APP ── */
+function App() {
+  const { useTweaks, TweaksPanel, TweakSection, TweakToggle } = window;
+  const [tweaks, setTweak] = useTweaks(/*EDITMODE-BEGIN*/{
+    "showRe": true,
+    "showKontra": true,
+    "showVorbehalt": false,
+    "showGeber": true
+  }/*EDITMODE-END*/);
+
+  const [players, setPlayers] = useState(INIT_PLAYERS);
+  const [animateBadge, setAnimateBadge] = useState(false);
+  const [turnIdx, setTurnIdx] = useState(0);
+
+  // Sync tweaks → player state
+  useEffect(() => {
+    setPlayers(prev => prev.map((p, i) => ({
+      ...p,
+      hasRe:     tweaks.showRe     && p.team === 're',
+      hasKontra: tweaks.showKontra && p.team === 'kontra',
+      vorbehalt: tweaks.showVorbehalt && !p.hasRe && !p.hasKontra,
+      isGeber:   tweaks.showGeber  && i === 2,
+      isTurn:    i === turnIdx,
+    })));
+  }, [tweaks, turnIdx]);
+
+  const triggerRe = () => {
+    setAnimateBadge(false);
+    setTimeout(() => {
+      setTweak('showRe', true);
+      setAnimateBadge(true);
+    }, 50);
+  };
+  const triggerKontra = () => {
+    setAnimateBadge(false);
+    setTimeout(() => {
+      setTweak('showKontra', true);
+      setAnimateBadge(true);
+    }, 50);
+  };
+  const nextTurn = () => setTurnIdx(i => (i + 1) % 4);
+  const reset = () => {
+    setTweak('showRe', false);
+    setTweak('showKontra', false);
+    setTweak('showVorbehalt', false);
+    setAnimateBadge(false);
+    setTurnIdx(0);
+  };
+
+  const variants = [
+    { label: 'A', name: 'Compact Pill', desc: 'Horizontal, minimalistisch — gut für kleine Displays', comp: NameplateA },
+    { label: 'B', name: 'Card Style',   desc: 'Hochformat wie eine Spielkarte — teamfarbe als Streifen', comp: NameplateB },
+    { label: 'C', name: 'HUD Bar',      desc: 'Breite Bar mit linkem Farbakzent — klassisches Game-HUD', comp: NameplateC },
+  ];
+
+  return (
+    <div style={{ minHeight: '100vh' }}>
+      <TweaksPanel>
+        <TweakSection label="Spielzustand" />
+        <TweakToggle label="RE angesagt" id="showRe" value={tweaks.showRe} onChange={v => { setTweak('showRe', v); if(v) setAnimateBadge(true); }} />
+        <TweakToggle label="KONTRA angesagt" id="showKontra" value={tweaks.showKontra} onChange={v => { setTweak('showKontra', v); if(v) setAnimateBadge(true); }} />
+        <TweakToggle label="Vorbehalt" id="showVorbehalt" value={tweaks.showVorbehalt} onChange={v => setTweak('showVorbehalt', v)} />
+        <TweakToggle label="Geber anzeigen" id="showGeber" value={tweaks.showGeber} onChange={v => setTweak('showGeber', v)} />
+      </TweaksPanel>
+
+      {/* Header */}
+      <div className="hdr">
+        <div>
+          <h1>NAMEPLATES</h1>
+          <p>3 Varianten · interaktive States · Balatro Style · Phaser 3 ready</p>
+        </div>
+        <span className="hdr-tag">NAMEPLATE LAB</span>
+      </div>
+
+      {/* Controls */}
+      <div className="controls">
+        <span className="ctrl-label">EVENTS:</span>
+        <button className="ctrl-btn cb-re" onClick={triggerRe}>▶ RE ansagen</button>
+        <button className="ctrl-btn cb-kt" onClick={triggerKontra}>▶ KONTRA ansagen</button>
+        <button className="ctrl-btn cb-on" onClick={nextTurn}>▶ Nächster Zug</button>
+        <div className="cb-sep" />
+        <button className="ctrl-btn cb-off" onClick={() => setTweak('showVorbehalt', !tweaks.showVorbehalt)}>
+          {tweaks.showVorbehalt ? '✓' : '○'} Vorbehalt
+        </button>
+        <button className="ctrl-btn cb-off" onClick={reset}>↺ Reset</button>
+        <span style={{ marginLeft: 'auto', fontFamily: "'Press Start 2P', monospace", fontSize: 8, color: '#6a4a8a' }}>
+          AM ZUG: {players.find(p=>p.isTurn)?.name}
+        </span>
+      </div>
+
+      <div className="main">
+        {variants.map(({ label, name, desc, comp: Comp }) => (
+          <div key={label}>
+            <div className="variant-label">
+              VARIANTE <span>{label}</span> — {name}
+              <span style={{ color: '#6a4a8a', fontSize: 8 }}>{desc}</span>
+            </div>
+
+            {/* 4-player table preview */}
+            <TablePreview players={players} VariantComp={Comp} animate={animateBadge} />
+
+            {/* Single nameplate showcase — all states */}
+            <div style={{
+              marginTop: 28,
+              display: 'flex', gap: 20, flexWrap: 'wrap', alignItems: 'flex-start',
+              padding: '20px 24px',
+              background: '#0a0612', borderRadius: 8,
+              border: '2px solid #3d2860',
+            }}>
+              <div style={{ fontFamily: "'Press Start 2P', monospace", fontSize: 7, color: '#6a4a8a', alignSelf: 'center', minWidth: 60 }}>STATES:</div>
+
+              {/* Default */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 6, alignItems: 'center' }}>
+                <Comp player={{ ...INIT_PLAYERS[1], isTurn: false, hasRe: false, hasKontra: false, vorbehalt: false }} animate={false} />
+                <div style={{ fontFamily: "'Press Start 2P', monospace", fontSize: 6, color: '#6a4a8a' }}>DEFAULT</div>
+              </div>
+
+              {/* AM ZUG */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 6, alignItems: 'center' }}>
+                <Comp player={{ ...INIT_PLAYERS[0], isTurn: true, hasRe: false, hasKontra: false, vorbehalt: false }} animate={false} />
+                <div style={{ fontFamily: "'Press Start 2P', monospace", fontSize: 6, color: '#ffd700' }}>AM ZUG</div>
+              </div>
+
+              {/* RE */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 6, alignItems: 'center' }}>
+                <Comp player={{ ...INIT_PLAYERS[0], isTurn: false, hasRe: true, hasKontra: false, vorbehalt: false }} animate={false} />
+                <div style={{ fontFamily: "'Press Start 2P', monospace", fontSize: 6, color: '#ffd700' }}>RE</div>
+              </div>
+
+              {/* KONTRA */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 6, alignItems: 'center' }}>
+                <Comp player={{ ...INIT_PLAYERS[1], isTurn: false, hasRe: false, hasKontra: true, vorbehalt: false, team: 'kontra' }} animate={false} />
+                <div style={{ fontFamily: "'Press Start 2P', monospace", fontSize: 6, color: '#ff4455' }}>KONTRA</div>
+              </div>
+
+              {/* GEBER */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 6, alignItems: 'center' }}>
+                <Comp player={{ ...INIT_PLAYERS[2], isTurn: false, hasRe: false, isGeber: true }} animate={false} />
+                <div style={{ fontFamily: "'Press Start 2P', monospace", fontSize: 6, color: '#ffd700' }}>GEBER</div>
+              </div>
+
+              {/* VORBEHALT */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 6, alignItems: 'center' }}>
+                <Comp player={{ ...INIT_PLAYERS[3], isTurn: false, vorbehalt: true }} animate={false} />
+                <div style={{ fontFamily: "'Press Start 2P', monospace", fontSize: 6, color: '#44aaff' }}>VORBEHALT</div>
+              </div>
+
+              {/* AM ZUG + RE kombiniert */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 6, alignItems: 'center' }}>
+                <Comp player={{ ...INIT_PLAYERS[0], isTurn: true, hasRe: true }} animate={false} />
+                <div style={{ fontFamily: "'Press Start 2P', monospace", fontSize: 6, color: '#ffd700' }}>ZUG+RE</div>
+              </div>
+            </div>
+
+            <div className="divider" style={{ margin: '40px -36px 0' }} />
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+</script>
+</body>
+</html>

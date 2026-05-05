@@ -1,0 +1,598 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Doppelkopf – Font Vergleich</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Bebas+Neue&family=Anton&family=Cinzel:wght@700;900&family=UnifrakturMaguntia&family=Pirata+One&family=Oswald:wght@700&family=DM+Sans:wght@400;600&display=swap" rel="stylesheet">
+
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg:     #120e1a;
+  --bg2:    #1c1428;
+  --bg3:    #251c35;
+  --border: #3d2860;
+  --text:   #ede0ff;
+  --muted:  #6a4a8a;
+}
+
+html, body {
+  width: 100%; min-height: 100vh;
+  background: #120e1a; color: #ede0ff;
+  overflow-x: hidden; font-family: 'DM Sans', sans-serif;
+}
+#root { min-height: 100vh; }
+
+/* pixel grid */
+body::before {
+  content: ''; position: fixed; inset: 0; pointer-events: none; z-index: 0;
+  background-image:
+    linear-gradient(rgba(255,255,255,0.012) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,0.012) 1px, transparent 1px);
+  background-size: 40px 40px;
+}
+
+/* header */
+.hdr {
+  position: relative; z-index: 10;
+  padding: 24px 36px 20px;
+  border-bottom: 3px solid #3d2860;
+  background: #1c1428;
+  display: flex; align-items: center; justify-content: space-between;
+}
+.hdr-title { font-size: 13px; font-weight: 700; color: #ffd700; letter-spacing: 0.04em; }
+.hdr-sub { font-size: 12px; color: #6a4a8a; margin-top: 4px; }
+.hdr-tag {
+  font-size: 10px; font-weight: 700; background: #ffd700;
+  color: #120e1a; padding: 6px 14px; border-radius: 4px;
+  box-shadow: 3px 3px 0 #7a5000; letter-spacing: 0.06em;
+}
+
+/* font tabs */
+.tabs {
+  position: relative; z-index: 10;
+  display: flex; gap: 0; overflow-x: auto;
+  border-bottom: 3px solid #3d2860;
+  background: #120e1a;
+  scrollbar-width: none;
+}
+.tabs::-webkit-scrollbar { display: none; }
+.tab {
+  padding: 14px 22px 12px; cursor: pointer;
+  font-size: 11px; font-weight: 600; white-space: nowrap;
+  color: #6a4a8a; border-bottom: 3px solid transparent;
+  margin-bottom: -3px; transition: color 0.15s, border-color 0.15s;
+  background: transparent; border-top: none; border-left: none; border-right: none;
+  letter-spacing: 0.04em;
+}
+.tab:hover { color: #ede0ff; }
+.tab.active { color: #ffd700; border-bottom-color: #ffd700; }
+.tab-font-preview {
+  display: block; font-size: 18px; line-height: 1; margin-bottom: 3px;
+  color: #ede0ff;
+}
+
+/* main content */
+.content {
+  position: relative; z-index: 1;
+  padding: 32px 36px;
+  display: flex; flex-direction: column; gap: 32px;
+}
+
+/* event row */
+.event-row {
+  display: flex; gap: 20px; align-items: stretch; flex-wrap: wrap;
+}
+.event-label {
+  width: 180px; flex-shrink: 0;
+  display: flex; flex-direction: column; justify-content: center; gap: 6px;
+  padding: 16px 0;
+}
+.event-name-tag {
+  font-size: 9px; font-family: 'DM Sans', monospace; font-weight: 700;
+  letter-spacing: 0.08em; text-transform: uppercase;
+  color: #33ffee; opacity: 0.8;
+}
+.event-desc { font-size: 11px; color: #6a4a8a; line-height: 1.5; }
+
+/* demo stage */
+.demo {
+  flex: 1; min-width: 280px;
+  height: 140px; border-radius: 8px;
+  border: 2px solid #3d2860;
+  background: radial-gradient(ellipse at center, #1e1030 0%, #0a0612 100%);
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; overflow: hidden; position: relative;
+  transition: border-color 0.2s;
+}
+.demo:hover { border-color: #6a4a8a; }
+.demo::after {
+  content: '';
+  position: absolute; inset: 0; pointer-events: none;
+  background: repeating-linear-gradient(0deg, transparent, transparent 3px, rgba(0,0,0,0.12) 3px, rgba(0,0,0,0.12) 4px);
+}
+
+/* divider */
+.divider {
+  height: 1px; background: #3d2860; margin: 0 -36px;
+}
+
+/* font comparison grid — all fonts side by side */
+.font-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 3px;
+  background: #3d2860;
+  border: 3px solid #3d2860;
+  border-radius: 8px; overflow: hidden;
+}
+.font-cell {
+  background: #120e1a;
+  padding: 20px 16px 16px;
+  display: flex; flex-direction: column; align-items: center; gap: 10px;
+  cursor: pointer; transition: background 0.15s;
+}
+.font-cell:hover { background: #1c1428; }
+.font-cell.selected { background: #1c1428; outline: 3px solid #ffd700; outline-offset: -3px; }
+.font-cell-name {
+  font-size: 10px; color: #6a4a8a; text-align: center;
+  font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase;
+}
+.font-cell-tag {
+  font-size: 9px; padding: 2px 8px; border-radius: 3px;
+  font-family: 'DM Sans', sans-serif;
+}
+.tag-pixel    { background: #441188; color: #cc88ff; }
+.tag-modern   { background: #004488; color: #44aaff; }
+.tag-historic { background: #884400; color: #ffaa44; }
+.tag-cinematic{ background: #006644; color: #44ff88; }
+
+/* ── ANIMATIONS ── */
+@keyframes aPunch {
+  0%   { transform: scale(0.05); opacity: 0; }
+  55%  { transform: scale(1.2); opacity: 1; }
+  75%  { transform: scale(0.93); }
+  90%  { transform: scale(1.05); }
+  100% { transform: scale(1); opacity: 1; }
+}
+@keyframes aStamp {
+  0%   { transform: translateY(-60px) scale(1.3); opacity: 0; }
+  55%  { transform: translateY(4px) scale(0.98); opacity: 1; }
+  78%  { transform: translateY(-2px) scale(1.01); }
+  100% { transform: translateY(0) scale(1); opacity: 1; }
+}
+@keyframes aZoom {
+  0%   { transform: scale(4); opacity: 0; filter: blur(16px); }
+  50%  { transform: scale(0.96); opacity: 1; filter: blur(0); }
+  100% { transform: scale(1); }
+}
+@keyframes aFlip {
+  0%   { transform: perspective(600px) rotateY(90deg); opacity: 0; }
+  50%  { transform: perspective(600px) rotateY(-6deg); opacity: 1; }
+  100% { transform: perspective(600px) rotateY(0); opacity: 1; }
+}
+@keyframes aScore {
+  0%   { transform: translateY(24px) scale(0.6); opacity: 0; }
+  45%  { transform: translateY(-6px) scale(1.12); opacity: 1; }
+  100% { transform: translateY(0) scale(1); opacity: 1; }
+}
+
+/* ── BLINK SHOWCASE ── */
+/* Staggered letter blink */
+@keyframes bChar {
+  0%, 100% { opacity: 1; color: inherit; text-shadow: inherit; }
+  50% { opacity: 0.1; }
+}
+/* Color cycle blink */
+@keyframes bColor {
+  0%   { color: #ffd700; text-shadow: 0 0 12px #ffd700, 0 0 30px #ffd700; }
+  25%  { color: #ff55cc; text-shadow: 0 0 12px #ff55cc, 0 0 30px #ff55cc; }
+  50%  { color: #33ffee; text-shadow: 0 0 12px #33ffee, 0 0 30px #33ffee; }
+  75%  { color: #44ff88; text-shadow: 0 0 12px #44ff88, 0 0 30px #44ff88; }
+  100% { color: #ffd700; text-shadow: 0 0 12px #ffd700, 0 0 30px #ffd700; }
+}
+/* Neon flicker */
+@keyframes bFlicker {
+  0%,19%,21%,23%,25%,54%,56%,100% {
+    opacity: 1;
+    text-shadow: 0 0 8px #44aaff, 0 0 20px #44aaff, 0 0 50px #44aaff;
+  }
+  20%,22%,24%,55% { opacity: 0.4; text-shadow: none; }
+}
+/* Glitch blink */
+@keyframes bGlitch {
+  0%,100% { transform: none; opacity: 1; }
+  7% { transform: translateX(-4px) skewX(3deg); opacity: 0.8; color: #ff4455; }
+  8% { transform: translateX(4px) skewX(-3deg); color: #33ffee; }
+  9% { transform: none; opacity: 1; }
+  30%{ transform: translateX(-2px); opacity: 0.9; }
+  31%{ transform: none; }
+}
+/* Pulse grow */
+@keyframes bPulse {
+  0%,100% { transform: scale(1); text-shadow: 0 0 8px currentColor, 0 0 20px currentColor; }
+  50% { transform: scale(1.08); text-shadow: 0 0 20px currentColor, 0 0 50px currentColor, 0 0 80px currentColor; }
+}
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel" src="tweaks-panel.jsx"></script>
+<script type="text/babel">
+const { useState, useEffect, useRef, useCallback } = React;
+
+function useReplay() {
+  const [k, setK] = useState(0);
+  return [k, useCallback(() => setK(v => v+1), [])];
+}
+
+/* ── FONTS ── */
+const FONTS = [
+  { id:'press',  label:'Press Start 2P', family:"'Press Start 2P', monospace",    tag:'pixel',     tagLabel:'Pixel / Retro' },
+  { id:'bebas',  label:'Bebas Neue',      family:"'Bebas Neue', sans-serif",        tag:'modern',    tagLabel:'Edel / Modern' },
+  { id:'anton',  label:'Anton',           family:"'Anton', sans-serif",             tag:'modern',    tagLabel:'Edel / Modern' },
+  { id:'cinzel', label:'Cinzel',          family:"'Cinzel', serif",                 tag:'historic',  tagLabel:'Historisch / Edel' },
+  { id:'fraktur',label:'UnifrakturMaguntia',family:"'UnifrakturMaguntia', cursive", tag:'historic',  tagLabel:'Dt. Spielkarten' },
+  { id:'pirata', label:'Pirata One',      family:"'Pirata One', cursive",           tag:'historic',  tagLabel:'Historisch' },
+  { id:'oswald', label:'Oswald',          family:"'Oswald', sans-serif",            tag:'cinematic', tagLabel:'Cinematic' },
+];
+
+/* ── EVENTS CONFIG ── */
+const EVENTS = [
+  {
+    name: 'DoppelkopfGestochen',
+    desc: 'Größter Moment — braucht maximale Wirkung',
+    text: 'DOPPELKOPF',
+    sub: 'GESTOCHEN · +2',
+    color: '#ffd700',
+    shadow: '4px 4px 0 #7a5000, 0 0 24px #ffd700',
+    anim: 'aZoom',
+    dur: 520,
+  },
+  {
+    name: 'FuchsGefangen',
+    desc: 'Letter-Drop — Buchstabe für Buchstabe',
+    text: 'FUCHS',
+    sub: 'GEFANGEN · +1',
+    color: '#ff8833',
+    shadow: '3px 3px 0 #884400, 0 0 18px #ff8833',
+    anim: 'aStamp',
+    dur: 440,
+    letterDrop: true,
+  },
+  {
+    name: 'KarlchenGespielt',
+    desc: 'Bounce-In — letzter Stich',
+    text: 'KARLCHEN',
+    sub: 'LETZTER STICH',
+    color: '#ffd700',
+    shadow: '3px 3px 0 #7a5000, 0 0 18px #ffd700',
+    anim: 'aPunch',
+    dur: 500,
+  },
+  {
+    name: 'SchweinchenGemeldet',
+    desc: 'Stamp-Drop — mit Emoji',
+    text: '🐷 SCHWEIN',
+    sub: 'GEMELDET',
+    color: '#ff55cc',
+    shadow: '3px 3px 0 #880066, 0 0 18px #ff55cc',
+    anim: 'aFlip',
+    dur: 500,
+  },
+  {
+    name: 'SpielBeendet',
+    desc: 'Zoom-Blur — episches Finish',
+    text: 'GEWONNEN',
+    sub: 'SPIEL BEENDET',
+    color: '#44ff88',
+    shadow: '3px 3px 0 #006633, 0 0 24px #44ff88',
+    anim: 'aZoom',
+    dur: 520,
+  },
+  {
+    name: 'StichAbgeschlossen',
+    desc: 'Score Fly-Up',
+    text: '+3',
+    sub: 'PUNKTE',
+    color: '#44ff88',
+    shadow: '3px 3px 0 #006633, 0 0 14px #44ff88',
+    anim: 'aScore',
+    dur: 380,
+    big: true,
+  },
+];
+
+/* ── Animated Text in a Stage ── */
+function LetterDrop({ text, font, color, shadow, dur, speed }) {
+  const [k, go] = useReplay();
+  const gap = Math.round(65 / speed);
+  const [dropped, setDropped] = useState([]);
+  useEffect(() => {
+    if (!k) return;
+    setDropped([]);
+    text.split('').forEach((_, i) => {
+      setTimeout(() => setDropped(d => [...d, i]), i * gap);
+    });
+  }, [k]);
+  return (
+    <div style={{ textAlign: 'center', cursor: 'pointer', zIndex: 2 }} onClick={go}>
+      {k > 0 ? (
+        <div style={{ fontFamily: font, fontSize: getFontSize(font, true), color, textShadow: shadow, lineHeight: 1.1 }}>
+          {text.split('').map((ch, i) => (
+            <span key={i} style={{
+              display: 'inline-block',
+              opacity: dropped.includes(i) ? 1 : 0,
+              transform: dropped.includes(i) ? 'translateY(0) rotate(0deg)' : 'translateY(-30px) rotate(-18deg)',
+              transition: `opacity 0.25s, transform 0.3s cubic-bezier(0.34,1.56,0.64,1)`,
+            }}>{ch}</span>
+          ))}
+        </div>
+      ) : <PlayHint />}
+    </div>
+  );
+}
+
+function PlayHint() {
+  return <div style={{ color: '#6a4a8a', fontSize: 11, fontFamily: "'DM Sans', sans-serif" }}>▶ klicken</div>;
+}
+
+function getFontSize(font, isLetterDrop) {
+  if (font.includes('Press Start')) return isLetterDrop ? 26 : 24;
+  if (font.includes('UnifrakturMaguntia')) return 40;
+  if (font.includes('Cinzel')) return 34;
+  if (font.includes('Pirata')) return 38;
+  if (font.includes('Bebas') || font.includes('Anton') || font.includes('Oswald')) return 44;
+  return 36;
+}
+
+function AnimStage({ event, font, speed }) {
+  const [k, go] = useReplay();
+  const fs = getFontSize(font);
+  const dur = (event.dur / speed).toFixed(0) + 'ms';
+
+  if (event.letterDrop) return (
+    <div className="demo" style={{ height: 140 }}>
+      <LetterDrop text={event.text} font={font} color={event.color} shadow={event.shadow} dur={event.dur} speed={speed} />
+    </div>
+  );
+
+  return (
+    <div className="demo" style={{ height: 140 }} onClick={go}>
+      {k > 0 ? (
+        <div key={k} style={{
+          textAlign: 'center', zIndex: 2,
+          fontFamily: font,
+          fontSize: event.big ? fs * 1.5 : fs,
+          color: event.color,
+          textShadow: event.shadow,
+          lineHeight: 1.15,
+          animation: `${event.anim} ${dur} cubic-bezier(0.22,1,0.36,1) forwards`,
+        }}>
+          {event.text}
+          {event.sub && <div style={{ fontSize: Math.max(fs * 0.28, 10), color: event.color, opacity: 0.65, marginTop: 4, fontFamily: "'DM Sans', sans-serif", fontWeight: 700, letterSpacing: '0.1em' }}>{event.sub}</div>}
+        </div>
+      ) : <PlayHint />}
+    </div>
+  );
+}
+
+/* ── BLINK SHOWCASE ── */
+function BlinkShowcase({ font, speed }) {
+  const [k, go] = useReplay();
+  const phrase = 'KEINE 9';
+  const charDelay = 120 / speed;
+  const cycleDur = (1400 / speed).toFixed(0) + 'ms';
+  const flickerDur = (2200 / speed).toFixed(0) + 'ms';
+  const glitchDur = (1800 / speed).toFixed(0) + 'ms';
+  const pulseDur = (1000 / speed).toFixed(0) + 'ms';
+
+  return (
+    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: 3, background: '#3d2860', padding: 3, borderRadius: 8 }}>
+
+      {/* 1. Staggered letter blink */}
+      <div style={{ background: '#0a0612', borderRadius: 6, padding: '20px 16px', textAlign: 'center', cursor: 'pointer' }} onClick={go}>
+        <div style={{ fontSize: 10, color: '#6a4a8a', marginBottom: 12, fontWeight: 600, letterSpacing: '0.08em' }}>VERSETZT</div>
+        {k > 0 && (
+          <div style={{ fontFamily: font, fontSize: getFontSize(font) * 0.85, color: '#44aaff', textShadow: '0 0 10px #44aaff, 0 0 25px #44aaff' }}>
+            {phrase.split('').map((ch, i) => (
+              <span key={i} style={{
+                display: 'inline-block',
+                animation: `bChar ${cycleDur} ${(i * charDelay).toFixed(0)}ms ease-in-out infinite`,
+              }}>{ch}</span>
+            ))}
+          </div>
+        )}
+        {k === 0 && <div style={{ color: '#6a4a8a', fontSize: 11 }}>▶</div>}
+        <div style={{ fontSize: 10, color: '#6a4a8a', marginTop: 8, fontWeight: 600 }}>VorbehaltErwartet</div>
+      </div>
+
+      {/* 2. Color cycle */}
+      <div style={{ background: '#0a0612', borderRadius: 6, padding: '20px 16px', textAlign: 'center', cursor: 'pointer' }} onClick={go}>
+        <div style={{ fontSize: 10, color: '#6a4a8a', marginBottom: 12, fontWeight: 600, letterSpacing: '0.08em' }}>FARBWECHSEL</div>
+        {k > 0 && (
+          <div style={{ fontFamily: font, fontSize: getFontSize(font) * 0.85, animation: `bColor ${cycleDur} ease-in-out infinite` }}>
+            {phrase}
+          </div>
+        )}
+        {k === 0 && <div style={{ color: '#6a4a8a', fontSize: 11 }}>▶</div>}
+        <div style={{ fontSize: 10, color: '#6a4a8a', marginTop: 8, fontWeight: 600 }}>Absage</div>
+      </div>
+
+      {/* 3. Neon flicker */}
+      <div style={{ background: '#0a0612', borderRadius: 6, padding: '20px 16px', textAlign: 'center', cursor: 'pointer' }} onClick={go}>
+        <div style={{ fontSize: 10, color: '#6a4a8a', marginBottom: 12, fontWeight: 600, letterSpacing: '0.08em' }}>NEON FLICKER</div>
+        {k > 0 && (
+          <div style={{ fontFamily: font, fontSize: getFontSize(font) * 0.85, color: '#44aaff', animation: `bFlicker ${flickerDur} linear infinite` }}>
+            {phrase}
+          </div>
+        )}
+        {k === 0 && <div style={{ color: '#6a4a8a', fontSize: 11 }}>▶</div>}
+        <div style={{ fontSize: 10, color: '#6a4a8a', marginTop: 8, fontWeight: 600 }}>Keine 60</div>
+      </div>
+
+      {/* 4. Glitch blink */}
+      <div style={{ background: '#0a0612', borderRadius: 6, padding: '20px 16px', textAlign: 'center', cursor: 'pointer' }} onClick={go}>
+        <div style={{ fontSize: 10, color: '#6a4a8a', marginBottom: 12, fontWeight: 600, letterSpacing: '0.08em' }}>GLITCH</div>
+        {k > 0 && (
+          <div style={{ fontFamily: font, fontSize: getFontSize(font) * 0.85, color: '#ff4455', textShadow: '2px 0 #33ffee, -2px 0 #ff4455', animation: `bGlitch ${glitchDur} ease-in-out infinite` }}>
+            {phrase}
+          </div>
+        )}
+        {k === 0 && <div style={{ color: '#6a4a8a', fontSize: 11 }}>▶</div>}
+        <div style={{ fontSize: 10, color: '#6a4a8a', marginTop: 8, fontWeight: 600 }}>Fehler / Verloren</div>
+      </div>
+
+      {/* 5. Pulse grow */}
+      <div style={{ background: '#0a0612', borderRadius: 6, padding: '20px 16px', textAlign: 'center', cursor: 'pointer' }} onClick={go}>
+        <div style={{ fontSize: 10, color: '#6a4a8a', marginBottom: 12, fontWeight: 600, letterSpacing: '0.08em' }}>GLOW PULSE</div>
+        {k > 0 && (
+          <div style={{ fontFamily: font, fontSize: getFontSize(font) * 0.85, color: '#ffd700', animation: `bPulse ${pulseDur} ease-in-out infinite` }}>
+            RE!
+          </div>
+        )}
+        {k === 0 && <div style={{ color: '#6a4a8a', fontSize: 11 }}>▶</div>}
+        <div style={{ fontSize: 10, color: '#6a4a8a', marginTop: 8, fontWeight: 600 }}>RE / KONTRA</div>
+      </div>
+
+      {/* 6. Versetzt + Farbwechsel kombiniert */}
+      <div style={{ background: '#0a0612', borderRadius: 6, padding: '20px 16px', textAlign: 'center', cursor: 'pointer' }} onClick={go}>
+        <div style={{ fontSize: 10, color: '#6a4a8a', marginBottom: 12, fontWeight: 600, letterSpacing: '0.08em' }}>VERSETZT + FARBE</div>
+        {k > 0 && (
+          <div style={{ fontFamily: font, fontSize: getFontSize(font) * 0.85 }}>
+            {'SCHWARZ'.split('').map((ch, i) => (
+              <span key={i} style={{
+                display: 'inline-block',
+                animation: `bColor ${cycleDur} ${(i * charDelay * 1.2).toFixed(0)}ms ease-in-out infinite`,
+                textShadow: '0 0 10px currentColor, 0 0 25px currentColor',
+              }}>{ch}</span>
+            ))}
+          </div>
+        )}
+        {k === 0 && <div style={{ color: '#6a4a8a', fontSize: 11 }}>▶</div>}
+        <div style={{ fontSize: 10, color: '#6a4a8a', marginTop: 8, fontWeight: 600 }}>Schwarz Ansage</div>
+      </div>
+
+    </div>
+  );
+}
+
+/* ── MAIN APP ── */
+function App() {
+  const { useTweaks, TweaksPanel, TweakSection, TweakSlider, TweakRadio } = window;
+  const [tweaks, setTweak] = useTweaks(/*EDITMODE-BEGIN*/{
+    "speed": 0.9
+  }/*EDITMODE-END*/);
+  const s = tweaks.speed;
+
+  const [activeFont, setActiveFont] = useState('bebas');
+  const currentFont = FONTS.find(f => f.id === activeFont);
+
+  return (
+    <div style={{ minHeight: '100vh' }}>
+      <TweaksPanel>
+        <TweakSection label="Animationsgeschwindigkeit" />
+        <TweakSlider label="Speed" id="speed" min={0.3} max={3} step={0.1} value={s} onChange={v => setTweak('speed', v)} />
+        <div style={{ fontSize: 11, color: '#6a4a8a', marginTop: 4, fontFamily: 'DM Sans' }}>
+          {s < 0.7 ? 'Zeitlupe' : s > 2 ? 'Turbo' : s > 1.4 ? 'Schnell' : 'Normal'}
+        </div>
+      </TweaksPanel>
+
+      {/* Header */}
+      <div className="hdr">
+        <div>
+          <div className="hdr-title">Doppelkopf — Font Vergleich</div>
+          <div className="hdr-sub">7 Schriftarten · alle Events · 6 Blink-Varianten · klicken zum Abspielen</div>
+        </div>
+        <span className="hdr-tag">FONT LAB</span>
+      </div>
+
+      {/* Font Tabs */}
+      <div className="tabs">
+        {FONTS.map(f => (
+          <button key={f.id} className={`tab ${activeFont === f.id ? 'active' : ''}`} onClick={() => setActiveFont(f.id)}>
+            <span className="tab-font-preview" style={{ fontFamily: f.family }}>AaKk</span>
+            {f.label}
+          </button>
+        ))}
+      </div>
+
+      <div className="content">
+
+        {/* Font info + all-fonts mini grid */}
+        <div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 20 }}>
+            <div style={{ fontFamily: currentFont.family, fontSize: 48, color: '#ffd700', textShadow: '3px 3px 0 #7a5000', lineHeight: 1 }}>DOPPELKOPF</div>
+            <div>
+              <div style={{ fontSize: 13, fontWeight: 700, color: '#ede0ff' }}>{currentFont.label}</div>
+              <span className={`font-cell-tag tag-${currentFont.tag}`} style={{ fontFamily: 'DM Sans', marginTop: 4, display: 'inline-block' }}>{currentFont.tagLabel}</span>
+            </div>
+          </div>
+
+          {/* All-font quick compare */}
+          <div className="font-grid">
+            {FONTS.map(f => (
+              <div key={f.id} className={`font-cell ${activeFont === f.id ? 'selected' : ''}`} onClick={() => setActiveFont(f.id)}>
+                <div style={{ fontFamily: f.family, fontSize: 28, color: '#ffd700', textShadow: '2px 2px 0 #7a5000', lineHeight: 1, textAlign: 'center' }}>
+                  FUCHS
+                </div>
+                <div style={{ fontFamily: f.family, fontSize: 20, color: '#ff8833', lineHeight: 1, textAlign: 'center' }}>
+                  +3
+                </div>
+                <div className={`font-cell-tag tag-${f.tag}`}>{f.tagLabel}</div>
+                <div className="font-cell-name">{f.label}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div className="divider" />
+
+        {/* Event rows */}
+        <div>
+          <div style={{ fontSize: 11, fontWeight: 700, color: '#6a4a8a', letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: 20 }}>
+            Events mit {currentFont.label}
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+            {EVENTS.map(ev => (
+              <div key={ev.name} style={{ display: 'grid', gridTemplateColumns: '200px 1fr', gap: 16, alignItems: 'center' }}>
+                <div>
+                  <div style={{ fontSize: 9, fontWeight: 700, color: '#33ffee', letterSpacing: '0.06em', marginBottom: 4, fontFamily: 'DM Sans' }}>{ev.name}</div>
+                  <div style={{ fontSize: 11, color: '#6a4a8a', lineHeight: 1.5, fontFamily: 'DM Sans' }}>{ev.desc}</div>
+                </div>
+                <AnimStage event={ev} font={currentFont.family} speed={s} />
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div className="divider" />
+
+        {/* Blink showcase */}
+        <div>
+          <div style={{ fontSize: 11, fontWeight: 700, color: '#6a4a8a', letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: 8 }}>
+            Blinkende Schrift — 6 Varianten
+          </div>
+          <div style={{ fontSize: 12, color: '#6a4a8a', marginBottom: 20, fontFamily: 'DM Sans' }}>
+            Alle mit <strong style={{ color: '#ede0ff' }}>{currentFont.label}</strong> — klicken zum Starten
+          </div>
+          <BlinkShowcase font={currentFont.family} speed={s} />
+        </div>
+
+      </div>
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+</script>
+</body>
+</html>

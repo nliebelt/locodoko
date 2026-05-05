@@ -1,0 +1,841 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Doppelkopf – Flash Text Animations</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Black+Han+Sans&family=DM+Sans:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: oklch(14% 0.01 260);
+    --bg2: oklch(18% 0.012 260);
+    --bg3: oklch(22% 0.014 260);
+    --border: oklch(30% 0.015 260);
+    --text: oklch(92% 0.005 260);
+    --muted: oklch(55% 0.01 260);
+    --accent-gold: oklch(75% 0.16 75);
+    --accent-red: oklch(60% 0.22 25);
+    --accent-blue: oklch(65% 0.18 230);
+    --accent-green: oklch(65% 0.18 145);
+    --accent-fox: oklch(70% 0.20 50);
+    font-family: 'DM Sans', sans-serif;
+  }
+
+  html, body { width: 100%; height: 100%; background: var(--bg); color: var(--text); overflow-x: hidden; }
+
+  #root { min-height: 100vh; }
+
+  /* Header */
+  .site-header {
+    padding: 32px 40px 20px;
+    border-bottom: 1px solid var(--border);
+    display: flex; align-items: baseline; gap: 16px;
+  }
+  .site-header h1 {
+    font-family: 'Space Mono', monospace;
+    font-size: 13px; font-weight: 700;
+    letter-spacing: 0.12em; text-transform: uppercase;
+    color: var(--accent-gold);
+  }
+  .site-header p { font-size: 13px; color: var(--muted); }
+
+  /* Grid */
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
+    gap: 2px;
+    padding: 2px;
+  }
+
+  /* Card */
+  .card {
+    background: var(--bg2);
+    display: flex; flex-direction: column;
+    overflow: hidden;
+  }
+  .card-stage {
+    height: 220px;
+    display: flex; align-items: center; justify-content: center;
+    background: var(--bg);
+    position: relative;
+    overflow: hidden;
+    cursor: pointer;
+    user-select: none;
+  }
+  .card-stage:hover .play-hint { opacity: 1; }
+  .play-hint {
+    position: absolute; bottom: 10px; right: 12px;
+    font-size: 11px; color: var(--muted);
+    font-family: 'Space Mono', monospace;
+    opacity: 0; transition: opacity 0.2s;
+    pointer-events: none;
+  }
+
+  .card-meta {
+    padding: 16px 20px 14px;
+    border-top: 1px solid var(--border);
+    flex: 1;
+  }
+  .card-title {
+    font-size: 14px; font-weight: 600;
+    color: var(--text); margin-bottom: 4px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .badge {
+    font-size: 10px; font-family: 'Space Mono', monospace;
+    letter-spacing: 0.06em; text-transform: uppercase;
+    padding: 2px 7px; border-radius: 3px;
+    color: var(--bg); font-weight: 700;
+  }
+  .badge-gold { background: var(--accent-gold); }
+  .badge-red { background: var(--accent-red); }
+  .badge-blue { background: var(--accent-blue); }
+  .badge-green { background: var(--accent-green); }
+  .badge-fox { background: var(--accent-fox); }
+
+  .card-desc { font-size: 12px; color: var(--muted); margin-bottom: 12px; line-height: 1.5; }
+
+  .code-block {
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 12px 14px;
+    font-family: 'Space Mono', monospace;
+    font-size: 10.5px;
+    color: oklch(75% 0.08 260);
+    line-height: 1.7;
+    overflow-x: auto;
+    white-space: pre;
+  }
+  .code-kw { color: oklch(65% 0.18 290); }
+  .code-str { color: var(--accent-green); }
+  .code-num { color: var(--accent-fox); }
+  .code-fn { color: var(--accent-gold); }
+  .code-cmt { color: var(--muted); }
+
+  /* Section label */
+  .section-label {
+    grid-column: 1 / -1;
+    padding: 24px 24px 8px;
+    font-size: 11px; font-weight: 700; letter-spacing: 0.14em;
+    text-transform: uppercase; color: var(--muted);
+    font-family: 'Space Mono', monospace;
+  }
+
+  /* ── Animation CSS classes ── */
+
+  /* 1. Scale Punch */
+  @keyframes scalePunch {
+    0%   { transform: scale(0.1) rotate(-5deg); opacity: 0; }
+    55%  { transform: scale(1.15) rotate(2deg); opacity: 1; }
+    70%  { transform: scale(0.95) rotate(-1deg); }
+    85%  { transform: scale(1.05) rotate(0.5deg); }
+    100% { transform: scale(1) rotate(0deg); opacity: 1; }
+  }
+  .anim-scale-punch { animation: scalePunch 0.55s cubic-bezier(0.22,1,0.36,1) forwards; }
+
+  /* 2. Chromatic Flash */
+  @keyframes chromaFlash {
+    0%   { transform: scale(0.4); opacity: 0; filter: blur(12px) brightness(3); }
+    15%  { transform: scale(1.3); opacity: 1; filter: blur(0px) brightness(4); }
+    30%  { transform: scale(0.97); filter: brightness(1.5); }
+    60%  { transform: scale(1.02); filter: brightness(1.1); }
+    100% { transform: scale(1); opacity: 1; filter: brightness(1); }
+  }
+  .anim-chroma { animation: chromaFlash 0.6s ease-out forwards; }
+
+  /* 3. Stamp Drop */
+  @keyframes stampDrop {
+    0%   { transform: translateY(-80px) scale(1.4); opacity: 0; }
+    60%  { transform: translateY(6px) scale(0.98); opacity: 1; }
+    78%  { transform: translateY(-3px) scale(1.01); }
+    100% { transform: translateY(0) scale(1); opacity: 1; }
+  }
+  .anim-stamp { animation: stampDrop 0.45s cubic-bezier(0.34,1.56,0.64,1) forwards; }
+
+  /* 4. Fox Reveal (letter by letter) — done via JS */
+
+  /* 5. Glitch */
+  @keyframes glitchMain {
+    0%,100% { clip-path: none; transform: none; }
+    10% { clip-path: polygon(0 10%, 100% 10%, 100% 40%, 0 40%); transform: translateX(-4px); }
+    12% { clip-path: polygon(0 60%, 100% 60%, 100% 90%, 0 90%); transform: translateX(4px); }
+    14% { clip-path: none; transform: translateX(0); }
+    30% { clip-path: polygon(0 30%, 100% 30%, 100% 50%, 0 50%); transform: translateX(3px); }
+    32% { clip-path: none; transform: none; }
+  }
+  @keyframes glitchIn {
+    0%   { transform: scale(0.8) skewX(8deg); opacity: 0; filter: brightness(8) hue-rotate(90deg); }
+    20%  { transform: scale(1.1) skewX(-3deg); opacity: 1; filter: brightness(3) hue-rotate(0deg); }
+    40%  { transform: scale(0.98) skewX(1deg); }
+    100% { transform: scale(1) skewX(0deg); opacity: 1; filter: brightness(1); }
+  }
+  .anim-glitch { animation: glitchIn 0.5s ease-out forwards; }
+  .anim-glitch.running { animation: glitchIn 0.5s ease-out forwards, glitchMain 2s 0.5s infinite; }
+
+  /* 6. Score Fly-up */
+  @keyframes scoreUp {
+    0%   { transform: translateY(30px) scale(0.7); opacity: 0; }
+    40%  { transform: translateY(-8px) scale(1.08); opacity: 1; }
+    65%  { transform: translateY(3px) scale(0.99); }
+    100% { transform: translateY(0) scale(1); opacity: 1; }
+  }
+  .anim-score { animation: scoreUp 0.4s cubic-bezier(0.34,1.56,0.64,1) forwards; }
+
+  /* 7. Shockwave Ring */
+  @keyframes shockRing {
+    0%   { transform: scale(0.2); opacity: 0.9; }
+    100% { transform: scale(3.5); opacity: 0; }
+  }
+  .shock-ring {
+    position: absolute;
+    width: 80px; height: 80px;
+    border-radius: 50%;
+    border: 3px solid currentColor;
+    pointer-events: none;
+  }
+  .shock-ring.go { animation: shockRing 0.6s ease-out forwards; }
+
+  /* 8. Neon Pulse */
+  @keyframes neonIn {
+    0%   { opacity: 0; letter-spacing: -0.1em; filter: blur(8px); }
+    50%  { opacity: 1; letter-spacing: 0.02em; filter: blur(1px); }
+    100% { opacity: 1; letter-spacing: 0.04em; filter: blur(0); }
+  }
+  @keyframes neonPulse {
+    0%,100% { text-shadow: 0 0 8px currentColor, 0 0 20px currentColor, 0 0 40px currentColor; }
+    50%      { text-shadow: 0 0 4px currentColor, 0 0 10px currentColor; }
+  }
+  .anim-neon { animation: neonIn 0.5s ease-out forwards, neonPulse 1.4s 0.5s ease-in-out infinite; }
+
+  /* 9. Confetti burst — canvas based */
+
+  /* 10. Zoom Blur */
+  @keyframes zoomBlur {
+    0%   { transform: scale(4); opacity: 0; filter: blur(20px); }
+    50%  { transform: scale(0.95); opacity: 1; filter: blur(0); }
+    70%  { transform: scale(1.03); }
+    100% { transform: scale(1); opacity: 1; }
+  }
+  .anim-zoom-blur { animation: zoomBlur 0.5s cubic-bezier(0.16,1,0.3,1) forwards; }
+
+  /* Base text styles for stages */
+  .flash-text {
+    font-family: 'Black Han Sans', sans-serif;
+    font-size: 52px;
+    text-align: center;
+    line-height: 1.1;
+    position: relative;
+    z-index: 2;
+    -webkit-font-smoothing: antialiased;
+  }
+  .flash-text.size-lg { font-size: 64px; }
+  .flash-text.size-sm { font-size: 40px; }
+
+  .flash-sub {
+    font-family: 'Space Mono', monospace;
+    font-size: 12px; letter-spacing: 0.12em;
+    text-transform: uppercase; margin-top: 6px;
+    opacity: 0.7; text-align: center;
+  }
+
+  /* Fox card special */
+  .fox-letter {
+    display: inline-block;
+    opacity: 0;
+    transform: translateY(-30px) rotate(-15deg);
+    transition: transform 0.3s, opacity 0.3s;
+  }
+  .fox-letter.drop {
+    opacity: 1;
+    transform: translateY(0) rotate(0deg);
+  }
+</style>
+</head>
+<body>
+<div id="root"></div>
+
+<script type="text/babel" src="tweaks-panel.jsx"></script>
+
+<script type="text/babel">
+const { useState, useEffect, useRef, useCallback } = React;
+
+/* ─── Confetti Canvas ─── */
+function ConfettiCanvas({ trigger, color1, color2 }) {
+  const canvasRef = useRef(null);
+  const animRef = useRef(null);
+
+  useEffect(() => {
+    if (!trigger) return;
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    const W = canvas.width = canvas.offsetWidth;
+    const H = canvas.height = canvas.offsetHeight;
+    const particles = Array.from({ length: 60 }, () => ({
+      x: W / 2 + (Math.random() - 0.5) * 40,
+      y: H / 2,
+      vx: (Math.random() - 0.5) * 12,
+      vy: -(Math.random() * 10 + 4),
+      size: Math.random() * 7 + 3,
+      color: Math.random() > 0.5 ? color1 : color2,
+      rot: Math.random() * Math.PI * 2,
+      rotV: (Math.random() - 0.5) * 0.3,
+      alpha: 1,
+    }));
+    let frame = 0;
+    const draw = () => {
+      ctx.clearRect(0, 0, W, H);
+      particles.forEach(p => {
+        p.x += p.vx; p.y += p.vy; p.vy += 0.4;
+        p.rot += p.rotV; p.alpha -= 0.018;
+        if (p.alpha <= 0) return;
+        ctx.save(); ctx.globalAlpha = p.alpha;
+        ctx.translate(p.x, p.y); ctx.rotate(p.rot);
+        ctx.fillStyle = p.color;
+        ctx.fillRect(-p.size / 2, -p.size / 2, p.size, p.size * 0.5);
+        ctx.restore();
+      });
+      frame++;
+      if (frame < 120) animRef.current = requestAnimationFrame(draw);
+    };
+    if (animRef.current) cancelAnimationFrame(animRef.current);
+    draw();
+    return () => cancelAnimationFrame(animRef.current);
+  }, [trigger]);
+
+  return <canvas ref={canvasRef} style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', pointerEvents: 'none' }} />;
+}
+
+/* ─── Shockwave Ring ─── */
+function ShockwaveRing({ trigger, color }) {
+  const [rings, setRings] = useState([]);
+  useEffect(() => {
+    if (!trigger) return;
+    const id = Date.now();
+    setRings(r => [...r, id]);
+    setTimeout(() => setRings(r => r.filter(x => x !== id)), 700);
+  }, [trigger]);
+  return <>
+    {rings.map(id => (
+      <div key={id} className="shock-ring go" style={{ color, position: 'absolute', left: '50%', top: '50%', marginLeft: -40, marginTop: -40 }} />
+    ))}
+  </>;
+}
+
+/* ─── Code Snippet Component ─── */
+function Code({ children }) {
+  return <pre className="code-block" dangerouslySetInnerHTML={{ __html: children }} />;
+}
+
+/* ─── Animation Card ─── */
+function AnimCard({ label, badge, badgeClass, desc, code, children }) {
+  return (
+    <div className="card">
+      <div className="card-meta" style={{ borderTop: 'none', borderBottom: '1px solid var(--border)', padding: '14px 20px 12px' }}>
+        <div className="card-title">
+          {label}
+          <span className={`badge ${badgeClass}`}>{badge}</span>
+        </div>
+        <div className="card-desc">{desc}</div>
+      </div>
+      <div className="card-stage" onClick={children.props?.onReplay}>
+        {children}
+        <div className="play-hint">↺ klicken zum Wiederholen</div>
+      </div>
+      <div className="card-meta">
+        <Code>{code}</Code>
+      </div>
+    </div>
+  );
+}
+
+/* ─── Each Animation Stage ─── */
+
+function useReplay() {
+  const [key, setKey] = useState(0);
+  const replay = useCallback(() => setKey(k => k + 1), []);
+  return [key, replay];
+}
+
+/* 1. SCALE PUNCH — Doppelkopf Announcement */
+function ScalePunchStage({ speed }) {
+  const [key, replay] = useReplay();
+  const dur = (500 / speed).toFixed(0);
+  return (
+    <div className="card-stage" onClick={replay} style={{ background: 'oklch(10% 0.03 260)' }}>
+      {key > 0 && (
+        <div key={key} className="flash-text anim-scale-punch" style={{ color: 'var(--accent-gold)', animationDuration: dur + 'ms' }}>
+          DOPPELKOPF
+          <div className="flash-sub" style={{ color: 'var(--accent-gold)' }}>Ansage gemacht</div>
+        </div>
+      )}
+      {key === 0 && (
+        <div style={{ color: 'var(--muted)', fontSize: 13, fontFamily: 'Space Mono' }}>↺ klicken</div>
+      )}
+      <div className="play-hint">↺ klicken zum Wiederholen</div>
+    </div>
+  );
+}
+
+/* 2. CHROMA FLASH — Re/Kontra */
+function ChromaFlashStage({ speed }) {
+  const [key, replay] = useReplay();
+  const dur = (600 / speed).toFixed(0);
+  const [label, setLabel] = useState('RE');
+  const toggle = () => { setLabel(l => l === 'RE' ? 'KONTRA' : 'RE'); replay(); };
+  return (
+    <div className="card-stage" onClick={toggle} style={{ background: 'oklch(8% 0.04 260)' }}>
+      <ShockwaveRing trigger={key} color={label === 'RE' ? 'var(--accent-gold)' : 'var(--accent-red)'} />
+      {key > 0 && (
+        <div key={key} className="flash-text size-lg anim-chroma" style={{
+          color: label === 'RE' ? 'var(--accent-gold)' : 'var(--accent-red)',
+          animationDuration: dur + 'ms',
+          textShadow: `0 0 30px currentColor`,
+        }}>
+          {label}
+          <div className="flash-sub" style={{ color: label === 'RE' ? 'var(--accent-gold)' : 'var(--accent-red)' }}>
+            {label === 'RE' ? 'Re-Partei' : 'Kontra-Partei'}
+          </div>
+        </div>
+      )}
+      {key === 0 && <div style={{ color: 'var(--muted)', fontSize: 13, fontFamily: 'Space Mono' }}>↺ klicken</div>}
+      <div className="play-hint">RE / KONTRA umschalten</div>
+    </div>
+  );
+}
+
+/* 3. STAMP DROP — Fuchs gefangen */
+function StampDropStage({ speed }) {
+  const [key, replay] = useReplay();
+  const dur = (450 / speed).toFixed(0);
+  return (
+    <div className="card-stage" onClick={replay} style={{ background: 'oklch(10% 0.04 50)' }}>
+      {key > 0 && <>
+        <ConfettiCanvas trigger={key} color1="var(--accent-fox)" color2="#fff" />
+        <div key={key} style={{ textAlign: 'center', zIndex: 2 }}>
+          <div className="flash-text anim-stamp" style={{ color: 'var(--accent-fox)', animationDuration: dur + 'ms', fontSize: 48 }}>
+            🦊 FUCHS
+          </div>
+          <div key={key + 'sub'} className="flash-text anim-stamp" style={{
+            color: 'var(--text)', fontSize: 22, animationDuration: (parseInt(dur) + 80) + 'ms',
+            animationDelay: '60ms', opacity: 0
+          }}>
+            gefangen!
+          </div>
+        </div>
+      </>}
+      {key === 0 && <div style={{ color: 'var(--muted)', fontSize: 13, fontFamily: 'Space Mono' }}>↺ klicken</div>}
+      <div className="play-hint">↺ klicken zum Wiederholen</div>
+    </div>
+  );
+}
+
+/* 4. LETTER DROP — Fox Letter by Letter */
+function FoxLetterStage({ speed }) {
+  const [key, replay] = useReplay();
+  const word = 'FUCHS';
+  const delay = Math.round(80 / speed);
+  return (
+    <div className="card-stage" onClick={replay} style={{ background: 'oklch(9% 0.05 50)' }}>
+      {key > 0 && (
+        <div key={key} style={{ textAlign: 'center' }}>
+          <div style={{ fontFamily: "'Black Han Sans', sans-serif", fontSize: 60, color: 'var(--accent-fox)' }}>
+            {word.split('').map((ch, i) => (
+              <FoxLetter key={i} ch={ch} delay={i * delay} />
+            ))}
+          </div>
+          <div className="flash-sub" style={{ color: 'var(--accent-fox)', marginTop: 8 }}>gefangen · +1 Punkt</div>
+        </div>
+      )}
+      {key === 0 && <div style={{ color: 'var(--muted)', fontSize: 13, fontFamily: 'Space Mono' }}>↺ klicken</div>}
+      <div className="play-hint">↺ klicken zum Wiederholen</div>
+    </div>
+  );
+}
+
+function FoxLetter({ ch, delay }) {
+  const ref = useRef(null);
+  useEffect(() => {
+    const t = setTimeout(() => ref.current?.classList.add('drop'), delay);
+    return () => clearTimeout(t);
+  }, [delay]);
+  return <span ref={ref} className="fox-letter" style={{ transitionDelay: '0ms' }}>{ch}</span>;
+}
+
+/* 5. GLITCH — Spielende / Niederlage */
+function GlitchStage({ speed }) {
+  const [key, replay] = useReplay();
+  const dur = (500 / speed).toFixed(0);
+  return (
+    <div className="card-stage" onClick={replay} style={{ background: 'oklch(8% 0.06 15)' }}>
+      {key > 0 && (
+        <div key={key} className="flash-text anim-glitch running" style={{ color: 'var(--accent-red)', animationDuration: dur + 'ms', textShadow: '2px 0 #0ff, -2px 0 #f0f' }}>
+          VERLOREN
+          <div className="flash-sub" style={{ color: 'var(--accent-red)' }}>Spiel beendet</div>
+        </div>
+      )}
+      {key === 0 && <div style={{ color: 'var(--muted)', fontSize: 13, fontFamily: 'Space Mono' }}>↺ klicken</div>}
+      <div className="play-hint">↺ klicken zum Wiederholen</div>
+    </div>
+  );
+}
+
+/* 6. SCORE FLY-UP — Punkte */
+function ScoreFlyStage({ speed }) {
+  const [key, replay] = useReplay();
+  const dur = (400 / speed).toFixed(0);
+  const scores = ['+1', '+3', '+2'];
+  const [idx, setIdx] = useState(0);
+  const go = () => { setIdx(i => (i + 1) % scores.length); replay(); };
+  return (
+    <div className="card-stage" onClick={go} style={{ background: 'oklch(10% 0.02 260)' }}>
+      {key > 0 && (
+        <div key={key} style={{ textAlign: 'center' }}>
+          <div className="flash-text size-lg anim-score" style={{ color: 'var(--accent-green)', animationDuration: dur + 'ms' }}>
+            {scores[idx]}
+          </div>
+          <div className="flash-sub" style={{ color: 'var(--accent-green)', marginTop: 4, animationDuration: (parseInt(dur) + 60) + 'ms' }}>Punkte</div>
+        </div>
+      )}
+      {key === 0 && <div style={{ color: 'var(--muted)', fontSize: 13, fontFamily: 'Space Mono' }}>↺ klicken</div>}
+      <div className="play-hint">↺ klicken · Wert wechselt</div>
+    </div>
+  );
+}
+
+/* 7. NEON — Absage (Keine 9, etc.) */
+function NeonStage({ speed }) {
+  const [key, replay] = useReplay();
+  const [label, setLabel] = useState('KEINE 9');
+  const labels = ['KEINE 9', 'KEINE 60', 'KEINE 90', 'SCHWARZ'];
+  const [idx, setIdx] = useState(0);
+  const dur = (500 / speed).toFixed(0);
+  const go = () => {
+    const next = (idx + 1) % labels.length;
+    setIdx(next); setLabel(labels[next]); replay();
+  };
+  return (
+    <div className="card-stage" onClick={go} style={{ background: 'oklch(7% 0.03 260)' }}>
+      {key > 0 && (
+        <div key={key} className="flash-text anim-neon" style={{ color: 'var(--accent-blue)', fontSize: 44, animationDuration: dur + 'ms' }}>
+          {label}
+          <div className="flash-sub" style={{ color: 'var(--accent-blue)' }}>Absage</div>
+        </div>
+      )}
+      {key === 0 && <div style={{ color: 'var(--muted)', fontSize: 13, fontFamily: 'Space Mono' }}>↺ klicken</div>}
+      <div className="play-hint">↺ klicken · Absage wechselt</div>
+    </div>
+  );
+}
+
+/* 8. ZOOM BLUR — GEWONNEN */
+function ZoomBlurStage({ speed }) {
+  const [key, replay] = useReplay();
+  const dur = (500 / speed).toFixed(0);
+  return (
+    <div className="card-stage" onClick={replay} style={{ background: 'oklch(9% 0.04 145)' }}>
+      {key > 0 && <>
+        <ConfettiCanvas trigger={key} color1="var(--accent-green)" color2="var(--accent-gold)" />
+        <div key={key} style={{ textAlign: 'center', zIndex: 2 }}>
+          <div className="flash-text size-lg anim-zoom-blur" style={{ color: 'var(--accent-green)', animationDuration: dur + 'ms' }}>
+            GEWONNEN
+          </div>
+          <div className="flash-sub" style={{ color: 'var(--accent-gold)', marginTop: 6 }}>Re gewinnt!</div>
+        </div>
+      </>}
+      {key === 0 && <div style={{ color: 'var(--muted)', fontSize: 13, fontFamily: 'Space Mono' }}>↺ klicken</div>}
+      <div className="play-hint">↺ klicken zum Wiederholen</div>
+    </div>
+  );
+}
+
+/* 9. SEQUENCE — Stacked announcements */
+function SequenceStage({ speed }) {
+  const [key, replay] = useReplay();
+  const [step, setStep] = useState(-1);
+  const entries = [
+    { text: 'RE', color: 'var(--accent-gold)', sub: 'Ansage' },
+    { text: 'KEINE 9', color: 'var(--accent-blue)', sub: 'Absage' },
+    { text: '🦊 FUCHS', color: 'var(--accent-fox)', sub: 'gefangen' },
+    { text: 'GEWONNEN', color: 'var(--accent-green)', sub: 'Re +4' },
+  ];
+  const stepDelay = Math.round(600 / speed);
+  useEffect(() => {
+    if (key === 0) return;
+    setStep(-1);
+    let i = 0;
+    const next = () => {
+      setStep(i);
+      i++;
+      if (i < entries.length) setTimeout(next, stepDelay);
+    };
+    setTimeout(next, 50);
+  }, [key]);
+
+  return (
+    <div className="card-stage" onClick={replay} style={{ background: 'oklch(8% 0.02 260)', flexDirection: 'column', gap: 4 }}>
+      {key > 0 && entries.map((e, i) => (
+        <div key={i} style={{
+          fontFamily: "'Black Han Sans', sans-serif",
+          fontSize: 22,
+          color: i <= step ? e.color : 'transparent',
+          transition: 'color 0.15s, transform 0.3s, opacity 0.3s',
+          transform: i <= step ? 'translateX(0) scale(1)' : 'translateX(-20px) scale(0.9)',
+          opacity: i <= step ? 1 : 0,
+          display: 'flex', gap: 12, alignItems: 'baseline',
+        }}>
+          <span style={{ minWidth: 130, textAlign: 'right' }}>{e.text}</span>
+          <span style={{ fontSize: 11, fontFamily: 'Space Mono', opacity: 0.6, color: e.color }}>{e.sub}</span>
+        </div>
+      ))}
+      {key === 0 && <div style={{ color: 'var(--muted)', fontSize: 13, fontFamily: 'Space Mono' }}>↺ klicken</div>}
+      <div className="play-hint">↺ klicken zum Wiederholen</div>
+    </div>
+  );
+}
+
+/* ─── CODE SNIPPETS ─── */
+const codes = {
+  scalePunch: `<span class="code-cmt">// Phaser 3 — Scale Punch (tweens)</span>
+<span class="code-kw">this</span>.<span class="code-fn">tweens</span>.<span class="code-fn">add</span>({
+  targets: text,
+  scaleX: [<span class="code-num">0.1</span>, <span class="code-num">1.15</span>, <span class="code-num">0.95</span>, <span class="code-num">1</span>],
+  scaleY: [<span class="code-num">0.1</span>, <span class="code-num">1.15</span>, <span class="code-num">0.95</span>, <span class="code-num">1</span>],
+  alpha:  [<span class="code-num">0</span>,   <span class="code-num">1</span>,    <span class="code-num">1</span>,    <span class="code-num">1</span>],
+  ease: <span class="code-str">'Back.Out'</span>,
+  duration: <span class="code-num">500</span>,
+});`,
+  chroma: `<span class="code-cmt">// Phaser 3 — Chroma Flash + Shockwave Ring</span>
+<span class="code-kw">const</span> ring = <span class="code-kw">this</span>.<span class="code-fn">add</span>.<span class="code-fn">circle</span>(x, y, <span class="code-num">40</span>, <span class="code-num">0</span>, <span class="code-num">0</span>)
+  .<span class="code-fn">setStrokeStyle</span>(<span class="code-num">3</span>, <span class="code-num">0xffd700</span>);
+<span class="code-kw">this</span>.<span class="code-fn">tweens</span>.<span class="code-fn">add</span>({
+  targets: ring,
+  scaleX: <span class="code-num">4</span>, scaleY: <span class="code-num">4</span>, alpha: <span class="code-num">0</span>,
+  duration: <span class="code-num">500</span>, ease: <span class="code-str">'Sine.Out'</span>,
+  onComplete: () => ring.<span class="code-fn">destroy</span>()
+});
+<span class="code-kw">this</span>.<span class="code-fn">cameras</span>.main.<span class="code-fn">flash</span>(<span class="code-num">200</span>, <span class="code-num">255</span>, <span class="code-num">200</span>, <span class="code-num">50</span>);`,
+  stampDrop: `<span class="code-cmt">// Phaser 3 — Stamp Drop + Particles</span>
+text.<span class="code-fn">setPosition</span>(x, y - <span class="code-num">80</span>).<span class="code-fn">setScale</span>(<span class="code-num">1.4</span>).<span class="code-fn">setAlpha</span>(<span class="code-num">0</span>);
+<span class="code-kw">this</span>.<span class="code-fn">tweens</span>.<span class="code-fn">add</span>({
+  targets: text,
+  y: y, scaleX: <span class="code-num">1</span>, scaleY: <span class="code-num">1</span>, alpha: <span class="code-num">1</span>,
+  ease: <span class="code-str">'Back.Out(1.7)'</span>,
+  duration: <span class="code-num">400</span>,
+});
+<span class="code-cmt">// Partikel-Emitter starten</span>
+emitter.<span class="code-fn">explode</span>(<span class="code-num">30</span>, x, y);`,
+  foxLetter: `<span class="code-cmt">// Phaser 3 — Letter-by-letter Drop (BitmapText)</span>
+<span class="code-str">'FUCHS'</span>.<span class="code-fn">split</span>(<span class="code-str">''</span>).<span class="code-fn">forEach</span>((ch, i) => {
+  <span class="code-kw">const</span> letter = <span class="code-kw">this</span>.<span class="code-fn">add</span>.<span class="code-fn">bitmapText</span>(
+    startX + i * <span class="code-num">60</span>, y - <span class="code-num">40</span>, <span class="code-str">'font'</span>, ch
+  ).<span class="code-fn">setAlpha</span>(<span class="code-num">0</span>);
+  <span class="code-kw">this</span>.<span class="code-fn">tweens</span>.<span class="code-fn">add</span>({
+    targets: letter,
+    y: y, alpha: <span class="code-num">1</span>, angle: [<span class="code-num">-15</span>, <span class="code-num">0</span>],
+    ease: <span class="code-str">'Back.Out'</span>,
+    delay: i * <span class="code-num">80</span>, duration: <span class="code-num">300</span>,
+  });
+});`,
+  glitch: `<span class="code-cmt">// Phaser 3 — Glitch (PostFX Pipeline)</span>
+<span class="code-cmt">// Phaser 3.60+ mit WebGL</span>
+text.<span class="code-fn">setPostPipeline</span>(<span class="code-str">'Glitch'</span>);
+<span class="code-kw">const</span> fx = text.<span class="code-fn">getPostPipeline</span>(<span class="code-str">'Glitch'</span>);
+fx.amount  = <span class="code-num">0.08</span>;
+fx.speed   = <span class="code-num">0.3</span>;
+<span class="code-cmt">// oder: einfacher Tween auf setTintFill</span>
+<span class="code-kw">this</span>.<span class="code-fn">time</span>.<span class="code-fn">addEvent</span>({
+  delay: <span class="code-num">80</span>, repeat: <span class="code-num">6</span>,
+  callback: () => text.<span class="code-fn">setX</span>(
+    x + Phaser.Math.<span class="code-fn">Between</span>(-<span class="code-num">4</span>,<span class="code-num">4</span>))
+});`,
+  scoreFly: `<span class="code-cmt">// Phaser 3 — Score Fly-Up</span>
+<span class="code-kw">const</span> score = <span class="code-kw">this</span>.<span class="code-fn">add</span>.<span class="code-fn">text</span>(x, y, <span class="code-str">'+3'</span>, style)
+  .<span class="code-fn">setOrigin</span>(<span class="code-num">0.5</span>);
+<span class="code-kw">this</span>.<span class="code-fn">tweens</span>.<span class="code-fn">add</span>({
+  targets: score,
+  y: y - <span class="code-num">60</span>,
+  scaleX: [<span class="code-num">0.7</span>, <span class="code-num">1.1</span>, <span class="code-num">1</span>],
+  scaleY: [<span class="code-num">0.7</span>, <span class="code-num">1.1</span>, <span class="code-num">1</span>],
+  alpha: { from: <span class="code-num">0</span>, to: <span class="code-num">1</span> },
+  ease: <span class="code-str">'Back.Out(2)'</span>,
+  duration: <span class="code-num">380</span>,
+});`,
+  neon: `<span class="code-cmt">// Phaser 3 — Neon Glow Pulse (Text Shadow)</span>
+text.<span class="code-fn">setShadow</span>(<span class="code-num">0</span>, <span class="code-num">0</span>, <span class="code-str">'#4488ff'</span>, <span class="code-num">20</span>, <span class="code-num">true</span>);
+<span class="code-cmt">// letter-spacing expand tween</span>
+<span class="code-kw">this</span>.<span class="code-fn">tweens</span>.<span class="code-fn">add</span>({
+  targets: text,
+  alpha: { from: <span class="code-num">0</span>, to: <span class="code-num">1</span> },
+  duration: <span class="code-num">500</span>, ease: <span class="code-str">'Sine.Out'</span>,
+  onComplete: () => <span class="code-kw">this</span>.<span class="code-fn">tweens</span>.<span class="code-fn">add</span>({
+    targets: text,
+    alpha: { from: <span class="code-num">0.6</span>, to: <span class="code-num">1</span> },
+    yoyo: <span class="code-num">true</span>, repeat: -<span class="code-num">1</span>, duration: <span class="code-num">700</span>
+  })
+});`,
+  zoomBlur: `<span class="code-cmt">// Phaser 3 — Zoom Blur In (camera + tween)</span>
+<span class="code-kw">this</span>.<span class="code-fn">cameras</span>.main
+  .<span class="code-fn">zoomTo</span>(<span class="code-num">1</span>, <span class="code-num">500</span>, <span class="code-str">'Expo.Out'</span>);
+text.<span class="code-fn">setScale</span>(<span class="code-num">4</span>).<span class="code-fn">setAlpha</span>(<span class="code-num">0</span>);
+<span class="code-kw">this</span>.<span class="code-fn">tweens</span>.<span class="code-fn">add</span>({
+  targets: text,
+  scaleX: <span class="code-num">1</span>, scaleY: <span class="code-num">1</span>, alpha: <span class="code-num">1</span>,
+  ease: <span class="code-str">'Expo.Out'</span>, duration: <span class="code-num">500</span>,
+});
+emitter.<span class="code-fn">explode</span>(<span class="code-num">60</span>, x, y);`,
+  sequence: `<span class="code-cmt">// Phaser 3 — Sequenced Announcements</span>
+<span class="code-kw">const</span> events = [
+  { text: <span class="code-str">'RE'</span>,      delay: <span class="code-num">0</span>   },
+  { text: <span class="code-str">'KEINE 9'</span>, delay: <span class="code-num">600</span>  },
+  { text: <span class="code-str">'🦊 FUCHS'</span>,delay: <span class="code-num">1200</span> },
+  { text: <span class="code-str">'GEWONNEN'</span>,delay: <span class="code-num">1800</span> },
+];
+events.<span class="code-fn">forEach</span>(({ text, delay }) =>
+  <span class="code-kw">this</span>.<span class="code-fn">time</span>.<span class="code-fn">delayedCall</span>(delay, () =>
+    <span class="code-fn">showFlashText</span>(text))
+);`,
+};
+
+/* ─── Main App ─── */
+function App() {
+  const { useTweaks, TweaksPanel, TweakSection, TweakSlider } = window;
+  const [tweaks, setTweak] = useTweaks(/*EDITMODE-BEGIN*/{
+    "speed": 1.0
+  }/*EDITMODE-END*/);
+  const { speed } = tweaks;
+
+  return (
+    <div style={{ minHeight: '100vh' }}>
+      <TweaksPanel>
+        <TweakSection label="Animationsgeschwindigkeit" />
+        <TweakSlider label="Speed" id="speed" min={0.3} max={3} step={0.1} value={speed} onChange={v => setTweak('speed', v)} />
+        <div style={{ fontSize: 11, color: 'var(--muted)', fontFamily: 'Space Mono', marginTop: 4 }}>
+          {speed < 0.8 ? 'Langsam (Debug)' : speed > 1.8 ? 'Sehr schnell' : 'Normal'}
+        </div>
+      </TweaksPanel>
+
+      <header className="site-header">
+        <h1>Doppelkopf · Flash Text</h1>
+        <p>Animationstechniken für Spielansagen — klicke auf eine Karte um die Animation abzuspielen</p>
+      </header>
+
+      <div className="grid">
+
+        <div className="section-label">Ansagen &amp; Absagen</div>
+
+        {/* 1 */}
+        <div className="card">
+          <div className="card-meta" style={{ borderTop: 'none', borderBottom: '1px solid var(--border)', padding: '14px 20px 12px' }}>
+            <div className="card-title">Scale Punch <span className="badge badge-gold">Doppelkopf</span></div>
+            <div className="card-desc">Klassischer Impact-Effekt. Text startet bei Scale 0, überschwingt auf 1.15× und federt zurück. Ideal für wichtige Ansagen.</div>
+          </div>
+          <ScalePunchStage speed={speed} />
+          <div className="card-meta"><Code>{codes.scalePunch}</Code></div>
+        </div>
+
+        {/* 2 */}
+        <div className="card">
+          <div className="card-meta" style={{ borderTop: 'none', borderBottom: '1px solid var(--border)', padding: '14px 20px 12px' }}>
+            <div className="card-title">Chroma Flash <span className="badge badge-red">Re / Kontra</span></div>
+            <div className="card-desc">Blur + Brightness-Spike beim Eintreffen, kombiniert mit einem Shockwave-Ring. Sehr dramatisch. Klicken wechselt RE/KONTRA.</div>
+          </div>
+          <ChromaFlashStage speed={speed} />
+          <div className="card-meta"><Code>{codes.chroma}</Code></div>
+        </div>
+
+        {/* 7 */}
+        <div className="card">
+          <div className="card-meta" style={{ borderTop: 'none', borderBottom: '1px solid var(--border)', padding: '14px 20px 12px' }}>
+            <div className="card-title">Neon Glow <span className="badge badge-blue">Absage</span></div>
+            <div className="card-desc">Text expandiert aus Blur, dann kontinuierliches Neon-Pulsieren. Gut für anhaltende Absagen (Keine 9, Keine 60…). Klicken wechselt Absage.</div>
+          </div>
+          <NeonStage speed={speed} />
+          <div className="card-meta"><Code>{codes.neon}</Code></div>
+        </div>
+
+        <div className="section-label">Fuchs</div>
+
+        {/* 3 */}
+        <div className="card">
+          <div className="card-meta" style={{ borderTop: 'none', borderBottom: '1px solid var(--border)', padding: '14px 20px 12px' }}>
+            <div className="card-title">Stamp Drop + Konfetti <span className="badge badge-fox">Fuchs gefangen</span></div>
+            <div className="card-desc">Text fällt von oben mit Back.Out-Easing — wirkt wie ein Stempel. Konfetti-Burst unterstreicht den Moment.</div>
+          </div>
+          <StampDropStage speed={speed} />
+          <div className="card-meta"><Code>{codes.stampDrop}</Code></div>
+        </div>
+
+        {/* 4 */}
+        <div className="card">
+          <div className="card-meta" style={{ borderTop: 'none', borderBottom: '1px solid var(--border)', padding: '14px 20px 12px' }}>
+            <div className="card-title">Letter Drop <span className="badge badge-fox">Fuchs gefangen</span></div>
+            <div className="card-desc">Buchstabe für Buchstabe fällt mit Rotation ein — jeder um 80ms verzögert. Baut Spannung auf. Gut mit BitmapText in Phaser.</div>
+          </div>
+          <FoxLetterStage speed={speed} />
+          <div className="card-meta"><Code>{codes.foxLetter}</Code></div>
+        </div>
+
+        <div className="section-label">Spielende</div>
+
+        {/* 8 */}
+        <div className="card">
+          <div className="card-meta" style={{ borderTop: 'none', borderBottom: '1px solid var(--border)', padding: '14px 20px 12px' }}>
+            <div className="card-title">Zoom Blur In + Konfetti <span className="badge badge-green">Gewonnen</span></div>
+            <div className="card-desc">Text zoomt aus der Ferne heran mit Motion-Blur-Effekt. Kombiniert mit Konfetti-Explosion — bester Effekt für Spielende.</div>
+          </div>
+          <ZoomBlurStage speed={speed} />
+          <div className="card-meta"><Code>{codes.zoomBlur}</Code></div>
+        </div>
+
+        {/* 5 */}
+        <div className="card">
+          <div className="card-meta" style={{ borderTop: 'none', borderBottom: '1px solid var(--border)', padding: '14px 20px 12px' }}>
+            <div className="card-title">Glitch <span className="badge badge-red">Verloren</span></div>
+            <div className="card-desc">RGB-Versatz + Clip-Path-Glitch — signalisiert Fehler oder Niederlage. Phaser 3.60+ hat native PostFX-Glitch-Pipeline.</div>
+          </div>
+          <GlitchStage speed={speed} />
+          <div className="card-meta"><Code>{codes.glitch}</Code></div>
+        </div>
+
+        {/* 6 */}
+        <div className="card">
+          <div className="card-meta" style={{ borderTop: 'none', borderBottom: '1px solid var(--border)', padding: '14px 20px 12px' }}>
+            <div className="card-title">Score Fly-Up <span className="badge badge-green">Punkte</span></div>
+            <div className="card-desc">Punkte-Wert springt nach oben mit Back.Out. Kompakt und schnell — ideal für inline Punktestand-Updates.</div>
+          </div>
+          <ScoreFlyStage speed={speed} />
+          <div className="card-meta"><Code>{codes.scoreFly}</Code></div>
+        </div>
+
+        <div className="section-label">Kombination</div>
+
+        {/* 9 */}
+        <div className="card" style={{ gridColumn: '1 / -1' }}>
+          <div className="card-meta" style={{ borderTop: 'none', borderBottom: '1px solid var(--border)', padding: '14px 20px 12px' }}>
+            <div className="card-title">Sequenz-Anzeige <span className="badge badge-gold">Rundenende</span></div>
+            <div className="card-desc">Alle Ereignisse einer Runde werden nacheinander eingeblendet — Re, Absage, Fuchs, Ergebnis. Timing-gesteuert über <code style={{ fontFamily: 'Space Mono', fontSize: 11 }}>time.delayedCall</code>.</div>
+          </div>
+          <SequenceStage speed={speed} />
+          <div className="card-meta"><Code>{codes.sequence}</Code></div>
+        </div>
+
+      </div>
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+</script>
+</body>
+</html>
