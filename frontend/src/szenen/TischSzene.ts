@@ -39,7 +39,7 @@ import type {
   AktionAbgelehntEreignis,
   AbgeschlossenerStichAntwort
 } from '../modelle/SpielverwaltungDto';
-import { AnimationenService, type AnimierbareKartenobjekte, type RundenauswertungDaten } from '../services/AnimationenService';
+import { AnimationenService, type AnimierbareKartenobjekte } from '../services/AnimationenService';
 import type { AppZustand } from '../store/AppStore';
 import { TischInputHandler, type TischInputKontext } from './TischInputHandler';
 import { TischUIManager, type TischUIKontext } from './TischUIManager';
@@ -54,7 +54,6 @@ import {
   formatiereVorbehalt,
   formatiereSonderpunkt,
   formatiereCountdownText,
-  escapeHtml,
 } from './tischFormatierer';
 import {
   type TischLayout,
@@ -111,8 +110,9 @@ export class TischSzene extends Phaser.Scene {
   private _zeigeOverlayNachSnapshot: { spielNummer: number; partieBeendet: boolean } | null = null;
   private rundenauswertungObjekte: Phaser.GameObjects.GameObject[] = [];
   private phaserRundenEndeModal?: PhaserModal;
+  private phaserPartieEndeModal?: PhaserModal;
+  private partieCountdownInterval?: number;
   private escapeHandler?: (e: KeyboardEvent) => void;
-  private backdropClickHandler?: (e: MouseEvent) => void;
   private tastaturKarteIndex = -1;
   private tastaturVorbehaltIndex = 0;
   private letzterStichOverlay?: Phaser.GameObjects.Container;
@@ -272,10 +272,8 @@ export class TischSzene extends Phaser.Scene {
       };
       bridge.setzeKiVerzoegerung = (ms: number) => appStore.setzeKiKartenVerzögerung(ms);
       bridge.isOverlaySichtbar = () => {
-        const rEnde = this.rundenEndeModal;
-        const pEnde = this.partieEndeModal;
-        const rSichtbar = !!rEnde && !rEnde.hidden;
-        const pSichtbar = !!pEnde && !pEnde.hidden;
+        const rSichtbar = !!this.phaserRundenEndeModal && this.phaserRundenEndeModal.active;
+        const pSichtbar = !!this.phaserPartieEndeModal && this.phaserPartieEndeModal.active;
         return rSichtbar || pSichtbar;
       };
       bridge.isIdle = (ignoreStore = false) => this.isIdle(ignoreStore);
@@ -584,8 +582,6 @@ export class TischSzene extends Phaser.Scene {
     }
   }
 
-  private get rundenEndeModal(): HTMLDivElement | undefined { return this.uiManager?.getRundenEndeModal(); }
-  private get partieEndeModal(): HTMLDivElement | undefined { return this.uiManager?.getPartieEndeModal(); }
 
   shutdown(): void {
     Logger.szene('TischSzene shutdown');
@@ -609,16 +605,9 @@ export class TischSzene extends Phaser.Scene {
       });
       appStore.quittiereMeldung();
     }
-    // Countdown-Anzeige im Partie-Ende-Modal aktualisieren
-    if (this.partieEndeModal && !this.partieEndeModal.hidden) {
-      const countdownEl = this.partieEndeModal.querySelector<HTMLElement>('[data-testid="countdown-text"]');
-      if (countdownEl) {
-        countdownEl.textContent = formatiereCountdownText(zustand.countdownSekunden);
-      }
-      // Modal automatisch schliessen wenn eine neue Partie gestartet wurde (z.B. Auto-Start)
-      if (zustand.partieStand?.laufendesSpiel) {
-        this.schliessePartieEndeModal();
-      }
+    // Modal automatisch schliessen wenn eine neue Partie gestartet wurde (z.B. Auto-Start)
+    if (this.phaserPartieEndeModal && zustand.partieStand?.laufendesSpiel) {
+      this.schliessePartieEndeModal();
     }
   }
 
@@ -1226,7 +1215,7 @@ export class TischSzene extends Phaser.Scene {
       breite: 620,
       hoehe: 520,
       titel: anzahlS ? `${spieltypLabel} | Spiel ${e.spielNummer}/${anzahlS}` : `${spieltypLabel} | Spiel ${e.spielNummer}`,
-      aktionen: [{ label: 'Weiter', callback: () => this.schliesseRundenEndeModal() }]
+      aktionen: [{ text: 'Weiter', callback: () => this.schliesseRundenEndeModal() }]
     });
     this.rundenauswertungObjekte.push(this.phaserRundenEndeModal);
 
@@ -1238,7 +1227,7 @@ export class TischSzene extends Phaser.Scene {
     const siegerText = this.add.text(0, ry, gewinner, {
       fontSize: '18px', color: siegerFarbe, fontFamily: 'Press Start 2P', stroke: '#000', strokeThickness: 3
     }).setOrigin(0.5, 0).setDepth(100);
-    this.phaserRundenEndeModal.contentContainer.add(siegerText);
+    this.phaserRundenEndeModal.getContentContainer().add(siegerText);
     ry += 36;
 
     // Punkte-Aufschluesselung mit Fallback auf berechnete Zeilen
@@ -1258,7 +1247,7 @@ export class TischSzene extends Phaser.Scene {
       const txt = this.add.text(-290, ry, `${pc.label}: 0`, {
         fontSize: '12px', color: '#f0e6ff', fontFamily: 'Press Start 2P'
       }).setOrigin(0, 0).setDepth(100);
-      this.phaserRundenEndeModal!.contentContainer.add(txt);
+      this.phaserRundenEndeModal!.getContentContainer().add(txt);
       countUpTexte.push({ wert: pc.punkte, label: pc.label, textObj: txt });
       ry += 24;
     });
@@ -1290,16 +1279,17 @@ export class TischSzene extends Phaser.Scene {
     const swText = this.add.text(0, ry, `Spielwert: ${e.spielwert > 0 ? '+' : ''}${e.spielwert}`, {
       fontSize: '13px', color: siegerFarbe, fontFamily: 'Press Start 2P'
     }).setOrigin(0.5, 0).setDepth(100);
-    this.phaserRundenEndeModal.contentContainer.add(swText);
+    this.phaserRundenEndeModal.getContentContainer().add(swText);
     ry += 28;
 
     // Spieler-Punkte
     e.spielpunkte.forEach((sp) => {
-      const marker = sp.istSelbst ? ' <<' : '';
+      const istSelbst = sp.position === SPIELER_POSITION.SUED;
+      const marker = istSelbst ? ' <<' : '';
       const spTxt = this.add.text(-290, ry, `${sp.name}: ${sp.punkte > 0 ? '+' : ''}${sp.punkte}${marker}`, {
-        fontSize: '10px', color: sp.istSelbst ? '#ffd700' : '#c0b0d0', fontFamily: 'Press Start 2P'
+        fontSize: '10px', color: istSelbst ? '#ffd700' : '#c0b0d0', fontFamily: 'Press Start 2P'
       }).setOrigin(0, 0).setDepth(100);
-      this.phaserRundenEndeModal!.contentContainer.add(spTxt);
+      this.phaserRundenEndeModal!.getContentContainer().add(spTxt);
       ry += 20;
     });
 
@@ -1313,65 +1303,159 @@ export class TischSzene extends Phaser.Scene {
   }
 
   private zeigePartieEndeModal(m: TischAnsichtModell): void {
-    if (!this.partieEndeModal) {
-      Logger.szene('zeigePartieEndeModal: kein Modal — Queue wird fortgesetzt');
+    const e = m.letztesSpielergebnis;
+    if (!e) {
+      Logger.szene('zeigePartieEndeModal: kein Spielergebnis — Queue wird fortgesetzt');
       appStore.setzeQueueFort();
       return;
     }
-    const e = m.letztesSpielergebnis;
+
     const anzahlS = this.letzterZustand?.aktuellerTisch?.konfiguration?.anzahlSpiele;
-    const dia = document.createElement('div'); dia.className = 'ui-modal'; dia.dataset['testid'] = 'partie-ende-modal';
-    const tit = document.createElement('h2'); tit.textContent = 'Partie beendet!';
-    dia.append(tit);
-    if (e) {
-      const sNMap = new Map(m.spieler.map((s) => [s.position, s.name] as const));
-      const spieltypLabel = formatiereVorbehalt(e.spieltyp as VorbehaltAnsage) ?? e.spieltyp;
-      const spielSec = document.createElement('div'); spielSec.className = 'ui-section';
-      const infoP = document.createElement('p'); infoP.style.cssText = 'margin:0;font-size:0.9rem;color:#d8f3dc'; infoP.textContent = `${spieltypLabel} · ${anzahlS ? `Spiel ${e.spielNummer} von ${anzahlS}` : `Spiel ${e.spielNummer}`}`;
-      const siegerP = document.createElement('p'); siegerP.style.cssText = 'margin:0;font-size:0.9rem;color:#90caf9'; siegerP.textContent = `${e.siegerPartei} gewinnt · Re ${e.augenRe}:${e.augenKontra} Kontra Augen`;
-      const reNamen = m.spieler.filter((s) => s.partei === PARTEI.RE).map((s) => s.name).join(', ') || '–';
-      const kontraNamen = m.spieler.filter((s) => s.partei === PARTEI.KONTRA).map((s) => s.name).join(', ') || '–';
-      const parteienP = document.createElement('p'); parteienP.style.cssText = 'margin:0;font-size:0.8rem;opacity:0.75'; parteienP.textContent = `Re: ${reNamen} | Kontra: ${kontraNamen}`;
-      const bZ: string[] = [`Grundwert: +${e.grundwert}`];
-      if (e.absagePunkte !== 0) bZ.push(`Ansagen: ${e.absagePunkte > 0 ? '+' : ''}${e.absagePunkte}`);
-      if (e.gegenDieAltenPunkte > 0) bZ.push(`Gegen die Alten: +${e.gegenDieAltenPunkte}`);
-      if (e.soloMultiplikator > 1) bZ.push(`Solo-Multiplikator: ×${e.soloMultiplikator}`);
-      const sp = [...e.sonderpunkteRe.map((s) => `Re: ${formatiereSonderpunkt(s, sNMap)}`), ...e.sonderpunkteKontra.map((s) => `Kontra: ${formatiereSonderpunkt(s, sNMap)}`)];
-      if (sp.length > 0) bZ.push(`Sonderpunkte: ${sp.join(', ')}`);
-      const berechnungL = document.createElement('ul'); berechnungL.className = 'ui-list ui-list--dense';
-      bZ.forEach((z) => { const li = document.createElement('li'); li.className = 'ui-list-item ui-list-item--dense'; li.style.fontSize = '0.85rem'; li.textContent = z; berechnungL.append(li); });
-      const punkteL = document.createElement('ul'); punkteL.className = 'ui-list ui-list--dense';
-      e.spielpunkte.forEach((p) => { const li = document.createElement('li'); li.className = 'ui-list-item ui-list-item--dense'; li.innerHTML = `<div class="ui-list-item__headline"><strong>${escapeHtml(p.name)}</strong></div><div class="ui-list-item__meta"><span style="color:${p.punkte >= 0 ? '#4adf7a' : '#ff6b6b'}">${p.punkte > 0 ? '+' : ''}${p.punkte} Pkt</span></div>`; punkteL.append(li); });
-      spielSec.append(infoP, siegerP, parteienP, berechnungL, punkteL);
-      dia.append(spielSec);
-    }
-    const gsSec = document.createElement('div'); gsSec.className = 'ui-section';
-    const gsTit = document.createElement('strong'); gsTit.style.cssText = 'font-size:0.9rem;opacity:0.8'; gsTit.textContent = 'Gesamtstand';
-    const sortedGs = [...m.gesamtpunktestand].sort((a, b) => b.punkte - a.punkte);
+    const sNMap = new Map(m.spieler.map((s) => [s.position, s.name] as const));
+    const spieltypLabel = formatiereVorbehalt(e.spieltyp as VorbehaltAnsage) ?? e.spieltyp;
+    const siegerFarbe = e.siegerPartei === 'RE' ? '#4adf7a' : '#ff6b6b';
+
+    this.phaserPartieEndeModal = new PhaserModal(this, this.scale.gameSize.width / 2, this.scale.gameSize.height / 2, {
+      breite: 500,
+      hoehe: 600,
+      titel: 'Partie beendet',
+      zeigeSchliessenButton: false,
+      aktionen: [
+        {
+          text: 'Neue Partie',
+          callback: () => { this.schliessePartieEndeModal(); void appStore.starteNeuePartie(); }
+        },
+        {
+          text: 'Tisch verlassen',
+          typ: 'secondary',
+          callback: () => { this.schliessePartieEndeModal(); void appStore.verlasseAktuellenTisch(); }
+        }
+      ]
+    });
+
+    const container = this.phaserPartieEndeModal?.getContentContainer();
+    let y = -280;
+
+    // Spielinfo
+    const infoTxt = this.add.text(0, y, `${spieltypLabel} · ${anzahlS ? `Spiel ${e.spielNummer} von ${anzahlS}` : `Spiel ${e.spielNummer}`}`, {
+      fontSize: '12px', color: '#d8f3dc', fontFamily: 'Press Start 2P'
+    }).setOrigin(0.5, 0);
+    container.add(infoTxt);
+    y += 20;
+
+    // Sieger
+    const siegerTxt = this.add.text(0, y, `${e.siegerPartei} gewinnt`, {
+      fontSize: '16px', color: siegerFarbe, fontFamily: 'Press Start 2P', stroke: '#000', strokeThickness: 2
+    }).setOrigin(0.5, 0);
+    container.add(siegerTxt);
+    y += 28;
+
+    // Augen
+    const augenTxt = this.add.text(0, y, `Re ${e.augenRe}:${e.augenKontra} Kontra Augen`, {
+      fontSize: '11px', color: '#90caf9', fontFamily: 'Press Start 2P'
+    }).setOrigin(0.5, 0);
+    container.add(augenTxt);
+    y += 20;
+
+    // Parteien
+    const reNamen = m.spieler.filter((s) => s.partei === PARTEI.RE).map((s) => s.name).join(', ') || '–';
+    const kontraNamen = m.spieler.filter((s) => s.partei === PARTEI.KONTRA).map((s) => s.name).join(', ') || '–';
+    const parteienTxt = this.add.text(0, y, `Re: ${reNamen}\nKontra: ${kontraNamen}`, {
+      fontSize: '9px', color: '#c0b0d0', fontFamily: 'Press Start 2P', align: 'center'
+    }).setOrigin(0.5, 0);
+    container.add(parteienTxt);
+    y += 36;
+
+    // Berechnung
+    const bZ: string[] = [`Grundwert: +${e.grundwert}`];
+    if (e.absagePunkte !== 0) bZ.push(`Ansagen: ${e.absagePunkte > 0 ? '+' : ''}${e.absagePunkte}`);
+    if (e.gegenDieAltenPunkte > 0) bZ.push(`Gegen die Alten: +${e.gegenDieAltenPunkte}`);
+    if (e.soloMultiplikator > 1) bZ.push(`Solo-Multiplikator: ×${e.soloMultiplikator}`);
+    const sp = [...e.sonderpunkteRe.map((s) => `Re: ${formatiereSonderpunkt(s, sNMap)}`), ...e.sonderpunkteKontra.map((s) => `Kontra: ${formatiereSonderpunkt(s, sNMap)}`)];
+    if (sp.length > 0) bZ.push(`Sonderpunkte: ${sp.join(', ')}`);
+
+    bZ.forEach((zeile) => {
+      const berechnungTxt = this.add.text(-220, y, zeile, {
+        fontSize: '10px', color: '#f0e6ff', fontFamily: 'Press Start 2P'
+      }).setOrigin(0, 0);
+      container.add(berechnungTxt);
+      y += 18;
+    });
+
+    // Spielwert
+    y += 6;
+    const spielwertTxt = this.add.text(0, y, `Spielwert: ${e.spielwert > 0 ? '+' : ''}${e.spielwert}`, {
+      fontSize: '12px', color: siegerFarbe, fontFamily: 'Press Start 2P'
+    }).setOrigin(0.5, 0);
+    container.add(spielwertTxt);
+    y += 22;
+
+    // Spieler-Punkte
+    e.spielpunkte.forEach((sp) => {
+      const istSelbst = sp.position === SPIELER_POSITION.SUED;
+      const marker = istSelbst ? ' <<' : '';
+      const puntFarbe = sp.punkte >= 0 ? '#4adf7a' : '#ff6b6b';
+      const punktTxt = this.add.text(-220, y, `${sp.name}: ${sp.punkte > 0 ? '+' : ''}${sp.punkte}${marker}`, {
+        fontSize: '10px', color: puntFarbe, fontFamily: 'Press Start 2P'
+      }).setOrigin(0, 0);
+      container.add(punktTxt);
+      y += 18;
+    });
+
+    // Gesamtstand (Top 4)
+    y += 12;
+    const gesamtstandTitel = this.add.text(0, y, 'Gesamtstand', {
+      fontSize: '12px', color: '#ffd700', fontFamily: 'Press Start 2P'
+    }).setOrigin(0.5, 0);
+    container.add(gesamtstandTitel);
+    y += 20;
+
+    const sortedGs = [...m.gesamtpunktestand].sort((a, b) => b.punkte - a.punkte).slice(0, 4);
     const maxPkt = sortedGs.length > 0 ? sortedGs[0].punkte : 0;
-    const gsL = document.createElement('ul'); gsL.className = 'ui-list ui-list--dense';
-    sortedGs.forEach((ei) => { const li = document.createElement('li'); li.className = 'ui-list-item ui-list-item--dense'; const istVorne = ei.punkte === maxPkt && maxPkt > 0; li.innerHTML = `<div class="ui-list-item__headline"><strong style="${istVorne ? 'color:#ffd166' : ''}">${escapeHtml(ei.name)}${istVorne ? ' ★' : ''}</strong></div><div class="ui-list-item__meta"><span>${ei.punkte} Pkt</span></div>`; gsL.append(li); });
-    gsSec.append(gsTit, gsL); dia.append(gsSec);
-    const countdownP = document.createElement('p');
-    countdownP.dataset['testid'] = 'countdown-text';
-    countdownP.style.cssText = 'margin:0.5rem 0 0;font-size:0.85rem;opacity:0.7;text-align:center';
-    const aktuellerCountdown = appStore.snapshot().countdownSekunden;
-    countdownP.textContent = formatiereCountdownText(aktuellerCountdown);
-    dia.append(countdownP);
-    const aR = document.createElement('div'); aR.className = 'ui-action-row';
-    const nB = this.erstelleButton('Neue Partie', () => { this.schliessePartieEndeModal(); void appStore.starteNeuePartie(); }, false);
-    nB.dataset['testid'] = 'btn-neue-partie';
-    const vB = this.erstelleButton('Tisch verlassen', () => { this.schliessePartieEndeModal(); void appStore.verlasseAktuellenTisch(); }, false, 'ui-button--secondary');
-    vB.dataset['testid'] = 'btn-tisch-verlassen';
-    aR.append(nB, vB); dia.append(aR); this.partieEndeModal.innerHTML = ''; this.partieEndeModal.append(dia); this.partieEndeModal.hidden = false;
-    setTimeout(() => nB.focus(), 0);
+    sortedGs.forEach((ei) => {
+      const istVorne = ei.punkte === maxPkt && maxPkt > 0;
+      const sternchenText = istVorne ? ' ★' : '';
+      const gsTxt = this.add.text(-220, y, `${ei.name}${sternchenText}: ${ei.punkte}`, {
+        fontSize: '10px', color: istVorne ? '#ffd166' : '#c0b0d0', fontFamily: 'Press Start 2P'
+      }).setOrigin(0, 0);
+      container.add(gsTxt);
+      y += 18;
+    });
+
+    // Countdown Timer
+    y += 12;
+    const countdownTxt = this.add.text(0, y, '', {
+      fontSize: '10px', color: '#888888', fontFamily: 'Press Start 2P'
+    }).setOrigin(0.5, 0);
+    container.add(countdownTxt);
+
+    const updateCountdown = () => {
+      const aktuellerCountdown = appStore.snapshot().countdownSekunden ?? 0;
+      countdownTxt.setText(formatiereCountdownText(aktuellerCountdown));
+      if (aktuellerCountdown <= 0) {
+        this.schliessePartieEndeModal();
+        void appStore.starteNeuePartie();
+      }
+    };
+
+    updateCountdown();
+    this.partieCountdownInterval = window.setInterval(updateCountdown, 1000);
+
+    this.tischEbene?.add(this.phaserPartieEndeModal);
+
+    const br = (window as { __locodoko?: { _partieEndeModalGezeigt?: number } }).__locodoko;
+    if (br) {
+      br._partieEndeModalGezeigt = (br._partieEndeModalGezeigt ?? 0) + 1;
+    }
   }
 
   private schliessePartieEndeModal(): void {
-    if (!this.partieEndeModal) return;
-    this.partieEndeModal.hidden = true; this.partieEndeModal.innerHTML = '';
-    
-    // Nach dem Schließen des Modals darf der Store Folge-Events abarbeiten
+    if (this.partieCountdownInterval !== undefined) {
+      clearInterval(this.partieCountdownInterval);
+      this.partieCountdownInterval = undefined;
+    }
+    this.phaserPartieEndeModal?.destroy();
+    this.phaserPartieEndeModal = undefined;
     appStore.setzeQueueFort();
   }
 
@@ -1464,9 +1548,6 @@ export class TischSzene extends Phaser.Scene {
     }
   }
 
-  private erstelleButton(txt: string, hdl: () => void, d: boolean, kl = ''): HTMLButtonElement {
-    const btn = document.createElement('button'); btn.type = 'button'; btn.className = ['ui-button', kl].filter(Boolean).join(' '); btn.textContent = txt; btn.disabled = d; btn.addEventListener('click', hdl); return btn;
-  }
 
   private aktualisiereHintergrund(bg: Tischhintergrund, b: number, h: number): void {
     const tex = texturFuerTischhintergrund(bg);
