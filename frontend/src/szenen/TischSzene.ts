@@ -45,6 +45,7 @@ import { TischInputHandler, type TischInputKontext } from './TischInputHandler';
 import { TischUIManager, type TischUIKontext } from './TischUIManager';
 import { ToastManager } from './ToastManager';
 import { FlashTextManager } from '../ui/FlashTextManager';
+import { Nameplate, ansageBadgeTyp, type NameplateDaten } from '../ui/Nameplate';
 import {
   formatiereAnsage,
   formatiereVorbehalt,
@@ -94,6 +95,7 @@ export class TischSzene extends Phaser.Scene {
   private uiManager?: TischUIManager;
   private toastManager?: ToastManager;
   private flashTextManager?: FlashTextManager;
+  private nameplates = new Map<SpielerPosition, Nameplate>();
   private inputHandler?: TischInputHandler;
   private ausgewaehlteArmutKarten = new Set<string>();
   private armutAnnahmeAktiv = false;
@@ -238,10 +240,17 @@ export class TischSzene extends Phaser.Scene {
 
     this.abmeldenSonderpunkte = appStore.abonniereSonderpunkte((sp) => {
       for (const s of sp) {
-        const name = this.letztesModell?.spieler.find(p => p.absolutePosition === s.gewinner)?.name;
+        const gewinnerSpieler = this.letztesModell?.spieler.find(p => p.absolutePosition === s.gewinner);
+        const name = gewinnerSpieler?.name;
         switch (s.typ) {
-          case 'FUCHS_GEFANGEN': this.flashTextManager?.zeigeSpielevent('FuchsGefangen', { spielerName: name }); break;
-          case 'KARLCHEN':       this.flashTextManager?.zeigeSpielevent('KarlchenGespielt', { spielerName: name }); break;
+          case 'FUCHS_GEFANGEN':
+            this.flashTextManager?.zeigeSpielevent('FuchsGefangen', { spielerName: name });
+            if (gewinnerSpieler) this.nameplates.get(gewinnerSpieler.position)?.shake();
+            break;
+          case 'KARLCHEN':
+            this.flashTextManager?.zeigeSpielevent('KarlchenGespielt', { spielerName: name });
+            if (gewinnerSpieler) this.nameplates.get(gewinnerSpieler.position)?.shake();
+            break;
           case 'DOPPELKOPF':     this.flashTextManager?.zeigeSpielevent('DoppelkopfGestochen'); break;
         }
       }
@@ -421,6 +430,9 @@ export class TischSzene extends Phaser.Scene {
         const letzteAnsage = historie && historie.length > 0 ? historie[historie.length - 1] : null;
         if (letzteAnsage) {
           this.animationen?.reiheEin(() => this.starteAnsageBannerAnimationen([letzteAnsage.ansage]));
+          const relPos = this.letztesModell?.spieler.find(s => s.absolutePosition === letzteAnsage.spielerPosition)?.position;
+          const badgeTyp = ansageBadgeTyp(letzteAnsage.ansage);
+          if (relPos && badgeTyp) this.nameplates.get(relPos)?.showAnsage(badgeTyp);
         }
         break;
       }
@@ -622,7 +634,7 @@ export class TischSzene extends Phaser.Scene {
     this.renderStichmitte(ebene, modell, mitteX, mitteY, breite, hoehe);
 
     modell.spieler.forEach((spieler) => {
-      this.renderNameplate(ebene, spieler, modell, layout, breite, hoehe);
+      this.aktualisiereNameplate(spieler, modell, breite, hoehe);
       this.renderKartenFaecher(ebene, layout, spieler, modell);
     });
 
@@ -880,44 +892,44 @@ export class TischSzene extends Phaser.Scene {
     return Kartenansicht.leer(this, x, y, w, h);
   }
 
-  private renderNameplate(ebene: Phaser.GameObjects.Container, spieler: TischAnsichtModell['spieler'][number], modell: TischAnsichtModell, layout: TischLayout, breite: number, hoehe: number): void {
-    const npW = Math.max(120, breite * 0.11);
-    const npH = Math.max(54, hoehe * 0.075);
-    const kAb = berechneKartenAbstand(breite, hoehe);
-    const kG = berechneKartenGroesse(breite);
-    const kAnzahl = spieler.sichtbareHandkarten.length > 0 ? spieler.sichtbareHandkarten.length : Math.max(spieler.verbleibendeKarten, 0);
-    let pos: { x: number; y: number };
-    if (spieler.position === SPIELER_POSITION.SUED) {
-      const fH = kAnzahl > 0 ? ((kAnzahl - 1) * kAb.horizontal + kG.w) / 2 : 0;
-      pos = { x: Math.min(breite / 2 + fH + npW / 2 + 40, breite - npW / 2 - 4), y: hoehe * 0.85 };
-    } else if (spieler.position === SPIELER_POSITION.NORD) {
-      const fH = kAnzahl > 0 ? ((kAnzahl - 1) * kAb.horizontal + kG.w) / 2 : 0;
-      pos = { x: Math.max(breite / 2 - fH - npW / 2 - 20, npW / 2 + 4), y: hoehe * 0.15 };
-    } else if (spieler.position === SPIELER_POSITION.WEST) {
-      const fU = layout.WEST.kartenY + (kAnzahl > 0 ? (kAnzahl - 1) * kAb.vertikal : 0) + kG.h / 2;
-      pos = { x: Math.max(npW / 2 + 4, layout.WEST.kartenX), y: Math.min(fU + npH / 2 + 50, hoehe - npH / 2 - 4) };
+  private aktualisiereNameplate(spieler: TischAnsichtModell['spieler'][number], modell: TischAnsichtModell, breite: number, hoehe: number): void {
+    const pos = nameplatePositionFuer(spieler.position, breite, hoehe);
+    let np = this.nameplates.get(spieler.position);
+
+    if (!np) {
+      const daten: NameplateDaten = {
+        name: spieler.anzeigeName,
+        position: spieler.position,
+        istKI: !spieler.istMensch && !spieler.istSelbst,
+      };
+      np = new Nameplate(this, pos.x, pos.y, daten);
+      this.nameplates.set(spieler.position, np);
     } else {
-      const fO = layout.OST.kartenY - kG.h / 2;
-      pos = { x: Math.min(breite - npW / 2 - 4, layout.OST.kartenX), y: Math.max(fO - npH / 2 - 12, npH / 2 + 4) };
+      np.setPosition(pos.x, pos.y);
     }
-    const rad = Math.max(6, Math.round(npH * 0.15));
-    const aR = Math.max(2, Math.round(npH * 0.04));
-    const hg = spieler.istAktivHervorgehoben ? 0x1a4a20 : 0x0d3d1e;
-    const g = this.add.graphics();
-    if (spieler.istAktivHervorgehoben) { g.fillStyle(0xffe082, 0.18); g.fillRoundedRect(pos.x - npW / 2 - 5, pos.y - npH / 2 - 5, npW + 10, npH + 10, rad + 3); }
-    g.fillStyle(hg, 0.55); g.fillRoundedRect(pos.x - npW / 2, pos.y - npH / 2, npW, npH, rad);
-    g.lineStyle(aR, spieler.istAktivHervorgehoben ? 0xffe082 : 0x111111, spieler.istAktivHervorgehoben ? 1 : 0.9);
-    g.strokeRoundedRect(pos.x - npW / 2, pos.y - npH / 2, npW, npH, rad);
-    g.lineStyle(1, 0xe5e7eb, 0.4); g.strokeRoundedRect(pos.x - npW / 2 + aR, pos.y - npH / 2 + aR, npW - aR * 2, npH - aR * 2, Math.max(3, rad - aR));
-    ebene.add(g);
-    const nS = Math.round(Math.max(15, breite * 0.014));
-    const kS = Math.round(Math.max(10, breite * 0.009));
-    if (spieler.avatarFarbe) { ebene.add(this.add.circle(pos.x - npW * 0.38, pos.y - npH * 0.22, nS * 0.55, parseInt(spieler.avatarFarbe.replace('#', ''), 16), 1)); }
-    ebene.add(this.add.text(pos.x, pos.y - npH * 0.22, spieler.anzeigeName, { color: '#f8f9fa', fontSize: `${nS}px`, fontStyle: 'bold' }).setOrigin(0.5));
-    if (spieler.partei) { ebene.add(this.add.text(pos.x, pos.y - npH / 2 - 10, spieler.partei, { color: spieler.partei === PARTEI.RE ? '#ffd166' : '#90caf9', fontSize: `${kS}px`, fontStyle: 'bold' }).setOrigin(0.5)); }
-    const ansageBadges: Partial<Record<string, string>> = { KEINE_90: 'K90', KEINE_60: 'K60', KEINE_30: 'K30', SCHWARZ: 'S' };
-    const ansSuf = modell.ansageHistorie.filter((a) => a.position === spieler.position && ansageBadges[a.ansage] !== undefined).map((a) => ansageBadges[a.ansage]).join(' ');
-    ebene.add(this.add.text(pos.x, pos.y + npH * 0.22, `${spieler.istSelbst ? 'Du' : spieler.istMensch ? 'Mensch' : 'KI'} · ${spieler.stiche} Stiche${spieler.istGeber ? ' G' : ''}${ansSuf ? ' · ' + ansSuf : ''}`, { color: spieler.istGeber ? '#ffd166' : '#a3c4a8', fontSize: `${kS}px` }).setOrigin(0.5));
+
+    if (spieler.position === SPIELER_POSITION.WEST) np.setAngle(-90);
+    else if (spieler.position === SPIELER_POSITION.OST) np.setAngle(90);
+    else np.setAngle(0);
+
+    if (spieler.partei) {
+      np.setTeamfarbe(spieler.partei === PARTEI.RE ? 're' : 'kontra');
+    }
+
+    if (spieler.istAktivHervorgehoben && !spieler.istSelbst) {
+      np.setState('amZug');
+    } else if (spieler.istGeber) {
+      np.setState('geber');
+    } else {
+      np.setState('default');
+    }
+
+    // Ansage-Badges aus Historie setzen (idempotent — showAnsage erkennt Duplikate nicht, daher nur einmal)
+    const eigeneAnsagen = modell.ansageHistorie.filter(a => a.position === spieler.position);
+    const reAnsage = eigeneAnsagen.find(a => ansageBadgeTyp(a.ansage) === 're');
+    const kontraAnsage = eigeneAnsagen.find(a => ansageBadgeTyp(a.ansage) === 'kontra');
+    if (reAnsage && !np['ansageBadge']) np.showAnsage('re');
+    if (kontraAnsage && !np['ansageBadge']) np.showAnsage('kontra');
   }
 
   private renderKartenFaecher(ebene: Phaser.GameObjects.Container, layout: TischLayout, spieler: TischAnsichtModell['spieler'][number], modell: TischAnsichtModell): void {
@@ -1404,6 +1416,7 @@ export class TischSzene extends Phaser.Scene {
     if (this.backdropClickHandler && this.rundenEndeModal) this.rundenEndeModal.removeEventListener('click', this.backdropClickHandler);
     this.abmeldenStore?.(); this.abmeldenSonderpunkte?.();
     this.flashTextManager?.destroy(); this.flashTextManager = undefined;
+    this.nameplates.forEach(np => np.destroy()); this.nameplates.clear();
     this.animationen?.abbrechen(); this.animationen = undefined;
     this.loeseEigeneKartenAuf();
     this.rundenauswertungObjekte.forEach((o) => o.destroy()); this.tischEbene?.destroy(true);

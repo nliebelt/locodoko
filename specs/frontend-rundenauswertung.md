@@ -122,9 +122,66 @@ Nach jeder abgeschlossenen Runde (einem einzelnen Spiel innerhalb der Partie) er
 - [x] Keyboard-Support (Enter zum Schließen)
 - [ ] Visuelles Review
 
+## Spielprotokoll (DKV-Scorecard)
+
+### Beschreibung
+
+Ein laufendes Spielprotokoll im DKV-Stil zeigt alle Runden der aktuellen Partie als wachsende Tabelle. Es ist über einen Button in der `TischSzene` als Overlay aufrufbar (kein Pflicht-Modal). Das Protokoll wird **ausschließlich im Frontend akkumuliert** — kein eigener Backend-Endpunkt.
+
+### Layout
+
+```
+┌────────────────────────────────────────────────────────────────┐
+│  SPIELPROTOKOLL                                                 │
+│  ──────────────────────────────────────────────────────────── │
+│  Nr. │ G │ Typ       │ Bock │ Alice     │ Bob       │ ...      │
+│       │   │           │      │ Pkt (Std) │ Pkt (Std) │          │
+│  ─── │ ─ │ ─────────│ ─── │ ─────────│ ─────────│          │
+│   1   │ N │ Normal    │      │ +2 (+2)   │ -2 (-2)   │ ...      │
+│   2   │ O │ Solo      │      │ -3 (-1)   │ +9 (+11)  │ ...      │
+│   3   │ S │ Normal    │ ✗    │ +4 (+3)   │ -4 (+7)   │ ...      │
+│   4   │ W │ Hochzeit  │ ✗    │ -2 (+1)   │ +2 (+9)   │ ...      │
+│  ...                                                            │
+│                                              [ Schließen ]      │
+└────────────────────────────────────────────────────────────────┘
+```
+
+### Anforderungen
+
+1. Jede Zeile entspricht einem abgeschlossenen Spiel innerhalb der Partie.
+2. Spalten: `Nr.` (laufende Nummer), `G` (Geber-Kürzel: N/O/S/W), `Typ` (Spieltyp), `Bock` (✗ wenn Bock-Runde), pro Spieler: `Pkt` (Punkte der Runde) und `(Stand)` (kumulativer Partiepunktestand).
+3. Neuer Eintrag wird **pro `SpielBeendet`-Event** hinzugefügt.
+4. Datenquelle aus `SpielBeendet`-Event:
+   - `spielNummer` → Nr.
+   - `spieltyp` → Typ
+   - `SpielerSpielDaten.spielpunkte` → Pkt pro Spieler
+   - `SpielerSpielDaten.kumulativePartiePunkte` → Stand pro Spieler
+   - `bockrundeAktiv` → Bock-Marker (falls im Event vorhanden, sonst aus `bockrundenZaehler > 0` ableiten)
+   - Geber: wird frontend-seitig aus der Rotation N→O→S→W abgeleitet (Spielnummer mod 4)
+5. Scrollen: Die Tabelle ist scrollbar wenn mehr als ~8 Einträge vorhanden sind (via `PhaserList` oder Masking).
+6. Font: `Press Start 2P` für Werte, kleinste zulässige Größe XS (8px) für Stand-Spalten.
+7. Aktuelle Runde (letzte Zeile) wird farblich hervorgehoben.
+8. Das Protokoll bleibt über die gesamte Partie im Speicher und überlebt Szenen-Wechsel via AppStore.
+
+### Akzeptanzkriterien
+
+- Tabelle wächst nach jeder Runde um eine Zeile.
+- Kumulativer Stand ist korrekt berechnet.
+- Bock-Marker erscheint wenn in einer Bock-Runde gespielt wurde.
+- Protokoll überlebt Verbindungsunterbrüche (da im AppStore gespeichert).
+
+### Definition of Done Spielprotokoll
+
+- [ ] `SpielpritkollStore` oder Protokoll-State im AppStore
+- [ ] Protokoll-Overlay (Button + Tabellenansicht) in `TischSzene.ts`
+- [ ] Korrekte Akkumulation via `SpielBeendet`-Events
+- [ ] Scrollen bei mehr als 8 Einträgen
+- [ ] Visuelles Review
+
 ## Technische Hinweise
 
 - Datenbasis: `LetztesSpielergebnisAnsicht` aus `TischAnsichtModell` — dort alle nötigen Felder ergänzen falls noch nicht vorhanden.
 - Die Ansicht ist auch in Phaser umgesetzt.
 - Das bestehende `rundenEndeModal` und `partieEndeModal` in `TischSzene.ts` werden durch diese Spec ersetzt und inhaltlich erweitert.
 - Punkte-Berechnung muss vom Backend vollständig übertragen werden (alle Einzelschritte).
+- **Spielprotokoll-Persistenz**: Der Protokoll-State lebt im AppStore (kein eigener Backend-Endpunkt). Bei Verbindungsabbruch und Reconnect wird der State aus dem laufenden `partieStand` rekonstruiert soweit möglich.

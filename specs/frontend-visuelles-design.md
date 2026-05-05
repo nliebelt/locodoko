@@ -29,15 +29,14 @@ Akzent Grün:            #4ade80   Bestätigungen, erfolgreiche Aktionen
 
 ## Typografie
 
-1. **Schriftart**: `Space Grotesk` (Google Fonts, kostenlos, OFL-Lizenz). Fallback: `system-ui, sans-serif`.
-2. **Gewicht**: Überschriften `700` (Bold), Nameplates `600` (SemiBold), Fließtext `400` (Regular).
-3. **Stil**: technisch, kantig, kein Italic außer für Spielstatus-Hinweise.
-4. **Größen** (relativ zur Canvas-Breite, min. Werte für kleine Screens):
-   - Spieltyp Top-Bar Mitte: `max(18px, 1.5vw)`
-   - Stichzähler Top-Bar links: `max(14px, 1.1vw)`
-   - Spieler-Nameplate: `max(13px, 1.0vw)`
-   - Karten-Kürzel (Wert/Farbe): `max(15px, 1.1vw)`
-   - Modal-Überschriften: `max(22px, 1.8vw)`
+**Eine Schriftart für das gesamte Spiel:**
+
+**`Press Start 2P`** (Pixel-Arcade-Font, lokal gebundelt unter `frontend/public/assets/fonts/`):
+- Rollen: alle UI-Elemente — Nameplates, Flash-Text, Modal-Titel, Badges (RE/KONTRA), Spielergebnis-Überschriften, Spielprotokoll, Buttons.
+- Wird als Phaser `BitmapFont` geladen (`this.load.bitmapFont`) für performantes Gameplay-Rendering.
+- Fallback: `monospace`.
+- Größen (px, Phaser-Einheiten): XL 28 · LG 20 · MD 14 · SM 10 · XS 8. Minimum: 8px.
+- Lizenz: SIL Open Font License (Google Fonts).
 
 ## Karten
 
@@ -126,6 +125,29 @@ Diese Effekte treten **kurz und gezielt** auf, dann kehrt die UI zur Ruhe zurüc
 2. Farbkodierung (Re/Kontra gold/blau) wird **nie als einziges** Unterscheidungsmerkmal genutzt — es gibt immer auch Text-Labels.
 3. Toast-Notifications haben `aria-live="polite"`.
 
+## Balatro-UI-Palette (Overlays, Nameplates, Flash-Text)
+
+Diese Farben gelten ausschließlich für UI-Overlays die über dem Spieltisch liegen (Nameplates, Flash-Text-Cards, Modals). Der Spieltisch selbst bleibt grün.
+
+```
+Panel Background:  #1a1020   (sehr dunkles Lila — fast schwarz)
+Card BG:           #221530   (Nameplate- und Flash-Card-Hintergrund)
+Card BG Dark:      #2d1d40   (aktiver Zustand, hover)
+Border Standard:   #4a2d6a   (Lila für Trennlinien)
+Text:              #f0e6ff   (helles Lila-Weiß)
+Text Muted:        #7a5a9a   (gedämpft für Labels)
+
+Gold:              #ffd700   (RE-Partei, Karlchen, Doppelkopf) — Shadow: 4px 4px 0 #7a5000, 0 0 20px #ffd700
+Red:               #ff4455   (KONTRA-Partei, Verloren)          — Shadow: 4px 4px 0 #880022
+Blue:              #44aaff   (Vorbehalt, Ansagen-Chip)
+Green:             #44ff88   (Gewonnen, Stich)                  — Shadow: 4px 4px 0 #006633, 0 0 20px #44ff88
+Fox Orange:        #ff8833   (Fuchs gefangen)                   — Shadow: 4px 4px 0 #884400, 0 0 20px #ff8833
+Pink:              #ff55cc   (Schweinchen)                      — Shadow: 4px 4px 0 #880066, 0 0 20px #ff55cc
+Cyan:              #33ffee   (SpielGestartet, KI-Label)         — Shadow: 4px 4px 0 #006655, 0 0 20px #33ffee
+```
+
+Design-Referenz: `design_handoff/README.md` (Abschnitt "Design Tokens").
+
 ## Definition of Done
 
 - [x] Space Grotesk eingebunden (Google Fonts oder self-hosted)
@@ -138,3 +160,5 @@ Diese Effekte treten **kurz und gezielt** auf, dann kehrt die UI zur Ruhe zurüc
 - [x] Solo-Ankündigung
 - [x] Focus-Styles für Keyboard-Navigation
 - [x] Visuelles Review
+- [ ] `Press Start 2P` lokal gebundelt und als BitmapFont in PreloadSzene geladen
+- [ ] Balatro-UI-Palette als Konstanten-Datei `frontend/src/ui/designTokens.ts`

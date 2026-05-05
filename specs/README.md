@@ -35,3 +35,4 @@ Alle Vorgaben zur visuellen Repräsentation und Nutzerinteraktion im Browser.
 - **Architektur:** `frontend-architektur.md`, `frontend-ui-logik.md`, `frontend-logging.md`.
 - **Szenen & Ansichten:** `frontend-startscreen.md`, `frontend-tischansicht.md`, `frontend-rundenauswertung.md`, `rundenauswertung.md`.
 - **UX & Design:** `frontend-visuelles-design.md`, `frontend-animationen.md`, `frontend-tastatursteuerung.md`.
+- **Balatro-Design-System (Plan #101):** `frontend-flash-text.md` (FlashTextManager, 9 Events), `frontend-nameplates.md` (HUD-Bar Spieler-Anzeige). Design-Referenzen: `design_handoff/`.
