@@ -71,10 +71,10 @@ Design-Referenz: `design_handoff/Doppelkopf Nameplates.html` (Variante C) und `d
 ### Positionierung der 4 Nameplates
 
 17. Positionen relativ zur Canvas-Größe (aus `layout.ts`-Funktion `nameplatePositionFuer`):
-    - **SUED (ich)**: x=center, y=bottom−80
-    - **NORD (oben)**: x=center, y=top+80
-    - **WEST (links)**: x=left+80, y=center
-    - **OST (rechts)**: x=right−80, y=center
+    - **SUED (ich)**: x=76%, y=88% (rechts neben den Kartenfächern unten)
+    - **NORD (oben)**: x=24%, y=15% (links neben den Kartenfächern oben)
+    - **WEST (links)**: x=14%, y=50% (auf gleicher Höhe wie die Kartenfächer)
+    - **OST (rechts)**: x=86%, y=50% (auf gleicher Höhe wie die Kartenfächer)
 18. Für WEST und OST: Container um 90° rotieren (`setAngle(-90)` bzw. `+90`).
 
 ### Teamfarbe

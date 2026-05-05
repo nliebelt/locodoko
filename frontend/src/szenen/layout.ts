@@ -55,10 +55,10 @@ export function nameplatePositionFuer(
   hoehe: number
 ): { x: number; y: number } {
   switch (spielerPosition) {
-    case SPIELER_POSITION.NORD: return { x: breite * 0.5, y: hoehe * 0.15 };
-    case SPIELER_POSITION.SUED: return { x: breite * 0.5, y: hoehe * 0.85 };
-    case SPIELER_POSITION.WEST: return { x: breite * 0.14, y: hoehe * 0.84 };
-    case SPIELER_POSITION.OST:  return { x: breite * 0.86, y: hoehe * 0.16 };
+    case SPIELER_POSITION.NORD: return { x: breite * 0.24, y: hoehe * 0.15 };
+    case SPIELER_POSITION.SUED: return { x: breite * 0.76, y: hoehe * 0.86 };
+    case SPIELER_POSITION.WEST: return { x: breite * 0.10, y: hoehe * 0.78 };
+    case SPIELER_POSITION.OST:  return { x: breite * 0.90, y: hoehe * 0.22 };
   }
 }
 
