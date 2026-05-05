@@ -123,7 +123,8 @@ function baueSzene(z: any) {
   const s = new (TischSzene as any)();
   aktiveSzene = s;
   const t = erstelleTweenApi();
-  Object.assign(s, { add: { existing: (o:any)=>o, tileSprite: (_x:any,_y:any,w:any,h:any,t:any)=>new FakeGameObject('tileSprite',{x:_x,y:_y,breite:w,hoehe:h,textur:t}), container: (_x:any,_y:any)=>new FakeContainer(), graphics: ()=>new FakeGameObject('graphics'), ellipse: (_x:any,_y:any,w:any,h:any)=>new FakeGameObject('ellipse',{x:_x,y:_y,breite:w,hoehe:h}), text: (_x:any,_y:any,t:any)=>new FakeGameObject('text',{x:_x,y:_y,text:t}), circle: (_x:any,_y:any)=>new FakeGameObject('circle',{x:_x,y:_y}), rectangle: (_x:any,_y:any,w:any,h:any)=>new FakeGameObject('rectangle',{x:_x,y:_y,breite:w,hoehe:h}), image: (_x:any,_y:any,t:any)=>new FakeGameObject('image',{x:_x,y:_y,textur:t}) }, scale: { gameSize: { width: 1280, height: 720 }, on: vi.fn(), off: vi.fn() }, scene: { start: vi.fn() }, tweens: t, time: { addEvent: ()=>({remove:()=>{}}), delayedCall: vi.fn() }, textures: { exists: ()=>true, addCanvas: ()=>{} }, game: { loop: { sleep: vi.fn(), wake: vi.fn() } } });
+  const fakeParticles = () => ({ setDepth: () => fakeParticles(), explode: vi.fn(), destroy: vi.fn(), active: false });
+  Object.assign(s, { add: { existing: (o:any)=>o, tileSprite: (_x:any,_y:any,w:any,h:any,t:any)=>new FakeGameObject('tileSprite',{x:_x,y:_y,breite:w,hoehe:h,textur:t}), container: (_x:any,_y:any)=>new FakeContainer(), graphics: ()=>new FakeGameObject('graphics'), ellipse: (_x:any,_y:any,w:any,h:any)=>new FakeGameObject('ellipse',{x:_x,y:_y,breite:w,hoehe:h}), text: (_x:any,_y:any,t:any)=>new FakeGameObject('text',{x:_x,y:_y,text:t}), circle: (_x:any,_y:any)=>new FakeGameObject('circle',{x:_x,y:_y}), rectangle: (_x:any,_y:any,w:any,h:any)=>new FakeGameObject('rectangle',{x:_x,y:_y,breite:w,hoehe:h}), image: (_x:any,_y:any,t:any)=>new FakeGameObject('image',{x:_x,y:_y,textur:t}), particles: fakeParticles }, scale: { gameSize: { width: 1280, height: 720 }, on: vi.fn(), off: vi.fn() }, scene: { start: vi.fn() }, tweens: t, time: { addEvent: ()=>({remove:()=>{}}), delayedCall: vi.fn() }, textures: { exists: ()=>true, addCanvas: ()=>{} }, game: { loop: { sleep: vi.fn(), wake: vi.fn() } }, cameras: { main: { shake: vi.fn(), flash: vi.fn() } } });
   s.create();
   return { s, t };
 }
@@ -216,11 +217,11 @@ describe('TischSzene', () => {
     expect(appStoreHarness.store.beantworteArmut).toHaveBeenCalledWith(false, []);
   });
 
-  it('zeigt Schweinchen-Banner mit korrektem Spielernamen aus absolutePosition', async () => {
+  it('zeigt Schweinchen-Flash mit korrektem Spielernamen aus absolutePosition', async () => {
     // Wichtig: e.spielerPosition ist absolute Backend-Position (WEST = Ben).
-    // Ohne absolutePosition-Abgleich zeigt der Banner immer "Spieler: Schweinchen!".
+    // Ohne absolutePosition-Abgleich würde spielerName 'Spieler' statt 'Ben' sein.
     const { s } = baueSzene(baueZustand());
-    const bannerSpy = vi.spyOn(s as any, 'zeigeSchweinchenBanner').mockResolvedValue(undefined);
+    const flashSpy = vi.spyOn((s as any).flashTextManager, 'zeigeSpielevent');
 
     appStoreHarness.sendeEvent({
       ereignisTyp: 'SCHWEINCHEN_GEMELDET',
@@ -231,7 +232,7 @@ describe('TischSzene', () => {
     });
     await vi.runAllTimersAsync();
 
-    expect(bannerSpy).toHaveBeenCalledWith('Ben: Schweinchen!');
+    expect(flashSpy).toHaveBeenCalledWith('SchweinchenGemeldet', { spielerName: 'Ben' });
   });
 
   it('zeigt Ansage-Buttons (DOM-Marker) wenn moeglicheAnsagen gesetzt sind', () => {

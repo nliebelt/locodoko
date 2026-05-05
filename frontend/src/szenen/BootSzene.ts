@@ -21,6 +21,9 @@ export class BootSzene extends Phaser.Scene {
   preload(): void {
     console.log('[BootSzene] preload: lade Hintergruende...');
     ladeHintergrundbilder(this);
+    // Press Start 2P lokal laden (OFL-Lizenz) — asynchron, verfügbar bis TischSzene startet
+    const font = new FontFace('Press Start 2P', "url('/assets/fonts/PressStart2P-Regular.ttf')");
+    void font.load().then(f => document.fonts.add(f));
   }
 
   /**

@@ -44,12 +44,12 @@ import type { AppZustand } from '../store/AppStore';
 import { TischInputHandler, type TischInputKontext } from './TischInputHandler';
 import { TischUIManager, type TischUIKontext } from './TischUIManager';
 import { ToastManager } from './ToastManager';
+import { FlashTextManager } from '../ui/FlashTextManager';
 import {
   formatiereAnsage,
   formatiereVorbehalt,
   formatiereSonderpunkt,
   formatiereCountdownText,
-  formatiereEreignisSonderpunktFeedback,
   escapeHtml,
 } from './tischFormatierer';
 import {
@@ -93,6 +93,7 @@ export class TischSzene extends Phaser.Scene {
   private tischEbene?: Phaser.GameObjects.Container;
   private uiManager?: TischUIManager;
   private toastManager?: ToastManager;
+  private flashTextManager?: FlashTextManager;
   private inputHandler?: TischInputHandler;
   private ausgewaehlteArmutKarten = new Set<string>();
   private armutAnnahmeAktiv = false;
@@ -146,6 +147,7 @@ export class TischSzene extends Phaser.Scene {
     
     this.animationen = new AnimationenService(this);
     this.toastManager = new ToastManager(this);
+    this.flashTextManager = new FlashTextManager(this);
 
     const uiKontext: TischUIKontext = {
       szeneStarten: (name) => { this.scene.start(name); },
@@ -235,8 +237,14 @@ export class TischSzene extends Phaser.Scene {
     this.abmeldenStore = () => { originalAbmelden?.(); abmeldenEvents(); };
 
     this.abmeldenSonderpunkte = appStore.abonniereSonderpunkte((sp) => {
-      const texte = sp.map((s) => formatiereEreignisSonderpunktFeedback(s));
-      if (texte.length > 0) this.animationen?.reiheEin(() => this.starteSonderpunktFeedbackAnimationen(texte));
+      for (const s of sp) {
+        const name = this.letztesModell?.spieler.find(p => p.absolutePosition === s.gewinner)?.name;
+        switch (s.typ) {
+          case 'FUCHS_GEFANGEN': this.flashTextManager?.zeigeSpielevent('FuchsGefangen', { spielerName: name }); break;
+          case 'KARLCHEN':       this.flashTextManager?.zeigeSpielevent('KarlchenGespielt', { spielerName: name }); break;
+          case 'DOPPELKOPF':     this.flashTextManager?.zeigeSpielevent('DoppelkopfGestochen'); break;
+        }
+      }
     });
 
     // TEST-HOOK: Animationsgeschwindigkeit steuerbar machen fuer E2E-Tests
@@ -361,6 +369,7 @@ export class TischSzene extends Phaser.Scene {
         this.schliesseRundenEndeModal();
         this.schliessePartieEndeModal();
         this.austeilenAktiv = true;
+        this.flashTextManager?.zeigeSpielevent('SpielGestartet');
         // Wir nehmen den Stand direkt aus dem Event, da der Store ggf. noch nicht gepatcht ist
         const modellG = this.erstelleModell({ ...appStore.snapshot(), partieStand: ereignis.partieStand });
         this.animationen?.reiheEin(async () => {
@@ -400,28 +409,6 @@ export class TischSzene extends Phaser.Scene {
           });
           this.animationen?.reiheEin(async () => {
             await this.animiereStichEinziehen(letzterStich, ereignis.partieStand);
-            
-            // Sonderpunkte auswerten und animieren
-            const e = ereignis as any;
-            if (e.neueSonderpunkte && e.neueSonderpunkte.length > 0) {
-              const popupTexte = e.neueSonderpunkte.map((sp: any) => {
-                 switch (sp.art) {
-                   case 'FUCHS_GEFANGEN': return 'Fuchs gefangen!';
-                   case 'KARLCHEN': return 'Karlchen!';
-                   case 'DOPPELKOPF': return 'Doppelkopf!';
-                   default: return sp.art;
-                 }
-              });
-              
-              if (popupTexte.length > 0) {
-                const text = popupTexte.join('\\n');
-                const b = this.scale.gameSize.width;
-                const h = this.scale.gameSize.height;
-                const targetPos = nameplatePositionFuer(letzterStich.gewinnerPosition, b, h);
-                // Zeige Sonderpunkt direkt ueber dem Gewinner-Nameplate
-                await this.animationen?.animiereAnsageBanner(text, { x: targetPos.x, y: targetPos.y - 60 }, 1500, '#ffd166');
-              }
-            }
           });
         }
         break;
@@ -441,15 +428,14 @@ export class TischSzene extends Phaser.Scene {
       case 'SCHWEINCHEN_GEMELDET': {
         const e = ereignis as SchweinchenGemeldetEreignis;
         const name = this.letztesModell?.spieler.find(s => s.absolutePosition === e.spielerPosition)?.name ?? 'Spieler';
-        this.animationen?.reiheEin(() => this.zeigeSchweinchenBanner(`${name}: Schweinchen!`));
+        this.flashTextManager?.zeigeSpielevent('SchweinchenGemeldet', { spielerName: name });
         break;
       }
 
       case 'HOCHZEIT_PARTNER_GEFUNDEN': {
         const e = ereignis as HochzeitPartnerGefundenEreignis;
         const partner = this.letztesModell?.spieler.find(s => s.position === e.partnerPosition);
-        const partnerName = partner?.name ?? 'Spieler';
-        this.animationen?.reiheEin(() => this.zeigeSchweinchenBanner(`${partnerName}: Partner gefunden!`));
+        this.flashTextManager?.zeigeSpielevent('SchweinchenGemeldet', { spielerName: partner?.name ?? 'Spieler' });
         break;
       }
 
@@ -458,6 +444,7 @@ export class TischSzene extends Phaser.Scene {
         const spielNr = m.letztesSpielergebnis?.spielNummer ?? null;
         if (spielNr !== null && spielNr === this._letzterGezeigterSpielBeendet) break;
         this._letzterGezeigterSpielBeendet = spielNr;
+        this.flashTextManager?.zeigeSpielevent('SpielBeendet');
         this.animationen?.reiheEin(() => this.zeigeGewinnerFlash(m));
         
         // Blockiere die Verarbeitung von Folge-Events (z.B. SPIEL_GESTARTET oder KI-Züge), 
@@ -1161,10 +1148,6 @@ export class TischSzene extends Phaser.Scene {
     }
   }
 
-  private async starteSonderpunktFeedbackAnimationen(texte: string[]): Promise<void> {
-    for (const t of texte) { await this.animationen?.animiereSonderpunktFeedback(t, { x: this.scale.gameSize.width / 2, y: this.scale.gameSize.height / 2 }); }
-  }
-
   private async zeigeGewinnerFlash(m: TischAnsichtModell): Promise<void> {
     const e = m.letztesSpielergebnis;
     if (!e) return;
@@ -1283,10 +1266,6 @@ export class TischSzene extends Phaser.Scene {
 
   private async zeigeSpielankuendigung(m: string): Promise<void> {
     await this.animationen?.animiereSoloAnkuendigung(m, { x: this.scale.gameSize.width / 2, y: this.scale.gameSize.height / 2 });
-  }
-
-  private async zeigeSchweinchenBanner(m: string): Promise<void> {
-    await this.animationen?.animiereAnsageBanner(m, { x: this.scale.gameSize.width / 2, y: this.scale.gameSize.height * 0.18 }, undefined, '#ff69b4');
   }
 
   private erstellePhaserButton(ebene: Phaser.GameObjects.Container, x: number, y: number, w: number, h: number, txt: string, hdl: () => void, d = false, s = false, hv = false, testId?: string): void {
@@ -1424,6 +1403,7 @@ export class TischSzene extends Phaser.Scene {
     if (this.escapeHandler) document.removeEventListener('keydown', this.escapeHandler);
     if (this.backdropClickHandler && this.rundenEndeModal) this.rundenEndeModal.removeEventListener('click', this.backdropClickHandler);
     this.abmeldenStore?.(); this.abmeldenSonderpunkte?.();
+    this.flashTextManager?.destroy(); this.flashTextManager = undefined;
     this.animationen?.abbrechen(); this.animationen = undefined;
     this.loeseEigeneKartenAuf();
     this.rundenauswertungObjekte.forEach((o) => o.destroy()); this.tischEbene?.destroy(true);

@@ -11,6 +11,7 @@ export const TEXTUR_BILD_RUND_1 = 'hintergrund-rund-1';
 export const TEXTUR_KARTE_OFFEN = 'karte-offen';
 export const TEXTUR_KARTE_VERDECKT = 'karte-verdeckt';
 export const TEXTUR_KARTE_RUECKSEITE = 'card_back';
+export const TEXTUR_PIXEL = 'pixel';
 
 /**
  * Mapping von Doppelkopf-Farbbezeichnungen auf englische PNG-Dateinamen-Bestandteile.
@@ -101,6 +102,16 @@ export function registriereBasisTexturen(szene: Phaser.Scene): void {
   registriereBlauGrafik(szene);
   registriereKarteOffen(szene);
   registriereKarteVerdeckt(szene);
+  registrierePixelTextur(szene);
+}
+
+export function registrierePixelTextur(szene: Phaser.Scene): void {
+  if (szene.textures.exists(TEXTUR_PIXEL)) return;
+  const g = szene.add.graphics();
+  g.fillStyle(0xffffff, 1);
+  g.fillRect(0, 0, 4, 4);
+  g.generateTexture(TEXTUR_PIXEL, 4, 4);
+  g.destroy();
 }
 
 /**

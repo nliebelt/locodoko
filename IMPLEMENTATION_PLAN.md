@@ -4,15 +4,15 @@
 
 ## Notiz
 
-**Was wurde implementiert?** Task 1 (FEAT-DESIGN-TOKENS): `frontend/src/ui/designTokens.ts` erstellt mit vollständiger Balatro-UI-Palette — Spieltisch-Palette (grün), Overlay-Palette (purpur), Akzentfarben, Teamfarben (RE/KONTRA jeweils in Spieltisch- und Overlay-Variante), Event-Farben (Fuchs=Orange, Schweinchen=Pink, Karlchen=Gold, Doppelkopf=Gold, SpielGestartet=Cyan), Glow-Schatten-Strings, Typography-Konstanten (FONT_XS–XL, FONT_FAMILY), Animations-Timings.
+**Was wurde implementiert?** Task 2 (FEAT-FONT) + Task 3 (FEAT-FLASH-TEXT): Font `PressStart2P-Regular.ttf` in `frontend/public/assets/fonts/` abgelegt und via FontFace-API in `BootSzene.preload()` geladen. Pixel-Textur (4×4 weiß) in `registriereBasisTexturen()` ergänzt. `FlashTextManager.ts` vollständig implementiert — alle 9 Events (SpielGestartet, NaechsterSpielerErwartet, VorbehaltErwartet, StichAbgeschlossen, SchweinchenGemeldet, FuchsGefangen, KarlchenGespielt, DoppelkopfGestochen, SpielBeendet) mit Foil-Shimmer, Konfetti, Shockwave-Ringen, Screen Shake, Camera Flash. Integration in TischSzene.ts: SpielGestartet, SchweinchenGemeldet (via absolutePosition), HOCHZEIT_PARTNER_GEFUNDEN, SpielBeendet, Sonderpunkte (Fuchs/Karlchen/Doppelkopf via abonniereSonderpunkte). Altes `zeigeSchweinchenBanner` + `starteSonderpunktFeedbackAnimationen` entfernt.
 
-**Nächster logischer Schritt:** Task 2 (FEAT-FONT) — `PressStart2P-Regular.ttf` herunterladen und in `frontend/public/assets/fonts/` ablegen, dann in BootSzene (nicht PreloadSzene — die gibt es nicht) als CSS-Font laden. Danach direkt Task 3 (FlashTextManager) da designTokens.ts jetzt verfügbar ist.
+**Nächster logischer Schritt:** Task 4 (FEAT-NAMEPLATES) — `Nameplate.ts` implementieren (States: default/amZug/geber, Badges RE/KONTRA, shake(), Vorbehalt-Pulse) und in TischSzene integrieren. Referenz: `design_handoff/Doppelkopf Nameplates.html`.
 
 **Wichtige Beobachtungen:**
-- `frontend/src/ui/` Verzeichnis existierte nicht — wurde neu angelegt.
-- Es gibt keine PreloadSzene — Font-Laden muss in `BootSzene.ts` erfolgen.
-- Pink (`#ff55cc`) = Schweinchen (nicht Karlchen). Karlchen und Doppelkopf nutzen beide Gold.
-- Lint hat 92 pre-existierende `no-explicit-any` Fehler in TischSzene.ts — nicht von diesem Task.
+- NaechsterSpielerErwartet und VorbehaltErwartet sind in FlashTextManager implementiert, aber noch nicht in TischSzene verdrahtet — es gibt keine Backend-Events für diese (State-basiert, nächster Run).
+- `import type Phaser` erforderlich wegen `@typescript-eslint/consistent-type-imports`.
+- In Tests muss `cameras: { main: { shake, flash } }` und `add.particles` im Fake-Scene-Objekt vorhanden sein.
+- Lint hat 90 pre-existierende `no-explicit-any` Fehler — nicht von diesen Tasks.
 
 Dieser Run setzt das Design-Handoff vom Design-Büro pixel-genau in Phaser 3 um. Strategie: einheitliche visuelle Sprache über alle UI-Elemente (Press Start 2P, Balatro-Neon-Palette), keine DOM-Abhängigkeiten. Plan #100-Tasks (DOM-Elimination, PhaserModal) laufen parallel weiter — sie profitieren direkt von den neuen Design-Tokens.
 
@@ -52,8 +52,8 @@ Dieser Run setzt das Design-Handoff vom Design-Büro pixel-genau in Phaser 3 um.
   - Kategorien: `PANEL_BG`, `CARD_BG`, `BORDER_*`, `TEXT_*`, Teamfarben `RE_*` / `KONTRA_*`, Event-Farben `FUCHS_*`, `KARLCHEN_*` etc.
 
 ### FEAT-FONT: Press Start 2P lokal bundeln
-- [ ] Font-Datei `PressStart2P-Regular.ttf` herunterladen (Google Fonts, OFL-Lizenz) und in `frontend/public/assets/fonts/` ablegen.
-- [ ] In PreloadSzene laden:
+- [x] Font-Datei `PressStart2P-Regular.ttf` herunterladen (Google Fonts, OFL-Lizenz) und in `frontend/public/assets/fonts/` ablegen.
+- [x] In BootSzene laden:
   - Als CSS-Font für DOM-Elemente: `new FontFace('Press Start 2P', "url('/assets/fonts/PressStart2P-Regular.ttf')").load()`
   - Als BitmapFont für Phaser: `this.load.bitmapFont('pressStart2p', ...)` (Bitmap-Sheet und XML generieren oder Phaser dynamisch via `WebFontLoader` laden).
   - Hinweis: Phaser `add.text` mit `fontFamily: 'Press Start 2P'` funktioniert sobald der CSS-Font geladen ist — BitmapFont-Route für kritische Performance-Pfade (Flash-Text).
@@ -63,14 +63,14 @@ Dieser Run setzt das Design-Handoff vom Design-Büro pixel-genau in Phaser 3 um.
 ## P1 — Flash-Text-Animationssystem
 
 ### FEAT-FLASH-TEXT: FlashTextManager
-- [ ] Neue Klasse `frontend/src/ui/FlashTextManager.ts` (Spec: `specs/frontend-flash-text.md`).
+- [x] Neue Klasse `frontend/src/ui/FlashTextManager.ts` (Spec: `specs/frontend-flash-text.md`).
   - Methode `zeigeSpielevent(event, payload)` dispatcht auf event-spezifische Animations-Methoden.
   - Hilfsmethoden: `konfetti(x, y, menge)`, `shockwaveRing(x, y, farbe)`, `screenShake()`, `cameraFlash(r, g, b)`.
   - Foil-Shimmer für `DoppelkopfGestochen` + `SpielBeendet` via `time.addEvent` + tint-cycling.
   - 9 Events vollständig: SpielGestartet, NaechsterSpielerErwartet, VorbehaltErwartet, StichAbgeschlossen, SchweinchenGemeldet, FuchsGefangen, KarlchenGespielt, DoppelkopfGestochen, SpielBeendet.
-- [ ] Integration in `TischSzene.ts`: bisherige Sonderpunkt-Toasts (Fuchs, Karlchen, Doppelkopf) durch `FlashTextManager`-Aufrufe ersetzen.
-- [ ] `destroy()` in `TischSzene.shutdown()` aufrufen.
-- [ ] Referenz-HTML für visuelle Verifikation: `design_handoff/Doppelkopf Flash Text v3.html`.
+- [x] Integration in `TischSzene.ts`: bisherige Sonderpunkt-Toasts (Fuchs, Karlchen, Doppelkopf) durch `FlashTextManager`-Aufrufe ersetzen.
+- [x] `destroy()` in `TischSzene.shutdown()` aufrufen.
+- [ ] Referenz-HTML für visuelle Verifikation: `design_handoff/Doppelkopf Flash Text v3.html`. (NaechsterSpieler + Vorbehalt noch nicht verdrahtet)
 
 ---
 
@@ -194,10 +194,10 @@ Dieser Run setzt das Design-Handoff vom Design-Büro pixel-genau in Phaser 3 um.
 
 **P0 (Design Foundation):**
 - [x] Task 1: Design-Tokens-Datei erstellen (`frontend/src/ui/designTokens.ts`)
-- [ ] Task 2: Press Start 2P Font lokal bundeln + in PreloadSzene laden
+- [x] Task 2: Press Start 2P Font lokal bundeln + in BootSzene laden
 
 **P1 (Flash-Text):**
-- [ ] Task 3: `FlashTextManager` implementieren — alle 9 Events, Hilfsmethoden, Foil-Shimmer
+- [x] Task 3: `FlashTextManager` implementieren — alle 9 Events, Hilfsmethoden, Foil-Shimmer
 
 **P2 (Nameplates):**
 - [ ] Task 4: `Nameplate`-Klasse implementieren — States, Badges, shake(), Animationen
