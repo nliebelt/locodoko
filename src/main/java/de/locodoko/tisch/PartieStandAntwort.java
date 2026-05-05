@@ -501,11 +501,11 @@ public record PartieStandAntwort(
             int gegenDieAltenPunkte = dbGegenDieAltenPunkte != null ? dbGegenDieAltenPunkte : 0;
 
             List<PunkteKomponenteAntwort> aufschluesselung = new ArrayList<>();
-            aufschluesselung.add(new PunkteKomponenteAntwort("GRUNDWERT", grundwert));
-            if (absagePunkte != 0) aufschluesselung.add(new PunkteKomponenteAntwort("ABSAGE", absagePunkte));
-            if (gegenDieAltenPunkte != 0) aufschluesselung.add(new PunkteKomponenteAntwort("GEGEN_DIE_ALTEN", gegenDieAltenPunkte));
+            aufschluesselung.add(new PunkteKomponenteAntwort("GRUNDWERT", "Grundwert", grundwert));
+            if (absagePunkte != 0) aufschluesselung.add(new PunkteKomponenteAntwort("ABSAGE", "Absagen", absagePunkte));
+            if (gegenDieAltenPunkte != 0) aufschluesselung.add(new PunkteKomponenteAntwort("GEGEN_DIE_ALTEN", "Gegen die Alten", gegenDieAltenPunkte));
             int sonderpunkteWert = ergebnis.spielwert() - grundwert - absagePunkte - gegenDieAltenPunkte;
-            if (sonderpunkteWert != 0) aufschluesselung.add(new PunkteKomponenteAntwort("SONDERPUNKTE", sonderpunkteWert));
+            if (sonderpunkteWert != 0) aufschluesselung.add(new PunkteKomponenteAntwort("SONDERPUNKTE", "Sonderpunkte", sonderpunkteWert));
 
             return new LetztesSpielergebnisAntwort(
                 spiel.spielNummer(),
@@ -528,6 +528,8 @@ public record PartieStandAntwort(
     public record PunkteKomponenteAntwort(
         @Schema(description = "Typ der Komponente (z.B. GRUNDWERT, ABSAGE, SONDERPUNKTE).", example = "GRUNDWERT")
         String typ,
+        @Schema(description = "Deutsches Label der Komponente fuer die Anzeige.", example = "Grundwert")
+        String label,
         @Schema(description = "Punkte dieser Komponente.", example = "2")
         int punkte
     ) {}

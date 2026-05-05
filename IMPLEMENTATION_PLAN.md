@@ -4,16 +4,10 @@
 
 ## Notiz
 
-**Was wurde implementiert (Run #107)?**
-- Task 20 (FEAT-SCHMEISSEN-FRONTEND): TypeScript-Typ `VorbehaltAnsage` um `'SCHMEISSEN_FUENF_NEUNEN'` und `'SCHMEISSEN_WENIG_TRUMPF'` erweitert. `formatiereVorbehalt()` in `tischFormatierer.ts` um Labels ergänzt. Der Vorbehalt-Dialog rendert alle `moeglicheVorbehalte` vom Server automatisch — Backend liefert die Schmeissen-Varianten bereits korrekt (via `istZulaessig()`), sobald `schmeissenAktiv=true` und Kartenhand-Bedingung erfüllt. Kein weiterer Frontend-Code nötig.
-- Task 19 (FIX-ARMUT-BESTIMMUNG): Armut-Spieler wird jetzt direkt vom Server geliefert.
-  - `PartieStandAntwort.java` (`LaufendesSpielAntwort` Record): Neues Feld `armutSpielerPosition: SpielerPosition | null` ergänzt. Wird aus `laufendesSpiel.armutStatus().map(ArmutStatus::armutSpieler).orElse(null)` befüllt — exakt der Backend-Domainwert statt Heuristik.
-  - `SpielverwaltungDto.ts`: `armutSpielerPosition?: SpielerPosition | null` (optional, damit alte Test-Payloads nicht brechen).
-  - `TischAnsichtModell.ts` (`bestimmeArmutAktion()`): reduce-Heuristik (kleinste Handkartenzahl) ersetzt durch direkten Feldvergleich. ANBIETEN-Fall: `armutSpielerAbsolut === bezugPosition`. ANTWORTEN-Fall: Spieler per `absolutePosition`-Lookup.
-  - Tests angepasst: `TischAnsichtModell.test.ts` (beide Armut-Szenarien), `TischSzene.test.ts` (lehnt-Armut-ab-Test).
-- 94 Unit-Tests und Build grün. 90 pre-existing ESLint `any`-Fehler unverändert.
+**Was wurde implementiert (Run #108)?**
+- Task 6 (FEAT-POINT-LABELS): `PunkteKomponenteAntwort` in `PartieStandAntwort.java` um Feld `label: String` erweitert. Deutsche Labels: "Grundwert", "Absagen", "Gegen die Alten", "Sonderpunkte". TypeScript-Interface `PunkteKomponenteAntwort` in `SpielverwaltungDto.ts` entsprechend um `label: string` ergänzt. 305 Backend- und 94 Frontend-Tests grün.
 
-**Nächster logischer Schritt:** Task 6 (FEAT-POINT-LABELS) — Backend Punkte-Labels + DTO, oder Task 7 (PhaserModal + PhaserList Basis-Komponenten).
+**Nächster logischer Schritt:** Task 7 (PhaserModal + PhaserList Basis-Komponenten) — Voraussetzung für Task 8 (REFACTOR-LOBBY) und Task 9 (REFACTOR-EVALUATION).
 
 **Offene Fragen:**
 - 90 pre-existing ESLint `any`-Fehler in AppStore.ts und TischSzene.ts — Cleanup-Task ausstehend.
@@ -250,7 +244,7 @@ Backend: `bereitsGeschmissen Set`, `VorbehaltAnsage.SCHMEISSEN_WENIG_TRUMPF`, `i
 - [x] Task 5: Spielprotokoll vollständig — State im AppStore + Overlay-Integration in TischSzene (📋-Button, Scrolling, Cleanup)
 
 **P4 (Plan #100):**
-- [ ] Task 6: Backend Punkte-Labels + DTO (`FEAT-POINT-LABELS`)
+- [x] Task 6: Backend Punkte-Labels + DTO (`FEAT-POINT-LABELS`)
 - [ ] Task 7: `PhaserModal` + `PhaserList` Basis-Komponenten
 - [ ] Task 8: `SpielverwaltungsSzene` Phaser-native (`REFACTOR-LOBBY`)
 - [ ] Task 9: Rundenauswertung 2.0 als `PhaserModal` (`REFACTOR-EVALUATION`)

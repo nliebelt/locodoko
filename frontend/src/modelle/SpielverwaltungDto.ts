@@ -201,6 +201,7 @@ export interface SonderpunktEreignis {
 
 export interface PunkteKomponenteAntwort {
   typ: string;
+  label: string;
   punkte: number;
 }
 
