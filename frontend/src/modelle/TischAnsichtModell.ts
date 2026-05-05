@@ -582,39 +582,35 @@ function bestimmeArmutAktion(
     return null;
   }
 
+  const armutSpielerAbsolut = laufendesSpiel.armutSpielerPosition;
+  if (!armutSpielerAbsolut) {
+    return null;
+  }
+
   const eigenerSpieler = spielerAnsichten.find((spieler) => spieler.istSelbst) ?? spielerAnsichten.find((spieler) => spieler.position === SPIELER_POSITION.SUED);
   if (!eigenerSpieler) {
     return null;
   }
 
-  const armutSpieler = spielerAnsichten
-    .filter((spieler) => spieler.absolutePosition !== null)
-    .reduce<SpielerAnsicht | null>((kleinsteHand, spieler) => {
-      if (!kleinsteHand || spieler.verbleibendeKarten < kleinsteHand.verbleibendeKarten) {
-        return spieler;
-      }
-      return kleinsteHand;
-    }, null);
+  if (armutSpielerAbsolut === bezugPosition) {
+    return {
+      modus: 'ANBIETEN',
+      kartenAnzahl: eigenerSpieler.sichtbareHandkarten.filter((karte) => istTrumpfFuerSpieltyp(karte, laufendesSpiel.spieltyp)).length,
+      armutSpielerPosition: eigenerSpieler.position,
+      armutSpielerName: eigenerSpieler.name
+    };
+  }
 
+  const armutSpieler = spielerAnsichten.find((spieler) => spieler.absolutePosition === armutSpielerAbsolut);
   if (!armutSpieler) {
     return null;
   }
 
-  const kartenDifferenz = Math.max(0, eigenerSpieler.verbleibendeKarten - armutSpieler.verbleibendeKarten);
-  if (kartenDifferenz > 0) {
-    return {
-      modus: 'ANTWORTEN',
-      kartenAnzahl: kartenDifferenz,
-      armutSpielerPosition: armutSpieler.position,
-      armutSpielerName: armutSpieler.name
-    };
-  }
-
   return {
-    modus: 'ANBIETEN',
-    kartenAnzahl: eigenerSpieler.sichtbareHandkarten.filter((karte) => istTrumpfFuerSpieltyp(karte, laufendesSpiel.spieltyp)).length,
-    armutSpielerPosition: eigenerSpieler.position,
-    armutSpielerName: eigenerSpieler.name
+    modus: 'ANTWORTEN',
+    kartenAnzahl: Math.max(0, eigenerSpieler.verbleibendeKarten - armutSpieler.verbleibendeKarten),
+    armutSpielerPosition: armutSpieler.position,
+    armutSpielerName: armutSpieler.name
   };
 }
 

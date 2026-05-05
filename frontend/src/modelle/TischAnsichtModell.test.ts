@@ -504,6 +504,7 @@ describe('erstelleTischAnsichtAusStatus', () => {
         hochzeitGeklaert: false,
         schweinchenAktiv: false,
         schweinchenGemeldetVon: null,
+        armutSpielerPosition: 'SUED',
         spieler: [
           { position: 'SUED', spielerId: 'spieler-1', name: 'Anna', anzeigeName: 'Anna', avatarFarbe: null, istKi: false, istKiUebernommen: false, istSelbst: true, istGeber: true, istAmZug: true, verbleibendeKarten: 12, gewonneneStiche: 0, partei: null, sichtbareHandkarten: [{ id: 'HERZ-ZEHN-1', farbe: 'HERZ', wert: 'ZEHN', exemplarIndex: 1 }, { id: 'KARO-KOENIG-1', farbe: 'KARO', wert: 'KOENIG', exemplarIndex: 1 }, { id: 'KREUZ-AS-1', farbe: 'KREUZ', wert: 'AS', exemplarIndex: 1 }] },
           { position: 'WEST', spielerId: 'spieler-2', name: 'Ben', anzeigeName: 'Ben', avatarFarbe: null, istKi: true, istKiUebernommen: false, istSelbst: false, istGeber: false, istAmZug: false, verbleibendeKarten: 12, gewonneneStiche: 0, partei: null, sichtbareHandkarten: null },
@@ -558,6 +559,7 @@ describe('erstelleTischAnsichtAusStatus', () => {
         hochzeitGeklaert: false,
         schweinchenAktiv: false,
         schweinchenGemeldetVon: null,
+        armutSpielerPosition: 'SUED',
         spieler: [
           { position: 'SUED', spielerId: 'spieler-1', name: 'Anna', anzeigeName: 'Anna', avatarFarbe: null, istKi: false, istKiUebernommen: false, istSelbst: false, istGeber: true, istAmZug: false, verbleibendeKarten: 9, gewonneneStiche: 0, partei: null, sichtbareHandkarten: null },
           { position: 'WEST', spielerId: 'spieler-2', name: 'Ben', anzeigeName: 'Ben', avatarFarbe: null, istKi: false, istKiUebernommen: false, istSelbst: true, istGeber: false, istAmZug: true, verbleibendeKarten: 12, gewonneneStiche: 0, partei: null, sichtbareHandkarten: [{ id: 'KREUZ-AS-1', farbe: 'KREUZ', wert: 'AS', exemplarIndex: 1 }] },

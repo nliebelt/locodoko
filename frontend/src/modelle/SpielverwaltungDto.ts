@@ -181,6 +181,7 @@ export interface LaufendesSpielAntwort {
   hochzeitGeklaert: boolean;
   schweinchenAktiv: boolean;
   schweinchenGemeldetVon: SpielerPosition | null;
+  armutSpielerPosition?: SpielerPosition | null;
 }
 
 export interface AbgeschlossenerStichAntwort {

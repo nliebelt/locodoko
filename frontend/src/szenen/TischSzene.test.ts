@@ -212,7 +212,7 @@ describe('TischSzene', () => {
   });
 
   it('lehnt Armut ab', () => {
-    baueSzene(baueZustand({ partieStand: bauePartieStand(baueLaufendesSpiel({ spieltyp: 'ARMUT', phase: 'ARMUT_TAUSCH', spieler: [baueSpieler('SUED','A',{verbleibendeKarten:12}), baueSpieler('WEST','B',{verbleibendeKarten:9})] })) }));
+    baueSzene(baueZustand({ partieStand: bauePartieStand(baueLaufendesSpiel({ spieltyp: 'ARMUT', phase: 'ARMUT_TAUSCH', armutSpielerPosition: 'WEST', spieler: [baueSpieler('SUED','A',{verbleibendeKarten:12}), baueSpieler('WEST','B',{verbleibendeKarten:9})] })) }));
     document.dispatchEvent(new KeyboardEvent('keydown', { key: 'n', bubbles: true }));
     expect(appStoreHarness.store.beantworteArmut).toHaveBeenCalledWith(false, []);
   });

@@ -4,17 +4,15 @@
 
 ## Notiz
 
-**Was wurde implementiert (Run #106)?**
-- Task 18 (FIX-E2E-TESTIDS): Alle 19 data-testid-Attribute aus `specs/e2e-tests.md` waren bereits im Code implementiert (TischUIManager.ts, TischSzene.ts, SpielverwaltungsSzene.ts). Fehlende Arbeit war die E2E-Testabsicherung:
-  - `e2e/tests/solo-spielfluss.spec.ts` überarbeitet:
-    - `warteAufEigenenVorbehalt` importiert und genutzt — zuerst auf eigenen Vorbehalt-Zug warten
-    - `test.skip()` wenn kein SOLO-Vorbehalt verfügbar (statt Fallback zu GESUND)
-    - Nach Spielende: Assert `[data-testid="rundenauswertung-spieltyp"]` enthält `/solo/i`
-    - Assert `[data-testid="rundenauswertung-punktemultiplikator"]` zeigt `×3`
+**Was wurde implementiert (Run #107)?**
+- Task 19 (FIX-ARMUT-BESTIMMUNG): Armut-Spieler wird jetzt direkt vom Server geliefert.
+  - `PartieStandAntwort.java` (`LaufendesSpielAntwort` Record): Neues Feld `armutSpielerPosition: SpielerPosition | null` ergänzt. Wird aus `laufendesSpiel.armutStatus().map(ArmutStatus::armutSpieler).orElse(null)` befüllt — exakt der Backend-Domainwert statt Heuristik.
+  - `SpielverwaltungDto.ts`: `armutSpielerPosition?: SpielerPosition | null` (optional, damit alte Test-Payloads nicht brechen).
+  - `TischAnsichtModell.ts` (`bestimmeArmutAktion()`): reduce-Heuristik (kleinste Handkartenzahl) ersetzt durch direkten Feldvergleich. ANBIETEN-Fall: `armutSpielerAbsolut === bezugPosition`. ANTWORTEN-Fall: Spieler per `absolutePosition`-Lookup.
+  - Tests angepasst: `TischAnsichtModell.test.ts` (beide Armut-Szenarien), `TischSzene.test.ts` (lehnt-Armut-ab-Test).
 - 94 Unit-Tests und Build grün. 90 pre-existing ESLint `any`-Fehler unverändert.
-- E2E-Tests konnten nicht ausgeführt werden (Backend offline). Manueller E2E-Lauf empfohlen.
 
-**Nächster logischer Schritt:** Task 19 (FIX-ARMUT-BESTIMMUNG) — Armut-Spieler direkt vom Server empfangen statt aus kleinster Handkartenzahl ermitteln.
+**Nächster logischer Schritt:** Task 20 (FEAT-SCHMEISSEN-FRONTEND) — Schmeissen-Button im Vorbehalt-Dialog.
 
 **Offene Fragen:**
 - 90 pre-existing ESLint `any`-Fehler in AppStore.ts und TischSzene.ts — Cleanup-Task ausstehend.
@@ -268,5 +266,5 @@ Backend: `bereitsGeschmissen Set`, `VorbehaltAnsage.SCHMEISSEN_WENIG_TRUMPF`, `i
 - [x] Task 16: FEAT-VERDRAHTUNG — Flash-Text (3 fehlende Events) + Nameplate Event-Mapping in TischSzene
 - [x] Task 17: FIX-HOCHZEIT-ANIMATION — Dedizierte Hochzeit-FlashText-Animation statt SchweinchenGemeldet-Style
 - [x] Task 18: FIX-E2E-TESTIDS — 19 fehlende data-testid-Attribute ergänzen
-- [ ] Task 19: FIX-ARMUT-BESTIMMUNG — Armut-Spieler direkt vom Server empfangen, Angebots-Status anzeigen
+- [x] Task 19: FIX-ARMUT-BESTIMMUNG — Armut-Spieler direkt vom Server empfangen, Angebots-Status anzeigen
 - [ ] Task 20: FEAT-SCHMEISSEN-FRONTEND — Schmeissen-Button im Vorbehalt-Dialog

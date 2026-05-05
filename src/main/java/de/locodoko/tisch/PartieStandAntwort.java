@@ -2,6 +2,7 @@ package de.locodoko.tisch;
 
 import de.locodoko.karten.Karte;
 import de.locodoko.karten.Spielregeln;
+import de.locodoko.partie.ArmutStatus;
 import de.locodoko.partie.SpielerPosition;
 import de.locodoko.karten.Spieltyp;
 import de.locodoko.partie.Ansage;
@@ -123,7 +124,9 @@ public record PartieStandAntwort(
         @Schema(description = "Ob Schweinchen (beide Karo-Asse bei einem Spieler) in diesem Spiel aktiv ist.")
         boolean schweinchenAktiv,
         @Schema(description = "Position des Spielers, der Schweinchen gemeldet hat; null falls keiner.")
-        SpielerPosition schweinchenGemeldetVon
+        SpielerPosition schweinchenGemeldetVon,
+        @Schema(description = "Position des Armut-Spielers; nur in der ARMUT_TAUSCH-Phase gesetzt, sonst null.")
+        SpielerPosition armutSpielerPosition
     ) {
 
         static LaufendesSpielAntwort aus(TischEntity tisch, Spiel laufendesSpiel, UUID sichtbarerSpielerId, boolean debugModus) {
@@ -177,7 +180,8 @@ public record PartieStandAntwort(
                 tisch.partie().bockrundenZaehlerAusDb(),
                 hochzeitGeklaert,
                 fachlichesSpiel.schweinchenAktiv(),
-                fachlichesSpiel.schweinchenGemeldetVon().orElse(null)
+                fachlichesSpiel.schweinchenGemeldetVon().orElse(null),
+                fachlichesSpiel.armutStatus().map(ArmutStatus::armutSpieler).orElse(null)
             );
         }
 
