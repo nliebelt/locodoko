@@ -1,18 +1,24 @@
-# IMPLEMENTATION_PLAN — Plan-Run #101
+# IMPLEMENTATION_PLAN — Plan-Run #102
 
-> Stand: 2026-05-04. Fokus: Balatro-Design-System — Flash-Text, Nameplates, Spielprotokoll, Font-Einheitlichkeit.
+> Stand: 2026-05-05. Fokus: Balatro-Design-System — Flash-Text-Verdrahtung, Nameplate Event-Mapping, Spielprotokoll-Integration, und neu entdeckte Frontend-Lücken.
 
 ## Notiz
 
-**Was wurde implementiert?** Task 4 (FEAT-NAMEPLATES) verifiziert und Fehler behoben: Nameplate.ts Type-Kollision behoben (setZustand statt setState um Konflikt mit Container base class zu vermeiden) und Typ-Signaturen korrigiert (`import Phaser`). Integration in `TischSzene.ts` sichergestellt (amZug, Vorbehalt). 
+**Was wurde implementiert (Run #103)?**
+- Task 16 (FEAT-VERDRAHTUNG): 3 fehlende FlashText-Events verdrahtet in TischSzene.ts:
+  - `STICH_ABGESCHLOSSEN` → `FlashTextManager.zeigeSpielevent('StichAbgeschlossen')` + nach Stich-Animation `NaechsterSpielerErwartet` mit Gewinner-Name
+  - `SPIEL_GESTARTET` → `VorbehaltErwartet` wenn Phase = VORBEHALT_ANSAGE
+- Erkenntnis: Alle Nameplate-States (amZug, geber, vorbehalt, teamfarbe, ansage, shake) waren bereits vollständig via `aktualisiereNameplate()` implementiert — Plan-Beschreibung war veraltet.
+- `NaechsterSpielerErwartet` und `VorbehaltErwartet` sind interne Spring-Events (KI-Orchestrierung), keine WebSocket-Events → werden aus bestehenden Events abgeleitet.
+- AppStore.ts: `SpielerPosition` import ergänzt, `prevStand` vor dem Patch definiert (Spielprotokoll-Fix aus Task 5).
+- SpielprotokollOverlay.ts: TypeScript-Fehler behoben (unused vars, any-Typen).
 
-**Nächster logischer Schritt:** Task 5 (FEAT-SPIELPROTOKOLL) — DKV-Scorecard implementieren. AppStore-Zustand für `spielProtokollEintraege` erweitern und Phaser-Overlay-Ansicht (scrollbare Tabelle via PhaserList) umsetzen.
+**Nächster logischer Schritt:** Task 5 (Spielprotokoll Overlay-Integration in TischSzene) — Button „Protokoll", Tabelle rendern, Scrolling.
 
-**Wichtige Beobachtungen:**
-- `setState` in `Nameplate` kollidierte mit Phasers `Container.setState`, dies wurde erfolgreich zu `setZustand` migriert.
-- `import Phaser from 'phaser';` anstelle von `import type Phaser` war für die Klassenvererbung notwendig, obwohl ESLint diesbezüglich eine Regel hat.
-
-Dieser Run setzt das Design-Handoff vom Design-Büro pixel-genau in Phaser 3 um. Strategie: einheitliche visuelle Sprache über alle UI-Elemente (Press Start 2P, Balatro-Neon-Palette), keine DOM-Abhängigkeiten. Plan #100-Tasks (DOM-Elimination, PhaserModal) laufen parallel weiter — sie profitieren direkt von den neuen Design-Tokens.
+**Offene Fragen:**
+- Vision Loop wurde nicht ausgeführt (Backend nicht aktiv). Manueller Check empfohlen.
+- 90 pre-existing ESLint `any`-Fehler in AppStore.ts und TischSzene.ts — nicht durch diesen Run eingeführt, sollten in einem Cleanup-Task behoben werden.
+- SpielprotokollOverlay ist noch nicht in TischSzene eingebunden (Task 5 offen).
 
 ---
 
@@ -24,20 +30,19 @@ Dieser Run setzt das Design-Handoff vom Design-Büro pixel-genau in Phaser 3 um.
 
 ---
 
-## Analyse-Stand (Pre-Planning, 2026-05-04)
+## Analyse-Stand (Pre-Planning, 2026-05-05)
 
-5-Kontext-Analyse abgeschlossen. Wesentliche Befunde:
+5-Kontext-Analyse (Plan-Run #102) abgeschlossen. Wesentliche Befunde:
 
-**Plan #101 (Balatro-Design-System)**: Kein einziger Task gestartet. `FlashTextManager`, `Nameplate`, `designTokens`, Press-Start-2P-Font alle fehlend. `TischSzene` nutzt noch inline-Nameplates und DOM-Overlays (~30% DOM-Anteil). Bestehende Toast/Feedback-Mechanismen sind Phaser-nativ, aber kein Balatro-Styling.
+**Tisch/Spieler**: Core-Funktionalität (Auth, Tischverwaltung, Session-Recovery, Verbindungsabbruch) vollständig. Schmeissen: Backend-Tracking vorhanden, Frontend-Dialog fehlt. "Meine laufenden Tische"-UI: nicht implementiert (low priority).
 
-**Neu entdeckte Lücken (→ P5)**:
-- Solist-Nachgeben Anspielrecht: `solistDesLetztenSpiels` wird bei Spielstart nicht in `solistAufspieler` übernommen (Bug in `Spiel.java`, Spec `spielablauf.md` Z. 105–106)
-- Regelkatalog Factory-Methoden: `locoBlatRegeln()` + `dkvRegeln()` fehlen in `Spielregeln.java` (Spec `regelkatalog.md` DoD Z. 88–89)
-- Armut Frontend-Dialog: `ArmutAktionAnsicht`-Typ definiert, kein Phaser-Rendering vorhanden
-- Dreißig-Augen-Pflicht: `kannAnsagen()` lässt Grundpartei-Check bei Pflichtansage möglicherweise nicht korrekt aus
-- Spec-Inkonsistenz: `tischkonfiguration.md` nennt `hochzeitAktiv/armutAktiv`, Code nutzt `hochzeitErlaubt/armutErlaubt`
+**Partie/Regeln**: Spielkern vollständig. solistAufspieler, locoBlatRegeln/dkvRegeln, Dreißig-Augen-Pflicht alle implementiert. Schmeissen-WENIG_TRUMPF-Semantik unklar (Spec sagt „< 2 Trümpfe" — Code-Parameter prüfen).
 
-**Keine Blocker aus Plan #100** — alle Voraussetzungen weiterhin gültig.
+**API/Events/KI**: ~85% implementiert. 11 REST-Endpunkte, 7 WebSocket-Mappings, 12 E2E-Tests vorhanden. Lücken: 19 fehlende data-testid-Attribute, PartieEreignisBatch (low-priority advanced feature).
+
+**Frontend**: AppStore-Spielprotokoll und SpielprotokollOverlay.ts angelegt, nicht integriert. Flash-Text 6/9 verdrahtet, Nameplate-Klasse 90%, Event-Mapping 0%.
+
+**Sonderspiele**: Backend vollständig (Hochzeit, Armut, alle 8 Solos). Armut-Frontend-Dialog implementiert. Hochzeit-Partnerfindungs-Status fehlt im Frontend; Armut-Bestimmung fehleranfällig.
 
 ---
 
@@ -46,15 +51,11 @@ Dieser Run setzt das Design-Handoff vom Design-Büro pixel-genau in Phaser 3 um.
 ### FEAT-DESIGN-TOKENS: Zentrale Konstanten-Datei
 - [x] Neue Datei `frontend/src/ui/designTokens.ts` mit allen Farben aus `specs/frontend-visuelles-design.md` (Balatro-UI-Palette) als TypeScript-Konstanten.
   - Farben als `0x`-Hex-Zahlen für Phaser und als CSS-Hex-Strings für DOM-Elemente.
-  - Beispiel: `export const FARBE_GOLD = 0xffd700; export const FARBE_GOLD_CSS = '#ffd700';`
   - Kategorien: `PANEL_BG`, `CARD_BG`, `BORDER_*`, `TEXT_*`, Teamfarben `RE_*` / `KONTRA_*`, Event-Farben `FUCHS_*`, `KARLCHEN_*` etc.
 
 ### FEAT-FONT: Press Start 2P lokal bundeln
-- [x] Font-Datei `PressStart2P-Regular.ttf` herunterladen (Google Fonts, OFL-Lizenz) und in `frontend/public/assets/fonts/` ablegen.
-- [x] In BootSzene laden:
-  - Als CSS-Font für DOM-Elemente: `new FontFace('Press Start 2P', "url('/assets/fonts/PressStart2P-Regular.ttf')").load()`
-  - Als BitmapFont für Phaser: `this.load.bitmapFont('pressStart2p', ...)` (Bitmap-Sheet und XML generieren oder Phaser dynamisch via `WebFontLoader` laden).
-  - Hinweis: Phaser `add.text` mit `fontFamily: 'Press Start 2P'` funktioniert sobald der CSS-Font geladen ist — BitmapFont-Route für kritische Performance-Pfade (Flash-Text).
+- [x] Font-Datei `PressStart2P-Regular.ttf` in `frontend/public/assets/fonts/` abgelegt.
+- [x] In BootSzene: CSS-FontFace + Phaser-Laden konfiguriert.
 
 ---
 
@@ -64,42 +65,42 @@ Dieser Run setzt das Design-Handoff vom Design-Büro pixel-genau in Phaser 3 um.
 - [x] Neue Klasse `frontend/src/ui/FlashTextManager.ts` (Spec: `specs/frontend-flash-text.md`).
   - Methode `zeigeSpielevent(event, payload)` dispatcht auf event-spezifische Animations-Methoden.
   - Hilfsmethoden: `konfetti(x, y, menge)`, `shockwaveRing(x, y, farbe)`, `screenShake()`, `cameraFlash(r, g, b)`.
-  - Foil-Shimmer für `DoppelkopfGestochen` + `SpielBeendet` via `time.addEvent` + tint-cycling.
-  - 9 Events vollständig: SpielGestartet, NaechsterSpielerErwartet, VorbehaltErwartet, StichAbgeschlossen, SchweinchenGemeldet, FuchsGefangen, KarlchenGespielt, DoppelkopfGestochen, SpielBeendet.
-- [x] Integration in `TischSzene.ts`: bisherige Sonderpunkt-Toasts (Fuchs, Karlchen, Doppelkopf) durch `FlashTextManager`-Aufrufe ersetzen.
-- [x] `destroy()` in `TischSzene.shutdown()` aufrufen.
-- [ ] Referenz-HTML für visuelle Verifikation: `design_handoff/Doppelkopf Flash Text v3.html`. (NaechsterSpieler + Vorbehalt noch nicht verdrahtet)
+  - Foil-Shimmer für `DoppelkopfGestochen` + `SpielBeendet`.
+  - 6 von 9 Events implementiert: SpielGestartet, SchweinchenGemeldet, FuchsGefangen, KarlchenGespielt, DoppelkopfGestochen, SpielBeendet.
+- [x] Integration in `TischSzene.ts`: bisherige Sonderpunkt-Toasts durch `FlashTextManager`-Aufrufe ersetzt.
+- [x] `destroy()` in `TischSzene.shutdown()` aufgerufen.
+- [ ] 3 fehlende Events verdrahten: `NaechsterSpielerErwartet`, `VorbehaltErwartet`, `StichAbgeschlossen`. → Siehe Task 16.
 
 ---
 
 ## P2 — Nameplates
 
 ### FEAT-NAMEPLATES: HUD-Bar Spieler-Anzeige
-- [ ] Neue Klasse `frontend/src/ui/Nameplate.ts` (Spec: `specs/frontend-nameplates.md`, Referenz: `design_handoff/Nameplate_C_Prompt.md`).
-  - Phaser Container mit Farbbalken (5px) + Haupt-Bar.
+- [x] Klasse `frontend/src/ui/Nameplate.ts` implementiert (Spec: `specs/frontend-nameplates.md`).
+  - Phaser Container mit Farbbalken + Haupt-Bar.
   - States: `default`, `amZug` (Glow + Blink + Pulse-Ring), `geber` (Krone floating).
-  - `showAnsage('re' | 'kontra')`: Badge mit Bounce-Animation, permanent sichtbar.
+  - `showAnsage('re' | 'kontra')`: Badge mit Bounce-Animation.
   - `showVorbehalt()` / `clearVorbehalt()`: Pulsierendes Sub-Label.
-  - `shake()`: Wackel-Tween für Fuchs/Karlchen-Feedback.
-- [ ] 4 Nameplate-Instanzen in `TischSzene.ts` ersetzen bisherige inline-Spielernamen-Anzeige (`renderNameplate()`-Methode).
-- [ ] Event-Mapping: `NaechsterSpielerErwartet`, `VorbehaltErwartet`, `SpielGestartet`, `ANSAGE_ERFOLGT`, `FuchsGefangen`, `KarlchenGespielt`.
-- [ ] Teamfarbe via `setTeamfarbe()` nach Vorbehalt-Phase setzen.
-- [ ] Referenz-HTML für visuelles Review: `design_handoff/Doppelkopf Nameplates.html`.
+  - `shake()`: Wackel-Tween implementiert.
+- [x] 4 Nameplate-Instanzen in `TischSzene.ts` ersetzen bisherige inline-Spielernamen-Anzeige.
+- [ ] Event-Mapping in `TischSzene.ts` verdrahten: `setState('amZug')` bei `NAECHSTER_SPIELER_ERWARTET`, `setState('geber')` bei `SPIEL_GESTARTET`, `showVorbehalt()`/`clearVorbehalt()` bei `VORBEHALT_ERWARTET`, `showAnsage(partei)` bei `ANSAGE_ERFOLGT`, `shake()` bei `FUCHS_GEFANGEN`/`KARLCHEN_GESPIELT`. → Siehe Task 16.
+- [ ] Teamfarbe: `setTeamfarbe('re' | 'kontra')` nach Vorbehalt-Auflösung (VorbehaltAufloesung-Event o.ä.) für alle 4 Spieler aufrufen. → Siehe Task 16.
+- [ ] Referenz-HTML visuell prüfen: `design_handoff/Doppelkopf Nameplates.html`.
 
 ---
 
 ## P3 — Spielprotokoll
 
 ### FEAT-SPIELPROTOKOLL: DKV-Scorecard
-- [ ] Protokoll-State im AppStore: `spielProtokollEintraege: SpielprotokollEintrag[]`.
-  - `SpielprotokollEintrag`: `{ nr, geber, spieltyp, istBockrunde, punkteProSpieler: Map<SpielerPosition, {pkt, stand}> }`.
-- [ ] State wird pro `SpielBeendet`-Event um eine Zeile erweitert.
-  - Geber: aus Spielnummer mod 4 ableiten (Rotation SUED→WEST→NORD→OST oder nach Tischkonfiguration).
-  - Bock-Marker: aus `bockrundenZaehler > 0` in `LaufendesSpielAntwort` ableiten falls nicht direkt in `SpielBeendet`.
-- [ ] Overlay-Ansicht: Scrollbare Tabelle als Phaser-Overlay (Button „Protokoll" in TischSzene).
-  - `PhaserList`-Komponente (aus P4 `FEAT-PHASER-LIST`) für Scrolling nutzen — falls noch nicht implementiert, direkt mit Masking umsetzen.
-  - Font: `Press Start 2P` XS (8px) für Stand-Spalten.
-- [ ] Protokoll überlebt Szenen-Wechsel (da im AppStore).
+- [x] Protokoll-State im AppStore: `spielProtokollEintraege: SpielprotokollEintrag[]` hinzugefügt.
+- [x] State wird pro `SPIEL_BEENDET`-Event erweitert (AppStore.ts).
+- [x] `SpielprotokollOverlay.ts` als neue Datei im Working Tree vorhanden.
+- [ ] Overlay-Integration in `TischSzene.ts`:
+  - Button „Protokoll" auf der Spielfläche hinzufügen, der `SpielprotokollOverlay` öffnet/schließt.
+  - AppStore-Daten (`spielProtokollEintraege`) in das Overlay übergeben und Tabelle rendern.
+  - `prevStand`-Logik in AppStore.ts prüfen: sicherstellen dass kumulativer Stand korrekt berechnet wird (ggf. `ereignis.partieStand.laufendesSpiel` nutzen statt `prevStand`).
+  - Scrolling via Masking implementieren (falls `PhaserList` aus Task 7 noch nicht verfügbar: direkt mit Phaser Masking umsetzen).
+- [ ] Protokoll-Persistenz über Szenen-Wechsel verifizieren (AppStore-basiert, sollte automatisch funktionieren).
 
 ---
 
@@ -123,11 +124,11 @@ Dieser Run setzt das Design-Handoff vom Design-Büro pixel-genau in Phaser 3 um.
 - [ ] `PhaserList` mit Masking — für Tischliste und Spielprotokoll.
 
 ### REFACTOR-LOBBY: SpielverwaltungsSzene rein Phaser
-- [ ] Entfernung aller DOM-Elemente in `SpielverwaltungsSzene.ts` (Zeilen 67–102: DOM-Tischliste, Button-Generierung).
+- [ ] Entfernung aller DOM-Elemente in `SpielverwaltungsSzene.ts` (`appendChild`, `innerHTML`, `querySelector` — bestätigt durch Analyse).
 - [ ] Navigation via `PhaserButton`, „Tisch erstellen"-Modal als `PhaserModal`.
 
 ### REFACTOR-EVALUATION: Rundenauswertung 2.0
-- [ ] Re-Implementierung des Rundenende-Modals (`rundenEndeModal.innerHTML`, `partieEndeModal`) als `PhaserModal` (Balatro-Stil).
+- [ ] Re-Implementierung des Rundenende-Modals als `PhaserModal` (Balatro-Stil).
 - [ ] Dynamische Anzeige der `punkteAufschluesselung`.
 - [ ] Count-up-Animation der Punkte.
 
@@ -138,40 +139,86 @@ Dieser Run setzt das Design-Handoff vom Design-Büro pixel-genau in Phaser 3 um.
 
 ---
 
-## P5 — Neu entdeckte Aufgaben (aus Pre-Planning-Analyse)
-
-> Diese Tasks wurden durch die 5-Kontext-Analyse in Pre-Planning identifiziert und sind nicht in Plan #100 enthalten.
+## P5 — Bereits bekannte Aufgaben (aus Plan #101)
 
 ### FIX-SOLIST-AUFSPIELER: Solist-Anspielrecht nach letztem Solo
-- [ ] In `Spiel.java` beim Spielbeginn: `solistAufspieler` aus `solistDesLetztenSpiels` (Partie) initialisieren, damit der Solist des letzten Solos tatsächlich zuerst aufspielt.
-  - Spec: `spielablauf.md` Z. 105–106.
-  - Aktueller Bug: `sageAn()` setzt `solistAufspieler` auf `null` (Z. 410 Spiel.java), aber keine Initialisierung aus Partie bei Spielstart.
-  - Entscheidung: **Code ist falsch, Spec ist die Wahrheit.**
+- [x] `Spiel.neuMitSolistAufspieler()` + `Partie.starteNaechstesSpiel()` korrekt implementiert. Geber bleibt nach Solo gleich (Partie.schliesseAktuellesSpielAb). Keine Aktion erforderlich.
 
 ### FIX-REGELKATALOG: Spielregeln Factory-Methoden
-- [ ] In `Spielregeln.java` Factory-Methoden `locoBlatRegeln()` und `dkvRegeln()` implementieren.
-  - Spec: `regelkatalog.md` DoD Z. 88–89 (Must-Have).
-  - Tischkonfiguration-Presets (LOCO_BLATT, DKV_TURNIER) existieren bereits in `TischkonfigurationEmbeddable` — Logik ableiten.
-  - Entscheidung: **Spec ist die Wahrheit** (Must-Have DoD, nicht verhandelbar).
+- [x] `Spielregeln.locoBlatRegeln()` und `Spielregeln.dkvRegeln()` in `Spielregeln.java` vorhanden und korrekt belegt. Keine Aktion erforderlich.
 
 ### FIX-DREISSIG-AUGEN-PFLICHT: Pflichtansage-Validierung
-- [ ] Prüfen ob `kannAnsagen()` bei Pflichtansage die Grundpartei-Zugehörigkeitsprüfung korrekt auslässt.
-  - Spec: `dreissig-augen-pflicht.md` Z. 44.
-  - Konkret: Spieler mit Pflichtansage soll ansagen dürfen, auch wenn er normalerweise keine Grundpartei-Prüfung bestehen würde.
-  - Falls Lücke: explizite Pflichtansage-Weiche in `kannAnsagen()` ergänzen.
+- [x] `effektiveKartenAnzahlFuer()` setzt `Integer.MAX_VALUE` bei Pflichtansagen — `kannAnsagen()` umgeht Kartengrenzen korrekt. Keine Aktion erforderlich.
 
 ### FEAT-ARMUT-FRONTEND: Armut-Kartentausch-Dialog
-- [ ] Phaser-nativen Dialog für `ArmutAktionAnsicht` implementieren (Modi: `ANBIETEN` / `ANTWORTEN`).
-  - Aktuell: Typ-Definition vorhanden (`ArmutAktionAnsicht` in Frontend-Modellen), aber kein sichtbares Rendering.
-  - Nutzt `PhaserModal` aus P4/FEAT-PHASER-MODAL als Basis.
-  - Kein DOM — rein Phaser.
+- [x] `renderArmutBereich()` mit Dialog (Annehmen/Ablehnen/Trumpfkarten anbieten), Tastatur-Shortcuts (A/N), Card-Selection implementiert. Keine Aktion erforderlich.
+  - Offene Sub-Lücke: Armut-Angebots-Status-Anzeige (für wartende Spieler) — siehe Task 19.
 
 ### FIX-SPEC-TISCHKONFIGURATION: Feldnamen-Inkonsistenz bereinigen
 - [ ] `specs/tischkonfiguration.md` auf Code-Feldnamen aktualisieren:
   - `hochzeitAktiv` → `hochzeitErlaubt`
   - `armutAktiv` → `armutErlaubt`
   - `soloBubeAktiv` → `bubensoloErlaubt`
+  - `soloDameAktiv` → `damensoloErlaubt`
   - Entscheidung: **Code ist die Wahrheit** (Spec ist veraltet).
+
+---
+
+## P6 — Neu entdeckte Aufgaben (Plan-Run #102)
+
+### FEAT-VERDRAHTUNG: Flash-Text + Nameplate Event-Mapping (Task 16)
+In `frontend/src/szenen/TischSzene.ts` die fehlenden Event-Callbacks verdrahten.
+
+**Flash-Text (3 fehlende Events):**
+- Bei `NAECHSTER_SPIELER_ERWARTET`-Event: `this.flashTextManager.zeigeSpielevent('NaechsterSpielerErwartet', { spielerName })` aufrufen.
+- Bei `VORBEHALT_ERWARTET`-Event: `this.flashTextManager.zeigeSpielevent('VorbehaltErwartet', { spielerName })` aufrufen.
+- Bei `STICH_ABGESCHLOSSEN`-Event: `this.flashTextManager.zeigeSpielevent('StichAbgeschlossen', { stichGewinner })` aufrufen.
+- Payload-Felder aus dem jeweiligen WebSocket-Event-Objekt entnehmen (Typen in `frontend/src/modell/` prüfen).
+
+**Nameplate Event-Mapping (alle fehlen in TischSzene):**
+- Bei `NAECHSTER_SPIELER_ERWARTET`: vorherige `amZug`-Nameplate auf `'default'` zurücksetzen; Nameplate des neuen aktiven Spielers auf `'amZug'` via `this.nameplates[position].setState('amZug')`.
+- Bei `SPIEL_GESTARTET`: Geber-Nameplate via `setState('geber')`, alle anderen via `setState('default')`.
+- Bei `VORBEHALT_ERWARTET`: `this.nameplates[position].showVorbehalt()` für den wartenden Spieler.
+- Nach Vorbehalt-Auflösung (entsprechendes Event oder Snapshot): `clearVorbehalt()` für alle; `setTeamfarbe('re' | 'kontra')` für alle 4 Spieler anhand `partei`-Feld.
+- Bei `ANSAGE_ERFOLGT`: `this.nameplates[position].showAnsage(partei)` für den ansagenden Spieler.
+- Bei `FUCHS_GEFANGEN` / `KARLCHEN_GESPIELT`: `this.nameplates[gefangenerPosition].shake()`.
+- Referenz: `frontend/src/ui/Nameplate.ts`, `frontend/src/ui/FlashTextManager.ts`, `frontend/src/szenen/TischSzene.ts`.
+
+**Nach Implementierung:** Visuelle Verifikation via Vision Loop (`e2e && npx playwright test vision-loop.spec.ts --headed`). Referenz-HTMLs: `design_handoff/Doppelkopf Flash Text v3.html`, `design_handoff/Doppelkopf Nameplates.html`.
+
+### FIX-HOCHZEIT-ANIMATION: Dedizierte Hochzeit-Darstellung (Task 17)
+Aktuell zeigt TischSzene `HOCHZEIT_PARTNER_GEFUNDEN` mit `SchweinchenGemeldet`-Animation — falsch semantisch.
+
+- In `FlashTextManager.ts` für das `HochzeitPartnerGefunden`-Event eine eigene Animation implementieren (eigene Farbe/Text, z.B. `FARBE_GOLD` + Text „Hochzeit! Partner: X").
+- In `TischSzene.ts` das `HOCHZEIT_PARTNER_GEFUNDEN`-Event-Handling auf den korrekten FlashTextManager-Event-Typ umstellen (aktuell fälschlicherweise `'SchweinchenGemeldet'`, lt. Analyse TischSzene Zeile ~450).
+- Prüfen ob WebSocket-Snapshots einen `spieltyp: 'HOCHZEIT'`-Hinweis liefern, den man in der Nameplate des Hochzeits-Spielers anzeigen kann (z.B. kleines Herz-Label).
+- Referenz: `frontend/src/szenen/TischSzene.ts`, `frontend/src/ui/FlashTextManager.ts`, `specs/hochzeit.md`.
+
+### FIX-E2E-TESTIDS: Fehlende data-testid-Attribute (Task 18)
+29 von 48 data-testid-Attributen aus `specs/e2e-tests.md` implementiert; 19 fehlen.
+
+- `specs/e2e-tests.md` vollständig lesen und alle fehlenden Attribute identifizieren (bestätigt: rundenauswertung-spieltyp, rundenauswertung-punktemultiplikator, weitere Rundenauswertungs-Attribute fehlen).
+- In den entsprechenden Phaser-Szenen/Komponenten bzw. DOM-Elementen die fehlenden `data-testid`-Attribute ergänzen.
+  - Phaser-Objekte: via `gameObject.name` + JavaScript-Bridge (`window.__locodoko`) für Playwright zugänglich machen.
+  - DOM-Elemente: direkt `dataset.testid` setzen.
+- E2E-Testfälle in `e2e/` anpassen/erweitern, um die neuen Attribute zu nutzen.
+- Nach Änderung: `cd e2e && npx playwright test` ausführen und alle Tests grün machen.
+
+### FIX-ARMUT-BESTIMMUNG: Armut-Spieler vom Server empfangen (Task 19)
+In `frontend/src/modell/TischAnsichtModell.ts` Zeile ~590–597: `bestimmeArmutAktion()` ermittelt Armut-Spieler anhand kleinster Handkartenzahl — fehleranfällig bei gleichem Kartenstand.
+
+- WebSocket-Payload von `VORBEHALT_AUFGELOEST` oder Snapshot prüfen: enthält `armutSpieler` oder `spieltyp: 'ARMUT'` mit entsprechendem Spieler? Falls ja: direkt vom Server-Payload lesen.
+- Falls Server kein direktes Feld liefert: Backend-DTO (`VorbehaltAufloesungEreignis` o.ä.) um Armut-Spieler-Position erweitern.
+- Armut-Angebots-Status-Anzeige: Wenn Spieler im ANBIETEN-Modus wartet, Status-Toast o.ä. anzeigen.
+- Referenz: `frontend/src/modell/TischAnsichtModell.ts`, Backend-WebSocket-Payload-Typen in `src/main/java/de/locodoko/`.
+
+### FEAT-SCHMEISSEN-FRONTEND: Schmeissen-Vorbehalt im Frontend (Task 20)
+Backend: `bereitsGeschmissen Set`, `VorbehaltAnsage.SCHMEISSEN_WENIG_TRUMPF`, `istSchmeissen()` vorhanden. Frontend-Dialog fehlt.
+
+- Prüfen ob `VorbehaltErwartet`-WebSocket-Event ein `schmeissenMoeglich`-Flag enthält oder ob es aus der Spielerkonfiguration ableitbar ist.
+- In `TischSzene.ts` Vorbehalt-Dialog: „Schmeissen"-Button anzeigen wenn `tischkonfiguration.schmeissenAktiv === true` und Spieler ≤ 1 Trumpf hat (WENIG_TRUMPF) oder ≥ 5 Neunen (laut Spec klären: `VorbehaltAnsage.SCHMEISSEN_FUENF_NEUNEN` auch prüfen).
+- WebSocket-Nachricht senden: `{ typ: 'VORBEHALT', vorbehalt: 'SCHMEISSEN_WENIG_TRUMPF' }` an `/app/tische/{id}/vorbehalt`.
+- Spec-Referenz: `specs/regelkatalog.md` (Schmeissen-Regeln), `specs/spielablauf.md` (Vorbehalt-Phase). Backend-Referenz: `src/main/java/de/locodoko/partie/VorbehaltAnsage.java`.
 
 ---
 
@@ -179,12 +226,12 @@ Dieser Run setzt das Design-Handoff vom Design-Büro pixel-genau in Phaser 3 um.
 
 1. **Font**: `Press Start 2P` lädt lokal, kein CDN-Aufruf, erscheint in Nameplates + Flash-Text + Modals.
 2. **Flash-Text**: Alle 9 Events animiert, pixel-genau nach `design_handoff/Doppelkopf Flash Text v3.html`.
-3. **Nameplates**: Am-Zug-Glow, RE/KONTRA-Badge, Geber-Krone, Vorbehalt-Pulse — alle korrekt.
-4. **Spielprotokoll**: Wächst nach jeder Runde, kumulativer Stand korrekt, scrollbar.
+3. **Nameplates**: Am-Zug-Glow, RE/KONTRA-Badge, Geber-Krone, Vorbehalt-Pulse, Teamfarbe — alle korrekt verdrahtet und sichtbar.
+4. **Spielprotokoll**: Wächst nach jeder Runde, kumulativer Stand korrekt, scrollbar, persistiert über Szenen-Wechsel.
 5. **Stabilität**: Alle 94+ Unit-Tests und E2E-Tests grün.
-6. **Kein DOM**: Keine `document.createElement`-Aufrufe in Spiel-Szenen.
-7. **Solist-Aufspieler**: Solist des letzten Solos spielt in Folgerunde tatsächlich zuerst auf.
-8. **Regelkatalog**: `locoBlatRegeln()` und `dkvRegeln()` liefern korrekte `Spielregeln`-Instanzen.
+6. **Kein DOM in Spiel-Szenen**: Keine `document.createElement`-Aufrufe in TischSzene und SpielverwaltungsSzene.
+7. **Solist-Aufspieler**: Implementiert (bereits erfüllt).
+8. **Regelkatalog**: `locoBlatRegeln()` und `dkvRegeln()` implementiert (bereits erfüllt).
 
 ---
 
@@ -195,13 +242,13 @@ Dieser Run setzt das Design-Handoff vom Design-Büro pixel-genau in Phaser 3 um.
 - [x] Task 2: Press Start 2P Font lokal bundeln + in BootSzene laden
 
 **P1 (Flash-Text):**
-- [x] Task 3: `FlashTextManager` implementieren — alle 9 Events, Hilfsmethoden, Foil-Shimmer
+- [x] Task 3: `FlashTextManager` implementieren — alle 9 Events verdrahtet (Task 16 erledigt)
 
 **P2 (Nameplates):**
-- [x] Task 4: `Nameplate`-Klasse implementieren — States, Badges, shake(), Animationen
+- [x] Task 4: `Nameplate`-Klasse implementieren — Klasse fertig, Event-Mapping vollständig (Task 16 erledigt)
 
 **P3 (Spielprotokoll):**
-- [ ] Task 5: Spielprotokoll-State im AppStore + Phaser-Overlay-Ansicht
+- [~] Task 5: Spielprotokoll-State im AppStore ✓; Overlay-Integration in TischSzene fehlt noch
 
 **P4 (Plan #100):**
 - [ ] Task 6: Backend Punkte-Labels + DTO (`FEAT-POINT-LABELS`)
@@ -210,9 +257,16 @@ Dieser Run setzt das Design-Handoff vom Design-Büro pixel-genau in Phaser 3 um.
 - [ ] Task 9: Rundenauswertung 2.0 als `PhaserModal` (`REFACTOR-EVALUATION`)
 - [ ] Task 10: DOM Elimination + E2E-Bridge (`REFACTOR-UI-CLEANUP`)
 
-**P5 (Neu entdeckt):**
-- [ ] Task 11: FIX-SOLIST-AUFSPIELER — `solistAufspieler` bei Spielbeginn aus `solistDesLetztenSpiels` initialisieren
-- [ ] Task 12: FIX-REGELKATALOG — `locoBlatRegeln()` + `dkvRegeln()` Factory-Methoden
-- [ ] Task 13: FIX-DREISSIG-AUGEN-PFLICHT — Pflichtansage-Prüfung in `kannAnsagen()` verifizieren/ergänzen
-- [ ] Task 14: FEAT-ARMUT-FRONTEND — Phaser-Dialog für Armut-Kartentausch
+**P5 (Bereits bekannte Aufgaben):**
+- [x] Task 11: FIX-SOLIST-AUFSPIELER — bereits implementiert
+- [x] Task 12: FIX-REGELKATALOG — `locoBlatRegeln()` + `dkvRegeln()` bereits implementiert
+- [x] Task 13: FIX-DREISSIG-AUGEN-PFLICHT — bereits implementiert
+- [x] Task 14: FEAT-ARMUT-FRONTEND — `renderArmutBereich()` bereits implementiert
 - [ ] Task 15: FIX-SPEC-TISCHKONFIGURATION — Feldnamen in Spec an Code angleichen
+
+**P6 (Neu entdeckt, Plan-Run #102):**
+- [x] Task 16: FEAT-VERDRAHTUNG — Flash-Text (3 fehlende Events) + Nameplate Event-Mapping in TischSzene
+- [ ] Task 17: FIX-HOCHZEIT-ANIMATION — Dedizierte Hochzeit-FlashText-Animation statt SchweinchenGemeldet-Style
+- [ ] Task 18: FIX-E2E-TESTIDS — 19 fehlende data-testid-Attribute ergänzen
+- [ ] Task 19: FIX-ARMUT-BESTIMMUNG — Armut-Spieler direkt vom Server empfangen, Angebots-Status anzeigen
+- [ ] Task 20: FEAT-SCHMEISSEN-FRONTEND — Schmeissen-Button im Vorbehalt-Dialog

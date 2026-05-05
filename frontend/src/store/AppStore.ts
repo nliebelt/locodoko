@@ -6,6 +6,7 @@ import type {
   PartieStandAntwort,
   SonderpunktEreignisAntwortDto,
   SpielverwaltungWebSocketFehlerAntwort,
+  SpielerPosition,
   SpielerSessionAntwort,
   TischKonfigurationDto,
   Tischhintergrund,
@@ -33,6 +34,14 @@ export interface UiKonfiguration {
   kiVerzoegerungMs: number;
 }
 
+export interface SpielprotokollEintrag {
+  nr: number;
+  geber: SpielerPosition;
+  spieltyp: string;
+  istBockrunde: boolean;
+  punkteProSpieler: Record<string, { pkt: number; stand: number }>;
+}
+
 export interface AppZustand {
   initialisiert: boolean;
   wirdGeladen: boolean;
@@ -48,6 +57,7 @@ export interface AppZustand {
   uiKonfiguration: UiKonfiguration;
   /** Verbleibende Sekunden des Countdown nach Partie-Ende; null wenn kein Countdown aktiv. */
   countdownSekunden: number | null;
+  spielProtokollEintraege: SpielprotokollEintrag[];
 }
 
 type Listener = (zustand: AppZustand) => void;
@@ -66,7 +76,8 @@ function erzeugeAnfangszustand(): AppZustand {
     partieStand: null,
     meldung: null,
     uiKonfiguration: { kiVerzoegerungMs: 800 },
-    countdownSekunden: null
+    countdownSekunden: null,
+    spielProtokollEintraege: []
   };
 }
 
@@ -656,6 +667,7 @@ export class AppStore {
 
         // State NACH den Listenern patchen
         // AUSNAHME: Bei KARTE_GESPIELT und STICH_ABGESCHLOSSEN regelt der case-Block das Patching selbst (hint-then-patch).
+        const prevStand = this.zustand.partieStand;
         if (ereignis.partieStand && ereignis.ereignisTyp !== 'KARTE_GESPIELT' && ereignis.ereignisTyp !== 'STICH_ABGESCHLOSSEN') {
           // Spezieller Fix für SPIEL_BEENDET gefolgt von SPIEL_GESTARTET (Rundenauswertung wird sofort geschlossen).
           // Wir warten kurz, ob noch Animationen eingereiht wurden, bevor wir den State überschreiben.
@@ -687,11 +699,33 @@ export class AppStore {
              if (ereignis.neueSonderpunkte.length) this._sonderpunkteListener.forEach((l) => l(ereignis.neueSonderpunkte));
              break;
           }
-          case 'SPIEL_BEENDET':
-             // Patching bereits oben vor dem try-catch Block passiert - STOPP, 
-             // Das Patching ist auskommentiert (`// Patching bereits oben erledigt`), aber 
-             // in Wahrheit patcht der generische Block `ereignis.ereignisTyp !== 'KARTE_GESPIELT'` alles!
+          case 'SPIEL_BEENDET': {
+            const erg = ereignis.partieStand.letztesSpielergebnis;
+            if (erg) {
+              const geber = prevStand?.laufendesSpiel?.geber ?? 'SUED';
+              const istBockrunde = (prevStand?.laufendesSpiel?.bockrundenZaehler ?? 0) > 0;
+              const punkteProSpieler = {} as Record<string, { pkt: number; stand: number }>;
+              Object.keys(erg.spielpunkteProSpieler).forEach((pos) => {
+                punkteProSpieler[pos] = {
+                  pkt: erg.spielpunkteProSpieler[pos as SpielerPosition] ?? 0,
+                  stand: ereignis.partieStand.gesamtpunktestand?.[pos as SpielerPosition] ?? 0
+                };
+              });
+              this.patch({
+                spielProtokollEintraege: [
+                  ...this.zustand.spielProtokollEintraege,
+                  {
+                    nr: erg.spielNummer,
+                    geber,
+                    spieltyp: erg.spieltyp,
+                    istBockrunde,
+                    punkteProSpieler
+                  }
+                ]
+              });
+            }
              break;
+          }
           case 'ANSAGE_ERFOLGT':
           case 'SCHWEINCHEN_GEMELDET':
           case 'HOCHZEIT_PARTNER_GEFUNDEN':

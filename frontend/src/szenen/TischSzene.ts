@@ -379,6 +379,9 @@ export class TischSzene extends Phaser.Scene {
         this.schliessePartieEndeModal();
         this.austeilenAktiv = true;
         this.flashTextManager?.zeigeSpielevent('SpielGestartet');
+        if (ereignis.partieStand.laufendesSpiel?.phase === 'VORBEHALT_ANSAGE') {
+          this.flashTextManager?.zeigeSpielevent('VorbehaltErwartet');
+        }
         // Wir nehmen den Stand direkt aus dem Event, da der Store ggf. noch nicht gepatcht ist
         const modellG = this.erstelleModell({ ...appStore.snapshot(), partieStand: ereignis.partieStand });
         this.animationen?.reiheEin(async () => {
@@ -412,12 +415,18 @@ export class TischSzene extends Phaser.Scene {
         const stiche = ereignis.partieStand.letzteAbgeschlosseneStiche;
         const letzterStich = stiche && stiche.length > 0 ? stiche[stiche.length - 1] : null;
         if (letzterStich) {
-          Logger.szene('STICH_ABGESCHLOSSEN Event verarbeitet', { 
+          Logger.szene('STICH_ABGESCHLOSSEN Event verarbeitet', {
             gewinner: letzterStich.gewinnerPosition,
-            kartenAnzahl: letzterStich.gespielteKarten?.length 
+            kartenAnzahl: letzterStich.gespielteKarten?.length
           });
+          const gewinnerName = this.letztesModell?.spieler.find(s => s.absolutePosition === letzterStich.gewinnerPosition)?.name;
+          this.flashTextManager?.zeigeSpielevent('StichAbgeschlossen');
+          const laufendesSpiel = ereignis.partieStand.laufendesSpiel;
           this.animationen?.reiheEin(async () => {
             await this.animiereStichEinziehen(letzterStich, ereignis.partieStand);
+            if (laufendesSpiel && gewinnerName) {
+              this.flashTextManager?.zeigeSpielevent('NaechsterSpielerErwartet', { spielerName: gewinnerName });
+            }
           });
         }
         break;
