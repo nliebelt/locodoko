@@ -9,9 +9,6 @@ export interface TischInputKontext {
   getLetztesModell(): TischAnsichtModell | null;
   getLetzterZustand(): AppZustand | undefined;
   getAusgewaehlteArmutKarten(): Set<string>;
-  getRundenEndeModal(): HTMLDivElement | undefined;
-  getPartieEndeModal(): HTMLDivElement | undefined;
-  getEinstellungsModalEl(): HTMLDivElement | undefined;
   isSeitenladeOffen(): boolean;
   isEinstellungenOffen(): boolean;
   isSpielzugAnimationAktiv(): boolean;
@@ -88,21 +85,7 @@ export class TischInputHandler {
       }
     }
 
-    // 3. Rundenende-Modal: Focus-Trap (Tab-Zirkulation) und Enter-Bestaetigung
-    const rundenEndeModal = this.kontext.getRundenEndeModal();
-    if (rundenEndeModal && !rundenEndeModal.hidden) {
-      this.verarbeiteModalFocusTrap(e, rundenEndeModal);
-      return;
-    }
-
-    // 4. Partie-Ende-Modal: Focus-Trap
-    const partieEndeModal = this.kontext.getPartieEndeModal();
-    if (partieEndeModal && !partieEndeModal.hidden) {
-      this.verarbeiteModalFocusTrap(e, partieEndeModal);
-      return;
-    }
-
-    // 5. Seitenlade (Phaser): Escape schliesst
+    // 3. Seitenlade (Phaser): Escape schliesst
     if (this.kontext.isSeitenladeOffen() && e.key === 'Escape') {
       this.kontext.togglSeitenlade();
       e.preventDefault();
@@ -220,29 +203,5 @@ export class TischInputHandler {
     this.kontext.setTastaturKarteIndex(aktIdx);
     this.kontext.renderTisch(this.kontext.getLetzterZustand()!, modell);
     e.preventDefault();
-  }
-
-  private verarbeiteModalFocusTrap(e: KeyboardEvent, modal: HTMLDivElement): void {
-    const focusable = modal.querySelectorAll<HTMLElement>(
-      'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
-    );
-    const first = focusable[0];
-    const last = focusable[focusable.length - 1];
-
-    if (e.key === 'Tab') {
-      if (e.shiftKey) {
-        if (document.activeElement === first) {
-          last?.focus();
-          e.preventDefault();
-        }
-      } else if (document.activeElement === last) {
-        first?.focus();
-        e.preventDefault();
-      }
-    } else if (e.key === 'Enter') {
-      const ersterButton = modal.querySelector<HTMLButtonElement>('button:not([disabled])');
-      ersterButton?.click();
-      e.preventDefault();
-    }
   }
 }

@@ -43,15 +43,18 @@ export class Nameplate extends Phaser.GameObjects.Container {
     scene.add.existing(this);
     this.setDepth(5);
 
-    this.farbBalken = scene.add.graphics();
+    // Kinder direkt ueber Konstruktoren erstellen (nicht scene.add.*),
+    // damit sie nicht doppelt in der Scene DisplayList landen → verhindert Double-Destroy-Crash
+    this.farbBalken = scene.make.graphics();
     this.zeichneBalken(BORDER_DEFAULT);
     this.add(this.farbBalken);
 
-    this.hauptBar = scene.add.graphics();
+    this.hauptBar = scene.make.graphics();
     this.zeichneHauptBar(BORDER_DEFAULT, BG_DEFAULT);
     this.add(this.hauptBar);
 
-    this.nameText = scene.add.text(
+    this.nameText = new Phaser.GameObjects.Text(
+      scene,
       -BREITE / 2 + BALKEN_B + 8,
       -5,
       daten.name,
@@ -60,12 +63,13 @@ export class Nameplate extends Phaser.GameObjects.Container {
     this.add(this.nameText);
 
     if (daten.istKI) {
-      const kiBadge = scene.add.container(BREITE / 2 - 16, 8);
-      const bg = scene.add.graphics();
+      const kiBadge = new Phaser.GameObjects.Container(scene, BREITE / 2 - 16, 8);
+      const bg = scene.make.graphics();
       bg.fillStyle(0x0a3333, 1);
       bg.fillRoundedRect(-8, -5, 16, 10, 2);
       kiBadge.add(bg);
-      const kiLabel = scene.add.text(
+      const kiLabel = new Phaser.GameObjects.Text(
+        scene,
         0, 0,
         'KI',
         { fontSize: '6px', fontFamily: FONT_FAMILY, color: '#33ffee' }
@@ -137,7 +141,7 @@ export class Nameplate extends Phaser.GameObjects.Container {
       });
       this.aktiveTweens.push(nameTween);
 
-      this.pulseRing = this.szene.add.graphics();
+      this.pulseRing = this.szene.make.graphics();
       this.pulseRing.lineStyle(2, aktivFarbe, 1);
       this.pulseRing.strokeRoundedRect(-BREITE / 2 - 3, -HOEHE / 2 - 3, BREITE + 6, HOEHE + 6, 6);
       this.add(this.pulseRing);

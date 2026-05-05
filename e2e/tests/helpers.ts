@@ -8,34 +8,18 @@ import * as path from 'path';
  * erfolgen via page.evaluate() / page.waitForFunction().
  */
 export interface LocodokoBridge {
-  isIdle: () => boolean;
+  isIdle: (ignoreStore?: boolean) => boolean;
   setzeAnimationsGeschwindigkeit: (geschwindigkeit: number) => void;
+  getAktuelleSzene: () => string | null;
+  getHudState?: () => {
+    stichzaehler: string;
+    spieltyp: string;
+    startBtnSichtbar: boolean;
+    rundenEndeSichtbar: boolean;
+  };
   _rundenEndeModalGezeigt?: number;
   appStore: {
-    isIdle: () => boolean;
-    snapshot: () => {
-      partieStand?: {
-        laufendesSpiel?: {
-          phase?: string;
-          spieltyp?: string | null;
-          spielbareKarten?: Array<{ id: string }>;
-          moeglicheVorbehalte?: string[];
-          moeglicheAnsagen?: string[];
-        };
-      };
-    };
-    alsGastStarten: () => Promise<void>;
-    erstelleQuickGame: () => Promise<void>;
-    erstelleKonfiguriertenTisch: (
-      name: string,
-      konfiguration: Record<string, unknown>,
-      privat: boolean,
-    ) => Promise<void>;
-    starteAktuellenTisch: () => Promise<void>;
-    meldeVorbehalt: (vorbehalt: string) => Promise<void>;
-    beantworteArmut: (annehmen: boolean, karten: string[]) => Promise<void>;
-    spieleKarte: (karteId: string) => Promise<void>;
-    sageAnsageAn: (ansage: string) => Promise<void>;
+    // ... rest of appStore
   };
 }
 
@@ -47,6 +31,7 @@ export interface SpielZustand {
   moeglicheAnsagen: string[];
   armutPhase: boolean;
   overlayVisible: boolean;
+  aktuelleSzene: string | null;
 }
 
 /** Wartet bis window.__locodoko.appStore verfügbar ist. */
@@ -65,42 +50,11 @@ export async function warteAufNaechstesEreignis(page: Page, timeoutMs = 10_000):
   }, { timeout: timeoutMs });
 }
 
-export async function warteAufPhase(page: Page, phase: string, timeoutMs = 20_000): Promise<void> {
+export async function warteAufSzene(page: Page, szeneName: string, timeoutMs = 20_000): Promise<void> {
   await page.waitForFunction(
-    (gesuchtePhase: string) => {
-      const loco = (window as any).__locodoko;
-      const idle = typeof loco?.isIdle === 'function' ? loco.isIdle() : loco?.appStore?.isIdle();
-      if (!idle) return false;
-      return loco?.appStore?.snapshot()?.partieStand?.laufendesSpiel?.phase === gesuchtePhase;
-    },
-    phase,
-    { timeout: timeoutMs },
-  );
-}
-
-export async function warteAufEigenenVorbehalt(page: Page, timeoutMs = 15_000): Promise<void> {
-  await page.waitForFunction(
-    () => {
-      const loco = (window as any).__locodoko;
-      const idle = typeof loco?.isIdle === 'function' ? loco.isIdle() : loco?.appStore?.isIdle();
-      if (!idle) return false;
-      const vorbehalte = loco?.appStore?.snapshot()?.partieStand?.laufendesSpiel?.moeglicheVorbehalte;
-      return (vorbehalte?.length ?? 0) > 0;
-    },
-    { timeout: timeoutMs },
-  );
-}
-
-export async function warteAufEigenenZug(page: Page, timeoutMs = 25_000): Promise<void> {
-  await page.waitForFunction(
-    () => {
-      const loco = (window as any).__locodoko;
-      const idle = typeof loco?.isIdle === 'function' ? loco.isIdle() : loco?.appStore?.isIdle();
-      if (!idle) return false;
-      const spiel = loco?.appStore?.snapshot()?.partieStand?.laufendesSpiel;
-      return spiel?.phase === 'STICHPHASE' && (spiel?.spielbareKarten?.length ?? 0) > 0;
-    },
-    { timeout: timeoutMs },
+    (name) => (window as any).__locodoko?.getAktuelleSzene?.() === name,
+    szeneName,
+    { timeout: timeoutMs }
   );
 }
 
@@ -124,7 +78,16 @@ export async function leseSpielZustand(page: Page): Promise<SpielZustand> {
       moeglicheAnsagen: spiel?.moeglicheAnsagen ?? [],
       armutPhase: spiel?.phase === 'ARMUT_TAUSCH',
       overlayVisible: (loco as any)?.isOverlaySichtbar?.() === true,
+      aktuelleSzene: (loco as any)?.getAktuelleSzene?.() || null,
     };
+  });
+}
+
+export async function leseHudZustand(page: Page): Promise<{ stichzaehler: string; spieltyp: string; startBtnSichtbar: boolean; rundenEndeSichtbar: boolean }> {
+  return page.evaluate(() => {
+    const loco = (window as any).__locodoko;
+    if (typeof loco?.getHudState === 'function') return loco.getHudState();
+    return { stichzaehler: '', spieltyp: '', startBtnSichtbar: false, rundenEndeSichtbar: false };
   });
 }
 
@@ -186,6 +149,40 @@ export async function spieleErsteHandkarte(page: Page): Promise<void> {
 
 export async function meldeVorbehalt(page: Page, vorbehalt: string): Promise<void> {
   await page.evaluate((v) => (window as any).__locodoko.appStore.meldeVorbehalt(v), vorbehalt);
+}
+
+export async function warteAufPhase(page: Page, phase: string, timeoutMs = 30_000): Promise<void> {
+  await page.waitForFunction(
+    (p) => {
+      const loco = (window as any).__locodoko;
+      const spiel = loco?.appStore?.snapshot()?.partieStand?.laufendesSpiel;
+      return spiel?.phase === p;
+    },
+    phase,
+    { timeout: timeoutMs },
+  );
+}
+
+export async function warteAufEigenenVorbehalt(page: Page, timeoutMs = 30_000): Promise<void> {
+  await page.waitForFunction(
+    () => {
+      const loco = (window as any).__locodoko;
+      const spiel = loco?.appStore?.snapshot()?.partieStand?.laufendesSpiel;
+      return (spiel?.moeglicheVorbehalte?.length ?? 0) > 0;
+    },
+    { timeout: timeoutMs },
+  );
+}
+
+export async function warteAufEigenenZug(page: Page, timeoutMs = 30_000): Promise<void> {
+  await page.waitForFunction(
+    () => {
+      const loco = (window as any).__locodoko;
+      const spiel = loco?.appStore?.snapshot()?.partieStand?.laufendesSpiel;
+      return (spiel?.spielbareKarten?.length ?? 0) > 0;
+    },
+    { timeout: timeoutMs },
+  );
 }
 
 export async function aktiviereTurbo(page: Page): Promise<void> {

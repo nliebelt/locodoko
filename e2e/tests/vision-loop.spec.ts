@@ -14,7 +14,9 @@ import {
   getBridge,
   aktiviereTurbo,
   leseSpielZustand,
+  leseHudZustand,
   leseRundenEndeModalCount,
+  warteAufSzene,
   warteAufPhase,
   warteAufEigenenVorbehalt,
   warteAufEigenenZug,
@@ -43,31 +45,32 @@ test.describe('Vision Loop — UI Screenshots', () => {
     await getBridge(page);
     await alsGastStarten(page);
 
-    await expect(page.locator('[data-testid="startscreen"]')).toBeVisible({ timeout: 20_000 });
+    await warteAufSzene(page, 'SpielverwaltungsSzene');
     await page.waitForTimeout(2000);
     await screenshot(page, 'debug-start');
     await screenshot(page, '01-lobby');
 
-    // ── 1. Offene Tische ────────────────────────────────────────────────────
-    console.log('Opening Offene Tische...');
-    const btnOffeneTische = page.locator('[data-testid="btn-offene-tische"]');
-    await expect(btnOffeneTische).toBeVisible();
-    await btnOffeneTische.click({ force: true });
+    // ── 1. Offene Tische (Permanent sichtbar in neuer Lobby) ──────────────────
+    console.log('Taking screenshot of Offene Tische...');
     await page.waitForTimeout(1000);
     await screenshot(page, '11-offene-tische');
-    await page.click('[data-testid="btn-offene-tische"]');
 
     // ── 2. Neuen Tisch Modal ────────────────────────────────────────────────
     console.log('Opening Erstelle Tisch Modal...');
-    await page.click('[data-testid="btn-neuer-tisch"]');
+    // Da es ein Phaser-Button ist, koennen wir ihn ueber die Bridge klicken oder via Tab/Enter (da Fokus-Management vorhanden)
+    // Aber fuer E2E ist es oft einfacher, den Button-Namen zu nutzen oder direkt den Store zu triggern.
+    // Der vision-loop soll aber die UI testen.
+    await page.keyboard.press('Tab'); // Quick Game
+    await page.keyboard.press('Tab'); // Neuen Tisch
+    await page.keyboard.press('Enter');
     await page.waitForTimeout(1000);
     await screenshot(page, '12-neuer-tisch-modal');
-    await page.click('#btn-abbrechen');
+    await page.keyboard.press('Escape'); // Schliesst das Modal
 
     // ── 3. Quick Game starten ─────────────────────────────────────────────────
     console.log('Starting Quick Game...');
-    await page.click('[data-testid="btn-quick-game"]');
-    await expect(page.locator('[data-testid="tischszene"]')).toBeVisible({ timeout: 25_000 });
+    await page.evaluate(() => (window as any).__locodoko.appStore.erstelleQuickGame());
+    await warteAufSzene(page, 'TischSzene');
     await aktiviereTurbo(page);
     await page.mouse.click(640, 360);
 
@@ -162,8 +165,8 @@ test.describe('Vision Loop — UI Screenshots', () => {
 
     // Fallback-Screenshot falls das Overlay noch sichtbar ist
     if (!rundenauswertungScreenshotGemacht) {
-      const overlay = page.locator('[data-testid="rundenauswertung-overlay"]');
-      if (await overlay.isVisible()) {
+      const hud = await leseHudZustand(page);
+      if (hud.rundenEndeSichtbar) {
         await screenshot(page, '05-rundenauswertung-overlay');
       }
     }

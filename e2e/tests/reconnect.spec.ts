@@ -15,7 +15,7 @@
  */
 
 import { test, expect, type Page } from '@playwright/test';
-import { getBridge, warteAufPhase, warteAufEigenenVorbehalt, warteAufEigenenZug } from './helpers';
+import { getBridge, warteAufPhase, warteAufEigenenVorbehalt, warteAufEigenenZug, warteAufSzene, leseHudZustand } from './helpers';
 
 // ── Reconnect-spezifische Typen ──────────────────────────────────────────
 
@@ -37,12 +37,12 @@ interface LaufendesSpielDto {
 /**
  * Wartet auf ein Spielereignis: Overlay, Vorbehalt oder eigener Zug.
  */
-async function warteAufNaechstesEreignis(page: Page, timeoutMs = 30_000): Promise<string> {
+async function warteAufNaechstesEreignisLocal(page: Page, timeoutMs = 30_000): Promise<string> {
   return page.waitForFunction(
     (): string | null => {
-      const overlay = document.querySelector('[data-testid="rundenauswertung-overlay"]') as HTMLElement | null;
-      if (overlay && !overlay.hidden) return 'overlay';
-      const loco = (window as unknown as Record<string, { appStore: { snapshot: () => { partieStand?: { laufendesSpiel?: { spielbareKarten?: unknown[]; phase?: string; moeglicheVorbehalte?: unknown[]; moeglicheAnsagen?: string[] } } } } }>)['__locodoko'];
+      const loco = (window as any)['__locodoko'];
+      const hud = loco?.getHudState?.();
+      if (hud?.rundenEndeSichtbar) return 'overlay';
       const spiel = loco?.appStore?.snapshot()?.partieStand?.laufendesSpiel;
       if (!spiel) return null;
       if ((spiel.moeglicheVorbehalte?.length ?? 0) > 0) return 'vorbehalt';
@@ -56,9 +56,9 @@ async function warteAufNaechstesEreignis(page: Page, timeoutMs = 30_000): Promis
 /**
  * Liest den aktuellen Stichzaehler-Text aus dem HUD.
  */
-async function leseStichzaehler(page: Page): Promise<string> {
-  return page.locator('[data-testid="hud-stichzaehler"]').textContent()
-    .then(t => t?.trim() ?? '');
+async function leseStichzaehlerLocal(page: Page): Promise<string> {
+  const hud = await leseHudZustand(page);
+  return hud.stichzaehler;
 }
 
 /**
@@ -66,9 +66,9 @@ async function leseStichzaehler(page: Page): Promise<string> {
  */
 async function eigeneHandkartenAnzahl(page: Page): Promise<number> {
   return page.evaluate(() => {
-    const loco = (window as unknown as Record<string, { appStore: { snapshot: () => { partieStand?: { laufendesSpiel?: LaufendesSpielDto } } } }>)['__locodoko'];
+    const loco = (window as any)['__locodoko'];
     const spieler = loco?.appStore?.snapshot()?.partieStand?.laufendesSpiel?.spieler;
-    const selbst = spieler?.find(s => s.istSelbst);
+    const selbst = spieler?.find((s: any) => s.istSelbst);
     return selbst?.sichtbareHandkarten?.length ?? selbst?.verbleibendeKarten ?? -1;
   });
 }
@@ -97,10 +97,7 @@ test.describe('Reconnect', () => {
       await loco.appStore.erstelleQuickGame();
     });
 
-    await expect(
-      page.locator('[data-testid="tischszene"]'),
-      'TischSzene muss geladen sein',
-    ).toBeVisible({ timeout: 15_000 });
+    await warteAufSzene(page, 'TischSzene', 25_000);
 
     // ── 2. Vorbehalt-Phase: GESUND waehlen ────────────────────────────────
     await warteAufPhase(page, 'VORBEHALT_ANSAGE', 25_000);
@@ -109,20 +106,18 @@ test.describe('Reconnect', () => {
 
     // ── 3. Mindestens einen Stich abschliessen ───────────────────────────
     // Spiele Karten bis der Stichzaehler mindestens "Stich 1/12" zeigt.
-    const overlay = page.locator('[data-testid="rundenauswertung-overlay"]');
     let sticheVorReload = '';
 
     for (let versuch = 0; versuch < 60; versuch++) {
-      const ereignis = await warteAufNaechstesEreignis(page, 30_000);
+      const ereignis = await warteAufNaechstesEreignisLocal(page, 30_000);
 
       if (ereignis === 'overlay') break;
       if (ereignis === 'timeout') continue;
-      if (await overlay.isVisible()) break;
 
       if (ereignis === 'zug') {
         // 30-Augen-Pflichtansage behandeln
         const ansagen = await page.evaluate((): string[] => {
-          const loco = (window as unknown as Record<string, { appStore: { snapshot: () => { partieStand?: { laufendesSpiel?: { moeglicheAnsagen?: string[] } } } } }>)['__locodoko'];
+          const loco = (window as any)['__locodoko'];
           return loco?.appStore?.snapshot()?.partieStand?.laufendesSpiel?.moeglicheAnsagen ?? [];
         }).catch(() => [] as string[]);
         if (ansagen.includes('KONTRA')) await page.keyboard.press('k');
@@ -132,7 +127,7 @@ test.describe('Reconnect', () => {
         await page.waitForTimeout(500);
 
         // Pruefen ob mindestens 2 Stiche abgeschlossen
-        sticheVorReload = await leseStichzaehler(page);
+        sticheVorReload = await leseStichzaehlerLocal(page);
         const stichMatch = sticheVorReload.match(/Stich (\d+)/);
         if (stichMatch && parseInt(stichMatch[1], 10) >= 2) {
           break;
@@ -153,36 +148,28 @@ test.describe('Reconnect', () => {
     // und leitet automatisch zur TischSzene weiter.
     jsFehler.length = 0; // JS-Fehler zuruecksetzen fuer Reconnect-Phase
     await page.reload();
+    await getBridge(page);
 
     // ── 5. TischSzene muss automatisch geladen werden (Session-Recovery) ──
-    // BootSzene ruft /api/spieler/session → aktiverTischId gesetzt →
-    // reconnecteTisch() → scene.start('TischSzene')
-    await expect(
-      page.locator('[data-testid="tischszene"]'),
-      'TischSzene muss nach Reload automatisch sichtbar sein (Session-Recovery)',
-    ).toBeVisible({ timeout: 30_000 });
+    await warteAufSzene(page, 'TischSzene', 30_000);
 
     // ── 6. Spielstand pruefen: Stichzaehler identisch ────────────────────
-    // Warum: Beweist dass der Snapshot korrekt uebertragen und gerendert wurde.
-    // Der Zaehler darf gleich oder hoeher sein (KI koennte waehrend Reload
-    // weiter gespielt haben, aber das ist im Solo-KI-Modus nicht der Fall).
-    await expect(
-      page.locator('[data-testid="hud-stichzaehler"]'),
-      'Stichzaehler muss nach Reload den gespeicherten Stand zeigen',
-    ).toContainText(/Stich [1-9]/, { timeout: 15_000 });
+    await expect.poll(async () => {
+      const hud = await leseHudZustand(page);
+      return hud.stichzaehler;
+    }, { timeout: 15_000 }).toContain(/Stich [1-9]/);
 
-    const sticheNachReload = await leseStichzaehler(page);
+    const sticheNachReload = await leseStichzaehlerLocal(page);
     const stichVorher = parseInt(sticheVorReload.match(/Stich (\d+)/)?.[1] ?? '0', 10);
     const stichNachher = parseInt(sticheNachReload.match(/Stich (\d+)/)?.[1] ?? '0', 10);
     expect(stichNachher, 'Stichzaehler nach Reload darf nicht kleiner sein als vorher').toBeGreaterThanOrEqual(stichVorher);
 
     // ── 7. Handkarten nach Reload pruefen ────────────────────────────────
-    // Warum: Stellt sicher dass der Spieler seine Karten zurueck hat.
     await page.waitForFunction(
       () => {
-        const loco = (window as unknown as Record<string, { appStore: { snapshot: () => { partieStand?: { laufendesSpiel?: { spieler?: { istSelbst: boolean; sichtbareHandkarten?: unknown[] | null; verbleibendeKarten?: number | null }[] } } } } }>)['__locodoko'];
+        const loco = (window as any)['__locodoko'];
         const spieler = loco?.appStore?.snapshot()?.partieStand?.laufendesSpiel?.spieler;
-        const selbst = spieler?.find(s => s.istSelbst);
+        const selbst = spieler?.find((s: any) => s.istSelbst);
         const anzahl = selbst?.sichtbareHandkarten?.length ?? selbst?.verbleibendeKarten ?? 0;
         return anzahl > 0;
       },
@@ -194,19 +181,15 @@ test.describe('Reconnect', () => {
     expect(handkartenNachReload, 'Handkarten nach Reload duerfen nicht mehr sein als vorher').toBeLessThanOrEqual(handkartenVorReload);
 
     // ── 8. Interaktivitaet: Weitere Karte spielen ────────────────────────
-    // Warum: Beweist dass WebSocket-Verbindung wiederhergestellt ist und
-    // der Spieler aktiv am Spiel teilnehmen kann.
     let karteGespielt = false;
     for (let versuch = 0; versuch < 30; versuch++) {
-      if (await overlay.isVisible()) {
-        // Spiel ist beendet — Interaktion ueber Overlay-Button pruefen
-        const weiterBtn = page.locator('[data-testid="btn-rundenauswertung-weiter"]');
-        await expect(weiterBtn).toBeVisible({ timeout: 5_000 });
+      const hud = await leseHudZustand(page);
+      if (hud.rundenEndeSichtbar) {
         karteGespielt = true; // Overlay-Interaktion zaehlt als Beweis
         break;
       }
 
-      const ereignis = await warteAufNaechstesEreignis(page, 30_000);
+      const ereignis = await warteAufNaechstesEreignisLocal(page, 30_000);
       if (ereignis === 'overlay') {
         karteGespielt = true;
         break;
@@ -214,7 +197,7 @@ test.describe('Reconnect', () => {
       if (ereignis === 'zug') {
         // 30-Augen-Pflichtansage behandeln
         const ansagen = await page.evaluate((): string[] => {
-          const loco = (window as unknown as Record<string, { appStore: { snapshot: () => { partieStand?: { laufendesSpiel?: { moeglicheAnsagen?: string[] } } } } }>)['__locodoko'];
+          const loco = (window as any)['__locodoko'];
           return loco?.appStore?.snapshot()?.partieStand?.laufendesSpiel?.moeglicheAnsagen ?? [];
         }).catch(() => [] as string[]);
         if (ansagen.includes('KONTRA')) await page.keyboard.press('k');
@@ -234,8 +217,6 @@ test.describe('Reconnect', () => {
     expect(karteGespielt, 'Nach Reconnect muss der Spieler interagieren koennen').toBe(true);
 
     // ── 9. Neuer Tab: Session-Recovery-Button testen ─────────────────────
-    // Warum: Testet den alternativen Recovery-Pfad ueber SpielverwaltungsSzene.
-    // Ein neuer Tab im selben Browser-Kontext teilt das Session-Cookie.
     const neuerTab = await page.context().newPage();
     const jsFehlerNeuerTab: string[] = [];
     neuerTab.on('console', (msg) => {
@@ -244,18 +225,16 @@ test.describe('Reconnect', () => {
     neuerTab.on('pageerror', (err) => jsFehlerNeuerTab.push(`[pageerror] ${err.message}`));
 
     await neuerTab.goto('/');
+    await getBridge(neuerTab);
 
     // BootSzene erkennt aktiverTischId und leitet zur TischSzene weiter
-    await expect(
-      neuerTab.locator('[data-testid="tischszene"]'),
-      'Neuer Tab muss via Session-Recovery direkt zur TischSzene gelangen',
-    ).toBeVisible({ timeout: 30_000 });
+    await warteAufSzene(neuerTab, 'TischSzene', 30_000);
 
     // HUD muss sichtbar sein — Beweis dass der Spielstand geladen wurde
-    await expect(
-      neuerTab.locator('[data-testid="hud-stichzaehler"]'),
-      'HUD-Stichzaehler muss im neuen Tab sichtbar sein',
-    ).toBeVisible({ timeout: 15_000 });
+    await expect.poll(async () => {
+      const hud = await leseHudZustand(neuerTab);
+      return hud.stichzaehler;
+    }, { timeout: 15_000 }).toContain(/Stich [1-9]/);
 
     await neuerTab.close();
 

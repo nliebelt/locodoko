@@ -55,7 +55,7 @@ vi.mock('../anwendung', () => ({ appStore: appStoreHarness.store }));
 
 class FakeGameObject {
   readonly typ: string;
-  x=0; y=0; textur?: string; text?: string; alpha=1; winkel=0; breite=0; hoehe=0; interactive=false; zerstort=false; tint?: number;
+  x=0; y=0; textur?: string; text?: string; alpha=1; winkel=0; breite=0; hoehe=0; interactive=false; zerstort=false; tint?: number; name = ''; active = true; scene: { input: { enabled: boolean } } = { input: { enabled: true } };
   private readonly handler = new Map<string, Handler[]>();
   get texture() { return { key: this.textur }; }
   constructor(typ: string, opt: any = {}) { this.typ = typ; Object.assign(this, opt); }
@@ -63,6 +63,7 @@ class FakeGameObject {
   setAngle(w: number) { this.winkel = w; return this; }
   setAlpha(a: number) { this.alpha = a; return this; }
   setTint(t: number) { this.tint = t; return this; }
+  setName(n: string) { this.name = n; return this; }
   setOrigin() { return this; }
   setDepth() { return this; }
   setPosition(x: number, y: number) { this.x = x; this.y = y; return this; }
@@ -91,7 +92,18 @@ class FakeContainer extends FakeGameObject {
 
 vi.mock('phaser', () => ({
   default: {
-    Scene: class { add: any; scale: any; scene: any; tweens: any; time: any; textures: any; game: any; },
+    Scene: class {
+      add: any;
+      scale: any;
+      scene: any;
+      tweens: any;
+      time: any;
+      textures: any;
+      game: any;
+      make = {
+        graphics: () => new FakeGameObject('graphics')
+      };
+    },
     GameObjects: { Container: FakeContainer, Image: class extends FakeGameObject { constructor(_:any,x:number,y:number,t:string) { super('image',{x,y,textur:t}); } }, TileSprite: class extends FakeGameObject { constructor(_:any,x:number,y:number,w:number,h:number,t:string) { super('tileSprite',{x,y,breite:w,hoehe:h,textur:t}); } }, Text: class extends FakeGameObject { constructor(_:any,x:number,y:number,t:string) { super('text',{x,y,text:t}); } }, Rectangle: class extends FakeGameObject { constructor(_:any,x:number,y:number,w:number,h:number) { super('rectangle',{x,y,breite:w,hoehe:h}); } }, Graphics: class extends FakeGameObject { constructor() { super('graphics'); } }, GameObject: FakeGameObject },
     Scale: { Events: { RESIZE: 'resize' } }
   }
@@ -112,10 +124,21 @@ function erstelleTweenApi() {
     ['x', 'y', 'alpha', 'val'].forEach(p => { if (typeof k[p] === 'number') z.forEach((o: any) => { if (o) o[p] = k[p]; }); });
     if (k.onUpdate) k.onUpdate(); if (k.onComplete) k.onComplete();
     return { stop: vi.fn() };
-  }) };
+  }), killTweensOf: vi.fn() };
 }
 
 let aktiveSzene: any | undefined;
+
+function findeButtonMitTestid(container: any, testid: string): any {
+  if (!container) return null;
+  if (container.name === testid) return container;
+  const kinder: any[] = container.kinder ?? container.list ?? [];
+  for (const kind of kinder) {
+    const gefunden = findeButtonMitTestid(kind, testid);
+    if (gefunden) return gefunden;
+  }
+  return null;
+}
 
 function baueSzene(z: any) {
   document.body.innerHTML = '<div id="ui-root"></div>';
@@ -242,13 +265,13 @@ describe('TischSzene', () => {
     expect(flashSpy).toHaveBeenCalledWith('SchweinchenGemeldet', { spielerName: 'Ben' });
   });
 
-  it('zeigt Ansage-Buttons (DOM-Marker) wenn moeglicheAnsagen gesetzt sind', () => {
+  it('zeigt Ansage-Buttons (Phaser) wenn moeglicheAnsagen gesetzt sind', () => {
     // Wichtig: Sichert ab, dass der Spieler die Ansage-Optionen in der FAB sehen kann.
     baueSzene(baueZustand({
       partieStand: bauePartieStand(baueLaufendesSpiel({ moeglicheAnsagen: ['RE', 'KONTRA'] }))
     }));
-    expect(document.querySelector('[data-testid="btn-ansage-re"]')).not.toBeNull();
-    expect(document.querySelector('[data-testid="btn-ansage-kontra"]')).not.toBeNull();
+    expect(findeButtonMitTestid(aktiveSzene['tischEbene'], 'btn-ansage-re')).not.toBeNull();
+    expect(findeButtonMitTestid(aktiveSzene['tischEbene'], 'btn-ansage-kontra')).not.toBeNull();
   });
 
   it('zeigt keine Ansage-Buttons wenn moeglicheAnsagen leer sind', () => {
@@ -256,7 +279,8 @@ describe('TischSzene', () => {
     baueSzene(baueZustand({
       partieStand: bauePartieStand(baueLaufendesSpiel({ moeglicheAnsagen: [] }))
     }));
-    expect(document.querySelector('[data-testid^="btn-ansage-"]')).toBeNull();
+    expect(findeButtonMitTestid(aktiveSzene['tischEbene'], 'btn-ansage-re')).toBeNull();
+    expect(findeButtonMitTestid(aktiveSzene['tischEbene'], 'btn-ansage-kontra')).toBeNull();
   });
 
   it('zeigt keine Ansage-Buttons wenn ein anderer Spieler am Zug ist', () => {
@@ -264,7 +288,7 @@ describe('TischSzene', () => {
     baueSzene(baueZustand({
       partieStand: bauePartieStand(baueLaufendesSpiel({ aktuellerSpieler: 'WEST', moeglicheAnsagen: ['RE'] }))
     }));
-    expect(document.querySelector('[data-testid^="btn-ansage-"]')).toBeNull();
+    expect(findeButtonMitTestid(aktiveSzene['tischEbene'], 'btn-ansage-re')).toBeNull();
   });
 
   it('entfernt Ansage-Buttons wenn Zustand auf keine Ansagen wechselt', () => {
@@ -272,13 +296,13 @@ describe('TischSzene', () => {
     baueSzene(baueZustand({
       partieStand: bauePartieStand(baueLaufendesSpiel({ moeglicheAnsagen: ['RE'] }))
     }));
-    expect(document.querySelector('[data-testid="btn-ansage-re"]')).not.toBeNull();
+    expect(findeButtonMitTestid(aktiveSzene['tischEbene'], 'btn-ansage-re')).not.toBeNull();
 
     appStoreHarness.setZustand(baueZustand({
       partieStand: bauePartieStand(baueLaufendesSpiel({ moeglicheAnsagen: [] }))
     }));
     appStoreHarness.sendeZustand();
-    expect(document.querySelector('[data-testid="btn-ansage-re"]')).toBeNull();
+    expect(findeButtonMitTestid(aktiveSzene['tischEbene'], 'btn-ansage-re')).toBeNull();
   });
 
   it('R-Taste loest RE-Ansage aus', () => {

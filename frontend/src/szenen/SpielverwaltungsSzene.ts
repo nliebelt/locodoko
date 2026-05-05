@@ -58,12 +58,6 @@ export class SpielverwaltungsSzene extends Phaser.Scene {
     });
 
     this.renderUi(appStore.snapshot());
-    
-    // Playwright E2E marker
-    const marker = document.createElement('div');
-    marker.dataset['testid'] = 'startscreen';
-    marker.style.cssText = 'position:absolute;width:1px;height:1px;left:-9999px;top:-9999px;pointer-events:none';
-    document.getElementById('ui-root')?.appendChild(marker);
   }
 
   private renderUi(zustand: AppZustand): void {
@@ -78,6 +72,7 @@ export class SpielverwaltungsSzene extends Phaser.Scene {
         x: 640, y: startY, text: 'Zurück zum Spiel', typ: 'primary',
         callback: () => void appStore.reconnecteTisch(aktiverTischId)
       });
+      btn.setName('btn-session-recovery');
       this.uiContainer.add(btn);
       startY += 60;
     }
@@ -86,6 +81,7 @@ export class SpielverwaltungsSzene extends Phaser.Scene {
       x: 640, y: startY, text: '▶  Quick Game', typ: 'primary',
       callback: () => void appStore.erstelleQuickGame()
     });
+    quickGameBtn.setName('btn-quick-game');
     this.uiContainer.add(quickGameBtn);
     startY += 60;
 
@@ -93,6 +89,7 @@ export class SpielverwaltungsSzene extends Phaser.Scene {
       x: 640, y: startY, text: '+ Neuen Tisch', typ: 'secondary',
       callback: () => this.zeigeErstelleTischModal(zustand)
     });
+    erstelleTischBtn.setName('btn-neuer-tisch');
     this.uiContainer.add(erstelleTischBtn);
     startY += 60;
 
@@ -102,6 +99,7 @@ export class SpielverwaltungsSzene extends Phaser.Scene {
         void appStore.ausloggen().then(() => this.scene.start('LoginSzene'));
       }
     });
+    logoutBtn.setName('btn-logout');
     this.uiContainer.add(logoutBtn);
 
     // List of tables
@@ -192,8 +190,8 @@ export class SpielverwaltungsSzene extends Phaser.Scene {
       zeigeSchliessenButton: true,
       onClose: closeCallback,
       aktionen: [
-        { text: 'Abbrechen', callback: closeCallback, typ: 'secondary' },
-        { text: 'Erstellen', callback: doCreate, typ: 'primary' }
+        { text: 'Abbrechen', callback: closeCallback, typ: 'secondary', testId: 'btn-abbrechen' },
+        { text: 'Erstellen', callback: doCreate, typ: 'primary', testId: 'btn-erstellen' }
       ]
     });
 
@@ -245,7 +243,5 @@ export class SpielverwaltungsSzene extends Phaser.Scene {
     this.abmeldenStore?.();
     this.uiContainer?.removeAll(true);
     this.offeneTischeListe?.destroy();
-    const marker = document.querySelector('[data-testid="startscreen"]');
-    if (marker) marker.remove();
   }
 }

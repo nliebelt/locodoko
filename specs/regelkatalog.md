@@ -26,15 +26,15 @@ Das Hausregelset von Locodoko — vollständiges Spiel mit allen modernen Sonder
 | `bockrundenAktiv` | true |
 | `schweinchenAktiv` | true |
 | `dreissigAugenPflichtAktiv` | true |
-| `fuchsAktiv` | true |
+| `fuchsGefangenAktiv` | true |
 | `karlchenAktiv` | true |
 | `doppelkopfAktiv` | true |
-| `armutAktiv` | true |
-| `hochzeitAktiv` | true |
-| `soloDameAktiv` | true |
-| `soloBubeAktiv` | true |
-| `soloTrumpfAktiv` | true |
-| `soloFleischlosAktiv` | true |
+| `armutErlaubt` | true |
+| `hochzeitErlaubt` | true |
+| `soloDameErlaubt` | true |
+| `soloBubeErlaubt` | true |
+| `soloTrumpfErlaubt` | true |
+| `soloFleischlosErlaubt` | true |
 | `anzahlSpiele` | 24 |
 
 ### DKV-Turnier
@@ -48,15 +48,15 @@ Offizielles DKV-Regelwerk (Deutscher Doppelkopf-Verband), ohne Locodoko-Hausrege
 | `bockrundenAktiv` | false |
 | `schweinchenAktiv` | false |
 | `dreissigAugenPflichtAktiv` | false |
-| `fuchsAktiv` | true |
+| `fuchsGefangenAktiv` | true |
 | `karlchenAktiv` | true |
 | `doppelkopfAktiv` | true |
-| `armutAktiv` | true |
-| `hochzeitAktiv` | true |
-| `soloDameAktiv` | true |
-| `soloBubeAktiv` | true |
-| `soloTrumpfAktiv` | true |
-| `soloFleischlosAktiv` | true |
+| `armutErlaubt` | true |
+| `hochzeitErlaubt` | true |
+| `soloDameErlaubt` | true |
+| `soloBubeErlaubt` | true |
+| `soloTrumpfErlaubt` | true |
+| `soloFleischlosErlaubt` | true |
 | `anzahlSpiele` | 24 |
 
 ### Ohne Neunen / Mit Neunen

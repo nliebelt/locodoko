@@ -9,7 +9,7 @@ export interface PhaserModalOptionen {
   titel?: string;
   onClose?: () => void;
   zeigeSchliessenButton?: boolean;
-  aktionen?: Omit<ButtonOptionen, 'x' | 'y'>[];
+  aktionen?: (Omit<ButtonOptionen, 'x' | 'y'> & { testId?: string })[];
 }
 
 export class PhaserModal extends Phaser.GameObjects.Container {
@@ -84,6 +84,7 @@ export class PhaserModal extends Phaser.GameObjects.Container {
       aktionen.forEach((akt, index) => {
         const btnOpt = { ...akt, x: startX + index * 160, y: hoehe / 2 - 40, breite: akt.breite || 140, hoehe: akt.hoehe || 40 };
         const btn = new PhaserButton(scene, btnOpt);
+        if (akt.testId) btn.setName(akt.testId);
         this.add(btn);
         this.addFocusable(btn);
       });

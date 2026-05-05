@@ -1,22 +1,21 @@
-# IMPLEMENTATION_PLAN — Plan-Run #109
+# IMPLEMENTATION_PLAN — Plan-Run #110
 
-> Stand: 2026-05-05. Fokus: Rundenauswertung als PhaserModal (Task 9), dann DOM Elimination (Task 10).
+> Stand: 2026-05-05. Fokus: Task 10 DOM Elimination + E2E-Bridge (REFACTOR-UI-CLEANUP) abgeschlossen.
 
 ## Notiz
 
-**Was wurde implementiert (Run #109)?**
-- Task 7 (FEAT-PHASER-COMPONENTS): `PhaserModal` + `PhaserList` Basis-Komponenten.
-- Task 8 (REFACTOR-LOBBY): `SpielverwaltungsSzene` vollständig Phaser-nativ. Vision Loop bestätigt.
-- Task 9 (REFACTOR-EVALUATION): Rundenauswertung komplett zu Phaser migriert. `PhaserModal` mit Sieger-Banner (RE/KONTRA-Farben), `punkteAufschluesselung` vom Backend, Count-up 0→Endwert (800ms Cubic.Out), Sonderpunkte-Glow-Effekt, Spielwert + Spielerpunkte. JS-Bridge für E2E-Tests. 94 Frontend-Tests grün.
+**Was wurde implementiert (Run #110)?**
+- Task 10 (REFACTOR-UI-CLEANUP): DOM Elimination abgeschlossen. `TischUIManager.ts` gelöscht, keine DOM-Calls mehr in `TischSzene.ts`. E2E-Bridge (`window.__locodoko`) vollständig mit `isIdle`, `getHudState`, `getAktuelleSzene`, `isOverlaySichtbar`, `setzeAnimationsGeschwindigkeit` verdrahtet.
+- Task 15 (FIX-SPEC-TISCHKONFIGURATION): Feldnamen in Spec an Code angeglichen (bereits in Run #109 committed, Plan jetzt korrekt markiert).
+- Test-Fixes: `TischSzene.test.ts` auf Phaser-Traversal umgestellt (Ansage-Buttons), `FakeGameObject` um `active`, `scene`, `name`, `killTweensOf` ergänzt. 94 Tests grün.
+- E2E-Helpers: `warteAufPhase`, `warteAufEigenenVorbehalt`, `warteAufEigenenZug` in `helpers.ts` implementiert; `vision-loop.spec.ts` Imports korrigiert.
+- TypeScript-Fixes: `getRundenEndeModal`/`getPartieEndeModal`/`getEinstellungsModalEl` aus `inputKontext` entfernt (nicht im Interface); `appStore.getState()` → `this.letzterZustand`.
 
-**Nächster logischer Schritt:** Task 10 (REFACTOR-UI-CLEANUP: DOM Elimination in TischSzene) — letzte DOM-Calls entfernen, E2E-Bridge vervollständigen.
-
-**Offene Fragen:**
-- `btn-offene-tische` testid fehlt → Vision Loop schlägt früh fehl (pre-existing, Task 18 Nachfolger).
-- Rundenauswertungs-Screenshot im Vision Loop nicht gemacht (KI-Spiel zu lang für Loop-Timeout).
+**Nächster logischer Schritt:** Alle P0–P6 Tasks abgeschlossen. Nächste Priorität: ESLint `any`-Cleanup (96 Fehler, alle pre-existing oder Test-Datei), dann Spielprotokoll-Integration (`SpielprotokollOverlay` in TischSzene einbinden — Task 5 Restarbeit).
 
 **Offene Fragen:**
-- 90 pre-existing ESLint `any`-Fehler in AppStore.ts und TischSzene.ts — Cleanup-Task ausstehend.
+- Vision Loop Spielschleife: `leseSpielZustand` wartet auf `isIdle()` das bei KI-Spiel gelegentlich >15s dauert (pre-existing, Timeout-Problem).
+- 96 ESLint `any`-Fehler (92 pre-existing + 4 neue in `findeButtonMitTestid` Testhelfer) — Cleanup-Task ausstehend.
 - Hochzeit-Nameplate: Kein Herz-Label implementiert (WebSocket-Snapshot müsste `spieltyp: 'HOCHZEIT'` liefern — noch nicht geprüft).
 
 ---
@@ -123,18 +122,18 @@
 - [x] `PhaserList` mit Masking — für Tischliste und Spielprotokoll.
 
 ### REFACTOR-LOBBY: SpielverwaltungsSzene rein Phaser
-- [ ] Entfernung aller DOM-Elemente in `SpielverwaltungsSzene.ts` (`appendChild`, `innerHTML`, `querySelector` — bestätigt durch Analyse).
-- [ ] Navigation via `PhaserButton`, „Tisch erstellen"-Modal als `PhaserModal`.
+- [x] Entfernung aller DOM-Elemente in `SpielverwaltungsSzene.ts` (`appendChild`, `innerHTML`, `querySelector` — bestätigt durch Analyse).
+- [x] Navigation via `PhaserButton`, „Tisch erstellen"-Modal als `PhaserModal`.
 
 ### REFACTOR-EVALUATION: Rundenauswertung 2.0
-- [ ] Re-Implementierung des Rundenende-Modals als `PhaserModal` (Balatro-Stil).
-- [ ] Dynamische Anzeige der `punkteAufschluesselung`.
-- [ ] Count-up-Animation der Punkte.
+- [x] Re-Implementierung des Rundenende-Modals als `PhaserModal` (Balatro-Stil).
+- [x] Dynamische Anzeige der `punkteAufschluesselung`.
+- [x] Count-up-Animation der Punkte.
 
 ### REFACTOR-UI-CLEANUP: DOM Elimination
-- [ ] `TischUIManager`: vollständige Entfernung der DOM-Abhängigkeiten (Overlays, Modal-HTML in `TischSzene.ts` Z. 270–621).
-- [ ] `ToastManager`: finale Bereinigung (sollte bereits Phaser-nativ sein).
-- [ ] E2E-Tests: Umstellung auf JavaScript-Bridge (`window.__locodoko`).
+- [x] `TischUIManager`: vollständige Entfernung (gelöscht). Keine DOM-Abhängigkeiten mehr in `TischSzene.ts`.
+- [x] `ToastManager`: bereits Phaser-nativ.
+- [x] E2E-Tests: Umstellung auf JavaScript-Bridge (`window.__locodoko`).
 
 ---
 
@@ -154,7 +153,7 @@
   - Offene Sub-Lücke: Armut-Angebots-Status-Anzeige (für wartende Spieler) — siehe Task 19.
 
 ### FIX-SPEC-TISCHKONFIGURATION: Feldnamen-Inkonsistenz bereinigen
-- [ ] `specs/tischkonfiguration.md` auf Code-Feldnamen aktualisieren:
+- [x] `specs/tischkonfiguration.md` auf Code-Feldnamen aktualisieren:
   - `hochzeitAktiv` → `hochzeitErlaubt`
   - `armutAktiv` → `armutErlaubt`
   - `soloBubeAktiv` → `bubensoloErlaubt`
@@ -254,14 +253,14 @@ Backend: `bereitsGeschmissen Set`, `VorbehaltAnsage.SCHMEISSEN_WENIG_TRUMPF`, `i
 - [x] Task 7: `PhaserModal` + `PhaserList` Basis-Komponenten
 - [x] Task 8: `SpielverwaltungsSzene` Phaser-native (`REFACTOR-LOBBY`)
 - [x] Task 9: Rundenauswertung 2.0 als `PhaserModal` (`REFACTOR-EVALUATION`)
-- [ ] Task 10: DOM Elimination + E2E-Bridge (`REFACTOR-UI-CLEANUP`)
+- [x] Task 10: DOM Elimination + E2E-Bridge (`REFACTOR-UI-CLEANUP`)
 
 **P5 (Bereits bekannte Aufgaben):**
 - [x] Task 11: FIX-SOLIST-AUFSPIELER — bereits implementiert
 - [x] Task 12: FIX-REGELKATALOG — `locoBlatRegeln()` + `dkvRegeln()` bereits implementiert
 - [x] Task 13: FIX-DREISSIG-AUGEN-PFLICHT — bereits implementiert
 - [x] Task 14: FEAT-ARMUT-FRONTEND — `renderArmutBereich()` bereits implementiert
-- [ ] Task 15: FIX-SPEC-TISCHKONFIGURATION — Feldnamen in Spec an Code angleichen
+- [x] Task 15: FIX-SPEC-TISCHKONFIGURATION — Feldnamen in Spec an Code angleichen
 
 **P6 (Neu entdeckt, Plan-Run #102):**
 - [x] Task 16: FEAT-VERDRAHTUNG — Flash-Text (3 fehlende Events) + Nameplate Event-Mapping in TischSzene

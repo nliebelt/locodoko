@@ -42,7 +42,6 @@ import type {
 import { AnimationenService, type AnimierbareKartenobjekte } from '../services/AnimationenService';
 import type { AppZustand } from '../store/AppStore';
 import { TischInputHandler, type TischInputKontext } from './TischInputHandler';
-import { TischUIManager, type TischUIKontext } from './TischUIManager';
 import { ToastManager } from './ToastManager';
 import { FlashTextManager } from '../ui/FlashTextManager';
 import { Nameplate, ansageBadgeTyp, type NameplateDaten } from '../ui/Nameplate';
@@ -64,6 +63,28 @@ import {
   nameplatePositionFuer,
   stichStapelPositionFuer,
 } from './layout';
+
+/** Moegliche Animations-Geschwindigkeitsstufen: normal (1x), doppelt (2x), sofort (Infinity). */
+type AnimationsGeschwindigkeit = 1 | 2 | typeof Infinity;
+const LS_GESCHWINDIGKEIT = 'locodoko.animationsgeschwindigkeit';
+
+function ladeGeschwindigkeit(): AnimationsGeschwindigkeit {
+  const wert = localStorage.getItem(LS_GESCHWINDIGKEIT);
+  if (wert === '2') return 2;
+  if (wert === 'sofort') return Infinity;
+  return 1;
+}
+
+function naechsteGeschwindigkeit(aktuelle: AnimationsGeschwindigkeit): AnimationsGeschwindigkeit {
+  if (aktuelle === 1) return 2;
+  if (aktuelle === 2) return Infinity;
+  return 1;
+}
+
+function speichereGeschwindigkeit(faktor: AnimationsGeschwindigkeit): void {
+  const wert = faktor === Infinity ? 'sofort' : String(faktor);
+  localStorage.setItem(LS_GESCHWINDIGKEIT, wert);
+}
 
 function texturFuerTischhintergrund(bg: Tischhintergrund): string {
   const tex = ({
@@ -94,7 +115,7 @@ export class TischSzene extends Phaser.Scene {
   private letzterZustand?: AppZustand;
   private hintergrund?: Phaser.GameObjects.TileSprite | Phaser.GameObjects.Image | Phaser.GameObjects.Rectangle;
   private tischEbene?: Phaser.GameObjects.Container;
-  private uiManager?: TischUIManager;
+  private animationsGeschwindigkeit: AnimationsGeschwindigkeit = 1;
   private toastManager?: ToastManager;
   private flashTextManager?: FlashTextManager;
   private nameplates = new Map<SpielerPosition, Nameplate>();
@@ -153,27 +174,15 @@ export class TischSzene extends Phaser.Scene {
     Logger.szene('TischSzene create', { tischId: snapshot.aktuellerTisch?.id });
     
     this.animationen = new AnimationenService(this);
+    this.animationsGeschwindigkeit = ladeGeschwindigkeit();
+    this.animationen.setzeGeschwindigkeitsfaktor(this.animationsGeschwindigkeit);
     this.toastManager = new ToastManager(this);
     this.flashTextManager = new FlashTextManager(this);
-
-    const uiKontext: TischUIKontext = {
-      szeneStarten: (name) => { this.scene.start(name); },
-      onGeschwindigkeitGeaendert: (f) => { this.animationen?.setzeGeschwindigkeitsfaktor(f); },
-      onLetzteSticheToggle: () => { 
-        this.einstellungenOffen = !this.einstellungenOffen;
-        this.triggerRender();
-      },
-    };
-    this.uiManager = new TischUIManager(uiKontext);
-    this.uiManager.baueUi();
 
     const inputKontext: TischInputKontext = {
       getLetztesModell: () => this.letztesModell ?? null,
       getLetzterZustand: () => this.letzterZustand,
       getAusgewaehlteArmutKarten: () => this.ausgewaehlteArmutKarten,
-      getRundenEndeModal: () => this.uiManager?.getRundenEndeModal(),
-      getPartieEndeModal: () => this.uiManager?.getPartieEndeModal(),
-      getEinstellungsModalEl: () => undefined,
       isSeitenladeOffen: () => this.seitenladeOffen,
       isEinstellungenOffen: () => this.einstellungenOffen,
       isSpielzugAnimationAktiv: () => !!this.wartendeKartenId || (this.animationen?.animationLaeuft ?? false),
@@ -265,6 +274,7 @@ export class TischSzene extends Phaser.Scene {
     const bridge = (window as any)['__locodoko'];
     if (bridge) {
       bridge.setzeAnimationsGeschwindigkeit = (f: number) => {
+        this.animationsGeschwindigkeit = f as AnimationsGeschwindigkeit;
         this.animationen?.setzeGeschwindigkeitsfaktor(f);
         if (f >= 50) {
           appStore.setzeKiKartenVerzögerung(0);
@@ -272,42 +282,32 @@ export class TischSzene extends Phaser.Scene {
       };
       bridge.setzeKiVerzoegerung = (ms: number) => appStore.setzeKiKartenVerzögerung(ms);
       bridge.isOverlaySichtbar = () => {
-        const rSichtbar = !!this.phaserRundenEndeModal && this.phaserRundenEndeModal.active;
-        const pSichtbar = !!this.phaserPartieEndeModal && this.phaserPartieEndeModal.active;
-        return rSichtbar || pSichtbar;
+        const rSichtbar = !!this.phaserRundenEndeModal;
+        const pSichtbar = !!this.phaserPartieEndeModal;
+        const eSichtbar = this.einstellungenOffen;
+        const pOSichtbar = !!this.spielprotokollOverlay;
+        return rSichtbar || pSichtbar || eSichtbar || pOSichtbar;
       };
       bridge.isIdle = (ignoreStore = false) => this.isIdle(ignoreStore);
+      bridge.getHudState = () => {
+        const zustand = this.letzterZustand;
+        const modell = this.letztesModell;
+        const stichAnzahl = modell?.spieler.reduce((sum, s) => sum + s.stiche, 0) ?? 0;
+        const maxStiche = zustand?.aktuellerTisch?.konfiguration.ohneNeunen ? 10 : 12;
+        return {
+          stichzaehler: modell?.spieltyp ? `Stich ${stichAnzahl}/${maxStiche}` : '',
+          spieltyp: modell?.spieltyp ?? '',
+          startBtnSichtbar: !!(zustand?.aktuellerTisch?.status === 'WARTEND' && zustand?.spieler?.spielerId === zustand?.aktuellerTisch?.erstelltVonSpielerId),
+          rundenEndeSichtbar: !!this.phaserRundenEndeModal
+        };
+      };
       bridge._rundenEndeModalGezeigt = 0;
     }
 
     this.triggerRender();
-
-    // E2E-Marker fuer Playwright (TischSzene ist immer da)
-    this.aktualisiereE2EMarker('tischszene', true);
-  }
-
-  private aktualisiereE2EMarker(testId: string, sichtbar: boolean): void {
-    const root = document.getElementById('ui-root');
-    if (!root) return;
-    let marker = document.querySelector(`[data-testid="${testId}"]`) as HTMLElement;
-    if (sichtbar) {
-      if (!marker) {
-        marker = document.createElement('div');
-        marker.dataset['testid'] = testId;
-        marker.style.cssText = 'position:absolute;width:1px;height:1px;left:-9999px;top:-9999px;pointer-events:none';
-        root.appendChild(marker);
-      }
-      marker.hidden = false;
-    } else if (marker) {
-      marker.hidden = true;
-      // Fuer Playwright ist .hidden = true oft nicht genug bei toBeHidden(), 
-      // daher entfernen wir es lieber ganz.
-      marker.remove();
-    }
   }
 
   private renderAngefodert = false;
-
   public triggerRender(force = false): void {
     if (force) {
       // Force overrides any pending requests and renders immediately synchronously
@@ -621,7 +621,6 @@ export class TischSzene extends Phaser.Scene {
     }
 
     this.tischEbene?.destroy(true);
-    document.getElementById('ui-root')?.querySelectorAll('[data-testid^="btn-vorbehalt-"],[data-testid^="btn-ansage-"],[data-testid^="btn-armut-"]').forEach(el => el.remove());
     this.handKartenobjekte.clear();
     const breite = this.scale.gameSize.width;
     const hoehe = this.scale.gameSize.height;
@@ -716,7 +715,6 @@ export class TischSzene extends Phaser.Scene {
         void navigator.clipboard.writeText(url);
       }, false, true);
     }
-    this.uiManager?.aktualisiereTopBar(stichInfo, modell.spieltyp ?? '', startBtnSichtbar);
   }
 
   private renderEinstellungsModal(ebene: Phaser.GameObjects.Container, modell: TischAnsichtModell, zustand: AppZustand, breite: number, hoehe: number): void {
@@ -758,10 +756,12 @@ export class TischSzene extends Phaser.Scene {
     currentY += zeilenAbstand - 20;
     ebene.add(this.add.text(dialogX, currentY, 'Animationen', { fontFamily: FONT_FAMILY, color: '#d8f3dc', fontSize: `${schriftHint}px` }).setOrigin(0.5));
     currentY += 25;
-    const geschw = this.uiManager?.getAnimationsGeschwindigkeit() ?? 1;
+    const geschw = this.animationsGeschwindigkeit;
     const label = geschw === Infinity ? 'Geschw.: sofort' : `Geschw.: ${geschw}x`;
     this.erstellePhaserButton(ebene, dialogX, currentY, dialogW - 60, 34, label, () => {
-      this.uiManager?.zyklusGeschwindigkeit();
+      this.animationsGeschwindigkeit = naechsteGeschwindigkeit(this.animationsGeschwindigkeit);
+      speichereGeschwindigkeit(this.animationsGeschwindigkeit);
+      this.animationen?.setzeGeschwindigkeitsfaktor(this.animationsGeschwindigkeit);
       this.renderTisch(zustand, modell);
     }, false, true);
     currentY += 60;
@@ -1028,19 +1028,26 @@ export class TischSzene extends Phaser.Scene {
           kA.removeAllListeners?.('pointerout');
           kA.removeAllListeners?.('pointerdown');
         }
-        kA.setInteractive({ useHandCursor: true });
-        const hV = Math.round(kG.h * 0.08);
-        kA.on('pointerover', () => kA.setY(y + bV - hV));
-        kA.on('pointerout', () => kA.setY(y + bV));
-        kA.on('pointerdown', () => { if (istSp) void this.spieleKarteMitAnimation(k.id); else { this.toggleArmutKarte(k.id, modell.armutAktion?.kartenAnzahl ?? 0); this.renderTisch(this.letzterZustand ?? appStore.snapshot()); } });
+        if (kA.active && kA.scene && kA.scene.input && kA.scene.input.enabled) {
+          kA.setInteractive({ useHandCursor: true });
+          const hV = Math.round(kG.h * 0.08);
+          kA.on('pointerover', () => kA.setY(y + bV - hV));
+          kA.on('pointerout', () => kA.setY(y + bV));
+          kA.on('pointerdown', () => { if (istSp) void this.spieleKarteMitAnimation(k.id); else { this.toggleArmutKarte(k.id, modell.armutAktion?.kartenAnzahl ?? 0); this.renderTisch(this.letzterZustand ?? appStore.snapshot()); } });
+        }
       } else if (offen && k && !istInt && istWiederverwendet) {
         // Reusierter Sprite war vorher interaktiv — Zustand zuruecksetzen.
-        kA.disableInteractive?.();
-        kA.removeAllListeners?.('pointerover');
-        kA.removeAllListeners?.('pointerout');
-        kA.removeAllListeners?.('pointerdown');
-      }
-    }
+        if (kA.active && kA.scene && kA.input && kA.input.enabled) {
+          try {
+            kA.disableInteractive();
+            kA.removeAllListeners?.('pointerover');
+            kA.removeAllListeners?.('pointerout');
+            kA.removeAllListeners?.('pointerdown');
+          } catch (e) {
+            console.warn('[TischSzene] Fehler beim Deaktivieren der Interaktion', e);
+          }
+        }
+      }    }
   }
 
   /** Zerstoert alle persistierten eigenen Karten-Sprites und leert den Cache. */
@@ -1469,9 +1476,9 @@ export class TischSzene extends Phaser.Scene {
     const rF = d ? 0x555555 : hv ? 0xf8f9fa : s ? 0x4a7a5a : 0x4adf7a;
     const tF = d ? '#888888' : hv ? '#0d1f12' : '#f8f9fa';
     const bg = this.add.rectangle(x, y, w, h, hgF, d ? 0.5 : 0.92).setStrokeStyle(hv ? 2 : 1, rF, 0.9);
+    if (testId) bg.setName(testId);
     ebene.add(bg); ebene.add(this.add.text(x, y, txt, { fontFamily: FONT_FAMILY, color: tF, fontSize: `${Math.round(Math.max(12, this.scale.gameSize.width * 0.011))}px` }).setOrigin(0.5));
     if (!d) bg.setInteractive({ useHandCursor: true }).on('pointerdown', hdl);
-    if (testId) this.aktualisiereE2EMarker(testId, true);
   }
 
   private renderVorbehaltDialog(ebene: Phaser.GameObjects.Container, modell: TischAnsichtModell, zustand: AppZustand, breite: number, hoehe: number): void {
@@ -1604,7 +1611,5 @@ export class TischSzene extends Phaser.Scene {
     this.hintergrund?.destroy(); this.handKartenobjekte.clear();
     this.schliesseRundenEndeModal(); this.versteckeLetztesStichOverlay(); this.schliessePartieEndeModal();
     this.spielprotokollOverlay?.destroy(true); this.spielprotokollOverlay = undefined;
-    document.getElementById('ui-root')?.querySelectorAll('[data-testid^="btn-vorbehalt-"],[data-testid^="btn-ansage-"],[data-testid^="btn-armut-"]').forEach(el => el.remove());
-    this.uiManager?.aufraeumen();
   }
 }

@@ -34,7 +34,12 @@ window.addEventListener('beforeunload', () => {
   spiel.destroy(true);
 });
 
-// Test-Hook: appStore global zugaenglich machen fuer E2E-Tests.
-// Ermoeglicht zuverlässigen Karten-Zugriff ohne Phaser-Canvas-Hit-Testing,
-// das in headless Chromium (Playwright) nicht funktioniert.
-(window as unknown as Record<string, unknown>)['__locodoko'] = { appStore };
+// Test-Hook: Bridge für E2E-Tests.
+// Ermoeglicht zuverlässigen Zugriff auf Store und Szenen-Status.
+(window as any)['__locodoko'] = {
+  appStore,
+  getAktuelleSzene: () => {
+    const aktiveSzenen = spiel.scene.getScenes(true);
+    return aktiveSzenen.length > 0 ? aktiveSzenen[0].scene.key : null;
+  }
+};

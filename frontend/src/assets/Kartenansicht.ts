@@ -28,11 +28,15 @@ export class Kartenansicht extends Phaser.GameObjects.Container {
 
   private readonly markierung: Phaser.GameObjects.Graphics;
 
-  private readonly bild?: Phaser.GameObjects.Image;
+  private bild?: Phaser.GameObjects.Image;
 
-  private readonly breite: number;
+  private breite: number;
 
-  private readonly hoehe: number;
+  private hoehe: number;
+
+  public get bildObjekt(): Phaser.GameObjects.Image | undefined {
+    return this.bild;
+  }
 
   constructor(szene: Phaser.Scene, optionen: KartenansichtOptionen) {
     super(szene, optionen.x, optionen.y);
@@ -141,10 +145,6 @@ export class Kartenansicht extends Phaser.GameObjects.Container {
       hoehe,
       inhalt: { typ: 'leer' }
     });
-  }
-
-  get bildObjekt(): Phaser.GameObjects.Image | undefined {
-    return this.bild;
   }
 
   markiereAuswahl(): this {
