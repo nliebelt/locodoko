@@ -32,14 +32,14 @@ export class PhaserButton extends Phaser.GameObjects.Container implements Focusa
     const bgFarbe = typ === 'primary' ? 0xd8f3dc : 0x2d5a3d;
     const textFarbe = typ === 'primary' ? '#14361f' : '#f8f9fa';
 
-    // Schlagschatten
-    const schatten = scene.add.rectangle(4, 4, breite, hoehe, 0x000000, 0.5);
-    
-    // Hintergrund
-    this.hintergrund = scene.add.rectangle(0, 0, breite, hoehe, bgFarbe);
+    // Kinder direkt ueber Konstruktoren erstellen (nicht scene.add.*),
+    // damit sie nicht doppelt in der Scene DisplayList landen → verhindert Double-Destroy-Crash
+    const schatten = new Phaser.GameObjects.Rectangle(scene, 4, 4, breite, hoehe, 0x000000, 0.5);
+
+    this.hintergrund = new Phaser.GameObjects.Rectangle(scene, 0, 0, breite, hoehe, bgFarbe);
     this.hintergrund.setStrokeStyle(2, 0xf8f9fa);
 
-    const textObj = scene.add.text(0, 0, text, {
+    const textObj = new Phaser.GameObjects.Text(scene, 0, 0, text, {
       fontFamily: FONT_FAMILY,
       fontSize: '20px',
       color: textFarbe
@@ -54,7 +54,7 @@ export class PhaserButton extends Phaser.GameObjects.Container implements Focusa
       schatten.alpha = 0;
       textObj.y = 2;
     });
-    
+
     this.hintergrund.on('pointerup', () => {
       this.hintergrund.y = 0;
       schatten.alpha = 0.5;

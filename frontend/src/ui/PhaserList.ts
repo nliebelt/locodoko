@@ -22,7 +22,9 @@ export class PhaserList extends Phaser.GameObjects.Container {
     super(scene, x, y);
 
     this.listH = optionen.hoehe;
-    this.listContainer = scene.add.container(0, 0);
+    // Kinder direkt ueber Konstruktoren erstellen (nicht scene.add.*),
+    // damit sie nicht doppelt in der Scene DisplayList landen → verhindert Double-Destroy-Crash
+    this.listContainer = new Phaser.GameObjects.Container(scene, 0, 0);
     this.add(this.listContainer);
 
     this.maskGraphics = scene.make.graphics();
@@ -30,7 +32,7 @@ export class PhaserList extends Phaser.GameObjects.Container {
 
     const mX = optionen.worldX !== undefined ? optionen.worldX : x;
     const mY = optionen.worldY !== undefined ? optionen.worldY : y;
-    
+
     this.maskGraphics.fillRect(mX - optionen.breite / 2, mY - optionen.hoehe / 2, optionen.breite, optionen.hoehe);
     const mask = this.maskGraphics.createGeometryMask();
     this.listContainer.setMask(mask);
@@ -39,7 +41,7 @@ export class PhaserList extends Phaser.GameObjects.Container {
       const eH = optionen.elementHoehe;
       this.totalListHeight = optionen.items.length * eH;
       optionen.items.forEach((item, index) => {
-        const itemContainer = scene.add.container(0, index * eH + eH / 2 - optionen.hoehe / 2);
+        const itemContainer = new Phaser.GameObjects.Container(scene, 0, index * eH + eH / 2 - optionen.hoehe / 2);
         optionen.renderElement!(item, itemContainer);
         this.listContainer.add(itemContainer);
       });

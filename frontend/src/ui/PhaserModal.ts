@@ -29,29 +29,32 @@ export class PhaserModal extends Phaser.GameObjects.Container {
       aktionen = []
     } = optionen;
 
+    // Kinder direkt ueber Konstruktoren erstellen (nicht scene.add.*),
+    // damit sie nicht doppelt in der Scene DisplayList landen → verhindert Double-Destroy-Crash
+
     // Backdrop: cover the whole screen, centered around x,y
     const { width: sw, height: sh } = scene.cameras.main;
-    const backdrop = scene.add.rectangle(0, 0, sw * 2, sh * 2, 0x000000, 0.6)
+    const backdrop = new Phaser.GameObjects.Rectangle(scene, 0, 0, sw * 2, sh * 2, 0x000000, 0.6)
       .setInteractive();
-    
+
     if (onClose) {
       backdrop.on('pointerdown', onClose);
     }
     this.add(backdrop);
 
     // Schatten (Neo-Brutalism: harter Offset-Schatten 4px 4px)
-    const schatten = scene.add.rectangle(4, 4, breite, hoehe, 0x000000, 1);
+    const schatten = new Phaser.GameObjects.Rectangle(scene, 4, 4, breite, hoehe, 0x000000, 1);
     this.add(schatten);
 
     // Panel
-    const panel = scene.add.rectangle(0, 0, breite, hoehe, PANEL_BG)
+    const panel = new Phaser.GameObjects.Rectangle(scene, 0, 0, breite, hoehe, PANEL_BG)
       .setStrokeStyle(2, BORDER_PANEL);
     panel.setInteractive().on('pointerdown', () => { /* konsumiert Klicks, verhindert Schliessen */ });
     this.add(panel);
 
     // Titel
     if (titel) {
-      const titleObj = scene.add.text(0, -hoehe / 2 + 20, titel, {
+      const titleObj = new Phaser.GameObjects.Text(scene, 0, -hoehe / 2 + 20, titel, {
         fontFamily: FONT_FAMILY,
         fontSize: '16px',
         color: '#ffd700'
@@ -61,7 +64,7 @@ export class PhaserModal extends Phaser.GameObjects.Container {
 
     // Schliessen Button (X)
     if (zeigeSchliessenButton && onClose) {
-      const closeBtn = scene.add.text(breite / 2 - 20, -hoehe / 2 + 20, 'X', {
+      const closeBtn = new Phaser.GameObjects.Text(scene, breite / 2 - 20, -hoehe / 2 + 20, 'X', {
         fontFamily: FONT_FAMILY,
         fontSize: '16px',
         color: '#ff4455'
@@ -71,8 +74,8 @@ export class PhaserModal extends Phaser.GameObjects.Container {
       this.add(closeBtn);
     }
 
-    // Content Container - Subklassen koennen hier ihre UI-Elemente hinzufuegen
-    this.contentContainer = scene.add.container(0, 0);
+    // Content Container
+    this.contentContainer = new Phaser.GameObjects.Container(scene, 0, 0);
     this.add(this.contentContainer);
 
     // Aktionen (Buttons am unteren Rand)
