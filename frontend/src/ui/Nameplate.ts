@@ -1,8 +1,7 @@
-import type Phaser from 'phaser';
+import Phaser from 'phaser';
 import {
   FARBE_GOLD,
   FARBE_ROT,
-  FARBE_BLAU,
   RE_FARBE_OVERLAY,
   KONTRA_FARBE_OVERLAY,
   FONT_FAMILY,
@@ -61,13 +60,18 @@ export class Nameplate extends Phaser.GameObjects.Container {
     this.add(this.nameText);
 
     if (daten.istKI) {
+      const kiBadge = scene.add.container(BREITE / 2 - 16, 8);
+      const bg = scene.add.graphics();
+      bg.fillStyle(0x0a3333, 1);
+      bg.fillRoundedRect(-8, -5, 16, 10, 2);
+      kiBadge.add(bg);
       const kiLabel = scene.add.text(
-        BREITE / 2 - 8,
-        8,
+        0, 0,
         'KI',
         { fontSize: '6px', fontFamily: FONT_FAMILY, color: '#33ffee' }
-      ).setOrigin(1, 0.5).setAlpha(0.6);
-      this.add(kiLabel);
+      ).setOrigin(0.5, 0.5);
+      kiBadge.add(kiLabel);
+      this.add(kiBadge);
     }
   }
 
@@ -99,7 +103,7 @@ export class Nameplate extends Phaser.GameObjects.Container {
     this.kronenIcon = undefined;
   }
 
-  setState(zustand: 'default' | 'amZug' | 'geber'): void {
+  setZustand(zustand: 'default' | 'amZug' | 'geber'): void {
     this.stoppeAktiveTweens();
     const farbe = this.teamfarbe !== BORDER_DEFAULT ? this.teamfarbe : BORDER_DEFAULT;
 
@@ -219,7 +223,7 @@ export class Nameplate extends Phaser.GameObjects.Container {
       alpha: { from: 0.5, to: 1 },
       yoyo: true,
       repeat: -1,
-      duration: 900,
+      duration: 450,
     });
   }
 

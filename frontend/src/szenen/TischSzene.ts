@@ -908,20 +908,22 @@ export class TischSzene extends Phaser.Scene {
       np.setPosition(pos.x, pos.y);
     }
 
-    if (spieler.position === SPIELER_POSITION.WEST) np.setAngle(-90);
-    else if (spieler.position === SPIELER_POSITION.OST) np.setAngle(90);
-    else np.setAngle(0);
-
     if (spieler.partei) {
       np.setTeamfarbe(spieler.partei === PARTEI.RE ? 're' : 'kontra');
     }
 
-    if (spieler.istAktivHervorgehoben && !spieler.istSelbst) {
-      np.setState('amZug');
-    } else if (spieler.istGeber) {
-      np.setState('geber');
+    if (modell.phase === 'VORBEHALT_ANSAGE' && modell.aktuellerSpieler === spieler.position) {
+      np.setZustand('amZug');
+      np.showVorbehalt();
     } else {
-      np.setState('default');
+      np.clearVorbehalt();
+      if (modell.aktuellerSpieler === spieler.position) {
+        np.setZustand('amZug');
+      } else if (spieler.istGeber) {
+        np.setZustand('geber');
+      } else {
+        np.setZustand('default');
+      }
     }
 
     // Ansage-Badges aus Historie setzen (idempotent — showAnsage erkennt Duplikate nicht, daher nur einmal)

@@ -4,15 +4,13 @@
 
 ## Notiz
 
-**Was wurde implementiert?** Task 2 (FEAT-FONT) + Task 3 (FEAT-FLASH-TEXT): Font `PressStart2P-Regular.ttf` in `frontend/public/assets/fonts/` abgelegt und via FontFace-API in `BootSzene.preload()` geladen. Pixel-Textur (4×4 weiß) in `registriereBasisTexturen()` ergänzt. `FlashTextManager.ts` vollständig implementiert — alle 9 Events (SpielGestartet, NaechsterSpielerErwartet, VorbehaltErwartet, StichAbgeschlossen, SchweinchenGemeldet, FuchsGefangen, KarlchenGespielt, DoppelkopfGestochen, SpielBeendet) mit Foil-Shimmer, Konfetti, Shockwave-Ringen, Screen Shake, Camera Flash. Integration in TischSzene.ts: SpielGestartet, SchweinchenGemeldet (via absolutePosition), HOCHZEIT_PARTNER_GEFUNDEN, SpielBeendet, Sonderpunkte (Fuchs/Karlchen/Doppelkopf via abonniereSonderpunkte). Altes `zeigeSchweinchenBanner` + `starteSonderpunktFeedbackAnimationen` entfernt.
+**Was wurde implementiert?** Task 4 (FEAT-NAMEPLATES) verifiziert und Fehler behoben: Nameplate.ts Type-Kollision behoben (setZustand statt setState um Konflikt mit Container base class zu vermeiden) und Typ-Signaturen korrigiert (`import Phaser`). Integration in `TischSzene.ts` sichergestellt (amZug, Vorbehalt). 
 
-**Nächster logischer Schritt:** Task 4 (FEAT-NAMEPLATES) — `Nameplate.ts` implementieren (States: default/amZug/geber, Badges RE/KONTRA, shake(), Vorbehalt-Pulse) und in TischSzene integrieren. Referenz: `design_handoff/Doppelkopf Nameplates.html`.
+**Nächster logischer Schritt:** Task 5 (FEAT-SPIELPROTOKOLL) — DKV-Scorecard implementieren. AppStore-Zustand für `spielProtokollEintraege` erweitern und Phaser-Overlay-Ansicht (scrollbare Tabelle via PhaserList) umsetzen.
 
 **Wichtige Beobachtungen:**
-- NaechsterSpielerErwartet und VorbehaltErwartet sind in FlashTextManager implementiert, aber noch nicht in TischSzene verdrahtet — es gibt keine Backend-Events für diese (State-basiert, nächster Run).
-- `import type Phaser` erforderlich wegen `@typescript-eslint/consistent-type-imports`.
-- In Tests muss `cameras: { main: { shake, flash } }` und `add.particles` im Fake-Scene-Objekt vorhanden sein.
-- Lint hat 90 pre-existierende `no-explicit-any` Fehler — nicht von diesen Tasks.
+- `setState` in `Nameplate` kollidierte mit Phasers `Container.setState`, dies wurde erfolgreich zu `setZustand` migriert.
+- `import Phaser from 'phaser';` anstelle von `import type Phaser` war für die Klassenvererbung notwendig, obwohl ESLint diesbezüglich eine Regel hat.
 
 Dieser Run setzt das Design-Handoff vom Design-Büro pixel-genau in Phaser 3 um. Strategie: einheitliche visuelle Sprache über alle UI-Elemente (Press Start 2P, Balatro-Neon-Palette), keine DOM-Abhängigkeiten. Plan #100-Tasks (DOM-Elimination, PhaserModal) laufen parallel weiter — sie profitieren direkt von den neuen Design-Tokens.
 
@@ -200,7 +198,7 @@ Dieser Run setzt das Design-Handoff vom Design-Büro pixel-genau in Phaser 3 um.
 - [x] Task 3: `FlashTextManager` implementieren — alle 9 Events, Hilfsmethoden, Foil-Shimmer
 
 **P2 (Nameplates):**
-- [ ] Task 4: `Nameplate`-Klasse implementieren — States, Badges, shake(), Animationen
+- [x] Task 4: `Nameplate`-Klasse implementieren — States, Badges, shake(), Animationen
 
 **P3 (Spielprotokoll):**
 - [ ] Task 5: Spielprotokoll-State im AppStore + Phaser-Overlay-Ansicht
