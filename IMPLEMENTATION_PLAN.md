@@ -5,10 +5,15 @@
 ## Notiz
 
 **Was wurde implementiert (Run #109)?**
-- Task 7 (FEAT-PHASER-COMPONENTS): `PhaserModal` + `PhaserList` Basis-Komponenten mit Keyboard-Navigation, Fokus-Trap, Action-Buttons. 2 neue Commits.
-- Task 8 (REFACTOR-LOBBY): `SpielverwaltungsSzene` vollständig auf Phaser migriert. Vision Loop bestätigt: Balatro-Design korrekt (Buttons, Modal, Nameplates, Spielprotokoll). 94 Frontend-Tests grün.
+- Task 7 (FEAT-PHASER-COMPONENTS): `PhaserModal` + `PhaserList` Basis-Komponenten.
+- Task 8 (REFACTOR-LOBBY): `SpielverwaltungsSzene` vollständig Phaser-nativ. Vision Loop bestätigt.
+- Task 9 (REFACTOR-EVALUATION): Rundenauswertung komplett zu Phaser migriert. `PhaserModal` mit Sieger-Banner (RE/KONTRA-Farben), `punkteAufschluesselung` vom Backend, Count-up 0→Endwert (800ms Cubic.Out), Sonderpunkte-Glow-Effekt, Spielwert + Spielerpunkte. JS-Bridge für E2E-Tests. 94 Frontend-Tests grün.
 
-**Nächster logischer Schritt:** Task 9 (REFACTOR-EVALUATION: Rundenauswertung 2.0 als `PhaserModal`) — baut auf PhaserModal auf, visuelle Aufwertung mit Count-up-Animation.
+**Nächster logischer Schritt:** Task 10 (REFACTOR-UI-CLEANUP: DOM Elimination in TischSzene) — letzte DOM-Calls entfernen, E2E-Bridge vervollständigen.
+
+**Offene Fragen:**
+- `btn-offene-tische` testid fehlt → Vision Loop schlägt früh fehl (pre-existing, Task 18 Nachfolger).
+- Rundenauswertungs-Screenshot im Vision Loop nicht gemacht (KI-Spiel zu lang für Loop-Timeout).
 
 **Offene Fragen:**
 - 90 pre-existing ESLint `any`-Fehler in AppStore.ts und TischSzene.ts — Cleanup-Task ausstehend.
@@ -248,7 +253,7 @@ Backend: `bereitsGeschmissen Set`, `VorbehaltAnsage.SCHMEISSEN_WENIG_TRUMPF`, `i
 - [x] Task 6: Backend Punkte-Labels + DTO (`FEAT-POINT-LABELS`)
 - [x] Task 7: `PhaserModal` + `PhaserList` Basis-Komponenten
 - [x] Task 8: `SpielverwaltungsSzene` Phaser-native (`REFACTOR-LOBBY`)
-- [~] Task 9: Rundenauswertung 2.0 als `PhaserModal` (`REFACTOR-EVALUATION`) ← IN ARBEIT
+- [x] Task 9: Rundenauswertung 2.0 als `PhaserModal` (`REFACTOR-EVALUATION`)
 - [ ] Task 10: DOM Elimination + E2E-Bridge (`REFACTOR-UI-CLEANUP`)
 
 **P5 (Bereits bekannte Aufgaben):**

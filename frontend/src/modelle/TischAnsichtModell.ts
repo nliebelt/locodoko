@@ -9,6 +9,7 @@ import type {
   LetztesSpielergebnisAntwort,
   Partei,
   PartieStandAntwort,
+  PunkteKomponenteAntwort,
   SonderpunktEreignis,
   SpielerAmTischAntwort,
   SpielerImSpielAntwort,
@@ -96,6 +97,7 @@ export interface LetztesSpielergebnisAnsicht {
   spielpunkte: PunktestandEintrag[];
   sonderpunkteRe: SonderpunktEreignis[];
   sonderpunkteKontra: SonderpunktEreignis[];
+  punkteAufschluesselung: PunkteKomponenteAntwort[];
 }
 
 /**
@@ -556,7 +558,8 @@ function mappeLetztesSpielergebnis(
     augenKontra: ergebnis.augenProPartei.KONTRA ?? 0,
     spielpunkte: mappeSpielpunkte(spielerAnsichten, ergebnis.spielpunkteProSpieler),
     sonderpunkteRe: ergebnis.sonderpunkteProPartei.RE ?? [],
-    sonderpunkteKontra: ergebnis.sonderpunkteProPartei.KONTRA ?? []
+    sonderpunkteKontra: ergebnis.sonderpunkteProPartei.KONTRA ?? [],
+    punkteAufschluesselung: ergebnis.punkteAufschluesselung ?? []
   };
 }
 

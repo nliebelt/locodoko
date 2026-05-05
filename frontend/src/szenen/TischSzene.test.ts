@@ -124,13 +124,19 @@ function baueSzene(z: any) {
   aktiveSzene = s;
   const t = erstelleTweenApi();
   const fakeParticles = () => ({ setDepth: () => fakeParticles(), explode: vi.fn(), destroy: vi.fn(), active: false });
+  const fakeAnimationen = { reiheEin: (fn: () => void) => { fn(); return Promise.resolve([]); }, abbrechen: vi.fn(), animiereRundenauswertung: vi.fn().mockResolvedValue([]), animiereAusteilung: vi.fn().mockResolvedValue(undefined), animiereGespielteKarte: vi.fn().mockResolvedValue(undefined), animiereStichgewinner: vi.fn().mockResolvedValue(undefined), animiereGewinnerFlash: vi.fn().mockResolvedValue(undefined), setzeGeschwindigkeitsfaktor: vi.fn() };
   Object.assign(s, { add: { existing: (o:any)=>o, tileSprite: (_x:any,_y:any,w:any,h:any,t:any)=>new FakeGameObject('tileSprite',{x:_x,y:_y,breite:w,hoehe:h,textur:t}), container: (_x:any,_y:any)=>new FakeContainer(), graphics: ()=>new FakeGameObject('graphics'), ellipse: (_x:any,_y:any,w:any,h:any)=>new FakeGameObject('ellipse',{x:_x,y:_y,breite:w,hoehe:h}), text: (_x:any,_y:any,t:any)=>new FakeGameObject('text',{x:_x,y:_y,text:t}), circle: (_x:any,_y:any)=>new FakeGameObject('circle',{x:_x,y:_y}), rectangle: (_x:any,_y:any,w:any,h:any)=>new FakeGameObject('rectangle',{x:_x,y:_y,breite:w,hoehe:h}), image: (_x:any,_y:any,t:any)=>new FakeGameObject('image',{x:_x,y:_y,textur:t}), particles: fakeParticles }, scale: { gameSize: { width: 1280, height: 720 }, on: vi.fn(), off: vi.fn() }, scene: { start: vi.fn() }, tweens: t, time: { addEvent: ()=>({remove:()=>{}}), delayedCall: vi.fn() }, textures: { exists: ()=>true, addCanvas: ()=>{} }, game: { loop: { sleep: vi.fn(), wake: vi.fn() } }, cameras: { main: { shake: vi.fn(), flash: vi.fn() } } });
+  s['animationen'] = fakeAnimationen;
   s.create();
   return { s, t };
 }
 
-beforeEach(() => { vi.clearAllMocks(); vi.useFakeTimers(); Object.defineProperty(globalThis, 'localStorage', { value: richteLocalStorageEin(), configurable: true, writable: true }); });
-afterEach(() => { aktiveSzene?.shutdown(); aktiveSzene = undefined; vi.useRealTimers(); });
+beforeEach(() => {
+  vi.clearAllMocks(); vi.useFakeTimers();
+  Object.defineProperty(globalThis, 'localStorage', { value: richteLocalStorageEin(), configurable: true, writable: true });
+  (window as any).__locodoko = { _rundenEndeModalGezeigt: 0 };
+});
+afterEach(() => { aktiveSzene?.shutdown(); aktiveSzene = undefined; vi.useRealTimers(); delete (window as any).__locodoko; });
 
 describe('TischSzene', () => {
   it('rendert Karten und reagiert auf Klick', async () => {
@@ -158,16 +164,17 @@ describe('TischSzene', () => {
         soloMultiplikator: 1,
         augenProPartei: { RE: 130, KONTRA: 110 },
         spielpunkteProSpieler: { SUED: 1, WEST: -1, NORD: 1, OST: -1 },
-        sonderpunkteProPartei: { RE: [], KONTRA: [] }
+        sonderpunkteProPartei: { RE: [], KONTRA: [] },
+        punkteAufschluesselung: [{ typ: 'GRUNDWERT', label: 'Grundwert', punkte: 1 }]
       }
     };
     appStoreHarness.setZustand(baueZustand({ partieStand: neuerStand }));
     appStoreHarness.sendeZustand();
     appStoreHarness.sendeEvent({ ereignisTyp: 'SPIEL_BEENDET', partieStand: neuerStand, timestamp: new Date().toISOString() });
     await vi.runAllTimersAsync();
-    const modal = document.querySelector('.ui-rundenauswertung-overlay') as HTMLElement;
-    expect(modal).not.toBeNull();
-    expect(modal.hidden).toBe(false);
+    // Rundenende-Modal wird jetzt als Phaser-Objekt gerendert — JS-Bridge prüfen
+    const bridge = (window as { __locodoko?: { _rundenEndeModalGezeigt?: number } }).__locodoko;
+    expect(bridge?._rundenEndeModalGezeigt).toBeGreaterThan(0);
   });
 
   it('stellt Rundenende-Modal nach Browser-Reload wieder her (BUG-ANIM-03)', async () => {
@@ -196,9 +203,9 @@ describe('TischSzene', () => {
     appStoreHarness.setZustand(baueZustand({ partieStand: partieStandNachSpiel }));
     appStoreHarness.sendeZustand();
     await vi.runAllTimersAsync();
-    const modal = document.querySelector('.ui-rundenauswertung-overlay') as HTMLElement;
-    expect(modal).not.toBeNull();
-    expect(modal.hidden).toBe(false);
+    // Rundenende-Modal wird jetzt als Phaser-Objekt gerendert — JS-Bridge prüfen
+    const bridge = (window as { __locodoko?: { _rundenEndeModalGezeigt?: number } }).__locodoko;
+    expect(bridge?._rundenEndeModalGezeigt).toBeGreaterThan(0);
   });
 
 
