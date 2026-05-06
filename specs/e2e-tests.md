@@ -60,8 +60,10 @@ locodoko/
 │   ├── package.json               # eigenes npm-Projekt
 │   ├── playwright.config.ts       # baseURL via ENV konfigurierbar
 │   └── tests/
-│       ├── partie-gegen-ki.spec.ts      # Testfall 1: Kritischer Pfad
-│       └── rundenauswertung.spec.ts     # Testfall 2: Rundenauswertung
+│       ├── helpers.ts                   # Bridge-Wrapper + Animations-Helpers
+│       ├── partie-gegen-ki.spec.ts      # Testfall 1: Kritischer Pfad (Turbo)
+│       ├── rundenauswertung.spec.ts     # Testfall 2: Rundenauswertung (Turbo)
+│       └── vision-loop.spec.ts         # Testfall 4: Visuelle Verifikation + Animations-Keyframes
 ```
 
 Das `e2e/`-Verzeichnis ist ein eigenständiges npm-Projekt und **nicht** Teil des `frontend/`-Projekts. Es wird **nicht** von `mvn verify` ausgeführt.
@@ -180,6 +182,82 @@ Then
 
 ---
 
+---
+
+## Testfall 4: Vision Loop — Visuelle Verifikation und Animations-Keyframes
+
+**Implementierung:** `e2e/tests/vision-loop.spec.ts`
+
+**Zweck:** Einziger Test der visuell validiert. Läuft ohne Turbo für animierte Abschnitte, damit Animationsfehler sichtbar werden (Springen statt Gleiten, Animation startet nicht, Tween-Konflikt). Dauer: < 2 Minuten.
+
+**Szenario:** Eine vollständige Partie mit gezielten Keyframe-Screenshots an animierten Events
+
+```gherkin
+Given
+  - Anwendung ist erreichbar
+  - Screenshots-Verzeichnis e2e/screenshots/ vorhanden
+
+When — Phase 1: Lobby (Turbo)
+  - Startscreen geladen → Screenshot
+  - Neuer-Tisch-Modal geöffnet → Screenshot
+  - Quick Game erstellt, TischSzene geladen
+
+When — Phase 2: Vorbehalt-Animation (Slow-Motion 0.2×)
+  - Vorbehalt-Phase aktiv, Spieler ist dran
+  - Screenshot: Ausgangszustand (GESUND vorausgewählt)
+  - Vorbehalt wechseln: GESUND → nächste Option
+  - Screenshot sofort nach Wechsel          (t=0 der Animation)
+  - Warten (~halbe Animations-Dauer)
+  - Screenshot                              (t≈50%, Karten auf halbem Weg)
+  - Warten bis isIdle()
+  - Screenshot                              (t=100%, Endzustand)
+  - Vorbehalt bestätigen (GESUND)
+
+When — Phase 3: Stich-Animation (Slow-Motion 0.2×)
+  - Spieler ist dran, spielt erste Karte
+  - Screenshot sofort nach Karte spielen    (t=0, Karte verlässt Hand)
+  - Warten (~halbe Animations-Dauer)
+  - Screenshot                              (t≈50%, Karte auf halbem Weg zum Tisch)
+  - Warten bis isIdle()
+  - Screenshot                              (t=100%, Karte auf dem Tisch)
+
+When — Phase 4: Rest der Partie (Turbo)
+  - Alle verbleibenden Stiche schnell durchspielen
+
+When — Phase 5: Rundenauswertung (Normal)
+  - Rundenauswertungs-Overlay erscheint → Screenshot
+
+Then
+  - Für jeden Animations-Block: Screenshot t=50% unterscheidet sich von t=0 und t=100%
+    → Animation hat stattgefunden (kein Sprung)
+  - Karten in t=50%-Screenshot befinden sich visuell zwischen Start- und Zielposition
+  - Rundenauswertungs-Overlay wurde angezeigt
+  - Keine JavaScript-Fehler
+```
+
+**Kritischer Testpunkt:** Findet Animationsfehler die reine Logiktests nicht sehen — Karte springt statt zu gleiten, Tween startet nicht, Animation bleibt hängen.
+
+### Slow-Motion Pattern
+
+Animations-Tests nutzen `setzeAnimationsGeschwindigkeit(0.2)` statt Turbo:
+- Jede 200ms-Animation dauert dadurch 1000ms → Playwright hat genug Zeit für Keyframe-Screenshots
+- Nach dem Animations-Abschnitt wird Turbo aktiviert um die Partie schnell zu beenden
+- `waitForTimeout()` ist im Animations-Abschnitt explizit erlaubt — die Dauer ist bekannt und deterministisch (Animations-Dauer × Slow-Motion-Faktor)
+
+### Neuer Helper: `screenshotKeyframes()`
+
+```gherkin
+Given  - Animation wird ausgelöst (Slow-Motion aktiv)
+When   - Screenshot t=0 (vor Animation)
+       - warte animationsDauer × slowMotionFaktor × 0.5
+       - Screenshot t=50%
+       - warteAufNaechstesEreignis()
+       - Screenshot t=100%
+Then   - 3 Dateien in e2e/screenshots/{name}-0.png, {name}-50.png, {name}-100.png
+```
+
+---
+
 ## Konfiguration: `playwright.config.ts`
 
 ```typescript
@@ -222,8 +300,10 @@ export default defineConfig({
 - [x] `partie-gegen-ki.spec.ts` — Testfall 1 läuft und validiert kritischen Pfad
 - [x] `rundenauswertung.spec.ts` — Testfall 2 läuft und validiert Spielende + Auswertung
 - [ ] `solo-spielfluss.spec.ts` — Testfall 3 (optional: bei Bedarf implementieren)
+- [ ] `helpers.ts` um `screenshotKeyframes(page, name, animationsMs)` erweitert
+- [ ] `vision-loop.spec.ts` auf Slow-Motion-Pattern umgestellt (Phase 1–5)
+- [ ] Vision Loop läuft in < 2 Minuten durch
 - [x] `e2e/` Projektstruktur mit `package.json` und `playwright.config.ts`
-- [x] Specs dokumentieren WAS und WARUM, nicht HOW
 
 ## Technische Hinweise
 
@@ -240,7 +320,13 @@ export default defineConfig({
 - Nicht: `await page.waitForTimeout(1000)` (unkontrollierbar, flaky)
 - Ja: Schleife mit `leseSpielZustand()` + `warteAufNaechstesEreignis()` (adaptive Wartezeit)
 
+**Wann Turbo, wann Slow-Motion?**
+- Logiktests (Testfall 1–3): immer Turbo → schnell, CI-geeignet
+- Vision Loop Animations-Abschnitt: Slow-Motion (0.2×) → Keyframes sichtbar
+- Vision Loop Rest: Turbo → Partie schnell beenden
+- Faustregel: `waitForTimeout()` ist nur im Slow-Motion-Abschnitt erlaubt, weil die Dauer bekannt ist
+
 **Debugging bei Fehlern:**
 - `aktiviereConsoleCapture()` schreibt Browser-Logs → `e2e/test-results/console-{testName}.log`
 - Playwright speichert Screenshots + Videos bei Fehler automatisch
-- Logfiles zeigen was die App getan hat, wenn Test fehlschlägt
+- Keyframe-Screenshots in `e2e/screenshots/` zeigen visuell was schiefgelaufen ist
