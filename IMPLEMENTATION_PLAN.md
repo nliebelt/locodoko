@@ -1,20 +1,14 @@
 # IMPLEMENTATION_PLAN — Plan-Run #114
 
-> Stand: 2026-05-06. Fokus: Codebase-Scan Run #114 — Statusabgleich offener Tasks, neue Cleanup-Tasks.
+> Stand: 2026-05-06. Fokus: Task 29 erledigt — KiEventAdapter gelöscht.
 
 ## Notiz
 
-**Was wurde gescannt (Run #114)?**
-- Task 5 (Spielprotokoll): bereits vollständig implementiert — `SpielprotokollOverlay.ts`, `spielProtokollEintraege` im AppStore, 📋-Button in TischSzene. Als [x] markiert.
-- Task 6 (FEAT-POINT-LABELS): bereits vollständig implementiert — `PunkteKomponenteAntwort` (typ/label/punkte) im Backend, DTO im Frontend. Als [x] markiert.
-- FEAT-QUICK-PLAY-SYNC: bereits vollständig implementiert — `erstelleQuickGame()` mit `wirdGeladen`-Flag, API-Integration, E2E-Test. Als [x] markiert.
-- Task 25 (FIX-KI-ARCHITECTURE-VIOLATION): bestätigt erledigt — `KiEventAdapter` ist leer (deprecated), Logik in `KiTischOrchestrator`. Inkonsistenz im Plan behoben.
-- Task 28 (DOC-SPEC-UPDATES): Scope präzisiert — `frontend-ui-logik.md` und `ki-strategie.md` sind bereits korrekt, kein Update nötig. Nur `spieler-session.md` und `architektur-domain-events.md` brauchen Updates.
-- Neue Tasks: 29 (leere KiEventAdapter-Klasse entfernen), 30 (ESLint `any`-Fehler beheben).
+**Was wurde implementiert?**
+- Task 29 (REFACTOR-KI-ADAPTER-CLEANUP): `KiEventAdapter.java` gelöscht. War leere Stub-Klasse ohne Referenzen. `mvn test` grün (307 Tests).
 
 **Nächster logischer Schritt:**
-- Task 28 (DOC-SPEC-UPDATES): Zwei Spec-Dateien aktualisieren.
-- Task 29 (REFACTOR-KI-ADAPTER-CLEANUP): Leere KiEventAdapter-Klasse entfernen.
+- Task 28 (DOC-SPEC-UPDATES): Zwei Spec-Dateien aktualisieren (`spieler-session.md`, `architektur-domain-events.md`).
 - Task 30 (FIX-ESLINT-ANY): 96 TypeScript `any`-Fehler bereinigen.
 - Vision Loop Spielschleife: `leseSpielZustand` wartet auf `isIdle()` das bei KI-Spiel gelegentlich >15s dauert (pre-existing), soll verbessert werden.
 - Hochzeit-Nameplate: Kein Herz-Label implementiert.
@@ -152,7 +146,7 @@ Vollständiger Codebase-Scan abgeschlossen. Wesentliche Befunde:
 ## P8 — Neu entdeckte Aufgaben (Plan-Run #114)
 
 ### REFACTOR-KI-ADAPTER-CLEANUP (Task 29)
-- [ ] **Backend**: Leere Klasse `de.locodoko.ki.orchestrierung.KiEventAdapter` entfernen. Sie enthält nur einen Kommentar und einen leeren Body — kein produktiver Code, keine Tests referenzieren sie. Sicherstellen dass `mvn test` danach grün ist.
+- [x] **Backend**: Leere Klasse `de.locodoko.ki.orchestrierung.KiEventAdapter` entfernen. Sie enthält nur einen Kommentar und einen leeren Body — kein produktiver Code, keine Tests referenzieren sie. Sicherstellen dass `mvn test` danach grün ist.
 
 ### FIX-ESLINT-ANY (Task 30)
 - [ ] **Frontend**: 96 TypeScript ESLint `any`-Fehler in `frontend/src/` bereinigen. Schrittweise: zuerst `npm run lint` ausführen um aktuelle Liste zu erhalten, dann Typen präzisieren (bevorzugt `unknown` + Type Guards oder spezifische Typen aus `api-types.ts`). Nach jeder Datei `npm test` ausführen. Kein `eslint-disable`-Kommentar ohne Begründung.
@@ -181,5 +175,5 @@ Vollständiger Codebase-Scan abgeschlossen. Wesentliche Befunde:
 - [ ] Task 28: DOC-SPEC-UPDATES
 
 **P8 (Neu entdeckt, Plan-Run #114):**
-- [ ] Task 29: REFACTOR-KI-ADAPTER-CLEANUP
+- [x] Task 29: REFACTOR-KI-ADAPTER-CLEANUP
 - [ ] Task 30: FIX-ESLINT-ANY
