@@ -7,9 +7,12 @@
 **Was wurde implementiert?**
 - Task 29 (REFACTOR-KI-ADAPTER-CLEANUP): `KiEventAdapter.java` gelöscht. War leere Stub-Klasse ohne Referenzen. `mvn test` grün (307 Tests).
 - Task 28 (DOC-SPEC-UPDATES): `spieler-session.md` auf BCrypt/Passwort aktualisiert. `architektur-domain-events.md`: KiEventAdapter → KiTischOrchestrator, SpielBeendet-Produzent korrigiert, KI_ZUG_SEQUENZ entfernt, AKTION_ABGELEHNT ergänzt, PartieEreignisBatch auf „Implementiert" gesetzt.
+- Task 30 (FIX-ESLINT-ANY): `no-explicit-any` als ESLint-Regel aktiviert. Alle 7 `as any`-Casts im Produktionscode durch korrekte Phaser-Typen (`cameras.main.shake/flash`, `add.particles`) und typisiertes Window-Interface ersetzt. 104 Tests grün, Build und Lint sauber.
 
 **Nächster logischer Schritt:**
-- Task 30 (FIX-ESLINT-ANY): 96 TypeScript `any`-Fehler bereinigen (`cd frontend && npm run lint` für aktuelle Liste).
+- Alle P7/P8-Tasks erledigt. Nächster Ralph: Codebase-Scan für neue Tasks.
+- Pre-existing: Vision Loop `isIdle()` gelegentlich >15s bei KI-Spielen.
+- Pre-existing: Hochzeit-Nameplate ohne Herz-Label.
 - Vision Loop Spielschleife: `leseSpielZustand` wartet auf `isIdle()` das bei KI-Spiel gelegentlich >15s dauert (pre-existing), soll verbessert werden.
 - Hochzeit-Nameplate: Kein Herz-Label implementiert.
 
@@ -149,7 +152,7 @@ Vollständiger Codebase-Scan abgeschlossen. Wesentliche Befunde:
 - [x] **Backend**: Leere Klasse `de.locodoko.ki.orchestrierung.KiEventAdapter` entfernen. Sie enthält nur einen Kommentar und einen leeren Body — kein produktiver Code, keine Tests referenzieren sie. Sicherstellen dass `mvn test` danach grün ist.
 
 ### FIX-ESLINT-ANY (Task 30)
-- [ ] **Frontend**: 96 TypeScript ESLint `any`-Fehler in `frontend/src/` bereinigen. Schrittweise: zuerst `npm run lint` ausführen um aktuelle Liste zu erhalten, dann Typen präzisieren (bevorzugt `unknown` + Type Guards oder spezifische Typen aus `api-types.ts`). Nach jeder Datei `npm test` ausführen. Kein `eslint-disable`-Kommentar ohne Begründung.
+- [x] **Frontend**: TypeScript ESLint `any`-Fehler in `frontend/src/` bereinigen. Schrittweise: zuerst `npm run lint` ausführen um aktuelle Liste zu erhalten, dann Typen präzisieren (bevorzugt `unknown` + Type Guards oder spezifische Typen aus `api-types.ts`). Nach jeder Datei `npm test` ausführen. Kein `eslint-disable`-Kommentar ohne Begründung.
 
 ---
 
@@ -176,4 +179,4 @@ Vollständiger Codebase-Scan abgeschlossen. Wesentliche Befunde:
 
 **P8 (Neu entdeckt, Plan-Run #114):**
 - [x] Task 29: REFACTOR-KI-ADAPTER-CLEANUP
-- [ ] Task 30: FIX-ESLINT-ANY
+- [x] Task 30: FIX-ESLINT-ANY

@@ -273,8 +273,17 @@ export class TischSzene extends Phaser.Scene {
     });
 
     // TEST-HOOK: Animationsgeschwindigkeit steuerbar machen fuer E2E-Tests
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const bridge = (window as any)['__locodoko'];
+    const bridge = (window as {
+      __locodoko?: {
+        setzeAnimationsGeschwindigkeit?: (f: number) => void;
+        setzeKiVerzoegerung?: (ms: number) => void;
+        isOverlaySichtbar?: () => boolean;
+        isIdle?: (ignoreStore?: boolean) => boolean;
+        getHudState?: () => { stichzaehler: string; spieltyp: string; startBtnSichtbar: boolean; rundenEndeSichtbar: boolean };
+        schliesseRundenEndeModal?: () => void;
+        _rundenEndeModalGezeigt?: number;
+      };
+    }).__locodoko;
     if (bridge) {
       bridge.setzeAnimationsGeschwindigkeit = (f: number) => {
         this.animationsGeschwindigkeit = f as AnimationsGeschwindigkeit;

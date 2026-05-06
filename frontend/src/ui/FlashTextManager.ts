@@ -120,8 +120,7 @@ export class FlashTextManager {
 
   konfetti(x: number, y: number, menge: number, farben = [0xffd700, 0xff88ff, 0x44ffee, 0xff8833]): void {
     if (!this.szene.textures.exists('pixel')) return;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const emitter = (this.szene.add as any).particles(x, y, 'pixel', {
+    const emitter = this.szene.add.particles(x, y, 'pixel', {
       speed: { min: 80, max: 200 },
       angle: { min: 0, max: 360 },
       gravityY: 300,
@@ -154,13 +153,11 @@ export class FlashTextManager {
   }
 
   screenShake(): void {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    (this.szene.cameras as any)?.main?.shake?.(350, 0.007);
+    this.szene.cameras.main.shake(350, 0.007);
   }
 
   cameraFlash(r: number, g: number, b: number, dauer: number): void {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    (this.szene.cameras as any)?.main?.flash?.(dauer, r, g, b);
+    this.szene.cameras.main.flash(dauer, r, g, b);
   }
 
   private foilShimmer(text: Phaser.GameObjects.Text): Phaser.Time.TimerEvent {
@@ -335,8 +332,7 @@ export class FlashTextManager {
     });
     this.shockwaveRing(this.cx(), this.cy(), FARBE_GOLD, 0);
     this.shockwaveRing(this.cx(), this.cy(), FARBE_GOLD, 100);
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    (this.szene.cameras as any)?.main?.shake?.(300, 0.006);
+    this.szene.cameras.main.shake(300, 0.006);
     this.verwalteMitTimeout(container, 2500);
   }
 
@@ -366,8 +362,7 @@ export class FlashTextManager {
     this.shockwaveRing(cx, cy, FARBE_GOLD, 200);
     this.konfetti(cx, cy, 70, [0xffd700, 0xff88ff, 0x44ffee, 0xff8833, 0xffffff]);
     this.cameraFlash(255, 215, 0, 300);
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    (this.szene.cameras as any)?.main?.shake?.(400, 0.01);
+    this.szene.cameras.main.shake(400, 0.01);
     this.verwalteteObjekte.push(container);
     const destroyTimer = this.szene.time.delayedCall(3500, () => {
       foilTimer.remove(false);
@@ -450,8 +445,7 @@ export class FlashTextManager {
     this.shockwaveRing(cx, cy, FARBE_GRUEN, 100);
     this.konfetti(cx, cy, 150, [0x44ff88, 0xffd700, 0xffffff, 0x44ffee, 0xff88ff]);
     this.cameraFlash(100, 255, 150, 400);
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    (this.szene.cameras as any)?.main?.shake?.(500, 0.012);
+    this.szene.cameras.main.shake(500, 0.012);
     this.verwalteteObjekte.push(container);
     const destroyTimer = this.szene.time.delayedCall(4000, () => {
       foilTimer.remove(false);
