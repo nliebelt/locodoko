@@ -576,6 +576,35 @@ class TischControllerTest {
             "Verschiedene Tische muessen unterschiedliche Einladungscodes haben");
     }
 
+    @Test
+    void verweigerteGastZugriffAufPrivatenTisch() throws Exception {
+        // WARUM: Gast-Spieler (ohne Konto) duerfen keine privaten Tische betreten —
+        // Private Tische sind eingeloggten Spielern vorbehalten (authentifizierung.md).
+        MockHttpSession adaSession = registriereSpieler("AdaPrivat");
+        MockHttpSession gastSession = registriereSpieler("GastPrivat");
+
+        // Ada erstellt einen privaten Tisch
+        MvcResult ergebnis = mockMvc.perform(post("/api/tische")
+                .session(adaSession)
+                .contentType(APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(new TischErstellenAnfrage("Privater Tisch", null, true, null))))
+            .andExpect(status().isCreated())
+            .andReturn();
+        TischAntwort tischAntwort = objectMapper.readValue(ergebnis.getResponse().getContentAsByteArray(), TischAntwort.class);
+        UUID tischId = tischAntwort.id();
+        String einladungsCode = tischAntwort.einladungsCode();
+
+        // Gast versucht via ID beizutreten → 403
+        mockMvc.perform(post("/api/tische/{id}/beitreten", tischId).session(gastSession))
+            .andExpect(status().isForbidden())
+            .andExpect(jsonPath("$.fehlerCode").value("ZUGRIFF_VERWEIGERT"));
+
+        // Gast versucht via Einladungscode beizutreten → 403
+        mockMvc.perform(post("/api/tische/beitreten/{code}", einladungsCode).session(gastSession))
+            .andExpect(status().isForbidden())
+            .andExpect(jsonPath("$.fehlerCode").value("ZUGRIFF_VERWEIGERT"));
+    }
+
     private MockHttpSession registriereSpieler(String name) throws Exception {
         MvcResult ergebnis = mockMvc.perform(post("/api/spieler/session")
                 .contentType(APPLICATION_JSON)

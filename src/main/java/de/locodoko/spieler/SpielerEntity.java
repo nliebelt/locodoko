@@ -150,6 +150,11 @@ public class SpielerEntity extends AbstraktePersistenzEntity {
             : null;
     }
 
+    /** Gibt {@code true} zurueck, wenn der Spieler kein eingeloggtes Konto hat (anonymer Gast-Zugang). */
+    public boolean istGast() {
+        return authentifizierungsMethode == null;
+    }
+
     public String externalId() {
         return externalId;
     }

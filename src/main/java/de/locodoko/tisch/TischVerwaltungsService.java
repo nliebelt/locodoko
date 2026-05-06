@@ -9,6 +9,7 @@ import de.locodoko.partie.Spiel;
 import de.locodoko.spieler.SpielerEntity;
 import de.locodoko.spieler.SpielerId;
 import de.locodoko.spieler.SpielerRepository;
+import de.locodoko.spieler.SpielerZugriffVerweigertException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -119,6 +120,11 @@ public class TischVerwaltungsService {
         pruefeDassSpielerAnKeinemTischSitzt(verwalteterSpieler);
         TischEntity tisch = ladeTischEntityMitSperre(tischId);
         pruefeWartendenTisch(tisch, "TISCH_BEREITS_GESTARTET", "Ein gestarteter Tisch kann nicht mehr betreten werden.");
+        if (tisch.zugangsmodus() == Zugangsmodus.PRIVAT && verwalteterSpieler.istGast()) {
+            throw new SpielerZugriffVerweigertException(
+                "Private Tische koennen nur von eingeloggten Spielern betreten werden."
+            );
+        }
         if (tisch.istVoll()) {
             throw new SpielverwaltungKonfliktException("TISCH_VOLL", "Der Tisch ist bereits voll belegt.");
         }

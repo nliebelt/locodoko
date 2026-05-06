@@ -4,12 +4,12 @@
 
 ## Notiz
 
-**Was wurde implementiert (Run #111)?**
-- Task 22 (FIX-TISCH-STATUS-ABBRUCH): `VerbindungsabbruchService.pruefeReconnectTimeouts()` setzt Tisch-Status auf `WARTEND` wenn der letzte menschliche Spieler seinen Reconnect-Timeout überschreitet (statt Tisch im Status `IM_SPIEL` zu belassen). `TischEntity.setzeStatusWartend()` hinzugefügt. `pruefeReconnectTimeouts()` in `verarbeiteTimeouts(Instant)` extrahiert (package-private, testbar). Neuer Test `tischWirdNachTimeoutDesLetztenSpielerAufWartendGesetzt` in `VerbindungsabbruchServiceTest`. 306 Backend-Tests grün.
+**Was wurde implementiert (Run #111, zweite Iteration)?**
+- Task 23 (FIX-PRIVATE-TISCH-GUESTS): `SpielerEntity.istGast()` hinzugefügt (gibt `true` wenn `authentifizierungsMethode == null`). In `TischVerwaltungsService.betreteTisch()` wird vor dem Beitritt geprüft: wenn der Tisch `PRIVAT` ist und der Spieler ein Gast ist → `SpielerZugriffVerweigertException` (HTTP 403). Gilt auch für den Code-Beitritt (`beitretenViaCode` delegiert an `betreteTisch`). Neuer Integrationstest `verweigerteGastZugriffAufPrivatenTisch` in `TischControllerTest`. 307 Backend-Tests grün.
 
 **Nächster logischer Schritt:**
-- Task 23 (FIX-PRIVATE-TISCH-GUESTS): Sicherheitscheck beim Tisch-Beitritt — Gast-User (nicht eingeloggt) dürfen keine privaten Tische betreten.
-- Alternativ: Task 21 (FIX-ABAC-AUTHORIZATION) für vollständige ABAC-Durchsetzung in Controllern.
+- Task 21 (FIX-ABAC-AUTHORIZATION): `@PreAuthorize`-Annotationen in Controllern für ABAC-Durchsetzung ergänzen.
+- Task 24 (REFACTOR-URL-CONSISTENCY): Alle REST-Endpunkte auf Plural `/api/tische/...` vereinheitlichen.
 
 **Offene Fragen:**
 - Vision Loop Spielschleife: `leseSpielZustand` wartet auf `isIdle()` das bei KI-Spiel gelegentlich >15s dauert (pre-existing).
@@ -113,7 +113,7 @@
 - [x] **Backend**: Nach Verbindungsabbruch den Tisch-Status auf `WARTEND` setzen, anstatt den Tisch zu löschen (`VerbindungsabbruchService.java`).
 
 ### FIX-PRIVATE-TISCH-GUESTS (Task 23)
-- [ ] **Backend**: Überprüfung beim Beitritt zu privaten Tischen implementieren, um Gast-User abzulehnen (Login-Pflicht gemäß Spec).
+- [x] **Backend**: Überprüfung beim Beitritt zu privaten Tischen implementieren, um Gast-User abzulehnen (Login-Pflicht gemäß Spec).
 
 ### REFACTOR-URL-CONSISTENCY (Task 24)
 - [ ] **Backend**: Alle REST-Endpunkte für Tische auf Plural (`/api/tische/...`) vereinheitlichen.
@@ -155,7 +155,7 @@
 **P7 (Neu entdeckt, Plan-Run #111):**
 - [ ] Task 21: FIX-ABAC-AUTHORIZATION
 - [x] Task 22: FIX-TISCH-STATUS-ABBRUCH
-- [ ] Task 23: FIX-PRIVATE-TISCH-GUESTS
+- [x] Task 23: FIX-PRIVATE-TISCH-GUESTS
 - [ ] Task 24: REFACTOR-URL-CONSISTENCY
 - [ ] Task 25: FIX-KI-ARCHITECTURE-VIOLATION
 - [ ] Task 26: FEAT-EVENT-GAP-DETECTION
