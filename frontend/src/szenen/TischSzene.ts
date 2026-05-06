@@ -273,6 +273,7 @@ export class TischSzene extends Phaser.Scene {
     });
 
     // TEST-HOOK: Animationsgeschwindigkeit steuerbar machen fuer E2E-Tests
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const bridge = (window as any)['__locodoko'];
     if (bridge) {
       bridge.setzeAnimationsGeschwindigkeit = (f: number) => {
@@ -577,7 +578,7 @@ export class TischSzene extends Phaser.Scene {
     try { 
       await this.animationen?.animiereStichEinziehen(animK, ziel, mStich.augen, flash); 
     } finally { 
-      animK.forEach((k: any) => k.wurzel.destroy()); 
+      animK.forEach((k: { wurzel: { destroy: () => void } }) => k.wurzel.destroy()); 
       flash.destroy(); 
       this.stichEinziehenAktiv = false;
       // Wieder statisch rendern, falls der Store den State noch nicht gepatcht hat

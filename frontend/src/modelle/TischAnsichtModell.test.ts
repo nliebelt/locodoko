@@ -718,7 +718,7 @@ describe('erstelleTischAnsichtAusStatus', () => {
 });
 
 function karte(farbe: KarteAntwort['farbe'], wert: KarteAntwort['wert'], idx = 1): KarteAntwort {
-  return { id: `${farbe}-${wert}-${idx}`, farbe, wert, exemplarIndex: idx, bildId: '' };
+  return { id: `${farbe}-${wert}-${idx}`, farbe, wert, exemplarIndex: idx };
 }
 
 describe('vorbehaltZuSpieltypFuerSortierung', () => {

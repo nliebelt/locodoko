@@ -32,11 +32,12 @@ test.describe('Schnellstart (Quick Game)', () => {
     // (window.__locodoko) bereitsteht und die SpielverwaltungsSzene aktiv ist.
     await page.goto('/');
     await getBridge(page);
-    await warteAufSzene(page, 'SpielverwaltungsSzene', 20_000);
+    await warteAufSzene(page, 'LoginSzene', 20_000);
 
     // ── 2. Quick Game triggern ───────────────────────────────────────────────
     // Warum: Da die Buttons in Phaser gerendert werden, nutzen wir die JS-Bridge.
     await alsGastStarten(page);
+    await warteAufSzene(page, 'SpielverwaltungsSzene', 20_000);
     await erstelleQuickGame(page);
 
     // ── 3. TischSzene erscheint direkt ──────────────────────────────────────
@@ -49,6 +50,7 @@ test.describe('Schnellstart (Quick Game)', () => {
     // wurden und der Spieler seinen Vorbehalt erklaeren muss.
     await warteAufPhase(page, 'VORBEHALT_ANSAGE', 20_000);
     await warteAufEigenenVorbehalt(page, 15_000);
+    await page.locator('canvas').focus();
     // Vorbehalt per Ziffertaste 1 = erste Option (GESUND)
     await page.keyboard.press('1');
 
@@ -56,6 +58,7 @@ test.describe('Schnellstart (Quick Game)', () => {
     // KI-Spieler melden Vorbehalte automatisch → Spielphase wechselt zu STICHPHASE.
     // Warte bis SUED an der Reihe ist (spielbareKarten vorhanden).
     await warteAufEigenenZug(page, 25_000);
+    await page.keyboard.press('ArrowRight');
     await page.keyboard.press('Enter');
 
     // ── 6. Stich-Zaehler pruefen ─────────────────────────────────────────────

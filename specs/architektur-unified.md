@@ -4,7 +4,7 @@
 |----------------|-------------------------------------------------------------|
 | Status         | Aktive Vorgabe                                              |
 | Priorität      | Kritisch                                                    |
-| Bezug          | architektur-ddd.md, websocket-kommunikation.md              |
+| Bezug          | architektur.md, websocket-kommunikation.md                  |
 
 ## Kernprinzipien
 

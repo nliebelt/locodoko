@@ -18,6 +18,15 @@
 
 ---
 
+## Entdeckungen
+
+<!-- Build-Agent trägt hier Beobachtungen ein die nicht zur aktuellen Aufgabe gehören.
+     Plan-Agent wandelt sie beim nächsten Scan in konkrete Tasks um. -->
+
+- (noch keine Einträge)
+
+---
+
 ## Legende
 
 - [ ] Offen

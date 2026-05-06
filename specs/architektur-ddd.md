@@ -1,15 +1,16 @@
-# Architektur-Prinzipien (Domain-Driven Design)
+# Architektur-Detail: Spring Modulith & Persistenz
 
 | Feld           | Wert                                                                 |
 |----------------|----------------------------------------------------------------------|
-| Status         | Finalisierte Vorgabe |
-| Priorität      | Kritisch                                                             |
-| Abhängigkeiten | datenbankmodell.md                                                   |
-| Letztes Update | 2026-04-13 — Spring Modulith, neue BC-Namen, Application Layer      |
+| Status         | Detail-Spec (Konsolidiert in architektur.md) |
+| Priorität      | Mittel                                                               |
+| Abhängigkeiten | architektur.md, datenbankmodell.md                                   |
+| Letztes Update | 2026-05-06 — Degradiert zu Detail-Spec; Kern-Prinzipien leben jetzt in architektur.md |
 
 ## Beschreibung
 
-Diese Spezifikation ist der architektonische Kompass für die Locodoko-Codebase. Sie stellt sicher, dass Komplexität durch klare Fachlichkeit beherrscht wird und Code für Menschen (und Agents) ohne Rätselraten lesbar bleibt. Wir bauen kein technisches Konstrukt, sondern bilden ein lebendiges Kartenspiel ab — mit echter Domänensprache und sauberen Modulgrenzen.
+Diese Spezifikation enthält Detail-Konfiguration für Spring Modulith und Persistenz-Strategien.
+Die übergreifenden Architektur-Prinzipien, das Domain Model und den Event-Vertrag findest du in `architektur.md`.
 
 Strategie: Pragmatisches DDD — Domain Model = Persistence Model, Spring Modulith für Modulgrenzen-Durchsetzung.
 Tech-Stack: Spring Boot 4, Spring Data JDBC, Liquibase, Spring Modulith.

@@ -1,4 +1,5 @@
 // @vitest-environment jsdom
+/* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unused-vars */
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type {

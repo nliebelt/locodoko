@@ -18,6 +18,6 @@ Vollständiges Paket: `mvn clean package` (baut Frontend ein, erzeugt JAR)
 
 Code, Kommentare, Klassen, Methoden auf **Deutsch**. Fachbegriffe: Stich, Trumpf, Dulle, Fuchs, Karlchen, Re, Kontra, Armut, Hochzeit.
 
-## Architektur (Details → specs/)
+## Architektur (Details → specs/architektur.md)
 
-Pragmatisches DDD: Domain Model = Persistence Model. Spring Data JDBC (kein JPA) + Liquibase. Bounded Contexts: `lobby`, `partie`, `karten`, `session`. Frontend: Phaser 3, TypeScript strict, AppStore als zentraler Zustandsspeicher. Backend = einzige Wahrheitsquelle.
+Module: `partie/` (Domain-Kern), `karten/` (Shared Kernel), `spieler/` (Identität/Auth), `ki/` (Autonomer Agent), `tisch/` (Application Layer + Delivery). Spring Data JDBC (kein JPA) + Liquibase. Frontend: Phaser 3, TypeScript strict, AppStore + Snapshot+Hint Modell. Backend = einzige Wahrheitsquelle.

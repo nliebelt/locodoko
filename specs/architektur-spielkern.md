@@ -4,7 +4,7 @@
 |----------------|-------------------------------------------------------------|
 | Status         | Aktive Vorgabe                                              |
 | Priorität      | Kritisch                                                    |
-| Abhängigkeiten | architektur-ddd.md, kartendeck.md                           |
+| Abhängigkeiten | architektur.md, kartendeck.md                               |
 
 ## Glossar
 

@@ -104,6 +104,10 @@ build_context() {
     cat AGENTS.md >> "$CONTEXT_FILE"
     echo "" >> "$CONTEXT_FILE"
 
+    echo "=== specs/architektur.md ===" >> "$CONTEXT_FILE"
+    cat specs/architektur.md >> "$CONTEXT_FILE"
+    echo "" >> "$CONTEXT_FILE"
+
     echo "=== ANWEISUNGEN ($MODE-Modus) ===" >> "$CONTEXT_FILE"
     cat "$PROMPT_FILE" >> "$CONTEXT_FILE"
     echo "" >> "$CONTEXT_FILE"
@@ -111,6 +115,13 @@ build_context() {
     if [ -f "IMPLEMENTATION_PLAN.md" ]; then
         echo "=== IMPLEMENTATION_PLAN.md ===" >> "$CONTEXT_FILE"
         cat IMPLEMENTATION_PLAN.md >> "$CONTEXT_FILE"
+        echo "" >> "$CONTEXT_FILE"
+    fi
+
+    # Git diff for build mode — what changed in the last iteration?
+    if [ "$MODE" = "build" ] && git rev-parse HEAD~1 &>/dev/null; then
+        echo "=== Letzte Änderungen (git diff --stat HEAD~1) ===" >> "$CONTEXT_FILE"
+        git diff --stat HEAD~1 >> "$CONTEXT_FILE" 2>/dev/null || true
         echo "" >> "$CONTEXT_FILE"
     fi
 

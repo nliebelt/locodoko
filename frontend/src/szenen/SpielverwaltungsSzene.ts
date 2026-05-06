@@ -57,6 +57,8 @@ export class SpielverwaltungsSzene extends Phaser.Scene {
       }
     });
 
+    this.events.once('shutdown', this.shutdown, this);
+
     this.renderUi(appStore.snapshot());
   }
 

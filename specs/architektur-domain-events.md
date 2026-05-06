@@ -4,7 +4,7 @@
 |----------------|-------------------------------------------------------------|
 | Status         | Aktive Vorgabe                                              |
 | Priorität      | Kritisch                                                    |
-| Abhängigkeiten | architektur-ddd.md, architektur-spielkern.md                |
+| Abhängigkeiten | architektur.md, architektur-spielkern.md                    |
 
 ## Ziel
 
