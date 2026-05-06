@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { getBridge, leseSpielZustand, aktiviereTurbo, meldeVorbehalt, alsGastStarten, erstelleKonfiguriertenTisch, starteAktuellenTisch, spieleKarte, aktiviereConsoleCapture } from './helpers';
+import { getBridge, leseSpielZustand, aktiviereTurbo, meldeVorbehalt, alsGastStarten, erstelleKonfiguriertenTisch, starteAktuellenTisch, spieleKarte, aktiviereConsoleCapture, warteAufSzene, leseHudZustand } from './helpers';
 
 test.describe('Mehrere Runden ohne Neunen (10 Stiche)', () => {
   test('Zwei vollständige Runden ohne JS-Fehler spielen', async ({ page }, testInfo) => {
@@ -18,7 +18,7 @@ test.describe('Mehrere Runden ohne Neunen (10 Stiche)', () => {
       kiSchwierigkeit: 'STANDARD',
     }, true);
 
-    await expect(page.locator('[data-testid="tischszene"]')).toBeVisible({ timeout: 15_000 });
+    await warteAufSzene(page, 'TischSzene', 15_000);
     // Wenn das Backend KI-Spieler automatisch einbucht und startet (Race Condition),
     // wird "Der Tisch wurde bereits gestartet" geworfen — sicher ignorieren.
     await starteAktuellenTisch(page).catch(() => {});
@@ -39,8 +39,8 @@ test.describe('Mehrere Runden ohne Neunen (10 Stiche)', () => {
 
       // Stichzähler Prüfung (muss /10 sein)
       if (!stichzaehlerGeprueft && zustand.phase === 'STICHPHASE') {
-        const text = await page.locator('[data-testid="hud-stichzaehler"]').innerText();
-        expect(text).toContain('/10');
+        const hud = await leseHudZustand(page);
+        expect(hud.stichzaehler).toContain('/10');
         stichzaehlerGeprueft = true;
       }
 

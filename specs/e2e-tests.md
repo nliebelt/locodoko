@@ -22,29 +22,30 @@ Locodoko nutzt daher das **Bridge Pattern**:
 
 Die Tastatursteuerung bleibt als sekundärer Pfad für lokale UX-Tests erhalten, für die automatisierte Absicherung der Spiellogik ist die Bridge jedoch die **Single Source of Truth**.
 
-### `data-testid`-Attribute
+### Bridge API — Stabile Test-Selektoren
 
-Stabile Tests brauchen stabile Selektoren. Alle testbaren UI-Elemente bekommen ein `data-testid`-Attribut. Das sind **Implementierungsanforderungen** — Ralph muss diese Attribute beim Umbau der UI setzen:
+Da die gesamte Spieloberfläche in Phaser (Canvas) gerendert wird, gibt es keine DOM-Elemente mit `data-testid`. Die **JavaScript-Bridge** (`window.__locodoko`) ist der einzige stabile Zugangspunkt für Playwright-Tests.
 
-| `data-testid`              | Element                                             | Szene        |
-|----------------------------|-----------------------------------------------------|--------------|
-| `startscreen`              | Start-Screen Wurzel-Container                       | Start-Screen |
-| `btn-neuer-tisch`          | „+ Neuen Tisch erstellen"-Button                    | Start-Screen |
-| `btn-offene-tische`        | „⊞ Offene Tische"-Button                           | Start-Screen |
-| `btn-session-recovery`     | „↩ Zurück zu [Tischname]"-Button (wenn vorhanden)  | Start-Screen |
-| `tisch-config-modal`       | Tisch-Konfigurations-Modal                          | Start-Screen |
-| `input-tischname`          | Tischname-Eingabefeld im Modal                      | Start-Screen |
-| `btn-tisch-erstellen`      | „Tisch erstellen"-Button im Modal                   | Start-Screen |
-| `tischszene`               | TischSzene Wurzel-Container                         | Tischansicht |
-| `hud-stichzaehler`         | Stich X/12 in der Top-Bar                           | Tischansicht |
-| `hud-spieltyp`             | Spieltyp-Anzeige in der Top-Bar                     | Tischansicht |
-| `hud-btn-einstellungen`    | `[⚙]`-Button in der Top-Bar                        | Tischansicht |
-| `einstellungen-modal`      | Einstellungs-Modal                                  | Tischansicht |
-| `btn-spiel-starten`        | „Spiel starten"-Button im Einstellungs-Modal        | Tischansicht |
-| `vorbehalt-overlay`        | Vorbehalt-Overlay                                   | Tischansicht |
-| `floating-action-bar`      | Floating Action Bar (Ansagen / Aktionshinweis)      | Tischansicht |
-| `rundenauswertung-overlay` | Rundenauswertungs-Overlay                           | Tischansicht |
-| `btn-rundenauswertung-weiter` | „Weiter →"-Button im Rundenauswertungs-Overlay   | Tischansicht |
+| Bridge-Property / Methode                        | Beschreibung                                                                             |
+|--------------------------------------------------|------------------------------------------------------------------------------------------|
+| `getAktuelleSzene()`                             | Aktive Phaser-Szene (`'SpielverwaltungsSzene'`, `'TischSzene'` etc.)                    |
+| `appStore.snapshot()`                            | Aktueller App-Zustand: Session, Tisch, Partie, Spieler                                  |
+| `appStore.alsGastStarten()`                      | Session als Gast initialisieren                                                          |
+| `appStore.erstelleQuickGame()`                   | Schnellstart: Tisch erstellen, KI auffüllen, Partie starten                             |
+| `appStore.erstelleKonfiguriertenTisch(n, c, p)`  | Konfigurierten Tisch erstellen                                                           |
+| `appStore.starteAktuellenTisch()`                | Warte-Tisch starten                                                                      |
+| `appStore.spieleKarte(karteId)`                  | Karte per ID spielen                                                                     |
+| `appStore.meldeVorbehalt(v)`                     | Vorbehalt melden (z.B. `'GESUND'`, `'SOLO_DAME'`)                                       |
+| `appStore.sageAnsageAn(partei)`                  | Ansage `'RE'` oder `'KONTRA'` machen                                                    |
+| `appStore.beantworteArmut(annehmen, karten)`     | Armutangebot annehmen/ablehnen                                                           |
+| `isIdle()`                                       | `true` wenn alle Animationen und Event-Queue verarbeitet sind (Quiescence)               |
+| `isOverlaySichtbar()`                            | Rundenauswertung, Partie-Ende oder Einstellungen sichtbar                                |
+| `getHudState()`                                  | `{ stichzaehler, spieltyp, startBtnSichtbar, rundenEndeSichtbar }`                      |
+| `setzeAnimationsGeschwindigkeit(f)`              | Animationsgeschwindigkeit (`Infinity` = Turbo für Tests)                                 |
+| `_rundenEndeModalGezeigt`                        | Zähler: wie oft das Rundenende-Modal seit Szenen-Start angezeigt wurde                  |
+| `_rundenauswertungSpieltypLabel`                 | Spieltyp-Text des letzten Rundenende-Modals (z.B. `'Damensolo'`)                       |
+| `_rundenauswertungMultiplikator`                 | Solo-Multiplikator des letzten Modals (z.B. `3` bei Solo)                              |
+| `schliesseRundenEndeModal()`                     | Schließt das Rundenende-Modal programmatisch (entspricht „Weiter →")                    |
 
 ## Projektstruktur
 
@@ -188,23 +189,15 @@ cd e2e && npx playwright test --ui
 
 #### 6. Rundenauswertung: Solo-spezifische Anzeige
 
-- Assert: `[data-testid="rundenauswertung-overlay"]` wird sichtbar (timeout: 120s)
-- Assert: `[data-testid="rundenauswertung-spieltyp"]` enthält Solo-Typ (z.B. „Damensolo")
-- Assert: Overlay enthält „RE" genau einmal (nur Solist) und „KONTRA" für die anderen drei
-- Assert: `[data-testid="rundenauswertung-punktemultiplikator"]` zeigt `×3`
+- Assert: `window.__locodoko._rundenEndeModalGezeigt > 0` (Modal wurde gezeigt)
+- Assert: `window.__locodoko._rundenauswertungSpieltypLabel` enthält Solo-Typ (z.B. `'Damensolo'`)
+- Assert: `window.__locodoko._rundenauswertungMultiplikator === 3`
 
 #### 7. Nächstes Spiel: Geber-Wiederholung nach Solo
 
-- Drücke `Enter` um Overlay zu schließen
-- Assert: Neues Vorbehalt-Overlay erscheint (neues Spiel gestartet)
+- `window.__locodoko.schliesseRundenEndeModal()` aufrufen
+- Assert: Neues Spiel gestartet (Phase wechselt zu `VORBEHALT_ANSAGE`)
 - Assert: Kein JavaScript-Fehler im gesamten Test
-
-### Neue data-testid-Attribute für Testfall 3
-
-| `data-testid` | Element | Szene |
-|---|---|---|
-| `rundenauswertung-spieltyp` | Spieltyp-Text im Rundenauswertungs-Overlay | Tischansicht |
-| `rundenauswertung-punktemultiplikator` | Multiplikator-Anzeige (×3 bei Solo) | Tischansicht |
 
 ---
 

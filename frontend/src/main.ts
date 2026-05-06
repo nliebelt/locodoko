@@ -36,7 +36,7 @@ window.addEventListener('beforeunload', () => {
 
 // Test-Hook: Bridge für E2E-Tests.
 // Ermoeglicht zuverlässigen Zugriff auf Store und Szenen-Status.
-(window as any)['__locodoko'] = {
+(window as unknown as Record<string, unknown>)['__locodoko'] = {
   appStore,
   getAktuelleSzene: () => {
     const aktiveSzenen = spiel.scene.getScenes(true);

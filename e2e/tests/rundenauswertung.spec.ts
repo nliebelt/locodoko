@@ -10,6 +10,7 @@ import {
   spieleKarte,
   beantworteArmut,
   aktiviereConsoleCapture,
+  warteAufSzene,
 } from './helpers';
 
 test.describe('Rundenauswertung', () => {
@@ -21,7 +22,7 @@ test.describe('Rundenauswertung', () => {
     await alsGastStarten(page);
     await erstelleQuickGame(page);
 
-    await expect(page.locator('[data-testid="tischszene"]')).toBeVisible({ timeout: 15_000 });
+    await warteAufSzene(page, 'TischSzene', 15_000);
     await aktiviereTurbo(page);
 
     let warInStichphase = false;

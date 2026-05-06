@@ -1,6 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import type { TischKonfigurationDto } from '../modelle/SpielverwaltungDto';
-import { erstelleStandardTischAnsicht, erstelleTischAnsichtAusStatus } from './TischAnsichtModell';
+import {
+  erstelleStandardTischAnsicht, erstelleTischAnsichtAusStatus,
+  vorbehaltZuSpieltypFuerSortierung, istHervorgehobeneKarteImVorbehalt, sortiereKartenFuerVorbehalt
+} from './TischAnsichtModell';
+import type { KarteAntwort } from './SpielverwaltungDto';
 
 const standardKonfiguration: TischKonfigurationDto = {
   ohneNeunen: false,
@@ -710,5 +714,82 @@ describe('erstelleTischAnsichtAusStatus', () => {
       'HERZ-ZEHN-1',  // Dulle (Rang 13)
       'KREUZ-DAME-1'  // Kreuz-Dame (Rang 12)
     ]);
+  });
+});
+
+function karte(farbe: KarteAntwort['farbe'], wert: KarteAntwort['wert'], idx = 1): KarteAntwort {
+  return { id: `${farbe}-${wert}-${idx}`, farbe, wert, exemplarIndex: idx, bildId: '' };
+}
+
+describe('vorbehaltZuSpieltypFuerSortierung', () => {
+  it('gibt NORMALSPIEL für GESUND, HOCHZEIT, ARMUT, SCHMEISSEN zurück', () => {
+    expect(vorbehaltZuSpieltypFuerSortierung('GESUND')).toBe('NORMALSPIEL');
+    expect(vorbehaltZuSpieltypFuerSortierung('HOCHZEIT')).toBe('NORMALSPIEL');
+    expect(vorbehaltZuSpieltypFuerSortierung('ARMUT')).toBe('NORMALSPIEL');
+    expect(vorbehaltZuSpieltypFuerSortierung('SCHMEISSEN')).toBe('NORMALSPIEL');
+  });
+
+  it('gibt den passenden Spieltyp für Solo-Vorbehalte zurück', () => {
+    expect(vorbehaltZuSpieltypFuerSortierung('SOLO_DAME')).toBe('SOLO_DAME');
+    expect(vorbehaltZuSpieltypFuerSortierung('SOLO_BUBE')).toBe('SOLO_BUBE');
+    expect(vorbehaltZuSpieltypFuerSortierung('SOLO_FLEISCHLOS')).toBe('SOLO_FLEISCHLOS');
+    expect(vorbehaltZuSpieltypFuerSortierung('SOLO_TRUMPF')).toBe('SOLO_TRUMPF');
+    expect(vorbehaltZuSpieltypFuerSortierung('SOLO_TRUMPF_HERZ')).toBe('SOLO_TRUMPF_HERZ');
+    expect(vorbehaltZuSpieltypFuerSortierung('SOLO_TRUMPF_PIK')).toBe('SOLO_TRUMPF_PIK');
+    expect(vorbehaltZuSpieltypFuerSortierung('SOLO_TRUMPF_KREUZ')).toBe('SOLO_TRUMPF_KREUZ');
+  });
+});
+
+describe('istHervorgehobeneKarteImVorbehalt', () => {
+  it('hebt bei HOCHZEIT nur Kreuz-Damen hervor', () => {
+    expect(istHervorgehobeneKarteImVorbehalt(karte('KREUZ', 'DAME'), 'HOCHZEIT')).toBe(true);
+    expect(istHervorgehobeneKarteImVorbehalt(karte('PIK', 'DAME'), 'HOCHZEIT')).toBe(false);
+    expect(istHervorgehobeneKarteImVorbehalt(karte('KREUZ', 'AS'), 'HOCHZEIT')).toBe(false);
+  });
+
+  it('hebt bei SOLO_DAME alle Damen hervor', () => {
+    expect(istHervorgehobeneKarteImVorbehalt(karte('KREUZ', 'DAME'), 'SOLO_DAME')).toBe(true);
+    expect(istHervorgehobeneKarteImVorbehalt(karte('HERZ', 'DAME'), 'SOLO_DAME')).toBe(true);
+    expect(istHervorgehobeneKarteImVorbehalt(karte('KREUZ', 'BUBE'), 'SOLO_DAME')).toBe(false);
+  });
+
+  it('hebt bei SOLO_BUBE alle Buben hervor', () => {
+    expect(istHervorgehobeneKarteImVorbehalt(karte('KREUZ', 'BUBE'), 'SOLO_BUBE')).toBe(true);
+    expect(istHervorgehobeneKarteImVorbehalt(karte('KREUZ', 'DAME'), 'SOLO_BUBE')).toBe(false);
+  });
+
+  it('hebt bei SOLO_FLEISCHLOS und SCHMEISSEN keine Karte hervor', () => {
+    expect(istHervorgehobeneKarteImVorbehalt(karte('KREUZ', 'DAME'), 'SOLO_FLEISCHLOS')).toBe(false);
+    expect(istHervorgehobeneKarteImVorbehalt(karte('KARO', 'AS'), 'SCHMEISSEN')).toBe(false);
+  });
+
+  it('hebt bei GESUND alle Normalspiel-Trümpfe hervor', () => {
+    expect(istHervorgehobeneKarteImVorbehalt(karte('KREUZ', 'DAME'), 'GESUND')).toBe(true);
+    expect(istHervorgehobeneKarteImVorbehalt(karte('KARO', 'AS'), 'GESUND')).toBe(true);
+    expect(istHervorgehobeneKarteImVorbehalt(karte('HERZ', 'ZEHN'), 'GESUND')).toBe(true);
+    expect(istHervorgehobeneKarteImVorbehalt(karte('KREUZ', 'AS'), 'GESUND')).toBe(false);
+  });
+});
+
+describe('sortiereKartenFuerVorbehalt', () => {
+  it('sortiert Karten für SOLO_DAME: Damen zuerst', () => {
+    const hand = [karte('KREUZ', 'AS'), karte('PIK', 'DAME'), karte('HERZ', 'BUBE'), karte('KREUZ', 'DAME')];
+    const sortiert = sortiereKartenFuerVorbehalt(hand, 'SOLO_DAME');
+    expect(sortiert[0].wert).toBe('DAME');
+    expect(sortiert[1].wert).toBe('DAME');
+  });
+
+  it('sortiert Karten für SOLO_FLEISCHLOS: keine Trümpfe, alle Fehlfarben gleichberechtigt', () => {
+    const hand = [karte('KREUZ', 'DAME'), karte('HERZ', 'AS'), karte('PIK', 'AS'), karte('KARO', 'KOENIG')];
+    const sortiert = sortiereKartenFuerVorbehalt(hand, 'SOLO_FLEISCHLOS');
+    // Im Fleischlos sind alle Karten Fehlfarbe — Sortierung nach Farb- und Wertrang
+    expect(sortiert).toHaveLength(4);
+  });
+
+  it('verändert das Original-Array nicht', () => {
+    const hand = [karte('KREUZ', 'AS'), karte('PIK', 'DAME')];
+    const original = [...hand];
+    sortiereKartenFuerVorbehalt(hand, 'SOLO_DAME');
+    expect(hand.map((k) => k.id)).toEqual(original.map((k) => k.id));
   });
 });

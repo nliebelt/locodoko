@@ -42,7 +42,6 @@ Backend (Spring Boot)
 | Modell           | `SpielverwaltungDto.ts`                      | TypeScript-Typen für Backend-DTOs                         |
 | Darstellung      | `TischSzene.ts`                              | Phaser-Scene: Tisch rendern, Karten, HUD, Dialoge         |
 | Darstellung      | `TischInputHandler.ts`                       | Tastatur- und Klick-Event-Handling für die TischSzene     |
-| Darstellung      | `TischUIManager.ts`                          | Verwaltung und Aktualisierung aller UI-Komponenten der TischSzene |
 | Darstellung      | `SpielverwaltungsSzene.ts`                   | Phaser-Scene: Tischliste, Schnellstart, Erstellen, Beitreten |
 | Darstellung      | `BootSzene.ts`                               | Initialisierung: Session laden, URL-Hash-Routing, Asset-Preload |
 | Darstellung      | `Kartenansicht.ts`                           | Phaser-Sprite-Verwaltung für einzelne Spielkarten         |
@@ -61,13 +60,18 @@ Backend (Spring Boot)
 
 Für automatisierte Tests (E2E) und die Diagnose zur Laufzeit exponiert das Frontend ein globales Bridge-Objekt. Dies ermöglicht den Zugriff auf den internen Zustand der Phaser-Engine und des App-Stores, ohne die Kapselung im Produktivcode zu verletzen.
 
-| Methode / Eigenschaft | Beschreibung |
-|-----------------------|--------------|
-| `appStore`            | Direkter Zugriff auf den `AppStore` (Snapshots, Aktionen) |
-| `szene`               | Referenz auf die aktuell aktive `Phaser.Scene` |
-| `isIdle()`            | Gibt `true` zurück, wenn alle Animationen und Event-Queues verarbeitet sind |
-| `isOverlaySichtbar()` | Prüft die Sichtbarkeit von modalen Overlays (Rundenauswertung) |
-| `setzeAnimationsGeschwindigkeit(f)` | Setzt den globalen Faktor (1, 2, Infinity) |
+| Methode / Eigenschaft                    | Beschreibung                                                                             |
+|------------------------------------------|------------------------------------------------------------------------------------------|
+| `appStore`                               | Direkter Zugriff auf den `AppStore` (Snapshots, Aktionen)                               |
+| `getAktuelleSzene()`                     | Aktive Phaser-Szene (`'SpielverwaltungsSzene'`, `'TischSzene'` etc.)                    |
+| `isIdle()`                               | `true` wenn alle Animationen und Event-Queues verarbeitet sind                           |
+| `isOverlaySichtbar()`                    | Rundenauswertung, Partie-Ende oder Einstellungen sichtbar                                |
+| `getHudState()`                          | `{ stichzaehler, spieltyp, startBtnSichtbar, rundenEndeSichtbar }`                      |
+| `setzeAnimationsGeschwindigkeit(f)`      | Globaler Animationsfaktor (`1`, `2`, `Infinity`)                                         |
+| `schliesseRundenEndeModal()`             | Schließt das Rundenende-Modal (entspricht „Weiter →")                                   |
+| `_rundenEndeModalGezeigt`                | Zähler für angezeigte Rundenende-Modals seit Szenen-Start                               |
+| `_rundenauswertungSpieltypLabel`         | Spieltyp-Label des zuletzt angezeigten Rundenende-Modals                                |
+| `_rundenauswertungMultiplikator`         | Solo-Multiplikator des letzten Rundenende-Modals                                        |
 
 ---
 

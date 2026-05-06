@@ -10,6 +10,8 @@ import {
   spieleKarte,
   warteAufEigenenVorbehalt,
   aktiviereConsoleCapture,
+  warteAufSzene,
+  leseRundenauswertung,
 } from './helpers';
 
 test.describe('Solo-Spielfluss', () => {
@@ -26,7 +28,7 @@ test.describe('Solo-Spielfluss', () => {
       anzahlSpiele: 1,
     }, true);
 
-    await expect(page.locator('[data-testid="tischszene"]')).toBeVisible({ timeout: 15_000 });
+    await warteAufSzene(page, 'TischSzene', 15_000);
     await starteAktuellenTisch(page);
     await aktiviereTurbo(page);
 
@@ -61,11 +63,9 @@ test.describe('Solo-Spielfluss', () => {
 
     expect(soloGefunden, 'Ein Solo-Spieltyp muss während der Partie erkannt worden sein').toBe(true);
 
-    // Rundenauswertung: Solo-spezifische data-testid-Attribute prüfen (specs/e2e-tests.md Testfall 3)
-    const spieltypText = await page.locator('[data-testid="rundenauswertung-spieltyp"]').textContent();
-    expect(spieltypText, 'rundenauswertung-spieltyp soll Solo-Typ enthalten').toMatch(/solo/i);
-
-    const multiplikatorText = await page.locator('[data-testid="rundenauswertung-punktemultiplikator"]').textContent();
-    expect(multiplikatorText, 'rundenauswertung-punktemultiplikator soll ×3 zeigen').toBe('×3');
+    // Rundenauswertung: Solo-spezifische Werte aus der JS-Bridge prüfen
+    const auswertung = await leseRundenauswertung(page);
+    expect(auswertung.spieltypLabel, 'spieltypLabel soll Solo-Typ enthalten').toMatch(/solo/i);
+    expect(auswertung.multiplikator, 'Multiplikator soll 3 sein').toBe(3);
   });
 });

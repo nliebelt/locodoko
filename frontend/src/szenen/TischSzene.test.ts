@@ -27,16 +27,16 @@ function richteLocalStorageEin(initialeWerte: Record<string, string> = {}): Stor
 }
 
 const appStoreHarness = vi.hoisted(() => {
-  let zustand: any;
-  let listener: ((wert: any) => void) | undefined;
-  let eventListener: ((e: any) => void) | undefined;
+  let zustand: unknown;
+  let listener: ((wert: unknown) => void) | undefined;
+  let eventListener: ((e: unknown) => void) | undefined;
   return {
-    setZustand(z: any) { zustand = structuredClone(z); },
+    setZustand(z: unknown) { zustand = structuredClone(z); },
     sendeZustand() { listener?.(structuredClone(zustand)); },
-    sendeEvent(e: any) { eventListener?.(e); },
+    sendeEvent(e: unknown) { eventListener?.(e); },
     store: {
-      abonnieren: vi.fn((cb: any) => { listener = cb; cb(structuredClone(zustand)); return vi.fn(); }),
-      abonniereEvents: vi.fn((cb: any) => { eventListener = cb; return vi.fn(); }),
+      abonnieren: vi.fn((cb: (z: unknown) => void) => { listener = cb; cb(structuredClone(zustand)); return vi.fn(); }),
+      abonniereEvents: vi.fn((cb: (e: unknown) => void) => { eventListener = cb; return vi.fn(); }),
       abonniereSonderpunkte: vi.fn(() => vi.fn()),
       snapshot: vi.fn(() => structuredClone(zustand)),
       spieleKarte: vi.fn(),

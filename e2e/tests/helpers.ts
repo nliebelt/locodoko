@@ -197,6 +197,20 @@ export async function leseRundenEndeModalCount(page: Page): Promise<number> {
   return page.evaluate(() => (window as any).__locodoko?._rundenEndeModalGezeigt ?? 0);
 }
 
+export async function schliesseRundenEndeModal(page: Page): Promise<void> {
+  await page.evaluate(() => (window as any).__locodoko?.schliesseRundenEndeModal?.());
+}
+
+export async function leseRundenauswertung(page: Page): Promise<{ spieltypLabel: string; multiplikator: number | null }> {
+  return page.evaluate(() => {
+    const loco = (window as any).__locodoko;
+    return {
+      spieltypLabel: loco?._rundenauswertungSpieltypLabel ?? '',
+      multiplikator: loco?._rundenauswertungMultiplikator ?? null,
+    };
+  });
+}
+
 /**
  * Schreibt console.* und pageerror-Events in e2e/test-results/console-{testName}.log.
  * Format: [HH:MM:SS.mmm] [LEVEL] message

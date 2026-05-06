@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { getBridge, aktiviereTurbo, leseSpielZustand, meldeVorbehalt, warteAufEigenenVorbehalt, warteAufEigenenZug, alsGastStarten, erstelleQuickGame, aktiviereConsoleCapture } from './helpers';
+import { getBridge, aktiviereTurbo, leseSpielZustand, meldeVorbehalt, warteAufEigenenVorbehalt, warteAufEigenenZug, alsGastStarten, erstelleQuickGame, aktiviereConsoleCapture, warteAufSzene } from './helpers';
 
 test.describe('Ungueltige Karte', () => {
   test('Fehler-Toast erscheint bei ungueltiger Karte und Spiel laeuft weiter', async ({ page }, testInfo) => {
@@ -13,7 +13,7 @@ test.describe('Ungueltige Karte', () => {
     await alsGastStarten(page);
     await erstelleQuickGame(page);
 
-    await expect(page.locator('[data-testid="tischszene"]')).toBeVisible({ timeout: 15_000 });
+    await warteAufSzene(page, 'TischSzene', 15_000);
     await aktiviereTurbo(page);
 
     // Vorbehalt-Phase durchlaufen: warten bis wir dran sind, dann GESUND melden

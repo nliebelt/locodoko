@@ -20,6 +20,8 @@ import { Logger } from '../logger';
 import {
   erstelleTischAnsichtAusStatus,
   istTrumpfFuerSpieltyp,
+  istHervorgehobeneKarteImVorbehalt,
+  sortiereKartenFuerVorbehalt,
   SPIELER_POSITION,
   PARTEI,
   type AbgeschlossenerStichAnsicht,
@@ -302,6 +304,7 @@ export class TischSzene extends Phaser.Scene {
         };
       };
       bridge._rundenEndeModalGezeigt = 0;
+      bridge.schliesseRundenEndeModal = () => this.schliesseRundenEndeModal();
     }
 
     this.triggerRender();
@@ -597,6 +600,7 @@ export class TischSzene extends Phaser.Scene {
     const tisch = zustand.aktuellerTisch;
     if (!tisch) return;
     this.aktualisiereKartenNavigationsIndex(modell);
+    this.aktualisiereVorbehaltNavigationsIndex(modell);
     this.synchronisiereAktionZustand(modell);
     if (zustand.meldung) {
       this.toastManager?.zeige({
@@ -651,7 +655,7 @@ export class TischSzene extends Phaser.Scene {
     if (zustand.partieStand?.laufendesSpiel) {
       this.renderAnsageButtons(ebene, modell, zustand, breite, hoehe);
       this.renderArmutBereich(ebene, modell, zustand, breite, hoehe);
-      this.renderVorbehaltDialog(ebene, modell, zustand, breite, hoehe);
+      this.renderVorbehaltLabel(ebene, modell, breite, hoehe);
     }
 
     if (this.einstellungenOffen) {
@@ -967,11 +971,21 @@ export class TischSzene extends Phaser.Scene {
     const kG = berechneKartenGroesse(szB);
     const kAb = berechneKartenAbstand(szB, szH);
     const auswV = Math.round(kG.h * 0.19);
+    const elevV = Math.round(kG.h * 0.22);
     const istH = spieler.position === SPIELER_POSITION.SUED || spieler.position === SPIELER_POSITION.NORD;
     const stX = istH ? szB / 2 - ((kAnzahl - 1) * kAb.horizontal) / 2 : pos.kartenX;
     const [fB, fS]: [number, number] = { SUED: [-12, 5], NORD: [12, -5], WEST: [78, 5], OST: [102, -5] }[spieler.position] as [number, number];
     const istGesp = spieler.position === SPIELER_POSITION.NORD || spieler.position === SPIELER_POSITION.OST;
     const animA = !!this.wartendeKartenId || (this.animationen?.animationLaeuft ?? false);
+
+    // Vorbehalt-Preview: Karten werden client-seitig umsortiert und spieltyp-relevante Karten angehoben.
+    const vorbehaltIdx = Math.min(this.tastaturVorbehaltIndex, modell.moeglicheVorbehalte.length - 1);
+    const aktuellerVorbehalt = spieler.istSelbst && modell.moeglicheVorbehalte.length > 0
+      ? modell.moeglicheVorbehalte[vorbehaltIdx]
+      : null;
+    const angezeigteKarten = aktuellerVorbehalt && sichtbare
+      ? sortiereKartenFuerVorbehalt(sichtbare, aktuellerVorbehalt)
+      : sichtbare;
 
     // Eigene Hand (SUED): Karten-Sprites werden persistiert und wiederverwendet, damit keine Flackern-Artefakte entstehen.
     if (spieler.istSelbst && sichtbare) {
@@ -988,7 +1002,7 @@ export class TischSzene extends Phaser.Scene {
       const x = istH ? stX + ab : pos.kartenX;
       const y = istH ? pos.kartenY : pos.kartenY + ab;
       const w = fB + fI * fS;
-      const k = sichtbare?.[i];
+      const k = angezeigteKarten?.[i];
       // AnimationGuard: Karte wird exklusiv durch die Animation dargestellt — statischen Render überspringen
       if (k && this.wartendeKartenId === k.id) continue;
       const istSp = k ? modell.spielbareKarten.includes(k.id) : false;
@@ -996,7 +1010,8 @@ export class TischSzene extends Phaser.Scene {
       const istInt = !animA && (istSp || istArm);
       const istAus = k ? this.ausgewaehlteArmutKarten.has(k.id) : false;
       const istTast = spieler.istSelbst && k !== undefined && this.tastaturKarteIndex >= 0 && modell.spielbareKarten[this.tastaturKarteIndex] === k.id;
-      const bV = (istAus || istTast) ? -auswV : 0;
+      const istVorbEleviert = aktuellerVorbehalt && k ? istHervorgehobeneKarteImVorbehalt(k, aktuellerVorbehalt) : false;
+      const bV = (istAus || istTast) ? -auswV : (istVorbEleviert ? -elevV : 0);
 
       let kA: Kartenansicht;
       let istWiederverwendet = false;
@@ -1047,7 +1062,19 @@ export class TischSzene extends Phaser.Scene {
             console.warn('[TischSzene] Fehler beim Deaktivieren der Interaktion', e);
           }
         }
-      }    }
+      }
+
+      // Vorbehalt-Modus: Klick auf beliebige Karte bestätigt die aktuelle Auswahl.
+      if (aktuellerVorbehalt && offen && k && kA.active && kA.scene?.input?.enabled) {
+        if (istWiederverwendet) {
+          kA.removeAllListeners?.('pointerover');
+          kA.removeAllListeners?.('pointerout');
+          kA.removeAllListeners?.('pointerdown');
+        }
+        kA.setInteractive({ useHandCursor: true });
+        kA.on('pointerdown', () => { void appStore.meldeVorbehalt(aktuellerVorbehalt); });
+      }
+    }
   }
 
   /** Zerstoert alle persistierten eigenen Karten-Sprites und leert den Cache. */
@@ -1301,7 +1328,8 @@ export class TischSzene extends Phaser.Scene {
       ry += 20;
     });
 
-    this.tischEbene?.add(this.phaserRundenEndeModal);
+    this.add.existing(this.phaserRundenEndeModal);
+    this.phaserRundenEndeModal.setDepth(200);
   }
 
   private schliesseRundenEndeModal(): void {
@@ -1449,7 +1477,8 @@ export class TischSzene extends Phaser.Scene {
     updateCountdown();
     this.partieCountdownInterval = window.setInterval(updateCountdown, 1000);
 
-    this.tischEbene?.add(this.phaserPartieEndeModal);
+    this.add.existing(this.phaserPartieEndeModal);
+    this.phaserPartieEndeModal.setDepth(200);
 
     const br = (window as { __locodoko?: { _partieEndeModalGezeigt?: number } }).__locodoko;
     if (br) {
@@ -1481,37 +1510,69 @@ export class TischSzene extends Phaser.Scene {
     if (!d) bg.setInteractive({ useHandCursor: true }).on('pointerdown', hdl);
   }
 
-  private renderVorbehaltDialog(ebene: Phaser.GameObjects.Container, modell: TischAnsichtModell, zustand: AppZustand, breite: number, hoehe: number): void {
+  private renderVorbehaltLabel(ebene: Phaser.GameObjects.Container, modell: TischAnsichtModell, breite: number, hoehe: number): void {
     if (modell.aktuellerSpieler !== SPIELER_POSITION.SUED || modell.moeglicheVorbehalte.length === 0) return;
     const opt = modell.moeglicheVorbehalte;
-    const bH = Math.round(Math.max(32, hoehe * 0.048));
-    const bW = Math.round(Math.min(130, breite * 0.11));
-    const aX = Math.round(breite * 0.008);
-    const aY = Math.round(bH * 0.3);
-    const spal = 2;
-    const zeil = Math.ceil(opt.length / spal);
-    const diaW = spal * bW + (spal + 1) * aX;
-    const titH = Math.round(hoehe * 0.04);
-    const zeiH = Math.round(hoehe * 0.025);
+    const idx = Math.min(this.tastaturVorbehaltIndex, opt.length - 1);
+    const kG = berechneKartenGroesse(breite);
+
+    // Label zentriert oberhalb der SUED-Hand, mit Platz für elevierte Karten.
+    const suedKartenY = hoehe * 0.91;
+    const labelY = suedKartenY - kG.h * 0.5 - kG.h * 0.28 - 18;
+
+    const labelFontSize = Math.round(Math.max(14, breite * 0.018));
+    const kleinFontSize = Math.round(Math.max(9, breite * 0.009));
+    const pfeileAbstand = Math.round(Math.max(100, breite * 0.16));
+
+    // Vorbehalt-Name — groß, zentriert
+    const vorbehaltName = formatiereVorbehalt(opt[idx]) ?? opt[idx];
+    ebene.add(
+      this.add.text(breite / 2, labelY, vorbehaltName, {
+        fontFamily: FONT_FAMILY, color: '#ffd166', fontSize: `${labelFontSize}px`,
+        stroke: '#000000', strokeThickness: 3
+      }).setOrigin(0.5)
+    );
+
+    // Navigationspfeile ◄ ► links und rechts
+    const linksPfeil = this.add.text(breite / 2 - pfeileAbstand, labelY, '◄', {
+      fontFamily: FONT_FAMILY, color: '#a3c4a8', fontSize: `${labelFontSize}px`
+    }).setOrigin(0.5).setInteractive({ useHandCursor: true });
+    linksPfeil.on('pointerdown', () => {
+      this.tastaturVorbehaltIndex = (idx - 1 + opt.length) % opt.length;
+      this.renderTisch(this.letzterZustand ?? appStore.snapshot());
+    });
+    ebene.add(linksPfeil);
+
+    const rechtsPfeil = this.add.text(breite / 2 + pfeileAbstand, labelY, '►', {
+      fontFamily: FONT_FAMILY, color: '#a3c4a8', fontSize: `${labelFontSize}px`
+    }).setOrigin(0.5).setInteractive({ useHandCursor: true });
+    rechtsPfeil.on('pointerdown', () => {
+      this.tastaturVorbehaltIndex = (idx + 1) % opt.length;
+      this.renderTisch(this.letzterZustand ?? appStore.snapshot());
+    });
+    ebene.add(rechtsPfeil);
+
+    // Positions-Indikator: (2 von 5)
+    ebene.add(
+      this.add.text(breite / 2, labelY + labelFontSize * 0.8, `(${idx + 1} von ${opt.length})`, {
+        fontFamily: FONT_FAMILY, color: '#7a9a82', fontSize: `${kleinFontSize}px`
+      }).setOrigin(0.5)
+    );
+
+    // Deklarierte Vorbehalte anderer Spieler (Status-Info)
     const aDek = modell.deklarierteVorbehalte.filter((d) => d.position !== SPIELER_POSITION.SUED);
-    const diaH = titH + (aDek.length > 0 ? aDek.length * zeiH + Math.round(zeiH * 0.5) : 0) + zeil * (bH + aY) + aY;
-    const diaY = Math.round(hoehe * 0.28);
-    ebene.add(this.add.rectangle(breite / 2, diaY, diaW, diaH, 0x0a2818, 0.97).setStrokeStyle(2, 0x4adf7a, 0.7));
-    ebene.add(this.add.text(breite / 2, diaY - diaH / 2 + titH * 0.5, 'Vorbehalt ansagen', { fontFamily: FONT_FAMILY, color: '#f8f9fa', fontSize: `${Math.round(Math.max(13, breite * 0.012))}px` }).setOrigin(0.5));
     if (aDek.length > 0) {
-      const sY = diaY - diaH / 2 + titH + zeiH * 0.5;
+      const statusY = labelY - labelFontSize * 1.2;
       aDek.forEach((d, i) => {
         const sN = modell.spieler.find((s) => s.position === d.position)?.name ?? d.position;
         const hV = d.ansage !== 'GESUND';
-        ebene.add(this.add.text(breite / 2, sY + i * zeiH, `${sN}: ${hV ? '⚑ Vorbehalt' : '✓ Gesund'}`, { fontFamily: FONT_FAMILY, color: hV ? '#ffd700' : '#aaffaa', fontSize: `${Math.round(Math.max(11, breite * 0.009))}px` }).setOrigin(0.5));
+        ebene.add(
+          this.add.text(breite / 2, statusY - i * (kleinFontSize + 4), `${sN}: ${hV ? '⚑ Vorbehalt' : '✓ Gesund'}`, {
+            fontFamily: FONT_FAMILY, color: hV ? '#ffd700' : '#aaffaa', fontSize: `${kleinFontSize}px`
+          }).setOrigin(0.5)
+        );
       });
     }
-    const dkt = zustand.wirdGeladen || !!this.wartendeKartenId || (this.animationen?.animationLaeuft ?? false);
-    const gX = breite / 2 - bW / 2 - aX / 2;
-    const gY = diaY - diaH / 2 + titH + (aDek.length > 0 ? aDek.length * zeiH + Math.round(zeiH * 0.5) : 0) + aY + bH / 2;
-    opt.forEach((v, i) => {
-      this.erstellePhaserButton(ebene, gX + (i % spal) * (bW + aX), gY + Math.floor(i / spal) * (bH + aY), bW, bH, formatiereVorbehalt(v), () => appStore.meldeVorbehalt(v), dkt, false, i === this.tastaturVorbehaltIndex, `btn-vorbehalt-${v.toLowerCase().replace(/_/g, '-')}`);
-    });
   }
 
   private renderAnsageButtons(ebene: Phaser.GameObjects.Container, modell: TischAnsichtModell, zustand: AppZustand, breite: number, hoehe: number): void {
@@ -1585,6 +1646,18 @@ export class TischSzene extends Phaser.Scene {
     if ((!wE && iE) || (iE && this.tastaturKarteIndex === -1)) this.tastaturKarteIndex = 0;
     else if (!iE) this.tastaturKarteIndex = -1;
     else if (iE && this.tastaturKarteIndex >= m.spielbareKarten.length) this.tastaturKarteIndex = m.spielbareKarten.length - 1;
+  }
+
+  private aktualisiereVorbehaltNavigationsIndex(m: TischAnsichtModell): void {
+    const hatteVorbehalt = (this.letztesModell?.moeglicheVorbehalte.length ?? 0) > 0;
+    const hatVorbehalt = m.moeglicheVorbehalte.length > 0 && m.aktuellerSpieler === SPIELER_POSITION.SUED;
+    if (!hatteVorbehalt && hatVorbehalt) {
+      // Beim Eintritt in die Vorbehalt-Phase: GESUND vorbelegen
+      const gesundIdx = m.moeglicheVorbehalte.indexOf('GESUND');
+      this.tastaturVorbehaltIndex = gesundIdx >= 0 ? gesundIdx : 0;
+    } else if (!hatVorbehalt) {
+      this.tastaturVorbehaltIndex = 0;
+    }
   }
 
   private handleResize(): void {

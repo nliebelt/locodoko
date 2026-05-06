@@ -2,6 +2,7 @@ import { expect, test } from '@playwright/test';
 import {
   getBridge,
   leseSpielZustand,
+  leseHudZustand,
   aktiviereTurbo,
   meldeVorbehalt,
   alsGastStarten,
@@ -11,6 +12,8 @@ import {
   spieleKarte,
   aktiviereConsoleCapture,
   warteAufNaechstesEreignis,
+  warteAufSzene,
+  schliesseRundenEndeModal,
 } from './helpers';
 
 test.describe('Armut-Workflow', () => {
@@ -26,7 +29,7 @@ test.describe('Armut-Workflow', () => {
       anzahlSpiele: 6
     }, true);
 
-    await expect(page.locator('[data-testid="tischszene"]')).toBeVisible({ timeout: 15_000 });
+    await warteAufSzene(page, 'TischSzene', 15_000);
     await starteAktuellenTisch(page);
     await aktiviereTurbo(page);
 
@@ -36,9 +39,9 @@ test.describe('Armut-Workflow', () => {
 
     for (let i = 0; i < 2000 && !partieBeendet; i++) {
       // Rundenauswertungs-Overlay schliessen falls vorhanden (nicht Partie-Ende)
-      const weiterBtn = page.locator('[data-testid="btn-rundenauswertung-weiter"]');
-      if (await weiterBtn.isVisible({ timeout: 200 }).catch(() => false)) {
-        await weiterBtn.click();
+      const hudState = await leseHudZustand(page);
+      if (hudState.rundenEndeSichtbar) {
+        await schliesseRundenEndeModal(page);
         continue;
       }
 

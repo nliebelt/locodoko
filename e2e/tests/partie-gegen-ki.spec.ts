@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { getBridge, aktiviereTurbo, leseSpielZustand, meldeVorbehalt, warteAufEigenenVorbehalt, warteAufEigenenZug, spieleErsteHandkarte, alsGastStarten, erstelleKonfiguriertenTisch, starteAktuellenTisch, aktiviereConsoleCapture } from './helpers';
+import { getBridge, aktiviereTurbo, leseSpielZustand, meldeVorbehalt, warteAufEigenenVorbehalt, warteAufEigenenZug, spieleErsteHandkarte, alsGastStarten, erstelleKonfiguriertenTisch, starteAktuellenTisch, aktiviereConsoleCapture, warteAufSzene } from './helpers';
 
 test.describe('Partie gegen KI', () => {
   test('Erste Partie bis zum ersten abgeschlossenen Stich', async ({ page }, testInfo) => {
@@ -18,7 +18,7 @@ test.describe('Partie gegen KI', () => {
       kiSchwierigkeit: 'STANDARD',
     }, true);
 
-    await expect(page.locator('[data-testid="tischszene"]')).toBeVisible({ timeout: 15_000 });
+    await warteAufSzene(page, 'TischSzene', 15_000);
 
     await starteAktuellenTisch(page);
     await aktiviereTurbo(page);

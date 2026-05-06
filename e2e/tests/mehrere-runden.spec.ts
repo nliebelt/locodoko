@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { getBridge, leseSpielZustand, aktiviereTurbo, meldeVorbehalt } from './helpers';
+import { getBridge, leseSpielZustand, aktiviereTurbo, meldeVorbehalt, warteAufSzene, leseHudZustand, schliesseRundenEndeModal } from './helpers';
 
 test.describe('Mehrere Runden gegen KI', () => {
   test('Zwei vollständige Runden ohne JS-Fehler spielen', async ({ page }) => {
@@ -15,7 +15,7 @@ test.describe('Mehrere Runden gegen KI', () => {
       await loco.appStore.erstelleQuickGame();
     });
 
-    await expect(page.locator('[data-testid="tischszene"]')).toBeVisible({ timeout: 15_000 });
+    await warteAufSzene(page, 'TischSzene', 15_000);
     await aktiviereTurbo(page);
 
     // Runden werden per Phasenwechsel gezählt: STICHPHASE → VORBEHALT_ANSAGE = 1 abgeschlossene Runde.
@@ -24,9 +24,9 @@ test.describe('Mehrere Runden gegen KI', () => {
     let warInStichphase = false;
 
     for (let i = 0; i < 1000 && abgeschlosseneRunden < 2; i++) {
-      const weiterBtn = page.locator('[data-testid="btn-rundenauswertung-weiter"]');
-      if (await weiterBtn.isVisible({ timeout: 200 }).catch(() => false)) {
-        await weiterBtn.click();
+      const hudState = await leseHudZustand(page);
+      if (hudState.rundenEndeSichtbar) {
+        await schliesseRundenEndeModal(page);
         continue;
       }
 

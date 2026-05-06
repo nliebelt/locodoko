@@ -18,6 +18,9 @@ import {
   warteAufEigenenVorbehalt,
   warteAufEigenenZug,
   aktiviereConsoleCapture,
+  warteAufSzene,
+  leseHudZustand,
+  getBridge,
 } from './helpers';
 
 test.describe('Schnellstart (Quick Game)', () => {
@@ -25,13 +28,11 @@ test.describe('Schnellstart (Quick Game)', () => {
     aktiviereConsoleCapture(page, testInfo.title);
 
     // ── 1. Start-Screen laden ────────────────────────────────────────────────
-    // Warum: Stellt sicher dass die Anwendung erreichbar ist und der Start-Screen
-    // korrekt gerendert wird (Session-Cookie, Phaser initialisiert, DOM aufgebaut).
+    // Warum: Stellt sicher dass die Anwendung erreichbar ist, die Bridge
+    // (window.__locodoko) bereitsteht und die SpielverwaltungsSzene aktiv ist.
     await page.goto('/');
-    await expect(
-      page.locator('[data-testid="startscreen"]'),
-      'Start-Screen muss nach dem Laden sichtbar sein',
-    ).toBeVisible({ timeout: 20_000 });
+    await getBridge(page);
+    await warteAufSzene(page, 'SpielverwaltungsSzene', 20_000);
 
     // ── 2. Quick Game triggern ───────────────────────────────────────────────
     // Warum: Da die Buttons in Phaser gerendert werden, nutzen wir die JS-Bridge.
@@ -39,12 +40,9 @@ test.describe('Schnellstart (Quick Game)', () => {
     await erstelleQuickGame(page);
 
     // ── 3. TischSzene erscheint direkt ──────────────────────────────────────
-    // Warum: Nach Schnellstart muss die TischSzene ohne manuellen Spielstart sichtbar sein.
+    // Warum: Nach Schnellstart muss die TischSzene ohne manuellen Spielstart aktiv sein.
     // Das Spiel laueft bereits — kein "Spiel starten"-Button mehr sichtbar.
-    await expect(
-      page.locator('[data-testid="tischszene"]'),
-      'TischSzene muss direkt nach Quick Game sichtbar sein',
-    ).toBeVisible({ timeout: 15_000 });
+    await warteAufSzene(page, 'TischSzene', 15_000);
 
     // ── 4. Vorbehalt-Phase durchlaufen ───────────────────────────────────────
     // Warum: Stellt sicher dass die Partie gestartet wurde, 12 Karten ausgeteilt
@@ -63,9 +61,14 @@ test.describe('Schnellstart (Quick Game)', () => {
     // ── 6. Stich-Zaehler pruefen ─────────────────────────────────────────────
     // Warum: Beweist dass die serverseitig gestartete Partie vollstaendig
     // funktioniert: Stich-Logik, KI-Zuege und WebSocket-Updates korrekt.
-    await expect(
-      page.locator('[data-testid="hud-stichzaehler"]'),
-      'Nach dem ersten abgeschlossenen Stich muss der Zaehler "Stich 1/..." zeigen',
-    ).toContainText('Stich 1/', { timeout: 20_000 });
+    await page.waitForFunction(
+      () => {
+        const hud = (window as any).__locodoko?.getHudState?.();
+        return hud?.stichzaehler?.includes('Stich 1/');
+      },
+      { timeout: 20_000 },
+    );
+    const hud = await leseHudZustand(page);
+    expect(hud.stichzaehler, 'Nach dem ersten Stich muss der Zaehler "Stich 1/..." zeigen').toMatch(/Stich 1\//);
   });
 });

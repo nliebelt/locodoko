@@ -10,7 +10,7 @@
  */
 
 import { test, expect, type Page } from '@playwright/test';
-import { getBridge, alsGastStarten, erstelleKonfiguriertenTisch, aktiviereConsoleCapture } from './helpers';
+import { getBridge, alsGastStarten, erstelleKonfiguriertenTisch, aktiviereConsoleCapture, warteAufSzene } from './helpers';
 
 async function leseEinladungsCode(page: Page): Promise<string> {
   const handle = await page.waitForFunction(
@@ -54,10 +54,7 @@ test.describe('Einladungslink (Link-Beitritt)', () => {
       kiSchwierigkeit: 'STANDARD',
     }, true);
 
-    await expect(
-      page.locator('[data-testid="tischszene"]'),
-      'TischSzene muss nach Tisch-Erstellung fuer Spieler 1 sichtbar sein',
-    ).toBeVisible({ timeout: 10_000 });
+    await warteAufSzene(page, 'TischSzene', 10_000);
 
     // ── 3. Einladungscode aus AppStore auslesen ──────────────────────────────
     // Warum: Der Code wird serverseitig per UUID-basierter Zufallsgenerierung erzeugt
@@ -92,10 +89,7 @@ test.describe('Einladungslink (Link-Beitritt)', () => {
       // Warum: Beweist dass der vollstaendige Beitritts-Flow funktioniert:
       // URL-Parsing (BootSzene) → REST-Aufruf (POST /api/tische/beitreten/{code})
       // → AppStore-Update → Szenen-Wechsel zu TischSzene.
-      await expect(
-        seite2.locator('[data-testid="tischszene"]'),
-        'TischSzene muss fuer Spieler 2 nach Einladungslink automatisch sichtbar sein',
-      ).toBeVisible({ timeout: 20_000 });
+      await warteAufSzene(seite2, 'TischSzene', 20_000);
 
       // ── Abschlusskontrolle: Keine JavaScript-Fehler bei Spieler 2 ────────
       expect(
