@@ -6,10 +6,10 @@
 
 **Was wurde implementiert?**
 - Task 29 (REFACTOR-KI-ADAPTER-CLEANUP): `KiEventAdapter.java` gelöscht. War leere Stub-Klasse ohne Referenzen. `mvn test` grün (307 Tests).
+- Task 28 (DOC-SPEC-UPDATES): `spieler-session.md` auf BCrypt/Passwort aktualisiert. `architektur-domain-events.md`: KiEventAdapter → KiTischOrchestrator, SpielBeendet-Produzent korrigiert, KI_ZUG_SEQUENZ entfernt, AKTION_ABGELEHNT ergänzt, PartieEreignisBatch auf „Implementiert" gesetzt.
 
 **Nächster logischer Schritt:**
-- Task 28 (DOC-SPEC-UPDATES): Zwei Spec-Dateien aktualisieren (`spieler-session.md`, `architektur-domain-events.md`).
-- Task 30 (FIX-ESLINT-ANY): 96 TypeScript `any`-Fehler bereinigen.
+- Task 30 (FIX-ESLINT-ANY): 96 TypeScript `any`-Fehler bereinigen (`cd frontend && npm run lint` für aktuelle Liste).
 - Vision Loop Spielschleife: `leseSpielZustand` wartet auf `isIdle()` das bei KI-Spiel gelegentlich >15s dauert (pre-existing), soll verbessert werden.
 - Hochzeit-Nameplate: Kein Herz-Label implementiert.
 
@@ -133,7 +133,7 @@ Vollständiger Codebase-Scan abgeschlossen. Wesentliche Befunde:
 - [x] **E2E**: E2E-Tests auf ausschließliche Nutzung von Tastatur-Shortcuts (gemäß `frontend-tastatursteuerung.md`) umstellen; Mausklicks entfernen.
 
 ### DOC-SPEC-UPDATES (Task 28)
-- [ ] **Dokumentation** (2 Dateien — `frontend-ui-logik.md` und `ki-strategie.md` sind bereits korrekt):
+- [x] **Dokumentation** (2 Dateien — `frontend-ui-logik.md` und `ki-strategie.md` sind bereits korrekt):
   - `spieler-session.md` aktualisieren: Passwort/Login (BCrypt) als primäres Authentifizierungsmittel beschreiben; Session-Cookie bleibt Transportmechanismus.
   - `architektur-domain-events.md` aktualisieren:
     - Zeile mit `KI_ZUG_SEQUENZ` entfernen — dieses Event existiert nicht im Code; KI-Timing ist rein Frontend-seitig (800ms Queue-Delay).
@@ -172,7 +172,7 @@ Vollständiger Codebase-Scan abgeschlossen. Wesentliche Befunde:
 - [x] Task 25: FIX-KI-ARCHITECTURE-VIOLATION
 - [x] Task 26: FEAT-EVENT-GAP-DETECTION
 - [x] Task 27: REFACTOR-E2E-KEYBOARD
-- [ ] Task 28: DOC-SPEC-UPDATES
+- [x] Task 28: DOC-SPEC-UPDATES
 
 **P8 (Neu entdeckt, Plan-Run #114):**
 - [x] Task 29: REFACTOR-KI-ADAPTER-CLEANUP

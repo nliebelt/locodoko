@@ -53,14 +53,14 @@ Werden von Spring Modulith innerhalb des Backends verarbeitet. Nie direkt an das
 
 | Event | Ausgelöst durch | Listener |
 |-------|----------------|---------|
-| `NaechsterSpielerErwartet` | `SpielAktionsService` nach Kartenzug | `KiEventAdapter` |
-| `VorbehaltErwartet` | `SpielAktionsService` in VORBEHALT_ANSAGE-Phase | `KiEventAdapter` |
+| `NaechsterSpielerErwartet` | `SpielAktionsService` nach Kartenzug | `KiTischOrchestrator` |
+| `VorbehaltErwartet` | `SpielAktionsService` in VORBEHALT_ANSAGE-Phase | `KiTischOrchestrator` |
 | `SchweinchenGemeldet` | `SpielAktionsService` bei erster Dullen-Trumpf-Karte | — (kein WS-Broadcast implementiert) |
 | `FuchsGefangen` | `SpielAktionsService` nach Stich-Abschluss | — (Sonderpunkt in `neueSonderpunkte` des `STICH_ABGESCHLOSSEN`-Events) |
 | `KarlchenGespielt` | `SpielAktionsService` nach letztem Stich | — (Sonderpunkt in `neueSonderpunkte` des `STICH_ABGESCHLOSSEN`-Events) |
 | `DoppelkopfGestochen` | `SpielAktionsService` nach Stich-Abschluss | — (Sonderpunkt in `neueSonderpunkte` des `STICH_ABGESCHLOSSEN`-Events) |
 | `HochzeitPartnerGefunden` | `Spiel.java` nach Stich-Abschluss | — (kein WS-Broadcast implementiert) |
-| `SpielBeendet` | `KiOrchestrierungService.veroeffentlicheSpielBeendet()` | — (Seiten-Effekt: WS-Broadcast) |
+| `SpielBeendet` | `PartieLifecycleService` | — (Seiten-Effekt: WS-Broadcast) |
 
 ### 2. WebSocket-Ereignisse (`PartieEreignisTyp`)
 
@@ -75,7 +75,8 @@ er muss jederzeit mit dem Java-Enum `PartieEreignisTyp` übereinstimmen.
 | `KARTE_GESPIELT` | `SpielAktionsService`, `KiOrchestrierungService` | Kartenzug | Karte animieren + State patchen |
 | `STICH_ABGESCHLOSSEN` | `SpielAktionsService` | Stich vollständig | Stich-Animation + State patchen |
 | `HOCHZEIT_PARTNER_GEFUNDEN` | `KiOrchestrierungService` (via `HochzeitPartnerGefunden`-Domain-Event) | Hochzeits-Partner ermittelt | Banner „Partner gefunden!" + Partei anzeigen |
-| `SPIEL_BEENDET` | `KiOrchestrierungService` | Spiel ausgewertet | Auswertungs-Overlay anzeigen |
+| `AKTION_ABGELEHNT` | `SpielAktionsService` | Ungültige Aktion (z.B. falsche Karte) | Fehlermeldung anzeigen |
+| `SPIEL_BEENDET` | `PartieLifecycleService` | Spiel ausgewertet | Auswertungs-Overlay anzeigen |
 
 ---
 
@@ -92,27 +93,11 @@ Um Race-Conditions zwischen Animationen und Zustands-Updates zu vermeiden, nutzt
 
 Dies garantiert, dass Karten nicht "springen" und das Backend-Timing entkoppelt von der UI-Darstellung bleibt.
 
-`KiEventAdapter` reagiert auf `NaechsterSpielerErwartet` und `VorbehaltErwartet`.
+`KiTischOrchestrator` (im `tisch/`-Modul) reagiert auf `NaechsterSpielerErwartet` und `VorbehaltErwartet`.
 **Pflicht:** Alle Listener nutzen `@TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)`, damit die KI-Orchestrierung erst nach dem Commit des auslösenden Spielzugs startet.
 
-```java
-@Component
-public class KiEventAdapter {
-
-    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
-    public void beiNaechsterSpielerErwartet(NaechsterSpielerErwartet event) {
-        // Delegiert an KiOrchestrierungService.automatisiereTisch()
-    }
-
-    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
-    public void beiVorbehaltErwartet(VorbehaltErwartet event) {
-        // Delegiert an KiOrchestrierungService.automatisiereTisch()
-    }
-}
-```
-
 `SpielAktionsService` enthält kein `if (isKi())` mehr — ob Mensch oder KI spielt,
-entscheidet ausschließlich der `KiEventAdapter` anhand von `SpielerEntity.isKi()`.
+entscheidet ausschließlich der `KiTischOrchestrator` anhand von `SpielerEntity.isKi()`.
 
 ---
 
@@ -129,8 +114,8 @@ WebSocket-Nachricht
       SNAPSHOT          → leereKiSequenzQueue() + patch(partieStand)
       KARTE_GESPIELT    → patch(partieStand)
       SPIEL_BEENDET     → patch(partieStand)
-      KI_ZUG_SEQUENZ    → Karten mit 800 ms Delay animieren, dann patch()
       STICH_ABGESCHLOSSEN → patch(partieStand) + sonderpunkteListener feuern
+      AKTION_ABGELEHNT  → Fehlermeldung anzeigen
   → AppStore-Listener benachrichtigen
   → TischSzene re-rendert via aktualisiereUi()
 ```
@@ -140,15 +125,11 @@ abonnieren — für dedizierte UI-Reaktionen (Modals, Banner), ohne Polling auf 
 
 ---
 
-## Geplant (noch nicht implementiert)
+## Sequenznummerierung & Self-Healing (`PartieEreignisBatch`)
 
-### Sequenznummerierung & Self-Healing
-
-Um Race-Conditions bei verlorenen WebSocket-Frames zu erkennen, ist ein
-`PartieEreignisBatch`-Protokoll geplant:
+Implementiert. Um Race-Conditions bei verlorenen WebSocket-Frames zu erkennen, nutzt das System das `PartieEreignisBatch`-Protokoll:
 
 ```typescript
-// Geplant — noch nicht implementiert
 export interface PartieEreignisBatch {
   version: number;                       // @Version des Partie-Aggregats — einzige Sequenznummer
   ereignisse: PartieEreignisAntwort[];   // Atomare Liste
@@ -162,5 +143,4 @@ export interface PartieEreignisBatch {
 3. Frontend fordert automatisch `/snapshot` an (Self-Healing).
 4. Stale Batches (`version ≤ letzteVersion`) werden verworfen.
 
-Bis zur Implementierung: Verbindungsabbrüche werden durch den bestehenden
-`VerbindungsabbruchService` behandelt (STOMP-Reconnect → SNAPSHOT).
+Verbindungsabbrüche werden zusätzlich durch den `VerbindungsabbruchService` behandelt (STOMP-Reconnect → SNAPSHOT).
