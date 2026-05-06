@@ -4,16 +4,12 @@
 
 ## Notiz
 
-**Was wurde implementiert (Run #112)?**
-- Task 26 (FEAT-EVENT-GAP-DETECTION): `PartieEreignisBatch` End-to-End vollständig aktiviert.
-  - Backend: `TischVerwaltungsService.veroeffentlichePartieAktualisierung` sendet Snapshots jetzt als `PartieEreignisBatch` (nicht mehr als rohes `PartieEreignisAntwort`).
-  - Frontend `AppStore.test.ts`: Alle Partie-Queue-Events auf `PartieEreignisBatch`-Format umgestellt; `batchieren()`-Hilfsfunktion eingeführt; fehlende `version`-Felder nachgepflegt.
-  - Frontend `AppStore.ts`: Ungenutztes `istSnapshot`-const entfernt (TS6133).
-  - Backend-Tests: `PartieEchtzeitVertragsTest` und `WebSocketPublikationIntegrationTest` auf Batch-Format aktualisiert. 307 Backend-Tests grün.
+**Was wurde implementiert (Run #113)?**
+- Task 27 (REFACTOR-E2E-KEYBOARD): Letzter Mausklick (`page.mouse.click(640, 360)`) in `vision-loop.spec.ts` durch `page.locator('canvas').focus()` ersetzt. Alle anderen E2E-Tests waren bereits frei von Mausklicks.
 
 **Nächster logischer Schritt:**
-- Task 27 (REFACTOR-E2E-KEYBOARD): E2E-Tests auf Tastatureingaben umstellen.
-- Task 28 (DOC-SPEC-UPDATES): Spec-Dokumente aktualisieren.
+- Task 28 (DOC-SPEC-UPDATES): Spec-Dokumente aktualisieren (spieler-session.md, architektur-domain-events.md, frontend-ui-logik.md).
+- Task 5: Spielprotokoll vollständig (P3, lang offen).
 
 **Offene Fragen:**
 - Vision Loop Spielschleife: `leseSpielZustand` wartet auf `isIdle()` das bei KI-Spiel gelegentlich >15s dauert (pre-existing).
@@ -129,7 +125,7 @@
 - [x] **Backend/Frontend**: Implementierung von `PartieEreignisBatch` für zuverlässigere WebSocket-Synchronisation.
 
 ### REFACTOR-E2E-KEYBOARD (Task 27)
-- [ ] **E2E**: E2E-Tests auf ausschließliche Nutzung von Tastatur-Shortcuts (gemäß `frontend-tastatursteuerung.md`) umstellen; Mausklicks entfernen.
+- [x] **E2E**: E2E-Tests auf ausschließliche Nutzung von Tastatur-Shortcuts (gemäß `frontend-tastatursteuerung.md`) umstellen; Mausklicks entfernen.
 
 ### DOC-SPEC-UPDATES (Task 28)
 - [ ] **Dokumentation**:
@@ -163,5 +159,5 @@
 - [x] Task 24: REFACTOR-URL-CONSISTENCY
 - [x] Task 25: FIX-KI-ARCHITECTURE-VIOLATION
 - [x] Task 26: FEAT-EVENT-GAP-DETECTION
-- [ ] Task 27: REFACTOR-E2E-KEYBOARD
+- [x] Task 27: REFACTOR-E2E-KEYBOARD
 - [ ] Task 28: DOC-SPEC-UPDATES
