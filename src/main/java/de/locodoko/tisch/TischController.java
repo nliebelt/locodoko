@@ -25,6 +25,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import org.slf4j.MDC;
+import org.springframework.security.access.prepost.PreAuthorize;
 
 import java.util.List;
 import java.util.UUID;
@@ -171,6 +172,7 @@ public class TischController {
         @ApiResponse(responseCode = "404", description = "Tisch nicht gefunden"),
         @ApiResponse(responseCode = "409", description = "Spiel laeuft bereits")
     })
+    @PreAuthorize("@tischSicherheit.istGastgeber(#id, authentication)")
     @PostMapping("/{id}/starten")
     public BestaetigungAntwort starteTisch(@Parameter(description = "Tisch-ID") @PathVariable UUID id, HttpServletRequest request) {
         MDC.put("tischId", id.toString());
@@ -191,6 +193,7 @@ public class TischController {
         @ApiResponse(responseCode = "404", description = "Tisch nicht gefunden"),
         @ApiResponse(responseCode = "409", description = "Partie noch nicht beendet")
     })
+    @PreAuthorize("@tischSicherheit.hatZugang(#id, authentication)")
     @PostMapping("/{id}/neue-partie")
     public BestaetigungAntwort starteNeuePartie(@Parameter(description = "Tisch-ID") @PathVariable UUID id, HttpServletRequest request) {
         MDC.put("tischId", id.toString());
@@ -227,6 +230,7 @@ public class TischController {
         @ApiResponse(responseCode = "404", description = "Tisch nicht gefunden"),
         @ApiResponse(responseCode = "409", description = "Partie laeuft bereits, Konfiguration nicht mehr aenderbar")
     })
+    @PreAuthorize("@tischSicherheit.istGastgeber(#id, authentication)")
     @PutMapping("/{id}/konfiguration")
     public TischKonfigurationDto aktualisiereKonfiguration(
         @Parameter(description = "Tisch-ID") @PathVariable UUID id,
@@ -250,6 +254,7 @@ public class TischController {
         @ApiResponse(responseCode = "404", description = "Tisch oder Spieler nicht gefunden"),
         @ApiResponse(responseCode = "409", description = "Partie laeuft oder Spieler nicht am Tisch")
     })
+    @PreAuthorize("@tischSicherheit.istGastgeber(#id, authentication)")
     @DeleteMapping("/{id}/spieler/{spielerId}")
     public BestaetigungAntwort kickeSpieler(
         @Parameter(description = "Tisch-ID") @PathVariable UUID id,
