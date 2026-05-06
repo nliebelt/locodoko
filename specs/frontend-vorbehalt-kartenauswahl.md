@@ -149,12 +149,54 @@ Keine Änderungen nötig — Left/Right und Enter sind bereits korrekt implement
 
 Die Preview-Sortierung findet in `renderHand()` statt und liest nur `this.tastaturVorbehaltIndex`.
 Wenn ein WebSocket-Update `renderTisch()` triggert, werden die Karten neu gerendert —
-mit dem aktuellen `tastaturVorbehaltIndex`. Kein Tween-Konflikt, da keine laufenden
-Tweens auf Kartenansicht-Objekten existieren (renderTisch zerstört und recreates sie).
+mit dem aktuellen `tastaturVorbehaltIndex`.
 
-Ein leichter Y-Bounce-Tween (~100 ms, scale 1.0 → 1.05 → 1.0) auf die hervorgehobenen
-Karten beim Wechsel ist **optional** — nur wenn er das renderTisch-Destroy korrekt abfängt.
-Im ersten Schritt: kein Tween, reine Neupositionierung.
+---
+
+## Ausbaustufe: Animierter Vorbehalt-Wechsel
+
+Beim Wechsel zwischen Vorbehalten (←/→) sollen die Karten **animiert** in ihre neue Position gleiten — sowohl die Elevation (Y-Achse) als auch die Sortierung (X-Achse). Das ergibt ein hochwertiges, spielerisches Feedback: der Spieler sieht welche Karten für den gewählten Spieltyp relevant sind.
+
+### Anforderung
+
+```gherkin
+Given
+  - Spieler ist in Vorbehalt-Phase
+  - Karten sind in der Hand dargestellt
+
+When
+  - Spieler drückt ← oder → und wechselt den Vorbehalt
+
+Then
+  - Karten gleiten animiert in ihre neue Y-Position (Elevation hoch/runter)
+  - Karten gleiten animiert in ihre neue X-Position (Reihenfolge gemäß neuem Spieltyp)
+  - Animation dauert ~150–200 ms, danach ist die Hand im neuen Zustand stabil
+  - Läuft ein WebSocket-Update während der Animation ein, wird die Animation abgebrochen
+    und der neue Zustand sofort gerendert (kein Tween-Konflikt)
+```
+
+### Technische Voraussetzung: Reconciliation-Pattern für Karten-Objekte
+
+Der aktuelle Render-Ansatz (`renderTisch()` zerstört und recreates alle Karten-Objekte)
+macht positionsbasierte Tweens unmöglich — es gibt kein altes Objekt mehr, von dem aus
+animiert werden könnte.
+
+**Nötiges Refactoring:** `renderHand()` wechselt von destroy/recreate auf ein
+**Reconciliation-Modell**:
+
+```
+Given  - existierendes Karten-Objekt mit Karte-ID X an Position (x1, y1)
+When   - neuer Render-State platziert Karte X an Position (x2, y2)
+Then   - Objekt wird NICHT zerstört, sondern per Tween von (x1,y1) → (x2,y2) animiert
+```
+
+- Jede Karte braucht eine stabile Referenz (Map `karteId → PhaserObject`)
+- Karten die aus der Hand verschwinden (gespielt) werden nach dem Tween destroyed
+- Neue Karten (z.B. nach Armut-Tausch) erscheinen mit kurzer Fade-In-Animation
+- Laufende Tweens müssen beim Scene-Destroy sauber abgebrochen werden
+
+Dieses Refactoring betrifft nur `renderHand()` innerhalb von `TischSzene.ts` — andere
+Render-Methoden bleiben unverändert.
 
 ---
 
@@ -162,23 +204,28 @@ Im ersten Schritt: kein Tween, reine Neupositionierung.
 
 - Im Vorbehalt-Modus erscheint **kein Dialog-Fenster** mehr — stattdessen Label + Kartenelevation
 - Links/Rechts wechselt den Vorbehalt, die Karten sortieren und elevieren sich entsprechend
+- Beim Wechsel gleiten Karten animiert in ihre neue Position (Elevation + Sortierung)
 - Label zeigt Vorbehalt-Name, Pfeile und Position-Indikator korrekt an
 - Enter bestätigt die aktuelle Auswahl korrekt
 - Standard-Vorbelegung ist `GESUND` (oder Index 0)
 - Klick auf eine Karte bestätigt die aktuelle Auswahl (nicht: wählt diese Karte aus)
 - Alle Vorbehalt-Typen zeigen die korrekte Elevation (Tabelle oben)
 - Kein JS-Fehler wenn `moeglicheVorbehalte` leer ist (kein Vorbehalt-Modus aktiv)
+- Kein Tween-Konflikt bei WebSocket-Updates während der Animation
 - `npm run build` und `npm test` grün
 
 ## Definition of Done
 
-- [ ] `vorbehaltZuSpieltypFuerSortierung()` in `TischAnsichtModell.ts` implementiert und getestet
-- [ ] `istHervorgehobeneKarteImVorbehalt()` in `TischAnsichtModell.ts` implementiert und getestet
-- [ ] `sortiereKartenFuerVorbehalt()` in `TischAnsichtModell.ts` implementiert und testbar
-- [ ] `renderVorbehaltDialog()` aus `TischSzene.ts` entfernt
-- [ ] `renderHand()` unterstützt Preview-Sort und Kartenelevation
-- [ ] `renderVorbehaltLabel()` implementiert (Text, Pfeile, Positions-Indikator)
-- [ ] Klick auf Karte im Vorbehalt-Modus bestätigt die aktuelle Auswahl
-- [ ] Vorbelegung auf `GESUND`-Index korrekt
+- [x] `vorbehaltZuSpieltypFuerSortierung()` in `TischAnsichtModell.ts` implementiert und getestet
+- [x] `istHervorgehobeneKarteImVorbehalt()` in `TischAnsichtModell.ts` implementiert und getestet
+- [x] `sortiereKartenFuerVorbehalt()` in `TischAnsichtModell.ts` implementiert und testbar
+- [x] `renderVorbehaltDialog()` aus `TischSzene.ts` entfernt
+- [x] `renderHand()` unterstützt Preview-Sort und Kartenelevation
+- [x] `renderVorbehaltLabel()` implementiert (Text, Pfeile, Positions-Indikator)
+- [x] Klick auf Karte im Vorbehalt-Modus bestätigt die aktuelle Auswahl
+- [x] Vorbelegung auf `GESUND`-Index korrekt
 - [ ] `specs/frontend-tastatursteuerung.md` aktualisiert (Vorbehalt-Sektion)
+- [ ] `renderHand()` auf Reconciliation-Pattern umgestellt (stabile Karten-Referenzen)
+- [ ] Animierter Vorbehalt-Wechsel implementiert (Y + X Tweens, ~150–200 ms)
+- [ ] Tween-Abbruch bei WebSocket-Update während Animation
 - [ ] Vision Loop (Playwright headed) bestätigt korrektes visuelles Ergebnis
