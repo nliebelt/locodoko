@@ -50,6 +50,6 @@ The `specs/` directory is the **Single Source of Truth** for this project. Every
 | UI-Szenen                      | `frontend-tischansicht.md`, `frontend-startscreen.md`, `frontend-rundenauswertung.md` |
 | Animationen                    | `frontend-animationen.md`                                |
 | Tastatursteuerung              | `frontend-tastatursteuerung.md`                          |
-| Clean Code, DDD-Methodik       | `methodik-clean-code.md`, `architektur-ddd.md`          |
+| Clean Code, DDD-Methodik       | `architektur.md`, `architektur-ddd.md`                  |
 | Datenbank-Schema               | `datenbankmodell.md`                                     |
 | E2E-Tests                      | `e2e-tests.md`                                           |

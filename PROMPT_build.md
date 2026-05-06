@@ -7,19 +7,19 @@
 - **Vertraue deinen Subagenten.** Wenn ein Subagent eine Datei bereits zusammengefasst hat,
   lies sie nicht nochmal selbst. Arbeite mit der Zusammenfassung.
 - **Tests müssen echte Fehler finden können.** Schreibe dazu kurz auf WARUM jeder Test wichtig ist.
-- **Architekturprinzipien einhalten.** Domain Model = Persistence Model. Immutable Domain Objects.
-  Typed IDs statt nackter UUID. Keine God-Objects. Ubiquitous Language auf Deutsch.
+- **Architekturprinzipien einhalten.** Siehe `specs/architektur.md` — die kompakte Referenz
+  für Domain Model, Module, Event-Vertrag und Coding-Prinzipien.
 
 ## Vorbereitung
 
-0a. Studiere @IMPLEMENTATION_PLAN.md. Lies die `## Notiz`-Sektion — sie enthält den Stand
-    der letzten Iteration.
+0a. Studiere @IMPLEMENTATION_PLAN.md. Lies die `## Notiz`-Sektion UND die `## Entdeckungen`-Sektion.
 
-0b. Wähle die EINE wichtigste offene Aufgabe. Ausnahme: Test-Tasks (T1–T6) und ihr
-    zugehöriger R-Task können gemeinsam in einer Iteration erledigt werden wenn sie
-    dieselbe Klasse betreffen (z.B. T1 + R0 wenn beide `Spiel.java` berühren).
+0b. Prüfe was sich seit der letzten Iteration geändert hat:
+    `git diff --stat HEAD~1` — damit weißt du sofort welche Dateien der letzte Ralph berührt hat.
 
-0c. Starte PARALLEL zwei Subagenten:
+0c. Wähle die EINE wichtigste offene Aufgabe.
+
+0d. Starte PARALLEL zwei Subagenten:
     - Subagent A: Konsultiere `specs/README.md` (Domain-Landkarte), um die 1-2 relevantesten Detail-Specs für die Aufgabe zu finden. Lies diese und fasse sie kompakt zusammen (max. 15 Zeilen). Was sagen die Specs zu dieser Aufgabe?
     - Subagent B: Betroffener Code in `src/`, `frontend/`, `pom.xml`, `package.json`.
       Kompakte Zusammenfassung — max. 15 Zeilen. Was existiert bereits?
@@ -31,7 +31,7 @@
     Lies keine Dateien nach die die Subagenten bereits abgedeckt haben —
     es sei denn du brauchst einen konkreten Zeilenwert zum Editieren.
 
-0d. Prüfe kurz: Sind die relevanten Specs konsistent mit dem was Subagent B im Code
+0e. Prüfe kurz: Sind die relevanten Specs konsistent mit dem was Subagent B im Code
     gefunden hat? Falls nicht, korrigiere die Spec vor der Implementierung.
 
 ## Implementierung
@@ -39,8 +39,13 @@
 1. Implementiere ausschließlich diese eine Aufgabe — vollständig, keine Platzhalter.
    Baue auf bestehendem Code auf statt neu zu schreiben.
 
-2. Führe die relevanten Tests aus — Backend, Frontend, oder beide je nach Änderungsbereich.
-   Orientiere dich an @CLAUDE.md > Validation nach Implementierung.
+2. Validierung — abhängig vom Task-Prefix:
+   - `FEAT-` / `R` / `BUG-` (Backend): `mvn test`
+   - `FE-` / `UI-` (Frontend): `cd frontend && npm run generate-types && npm test && npm run build && npm run lint`
+   - `REFACTOR-` (beides): `mvn test` UND `cd frontend && npm test && npm run build && npm run lint`
+   - `DOC-` / `SPEC-` (nur Specs): Keine Tests nötig, nur Konsistenz prüfen.
+
+   Orientiere dich zusätzlich an @CLAUDE.md > Validation nach Implementierung.
    - Grün → weiter zu Schritt 2b.
    - Rot → einmal debuggen und beheben.
    - Nach dem zweiten fehlgeschlagenen Versuch: **stop.** Nicht ein drittes Mal versuchen.
@@ -68,6 +73,11 @@
    - Was wurde implementiert?
    - Was ist der nächste logische Schritt?
    - Offene Fragen oder Probleme?
+
+5. Falls du während der Implementierung etwas entdeckst das nicht zur aktuellen Aufgabe
+   gehört (unerwarteter Bug, Inkonsistenz, fehlende Spec), trage es unter
+   `## Entdeckungen` in @IMPLEMENTATION_PLAN.md ein (append, nicht überschreiben).
+   Der Plan-Agent wandelt es beim nächsten Scan in einen konkreten Task um.
 
 ---
 

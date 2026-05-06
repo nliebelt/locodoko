@@ -17,7 +17,7 @@ Extract and formalize domain terminology from the current conversation into a co
    - Same word used for different concepts (ambiguity)
    - Different words used for the same concept (synonyms)
    - Vague or overloaded terms
-3. **Consult `specs/methodik-clean-code.md`** and **`specs/architektur-ddd.md`** if available, to align with existing bounded context boundaries
+3. **Consult `specs/architektur.md`** for domain model, module boundaries, and naming conventions
 4. **Propose a canonical glossary** with opinionated term choices
 5. **Write to `UBIQUITOUS_LANGUAGE.md`** in the working directory using the format below
 6. **Output a summary** inline in the conversation
