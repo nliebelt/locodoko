@@ -1,19 +1,22 @@
-# IMPLEMENTATION_PLAN — Plan-Run #112
+# IMPLEMENTATION_PLAN — Plan-Run #114
 
-> Stand: 2026-05-06. Fokus: FEAT-EVENT-GAP-DETECTION vollständig fertiggestellt.
+> Stand: 2026-05-06. Fokus: Codebase-Scan Run #114 — Statusabgleich offener Tasks, neue Cleanup-Tasks.
 
 ## Notiz
 
-**Was wurde implementiert (Run #113)?**
-- Task 27 (REFACTOR-E2E-KEYBOARD): Letzter Mausklick (`page.mouse.click(640, 360)`) in `vision-loop.spec.ts` durch `page.locator('canvas').focus()` ersetzt. Alle anderen E2E-Tests waren bereits frei von Mausklicks.
+**Was wurde gescannt (Run #114)?**
+- Task 5 (Spielprotokoll): bereits vollständig implementiert — `SpielprotokollOverlay.ts`, `spielProtokollEintraege` im AppStore, 📋-Button in TischSzene. Als [x] markiert.
+- Task 6 (FEAT-POINT-LABELS): bereits vollständig implementiert — `PunkteKomponenteAntwort` (typ/label/punkte) im Backend, DTO im Frontend. Als [x] markiert.
+- FEAT-QUICK-PLAY-SYNC: bereits vollständig implementiert — `erstelleQuickGame()` mit `wirdGeladen`-Flag, API-Integration, E2E-Test. Als [x] markiert.
+- Task 25 (FIX-KI-ARCHITECTURE-VIOLATION): bestätigt erledigt — `KiEventAdapter` ist leer (deprecated), Logik in `KiTischOrchestrator`. Inkonsistenz im Plan behoben.
+- Task 28 (DOC-SPEC-UPDATES): Scope präzisiert — `frontend-ui-logik.md` und `ki-strategie.md` sind bereits korrekt, kein Update nötig. Nur `spieler-session.md` und `architektur-domain-events.md` brauchen Updates.
+- Neue Tasks: 29 (leere KiEventAdapter-Klasse entfernen), 30 (ESLint `any`-Fehler beheben).
 
 **Nächster logischer Schritt:**
-- Task 28 (DOC-SPEC-UPDATES): Spec-Dokumente aktualisieren (spieler-session.md, architektur-domain-events.md, frontend-ui-logik.md).
-- Task 5: Spielprotokoll vollständig (P3, lang offen).
-
-**Offene Fragen:**
-- Vision Loop Spielschleife: `leseSpielZustand` wartet auf `isIdle()` das bei KI-Spiel gelegentlich >15s dauert (pre-existing).
-- 96 ESLint `any`-Fehler — Cleanup-Task ausstehend.
+- Task 28 (DOC-SPEC-UPDATES): Zwei Spec-Dateien aktualisieren.
+- Task 29 (REFACTOR-KI-ADAPTER-CLEANUP): Leere KiEventAdapter-Klasse entfernen.
+- Task 30 (FIX-ESLINT-ANY): 96 TypeScript `any`-Fehler bereinigen.
+- Vision Loop Spielschleife: `leseSpielZustand` wartet auf `isIdle()` das bei KI-Spiel gelegentlich >15s dauert (pre-existing), soll verbessert werden.
 - Hochzeit-Nameplate: Kein Herz-Label implementiert.
 
 ---
@@ -35,27 +38,26 @@
 
 ---
 
-## Analyse-Stand (Plan-Run #111)
+## Analyse-Stand (Plan-Run #114)
 
-5-Kontext-Analyse abgeschlossen. Wesentliche Befunde:
+Vollständiger Codebase-Scan abgeschlossen. Wesentliche Befunde:
 
 **Tisch/Spieler**:
-- Implementiert: Entities, Lobby, Auth (OAuth2, BCrypt), Session, Disconnect (120s), Statistiken.
-- Fehlt: `@PreAuthorize` ABAC-Durchsetzung in Controllern (Spezifikation fordert dies); Tisch-Status WARTEND nach Abbruch (Code löscht Tisch). Private Tische blocken Gäste nicht.
-- Inkonsistenzen: `spieler-session.md` veraltet, URL-Pluralisierung inkonsistent (`tische` vs `tisch`).
+- Implementiert: Entities, Lobby, Auth (BCrypt/Passwort), Session, Disconnect (120s), Statistiken, ABAC, privater-Tisch-Schutz.
+- `spieler-session.md` ist noch veraltet (beschreibt nur Name+Cookie, nicht Passwort/Login).
 
 **Partie/Regeln**:
-- Spielkern und Sonderspiele vollständig. Sonderspiele (Hochzeit, Armut, 8 Solos) funktionieren exakt nach Spec. TrumpfOrdnung korrekt, KI bewertet Soli (Solo 46/28/30) nach Spec.
+- Spielkern und Sonderspiele vollständig. Sonderspiele (Hochzeit, Armut, 8 Solos) exakt nach Spec.
 
 **API/Events/KI**:
-- Implementiert: KI reagiert auf Domain-Events, 800ms Frontend-Delay, Solo-Schwellen korrekt.
-- Fehlt: `KI_ZUG_SEQUENZ` Event (es werden individuelle `KARTE_GESPIELT`-Events gesendet, was aber konsistent mit `ki-strategie.md` ist). `PartieEreignisBatch` für Gap-Detection fehlt.
-- Inkonsistent: Architektur-Bruch im Code (`KiEventAdapter` hängt direkt von `tisch`-Entitäten ab). Spec-Status fehlerhaft bzgl. Schweinchen/Hochzeit-Events.
+- `PartieEreignisBatch` für Gap-Detection implementiert (Task 26 erledigt).
+- `KiEventAdapter` ist leer und kann entfernt werden (Task 29).
+- `architektur-domain-events.md` ist veraltet: `KI_ZUG_SEQUENZ` existiert nicht im Code; `PartieEreignisBatch` fälschlicherweise als „Geplant" markiert.
 
 **Frontend**:
-- Projekt ist vollständig auf Pure Phaser umgestellt. Die Hybrid-Architektur-Specs sind veraltet.
-- Modale, Nameplates, Flash-Text vollständig.
-- Minor-Defizit: E2E-Tests nutzen teilweise noch Klicks statt reiner Tastaturbedienung.
+- Spielprotokoll, Punkte-Labels, Schnellstart-Sync vollständig implementiert.
+- 96 ESLint `any`-Fehler ausstehend (Task 30).
+- `frontend-ui-logik.md` und `ki-strategie.md` sind korrekt und aktuell.
 
 ---
 
@@ -81,13 +83,13 @@
 
 ## P3 — Spielprotokoll
 ### FEAT-SPIELPROTOKOLL: DKV-Scorecard
-- [ ] Task 5: Spielprotokoll vollständig — State im AppStore + Overlay-Integration in TischSzene (📋-Button, Scrolling, Cleanup)
+- [x] Task 5: Spielprotokoll vollständig — `SpielprotokollOverlay.ts` mit Scrolling; `spielProtokollEintraege` im AppStore; 📋-Button in TischSzene; Befüllung bei `SPIEL_BEENDET`.
 
 ---
 
 ## P4 — Plan #100 Tasks (parallel laufend)
-- [ ] Task 6: FEAT-POINT-LABELS: Backend Punkte-Labels + DTO
-- [ ] FEAT-QUICK-PLAY-SYNC: Schnellstart Lade-Status
+- [x] Task 6: FEAT-POINT-LABELS: Backend `PunkteKomponenteAntwort` (typ/label/punkte) + DTO im Frontend
+- [x] FEAT-QUICK-PLAY-SYNC: Schnellstart Lade-Status via `wirdGeladen`-Flag in `erstelleQuickGame()`
 - [x] Task 7: FEAT-PHASER-MODAL / PHASER-LIST
 - [x] Task 8: REFACTOR-LOBBY
 - [x] Task 9: REFACTOR-EVALUATION
@@ -128,7 +130,7 @@
 - [x] **Backend**: Alle REST-Endpunkte für Tische auf Plural (`/api/tische/...`) vereinheitlichen. (Bereits konsistent — keine Änderungen nötig.)
 
 ### FIX-KI-ARCHITECTURE-VIOLATION (Task 25)
-- [ ] **Backend**: Abhängigkeiten im KI-Modul auflösen. `KiEventAdapter`/`Service` dürfen laut `architektur-ddd.md` nicht `tisch` importieren. Umbau auf reine DTOs/IDs im Event.
+- [x] **Backend**: Abhängigkeiten im KI-Modul aufgelöst. `KiEventAdapter` ist leer, Logik wurde in `de.locodoko.tisch.KiTischOrchestrator` verschoben. KI importiert nur noch `partie` und `karten`.
 
 ### FEAT-EVENT-GAP-DETECTION (Task 26)
 - [x] **Backend/Frontend**: Implementierung von `PartieEreignisBatch` für zuverlässigere WebSocket-Synchronisation.
@@ -137,11 +139,23 @@
 - [x] **E2E**: E2E-Tests auf ausschließliche Nutzung von Tastatur-Shortcuts (gemäß `frontend-tastatursteuerung.md`) umstellen; Mausklicks entfernen.
 
 ### DOC-SPEC-UPDATES (Task 28)
-- [ ] **Dokumentation**:
-  - `spieler-session.md` aktualisieren (Passwort/Login erwähnen).
-  - `architektur-domain-events.md` aktualisieren (Schweinchen/Hochzeit sind implementiert, `KI_ZUG_SEQUENZ` klären).
-  - `frontend-ui-logik.md` auf Pure Phaser aktualisieren.
-  - Verantwortlichkeit für `SPIEL_BEENDET` in Spec klären (Code: `PartieLifecycleService`).
+- [ ] **Dokumentation** (2 Dateien — `frontend-ui-logik.md` und `ki-strategie.md` sind bereits korrekt):
+  - `spieler-session.md` aktualisieren: Passwort/Login (BCrypt) als primäres Authentifizierungsmittel beschreiben; Session-Cookie bleibt Transportmechanismus.
+  - `architektur-domain-events.md` aktualisieren:
+    - Zeile mit `KI_ZUG_SEQUENZ` entfernen — dieses Event existiert nicht im Code; KI-Timing ist rein Frontend-seitig (800ms Queue-Delay).
+    - `PartieEreignisBatch`-Abschnitt von „Geplant" auf „Implementiert" ändern.
+    - Fehlende Events in Tabelle ergänzen: `AKTION_ABGELEHNT`, `SNAPSHOT`.
+    - `SPIEL_BEENDET` Verantwortlichkeit korrigieren: Produzent ist `PartieLifecycleService`.
+
+---
+
+## P8 — Neu entdeckte Aufgaben (Plan-Run #114)
+
+### REFACTOR-KI-ADAPTER-CLEANUP (Task 29)
+- [ ] **Backend**: Leere Klasse `de.locodoko.ki.orchestrierung.KiEventAdapter` entfernen. Sie enthält nur einen Kommentar und einen leeren Body — kein produktiver Code, keine Tests referenzieren sie. Sicherstellen dass `mvn test` danach grün ist.
+
+### FIX-ESLINT-ANY (Task 30)
+- [ ] **Frontend**: 96 TypeScript ESLint `any`-Fehler in `frontend/src/` bereinigen. Schrittweise: zuerst `npm run lint` ausführen um aktuelle Liste zu erhalten, dann Typen präzisieren (bevorzugt `unknown` + Type Guards oder spezifische Typen aus `api-types.ts`). Nach jeder Datei `npm test` ausführen. Kein `eslint-disable`-Kommentar ohne Begründung.
 
 ---
 
@@ -156,11 +170,6 @@
 
 ## TODO Liste
 
-**P3 / P4 (Offene Restaufgaben vorheriger Runs):**
-- [ ] Task 5: Spielprotokoll vollständig
-- [ ] Task 6: FEAT-POINT-LABELS
-- [ ] FEAT-QUICK-PLAY-SYNC
-
 **P7 (Neu entdeckt, Plan-Run #111):**
 - [x] Task 21: FIX-ABAC-AUTHORIZATION
 - [x] Task 22: FIX-TISCH-STATUS-ABBRUCH
@@ -170,3 +179,7 @@
 - [x] Task 26: FEAT-EVENT-GAP-DETECTION
 - [x] Task 27: REFACTOR-E2E-KEYBOARD
 - [ ] Task 28: DOC-SPEC-UPDATES
+
+**P8 (Neu entdeckt, Plan-Run #114):**
+- [ ] Task 29: REFACTOR-KI-ADAPTER-CLEANUP
+- [ ] Task 30: FIX-ESLINT-ANY
