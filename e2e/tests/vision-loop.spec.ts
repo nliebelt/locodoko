@@ -72,7 +72,7 @@ test.describe('Vision Loop — UI Screenshots', () => {
     await page.evaluate(() => (window as any).__locodoko.appStore.erstelleQuickGame());
     await warteAufSzene(page, 'TischSzene');
     await aktiviereTurbo(page);
-    await page.mouse.click(640, 360);
+    await page.locator('canvas').focus(); // Fokus auf Canvas ohne Mausklick (Keyboard-Handler auf document)
 
     // ── 4. Seitenlade & Einstellungen ────────────────────────────────────────
     console.log('Opening Seitenlade...');
