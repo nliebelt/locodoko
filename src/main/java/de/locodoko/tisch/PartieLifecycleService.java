@@ -97,11 +97,14 @@ public class PartieLifecycleService {
     public void veroeffentlicheSpielGestartet(TischEntity tisch) {
         tisch.spieler().stream()
             .filter(s -> !s.istKi() && !s.istKiUebernommen() && s.sessionId() != null)
-            .forEach(s -> tischEchtzeitService.planeAnBenutzer(
-                s.sessionId(),
-                "/queue/partie/" + tisch.partie().id(),
-                PartieEreignisAntwort.spielGestartet(PartieStandAntwort.aus(tisch, s.id()))
-            ));
+            .forEach(s -> {
+                PartieStandAntwort stand = PartieStandAntwort.aus(tisch, s.id());
+                tischEchtzeitService.planeAnBenutzer(
+                    s.sessionId(),
+                    "/queue/partie/" + tisch.partie().id(),
+                    new PartieEreignisBatch(stand.version(), List.of(PartieEreignisAntwort.spielGestartet(stand)))
+                );
+            });
     }
 
     /**
@@ -124,11 +127,14 @@ public class PartieLifecycleService {
         // WebSocket-Broadcast (Bestands-Logik)
         tisch.spieler().stream()
             .filter(s -> !s.istKi() && !s.istKiUebernommen() && s.sessionId() != null)
-            .forEach(s -> tischEchtzeitService.planeAnBenutzer(
-                s.sessionId(),
-                "/queue/partie/" + tisch.partie().id(),
-                PartieEreignisAntwort.spielBeendet(PartieStandAntwort.aus(tisch, s.id()))
-            ));
+            .forEach(s -> {
+                PartieStandAntwort stand = PartieStandAntwort.aus(tisch, s.id());
+                tischEchtzeitService.planeAnBenutzer(
+                    s.sessionId(),
+                    "/queue/partie/" + tisch.partie().id(),
+                    new PartieEreignisBatch(stand.version(), List.of(PartieEreignisAntwort.spielBeendet(stand)))
+                );
+            });
 
         // Domain-Event fuer Statistiken (NEU)
         Map<UUID, SpielBeendet.SpielerSpielDaten> spielerDaten = new HashMap<>();

@@ -3,6 +3,7 @@ import type {
   KiSchwierigkeit,
   KarteGespieltEreignis,
   PartieEreignisAntwort,
+  PartieEreignisBatch,
   PartieStandAntwort,
   SonderpunktEreignisAntwortDto,
   SpielverwaltungWebSocketFehlerAntwort,
@@ -532,8 +533,8 @@ export class AppStore {
     // bei nachfolgenden TischEreignissen mit derselben partieId NICHT erneut
     // registrierePartieAbos aufruft und doppelte Subscriptions erzeugt.
     this.aktuellePartieAbo = partieId;
-    this.tischAbos.push(this.echtzeit.abonnieren<PartieEreignisAntwort>(`/user/queue/partie/${partieId}`, (e) => {
-      this.verarbeitePartieEreignis(e);
+    this.tischAbos.push(this.echtzeit.abonnieren<PartieEreignisBatch>(`/user/queue/partie/${partieId}`, (batch) => {
+      this.verarbeitePartieBatch(batch);
     }));
     this.echtzeit.senden(`/app/partie/${partieId}/snapshot`);
   }
@@ -580,9 +581,33 @@ export class AppStore {
     }
   }
 
-  private verarbeitePartieEreignis(ereignis: PartieEreignisAntwort): void {
-    Logger.websocket(`Empfange PartieEreignis: ${ereignis.ereignisTyp}`, ereignis);
-    this._eventQueue.push(ereignis);
+  private verarbeitePartieBatch(batch: PartieEreignisBatch): void {
+    Logger.websocket(`Empfange PartieBatch: v=${batch.version}, ${batch.ereignisse.length} Ereignis(se)`, batch);
+
+    const ersteEreignisTyp = batch.ereignisse[0]?.ereignisTyp;
+    const erstePartieId = batch.ereignisse[0]?.partieStand?.partieId ?? null;
+    const istSnapshot = ersteEreignisTyp === 'SNAPSHOT';
+    const istNeuePartie = erstePartieId != null && erstePartieId !== this.zustand.partieStand?.partieId;
+
+    // Sequenzluecke pruefen (nur wenn gleiche Partie und Version bekannt)
+    if (!istNeuePartie && !istSnapshot && this._letztePartieVersion >= 0) {
+      if (batch.version > this._letztePartieVersion + 1) {
+        Logger.error(`Batch-Sequenzluecke: Erwartet v=${this._letztePartieVersion + 1}, erhalten v=${batch.version}`);
+        const tischId = this.zustand.aktuellerTisch?.id;
+        if (tischId) this.reconnecteTisch(tischId);
+        return;
+      }
+    }
+
+    // Stale batch verwerfen (ausser bei neuer Partie)
+    if (!istNeuePartie && batch.version < this._letztePartieVersion) {
+      Logger.websocket('Verwerfe veralteten Batch', { batchVersion: batch.version, letzte: this._letztePartieVersion });
+      return;
+    }
+
+    this._letztePartieVersion = batch.version;
+
+    batch.ereignisse.forEach(e => this._eventQueue.push(e));
     void this._verarbeiteEventQueue();
   }
 
@@ -606,19 +631,6 @@ export class AppStore {
         if (this._queuePausiert) break;
         
         const ereignis = this._eventQueue.shift()!;
-        const istSnapshot = ereignis.ereignisTyp === 'SNAPSHOT';
-
-        // Bei Versionsluecke (verlorene WebSocket-Nachricht) sofort Snapshot anfordern.
-        // Pruefung MUSS vor _darfPartieStandAktualisieren() erfolgen, da diese Methode
-        // _letztePartieVersion als Seiteneffekt setzt und die Luecke dadurch unsichtbar wuerde.
-        // reconnecteTisch() leert die Queue und setzt State zurueck; das lueckenhafte Event
-        // wird verworfen — der Snapshot liefert den korrekten Stand nach.
-        if (!istSnapshot && this._letztePartieVersion >= 0 && ereignis.version > this._letztePartieVersion + 1) {
-          Logger.error(`Sequenz-Luecke erkannt! Erwartet ${this._letztePartieVersion + 1}, erhalten ${ereignis.version}`);
-          const tischId = this.zustand.aktuellerTisch?.id;
-          if (tischId) this.reconnecteTisch(tischId);
-          return;
-        }
 
         if (!this._darfPartieStandAktualisieren(ereignis.partieStand, ereignis.version)) {
           Logger.websocket('Ignoriere veraltetes PartieEreignis', {

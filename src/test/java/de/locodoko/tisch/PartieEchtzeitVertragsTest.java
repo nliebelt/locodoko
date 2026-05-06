@@ -118,9 +118,11 @@ class PartieEchtzeitVertragsTest {
             String queue = "/queue/partie/" + setup.partieId();
             await().atMost(ASYNC_TIMEOUT).until(() ->
                 nachrichtenSpeicher.nachrichten().stream()
-                    .anyMatch(n -> queue.equals(n.ziel())
+                    .filter(n -> queue.equals(n.ziel())
                         && sessionId.equals(n.benutzer())
-                        && n.payload() instanceof PartieEreignisAntwort.StichAbgeschlossen)
+                        && n.payload() instanceof PartieEreignisBatch)
+                    .flatMap(n -> ((PartieEreignisBatch) n.payload()).ereignisse().stream())
+                    .anyMatch(e -> e instanceof PartieEreignisAntwort.StichAbgeschlossen)
             );
         }
 
@@ -309,8 +311,8 @@ class PartieEchtzeitVertragsTest {
         return nachrichtenSpeicher.nachrichten().stream()
             .filter(n -> queue.equals(n.ziel())
                 && sessionId.equals(n.benutzer())
-                && n.payload() instanceof PartieEreignisAntwort)
-            .map(n -> (PartieEreignisAntwort) n.payload())
+                && n.payload() instanceof PartieEreignisBatch)
+            .flatMap(n -> ((PartieEreignisBatch) n.payload()).ereignisse().stream())
             .toList();
     }
 

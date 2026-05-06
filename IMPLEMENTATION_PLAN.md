@@ -1,16 +1,19 @@
-# IMPLEMENTATION_PLAN — Plan-Run #111
+# IMPLEMENTATION_PLAN — Plan-Run #112
 
-> Stand: 2026-05-06. Fokus: Analyse der Bounded Contexts und Planung neuer Aufgaben.
+> Stand: 2026-05-06. Fokus: FEAT-EVENT-GAP-DETECTION vollständig fertiggestellt.
 
 ## Notiz
 
-**Was wurde implementiert (Run #111, dritte Iteration)?**
-- Task 21 (FIX-ABAC-AUTHORIZATION): `@PreAuthorize`-Annotationen in `TischController` für Gastgeber-Endpunkte (`starten`, `PUT konfiguration`, `DELETE spieler/{id}`) und Mitglieds-Endpunkt (`neue-partie`). `TischSicherheit` erweitert: Session-Fallback für Gast-Spieler (via `RequestContextHolder`) und OAuth2-Principal-Support. `TischControllerTest` auf `springSecurity()` umgestellt. 307 Backend-Tests grün.
-- Task 25 (FIX-KI-ARCHITECTURE-VIOLATION): `KiTischOrchestrator` im `tisch`-Kontext erstellt; `KiEventAdapter` auf leere Klasse reduziert; `tisch.KiSchwierigkeit`-Duplikat gelöscht; `ki/package-info.java` allowedDependencies bereinigt (kein `tisch` mehr). 307 Backend-Tests grün.
+**Was wurde implementiert (Run #112)?**
+- Task 26 (FEAT-EVENT-GAP-DETECTION): `PartieEreignisBatch` End-to-End vollständig aktiviert.
+  - Backend: `TischVerwaltungsService.veroeffentlichePartieAktualisierung` sendet Snapshots jetzt als `PartieEreignisBatch` (nicht mehr als rohes `PartieEreignisAntwort`).
+  - Frontend `AppStore.test.ts`: Alle Partie-Queue-Events auf `PartieEreignisBatch`-Format umgestellt; `batchieren()`-Hilfsfunktion eingeführt; fehlende `version`-Felder nachgepflegt.
+  - Frontend `AppStore.ts`: Ungenutztes `istSnapshot`-const entfernt (TS6133).
+  - Backend-Tests: `PartieEchtzeitVertragsTest` und `WebSocketPublikationIntegrationTest` auf Batch-Format aktualisiert. 307 Backend-Tests grün.
 
 **Nächster logischer Schritt:**
-- Task 26 (FEAT-EVENT-GAP-DETECTION): Event-Gap-Detection im Frontend implementieren.
 - Task 27 (REFACTOR-E2E-KEYBOARD): E2E-Tests auf Tastatureingaben umstellen.
+- Task 28 (DOC-SPEC-UPDATES): Spec-Dokumente aktualisieren.
 
 **Offene Fragen:**
 - Vision Loop Spielschleife: `leseSpielZustand` wartet auf `isIdle()` das bei KI-Spiel gelegentlich >15s dauert (pre-existing).
@@ -123,7 +126,7 @@
 - [ ] **Backend**: Abhängigkeiten im KI-Modul auflösen. `KiEventAdapter`/`Service` dürfen laut `architektur-ddd.md` nicht `tisch` importieren. Umbau auf reine DTOs/IDs im Event.
 
 ### FEAT-EVENT-GAP-DETECTION (Task 26)
-- [ ] **Backend/Frontend**: Implementierung von `PartieEreignisBatch` für zuverlässigere WebSocket-Synchronisation.
+- [x] **Backend/Frontend**: Implementierung von `PartieEreignisBatch` für zuverlässigere WebSocket-Synchronisation.
 
 ### REFACTOR-E2E-KEYBOARD (Task 27)
 - [ ] **E2E**: E2E-Tests auf ausschließliche Nutzung von Tastatur-Shortcuts (gemäß `frontend-tastatursteuerung.md`) umstellen; Mausklicks entfernen.
@@ -159,6 +162,6 @@
 - [x] Task 23: FIX-PRIVATE-TISCH-GUESTS
 - [x] Task 24: REFACTOR-URL-CONSISTENCY
 - [x] Task 25: FIX-KI-ARCHITECTURE-VIOLATION
-- [ ] Task 26: FEAT-EVENT-GAP-DETECTION
+- [x] Task 26: FEAT-EVENT-GAP-DETECTION
 - [ ] Task 27: REFACTOR-E2E-KEYBOARD
 - [ ] Task 28: DOC-SPEC-UPDATES

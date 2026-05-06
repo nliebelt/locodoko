@@ -292,6 +292,11 @@ export type PartieEreignisAntwort =
   | SpielGestartetEreignis
   | AktionAbgelehntEreignis;
 
+export interface PartieEreignisBatch {
+  version: number;
+  ereignisse: PartieEreignisAntwort[];
+}
+
 export interface SpielverwaltungWebSocketFehlerAntwort {
   timestamp: string;
   fehlerCode: string;

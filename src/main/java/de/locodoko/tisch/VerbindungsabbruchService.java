@@ -13,6 +13,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
@@ -121,7 +122,7 @@ public class VerbindungsabbruchService {
                 tischEchtzeitService.planeAnBenutzer(
                         httpSessionId,
                         "/queue/partie/" + tisch.partie().id(),
-                        PartieEreignisAntwort.snapshot(stand)
+                        new PartieEreignisBatch(stand.version(), List.of(PartieEreignisAntwort.snapshot(stand)))
                 );
             }
         });
@@ -203,11 +204,14 @@ public class VerbindungsabbruchService {
             if (aktuellerTisch.partie() != null) {
                 aktuellerTisch.spieler().stream()
                     .filter(s -> !s.istKi() && s.sessionId() != null)
-                    .forEach(s -> tischEchtzeitService.planeAnBenutzer(
-                        s.sessionId(),
-                        "/queue/partie/" + aktuellerTisch.partie().id(),
-                        PartieEreignisAntwort.snapshot(PartieStandAntwort.aus(aktuellerTisch, s.id()))
-                    ));
+                    .forEach(s -> {
+                        PartieStandAntwort stand = PartieStandAntwort.aus(aktuellerTisch, s.id());
+                        tischEchtzeitService.planeAnBenutzer(
+                            s.sessionId(),
+                            "/queue/partie/" + aktuellerTisch.partie().id(),
+                            new PartieEreignisBatch(stand.version(), List.of(PartieEreignisAntwort.snapshot(stand)))
+                        );
+                    });
             }
         }
     }

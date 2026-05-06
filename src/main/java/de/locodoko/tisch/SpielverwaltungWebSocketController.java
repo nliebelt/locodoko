@@ -19,6 +19,7 @@ import de.locodoko.tisch.TischId;
 import de.locodoko.partie.PartieId;
 
 import java.security.Principal;
+import java.util.List;
 import java.util.UUID;
 
 /**
@@ -82,10 +83,11 @@ public class SpielverwaltungWebSocketController {
     public void sendePartieSnapshot(@DestinationVariable UUID partieId, Principal principal) {
         SpielerEntity spieler = ladeAktivenSpieler(principal);
         LOGGER.debug("WS PARTIE-SNAPSHOT [spieler={} ({}), partieId={}]", spieler.anzeigeName(), spieler.id(), partieId);
+        PartieStandAntwort stand = spielAktionsService.ladePartieStand(PartieId.von(partieId), spieler);
         tischEchtzeitService.sendeAnBenutzer(
             principal.getName(),
             "/queue/partie/" + partieId,
-            PartieEreignisAntwort.snapshot(spielAktionsService.ladePartieStand(PartieId.von(partieId), spieler))
+            new PartieEreignisBatch(stand.version(), List.of(PartieEreignisAntwort.snapshot(stand)))
         );
     }
 
@@ -93,10 +95,11 @@ public class SpielverwaltungWebSocketController {
     public void sendePartieDebugSnapshot(@DestinationVariable UUID partieId, Principal principal) {
         SpielerEntity spieler = ladeAktivenSpieler(principal);
         LOGGER.debug("WS DEBUG-SNAPSHOT [spieler={} ({}), partieId={}]", spieler.anzeigeName(), spieler.id(), partieId);
+        PartieStandAntwort stand = spielAktionsService.ladePartieStand(PartieId.von(partieId), spieler, true);
         tischEchtzeitService.sendeAnBenutzer(
             principal.getName(),
             "/queue/partie/" + partieId,
-            PartieEreignisAntwort.snapshot(spielAktionsService.ladePartieStand(PartieId.von(partieId), spieler, true))
+            new PartieEreignisBatch(stand.version(), List.of(PartieEreignisAntwort.snapshot(stand)))
         );
     }
 

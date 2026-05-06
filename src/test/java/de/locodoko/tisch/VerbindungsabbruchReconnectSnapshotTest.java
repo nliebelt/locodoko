@@ -226,9 +226,12 @@ class VerbindungsabbruchReconnectSnapshotTest {
     ) {
         String ziel = "/queue/partie/" + partieId;
         return nachrichten.stream()
-            .filter(n -> ziel.equals(n.ziel()) && benutzer.equals(n.benutzer()) && n.payload() instanceof PartieEreignisAntwort)
-            .map(n -> (PartieEreignisAntwort) n.payload())
-            .filter(e -> e.ereignisTyp() == PartieEreignisTyp.SNAPSHOT)
+            .filter(n -> ziel.equals(n.ziel()) && benutzer.equals(n.benutzer())
+                && n.payload() instanceof PartieEreignisBatch batch
+                && batch.ereignisse().stream().anyMatch(e -> e.ereignisTyp() == PartieEreignisTyp.SNAPSHOT))
+            .map(n -> ((PartieEreignisBatch) n.payload()).ereignisse().stream()
+                .filter(e -> e.ereignisTyp() == PartieEreignisTyp.SNAPSHOT)
+                .findFirst().orElseThrow())
             .findFirst()
             .orElseThrow(() -> new AssertionError(
                 "Kein SNAPSHOT für Benutzer '" + benutzer + "' auf '" + ziel + "' gefunden. " +
@@ -241,9 +244,12 @@ class VerbindungsabbruchReconnectSnapshotTest {
     ) {
         String ziel = "/queue/partie/" + partieId;
         return nachrichten.stream()
-            .filter(n -> ziel.equals(n.ziel()) && n.payload() instanceof PartieEreignisAntwort)
-            .map(n -> (PartieEreignisAntwort) n.payload())
-            .filter(e -> e.ereignisTyp() == PartieEreignisTyp.SNAPSHOT)
+            .filter(n -> ziel.equals(n.ziel())
+                && n.payload() instanceof PartieEreignisBatch batch
+                && batch.ereignisse().stream().anyMatch(e -> e.ereignisTyp() == PartieEreignisTyp.SNAPSHOT))
+            .map(n -> ((PartieEreignisBatch) n.payload()).ereignisse().stream()
+                .filter(e -> e.ereignisTyp() == PartieEreignisTyp.SNAPSHOT)
+                .findFirst().orElseThrow())
             .toList();
     }
 

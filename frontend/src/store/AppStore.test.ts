@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import type {
   AuthentifizierungsAntwort,
   PartieEreignisAntwort,
+  PartieEreignisBatch,
   PartieStandAntwort,
   SpielverwaltungWebSocketFehlerAntwort,
   SpielerSessionAntwort,
@@ -112,9 +113,14 @@ class FakeEchtzeit implements EchtzeitPort {
 
   trennen(): void {}
 
-  emit(ziel: string, nachricht: TischlisteEreignisAntwort | TischEreignisAntwort | PartieEreignisAntwort | SpielverwaltungWebSocketFehlerAntwort): void {
+  emit(ziel: string, nachricht: TischlisteEreignisAntwort | TischEreignisAntwort | PartieEreignisAntwort | PartieEreignisBatch | SpielverwaltungWebSocketFehlerAntwort): void {
     (this.handler.get(ziel) ?? []).forEach((callback) => callback(nachricht));
   }
+}
+
+/** Verpackt ein einzelnes Partie-Ereignis in einen PartieEreignisBatch fuer Tests. */
+function batchieren(ereignis: PartieEreignisAntwort): PartieEreignisBatch {
+  return { version: ereignis.version, ereignisse: [ereignis] };
 }
 
 function baueTisch(tischId: Uuid = 'tisch-1'): TischAntwort {
@@ -397,31 +403,31 @@ describe('AppStore', () => {
     } as unknown as PartieStandAntwort;
 
     // KI-Animation startet (hält die Queue mit async Barrier besetzt)
-    echtzeit.emit('/user/queue/partie/partie-snap', {
+    echtzeit.emit('/user/queue/partie/partie-snap', batchieren({
       timestamp: '2026-04-21T12:00:01Z',
       version: 1,
       ereignisTyp: 'KARTE_GESPIELT',
       partieStand: spiel1Stand,
       spielerPosition: 'WEST',
       karteId: 'KREUZ-AS-1',
-    } as unknown as PartieEreignisAntwort);
+    } as unknown as PartieEreignisAntwort));
 
     // Während die Animation läuft: SNAPSHOT(Spiel2) dann KARTE_GESPIELT(Spiel1) eintreffen
-    echtzeit.emit('/user/queue/partie/partie-snap', {
+    echtzeit.emit('/user/queue/partie/partie-snap', batchieren({
       timestamp: '2026-04-21T12:00:02Z',
       version: 2,
       ereignisTyp: 'SNAPSHOT',
       partieStand: spiel2Stand,
-    } as unknown as PartieEreignisAntwort);
+    } as unknown as PartieEreignisAntwort));
 
-    echtzeit.emit('/user/queue/partie/partie-snap', {
+    echtzeit.emit('/user/queue/partie/partie-snap', batchieren({
       timestamp: '2026-04-21T12:00:01Z',
       version: 1, // Veraltete Version
       ereignisTyp: 'KARTE_GESPIELT',
       partieStand: spiel1Stand,
       spielerPosition: 'WEST',
       karteId: 'KREUZ-AS-1',
-    } as unknown as PartieEreignisAntwort);
+    } as unknown as PartieEreignisAntwort));
 
     // Warten bis KI-Animation (5ms) und Queue-Verarbeitung fertig
     await new Promise<void>((r) => setTimeout(r, 20));
@@ -485,22 +491,24 @@ describe('AppStore', () => {
     } as unknown as PartieStandAntwort;
 
     // KI animiert → async Barrier
-    echtzeit.emit('/user/queue/partie/partie-rec', {
+    echtzeit.emit('/user/queue/partie/partie-rec', batchieren({
       timestamp: t2,
+      version: 1,
       ereignisTyp: 'KARTE_GESPIELT',
       partieStand: spiel1Stand,
       spielerPosition: 'WEST',
       karteId: 'KREUZ-AS-1',
-    } as unknown as PartieEreignisAntwort);
+    } as unknown as PartieEreignisAntwort));
 
     // Veraltetes Event landet in Queue
-    echtzeit.emit('/user/queue/partie/partie-rec', {
+    echtzeit.emit('/user/queue/partie/partie-rec', batchieren({
       timestamp: t2,
+      version: 1,
       ereignisTyp: 'KARTE_GESPIELT',
       partieStand: spiel1Stand,
       spielerPosition: 'WEST',
       karteId: 'KREUZ-AS-1',
-    } as unknown as PartieEreignisAntwort);
+    } as unknown as PartieEreignisAntwort));
 
     // Ctrl+R: reconnecteTisch leert die Queue
     store.reconnecteTisch('tisch-reconnect2');
@@ -556,21 +564,21 @@ describe('AppStore', () => {
     } as unknown as PartieEreignisAntwort;
 
     // Version 1 → normal verarbeitet
-    echtzeit.emit('/user/queue/partie/partie-selfheal', {
+    echtzeit.emit('/user/queue/partie/partie-selfheal', batchieren({
       timestamp: t2, ereignisTyp: 'KARTE_GESPIELT', version: 1,
       partieStand: standV1, spielerPosition: 'WEST', karteId: 'KREUZ-AS-1',
-    } as unknown as PartieEreignisAntwort);
+    } as unknown as PartieEreignisAntwort));
 
     await new Promise<void>((r) => setTimeout(r, 20));
 
     const sendungenVorLuecke = echtzeit.sendungen.length;
 
     // Version 3 ohne Version 2 → Lücke erkannt → reconnect
-    echtzeit.emit('/user/queue/partie/partie-selfheal', {
+    echtzeit.emit('/user/queue/partie/partie-selfheal', batchieren({
       timestamp: t3, ereignisTyp: 'KARTE_GESPIELT', version: 3,
-      partieStand: { ...standV1, version: 3 } as unknown as PartieEreignisAntwort,
+      partieStand: { ...standV1, version: 3 } as unknown as PartieStandAntwort,
       spielerPosition: 'NORD', karteId: 'PIK-BUBE-1',
-    } as unknown as PartieEreignisAntwort);
+    } as unknown as PartieEreignisAntwort));
 
     await new Promise<void>((r) => setTimeout(r, 20));
 
@@ -670,12 +678,12 @@ describe('AppStore', () => {
       }
     });
 
-    echtzeit.emit('/user/queue/partie/partie-order', {
+    echtzeit.emit('/user/queue/partie/partie-order', batchieren({
       version: 1,
       ereignisTyp: 'STICH_ABGESCHLOSSEN',
       partieStand: stichStand,
       neueSonderpunkte: [],
-    } as unknown as PartieEreignisAntwort);
+    } as unknown as PartieEreignisAntwort));
 
     // Microtask-Checkpoint abwarten
     await Promise.resolve();
@@ -729,11 +737,11 @@ describe('AppStore', () => {
     } as unknown as PartieStandAntwort;
 
     // Initial-Stand via SNAPSHOT etablieren
-    echtzeit.emit('/user/queue/partie/partie-stich', {
+    echtzeit.emit('/user/queue/partie/partie-stich', batchieren({
       version: 0,
       ereignisTyp: 'SNAPSHOT',
       partieStand: standVorStich,
-    } as unknown as PartieEreignisAntwort);
+    } as unknown as PartieEreignisAntwort));
 
     await Promise.resolve();
     expect(store.snapshot().partieStand?.version).toBe(0);
@@ -751,12 +759,12 @@ describe('AppStore', () => {
       }
     });
 
-    echtzeit.emit('/user/queue/partie/partie-stich', {
+    echtzeit.emit('/user/queue/partie/partie-stich', batchieren({
       version: 1,
       ereignisTyp: 'STICH_ABGESCHLOSSEN',
       partieStand: standNachStich,
       neueSonderpunkte: [],
-    } as unknown as PartieEreignisAntwort);
+    } as unknown as PartieEreignisAntwort));
 
     await Promise.resolve();
 
@@ -793,7 +801,7 @@ describe('AppStore', () => {
       }
     } as unknown as PartieStandAntwort;
 
-    echtzeit.emit('/user/queue/partie/partie-4', { version: 1, ereignisTyp: 'SNAPSHOT', partieStand: partieStandVorher } as PartieEreignisAntwort);
+    echtzeit.emit('/user/queue/partie/partie-4', batchieren({ version: 1, ereignisTyp: 'SNAPSHOT', partieStand: partieStandVorher } as PartieEreignisAntwort));
     await Promise.resolve();
 
     // Backend liefert KARTE_GESPIELT und STICH_ABGESCHLOSSEN (beide mit leerer Mitte!)
@@ -810,9 +818,9 @@ describe('AppStore', () => {
     });
 
     // 1. KARTE_GESPIELT (4. Karte von OST)
-    echtzeit.emit('/user/queue/partie/partie-4', {
+    echtzeit.emit('/user/queue/partie/partie-4', batchieren({
       version: 2, ereignisTyp: 'KARTE_GESPIELT', spielerPosition: 'OST', karteId: 'KREUZ-AS-0', partieStand: partieStandNachher
-    } as unknown as PartieEreignisAntwort);
+    } as unknown as PartieEreignisAntwort));
 
     await Promise.resolve();
     // Nach KARTE_GESPIELT MUSS die Mitte kuenstlich auf 4 stehen (Synthesizer aktiv)
@@ -820,9 +828,9 @@ describe('AppStore', () => {
     expect(store.snapshot().partieStand?.laufendesSpiel?.aktuelleStichmitte).toHaveLength(4);
 
     // 2. STICH_ABGESCHLOSSEN
-    echtzeit.emit('/user/queue/partie/partie-4', {
+    echtzeit.emit('/user/queue/partie/partie-4', batchieren({
       version: 3, ereignisTyp: 'STICH_ABGESCHLOSSEN', partieStand: partieStandNachher, neueSonderpunkte: []
-    } as unknown as PartieEreignisAntwort);
+    } as unknown as PartieEreignisAntwort));
 
     await Promise.resolve();
     // Waehrend der Listener laeuft, sind noch alle 4 Karten da (fuer AnimationGuard)
@@ -859,18 +867,18 @@ describe('AppStore', () => {
       }
     } as unknown as PartieStandAntwort;
 
-    echtzeit.emit('/user/queue/partie/partie-ki', {
+    echtzeit.emit('/user/queue/partie/partie-ki', batchieren({
       version: 1, ereignisTyp: 'SNAPSHOT', partieStand: initialStand
-    } as PartieEreignisAntwort);
+    } as PartieEreignisAntwort));
     await new Promise<void>((r) => setTimeout(r, 10)); // SNAPSHOT verarbeiten lassen
 
     expect(store.snapshot().partieStand?.version).toBe(1);
 
     const nachKiKarte = { ...initialStand, version: 2 } as unknown as PartieStandAntwort;
-    echtzeit.emit('/user/queue/partie/partie-ki', {
+    echtzeit.emit('/user/queue/partie/partie-ki', batchieren({
       version: 2, ereignisTyp: 'KARTE_GESPIELT', spielerPosition: 'WEST', karteId: 'KREUZ-AS-0',
       partieStand: nachKiKarte
-    } as unknown as PartieEreignisAntwort);
+    } as unknown as PartieEreignisAntwort));
 
     // Nach einem Microtask: State noch nicht aktualisiert — Delay (30ms) läuft noch
     await Promise.resolve();
@@ -908,16 +916,16 @@ describe('AppStore', () => {
       }
     } as unknown as PartieStandAntwort;
 
-    echtzeit.emit('/user/queue/partie/partie-ki-nd', {
+    echtzeit.emit('/user/queue/partie/partie-ki-nd', batchieren({
       version: 1, ereignisTyp: 'SNAPSHOT', partieStand: initialStand
-    } as PartieEreignisAntwort);
+    } as PartieEreignisAntwort));
     await new Promise<void>((r) => setTimeout(r, 10));
 
     const nachKiKarte = { ...initialStand, version: 2 } as unknown as PartieStandAntwort;
-    echtzeit.emit('/user/queue/partie/partie-ki-nd', {
+    echtzeit.emit('/user/queue/partie/partie-ki-nd', batchieren({
       version: 2, ereignisTyp: 'KARTE_GESPIELT', spielerPosition: 'WEST', karteId: 'KREUZ-AS-0',
       partieStand: nachKiKarte
-    } as unknown as PartieEreignisAntwort);
+    } as unknown as PartieEreignisAntwort));
 
     // Mit Delay=0: State sofort (nach Microtask-Queue) aktualisiert
     await new Promise<void>((r) => setTimeout(r, 10));

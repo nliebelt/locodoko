@@ -199,73 +199,51 @@ public class KiTischOrchestrator {
     }
 
     private void veroeffentlicheKiEreignisse(TischEntity tisch, List<SpielEreignis> ereignisse) {
+        // Domain-Events fuer Statistiken separat veroeffentlichen
         for (SpielEreignis ereignis : ereignisse) {
             switch (ereignis) {
-                case SpielEreignis.KarteGespielt kg ->
-                        sendeKarteGespielt(tisch, kg.position(), kg.karte().karteId());
-                case SpielEreignis.StichAbgeschlossenEreignis sa ->
-                        sendeStichAbgeschlossen(tisch, sa.sonderpunkte());
-                case SpielEreignis.SchweinchenGemeldet sg -> {
-                    eventPublisher.publishEvent(new SchweinchenGemeldet(tisch.id(), sg.spielerPosition()));
-                    sendeSchweinchenGemeldet(tisch, sg.spielerPosition());
+                case SpielEreignis.StichAbgeschlossenEreignis sa -> {
+                    for (SonderpunktEreignis sp : sa.sonderpunkte()) {
+                        switch (sp.art()) {
+                            case FUCHS_GEFANGEN ->
+                                    eventPublisher.publishEvent(new FuchsGefangen(tisch.id(), sp.taeter(), sp.opfer()));
+                            case KARLCHEN ->
+                                    eventPublisher.publishEvent(new KarlchenGespielt(tisch.id(), sp.taeter()));
+                            case DOPPELKOPF ->
+                                    eventPublisher.publishEvent(new DoppelkopfGestochen(tisch.id(), sp.taeter()));
+                        }
+                    }
                 }
-                case SpielEreignis.HochzeitPartnerGefunden hpg ->
-                        sendeHochzeitPartnerGefunden(tisch, hpg.partner());
+                case SpielEreignis.SchweinchenGemeldet sg ->
+                        eventPublisher.publishEvent(new SchweinchenGemeldet(tisch.id(), sg.spielerPosition()));
+                default -> {} // KarteGespielt, HochzeitPartnerGefunden: keine Domain-Events
             }
         }
-    }
-
-    private void sendeKarteGespielt(TischEntity tisch, SpielerPosition spielerPosition, String karteId) {
+        // Pro Spieler: Einen Batch mit allen Ereignissen senden
         tisch.spieler().stream()
                 .filter(s -> !s.istKi() && !s.istKiUebernommen() && s.sessionId() != null)
-                .forEach(s -> tischEchtzeitService.planeAnBenutzer(
-                        s.sessionId(),
-                        "/queue/partie/" + tisch.partie().id(),
-                        PartieEreignisAntwort.karteGespielt(PartieStandAntwort.aus(tisch, s.id()), spielerPosition, karteId)
-                ));
-    }
-
-    private void sendeStichAbgeschlossen(TischEntity tisch, List<SonderpunktEreignis> sonderpunkte) {
-        List<SonderpunktEreignisAntwort> sonderpunktDtos = sonderpunkte.stream()
-                .map(sp -> new SonderpunktEreignisAntwort(sp.art().name(), sp.taeter(), sp.opfer()))
-                .toList();
-        tisch.spieler().stream()
-                .filter(s -> !s.istKi() && !s.istKiUebernommen() && s.sessionId() != null)
-                .forEach(s -> tischEchtzeitService.planeAnBenutzer(
-                        s.sessionId(),
-                        "/queue/partie/" + tisch.partie().id(),
-                        PartieEreignisAntwort.stichAbgeschlossen(PartieStandAntwort.aus(tisch, s.id()), sonderpunktDtos)
-                ));
-        for (SonderpunktEreignis sp : sonderpunkte) {
-            switch (sp.art()) {
-                case FUCHS_GEFANGEN ->
-                        eventPublisher.publishEvent(new FuchsGefangen(tisch.id(), sp.taeter(), sp.opfer()));
-                case KARLCHEN ->
-                        eventPublisher.publishEvent(new KarlchenGespielt(tisch.id(), sp.taeter()));
-                case DOPPELKOPF ->
-                        eventPublisher.publishEvent(new DoppelkopfGestochen(tisch.id(), sp.taeter()));
-            }
-        }
-    }
-
-    private void sendeSchweinchenGemeldet(TischEntity tisch, SpielerPosition spielerPosition) {
-        tisch.spieler().stream()
-                .filter(s -> !s.istKi() && !s.istKiUebernommen() && s.sessionId() != null)
-                .forEach(s -> tischEchtzeitService.planeAnBenutzer(
-                        s.sessionId(),
-                        "/queue/partie/" + tisch.partie().id(),
-                        PartieEreignisAntwort.schweinchenGemeldet(PartieStandAntwort.aus(tisch, s.id()), spielerPosition)
-                ));
-    }
-
-    private void sendeHochzeitPartnerGefunden(TischEntity tisch, SpielerPosition partnerPosition) {
-        tisch.spieler().stream()
-                .filter(s -> !s.istKi() && !s.istKiUebernommen() && s.sessionId() != null)
-                .forEach(s -> tischEchtzeitService.planeAnBenutzer(
-                        s.sessionId(),
-                        "/queue/partie/" + tisch.partie().id(),
-                        PartieEreignisAntwort.hochzeitPartnerGefunden(PartieStandAntwort.aus(tisch, s.id()), partnerPosition)
-                ));
+                .forEach(s -> {
+                    PartieStandAntwort stand = PartieStandAntwort.aus(tisch, s.id());
+                    List<PartieEreignisAntwort> partieEreignisse = ereignisse.stream()
+                            .map(ereignis -> switch (ereignis) {
+                                case SpielEreignis.KarteGespielt kg ->
+                                        PartieEreignisAntwort.karteGespielt(stand, kg.position(), kg.karte().karteId());
+                                case SpielEreignis.StichAbgeschlossenEreignis sa ->
+                                        PartieEreignisAntwort.stichAbgeschlossen(stand, sa.sonderpunkte().stream()
+                                                .map(sp -> new SonderpunktEreignisAntwort(sp.art().name(), sp.taeter(), sp.opfer()))
+                                                .toList());
+                                case SpielEreignis.SchweinchenGemeldet sg ->
+                                        PartieEreignisAntwort.schweinchenGemeldet(stand, sg.spielerPosition());
+                                case SpielEreignis.HochzeitPartnerGefunden hpg ->
+                                        PartieEreignisAntwort.hochzeitPartnerGefunden(stand, hpg.partner());
+                            })
+                            .toList();
+                    tischEchtzeitService.planeAnBenutzer(
+                            s.sessionId(),
+                            "/queue/partie/" + tisch.partie().id(),
+                            new PartieEreignisBatch(stand.version(), partieEreignisse)
+                    );
+                });
     }
 
     private void veroeffentlicheAnsageEreignisse(TischEntity tisch) {
@@ -274,11 +252,14 @@ public class KiTischOrchestrator {
         }
         tisch.spieler().stream()
                 .filter(s -> !s.istKi() && !s.istKiUebernommen() && s.sessionId() != null)
-                .forEach(s -> tischEchtzeitService.planeAnBenutzer(
-                        s.sessionId(),
-                        "/queue/partie/" + tisch.partie().id(),
-                        PartieEreignisAntwort.ansageErfolgt(PartieStandAntwort.aus(tisch, s.id()))
-                ));
+                .forEach(s -> {
+                    PartieStandAntwort stand = PartieStandAntwort.aus(tisch, s.id());
+                    tischEchtzeitService.planeAnBenutzer(
+                            s.sessionId(),
+                            "/queue/partie/" + tisch.partie().id(),
+                            new PartieEreignisBatch(stand.version(), List.of(PartieEreignisAntwort.ansageErfolgt(stand)))
+                    );
+                });
     }
 
     private void veroeffentlicheEinwurfEreignisse(TischEntity tisch) {
@@ -287,11 +268,14 @@ public class KiTischOrchestrator {
         }
         tisch.spieler().stream()
                 .filter(s -> !s.istKi() && !s.istKiUebernommen() && s.sessionId() != null)
-                .forEach(s -> tischEchtzeitService.planeAnBenutzer(
-                        s.sessionId(),
-                        "/queue/partie/" + tisch.partie().id(),
-                        PartieEreignisAntwort.spielGestartet(PartieStandAntwort.aus(tisch, s.id()))
-                ));
+                .forEach(s -> {
+                    PartieStandAntwort stand = PartieStandAntwort.aus(tisch, s.id());
+                    tischEchtzeitService.planeAnBenutzer(
+                            s.sessionId(),
+                            "/queue/partie/" + tisch.partie().id(),
+                            new PartieEreignisBatch(stand.version(), List.of(PartieEreignisAntwort.spielGestartet(stand)))
+                    );
+                });
     }
 
     private SpielerEntity spielerFuerPosition(TischEntity tisch, SpielerPosition position) {

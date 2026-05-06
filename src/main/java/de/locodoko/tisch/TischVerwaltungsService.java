@@ -476,11 +476,14 @@ public class TischVerwaltungsService {
         if (tisch.partie() == null) return;
         tisch.spieler().stream()
             .filter(spieler -> !spieler.istKi() && !spieler.istKiUebernommen() && spieler.sessionId() != null)
-            .forEach(spieler -> tischEchtzeitService.planeAnBenutzer(
-                spieler.sessionId(),
-                "/queue/partie/" + tisch.partie().id(),
-                PartieEreignisAntwort.snapshot(PartieStandAntwort.aus(tisch, spieler.id()))
-            ));
+            .forEach(spieler -> {
+                PartieStandAntwort stand = PartieStandAntwort.aus(tisch, spieler.id());
+                tischEchtzeitService.planeAnBenutzer(
+                    spieler.sessionId(),
+                    "/queue/partie/" + tisch.partie().id(),
+                    new PartieEreignisBatch(stand.version(), List.of(PartieEreignisAntwort.snapshot(stand)))
+                );
+            });
     }
 
     TischEntity ladeTischEntity(TischId tischId) {

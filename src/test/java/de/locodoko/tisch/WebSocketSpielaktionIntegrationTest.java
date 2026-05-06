@@ -91,9 +91,9 @@ class WebSocketSpielaktionIntegrationTest {
         WebSocketNachrichtGesendet broadcastNachricht = findeBenutzerNachricht(
             setup.sessionIds().get(SpielerPosition.WEST),
             "/queue/partie/" + setup.partieId(),
-            PartieEreignisAntwort.class
+            PartieEreignisBatch.class
         );
-        PartieEreignisAntwort broadcast = (PartieEreignisAntwort) broadcastNachricht.payload();
+        PartieEreignisAntwort broadcast = ((PartieEreignisBatch) broadcastNachricht.payload()).ereignisse().get(0);
         assertEquals("STICHPHASE", broadcast.partieStand().laufendesSpiel().phase(),
             "Nach vier WebSocket-Vorbehalten muss das Spiel automatisch aufgeloest und in die Stichphase ueberfuehrt werden.");
         assertEquals("SOLO_TRUMPF", broadcast.partieStand().laufendesSpiel().spieltyp().name());
@@ -101,9 +101,9 @@ class WebSocketSpielaktionIntegrationTest {
         WebSocketNachrichtGesendet nordSnapshot = findeBenutzerNachricht(
             setup.sessionIds().get(SpielerPosition.NORD),
             "/queue/partie/" + setup.partieId(),
-            PartieEreignisAntwort.class
+            PartieEreignisBatch.class
         );
-        PartieEreignisAntwort snapshot = (PartieEreignisAntwort) nordSnapshot.payload();
+        PartieEreignisAntwort snapshot = ((PartieEreignisBatch) nordSnapshot.payload()).ereignisse().get(0);
         assertNotNull(snapshot.partieStand().laufendesSpiel());
         assertTrue(snapshot.partieStand().laufendesSpiel().spieler().stream()
                 .filter(spieler -> SpielerPosition.NORD == spieler.position())
@@ -162,18 +162,18 @@ class WebSocketSpielaktionIntegrationTest {
         WebSocketNachrichtGesendet broadcastNachricht = findeBenutzerNachricht(
             setup.sessionIds().get(SpielerPosition.WEST),
             "/queue/partie/" + setup.partieId(),
-            PartieEreignisAntwort.class
+            PartieEreignisBatch.class
         );
-        PartieEreignisAntwort broadcast = (PartieEreignisAntwort) broadcastNachricht.payload();
+        PartieEreignisAntwort broadcast = ((PartieEreignisBatch) broadcastNachricht.payload()).ereignisse().get(0);
         assertEquals("STICHPHASE", broadcast.partieStand().laufendesSpiel().phase(),
             "Nach Angebot, Ablehnung und Annahme muss der WebSocket-Armutfluss die Stichphase erreichen, damit das Spiel ohne manuelle Eingriffe weiterlaufen kann.");
 
         WebSocketNachrichtGesendet ostSnapshot = findeBenutzerNachricht(
             setup.sessionIds().get(SpielerPosition.OST),
             "/queue/partie/" + setup.partieId(),
-            PartieEreignisAntwort.class
+            PartieEreignisBatch.class
         );
-        PartieEreignisAntwort snapshot = (PartieEreignisAntwort) ostSnapshot.payload();
+        PartieEreignisAntwort snapshot = ((PartieEreignisBatch) ostSnapshot.payload()).ereignisse().get(0);
         PartieStandAntwort.SpielerImSpielAntwort ost = snapshot.partieStand().laufendesSpiel().spieler().stream()
             .filter(spieler -> spieler.position() == SpielerPosition.OST)
             .findFirst()
@@ -198,9 +198,9 @@ class WebSocketSpielaktionIntegrationTest {
         WebSocketNachrichtGesendet broadcastNachricht = findeBenutzerNachricht(
             setup.sessionIds().get(SpielerPosition.WEST),
             "/queue/partie/" + setup.partieId(),
-            PartieEreignisAntwort.class
+            PartieEreignisBatch.class
         );
-        PartieEreignisAntwort broadcast = (PartieEreignisAntwort) broadcastNachricht.payload();
+        PartieEreignisAntwort broadcast = ((PartieEreignisBatch) broadcastNachricht.payload()).ereignisse().get(0);
         assertEquals(1, broadcast.partieStand().laufendesSpiel().aktuelleStichmitte().size(),
             "Nach einer gueltigen Kartenaktion muss die Broadcast-Stichmitte die bereits ausgespielten Karten enthalten, damit alle Clients denselben Tischzustand sehen.");
         assertEquals("KREUZ-AS-1", broadcast.partieStand().laufendesSpiel().aktuelleStichmitte().getFirst().karte().id());
@@ -208,9 +208,9 @@ class WebSocketSpielaktionIntegrationTest {
         WebSocketNachrichtGesendet nordSnapshotNachricht = findeBenutzerNachricht(
             setup.sessionIds().get(SpielerPosition.NORD),
             "/queue/partie/" + setup.partieId(),
-            PartieEreignisAntwort.class
+            PartieEreignisBatch.class
         );
-        PartieEreignisAntwort nordSnapshot = (PartieEreignisAntwort) nordSnapshotNachricht.payload();
+        PartieEreignisAntwort nordSnapshot = ((PartieEreignisBatch) nordSnapshotNachricht.payload()).ereignisse().get(0);
         assertTrue(nordSnapshot.partieStand().laufendesSpiel().spielbareKarten().stream()
                 .allMatch(karte -> "KREUZ".equals(karte.farbe())),
             "Der naechste Spieler muss im benutzerbezogenen Snapshot nur regelkonforme Folgekarten sehen, damit das Frontend keine ungueltigen Zuege anbietet.");
@@ -227,7 +227,7 @@ class WebSocketSpielaktionIntegrationTest {
             principal(setup.sessionIds().get(SpielerPosition.WEST))
         );
         // Auf asynchrone Events des gültigen Zugs warten, bevor der Speicher geleert wird
-        findeBenutzerNachricht(setup.sessionIds().get(SpielerPosition.WEST), "/queue/partie/" + setup.partieId(), PartieEreignisAntwort.class);
+        findeBenutzerNachricht(setup.sessionIds().get(SpielerPosition.WEST), "/queue/partie/" + setup.partieId(), PartieEreignisBatch.class);
         nachrichtenSpeicher.leeren();
 
         SpielverwaltungKonfliktException exception = assertThrows(
@@ -260,9 +260,9 @@ class WebSocketSpielaktionIntegrationTest {
         WebSocketNachrichtGesendet broadcastNachricht = findeBenutzerNachricht(
             setup.sessionIds().get(SpielerPosition.WEST),
             "/queue/partie/" + setup.partieId(),
-            PartieEreignisAntwort.class
+            PartieEreignisBatch.class
         );
-        PartieEreignisAntwort broadcast = (PartieEreignisAntwort) broadcastNachricht.payload();
+        PartieEreignisAntwort broadcast = ((PartieEreignisBatch) broadcastNachricht.payload()).ereignisse().get(0);
         assertEquals(1, broadcast.partieStand().laufendesSpiel().ansageHistorie().size(),
             "Nach einer gueltigen Ansage muss die Broadcast-Historie wachsen, damit Frontend und spaetere KI denselben Ansagezustand kennen.");
         assertEquals(Ansage.RE, broadcast.partieStand().laufendesSpiel().ansageHistorie().getFirst().ansage());
@@ -271,9 +271,9 @@ class WebSocketSpielaktionIntegrationTest {
         WebSocketNachrichtGesendet nordSnapshotNachricht = findeBenutzerNachricht(
             setup.sessionIds().get(SpielerPosition.NORD),
             "/queue/partie/" + setup.partieId(),
-            PartieEreignisAntwort.class
+            PartieEreignisBatch.class
         );
-        PartieEreignisAntwort nordSnapshot = (PartieEreignisAntwort) nordSnapshotNachricht.payload();
+        PartieEreignisAntwort nordSnapshot = ((PartieEreignisBatch) nordSnapshotNachricht.payload()).ereignisse().get(0);
         PartieStandAntwort.SpielerImSpielAntwort westAusNordSicht = nordSnapshot.partieStand().laufendesSpiel().spieler().stream()
             .filter(spieler -> spieler.position() == SpielerPosition.WEST)
             .findFirst()
@@ -288,7 +288,7 @@ class WebSocketSpielaktionIntegrationTest {
         setzeKontrollierteStandardhaende(setup.partieId());
         meldeGesundesSpiel(setup);
         // Auf asynchrone Events der Vorbehaltsrunde warten, bevor der Speicher geleert wird
-        findeBenutzerNachricht(setup.sessionIds().get(SpielerPosition.WEST), "/queue/partie/" + setup.partieId(), PartieEreignisAntwort.class);
+        findeBenutzerNachricht(setup.sessionIds().get(SpielerPosition.WEST), "/queue/partie/" + setup.partieId(), PartieEreignisBatch.class);
         nachrichtenSpeicher.leeren();
 
         SpielverwaltungKonfliktException exception = assertThrows(
@@ -330,8 +330,8 @@ class WebSocketSpielaktionIntegrationTest {
         webSocketController.verarbeiteArmutAntwort(setup.tischId(), new ArmutAntwortAnfrage(false, List.of()), principal(setup.sessionIds().get(SpielerPosition.OST)));
         webSocketController.verarbeiteArmutAntwort(setup.tischId(), new ArmutAntwortAnfrage(false, List.of()), principal(setup.sessionIds().get(SpielerPosition.SUED)));
 
-        WebSocketNachrichtGesendet broadcast = findeBenutzerNachricht(setup.sessionIds().get(SpielerPosition.WEST), "/queue/partie/" + setup.partieId(), PartieEreignisAntwort.class);
-        PartieEreignisAntwort ereignis = (PartieEreignisAntwort) broadcast.payload();
+        WebSocketNachrichtGesendet broadcast = findeBenutzerNachricht(setup.sessionIds().get(SpielerPosition.WEST), "/queue/partie/" + setup.partieId(), PartieEreignisBatch.class);
+        PartieEreignisAntwort ereignis = ((PartieEreignisBatch) broadcast.payload()).ereignisse().get(0);
 
         assertEquals("VORBEHALT_ANSAGE", ereignis.partieStand().laufendesSpiel().phase(),
             "Wenn niemand die Armut annimmt, muss das Spiel eingeworfen und ein Broadcast mit der neuen Vorbehaltsphase gesendet werden.");
@@ -374,8 +374,8 @@ class WebSocketSpielaktionIntegrationTest {
         webSocketController.verarbeiteArmutAntwort(setup.tischId(), new ArmutAntwortAnfrage(false, List.of()), principal(setup.sessionIds().get(SpielerPosition.OST)));
         webSocketController.verarbeiteArmutAntwort(setup.tischId(), new ArmutAntwortAnfrage(false, List.of()), principal(setup.sessionIds().get(SpielerPosition.SUED)));
 
-        WebSocketNachrichtGesendet broadcast = findeBenutzerNachricht(setup.sessionIds().get(SpielerPosition.WEST), "/queue/partie/" + setup.partieId(), PartieEreignisAntwort.class);
-        PartieEreignisAntwort ereignis = (PartieEreignisAntwort) broadcast.payload();
+        WebSocketNachrichtGesendet broadcast = findeBenutzerNachricht(setup.sessionIds().get(SpielerPosition.WEST), "/queue/partie/" + setup.partieId(), PartieEreignisBatch.class);
+        PartieEreignisAntwort ereignis = ((PartieEreignisBatch) broadcast.payload()).ereignisse().get(0);
 
         assertEquals("VORBEHALT_ANSAGE", ereignis.partieStand().laufendesSpiel().phase(),
             "Wiederholte Armut-Einwuerfe muessen unbegrenzt moeglich sein; auch nach dem zweiten Einwurf muss das Spiel wieder in der Vorbehaltsphase sein.");

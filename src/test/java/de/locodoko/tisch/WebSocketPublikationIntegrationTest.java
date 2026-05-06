@@ -78,8 +78,9 @@ class WebSocketPublikationIntegrationTest {
         UUID partieId = Objects.requireNonNull(startEreignis.partieStand()).partieId();
         String sessionId = extrahiereSessionId(sessionCookie);
         WebSocketNachrichtGesendet partieNachricht = findeBenutzerNachricht(
-            nachrichten, sessionId, "/queue/partie/" + partieId, PartieEreignisAntwort.class);
-        PartieEreignisAntwort partieEreignis = (PartieEreignisAntwort) partieNachricht.payload();
+            nachrichten, sessionId, "/queue/partie/" + partieId, PartieEreignisBatch.class);
+        PartieEreignisBatch batch = (PartieEreignisBatch) partieNachricht.payload();
+        PartieEreignisAntwort partieEreignis = batch.ereignisse().get(0);
         assertEquals(PartieEreignisTyp.SNAPSHOT, partieEreignis.ereignisTyp());
         assertEquals(partieId, partieEreignis.partieStand().partieId());
     }
@@ -121,9 +122,10 @@ class WebSocketPublikationIntegrationTest {
             nachrichtenSpeicher.nachrichten(),
             sessionId,
             "/queue/partie/" + partieId,
-            PartieEreignisAntwort.class
+            PartieEreignisBatch.class
         );
-        PartieEreignisAntwort ereignis = (PartieEreignisAntwort) partieSnapshot.payload();
+        PartieEreignisBatch debugBatch = (PartieEreignisBatch) partieSnapshot.payload();
+        PartieEreignisAntwort ereignis = debugBatch.ereignisse().get(0);
         assertNotNull(ereignis.partieStand().laufendesSpiel());
         assertTrue(
             ereignis.partieStand().laufendesSpiel().spieler().stream()

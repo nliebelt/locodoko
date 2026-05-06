@@ -17,7 +17,6 @@ import de.locodoko.partie.ereignisse.DoppelkopfGestochen;
 import de.locodoko.partie.ereignisse.FuchsGefangen;
 import de.locodoko.partie.ereignisse.KarlchenGespielt;
 import de.locodoko.partie.ereignisse.NaechsterSpielerErwartet;
-import de.locodoko.partie.ereignisse.SchweinchenGemeldet;
 import de.locodoko.partie.ereignisse.VorbehaltErwartet;
 import de.locodoko.spieler.SpielerEntity;
 import de.locodoko.spieler.SpielerId;
@@ -176,10 +175,11 @@ public class SpielAktionsService {
             } catch (IllegalStateException | UngueltigerSpielzugException exception) {
                 LOGGER.warn("Ungueltige Karte gespielt [spieler={}, karte={}]: {}", position, karteId, exception.getMessage());
                 if (tisch.partie() != null && verwalteterSpieler.sessionId() != null) {
+                    PartieStandAntwort stand = PartieStandAntwort.aus(tisch, verwalteterSpieler.id());
                     tischEchtzeitService.planeAnBenutzer(
                         verwalteterSpieler.sessionId(),
                         "/queue/partie/" + tisch.partie().id(),
-                        PartieEreignisAntwort.aktionAbgelehnt(PartieStandAntwort.aus(tisch, verwalteterSpieler.id()), "KARTE_UNGUELTIG")
+                        new PartieEreignisBatch(stand.version(), List.of(PartieEreignisAntwort.aktionAbgelehnt(stand, "KARTE_UNGUELTIG")))
                     );
                 }
                 throw new SpielverwaltungKonfliktException("KARTE_UNGUELTIG", exception.getMessage());
@@ -226,11 +226,14 @@ public class SpielAktionsService {
         }
         tisch.spieler().stream()
             .filter(s -> !s.istKi() && !s.istKiUebernommen() && s.sessionId() != null)
-            .forEach(s -> tischEchtzeitService.planeAnBenutzer(
-                s.sessionId(),
-                "/queue/partie/" + tisch.partie().id(),
-                PartieEreignisAntwort.ansageErfolgt(PartieStandAntwort.aus(tisch, s.id()))
-            ));
+            .forEach(s -> {
+                PartieStandAntwort stand = PartieStandAntwort.aus(tisch, s.id());
+                tischEchtzeitService.planeAnBenutzer(
+                    s.sessionId(),
+                    "/queue/partie/" + tisch.partie().id(),
+                    new PartieEreignisBatch(stand.version(), List.of(PartieEreignisAntwort.ansageErfolgt(stand)))
+                );
+            });
     }
 
     private void veroeffentlicheEinwurfEreignisse(TischEntity tisch) {
@@ -239,83 +242,58 @@ public class SpielAktionsService {
         }
         tisch.spieler().stream()
             .filter(s -> !s.istKi() && !s.istKiUebernommen() && s.sessionId() != null)
-            .forEach(s -> tischEchtzeitService.planeAnBenutzer(
-                s.sessionId(),
-                "/queue/partie/" + tisch.partie().id(),
-                PartieEreignisAntwort.spielGestartet(PartieStandAntwort.aus(tisch, s.id()))
-            ));
+            .forEach(s -> {
+                PartieStandAntwort stand = PartieStandAntwort.aus(tisch, s.id());
+                tischEchtzeitService.planeAnBenutzer(
+                    s.sessionId(),
+                    "/queue/partie/" + tisch.partie().id(),
+                    new PartieEreignisBatch(stand.version(), List.of(PartieEreignisAntwort.spielGestartet(stand)))
+                );
+            });
     }
 
-    private void veroeffentlicheSchweinchenEreignis(TischEntity tisch, SpielerPosition spielerPosition) {
+    private void veroeffentlicheSpielKarteEreignisse(TischEntity tisch, List<SpielEreignis> spielEreignisse) {
         if (tisch.partie() == null) {
             return;
         }
-        eventPublisher.publishEvent(new SchweinchenGemeldet(tisch.id(), spielerPosition));
-        tisch.spieler().stream()
-            .filter(s -> !s.istKi() && !s.istKiUebernommen() && s.sessionId() != null)
-            .forEach(s -> tischEchtzeitService.planeAnBenutzer(
-                s.sessionId(),
-                "/queue/partie/" + tisch.partie().id(),
-                PartieEreignisAntwort.schweinchenGemeldet(PartieStandAntwort.aus(tisch, s.id()), spielerPosition)
-            ));
-    }
-
-    private void veroeffentlicheHochzeitEreignis(TischEntity tisch, SpielerPosition partnerPosition) {
-        if (tisch.partie() == null) {
-            return;
-        }
-        tisch.spieler().stream()
-            .filter(s -> !s.istKi() && !s.istKiUebernommen() && s.sessionId() != null)
-            .forEach(s -> tischEchtzeitService.planeAnBenutzer(
-                s.sessionId(),
-                "/queue/partie/" + tisch.partie().id(),
-                PartieEreignisAntwort.hochzeitPartnerGefunden(PartieStandAntwort.aus(tisch, s.id()), partnerPosition)
-            ));
-    }
-
-    private void veroeffentlicheSpielKarteEreignisse(TischEntity tisch, List<SpielEreignis> ereignisse) {
-        if (tisch.partie() == null) {
-            return;
-        }
-        for (SpielEreignis ereignis : ereignisse) {
-            switch (ereignis) {
-                case SpielEreignis.KarteGespielt kg -> sendeKarteGespielt(tisch, kg.position(), kg.karte().karteId());
-                case SpielEreignis.StichAbgeschlossenEreignis sa -> sendeStichAbgeschlossen(tisch, sa.sonderpunkte());
-                case SpielEreignis.SchweinchenGemeldet sg -> veroeffentlicheSchweinchenEreignis(tisch, sg.spielerPosition());
-                case SpielEreignis.HochzeitPartnerGefunden hpg -> veroeffentlicheHochzeitEreignis(tisch, hpg.partner());
+        // Domain-Events fuer Statistiken separat veroeffentlichen (Seiteneffekte)
+        for (SpielEreignis spielEreignis : spielEreignisse) {
+            if (spielEreignis instanceof SpielEreignis.StichAbgeschlossenEreignis sa) {
+                for (SonderpunktEreignis sp : sa.sonderpunkte()) {
+                    switch (sp.art()) {
+                        case FUCHS_GEFANGEN -> eventPublisher.publishEvent(new FuchsGefangen(tisch.id(), sp.taeter(), sp.opfer()));
+                        case KARLCHEN -> eventPublisher.publishEvent(new KarlchenGespielt(tisch.id(), sp.taeter()));
+                        case DOPPELKOPF -> eventPublisher.publishEvent(new DoppelkopfGestochen(tisch.id(), sp.taeter()));
+                    }
+                }
             }
         }
+        // Pro Spieler: Einen Batch mit allen Ereignissen senden
+        tisch.spieler().stream()
+            .filter(s -> !s.istKi() && !s.istKiUebernommen() && s.sessionId() != null)
+            .forEach(s -> {
+                PartieStandAntwort stand = PartieStandAntwort.aus(tisch, s.id());
+                List<PartieEreignisAntwort> ereignisse = spielEreignisse.stream()
+                    .map(spielEreignis -> switch (spielEreignis) {
+                        case SpielEreignis.KarteGespielt kg ->
+                            PartieEreignisAntwort.karteGespielt(stand, kg.position(), kg.karte().karteId());
+                        case SpielEreignis.StichAbgeschlossenEreignis sa ->
+                            PartieEreignisAntwort.stichAbgeschlossen(stand, sa.sonderpunkte().stream()
+                                .map(sp -> new SonderpunktEreignisAntwort(sp.art().name(), sp.taeter(), sp.opfer()))
+                                .toList());
+                        case SpielEreignis.SchweinchenGemeldet sg ->
+                            PartieEreignisAntwort.schweinchenGemeldet(stand, sg.spielerPosition());
+                        case SpielEreignis.HochzeitPartnerGefunden hpg ->
+                            PartieEreignisAntwort.hochzeitPartnerGefunden(stand, hpg.partner());
+                    })
+                    .toList();
+                tischEchtzeitService.planeAnBenutzer(
+                    s.sessionId(),
+                    "/queue/partie/" + tisch.partie().id(),
+                    new PartieEreignisBatch(stand.version(), ereignisse)
+                );
+            });
         triggereKi(tisch);
-    }
-
-    private void sendeKarteGespielt(TischEntity tisch, SpielerPosition spielerPosition, String karteId) {
-        tisch.spieler().stream()
-            .filter(s -> !s.istKi() && !s.istKiUebernommen() && s.sessionId() != null)
-            .forEach(s -> tischEchtzeitService.planeAnBenutzer(
-                s.sessionId(),
-                "/queue/partie/" + tisch.partie().id(),
-                PartieEreignisAntwort.karteGespielt(PartieStandAntwort.aus(tisch, s.id()), spielerPosition, karteId)
-            ));
-    }
-
-    private void sendeStichAbgeschlossen(TischEntity tisch, List<SonderpunktEreignis> sonderpunkte) {
-        List<SonderpunktEreignisAntwort> sonderpunktDtos = sonderpunkte.stream()
-            .map(sp -> new SonderpunktEreignisAntwort(sp.art().name(), sp.taeter(), sp.opfer()))
-            .toList();
-        tisch.spieler().stream()
-            .filter(s -> !s.istKi() && !s.istKiUebernommen() && s.sessionId() != null)
-            .forEach(s -> tischEchtzeitService.planeAnBenutzer(
-                s.sessionId(),
-                "/queue/partie/" + tisch.partie().id(),
-                PartieEreignisAntwort.stichAbgeschlossen(PartieStandAntwort.aus(tisch, s.id()), sonderpunktDtos)
-            ));
-        for (SonderpunktEreignis sp : sonderpunkte) {
-            switch (sp.art()) {
-                case FUCHS_GEFANGEN -> eventPublisher.publishEvent(new FuchsGefangen(tisch.id(), sp.taeter(), sp.opfer()));
-                case KARLCHEN -> eventPublisher.publishEvent(new KarlchenGespielt(tisch.id(), sp.taeter()));
-                case DOPPELKOPF -> eventPublisher.publishEvent(new DoppelkopfGestochen(tisch.id(), sp.taeter()));
-            }
-        }
     }
 
     private void triggereKi(TischEntity tisch) {
