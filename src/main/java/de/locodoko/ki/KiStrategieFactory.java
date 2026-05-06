@@ -1,6 +1,6 @@
 package de.locodoko.ki;
 
-import de.locodoko.tisch.KiSchwierigkeit;
+import de.locodoko.ki.KiSchwierigkeit;
 import org.springframework.stereotype.Component;
 
 /**

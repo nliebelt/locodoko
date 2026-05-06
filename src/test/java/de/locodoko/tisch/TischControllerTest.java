@@ -1,6 +1,7 @@
 package de.locodoko.tisch;
 
 import tools.jackson.databind.ObjectMapper;
+import de.locodoko.ki.KiSchwierigkeit;
 import de.locodoko.partie.SpielerPosition;
 import de.locodoko.partie.Partie;
 import de.locodoko.partie.Spiel;

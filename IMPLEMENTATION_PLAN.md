@@ -6,10 +6,11 @@
 
 **Was wurde implementiert (Run #111, dritte Iteration)?**
 - Task 21 (FIX-ABAC-AUTHORIZATION): `@PreAuthorize`-Annotationen in `TischController` für Gastgeber-Endpunkte (`starten`, `PUT konfiguration`, `DELETE spieler/{id}`) und Mitglieds-Endpunkt (`neue-partie`). `TischSicherheit` erweitert: Session-Fallback für Gast-Spieler (via `RequestContextHolder`) und OAuth2-Principal-Support. `TischControllerTest` auf `springSecurity()` umgestellt. 307 Backend-Tests grün.
+- Task 25 (FIX-KI-ARCHITECTURE-VIOLATION): `KiTischOrchestrator` im `tisch`-Kontext erstellt; `KiEventAdapter` auf leere Klasse reduziert; `tisch.KiSchwierigkeit`-Duplikat gelöscht; `ki/package-info.java` allowedDependencies bereinigt (kein `tisch` mehr). 307 Backend-Tests grün.
 
 **Nächster logischer Schritt:**
-- Task 24 (REFACTOR-URL-CONSISTENCY): Alle REST-Endpunkte auf Plural `/api/tische/...` vereinheitlichen.
-- Task 25 (FIX-KI-ARCHITECTURE-VIOLATION): Abhängigkeiten im KI-Modul auflösen.
+- Task 26 (FEAT-EVENT-GAP-DETECTION): Event-Gap-Detection im Frontend implementieren.
+- Task 27 (REFACTOR-E2E-KEYBOARD): E2E-Tests auf Tastatureingaben umstellen.
 
 **Offene Fragen:**
 - Vision Loop Spielschleife: `leseSpielZustand` wartet auf `isIdle()` das bei KI-Spiel gelegentlich >15s dauert (pre-existing).
@@ -116,7 +117,7 @@
 - [x] **Backend**: Überprüfung beim Beitritt zu privaten Tischen implementieren, um Gast-User abzulehnen (Login-Pflicht gemäß Spec).
 
 ### REFACTOR-URL-CONSISTENCY (Task 24)
-- [ ] **Backend**: Alle REST-Endpunkte für Tische auf Plural (`/api/tische/...`) vereinheitlichen.
+- [x] **Backend**: Alle REST-Endpunkte für Tische auf Plural (`/api/tische/...`) vereinheitlichen. (Bereits konsistent — keine Änderungen nötig.)
 
 ### FIX-KI-ARCHITECTURE-VIOLATION (Task 25)
 - [ ] **Backend**: Abhängigkeiten im KI-Modul auflösen. `KiEventAdapter`/`Service` dürfen laut `architektur-ddd.md` nicht `tisch` importieren. Umbau auf reine DTOs/IDs im Event.
@@ -156,8 +157,8 @@
 - [x] Task 21: FIX-ABAC-AUTHORIZATION
 - [x] Task 22: FIX-TISCH-STATUS-ABBRUCH
 - [x] Task 23: FIX-PRIVATE-TISCH-GUESTS
-- [ ] Task 24: REFACTOR-URL-CONSISTENCY
-- [ ] Task 25: FIX-KI-ARCHITECTURE-VIOLATION
+- [x] Task 24: REFACTOR-URL-CONSISTENCY
+- [x] Task 25: FIX-KI-ARCHITECTURE-VIOLATION
 - [ ] Task 26: FEAT-EVENT-GAP-DETECTION
 - [ ] Task 27: REFACTOR-E2E-KEYBOARD
 - [ ] Task 28: DOC-SPEC-UPDATES

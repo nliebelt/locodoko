@@ -1,6 +1,7 @@
 package de.locodoko.tisch;
 
 import de.locodoko.karten.Spielregeln;
+import de.locodoko.ki.KiSchwierigkeit;
 import de.locodoko.tisch.TischkonfigurationEmbeddable;
 
 import io.swagger.v3.oas.annotations.media.Schema;

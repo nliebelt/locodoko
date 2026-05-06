@@ -7,7 +7,7 @@ import de.locodoko.karten.Kartendeck;
 import de.locodoko.partie.SpielerPosition;
 import de.locodoko.karten.Spielregeln;
 import de.locodoko.ki.KiArmutAntwort;
-import de.locodoko.tisch.KiSchwierigkeit;
+import de.locodoko.ki.KiSchwierigkeit;
 import de.locodoko.ki.KiSpielzustand;
 import de.locodoko.ki.KiStrategie;
 import de.locodoko.ki.KiStrategieFactory;
@@ -16,8 +16,8 @@ import de.locodoko.partie.Spiel;
 import de.locodoko.partie.Spielphase;
 import de.locodoko.partie.VorbehaltAnsage;
 import de.locodoko.partie.Partie;
+import de.locodoko.tisch.KiTischOrchestrator;
 import de.locodoko.tisch.persistenz.PartieRepository;
-import de.locodoko.partie.Spiel;
 import de.locodoko.spieler.SpielerEntity;
 import de.locodoko.tisch.TischEntity;
 import de.locodoko.tisch.TischRepository;
@@ -37,7 +37,7 @@ import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 /**
- * Testet die Fehlerbehandlung im KiOrchestrierungService.
+ * Testet die Fehlerbehandlung im KiTischOrchestrator.
  *
  * Wichtig: Wenn die KI-Strategie eine Exception wirft, darf die Partie nicht in einem
  * inkonsistenten Zustand haengen bleiben. Die Exception wird abgefangen, die Partie
@@ -101,7 +101,7 @@ class KiOrchestrierungServiceFehlerTest {
     }
 
     @Autowired
-    private KiOrchestrierungService kiOrchestrierungService;
+    private KiTischOrchestrator kiTischOrchestrator;
 
     @Autowired
     private TischRepository tischRepository;
@@ -132,7 +132,7 @@ class KiOrchestrierungServiceFehlerTest {
 
             // automatisiereTisch() darf trotz KI-Exception nicht werfen
             assertDoesNotThrow(
-                () -> kiOrchestrierungService.automatisiereTisch(gespeichert),
+                () -> kiTischOrchestrator.automatisiereTisch(gespeichert),
                 "Eine KI-Strategie-Exception in der Stichphase darf nicht propagieren, " +
                 "sonst bricht der WebSocket-Handler ab und die Partie bleibt dauerhaft blockiert."
             );
@@ -173,7 +173,7 @@ class KiOrchestrierungServiceFehlerTest {
             TischEntity gespeichert = tischRepository.saveAndFlush(tisch);
 
             assertDoesNotThrow(
-                () -> kiOrchestrierungService.automatisiereTisch(gespeichert),
+                () -> kiTischOrchestrator.automatisiereTisch(gespeichert),
                 "Eine KI-Strategie-Exception in der Vorbehaltphase darf nicht propagieren."
             );
 

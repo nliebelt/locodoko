@@ -1,5 +1,6 @@
 package de.locodoko.ki.orchestrierung;
 
+import de.locodoko.tisch.KiTischOrchestrator;
 import de.locodoko.tisch.PartieStandAntwort;
 import de.locodoko.tisch.TischId;
 
@@ -16,7 +17,6 @@ import de.locodoko.partie.VorbehaltAnsage;
 import de.locodoko.partie.Partie;
 import de.locodoko.tisch.persistenz.PartieRepository;
 import de.locodoko.partie.PartieStatus;
-import de.locodoko.partie.Spiel;
 import de.locodoko.spieler.SpielerEntity;
 import de.locodoko.tisch.TischEntity;
 import de.locodoko.tisch.TischRepository;
@@ -40,7 +40,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class KiOrchestrierungServiceIntegrationTest {
 
     @Autowired
-    private KiOrchestrierungService kiOrchestrierungService;
+    private KiTischOrchestrator kiTischOrchestrator;
 
     @Autowired
     private de.locodoko.tisch.SpielAktionsService spielAktionsService;
@@ -86,7 +86,7 @@ class KiOrchestrierungServiceIntegrationTest {
             // Mit menschlichem Spieler: automatisiereTisch spielt alle KI-Zuege (WEST, NORD, OST)
             // synchron durch und broadcastet nach jedem Stichphase-Zug sofort.
             // Der Client puffert die Updates clientseitig mit 800ms Delay.
-            kiOrchestrierungService.automatisiereTisch(gespeichert);
+            kiTischOrchestrator.automatisiereTisch(gespeichert);
             partieRepository.saveAndFlush(gespeichert.partie());
             return new UUIDs(gespeichert.id(), gespeichert.partie().id());
         });
@@ -133,7 +133,7 @@ class KiOrchestrierungServiceIntegrationTest {
             )));
             tisch.setzePartie(partieMitSpiel(spiel, 1));
             TischEntity gespeichert = tischRepository.saveAndFlush(tisch);
-            kiOrchestrierungService.automatisiereTisch(gespeichert);
+            kiTischOrchestrator.automatisiereTisch(gespeichert);
             partieRepository.saveAndFlush(gespeichert.partie());
             return new UUIDs(gespeichert.id(), gespeichert.partie().id());
         });
@@ -297,7 +297,7 @@ class KiOrchestrierungServiceIntegrationTest {
             )));
             tisch.setzePartie(partieMitSpiel(spiel, 2));
             TischEntity gespeichert = tischRepository.saveAndFlush(tisch);
-            kiOrchestrierungService.automatisiereTisch(gespeichert);
+            kiTischOrchestrator.automatisiereTisch(gespeichert);
             partieRepository.saveAndFlush(gespeichert.partie());
             return new UUIDs(gespeichert.id(), gespeichert.partie().id());
         });
@@ -370,7 +370,7 @@ class KiOrchestrierungServiceIntegrationTest {
         // 1. WEST (KI) spielt Karte
         transactionTemplate.executeWithoutResult(status -> {
             TischEntity tisch = tischRepository.findById(TischId.von(ids.tischId())).orElseThrow();
-            kiOrchestrierungService.automatisiereTisch(tisch);
+            kiTischOrchestrator.automatisiereTisch(tisch);
             tischRepository.saveAndFlush(tisch);
         });
 
@@ -416,7 +416,7 @@ class KiOrchestrierungServiceIntegrationTest {
         // 1. WEST (KI) spielt Fuchs
         transactionTemplate.executeWithoutResult(status -> {
             TischEntity tisch = tischRepository.findById(TischId.von(ids.tischId())).orElseThrow();
-            kiOrchestrierungService.automatisiereTisch(tisch);
+            kiTischOrchestrator.automatisiereTisch(tisch);
             tischRepository.saveAndFlush(tisch);
         });
 

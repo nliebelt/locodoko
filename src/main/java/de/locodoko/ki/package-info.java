@@ -1,4 +1,4 @@
 @org.springframework.modulith.ApplicationModule(
-    allowedDependencies = {"tisch", "partie", "partie :: ereignisse", "karten", "spieler"}
+    allowedDependencies = {"partie", "partie :: ereignisse", "karten"}
 )
 package de.locodoko.ki;
