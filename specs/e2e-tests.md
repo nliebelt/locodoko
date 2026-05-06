@@ -22,30 +22,35 @@ Locodoko nutzt daher das **Bridge Pattern**:
 
 Die Tastatursteuerung bleibt als sekundärer Pfad für lokale UX-Tests erhalten, für die automatisierte Absicherung der Spiellogik ist die Bridge jedoch die **Single Source of Truth**.
 
-### Bridge API — Stabile Test-Selektoren
+### Bridge API über Helper-Funktionen
 
 Da die gesamte Spieloberfläche in Phaser (Canvas) gerendert wird, gibt es keine DOM-Elemente mit `data-testid`. Die **JavaScript-Bridge** (`window.__locodoko`) ist der einzige stabile Zugangspunkt für Playwright-Tests.
 
-| Bridge-Property / Methode                        | Beschreibung                                                                             |
-|--------------------------------------------------|------------------------------------------------------------------------------------------|
-| `getAktuelleSzene()`                             | Aktive Phaser-Szene (`'SpielverwaltungsSzene'`, `'TischSzene'` etc.)                    |
-| `appStore.snapshot()`                            | Aktueller App-Zustand: Session, Tisch, Partie, Spieler                                  |
-| `appStore.alsGastStarten()`                      | Session als Gast initialisieren                                                          |
-| `appStore.erstelleQuickGame()`                   | Schnellstart: Tisch erstellen, KI auffüllen, Partie starten                             |
-| `appStore.erstelleKonfiguriertenTisch(n, c, p)`  | Konfigurierten Tisch erstellen                                                           |
-| `appStore.starteAktuellenTisch()`                | Warte-Tisch starten                                                                      |
-| `appStore.spieleKarte(karteId)`                  | Karte per ID spielen                                                                     |
-| `appStore.meldeVorbehalt(v)`                     | Vorbehalt melden (z.B. `'GESUND'`, `'SOLO_DAME'`)                                       |
-| `appStore.sageAnsageAn(partei)`                  | Ansage `'RE'` oder `'KONTRA'` machen                                                    |
-| `appStore.beantworteArmut(annehmen, karten)`     | Armutangebot annehmen/ablehnen                                                           |
-| `isIdle()`                                       | `true` wenn alle Animationen und Event-Queue verarbeitet sind (Quiescence)               |
-| `isOverlaySichtbar()`                            | Rundenauswertung, Partie-Ende oder Einstellungen sichtbar                                |
-| `getHudState()`                                  | `{ stichzaehler, spieltyp, startBtnSichtbar, rundenEndeSichtbar }`                      |
-| `setzeAnimationsGeschwindigkeit(f)`              | Animationsgeschwindigkeit (`Infinity` = Turbo für Tests)                                 |
-| `_rundenEndeModalGezeigt`                        | Zähler: wie oft das Rundenende-Modal seit Szenen-Start angezeigt wurde                  |
-| `_rundenauswertungSpieltypLabel`                 | Spieltyp-Text des letzten Rundenende-Modals (z.B. `'Damensolo'`)                       |
-| `_rundenauswertungMultiplikator`                 | Solo-Multiplikator des letzten Modals (z.B. `3` bei Solo)                              |
-| `schliesseRundenEndeModal()`                     | Schließt das Rundenende-Modal programmatisch (entspricht „Weiter →")                    |
+Tests verwenden **Wrapper-Funktionen** aus `helpers.ts` statt direkter `page.evaluate()`-Aufrufe:
+
+| Helper-Funktion                              | Beschreibung                                                                             |
+|----------------------------------------------|------------------------------------------------------------------------------------------|
+| `getBridge(page)`                            | Warte bis `window.__locodoko.appStore` verfügbar ist                                    |
+| `warteAufSzene(page, szeneName, timeout)`    | Warte auf Szene (`'TischSzene'`, `'SpielverwaltungsSzene'`)                            |
+| `warteAufNaechstesEreignis(page, timeout)`   | Warte bis App idle ist (`isIdle()` == true)                                             |
+| `warteAufPhase(page, phase, timeout)`        | Warte auf Spiel-Phase (z.B. `'VORBEHALT_ANSAGE'`, `'STICHPHASE'`)                      |
+| `warteAufEigenenVorbehalt(page, timeout)`    | Warte bis der aktuelle Spieler einen Vorbehalt melden kann                              |
+| `warteAufEigenenZug(page, timeout)`          | Warte bis der aktuelle Spieler eine Karte spielen kann                                  |
+| `leseSpielZustand(page)`                     | Lese aktuellen Zustand: Phase, Spieltyp, spielbare Karten, mögliche Vorbehalte          |
+| `leseHudZustand(page)`                       | Lese HUD-State: Stichzähler, Spieltyp, Button-Sichtbarkeiten                           |
+| `alsGastStarten(page)`                       | Session als Gast initialisieren                                                          |
+| `erstelleQuickGame(page)`                    | Schnellstart: Tisch erstellen, KI auffüllen, Partie starten                             |
+| `erstelleKonfiguriertenTisch(page, n, c, p)` | Tisch mit Konfiguration erstellen (z.B. ohneNeunen, anzahlSpiele, kiSchwierigkeit)     |
+| `starteAktuellenTisch(page)`                 | Warte-Tisch starten                                                                      |
+| `spieleErsteHandkarte(page)`                 | Spiele erste verfügbare Karte                                                            |
+| `spieleKarte(page, karteId)`                 | Spiele Karte per ID                                                                      |
+| `meldeVorbehalt(page, vorbehalt)`            | Melde Vorbehalt (z.B. `'GESUND'`, `'SOLO_DAME'`)                                       |
+| `beantworteArmut(page, annehmen, karten)`    | Antworte auf Armutangebot                                                                |
+| `aktiviereTurbo(page)`                       | Setze Animationsgeschwindigkeit auf `Infinity` (testet schneller)                        |
+| `schliesseRundenEndeModal(page)`             | Schließe Rundenende-Modal programmatisch                                                 |
+| `leseRundenEndeModalCount(page)`             | Lese wie oft das Modal seit Start angezeigt wurde                                       |
+| `leseRundenauswertung(page)`                 | Lese Rundenauswertung: spieltypLabel, multiplikator                                     |
+| `aktiviereConsoleCapture(page, testName)`    | Erfasse console-Logs in `e2e/test-results/console-{testName}.log`                       |
 
 ## Projektstruktur
 
@@ -78,126 +83,100 @@ cd e2e && npx playwright test --ui
 
 ## Testfall 1: Kritischer Pfad — erste Partie bis zum ersten Stich
 
-### Vorbedingungen
+**Implementierung:** `e2e/tests/partie-gegen-ki.spec.ts`
 
-- Anwendung läuft und ist erreichbar
-- Keine Session-Cookies aus vorherigen Tests (jeder Test startet frisch)
+**Szenario:** Spieler meldet Vorbehalt, spielt erste Karte, Stich wird abgeschlossen
 
-### Schritte und Assertions
+```gherkin
+Given
+  - Anwendung ist erreichbar
+  - Keine bestehende Session (Test startet frisch)
+  - KI-Spieler sind konfiguriert
 
-#### 1. Start-Screen laden
+When
+  - Spieler verbindet sich als Gast
+  - Tisch wird erstellt und gestartet
+  - Vorbehalt-Phase erreicht wird
+  - Spieler meldet Vorbehalt (z.B. GESUND)
+  - Spieler ist dran und spielt erste verfügbare Karte
+  - KI spielt ihre Karten
 
-- Navigiere zu `BASE_URL`
-- Assert: `[data-testid="startscreen"]` ist sichtbar
-- Assert: `[data-testid="btn-neuer-tisch"]` ist sichtbar
-- Assert: Session-Cookie wurde gesetzt
+Then
+  - TischSzene wird geladen (nicht SpielverwaltungsSzene)
+  - Spieler erhält Vorbehalt-Zug (moeglicheVorbehalte.length > 0)
+  - Spieler erhält Spielzug (spielbareKarten.length > 0)
+  - Stich wird abgeschlossen (mindestens ein Spieler hat gewonneneStiche > 0)
+  - Keine JavaScript-Fehler in Browser-Konsole
+```
 
-#### 2. Tisch erstellen
-
-- Klicke `[data-testid="btn-neuer-tisch"]`
-- Assert: `[data-testid="tisch-config-modal"]` ist sichtbar
-- Fülle `[data-testid="input-tischname"]` mit `E2E-Test-Tisch`
-- Klicke `[data-testid="btn-tisch-erstellen"]`
-- Assert: `[data-testid="tischszene"]` ist sichtbar
-- Assert: `[data-testid="hud-btn-einstellungen"]` ist sichtbar
-
-#### 3. Spiel starten
-
-- Klicke `[data-testid="hud-btn-einstellungen"]`
-- Assert: `[data-testid="einstellungen-modal"]` ist sichtbar
-- Klicke `[data-testid="btn-spiel-starten"]`
-- Assert: `[data-testid="einstellungen-modal"]` ist nicht mehr sichtbar
-
-#### 4. Vorbehalt-Phase
-
-- Assert: `[data-testid="vorbehalt-overlay"]` wird sichtbar (timeout: 15s)
-- Assert: Overlay enthält Button mit Text „Gesund"
-- Drücke `1` (Zifferntaste für „Gesund") oder klicke den „Gesund"-Button
-- Assert: `[data-testid="vorbehalt-overlay"]` verschwindet
-- Assert: `[data-testid="hud-spieltyp"]` zeigt einen Spieltyp an (timeout: 15s)
-
-#### 5. Erste Karte per Tastatur spielen
-
-- Assert: `[data-testid="floating-action-bar"]` enthält Hinweis dass Spieler dran ist (timeout: 20s)
-- Drücke `Enter` (spielt die automatisch vorausgewählte erste spielbare Karte)
-- Assert: `[data-testid="hud-stichzaehler"]` zeigt `Stich 1/12`
-
-#### 6. KI spielt den Stich zu Ende
-
-- Assert: `[data-testid="hud-stichzaehler"]` zeigt `Stich 2/12` (timeout: 20s) — Stich wurde abgeschlossen, nächster beginnt
-- Assert: Kein JavaScript-Fehler in der Browser-Konsole während des gesamten Tests
+**Kritischer Testpunkt:** Validiert dass grundlegender Spielablauf funktioniert (Vorbehalt → Kartenspiel → Stichlogik)
 
 ---
 
-## Testfall 2: Rundenauswertung erscheint nach Spielende
+## Testfall 2: Rundenauswertung und Rundenende
 
-> **Hinweis**: Dieser Test läuft gegen eine KI die alle 12 Stiche bis zum Ende spielt. Er ist langsamer als Testfall 1 (ca. 60–90s Timeout).
+**Implementierung:** `e2e/tests/rundenauswertung.spec.ts`
 
-### Testablauf
+**Szenario:** Komplettes Spiel wird bis zum Rundenende gespielt, Auswertung wird angezeigt
 
-#### 1–4. Wie Testfall 1 (Tisch erstellen, Spiel starten, Vorbehalt)
+```gherkin
+Given
+  - Anwendung ist erreichbar
+  - Tisch mit KI-Spielern erstellt
+  - Spiel wird gestartet (Vorbehalt-Phase erreicht)
 
-#### 5. Alle eigenen Karten spielen
+When
+  - Alle 12 Stiche werden nacheinander gespielt
+  - Spieler und KI spielen ihre Karten reihum
+  - Vorbehalte und Armut-Phasen werden gehandhabt
+  - Spiel erreicht STICHPHASE und endet
 
-- Wiederhole für jede Karte: warte auf Zug (`floating-action-bar`), drücke `Enter`
-- Assert nach jeder gespielten Karte: `hud-stichzaehler` erhöht sich korrekt
+Then
+  - Nach letztem Stich wechselt Phase zurück zu VORBEHALT_ANSAGE
+  - Rundenauswertungs-Overlay wird angezeigt (Modal-Count > 0)
+  - Overlay zeigt Spieltyp-Label (z.B. "Normales Spiel", "Damensolo")
+  - Overlay kann geschlossen werden
+  - Nach Schließen startet neue Runde (Phase = VORBEHALT_ANSAGE)
+  - Keine JavaScript-Fehler während gesamtem Spiel
+```
 
-#### 6. Rundenauswertung erscheint
+**Kritischer Testpunkt:** Validiert dass volle Partie bis zum Ende spielbar ist und Rundenauswertung korrekt angezeigt wird
 
-- Assert: `[data-testid="rundenauswertung-overlay"]` wird sichtbar (timeout: 30s)
-- Assert: Overlay enthält Spieltyp-Text (z.B. „Normales Spiel" oder „Trumpfsolo")
-- Assert: Overlay enthält Text „RE" oder „KONTRA" (Gewinner sichtbar)
-- Assert: Overlay enthält `[data-testid="btn-rundenauswertung-weiter"]`
-
-#### 7. Weiter zur nächsten Runde
-
-- Drücke `Enter` oder klicke `[data-testid="btn-rundenauswertung-weiter"]`
-- Assert: `[data-testid="rundenauswertung-overlay"]` verschwindet
-- Assert: `[data-testid="hud-spieltyp"]` zeigt neuen Spieltyp / `Vorbehalt läuft…`
-- Assert: Kein JavaScript-Fehler
+> **Hinweis:** Dieser Test ist langsamer als Testfall 1 (ca. 60–90s für ein komplettes Spiel), daher `timeout: 90_000` auf Test-Ebene.
 
 ---
 
 ## Testfall 3: Solo-Spielfluss — vollständige Solo-Runde
 
-> **Hinweis**: Dieser Test erzwingt kein Solo durch eine Tischkonfiguration — er wartet deterministisch
-> auf eine Solo-Hand des Spielers, oder nutzt `meldeVorbehalt(page, 'SOLO_DAME')` wenn der Spieler
-> die Wahl hat. Falls kein Solo möglich: `test.skip`.
->
-> **Warum E2E für Solo wichtig:** Solo verändert drei Dinge die im Normalspiel nicht beobachtbar sind:
-> - HUD zeigt anderen Spieltyp (z.B. „Damensolo")
-> - Nur der Solist ist Re, alle anderen Kontra — Rundenauswertung zeigt das korrekt
-> - Geberrotation bleibt nach Solo beim selben Geber — zweites Spiel bestätigt das
+**Implementierung:** `e2e/tests/solo-spielfluss.spec.ts` (ggf. zu implementieren)
 
-### Testablauf
+**Szenario:** Spieler erhält Solo-Hand, meldet Solo, spielt bis zum Ende, Auswertung zeigt korrekte Solo-Multiplikation
 
-#### 1–3. Wie Testfall 1 (Tisch erstellen, Spiel starten)
+```gherkin
+Given
+  - Anwendung ist erreichbar
+  - Spieler erhält Solo-Hand (SOLO_DAME, SOLO_BUBE, TRUMPF-SOLO, etc.)
+  - Falls keine Solo-Hand: Test wird übersprungen
 
-#### 4. Vorbehalt-Phase: Solo wählen
+When
+  - Spieler ist in Vorbehalt-Phase und hat Solo-Option
+  - Spieler meldet Solo-Vorbehalt
+  - HUD zeigt neuen Spieltyp (z.B. "Damensolo")
+  - Alle 12 Stiche werden gespielt (nur Solist vs. alle anderen)
+  - Runde endet
 
-- Assert: `[data-testid="vorbehalt-overlay"]` wird sichtbar (timeout: 15s)
-- Falls Spieler einen Solo-Vorbehalt hat: Drücke passende Ziffer (z.B. `3` für SOLO_DAME)
-- Falls kein Solo möglich: `test.skip('Keine Solo-Hand — Test übersprungen')`
-- Assert: `[data-testid="vorbehalt-overlay"]` verschwindet
-- Assert: `[data-testid="hud-spieltyp"]` zeigt Solo-Spieltyp, z.B. `Damensolo` (timeout: 15s)
+Then
+  - Spieltyp im HUD enthält Solo-Typ-Zeichen
+  - Rundenauswertung zeigt Spieltyp-Label mit Solo (z.B. "Damensolo")
+  - Rundenauswertung zeigt Multiplikator = 3 (Solo-Faktor)
+  - Nach Schließen startet neue Runde
+  - Geberrotation bleibt beim selben Geber (nächste Runde hat gleicher Geber)
+  - Keine JavaScript-Fehler
+```
 
-#### 5. Solo-Spielfluss: alle Stiche
+**Kritischer Testpunkt:** Validiert dass Solo-Logik separaten Spieltyp, Punktemultiplikation und Geberrotation korrekt handhaben
 
-- Wiederhole für jeden eigenen Zug: warte auf Zug, drücke `Enter`
-- Assert nach Stich 1: `hud-stichzaehler` zeigt `Stich 2/12`
-- Assert: Spieltyp im HUD wechselt nicht während der Runde
-
-#### 6. Rundenauswertung: Solo-spezifische Anzeige
-
-- Assert: `window.__locodoko._rundenEndeModalGezeigt > 0` (Modal wurde gezeigt)
-- Assert: `window.__locodoko._rundenauswertungSpieltypLabel` enthält Solo-Typ (z.B. `'Damensolo'`)
-- Assert: `window.__locodoko._rundenauswertungMultiplikator === 3`
-
-#### 7. Nächstes Spiel: Geber-Wiederholung nach Solo
-
-- `window.__locodoko.schliesseRundenEndeModal()` aufrufen
-- Assert: Neues Spiel gestartet (Phase wechselt zu `VORBEHALT_ANSAGE`)
-- Assert: Kein JavaScript-Fehler im gesamten Test
+> **Hinweis:** Dieser Test wartet auf eine zufällige Solo-Hand oder wird übersprungen. Es wird nicht erzwungen, dass ein Solo auftritt.
 
 ---
 
@@ -208,7 +187,7 @@ import { defineConfig } from '@playwright/test';
 
 export default defineConfig({
   testDir: './tests',
-  timeout: 300_000,   // 5 Minuten — nötig wegen KI-Karten-Delay (800ms/Karte × 3 KI × 12 Stiche ≈ 30s reine KI-Zeit)
+  timeout: 300_000,   // 5 Min — Standard-Timeout für längere Tests (z.B. volles Spiel)
   use: {
     baseURL: process.env.BASE_URL ?? 'http://localhost:8081',
     headless: true,
@@ -220,33 +199,48 @@ export default defineConfig({
 });
 ```
 
-> **Wichtig:** Das Timeout muss ≥ 300_000ms sein. Der KI-Karten-Delay (800ms/Karte in STICHPHASE) führt dazu, dass ein vollständiges Spiel mit 3 KI-Mitspielern ca. 30–60s reine Wartezeit an KI-Aktionen hat. Testschleifen müssen so gebaut sein, dass sie rein-KI-Stiche (kein eigener Zug) korrekt abwarten, bevor sie zum nächsten Schritt fortschreiten.
+> **Wichtig:** 
+> - Standard-Timeout: 300_000ms = 5min (global konfiguriert)
+> - Längere Tests (vollständiges Spiel): `test.setTimeout(90_000)` direkt im Test setzen
+> - KI-Karten-Delay: 800ms/Karte in STICHPHASE; ein Spiel mit 3 KI-Mitspielern ≈ 30–60s reine KI-Wartezeit
+> - Testschleifen nutzen `leseSpielZustand()` + `warteAufNaechstesEreignis()` um KI-Stiche korrekt abzuwarten (nicht mit festen Delays)
 
 ## Akzeptanzkriterien
 
-- `cd e2e && npx playwright test` läuft lokal durch ohne manuellen Eingriff
-- `BASE_URL=https://... npx playwright test` läuft gegen ein Testsystem
-- Testfall 1 schlägt reproduzierbar fehl wenn UI einfriert oder Karte nicht gespielt werden kann
-- Testfall 2 schlägt fehl wenn Rundenauswertung nicht erscheint
-- Kein JavaScript-Fehler in der Browser-Konsole
-- Screenshots und Videos bei Fehler in `e2e/test-results/`
+- Tests laufen lokal mit `cd e2e && npx playwright test` durch
+- Tests laufen gegen beliebiges System mit `BASE_URL=https://... npx playwright test`
+- **Testfall 1:** Vorbehalt → Kartenspiel → Stichlogik funktioniert (kein JS-Fehler)
+- **Testfall 2:** Komplettes Spiel spielbar, Rundenauswertung wird angezeigt (kein JS-Fehler)
+- **Testfall 3** (optional): Solo-Spieltyp, Multiplikator, Geberrotation funktionieren
+- Fehler-Debugging möglich via Screenshots, Videos, Console-Logs
 
 ## Definition of Done
 
-- [x] `e2e/`-Verzeichnis mit `package.json` und `playwright.config.ts` angelegt
-- [x] `BASE_URL`-Unterstützung implementiert
-- [x] `e2e/.gitignore` korrekt
-- [x] `data-testid`-Attribute in TischSzene und SpielverwaltungsSzene für alle relevanten Elemente gesetzt (11 von 17 — rest in specs/e2e-tests.md Task 11)
-- [~] `partie-gegen-ki.spec.ts` auf neue Selektoren und Tastatursteuerung umgestellt (weitgehend fertig)
-- [x] `rundenauswertung.spec.ts` implementiert und stabil
-- [x] Testfall 1 läuft lokal grün gegen `mvn spring-boot:run`
-- [x] Testfall 2 läuft lokal grün gegen `mvn spring-boot:run`
+- [x] Bridge-Pattern implementiert (Interaktion via `window.__locodoko` statt Tastatur/Maus)
+- [x] Quiescence-Pattern für Synchronisation (`isIdle()` vor Tests)
+- [x] `helpers.ts` mit stabilen Wrapper-Funktionen
+- [x] `partie-gegen-ki.spec.ts` — Testfall 1 läuft und validiert kritischen Pfad
+- [x] `rundenauswertung.spec.ts` — Testfall 2 läuft und validiert Spielende + Auswertung
+- [ ] `solo-spielfluss.spec.ts` — Testfall 3 (optional: bei Bedarf implementieren)
+- [x] `e2e/` Projektstruktur mit `package.json` und `playwright.config.ts`
+- [x] Specs dokumentieren WAS und WARUM, nicht HOW
 
 ## Technische Hinweise
 
-- Wartezeiten für KI-Aktionen: `waitForSelector` statt fester `sleep`-Delays.
-- WebSocket-Nachrichten sind asynchron — Assertions mit `expect.poll()` oder `waitFor` absichern.
-- Jeder Test beginnt mit frischer Session (kein `storageState`).
-- Browser-Konsolen-Fehler per `page.on('console', ...)` und `page.on('pageerror', ...)` abfangen.
-- `window.__locodoko.appStore` bleibt als Notfall-Fallback verfügbar, wird aber nicht mehr als primärer Spielmechanismus genutzt.
-- Testfall 2 benötigt `timeout: 90_000` auf Test-Ebene (überschreibt globale 30s).
+**Warum Bridge-Pattern statt Tastatur/Maus?**
+- Phaser rendert auf Canvas → keine DOM-Elemente zum Klicken
+- In Headless-Umgebungen (CI) ist GPU-Rendering oft verzögert → Tastatur-Input unzuverlässig
+- Bridge bietet direkten Zugriff: Befehle werden sofort verarbeitet, unabhängig von Rendering-FPS
+
+**Warum Quiescence-Pattern?**
+- `isIdle()` prüft: alle Animationen fertig + Event-Queue leer
+- Garantiert dass nächster Test-Schritt nicht in Animation startet → zuverlässigere Assertions
+
+**KI-Wartezeiten richtig handhaben:**
+- Nicht: `await page.waitForTimeout(1000)` (unkontrollierbar, flaky)
+- Ja: Schleife mit `leseSpielZustand()` + `warteAufNaechstesEreignis()` (adaptive Wartezeit)
+
+**Debugging bei Fehlern:**
+- `aktiviereConsoleCapture()` schreibt Browser-Logs → `e2e/test-results/console-{testName}.log`
+- Playwright speichert Screenshots + Videos bei Fehler automatisch
+- Logfiles zeigen was die App getan hat, wenn Test fehlschlägt

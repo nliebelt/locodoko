@@ -2,7 +2,7 @@
 
 | Feld           | Wert                                        |
 |----------------|---------------------------------------------|
-| Status         | Zu prüfen |
+| Status         | Abgeschlossen |
 | Priorität      | Mittel                                      |
 | Abhängigkeiten | lobby.md, regelkatalog.md                   |
 
