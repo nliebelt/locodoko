@@ -150,6 +150,11 @@ public class TischEntity extends AbstraktePersistenzEntity {
         this.status = TischStatus.IM_SPIEL.name();
     }
 
+    /** Setzt den Tisch-Status auf WARTEND zurück (z.B. nach Verbindungsabbruch aller Spieler). */
+    public void setzeStatusWartend() {
+        this.status = TischStatus.WARTEND.name();
+    }
+
     /**
      * Setzt die transiente Partie-Referenz ohne den Status zu aendern
      * (wird beim Laden aus der Datenbank verwendet).

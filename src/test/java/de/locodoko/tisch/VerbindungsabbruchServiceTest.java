@@ -7,6 +7,7 @@ import de.locodoko.spieler.SpielerRepository;
 import de.locodoko.spieler.SpielerEntity;
 import de.locodoko.spieler.SpielerRepository;
 import de.locodoko.tisch.TischEntity;
+import de.locodoko.tisch.TischId;
 import de.locodoko.tisch.TischRepository;
 import de.locodoko.tisch.TischStatus;
 import de.locodoko.tisch.TischkonfigurationEmbeddable;
@@ -22,6 +23,7 @@ import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -192,6 +194,35 @@ class VerbindungsabbruchServiceTest {
                 timeout > 0,
                 "Der Reconnect-Timeout muss größer als 0 sein — ein Timeout von 0 würde " +
                 "sofortige KI-Übernahme ohne Wartezeit bedeuten."
+        );
+    }
+
+    /**
+     * Tisch-Status nach letztem Disconnect: Wenn der einzige menschliche Spieler den Timeout
+     * überschreitet, muss der Tisch auf WARTEND gesetzt werden — nicht auf IM_SPIEL bleiben.
+     * Ohne diesen Fix wäre der Tisch permanent blockiert und für neue Spieler nicht beitrittsfähig.
+     */
+    @Test
+    void tischWirdNachTimeoutDesLetztenSpielerAufWartendGesetzt() throws Exception {
+        // Tisch auf IM_SPIEL setzen (simuliert laufende Partie)
+        tisch = tischRepository.findById(TischId.von(tisch.id())).orElseThrow();
+        var statusFeld = tisch.getClass().getDeclaredField("status");
+        statusFeld.setAccessible(true);
+        statusFeld.set(tisch, TischStatus.IM_SPIEL.name());
+        tischRepository.save(tisch);
+
+        String sessionId = menschlicherSpieler.sessionId();
+        verbindungsabbruchService.verarbeiteDisconnect(sessionId, SpielerId.von(menschlicherSpieler.id()), menschlicherSpieler.name());
+
+        // Zeitgrenze weit in der Zukunft → alle Disconnect-Einträge sind "abgelaufen"
+        verbindungsabbruchService.verarbeiteTimeouts(Instant.now().plusSeconds(9999));
+
+        TischEntity aktuell = tischRepository.findById(TischId.von(tisch.id())).orElseThrow();
+        assertEquals(
+                TischStatus.WARTEND,
+                aktuell.status(),
+                "Nach Timeout des letzten menschlichen Spielers muss der Tisch auf WARTEND stehen, " +
+                "damit neue Spieler beitreten können und er nicht dauerhaft blockiert bleibt."
         );
     }
 }

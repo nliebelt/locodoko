@@ -137,8 +137,12 @@ public class VerbindungsabbruchService {
     @Scheduled(fixedDelayString = "${locodoko.verbindung.pruefreconnect-ms:10000}")
     @Transactional
     public void pruefeReconnectTimeouts() {
-        Instant timeoutGrenze = Instant.now().minusSeconds(reconnectTimeoutSekunden);
+        verarbeiteTimeouts(Instant.now().minusSeconds(reconnectTimeoutSekunden));
+    }
 
+    /** Sichtbar für Tests: verarbeitet Timeouts mit expliziter Zeitgrenze. */
+    @Transactional
+    void verarbeiteTimeouts(Instant timeoutGrenze) {
         // Snapshot der aktuellen Einträge um ConcurrentModificationException zu vermeiden
         for (Map.Entry<String, DisconnectInfo> eintrag : new ArrayList<>(getrennteSessionen.entrySet())) {
             if (eintrag.getValue().disconnectZeit().isAfter(timeoutGrenze)) {
@@ -163,10 +167,15 @@ public class VerbindungsabbruchService {
                                        .count();
 
             if (humanPlayerCount == 1) {
-                // If there's only one human player left, and it's the one whose timeout expired,
-                // we should NOT take over with KI. The player might reconnect.
-                LOGGER.debug("Only one human player remaining at table {}. Skipping KI takeover for {}.", tisch.id(), info.spielerName());
-                continue; // Skip to the next disconnected session
+                // Letzter menschlicher Spieler getrennt — Tisch auf WARTEND setzen, KI-Übernahme entfällt.
+                LOGGER.info("Letzter menschlicher Spieler '{}' hat Timeout. Tisch {} wird auf WARTEND gesetzt.", info.spielerName(), tisch.id());
+                tisch.setzeStatusWartend();
+                tischRepository.save(tisch);
+                tischEchtzeitService.planeTischVerbindungsStatus(
+                        tisch.id(),
+                        VerbindungStatusEreignisAntwort.kiUebernommen(info.spielerName())
+                );
+                continue;
             }
 
             LOGGER.info("Reconnect-Timeout für Spieler '{}' abgelaufen. KI übernimmt die Steuerung.", info.spielerName());
