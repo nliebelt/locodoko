@@ -4,12 +4,12 @@
 
 ## Notiz
 
-**Was wurde implementiert (Run #111, zweite Iteration)?**
-- Task 23 (FIX-PRIVATE-TISCH-GUESTS): `SpielerEntity.istGast()` hinzugefügt (gibt `true` wenn `authentifizierungsMethode == null`). In `TischVerwaltungsService.betreteTisch()` wird vor dem Beitritt geprüft: wenn der Tisch `PRIVAT` ist und der Spieler ein Gast ist → `SpielerZugriffVerweigertException` (HTTP 403). Gilt auch für den Code-Beitritt (`beitretenViaCode` delegiert an `betreteTisch`). Neuer Integrationstest `verweigerteGastZugriffAufPrivatenTisch` in `TischControllerTest`. 307 Backend-Tests grün.
+**Was wurde implementiert (Run #111, dritte Iteration)?**
+- Task 21 (FIX-ABAC-AUTHORIZATION): `@PreAuthorize`-Annotationen in `TischController` für Gastgeber-Endpunkte (`starten`, `PUT konfiguration`, `DELETE spieler/{id}`) und Mitglieds-Endpunkt (`neue-partie`). `TischSicherheit` erweitert: Session-Fallback für Gast-Spieler (via `RequestContextHolder`) und OAuth2-Principal-Support. `TischControllerTest` auf `springSecurity()` umgestellt. 307 Backend-Tests grün.
 
 **Nächster logischer Schritt:**
-- Task 21 (FIX-ABAC-AUTHORIZATION): `@PreAuthorize`-Annotationen in Controllern für ABAC-Durchsetzung ergänzen.
 - Task 24 (REFACTOR-URL-CONSISTENCY): Alle REST-Endpunkte auf Plural `/api/tische/...` vereinheitlichen.
+- Task 25 (FIX-KI-ARCHITECTURE-VIOLATION): Abhängigkeiten im KI-Modul auflösen.
 
 **Offene Fragen:**
 - Vision Loop Spielschleife: `leseSpielZustand` wartet auf `isIdle()` das bei KI-Spiel gelegentlich >15s dauert (pre-existing).
@@ -107,7 +107,7 @@
 ## P7 — Neu entdeckte Aufgaben (Plan-Run #111)
 
 ### FIX-ABAC-AUTHORIZATION (Task 21)
-- [ ] **Backend**: `@PreAuthorize`-Annotationen in Controllern für ABAC-Durchsetzung ergänzen (Specs fordern dies, aktuell manuelle Service-Prüfungen).
+- [x] **Backend**: `@PreAuthorize`-Annotationen in Controllern für ABAC-Durchsetzung ergänzen (Specs fordern dies, aktuell manuelle Service-Prüfungen).
 
 ### FIX-TISCH-STATUS-ABBRUCH (Task 22)
 - [x] **Backend**: Nach Verbindungsabbruch den Tisch-Status auf `WARTEND` setzen, anstatt den Tisch zu löschen (`VerbindungsabbruchService.java`).
@@ -153,7 +153,7 @@
 - [ ] FEAT-QUICK-PLAY-SYNC
 
 **P7 (Neu entdeckt, Plan-Run #111):**
-- [ ] Task 21: FIX-ABAC-AUTHORIZATION
+- [x] Task 21: FIX-ABAC-AUTHORIZATION
 - [x] Task 22: FIX-TISCH-STATUS-ABBRUCH
 - [x] Task 23: FIX-PRIVATE-TISCH-GUESTS
 - [ ] Task 24: REFACTOR-URL-CONSISTENCY
