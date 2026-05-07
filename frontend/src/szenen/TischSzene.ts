@@ -211,15 +211,16 @@ export class TischSzene extends Phaser.Scene {
     this.scale.on(Phaser.Scale.Events.RESIZE, this.handleResize, this);
     
     // PARTIE-EREIGNISSE (Animationen & Modals)
-    const abmeldenEvents = appStore.abonniereEvents((e) => {
-      this.verarbeitePartieEreignis(e);
+    const abmeldenEvents = appStore.abonniereEvents(async (e) => {
+      await this.verarbeitePartieEreignis(e);
       // Re-Sync erst triggern, wenn die Queue dieses Ereignisses durch ist
       void this.animationen?.reiheEin(() => Promise.resolve())
-        .then(() => { if (this.sys?.displayList) this.triggerRender(); });
+        .then(() => { if (this.sys?.displayList) this.triggerRender(); })
+        .catch(() => { /* Szene wurde zerstört */ });
     });
 
     // SNAPSHOT-ABO (Statische Ansicht)
-    this.abmeldenStore = appStore.abonnieren((zustand) => {
+    this.abmeldenStore = appStore.abonniere((zustand) => {
       if (zustand.bereich === 'SPIELVERWALTUNG') {
         this.scene.start('SpielverwaltungsSzene');
         return;
@@ -258,16 +259,27 @@ export class TischSzene extends Phaser.Scene {
       for (const s of sp) {
         const gewinnerSpieler = this.letztesModell?.spieler.find(p => p.absolutePosition === s.gewinner);
         const name = gewinnerSpieler?.name;
+        const { width: b, height: h } = this.scale.gameSize;
+        const pos = nameplatePositionFuer(s.gewinner, b, h);
+
         switch (s.typ) {
           case 'FUCHS_GEFANGEN':
-            this.flashTextManager?.zeigeSpielevent('FuchsGefangen', { spielerName: name });
+            this.animationen?.reiheEin(async () => {
+              await this.flashTextManager?.zeigeSpielevent('FuchsGefangen', { spielerName: name, x: pos.x, y: pos.y });
+            });
             if (gewinnerSpieler) this.nameplates.get(gewinnerSpieler.position)?.shake();
             break;
           case 'KARLCHEN':
-            this.flashTextManager?.zeigeSpielevent('KarlchenGespielt', { spielerName: name });
+            this.animationen?.reiheEin(async () => {
+              await this.flashTextManager?.zeigeSpielevent('KarlchenGespielt', { spielerName: name, x: pos.x, y: pos.y });
+            });
             if (gewinnerSpieler) this.nameplates.get(gewinnerSpieler.position)?.shake();
             break;
-          case 'DOPPELKOPF':     this.flashTextManager?.zeigeSpielevent('DoppelkopfGestochen'); break;
+          case 'DOPPELKOPF':
+            this.animationen?.reiheEin(async () => {
+              await this.flashTextManager?.zeigeSpielevent('DoppelkopfGestochen', { x: pos.x, y: pos.y });
+            });
+            break;
         }
       }
     });
@@ -334,7 +346,7 @@ export class TischSzene extends Phaser.Scene {
     // Waehrend Animation/Austeilen laeuft: kein Render einplanen.
     // Die Re-Sync-Logik (reiheEin(...).then(triggerRender)) stellt sicher,
     // dass nach Ende aller Animationen ein Render ausgeloest wird.
-    if (this.animationen?.animationLaeuft || this.austeilenAktiv) {
+    if (this.animationen?.animationLaeuft || this.austeilenAktiv || this.stichEinziehenAktiv) {
       return;
     }
 
@@ -386,7 +398,7 @@ export class TischSzene extends Phaser.Scene {
     this._zeigeOverlayNachSnapshot = null;
   }
 
-  private verarbeitePartieEreignis(ereignis: PartieEreignisAntwort): void {
+  private async verarbeitePartieEreignis(ereignis: PartieEreignisAntwort): Promise<void> {
     Logger.szene('Verarbeite PartieEreignis', { typ: ereignis.ereignisTyp });
     
     switch (ereignis.ereignisTyp) {
@@ -394,23 +406,23 @@ export class TischSzene extends Phaser.Scene {
         this.schliesseRundenEndeModal();
         this.schliessePartieEndeModal();
         this.austeilenAktiv = true;
-        this.flashTextManager?.zeigeSpielevent('SpielGestartet');
+        await this.animationen?.reiheEin(() => this.flashTextManager!.zeigeSpielevent('SpielGestartet'));
         if (ereignis.partieStand.laufendesSpiel?.phase === 'VORBEHALT_ANSAGE') {
-          this.flashTextManager?.zeigeSpielevent('VorbehaltErwartet');
+          await this.animationen?.reiheEin(() => this.flashTextManager!.zeigeSpielevent('VorbehaltErwartet'));
         }
         // Wir nehmen den Stand direkt aus dem Event, da der Store ggf. noch nicht gepatcht ist
         const modellG = this.erstelleModell({ ...appStore.snapshot(), partieStand: ereignis.partieStand });
-        this.animationen?.reiheEin(async () => {
+        await this.animationen?.reiheEin(async () => {
           await this.starteAusteilen(modellG, { ...appStore.snapshot(), partieStand: ereignis.partieStand });
           this.austeilenAktiv = false;
         });
         const ankuendigung = modellG.spielankuendigungstext;
-        if (ankuendigung) this.animationen?.reiheEin(() => this.zeigeSpielankuendigung(ankuendigung));
+        if (ankuendigung) await this.animationen?.reiheEin(() => this.zeigeSpielankuendigung(ankuendigung));
         {
           const bockrundenZaehler = ereignis.partieStand?.laufendesSpiel?.bockrundenZaehler ?? 0;
           if (bockrundenZaehler > 0) {
             const pos = { x: this.scale.gameSize.width / 2, y: this.scale.gameSize.height / 2 };
-            this.animationen?.reiheEin(() => this.animationen!.animiereBockrunde(bockrundenZaehler, pos));
+            await this.animationen?.reiheEin(() => this.animationen!.animiereBockrunde(bockrundenZaehler, pos));
           }
         }
         break;
@@ -418,11 +430,13 @@ export class TischSzene extends Phaser.Scene {
 
       case 'KARTE_GESPIELT': {
         const e = ereignis as KarteGespieltEreignis;
-        const eigPos = this.letztesModell?.spieler.find(s => s.istSelbst)?.position;
-        if (e.spielerPosition !== eigPos) {
+        const eventModell = this.erstelleModell({ ...appStore.snapshot(), partieStand: e.partieStand });
+        const eigAbsPos = eventModell.spieler.find(s => s.istSelbst)?.absolutePosition;
+        const relPos = eventModell.spieler.find(s => s.absolutePosition === e.spielerPosition)?.position;
+        if (eigAbsPos && e.spielerPosition !== eigAbsPos && relPos) {
            this.wartendeKartenId = e.karteId;
            const verzoegerung = appStore.snapshot().uiKonfiguration.kiVerzoegerungMs || 400;
-           this.animationen?.reiheEin(() => this.animiereGegnerKarte(e.spielerPosition, verzoegerung));
+           await this.animationen?.reiheEin(() => this.animiereGegnerKarte(relPos, verzoegerung));
         }
         break;
       }
@@ -431,17 +445,15 @@ export class TischSzene extends Phaser.Scene {
         const stiche = ereignis.partieStand.letzteAbgeschlosseneStiche;
         const letzterStich = stiche && stiche.length > 0 ? stiche[stiche.length - 1] : null;
         if (letzterStich) {
-          Logger.szene('STICH_ABGESCHLOSSEN Event verarbeitet', {
-            gewinner: letzterStich.gewinnerPosition,
-            kartenAnzahl: letzterStich.gespielteKarten?.length
-          });
           const gewinnerName = this.letztesModell?.spieler.find(s => s.absolutePosition === letzterStich.gewinnerPosition)?.name;
-          this.flashTextManager?.zeigeSpielevent('StichAbgeschlossen');
           const laufendesSpiel = ereignis.partieStand.laufendesSpiel;
-          this.animationen?.reiheEin(async () => {
+          await this.animationen?.reiheEin(async () => {
+            const { width: b, height: h } = this.scale.gameSize;
+            const npPos = nameplatePositionFuer(letzterStich.gewinnerPosition, b, h);
+            await this.flashTextManager?.zeigeSpielevent('StichAbgeschlossen', { x: npPos.x, y: npPos.y, punkte: letzterStich.augen });
             await this.animiereStichEinziehen(letzterStich, ereignis.partieStand);
             if (laufendesSpiel && gewinnerName) {
-              this.flashTextManager?.zeigeSpielevent('NaechsterSpielerErwartet', { spielerName: gewinnerName });
+              await this.flashTextManager?.zeigeSpielevent('NaechsterSpielerErwartet', { spielerName: gewinnerName });
             }
           });
         }
@@ -449,12 +461,10 @@ export class TischSzene extends Phaser.Scene {
       }
 
       case 'ANSAGE_ERFOLGT': {
-        // Da AnsageErfolgtEreignis aktuell keine 'ansage' Eigenschaft im DTO hat (nur partieStand),
-        // nehmen wir die letzte Ansage aus dem Historie-Snapshot.
         const historie = ereignis.partieStand.laufendesSpiel?.ansageHistorie;
         const letzteAnsage = historie && historie.length > 0 ? historie[historie.length - 1] : null;
         if (letzteAnsage) {
-          this.animationen?.reiheEin(() => this.starteAnsageBannerAnimationen([letzteAnsage.ansage]));
+          await this.animationen?.reiheEin(() => this.starteAnsageBannerAnimationen([letzteAnsage.ansage]));
           const relPos = this.letztesModell?.spieler.find(s => s.absolutePosition === letzteAnsage.spielerPosition)?.position;
           const badgeTyp = ansageBadgeTyp(letzteAnsage.ansage);
           if (relPos && badgeTyp) this.nameplates.get(relPos)?.showAnsage(badgeTyp);
@@ -464,15 +474,18 @@ export class TischSzene extends Phaser.Scene {
 
       case 'SCHWEINCHEN_GEMELDET': {
         const e = ereignis as SchweinchenGemeldetEreignis;
-        const name = this.letztesModell?.spieler.find(s => s.absolutePosition === e.spielerPosition)?.name ?? 'Spieler';
-        this.flashTextManager?.zeigeSpielevent('SchweinchenGemeldet', { spielerName: name });
+        const gewinnerSpieler = this.letztesModell?.spieler.find(s => s.absolutePosition === e.spielerPosition);
+        const name = gewinnerSpieler?.name ?? 'Spieler';
+        const { width: b, height: h } = this.scale.gameSize;
+        const pos = nameplatePositionFuer(e.spielerPosition, b, h);
+        await this.animationen?.reiheEin(() => this.flashTextManager!.zeigeSpielevent('SchweinchenGemeldet', { spielerName: name, x: pos.x, y: pos.y }));
         break;
       }
 
       case 'HOCHZEIT_PARTNER_GEFUNDEN': {
         const e = ereignis as HochzeitPartnerGefundenEreignis;
-        const partner = this.letztesModell?.spieler.find(s => s.position === e.partnerPosition);
-        this.flashTextManager?.zeigeSpielevent('HochzeitPartnerGefunden', { spielerName: partner?.name ?? 'Spieler' });
+        const partner = this.letztesModell?.spieler.find(s => s.absolutePosition === e.partnerPosition);
+        await this.animationen?.reiheEin(() => this.flashTextManager!.zeigeSpielevent('HochzeitPartnerGefunden', { spielerName: partner?.name ?? 'Spieler' }));
         break;
       }
 
@@ -481,17 +494,18 @@ export class TischSzene extends Phaser.Scene {
         const spielNr = m.letztesSpielergebnis?.spielNummer ?? null;
         if (spielNr !== null && spielNr === this._letzterGezeigterSpielBeendet) break;
         this._letzterGezeigterSpielBeendet = spielNr;
-        this.flashTextManager?.zeigeSpielevent('SpielBeendet');
-        this.animationen?.reiheEin(() => this.zeigeGewinnerFlash(m));
-        
-        // Blockiere die Verarbeitung von Folge-Events (z.B. SPIEL_GESTARTET oder KI-Züge), 
-        // bis der Nutzer das Modal bestätigt hat.
+
+        await this.animationen?.reiheEin(async () => {
+          await this.flashTextManager?.zeigeSpielevent('SpielBeendet');
+          await this.zeigeGewinnerFlash(m);
+        });
+
         appStore.pausiereQueue();
-        
+
         if (m.partieBeendet) {
-          this.animationen?.reiheEin(() => { this.zeigePartieEndeModal(m); return Promise.resolve(); });
+          await this.animationen?.reiheEin(() => { this.zeigePartieEndeModal(m); return Promise.resolve(); });
         } else {
-          this.animationen?.reiheEin(() => this.zeigeRundenEndeModal(m));
+          await this.animationen?.reiheEin(() => this.zeigeRundenEndeModal(m));
         }
         break;
       }
@@ -997,14 +1011,7 @@ export class TischSzene extends Phaser.Scene {
       ? sortiereKartenFuerVorbehalt(sichtbare, aktuellerVorbehalt)
       : sichtbare;
 
-    // Eigene Hand (SUED): Karten-Sprites werden persistiert und wiederverwendet, damit keine Flackern-Artefakte entstehen.
-    if (spieler.istSelbst && sichtbare) {
-      const aktuelleIds = new Set(sichtbare.map((k) => k.id));
-      // Sprites entfernen, die nicht mehr in der Hand sind
-      for (const [id, kA] of this.persistenteEigeneKarten) {
-        if (!aktuelleIds.has(id)) { kA.destroy(); this.persistenteEigeneKarten.delete(id); }
-      }
-    }
+    this.bereinigePersistenteEigeneKarten(spieler, sichtbare);
 
     for (let i = 0; i < kAnzahl; i++) {
       const fI = istGesp ? kAnzahl - 1 - i : i;
@@ -1023,66 +1030,113 @@ export class TischSzene extends Phaser.Scene {
       const istVorbEleviert = aktuellerVorbehalt && k ? istHervorgehobeneKarteImVorbehalt(k, aktuellerVorbehalt) : false;
       const bV = (istAus || istTast) ? -auswV : (istVorbEleviert ? -elevV : 0);
 
-      let kA: Kartenansicht;
-      let istWiederverwendet = false;
-      if (spieler.istSelbst && k && this.persistenteEigeneKarten.has(k.id)) {
-        // Persistierten Sprite wiederverwenden: Position und Darstellung aktualisieren
-        kA = this.persistenteEigeneKarten.get(k.id)!;
-        kA.setPosition(x, y + bV);
-        istWiederverwendet = true;
-      } else {
-        kA = offen ? this.erstelleKartenansicht(x, y + bV, kG.w, kG.h, k ? { karte: k } : {}) : this.erstelleKartenansicht(x, y + bV, kG.w, kG.h, { verdeckt: true });
-        if (spieler.istSelbst && k) {
-          // Neuen eigenen Sprite im Scene-Root verankern (nicht in tischEbene) und persistent merken.
-          // depth(2): ueber Hintergrund (0), unter tischEbene (3) — Overlays in tischEbene ueberdecken korrekt.
-          kA.setDepth(2);
-          this.persistenteEigeneKarten.set(k.id, kA);
-        } else {
-          ebene.add(kA);
-        }
-      }
+      const { sprite: kA, wiederverwendet: istWiederverwendet } = this.erstelleOderAktualisiereKartenSprite(
+        ebene, spieler, offen, k, x, y + bV, kG
+      );
 
       kA.setAngle(w).setAlpha(this.austeilenAktiv ? 0 : (offen ? (hatInt && k && !istInt ? 0.45 : 1) : 0.92));
       if (istAus) kA.markiereAuswahl(); else if (istTast) kA.markiereTastaturfokus(); else kA.loescheMarkierung();
 
       if (k) this.handKartenobjekte.set(k.id, { wurzel: kA, bild: kA.bildObjekt });
-      if (offen && k && istInt) {
-        // Bestehende Handler entfernen bevor neue angebunden werden (verhindert Akkumulation bei Reconciliation).
-        if (istWiederverwendet) {
-          kA.removeAllListeners?.('pointerover');
-          kA.removeAllListeners?.('pointerout');
-          kA.removeAllListeners?.('pointerdown');
-        }
-        if (kA.active && kA.scene && kA.scene.input && kA.scene.input.enabled) {
-          kA.setInteractive({ useHandCursor: true });
-          const hV = Math.round(kG.h * 0.08);
-          kA.on('pointerover', () => kA.setY(y + bV - hV));
-          kA.on('pointerout', () => kA.setY(y + bV));
-          kA.on('pointerdown', () => { if (istSp) void this.spieleKarteMitAnimation(k.id); else { this.toggleArmutKarte(k.id, modell.armutAktion?.kartenAnzahl ?? 0); this.renderTisch(this.letzterZustand ?? appStore.snapshot()); } });
-        }
-      } else if (offen && k && !istInt && istWiederverwendet) {
-        // Reusierter Sprite war vorher interaktiv — Zustand zuruecksetzen.
-        if (kA.active && kA.scene && kA.input && kA.input.enabled) {
-          try {
-            kA.disableInteractive();
-            kA.removeAllListeners?.('pointerover');
-            kA.removeAllListeners?.('pointerout');
-            kA.removeAllListeners?.('pointerdown');
-          } catch (e) {
-            console.warn('[TischSzene] Fehler beim Deaktivieren der Interaktion', e);
-          }
-        }
-      }
 
-      // Vorbehalt-Modus: Klick auf beliebige Karte bestätigt die aktuelle Auswahl.
-      if (aktuellerVorbehalt && offen && k && kA.active && kA.scene?.input?.enabled) {
-        if (istWiederverwendet) {
+      this.setzeKartenInteraktion(kA, k, istWiederverwendet, offen, istInt, istSp, aktuellerVorbehalt, y, bV, kG.h, modell);
+    }
+  }
+
+  private bereinigePersistenteEigeneKarten(spieler: TischAnsichtModell['spieler'][number], sichtbare: KarteAntwort[] | undefined): void {
+    if (!spieler.istSelbst || !sichtbare) return;
+    const aktuelleIds = new Set(sichtbare.map((k) => k.id));
+    for (const [id, kA] of this.persistenteEigeneKarten) {
+      if (!aktuelleIds.has(id)) { kA.destroy(); this.persistenteEigeneKarten.delete(id); }
+    }
+  }
+
+  private erstelleOderAktualisiereKartenSprite(
+    ebene: Phaser.GameObjects.Container,
+    spieler: TischAnsichtModell['spieler'][number],
+    offen: boolean,
+    k: KarteAntwort | undefined,
+    x: number,
+    y: number,
+    kG: { w: number; h: number }
+  ): { sprite: Kartenansicht; wiederverwendet: boolean } {
+    if (spieler.istSelbst && k && this.persistenteEigeneKarten.has(k.id)) {
+      const kA = this.persistenteEigeneKarten.get(k.id)!;
+      // Bei Wiederverwendung gleitet die Karte animiert (Reconciliation-Pattern)
+      kA.gleiteZu(x, y, 150);
+      return { sprite: kA, wiederverwendet: true };
+    }
+    const kA = offen
+      ? this.erstelleKartenansicht(x, y, kG.w, kG.h, k ? { karte: k } : {})
+      : this.erstelleKartenansicht(x, y, kG.w, kG.h, { verdeckt: true });
+    if (spieler.istSelbst && k) {
+      // depth(2): ueber Hintergrund (0), unter tischEbene (3)
+      kA.setDepth(2);
+      this.persistenteEigeneKarten.set(k.id, kA);
+    } else {
+      ebene.add(kA);
+    }
+    return { sprite: kA, wiederverwendet: false };
+  }
+
+  private setzeKartenInteraktion(
+    kA: Kartenansicht,
+    k: KarteAntwort | undefined,
+    istWiederverwendet: boolean,
+    offen: boolean,
+    istInt: boolean,
+    istSp: boolean,
+    aktuellerVorbehalt: VorbehaltAnsage | null,
+    y: number,
+    bV: number,
+    kartenHoehe: number,
+    modell: TischAnsichtModell
+  ): void {
+    const inputVerfuegbar = kA.active && kA.scene?.input?.enabled;
+
+    if (aktuellerVorbehalt && offen && k && inputVerfuegbar) {
+      if (istWiederverwendet) {
+        kA.removeAllListeners?.('pointerover');
+        kA.removeAllListeners?.('pointerout');
+        kA.removeAllListeners?.('pointerdown');
+      }
+      kA.setInteractive({ useHandCursor: true });
+      kA.on('pointerdown', () => { void appStore.meldeVorbehalt(aktuellerVorbehalt); });
+      return;
+    }
+
+    if (offen && k && istInt && inputVerfuegbar) {
+      if (istWiederverwendet) {
+        kA.removeAllListeners?.('pointerover');
+        kA.removeAllListeners?.('pointerout');
+        kA.removeAllListeners?.('pointerdown');
+      }
+      kA.setInteractive({ useHandCursor: true });
+      const hV = Math.round(kartenHoehe * 0.08);
+      kA.on('pointerover', () => kA.setY(y + bV - hV));
+      kA.on('pointerout', () => kA.setY(y + bV));
+      kA.on('pointerdown', () => {
+        if (istSp) {
+          void this.spieleKarteMitAnimation(k.id);
+        } else {
+          this.toggleArmutKarte(k.id, modell.armutAktion?.kartenAnzahl ?? 0);
+          this.renderTisch(this.letzterZustand ?? appStore.snapshot());
+        }
+      });
+      return;
+    }
+
+    if (offen && k && !istInt && istWiederverwendet) {
+      // Reusierter Sprite war vorher interaktiv — Zustand zurücksetzen.
+      if (kA.active && kA.scene && kA.input?.enabled) {
+        try {
+          kA.disableInteractive();
           kA.removeAllListeners?.('pointerover');
           kA.removeAllListeners?.('pointerout');
           kA.removeAllListeners?.('pointerdown');
+        } catch (e) {
+          console.warn('[TischSzene] Fehler beim Deaktivieren der Interaktion', e);
         }
-        kA.setInteractive({ useHandCursor: true });
-        kA.on('pointerdown', () => { void appStore.meldeVorbehalt(aktuellerVorbehalt); });
       }
     }
   }
@@ -1630,22 +1684,17 @@ export class TischSzene extends Phaser.Scene {
 
   private aktualisiereHintergrund(bg: Tischhintergrund, b: number, h: number): void {
     const tex = texturFuerTischhintergrund(bg);
-    console.log(`[TischSzene] aktualisiereHintergrund: bg=${bg}, tex=${tex}, istBild=${istBildHintergrund(bg)}`);
     if (istBildHintergrund(bg)) {
       if (this.hintergrund instanceof Phaser.GameObjects.Image && this.hintergrund.texture.key === tex) { 
-        console.log(`[TischSzene] Nutze existierendes Image`);
         this.hintergrund.setPosition(b / 2, h / 2).setDisplaySize(b, h); 
         return; 
       }
-      console.log(`[TischSzene] Erstelle neues Image für ${tex}`);
       this.hintergrund?.destroy(); this.hintergrund = this.add.image(b / 2, h / 2, tex).setDisplaySize(b, h).setDepth(0);
     } else {
       if (this.hintergrund instanceof Phaser.GameObjects.TileSprite && this.hintergrund.texture.key === tex) { 
-        console.log(`[TischSzene] Nutze existierendes TileSprite`);
         this.hintergrund.setPosition(b / 2, h / 2).setSize(b, h); 
         return; 
       }
-      console.log(`[TischSzene] Erstelle neues TileSprite für ${tex}`);
       this.hintergrund?.destroy(); this.hintergrund = this.add.tileSprite(b / 2, h / 2, b, h, tex).setDepth(0);
     }
   }
@@ -1665,7 +1714,7 @@ export class TischSzene extends Phaser.Scene {
       // Beim Eintritt in die Vorbehalt-Phase: GESUND vorbelegen
       const gesundIdx = m.moeglicheVorbehalte.indexOf('GESUND');
       this.tastaturVorbehaltIndex = gesundIdx >= 0 ? gesundIdx : 0;
-    } else if (!hatVorbehalt) {
+    } else if (!hatteVorbehalt) {
       this.tastaturVorbehaltIndex = 0;
     }
   }
@@ -1681,6 +1730,11 @@ export class TischSzene extends Phaser.Scene {
   }
 
   private aufraeumen(): void {
+    // Timer sofort stoppen — bevor anderer Cleanup eine Exception werfen kann
+    if (this.partieCountdownInterval !== undefined) {
+      clearInterval(this.partieCountdownInterval);
+      this.partieCountdownInterval = undefined;
+    }
     this.scale.off(Phaser.Scale.Events.RESIZE, this.handleResize, this);
     this.inputHandler?.aufraeumen();
     if (this.escapeHandler) document.removeEventListener('keydown', this.escapeHandler);

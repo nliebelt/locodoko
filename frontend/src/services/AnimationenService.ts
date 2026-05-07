@@ -402,7 +402,7 @@ export class AnimationenService {
    async animiereStichEinziehen(
      kartenobjekte: AnimierbareKartenobjekte[],
      ziel: Punkt,
-     augenzahl: number,
+     _augenzahl: number,
      flashObjekt?: Phaser.GameObjects.GameObject,
      wartezeit = 1000,
      dauer = 600
@@ -413,11 +413,11 @@ export class AnimationenService {
      await this.warte(wartezeit);
 
      if (flashObjekt) {
-       // Nameplate-Flash am Gewinner
+       // Nameplate-Flash am Gewinner — fire-and-forget, läuft parallel zur Einzieh-Animation
        void this.tweenAlpha(flashObjekt, 1, 200).then(async () => {
          await this.warte(200);
          await this.tweenAlpha(flashObjekt, 0, 200);
-       });
+       }).catch(() => { /* Objekt wurde zerstört bevor Tween abschloss */ });
      }
 
      // Alle Karten gleichzeitig zum Ziel bewegen und dabei verkleinern
@@ -431,23 +431,6 @@ export class AnimationenService {
      });
 
      await Promise.all(animationen);
-
-     // "+X Augen" Popup am Ziel einblenden
-     const popup = this.szene.add.text(ziel.x, ziel.y - 40, `+${augenzahl} Augen`, {
-       fontFamily: FONT_FAMILY,
-       fontSize: '18px',
-       color: '#ffd166',
-       stroke: '#000000',
-       strokeThickness: 4
-     }).setOrigin(0.5).setDepth(200).setAlpha(0);
-
-     try {
-       await this.tweenAlpha(popup, 1, 200);
-       await this.tweenZu([popup], { x: ziel.x, y: ziel.y - 80 }, 800);
-       await this.tweenAlpha(popup, 0, 300);
-     } finally {
-       popup.destroy();
-     }
    }
   // Zentraler Promise-Wrapper für alle Phaser-Tweens — Warum: tweenAlpha/tweenZu/tweenScale
   // teilten identische Registrierungs- und Cleanup-Logik; hier statt dreifach dupliziert.

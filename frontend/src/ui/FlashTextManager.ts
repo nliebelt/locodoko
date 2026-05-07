@@ -42,18 +42,18 @@ export class FlashTextManager {
     this.szene = szene;
   }
 
-  zeigeSpielevent(event: SpieleventTyp, payload: SpieleventPayload = {}): void {
+  async zeigeSpielevent(event: SpieleventTyp, payload: SpieleventPayload = {}): Promise<void> {
     switch (event) {
-      case 'SpielGestartet':            this.spielGestartet(); break;
-      case 'NaechsterSpielerErwartet':  this.naechsterSpielerErwartet(payload.spielerName ?? ''); break;
-      case 'VorbehaltErwartet':         this.vorbehaltErwartet(); break;
-      case 'StichAbgeschlossen':        this.stichAbgeschlossen(payload.punkte ?? 1, payload.x, payload.y); break;
-      case 'SchweinchenGemeldet':       this.schweinchenGemeldet(payload.spielerName); break;
-      case 'FuchsGefangen':             this.fuchsGefangen(payload.spielerName); break;
-      case 'KarlchenGespielt':          this.karlchenGespielt(payload.spielerName); break;
-      case 'DoppelkopfGestochen':       this.doppelkopfGestochen(); break;
-      case 'HochzeitPartnerGefunden':   this.hochzeitPartnerGefunden(payload.spielerName); break;
-      case 'SpielBeendet':              this.spielBeendet(); break;
+      case 'SpielGestartet':            await this.spielGestartet(); break;
+      case 'NaechsterSpielerErwartet':  await this.naechsterSpielerErwartet(payload.spielerName ?? ''); break;
+      case 'VorbehaltErwartet':         await this.vorbehaltErwartet(); break;
+      case 'StichAbgeschlossen':        await this.stichAbgeschlossen(payload.punkte ?? 1, payload.x, payload.y); break;
+      case 'SchweinchenGemeldet':       await this.schweinchenGemeldet(payload.spielerName, payload.x, payload.y); break;
+      case 'FuchsGefangen':             await this.fuchsGefangen(payload.spielerName, payload.x, payload.y); break;
+      case 'KarlchenGespielt':          await this.karlchenGespielt(payload.spielerName, payload.x, payload.y); break;
+      case 'DoppelkopfGestochen':       await this.doppelkopfGestochen(payload.x, payload.y); break;
+      case 'HochzeitPartnerGefunden':   await this.hochzeitPartnerGefunden(payload.spielerName, payload.x, payload.y); break;
+      case 'SpielBeendet':              await this.spielBeendet(); break;
     }
   }
 
@@ -99,23 +99,30 @@ export class FlashTextManager {
     return container;
   }
 
-  private verwalteMitTimeout(obj: Phaser.GameObjects.GameObject, ms: number): void {
+  private async verwalteMitTimeout(obj: Phaser.GameObjects.GameObject, ms: number): Promise<void> {
     this.verwalteteObjekte.push(obj);
-    const timer = this.szene.time.delayedCall(ms, () => {
-      this.szene.tweens.add({
-        targets: obj,
-        alpha: 0,
-        duration: 200,
-        onComplete: () => {
-          if ((obj as unknown as { active: boolean }).active) {
-            (obj as unknown as { destroy: (children?: boolean) => void }).destroy(true);
-          }
-        },
+    return new Promise((resolve) => {
+      const timer = this.szene.time.delayedCall(ms, () => {
+        if (!(obj as unknown as { active: boolean }).active) {
+          resolve();
+          return;
+        }
+        this.szene.tweens.add({
+          targets: obj,
+          alpha: 0,
+          duration: 200,
+          onComplete: () => {
+            if ((obj as unknown as { active: boolean }).active) {
+              (obj as unknown as { destroy: (children?: boolean) => void }).destroy(true);
+            }
+            resolve();
+          },
+        });
+        const idx = this.verwalteteObjekte.indexOf(obj);
+        if (idx !== -1) this.verwalteteObjekte.splice(idx, 1);
       });
-      const idx = this.verwalteteObjekte.indexOf(obj);
-      if (idx !== -1) this.verwalteteObjekte.splice(idx, 1);
+      this.verwalteteTimers.push(timer);
     });
-    this.verwalteteTimers.push(timer);
   }
 
   konfetti(x: number, y: number, menge: number, farben = [0xffd700, 0xff88ff, 0x44ffee, 0xff8833]): void {
@@ -176,7 +183,7 @@ export class FlashTextManager {
 
   // ── 9 Events ──
 
-  private spielGestartet(): void {
+  private async spielGestartet(): Promise<void> {
     const container = this.erstelleKartenContainer(this.cx(), this.cy(), FARBE_CYAN, 260, 105);
     const t1 = this.szene.add.text(0, -28, 'SPIEL', {
       fontFamily: FONT_FAMILY_FALLBACK, fontSize: `${FONT_XS}px`, color: FARBE_CYAN_CSS,
@@ -190,10 +197,10 @@ export class FlashTextManager {
     container.add([t1, t2, t3]);
     container.setScale(0, 1);
     this.szene.tweens.add({ targets: container, scaleX: 1, ease: 'Back.Out', duration: 380 });
-    this.verwalteMitTimeout(container, 2500);
+    await this.verwalteMitTimeout(container, 2500);
   }
 
-  private naechsterSpielerErwartet(spielerName: string): void {
+  private async naechsterSpielerErwartet(spielerName: string): Promise<void> {
     const container = this.erstelleKartenContainer(this.cx(), this.cy() * 0.38, FARBE_BLAU, 270, 80);
     const t1 = this.szene.add.text(0, -15, 'AM ZUG', {
       fontFamily: FONT_FAMILY_FALLBACK, fontSize: `${FONT_XS}px`, color: TEXT_GEDAEMPFT_CSS,
@@ -209,10 +216,10 @@ export class FlashTextManager {
       ease: 'Back.Out',
       duration: 400,
     });
-    this.verwalteMitTimeout(container, 2000);
+    await this.verwalteMitTimeout(container, 2000);
   }
 
-  private vorbehaltErwartet(): void {
+  private async vorbehaltErwartet(): Promise<void> {
     this.stoppeVorbehaltAnimation();
     const container = this.erstelleKartenContainer(this.cx(), this.cy() * 0.35, FARBE_BLAU, 280, 82);
     const t1 = this.szene.add.text(0, -12, 'VORBEHALT?', {
@@ -231,34 +238,40 @@ export class FlashTextManager {
       ease: 'Sine.InOut', delay: 500,
     });
     this.vorbehaltContainer = container;
+    return Promise.resolve();
   }
 
-  private stichAbgeschlossen(punkte: number, x?: number, y?: number): void {
+  private async stichAbgeschlossen(punkte: number, x?: number, y?: number): Promise<void> {
     const posX = x ?? this.cx();
     const posY = y ?? this.cy() + 20;
     const text = this.szene.add.text(posX, posY, `+${punkte}`, {
       fontFamily: FONT_FAMILY_FALLBACK, fontSize: `${FONT_XL}px`, color: FARBE_GRUEN_CSS,
       stroke: '#006633', strokeThickness: 4,
     }).setOrigin(0.5).setDepth(51).setAlpha(0).setScale(0.6);
-    this.szene.tweens.add({
-      targets: text,
-      y: posY - 60,
-      scaleX: [0.6, 1.15, 1], scaleY: [0.6, 1.15, 1],
-      alpha: { from: 0, to: 1 }, ease: 'Back.Out', duration: 360,
-      onComplete: () => {
-        this.szene.tweens.add({
-          targets: text, alpha: 0, delay: 800, duration: 300,
-          onComplete: () => {
-            if ((text as unknown as { active: boolean }).active) text.destroy();
-          },
-        });
-      },
+    
+    return new Promise((resolve) => {
+      this.szene.tweens.add({
+        targets: text,
+        y: posY - 60,
+        scaleX: [0.6, 1.15, 1], scaleY: [0.6, 1.15, 1],
+        alpha: { from: 0, to: 1 }, ease: 'Back.Out', duration: 360,
+        onComplete: () => {
+          this.szene.tweens.add({
+            targets: text, alpha: 0, delay: 800, duration: 300,
+            onComplete: () => {
+              if ((text as unknown as { active: boolean }).active) text.destroy();
+              resolve();
+            },
+          });
+        },
+      });
+      this.verwalteteObjekte.push(text);
     });
-    this.verwalteteObjekte.push(text);
   }
 
-  private schweinchenGemeldet(spielerName?: string): void {
-    const container = this.erstelleKartenContainer(this.cx(), this.cy(), FARBE_PINK, 290, 115);
+  private async schweinchenGemeldet(spielerName?: string, x?: number, y?: number): Promise<void> {
+    const posX = x ?? this.cx(), posY = y ?? this.cy();
+    const container = this.erstelleKartenContainer(posX, posY, FARBE_PINK, 290, 115);
     const emoji = this.szene.add.text(0, -32, '🐷', { fontSize: '34px' }).setOrigin(0.5);
     const t1 = this.szene.add.text(0, 14, 'SCHWEINCHEN!', {
       fontFamily: FONT_FAMILY_FALLBACK, fontSize: `${FONT_SM}px`, color: FARBE_PINK_CSS,
@@ -276,14 +289,15 @@ export class FlashTextManager {
       scaleX: [0, 1.25, 0.9, 1.08, 1], scaleY: [0, 1.25, 0.9, 1.08, 1],
       angle: [-30, 10, -4, 2, 0], ease: 'Back.Out', duration: 600,
     });
-    this.shockwaveRing(this.cx(), this.cy(), FARBE_PINK, 0);
-    this.shockwaveRing(this.cx(), this.cy(), FARBE_PINK, 100);
+    this.shockwaveRing(posX, posY, FARBE_PINK, 0);
+    this.shockwaveRing(posX, posY, FARBE_PINK, 100);
     this.screenShake();
-    this.verwalteMitTimeout(container, 2500);
+    await this.verwalteMitTimeout(container, 2500);
   }
 
-  private fuchsGefangen(spielerName?: string): void {
-    const container = this.erstelleKartenContainer(this.cx(), this.cy(), FARBE_ORANGE, 330, 100);
+  private async fuchsGefangen(spielerName?: string, x?: number, y?: number): Promise<void> {
+    const posX = x ?? this.cx(), posY = y ?? this.cy();
+    const container = this.erstelleKartenContainer(posX, posY, FARBE_ORANGE, 330, 100);
     const buchstaben = 'FUCHS'.split('');
     const letterBreite = 38;
     const startX = -(buchstaben.length - 1) * letterBreite / 2;
@@ -308,13 +322,14 @@ export class FlashTextManager {
       fontFamily: FONT_FAMILY_FALLBACK, fontSize: `${FONT_XS}px`, color: TEXT_GEDAEMPFT_CSS,
     }).setOrigin(0.5);
     container.add(sub);
-    this.konfetti(this.cx(), this.cy(), 40, [0xff8833, 0xffd700, 0xffffff, 0xff5500]);
+    this.konfetti(posX, posY, 40, [0xff8833, 0xffd700, 0xffffff, 0xff5500]);
     this.screenShake();
-    this.verwalteMitTimeout(container, 2500);
+    await this.verwalteMitTimeout(container, 2500);
   }
 
-  private karlchenGespielt(spielerName?: string): void {
-    const container = this.erstelleKartenContainer(this.cx(), this.cy(), FARBE_GOLD, 290, 105);
+  private async karlchenGespielt(spielerName?: string, x?: number, y?: number): Promise<void> {
+    const posX = x ?? this.cx(), posY = y ?? this.cy();
+    const container = this.erstelleKartenContainer(posX, posY, FARBE_GOLD, 290, 105);
     const t1 = this.szene.add.text(0, -20, 'KARLCHEN', {
       fontFamily: FONT_FAMILY_FALLBACK, fontSize: `${FONT_LG}px`, color: FARBE_GOLD_CSS,
       stroke: '#7a5000', strokeThickness: 4,
@@ -328,17 +343,17 @@ export class FlashTextManager {
     this.szene.tweens.add({
       targets: container,
       scaleX: [0, 1.25, 0.9, 1.08, 1], scaleY: [0, 1.25, 0.9, 1.08, 1],
-      angle: [-30, 10, -4, 2, 0], ease: 'Back.Out', duration: 560,
+      angle: [-30, 10, -4, 2, 0], ease: 'Back.Out', duration: 600,
     });
-    this.shockwaveRing(this.cx(), this.cy(), FARBE_GOLD, 0);
-    this.shockwaveRing(this.cx(), this.cy(), FARBE_GOLD, 100);
+    this.shockwaveRing(posX, posY, FARBE_GOLD, 0);
+    this.shockwaveRing(posX, posY, FARBE_GOLD, 100);
     this.szene.cameras.main.shake(300, 0.006);
-    this.verwalteMitTimeout(container, 2500);
+    await this.verwalteMitTimeout(container, 2500);
   }
 
-  private doppelkopfGestochen(): void {
-    const cx = this.cx(), cy = this.cy();
-    const container = this.szene.add.container(cx, cy);
+  private async doppelkopfGestochen(x?: number, y?: number): Promise<void> {
+    const posX = x ?? this.cx(), posY = y ?? this.cy();
+    const container = this.szene.add.container(posX, posY);
     container.setDepth(50);
     const bg = this.szene.add.graphics();
     bg.fillStyle(CARD_BG_DARK, 0.95);
@@ -357,28 +372,31 @@ export class FlashTextManager {
     container.setScale(5, 5);
     container.setAlpha(0);
     this.szene.tweens.add({ targets: container, scaleX: 1, scaleY: 1, alpha: 1, ease: 'Expo.Out', duration: 580 });
-    this.shockwaveRing(cx, cy, FARBE_GOLD, 0);
-    this.shockwaveRing(cx, cy, FARBE_GOLD, 100);
-    this.shockwaveRing(cx, cy, FARBE_GOLD, 200);
-    this.konfetti(cx, cy, 70, [0xffd700, 0xff88ff, 0x44ffee, 0xff8833, 0xffffff]);
+    this.shockwaveRing(posX, posY, FARBE_GOLD, 0);
+    this.shockwaveRing(posX, posY, FARBE_GOLD, 100);
+    this.shockwaveRing(posX, posY, FARBE_GOLD, 200);
+    this.konfetti(posX, posY, 70, [0xffd700, 0xff88ff, 0x44ffee, 0xff8833, 0xffffff]);
     this.cameraFlash(255, 215, 0, 300);
     this.szene.cameras.main.shake(400, 0.01);
     this.verwalteteObjekte.push(container);
-    const destroyTimer = this.szene.time.delayedCall(3500, () => {
-      foilTimer.remove(false);
-      this.szene.tweens.add({
-        targets: container, alpha: 0, duration: 200,
-        onComplete: () => {
-          if ((container as unknown as { active: boolean }).active) container.destroy(true);
-        },
+    return new Promise((resolve) => {
+      const destroyTimer = this.szene.time.delayedCall(3500, () => {
+        foilTimer.remove(false);
+        this.szene.tweens.add({
+          targets: container, alpha: 0, duration: 200,
+          onComplete: () => {
+            if ((container as unknown as { active: boolean }).active) container.destroy(true);
+            resolve();
+          },
+        });
       });
+      this.verwalteteTimers.push(destroyTimer);
     });
-    this.verwalteteTimers.push(destroyTimer);
   }
 
-  private hochzeitPartnerGefunden(partnerName?: string): void {
-    const cx = this.cx(), cy = this.cy();
-    const container = this.szene.add.container(cx, cy);
+  private async hochzeitPartnerGefunden(partnerName?: string, x?: number, y?: number): Promise<void> {
+    const posX = x ?? this.cx(), posY = y ?? this.cy();
+    const container = this.szene.add.container(posX, posY);
     container.setDepth(50);
     const bg = this.szene.add.graphics();
     bg.fillStyle(CARD_BG_DARK, 0.95);
@@ -404,24 +422,27 @@ export class FlashTextManager {
       scaleX: [0, 1.25, 0.9, 1.08, 1], scaleY: [0, 1.25, 0.9, 1.08, 1],
       angle: [-30, 10, -4, 2, 0], ease: 'Back.Out', duration: 600,
     });
-    this.shockwaveRing(cx, cy, FARBE_GOLD, 0);
-    this.shockwaveRing(cx, cy, FARBE_GOLD, 150);
-    this.konfetti(cx, cy, 60, [0xffd700, 0xffaacc, 0xffffff, 0xff88ff]);
+    this.shockwaveRing(posX, posY, FARBE_GOLD, 0);
+    this.shockwaveRing(posX, posY, FARBE_GOLD, 150);
+    this.konfetti(posX, posY, 60, [0xffd700, 0xffaacc, 0xffffff, 0xff88ff]);
     this.cameraFlash(255, 215, 0, 200);
     this.verwalteteObjekte.push(container);
-    const destroyTimer = this.szene.time.delayedCall(3000, () => {
-      foilTimer.remove(false);
-      this.szene.tweens.add({
-        targets: container, alpha: 0, duration: 200,
-        onComplete: () => {
-          if ((container as unknown as { active: boolean }).active) container.destroy(true);
-        },
+    return new Promise((resolve) => {
+      const destroyTimer = this.szene.time.delayedCall(3000, () => {
+        foilTimer.remove(false);
+        this.szene.tweens.add({
+          targets: container, alpha: 0, duration: 200,
+          onComplete: () => {
+            if ((container as unknown as { active: boolean }).active) container.destroy(true);
+            resolve();
+          },
+        });
       });
+      this.verwalteteTimers.push(destroyTimer);
     });
-    this.verwalteteTimers.push(destroyTimer);
   }
 
-  private spielBeendet(): void {
+  private async spielBeendet(): Promise<void> {
     const cx = this.cx(), cy = this.cy();
     const container = this.szene.add.container(cx, cy);
     container.setDepth(50);
@@ -447,15 +468,18 @@ export class FlashTextManager {
     this.cameraFlash(100, 255, 150, 400);
     this.szene.cameras.main.shake(500, 0.012);
     this.verwalteteObjekte.push(container);
-    const destroyTimer = this.szene.time.delayedCall(4000, () => {
-      foilTimer.remove(false);
-      this.szene.tweens.add({
-        targets: container, alpha: 0, duration: 200,
-        onComplete: () => {
-          if ((container as unknown as { active: boolean }).active) container.destroy(true);
-        },
+    return new Promise((resolve) => {
+      const destroyTimer = this.szene.time.delayedCall(4000, () => {
+        foilTimer.remove(false);
+        this.szene.tweens.add({
+          targets: container, alpha: 0, duration: 200,
+          onComplete: () => {
+            if ((container as unknown as { active: boolean }).active) container.destroy(true);
+            resolve();
+          },
+        });
       });
+      this.verwalteteTimers.push(destroyTimer);
     });
-    this.verwalteteTimers.push(destroyTimer);
   }
 }

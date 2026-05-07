@@ -672,7 +672,7 @@ describe('AppStore', () => {
         partieVersionBeimListenerAufruf = store.snapshot().partieStand?.version ?? -1;
       }
     });
-    store.abonnieren((z) => {
+    store.abonniere((z) => {
       if (z.partieStand?.version === 1) {
         aufrufReihenfolge.push('store-subscriber');
       }

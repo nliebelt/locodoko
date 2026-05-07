@@ -224,8 +224,8 @@ Render-Methoden bleiben unverändert.
 - [x] `renderVorbehaltLabel()` implementiert (Text, Pfeile, Positions-Indikator)
 - [x] Klick auf Karte im Vorbehalt-Modus bestätigt die aktuelle Auswahl
 - [x] Vorbelegung auf `GESUND`-Index korrekt
-- [ ] `specs/frontend-tastatursteuerung.md` aktualisiert (Vorbehalt-Sektion)
-- [ ] `renderHand()` auf Reconciliation-Pattern umgestellt (stabile Karten-Referenzen)
-- [ ] Animierter Vorbehalt-Wechsel implementiert (Y + X Tweens, ~150–200 ms)
-- [ ] Tween-Abbruch bei WebSocket-Update während Animation
+- [x] `specs/frontend-tastatursteuerung.md` aktualisiert (Vorbehalt-Sektion)
+- [x] `renderHand()` auf Reconciliation-Pattern umgestellt (stabile Karten-Referenzen via `persistenteEigeneKarten`-Map + `gleiteZu()`)
+- [x] Animierter Vorbehalt-Wechsel implementiert (Y + X Tweens, 150 ms, via `Kartenansicht.gleiteZu()`)
+- [x] Tween-Abbruch bei WebSocket-Update während Animation (`killTweensOf` in `gleiteZu()` + Re-Render bei jedem Update)
 - [ ] Vision Loop (Playwright headed) bestätigt korrektes visuelles Ergebnis

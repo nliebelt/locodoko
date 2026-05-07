@@ -165,6 +165,23 @@ export class Kartenansicht extends Phaser.GameObjects.Container {
     return this;
   }
 
+  gleiteZu(x: number, y: number, dauer = 150): this {
+    if (this.x === x && this.y === y) return this;
+    
+    // Unterbricht laufende Positions-Tweens fuer dieses Objekt
+    this.scene.tweens.killTweensOf(this);
+    
+    this.scene.tweens.add({
+      targets: this,
+      x: x,
+      y: y,
+      duration: dauer,
+      ease: 'Cubic.Out'
+    });
+    
+    return this;
+  }
+
   private zeichneMarkierung(farbe: number): void {
     const breite = this.width;
     const hoehe = this.height;

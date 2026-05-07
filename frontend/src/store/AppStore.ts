@@ -61,7 +61,9 @@ export interface AppZustand {
   spielProtokollEintraege: SpielprotokollEintrag[];
 }
 
-type Listener = (zustand: AppZustand) => void;
+export type PartieEreignisListener = (ereignis: PartieEreignisAntwort) => void | Promise<void>;
+export type SonderpunkteListener = (ereignis: SonderpunktEreignisAntwortDto[]) => void;
+export type StoreAbo = (zustand: AppZustand) => void;
 
 function erzeugeAnfangszustand(): AppZustand {
   return {
@@ -89,17 +91,18 @@ function erzeugeAnfangszustand(): AppZustand {
  */
 export class AppStore {
   private zustand: AppZustand = erzeugeAnfangszustand();
-  private readonly listener = new Set<Listener>();
+  private readonly listener = new Set<StoreAbo>();
   private readonly gemeinsameAbos: Array<() => void> = [];
   private tischAbos: Array<() => void> = [];
   private aktuellePartieAbo: Uuid | null = null;
   private _letztePartieVersion = -1;
-  private readonly _sonderpunkteListener = new Set<(sonderpunkte: SonderpunktEreignisAntwortDto[]) => void>();
-  private readonly _eventListener = new Set<(ereignis: PartieEreignisAntwort) => void>();
+  private readonly _sonderpunkteListener = new Set<SonderpunkteListener>();
+  private readonly _eventListener = new Set<PartieEreignisListener>();
   private _eventQueue: PartieEreignisAntwort[] = [];
   private _verarbeiteEventLaeuft = false;
   private _queuePausiert = false;
   private _aktuelleSequenzId = 0;
+  private _queueGeneration = 0;
   private _verpassterSpielBeendet: PartieEreignisAntwort | null = null;
 
   /**
@@ -135,17 +138,23 @@ export class AppStore {
 
   /**
    * Abonniert Partie-Ereignisse.
-   * @param listener Callback-Funktion, die bei Eintreffen eines Ereignisses aufgerufen wird.
-   * @returns Eine Funktion zur Abmeldung des Listeners.
+   * Der Listener kann ein Promise zurueckgeben, um die Queue-Verarbeitung zu pausieren
+   * (Sequential Processing Pattern).
    */
-  abonniereEvents(listener: (ereignis: PartieEreignisAntwort) => void): () => void {
+  abonniereEvents(listener: PartieEreignisListener): () => void {
     this._eventListener.add(listener);
     if (this._verpassterSpielBeendet) {
       const verpasst = this._verpassterSpielBeendet;
       this._verpassterSpielBeendet = null;
-      void Promise.resolve().then(() => listener(verpasst));
+      void Promise.resolve().then(async () => {
+        const res = listener(verpasst);
+        if (res instanceof Promise) await res;
+      });
     }
-    return () => this._eventListener.delete(listener);
+    return () => {
+      this._eventListener.delete(listener);
+      if (this._eventListener.size === 0) this._verpassterSpielBeendet = null;
+    };
   }
 
   /**
@@ -153,7 +162,7 @@ export class AppStore {
    * @param listener Callback-Funktion, die bei neuen Sonderpunkten aufgerufen wird.
    * @returns Eine Funktion zur Abmeldung des Listeners.
    */
-  abonniereSonderpunkte(listener: (sonderpunkte: SonderpunktEreignisAntwortDto[]) => void): () => void {
+  abonniereSonderpunkte(listener: SonderpunkteListener): () => void {
     this._sonderpunkteListener.add(listener);
     return () => this._sonderpunkteListener.delete(listener);
   }
@@ -170,7 +179,7 @@ export class AppStore {
    * @param listener Callback-Funktion, die bei jeder Zustandsänderung aufgerufen wird.
    * @returns Eine Funktion zur Abmeldung des Listeners.
    */
-  abonnieren(listener: Listener): () => void {
+  abonniere(listener: StoreAbo): () => void {
     this.listener.add(listener);
     listener(this.snapshot());
     return () => this.listener.delete(listener);
@@ -612,7 +621,7 @@ export class AppStore {
   }
 
   private async _verarbeiteEventQueue(): Promise<void> {
-    if (this._verarbeiteEventLaeuft) return;
+    if (this._verarbeiteEventLaeuft || this._queuePausiert) return;
     this._verarbeiteEventLaeuft = true;
     try {
       while (this._eventQueue.length > 0 && !this._queuePausiert) {
@@ -627,10 +636,11 @@ export class AppStore {
           }
         }
         
-        // Erneut checken, ob in der Zwischenzeit pausiert wurde
-        if (this._queuePausiert) break;
-        
-        const ereignis = this._eventQueue.shift()!;
+        // Erneut checken, ob in der Zwischenzeit pausiert wurde oder Queue geleert wurde
+        if (this._queuePausiert || this._eventQueue.length === 0) break;
+
+        const ereignis = this._eventQueue.shift();
+        if (!ereignis) break;;
 
         if (!this._darfPartieStandAktualisieren(ereignis.partieStand, ereignis.version)) {
           Logger.websocket('Ignoriere veraltetes PartieEreignis', {
@@ -657,34 +667,29 @@ export class AppStore {
         // kiVerzoegerungMs = 0 deaktiviert den Delay (z.B. in E2E-Tests).
         if (ereignis.ereignisTyp === 'KARTE_GESPIELT' && this.zustand.uiKonfiguration.kiVerzoegerungMs > 0) {
           const spielerImSpiel = this.zustand.partieStand?.laufendesSpiel?.spieler ?? [];
-          const istKiZug = spielerImSpiel.find(s => s.position === ereignis.spielerPosition)?.istKi ?? false;
-          const hatMenschlicheSpieler = spielerImSpiel.some(s => !s.istKi);
+          const istKiZug = spielerImSpiel.find(s => s.position === (ereignis as KarteGespieltEreignis).spielerPosition)?.istKi ?? false;
+          const hatMenschlicheSpieler = this.zustand.aktuellerTisch?.spieler.some(s => !s.istKi);
           if (istKiZug && hatMenschlicheSpieler) {
+            const generationVorDelay = this._queueGeneration;
             await new Promise<void>((r) => setTimeout(r, this.zustand.uiKonfiguration.kiVerzoegerungMs));
-            if (this._queuePausiert) break;
+            if (this._queuePausiert || this._queueGeneration !== generationVorDelay) break;
           }
         }
 
         // Event-Listener ZUERST aufrufen, bevor der State gepatcht wird.
-        // Listener koennen dabei Animationen einreihen (reiheEin → _animationLaeuft = true),
-        // sodass der anschliessende State-Patch keinen vorzeitigen Render ausloest.
-        // Neuer Contract: Listener duerfen sich NICHT auf appStore.snapshot() verlassen,
-        // sondern muessen ereignis.partieStand direkt verwenden (falls benoetigt).
-        // Exception-Handling: Listener-Fehler duerfen den State-Patch nicht verhindern.
+        // FUEHRT Sequential Processing Pattern gemaess Requirement 30 aus.
         try {
-          this._eventListener.forEach((l) => l(ereignis));
+          for (const l of this._eventListener) {
+            const res = l(ereignis);
+            if (res instanceof Promise) await res;
+          }
         } catch (e) {
           Logger.error('Event-Listener hat einen Fehler geworfen', e);
         }
 
-        // State NACH den Listenern patchen
-        // AUSNAHME: Bei KARTE_GESPIELT und STICH_ABGESCHLOSSEN regelt der case-Block das Patching selbst (hint-then-patch).
+        // State NACH den Listenern patchen (Animationen sollten nun fertig sein)
         const prevStand = this.zustand.partieStand;
         if (ereignis.partieStand && ereignis.ereignisTyp !== 'KARTE_GESPIELT' && ereignis.ereignisTyp !== 'STICH_ABGESCHLOSSEN') {
-          // Spezieller Fix für SPIEL_BEENDET gefolgt von SPIEL_GESTARTET (Rundenauswertung wird sofort geschlossen).
-          // Wir warten kurz, ob noch Animationen eingereiht wurden, bevor wir den State überschreiben.
-          // In Zukunft sollte der AppStore eine Referenz auf den AnimationenService bekommen, um auf dessen
-          // Queue zu warten.
           this.patch({ partieStand: ereignis.partieStand });
         }
         switch (ereignis.ereignisTyp) {
@@ -754,7 +759,7 @@ export class AppStore {
 
   private _synthetischerKarteGespielt(prevStand: PartieStandAntwort, ereignis: KarteGespieltEreignis): PartieStandAntwort {
     if (!prevStand.laufendesSpiel || !ereignis.partieStand.laufendesSpiel) return prevStand;
-    const kartenInMitte = [...prevStand.laufendesSpiel.aktuelleStichmitte];
+    const kartenInMitte = [...(prevStand.laufendesSpiel.aktuelleStichmitte ?? [])];
     const maxReihenfolge = kartenInMitte.reduce((max, k) => Math.max(max, k.reihenfolge ?? 0), 0);
     if (!kartenInMitte.some(k => k.spielerPosition === ereignis.spielerPosition)) {
       const [farbe, wert, idx] = ereignis.karteId.split('-');
@@ -797,6 +802,7 @@ export class AppStore {
     this.aktuellePartieAbo = null;
     this._letztePartieVersion = -1;
     this._aktuelleSequenzId++; // Invalidiert laufende KI-Animationen
+    this._queueGeneration++; // Bricht in-flight KI-Delays ab (Reconnect/Reset-Schutz)
     this._eventQueue.length = 0;
     this._verarbeiteEventLaeuft = false;
     this._queuePausiert = false;

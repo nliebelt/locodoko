@@ -1,10 +1,14 @@
-# IMPLEMENTATION_PLAN — Plan-Run #114
+# IMPLEMENTATION_PLAN — Plan-Run #115
 
-> Stand: 2026-05-06. Fokus: Task 29 erledigt — KiEventAdapter gelöscht.
+> Stand: 2026-05-06. Fokus: P9 — Frontend-Animationsfixes + Vorbehalt-Animationen in Arbeit.
 
 ## Notiz
 
 **Was wurde implementiert?**
+- Task 31–32 (FIX-ANIMATION-POSITIONS): Drei Positions-Bugs in `TischSzene.ts` behoben: `KARTE_GESPIELT` und `HOCHZEIT_PARTNER_GEFUNDEN` verglichen relative statt absolute Spielerposition; `animiereGegnerKarte` bekam absolute statt relative Position übergeben → Gegnerkarten wurden gar nicht oder am falschen Slot animiert.
+- Task 33 (FIX-RENDER-GUARDS): `stichEinziehenAktiv` in `triggerRender()`-Guard ergänzt; `partieCountdownInterval` wird jetzt am Anfang von `aufraeumen()` gestoppt (Exception-sicher); AppStore Event-Queue `shift()` nach Quiescence-Wait abgesichert; `_verpassterSpielBeendet` wird beim Abmelden des letzten Listeners geleert.
+- Task 34 (FIX-PROMISE-HANDLING): Fire-and-forget Promises in `AnimationenService.ts` und `TischSzene.ts` mit `.catch()` versehen.
+- Task 35 (REFACTOR-RENDER-KARTEN): `renderKartenFaecher()` (115 Zeilen, zyklom. Komplexität ~14) in drei Methoden aufgeteilt: `bereinigePersistenteEigeneKarten`, `erstelleOderAktualisiereKartenSprite`, `setzeKartenInteraktion`.
 - Task 29 (REFACTOR-KI-ADAPTER-CLEANUP): `KiEventAdapter.java` gelöscht. War leere Stub-Klasse ohne Referenzen. `mvn test` grün (307 Tests).
 - Task 28 (DOC-SPEC-UPDATES): `spieler-session.md` auf BCrypt/Passwort aktualisiert. `architektur-domain-events.md`: KiEventAdapter → KiTischOrchestrator, SpielBeendet-Produzent korrigiert, KI_ZUG_SEQUENZ entfernt, AKTION_ABGELEHNT ergänzt, PartieEreignisBatch auf „Implementiert" gesetzt.
 - Task 30 (FIX-ESLINT-ANY): `no-explicit-any` als ESLint-Regel aktiviert. Alle 7 `as any`-Casts im Produktionscode durch korrekte Phaser-Typen (`cameras.main.shake/flash`, `add.particles`) und typisiertes Window-Interface ersetzt. 104 Tests grün, Build und Lint sauber.
@@ -156,6 +160,40 @@ Vollständiger Codebase-Scan abgeschlossen. Wesentliche Befunde:
 
 ---
 
+## P9 — Neu entdeckte Aufgaben (Plan-Run #115)
+
+### FIX-ANIMATION-POSITIONS (Tasks 31–32)
+- [x] **Frontend**: Drei Positions-Bugs in `TischSzene.ts` behoben:
+  - `KARTE_GESPIELT` (Zeile 421): `eigPos` (relativ) → `eigAbsPos` (absolut) für Vergleich
+  - `animiereGegnerKarte` (Zeile 426): absolute `e.spielerPosition` → relative `relPos` für Layout/Slot-Lookup
+  - `HOCHZEIT_PARTNER_GEFUNDEN` (Zeile 474): `s.position` → `s.absolutePosition` für Partner-Name
+
+### FIX-RENDER-GUARDS (Task 33)
+- [x] **Frontend**: Stabilitätsfixes in `TischSzene.ts` und `AppStore.ts`:
+  - `triggerRender()`: `stichEinziehenAktiv` im Guard ergänzt
+  - `aufraeumen()`: `partieCountdownInterval` sofort am Anfang stoppen
+  - AppStore `_verarbeiteEventQueue`: `shift()!` durch null-sichere Variante ersetzt
+  - AppStore `abonniereEvents`: `_verpassterSpielBeendet` beim letzten Listener-Abmelden leeren
+
+### FIX-PROMISE-HANDLING (Task 34)
+- [x] **Frontend**: Fire-and-forget Promises in `AnimationenService.ts:417` und `TischSzene.ts:217` mit `.catch()` versehen.
+
+### REFACTOR-RENDER-KARTEN (Task 35)
+- [x] **Frontend**: `renderKartenFaecher()` (115 Zeilen, zyklom. Komplexität ~14) aufgeteilt in:
+  - `bereinigePersistenteEigeneKarten()` — Sprite-Cleanup
+  - `erstelleOderAktualisiereKartenSprite()` — Sprite-Erstellung/Wiederverwendung
+  - `setzeKartenInteraktion()` — Handler-Management
+
+### FEAT-VORBEHALT-ANIMATION (Task 36)
+- [ ] **Frontend**: Animierter Vorbehalt-Wechsel gemäß `specs/frontend-vorbehalt-kartenauswahl.md` (Ausbaustufe):
+  - `persistenteEigeneKarten` für Tween-Übergänge ausbauen (Reconciliation-Pattern: bestehende Sprites gleiten zur neuen Position statt destroy/recreate)
+  - Y-Tween (~150–200 ms) bei Elevation-Änderung (←/→ wechselt Vorbehalt)
+  - X-Tween (~150–200 ms) bei Sortierungs-Änderung
+  - Tween-Abbruch bei WebSocket-Update während der Animation
+  - `specs/frontend-tastatursteuerung.md` Vorbehalt-Sektion aktualisieren
+
+---
+
 ## Akzeptanzkriterien
 
 1. **Stabilität**: Alle Tests (Backend & Frontend) grün.
@@ -180,3 +218,10 @@ Vollständiger Codebase-Scan abgeschlossen. Wesentliche Befunde:
 **P8 (Neu entdeckt, Plan-Run #114):**
 - [x] Task 29: REFACTOR-KI-ADAPTER-CLEANUP
 - [x] Task 30: FIX-ESLINT-ANY
+
+**P9 (Neu entdeckt, Plan-Run #115):**
+- [x] Task 31–32: FIX-ANIMATION-POSITIONS
+- [x] Task 33: FIX-RENDER-GUARDS
+- [x] Task 34: FIX-PROMISE-HANDLING
+- [x] Task 35: REFACTOR-RENDER-KARTEN
+- [ ] Task 36: FEAT-VORBEHALT-ANIMATION

@@ -39,7 +39,7 @@ export class LoginSzene extends Phaser.Scene {
 
     this.baueLoginUi();
 
-    this.abmeldenStore = appStore.abonnieren((zustand) => {
+    this.abmeldenStore = appStore.abonniere((zustand) => {
       if (zustand.bereich === 'TISCH') {
         this.scene.start('TischSzene');
       } else if (zustand.bereich === 'SPIELVERWALTUNG' && zustand.authentifiziert) {

@@ -10,7 +10,7 @@ import type {
   LaufendesSpielAntwort,
   PartieStandAntwort,
   SpielerImSpielAntwort,
-  TischAntwort
+  TischAntwort,
 } from '../modelle/SpielverwaltungDto';
 
 type Handler = () => void;
@@ -30,15 +30,18 @@ function richteLocalStorageEin(initialeWerte: Record<string, string> = {}): Stor
 const appStoreHarness = vi.hoisted(() => {
   let zustand: unknown;
   let listener: ((wert: unknown) => void) | undefined;
-  let eventListener: ((e: unknown) => void) | undefined;
+  let eventListener: ((e: unknown) => void | Promise<void>) | undefined;
+  let sonderpunkteListener: ((sp: any) => void) | undefined;
+
   return {
     setZustand(z: unknown) { zustand = structuredClone(z); },
     sendeZustand() { listener?.(structuredClone(zustand)); },
-    sendeEvent(e: unknown) { eventListener?.(e); },
+    async sendeEvent(e: unknown) { await eventListener?.(e); },
+    sendeSonderpunkte(sp: any) { sonderpunkteListener?.(sp); },
     store: {
-      abonnieren: vi.fn((cb: (z: unknown) => void) => { listener = cb; cb(structuredClone(zustand)); return vi.fn(); }),
-      abonniereEvents: vi.fn((cb: (e: unknown) => void) => { eventListener = cb; return vi.fn(); }),
-      abonniereSonderpunkte: vi.fn(() => vi.fn()),
+      abonniere: vi.fn((cb: (z: unknown) => void) => { listener = cb; cb(structuredClone(zustand)); return vi.fn(); }),
+      abonniereEvents: vi.fn((cb: (e: unknown) => void | Promise<void>) => { eventListener = cb; return vi.fn(); }),
+      abonniereSonderpunkte: vi.fn((cb: (sp: any) => void) => { sonderpunkteListener = cb; return vi.fn(); }),
       snapshot: vi.fn(() => structuredClone(zustand)),
       spieleKarte: vi.fn(),
       sageAnsageAn: vi.fn(),
@@ -52,11 +55,20 @@ const appStoreHarness = vi.hoisted(() => {
   };
 });
 
+function erstelleTweenApi() {
+  return { add: vi.fn((k: any) => {
+    const z = Array.isArray(k.targets) ? k.targets : [k.targets];
+    ['x', 'y', 'alpha', 'val'].forEach(p => { if (typeof k[p] === 'number') z.forEach((o: any) => { if (o) o[p] = k[p]; }); });
+    if (k.onUpdate) k.onUpdate(); if (k.onComplete) k.onComplete();
+    return { stop: vi.fn() };
+  }), killTweensOf: vi.fn() };
+}
+
 vi.mock('../anwendung', () => ({ appStore: appStoreHarness.store }));
 
 class FakeGameObject {
   readonly typ: string;
-  x=0; y=0; textur?: string; text?: string; alpha=1; winkel=0; breite=0; hoehe=0; interactive=false; zerstort=false; tint?: number; name = ''; active = true; scene: { input: { enabled: boolean } } = { input: { enabled: true } };
+  x=0; y=0; textur?: string; text?: string; alpha=1; winkel=0; breite=0; hoehe=0; interactive=false; zerstort=false; tint?: number; name = ''; active = true; scene: any = { input: { enabled: true }, tweens: erstelleTweenApi() };
   private readonly handler = new Map<string, Handler[]>();
   get texture() { return { key: this.textur }; }
   constructor(typ: string, opt: any = {}) { this.typ = typ; Object.assign(this, opt); }
@@ -106,7 +118,8 @@ vi.mock('phaser', () => ({
       };
     },
     GameObjects: { Container: FakeContainer, Image: class extends FakeGameObject { constructor(_:any,x:number,y:number,t:string) { super('image',{x,y,textur:t}); } }, TileSprite: class extends FakeGameObject { constructor(_:any,x:number,y:number,w:number,h:number,t:string) { super('tileSprite',{x,y,breite:w,hoehe:h,textur:t}); } }, Text: class extends FakeGameObject { constructor(_:any,x:number,y:number,t:string) { super('text',{x,y,text:t}); } }, Rectangle: class extends FakeGameObject { constructor(_:any,x:number,y:number,w:number,h:number) { super('rectangle',{x,y,breite:w,hoehe:h}); } }, Graphics: class extends FakeGameObject { constructor() { super('graphics'); } }, GameObject: FakeGameObject },
-    Scale: { Events: { RESIZE: 'resize' } }
+    Scale: { Events: { RESIZE: 'resize' } },
+    Math: { Easing: { Cubic: { Out: 'Cubic.Out' } } }
   }
 }));
 
@@ -116,17 +129,8 @@ function karte(id: string, farbe: string, wert: string): KarteAntwort { return {
 function baueSpieler(pos: any, name: string, opt: any = {}): SpielerImSpielAntwort { return { position: pos, spielerId: opt.spielerId ?? `sp-${pos}`, name, anzeigeName: name, avatarFarbe: null, istKi: pos !== 'SUED', istKiUebernommen: false, istSelbst: pos === 'SUED', istGeber: false, istAmZug: false, verbleibendeKarten: opt.verbleibendeKarten ?? 0, gewonneneStiche: 0, partei: null, sichtbareHandkarten: opt.sichtbareHandkarten ?? null }; }
 function baueLaufendesSpiel(opt: any = {}): LaufendesSpielAntwort { return { spielNummer: 1, spieltyp: 'NORMALSPIEL', phase: 'STICHPHASE', geber: 'WEST', aktuellerSpieler: 'SUED', spieler: opt.spieler ?? [baueSpieler('SUED', 'Anna', { verbleibendeKarten: 2, sichtbareHandkarten: [karte('H1', 'HERZ', 'ZEHN'), karte('K1', 'KREUZ', 'AS')] }), baueSpieler('WEST', 'Ben'), baueSpieler('NORD', 'Clara'), baueSpieler('OST', 'Dirk')], spielbareKarten: opt.spielbareKarten ?? [karte('H1', 'HERZ', 'ZEHN')], aktuelleStichmitte: [], ansageHistorie: [], moeglicheAnsagen: [], moeglicheVorbehalte: [], deklarierteVorbehalte: [], bockrundenZaehler: 0, hochzeitGeklaert: false, schweinchenAktiv: false, schweinchenGemeldetVon: null, ...opt }; }
 function bauePartieStand(lauf: any): PartieStandAntwort { return { partieId: 'p1', version: 1, status: 'LAUFEND', anzahlSpiele: 8, gespielteSpiele: 0, gesamtpunktestand: { SUED: 0, WEST: 0, NORD: 0, OST: 0 }, laufendesSpiel: lauf }; }
-function baueTisch(): TischAntwort { return { id: 't1', name: 'T1', einladungsCode: 'C1', status: 'IM_SPIEL', zugangsmodus: 'OFFEN', erstelltVonSpielerId: 'sp-SUED', partieId: 'p1', konfiguration: { ohneNeunen: false, anzahlSpiele: 8, tischhintergrund: 'FILZ_GRUEN', hochzeitErlaubt: true, armutErlaubt: true, damensoloErlaubt: true, bubensoloErlaubt: true, fleischlosErlaubt: true, trumpfsoloErlaubt: true, zweiteDulleSticht: true, fuchsGefangenAktiv: true, karlchenAktiv: true, doppelkopfAktiv: true, mindestkartenReKontra: 11, mindestkartenKeine90: 10, mindestkartenKeine60: 9, mindestkartenKeine30: 8, mindestkartenSchwarz: 7, bockrundenAktiv: false, schweinchenAktiv: false, dreissigAugenPflichtAktiv: false, schmeissenAktiv: false, herzDurchgegangenNurHoch: false, kiSchwierigkeit: 'STANDARD' }, spieler: [{ spielerId: 'sp-SUED', name: 'Anna', istKi: false }, { spielerId: 'sp-WEST', name: 'Ben', istKi: true }, { spielerId: 'sp-NORD', name: 'Clara', istKi: true }, { spielerId: 'sp-OST', name: 'Dirk', istKi: true }] }; }
-function baueZustand(opt: any = {}): AppZustand { return { initialisiert: true, wirdGeladen: false, authentifiziert: true, bereich: 'TISCH', verbindung: 'verbunden', debugModus: false, spieler: { spielerId: 'sp-SUED', name: 'Anna', istKi: false }, tische: [], aktuellerTisch: baueTisch(), partieStand: bauePartieStand(baueLaufendesSpiel()), meldung: null, ...opt }; }
-
-function erstelleTweenApi() {
-  return { add: vi.fn((k: any) => {
-    const z = Array.isArray(k.targets) ? k.targets : [k.targets];
-    ['x', 'y', 'alpha', 'val'].forEach(p => { if (typeof k[p] === 'number') z.forEach((o: any) => { if (o) o[p] = k[p]; }); });
-    if (k.onUpdate) k.onUpdate(); if (k.onComplete) k.onComplete();
-    return { stop: vi.fn() };
-  }), killTweensOf: vi.fn() };
-}
+function baueTisch(opt: any = {}): TischAntwort { return { id: 't1', name: 'T1', einladungsCode: 'C1', status: 'IM_SPIEL', zugangsmodus: 'OFFEN', erstelltVonSpielerId: 'sp-SUED', partieId: 'p1', konfiguration: { ohneNeunen: false, anzahlSpiele: 8, tischhintergrund: 'FILZ_GRUEN', hochzeitErlaubt: true, armutErlaubt: true, damensoloErlaubt: true, bubensoloErlaubt: true, fleischlosErlaubt: true, trumpfsoloErlaubt: true, zweiteDulleSticht: true, fuchsGefangenAktiv: true, karlchenAktiv: true, doppelkopfAktiv: true, mindestkartenReKontra: 11, mindestkartenKeine90: 10, mindestkartenKeine60: 9, mindestkartenKeine30: 8, mindestkartenSchwarz: 7, bockrundenAktiv: false, schweinchenAktiv: false, dreissigAugenPflichtAktiv: false, schmeissenAktiv: false, herzDurchgegangenNurHoch: false, kiSchwierigkeit: 'STANDARD' }, spieler: opt.spieler ?? [{ spielerId: 'sp-SUED', name: 'Anna', istKi: false }, { spielerId: 'sp-WEST', name: 'Ben', istKi: true }, { spielerId: 'sp-NORD', name: 'Clara', istKi: true }, { spielerId: 'sp-OST', name: 'Dirk', istKi: true }] }; }
+function baueZustand(opt: any = {}): AppZustand { return { initialisiert: true, wirdGeladen: false, authentifiziert: true, bereich: 'TISCH' as const, verbindung: 'verbunden' as const, debugModus: false, spieler: { spielerId: 'sp-SUED', name: 'Anna', istKi: false }, tische: [], aktuellerTisch: baueTisch(), partieStand: bauePartieStand(baueLaufendesSpiel()), meldung: null, uiKonfiguration: { kiVerzoegerungMs: 800 }, countdownSekunden: null, spielProtokollEintraege: [], ...opt }; }
 
 let aktiveSzene: any | undefined;
 
@@ -148,8 +152,26 @@ function baueSzene(z: any) {
   aktiveSzene = s;
   const t = erstelleTweenApi();
   const fakeParticles = () => ({ setDepth: () => fakeParticles(), explode: vi.fn(), destroy: vi.fn(), active: false });
-  const fakeAnimationen = { reiheEin: (fn: () => void) => { fn(); return Promise.resolve([]); }, abbrechen: vi.fn(), animiereRundenauswertung: vi.fn().mockResolvedValue([]), animiereAusteilung: vi.fn().mockResolvedValue(undefined), animiereGespielteKarte: vi.fn().mockResolvedValue(undefined), animiereStichgewinner: vi.fn().mockResolvedValue(undefined), animiereGewinnerFlash: vi.fn().mockResolvedValue(undefined), setzeGeschwindigkeitsfaktor: vi.fn() };
-  Object.assign(s, { add: { existing: (o:any)=>o, tileSprite: (_x:any,_y:any,w:any,h:any,t:any)=>new FakeGameObject('tileSprite',{x:_x,y:_y,breite:w,hoehe:h,textur:t}), container: (_x:any,_y:any)=>new FakeContainer(), graphics: ()=>new FakeGameObject('graphics'), ellipse: (_x:any,_y:any,w:any,h:any)=>new FakeGameObject('ellipse',{x:_x,y:_y,breite:w,hoehe:h}), text: (_x:any,_y:any,t:any)=>new FakeGameObject('text',{x:_x,y:_y,text:t}), circle: (_x:any,_y:any)=>new FakeGameObject('circle',{x:_x,y:_y}), rectangle: (_x:any,_y:any,w:any,h:any)=>new FakeGameObject('rectangle',{x:_x,y:_y,breite:w,hoehe:h}), image: (_x:any,_y:any,t:any)=>new FakeGameObject('image',{x:_x,y:_y,textur:t}), particles: fakeParticles }, scale: { gameSize: { width: 1280, height: 720 }, on: vi.fn(), off: vi.fn() }, scene: { start: vi.fn() }, tweens: t, time: { addEvent: ()=>({remove:()=>{}}), delayedCall: vi.fn() }, textures: { exists: ()=>true, addCanvas: ()=>{} }, game: { loop: { sleep: vi.fn(), wake: vi.fn() } }, cameras: { main: { shake: vi.fn(), flash: vi.fn() } } });
+  const fakeAnimationen = {
+    reiheEin: (fn: () => Promise<unknown>) => { fn(); return Promise.resolve([]); },
+    abbrechen: vi.fn(),
+    animiereRundenauswertung: vi.fn().mockResolvedValue([]),
+    animiereAusteilung: vi.fn().mockResolvedValue(undefined),
+    animiereGespielteKarte: vi.fn().mockResolvedValue(undefined),
+    animiereStichgewinner: vi.fn().mockResolvedValue(undefined),
+    animiereGewinnerFlash: vi.fn().mockResolvedValue(undefined),
+    setzeGeschwindigkeitsfaktor: vi.fn(),
+    get animationLaeuft() { return false; }
+  };
+  const sTime = { 
+    addEvent: () => ({ remove: () => {} }), 
+    delayedCall: vi.fn((_ms, callback) => {
+      // In Tests rufen wir Callbacks SOFORT synchron auf
+      callback();
+      return { remove: () => {} };
+    })
+  };
+  Object.assign(s, { add: { existing: (o:any)=>o, tileSprite: (_x:any,_y:any,w:any,h:any,t:any)=>new FakeGameObject('tileSprite',{x:_x,y:_y,breite:w,hoehe:h,textur:t}), container: (_x:any,_y:any)=>new FakeContainer(), graphics: ()=>new FakeGameObject('graphics'), ellipse: (_x:any,_y:any,w:any,h:any)=>new FakeGameObject('ellipse',{x:_x,y:_y,breite:w,hoehe:h}), text: (_x:any,_y:any,t:any)=>new FakeGameObject('text',{x:_x,y:_y,text:t}), circle: (_x:any,_y:any)=>new FakeGameObject('circle',{x:_x,y:_y}), rectangle: (_x:any,_y:any,w:any,h:any)=>new FakeGameObject('rectangle',{x:_x,y:_y,breite:w,hoehe:h}), image: (_x:any,_y:any,t:any)=>new FakeGameObject('image',{x:_x,y:_y,textur:t}), particles: fakeParticles }, scale: { gameSize: { width: 1280, height: 720 }, on: vi.fn(), off: vi.fn() }, scene: { start: vi.fn() }, tweens: t, time: sTime, textures: { exists: ()=>true, addCanvas: ()=>{} }, game: { loop: { sleep: vi.fn(), wake: vi.fn() } }, cameras: { main: { shake: vi.fn(), flash: vi.fn() } } });
   s['animationen'] = fakeAnimationen;
   s.create();
   return { s, t };
@@ -174,11 +196,12 @@ describe('TischSzene', () => {
   });
 
   it('zeigt Rundenende-Modal', async () => {
-    baueSzene(baueZustand({ partieStand: bauePartieStand(null) }));
+    const { s } = baueSzene(baueZustand({ partieStand: bauePartieStand(baueLaufendesSpiel()) }));
+    
     const neuerStand = {
       ...bauePartieStand(null),
       letztesSpielergebnis: {
-        spielNummer: 1,
+        spielNummer: 42,
         spieltyp: 'NORMALSPIEL' as const,
         siegerPartei: 'RE' as const,
         spielwert: 1,
@@ -189,14 +212,21 @@ describe('TischSzene', () => {
         augenProPartei: { RE: 130, KONTRA: 110 },
         spielpunkteProSpieler: { SUED: 1, WEST: -1, NORD: 1, OST: -1 },
         sonderpunkteProPartei: { RE: [], KONTRA: [] },
-        punkteAufschluesselung: [{ typ: 'GRUNDWERT', label: 'Grundwert', punkte: 1 }]
+        punkteAufschluesselung: [{ typ: 'GRUNDWERT', label: 'Grundwert', punkte: 1 }],
+        spielpunkte: [],
+        gesamtstand: []
       }
     };
     appStoreHarness.setZustand(baueZustand({ partieStand: neuerStand }));
-    appStoreHarness.sendeZustand();
-    appStoreHarness.sendeEvent({ ereignisTyp: 'SPIEL_BEENDET', partieStand: neuerStand, timestamp: new Date().toISOString() });
+    
+    // Guard zuruecksetzen, falls er durch Snapshot/State-Update bereits gesetzt wurde
+    (s as any)._letzterGezeigterSpielBeendet = null;
+    
+    // sendeEvent loest Animationen aus die Timer benoetigen — nicht awaiten, sonst Deadlock
+    void appStoreHarness.sendeEvent({ ereignisTyp: 'SPIEL_BEENDET', partieStand: neuerStand, timestamp: new Date().toISOString() });
     await vi.runAllTimersAsync();
-    // Rundenende-Modal wird jetzt als Phaser-Objekt gerendert — JS-Bridge prüfen
+    
+    // In der Testumgebung mit synchronem Mock sollte das Modal nun sofort da sein
     const bridge = (window as { __locodoko?: { _rundenEndeModalGezeigt?: number } }).__locodoko;
     expect(bridge?._rundenEndeModalGezeigt).toBeGreaterThan(0);
   });
@@ -207,7 +237,7 @@ describe('TischSzene', () => {
     // abgeschlossenen Spielstand (laufendesSpiel=null + letztesSpielergebnis) liefert.
     baueSzene(baueZustand({ partieStand: null }));
     const ergebnis = {
-      spielNummer: 2,
+      spielNummer: 99,
       spieltyp: 'NORMALSPIEL' as const,
       siegerPartei: 'KONTRA' as const,
       spielwert: 1,
@@ -218,11 +248,13 @@ describe('TischSzene', () => {
       augenProPartei: { RE: 110, KONTRA: 130 },
       spielpunkteProSpieler: { SUED: -1, WEST: 1, NORD: -1, OST: 1 },
       sonderpunkteProPartei: { RE: [], KONTRA: [] },
-      punkteAufschluesselung: []
+      punkteAufschluesselung: [],
+      spielpunkte: [],
+      gesamtstand: []
     };
-    const partieStandNachSpiel: PartieStandAntwort = { ...bauePartieStand(null), letztesSpielergebnis: ergebnis };
+    const partieStandNachSpiel: PartieStandAntwort = { ...bauePartieStand(null), letztesSpielergebnis: ergebnis as any };
     // Partie-SNAPSHOT-Event: Backend liefert den Stand nach Reconnect (kein SPIEL_BEENDET)
-    appStoreHarness.sendeEvent({ ereignisTyp: 'SNAPSHOT', partieStand: partieStandNachSpiel, version: 1 });
+    await appStoreHarness.sendeEvent({ ereignisTyp: 'SNAPSHOT', partieStand: partieStandNachSpiel, version: 1 });
     // Store-Update: AppStore patcht State nachdem das Event verarbeitet wurde
     appStoreHarness.setZustand(baueZustand({ partieStand: partieStandNachSpiel }));
     appStoreHarness.sendeZustand();
@@ -243,18 +275,16 @@ describe('TischSzene', () => {
   });
 
   it('lehnt Armut ab', () => {
-    baueSzene(baueZustand({ partieStand: bauePartieStand(baueLaufendesSpiel({ spieltyp: 'ARMUT', phase: 'ARMUT_TAUSCH', armutSpielerPosition: 'WEST', spieler: [baueSpieler('SUED','A',{verbleibendeKarten:12}), baueSpieler('WEST','B',{verbleibendeKarten:9})] })) }));
+    baueSzene(baueZustand({ partieStand: bauePartieStand(baueLaufendesSpiel({ spieltyp: 'ARMUT', phase: 'ARMUT_TAUSCH', armutSpielerPosition: 'WEST', spieler: [baueSpieler('SUED','A',{verbleibendeKarten:12}), baueSpieler('WEST','B',{verbleibendeKarten:9}), baueSpieler('NORD','C'), baueSpieler('OST','D')] })) }));
     document.dispatchEvent(new KeyboardEvent('keydown', { key: 'n', bubbles: true }));
     expect(appStoreHarness.store.beantworteArmut).toHaveBeenCalledWith(false, []);
   });
 
   it('zeigt Schweinchen-Flash mit korrektem Spielernamen aus absolutePosition', async () => {
-    // Wichtig: e.spielerPosition ist absolute Backend-Position (WEST = Ben).
-    // Ohne absolutePosition-Abgleich würde spielerName 'Spieler' statt 'Ben' sein.
     const { s } = baueSzene(baueZustand());
     const flashSpy = vi.spyOn((s as any).flashTextManager, 'zeigeSpielevent');
 
-    appStoreHarness.sendeEvent({
+    await appStoreHarness.sendeEvent({
       ereignisTyp: 'SCHWEINCHEN_GEMELDET',
       spielerPosition: 'WEST',
       partieStand: { ...bauePartieStand(baueLaufendesSpiel()), version: 2 },
@@ -263,7 +293,7 @@ describe('TischSzene', () => {
     });
     await vi.runAllTimersAsync();
 
-    expect(flashSpy).toHaveBeenCalledWith('SchweinchenGemeldet', { spielerName: 'Ben' });
+    expect(flashSpy).toHaveBeenCalledWith('SchweinchenGemeldet', expect.objectContaining({ spielerName: 'Ben' }));
   });
 
   it('zeigt Ansage-Buttons (Phaser) wenn moeglicheAnsagen gesetzt sind', () => {

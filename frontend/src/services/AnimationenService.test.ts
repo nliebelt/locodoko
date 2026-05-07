@@ -201,8 +201,8 @@ describe('AnimationenService', () => {
     await vi.advanceTimersByTimeAsync(1);
     await animation;
 
-    // 5 Tweens: 1x Zu, 1x Scale (Karte) + 2x Alpha (Popup) + 1x Zu (Popup)
-    expect(aufrufe).toHaveLength(5);
+    // 2 Tweens: 1x Zu, 1x Scale (Karte) — Augen-Popup wurde nach FlashTextManager verschoben
+    expect(aufrufe).toHaveLength(2);
     expect(aufrufe[0].duration).toBe(600);
     expect(wurzel).toMatchObject({ x: 50, y: 75, scaleX: 0.4, scaleY: 0.4 });
     vi.useRealTimers();

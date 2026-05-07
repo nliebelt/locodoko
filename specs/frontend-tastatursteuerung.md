@@ -26,11 +26,12 @@ K                        Kontra ansagen
 1 … 6                    Ansage nach Nummerierung der sichtbaren Buttons
                          (1=Re/Kontra, 2=Keine 90, 3=Keine 60, 4=Keine 30, 5=Schwarz)
 
-VORBEHALT-OVERLAY (wenn offen)
+VORBEHALT-PHASE (kein Dialog — Karten in der Hand, Auswahl per Label + Pfeile)
 ─────────────────────────────────────────────────
-1 … N                    Option N auswählen (1=Gesund, 2=erste Sonderspiel-Option, …)
-Enter                    Auswahl bestätigen
-ArrowUp / ArrowDown      Durch Optionen navigieren
+1 … N                    Vorbehalt N direkt bestätigen (1=Gesund, 2=erste Sonderspiel-Option, …)
+ArrowLeft / ArrowRight   Zum vorherigen / nächsten Vorbehalt wechseln
+ArrowUp / ArrowDown      Alternativ: vorheriger / nächster Vorbehalt
+Enter / Space            Aktuell angezeigten Vorbehalt bestätigen
 
 OVERLAYS / MODALS (wenn offen)
 ─────────────────────────────────────────────────
@@ -67,9 +68,12 @@ S                        Einstellungs-Modal [⚙] öffnen/schließen
 
 ### Vorbehalt-Phase
 
-1. Im Vorbehalt-Overlay navigiert der Spieler per `ArrowUp`/`ArrowDown` oder direkten Zifferntasten (`1`=Gesund, `2`=erste Sonderspiel-Option etc.).
-2. `Enter` bestätigt die aktuell hervorgehobene Option.
-3. Das Overlay kann **nicht per Escape** verlassen werden — eine Auswahl ist zwingend.
+Es gibt kein separates Vorbehalt-Overlay mehr. Die Auswahl findet direkt in der Hand-Ansicht statt: Ein Label über den Karten zeigt den aktuell gewählten Vorbehalt, Navigationspfeile ◄/► und ein Positions-Indikator ergänzen es. Spieltyp-relevante Karten werden angehoben (Y-Elevation), die gesamte Hand neu sortiert.
+
+1. `ArrowLeft`/`ArrowRight` oder `ArrowUp`/`ArrowDown` navigiert durch die möglichen Vorbehalte. Die Karten gleiten animiert in ihre neue Position (Elevation + Reihenfolge, ~150 ms).
+2. Zifferntasten (`1`=Gesund, `2`=erste Sonderspiel-Option etc.) bestätigen einen Vorbehalt direkt — kein separates Enter nötig.
+3. `Enter` oder `Space` bestätigt den aktuell angezeigten Vorbehalt.
+4. `Escape` ist in der Vorbehalt-Phase nicht aktiv — eine Auswahl ist zwingend.
 
 ### Armut-Interaktion
 
@@ -113,7 +117,7 @@ Die Tastatursteuerung ist bewusst so gestaltet, dass Playwright-Tests ohne Canva
 - [x] Karten-Navigation (ArrowLeft/Right, Enter/Space) implementiert
 - [x] Auto-Fokus auf erste spielbare Karte bei Spielzug-Beginn
 - [x] Ansage-Shortcuts (R, K, 1–5) implementiert
-- [x] Vorbehalt-Navigation (Ziffern, ArrowUp/Down, Enter) implementiert
+- [x] Vorbehalt-Navigation (Ziffern, ArrowLeft/Right, ArrowUp/Down, Enter/Space) implementiert
 - [x] Armut-Shortcuts (A, N) implementiert
 - [x] Seitenlade (I) und Einstellungen (S) per Tastatur
 - [x] Focus-Trap in Modals implementiert
