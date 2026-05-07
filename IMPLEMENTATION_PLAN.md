@@ -5,20 +5,14 @@
 ## Notiz
 
 **Was wurde implementiert?**
-- Task 31–32 (FIX-ANIMATION-POSITIONS): Drei Positions-Bugs in `TischSzene.ts` behoben: `KARTE_GESPIELT` und `HOCHZEIT_PARTNER_GEFUNDEN` verglichen relative statt absolute Spielerposition; `animiereGegnerKarte` bekam absolute statt relative Position übergeben → Gegnerkarten wurden gar nicht oder am falschen Slot animiert.
-- Task 33 (FIX-RENDER-GUARDS): `stichEinziehenAktiv` in `triggerRender()`-Guard ergänzt; `partieCountdownInterval` wird jetzt am Anfang von `aufraeumen()` gestoppt (Exception-sicher); AppStore Event-Queue `shift()` nach Quiescence-Wait abgesichert; `_verpassterSpielBeendet` wird beim Abmelden des letzten Listeners geleert.
-- Task 34 (FIX-PROMISE-HANDLING): Fire-and-forget Promises in `AnimationenService.ts` und `TischSzene.ts` mit `.catch()` versehen.
-- Task 35 (REFACTOR-RENDER-KARTEN): `renderKartenFaecher()` (115 Zeilen, zyklom. Komplexität ~14) in drei Methoden aufgeteilt: `bereinigePersistenteEigeneKarten`, `erstelleOderAktualisiereKartenSprite`, `setzeKartenInteraktion`.
-- Task 29 (REFACTOR-KI-ADAPTER-CLEANUP): `KiEventAdapter.java` gelöscht. War leere Stub-Klasse ohne Referenzen. `mvn test` grün (307 Tests).
-- Task 28 (DOC-SPEC-UPDATES): `spieler-session.md` auf BCrypt/Passwort aktualisiert. `architektur-domain-events.md`: KiEventAdapter → KiTischOrchestrator, SpielBeendet-Produzent korrigiert, KI_ZUG_SEQUENZ entfernt, AKTION_ABGELEHNT ergänzt, PartieEreignisBatch auf „Implementiert" gesetzt.
-- Task 30 (FIX-ESLINT-ANY): `no-explicit-any` als ESLint-Regel aktiviert. Alle 7 `as any`-Casts im Produktionscode durch korrekte Phaser-Typen (`cameras.main.shake/flash`, `add.particles`) und typisiertes Window-Interface ersetzt. 104 Tests grün, Build und Lint sauber.
+- Task 36 (FEAT-VORBEHALT-ANIMATION): Spec-Update `frontend-tastatursteuerung.md` — Vorbehalt-Sektion auf kartenbasierte Auswahl ohne Dialog aktualisiert; ArrowLeft/Right als Vorbehalt-Navigation ergänzt. `frontend-vorbehalt-kartenauswahl.md` DoD 227-230 als erledigt markiert (Reconciliation + Tweens + Abbruch bereits in Tasks 31-35 implementiert).
+- Diverse Bugfixes aus abgestürzter Vorversion: AppStore `_queueGeneration`-Counter (Race Condition bei reconnecteTisch+KI-Delay), `abonniere()`-Umbenennung in allen Szenen, TypeScript-Fehler in Kartenansicht/AnimationenService, TischSzene-Test-Deadlock mit vi.runAllTimersAsync behoben.
 
 **Nächster logischer Schritt:**
-- Alle P7/P8-Tasks erledigt. Nächster Ralph: Codebase-Scan für neue Tasks.
+- Alle P9-Tasks erledigt. Nächster Ralph: Codebase-Scan für neue Tasks.
 - Pre-existing: Vision Loop `isIdle()` gelegentlich >15s bei KI-Spielen.
 - Pre-existing: Hochzeit-Nameplate ohne Herz-Label.
-- Vision Loop Spielschleife: `leseSpielZustand` wartet auf `isIdle()` das bei KI-Spiel gelegentlich >15s dauert (pre-existing), soll verbessert werden.
-- Hochzeit-Nameplate: Kein Herz-Label implementiert.
+- Vision Loop DoD-Item 231 (Playwright headed) steht noch aus — Backend muss laufen.
 
 ---
 
@@ -224,4 +218,4 @@ Vollständiger Codebase-Scan abgeschlossen. Wesentliche Befunde:
 - [x] Task 33: FIX-RENDER-GUARDS
 - [x] Task 34: FIX-PROMISE-HANDLING
 - [x] Task 35: REFACTOR-RENDER-KARTEN
-- [ ] Task 36: FEAT-VORBEHALT-ANIMATION
+- [x] Task 36: FEAT-VORBEHALT-ANIMATION
