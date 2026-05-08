@@ -185,6 +185,7 @@ Kapselt alle Phaser-Tweens und stellt sicher, dass Animationen sequenziell und n
 - [x] `TischUIManager.ts` und `TischInputHandler.ts` JSDoc (Klasse + kritische Methoden)
 - [x] `specs/frontend-architektur.md` auf aktuellem Stand (Dateistruktur, Datenfluss)
 - [x] Code-Review / Plausibilitätsprüfung
+- [ ] **Refactoring-Prüfung:** Bei Änderungen an Klassen mit > 300 Zeilen (z. B. `TischSzene.ts`, `AppStore.ts`) wurde geprüft, ob Teile der Logik durch Komposition in kleinere Hilfsklassen oder Manager ausgelagert werden können (Vermeidung von God Objects).
 
 ## Technische Hinweise
 

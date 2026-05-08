@@ -120,7 +120,10 @@ Detail-Specs: `frontend-architektur.md`, `frontend-animationen.md`, `frontend-ti
 6. **Domain Model = Persistence Model.** Keine separaten Entity-Klassen. `@Table` direkt auf Aggregaten.
 7. **Typed IDs.** `TischId`, `PartieId`, `SpielId`, `SpielerId` — nie nackte UUID in Signaturen.
 8. **YAGNI.** Einfachster Weg der das Problem vollständig löst. Keine vorzeitigen Abstraktionen.
-9. **Kleine Einheiten.** Klassen und Methoden mit einem klar definierten Zweck. Methoden idealerweise < 30 Zeilen.
+9. **Objektorientiertes Design & Kohäsion.** Bevorzuge echtes objektorientiertes Design, das Daten und Verhalten sinnvoll kapselt, anstatt gigantische, alles wissende Klassen ("God Objects") zu bauen.
+   - **Richtwert für Klassen:** Idealerweise nicht länger als ca. 300 Zeilen.
+   - **Richtwert für Methoden:** Idealerweise < 30 Zeilen.
+   - **Umgang mit Komplexität:** Wenn eine Klasse (z. B. eine UI-Szene oder ein Store) diese Grenzen deutlich überschreitet, ist das ein starkes Signal, Verantwortlichkeiten durch Komposition (z. B. Auslagerung von Input-Handling, Rendering-Subkomponenten, State-Modulen) auf kleinere, fokussierte Objekte aufzuteilen.
 10. **Tests als Spezifikation.** Testnamen beschreiben fachliche Szenarien auf Deutsch.
 
 ---
