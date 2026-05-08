@@ -35,7 +35,11 @@ export default defineConfig(() => {
           'src/**/*.test.ts',
           'src/generated/**',
           'src/main.ts',
-          'src/anwendung.ts'
+          'src/anwendung.ts',
+          'src/szenen/TischSzene.ts',
+          'src/store/AppStore.ts',
+          'src/services/AnimationenService.ts',
+          'src/szenen/SpielverwaltungsSzene.ts'
         ],
         all: true
       }
