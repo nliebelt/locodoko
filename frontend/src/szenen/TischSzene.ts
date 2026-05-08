@@ -24,6 +24,7 @@ import {
   sortiereKartenFuerVorbehalt,
   SPIELER_POSITION,
   PARTEI,
+  SPIELTYP,
   type AbgeschlossenerStichAnsicht,
   type TischAnsichtModell,
   type SpielerPosition
@@ -220,8 +221,10 @@ export class TischSzene extends Phaser.Scene {
     });
 
     // SNAPSHOT-ABO (Statische Ansicht)
+    this.abmeldenStore?.();
     this.abmeldenStore = appStore.abonniere((zustand) => {
       if (zustand.bereich === 'SPIELVERWALTUNG') {
+        this.abmeldenStore?.();
         this.scene.start('SpielverwaltungsSzene');
         return;
       }
@@ -243,9 +246,9 @@ export class TischSzene extends Phaser.Scene {
         this._zeigeOverlayNachSnapshot = null;
         appStore.pausiereQueue();
         if (partieBeendet) {
-          this.animationen?.reiheEin(() => { this.zeigePartieEndeModal(modell); return Promise.resolve(); });
+          this.zeigePartieEndeModal(modell);
         } else {
-          this.animationen?.reiheEin(() => this.zeigeRundenEndeModal(modell));
+          this.zeigeRundenEndeModal(modell);
         }
       }
       
@@ -300,12 +303,12 @@ export class TischSzene extends Phaser.Scene {
       bridge.setzeAnimationsGeschwindigkeit = (f: number) => {
         this.animationsGeschwindigkeit = f as AnimationsGeschwindigkeit;
         this.animationen?.setzeGeschwindigkeitsfaktor(f);
+        this.flashTextManager?.setzeGeschwindigkeitsfaktor(f);
         if (f >= 50) {
           appStore.setzeKiKartenVerzögerung(0);
         }
       };
-      bridge.setzeKiVerzoegerung = (ms: number) => appStore.setzeKiKartenVerzögerung(ms);
-      bridge.isOverlaySichtbar = () => {
+      bridge.setzeKiVerzoegerung = (ms: number) => appStore.setzeKiKartenVerzögerung(ms);      bridge.isOverlaySichtbar = () => {
         const rSichtbar = !!this.phaserRundenEndeModal;
         const pSichtbar = !!this.phaserPartieEndeModal;
         const eSichtbar = this.einstellungenOffen;
@@ -369,7 +372,7 @@ export class TischSzene extends Phaser.Scene {
 
     requestAnimationFrame(() => {
       this.renderAngefodert = false;
-      if (!this.sys?.displayList) return; // Szene wurde zwischenzeitlich zerstoert
+      if (!this.sys?.isActive()) return; // Szene wurde zwischenzeitlich zerstoert oder gestoppt
       // Race-Condition: Animation koennte zwischen triggerRender() und dem rAF gestartet sein.
       // In diesem Fall: nicht rendern. Die Re-Sync-Logik triggert nach Animationsende erneut.
       if (this.animationen?.animationLaeuft || this.austeilenAktiv) {
@@ -384,6 +387,7 @@ export class TischSzene extends Phaser.Scene {
   private initialisiereZustand(): void {
     console.log('[TischSzene] initialisiereZustand');
     this.animationen?.abbrechen();
+    this.loeseEigeneKartenAuf();
     this.letzterStichOverlay?.destroy(true);
     this.letzterStichOverlay = undefined;
     this.letzterStichTimer?.remove(false);
@@ -485,6 +489,11 @@ export class TischSzene extends Phaser.Scene {
       case 'HOCHZEIT_PARTNER_GEFUNDEN': {
         const e = ereignis as HochzeitPartnerGefundenEreignis;
         const partner = this.letztesModell?.spieler.find(s => s.absolutePosition === e.partnerPosition);
+        const solist = this.letztesModell?.spieler.find(s => s.position === SPIELER_POSITION.SUED); // Nur SUED kann Hochzeit anmelden (aus Sicht des Spielers)
+        
+        if (partner) this.nameplates.get(partner.position)?.setHochzeitPartner(true);
+        if (solist) this.nameplates.get(solist.position)?.setHochzeitPartner(true);
+
         await this.animationen?.reiheEin(() => this.flashTextManager!.zeigeSpielevent('HochzeitPartnerGefunden', { spielerName: partner?.name ?? 'Spieler' }));
         break;
       }
@@ -492,6 +501,7 @@ export class TischSzene extends Phaser.Scene {
       case 'SPIEL_BEENDET': {
         const m = this.erstelleModell({ ...appStore.snapshot(), partieStand: ereignis.partieStand });
         const spielNr = m.letztesSpielergebnis?.spielNummer ?? null;
+        Logger.szene('Verarbeite SPIEL_BEENDET', { spielNr, bereitsGezeigt: this._letzterGezeigterSpielBeendet });
         if (spielNr !== null && spielNr === this._letzterGezeigterSpielBeendet) break;
         this._letzterGezeigterSpielBeendet = spielNr;
 
@@ -503,9 +513,9 @@ export class TischSzene extends Phaser.Scene {
         appStore.pausiereQueue();
 
         if (m.partieBeendet) {
-          await this.animationen?.reiheEin(() => { this.zeigePartieEndeModal(m); return Promise.resolve(); });
+          this.zeigePartieEndeModal(m);
         } else {
-          await this.animationen?.reiheEin(() => this.zeigeRundenEndeModal(m));
+          this.zeigeRundenEndeModal(m);
         }
         break;
       }
@@ -604,8 +614,8 @@ export class TischSzene extends Phaser.Scene {
       animK.forEach((k: { wurzel: { destroy: () => void } }) => k.wurzel.destroy()); 
       flash.destroy(); 
       this.stichEinziehenAktiv = false;
-      // Wieder statisch rendern, falls der Store den State noch nicht gepatcht hat
-      this.triggerRender(true);
+      // Kein triggerRender(true) mehr nötig: Der AppStore schickt nach den Listeners ein Update,
+      // das den statischen Render des nächsten Stands (ohne Karten in der Mitte) auslöst.
     }
   }
 
@@ -980,8 +990,12 @@ export class TischSzene extends Phaser.Scene {
     const eigeneAnsagen = modell.ansageHistorie.filter(a => a.position === spieler.position);
     const reAnsage = eigeneAnsagen.find(a => ansageBadgeTyp(a.ansage) === 're');
     const kontraAnsage = eigeneAnsagen.find(a => ansageBadgeTyp(a.ansage) === 'kontra');
-    if (reAnsage && !np['ansageBadge']) np.showAnsage('re');
-    if (kontraAnsage && !np['ansageBadge']) np.showAnsage('kontra');
+    if (reAnsage && !np.hatAnsageBadge()) np.showAnsage('re');
+    if (kontraAnsage && !np.hatAnsageBadge()) np.showAnsage('kontra');
+
+    // Hochzeit-Herz anzeigen wenn Partner gefunden (Partei ist RE)
+    const istHochzeitPartner = modell.spieltyp === SPIELTYP.HOCHZEIT && spieler.partei === PARTEI.RE;
+    np.setHochzeitPartner(istHochzeitPartner);
   }
 
   private renderKartenFaecher(ebene: Phaser.GameObjects.Container, layout: TischLayout, spieler: TischAnsichtModell['spieler'][number], modell: TischAnsichtModell): void {
@@ -1033,6 +1047,11 @@ export class TischSzene extends Phaser.Scene {
       const { sprite: kA, wiederverwendet: istWiederverwendet } = this.erstelleOderAktualisiereKartenSprite(
         ebene, spieler, offen, k, x, y + bV, kG
       );
+
+      // Ghost-Card-Schutz: Falls Karte gerade animiert wird (wartendeKartenId), statisches Sprite verstecken.
+      // Ansonsten explizit sichtbar machen (wichtig bei Wiederverwendung von Sprites).
+      const istWartend = !!k && this.wartendeKartenId === k.id;
+      kA.setVisible(!istWartend);
 
       kA.setAngle(w).setAlpha(this.austeilenAktiv ? 0 : (offen ? (hatInt && k && !istInt ? 0.45 : 1) : 0.92));
       if (istAus) kA.markiereAuswahl(); else if (istTast) kA.markiereTastaturfokus(); else kA.loescheMarkierung();
@@ -1746,6 +1765,7 @@ export class TischSzene extends Phaser.Scene {
     this.loeseEigeneKartenAuf();
     this.rundenauswertungObjekte.forEach((o) => o.destroy()); this.tischEbene?.destroy(true);
     this.hintergrund?.destroy(); this.handKartenobjekte.clear();
+    this.loeseEigeneKartenAuf();
     this.schliesseRundenEndeModal(); this.versteckeLetztesStichOverlay(); this.schliessePartieEndeModal();
     this.spielprotokollOverlay?.destroy(true); this.spielprotokollOverlay = undefined;
   }

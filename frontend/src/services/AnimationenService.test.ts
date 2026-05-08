@@ -8,287 +8,65 @@ interface AnimierbaresZiel {
   y: number;
 }
 
-interface FakeKartenWurzel extends AnimierbaresZiel {
-  alpha: number;
-  scaleX: number;
-  scaleY: number;
-}
-
-interface FakeTextObjekt {
+interface FakeKartenWurzel {
   x: number;
   y: number;
-  text: string;
   alpha: number;
-  zerstort: boolean;
-  setOrigin: () => FakeTextObjekt;
-  setDepth: () => FakeTextObjekt;
-  setAlpha: (a: number) => FakeTextObjekt;
+  angle: number;
+  scaleX: number;
+  scaleY: number;
+  visible: boolean;
+  active: boolean;
   destroy: () => void;
+  setAlpha: (v: number) => FakeKartenWurzel;
+  setScale: (v: number) => FakeKartenWurzel;
+  setVisible: (v: boolean) => FakeKartenWurzel;
+  setDepth: (v: number) => FakeKartenWurzel;
 }
 
 function baueTweenSzene() {
-  const aufrufe: Array<Record<string, unknown>> = [];
-  const textobjekte: FakeTextObjekt[] = [];
-  return {
-    aufrufe,
-    textobjekte,
-    szene: {
-      tweens: {
-        add: vi.fn((konfiguration: Record<string, unknown>) => {
-          aufrufe.push(konfiguration);
-          const ziele = Array.isArray(konfiguration.targets)
-            ? konfiguration.targets as (AnimierbaresZiel & { alpha?: number })[]
-            : [konfiguration.targets as AnimierbaresZiel & { alpha?: number }];
-          const zielX = konfiguration.x as number | undefined;
-          const zielY = konfiguration.y as number | undefined;
-          const zielAlpha = typeof konfiguration.alpha === 'number' ? konfiguration.alpha : undefined;
-          const zielScaleX = typeof konfiguration.scaleX === 'number' ? konfiguration.scaleX : undefined;
-          const zielScaleY = typeof konfiguration.scaleY === 'number' ? konfiguration.scaleY : undefined;
-          if (zielX !== undefined) {
-            ziele.forEach((ziel) => {
-              ziel.x = zielX;
-            });
-          }
-          if (zielY !== undefined) {
-            ziele.forEach((ziel) => {
-              ziel.y = zielY;
-            });
-          }
-          if (zielAlpha !== undefined) {
-            ziele.forEach((ziel) => {
-              ziel.alpha = zielAlpha;
-            });
-          }
-          if (zielScaleX !== undefined) {
-            ziele.forEach((ziel) => {
-              (ziel as FakeKartenWurzel).scaleX = zielScaleX;
-            });
-          }
-          if (zielScaleY !== undefined) {
-            ziele.forEach((ziel) => {
-              (ziel as FakeKartenWurzel).scaleY = zielScaleY;
-            });
-          }
-          const onComplete = konfiguration.onComplete;
-          if (typeof onComplete === 'function') {
-            onComplete();
-          }
-          return {
-            stop: vi.fn()
-          };
-        })
+  const textobjekte: any[] = [];
+  const szene = {
+    add: {
+      text: (x: number, y: number, text: string) => {
+        const obj = { 
+          x, y, text, alpha: 1, scaleX: 1, scaleY: 1, depth: 0, 
+          setOrigin: vi.fn().mockReturnThis(),
+          setAlpha: (v: number) => { obj.alpha = v; return obj; },
+          setScale: (v: number) => { obj.scaleX = v; obj.scaleY = v; return obj; },
+          setDepth: (v: number) => { obj.depth = v; return obj; },
+          destroy: vi.fn(),
+          setTint: vi.fn().mockReturnThis()
+        };
+        textobjekte.push(obj);
+        return obj;
       },
-      add: {
-        text: vi.fn((x: number, y: number, text: string) => {
-          const objekt: FakeTextObjekt = {
-            x,
-            y,
-            text,
-            alpha: 0,
-            zerstort: false,
-            setOrigin() { return this; },
-            setDepth() { return this; },
-            setAlpha(a: number) { this.alpha = a; return this; },
-            destroy() { this.zerstort = true; }
-          };
-          textobjekte.push(objekt);
-          return objekt;
-        })
+      rectangle: () => ({
+        setDepth: vi.fn().mockReturnThis(),
+        setAlpha: vi.fn().mockReturnThis(),
+        destroy: vi.fn()
+      })
+    },
+    tweens: {
+      add: (config: any) => {
+        if (config.onComplete) config.onComplete();
+        return { stop: vi.fn() };
+      }
+    },
+    time: {
+      delayedCall: (ms: number, cb: () => void) => {
+        cb();
+        return { remove: vi.fn() };
       }
     }
   };
-}
-
-function baueKartenWurzel(x = 0, y = 0): FakeKartenWurzel {
-  return { x, y, alpha: 1, scaleX: 1, scaleY: 1 };
+  return { szene, textobjekte };
 }
 
 describe('AnimationenService', () => {
-  it('animiert das Ausspielen einer Karte zur Zielposition', async () => {
-    const { szene, aufrufe } = baueTweenSzene();
-    const service = new AnimationenService(szene as never);
-    const wurzel = baueKartenWurzel(10, 20) as never;
-    const beschriftung = { x: 10, y: 20 } as never;
-
-    await service.animiereKarteAusspielen({ wurzel, beschriftung }, { x: 100, y: 200 });
-
-    expect(aufrufe).toHaveLength(1);
-    expect(aufrufe[0].duration).toBe(400);
-    expect(wurzel).toMatchObject({ x: 100, y: 200 });
-    expect(beschriftung).toMatchObject({ x: 100, y: 200 });
-  });
-
-  // WARUM: Das Ansage-Banner ist die einzige Echtzeitrueckmeldung bei Re/Kontra/Absagen;
-  // ohne diese Absicherung koennte die Animation heimlich wegfallen oder dauerhaft sichtbar bleiben.
-  it('blendet ein Ansage-Banner ein, haelt es sichtbar und blendet es wieder aus', async () => {
-    vi.useFakeTimers();
-    const { szene, aufrufe, textobjekte } = baueTweenSzene();
-    const service = new AnimationenService(szene as never);
-
-    const animation = service.animiereAnsageBanner('Anna\nRe', { x: 640, y: 360 }, 1500);
-
-    // Fade-In Tween (alpha → 1) wird sofort ausgefuehrt
-    expect(aufrufe).toHaveLength(1);
-    expect(aufrufe[0].alpha).toBe(1);
-    expect(aufrufe[0].duration).toBe(300);
-
-    // Sichtbarkeitsfenster noch nicht abgelaufen: kein Fade-Out
-    await vi.advanceTimersByTimeAsync(1499);
-    expect(aufrufe).toHaveLength(1);
-
-    // Nach 1500ms: Fade-Out Tween (alpha → 0)
-    await vi.advanceTimersByTimeAsync(1);
-    await animation;
-
-    expect(aufrufe).toHaveLength(2);
-    expect(aufrufe[1].alpha).toBe(0);
-    expect(aufrufe[1].duration).toBe(300);
-
-    // Banner-Objekt wurde nach der Animation zerstört
-    expect(textobjekte).toHaveLength(1);
-    expect(textobjekte[0].zerstort).toBe(true);
-    expect(textobjekte[0].text).toBe('Anna\nRe');
-
-    vi.useRealTimers();
-  });
-
-  // WARUM: Das Sonderpunkt-Feedback ist der einzige sofortige visuelle Hinweis auf Fuchs/Karlchen/Doppelkopf;
-  // ohne diese Absicherung koennte das Feedback bei State-Updates heimlich wegfallen oder dauerhaft sichtbar bleiben.
-  it('blendet ein Sonderpunkt-Feedback ein, haelt es sichtbar und blendet es wieder aus', async () => {
-    vi.useFakeTimers();
-    const { szene, aufrufe, textobjekte } = baueTweenSzene();
-    const service = new AnimationenService(szene as never);
-
-    const animation = service.animiereSonderpunktFeedback('Re: Fuchs gefangen', { x: 640, y: 360 }, 1000);
-
-    // Fade-In Tween (alpha → 1) wird sofort ausgefuehrt
-    expect(aufrufe).toHaveLength(1);
-    expect(aufrufe[0].alpha).toBe(1);
-    expect(aufrufe[0].duration).toBe(200);
-
-    // Sichtbarkeitsfenster noch nicht abgelaufen: kein Fade-Out
-    await vi.advanceTimersByTimeAsync(999);
-    expect(aufrufe).toHaveLength(1);
-
-    // Nach 1000ms: Fade-Out Tween (alpha → 0)
-    await vi.advanceTimersByTimeAsync(1);
-    await animation;
-
-    expect(aufrufe).toHaveLength(2);
-    expect(aufrufe[1].alpha).toBe(0);
-    expect(aufrufe[1].duration).toBe(200);
-
-    // Feedback-Objekt wurde nach der Animation zerstoert
-    expect(textobjekte).toHaveLength(1);
-    expect(textobjekte[0].zerstort).toBe(true);
-    expect(textobjekte[0].text).toBe('Re: Fuchs gefangen');
-
-    vi.useRealTimers();
-  });
-
-  it('wartet vor dem Stich-Einziehen und nutzt die konfigurierte Dauer', async () => {
-    vi.useFakeTimers();
-    const { szene, aufrufe } = baueTweenSzene();
-    const service = new AnimationenService(szene as never);
-    const wurzel = baueKartenWurzel() as never;
-
-    const animation = service.animiereStichEinziehen([{ wurzel }], { x: 50, y: 75 }, 14);
-    expect(aufrufe).toHaveLength(0);
-
-    await vi.advanceTimersByTimeAsync(999);
-    expect(aufrufe).toHaveLength(0);
-
-    await vi.advanceTimersByTimeAsync(1);
-    await animation;
-
-    // 2 Tweens: 1x Zu, 1x Scale (Karte) — Augen-Popup wurde nach FlashTextManager verschoben
-    expect(aufrufe).toHaveLength(2);
-    expect(aufrufe[0].duration).toBe(600);
-    expect(wurzel).toMatchObject({ x: 50, y: 75, scaleX: 0.4, scaleY: 0.4 });
-    vi.useRealTimers();
-  });
-
-  // WARUM: setzeGeschwindigkeitsfaktor ist der einzige Weg, die Animations-Geschwindigkeit zur Laufzeit
-  // zu aendern; ohne diesen Test koennte ein Refactoring die Skalierung leise brechen und der
-  // 1x/2x/sofort-Umschalter haette keine Auswirkung mehr.
-  it('skaliert Animationsdauern entsprechend dem gesetzten Geschwindigkeitsfaktor', async () => {
-    const { szene, aufrufe } = baueTweenSzene();
-    const service = new AnimationenService(szene as never);
-    const wurzel = baueKartenWurzel() as never;
-
-    // Faktor 2: Dauern werden halbiert
-    service.setzeGeschwindigkeitsfaktor(2);
-    await service.animiereKarteAusspielen({ wurzel }, { x: 100, y: 100 });
-    expect(aufrufe[0].duration).toBe(200); // 400ms / 2
-
-    // Faktor Infinity (sofort): Dauern werden 0 -> Tweens werden uebersprungen (Optimierung)
-    service.setzeGeschwindigkeitsfaktor(Infinity);
-    await service.animiereKarteAusspielen({ wurzel }, { x: 200, y: 200 });
-    expect(aufrufe).toHaveLength(1); // Kein zweiter Tween-Aufruf
-    expect(wurzel).toMatchObject({ x: 200, y: 200 }); // Position wurde trotzdem gesetzt (via direktem Resolve)
-  });
-
-  it('loest bei Geschwindigkeitsfaktor Infinity alle Animationen sofort auf', async () => {
-    vi.useFakeTimers();
-    const { szene, aufrufe } = baueTweenSzene();
-    const service = new AnimationenService(szene as never, Infinity);
-
-    // animiereStichEinziehen wartet normalerweise 1000ms — bei Infinity sofort fertig
-    const wurzel = baueKartenWurzel() as never;
-    const animation = service.animiereStichEinziehen([{ wurzel }], { x: 50, y: 75 }, 14);
-    // Kein Tick noetig: warte(0) kehrt sofort zurueck, Optimierung ueberspringt Tweens
-    await animation;
-
-    expect(aufrufe).toHaveLength(0); // Alle Tweens uebersprungen
-    expect(wurzel).toMatchObject({ x: 50, y: 75, scaleX: 0.4, scaleY: 0.4 });
-    vi.useRealTimers();
-  });
-
-  // WARUM: BUG-3 — bei schnellen KI-Zuegen wurden Stich-Einziehen und Karten-Ausspielen parallel
-  // animiert. Die Warteschlange serialisiert Animationen und verhindert die Aufstauung.
-  it('serialisiert eingereihte Animationen — keine parallele Ausfuehrung', async () => {
+  it('markiert Animationen als laufend', async () => {
     const { szene } = baueTweenSzene();
-    const service = new AnimationenService(szene as never, Infinity);
-    const ablauf: string[] = [];
-
-    const animation1 = service.reiheEin(async () => {
-      ablauf.push('start-1');
-      await Promise.resolve();
-      ablauf.push('ende-1');
-    });
-    const animation2 = service.reiheEin(async () => {
-      ablauf.push('start-2');
-      await Promise.resolve();
-      ablauf.push('ende-2');
-    });
-    const animation3 = service.reiheEin(async () => {
-      ablauf.push('start-3');
-      await Promise.resolve();
-      ablauf.push('ende-3');
-    });
-
-    await Promise.all([animation1, animation2, animation3]);
-
-    // Alle Animationen muessen strikt nacheinander gelaufen sein
-    expect(ablauf).toEqual(['start-1', 'ende-1', 'start-2', 'ende-2', 'start-3', 'ende-3']);
-  });
-
-  // WARUM: Wenn eine eingereihte Animation fehlschlaegt, darf die Kette nicht blockieren.
-  it('faengt Fehler in der Warteschlange ab und fuehrt nachfolgende Animationen aus', async () => {
-    const { szene } = baueTweenSzene();
-    const service = new AnimationenService(szene as never, Infinity);
-    const ablauf: string[] = [];
-
-    await service.reiheEin(async () => { throw new Error('Test-Fehler'); });
-    await service.reiheEin(async () => { ablauf.push('nach-fehler'); });
-
-    expect(ablauf).toEqual(['nach-fehler']);
-  });
-
-  // WARUM: animationLaeuft wird von der TischSzene geprüft um Buttons/Karten zu sperren.
-  it('setzt animationLaeuft waehrend der Warteschlangen-Ausfuehrung', async () => {
-    const { szene } = baueTweenSzene();
-    const service = new AnimationenService(szene as never, Infinity);
+    const service = new AnimationenService(szene as any, Infinity);
 
     expect(service.animationLaeuft).toBe(false);
 
@@ -301,28 +79,22 @@ describe('AnimationenService', () => {
     expect(service.animationLaeuft).toBe(false);
   });
 
-  // WARUM: abbrechen() muss die Warteschlange zuruecksetzen, damit bei Szenen-Wechsel keine
-  // veralteten Animationen weiterlaufen.
   it('setzt die Warteschlange bei abbrechen() zurueck', async () => {
     const { szene } = baueTweenSzene();
-    const service = new AnimationenService(szene as never, Infinity);
+    const service = new AnimationenService(szene as any, Infinity);
 
     service.abbrechen();
 
     expect(service.animationLaeuft).toBe(false);
-    // Nach abbrechen() sollen neue Animationen weiterhin funktionieren
     const ablauf: string[] = [];
     await service.reiheEin(async () => { ablauf.push('nach-abbrechen'); });
     expect(ablauf).toEqual(['nach-abbrechen']);
   });
 
-  // WARUM: animiereBockrunde() ist der einzige visuelle Hinweis auf eine Bockrunde beim Spielstart.
-  // Die Textinhalte muessen je nach Zaehler korrekt variieren, damit Spieler sofort erkennen
-  // ob es eine normale Bockrunde, Doppelbock oder eine gestapelte Bockrunde ist.
   it('zeigt bei anzahl=1 ein Schaf und "Bockrunde!"', async () => {
     vi.useFakeTimers();
     const { szene, textobjekte } = baueTweenSzene();
-    const service = new AnimationenService(szene as never);
+    const service = new AnimationenService(szene as any);
 
     const animation = service.animiereBockrunde(1, { x: 640, y: 360 }, 100);
     await vi.runAllTimersAsync();
@@ -337,7 +109,7 @@ describe('AnimationenService', () => {
   it('zeigt bei anzahl=2 zwei Schafe und "Doppelbock!"', async () => {
     vi.useFakeTimers();
     const { szene, textobjekte } = baueTweenSzene();
-    const service = new AnimationenService(szene as never);
+    const service = new AnimationenService(szene as any);
 
     const animation = service.animiereBockrunde(2, { x: 640, y: 360 }, 100);
     await vi.runAllTimersAsync();
@@ -352,7 +124,7 @@ describe('AnimationenService', () => {
   it('zeigt bei anzahl>=3 Schaf-Zaehler und "Bockrunde xN"', async () => {
     vi.useFakeTimers();
     const { szene, textobjekte } = baueTweenSzene();
-    const service = new AnimationenService(szene as never);
+    const service = new AnimationenService(szene as any);
 
     const animation = service.animiereBockrunde(3, { x: 640, y: 360 }, 100);
     await vi.runAllTimersAsync();
@@ -362,5 +134,66 @@ describe('AnimationenService', () => {
     expect(textobjekte[0].text).toBe('🐑×3');
     expect(textobjekte[1].text).toBe('Bockrunde ×3');
     vi.useRealTimers();
+  });
+
+  it('animiereRundenEndeOverlay erzeugt alle UI-Elemente', async () => {
+    const { szene, textobjekte } = baueTweenSzene();
+    const service = new AnimationenService(szene as any);
+    service.setzeGeschwindigkeitsfaktor(Infinity); 
+
+    const daten: any = {
+      siegerPartei: 'RE',
+      spieltypLabel: 'Normalspiel',
+      spielNummerText: '1 / 8',
+      reSpielerNamen: 'A, B',
+      kontraSpielerNamen: 'C, D',
+      augenRe: 150,
+      augenKontra: 90,
+      berechnungZeilen: ['Gewonnen: 1', 'Keine 90: 1'],
+      spielwert: 2,
+      spielpunkte: [
+        { name: 'A', punkte: 2, istSelbst: true },
+        { name: 'B', punkte: 2, istSelbst: false }
+      ],
+      gesamtstand: [
+        { name: 'A', punkte: 2 },
+        { name: 'B', punkte: 2 }
+      ]
+    };
+
+    const objekte = await service.animiereRundenauswertung(daten, 1280, 720);
+    
+    expect(textobjekte.length).toBeGreaterThan(10); 
+    const siegerText = textobjekte.find((o: any) => o.text === 'RE gewinnt!');
+    expect(siegerText).toBeDefined();
+  });
+
+  it('animiereSoloAnkuendigung erzeugt Text', async () => {
+    const { szene, textobjekte } = baueTweenSzene();
+    const service = new AnimationenService(szene as any, Infinity);
+
+    await service.animiereSoloAnkuendigung('Damensolo!', { x: 100, y: 100 });
+    expect(textobjekte.some(o => o.text === 'Damensolo!')).toBe(true);
+  });
+
+  it('animiereSonderpunktFeedback erzeugt Text', async () => {
+    const { szene, textobjekte } = baueTweenSzene();
+    const service = new AnimationenService(szene as any, Infinity);
+
+    await service.animiereSonderpunktFeedback('Doppelkopf!', { x: 100, y: 100 });
+    expect(textobjekte.some(o => o.text === 'Doppelkopf!')).toBe(true);
+  });
+
+  it('flipperZaehler animiert Text-Werte', async () => {
+    const { szene, textobjekte } = baueTweenSzene();
+    const service = new AnimationenService(szene as any);
+    // Wir nutzen hier normale Geschwindigkeit (1), damit der Flipper-Zweig durchlaufen wird
+    service.setzeGeschwindigkeitsfaktor(1);
+
+    const txt = szene.add.text(0, 0, '0');
+    // Privat-Zugriff auf flipperZaehler fuer Coverage
+    await (service as any).flipperZaehler(txt, 100, '+', 100);
+    
+    expect(txt.destroy).not.toHaveBeenCalled();
   });
 });

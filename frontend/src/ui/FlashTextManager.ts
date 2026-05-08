@@ -38,8 +38,18 @@ export class FlashTextManager {
   private vorbehaltContainer?: Phaser.GameObjects.Container;
   private vorbehaltBlinkTween?: Phaser.Tweens.Tween;
 
+  private geschwindigkeitsfaktor = 1;
+
   constructor(szene: Phaser.Scene) {
     this.szene = szene;
+  }
+
+  setzeGeschwindigkeitsfaktor(faktor: number): void {
+    this.geschwindigkeitsfaktor = Math.max(0.01, faktor);
+  }
+
+  private skalierteDauer(dauer: number): number {
+    return Math.max(0, Math.round(dauer / this.geschwindigkeitsfaktor));
   }
 
   async zeigeSpielevent(event: SpieleventTyp, payload: SpieleventPayload = {}): Promise<void> {
@@ -100,9 +110,19 @@ export class FlashTextManager {
   }
 
   private async verwalteMitTimeout(obj: Phaser.GameObjects.GameObject, ms: number): Promise<void> {
+    const skalierteMs = this.skalierteDauer(ms);
+    // Optimierung für Turbo-Modus: Objekt sofort zerstören und Promise auflösen.
+    // Phaser Tweens mit duration:0 feuern onComplete im Headless-Modus oft nicht.
+    if (skalierteMs <= 0) {
+      if ((obj as unknown as { active: boolean }).active) {
+        (obj as unknown as { destroy: (children?: boolean) => void }).destroy(true);
+      }
+      return Promise.resolve();
+    }
+
     this.verwalteteObjekte.push(obj);
     return new Promise((resolve) => {
-      const timer = this.szene.time.delayedCall(ms, () => {
+      const timer = this.szene.time.delayedCall(skalierteMs, () => {
         if (!(obj as unknown as { active: boolean }).active) {
           resolve();
           return;
@@ -110,7 +130,7 @@ export class FlashTextManager {
         this.szene.tweens.add({
           targets: obj,
           alpha: 0,
-          duration: 200,
+          duration: this.skalierteDauer(200),
           onComplete: () => {
             if ((obj as unknown as { active: boolean }).active) {
               (obj as unknown as { destroy: (children?: boolean) => void }).destroy(true);
@@ -131,7 +151,7 @@ export class FlashTextManager {
       speed: { min: 80, max: 200 },
       angle: { min: 0, max: 360 },
       gravityY: 300,
-      lifespan: 1200,
+      lifespan: this.skalierteDauer(1200),
       tint: farben,
       scale: { start: 4, end: 2 },
       quantity: 0,
@@ -139,39 +159,42 @@ export class FlashTextManager {
     });
     emitter.setDepth(52);
     emitter.explode(menge);
-    this.szene.time.delayedCall(1400, () => emitter.destroy());
+    this.szene.time.delayedCall(this.skalierteDauer(1400), () => emitter.destroy());
   }
 
   shockwaveRing(x: number, y: number, farbe: number, verzoegerung = 0): void {
+    const skalierteVerz = this.skalierteDauer(verzoegerung);
     const ring = this.szene.add.circle(x, y, 30, 0, 0);
     ring.setStrokeStyle(4, farbe, 1);
     ring.setDepth(51);
-    this.szene.time.delayedCall(verzoegerung, () => {
+    this.szene.time.delayedCall(skalierteVerz, () => {
       this.szene.tweens.add({
         targets: ring,
         scaleX: 5,
         scaleY: 5,
         alpha: 0,
         ease: 'Sine.Out',
-        duration: 550,
+        duration: this.skalierteDauer(550),
         onComplete: () => ring.destroy(),
       });
     });
   }
 
   screenShake(): void {
+    if (this.geschwindigkeitsfaktor > 10) return; // Kein Shake im Turbo-Modus
     this.szene.cameras.main.shake(350, 0.007);
   }
 
   cameraFlash(r: number, g: number, b: number, dauer: number): void {
-    this.szene.cameras.main.flash(dauer, r, g, b);
+    if (this.geschwindigkeitsfaktor > 10) return; // Kein Flash im Turbo-Modus
+    this.szene.cameras.main.flash(this.skalierteDauer(dauer), r, g, b);
   }
 
   private foilShimmer(text: Phaser.GameObjects.Text): Phaser.Time.TimerEvent {
     const farben = [0xffd700, 0xff88ff, 0x44ffee, 0xff8833, 0x44aaff];
     let ci = 0;
     const timer = this.szene.time.addEvent({
-      delay: 80,
+      delay: this.skalierteDauer(80),
       repeat: -1,
       callback: () => {
         if ((text as unknown as { active: boolean }).active) text.setTint(farben[ci++ % farben.length]);
@@ -196,7 +219,7 @@ export class FlashTextManager {
     }).setOrigin(0.5);
     container.add([t1, t2, t3]);
     container.setScale(0, 1);
-    this.szene.tweens.add({ targets: container, scaleX: 1, ease: 'Back.Out', duration: 380 });
+    this.szene.tweens.add({ targets: container, scaleX: 1, ease: 'Back.Out', duration: this.skalierteDauer(380) });
     await this.verwalteMitTimeout(container, 2500);
   }
 
@@ -214,7 +237,7 @@ export class FlashTextManager {
       targets: container,
       scaleX: [0.05, 1.22, 0.92, 1.06, 1],
       ease: 'Back.Out',
-      duration: 400,
+      duration: this.skalierteDauer(400),
     });
     await this.verwalteMitTimeout(container, 2000);
   }
@@ -232,10 +255,10 @@ export class FlashTextManager {
     container.add([t1, t2]);
     container.setScale(0.7, 1);
     container.setAlpha(0);
-    this.szene.tweens.add({ targets: container, scaleX: 1, alpha: 1, duration: 450, ease: 'Sine.Out' });
+    this.szene.tweens.add({ targets: container, scaleX: 1, alpha: 1, duration: this.skalierteDauer(450), ease: 'Sine.Out' });
     this.vorbehaltBlinkTween = this.szene.tweens.add({
-      targets: t1, alpha: { from: 1, to: 0.5 }, yoyo: true, repeat: -1, duration: 650,
-      ease: 'Sine.InOut', delay: 500,
+      targets: t1, alpha: { from: 1, to: 0.5 }, yoyo: true, repeat: -1, duration: this.skalierteDauer(650),
+      ease: 'Sine.InOut', delay: this.skalierteDauer(500),
     });
     this.vorbehaltContainer = container;
     return Promise.resolve();
@@ -249,15 +272,21 @@ export class FlashTextManager {
       stroke: '#006633', strokeThickness: 4,
     }).setOrigin(0.5).setDepth(51).setAlpha(0).setScale(0.6);
     
+    const skalierteDauerMain = this.skalierteDauer(360);
+    if (skalierteDauerMain <= 0) {
+      if ((text as unknown as { active: boolean }).active) text.destroy();
+      return Promise.resolve();
+    }
+
     return new Promise((resolve) => {
       this.szene.tweens.add({
         targets: text,
         y: posY - 60,
         scaleX: [0.6, 1.15, 1], scaleY: [0.6, 1.15, 1],
-        alpha: { from: 0, to: 1 }, ease: 'Back.Out', duration: 360,
+        alpha: { from: 0, to: 1 }, ease: 'Back.Out', duration: skalierteDauerMain,
         onComplete: () => {
           this.szene.tweens.add({
-            targets: text, alpha: 0, delay: 800, duration: 300,
+            targets: text, alpha: 0, delay: this.skalierteDauer(800), duration: this.skalierteDauer(300),
             onComplete: () => {
               if ((text as unknown as { active: boolean }).active) text.destroy();
               resolve();
@@ -287,7 +316,7 @@ export class FlashTextManager {
     this.szene.tweens.add({
       targets: container,
       scaleX: [0, 1.25, 0.9, 1.08, 1], scaleY: [0, 1.25, 0.9, 1.08, 1],
-      angle: [-30, 10, -4, 2, 0], ease: 'Back.Out', duration: 600,
+      angle: [-30, 10, -4, 2, 0], ease: 'Back.Out', duration: this.skalierteDauer(600),
     });
     this.shockwaveRing(posX, posY, FARBE_PINK, 0);
     this.shockwaveRing(posX, posY, FARBE_PINK, 100);
@@ -309,9 +338,9 @@ export class FlashTextManager {
       l.setY(-60);
       l.setAngle(-20);
       container.add(l);
-      const timer = this.szene.time.delayedCall(i * 70, () => {
+      const timer = this.szene.time.delayedCall(this.skalierteDauer(i * 70), () => {
         if (!(l as unknown as { active: boolean }).active) return;
-        this.szene.tweens.add({ targets: l, y: -22, alpha: 1, angle: 0, duration: 280, ease: 'Back.Out' });
+        this.szene.tweens.add({ targets: l, y: -22, alpha: 1, angle: 0, duration: this.skalierteDauer(280), ease: 'Back.Out' });
       });
       this.verwalteteTimers.push(timer);
     });
@@ -343,11 +372,11 @@ export class FlashTextManager {
     this.szene.tweens.add({
       targets: container,
       scaleX: [0, 1.25, 0.9, 1.08, 1], scaleY: [0, 1.25, 0.9, 1.08, 1],
-      angle: [-30, 10, -4, 2, 0], ease: 'Back.Out', duration: 600,
+      angle: [-30, 10, -4, 2, 0], ease: 'Back.Out', duration: this.skalierteDauer(600),
     });
     this.shockwaveRing(posX, posY, FARBE_GOLD, 0);
     this.shockwaveRing(posX, posY, FARBE_GOLD, 100);
-    this.szene.cameras.main.shake(300, 0.006);
+    this.screenShake();
     await this.verwalteMitTimeout(container, 2500);
   }
 
@@ -371,19 +400,27 @@ export class FlashTextManager {
     const foilTimer = this.foilShimmer(hauptText);
     container.setScale(5, 5);
     container.setAlpha(0);
-    this.szene.tweens.add({ targets: container, scaleX: 1, scaleY: 1, alpha: 1, ease: 'Expo.Out', duration: 580 });
+    this.szene.tweens.add({ targets: container, scaleX: 1, scaleY: 1, alpha: 1, ease: 'Expo.Out', duration: this.skalierteDauer(580) });
     this.shockwaveRing(posX, posY, FARBE_GOLD, 0);
     this.shockwaveRing(posX, posY, FARBE_GOLD, 100);
     this.shockwaveRing(posX, posY, FARBE_GOLD, 200);
     this.konfetti(posX, posY, 70, [0xffd700, 0xff88ff, 0x44ffee, 0xff8833, 0xffffff]);
     this.cameraFlash(255, 215, 0, 300);
-    this.szene.cameras.main.shake(400, 0.01);
+    this.screenShake();
     this.verwalteteObjekte.push(container);
+
+    const skalierteWartezeit = this.skalierteDauer(3500);
+    if (skalierteWartezeit <= 0) {
+      foilTimer.remove(false);
+      if ((container as unknown as { active: boolean }).active) container.destroy(true);
+      return Promise.resolve();
+    }
+
     return new Promise((resolve) => {
-      const destroyTimer = this.szene.time.delayedCall(3500, () => {
+      const destroyTimer = this.szene.time.delayedCall(skalierteWartezeit, () => {
         foilTimer.remove(false);
         this.szene.tweens.add({
-          targets: container, alpha: 0, duration: 200,
+          targets: container, alpha: 0, duration: this.skalierteDauer(200),
           onComplete: () => {
             if ((container as unknown as { active: boolean }).active) container.destroy(true);
             resolve();
@@ -420,18 +457,26 @@ export class FlashTextManager {
     this.szene.tweens.add({
       targets: container,
       scaleX: [0, 1.25, 0.9, 1.08, 1], scaleY: [0, 1.25, 0.9, 1.08, 1],
-      angle: [-30, 10, -4, 2, 0], ease: 'Back.Out', duration: 600,
+      angle: [-30, 10, -4, 2, 0], ease: 'Back.Out', duration: this.skalierteDauer(600),
     });
     this.shockwaveRing(posX, posY, FARBE_GOLD, 0);
     this.shockwaveRing(posX, posY, FARBE_GOLD, 150);
     this.konfetti(posX, posY, 60, [0xffd700, 0xffaacc, 0xffffff, 0xff88ff]);
     this.cameraFlash(255, 215, 0, 200);
     this.verwalteteObjekte.push(container);
+
+    const skalierteWartezeit = this.skalierteDauer(3000);
+    if (skalierteWartezeit <= 0) {
+      foilTimer.remove(false);
+      if ((container as unknown as { active: boolean }).active) container.destroy(true);
+      return Promise.resolve();
+    }
+
     return new Promise((resolve) => {
-      const destroyTimer = this.szene.time.delayedCall(3000, () => {
+      const destroyTimer = this.szene.time.delayedCall(skalierteWartezeit, () => {
         foilTimer.remove(false);
         this.szene.tweens.add({
-          targets: container, alpha: 0, duration: 200,
+          targets: container, alpha: 0, duration: this.skalierteDauer(200),
           onComplete: () => {
             if ((container as unknown as { active: boolean }).active) container.destroy(true);
             resolve();
@@ -461,18 +506,26 @@ export class FlashTextManager {
     const foilTimer = this.foilShimmer(hauptText);
     container.setScale(5, 5);
     container.setAlpha(0);
-    this.szene.tweens.add({ targets: container, scaleX: 1, scaleY: 1, alpha: 1, ease: 'Expo.Out', duration: 540 });
+    this.szene.tweens.add({ targets: container, scaleX: 1, scaleY: 1, alpha: 1, ease: 'Expo.Out', duration: this.skalierteDauer(540) });
     this.shockwaveRing(cx, cy, FARBE_GRUEN, 0);
     this.shockwaveRing(cx, cy, FARBE_GRUEN, 100);
     this.konfetti(cx, cy, 150, [0x44ff88, 0xffd700, 0xffffff, 0x44ffee, 0xff88ff]);
     this.cameraFlash(100, 255, 150, 400);
-    this.szene.cameras.main.shake(500, 0.012);
+    this.screenShake();
     this.verwalteteObjekte.push(container);
+
+    const skalierteWartezeit = this.skalierteDauer(4000);
+    if (skalierteWartezeit <= 0) {
+      foilTimer.remove(false);
+      if ((container as unknown as { active: boolean }).active) container.destroy(true);
+      return Promise.resolve();
+    }
+
     return new Promise((resolve) => {
-      const destroyTimer = this.szene.time.delayedCall(4000, () => {
+      const destroyTimer = this.szene.time.delayedCall(skalierteWartezeit, () => {
         foilTimer.remove(false);
         this.szene.tweens.add({
-          targets: container, alpha: 0, duration: 200,
+          targets: container, alpha: 0, duration: this.skalierteDauer(200),
           onComplete: () => {
             if ((container as unknown as { active: boolean }).active) container.destroy(true);
             resolve();

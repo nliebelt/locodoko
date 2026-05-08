@@ -168,6 +168,13 @@ export class Kartenansicht extends Phaser.GameObjects.Container {
   gleiteZu(x: number, y: number, dauer = 150): this {
     if (this.x === x && this.y === y) return this;
     
+    // Guard: Falls die Szene oder das Tween-System bereits zerstoert wurde,
+    // (z.B. durch schnellen Szenenwechsel/Restart), breche sofort ab, um einen Crash zu verhindern.
+    if (!this.scene || !this.scene.tweens) {
+      this.setPosition(x, y);
+      return this;
+    }
+    
     // Unterbricht laufende Positions-Tweens fuer dieses Objekt
     this.scene.tweens.killTweensOf(this);
     

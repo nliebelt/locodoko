@@ -64,6 +64,13 @@ export class BootSzene extends Phaser.Scene {
    */
   private async initialisieren(): Promise<void> {
     try {
+      // Einladungslink: #join/{code} → automatischer Beitritt vormerken
+      const einladungsCode = this.leseEinladungsCodeAusUrl();
+      if (einladungsCode) {
+        sessionStorage.setItem('pendingJoinCode', einladungsCode);
+        window.location.hash = '';
+      }
+
       // Versuche bestehende Session wiederherzustellen (z.B. nach Tab-Reload)
       try {
         await appStore.initialisieren();
@@ -74,12 +81,12 @@ export class BootSzene extends Phaser.Scene {
           appStore.reconnecteTisch(aktiverTischId);
           this.scene.start('TischSzene');
         } else {
-          // Einladungslink: #join/{code} → automatischer Beitritt
-          const einladungsCode = this.leseEinladungsCodeAusUrl();
-          if (einladungsCode) {
-            window.location.hash = '';
+          // Pruefen ob ein vorgemerkter Einladungscode existiert
+          const pendingCode = sessionStorage.getItem('pendingJoinCode');
+          if (pendingCode) {
+            sessionStorage.removeItem('pendingJoinCode');
             try {
-              await appStore.betreteTischViaCode(einladungsCode);
+              await appStore.betreteTischViaCode(pendingCode);
               this.scene.start('TischSzene');
               return;
             } catch {

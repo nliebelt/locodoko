@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import type {
   AuthentifizierungsAntwort,
   PartieEreignisAntwort,
@@ -954,5 +954,97 @@ describe('AppStore', () => {
 
     expect(store.snapshot().tische).toHaveLength(1);
     expect(store.snapshot().tische[0]).toMatchObject({ name: 'Mein Tisch' });
+  });
+  it('erstellt Tisch mit Preset', async () => {
+    const echtzeit = new FakeEchtzeit();
+    const api = new FakeApi({ spielerId: 's1', name: 'Nora', istKi: false, aktiverTischId: null }, [], baueTisch()) as any;
+    const apiSpy = vi.spyOn(api, 'erstelleTisch');
+    const store = new AppStore(api, echtzeit);
+
+    await store.erstelleTischMitPreset('Mein Tisch', 'STANDARD', true);
+    expect(apiSpy).toHaveBeenCalledWith('Mein Tisch', undefined, true, 'STANDARD');
+  });
+
+  it('betritt Tisch via Code', async () => {
+    const echtzeit = new FakeEchtzeit();
+    const api = new FakeApi({ spielerId: 's1', name: 'Nora', istKi: false, aktiverTischId: null }, [], baueTisch()) as any;
+    const apiSpy = vi.spyOn(api, 'betreteTischViaCode');
+    const store = new AppStore(api, echtzeit);
+
+    await store.betreteTischViaCode('ABCDEF12');
+    expect(apiSpy).toHaveBeenCalledWith('ABCDEF12');
+  });
+
+  it('kickeSpieler ruft API auf', async () => {
+    const echtzeit = new FakeEchtzeit();
+    const api = new FakeApi({ spielerId: 's1', name: 'Nora', istKi: false, aktiverTischId: null }, [], baueTisch('t1')) as any;
+    const apiSpy = vi.spyOn(api, 'kickeSpieler');
+    const store = new AppStore(api, echtzeit);
+    await store.betreteTisch('t1');
+
+    await store.kickeSpieler('s2');
+    expect(apiSpy).toHaveBeenCalledWith('t1', 's2');
+  });
+it('quittiert Meldung', async () => {
+  const echtzeit = new FakeEchtzeit();
+  const store = new AppStore(new FakeApi({ spielerId: 's1' } as any, [], baueTisch()) as any, echtzeit);
+  store['patch']({ meldung: { text: 'Fehler' } } as any);
+  store.quittiereMeldung();
+  expect(store.snapshot().meldung).toBeNull();
+});
+
+it('toggles debug mode', () => {
+  const store = new AppStore(new FakeApi() as any, new FakeEchtzeit());
+  expect(store.snapshot().debugModus).toBe(false);
+  store.toggleDebugModus();
+  expect(store.snapshot().debugModus).toBe(true);
+    expect(store.snapshot().debugModus).toBe(true);
+  });
+
+  it('behandelt Fehler bei Initialisierung', async () => {
+    const api = new FakeApi() as any;
+    vi.spyOn(api, 'initialisiereSpielerSession').mockRejectedValue(new Error('API Down'));
+    const store = new AppStore(api, new FakeEchtzeit());
+    await expect(store.initialisieren()).rejects.toThrow('Initialisierung fehlgeschlagen.');
+    expect(store.snapshot().verbindung).toBe('offline');
+  });
+
+  it('setze KI-Kartenverzoegerung', () => {
+    const store = new AppStore(new FakeApi() as any, new FakeEchtzeit());
+    store.setzeKiKartenVerzögerung(400);
+    expect(store.snapshot().uiKonfiguration.kiVerzoegerungMs).toBe(400);
+  });
+
+  it('initialisiert die Session und lädt Tische', async () => {
+    const api = new FakeApi({ spielerId: 's1', name: 'Nora' } as any, [{ id: 't1', name: 'T1' } as any]) as any;
+    const store = new AppStore(api, new FakeEchtzeit());
+    await store.initialisieren();
+    expect(store.snapshot().initialisiert).toBe(true);
+    expect(store.snapshot().tische).toHaveLength(1);
+  });
+
+  it('erkennt Sequenzlücke und bricht Batch-Verarbeitung ab', async () => {
+    const echtzeit = new FakeEchtzeit();
+    const store = new AppStore(new FakeApi() as any, echtzeit);
+    (store as any).patch({ aktuellerTisch: { id: 't1' } });
+    (store as any)._letztePartieVersion = 5;
+    const batch = { version: 7, ereignisse: [] };
+    const wsSpy = vi.spyOn(echtzeit, 'senden');
+    await (store as any).verarbeitePartieBatch(batch);
+    expect(wsSpy).toHaveBeenCalled();
+  });
+
+  it('ignoriert veraltete Batches', async () => {
+    const store = new AppStore(new FakeApi() as any, new FakeEchtzeit());
+    (store as any)._letztePartieVersion = 10;
+    const batch = { version: 5, ereignisse: [{ typ: 'SNAPSHOT' }] };
+    await (store as any).verarbeitePartieBatch(batch);
+    expect((store as any)._eventQueue).toHaveLength(0);
+  });
+
+  it('formatiereMeldung behandelt unbekannte Fehler', () => {
+    const store = new AppStore(new FakeApi() as any, new FakeEchtzeit());
+    const m = store['formatiereMeldung'](new Error('Normaler Fehler'));
+    expect(m.text).toBe('Unbekannter Fehler.');
   });
 });

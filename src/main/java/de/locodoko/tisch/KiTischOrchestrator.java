@@ -137,6 +137,7 @@ public class KiTischOrchestrator {
                         // Menschliche Spieler erhalten Zeit fuer die Rundenauswertung.
                         if (hatMenschlichenSpieler) {
                             partieLifecycleService.veroeffentlicheSpielGestartet(tisch);
+                            eventPublisher.publishEvent(new VorbehaltErwartet(tisch.id()));
                             return;
                         }
                     } catch (Exception e) {

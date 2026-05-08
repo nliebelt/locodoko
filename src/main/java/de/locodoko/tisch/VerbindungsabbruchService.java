@@ -15,6 +15,7 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -37,6 +38,9 @@ public class VerbindungsabbruchService {
 
     /** HTTP-Session-ID → Disconnect-Informationen für getrennte, noch nicht KI-übernommene Spieler. */
     private final ConcurrentHashMap<String, DisconnectInfo> getrennteSessionen = new ConcurrentHashMap<>();
+    
+    /** HTTP-Session-ID → Menge der aktiven WebSocket-Session-IDs. */
+    private final ConcurrentHashMap<String, Set<String>> aktiveWsSessionen = new ConcurrentHashMap<>();
 
     private final TischRepository tischRepository;
     private final SpielerRepository spielerRepository;
@@ -68,14 +72,26 @@ public class VerbindungsabbruchService {
      * Merkt den Spieler als getrennt und sendet ein GETRENNT-Ereignis an den Tisch.
      *
      * @param httpSessionId HTTP-Session-ID des Spielers
+     * @param wsSessionId   WebSocket-Session-ID, die getrennt wurde
      * @param spielerId     Datenbankidentität des Spielers
      * @param spielerName   Anzeigename für die Benachrichtigung
      */
     @Transactional(readOnly = true)
-    public void verarbeiteDisconnect(String httpSessionId, SpielerId spielerId, String spielerName) {
+    public void verarbeiteDisconnect(String httpSessionId, String wsSessionId, SpielerId spielerId, String spielerName) {
         if (httpSessionId == null || spielerId == null) {
             return;
         }
+        
+        aktiveWsSessionen.computeIfPresent(httpSessionId, (k, set) -> {
+            set.remove(wsSessionId);
+            return set.isEmpty() ? null : set;
+        });
+
+        if (aktiveWsSessionen.containsKey(httpSessionId)) {
+            // Es gibt noch andere aktive WebSocket-Verbindungen für diese Session
+            return;
+        }
+
         // putIfAbsent verhindert, dass mehrere WebSocket-Sessions für denselben Spieler
         // den Disconnect-Zeitpunkt überschreiben
         getrennteSessionen.putIfAbsent(httpSessionId, new DisconnectInfo(spielerId, spielerName, Instant.now()));
@@ -97,11 +113,24 @@ public class VerbindungsabbruchService {
      * Der aktuelle Spielzustand wird dem Spieler direkt zugestellt.
      *
      * @param httpSessionId HTTP-Session-ID des Spielers
+     * @param wsSessionId   WebSocket-Session-ID, die aufgebaut wurde
      * @param spielerId     Datenbankidentität des Spielers
      * @param spielerName   Anzeigename für die Benachrichtigung
      */
     @Transactional
-    public void verarbeiteReconnect(String httpSessionId, SpielerId spielerId, String spielerName) {
+    public void verarbeiteReconnect(String httpSessionId, String wsSessionId, SpielerId spielerId, String spielerName) {
+        if (httpSessionId == null || wsSessionId == null) {
+            return;
+        }
+
+        aktiveWsSessionen.compute(httpSessionId, (k, set) -> {
+            if (set == null) {
+                set = ConcurrentHashMap.newKeySet();
+            }
+            set.add(wsSessionId);
+            return set;
+        });
+
         DisconnectInfo info = getrennteSessionen.remove(httpSessionId);
         if (info == null) {
             // Erstverbindung — kein Reconnect-Szenario
@@ -126,6 +155,18 @@ public class VerbindungsabbruchService {
                 );
             }
         });
+    }
+
+    /** Hilfsmethode für Tests */
+    @Transactional(readOnly = true)
+    public void verarbeiteDisconnect(String httpSessionId, SpielerId spielerId, String spielerName) {
+        verarbeiteDisconnect(httpSessionId, "test-ws-1", spielerId, spielerName);
+    }
+
+    /** Hilfsmethode für Tests */
+    @Transactional
+    public void verarbeiteReconnect(String httpSessionId, SpielerId spielerId, String spielerName) {
+        verarbeiteReconnect(httpSessionId, "test-ws-2", spielerId, spielerName);
     }
 
     /**

@@ -48,16 +48,29 @@ export class SpielverwaltungsSzene extends Phaser.Scene {
       this.presets = p;
     }).catch(console.error);
 
+    this.abmeldenStore?.();
     this.abmeldenStore = appStore.abonniere((zustand) => {
       this.renderUi(zustand);
       if (zustand.bereich === 'TISCH' && zustand.aktuellerTisch) {
+        this.abmeldenStore?.();
         this.scene.start('TischSzene');
       } else if (zustand.bereich === 'LOGIN') {
+        this.abmeldenStore?.();
         this.scene.start('LoginSzene');
       }
     });
 
     this.events.once('shutdown', this.shutdown, this);
+
+    const pendingCode = sessionStorage.getItem('pendingJoinCode');
+    if (pendingCode) {
+      sessionStorage.removeItem('pendingJoinCode');
+      void appStore.betreteTischViaCode(pendingCode).catch((e) => {
+        console.error('Automatischer Beitritt fehlgeschlagen', e);
+        this.renderUi(appStore.snapshot());
+      });
+      return;
+    }
 
     this.renderUi(appStore.snapshot());
   }

@@ -130,6 +130,8 @@ test.describe('Vision Loop — UI Screenshots', () => {
           rundenauswertungScreenshotGemacht = true;
           await screenshot(page, '05-rundenauswertung-overlay');
           console.log('Screenshot: 05-rundenauswertung-overlay');
+          rundeAbgeschlossen = true;
+          break;
         }
       }
 

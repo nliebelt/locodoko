@@ -9,6 +9,9 @@ export interface ButtonOptionen {
   breite?: number;
   hoehe?: number;
   callback: () => void;
+  deaktiviert?: boolean;
+  hervorheben?: boolean;
+  testId?: string;
 }
 
 export interface FocusableElement {
@@ -25,8 +28,9 @@ export class PhaserButton extends Phaser.GameObjects.Container implements Focusa
   private callback: () => void;
 
   constructor(scene: Phaser.Scene, optionen: ButtonOptionen) {
-    const { x, y, text, typ = 'primary', breite = 300, hoehe = 50, callback } = optionen;
+    const { x, y, text, typ = 'primary', breite = 300, hoehe = 50, callback, testId, deaktiviert = false } = optionen;
     super(scene, x, y);
+    if (testId) this.setName(testId);
 
     this.callback = callback;
     const bgFarbe = typ === 'primary' ? 0xd8f3dc : 0x2d5a3d;
@@ -47,26 +51,31 @@ export class PhaserButton extends Phaser.GameObjects.Container implements Focusa
 
     this.add([schatten, this.hintergrund, textObj]);
 
-    // Interaktion
-    this.hintergrund.setInteractive({ useHandCursor: true });
-    this.hintergrund.on('pointerdown', () => {
-      this.hintergrund.y = 2;
-      schatten.alpha = 0;
-      textObj.y = 2;
-    });
+    if (deaktiviert) {
+      this.hintergrund.setAlpha(0.5);
+      textObj.setAlpha(0.5);
+    } else {
+      // Interaktion
+      this.hintergrund.setInteractive({ useHandCursor: true });
+      this.hintergrund.on('pointerdown', () => {
+        this.hintergrund.y = 2;
+        schatten.alpha = 0;
+        textObj.y = 2;
+      });
 
-    this.hintergrund.on('pointerup', () => {
-      this.hintergrund.y = 0;
-      schatten.alpha = 0.5;
-      textObj.y = 0;
-      callback();
-    });
+      this.hintergrund.on('pointerup', () => {
+        this.hintergrund.y = 0;
+        schatten.alpha = 0.5;
+        textObj.y = 0;
+        callback();
+      });
 
-    this.hintergrund.on('pointerout', () => {
-      this.hintergrund.y = 0;
-      schatten.alpha = 0.5;
-      textObj.y = 0;
-    });
+      this.hintergrund.on('pointerout', () => {
+        this.hintergrund.y = 0;
+        schatten.alpha = 0.5;
+        textObj.y = 0;
+      });
+    }
 
     scene.add.existing(this);
   }

@@ -38,16 +38,18 @@ public class VerbindungsSessionEreignisListener {
      */
     @EventListener
     public void behandleVerbindungAufgebaut(SessionConnectedEvent ereignis) {
-        Map<String, Object> attribute = leseAttribute(ereignis.getMessage());
+        StompHeaderAccessor accessor = StompHeaderAccessor.wrap(ereignis.getMessage());
+        Map<String, Object> attribute = accessor.getSessionAttributes();
         if (attribute == null) {
             return;
         }
         String httpSessionId = (String) attribute.get(SpielerSessionHandshakeInterceptor.SPIELER_SESSION_ID_ATTRIBUT);
         UUID spielerId = (UUID) attribute.get("spielerId");
         String spielerName = (String) attribute.get("spielerName");
+        String wsSessionId = accessor.getSessionId();
 
-        if (httpSessionId != null && spielerId != null && spielerName != null) {
-            verbindungsabbruchService.verarbeiteReconnect(httpSessionId, SpielerId.von(spielerId), spielerName);
+        if (httpSessionId != null && spielerId != null && spielerName != null && wsSessionId != null) {
+            verbindungsabbruchService.verarbeiteReconnect(httpSessionId, wsSessionId, SpielerId.von(spielerId), spielerName);
         }
     }
 
@@ -57,16 +59,18 @@ public class VerbindungsSessionEreignisListener {
      */
     @EventListener
     public void behandleVerbindungGetrennt(SessionDisconnectEvent ereignis) {
-        Map<String, Object> attribute = leseAttribute(ereignis.getMessage());
+        StompHeaderAccessor accessor = StompHeaderAccessor.wrap(ereignis.getMessage());
+        Map<String, Object> attribute = accessor.getSessionAttributes();
         if (attribute == null) {
             return;
         }
         String httpSessionId = (String) attribute.get(SpielerSessionHandshakeInterceptor.SPIELER_SESSION_ID_ATTRIBUT);
         UUID spielerId = (UUID) attribute.get("spielerId");
         String spielerName = (String) attribute.get("spielerName");
+        String wsSessionId = accessor.getSessionId();
 
-        if (httpSessionId != null && spielerId != null && spielerName != null) {
-            verbindungsabbruchService.verarbeiteDisconnect(httpSessionId, SpielerId.von(spielerId), spielerName);
+        if (httpSessionId != null && spielerId != null && spielerName != null && wsSessionId != null) {
+            verbindungsabbruchService.verarbeiteDisconnect(httpSessionId, wsSessionId, SpielerId.von(spielerId), spielerName);
         } else {
             LOGGER.debug("WebSocket-Disconnect ohne gültige Spieler-Attribute — vermutlich fehlgeschlagener Handshake.");
         }

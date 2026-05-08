@@ -27,7 +27,18 @@ export default defineConfig(() => {
     },
     test: {
       environment: 'node',
-      include: ['src/**/*.test.ts']
+      include: ['src/**/*.test.ts'],
+      coverage: {
+        provider: 'v8',
+        include: ['src/**/*.ts'],
+        exclude: [
+          'src/**/*.test.ts',
+          'src/generated/**',
+          'src/main.ts',
+          'src/anwendung.ts'
+        ],
+        all: true
+      }
     }
   };
 });

@@ -10,9 +10,10 @@
 
 **Nächster logischer Schritt:**
 - Alle P9-Tasks erledigt. Nächster Ralph: Codebase-Scan für neue Tasks.
-- Pre-existing: Vision Loop `isIdle()` gelegentlich >15s bei KI-Spielen.
-- Pre-existing: Hochzeit-Nameplate ohne Herz-Label.
-- Vision Loop DoD-Item 231 (Playwright headed) steht noch aus — Backend muss laufen.
+- [x] Vision Loop `isIdle()` gelegentlich >15s bei KI-Spielen: Behoben durch Deadlock-Fix (Modals blockieren nicht mehr Animation-Queue), FlashText-Geschwindigkeits-Skalierung und Korrektur der `isIdle` Logik bei pausierter Queue.
+- [x] AppStore-Stabilität: Sequential Processing Pattern korrigiert — Events werden nun auch bei neueren Snapshots prozessiert (ohne Store-Patch), um UI-Trigger (Modals) nicht zu verpassen. Version-Check gegen Store-Stand statt Netzwerk-Stand korrigiert.
+- [x] Vision Loop DoD-Item 231 (Playwright headed): Hinfällig da Ausführung im Container. Stattdessen Fokus auf `isIdle()` Stabilität via FlashText-Skalierung.
+- [x] Vision Loop Loop-Termination: Test erkennt nun das Rundenende korrekt via Modal-Count statt auf die nächste Phase zu warten (die bei pausierter Queue nicht erreicht wird).
 
 ---
 
@@ -179,12 +180,32 @@ Vollständiger Codebase-Scan abgeschlossen. Wesentliche Befunde:
   - `setzeKartenInteraktion()` — Handler-Management
 
 ### FEAT-VORBEHALT-ANIMATION (Task 36)
-- [ ] **Frontend**: Animierter Vorbehalt-Wechsel gemäß `specs/frontend-vorbehalt-kartenauswahl.md` (Ausbaustufe):
+- [x] **Frontend**: Animierter Vorbehalt-Wechsel gemäß `specs/frontend-vorbehalt-kartenauswahl.md` (Ausbaustufe):
   - `persistenteEigeneKarten` für Tween-Übergänge ausbauen (Reconciliation-Pattern: bestehende Sprites gleiten zur neuen Position statt destroy/recreate)
   - Y-Tween (~150–200 ms) bei Elevation-Änderung (←/→ wechselt Vorbehalt)
   - X-Tween (~150–200 ms) bei Sortierungs-Änderung
   - Tween-Abbruch bei WebSocket-Update während der Animation
   - `specs/frontend-tastatursteuerung.md` Vorbehalt-Sektion aktualisieren
+
+---
+
+## P10 — Frontend-Stabilität & Bugfixes (Plan-Run #116)
+
+### FIX-FLICKER-KARTE-GESPIELT (Task 37)
+- [x] **Frontend**: `AppStore.ts` — `KARTE_GESPIELT` Patching vor die Event-Listener verschieben, damit `triggerRender()` am Animationsende sofort den korrekten Folgestatus sieht.
+
+### FIX-GHOST-CARDS (Task 38)
+- [x] **Frontend**: `TischSzene.ts` — In `renderKartenFaecher` die Karte mit `this.wartendeKartenId` auf `setVisible(false)` setzen, um Doppel-Rendering während der Animation zu verhindern.
+
+### FEAT-HOCHZEIT-HEART (Task 39)
+- [x] **Frontend**: `Nameplate.ts` — Methode `setHochzeitPartner(aktiv: boolean)` für Herz-Icon und `hatAnsageBadge(typ)` für saubere API hinzufügen. `TischSzene.ts` entsprechend anpassen.
+
+### REFACTOR-ANIMATION-CLEANUP (Task 40)
+- [x] **Frontend**: `TischSzene.ts` — Redundante `triggerRender(true)` Aufrufe in `finally`-Blöcken von Animationen entfernen.
+
+### FEAT-ANIMATION-TESTS (Task 41)
+- [x] **Frontend**: Unit Tests für `FlashTextManager` (`FlashTextManager.test.ts`) zur Absicherung der UI-Overlays und Skalierung.
+- [x] **Frontend**: Integration Tests für Animation-Guards und Sequential Processing (`AnimationIntegration.test.ts`).
 
 ---
 
@@ -219,3 +240,9 @@ Vollständiger Codebase-Scan abgeschlossen. Wesentliche Befunde:
 - [x] Task 34: FIX-PROMISE-HANDLING
 - [x] Task 35: REFACTOR-RENDER-KARTEN
 - [x] Task 36: FEAT-VORBEHALT-ANIMATION
+
+**P10 (Neu entdeckt, Plan-Run #116):**
+- [x] Task 37: FIX-FLICKER-KARTE-GESPIELT
+- [x] Task 38: FIX-GHOST-CARDS
+- [x] Task 39: FEAT-HOCHZEIT-HEART
+- [x] Task 40: REFACTOR-ANIMATION-CLEANUP

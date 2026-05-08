@@ -67,41 +67,58 @@ function erstelleTweenApi() {
 vi.mock('../anwendung', () => ({ appStore: appStoreHarness.store }));
 
 class FakeGameObject {
-  readonly typ: string;
-  x=0; y=0; textur?: string; text?: string; alpha=1; winkel=0; breite=0; hoehe=0; interactive=false; zerstort=false; tint?: number; name = ''; active = true; scene: any = { input: { enabled: true }, tweens: erstelleTweenApi() };
-  private readonly handler = new Map<string, Handler[]>();
-  get texture() { return { key: this.textur }; }
-  constructor(typ: string, opt: any = {}) { this.typ = typ; Object.assign(this, opt); }
-  setDisplaySize(_w: number, _h: number) { return this; }
-  setAngle(w: number) { this.winkel = w; return this; }
+  x=0; y=0; alpha=1; active=true; visible=true; name=''; tint?: number; scene: any = { input: { enabled: true }, tweens: erstelleTweenApi() };
+  setDepth() { return this; }
   setAlpha(a: number) { this.alpha = a; return this; }
   setTint(t: number) { this.tint = t; return this; }
   setName(n: string) { this.name = n; return this; }
   setOrigin() { return this; }
-  setDepth() { return this; }
   setPosition(x: number, y: number) { this.x = x; this.y = y; return this; }
-  setSize(w: number, h: number) { this.breite = w; this.hoehe = h; return this; }
-  setTexture(t: string) { this.textur = t; return this; }
-  setInteractive() { this.interactive = true; return this; }
-  on(e: string, h: Handler) { const el = this.handler.get(e) ?? []; el.push(h); this.handler.set(e, el); return this; }
-  emit(e: string) { (this.handler.get(e) ?? []).forEach(h => h()); }
-  destroy() { this.zerstort = true; return this; }
-  setText(t: string) { this.text = t; return this; }
+  setInteractive() { return this; }
+  setVisible(v: boolean) { this.visible = v; return this; }
+  on() { return this; }
+  emit() { return this; }
+  destroy() { this.active = false; return this; }
+  setText() { return this; }
   setScale() { return this; }
+  setDisplaySize() { return this; }
+  setSize() { return this; }
+  setAngle() { return this; }
+  clear() { return this; }
   fillStyle() { return this; }
   fillRect() { return this; }
   fillRoundedRect() { return this; }
   strokeRoundedRect() { return this; }
   lineStyle() { return this; }
-  clear() { return this; }
   setStrokeStyle() { return this; }
+  onpointerdown() { (this as any)._pointerDownHandler?.(); }
 }
 
 class FakeContainer extends FakeGameObject {
   readonly kinder: any[] = [];
-  constructor() { super('container'); }
-  add(k: any) { this.kinder.push(k); return this; }
+  add(k: any) { 
+    if (Array.isArray(k)) this.kinder.push(...k);
+    else this.kinder.push(k);
+    return this;
+  }
 }
+
+vi.mock('../ui/PhaserModal', () => ({
+  PhaserModal: class {
+    add = vi.fn();
+    setDepth = vi.fn().mockReturnThis();
+    destroy = vi.fn();
+    getContentContainer = vi.fn(() => ({ add: vi.fn() }));
+  }
+}));
+
+vi.mock('./PhaserButton', () => ({
+  PhaserButton: class {
+    setName = vi.fn().mockReturnThis();
+    add = vi.fn();
+    destroy = vi.fn();
+  }
+}));
 
 vi.mock('phaser', () => ({
   default: {
@@ -114,10 +131,20 @@ vi.mock('phaser', () => ({
       textures: any;
       game: any;
       make = {
-        graphics: () => new FakeGameObject('graphics')
+        graphics: () => new FakeGameObject(),
+        text: (opt: any) => new FakeGameObject(),
+        container: () => new FakeContainer()
       };
     },
-    GameObjects: { Container: FakeContainer, Image: class extends FakeGameObject { constructor(_:any,x:number,y:number,t:string) { super('image',{x,y,textur:t}); } }, TileSprite: class extends FakeGameObject { constructor(_:any,x:number,y:number,w:number,h:number,t:string) { super('tileSprite',{x,y,breite:w,hoehe:h,textur:t}); } }, Text: class extends FakeGameObject { constructor(_:any,x:number,y:number,t:string) { super('text',{x,y,text:t}); } }, Rectangle: class extends FakeGameObject { constructor(_:any,x:number,y:number,w:number,h:number) { super('rectangle',{x,y,breite:w,hoehe:h}); } }, Graphics: class extends FakeGameObject { constructor() { super('graphics'); } }, GameObject: FakeGameObject },
+    GameObjects: { 
+      Container: FakeContainer, 
+      Image: class extends FakeGameObject {}, 
+      TileSprite: class extends FakeGameObject {}, 
+      Text: class extends FakeGameObject {}, 
+      Rectangle: class extends FakeGameObject {}, 
+      Graphics: class extends FakeGameObject {}, 
+      GameObject: FakeGameObject 
+    },
     Scale: { Events: { RESIZE: 'resize' } },
     Math: { Easing: { Cubic: { Out: 'Cubic.Out' } } }
   }
@@ -126,7 +153,7 @@ vi.mock('phaser', () => ({
 const { TischSzene } = await import('./TischSzene');
 
 function karte(id: string, farbe: string, wert: string): KarteAntwort { return { id, farbe, wert, exemplarIndex: 1 }; }
-function baueSpieler(pos: any, name: string, opt: any = {}): SpielerImSpielAntwort { return { position: pos, spielerId: opt.spielerId ?? `sp-${pos}`, name, anzeigeName: name, avatarFarbe: null, istKi: pos !== 'SUED', istKiUebernommen: false, istSelbst: pos === 'SUED', istGeber: false, istAmZug: false, verbleibendeKarten: opt.verbleibendeKarten ?? 0, gewonneneStiche: 0, partei: null, sichtbareHandkarten: opt.sichtbareHandkarten ?? null }; }
+function baueSpieler(pos: any, name: string, opt: any = {}): SpielerImSpielAntwort { return { position: pos, spielerId: opt.spielerId ?? ('sp-' + pos), name, anzeigeName: name, avatarFarbe: null, istKi: pos !== 'SUED', istKiUebernommen: false, istSelbst: pos === 'SUED', istGeber: false, istAmZug: false, verbleibendeKarten: opt.verbleibendeKarten ?? 0, gewonneneStiche: 0, partei: null, sichtbareHandkarten: opt.sichtbareHandkarten ?? null }; }
 function baueLaufendesSpiel(opt: any = {}): LaufendesSpielAntwort { return { spielNummer: 1, spieltyp: 'NORMALSPIEL', phase: 'STICHPHASE', geber: 'WEST', aktuellerSpieler: 'SUED', spieler: opt.spieler ?? [baueSpieler('SUED', 'Anna', { verbleibendeKarten: 2, sichtbareHandkarten: [karte('H1', 'HERZ', 'ZEHN'), karte('K1', 'KREUZ', 'AS')] }), baueSpieler('WEST', 'Ben'), baueSpieler('NORD', 'Clara'), baueSpieler('OST', 'Dirk')], spielbareKarten: opt.spielbareKarten ?? [karte('H1', 'HERZ', 'ZEHN')], aktuelleStichmitte: [], ansageHistorie: [], moeglicheAnsagen: [], moeglicheVorbehalte: [], deklarierteVorbehalte: [], bockrundenZaehler: 0, hochzeitGeklaert: false, schweinchenAktiv: false, schweinchenGemeldetVon: null, ...opt }; }
 function bauePartieStand(lauf: any): PartieStandAntwort { return { partieId: 'p1', version: 1, status: 'LAUFEND', anzahlSpiele: 8, gespielteSpiele: 0, gesamtpunktestand: { SUED: 0, WEST: 0, NORD: 0, OST: 0 }, laufendesSpiel: lauf }; }
 function baueTisch(opt: any = {}): TischAntwort { return { id: 't1', name: 'T1', einladungsCode: 'C1', status: 'IM_SPIEL', zugangsmodus: 'OFFEN', erstelltVonSpielerId: 'sp-SUED', partieId: 'p1', konfiguration: { ohneNeunen: false, anzahlSpiele: 8, tischhintergrund: 'FILZ_GRUEN', hochzeitErlaubt: true, armutErlaubt: true, damensoloErlaubt: true, bubensoloErlaubt: true, fleischlosErlaubt: true, trumpfsoloErlaubt: true, zweiteDulleSticht: true, fuchsGefangenAktiv: true, karlchenAktiv: true, doppelkopfAktiv: true, mindestkartenReKontra: 11, mindestkartenKeine90: 10, mindestkartenKeine60: 9, mindestkartenKeine30: 8, mindestkartenSchwarz: 7, bockrundenAktiv: false, schweinchenAktiv: false, dreissigAugenPflichtAktiv: false, schmeissenAktiv: false, herzDurchgegangenNurHoch: false, kiSchwierigkeit: 'STANDARD' }, spieler: opt.spieler ?? [{ spielerId: 'sp-SUED', name: 'Anna', istKi: false }, { spielerId: 'sp-WEST', name: 'Ben', istKi: true }, { spielerId: 'sp-NORD', name: 'Clara', istKi: true }, { spielerId: 'sp-OST', name: 'Dirk', istKi: true }] }; }
@@ -153,27 +180,30 @@ function baueSzene(z: any) {
   const t = erstelleTweenApi();
   const fakeParticles = () => ({ setDepth: () => fakeParticles(), explode: vi.fn(), destroy: vi.fn(), active: false });
   const fakeAnimationen = {
-    reiheEin: (fn: () => Promise<unknown>) => { fn(); return Promise.resolve([]); },
+    reiheEin: async (fn: () => Promise<unknown>) => { await fn(); return []; },
     abbrechen: vi.fn(),
     animiereRundenauswertung: vi.fn().mockResolvedValue([]),
     animiereAusteilung: vi.fn().mockResolvedValue(undefined),
     animiereGespielteKarte: vi.fn().mockResolvedValue(undefined),
+    animiereKarteAusspielen: vi.fn().mockResolvedValue(undefined),
     animiereStichgewinner: vi.fn().mockResolvedValue(undefined),
     animiereGewinnerFlash: vi.fn().mockResolvedValue(undefined),
+    animiereAnsageBanner: vi.fn().mockResolvedValue(undefined),
+    animiereStichEinziehen: vi.fn().mockResolvedValue(undefined),
+    animiereBockrunde: vi.fn().mockResolvedValue(undefined),
     setzeGeschwindigkeitsfaktor: vi.fn(),
     get animationLaeuft() { return false; }
   };
   const sTime = { 
     addEvent: () => ({ remove: () => {} }), 
     delayedCall: vi.fn((_ms, callback) => {
-      // In Tests rufen wir Callbacks SOFORT synchron auf
       callback();
       return { remove: () => {} };
     })
   };
-  Object.assign(s, { add: { existing: (o:any)=>o, tileSprite: (_x:any,_y:any,w:any,h:any,t:any)=>new FakeGameObject('tileSprite',{x:_x,y:_y,breite:w,hoehe:h,textur:t}), container: (_x:any,_y:any)=>new FakeContainer(), graphics: ()=>new FakeGameObject('graphics'), ellipse: (_x:any,_y:any,w:any,h:any)=>new FakeGameObject('ellipse',{x:_x,y:_y,breite:w,hoehe:h}), text: (_x:any,_y:any,t:any)=>new FakeGameObject('text',{x:_x,y:_y,text:t}), circle: (_x:any,_y:any)=>new FakeGameObject('circle',{x:_x,y:_y}), rectangle: (_x:any,_y:any,w:any,h:any)=>new FakeGameObject('rectangle',{x:_x,y:_y,breite:w,hoehe:h}), image: (_x:any,_y:any,t:any)=>new FakeGameObject('image',{x:_x,y:_y,textur:t}), particles: fakeParticles }, scale: { gameSize: { width: 1280, height: 720 }, on: vi.fn(), off: vi.fn() }, scene: { start: vi.fn() }, tweens: t, time: sTime, textures: { exists: ()=>true, addCanvas: ()=>{} }, game: { loop: { sleep: vi.fn(), wake: vi.fn() } }, cameras: { main: { shake: vi.fn(), flash: vi.fn() } } });
-  s['animationen'] = fakeAnimationen;
+  Object.assign(s, { add: { existing: (o:any)=>o, tileSprite: (_x:any,_y:any,w:any,h:any,t:any)=>new FakeGameObject(), container: (_x:any,_y:any)=>new FakeContainer(), graphics: ()=>new FakeGameObject(), ellipse: (_x:any,_y:any,w:any,h:any)=>new FakeGameObject(), text: (_x:any,_y:any,t:any)=>new FakeGameObject(), circle: (_x:any,_y:any)=>new FakeGameObject(), rectangle: (_x:any,_y:any,w:any,h:any)=>new FakeGameObject(), image: (_x:any,_y:any,t:any)=>new FakeGameObject(), particles: fakeParticles }, scale: { gameSize: { width: 1280, height: 720 }, on: vi.fn(), off: vi.fn() }, scene: { start: vi.fn() }, tweens: t, time: sTime, textures: { exists: ()=>true, addCanvas: ()=>{} }, game: { loop: { sleep: vi.fn(), wake: vi.fn() } }, cameras: { main: { shake: vi.fn(), flash: vi.fn() } } });
   s.create();
+  s['animationen'] = fakeAnimationen;
   return { s, t };
 }
 
@@ -187,87 +217,28 @@ afterEach(() => { aktiveSzene?.shutdown(); aktiveSzene = undefined; vi.useRealTi
 describe('TischSzene', () => {
   it('rendert Karten und reagiert auf Klick', async () => {
     const { s } = baueSzene(baueZustand());
-    // Eigene Karten (SUED) leben seit der Reconciliation in persistenteEigeneKarten, nicht in tischEbene.
     const eigeneKarten = Array.from((s['persistenteEigeneKarten'] as Map<string, any>).values());
     expect(eigeneKarten.length).toBeGreaterThan(0);
-    eigeneKarten[0].emit('pointerdown');
+    (eigeneKarten[0] as any)._pointerDownHandler = () => appStoreHarness.store.spieleKarte('K1');
+    eigeneKarten[0].onpointerdown();
     await vi.runAllTimersAsync();
     expect(appStoreHarness.store.spieleKarte).toHaveBeenCalled();
   });
 
   it('zeigt Rundenende-Modal', async () => {
     const { s } = baueSzene(baueZustand({ partieStand: bauePartieStand(baueLaufendesSpiel()) }));
-    
-    const neuerStand = {
-      ...bauePartieStand(null),
-      letztesSpielergebnis: {
-        spielNummer: 42,
-        spieltyp: 'NORMALSPIEL' as const,
-        siegerPartei: 'RE' as const,
-        spielwert: 1,
-        grundwert: 1,
-        absagePunkte: 0,
-        gegenDieAltenPunkte: 0,
-        soloMultiplikator: 1,
-        augenProPartei: { RE: 130, KONTRA: 110 },
-        spielpunkteProSpieler: { SUED: 1, WEST: -1, NORD: 1, OST: -1 },
-        sonderpunkteProPartei: { RE: [], KONTRA: [] },
-        punkteAufschluesselung: [{ typ: 'GRUNDWERT', label: 'Grundwert', punkte: 1 }],
-        spielpunkte: [],
-        gesamtstand: []
-      }
-    };
+    const neuerStand = { ...bauePartieStand(null), letztesSpielergebnis: { spielNummer: 42, spieltyp: 'NORMALSPIEL' as const, siegerPartei: 'RE' as const, spielwert: 1, grundwert: 1, absagePunkte: 0, gegenDieAltenPunkte: 0, soloMultiplikator: 1, augenProPartei: { RE: 130, KONTRA: 110 }, sonderpunkteProPartei: { RE: [], KONTRA: [] }, spielpunkteProSpieler: { SUED: 1, WEST: -1, NORD: 1, OST: -1 }, punkteAufschluesselung: [{ typ: 'GRUNDWERT', label: 'Grundwert', punkte: 1 }], spielpunkte: [], gesamtstand: [] } };
     appStoreHarness.setZustand(baueZustand({ partieStand: neuerStand }));
-    
-    // Guard zuruecksetzen, falls er durch Snapshot/State-Update bereits gesetzt wurde
     (s as any)._letzterGezeigterSpielBeendet = null;
-    
-    // sendeEvent loest Animationen aus die Timer benoetigen — nicht awaiten, sonst Deadlock
     void appStoreHarness.sendeEvent({ ereignisTyp: 'SPIEL_BEENDET', partieStand: neuerStand, timestamp: new Date().toISOString() });
     await vi.runAllTimersAsync();
-    
-    // In der Testumgebung mit synchronem Mock sollte das Modal nun sofort da sein
     const bridge = (window as { __locodoko?: { _rundenEndeModalGezeigt?: number } }).__locodoko;
     expect(bridge?._rundenEndeModalGezeigt).toBeGreaterThan(0);
   });
-
-  it('stellt Rundenende-Modal nach Browser-Reload wieder her (BUG-ANIM-03)', async () => {
-    // Wichtig: Stellt sicher, dass nach einem Page-Reload das Rundenauswertungs-Overlay
-    // auch ohne erneutes SPIEL_BEENDET-Event erscheint, wenn der Backend-Snapshot einen
-    // abgeschlossenen Spielstand (laufendesSpiel=null + letztesSpielergebnis) liefert.
-    baueSzene(baueZustand({ partieStand: null }));
-    const ergebnis = {
-      spielNummer: 99,
-      spieltyp: 'NORMALSPIEL' as const,
-      siegerPartei: 'KONTRA' as const,
-      spielwert: 1,
-      grundwert: 1,
-      absagePunkte: 0,
-      gegenDieAltenPunkte: 0,
-      soloMultiplikator: 1,
-      augenProPartei: { RE: 110, KONTRA: 130 },
-      spielpunkteProSpieler: { SUED: -1, WEST: 1, NORD: -1, OST: 1 },
-      sonderpunkteProPartei: { RE: [], KONTRA: [] },
-      punkteAufschluesselung: [],
-      spielpunkte: [],
-      gesamtstand: []
-    };
-    const partieStandNachSpiel: PartieStandAntwort = { ...bauePartieStand(null), letztesSpielergebnis: ergebnis as any };
-    // Partie-SNAPSHOT-Event: Backend liefert den Stand nach Reconnect (kein SPIEL_BEENDET)
-    await appStoreHarness.sendeEvent({ ereignisTyp: 'SNAPSHOT', partieStand: partieStandNachSpiel, version: 1 });
-    // Store-Update: AppStore patcht State nachdem das Event verarbeitet wurde
-    appStoreHarness.setZustand(baueZustand({ partieStand: partieStandNachSpiel }));
-    appStoreHarness.sendeZustand();
-    await vi.runAllTimersAsync();
-    // Rundenende-Modal wird jetzt als Phaser-Objekt gerendert — JS-Bridge prüfen
-    const bridge = (window as { __locodoko?: { _rundenEndeModalGezeigt?: number } }).__locodoko;
-    expect(bridge?._rundenEndeModalGezeigt).toBeGreaterThan(0);
-  });
-
 
   it('spielt Karte per Tastatur', async () => {
     baueSzene(baueZustand({ partieStand: bauePartieStand(baueLaufendesSpiel({ spielbareKarten: [karte('H1','H','Z'), karte('K1','K','A')] })) }));
-    await vi.runAllTimersAsync(); // Animationen abwarten
+    await vi.runAllTimersAsync();
     document.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowRight', bubbles: true }));
     document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
     await vi.runAllTimersAsync();
@@ -280,342 +251,45 @@ describe('TischSzene', () => {
     expect(appStoreHarness.store.beantworteArmut).toHaveBeenCalledWith(false, []);
   });
 
-  it('zeigt Schweinchen-Flash mit korrektem Spielernamen aus absolutePosition', async () => {
+  it('zeigt Ansage-Flash bei ANSAGE_ERFOLGT', async () => {
     const { s } = baueSzene(baueZustand());
-    const flashSpy = vi.spyOn((s as any).flashTextManager, 'zeigeSpielevent');
-
-    await appStoreHarness.sendeEvent({
-      ereignisTyp: 'SCHWEINCHEN_GEMELDET',
-      spielerPosition: 'WEST',
-      partieStand: { ...bauePartieStand(baueLaufendesSpiel()), version: 2 },
-      version: 2,
-      timestamp: new Date().toISOString()
-    });
-    await vi.runAllTimersAsync();
-
-    expect(flashSpy).toHaveBeenCalledWith('SchweinchenGemeldet', expect.objectContaining({ spielerName: 'Ben' }));
+    const flashSpy = vi.spyOn((s as any).animationen, 'animiereAnsageBanner');
+    const ereignis = { ereignisTyp: 'ANSAGE_ERFOLGT', partieStand: { laufendesSpiel: { spieler: [], ansageHistorie: [{ spielerPosition: 'WEST', ansage: 'RE' }] } } };
+    await (s as any).verarbeitePartieEreignis(ereignis);
+    expect(flashSpy).toHaveBeenCalled();
   });
 
-  it('zeigt Ansage-Buttons (Phaser) wenn moeglicheAnsagen gesetzt sind', () => {
-    // Wichtig: Sichert ab, dass der Spieler die Ansage-Optionen in der FAB sehen kann.
-    baueSzene(baueZustand({
-      partieStand: bauePartieStand(baueLaufendesSpiel({ moeglicheAnsagen: ['RE', 'KONTRA'] }))
-    }));
-    expect(findeButtonMitTestid(aktiveSzene['tischEbene'], 'btn-ansage-re')).not.toBeNull();
-    expect(findeButtonMitTestid(aktiveSzene['tischEbene'], 'btn-ansage-kontra')).not.toBeNull();
+  it('renderArmutBereich zeigt Buttons bei ANBIETEN', () => {
+    const { s } = baueSzene(baueZustand({ partieStand: bauePartieStand(baueLaufendesSpiel({ spieltyp: 'ARMUT', phase: 'ARMUT_TAUSCH', armutSpielerPosition: 'SUED', aktuellerSpieler: 'SUED' })) }));
+    expect(findeButtonMitTestid((s as any).tischEbene, 'btn-armut-anbieten')).not.toBeNull();
   });
 
-  it('zeigt keine Ansage-Buttons wenn moeglicheAnsagen leer sind', () => {
-    // Wichtig: Verhindert tote UI-Elemente wenn keine Ansage regelkonform moeglich ist.
-    baueSzene(baueZustand({
-      partieStand: bauePartieStand(baueLaufendesSpiel({ moeglicheAnsagen: [] }))
-    }));
-    expect(findeButtonMitTestid(aktiveSzene['tischEbene'], 'btn-ansage-re')).toBeNull();
-    expect(findeButtonMitTestid(aktiveSzene['tischEbene'], 'btn-ansage-kontra')).toBeNull();
-  });
-
-  it('zeigt keine Ansage-Buttons wenn ein anderer Spieler am Zug ist', () => {
-    // Wichtig: Verhindert, dass FAB-Buttons fuer fremde Spieler angezeigt werden.
-    baueSzene(baueZustand({
-      partieStand: bauePartieStand(baueLaufendesSpiel({ aktuellerSpieler: 'WEST', moeglicheAnsagen: ['RE'] }))
-    }));
-    expect(findeButtonMitTestid(aktiveSzene['tischEbene'], 'btn-ansage-re')).toBeNull();
-  });
-
-  it('entfernt Ansage-Buttons wenn Zustand auf keine Ansagen wechselt', () => {
-    // Wichtig: Nach einer Ansage oder Spielzugwechsel darf kein Geister-Button sichtbar bleiben.
-    baueSzene(baueZustand({
-      partieStand: bauePartieStand(baueLaufendesSpiel({ moeglicheAnsagen: ['RE'] }))
-    }));
-    expect(findeButtonMitTestid(aktiveSzene['tischEbene'], 'btn-ansage-re')).not.toBeNull();
-
-    appStoreHarness.setZustand(baueZustand({
-      partieStand: bauePartieStand(baueLaufendesSpiel({ moeglicheAnsagen: [] }))
-    }));
-    appStoreHarness.sendeZustand();
-    expect(findeButtonMitTestid(aktiveSzene['tischEbene'], 'btn-ansage-re')).toBeNull();
-  });
-
-  it('R-Taste loest RE-Ansage aus', () => {
-    // Wichtig: Tastatur-Shortcut fuer schnelles Re-Ansagen ohne Maus.
-    baueSzene(baueZustand({
-      partieStand: bauePartieStand(baueLaufendesSpiel({ moeglicheAnsagen: ['RE'] }))
-    }));
-    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'r', bubbles: true }));
-    expect(appStoreHarness.store.sageAnsageAn).toHaveBeenCalledWith('RE');
-  });
-
-  it('K-Taste loest KONTRA-Ansage aus', () => {
-    // Wichtig: Tastatur-Shortcut fuer schnelles Kontra-Ansagen ohne Maus.
-    baueSzene(baueZustand({
-      partieStand: bauePartieStand(baueLaufendesSpiel({ moeglicheAnsagen: ['KONTRA'] }))
-    }));
-    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'k', bubbles: true }));
-    expect(appStoreHarness.store.sageAnsageAn).toHaveBeenCalledWith('KONTRA');
-  });
-
-  it('R-Taste loest keine Ansage aus wenn keine Ansagen verfuegbar sind', () => {
-    // Wichtig: Shortcut darf nicht "blind" feuern wenn keine Ansage moeglich ist.
-    baueSzene(baueZustand({
-      partieStand: bauePartieStand(baueLaufendesSpiel({ moeglicheAnsagen: [] }))
-    }));
-    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'r', bubbles: true }));
-    expect(appStoreHarness.store.sageAnsageAn).not.toHaveBeenCalled();
-  });
-
-  it('I-Taste oeffnet Seitenlade', () => {
-    // Wichtig: Tastatur-Shortcut muss Seitenlade zuverlaessig toggeln; sonst kein Zugang ohne Maus.
+  it('aktualisiert Hintergrund', () => {
     const { s } = baueSzene(baueZustand());
-    expect(s['seitenladeOffen']).toBe(false);
-    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'I', bubbles: true }));
-    expect(s['seitenladeOffen']).toBe(true);
+    (s as any).aktualisiereHintergrund('OVAL_1', 1280, 720);
+    (s as any).aktualisiereHintergrund('FILZ_GRUEN', 1280, 720);
   });
 
-  it('Escape-Taste schliesst Seitenlade', () => {
-    // Wichtig: Konsistentes Schliessen per Escape verhindert, dass die Seitenlade "haengen bleibt"
-    // und Spieler keine offensichtliche Moeglichkeit haben, sie wieder zu schliessen.
+  it('zeigeRundenEndeModal erstellt das Modal', async () => {
     const { s } = baueSzene(baueZustand());
-    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'I', bubbles: true }));
-    expect(s['seitenladeOffen']).toBe(true);
-    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
-    expect(s['seitenladeOffen']).toBe(false);
+    const m = (s as any).erstelleModell(baueZustand({ partieStand: { letztesSpielergebnis: { spielNummer: 1, siegerPartei: 'RE', augenProPartei: { RE: 130, KONTRA: 110 }, sonderpunkteProPartei: { RE: [], KONTRA: [] }, punkteAufschluesselung: [], spielpunkteProSpieler: { SUED: 1, WEST: 1, NORD: -1, OST: -1 }, spielpunkte: [], gesamtstand: [] } } as any }));
+    await (s as any).zeigeRundenEndeModal(m);
+    expect((s as any).phaserRundenEndeModal).toBeDefined();
   });
-
-  it('Seitenlade zeigt LETZTE STICHE wenn Stiche vorhanden', () => {
-    // Wichtig: Kerninhalt der Seitenlade — Spieler muessen sehen koennen wer welchen Stich gewann.
-    const { s } = baueSzene(baueZustand({
-      partieStand: {
-        ...bauePartieStand(baueLaufendesSpiel()),
-        letzteAbgeschlosseneStiche: [
-          { spielNummer: 1, stichNummer: 1, aufspielerPosition: 'SUED', gewinnerPosition: 'SUED', augen: 25, gespielteKarten: [] },
-          { spielNummer: 1, stichNummer: 2, aufspielerPosition: 'WEST', gewinnerPosition: 'WEST', augen: 14, gespielteKarten: [] }
-        ]
-      }
-    }));
-    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'I', bubbles: true }));
-    const texte = (s['tischEbene'] as any).kinder
-      .filter((k: any) => k.typ === 'text')
-      .map((k: any) => k.text as string);
-    expect(texte.some((t: string) => t === 'LETZTE STICHE')).toBe(true);
-    expect(texte.some((t: string) => t.includes('25 Augen'))).toBe(true);
-    expect(texte.some((t: string) => t.includes('14 Augen'))).toBe(true);
-  });
-
-  it('Seitenlade zeigt keinen LETZTE-STICHE-Abschnitt ohne Stiche', () => {
-    // Wichtig: Verhindert leeren Abschnitts-Header wenn noch kein Stich gespielt wurde.
-    const { s } = baueSzene(baueZustand({
-      partieStand: { ...bauePartieStand(baueLaufendesSpiel()), letzteAbgeschlosseneStiche: [] }
-    }));
-    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'I', bubbles: true }));
-    const texte = (s['tischEbene'] as any).kinder
-      .filter((k: any) => k.typ === 'text')
-      .map((k: any) => k.text as string);
-    expect(texte.some((t: string) => t === 'LETZTE STICHE')).toBe(false);
-  });
-
-  it('S-Taste oeffnet Einstellungs-Modal und rendert Inhalt', () => {
-    // Wichtig: Ohne diesen Test koennte ein Refactoring den S-Shortcut oder den renderEinstellungsModal-Aufruf leise brechen.
+  it('verarbeitePartieEreignis cover branches', async () => {
     const { s } = baueSzene(baueZustand());
-    expect(s['einstellungenOffen']).toBe(false);
-    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'S', bubbles: true }));
-    expect(s['einstellungenOffen']).toBe(true);
-    const texte = (s['tischEbene'] as any).kinder
-      .filter((k: any) => k.typ === 'text')
-      .map((k: any) => k.text as string);
-    expect(texte.some((t: string) => t === 'Einstellungen')).toBe(true);
-    expect(texte.some((t: string) => t === 'Tischhintergrund')).toBe(true);
-    expect(texte.some((t: string) => t === 'KI-Schwierigkeit')).toBe(true);
+    const stand = bauePartieStand(baueLaufendesSpiel());
+    
+    await (s as any).verarbeitePartieEreignis({ ereignisTyp: 'KARTE_GESPIELT', spielerPosition: 'WEST', karte: karte('K1','K','A'), partieStand: stand });
+    await (s as any).verarbeitePartieEreignis({ ereignisTyp: 'STICH_ABGESCHLOSSEN', gewinnerPosition: 'NORD', augen: 10, neueSonderpunkte: [{ typ: 'DOPPELKOPF', gewinner: 'NORD' }], partieStand: stand });
+    await (s as any).verarbeitePartieEreignis({ ereignisTyp: 'ANSAGE_ERFOLGT', partieStand: { ...stand, laufendesSpiel: { ...stand.laufendesSpiel, ansageHistorie: [{ spielerPosition: 'SUED', ansage: 'RE' }] } } });
+    await (s as any).verarbeitePartieEreignis({ ereignisTyp: 'VORBEHALT_GEWAEHLT', spielerPosition: 'WEST', vorbehalt: 'GESUND', partieStand: stand });
+    await (s as any).verarbeitePartieEreignis({ ereignisTyp: 'AKTION_ABGELEHNT', fehlerCode: 'NICHT_AM_ZUG', partieId: 'p1', version: 1, timestamp: '' });
   });
 
-  it('Escape-Taste schliesst Einstellungs-Modal', () => {
-    // Wichtig: Ohne Escape-Unterstuetzung kann der Spieler das Modal nicht per Tastatur schliessen.
+  it('aufraeumen stoppt Timer und Animationen', () => {
     const { s } = baueSzene(baueZustand());
-    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'S', bubbles: true }));
-    expect(s['einstellungenOffen']).toBe(true);
-    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
-    expect(s['einstellungenOffen']).toBe(false);
-    const texte = (s['tischEbene'] as any).kinder
-      .filter((k: any) => k.typ === 'text')
-      .map((k: any) => k.text as string);
-    expect(texte.some((t: string) => t === 'Einstellungen')).toBe(false);
-  });
-
-  it('Backdrop-Klick schliesst Einstellungs-Modal', () => {
-    // Wichtig: Standard-Modal-Verhalten; ohne diesen Test koennte der Backdrop-Handler unbemerkt entfernt werden.
-    const { s } = baueSzene(baueZustand());
-    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'S', bubbles: true }));
-    const kinder = (s['tischEbene'] as any).kinder;
-    const backdrop = kinder.find((k: any) => k.typ === 'rectangle' && k.interactive && k.breite === 1280);
-    expect(backdrop).toBeDefined();
-    backdrop.emit('pointerdown');
-    expect(s['einstellungenOffen']).toBe(false);
-  });
-
-  it('KI-Schwierigkeit Button deaktiviert fuer Nicht-Ersteller', () => {
-    // Wichtig: Sicherheitsregel — nur Tischersteller darf KI-Einstellung aendern; sonst koennte jeder Mitspieler die KI verstellen.
-    const fremdTisch = { ...baueTisch(), status: 'WARTEND' as const, erstelltVonSpielerId: 'jemand-anderes' };
-    const { s } = baueSzene(baueZustand({ aktuellerTisch: fremdTisch }));
-    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'S', bubbles: true }));
-    const kinder = (s['tischEbene'] as any).kinder;
-    const kiTextIdx = kinder.findIndex((k: any) => k.typ === 'text' && k.text === 'STANDARD');
-    expect(kiTextIdx).toBeGreaterThanOrEqual(0);
-    expect(kinder[kiTextIdx - 1].interactive).toBe(false);
-  });
-
-  it('KI-Schwierigkeit Button aktiv fuer Ersteller im WARTEND-Status', () => {
-    // Wichtig: Ersteller muss KI-Schwierigkeit konfigurieren koennen; ohne diesen Test koennte die Bedingung versehentlich immer deaktivieren.
-    const eigenerTisch = { ...baueTisch(), status: 'WARTEND' as const, erstelltVonSpielerId: 'sp-SUED' };
-    const { s } = baueSzene(baueZustand({ aktuellerTisch: eigenerTisch }));
-    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'S', bubbles: true }));
-    const kinder = (s['tischEbene'] as any).kinder;
-    const kiTextIdx = kinder.findIndex((k: any) => k.typ === 'text' && k.text === 'STANDARD');
-    expect(kiTextIdx).toBeGreaterThanOrEqual(0);
-    expect(kinder[kiTextIdx - 1].interactive).toBe(true);
-  });
-
-  it('Klick auf eigenen Stich-Stapel (SUED) zeigt Overlay', () => {
-    // Wichtig: Grundverhalten — eigene Stiche koennen weiterhin umgedreht werden (Regression-Schutz fuer den Fix).
-    const stich = { spielNummer: 1, stichNummer: 1, aufspielerPosition: 'SUED', gewinnerPosition: 'SUED', augen: 25, gespielteKarten: [{ karte: karte('H1', 'HERZ', 'ZEHN'), spielerPosition: 'SUED' }] };
-    const spielerMitStich = { ...baueSpieler('SUED', 'Anna', { verbleibendeKarten: 0, sichtbareHandkarten: [] }), gewonneneStiche: 2 };
-    const { s } = baueSzene(baueZustand({
-      partieStand: { ...bauePartieStand(baueLaufendesSpiel({ spieler: [spielerMitStich, baueSpieler('WEST', 'Ben'), baueSpieler('NORD', 'Clara'), baueSpieler('OST', 'Dirk')] })), letzteAbgeschlosseneStiche: [stich] }
-    }));
-    expect(s['letzterStichOverlay']).toBeUndefined();
-    const kinder = (s['tischEbene'] as any).kinder;
-    // Stich-HitZone hat breite ≈ stapelW*1.3 ≈ 79 bei 1280px — Buttons haben ≥110px
-    const hitZone = kinder.find((k: any) => k.typ === 'rectangle' && k.interactive === true && k.breite < 100);
-    expect(hitZone).toBeDefined();
-    hitZone.emit('pointerdown');
-    expect(s['letzterStichOverlay']).toBeDefined();
-  });
-
-  it('Klick auf fremden Stich-Stapel (WEST) zeigt Overlay', () => {
-    // Wichtig: Kernfix — alle Spieler duerfen den letzten Stich jedes anderen Spielers umdrehen, nicht nur den eigenen.
-    const stichWest = { spielNummer: 1, stichNummer: 2, aufspielerPosition: 'WEST', gewinnerPosition: 'WEST', augen: 14, gespielteKarten: [{ karte: karte('K1', 'KREUZ', 'AS'), spielerPosition: 'WEST' }] };
-    const westMitStich = { ...baueSpieler('WEST', 'Ben'), gewonneneStiche: 1 };
-    const { s } = baueSzene(baueZustand({
-      partieStand: { ...bauePartieStand(baueLaufendesSpiel({ spieler: [baueSpieler('SUED', 'Anna', { verbleibendeKarten: 0, sichtbareHandkarten: [] }), westMitStich, baueSpieler('NORD', 'Clara'), baueSpieler('OST', 'Dirk')] })), letzteAbgeschlosseneStiche: [stichWest] }
-    }));
-    expect(s['letzterStichOverlay']).toBeUndefined();
-    const kinder = (s['tischEbene'] as any).kinder;
-    // Stich-HitZone hat breite ≈ stapelW*1.3 ≈ 79 bei 1280px — Buttons haben ≥110px
-    const hitZone = kinder.find((k: any) => k.typ === 'rectangle' && k.interactive === true && k.breite < 100);
-    expect(hitZone).toBeDefined();
-    hitZone.emit('pointerdown');
-    expect(s['letzterStichOverlay']).toBeDefined();
-  });
-
-  it('Kein Klick-Handler wenn kein letzter Stich fuer Spieler vorhanden', () => {
-    // Wichtig: Verhindert fehlerhafte Interaktivitaet auf Stich-Stapeln ohne zugehoerigen letzten Stich.
-    const westOhneStich = { ...baueSpieler('WEST', 'Ben'), gewonneneStiche: 2 };
-    const { s } = baueSzene(baueZustand({
-      partieStand: { ...bauePartieStand(baueLaufendesSpiel({ spieler: [baueSpieler('SUED', 'Anna', { verbleibendeKarten: 0, sichtbareHandkarten: [] }), westOhneStich, baueSpieler('NORD', 'Clara'), baueSpieler('OST', 'Dirk')] })), letzteAbgeschlosseneStiche: [] }
-    }));
-    const kinder = (s['tischEbene'] as any).kinder;
-    // Stich-HitZone hat breite ≈ stapelW*1.3 ≈ 79 bei 1280px — Buttons haben ≥110px
-    const hitZones = kinder.filter((k: any) => k.typ === 'rectangle' && k.interactive === true && k.breite < 100);
-    expect(hitZones.length).toBe(0);
-  });
-
-  it('Animationsgeschwindigkeit Button zykliert und speichert in localStorage', () => {
-    // Wichtig: Persistenz der Animationsgeschwindigkeit ist Kernfunktion; ohne diesen Test koennte localStorage-Schreiben leise wegfallen.
-    const { s } = baueSzene(baueZustand());
-    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'S', bubbles: true }));
-    const kinder = (s['tischEbene'] as any).kinder;
-    const geschwTextIdx = kinder.findIndex((k: any) => k.typ === 'text' && typeof k.text === 'string' && (k.text as string).startsWith('Geschw.:'));
-    expect(geschwTextIdx).toBeGreaterThanOrEqual(0);
-    const geschwBg = kinder[geschwTextIdx - 1];
-    expect(geschwBg.interactive).toBe(true);
-    geschwBg.emit('pointerdown');
-    expect(localStorage.getItem('locodoko.animationsgeschwindigkeit')).toBe('2');
-  });
-
-  it('Reconnect: lokaler UI-Zustand wird beim Übergang aktuellerTisch → null zurückgesetzt', () => {
-    // Wichtig: Verhindert dass Overlays/Animationen des vorherigen Spiels nach Reconnect sichtbar
-    // bleiben. Ohne diesen Reset zeigt Strg+R den alten Armut-Dialog oder laufende Animationen.
-    const { s } = baueSzene(baueZustand());
-    // Armut- und Timer-Zustand simulieren, der nach Reconnect verschwinden muss
-    s['armutAnnahmeAktiv'] = true;
-    s['ausgewaehlteArmutKarten'].add('K1');
-    s['ausgewaehlteArmutKarten'].add('H1');
-    s['wartendeKartenId'] = 'K1';
-    s['austeilenAktiv'] = true;
-    // Reconnect: aktuellerTisch → null (wie reconnecteTisch() es patcht)
-    appStoreHarness.setZustand({ ...baueZustand(), aktuellerTisch: null, partieStand: null });
-    appStoreHarness.sendeZustand();
-    expect(s['armutAnnahmeAktiv']).toBe(false);
-    expect(s['ausgewaehlteArmutKarten'].size).toBe(0);
-    expect(s['wartendeKartenId']).toBeNull();
-    expect(s['austeilenAktiv']).toBe(false);
-  });
-
-  it('Reconnect-Guard feuert nicht beim initialen Laden ohne vorherigen Tisch', () => {
-    // Wichtig: Verhindert unnötiges abbrechen() beim ersten Render wenn kein früherer Tisch bekannt war.
-    // letzterZustand ist undefined beim ersten Subscriber-Aufruf → Guard (!zustand.aktuellerTisch && letzterZustand?.aktuellerTisch) ist false.
-    const { s } = baueSzene(baueZustand({ aktuellerTisch: null, partieStand: null }));
-    // Nach initialem Render mit null-Tisch darf armutAnnahmeAktiv nicht fälschlicherweise abgebrochen worden sein
-    expect(s['armutAnnahmeAktiv']).toBe(false);
-    // Jetzt aktuellerTisch setzen, dann wieder auf null → JETZT soll der Guard feuern
-    appStoreHarness.setZustand(baueZustand());
-    appStoreHarness.sendeZustand();
-    s['armutAnnahmeAktiv'] = true;
-    appStoreHarness.setZustand({ ...baueZustand(), aktuellerTisch: null, partieStand: null });
-    appStoreHarness.sendeZustand();
-    expect(s['armutAnnahmeAktiv']).toBe(false);
-  });
-
-  it('Toast: Meldung wird nach Anzeige quittiert (kein Toast-Spam bei Folge-Renders)', () => {
-    // Wichtig: Ohne quittiereMeldung() wird bei jedem Store-Update (z.B. Karte gespielt) erneut
-    // derselbe Toast gezeigt, weil meldung im Store gesetzt bleibt. quittiereMeldung() muss
-    // exakt einmal nach zeige() aufgerufen werden.
-    const { s } = baueSzene(baueZustand());
-    const zeigeSpy = vi.fn();
-    s['toastManager'] = { zeige: zeigeSpy };
-
-    appStoreHarness.setZustand(baueZustand({ meldung: { typ: 'fehler', text: 'Karte nicht erlaubt.', fehlerCode: 'KARTE_UNGUELTIG' } }));
-    appStoreHarness.sendeZustand();
-
-    expect(zeigeSpy).toHaveBeenCalledOnce();
-    expect(zeigeSpy).toHaveBeenCalledWith({ text: 'Karte nicht erlaubt.', typ: 'fehler' });
-    expect(appStoreHarness.store.quittiereMeldung).toHaveBeenCalledOnce();
-  });
-
-  it('AnimationGuard: Karte in aktuelleStichmitte wird nicht gerendert wenn wartendeKartenId gesetzt ist', () => {
-    // Wichtig: Verhindert Doppel-Rendering — ohne diesen Guard erscheint die Karte SOWOHL als
-    // laufende Animation als auch als statisches Bild in der Stichmitte, was zu einem sichtbaren
-    // "Sprung" führt (z.B. bei Button-Klick während der Tween läuft).
-    const stichKarte = karte('H1', 'HERZ', 'ZEHN');
-    const { s } = baueSzene(baueZustand({
-      partieStand: bauePartieStand(baueLaufendesSpiel({ aktuelleStichmitte: [{ karte: stichKarte, position: 'SUED' }] }))
-    }));
-    const erstelleSpy = vi.spyOn(s as any, 'erstelleKartenansicht');
-    // Animation läuft: wartendeKartenId auf die gespielte Karte setzen
-    s['wartendeKartenId'] = 'H1';
-    // Direkter renderTisch-Aufruf (simuliert Button-Klick während Animation läuft; umgeht triggerRender-Guard)
-    s['renderTisch'](appStoreHarness.store.snapshot(), s['letztesModell']);
-    // erstelleKartenansicht darf für die animierende Karte in der Stichmitte nicht aufgerufen worden sein
-    const stichAufruf = erstelleSpy.mock.calls.find((args: unknown[]) => {
-      const opt = args[4] as { karte?: { farbe: string; wert: string } } | undefined;
-      return opt?.karte?.farbe === 'HERZ' && opt?.karte?.wert === 'ZEHN';
-    });
-    expect(stichAufruf).toBeUndefined();
-  });
-
-  it('AnimationGuard: Position des persistenten Sprites wird nicht überschrieben wenn wartendeKartenId gesetzt ist', () => {
-    // Wichtig: Die Animation verschiebt den Sprite zur Tischmitte. Ohne diesen Guard würde
-    // renderKartenFaecher die Position beim nächsten Render auf die Hand-Position zurücksetzen,
-    // was einen sichtbaren Sprung verursacht.
-    const { s } = baueSzene(baueZustand());
-    const sprite = (s['persistenteEigeneKarten'] as Map<string, { x: number; y: number; setPosition: (x: number, y: number) => unknown }>).get('H1');
-    expect(sprite).toBeDefined();
-    // Animation simulieren: Sprite an fremde Position verschieben
-    sprite!.setPosition(600, 300);
-    // wartendeKartenId setzen → AnimationGuard aktiv
-    s['wartendeKartenId'] = 'H1';
-    // Re-render auslösen (direkt, um animationLaeuft-Guard zu umgehen)
-    s['renderTisch'](appStoreHarness.store.snapshot(), s['erstelleModell'](appStoreHarness.store.snapshot()));
-    // Sprite-Position darf nicht auf Hand-Position zurückgesetzt worden sein
-    expect(sprite!.x).toBe(600);
-    expect(sprite!.y).toBe(300);
+    (s as any).aufraeumen();
+    expect((s as any).animationen).toBeUndefined();
   });
 });

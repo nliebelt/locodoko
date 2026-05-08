@@ -125,7 +125,8 @@ export class AppStore {
    * Dies ist der Fall, wenn keine Events in der Queue sind und keine Event-Verarbeitung läuft.
    */
   isIdle(): boolean {
-    return this._eventQueue.length === 0 && !this._verarbeiteEventLaeuft && !this._queuePausiert;
+    if (this._queuePausiert) return true;
+    return this._eventQueue.length === 0 && !this._verarbeiteEventLaeuft;
   }
 
   /**
@@ -208,6 +209,7 @@ export class AppStore {
         this.patch({ spieler, tische, initialisiert: true, verbindung: 'verbunden', meldung: null });
         this.echtzeit.senden('/app/tische/snapshot');
       } catch {
+        this.patch({ verbindung: 'offline' });
         throw new Error('Initialisierung fehlgeschlagen.');
       }
     });
@@ -642,13 +644,17 @@ export class AppStore {
         const ereignis = this._eventQueue.shift();
         if (!ereignis) break;;
 
-        if (!this._darfPartieStandAktualisieren(ereignis.partieStand, ereignis.version)) {
-          Logger.websocket('Ignoriere veraltetes PartieEreignis', {
+        // Sequential Processing Pattern:
+        // Wir rufen die Event-Listener IMMER auf, solange das Ereignis in der Queue ist.
+        // Den Store-Patch (partieStand) überspringen wir jedoch, wenn bereits ein neuerer
+        // Stand (z.B. durch einen Snapshot oder Reconnect) vorliegt.
+        const darfStorePatchen = !!ereignis.partieStand && this._darfPartieStandAktualisieren(ereignis.partieStand, ereignis.version);
+        if (!darfStorePatchen && ereignis.partieStand) {
+          Logger.websocket('Verarbeite Ereignis ohne Store-Patch (neuerer Snapshot vorhanden)', {
             typ: ereignis.ereignisTyp,
             version: ereignis.version,
-            letzte: this._letztePartieVersion
+            storeVersion: this.zustand.partieStand?.version
           });
-          continue;
         }
 
         this._aktuelleSequenzId++; // Neue Sequenz fuer jedes Event (Animation-Guard)
@@ -676,7 +682,23 @@ export class AppStore {
           }
         }
 
-        // Event-Listener ZUERST aufrufen, bevor der State gepatcht wird.
+        // State VOR den Listenern patchen fuer flüssige Übergänge (KARTE_GESPIELT)
+        // Dadurch sieht triggerRender() am Ende der Animation sofort den korrekten Folgestatus.
+        const prevStand = this.zustand.partieStand;
+        if (darfStorePatchen) {
+          if (ereignis.ereignisTyp === 'KARTE_GESPIELT') {
+            if (prevStand) {
+              const syntheticStand = this._synthetischerKarteGespielt(prevStand, ereignis as KarteGespieltEreignis);
+              this.patch({ partieStand: syntheticStand });
+            } else {
+              this.patch({ partieStand: ereignis.partieStand });
+            }
+          } else if (ereignis.partieStand && ereignis.ereignisTyp !== 'STICH_ABGESCHLOSSEN' && ereignis.ereignisTyp !== 'SPIEL_BEENDET') {
+            this.patch({ partieStand: ereignis.partieStand });
+          }
+        }
+
+        // Event-Listener aufrufen
         // FUEHRT Sequential Processing Pattern gemaess Requirement 30 aus.
         try {
           for (const l of this._eventListener) {
@@ -687,36 +709,21 @@ export class AppStore {
           Logger.error('Event-Listener hat einen Fehler geworfen', e);
         }
 
-        // State NACH den Listenern patchen (Animationen sollten nun fertig sein)
-        const prevStand = this.zustand.partieStand;
-        if (ereignis.partieStand && ereignis.ereignisTyp !== 'KARTE_GESPIELT' && ereignis.ereignisTyp !== 'STICH_ABGESCHLOSSEN') {
-          this.patch({ partieStand: ereignis.partieStand });
-        }
+        // Finales Patching / Spezial-Handling NACH den Listenern
         switch (ereignis.ereignisTyp) {
           case 'SNAPSHOT':
             this._eventQueue.length = 0;
             break;
-          case 'KARTE_GESPIELT': {
-            const prevStand = this.zustand.partieStand;
-            
-            // Nutze syntheticStand fuer ALLE Karten. 
-            // Wichtig bei der 4. Karte: Das Backend liefert bereits eine leere 'aktuelleStichmitte'.
-            // Durch den Synthesizer zwingen wir die 4. Karte in die Mitte, 
-            // damit sie beim "Stich einziehen" Delay sichtbar bleibt.
-            if (prevStand) {
-              const syntheticStand = this._synthetischerKarteGespielt(prevStand, ereignis);
-              this.patch({ partieStand: syntheticStand });
-            } else {
-              this.patch({ partieStand: ereignis.partieStand });
-            }
+          case 'KARTE_GESPIELT':
+            // Bereits oben via Synthetic Patch erledigt
             break;
-          }
           case 'STICH_ABGESCHLOSSEN': {
-             this.patch({ partieStand: ereignis.partieStand });
+             if (darfStorePatchen) this.patch({ partieStand: ereignis.partieStand });
              if (ereignis.neueSonderpunkte.length) this._sonderpunkteListener.forEach((l) => l(ereignis.neueSonderpunkte));
              break;
           }
           case 'SPIEL_BEENDET': {
+            if (darfStorePatchen) this.patch({ partieStand: ereignis.partieStand });
             const erg = ereignis.partieStand.letztesSpielergebnis;
             if (erg) {
               const geber = prevStand?.laufendesSpiel?.geber ?? 'SUED';
@@ -783,18 +790,22 @@ export class AppStore {
 
     // Wenn neue Partie: immer akzeptieren
     if (neuerStand.partieId !== aktuellePartieId) {
-      this._letztePartieVersion = neueVersion;
       return true;
     }
+
+    const aktuelleStoreVersion = this.zustand.partieStand?.version ?? -1;
 
     // Wir erlauben >=, weil mehrere Ereignisse (z.B. KarteGespielt und StichAbgeschlossen)
     // in derselben Backend-Transaktion entstehen koennen und daher dieselbe Version haben.
-    if (neueVersion >= this._letztePartieVersion) {
-      this._letztePartieVersion = neueVersion;
-      return true;
+    const darfPatchen = neueVersion >= aktuelleStoreVersion;
+    if (!darfPatchen) {
+      Logger.websocket('PartieStand-Patch abgelehnt (veraltet)', {
+        neueVersion,
+        aktuelleStoreVersion,
+        partieId: neueStand.partieId
+      });
     }
-
-    return false;
+    return darfPatchen;
   }
 
   private setzeTischAbosZurueck(): void {

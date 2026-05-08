@@ -2,6 +2,7 @@ import Phaser from 'phaser';
 import {
   FARBE_GOLD,
   FARBE_ROT,
+  FARBE_ROT_CSS,
   RE_FARBE_OVERLAY,
   KONTRA_FARBE_OVERLAY,
   FONT_FAMILY,
@@ -32,6 +33,7 @@ export class Nameplate extends Phaser.GameObjects.Container {
   private pulseRing?: Phaser.GameObjects.Graphics;
   private ansageBadge?: Phaser.GameObjects.Container;
   private vorbehaltLabel?: Phaser.GameObjects.Text;
+  private heartbeatIcon?: Phaser.GameObjects.Text;
   private teamfarbe: number = BORDER_DEFAULT;
   private aktiveTweens: Phaser.Tweens.Tween[] = [];
   private vorbehaltTween?: Phaser.Tweens.Tween;
@@ -77,6 +79,34 @@ export class Nameplate extends Phaser.GameObjects.Container {
       kiBadge.add(kiLabel);
       this.add(kiBadge);
     }
+  }
+
+  setHochzeitPartner(aktiv: boolean): void {
+    if (aktiv) {
+      if (this.heartbeatIcon) return;
+      this.heartbeatIcon = this.szene.make.text({
+        x: -BREITE / 2 + BALKEN_B + 8 + this.nameText.width + 6,
+        y: -5,
+        text: '♥',
+        style: { fontSize: '14px', fontFamily: FONT_FAMILY, color: FARBE_ROT_CSS }
+      }).setOrigin(0, 0.5);
+      this.add(this.heartbeatIcon);
+      this.szene.tweens.add({
+        targets: this.heartbeatIcon,
+        scale: { from: 0.8, to: 1.1 },
+        yoyo: true,
+        repeat: -1,
+        duration: 600,
+        ease: 'Quad.easeInOut'
+      });
+    } else {
+      this.heartbeatIcon?.destroy();
+      this.heartbeatIcon = undefined;
+    }
+  }
+
+  hatAnsageBadge(): boolean {
+    return !!this.ansageBadge;
   }
 
   private zeichneHauptBar(borderFarbe: number, bgFarbe: number): void {

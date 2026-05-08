@@ -62,7 +62,7 @@ class VerbindungsabbruchServiceTest {
     @BeforeEach
     void setUp() {
         // Einfacher Tisch mit einem menschlichen Spieler für alle Tests
-        menschlicherSpieler = SpielerEntity.menschlich("Testerin", "session-test-123");
+        menschlicherSpieler = SpielerEntity.menschlich("Testerin", "session-test-" + UUID.randomUUID().toString());
         spielerRepository.save(menschlicherSpieler);
 
         tisch = TischEntity.neu("Verbindungstest-Tisch", menschlicherSpieler, TischkonfigurationEmbeddable.standard());
@@ -135,7 +135,7 @@ class VerbindungsabbruchServiceTest {
     @Test
     void disconnectMitNullAttributenWirftKeineException() {
         // Fehlgeschlagene Handshakes können SessionDisconnectEvents ohne Spieler-Attribute erzeugen
-        verbindungsabbruchService.verarbeiteDisconnect(null, null, null);
+        verbindungsabbruchService.verarbeiteDisconnect(null, null, null, null);
         // Kein Fehler erwartet
     }
 
