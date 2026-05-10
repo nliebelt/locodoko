@@ -1,28 +1,28 @@
-# IMPLEMENTATION_PLAN — Plan-Run #119
+# IMPLEMENTATION_PLAN — Plan-Run #120
 
-> Stand: 2026-05-09. Fokus: P11 — E2E Vision Loop Stabilität & Bugfixes, Rundenende-Workflow.
+> Stand: 2026-05-10. Fokus: P12 — Stabilität der E2E-Tests und Vervollständigung der Dokumentation.
 
 ## Notiz
 
-**Was wurde implementiert?**
-- Task 42a-c: Sämtliche ESLint-Fehler (`any`, ungenutzte Variablen) in den Frontend-Tests wurden behoben. Das Frontend-Projekt ist nun linter-frei (`npm run lint` grün).
-- Task 43a: Platzhalter- und Duplikat-Texte in der `TischSzene.ts` wurden entfernt. `statusText` wurde aus dem Modell und den Tests gelöscht.
-- Task 43b: Layout für OST/WEST Spieler in `layout.ts` korrigiert, um Overflow zu verhindern. Nameplate-Positionen gemäß Spec angepasst.
-- Task 43c: Stich-Karten in der Mitte werden nun leicht überlappend (gestapelt) und mit gejitterten Winkeln gerendert (per Vision Loop verifiziert).
-- Task 44a: E2E-Helper `screenshot` und `screenshotKeyframes` implementiert. `setzeAnimationsGeschwindigkeit` Bridge-Hook ergänzt.
-- `FlashTextManager` wurde an die globale Animationsgeschwindigkeit gekoppelt.
+**Was wurde analysiert?**
+- Der `IMPLEMENTATION_PLAN` (Stand #119) wurde geprüft. Die offenen Tasks sind 44b, 44c, 45, und 46.
+- Die Codebase wurde gezielt in den Bereichen der offenen Tasks gegen die Specs gescannt, um die nächsten Schritte zu präzisieren.
+- **Task 44b (E2E Timeout):** Die Analyse des `vision-loop.spec.ts` hat ergeben, dass die Hauptursache für den Timeout eine ineffiziente Polling-Schleife (`for i < 1500`) ist, die den Spielverlauf abwartet. Der Test muss auf ereignisbasiertes Warten umgestellt werden, um stabil und schnell zu sein.
+- **Task 44c (E2E Solo):** Die Implementierung in `solo-spielfluss.spec.ts` ist bereits weit fortgeschritten und deckt den Solo-Typ und den Multiplikator in der Auswertung ab. Es fehlt lediglich die im Spec geforderte Überprüfung der Geber-Rotation.
+- **Task 45 (Spec Cleanup):** Die Spec `frontend-rundenauswertung.md` kann basierend auf der Implementierung im `AppStore` und der `TischSzene` als weitgehend erledigt markiert werden.
+- **Task 46 (Animation Logging):** Die Aufgabe ist klar definiert und kann wie geplant umgesetzt werden, um das Debugging von Timing-Problemen zu verbessern.
 
 **Nächster logischer Schritt:**
-- [ ] Vision Loop Timeout (Task 44b) beheben. Der Test hängt aktuell beim Warten auf `isIdle()`.
-- [ ] Task 44c (Solo E2E) und Task 45 (Spec-Cleanup) abschließen.
-- [ ] Task 46 (Animation-Logging) für bessere Traceability implementieren.
-- [ ] `isIdle()` Logik in `TischSzene.ts` und `AppStore.ts` auf potenzielle Deadlocks prüfen.
+- Zuerst das Animation-Logging (Task 46) implementieren, da es die Fehlersuche im E2E-Test (Task 44b) erleichtern kann.
+- Anschließend den `vision-loop.spec.ts` (Task 44b) grundlegend refaktorisieren, um den Timeout zu beheben und die Stabilität zu gewährleisten.
+- Parallel können die kleineren Restarbeiten an der Solo-E2E-Spec (Task 44c) und der Doku (Task 45) abgeschlossen werden.
 
 ---
 
 ## Entdeckungen
 
-- **Vision Loop Timeout**: Der E2E Vision Loop Test benötigt aktuell > 6 Minuten und schlägt mit einem Timeout fehl. Ursache scheint der `isIdle()` Sensor zu sein, der in bestimmten Zuständen (möglicherweise während der Rundenende-Auswertung oder bei überlappenden Flash-Texten) nicht auf `true` zurückkehrt.
+- **Ineffiziente Test-Schleife**: Die Haupt-Schleife in `vision-loop.spec.ts` (`for (let i = 0; i < 1500 ...)` ist ein "busy wait" Polling-Mechanismus, der den Test unzuverlässig macht und zu Timeouts führt. Er muss durch gezielte `warteAuf...`-Helper ersetzt werden.
+- **Fehlende Solo-Assertion**: Im `solo-spielfluss.spec.ts` wird die im Spec geforderte Überprüfung der Geber-Rotation nach einem Solo-Spiel noch nicht durchgeführt.
 
 ---
 
@@ -232,28 +232,27 @@ Vollständiger Codebase-Scan abgeschlossen. Wesentliche Befunde:
 ### FEAT-E2E-HELPERS (Task 44a)
 - [x] **E2E**: Datei `e2e/tests/helpers.ts` öffnen und eine neue Funktion `screenshotKeyframes(page, name, animationsMs)` einbauen (gemäß Specs). (Auch generische `screenshot` Funktion ergänzt).
 
-### BUG-E2E-VISION-LOOP-TIMEOUT (Task 44b)
-- [ ] **E2E**: `vision-loop.spec.ts` Stabilität fixen. `isIdle()` Logik debuggen: Warum hängt der Test in Phase AUSWERTUNG? Sicherstellen, dass Modals und Flash-Texte den `isIdle` Zustand korrekt freigeben. Ziel: Laufzeit < 2 Minuten.
-
-### FEAT-E2E-SOLO (Task 44c)
-- [ ] **E2E**: `e2e/tests/solo-spielfluss.spec.ts` prüfen. Testfall 3 entweder implementieren (falls Fachlichkeit klar) oder aus der `e2e-tests.md` DoD entfernen.
-
-### DOC-SPEC-CLEANUP (Task 45)
-- [ ] **Dokumentation**: In `specs/datenbankmodell.md` (Tabellen Auth/Profil) und `specs/frontend-rundenauswertung.md` (Protokoll-Store) die bereits implementierten DoD-Einträge als `[x]` markieren.
-- [ ] **Dokumentation**: In `specs/frontend-startscreen.md` prüfen, ob Logo und Keyboard-Navigation vorhanden sind, und DoD abhaken.
-
 ---
 
-## P12 — Neu entdeckte Aufgaben (Plan-Run #118/119)
+## P12 — E2E-Stabilität & Doku (Plan-Run #120)
 
 ### FEAT-ANIMATION-LOGGING (Task 46)
-- [ ] **Frontend**: `AnimationenService.ts` anpassen, sodass Start und Ende jedes Tweens und jeder Animationssequenz (z.B. Ausspielen, Einziehen) mittels `Logger.szene` sauber protokolliert werden. Dies dient der besseren Überwachung der Zustandssynchronisation für E2E-Tests und Debugging.
+- [ ] **Frontend**: `AnimationenService.ts` anpassen, sodass Start und Ende jeder Animationssequenz (z.B. Ausspielen, Einziehen) mittels `Logger.szene` sauber protokolliert werden. Dies dient der besseren Überwachung der Zustandssynchronisation für E2E-Tests und Debugging.
+
+### BUG-E2E-VISION-LOOP-TIMEOUT (Task 44b)
+- [ ] **E2E**: `vision-loop.spec.ts` Stabilität fixen. Die Hauptursache ist eine ineffiziente Polling-Schleife. Der Test muss so refaktorisiert werden, dass er auf definierte Spielzustände (`warteAufEigenenZug`, `warteAufPhase`, etc.) wartet, statt blind zu pollen. Ziel: Laufzeit < 2 Minuten und kein Timeout.
+
+### FEAT-E2E-SOLO (Task 44c)
+- [ ] **E2E**: `e2e/tests/solo-spielfluss.spec.ts` vervollständigen. Der Test prüft bereits den Spieltyp und Multiplikator. Ergänze die fehlende Assertion, um zu verifizieren, dass der Geber nach einer Solo-Runde nicht wechselt. Anschließend DoD in `specs/e2e-tests.md` abhaken.
+
+### DOC-SPEC-CLEANUP (Task 45)
+- [ ] **Dokumentation**: In `specs/frontend-rundenauswertung.md` die DoD-Einträge für das "Spielprotokoll (DKV-Scorecard)" als `[x]` markieren, da die Implementierung im `AppStore` und der `TischSzene` bereits vorhanden ist.
 
 ---
 
 ## Akzeptanzkriterien
 
-1. **Stabilität**: Alle Tests (Backend & Frontend) grün. Frontend linter fehlerfrei.
+1. **Stabilität**: Alle Tests (Backend & Frontend) grün. Frontend linter fehlerfrei. `vision-loop.spec.ts` läuft stabil durch.
 2. **Architektur**: Keine verbotenen Abhängigkeiten (KI -> Tisch).
 3. **Spec-Konsistenz**: Code und Specs stimmen überein; abweichende Specs sind aktualisiert.
 4. **Sicherheit**: ABAC-Regeln sind aktiv und Gäste können keine privaten Tische betreten.
@@ -262,45 +261,15 @@ Vollständiger Codebase-Scan abgeschlossen. Wesentliche Befunde:
 
 ## TODO Liste
 
-**P7 (Neu entdeckt, Plan-Run #111):**
-- [x] Task 21: FIX-ABAC-AUTHORIZATION
-- [x] Task 22: FIX-TISCH-STATUS-ABBRUCH
-- [x] Task 23: FIX-PRIVATE-TISCH-GUESTS
-- [x] Task 24: REFACTOR-URL-CONSISTENCY
-- [x] Task 25: FIX-KI-ARCHITECTURE-VIOLATION
-- [x] Task 26: FEAT-EVENT-GAP-DETECTION
-- [x] Task 27: REFACTOR-E2E-KEYBOARD
-- [x] Task 28: DOC-SPEC-UPDATES
-
-**P8 (Neu entdeckt, Plan-Run #114):**
-- [x] Task 29: REFACTOR-KI-ADAPTER-CLEANUP
-- [x] Task 30: FIX-ESLINT-ANY
-
-**P9 (Neu entdeckt, Plan-Run #115):**
-- [x] Task 31–32: FIX-ANIMATION-POSITIONS
-- [x] Task 33: FIX-RENDER-GUARDS
-- [x] Task 34: FIX-PROMISE-HANDLING
-- [x] Task 35: REFACTOR-RENDER-KARTEN
-- [x] Task 36: FEAT-VORBEHALT-ANIMATION
-
-**P10 (Neu entdeckt, Plan-Run #116):**
-- [x] Task 37: FIX-FLICKER-KARTE-GESPIELT
-- [x] Task 38: FIX-GHOST-CARDS
-- [x] Task 39: FEAT-HOCHZEIT-HEART
-- [x] Task 40: REFACTOR-ANIMATION-CLEANUP
-- [x] Task 41: FEAT-ANIMATION-TESTS
-
 **P11 (Neu entdeckt, Plan-Run #117/119):**
-- [x] Task 42a: FIX-ESLINT-TESTS-1
-- [x] Task 42b: FIX-ESLINT-TESTS-2
-- [x] Task 42c: FIX-ESLINT-TESTS-3
+- [x] Task 42a-c: FIX-ESLINT-TESTS
 - [x] Task 43a: FIX-TISCHANSICHT-UI-TEXTE
 - [x] Task 43b: FIX-TISCHANSICHT-UI-LAYOUT
 - [x] Task 43c: FIX-TISCHANSICHT-UI-STICH
 - [x] Task 44a: FEAT-E2E-HELPERS
+
+**P12 (E2E-Stabilität & Doku, Plan-Run #120):**
+- [ ] Task 46: FEAT-ANIMATION-LOGGING
 - [ ] Task 44b: BUG-E2E-VISION-LOOP-TIMEOUT
 - [ ] Task 44c: FEAT-E2E-SOLO
 - [ ] Task 45: DOC-SPEC-CLEANUP
-
-**P12 (Neu entdeckt, Plan-Run #118/119):**
-- [ ] Task 46: FEAT-ANIMATION-LOGGING
