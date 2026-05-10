@@ -156,6 +156,7 @@ export class TischSzene extends Phaser.Scene {
     const storeIdle = ignoreStore ? true : appStore.isIdle();
     const animationenLaeuft = this.animationen?.animationLaeuft ?? false;
     
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- E2E Bridge Pattern
     const loco = (window as any).__locodoko;
     if (loco) {
       loco._idleDebug = {

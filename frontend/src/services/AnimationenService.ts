@@ -2,6 +2,7 @@ import type Phaser from 'phaser';
 import { PARTEI } from '../modelle/SpielverwaltungDto';
 import type { Partei } from '../modelle/SpielverwaltungDto';
 import { FONT_FAMILY } from '../ui/designTokens';
+import { Logger } from '../logger';
 
 /**
  * Phaser-Spielobjekte, die gemeinsam als Karte animiert werden koennen:
@@ -100,8 +101,9 @@ export class AnimationenService {
     ziel: { x: number; y: number; winkel?: number },
     dauer = 400
   ): Promise<void> {
+    Logger.szene('Starte animiereKarteAusspielen', { dauer });
     const objekte = [kartenobjekte.wurzel, kartenobjekte.beschriftung].filter(istVorhanden);
-    if (objekte.length === 0) return;
+    if (objekte.length === 0) { Logger.szene('Beende animiereKarteAusspielen'); return; }
     
     const tweenConfig: Phaser.Types.Tweens.TweenBuilderConfig = {
       targets: objekte,
@@ -114,6 +116,7 @@ export class AnimationenService {
       tweenConfig.angle = ziel.winkel;
     }
     await this.animiereTween(tweenConfig as Omit<Phaser.Types.Tweens.TweenBuilderConfig, 'duration' | 'onComplete'> & { duration: number });
+    Logger.szene('Beende animiereKarteAusspielen');
   }
 
   /**
@@ -128,7 +131,9 @@ export class AnimationenService {
     verzoegerungProKarte = 75,
     dauerProKarte = 75
   ): Promise<void> {
+    Logger.szene('Starte animiereKartenAusteilen', { anzahl: pakete.length });
     if (pakete.length === 0) {
+      Logger.szene('Beende animiereKartenAusteilen');
       return;
     }
     // Karten gestaffelt animieren: jede Karte startet mit leichter Verzoegerung nach der vorherigen
@@ -141,6 +146,7 @@ export class AnimationenService {
       );
     });
     await Promise.all(animationen);
+    Logger.szene('Beende animiereKartenAusteilen');
   }
 
   /**
@@ -158,6 +164,7 @@ export class AnimationenService {
     sichtbarkeitsdauer = 2500,
     textFarbe = '#ffffff'
   ): Promise<void> {
+    Logger.szene('Starte animiereAnsageBanner', { text });
     const bannerobjekt = this.szene.add
       .text(position.x, position.y, text, {
         fontFamily: FONT_FAMILY,
@@ -176,6 +183,7 @@ export class AnimationenService {
       await this.tweenAlpha(bannerobjekt, 0, 300);
     } finally {
       bannerobjekt.destroy();
+      Logger.szene('Beende animiereAnsageBanner');
     }
   }
 
@@ -192,6 +200,7 @@ export class AnimationenService {
     position: Punkt,
     sichtbarkeitsdauer = 2500
   ): Promise<void> {
+    Logger.szene('Starte animiereSoloAnkuendigung', { text });
     // Startposition: ausserhalb des sichtbaren Bereichs (oberhalb)
     const startY = position.y - 160;
     const bannerobjekt = this.szene.add
@@ -220,6 +229,7 @@ export class AnimationenService {
       ]);
     } finally {
       bannerobjekt.destroy();
+      Logger.szene('Beende animiereSoloAnkuendigung');
     }
   }
 
@@ -241,6 +251,7 @@ export class AnimationenService {
     position: Punkt,
     sichtbarkeitsdauer = 2500
   ): Promise<void> {
+    Logger.szene('Starte animiereGewinnerFlash', { parteiText });
     const startY = position.y - 200;
     const parteiLabel = this.szene.add
       .text(position.x, startY, parteiText, {
@@ -300,6 +311,7 @@ export class AnimationenService {
         this.tweenAlpha(punkteLabel, 0, 300)
       ]);
     } finally {
+      Logger.szene('Beende animiereGewinnerFlash');
       parteiLabel.destroy();
       namenLabel.destroy();
       punkteLabel.destroy();
@@ -313,6 +325,7 @@ export class AnimationenService {
    * @param sichtbarkeitsdauer - Haltezeit in ms (Standard: 2500ms)
    */
   async animiereBockrunde(anzahl: number, position: Punkt, sichtbarkeitsdauer = 2500): Promise<void> {
+    Logger.szene('Starte animiereBockrunde', { anzahl });
     const emojiText = anzahl === 1 ? '🐑' : anzahl === 2 ? '🐑🐑' : `🐑×${anzahl}`;
     const labelText = anzahl === 1 ? 'Bockrunde!' : anzahl === 2 ? 'Doppelbock!' : `Bockrunde ×${anzahl}`;
     const startY = position.y - 200;
@@ -352,6 +365,7 @@ export class AnimationenService {
         this.tweenAlpha(titel, 0, 300)
       ]);
     } finally {
+      Logger.szene('Beende animiereBockrunde');
       schaf.destroy();
       titel.destroy();
     }
@@ -369,6 +383,7 @@ export class AnimationenService {
     position: Punkt,
     sichtbarkeitsdauer = 2000
   ): Promise<void> {
+    Logger.szene('Starte animiereSonderpunktFeedback', { text });
     const feedbackobjekt = this.szene.add
       .text(position.x, position.y, text, {
         fontFamily: FONT_FAMILY,
@@ -387,6 +402,7 @@ export class AnimationenService {
       await this.tweenAlpha(feedbackobjekt, 0, 200);
     } finally {
       feedbackobjekt.destroy();
+      Logger.szene('Beende animiereSonderpunktFeedback');
     }
   }
 
@@ -407,7 +423,9 @@ export class AnimationenService {
      wartezeit = 1000,
      dauer = 600
    ): Promise<void> {
+     Logger.szene('Starte animiereStichEinziehen', { karten: kartenobjekte.length });
      if (kartenobjekte.length === 0) {
+       Logger.szene('Beende animiereStichEinziehen');
        return;
      }
      await this.warte(wartezeit);
@@ -431,6 +449,7 @@ export class AnimationenService {
      });
 
      await Promise.all(animationen);
+     Logger.szene('Beende animiereStichEinziehen');
    }
   // Zentraler Promise-Wrapper für alle Phaser-Tweens — Warum: tweenAlpha/tweenZu/tweenScale
   // teilten identische Registrierungs- und Cleanup-Logik; hier statt dreifach dupliziert.
@@ -563,6 +582,7 @@ export class AnimationenService {
     breite: number,
     hoehe: number
   ): Promise<Phaser.GameObjects.GameObject[]> {
+    Logger.szene('Starte animiereRundenauswertung', { spieltypLabel: daten.spieltypLabel });
     const objekte: Phaser.GameObjects.GameObject[] = [];
     const cx = breite / 2;
     const TIEFE = 300;
@@ -715,6 +735,7 @@ export class AnimationenService {
     );
     await this.tweenAlpha(gsObj, 1, 200);
 
+    Logger.szene('Beende animiereRundenauswertung');
     return objekte;
   }
 

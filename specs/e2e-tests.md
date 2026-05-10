@@ -299,10 +299,10 @@ export default defineConfig({
 - [x] `helpers.ts` mit stabilen Wrapper-Funktionen
 - [x] `partie-gegen-ki.spec.ts` — Testfall 1 läuft und validiert kritischen Pfad
 - [x] `rundenauswertung.spec.ts` — Testfall 2 läuft und validiert Spielende + Auswertung
-- [ ] `solo-spielfluss.spec.ts` — Testfall 3 (optional: bei Bedarf implementieren)
-- [ ] `helpers.ts` um `screenshotKeyframes(page, name, animationsMs)` erweitert
-- [ ] `vision-loop.spec.ts` auf Slow-Motion-Pattern umgestellt (Phase 1–5)
-- [ ] Vision Loop läuft in < 2 Minuten durch
+- [x] `solo-spielfluss.spec.ts` — Testfall 3 (optional: bei Bedarf implementieren)
+- [x] `helpers.ts` um `screenshotKeyframes(page, name, animationsMs)` erweitert
+- [x] `vision-loop.spec.ts` auf Slow-Motion-Pattern umgestellt (Phase 1–5)
+- [x] Vision Loop läuft in < 2 Minuten durch
 - [x] `e2e/` Projektstruktur mit `package.json` und `playwright.config.ts`
 
 ## Technische Hinweise

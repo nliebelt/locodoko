@@ -107,37 +107,38 @@ test.describe('Vision Loop — UI Screenshots', () => {
     console.log('Playing rest of game (Turbo)...');
     await aktiviereTurbo(page);
     
-    let warInStichphase = true;
     let rundeAbgeschlossen = false;
-    let letztePhase = 'STICHPHASE';
-    let rundenauswertungScreenshotGemacht = false;
 
-    for (let i = 0; i < 1500 && !rundeAbgeschlossen; i++) {
-      const zustand = await leseSpielZustand(page);
+    while (!rundeAbgeschlossen) {
+      // Wartet bis entweder eigene Aktion noetig ist oder Runde abgeschlossen (Modal gezeigt) oder neue Phase (Vorbehalt naechstes Spiel)
+      await page.waitForFunction(() => {
+        const loco = (window as any).__locodoko;
+        if (loco?._rundenEndeModalGezeigt > 0) return true;
+        const spiel = loco?.appStore?.snapshot()?.partieStand?.laufendesSpiel;
+        if (!spiel) return false;
+        if (spiel.phase === 'VORBEHALT_ANSAGE') return true;
+        if ((spiel.spielbareKarten?.length ?? 0) > 0) return true;
+        if ((spiel.moeglicheVorbehalte?.length ?? 0) > 0) return true;
+        if (spiel.phase === 'ARMUT_TAUSCH') return true;
+        return false;
+      }, { timeout: 60_000 });
 
-      if (zustand.phase !== letztePhase) {
-        console.log(`[i=${i}] Phase=${zustand.phase}`);
-        letztePhase = zustand.phase ?? '';
-      }
-
-      if (!rundenauswertungScreenshotGemacht) {
-        const modalCount = await leseRundenEndeModalCount(page);
-        if (modalCount > 0) {
-          rundenauswertungScreenshotGemacht = true;
-          await setzeAnimationsGeschwindigkeit(page, 1.0); // Normal speed for modal
-          await page.waitForTimeout(500); // Wait for fade in
-          await screenshot(page, '05-rundenauswertung-overlay');
-          console.log('Screenshot: 05-rundenauswertung-overlay');
-          rundeAbgeschlossen = true;
-          break;
-        }
-      }
-
-      if (warInStichphase && zustand.phase === 'VORBEHALT_ANSAGE') {
+      const modalCount = await leseRundenEndeModalCount(page);
+      if (modalCount > 0) {
+        await setzeAnimationsGeschwindigkeit(page, 1.0); // Normal speed for modal
+        await page.waitForTimeout(500); // Wait for fade in
+        await screenshot(page, '05-rundenauswertung-overlay');
+        console.log('Screenshot: 05-rundenauswertung-overlay');
         rundeAbgeschlossen = true;
         break;
       }
-      if (zustand.phase === 'STICHPHASE') warInStichphase = true;
+
+      const zustand = await leseSpielZustand(page);
+
+      if (zustand.phase === 'VORBEHALT_ANSAGE') {
+        rundeAbgeschlossen = true;
+        break;
+      }
 
       if (zustand.moeglicheVorbehalte.length > 0) {
         await meldeVorbehalt(page, zustand.moeglicheVorbehalte[0]);
@@ -153,8 +154,6 @@ test.describe('Vision Loop — UI Screenshots', () => {
         await spieleKarte(page, zustand.spielbareKarten[0]);
         continue;
       }
-
-      await page.waitForTimeout(100);
     }
 
     // ── 8. Abschluss ────────────────────────────────────────────────────────

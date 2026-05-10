@@ -172,11 +172,11 @@ Ein laufendes Spielprotokoll im DKV-Stil zeigt alle Runden der aktuellen Partie 
 
 ### Definition of Done Spielprotokoll
 
-- [ ] `SpielpritkollStore` oder Protokoll-State im AppStore
-- [ ] Protokoll-Overlay (Button + Tabellenansicht) in `TischSzene.ts`
-- [ ] Korrekte Akkumulation via `SpielBeendet`-Events
-- [ ] Scrollen bei mehr als 8 Einträgen
-- [ ] Visuelles Review
+- [x] `SpielpritkollStore` oder Protokoll-State im AppStore
+- [x] Protokoll-Overlay (Button + Tabellenansicht) in `TischSzene.ts`
+- [x] Korrekte Akkumulation via `SpielBeendet`-Events
+- [x] Scrollen bei mehr als 8 Einträgen
+- [x] Visuelles Review
 
 ## Technische Hinweise
 

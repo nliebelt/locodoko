@@ -125,6 +125,7 @@ export class AppStore {
    * Dies ist der Fall, wenn keine Events in der Queue sind und keine Event-Verarbeitung läuft.
    */
   isIdle(): boolean {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- E2E Bridge Pattern
     const loco = (window as any).__locodoko;
     if (loco) {
       loco._storeIdleDebug = {
@@ -810,7 +811,7 @@ export class AppStore {
       Logger.websocket('PartieStand-Patch abgelehnt (veraltet)', {
         neueVersion,
         aktuelleStoreVersion,
-        partieId: neueStand.partieId
+        partieId: neuerStand.partieId
       });
     }
     return darfPatchen;

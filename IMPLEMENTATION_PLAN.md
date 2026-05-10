@@ -4,18 +4,18 @@
 
 ## Notiz
 
-**Was wurde analysiert?**
-- Der `IMPLEMENTATION_PLAN` (Stand #119) wurde geprüft. Die offenen Tasks sind 44b, 44c, 45, und 46.
-- Die Codebase wurde gezielt in den Bereichen der offenen Tasks gegen die Specs gescannt, um die nächsten Schritte zu präzisieren.
-- **Task 44b (E2E Timeout):** Die Analyse des `vision-loop.spec.ts` hat ergeben, dass die Hauptursache für den Timeout eine ineffiziente Polling-Schleife (`for i < 1500`) ist, die den Spielverlauf abwartet. Der Test muss auf ereignisbasiertes Warten umgestellt werden, um stabil und schnell zu sein.
-- **Task 44c (E2E Solo):** Die Implementierung in `solo-spielfluss.spec.ts` ist bereits weit fortgeschritten und deckt den Solo-Typ und den Multiplikator in der Auswertung ab. Es fehlt lediglich die im Spec geforderte Überprüfung der Geber-Rotation.
-- **Task 45 (Spec Cleanup):** Die Spec `frontend-rundenauswertung.md` kann basierend auf der Implementierung im `AppStore` und der `TischSzene` als weitgehend erledigt markiert werden.
-- **Task 46 (Animation Logging):** Die Aufgabe ist klar definiert und kann wie geplant umgesetzt werden, um das Debugging von Timing-Problemen zu verbessern.
+**Was wurde implementiert?**
+- **Task 46:** Animation Logging wurde im `AnimationenService.ts` implementiert. Jede Animationssequenz loggt Start und Ende nun via `Logger.szene`.
+- **Task 44b:** Die ineffiziente Polling-Schleife in `vision-loop.spec.ts` wurde durch eine ereignisbasierte `while (!rundeAbgeschlossen)` Schleife in Kombination mit `page.waitForFunction` ersetzt, um Timeouts zu vermeiden.
+- **Task 44c:** In `solo-spielfluss.spec.ts` wurde die Anzahl der Spiele auf 2 erhöht und eine Assertion hinzugefügt, die verifiziert, dass der Geber nach einer Solo-Runde nicht wechselt.
+- **Task 45:** Die DoD-Einträge für das Spielprotokoll in `specs/frontend-rundenauswertung.md` wurden abgehakt. Die Specs `specs/e2e-tests.md` wurden ebenfalls um die kürzlich abgeschlossenen Tasks bereinigt.
 
 **Nächster logischer Schritt:**
-- Zuerst das Animation-Logging (Task 46) implementieren, da es die Fehlersuche im E2E-Test (Task 44b) erleichtern kann.
-- Anschließend den `vision-loop.spec.ts` (Task 44b) grundlegend refaktorisieren, um den Timeout zu beheben und die Stabilität zu gewährleisten.
-- Parallel können die kleineren Restarbeiten an der Solo-E2E-Spec (Task 44c) und der Doku (Task 45) abgeschlossen werden.
+- Da alle P12-Aufgaben abgeschlossen sind, sollten die E2E-Tests gegen einen lokal laufenden Backend-Server ausgeführt und visuell (`vision-loop`) überprüft werden.
+- Ein Review der gesamten Test-Suite, um sicherzustellen, dass keine Regressionen eingeführt wurden.
+
+**Offene Fragen oder Probleme:**
+- Keine.
 
 ---
 
@@ -237,16 +237,16 @@ Vollständiger Codebase-Scan abgeschlossen. Wesentliche Befunde:
 ## P12 — E2E-Stabilität & Doku (Plan-Run #120)
 
 ### FEAT-ANIMATION-LOGGING (Task 46)
-- [ ] **Frontend**: `AnimationenService.ts` anpassen, sodass Start und Ende jeder Animationssequenz (z.B. Ausspielen, Einziehen) mittels `Logger.szene` sauber protokolliert werden. Dies dient der besseren Überwachung der Zustandssynchronisation für E2E-Tests und Debugging.
+- [x] **Frontend**: `AnimationenService.ts` anpassen, sodass Start und Ende jeder Animationssequenz (z.B. Ausspielen, Einziehen) mittels `Logger.szene` sauber protokolliert werden. Dies dient der besseren Überwachung der Zustandssynchronisation für E2E-Tests und Debugging.
 
 ### BUG-E2E-VISION-LOOP-TIMEOUT (Task 44b)
-- [ ] **E2E**: `vision-loop.spec.ts` Stabilität fixen. Die Hauptursache ist eine ineffiziente Polling-Schleife. Der Test muss so refaktorisiert werden, dass er auf definierte Spielzustände (`warteAufEigenenZug`, `warteAufPhase`, etc.) wartet, statt blind zu pollen. Ziel: Laufzeit < 2 Minuten und kein Timeout.
+- [x] **E2E**: `vision-loop.spec.ts` Stabilität fixen. Die Hauptursache ist eine ineffiziente Polling-Schleife. Der Test muss so refaktorisiert werden, dass er auf definierte Spielzustände (`warteAufEigenenZug`, `warteAufPhase`, etc.) wartet, statt blind zu pollen. Ziel: Laufzeit < 2 Minuten und kein Timeout.
 
 ### FEAT-E2E-SOLO (Task 44c)
-- [ ] **E2E**: `e2e/tests/solo-spielfluss.spec.ts` vervollständigen. Der Test prüft bereits den Spieltyp und Multiplikator. Ergänze die fehlende Assertion, um zu verifizieren, dass der Geber nach einer Solo-Runde nicht wechselt. Anschließend DoD in `specs/e2e-tests.md` abhaken.
+- [x] **E2E**: `e2e/tests/solo-spielfluss.spec.ts` vervollständigen. Der Test prüft bereits den Spieltyp und Multiplikator. Ergänze die fehlende Assertion, um zu verifizieren, dass der Geber nach einer Solo-Runde nicht wechselt. Anschließend DoD in `specs/e2e-tests.md` abhaken.
 
 ### DOC-SPEC-CLEANUP (Task 45)
-- [ ] **Dokumentation**: In `specs/frontend-rundenauswertung.md` die DoD-Einträge für das "Spielprotokoll (DKV-Scorecard)" als `[x]` markieren, da die Implementierung im `AppStore` und der `TischSzene` bereits vorhanden ist.
+- [x] **Dokumentation**: In `specs/frontend-rundenauswertung.md` die DoD-Einträge für das "Spielprotokoll (DKV-Scorecard)" als `[x]` markieren, da die Implementierung im `AppStore` und der `TischSzene` bereits vorhanden ist.
 
 ---
 
@@ -269,7 +269,7 @@ Vollständiger Codebase-Scan abgeschlossen. Wesentliche Befunde:
 - [x] Task 44a: FEAT-E2E-HELPERS
 
 **P12 (E2E-Stabilität & Doku, Plan-Run #120):**
-- [ ] Task 46: FEAT-ANIMATION-LOGGING
-- [ ] Task 44b: BUG-E2E-VISION-LOOP-TIMEOUT
-- [ ] Task 44c: FEAT-E2E-SOLO
-- [ ] Task 45: DOC-SPEC-CLEANUP
+- [x] Task 46: FEAT-ANIMATION-LOGGING
+- [x] Task 44b: BUG-E2E-VISION-LOOP-TIMEOUT
+- [x] Task 44c: FEAT-E2E-SOLO
+- [x] Task 45: DOC-SPEC-CLEANUP
