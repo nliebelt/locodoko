@@ -1029,13 +1029,10 @@ it('toggles debug mode', () => {
     const echtzeit = new FakeEchtzeit();
     const api = new FakeApi({ spielerId: 's1', name: 'S1', istKi: false }, [], baueTisch()) as unknown as SpielverwaltungApi;
     const store = new AppStore(api, echtzeit);
-    // @ts-expect-error - Zugriff auf private Methode für Test
-    store['patch']({ aktuellerTisch: { id: 't1' } });
-    // @ts-expect-error - Zugriff auf private Methode für Test
+    store['patch']({ aktuellerTisch: { id: 't1' } as any });
     store['_letztePartieVersion'] = 5;
     const batch: PartieEreignisBatch = { version: 7, ereignisse: [] };
     const wsSpy = vi.spyOn(echtzeit, 'senden');
-    // @ts-expect-error - Zugriff auf private Methode für Test
     await store['verarbeitePartieBatch'](batch);
     expect(wsSpy).toHaveBeenCalled();
   });
@@ -1043,12 +1040,9 @@ it('toggles debug mode', () => {
   it('ignoriert veraltete Batches', async () => {
     const api = new FakeApi({ spielerId: 's1', name: 'S1', istKi: false }, [], baueTisch()) as unknown as SpielverwaltungApi;
     const store = new AppStore(api, new FakeEchtzeit());
-    // @ts-expect-error - Zugriff auf private Methode für Test
     store['_letztePartieVersion'] = 10;
     const batch: PartieEreignisBatch = { version: 5, ereignisse: [{ ereignisTyp: 'SNAPSHOT' } as PartieEreignisAntwort] };
-    // @ts-expect-error - Zugriff auf private Methode für Test
     await store['verarbeitePartieBatch'](batch);
-    // @ts-expect-error - Zugriff auf private Methode für Test
     expect(store['_eventQueue']).toHaveLength(0);
   });
 

@@ -14,7 +14,7 @@ describe('SpielverwaltungApi', () => {
   });
 
   it('initialisiert Spieler-Session und speichert Name', async () => {
-    const mockSpieler: SpielerSessionAntwort = { spielerId: '123', name: 'TestSpieler' };
+    const mockSpieler: SpielerSessionAntwort = { spielerId: '123', name: 'TestSpieler', istKi: false };
     vi.mocked(fetch).mockResolvedValue({
       ok: true,
       text: async () => JSON.stringify(mockSpieler)

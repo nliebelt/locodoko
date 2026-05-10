@@ -23,7 +23,7 @@ describe('ToastManager', () => {
         text: vi.fn(() => ({ setOrigin: vi.fn().mockReturnThis() }))
       },
       time: { 
-        delayedCall: vi.fn((ms, cb) => {
+        delayedCall: vi.fn((_ms, cb) => {
           cb(); // Sofort aufrufen für den Test
         }) 
       },

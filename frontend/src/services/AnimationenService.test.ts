@@ -53,7 +53,7 @@ function baueTweenSzene() {
       }
     },
     time: {
-      delayedCall: (ms: number, cb: () => void) => {
+      delayedCall: (_ms: number, cb: () => void) => {
         cb();
         return { remove: vi.fn() };
       }

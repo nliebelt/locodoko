@@ -23,7 +23,7 @@ class FakeGameObject {
 class FakeContainer extends FakeGameObject {
   list: any[] = [];
   constructor(scene: any) { super(scene); }
-  add(item: any) { 
+  add(item?: any) { 
     if (Array.isArray(item)) this.list.push(...item);
     else this.list.push(item);
     return this;
@@ -52,7 +52,7 @@ describe('SpielprotokollOverlay', () => {
       add: { 
         existing: vi.fn(),
         rectangle: vi.fn(() => new FakeGameObject(mockScene)),
-        text: vi.fn((x, y, text) => {
+        text: vi.fn((_x, _y, text) => {
           const t = new FakeGameObject(mockScene);
           t.text = text;
           return t;

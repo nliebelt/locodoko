@@ -29,7 +29,7 @@ export default defineConfig(() => {
       environment: 'node',
       include: ['src/**/*.test.ts'],
       coverage: {
-        provider: 'v8',
+        provider: 'v8' as const,
         include: ['src/**/*.ts'],
         exclude: [
           'src/**/*.test.ts',

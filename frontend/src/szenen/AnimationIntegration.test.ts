@@ -136,7 +136,7 @@ describe('Animation Integration & Guards', () => {
     
     // AnimationenService Mocken um reale Tweens zu vermeiden
     szene['animationen'] = new AnimationenService(szene);
-    vi.spyOn(szene['animationen'], 'reiheEin').mockImplementation(async (fn) => { await fn(); });
+    vi.spyOn(szene['animationen'], 'reiheEin').mockImplementation(async (fn: any) => { await fn(); });
   });
 
   afterEach(() => {

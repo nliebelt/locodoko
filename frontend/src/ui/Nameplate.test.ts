@@ -31,7 +31,7 @@ class FakeGameObject {
 class FakeContainer extends FakeGameObject {
   list: any[] = [];
   constructor(scene: any, x?: number, y?: number) { super(scene, x, y); }
-  add(item: any) { 
+  add(item?: any) { 
     if (Array.isArray(item)) this.list.push(...item);
     else this.list.push(item);
     return this;
@@ -77,7 +77,7 @@ describe('Nameplate', () => {
   it('erstellt Nameplate für Spieler', () => {
     const plate = new Nameplate(mockScene, 100, 100, { name: 'Player 1', istKI: false, position: 'SUED' });
     expect(mockScene.add.existing).toHaveBeenCalledWith(plate);
-    const nameText = plate.list.find(o => o.text === 'Player 1');
+    const nameText = plate.list.find((o: any) => o.text === 'Player 1');
     expect(nameText).toBeDefined();
   });
 
@@ -96,11 +96,11 @@ describe('Nameplate', () => {
   it('zeigt Hochzeit-Partner Icon', () => {
     const plate = new Nameplate(mockScene, 100, 100, { name: 'P1', istKI: false, position: 'SUED' });
     plate.setHochzeitPartner(true);
-    const heart = plate.list.find(o => o.text === '♥');
+    const heart = plate.list.find((o: any) => o.text === '♥');
     expect(heart).toBeDefined();
     
     plate.setHochzeitPartner(false);
-    expect(heart.active).toBe(false);
+    expect(heart!.active).toBe(false);
   });
 
   it('zeigt Ansage-Badge', () => {
@@ -112,10 +112,12 @@ describe('Nameplate', () => {
   it('zeigt Vorbehalt-Label', () => {
     const plate = new Nameplate(mockScene, 100, 100, { name: 'P1', istKI: false, position: 'SUED' });
     plate.showVorbehalt();
-    const label = plate.list.find(o => o.text === 'VORBEHALT?');
+    const label = plate.list.find((o: any) => o.text === 'VORBEHALT?');
     expect(label).toBeDefined();
     
     plate.clearVorbehalt();
-    expect(label.active).toBe(false);
-  });
-});
+    expect(label!.active).toBe(false);
+    });
+    });
+
+

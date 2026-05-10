@@ -109,7 +109,7 @@ describe('FlashTextManager', () => {
     timers[0].callback();
     
     // Fade-Out Tween onComplete triggern
-    const fadeOutTween = mockSzene.tweens.add.mock.calls.find((call: any) => call[0].alpha === 0)[0];
+    const fadeOutTween = mockSzene.tweens.add.mock.calls.find((call: any) => call[0].alpha === 0)![0];
     fadeOutTween.onComplete();
     
     await promise;
@@ -146,7 +146,7 @@ describe('FlashTextManager', () => {
     
     // VerwalteMitTimeout beenden
     timers[timers.length-1].callback();
-    const fadeOutTween = mockSzene.tweens.add.mock.calls.find((call: any) => call[0].alpha === 0)[0];
+    const fadeOutTween = mockSzene.tweens.add.mock.calls.find((call: any) => call[0].alpha === 0)![0];
     fadeOutTween.onComplete();
     
     await promise;
@@ -163,7 +163,7 @@ describe('FlashTextManager', () => {
 
     // VerwalteMitTimeout beenden
     timers[timers.length-1].callback();
-    const fadeOutTween = mockSzene.tweens.add.mock.calls.find((call: any) => call[0].alpha === 0)[0];
+    const fadeOutTween = mockSzene.tweens.add.mock.calls.find((call: any) => call[0].alpha === 0)![0];
     fadeOutTween.onComplete();
     
     await promise;
@@ -178,7 +178,7 @@ describe('FlashTextManager', () => {
     
     // VerwalteMitTimeout beenden
     timers[timers.length-1].callback();
-    const fadeOutTween = mockSzene.tweens.add.mock.calls.find((call: any) => call[0].alpha === 0)[0];
+    const fadeOutTween = mockSzene.tweens.add.mock.calls.find((call: any) => call[0].alpha === 0)![0];
     fadeOutTween.onComplete();
     
     await promise;
@@ -193,7 +193,7 @@ describe('FlashTextManager', () => {
     
     // VerwalteMitTimeout beenden
     timers[timers.length-1].callback();
-    const fadeOutTween = mockSzene.tweens.add.mock.calls.find((call: any) => call[0].alpha === 0)[0];
+    const fadeOutTween = mockSzene.tweens.add.mock.calls.find((call: any) => call[0].alpha === 0)![0];
     fadeOutTween.onComplete();
     
     await promise;
@@ -208,7 +208,7 @@ describe('FlashTextManager', () => {
     
     // VerwalteMitTimeout beenden
     timers[timers.length-1].callback();
-    const fadeOutTween = mockSzene.tweens.add.mock.calls.find((call: any) => call[0].alpha === 0)[0];
+    const fadeOutTween = mockSzene.tweens.add.mock.calls.find((call: any) => call[0].alpha === 0)![0];
     fadeOutTween.onComplete();
     
     await promise;

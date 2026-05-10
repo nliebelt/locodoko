@@ -5,15 +5,14 @@
 ## Notiz
 
 **Was wurde implementiert?**
-- **P12 Tasks (46, 44b, 44c, 45)** wurden erfolgreich abgeschlossen. E2E Tests wurden auf ereignisbasiertes Warten umgestellt und Solo-Tests erweitert.
+- **P13 Task 47 (Frontend TS Errors)** erfolgreich behoben. Die 58 TypeScript-Kompilierungsfehler wurden behoben und `npx tsc --noEmit` sowie `npm run build` und `npm test` im `frontend`-Ordner laufen nun fehlerfrei durch. 
+- Das `istKi` Property wurde ergänzt, ungenutzte `@ts-expect-error` entfernt, Parametermismatches in den Fake-Klassen behoben und die `provider` Config in `vite.config.ts` typisiert.
 
 **Nächster logischer Schritt:**
-- Der Build-Prozess im Frontend (`npm run build`, `tsc --noEmit`) schlägt aufgrund von 58 TypeScript-Kompilierungsfehlern fehl.
-- Diese Fehler müssen bereinigt werden, damit das Frontend wieder erfolgreich kompiliert und die CI-Pipeline bestehen kann. 
-- Fehler befinden sich vor allem in den Testdateien (`*.test.ts`) durch nicht übereinstimmende Typisierungen (z.B. Mock-Objekte, fehlendes `istKi` Property) und ungenutzte Variablen.
+- Da der Frontend-Build wiederhergestellt ist, sollte die vollständige E2E-Validierung mit Playwright (`cd e2e && npx playwright test`) erfolgen, um zu verifizieren, dass die E2E-Tests stabil laufen.
 
 **Offene Fragen oder Probleme:**
-- Keine neuen, aber der Frontend-Build ist blockiert.
+- Keine. Der Build ist wiederhergestellt!
 
 ---
 
@@ -279,4 +278,4 @@ Vollständiger Codebase-Scan abgeschlossen. Wesentliche Befunde:
 - [x] Task 45: DOC-SPEC-CLEANUP
 
 **P13 (Frontend Build, Plan-Run #121):**
-- [ ] Task 47: FIX-FRONTEND-TS-ERRORS
+- [x] Task 47: FIX-FRONTEND-TS-ERRORS

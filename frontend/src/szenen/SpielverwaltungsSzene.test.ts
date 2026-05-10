@@ -40,7 +40,7 @@ vi.mock('./PhaserButton', () => ({
 }));
 
 vi.mock('../ui/PhaserModal', () => ({
-  PhaserModal: vi.fn(function(this: any, scene: any, x: number, y: number, optionen: any) {
+  PhaserModal: vi.fn(function(this: any, _scene: any, _x: number, _y: number, optionen: any) {
     this.optionen = optionen;
     this.getContentContainer = () => ({ add: vi.fn() });
     this.destroy = vi.fn();

@@ -25,7 +25,7 @@ class FakeGameObject {
 
 class FakeContainer extends FakeGameObject {
   list: any[] = [];
-  add(k: any) { 
+  add(k?: any) { 
     if (Array.isArray(k)) this.list.push(...k);
     else this.list.push(k);
     return this;
@@ -92,7 +92,7 @@ describe('PhaserModal', () => {
     
     // Backdrop ist das erste Kind im Modal Container (Rectangle)
     const backdrop = modal.list[0];
-    if (backdrop.onpointerdown) backdrop.onpointerdown();
+    if ((backdrop as any).onpointerdown) (backdrop as any).onpointerdown();
     
     expect(onClose).toHaveBeenCalled();
   });
@@ -102,9 +102,9 @@ describe('PhaserModal', () => {
     const modal = new PhaserModal(mockScene, 640, 360, { onClose, zeigeSchliessenButton: true, titel: 'T' });
     
     // Schließen Button finden (ist ein Text-Objekt)
-    const closeBtn = modal.list.find(item => item.onpointerdown !== undefined && item !== modal.list[0] && item !== modal.list[2]);
+    const closeBtn = modal.list.find(item => (item as any).onpointerdown !== undefined && item !== modal.list[0] && item !== modal.list[2]);
     expect(closeBtn).toBeDefined();
-    if (closeBtn.onpointerdown) closeBtn.onpointerdown();
+    if (closeBtn && (closeBtn as any).onpointerdown) (closeBtn as any).onpointerdown();
     
     expect(onClose).toHaveBeenCalled();
   });

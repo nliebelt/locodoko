@@ -28,7 +28,7 @@ vi.mock('phaser', () => ({
     GameObjects: {
       Container: class extends FakeGameObject {
         list: any[] = [];
-        add(k: any) { 
+        add(k?: any) { 
           if (Array.isArray(k)) this.list.push(...k);
           else this.list.push(k);
           return this;
@@ -37,9 +37,9 @@ vi.mock('phaser', () => ({
       Rectangle: class extends FakeGameObject {
         lineWidth: number = 0;
         strokeColor: number = 0;
-        setStrokeStyle(w: number, c: number) {
-            this.lineWidth = w;
-            this.strokeColor = c;
+        setStrokeStyle(w?: number, c?: number) {
+            this.lineWidth = w || 0;
+            this.strokeColor = c || 0;
             return this;
         }
       },
