@@ -1,28 +1,26 @@
-# IMPLEMENTATION_PLAN — Plan-Run #120
+# IMPLEMENTATION_PLAN — Plan-Run #121
 
-> Stand: 2026-05-10. Fokus: P12 — Stabilität der E2E-Tests und Vervollständigung der Dokumentation.
+> Stand: 2026-05-10. Fokus: P13 — Frontend Build & Typescript Bereinigung.
 
 ## Notiz
 
 **Was wurde implementiert?**
-- **Task 46:** Animation Logging wurde im `AnimationenService.ts` implementiert. Jede Animationssequenz loggt Start und Ende nun via `Logger.szene`.
-- **Task 44b:** Die ineffiziente Polling-Schleife in `vision-loop.spec.ts` wurde durch eine ereignisbasierte `while (!rundeAbgeschlossen)` Schleife in Kombination mit `page.waitForFunction` ersetzt, um Timeouts zu vermeiden.
-- **Task 44c:** In `solo-spielfluss.spec.ts` wurde die Anzahl der Spiele auf 2 erhöht und eine Assertion hinzugefügt, die verifiziert, dass der Geber nach einer Solo-Runde nicht wechselt.
-- **Task 45:** Die DoD-Einträge für das Spielprotokoll in `specs/frontend-rundenauswertung.md` wurden abgehakt. Die Specs `specs/e2e-tests.md` wurden ebenfalls um die kürzlich abgeschlossenen Tasks bereinigt.
+- **P12 Tasks (46, 44b, 44c, 45)** wurden erfolgreich abgeschlossen. E2E Tests wurden auf ereignisbasiertes Warten umgestellt und Solo-Tests erweitert.
 
 **Nächster logischer Schritt:**
-- Da alle P12-Aufgaben abgeschlossen sind, sollten die E2E-Tests gegen einen lokal laufenden Backend-Server ausgeführt und visuell (`vision-loop`) überprüft werden.
-- Ein Review der gesamten Test-Suite, um sicherzustellen, dass keine Regressionen eingeführt wurden.
+- Der Build-Prozess im Frontend (`npm run build`, `tsc --noEmit`) schlägt aufgrund von 58 TypeScript-Kompilierungsfehlern fehl.
+- Diese Fehler müssen bereinigt werden, damit das Frontend wieder erfolgreich kompiliert und die CI-Pipeline bestehen kann. 
+- Fehler befinden sich vor allem in den Testdateien (`*.test.ts`) durch nicht übereinstimmende Typisierungen (z.B. Mock-Objekte, fehlendes `istKi` Property) und ungenutzte Variablen.
 
 **Offene Fragen oder Probleme:**
-- Keine.
+- Keine neuen, aber der Frontend-Build ist blockiert.
 
 ---
 
 ## Entdeckungen
 
-- **Ineffiziente Test-Schleife**: Die Haupt-Schleife in `vision-loop.spec.ts` (`for (let i = 0; i < 1500 ...)` ist ein "busy wait" Polling-Mechanismus, der den Test unzuverlässig macht und zu Timeouts führt. Er muss durch gezielte `warteAuf...`-Helper ersetzt werden.
-- **Fehlende Solo-Assertion**: Im `solo-spielfluss.spec.ts` wird die im Spec geforderte Überprüfung der Geber-Rotation nach einem Solo-Spiel noch nicht durchgeführt.
+- **Frontend TS Build-Fehler**: `tsc --noEmit` im `frontend`-Ordner bricht mit 58 Fehlern ab (z.B. `istKi` fehlt in `SpielverwaltungApi.test.ts`, ungenutzte `@ts-expect-error` in `AppStore.test.ts`, Parameter-Mismatches in Fake-Objekten in Phaser-Szenen-Tests, und ein Überladungsfehler in `vite.config.ts`).
+- **E2E Tests**: Die E2E Tests sind vorbereitet, aber da das Frontend nicht baut, muss zunächst der Build repariert werden, bevor die vollständige lokale Validierung via `playwright test` abgeschlossen werden kann.
 
 ---
 
@@ -250,9 +248,22 @@ Vollständiger Codebase-Scan abgeschlossen. Wesentliche Befunde:
 
 ---
 
+## P13 — Frontend Build & TypeScript Bereinigung (Plan-Run #121)
+
+### FIX-FRONTEND-TS-ERRORS (Task 47)
+- [ ] **Frontend**: `tsc --noEmit && vite build` im `frontend` Ordner reparieren.
+  - Typisierungsfehler in `SpielverwaltungApi.test.ts` beheben (`istKi` Property ergänzen).
+  - Ungenutzte Direktiven (`@ts-expect-error`) in `AppStore.test.ts` entfernen.
+  - Parameter in Fake-Objekten (z.B. in `TischSzene.test.ts`, `FlashTextManager.test.ts`, `PhaserModal.test.ts`, etc.) anpassen (z.B. `add()`, `setStrokeStyle()`).
+  - Überladungsfehler in `vite.config.ts` (Coverage Istanbul/v8) fixen.
+  - Ungenutzte Variablen und Typparameter (`w`, `h`, `t`, `opt`) in diversen Tests (`TischSzene.test.ts`, `tischFormatierer.test.ts`) bereinigen oder entfernen.
+  - Sicherstellen, dass `cd frontend && npm run build` am Ende fehlerfrei durchläuft.
+
+---
+
 ## Akzeptanzkriterien
 
-1. **Stabilität**: Alle Tests (Backend & Frontend) grün. Frontend linter fehlerfrei. `vision-loop.spec.ts` läuft stabil durch.
+1. **Stabilität**: Alle Tests (Backend & Frontend) grün. Frontend linter fehlerfrei. `cd frontend && npm run build` läuft fehlerfrei durch.
 2. **Architektur**: Keine verbotenen Abhängigkeiten (KI -> Tisch).
 3. **Spec-Konsistenz**: Code und Specs stimmen überein; abweichende Specs sind aktualisiert.
 4. **Sicherheit**: ABAC-Regeln sind aktiv und Gäste können keine privaten Tische betreten.
@@ -261,15 +272,11 @@ Vollständiger Codebase-Scan abgeschlossen. Wesentliche Befunde:
 
 ## TODO Liste
 
-**P11 (Neu entdeckt, Plan-Run #117/119):**
-- [x] Task 42a-c: FIX-ESLINT-TESTS
-- [x] Task 43a: FIX-TISCHANSICHT-UI-TEXTE
-- [x] Task 43b: FIX-TISCHANSICHT-UI-LAYOUT
-- [x] Task 43c: FIX-TISCHANSICHT-UI-STICH
-- [x] Task 44a: FEAT-E2E-HELPERS
-
 **P12 (E2E-Stabilität & Doku, Plan-Run #120):**
 - [x] Task 46: FEAT-ANIMATION-LOGGING
 - [x] Task 44b: BUG-E2E-VISION-LOOP-TIMEOUT
 - [x] Task 44c: FEAT-E2E-SOLO
 - [x] Task 45: DOC-SPEC-CLEANUP
+
+**P13 (Frontend Build, Plan-Run #121):**
+- [ ] Task 47: FIX-FRONTEND-TS-ERRORS
