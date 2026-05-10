@@ -155,6 +155,18 @@ export class TischSzene extends Phaser.Scene {
   public isIdle(ignoreStore = false): boolean {
     const storeIdle = ignoreStore ? true : appStore.isIdle();
     const animationenLaeuft = this.animationen?.animationLaeuft ?? false;
+    
+    const loco = (window as any).__locodoko;
+    if (loco) {
+      loco._idleDebug = {
+        storeIdle,
+        animationenLaeuft,
+        austeilenAktiv: this.austeilenAktiv,
+        wartendeKartenId: this.wartendeKartenId,
+        stichEinziehenAktiv: this.stichEinziehenAktiv
+      };
+    }
+    
     return storeIdle && !animationenLaeuft && !this.austeilenAktiv && !this.wartendeKartenId && !this.stichEinziehenAktiv;
   }
 
@@ -177,10 +189,13 @@ export class TischSzene extends Phaser.Scene {
     Logger.szene('TischSzene create', { tischId: snapshot.aktuellerTisch?.id });
     
     this.animationen = new AnimationenService(this);
-    this.animationsGeschwindigkeit = ladeGeschwindigkeit();
-    this.animationen.setzeGeschwindigkeitsfaktor(this.animationsGeschwindigkeit);
     this.toastManager = new ToastManager(this);
     this.flashTextManager = new FlashTextManager(this);
+    
+    this.animationsGeschwindigkeit = ladeGeschwindigkeit();
+    this.animationen.setzeGeschwindigkeitsfaktor(this.animationsGeschwindigkeit);
+    this.flashTextManager.setzeGeschwindigkeitsfaktor(this.animationsGeschwindigkeit);
+
 
     const inputKontext: TischInputKontext = {
       getLetztesModell: () => this.letztesModell ?? null,

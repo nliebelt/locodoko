@@ -40,7 +40,6 @@ export interface SpielerAnsicht {
   istGeber: boolean;
   verbleibendeKarten: number;
   stiche: number;
-  statusText: string;
   istAktivHervorgehoben: boolean;
   partei: Partei | null;
   sichtbareHandkarten: KarteAntwort[];
@@ -123,7 +122,6 @@ export interface ArmutAktionAnsicht {
 export interface TischAnsichtModell {
   titel: string;
   untertitel: string;
-  statusText: string;
   debugModus: boolean;
   tischhintergrund: Tischhintergrund;
   spieltyp: LaufendesSpielAntwort['spieltyp'] | null;
@@ -161,7 +159,6 @@ export function erstelleStandardTischAnsicht(spielerName: string): TischAnsichtM
   return {
     titel: 'Loco Doko',
     untertitel: 'Bereit fuer das erste Spiel',
-    statusText: 'Warten auf weitere Spieler',
     debugModus: false,
     tischhintergrund: 'OVAL_2',
     spieltyp: null,
@@ -184,7 +181,6 @@ export function erstelleStandardTischAnsicht(spielerName: string): TischAnsichtM
         istGeber: false,
         verbleibendeKarten: 12,
         stiche: 0,
-        statusText: 'Du',
         istAktivHervorgehoben: true,
         partei: null,
         sichtbareHandkarten: []
@@ -201,7 +197,6 @@ export function erstelleStandardTischAnsicht(spielerName: string): TischAnsichtM
         istGeber: false,
         verbleibendeKarten: 12,
         stiche: 0,
-        statusText: 'KI',
         istAktivHervorgehoben: false,
         partei: null,
         sichtbareHandkarten: []
@@ -218,7 +213,6 @@ export function erstelleStandardTischAnsicht(spielerName: string): TischAnsichtM
         istGeber: false,
         verbleibendeKarten: 12,
         stiche: 0,
-        statusText: 'KI',
         istAktivHervorgehoben: false,
         partei: null,
         sichtbareHandkarten: []
@@ -235,7 +229,6 @@ export function erstelleStandardTischAnsicht(spielerName: string): TischAnsichtM
         istGeber: false,
         verbleibendeKarten: 12,
         stiche: 0,
-        statusText: 'KI',
         istAktivHervorgehoben: false,
         partei: null,
         sichtbareHandkarten: []
@@ -276,7 +269,6 @@ export function erstelleTischAnsichtAusStatus(
     return {
       titel: 'Loco Doko',
       untertitel: 'Noch kein Tisch geoeffnet',
-       statusText: 'Bitte waehle in der Lobby einen Tisch aus.',
        debugModus,
        tischhintergrund: 'OVAL_2',
        spieltyp: null,
@@ -307,14 +299,6 @@ export function erstelleTischAnsichtAusStatus(
     ? mappeSpielerAusPartie(laufendesSpiel.spieler, tisch, laufendesSpiel.spieltyp, laufendesSpiel.schweinchenAktiv, bezugPosition)
     : mappeSpielerAusTisch(spielerId, tisch, bezugPosition);
 
-  const statusText = laufendesSpiel
-    ? `${lesbarerPhasenText(laufendesSpiel.phase)} · Spiel ${laufendesSpiel.spielNummer}/${partieStand?.anzahlSpiele ?? tisch.konfiguration.anzahlSpiele}`
-    : partieStand?.letztesSpielergebnis
-      ? `Letzte Auswertung abgeschlossen · Spiel ${partieStand.gespielteSpiele}/${partieStand.anzahlSpiele}`
-    : tisch.status === 'IM_SPIEL'
-      ? `Partie laeuft${partieStand ? ` · Spiel ${partieStand.gespielteSpiele + 1}/${partieStand.anzahlSpiele}` : ''}`
-      : 'Warte auf Start oder weitere Spieler';
-
   return {
     titel: tisch.name,
     untertitel: laufendesSpiel
@@ -324,7 +308,6 @@ export function erstelleTischAnsichtAusStatus(
         : tisch.status === 'IM_SPIEL'
           ? 'Top-Down-Tischansicht'
           : 'Tisch in der Lobby',
-    statusText,
     debugModus,
     tischhintergrund: tisch.konfiguration.tischhintergrund,
     spieltyp: laufendesSpiel?.spieltyp ?? null,
@@ -444,7 +427,6 @@ function mappeSpielerAusPartie(
       istGeber: eintrag.istGeber,
       verbleibendeKarten: eintrag.verbleibendeKarten ?? 0,
       stiche: eintrag.gewonneneStiche,
-      statusText: bildeStatusText(eintrag),
       istAktivHervorgehoben: eintrag.istAmZug || eintrag.istSelbst,
       partei: eintrag.partei,
       sichtbareHandkarten: sortiereSichtbareHandkarten(eintrag.sichtbareHandkarten ?? [], spieltyp, schweinchenAktiv)
@@ -652,31 +634,10 @@ function leererPlatz(position: SpielerPosition): SpielerAnsicht {
     istGeber: false,
     verbleibendeKarten: 0,
     stiche: 0,
-    statusText: 'Offen',
     istAktivHervorgehoben: false,
     partei: null,
     sichtbareHandkarten: []
   };
-}
-
-function lesbarerPhasenText(phase: LaufendesSpielAntwort['phase']): string {
-  switch (phase) {
-    case 'VORBEHALT_ANSAGE':
-      return 'Vorbehalte ansagen';
-    case 'VORBEHALT_AUFLOESUNG':
-      return 'Vorbehalte aufloesen';
-    case 'ARMUT_TAUSCH':
-      return 'Armut tauschen';
-    case 'STICHPHASE':
-      return 'Stichphase';
-    case 'AUSWERTUNG':
-      return 'Auswertung';
-    case 'GESAMTSTAND_AKTUALISIEREN':
-      return 'Gesamtstand';
-    case 'KARTEN_AUSTEILEN':
-    default:
-      return 'Karten austeilen';
-  }
 }
 
 function mappeLobbySpieler(
@@ -700,24 +661,10 @@ function mappeLobbySpieler(
     istGeber: false,
     verbleibendeKarten: istImSpiel ? 12 : 0,
     stiche: 0,
-    statusText: istEigenerSpieler ? 'Du' : spieler.istKi ? 'KI' : 'Mitspieler',
     istAktivHervorgehoben: istEigenerSpieler || spieler.spielerId === tisch.erstelltVonSpielerId,
     partei: null,
     sichtbareHandkarten: []
   };
-}
-
-function bildeStatusText(spieler: SpielerImSpielAntwort): string {
-  if (spieler.istSelbst) {
-    return 'Du';
-  }
-  if (spieler.istAmZug) {
-    return 'Am Zug';
-  }
-  if (spieler.istKi) {
-    return 'KI';
-  }
-  return 'Mitspieler';
 }
 
 function sortiereSichtbareHandkarten(

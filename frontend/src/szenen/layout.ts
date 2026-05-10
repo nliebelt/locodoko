@@ -18,15 +18,17 @@ export type TischLayout = Record<SpielerPosition, TischLayoutEintrag>;
 export function stichSlotPositionen(
   mitteX: number, mitteY: number, breite: number, hoehe: number
 ): Record<SpielerPosition, { x: number; y: number; winkel: number }> {
-  const versatzY = Math.round(hoehe * 0.15);
-  const versatzX = Math.round(breite * 0.103);
+  const versatzY = Math.round(hoehe * 0.07);
+  const versatzX = Math.round(breite * 0.045);
   return {
-    SUED: { x: mitteX,           y: mitteY + versatzY, winkel: -4 },
-    WEST: { x: mitteX - versatzX, y: mitteY,            winkel:  6 },
-    NORD: { x: mitteX,           y: mitteY - versatzY, winkel:  3 },
-    OST:  { x: mitteX + versatzX, y: mitteY,            winkel: -5 }
+    SUED: { x: mitteX,           y: mitteY + versatzY, winkel: -2 },
+    WEST: { x: mitteX - versatzX, y: mitteY,            winkel: 87 },
+    NORD: { x: mitteX,           y: mitteY - versatzY, winkel: 1 },
+    OST:  { x: mitteX + versatzX, y: mitteY,            winkel: -92 }
   };
 }
+
+
 
 export function berechneKartenGroesse(breite: number): { w: number; h: number } {
   const w = Math.round(Math.min(110, breite * 0.086));
@@ -42,10 +44,10 @@ export function berechneKartenAbstand(breite: number, hoehe: number): { horizont
 
 export function berechneLayout(breite: number, hoehe: number): TischLayout {
   return {
-    SUED: { x: breite * 0.5, y: hoehe * 0.82, kartenX: breite * 0.28, kartenY: hoehe * 0.91, kartenWinkel: 0 },
-    WEST: { x: breite * 0.12, y: hoehe * 0.5, kartenX: breite * 0.03, kartenY: hoehe * 0.37, kartenWinkel: 90 },
-    NORD: { x: breite * 0.5, y: hoehe * 0.18, kartenX: breite * 0.28, kartenY: hoehe * 0.01, kartenWinkel: 0 },
-    OST: { x: breite * 0.88, y: hoehe * 0.5, kartenX: breite * 0.97, kartenY: hoehe * 0.37, kartenWinkel: 90 }
+    SUED: { x: breite * 0.5, y: hoehe * 0.82, kartenX: breite * 0.28, kartenY: hoehe * 0.85, kartenWinkel: 0 },
+    WEST: { x: breite * 0.12, y: hoehe * 0.5, kartenX: breite * 0.10, kartenY: hoehe * 0.40, kartenWinkel: 90 },
+    NORD: { x: breite * 0.5, y: hoehe * 0.18, kartenX: breite * 0.28, kartenY: hoehe * 0.18, kartenWinkel: 0 },
+    OST: { x: breite * 0.88, y: hoehe * 0.5, kartenX: breite * 0.90, kartenY: hoehe * 0.40, kartenWinkel: 90 }
   };
 }
 
@@ -55,12 +57,14 @@ export function nameplatePositionFuer(
   hoehe: number
 ): { x: number; y: number } {
   switch (spielerPosition) {
-    case SPIELER_POSITION.NORD: return { x: breite * 0.24, y: hoehe * 0.15 };
-    case SPIELER_POSITION.SUED: return { x: breite * 0.76, y: hoehe * 0.86 };
-    case SPIELER_POSITION.WEST: return { x: breite * 0.10, y: hoehe * 0.78 };
-    case SPIELER_POSITION.OST:  return { x: breite * 0.90, y: hoehe * 0.22 };
+    case SPIELER_POSITION.NORD: return { x: breite * 0.76, y: hoehe * 0.18 };
+    case SPIELER_POSITION.SUED: return { x: breite * 0.76, y: hoehe * 0.85 };
+    case SPIELER_POSITION.WEST: return { x: breite * 0.10, y: hoehe * 0.85 };
+    case SPIELER_POSITION.OST:  return { x: breite * 0.90, y: hoehe * 0.15 };
   }
 }
+
+
 
 export function stichStapelPositionFuer(
   position: SpielerPosition,

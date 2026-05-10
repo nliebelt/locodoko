@@ -72,9 +72,9 @@ describe('erstelleTischAnsichtAusStatus', () => {
 
     expect(modell.titel).toBe('Abendrunde');
     expect(modell.spieler.map((spieler) => spieler.position)).toEqual(['SUED', 'WEST', 'NORD', 'OST']);
-    expect(modell.spieler[0]).toMatchObject({ name: 'Ben', statusText: 'Du', absolutePosition: 'WEST' });
+    expect(modell.spieler[0]).toMatchObject({ name: 'Ben', absolutePosition: 'WEST' });
     expect(modell.spieler[1]).toMatchObject({ name: 'Clara', absolutePosition: 'NORD' });
-    expect(modell.spieler[2]).toMatchObject({ name: 'Freier Platz', statusText: 'Offen' });
+    expect(modell.spieler[2]).toMatchObject({ name: 'Freier Platz' });
     expect(modell.spieler[3]).toMatchObject({ name: 'Anna', istErsteller: true, absolutePosition: 'SUED' });
   });
 
@@ -193,7 +193,6 @@ describe('erstelleTischAnsichtAusStatus', () => {
     expect(modell.moeglicheAnsagen).toEqual([]);
     expect(modell.spieler[0].sichtbareHandkarten).toHaveLength(1);
     expect(modell.spieler[1].sichtbareHandkarten).toEqual([]);
-    expect(modell.spieler[1].statusText).toBe('Am Zug');
     expect(modell.gesamtpunktestand.map((eintrag) => eintrag.punkte)).toEqual([0, 0, 0, 0]);
   });
 

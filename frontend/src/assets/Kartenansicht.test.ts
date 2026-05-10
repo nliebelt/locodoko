@@ -1,11 +1,29 @@
 // @vitest-environment jsdom
-/* eslint-disable @typescript-eslint/no-explicit-any */
 
 import { describe, expect, it, vi, beforeEach } from 'vitest';
+import type { Mock } from 'vitest';
+
+interface MockScene {
+  add: {
+    existing: Mock;
+    container: (x?: number, y?: number) => FakeContainer;
+    text: () => FakeGameObject;
+    graphics: () => FakeGameObject;
+    image: () => FakeGameObject;
+  };
+  textures: {
+    exists: Mock;
+  };
+  tweens: {
+    add: Mock;
+    killTweensOf: Mock;
+  };
+}
 
 class FakeGameObject {
   x=0; y=0; alpha=1; active=true; visible=true; width=100; height=150;
-  constructor(public scene: any, x?: number, y?: number) {
+  tint=0;
+  constructor(public scene: unknown, x?: number, y?: number) {
     this.x = x || 0;
     this.y = y || 0;
   }
@@ -14,7 +32,7 @@ class FakeGameObject {
   setScale() { return this; }
   setDisplaySize() { return this; }
   setOrigin() { return this; }
-  setTint() { return this; }
+  setTint(t: number) { this.tint = t; return this; }
   setAngle() { return this; }
   setPosition(x: number, y: number) { this.x = x; this.y = y; return this; }
   setSize(w: number, h: number) { this.width = w; this.height = h; return this; }
@@ -30,9 +48,9 @@ class FakeGameObject {
 }
 
 class FakeContainer extends FakeGameObject {
-  list: any[] = [];
-  constructor(scene: any, x?: number, y?: number) { super(scene, x, y); }
-  add(item: any) { 
+  list: unknown[] = [];
+  constructor(scene: unknown, x?: number, y?: number) { super(scene, x, y); }
+  add(item: unknown) { 
     if (Array.isArray(item)) this.list.push(...item);
     else this.list.push(item);
     return this;
@@ -54,7 +72,7 @@ vi.mock('phaser', () => ({
 const { Kartenansicht } = await import('./Kartenansicht');
 
 describe('Kartenansicht', () => {
-  let mockScene: any;
+  let mockScene: MockScene;
 
   beforeEach(() => {
     mockScene = {
@@ -76,23 +94,27 @@ describe('Kartenansicht', () => {
   });
 
   it('erstellt eine offene Karte', () => {
+    // @ts-expect-error - MockScene ist kein echtes Phaser.Scene
     const k = Kartenansicht.offen(mockScene, 100, 100, 'HERZ', 'AS', 100, 150);
     expect(mockScene.add.existing).toHaveBeenCalledWith(k);
     expect(k.textur).toContain('HERZ-AS');
   });
 
   it('erstellt eine verdeckte Karte', () => {
+    // @ts-expect-error - MockScene ist kein echtes Phaser.Scene
     const k = Kartenansicht.verdeckt(mockScene, 100, 100, 100, 150);
     expect(k.textur).toBe('card_back');
   });
 
   it('markiert die Karte bei Auswahl', () => {
+    // @ts-expect-error - MockScene ist kein echtes Phaser.Scene
     const k = Kartenansicht.offen(mockScene, 100, 100, 'HERZ', 'AS', 100, 150);
     k.markiereAuswahl();
     expect(k.tint).toBe(0xffe082);
   });
 
   it('gleitet zu einer neuen Position', () => {
+    // @ts-expect-error - MockScene ist kein echtes Phaser.Scene
     const k = Kartenansicht.offen(mockScene, 0, 0, 'HERZ', 'AS', 100, 150);
     k.gleiteZu(100, 200);
     expect(mockScene.tweens.add).toHaveBeenCalledWith(expect.objectContaining({
@@ -102,7 +124,8 @@ describe('Kartenansicht', () => {
 
   it('nutzt Fallback wenn Textur fehlt', () => {
     mockScene.textures.exists.mockReturnValue(false);
-    const k = Kartenansicht.offen(mockScene, 100, 100, 'HERZ', 'AS', 100, 150);
+    // @ts-expect-error - MockScene ist kein echtes Phaser.Scene
+    Kartenansicht.offen(mockScene, 100, 100, 'HERZ', 'AS', 100, 150);
     // Sollte fallback Texte hinzugefügt haben
     expect(mockScene.add.text).toHaveBeenCalled();
   });

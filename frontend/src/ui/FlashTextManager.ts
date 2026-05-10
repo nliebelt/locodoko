@@ -111,8 +111,6 @@ export class FlashTextManager {
 
   private async verwalteMitTimeout(obj: Phaser.GameObjects.GameObject, ms: number): Promise<void> {
     const skalierteMs = this.skalierteDauer(ms);
-    // Optimierung für Turbo-Modus: Objekt sofort zerstören und Promise auflösen.
-    // Phaser Tweens mit duration:0 feuern onComplete im Headless-Modus oft nicht.
     if (skalierteMs <= 0) {
       if ((obj as unknown as { active: boolean }).active) {
         (obj as unknown as { destroy: (children?: boolean) => void }).destroy(true);
@@ -122,26 +120,35 @@ export class FlashTextManager {
 
     this.verwalteteObjekte.push(obj);
     return new Promise((resolve) => {
+      let resolved = false;
+      const complete = () => {
+        if (resolved) return;
+        resolved = true;
+        if ((obj as unknown as { active: boolean }).active) {
+          (obj as unknown as { destroy: (children?: boolean) => void }).destroy(true);
+        }
+        resolve();
+      };
+      
+      const fadeDauer = this.skalierteDauer(200);
       const timer = this.szene.time.delayedCall(skalierteMs, () => {
         if (!(obj as unknown as { active: boolean }).active) {
-          resolve();
+          complete();
           return;
         }
         this.szene.tweens.add({
           targets: obj,
           alpha: 0,
-          duration: this.skalierteDauer(200),
-          onComplete: () => {
-            if ((obj as unknown as { active: boolean }).active) {
-              (obj as unknown as { destroy: (children?: boolean) => void }).destroy(true);
-            }
-            resolve();
-          },
+          duration: fadeDauer,
+          onComplete: complete,
         });
         const idx = this.verwalteteObjekte.indexOf(obj);
         if (idx !== -1) this.verwalteteObjekte.splice(idx, 1);
       });
       this.verwalteteTimers.push(timer);
+      
+      // Fallback-Timeout unabhaengig vom Phaser-Game-Loop
+      window.setTimeout(complete, skalierteMs + fadeDauer + 1000);
     });
   }
 
@@ -279,6 +286,17 @@ export class FlashTextManager {
     }
 
     return new Promise((resolve) => {
+      let resolved = false;
+      const complete = () => {
+        if (resolved) return;
+        resolved = true;
+        if ((text as unknown as { active: boolean }).active) text.destroy();
+        resolve();
+      };
+      
+      const fadeDauer = this.skalierteDauer(300);
+      const delay = this.skalierteDauer(800);
+
       this.szene.tweens.add({
         targets: text,
         y: posY - 60,
@@ -286,15 +304,14 @@ export class FlashTextManager {
         alpha: { from: 0, to: 1 }, ease: 'Back.Out', duration: skalierteDauerMain,
         onComplete: () => {
           this.szene.tweens.add({
-            targets: text, alpha: 0, delay: this.skalierteDauer(800), duration: this.skalierteDauer(300),
-            onComplete: () => {
-              if ((text as unknown as { active: boolean }).active) text.destroy();
-              resolve();
-            },
+            targets: text, alpha: 0, delay: delay, duration: fadeDauer,
+            onComplete: complete,
           });
         },
       });
       this.verwalteteObjekte.push(text);
+      
+      window.setTimeout(complete, skalierteDauerMain + delay + fadeDauer + 1000);
     });
   }
 
@@ -410,6 +427,8 @@ export class FlashTextManager {
     this.verwalteteObjekte.push(container);
 
     const skalierteWartezeit = this.skalierteDauer(3500);
+    const fadeDauer = this.skalierteDauer(200);
+    
     if (skalierteWartezeit <= 0) {
       foilTimer.remove(false);
       if ((container as unknown as { active: boolean }).active) container.destroy(true);
@@ -417,17 +436,24 @@ export class FlashTextManager {
     }
 
     return new Promise((resolve) => {
-      const destroyTimer = this.szene.time.delayedCall(skalierteWartezeit, () => {
+      let resolved = false;
+      const complete = () => {
+        if (resolved) return;
+        resolved = true;
         foilTimer.remove(false);
+        if ((container as unknown as { active: boolean }).active) container.destroy(true);
+        resolve();
+      };
+
+      const destroyTimer = this.szene.time.delayedCall(skalierteWartezeit, () => {
         this.szene.tweens.add({
-          targets: container, alpha: 0, duration: this.skalierteDauer(200),
-          onComplete: () => {
-            if ((container as unknown as { active: boolean }).active) container.destroy(true);
-            resolve();
-          },
+          targets: container, alpha: 0, duration: fadeDauer,
+          onComplete: complete,
         });
       });
       this.verwalteteTimers.push(destroyTimer);
+      
+      window.setTimeout(complete, skalierteWartezeit + fadeDauer + 1000);
     });
   }
 
@@ -466,6 +492,8 @@ export class FlashTextManager {
     this.verwalteteObjekte.push(container);
 
     const skalierteWartezeit = this.skalierteDauer(3000);
+    const fadeDauer = this.skalierteDauer(200);
+    
     if (skalierteWartezeit <= 0) {
       foilTimer.remove(false);
       if ((container as unknown as { active: boolean }).active) container.destroy(true);
@@ -473,17 +501,24 @@ export class FlashTextManager {
     }
 
     return new Promise((resolve) => {
-      const destroyTimer = this.szene.time.delayedCall(skalierteWartezeit, () => {
+      let resolved = false;
+      const complete = () => {
+        if (resolved) return;
+        resolved = true;
         foilTimer.remove(false);
+        if ((container as unknown as { active: boolean }).active) container.destroy(true);
+        resolve();
+      };
+
+      const destroyTimer = this.szene.time.delayedCall(skalierteWartezeit, () => {
         this.szene.tweens.add({
-          targets: container, alpha: 0, duration: this.skalierteDauer(200),
-          onComplete: () => {
-            if ((container as unknown as { active: boolean }).active) container.destroy(true);
-            resolve();
-          },
+          targets: container, alpha: 0, duration: fadeDauer,
+          onComplete: complete,
         });
       });
       this.verwalteteTimers.push(destroyTimer);
+      
+      window.setTimeout(complete, skalierteWartezeit + fadeDauer + 1000);
     });
   }
 
@@ -515,6 +550,8 @@ export class FlashTextManager {
     this.verwalteteObjekte.push(container);
 
     const skalierteWartezeit = this.skalierteDauer(4000);
+    const fadeDauer = this.skalierteDauer(200);
+    
     if (skalierteWartezeit <= 0) {
       foilTimer.remove(false);
       if ((container as unknown as { active: boolean }).active) container.destroy(true);
@@ -522,17 +559,24 @@ export class FlashTextManager {
     }
 
     return new Promise((resolve) => {
-      const destroyTimer = this.szene.time.delayedCall(skalierteWartezeit, () => {
+      let resolved = false;
+      const complete = () => {
+        if (resolved) return;
+        resolved = true;
         foilTimer.remove(false);
+        if ((container as unknown as { active: boolean }).active) container.destroy(true);
+        resolve();
+      };
+
+      const destroyTimer = this.szene.time.delayedCall(skalierteWartezeit, () => {
         this.szene.tweens.add({
-          targets: container, alpha: 0, duration: this.skalierteDauer(200),
-          onComplete: () => {
-            if ((container as unknown as { active: boolean }).active) container.destroy(true);
-            resolve();
-          },
+          targets: container, alpha: 0, duration: fadeDauer,
+          onComplete: complete,
         });
       });
       this.verwalteteTimers.push(destroyTimer);
+      
+      window.setTimeout(complete, skalierteWartezeit + fadeDauer + 1000);
     });
   }
 }

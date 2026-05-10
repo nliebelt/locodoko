@@ -1,11 +1,25 @@
 // @vitest-environment jsdom
 
 import { describe, expect, it, vi, beforeEach } from 'vitest';
+import type { Mock } from 'vitest';
 import { SpielverwaltungEchtzeit } from './SpielverwaltungEchtzeit';
 import { Client } from '@stomp/stompjs';
 
+// Typ-Definition für die Mock-Instanz des STOMP-Clients
+interface MockClient {
+  activate: Mock;
+  deactivate: Mock;
+  subscribe: Mock;
+  publish: Mock;
+  onConnect: (() => void) | null;
+  onStompError: ((frame: { body: string }) => void) | null;
+  onWebSocketError: (() => void) | null;
+  onWebSocketClose: (() => void) | null;
+  connected: boolean;
+}
+
 vi.mock('@stomp/stompjs', () => {
-  const mockClient = {
+  const mockClient: MockClient = {
     activate: vi.fn(),
     deactivate: vi.fn(),
     subscribe: vi.fn(),
@@ -32,7 +46,7 @@ describe('SpielverwaltungEchtzeit', () => {
   it('verbindet sich und loest das Promise bei onConnect auf', async () => {
     const promise = service.verbinde();
     
-    const clientInstance = (Client as any).mock.results[0].value;
+    const clientInstance = vi.mocked(Client).mock.results[0].value as MockClient;
     expect(clientInstance.activate).toHaveBeenCalled();
     
     if (clientInstance.onConnect) clientInstance.onConnect();
@@ -41,7 +55,7 @@ describe('SpielverwaltungEchtzeit', () => {
 
   it('behandelt Verbindungsfehler', async () => {
     const promise = service.verbinde();
-    const clientInstance = (Client as any).mock.results[0].value;
+    const clientInstance = vi.mocked(Client).mock.results[0].value as MockClient;
     
     if (clientInstance.onStompError) clientInstance.onStompError({ body: 'Fehler' });
     await expect(promise).rejects.toThrow('Fehler');
@@ -49,7 +63,7 @@ describe('SpielverwaltungEchtzeit', () => {
 
   it('abonniert ein Ziel wenn verbunden', async () => {
     const verbindung = service.verbinde();
-    const clientInstance = (Client as any).mock.results[0].value;
+    const clientInstance = vi.mocked(Client).mock.results[0].value as MockClient;
     clientInstance.connected = true;
     if (clientInstance.onConnect) clientInstance.onConnect();
     await verbindung;
@@ -74,7 +88,7 @@ describe('SpielverwaltungEchtzeit', () => {
 
   it('sendet Nachricht wenn verbunden', async () => {
     const verbindung = service.verbinde();
-    const clientInstance = (Client as any).mock.results[0].value;
+    const clientInstance = vi.mocked(Client).mock.results[0].value as MockClient;
     clientInstance.connected = true;
     if (clientInstance.onConnect) clientInstance.onConnect();
     await verbindung;
@@ -88,7 +102,7 @@ describe('SpielverwaltungEchtzeit', () => {
 
   it('trennen deaktiviert den Client', async () => {
     const promise = service.verbinde();
-    const clientInstance = (Client as any).mock.results[0].value;
+    const clientInstance = vi.mocked(Client).mock.results[0].value as MockClient;
     if (clientInstance.onConnect) clientInstance.onConnect();
     await promise;
 
@@ -96,3 +110,4 @@ describe('SpielverwaltungEchtzeit', () => {
     expect(clientInstance.deactivate).toHaveBeenCalled();
   });
 });
+

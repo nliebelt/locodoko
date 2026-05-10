@@ -2,6 +2,7 @@
 
 import { describe, expect, it, vi, beforeEach } from 'vitest';
 import { SpielverwaltungApi, SpielverwaltungFehler } from './SpielverwaltungApi';
+import type { SpielerSessionAntwort, TischAntwort } from '../modelle/SpielverwaltungDto';
 
 describe('SpielverwaltungApi', () => {
   let api: SpielverwaltungApi;
@@ -13,11 +14,11 @@ describe('SpielverwaltungApi', () => {
   });
 
   it('initialisiert Spieler-Session und speichert Name', async () => {
-    const mockSpieler = { spielerId: '123', name: 'TestSpieler' };
-    (fetch as any).mockResolvedValue({
+    const mockSpieler: SpielerSessionAntwort = { spielerId: '123', name: 'TestSpieler' };
+    vi.mocked(fetch).mockResolvedValue({
       ok: true,
       text: async () => JSON.stringify(mockSpieler)
-    });
+    } as Response);
 
     const result = await api.initialisiereSpielerSession();
     
@@ -28,49 +29,57 @@ describe('SpielverwaltungApi', () => {
 
   it('nutzt gespeicherten Namen für Session-Initialisierung', async () => {
     localStorage.setItem('locodoko-spielername', 'GespeicherterName');
-    (fetch as any).mockResolvedValue({
+    vi.mocked(fetch).mockResolvedValue({
       ok: true,
       text: async () => JSON.stringify({ spielerId: '123', name: 'GespeicherterName' })
-    });
+    } as Response);
 
     await api.initialisiereSpielerSession();
     
-    const body = JSON.parse((fetch as any).mock.calls[0][1].body);
+    const fetchMock = vi.mocked(fetch);
+    const lastCall = fetchMock.mock.calls[0];
+    const requestInit = lastCall[1] as RequestInit;
+    const body = JSON.parse(requestInit.body as string);
     expect(body.name).toBe('GespeicherterName');
   });
 
   it('behandelt API-Fehler korrekt', async () => {
     const mockFehler = { fehlerCode: 'NICHT_GEFUNDEN', nachricht: 'Tisch nicht da' };
-    (fetch as any).mockResolvedValue({
+    vi.mocked(fetch).mockResolvedValue({
       ok: false,
       status: 404,
       text: async () => JSON.stringify(mockFehler)
-    });
+    } as Response);
 
     await expect(api.ladeTisch('t1')).rejects.toThrow(SpielverwaltungFehler);
     try {
       await api.ladeTisch('t1');
-    } catch (e: any) {
-      expect(e.fehlerCode).toBe('NICHT_GEFUNDEN');
-      expect(e.message).toBe('Tisch nicht da');
+    } catch (e: unknown) {
+      if (e instanceof SpielverwaltungFehler) {
+        expect(e.fehlerCode).toBe('NICHT_GEFUNDEN');
+        expect(e.message).toBe('Tisch nicht da');
+      } else {
+        throw e;
+      }
     }
   });
 
   it('behandelt unerwartete Serverfehler', async () => {
-    (fetch as any).mockResolvedValue({
+    vi.mocked(fetch).mockResolvedValue({
       ok: false,
       status: 500,
       text: async () => ''
-    });
+    } as Response);
 
     await expect(api.listeTische()).rejects.toThrow('Unerwartete Antwort 500');
   });
 
   it('erstellt einen Tisch', async () => {
-    (fetch as any).mockResolvedValue({
+    const mockTisch: Partial<TischAntwort> = { id: 't1' };
+    vi.mocked(fetch).mockResolvedValue({
       ok: true,
-      text: async () => JSON.stringify({ id: 't1' })
-    });
+      text: async () => JSON.stringify(mockTisch)
+    } as Response);
 
     const result = await api.erstelleTisch('Mein Tisch', { ohneNeunen: true }, true);
     
@@ -82,10 +91,10 @@ describe('SpielverwaltungApi', () => {
   });
 
   it('loggt sich ein', async () => {
-    (fetch as any).mockResolvedValue({
+    vi.mocked(fetch).mockResolvedValue({
       ok: true,
       text: async () => JSON.stringify({ success: true })
-    });
+    } as Response);
 
     await api.einloggen('user', 'pass');
     expect(fetch).toHaveBeenCalledWith('/api/auth/login', expect.objectContaining({
@@ -95,13 +104,14 @@ describe('SpielverwaltungApi', () => {
   });
 
   it('behandelt 204 No Content korrekt', async () => {
-    (fetch as any).mockResolvedValue({
+    vi.mocked(fetch).mockResolvedValue({
       ok: true,
       status: 204,
       text: async () => ''
-    });
+    } as Response);
 
     const result = await api.ausloggen();
     expect(result).toBeUndefined();
   });
 });
+

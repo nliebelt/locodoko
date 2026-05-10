@@ -125,6 +125,14 @@ export class AppStore {
    * Dies ist der Fall, wenn keine Events in der Queue sind und keine Event-Verarbeitung läuft.
    */
   isIdle(): boolean {
+    const loco = (window as any).__locodoko;
+    if (loco) {
+      loco._storeIdleDebug = {
+        queuePausiert: this._queuePausiert,
+        eventQueueLength: this._eventQueue.length,
+        verarbeiteEventLaeuft: this._verarbeiteEventLaeuft
+      };
+    }
     if (this._queuePausiert) return true;
     return this._eventQueue.length === 0 && !this._verarbeiteEventLaeuft;
   }

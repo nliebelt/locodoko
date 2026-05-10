@@ -59,14 +59,26 @@ export async function warteAufSzene(page: Page, szeneName: string, timeoutMs = 2
 }
 
 export async function leseSpielZustand(page: Page): Promise<SpielZustand> {
-  await page.waitForFunction(
-    () => {
+  try {
+    await page.waitForFunction(
+      () => {
+        const loco = (window as any).__locodoko;
+        if (typeof loco?.isIdle === 'function') return loco.isIdle() === true;
+        return loco?.appStore?.isIdle() === true;
+      },
+      { timeout: 15_000 },
+    );
+  } catch (e) {
+    const debugInfo = await page.evaluate(() => {
       const loco = (window as any).__locodoko;
-      if (typeof loco?.isIdle === 'function') return loco.isIdle() === true;
-      return loco?.appStore?.isIdle() === true;
-    },
-    { timeout: 15_000 },
-  );
+      return {
+        idleDebug: loco?._idleDebug,
+        storeIdleDebug: loco?._storeIdleDebug
+      };
+    });
+    console.error('TIMEOUT WAITING FOR isIdle. DEBUG INFO:', JSON.stringify(debugInfo, null, 2));
+    throw e;
+  }
   return page.evaluate((): SpielZustand => {
     const loco = (window as any).__locodoko;
     const spiel = loco?.appStore?.snapshot()?.partieStand?.laufendesSpiel;
@@ -193,6 +205,19 @@ export async function aktiviereTurbo(page: Page): Promise<void> {
   await page.evaluate(() => (window as any).__locodoko.setzeAnimationsGeschwindigkeit(Infinity));
 }
 
+/**
+ * Setzt die Animationsgeschwindigkeit der App.
+ * @param geschwindigkeit - Faktor (1.0 = Normal, 0.2 = 5x langsamer, Infinity = sofort)
+ */
+export async function setzeAnimationsGeschwindigkeit(page: Page, geschwindigkeit: number): Promise<void> {
+  await page.waitForFunction(
+    () => !!(window as any).__locodoko?.setzeAnimationsGeschwindigkeit,
+    { timeout: 15_000 },
+  );
+  await page.evaluate((v) => (window as any).__locodoko.setzeAnimationsGeschwindigkeit(v), geschwindigkeit);
+}
+
+
 export async function leseRundenEndeModalCount(page: Page): Promise<number> {
   return page.evaluate(() => (window as any).__locodoko?._rundenEndeModalGezeigt ?? 0);
 }
@@ -212,7 +237,47 @@ export async function leseRundenauswertung(page: Page): Promise<{ spieltypLabel:
 }
 
 /**
+ * Nimmt einen Screenshot auf und speichert ihn in e2e/screenshots/.
+ * Erstellt das Verzeichnis falls nicht vorhanden.
+ */
+export async function screenshot(page: Page, name: string): Promise<void> {
+  const screenshotDir = path.join(process.cwd(), 'screenshots');
+  if (!fs.existsSync(screenshotDir)) {
+    fs.mkdirSync(screenshotDir, { recursive: true });
+  }
+  const pfad = path.join(screenshotDir, `${name}.png`);
+  await page.screenshot({ path: pfad });
+}
+
+/**
+ * Erstellt 3 Keyframe-Screenshots für eine Animation:
+ * - t=0: Sofort nach Aufruf (Startzustand)
+ * - t=50%: In der Mitte der erwarteten Dauer (berücksichtigt Slow-Motion-Faktor 0.2)
+ * - t=100%: Nach Abschluss aller Animationen (isIdle)
+ * 
+ * @param page - Playwright Page
+ * @param name - Basisname für die Dateien (z.B. 'stich-einzug')
+ * @param animationsMs - Erwartete Dauer der Animation bei 1x Geschwindigkeit in ms
+ */
+export async function screenshotKeyframes(page: Page, name: string, animationsMs: number): Promise<void> {
+  // t=0
+  await screenshot(page, `${name}-0`);
+
+  // t=50%
+  // Slow-Motion-Faktor 0.2 bedeutet 5x langsamere Geschwindigkeit.
+  // Mitte = (animationsMs * 5) * 0.5
+  const waitMs = Math.round(animationsMs * 5 * 0.5);
+  await page.waitForTimeout(waitMs);
+  await screenshot(page, `${name}-50`);
+
+  // t=100%
+  await warteAufNaechstesEreignis(page, 20_000); // Wartet auf isIdle
+  await screenshot(page, `${name}-100`);
+}
+
+/**
  * Schreibt console.* und pageerror-Events in e2e/test-results/console-{testName}.log.
+
  * Format: [HH:MM:SS.mmm] [LEVEL] message
  * Einmalig am Testanfang aufrufen, vor page.goto().
  */

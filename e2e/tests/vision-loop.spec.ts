@@ -1,18 +1,9 @@
-/**
- * Vision-Loop: Screenshot-Capture fuer UI-Review durch Ralph.
- *
- * Navigiert automatisch durch alle wichtigen Spielzustaende und speichert
- * Screenshots in e2e/screenshots/.
- * Schritt 8 spielt eine vollstaendige Runde durch und prueft das Rundenauswertungs-Overlay.
- */
-
-import { test, expect, type Page } from '@playwright/test';
-import path from 'path';
-import fs from 'fs';
+import { test, expect } from '@playwright/test';
 import {
   alsGastStarten,
   getBridge,
   aktiviereTurbo,
+  setzeAnimationsGeschwindigkeit,
   leseSpielZustand,
   leseHudZustand,
   leseRundenEndeModalCount,
@@ -20,20 +11,15 @@ import {
   warteAufPhase,
   warteAufEigenenVorbehalt,
   warteAufEigenenZug,
+  warteAufNaechstesEreignis,
   spieleErsteHandkarte,
   spieleKarte,
   meldeVorbehalt,
   beantworteArmut,
   aktiviereConsoleCapture,
+  screenshot,
+  screenshotKeyframes,
 } from './helpers';
-
-const SCREENSHOTS_DIR = path.join(__dirname, '..', 'screenshots');
-
-async function screenshot(page: Page, name: string): Promise<void> {
-  fs.mkdirSync(SCREENSHOTS_DIR, { recursive: true });
-  const dateiPfad = path.join(SCREENSHOTS_DIR, `${name}.png`);
-  await page.screenshot({ path: dateiPfad, fullPage: false });
-}
 
 test.describe('Vision Loop — UI Screenshots', () => {
   test('Alle wichtigen Spielzustaende screenshotten', async ({ page }, testInfo) => {
@@ -47,7 +33,6 @@ test.describe('Vision Loop — UI Screenshots', () => {
 
     await warteAufSzene(page, 'SpielverwaltungsSzene');
     await page.waitForTimeout(2000);
-    await screenshot(page, 'debug-start');
     await screenshot(page, '01-lobby');
 
     // ── 1. Offene Tische (Permanent sichtbar in neuer Lobby) ──────────────────
@@ -57,9 +42,6 @@ test.describe('Vision Loop — UI Screenshots', () => {
 
     // ── 2. Neuen Tisch Modal ────────────────────────────────────────────────
     console.log('Opening Erstelle Tisch Modal...');
-    // Da es ein Phaser-Button ist, koennen wir ihn ueber die Bridge klicken oder via Tab/Enter (da Fokus-Management vorhanden)
-    // Aber fuer E2E ist es oft einfacher, den Button-Namen zu nutzen oder direkt den Store zu triggern.
-    // Der vision-loop soll aber die UI testen.
     await page.keyboard.press('Tab'); // Quick Game
     await page.keyboard.press('Tab'); // Neuen Tisch
     await page.keyboard.press('Enter');
@@ -72,7 +54,7 @@ test.describe('Vision Loop — UI Screenshots', () => {
     await page.evaluate(() => (window as any).__locodoko.appStore.erstelleQuickGame());
     await warteAufSzene(page, 'TischSzene');
     await aktiviereTurbo(page);
-    await page.locator('canvas').focus(); // Fokus auf Canvas ohne Mausklick (Keyboard-Handler auf document)
+    await page.locator('canvas').focus();
 
     // ── 4. Seitenlade & Einstellungen ────────────────────────────────────────
     console.log('Opening Seitenlade...');
@@ -87,30 +69,45 @@ test.describe('Vision Loop — UI Screenshots', () => {
     await screenshot(page, '08-einstellungen-modal');
     await page.keyboard.press('Escape');
 
-    // ── 5. Vorbehalt-Phase ────────────────────────────────────────────────────
+    // ── 5. Vorbehalt-Animation (Slow-Motion 0.2×) ───────────────────────────
     console.log('Waiting for phase VORBEHALT_ANSAGE...');
     await warteAufPhase(page, 'VORBEHALT_ANSAGE', 30_000);
-    await page.waitForTimeout(500);
-    await screenshot(page, '02-vorbehalt-phase');
+    await setzeAnimationsGeschwindigkeit(page, 0.2); // Slow Motion active
 
     console.log('Waiting for own Vorbehalt choice...');
     await warteAufEigenenVorbehalt(page);
-    await meldeVorbehalt(page, 'GESUND');
+    await screenshot(page, '02-vorbehalt-phase');
+    
+    // Vorbehalt wechseln (animiert)
+    console.log('Changing Vorbehalt choice (animated)...');
+    await page.keyboard.press('ArrowRight');
+    await screenshotKeyframes(page, '02-vorbehalt-wechsel', 200);
 
-    // ── 6. Stichphase — eigener Zug ───────────────────────────────────────────
+    // Turbo vor meldeVorbehalt: SPIEL_GESTARTET-Animation (12.5s bei 0.2×) würde sonst
+    // den 10s-Timeout von warteAufNaechstesEreignis sprengen.
+    await aktiviereTurbo(page);
+    await meldeVorbehalt(page, 'GESUND');
+    await warteAufNaechstesEreignis(page, 30_000); // Warten bis SPIEL_GESTARTET + Austeilen durch
+
+    // ── 6. Stich-Animation (Slow-Motion 0.2×) ───────────────────────────────
     console.log('Waiting for own move (STICHPHASE)...');
     await warteAufEigenenZug(page, 30_000);
+    await setzeAnimationsGeschwindigkeit(page, 0.2); // Slow Motion für visuellen Stich-Screenshot
     await screenshot(page, '03-stichphase-eigener-zug');
 
-    // ── 7. Erste Karte ausspielen ─────────────────────────────────────────────
-    console.log('Playing first card...');
+    console.log('Playing first card (animated)...');
     await spieleErsteHandkarte(page);
-    await page.waitForTimeout(300);
-    await screenshot(page, '04-nach-erster-karte');
+    // Nur Startzustand und Mittelpunkt aufnehmen — kein isIdle()-Wait, da der volle Stich
+    // (3 KI-Züge + Einziehen + Flash-Texts) bei 0.2× ~31s dauert und den 20s-Timeout sprengen würde.
+    await screenshot(page, '03-stich-ausspielen-0');
+    await page.waitForTimeout(Math.round(400 * 5 * 0.5)); // Mitte der Karte-ausspielen-Animation
+    await screenshot(page, '03-stich-ausspielen-50');
 
-    // ── 8. Volles Spiel bis Rundenauswertungs-Overlay ─────────────────────────
-    console.log('Playing full game until Rundenauswertungs-Overlay...');
-    let warInStichphase = true; // Wir haben bereits eine Karte in der STICHPHASE gespielt
+    // ── 7. Rest der Partie (Turbo) ──────────────────────────────────────────
+    console.log('Playing rest of game (Turbo)...');
+    await aktiviereTurbo(page);
+    
+    let warInStichphase = true;
     let rundeAbgeschlossen = false;
     let letztePhase = 'STICHPHASE';
     let rundenauswertungScreenshotGemacht = false;
@@ -123,11 +120,12 @@ test.describe('Vision Loop — UI Screenshots', () => {
         letztePhase = zustand.phase ?? '';
       }
 
-      // Rundenauswertungs-Overlay screenshotten sobald es zum ersten Mal erscheint
       if (!rundenauswertungScreenshotGemacht) {
         const modalCount = await leseRundenEndeModalCount(page);
         if (modalCount > 0) {
           rundenauswertungScreenshotGemacht = true;
+          await setzeAnimationsGeschwindigkeit(page, 1.0); // Normal speed for modal
+          await page.waitForTimeout(500); // Wait for fade in
           await screenshot(page, '05-rundenauswertung-overlay');
           console.log('Screenshot: 05-rundenauswertung-overlay');
           rundeAbgeschlossen = true;
@@ -159,20 +157,13 @@ test.describe('Vision Loop — UI Screenshots', () => {
       await page.waitForTimeout(100);
     }
 
-    // ── 9. Rundenauswertungs-Overlay pruefen ─────────────────────────────────
+    // ── 8. Abschluss ────────────────────────────────────────────────────────
     expect(rundeAbgeschlossen, 'Eine vollstaendige Runde muss abgeschlossen sein').toBe(true);
 
     const modalGezeigt = await leseRundenEndeModalCount(page);
     expect(modalGezeigt, 'Rundenauswertungs-Overlay muss nach Spielende angezeigt worden sein').toBeGreaterThan(0);
 
-    // Fallback-Screenshot falls das Overlay noch sichtbar ist
-    if (!rundenauswertungScreenshotGemacht) {
-      const hud = await leseHudZustand(page);
-      if (hud.rundenEndeSichtbar) {
-        await screenshot(page, '05-rundenauswertung-overlay');
-      }
-    }
-
     console.log(`\n=== Vision Loop abgeschlossen — Rundenauswertung bestaetigt (${modalGezeigt}x gezeigt) ===`);
   });
 });
+
