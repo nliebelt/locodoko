@@ -128,9 +128,9 @@ Die Tischansicht ist das zentrale Spielfeld. Sie nutzt die **volle Canvas-Fläch
 - [x] vectorized-playing-cards integriert (Laden, Mapping auf Doppelkopf-Karten)
 - [x] Weißer Karten-Hintergrund hinter jedem Karten-Sprite
 - [x] Kartengröße auf 110×165px erhöht
-- [ ] Duplikat-Texte und Placeholder-Texte entfernt (kein „Am Zug", kein „Noch keine Karte", kein Titeltext)
-- [ ] OST/WEST vollständig innerhalb des Canvas (kein Overflow)
-- [ ] Stich-Karten gestampelt in Stichmitte (Position nach Spielerrichtung, keine Namen)
+- [x] Duplikat-Texte und Placeholder-Texte entfernt (kein „Am Zug", kein „Noch keine Karte", kein Titeltext)
+- [x] OST/WEST vollständig innerhalb des Canvas (kein Overflow)
+- [x] Stich-Karten gestampelt in Stichmitte (Position nach Spielerrichtung, keine Namen)
 - [x] Stich-Stapel beim Gewinner sichtbar
 - [x] Letzten Stich umdrehen funktioniert
 - [x] Floating Action Bar implementiert

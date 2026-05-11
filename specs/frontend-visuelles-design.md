@@ -161,4 +161,4 @@ Design-Referenz: `design_handoff/README.md` (Abschnitt "Design Tokens").
 - [x] Focus-Styles für Keyboard-Navigation
 - [x] Visuelles Review
 - [ ] `Press Start 2P` lokal gebundelt und als BitmapFont in PreloadSzene geladen
-- [ ] Balatro-UI-Palette als Konstanten-Datei `frontend/src/ui/designTokens.ts`
+- [x] Balatro-UI-Palette als Konstanten-Datei `frontend/src/ui/designTokens.ts`

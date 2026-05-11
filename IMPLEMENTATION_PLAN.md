@@ -1,26 +1,31 @@
-# IMPLEMENTATION_PLAN — Plan-Run #121
+# IMPLEMENTATION_PLAN — Plan-Run #122
 
-> Stand: 2026-05-10. Fokus: P13 — Frontend Build & Typescript Bereinigung.
+> Stand: 2026-05-11. Fokus: P14 — Spec-Sync, Keyboard-Navigation, TischSzene-Refactoring.
 
 ## Notiz
 
 **Was wurde implementiert?**
-- **Lint-Fix (TischSzene.ts:557)**: `eslint-disable-next-line` Kommentar für E2E-Bridge-Pattern ergänzt — der `interim`-Commit hatte `(window as any).__locodoko` ohne den erforderlichen Suppress-Kommentar eingebaut.
-- **Plan-Konsistenz**: Task 47 Body-Checkbox `[ ]` → `[x]` korrigiert (war im TODO bereits korrekt).
-- Alle Frontend-Validierungen grün: 191 Tests, `npm run build`, `npm run lint`.
+- **P13 abgeschlossen**: Alle 58 TypeScript-Build-Fehler behoben, `npm run build` und `npm run lint` laufen fehlerfrei durch.
+- **P12 abgeschlossen**: Vision-Loop-Timeout behoben, Solo-Assertion ergänzt, Animation-Logging eingebaut.
 
-**Nächster logischer Schritt:**
-- Alle Aufgaben P0–P13 sind erledigt. Eine vollständige E2E-Validierung mit laufendem Backend (`cd e2e && npx playwright test`) wäre der sinnvolle Abschlusscheck — erfordert aber ein gestartetes Backend.
+**Nächster logischer Schritt (P14):**
+- Spec-DoD-Einträge synchronisieren (Tasks 43a/43b/43c wurden in P11 abgeschlossen, in den Spec-Dateien aber noch nicht als `[x]` markiert).
+- Keyboard-Navigation in SpielverwaltungsSzene implementieren (offenes DoD-Item in `frontend-startscreen.md`).
+- `TischSzene.ts` (1791 Zeilen) weiter aufteilen — verletzt Architektur-Richtwert (300 Zeilen).
+- E2E-Spec aktualisieren: 7 zusätzliche Testdateien sind nicht in `specs/e2e-tests.md` dokumentiert.
 
 **Offene Fragen oder Probleme:**
-- Keine. Frontend ist vollständig grün.
+- Press Start 2P läuft noch als Web-Font via `fontFamily`, nicht als Phaser BitmapFont (offenes DoD-Item in `frontend-visuelles-design.md`). Funktional korrekt, aber Performance-Optimierung laut Spec ausstehend.
 
 ---
 
-## Entdeckungen
+## Entdeckungen (Plan-Run #122)
 
-- **Frontend TS Build-Fehler**: `tsc --noEmit` im `frontend`-Ordner bricht mit 58 Fehlern ab (z.B. `istKi` fehlt in `SpielverwaltungApi.test.ts`, ungenutzte `@ts-expect-error` in `AppStore.test.ts`, Parameter-Mismatches in Fake-Objekten in Phaser-Szenen-Tests, und ein Überladungsfehler in `vite.config.ts`).
-- **E2E Tests**: Die E2E Tests sind vorbereitet, aber da das Frontend nicht baut, muss zunächst der Build repariert werden, bevor die vollständige lokale Validierung via `playwright test` abgeschlossen werden kann.
+- **TischSzene.ts 1791 Zeilen**: Verletzt Architektur-Richtwert (max. ca. 300 Zeilen). Obwohl `TischInputHandler.ts`, `AnimationenService.ts`, `SpielprotokollOverlay.ts`, `Nameplate.ts`, `FlashTextManager.ts` und `layout.ts` bereits ausgelagert sind, enthält die Szene noch HUD-Rendering, Settings-Modal, Sidebar, Karten-Renderer, Rundenauswertungs-Modals und Stich-Stapel in einer Klasse.
+- **AppStore.ts 856 Zeilen / AnimationenService.ts 807 Zeilen**: Beide über dem Richtwert, aber funktional kohärent; geringere Priorität als TischSzene.
+- **Spec-DoD-Divergenz**: `frontend-tischansicht.md` zeigt noch `[ ]` für Tasks 43a/43b/43c. `frontend-visuelles-design.md` zeigt `[ ]` für `designTokens.ts` (existiert und ist vollständig). `frontend-startscreen.md` zeigt `[ ]` für Logo/Slogan (implementiert) und Keyboard-Navigation (nicht implementiert).
+- **E2E-Spec veraltet**: `specs/e2e-tests.md` listet nur 4 Testdateien, tatsächlich existieren 11: `reconnect.spec.ts`, `mehrere-runden.spec.ts`, `armut-workflow.spec.ts`, `mehrere-runden-ohne-neunen.spec.ts`, `schnellstart.spec.ts`, `einladungslink.spec.ts`, `ungueltige-karte.spec.ts` sind undokumentiert.
+- **BitmapFont ausstehend**: `frontend-visuelles-design.md` fordert Phaser BitmapFont für Press Start 2P (`this.load.bitmapFont`). Aktuell: Web-Font via `fontFamily` in `this.add.text()`. Funktional identisch, aber ohne die Performance-Vorteile des BitmapFont-Renderers.
 
 ---
 
@@ -261,6 +266,53 @@ Vollständiger Codebase-Scan abgeschlossen. Wesentliche Befunde:
 
 ---
 
+## P14 — Spec-Sync, Keyboard-Navigation & TischSzene-Refactoring (Plan-Run #122)
+
+### DOC-SPEC-SYNC (Task 48)
+- [x] **Dokumentation**: Veraltete `[ ]`-Einträge in Spec-Dateien auf `[x]` korrigieren (Code ist vorhanden, Marker fehlen):
+  - `specs/frontend-tischansicht.md`: Duplikat-Texte entfernt (Task 43a), OST/WEST-Canvas (Task 43b), Stich-Karten gestampelt (Task 43c).
+  - `specs/frontend-visuelles-design.md`: `Balatro-UI-Palette als designTokens.ts` — Datei existiert vollständig.
+  - `specs/frontend-startscreen.md`: Logo und Slogan dargestellt (`LOCO DOKO` + Slogan in SpielverwaltungsSzene, Zeilen 32/38).
+  - Validierung: kein Code zu ändern, nur Spec-Markdown.
+
+### DOC-E2E-SPEC-UPDATE (Task 49)
+- [ ] **Dokumentation**: `specs/e2e-tests.md` Projektstruktur aktualisieren. Die folgenden 7 Testdateien existieren, sind aber nicht dokumentiert:
+  - `reconnect.spec.ts` — Tab-Reload / Session-Recovery
+  - `mehrere-runden.spec.ts` — Mehrere Runden nacheinander
+  - `mehrere-runden-ohne-neunen.spec.ts` — Variante ohne Neunen
+  - `armut-workflow.spec.ts` — Armut annehmen / ablehnen
+  - `schnellstart.spec.ts` — Quick-Game-Flow
+  - `einladungslink.spec.ts` — Privater Tisch via Einladungslink
+  - `ungueltige-karte.spec.ts` — Fehlerfall: ungültige Karte spielen
+  - Pro Datei einen Eintrag in der Projektstruktur-Tabelle ergänzen (Name + ein-Satz-Beschreibung).
+
+### FEAT-KEYBOARD-NAV-LOBBY (Task 50)
+- [ ] **Frontend**: Keyboard-Navigation (Tab-Reihenfolge, Enter zum Auslösen) in `SpielverwaltungsSzene.ts` implementieren — offenes DoD-Item in `specs/frontend-startscreen.md`.
+  - `PhaserButton`-Instanzen müssen Tab-fokussierbar und per Enter auslösbar sein.
+  - `SpielverwaltungsSzene` registriert `keydown-TAB` und `keydown-ENTER` via Phaser-Input.
+  - Tab-Reihenfolge: Quick Game → Neuen Tisch erstellen → Offene Tische → (Session-Recovery-Button falls sichtbar).
+  - Fokussierter Button erhält visuelles Highlight (weißer 2px-Rahmen, analog zu `frontend-visuelles-design.md` Karten-Highlighting).
+  - Nach jeder Änderung: `cd frontend && npm test && npm run build && npm run lint`.
+
+### REFACTOR-TISCHSZENE (Task 51)
+- [ ] **Frontend**: `TischSzene.ts` (1791 Zeilen) in fokussierte Klassen aufteilen — Architektur-Prinzip 9 (max. ca. 300 Zeilen / Komposition). Vorgeschlagene Extraktion:
+  - **`TischHudRenderer.ts`**: Methoden `renderHud()`, `renderSettingsDialog()`, `renderSidebar()`. Erhält Referenz auf die Szene und den aktuellen `TischAnsichtModell`-Snapshot.
+  - **`TischOverlayRenderer.ts`**: Methoden `zeigeRundenEndeModal()`, `zeigePartieEndeModal()`. Verantwortlich für alle modalen Overlays nach Rundenende/Partieende.
+  - **`TischKartenRenderer.ts`**: Methoden `bereinigePersistenteEigeneKarten()`, `erstelleOderAktualisiereKartenSprite()`, `setzeKartenInteraktion()`, `renderStichmitte()`, `renderStichStapel()`.
+  - `TischSzene.ts` behält: `create()`, `triggerRender()`, Event-Verarbeitungs-Handler, Delegation an Renderer-Klassen.
+  - Ziel: `TischSzene.ts` < 600 Zeilen (pragmatisch — exakt 300 ist bei einer Phaser-Szene unrealistisch).
+  - Validierung: `cd frontend && npm test && npm run build && npm run lint`. E2E-Test `partie-gegen-ki.spec.ts` muss weiterhin grün sein (wenn Backend verfügbar).
+  - Hinweis: Dieses Refactoring ist riskant — vollständige Unit-Test-Abdeckung der extrahierten Methoden sicherstellen, bevor die ursprünglichen gelöscht werden.
+
+### FEAT-BITMAPFONT (Task 52)
+- [ ] **Frontend** (Niedrige Priorität — nach Task 51): Press Start 2P als Phaser BitmapFont laden statt als Web-Font.
+  - Bitmap-Atlas erzeugen (z.B. mit Phaser Font Builder oder `msdf-bmfont-xml`) für die benötigten Größen (8, 10, 14, 20, 28 px).
+  - `AssetLoader.ts`: `this.load.bitmapFont('pressStart2P', ...)` in `preload()`.
+  - Alle `this.add.text(x, y, t, { fontFamily: FONT_FAMILY })` in `TischSzene.ts` und anderen Dateien auf `this.add.bitmapText(x, y, 'pressStart2P', t, size)` umstellen.
+  - Aufwand: hoch (30+ Aufrufstellen). Nur umsetzen wenn messbare Performance-Probleme auf Schwachgeräten auftreten.
+
+---
+
 ## Akzeptanzkriterien
 
 1. **Stabilität**: Alle Tests (Backend & Frontend) grün. Frontend linter fehlerfrei. `cd frontend && npm run build` läuft fehlerfrei durch.
@@ -280,3 +332,10 @@ Vollständiger Codebase-Scan abgeschlossen. Wesentliche Befunde:
 
 **P13 (Frontend Build, Plan-Run #121):**
 - [x] Task 47: FIX-FRONTEND-TS-ERRORS
+
+**P14 (Spec-Sync, Keyboard-Nav, Refactoring, Plan-Run #122):**
+- [x] Task 48: DOC-SPEC-SYNC
+- [ ] Task 49: DOC-E2E-SPEC-UPDATE
+- [ ] Task 50: FEAT-KEYBOARD-NAV-LOBBY
+- [ ] Task 51: REFACTOR-TISCHSZENE
+- [ ] Task 52: FEAT-BITMAPFONT (niedrige Priorität)
