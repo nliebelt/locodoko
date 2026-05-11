@@ -554,6 +554,8 @@ export class TischSzene extends Phaser.Scene {
       case 'AKTION_ABGELEHNT': {
         const e = ereignis as AktionAbgelehntEreignis;
         this.toastManager?.zeige({ text: e.fehlerCode, typ: 'fehler' });
+        const loco = (window as any).__locodoko;
+        if (loco) loco._letzterFehlerToast = e.fehlerCode;
         break;
       }
     }

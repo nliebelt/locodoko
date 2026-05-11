@@ -50,7 +50,7 @@ class FakeGameObject {
 class FakeContainer extends FakeGameObject {
   list: unknown[] = [];
   constructor(scene: unknown, x?: number, y?: number) { super(scene, x, y); }
-  add(item?: any) { 
+  add(item?: unknown) { 
     if (Array.isArray(item)) this.list.push(...item);
     else this.list.push(item);
     return this;

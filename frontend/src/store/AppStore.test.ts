@@ -1029,7 +1029,7 @@ it('toggles debug mode', () => {
     const echtzeit = new FakeEchtzeit();
     const api = new FakeApi({ spielerId: 's1', name: 'S1', istKi: false }, [], baueTisch()) as unknown as SpielverwaltungApi;
     const store = new AppStore(api, echtzeit);
-    store['patch']({ aktuellerTisch: { id: 't1' } as any });
+    store['patch']({ aktuellerTisch: { id: 't1' } as TischAntwort });
     store['_letztePartieVersion'] = 5;
     const batch: PartieEreignisBatch = { version: 7, ereignisse: [] };
     const wsSpy = vi.spyOn(echtzeit, 'senden');
