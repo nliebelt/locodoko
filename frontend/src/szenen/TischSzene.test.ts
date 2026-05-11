@@ -254,7 +254,7 @@ describe('TischSzene', () => {
     const { s } = baueSzene(baueZustand());
     const flashSpy = vi.spyOn((s as any).animationen, 'animiereAnsageBanner');
     const ereignis = { ereignisTyp: 'ANSAGE_ERFOLGT', partieStand: { laufendesSpiel: { spieler: [], ansageHistorie: [{ spielerPosition: 'WEST', ansage: 'RE' }] } } };
-    await (s as any).verarbeitePartieEreignis(ereignis);
+    await (s as any).ereignisHandler.verarbeitePartieEreignis(ereignis);
     expect(flashSpy).toHaveBeenCalled();
   });
 
@@ -279,11 +279,11 @@ describe('TischSzene', () => {
     const { s } = baueSzene(baueZustand());
     const stand = bauePartieStand(baueLaufendesSpiel());
     
-    await (s as any).verarbeitePartieEreignis({ ereignisTyp: 'KARTE_GESPIELT', spielerPosition: 'WEST', karte: karte('K1','K','A'), partieStand: stand });
-    await (s as any).verarbeitePartieEreignis({ ereignisTyp: 'STICH_ABGESCHLOSSEN', gewinnerPosition: 'NORD', augen: 10, neueSonderpunkte: [{ typ: 'DOPPELKOPF', gewinner: 'NORD' }], partieStand: stand });
-    await (s as any).verarbeitePartieEreignis({ ereignisTyp: 'ANSAGE_ERFOLGT', partieStand: { ...stand, laufendesSpiel: { ...stand.laufendesSpiel, ansageHistorie: [{ spielerPosition: 'SUED', ansage: 'RE' }] } } });
-    await (s as any).verarbeitePartieEreignis({ ereignisTyp: 'VORBEHALT_GEWAEHLT', spielerPosition: 'WEST', vorbehalt: 'GESUND', partieStand: stand });
-    await (s as any).verarbeitePartieEreignis({ ereignisTyp: 'AKTION_ABGELEHNT', fehlerCode: 'NICHT_AM_ZUG', partieId: 'p1', version: 1, timestamp: '' });
+    await (s as any).ereignisHandler.verarbeitePartieEreignis({ ereignisTyp: 'KARTE_GESPIELT', spielerPosition: 'WEST', karte: karte('K1','K','A'), partieStand: stand });
+    await (s as any).ereignisHandler.verarbeitePartieEreignis({ ereignisTyp: 'STICH_ABGESCHLOSSEN', gewinnerPosition: 'NORD', augen: 10, neueSonderpunkte: [{ typ: 'DOPPELKOPF', gewinner: 'NORD' }], partieStand: stand });
+    await (s as any).ereignisHandler.verarbeitePartieEreignis({ ereignisTyp: 'ANSAGE_ERFOLGT', partieStand: { ...stand, laufendesSpiel: { ...stand.laufendesSpiel, ansageHistorie: [{ spielerPosition: 'SUED', ansage: 'RE' }] } } });
+    await (s as any).ereignisHandler.verarbeitePartieEreignis({ ereignisTyp: 'VORBEHALT_GEWAEHLT', spielerPosition: 'WEST', vorbehalt: 'GESUND', partieStand: stand });
+    await (s as any).ereignisHandler.verarbeitePartieEreignis({ ereignisTyp: 'AKTION_ABGELEHNT', fehlerCode: 'NICHT_AM_ZUG', partieId: 'p1', version: 1, timestamp: '' });
   });
 
   it('aufraeumen stoppt Timer und Animationen', () => {

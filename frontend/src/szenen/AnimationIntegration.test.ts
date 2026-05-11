@@ -67,6 +67,7 @@ vi.mock('../anwendung', () => ({
 
 // Erst importieren NACHDEM vi.mock phaser und anwendung gemockt hat
 const { TischSzene } = await import('./TischSzene');
+const { TischEreignisHandler } = await import('./TischEreignisHandler');
 const { AppStore } = await import('../store/AppStore');
 const { AnimationenService } = await import('../services/AnimationenService');
 
@@ -79,7 +80,7 @@ describe('Animation Integration & Guards', () => {
     mockStore = new AppStore(vi.fn() as any, vi.fn() as any);
     
     // Wir spyen auf dem Prototyp, damit wir alle Aufrufe sicher fangen
-    verarbeiteSpy = vi.spyOn(TischSzene.prototype as any, 'verarbeitePartieEreignis');
+    verarbeiteSpy = vi.spyOn(TischEreignisHandler.prototype as any, 'verarbeitePartieEreignis');
 
     szene = new (TischSzene as any)();
     Object.assign(szene, {

@@ -19,40 +19,25 @@ import { Logger } from '../logger';
 import {
   erstelleTischAnsichtAusStatus,
   SPIELER_POSITION,
-  PARTEI,
   type TischAnsichtModell,
   type SpielerPosition
 } from '../modelle/TischAnsichtModell';
-import type { 
-  Ansage,
-  KarteAntwort, 
-  PartieEreignisAntwort, 
-  Tischhintergrund, 
-  KarteGespieltEreignis,
-  SchweinchenGemeldetEreignis,
-  HochzeitPartnerGefundenEreignis,
-  AktionAbgelehntEreignis,
-  AbgeschlossenerStichAntwort
-} from '../modelle/SpielverwaltungDto';
-import { AnimationenService, type AnimierbareKartenobjekte } from '../services/AnimationenService';
+import type { Tischhintergrund } from '../modelle/SpielverwaltungDto';
+import { AnimationenService } from '../services/AnimationenService';
 import type { AppZustand } from '../store/AppStore';
 import { TischInputHandler, type TischInputKontext } from './TischInputHandler';
 import { ToastManager } from './ToastManager';
 import { FlashTextManager } from '../ui/FlashTextManager';
-import type { Nameplate} from '../ui/Nameplate';
-import { ansageBadgeTyp } from '../ui/Nameplate';
+import type { Nameplate } from '../ui/Nameplate';
 import { SpielprotokollOverlay } from '../ui/SpielprotokollOverlay';
-import { formatiereAnsage } from './tischFormatierer';
 import {
   berechneLayout,
-  nameplatePositionFuer,
-  stichSlotPositionen,
-  berechneKartenGroesse,
-  berechneKartenAbstand,
-  stichStapelPositionFuer
+  nameplatePositionFuer
 } from './layout';
 
 import { TischKartenRenderer } from './TischKartenRenderer';
+import { TischAnimationOrchestrator } from './TischAnimationOrchestrator';
+import { TischEreignisHandler } from './TischEreignisHandler';
 import { TischRundenEndeController } from './TischRundenEndeController';
 import { renderHud, renderTopBar, renderEinstellungsModal } from './TischHudRenderer';
 import { renderVorbehaltLabel, renderAnsageButtons, renderArmutBereich } from './TischSpieleventRenderer';
@@ -99,26 +84,26 @@ function istBildHintergrund(bg: Tischhintergrund): boolean {
 export class TischSzene extends Phaser.Scene {
   private abmeldenStore?: () => void;
   private abmeldenSonderpunkte?: () => void;
-  private letzterZustand?: AppZustand;
+  public letzterZustand?: AppZustand;
   private hintergrund?: Phaser.GameObjects.TileSprite | Phaser.GameObjects.Image | Phaser.GameObjects.Rectangle;
-  private tischEbene?: Phaser.GameObjects.Container;
+  public tischEbene?: Phaser.GameObjects.Container;
   private animationsGeschwindigkeit: AnimationsGeschwindigkeit = 1;
-  private toastManager?: ToastManager;
-  private flashTextManager?: FlashTextManager;
-  private nameplates = new Map<SpielerPosition, Nameplate>();
+  public toastManager?: ToastManager;
+  public flashTextManager?: FlashTextManager;
+  public nameplates = new Map<SpielerPosition, Nameplate>();
   private inputHandler?: TischInputHandler;
-  private ausgewaehlteArmutKarten = new Set<string>();
-  private armutAnnahmeAktiv = false;
-  private animationen?: AnimationenService;
-  private letztesModell: TischAnsichtModell | null = null;
+  public ausgewaehlteArmutKarten = new Set<string>();
+  public armutAnnahmeAktiv = false;
+  public animationen?: AnimationenService;
+  public letztesModell: TischAnsichtModell | null = null;
   
-  private kartenRenderer!: TischKartenRenderer;
-  private rundenEndeController!: TischRundenEndeController;
+  public kartenRenderer!: TischKartenRenderer;
+  public rundenEndeController!: TischRundenEndeController;
   
-  private wartendeKartenId: string | null = null;
-  private austeilenAktiv = false;
-  private _letzterGezeigterSpielBeendet: number | null = null;
-  private _zeigeOverlayNachSnapshot: { spielNummer: number; partieBeendet: boolean } | null = null;
+  public wartendeKartenId: string | null = null;
+  public austeilenAktiv = false;
+  public _letzterGezeigterSpielBeendet: number | null = null;
+  public _zeigeOverlayNachSnapshot: { spielNummer: number; partieBeendet: boolean } | null = null;
   
   private escapeHandler?: (e: KeyboardEvent) => void;
   private tastaturKarteIndex = -1;
@@ -128,7 +113,10 @@ export class TischSzene extends Phaser.Scene {
   private einstellungenOffen = false;
   private seitenladeOffen = false;
   private letztePersistierteSpielNummer: number | null = null;
-  private stichEinziehenAktiv = false;
+  public stichEinziehenAktiv = false;
+
+  public animationOrchestrator!: TischAnimationOrchestrator;
+  public ereignisHandler!: TischEreignisHandler;
 
   public isIdle(ignoreStore = false): boolean {
     const storeIdle = ignoreStore ? true : appStore.isIdle();
@@ -170,6 +158,8 @@ export class TischSzene extends Phaser.Scene {
     this.animationen = new AnimationenService(this);
     this.toastManager = new ToastManager(this);
     this.flashTextManager = new FlashTextManager(this);
+    this.animationOrchestrator = new TischAnimationOrchestrator(this);
+    this.ereignisHandler = new TischEreignisHandler(this);
     
     this.rundenEndeController = new TischRundenEndeController(this, () => this.letzterZustand);
     
@@ -182,7 +172,7 @@ export class TischSzene extends Phaser.Scene {
       getAusgewaehlteArmutKarten: () => this.ausgewaehlteArmutKarten,
       getArmutAnnahmeAktiv: () => this.armutAnnahmeAktiv,
       getAnimationLaeuft: () => this.animationen?.animationLaeuft ?? false,
-      onSpielKarteMitAnimation: (id) => { void this.spieleKarteMitAnimation(id); },
+      onSpielKarteMitAnimation: (id) => { void this.animationOrchestrator.spieleKarteMitAnimation(id); },
       onToggleArmutKarte: (id, max) => this.toggleArmutKarte(id, max),
       onRenderTisch: () => this.triggerRender(true),
     });
@@ -213,7 +203,7 @@ export class TischSzene extends Phaser.Scene {
         this.triggerRender();
       },
       renderTisch: (z, m) => { this.renderTisch(z, m); },
-      spieleKarteMitAnimation: (k) => this.spieleKarteMitAnimation(k),
+      spieleKarteMitAnimation: (k) => this.animationOrchestrator.spieleKarteMitAnimation(k),
     };
     this.inputHandler = new TischInputHandler(inputKontext);
     this.inputHandler.registriere();
@@ -221,7 +211,7 @@ export class TischSzene extends Phaser.Scene {
     this.scale.on(Phaser.Scale.Events.RESIZE, this.handleResize, this);
     
     const abmeldenEvents = appStore.abonniereEvents(async (e) => {
-      await this.verarbeitePartieEreignis(e);
+      await this.ereignisHandler.verarbeitePartieEreignis(e);
       void this.animationen?.reiheEin(() => Promise.resolve())
         .then(() => { if (this.sys?.displayList) this.triggerRender(); })
         .catch(() => { /* Szene wurde zerstört */ });
@@ -393,216 +383,8 @@ export class TischSzene extends Phaser.Scene {
     this._zeigeOverlayNachSnapshot = null;
   }
 
-  private async verarbeitePartieEreignis(ereignis: PartieEreignisAntwort): Promise<void> {
-    Logger.szene('Verarbeite PartieEreignis', { typ: ereignis.ereignisTyp });
-    
-    switch (ereignis.ereignisTyp) {
-      case 'SPIEL_GESTARTET': {
-        this.rundenEndeController.schliesseRundenEndeModal();
-        this.rundenEndeController.schliessePartieEndeModal();
-        this.austeilenAktiv = true;
-        await this.animationen?.reiheEin(() => this.flashTextManager!.zeigeSpielevent('SpielGestartet'));
-        if (ereignis.partieStand.laufendesSpiel?.phase === 'VORBEHALT_ANSAGE') {
-          await this.animationen?.reiheEin(() => this.flashTextManager!.zeigeSpielevent('VorbehaltErwartet'));
-        }
-        const modellG = this.erstelleModell({ ...appStore.snapshot(), partieStand: ereignis.partieStand });
-        await this.animationen?.reiheEin(async () => {
-          await this.starteAusteilen(modellG, { ...appStore.snapshot(), partieStand: ereignis.partieStand });
-          this.austeilenAktiv = false;
-        });
-        const ankuendigung = modellG.spielankuendigungstext;
-        if (ankuendigung) await this.animationen?.reiheEin(() => this.zeigeSpielankuendigung(ankuendigung));
-        {
-          const bockrundenZaehler = ereignis.partieStand?.laufendesSpiel?.bockrundenZaehler ?? 0;
-          if (bockrundenZaehler > 0) {
-            const pos = { x: this.scale.gameSize.width / 2, y: this.scale.gameSize.height / 2 };
-            await this.animationen?.reiheEin(() => this.animationen!.animiereBockrunde(bockrundenZaehler, pos));
-          }
-        }
-        break;
-      }
 
-      case 'KARTE_GESPIELT': {
-        const e = ereignis as KarteGespieltEreignis;
-        const eventModell = this.erstelleModell({ ...appStore.snapshot(), partieStand: e.partieStand });
-        const eigAbsPos = eventModell.spieler.find(s => s.istSelbst)?.absolutePosition;
-        const relPos = eventModell.spieler.find(s => s.absolutePosition === e.spielerPosition)?.position;
-        if (eigAbsPos && e.spielerPosition !== eigAbsPos && relPos) {
-           this.wartendeKartenId = e.karteId;
-           const verzoegerung = appStore.snapshot().uiKonfiguration.kiVerzoegerungMs || 400;
-           await this.animationen?.reiheEin(() => this.animiereGegnerKarte(relPos, verzoegerung));
-        }
-        break;
-      }
 
-      case 'STICH_ABGESCHLOSSEN': {
-        const stiche = ereignis.partieStand.letzteAbgeschlosseneStiche;
-        const letzterStich = stiche && stiche.length > 0 ? stiche[stiche.length - 1] : null;
-        if (letzterStich) {
-          const gewinnerName = this.letztesModell?.spieler.find(s => s.absolutePosition === letzterStich.gewinnerPosition)?.name;
-          const laufendesSpiel = ereignis.partieStand.laufendesSpiel;
-          await this.animationen?.reiheEin(async () => {
-            const { width: b, height: h } = this.scale.gameSize;
-            const npPos = nameplatePositionFuer(letzterStich.gewinnerPosition, b, h);
-            await this.flashTextManager?.zeigeSpielevent('StichAbgeschlossen', { x: npPos.x, y: npPos.y, punkte: letzterStich.augen });
-            await this.animiereStichEinziehen(letzterStich, ereignis.partieStand);
-            if (laufendesSpiel && gewinnerName) {
-              await this.flashTextManager?.zeigeSpielevent('NaechsterSpielerErwartet', { spielerName: gewinnerName });
-            }
-          });
-        }
-        break;
-      }
-
-      case 'ANSAGE_ERFOLGT': {
-        const historie = ereignis.partieStand.laufendesSpiel?.ansageHistorie;
-        const letzteAnsage = historie && historie.length > 0 ? historie[historie.length - 1] : null;
-        if (letzteAnsage) {
-          await this.animationen?.reiheEin(() => this.starteAnsageBannerAnimationen([letzteAnsage.ansage]));
-          const relPos = this.letztesModell?.spieler.find(s => s.absolutePosition === letzteAnsage.spielerPosition)?.position;
-          const badgeTyp = ansageBadgeTyp(letzteAnsage.ansage);
-          if (relPos && badgeTyp) this.nameplates.get(relPos)?.showAnsage(badgeTyp);
-        }
-        break;
-      }
-
-      case 'SCHWEINCHEN_GEMELDET': {
-        const e = ereignis as SchweinchenGemeldetEreignis;
-        const gewinnerSpieler = this.letztesModell?.spieler.find(s => s.absolutePosition === e.spielerPosition);
-        const name = gewinnerSpieler?.name ?? 'Spieler';
-        const { width: b, height: h } = this.scale.gameSize;
-        const pos = nameplatePositionFuer(e.spielerPosition, b, h);
-        await this.animationen?.reiheEin(() => this.flashTextManager!.zeigeSpielevent('SchweinchenGemeldet', { spielerName: name, x: pos.x, y: pos.y }));
-        break;
-      }
-
-      case 'HOCHZEIT_PARTNER_GEFUNDEN': {
-        const e = ereignis as HochzeitPartnerGefundenEreignis;
-        const partner = this.letztesModell?.spieler.find(s => s.absolutePosition === e.partnerPosition);
-        const solist = this.letztesModell?.spieler.find(s => s.position === SPIELER_POSITION.SUED);
-        
-        if (partner) this.nameplates.get(partner.position)?.setHochzeitPartner(true);
-        if (solist) this.nameplates.get(solist.position)?.setHochzeitPartner(true);
-
-        await this.animationen?.reiheEin(() => this.flashTextManager!.zeigeSpielevent('HochzeitPartnerGefunden', { spielerName: partner?.name ?? 'Spieler' }));
-        break;
-      }
-
-      case 'SPIEL_BEENDET': {
-        const m = this.erstelleModell({ ...appStore.snapshot(), partieStand: ereignis.partieStand });
-        const spielNr = m.letztesSpielergebnis?.spielNummer ?? null;
-        Logger.szene('Verarbeite SPIEL_BEENDET', { spielNr, bereitsGezeigt: this._letzterGezeigterSpielBeendet });
-        if (spielNr !== null && spielNr === this._letzterGezeigterSpielBeendet) break;
-        this._letzterGezeigterSpielBeendet = spielNr;
-
-        await this.animationen?.reiheEin(async () => {
-          await this.flashTextManager?.zeigeSpielevent('SpielBeendet');
-          await this.zeigeGewinnerFlash(m);
-        });
-
-        appStore.pausiereQueue();
-
-        if (m.partieBeendet) {
-          this.rundenEndeController.zeigePartieEndeModal(m);
-        } else {
-          void this.rundenEndeController.zeigeRundenEndeModal(m);
-        }
-        break;
-      }
-
-      case 'SNAPSHOT': {
-        const ps = ereignis.partieStand;
-        if (ps && !ps.laufendesSpiel && ps.letztesSpielergebnis) {
-          const spielNr = ps.letztesSpielergebnis.spielNummer;
-          if (spielNr !== this._letzterGezeigterSpielBeendet) {
-            this._letzterGezeigterSpielBeendet = spielNr;
-            this._zeigeOverlayNachSnapshot = { spielNummer: spielNr, partieBeendet: ps.status === 'BEENDET' };
-          }
-        }
-        break;
-      }
-
-      case 'AKTION_ABGELEHNT': {
-        const e = ereignis as AktionAbgelehntEreignis;
-        this.toastManager?.zeige({ text: e.fehlerCode, typ: 'fehler' });
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- E2E Bridge Pattern
-        const loco = (window as any).__locodoko;
-        if (loco) loco._letzterFehlerToast = e.fehlerCode;
-        break;
-      }
-    }
-  }
-
-  private async animiereGegnerKarte(pos: SpielerPosition, dauer = 400): Promise<void> {
-    const { width: b, height: h } = this.scale.gameSize;
-    const layout = berechneLayout(b, h);
-    const slotPos = stichSlotPositionen(b / 2, h / 2, b, h);
-    const kg = berechneKartenGroesse(b);
-    const tempK = this.kartenRenderer.erstelleKartenansicht(layout[pos].kartenX, layout[pos].kartenY, kg.w, kg.h, { verdeckt: true });
-    tempK.setDepth(10); 
-    try {
-      await this.animationen?.animiereKarteAusspielen({ wurzel: tempK }, slotPos[pos], dauer);
-    } finally {
-      tempK.destroy(true);
-      if (this.wartendeKartenId) {
-        this.wartendeKartenId = null;
-      }
-      this.triggerRender(true);
-    }
-  }
-
-  private async animiereStichEinziehen(stich: AbgeschlossenerStichAntwort, partieStandAusEvent: PartieStandAntwort): Promise<void> {
-    const { width: b, height: h } = this.scale.gameSize;
-    const slotPos = stichSlotPositionen(b / 2, h / 2, b, h);
-    const kg = berechneKartenGroesse(b);
-    
-    const aModell = this.erstelleModell({ ...appStore.snapshot(), partieStand: partieStandAusEvent });
-    const mStich = aModell.letzteAbgeschlosseneStiche.find(s => s.spielNummer === stich.spielNummer && s.stichNummer === stich.stichNummer);
-    if (!mStich) {
-      Logger.error('Konnte relativen Stich im Modell nicht finden!');
-      return;
-    }
-    
-    const gSp = aModell.spieler.find((s) => s.position === mStich.gewinnerPosition);
-    const gKAnz = gSp ? (gSp.sichtbareHandkarten.length > 0 ? gSp.sichtbareHandkarten.length : Math.max(gSp.verbleibendeKarten, 0)) : 0;
-    const ziel = stichStapelPositionFuer(mStich.gewinnerPosition, b, h, gKAnz);
-    
-    Logger.szene('Starte animiereStichEinziehen', { 
-      zielX: ziel.x, zielY: ziel.y, gewinner: mStich.gewinnerPosition, karten: mStich.gespielteKarten?.length 
-    });
-
-    if (!mStich.gespielteKarten || mStich.gespielteKarten.length === 0) {
-      Logger.error('Keine Karten im abgeschlossenen Stich gefunden!');
-      return;
-    }
-
-    const animK = mStich.gespielteKarten.map((k: { position: string, karte: KarteAntwort }) => { 
-      const s = slotPos[k.position as SpielerPosition]; 
-      if (!s) {
-          Logger.error('Keine Slot-Position fuer SpielerPosition gefunden!', { pos: k.position });
-          return { wurzel: this.kartenRenderer.erstelleKartenansicht(b/2, h/2, kg.w, kg.h, { karte: k.karte }) };
-      }
-      const w = this.kartenRenderer.erstelleKartenansicht(s.x, s.y, kg.w, kg.h, { karte: k.karte }); 
-      w.setAngle(s.winkel);
-      w.setDepth(100); 
-      return { wurzel: w, bild: w.bildObjekt }; 
-    });
-    
-    const npPos = nameplatePositionFuer(mStich.gewinnerPosition, b, h);
-    const istH = mStich.gewinnerPosition === SPIELER_POSITION.SUED || mStich.gewinnerPosition === SPIELER_POSITION.NORD;
-    const flash = this.add.rectangle(npPos.x, npPos.y, istH ? Math.max(120, b * 0.11) : Math.max(80, b * 0.07), istH ? Math.max(54, h * 0.075) : Math.max(80, h * 0.11), 0xffe082, 0.7).setDepth(150).setAlpha(0);
-    
-    this.stichEinziehenAktiv = true;
-    this.triggerRender(true); 
-    
-    try { 
-      await this.animationen?.animiereStichEinziehen(animK, ziel, mStich.augen, flash); 
-    } finally { 
-      animK.forEach((k: { wurzel: { destroy: () => void } }) => k.wurzel.destroy()); 
-      flash.destroy(); 
-      this.stichEinziehenAktiv = false;
-    }
-  }
 
   shutdown(): void {
     Logger.szene('TischSzene shutdown');
@@ -632,7 +414,7 @@ export class TischSzene extends Phaser.Scene {
     }
   }
 
-  private renderTisch(zustand: AppZustand, modell = this.erstelleModell(zustand)): void {
+  public renderTisch(zustand: AppZustand, modell = this.erstelleModell(zustand)): void {
     if (this.sys && !this.sys.displayList) return; 
     const aktuelleSpielNummer = zustand.partieStand?.laufendesSpiel?.spielNummer ?? null;
     if (aktuelleSpielNummer !== this.letztePersistierteSpielNummer) {
@@ -746,7 +528,7 @@ export class TischSzene extends Phaser.Scene {
     else if (this.ausgewaehlteArmutKarten.size < max) this.ausgewaehlteArmutKarten.add(id);
   }
 
-  private erstelleModell(zustand: AppZustand): TischAnsichtModell {
+  public erstelleModell(zustand: AppZustand): TischAnsichtModell {
     return erstelleTischAnsichtAusStatus(zustand.spieler?.spielerId ?? null, zustand.aktuellerTisch, zustand.partieStand, zustand.debugModus);
   }
 
@@ -759,96 +541,10 @@ export class TischSzene extends Phaser.Scene {
     }
   }
 
-  private async spieleKarteMitAnimation(id: string): Promise<void> {
-    if (this.wartendeKartenId || this.animationen?.animationLaeuft) return;
-    const kObj = this.kartenRenderer.handKartenobjekte.get(id);
-    if (!kObj) { appStore.spieleKarte(id); return; }
-    const { width: b, height: h } = this.scale.gameSize;
-    const ziel = stichSlotPositionen(b / 2, h / 2, b, h).SUED;
-    this.wartendeKartenId = id;
-    
-    this.kartenRenderer.persistenteEigeneKarten.delete(id);
-    this.tischEbene?.add(kObj.wurzel); 
-    
-    appStore.spieleKarte(id);
-    
-    await this.animationen?.reiheEin(async () => {
-      await this.animationen?.animiereKarteAusspielen(kObj, ziel);
-      kObj.wurzel.destroy(); 
-      if (this.wartendeKartenId === id) this.wartendeKartenId = null;
-    });
-  }
 
-  private async starteAusteilen(modell: TischAnsichtModell, zustand: AppZustand): Promise<void> {
-    const { width: b, height: h } = this.scale.gameSize;
-    const layout = berechneLayout(b, h);
-    const kg = berechneKartenGroesse(b);
-    const kAb = berechneKartenAbstand(b, h);
 
-    const uhrzeigersinn: SpielerPosition[] = [SPIELER_POSITION.SUED, SPIELER_POSITION.WEST, SPIELER_POSITION.NORD, SPIELER_POSITION.OST];
-    const geber = modell.spieler.find((s) => s.istGeber);
-    const geberIdx = geber ? uhrzeigersinn.indexOf(geber.position) : 0;
-    const dealReihenfolge = [1, 2, 3, 0].map((offset) => {
-      const pos = uhrzeigersinn[(geberIdx + offset) % 4];
-      return modell.spieler.find((s) => s.position === pos);
-    }).filter((s): s is TischAnsichtModell['spieler'][number] => s !== undefined);
 
-    type Paket = { kartenobjekte: AnimierbareKartenobjekte; ziel: { x: number; y: number } };
-    const kartenProSpieler = new Map<SpielerPosition, Paket[]>();
-    for (const s of dealReihenfolge) {
-      const kAnz = s.sichtbareHandkarten.length > 0 ? s.sichtbareHandkarten.length : Math.max(s.verbleibendeKarten, 0);
-      const istH = s.position === SPIELER_POSITION.SUED || s.position === SPIELER_POSITION.NORD;
-      const stX = istH ? b / 2 - ((kAnz - 1) * kAb.horizontal) / 2 : layout[s.position].kartenX;
-      const [fB, fS]: [number, number] = { SUED: [-12, 5], NORD: [12, -5], WEST: [78, 5], OST: [102, -5] }[s.position] as [number, number];
-      const istG = s.position === SPIELER_POSITION.NORD || s.position === SPIELER_POSITION.OST;
-      const spielerPakete: Paket[] = [];
-      for (let i = 0; i < kAnz; i++) {
-        const fI = istG ? kAnz - 1 - i : i;
-        const w = fB + fI * fS;
-        const k = s.sichtbareHandkarten?.[i];
-        const wuz = (s.istSelbst && k) ? this.kartenRenderer.erstelleKartenansicht(b / 2, h / 2, kg.w, kg.h, { karte: k }) : this.kartenRenderer.erstelleKartenansicht(b / 2, h / 2, kg.w, kg.h, { verdeckt: true });
-        wuz.setAngle(w);
-        wuz.setDepth(10);
-        spielerPakete.push({ kartenobjekte: { wurzel: wuz, bild: wuz.bildObjekt }, ziel: { x: istH ? stX + fI * kAb.horizontal : layout[s.position].kartenX, y: istH ? layout[s.position].kartenY : layout[s.position].kartenY + fI * kAb.vertikal } });
-      }
-      kartenProSpieler.set(s.position, spielerPakete);
-    }
 
-    const pakete: Paket[] = [];
-    const perPlayerIndex = new Map<SpielerPosition, number>(dealReihenfolge.map((s) => [s.position, 0]));
-    for (const rundeKarten of [3, 4, 3]) {
-      for (let k = 0; k < rundeKarten; k++) {
-        for (const s of dealReihenfolge) {
-          const idx = perPlayerIndex.get(s.position)!;
-          const sp = kartenProSpieler.get(s.position)!;
-          if (idx < sp.length) { pakete.push(sp[idx]); perPlayerIndex.set(s.position, idx + 1); }
-        }
-      }
-    }
-
-    try { await this.animationen?.animiereKartenAusteilen(pakete); } finally { pakete.forEach((p) => p.kartenobjekte.wurzel.destroy()); this.austeilenAktiv = false; this.renderTisch(this.letzterZustand ?? zustand); }
-  }
-
-  private async starteAnsageBannerAnimationen(neue: Ansage[]): Promise<void> {
-    const modell = this.letztesModell;
-    if (!modell) return;
-    for (const a of neue) {
-      const { width: b, height: h } = this.scale.gameSize;
-      const f = a === PARTEI.RE ? '#ffd166' : a === PARTEI.KONTRA ? '#90caf9' : '#ffffff';
-      await this.animationen?.animiereAnsageBanner(formatiereAnsage(a), { x: b / 2, y: h * 0.18 }, undefined, f);
-    }
-  }
-
-  private async zeigeGewinnerFlash(m: TischAnsichtModell): Promise<void> {
-    const e = m.letztesSpielergebnis;
-    if (!e) return;
-    const { width: b, height: h } = this.scale.gameSize;
-    await this.animationen?.animiereGewinnerFlash(`${e.siegerPartei} gewinnt!`, m.spieler.filter((s) => s.partei === e.siegerPartei).map((s) => s.name).join(', '), `+${e.spielwert} Punkte`, e.siegerPartei === PARTEI.RE ? '#ffd166' : '#90caf9', { x: b / 2, y: h / 2 });
-  }
-
-  private async zeigeSpielankuendigung(m: string): Promise<void> {
-    await this.animationen?.animiereSoloAnkuendigung(m, { x: this.scale.gameSize.width / 2, y: this.scale.gameSize.height / 2 });
-  }
 
   private aktualisiereHintergrund(bg: Tischhintergrund, b: number, h: number): void {
     const tex = texturFuerTischhintergrund(bg);

@@ -5,17 +5,13 @@
 ## Notiz
 
 **Was wurde implementiert?**
-- **P13 abgeschlossen**: Alle 58 TypeScript-Build-Fehler behoben, `npm run build` und `npm run lint` laufen fehlerfrei durch.
-- **P12 abgeschlossen**: Vision-Loop-Timeout behoben, Solo-Assertion ergänzt, Animation-Logging eingebaut.
+- **P14 (Task 51) abgeschlossen**: `TischSzene.ts` weiter in `TischAnimationOrchestrator` und `TischEreignisHandler` aufgeteilt. Größe der Datei ist nun ~600 Zeilen. Tests und Build sind grün.
 
-**Nächster logischer Schritt (P14):**
-- Spec-DoD-Einträge synchronisieren (Tasks 43a/43b/43c wurden in P11 abgeschlossen, in den Spec-Dateien aber noch nicht als `[x]` markiert).
-- Keyboard-Navigation in SpielverwaltungsSzene implementieren (offenes DoD-Item in `frontend-startscreen.md`).
-- `TischSzene.ts` (1791 Zeilen) weiter aufteilen — verletzt Architektur-Richtwert (300 Zeilen).
-- E2E-Spec aktualisieren: 7 zusätzliche Testdateien sind nicht in `specs/e2e-tests.md` dokumentiert.
+**Nächster logischer Schritt:**
+- (Task 52) FEAT-BITMAPFONT, falls Performance-Probleme bestehen. Ansonsten ist P14 abgeschlossen.
 
 **Offene Fragen oder Probleme:**
-- Press Start 2P läuft noch als Web-Font via `fontFamily`, nicht als Phaser BitmapFont (offenes DoD-Item in `frontend-visuelles-design.md`). Funktional korrekt, aber Performance-Optimierung laut Spec ausstehend.
+- Keine.
 
 ---
 
@@ -337,5 +333,5 @@ Vollständiger Codebase-Scan abgeschlossen. Wesentliche Befunde:
 - [x] Task 48: DOC-SPEC-SYNC
 - [x] Task 49: DOC-E2E-SPEC-UPDATE
 - [x] Task 50: FEAT-KEYBOARD-NAV-LOBBY
-- [ ] Task 51: REFACTOR-TISCHSZENE
+- [x] Task 51: REFACTOR-TISCHSZENE
 - [ ] Task 52: FEAT-BITMAPFONT (niedrige Priorität)
