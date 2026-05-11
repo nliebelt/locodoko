@@ -19,9 +19,9 @@ vi.mock('phaser', () => ({
     Scene: class {
       constructor(public name: string) {}
       add = {
-        text: vi.fn(() => ({ 
-          setAlpha: vi.fn().mockReturnThis(), 
-          setOrigin: vi.fn().mockReturnThis(), 
+        text: vi.fn(() => ({
+          setAlpha: vi.fn().mockReturnThis(),
+          setOrigin: vi.fn().mockReturnThis(),
           setShadow: vi.fn().mockReturnThis(),
           setText: vi.fn().mockReturnThis()
         })),
@@ -29,6 +29,7 @@ vi.mock('phaser', () => ({
         container: vi.fn(() => ({ add: vi.fn(), removeAll: vi.fn(), destroy: vi.fn() })),
         rectangle: vi.fn(() => ({ setOrigin: vi.fn().mockReturnThis() }))
       };
+      input = { keyboard: { on: vi.fn(), off: vi.fn() } };
       scene = { start: vi.fn() };
       events = { once: vi.fn() };
     }

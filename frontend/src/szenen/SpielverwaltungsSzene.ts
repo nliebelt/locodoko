@@ -15,6 +15,8 @@ export class SpielverwaltungsSzene extends Phaser.Scene {
   private presets: TischPresetAntwort[] = [];
   private currentPresetIndex = 0;
   private isPrivat = false;
+  private fokussierbareButtons: PhaserButton[] = [];
+  private fokusIndex = -1;
 
   constructor() {
     super('SpielverwaltungsSzene');
@@ -61,6 +63,7 @@ export class SpielverwaltungsSzene extends Phaser.Scene {
     });
 
     this.events.once('shutdown', this.shutdown, this);
+    this.registriereKeyboard();
 
     const pendingCode = sessionStorage.getItem('pendingJoinCode');
     if (pendingCode) {
@@ -79,16 +82,20 @@ export class SpielverwaltungsSzene extends Phaser.Scene {
     this.uiContainer?.removeAll(true);
     if (!this.uiContainer) return;
 
+    this.fokusIndex = -1;
+    this.fokussierbareButtons = [];
+
     let startY = 220;
 
     const aktiverTischId = zustand.spieler?.aktiverTischId;
+    let sessionRecoveryBtn: PhaserButton | undefined;
     if (aktiverTischId) {
-      const btn = new PhaserButton(this, {
+      sessionRecoveryBtn = new PhaserButton(this, {
         x: 640, y: startY, text: 'Zurück zum Spiel', typ: 'primary',
         callback: () => void appStore.reconnecteTisch(aktiverTischId)
       });
-      btn.setName('btn-session-recovery');
-      this.uiContainer.add(btn);
+      sessionRecoveryBtn.setName('btn-session-recovery');
+      this.uiContainer.add(sessionRecoveryBtn);
       startY += 60;
     }
 
@@ -117,8 +124,32 @@ export class SpielverwaltungsSzene extends Phaser.Scene {
     logoutBtn.setName('btn-logout');
     this.uiContainer.add(logoutBtn);
 
+    // Tab-Reihenfolge: Quick Game → Neuen Tisch → (Session-Recovery falls sichtbar)
+    this.fokussierbareButtons = [quickGameBtn, erstelleTischBtn];
+    if (sessionRecoveryBtn) {
+      this.fokussierbareButtons.push(sessionRecoveryBtn);
+    }
+
     // List of tables
     this.renderTischListe(zustand.tische, aktiverTischId);
+  }
+
+  private registriereKeyboard(): void {
+    this.input.keyboard?.on('keydown-TAB', (event: KeyboardEvent) => {
+      event.preventDefault();
+      if (this.fokussierbareButtons.length === 0) return;
+      if (this.fokusIndex >= 0 && this.fokusIndex < this.fokussierbareButtons.length) {
+        this.fokussierbareButtons[this.fokusIndex].setFocus(false);
+      }
+      this.fokusIndex = (this.fokusIndex + 1) % this.fokussierbareButtons.length;
+      this.fokussierbareButtons[this.fokusIndex].setFocus(true);
+    });
+
+    this.input.keyboard?.on('keydown-ENTER', () => {
+      if (this.fokusIndex >= 0 && this.fokusIndex < this.fokussierbareButtons.length) {
+        this.fokussierbareButtons[this.fokusIndex].trigger();
+      }
+    });
   }
 
   private renderTischListe(tische: TischListenEintragAntwort[], aktiverTischId: string | null | undefined): void {
@@ -256,6 +287,8 @@ export class SpielverwaltungsSzene extends Phaser.Scene {
 
   shutdown(): void {
     this.abmeldenStore?.();
+    this.input.keyboard?.off('keydown-TAB');
+    this.input.keyboard?.off('keydown-ENTER');
     this.uiContainer?.removeAll(true);
     this.offeneTischeListe?.destroy();
   }

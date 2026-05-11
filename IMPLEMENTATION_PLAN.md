@@ -287,7 +287,7 @@ Vollständiger Codebase-Scan abgeschlossen. Wesentliche Befunde:
   - Pro Datei einen Eintrag in der Projektstruktur-Tabelle ergänzen (Name + ein-Satz-Beschreibung).
 
 ### FEAT-KEYBOARD-NAV-LOBBY (Task 50)
-- [ ] **Frontend**: Keyboard-Navigation (Tab-Reihenfolge, Enter zum Auslösen) in `SpielverwaltungsSzene.ts` implementieren — offenes DoD-Item in `specs/frontend-startscreen.md`.
+- [x] **Frontend**: Keyboard-Navigation (Tab-Reihenfolge, Enter zum Auslösen) in `SpielverwaltungsSzene.ts` implementieren — offenes DoD-Item in `specs/frontend-startscreen.md`.
   - `PhaserButton`-Instanzen müssen Tab-fokussierbar und per Enter auslösbar sein.
   - `SpielverwaltungsSzene` registriert `keydown-TAB` und `keydown-ENTER` via Phaser-Input.
   - Tab-Reihenfolge: Quick Game → Neuen Tisch erstellen → Offene Tische → (Session-Recovery-Button falls sichtbar).
@@ -336,6 +336,6 @@ Vollständiger Codebase-Scan abgeschlossen. Wesentliche Befunde:
 **P14 (Spec-Sync, Keyboard-Nav, Refactoring, Plan-Run #122):**
 - [x] Task 48: DOC-SPEC-SYNC
 - [x] Task 49: DOC-E2E-SPEC-UPDATE
-- [ ] Task 50: FEAT-KEYBOARD-NAV-LOBBY
+- [x] Task 50: FEAT-KEYBOARD-NAV-LOBBY
 - [ ] Task 51: REFACTOR-TISCHSZENE
 - [ ] Task 52: FEAT-BITMAPFONT (niedrige Priorität)
