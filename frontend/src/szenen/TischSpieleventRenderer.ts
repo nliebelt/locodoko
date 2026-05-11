@@ -1,4 +1,4 @@
-import Phaser from 'phaser';
+import type Phaser from 'phaser';
 import { appStore } from '../anwendung';
 import { SPIELER_POSITION } from '../modelle/TischAnsichtModell';
 import type { TischAnsichtModell } from '../modelle/TischAnsichtModell';

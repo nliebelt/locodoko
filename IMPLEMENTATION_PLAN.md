@@ -295,7 +295,7 @@ Vollständiger Codebase-Scan abgeschlossen. Wesentliche Befunde:
   - Nach jeder Änderung: `cd frontend && npm test && npm run build && npm run lint`.
 
 ### REFACTOR-TISCHSZENE (Task 51)
-- [ ] **Frontend**: `TischSzene.ts` (1791 Zeilen) in fokussierte Klassen aufteilen — Architektur-Prinzip 9 (max. ca. 300 Zeilen / Komposition). Vorgeschlagene Extraktion:
+- [x] **Frontend**: `TischSzene.ts` (1791 Zeilen) in fokussierte Klassen aufteilen — Architektur-Prinzip 9 (max. ca. 300 Zeilen / Komposition). Vorgeschlagene Extraktion:
   - **`TischHudRenderer.ts`**: Methoden `renderHud()`, `renderSettingsDialog()`, `renderSidebar()`. Erhält Referenz auf die Szene und den aktuellen `TischAnsichtModell`-Snapshot.
   - **`TischOverlayRenderer.ts`**: Methoden `zeigeRundenEndeModal()`, `zeigePartieEndeModal()`. Verantwortlich für alle modalen Overlays nach Rundenende/Partieende.
   - **`TischKartenRenderer.ts`**: Methoden `bereinigePersistenteEigeneKarten()`, `erstelleOderAktualisiereKartenSprite()`, `setzeKartenInteraktion()`, `renderStichmitte()`, `renderStichStapel()`.

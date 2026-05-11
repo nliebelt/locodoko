@@ -1,4 +1,4 @@
-import Phaser from 'phaser';
+import type Phaser from 'phaser';
 import { appStore } from '../anwendung';
 import { Kartenansicht } from '../assets/Kartenansicht';
 import {

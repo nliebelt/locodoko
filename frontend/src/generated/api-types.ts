@@ -42,7 +42,7 @@ export interface paths {
         get: operations["ladeProfil"];
         /**
          * Spieler-Profil aktualisieren
-         * @description Aktualisiert Anzeigename und/oder Avatar-Farbe.
+         * @description Aktualisiert Anzeigename und/oder Avatar-Farbe. Nur der Spieler selbst darf sein eigenes Profil aendern.
          */
         put: operations["aktualisiereProfil"];
         post?: never;
@@ -98,26 +98,6 @@ export interface paths {
          * @description Erstellt einen neuen Tisch mit dem angegebenen Namen und der Konfiguration. Der anfragende Spieler wird automatisch Ersteller und Teilnehmer.
          */
         post: operations["erstelleTisch"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/tische/presets": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Verfuegbare Regel-Presets abrufen
-         * @description Gibt eine Liste aller vorkonfigurierten Regelwerke (z.B. Loco-Blatt, DKV) zurueck.
-         */
-        get: operations["gibPresets"];
-        put?: never;
-        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -244,6 +224,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/debug/log": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Schreibt eine Frontend-Logmeldung in das Server-Log. */
+        post: operations["logge"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/auth/register": {
         parameters: {
             query?: never;
@@ -336,6 +333,26 @@ export interface paths {
          * @description Gibt den Tisch mit der angegebenen ID zurueck.
          */
         get: operations["ladeTisch"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/tische/presets": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Verfuegbare Regel-Presets abrufen
+         * @description Gibt eine Liste aller vorkonfigurierten Regelwerke (z.B. Loco-Blatt, DKV) zurueck.
+         */
+        get: operations["gibPresets"];
         put?: never;
         post?: never;
         delete?: never;
@@ -721,6 +738,11 @@ export interface components {
              */
             nachricht?: string;
         };
+        FrontendLogAnfrage: {
+            kategorie?: string;
+            nachricht?: string;
+            daten?: Record<string, never>;
+        };
         RegistrierungsAnfrage: {
             benutzername?: string;
             passwort?: string;
@@ -744,25 +766,6 @@ export interface components {
              * @example GAST
              */
             authentifizierungsMethode?: string;
-        };
-        /** @description Informationen ueber ein verfuegbares Regel-Preset */
-        TischPresetAntwort: {
-            /**
-             * @description Technischer Name des Presets (zur Verwendung beim Erstellen)
-             * @example LOCO_BLATT
-             */
-            name?: string;
-            /**
-             * @description Anzeigename fuer die UI
-             * @example Loco-Blatt (Hausregeln)
-             */
-            label?: string;
-            /**
-             * @description Kurze Beschreibung der Regeln
-             * @example Alle Sonderregeln aktiv, ohne Neunen.
-             */
-            beschreibung?: string;
-            konfiguration?: components["schemas"]["TischKonfigurationDto"];
         };
         LoginAnfrage: {
             benutzername?: string;
@@ -805,6 +808,26 @@ export interface components {
             status?: "WARTEND" | "IM_SPIEL" | "BEENDET";
             /** @description Kurzdarstellung der Tischkonfiguration. */
             kurzKonfiguration?: components["schemas"]["TischKurzKonfigurationAntwort"];
+        };
+        /** @description Informationen ueber ein verfuegbares Regel-Preset */
+        TischPresetAntwort: {
+            /**
+             * @description Technischer Name des Presets (zur Verwendung beim Erstellen)
+             * @example LOCO_BLATT
+             */
+            name?: string;
+            /**
+             * @description Anzeigename fuer die UI
+             * @example Loco-Blatt (Hausregeln)
+             */
+            label?: string;
+            /**
+             * @description Kurze Beschreibung der Regeln
+             * @example Alle Sonderregeln aktiv, ohne Neunen.
+             */
+            beschreibung?: string;
+            /** @description Die vollstaendige Konfiguration dieses Presets */
+            konfiguration?: components["schemas"]["TischKonfigurationDto"];
         };
         /** @description Systemstatus der Anwendung. */
         SystemstatusAntwort: {
@@ -949,14 +972,28 @@ export interface components {
             /** @description Ansagen, die der aktuelle Spieler machen darf. */
             moeglicheAnsagen?: ("RE" | "KONTRA" | "KEINE_90" | "KEINE_60" | "KEINE_30" | "SCHWARZ")[];
             /** @description Vorbehalte, die der aktuelle Spieler ansagen darf. */
-            moeglicheVorbehalte?: ("GESUND" | "SOLO_DAME" | "SOLO_BUBE" | "SOLO_TRUMPF" | "SOLO_TRUMPF_HERZ" | "SOLO_TRUMPF_PIK" | "SOLO_TRUMPF_KREUZ" | "SOLO_FLEISCHLOS" | "HOCHZEIT" | "ARMUT" | "SCHMEISSEN")[];
-            /** @description Ob die aktuelle Runde eine Bockrunde ist. */
+            moeglicheVorbehalte?: ("GESUND" | "SOLO_DAME" | "SOLO_BUBE" | "SOLO_TRUMPF" | "SOLO_TRUMPF_HERZ" | "SOLO_TRUMPF_PIK" | "SOLO_TRUMPF_KREUZ" | "SOLO_FLEISCHLOS" | "HOCHZEIT" | "ARMUT" | "SCHMEISSEN" | "SCHMEISSEN_FUENF_NEUNEN" | "SCHMEISSEN_WENIG_TRUMPF")[];
+            /** @description Bereits deklarierte Vorbehalte der anderen Spieler (nur in der VorbehaltAnsage-Phase). */
+            deklarierteVorbehalte?: components["schemas"]["VorbehaltMeldungAntwort"][];
+            /**
+             * Format: int32
+             * @description Anzahl der aktiven Bockrunden (0 = keine Bockrunde).
+             */
             bockrundenZaehler?: number;
+            /** @description Ob eine Hochzeit bereits geklaert ist. */
+            hochzeitGeklaert?: boolean;
+            /** @description Ob Schweinchen (beide Karo-Asse bei einem Spieler) in diesem Spiel aktiv ist. */
+            schweinchenAktiv?: boolean;
             /**
              * @description Position des Spielers, der Schweinchen gemeldet hat; null falls keiner.
              * @enum {string}
              */
             schweinchenGemeldetVon?: "SUED" | "WEST" | "NORD" | "OST";
+            /**
+             * @description Position des Armut-Spielers; nur in der ARMUT_TAUSCH-Phase gesetzt, sonst null.
+             * @enum {string}
+             */
+            armutSpielerPosition?: "SUED" | "WEST" | "NORD" | "OST";
         };
         /** @description Ergebnis des letzten abgeschlossenen Spiels in der Partie. */
         LetztesSpielergebnisAntwort: {
@@ -1018,6 +1055,8 @@ export interface components {
             sonderpunkteProPartei?: {
                 [key: string]: components["schemas"]["SonderpunktEreignisDto"][];
             };
+            /** @description Aufschluesselung des Spielwerts nach Komponenten (Point Provenance). */
+            punkteAufschluesselung?: components["schemas"]["PunkteKomponenteAntwort"][];
         };
         /** @description Snapshot des aktuellen Partiestands fuer REST und WebSocket. */
         PartieStandAntwort: {
@@ -1027,6 +1066,12 @@ export interface components {
              * @example c3d4e5f6-7890-abcd-ef12-34567890abcd
              */
             partieId?: string;
+            /**
+             * Format: int64
+             * @description Aktuelle Sequenznummer/Version der Partie zur Synchronisation.
+             * @example 42
+             */
+            version?: number;
             /**
              * @description Aktueller Status der Partie.
              * @enum {string}
@@ -1054,6 +1099,25 @@ export interface components {
             letzteAbgeschlosseneStiche?: components["schemas"]["AbgeschlossenerStichAntwort"][];
             /** @description Daten des aktuell laufenden Spiels; null falls keines laeuft. */
             laufendesSpiel?: components["schemas"]["LaufendesSpielAntwort"];
+        };
+        /** @description Einzelne Komponente des Spielwerts (Point Provenance). */
+        PunkteKomponenteAntwort: {
+            /**
+             * @description Typ der Komponente (z.B. GRUNDWERT, ABSAGE, SONDERPUNKTE).
+             * @example GRUNDWERT
+             */
+            typ?: string;
+            /**
+             * @description Deutsches Label der Komponente fuer die Anzeige.
+             * @example Grundwert
+             */
+            label?: string;
+            /**
+             * Format: int32
+             * @description Punkte dieser Komponente.
+             * @example 2
+             */
+            punkte?: number;
         };
         /** @description Sonderpunkt-Ereignis (z.B. Fuchs gefangen, Karlchen). */
         SonderpunktEreignisDto: {
@@ -1103,6 +1167,8 @@ export interface components {
             avatarFarbe?: string;
             /** @description Ob es sich um einen KI-Spieler handelt. */
             istKi?: boolean;
+            /** @description Ob dieser menschliche Spieler nach Verbindungsabbruch von der KI gesteuert wird. */
+            istKiUebernommen?: boolean;
             /** @description Ob dieser Spieler der anfragende Spieler selbst ist. */
             istSelbst?: boolean;
             /** @description Ob dieser Spieler der aktuelle Geber ist. */
@@ -1128,6 +1194,18 @@ export interface components {
             partei?: "RE" | "KONTRA";
             /** @description Sichtbare Handkarten; null fuer Gegner. */
             sichtbareHandkarten?: components["schemas"]["KarteAntwort"][];
+        };
+        VorbehaltMeldungAntwort: {
+            /**
+             * @description Position des Spielers, der den Vorbehalt gemeldet hat.
+             * @enum {string}
+             */
+            position?: "SUED" | "WEST" | "NORD" | "OST";
+            /**
+             * @description Der gemeldete Vorbehalt (z.B. GESUND, SOLO_TRUMPF, HOCHZEIT).
+             * @enum {string}
+             */
+            ansage?: "GESUND" | "SOLO_DAME" | "SOLO_BUBE" | "SOLO_TRUMPF" | "SOLO_TRUMPF_HERZ" | "SOLO_TRUMPF_PIK" | "SOLO_TRUMPF_KREUZ" | "SOLO_FLEISCHLOS" | "HOCHZEIT" | "ARMUT" | "SCHMEISSEN" | "SCHMEISSEN_FUENF_NEUNEN" | "SCHMEISSEN_WENIG_TRUMPF";
         };
         /** @description Strukturierte Fehlerantwort fuer REST-Endpunkte. */
         ApiFehlerAntwort: {
@@ -1185,20 +1263,222 @@ export interface components {
             /** @description Aktuelle Liste aller Tische. */
             tische?: components["schemas"]["TischListenEintragAntwort"][];
         };
-        /** @description WebSocket-Ereignis-Wrapper fuer Partie-Updates. */
-        PartieEreignisAntwort: {
+        /** @description Eine Spieleraktion wurde abgelehnt (z.B. ungueltiger Kartenzug). */
+        AktionAbgelehnt: {
             /**
              * Format: date-time
              * @description Zeitpunkt des Ereignisses.
-             * @example 2026-04-15T14:30:00Z
              */
             timestamp?: string;
             /**
-             * @description Typ des Partie-Ereignisses.
+             * Format: int64
+             * @description Aktuelle Sequenznummer/Version der Partie.
+             * @example 42
+             */
+            version?: number;
+            /**
+             * @description Typ des Partie-Ereignisses zur Unterscheidung im Frontend.
              * @enum {string}
              */
-            ereignisTyp?: "PARTIE_SNAPSHOT" | "PARTIE_AKTUALISIERT";
+            ereignisTyp?: "SNAPSHOT" | "KARTE_GESPIELT" | "STICH_ABGESCHLOSSEN" | "SPIEL_BEENDET" | "ANSAGE_ERFOLGT" | "SCHWEINCHEN_GEMELDET" | "HOCHZEIT_PARTNER_GEFUNDEN" | "SPIEL_GESTARTET" | "AKTION_ABGELEHNT";
             partieStand?: components["schemas"]["PartieStandAntwort"];
+            /**
+             * @description Fehlercode der abgelehnten Aktion.
+             * @example KARTE_UNGUELTIG
+             */
+            fehlerCode?: string;
+        };
+        /** @description Ein Spieler hat eine Ansage (Re, Kontra, etc.) getaetigt. */
+        AnsageErfolgt: {
+            /**
+             * Format: date-time
+             * @description Zeitpunkt des Ereignisses.
+             */
+            timestamp?: string;
+            /**
+             * Format: int64
+             * @description Aktuelle Sequenznummer/Version der Partie.
+             * @example 42
+             */
+            version?: number;
+            /**
+             * @description Typ des Partie-Ereignisses zur Unterscheidung im Frontend.
+             * @enum {string}
+             */
+            ereignisTyp?: "SNAPSHOT" | "KARTE_GESPIELT" | "STICH_ABGESCHLOSSEN" | "SPIEL_BEENDET" | "ANSAGE_ERFOLGT" | "SCHWEINCHEN_GEMELDET" | "HOCHZEIT_PARTNER_GEFUNDEN" | "SPIEL_GESTARTET" | "AKTION_ABGELEHNT";
+            partieStand?: components["schemas"]["PartieStandAntwort"];
+        };
+        /** @description Der Hochzeit-Partner wurde gefunden. */
+        HochzeitPartnerGefunden: {
+            /**
+             * Format: date-time
+             * @description Zeitpunkt des Ereignisses.
+             */
+            timestamp?: string;
+            /**
+             * Format: int64
+             * @description Aktuelle Sequenznummer/Version der Partie.
+             * @example 42
+             */
+            version?: number;
+            /**
+             * @description Typ des Partie-Ereignisses zur Unterscheidung im Frontend.
+             * @enum {string}
+             */
+            ereignisTyp?: "SNAPSHOT" | "KARTE_GESPIELT" | "STICH_ABGESCHLOSSEN" | "SPIEL_BEENDET" | "ANSAGE_ERFOLGT" | "SCHWEINCHEN_GEMELDET" | "HOCHZEIT_PARTNER_GEFUNDEN" | "SPIEL_GESTARTET" | "AKTION_ABGELEHNT";
+            partieStand?: components["schemas"]["PartieStandAntwort"];
+            /**
+             * @description Position des gefundenen Partners.
+             * @enum {string}
+             */
+            partnerPosition?: "SUED" | "WEST" | "NORD" | "OST";
+        };
+        /** @description Ein Spieler (Mensch oder KI) hat eine Karte gespielt. */
+        KarteGespielt: {
+            /**
+             * Format: date-time
+             * @description Zeitpunkt des Ereignisses.
+             */
+            timestamp?: string;
+            /**
+             * Format: int64
+             * @description Aktuelle Sequenznummer/Version der Partie.
+             * @example 42
+             */
+            version?: number;
+            /**
+             * @description Typ des Partie-Ereignisses zur Unterscheidung im Frontend.
+             * @enum {string}
+             */
+            ereignisTyp?: "SNAPSHOT" | "KARTE_GESPIELT" | "STICH_ABGESCHLOSSEN" | "SPIEL_BEENDET" | "ANSAGE_ERFOLGT" | "SCHWEINCHEN_GEMELDET" | "HOCHZEIT_PARTNER_GEFUNDEN" | "SPIEL_GESTARTET" | "AKTION_ABGELEHNT";
+            partieStand?: components["schemas"]["PartieStandAntwort"];
+            /**
+             * @description Position des spielenden Spielers.
+             * @enum {string}
+             */
+            spielerPosition?: "SUED" | "WEST" | "NORD" | "OST";
+            /**
+             * @description ID der gespielten Karte im Format FARBE-WERT-INDEX.
+             * @example KREUZ-AS-1
+             */
+            karteId?: string;
+        };
+        /** @description Ein Ereignis innerhalb einer laufenden Partie. */
+        PartieEreignisAntwort: components["schemas"]["Snapshot"] | components["schemas"]["KarteGespielt"] | components["schemas"]["StichAbgeschlossen"] | components["schemas"]["SpielBeendet"] | components["schemas"]["AnsageErfolgt"] | components["schemas"]["SchweinchenGemeldet"] | components["schemas"]["HochzeitPartnerGefunden"] | components["schemas"]["SpielGestartet"] | components["schemas"]["AktionAbgelehnt"];
+        /** @description Ein Spieler hat Schweinchen gemeldet. */
+        SchweinchenGemeldet: {
+            /**
+             * Format: date-time
+             * @description Zeitpunkt des Ereignisses.
+             */
+            timestamp?: string;
+            /**
+             * Format: int64
+             * @description Aktuelle Sequenznummer/Version der Partie.
+             * @example 42
+             */
+            version?: number;
+            /**
+             * @description Typ des Partie-Ereignisses zur Unterscheidung im Frontend.
+             * @enum {string}
+             */
+            ereignisTyp?: "SNAPSHOT" | "KARTE_GESPIELT" | "STICH_ABGESCHLOSSEN" | "SPIEL_BEENDET" | "ANSAGE_ERFOLGT" | "SCHWEINCHEN_GEMELDET" | "HOCHZEIT_PARTNER_GEFUNDEN" | "SPIEL_GESTARTET" | "AKTION_ABGELEHNT";
+            partieStand?: components["schemas"]["PartieStandAntwort"];
+            /**
+             * @description Absolute Position des Spielers, der Schweinchen gemeldet hat.
+             * @enum {string}
+             */
+            spielerPosition?: "SUED" | "WEST" | "NORD" | "OST";
+        };
+        /** @description Expliziter Snapshot des gesamten Spielstands. */
+        Snapshot: {
+            /**
+             * Format: date-time
+             * @description Zeitpunkt des Ereignisses.
+             */
+            timestamp?: string;
+            /**
+             * Format: int64
+             * @description Aktuelle Sequenznummer/Version der Partie.
+             * @example 42
+             */
+            version?: number;
+            /**
+             * @description Typ des Partie-Ereignisses zur Unterscheidung im Frontend.
+             * @enum {string}
+             */
+            ereignisTyp?: "SNAPSHOT" | "KARTE_GESPIELT" | "STICH_ABGESCHLOSSEN" | "SPIEL_BEENDET" | "ANSAGE_ERFOLGT" | "SCHWEINCHEN_GEMELDET" | "HOCHZEIT_PARTNER_GEFUNDEN" | "SPIEL_GESTARTET" | "AKTION_ABGELEHNT";
+            partieStand?: components["schemas"]["PartieStandAntwort"];
+        };
+        /** @description Neue Sonderpunkte, die in diesem Stich erzielt wurden. */
+        SonderpunktEreignisAntwort: {
+            typ?: string;
+            /** @enum {string} */
+            gewinner?: "SUED" | "WEST" | "NORD" | "OST";
+            /** @enum {string} */
+            verlierer?: "SUED" | "WEST" | "NORD" | "OST";
+        };
+        /** @description Ein Einzelspiel wurde beendet (Auswertung abgeschlossen). */
+        SpielBeendet: {
+            /**
+             * Format: date-time
+             * @description Zeitpunkt des Ereignisses.
+             */
+            timestamp?: string;
+            /**
+             * Format: int64
+             * @description Aktuelle Sequenznummer/Version der Partie.
+             * @example 42
+             */
+            version?: number;
+            /**
+             * @description Typ des Partie-Ereignisses zur Unterscheidung im Frontend.
+             * @enum {string}
+             */
+            ereignisTyp?: "SNAPSHOT" | "KARTE_GESPIELT" | "STICH_ABGESCHLOSSEN" | "SPIEL_BEENDET" | "ANSAGE_ERFOLGT" | "SCHWEINCHEN_GEMELDET" | "HOCHZEIT_PARTNER_GEFUNDEN" | "SPIEL_GESTARTET" | "AKTION_ABGELEHNT";
+            partieStand?: components["schemas"]["PartieStandAntwort"];
+        };
+        /** @description Eine neue Partie an diesem Tisch wurde gestartet. */
+        SpielGestartet: {
+            /**
+             * Format: date-time
+             * @description Zeitpunkt des Ereignisses.
+             */
+            timestamp?: string;
+            /**
+             * Format: int64
+             * @description Aktuelle Sequenznummer/Version der Partie.
+             * @example 42
+             */
+            version?: number;
+            /**
+             * @description Typ des Partie-Ereignisses zur Unterscheidung im Frontend.
+             * @enum {string}
+             */
+            ereignisTyp?: "SNAPSHOT" | "KARTE_GESPIELT" | "STICH_ABGESCHLOSSEN" | "SPIEL_BEENDET" | "ANSAGE_ERFOLGT" | "SCHWEINCHEN_GEMELDET" | "HOCHZEIT_PARTNER_GEFUNDEN" | "SPIEL_GESTARTET" | "AKTION_ABGELEHNT";
+            partieStand?: components["schemas"]["PartieStandAntwort"];
+        };
+        /** @description Ein Stich wurde beendet und eingezogen. */
+        StichAbgeschlossen: {
+            /**
+             * Format: date-time
+             * @description Zeitpunkt des Ereignisses.
+             */
+            timestamp?: string;
+            /**
+             * Format: int64
+             * @description Aktuelle Sequenznummer/Version der Partie.
+             * @example 42
+             */
+            version?: number;
+            /**
+             * @description Typ des Partie-Ereignisses zur Unterscheidung im Frontend.
+             * @enum {string}
+             */
+            ereignisTyp?: "SNAPSHOT" | "KARTE_GESPIELT" | "STICH_ABGESCHLOSSEN" | "SPIEL_BEENDET" | "ANSAGE_ERFOLGT" | "SCHWEINCHEN_GEMELDET" | "HOCHZEIT_PARTNER_GEFUNDEN" | "SPIEL_GESTARTET" | "AKTION_ABGELEHNT";
+            partieStand?: components["schemas"]["PartieStandAntwort"];
+            /** @description Neue Sonderpunkte, die in diesem Stich erzielt wurden. */
+            neueSonderpunkte?: components["schemas"]["SonderpunktEreignisAntwort"][];
         };
         /** @description Strukturierte Fehlerantwort fuer WebSocket-Aktionen. */
         SpielverwaltungWebSocketFehlerAntwort: {
@@ -1403,6 +1683,24 @@ export interface operations {
                     "*/*": components["schemas"]["SpielerProfilAntwort"];
                 };
             };
+            /** @description Keine gueltige Spieler-Session */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["SpielerProfilAntwort"];
+                };
+            };
+            /** @description Zugriff verweigert — fremdes Profil */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["SpielerProfilAntwort"];
+                };
+            };
             /** @description Spieler nicht gefunden */
             404: {
                 headers: {
@@ -1552,26 +1850,6 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["TischListenEintragAntwort"][];
-                };
-            };
-        };
-    };
-    gibPresets: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Liste der Regel-Presets */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "*/*": components["schemas"]["TischPresetAntwort"][];
                 };
             };
         };
@@ -1897,6 +2175,28 @@ export interface operations {
             };
         };
     };
+    logge: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["FrontendLogAnfrage"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     registrieren: {
         parameters: {
             query?: never;
@@ -2069,6 +2369,26 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["TischAntwort"];
+                };
+            };
+        };
+    };
+    gibPresets: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Liste der Regel-Presets */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["TischPresetAntwort"][];
                 };
             };
         };

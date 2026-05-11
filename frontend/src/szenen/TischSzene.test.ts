@@ -216,7 +216,7 @@ afterEach(() => { aktiveSzene?.shutdown(); aktiveSzene = undefined; vi.useRealTi
 describe('TischSzene', () => {
   it('rendert Karten und reagiert auf Klick', async () => {
     const { s } = baueSzene(baueZustand());
-    const eigeneKarten = Array.from((s['persistenteEigeneKarten'] as Map<string, any>).values());
+    const eigeneKarten = Array.from((s['kartenRenderer']['persistenteEigeneKarten'] as Map<string, any>).values());
     expect(eigeneKarten.length).toBeGreaterThan(0);
     (eigeneKarten[0] as any)._pointerDownHandler = () => appStoreHarness.store.spieleKarte('K1');
     eigeneKarten[0].onpointerdown();
@@ -272,8 +272,8 @@ describe('TischSzene', () => {
   it('zeigeRundenEndeModal erstellt das Modal', async () => {
     const { s } = baueSzene(baueZustand());
     const m = (s as any).erstelleModell(baueZustand({ partieStand: { letztesSpielergebnis: { spielNummer: 1, siegerPartei: 'RE', augenProPartei: { RE: 130, KONTRA: 110 }, sonderpunkteProPartei: { RE: [], KONTRA: [] }, punkteAufschluesselung: [], spielpunkteProSpieler: { SUED: 1, WEST: 1, NORD: -1, OST: -1 }, spielpunkte: [], gesamtstand: [] } } as any }));
-    await (s as any).zeigeRundenEndeModal(m);
-    expect((s as any).phaserRundenEndeModal).toBeDefined();
+    await (s as any).rundenEndeController.zeigeRundenEndeModal(m);
+    expect((s as any).rundenEndeController.phaserRundenEndeModal).toBeDefined();
   });
   it('verarbeitePartieEreignis cover branches', async () => {
     const { s } = baueSzene(baueZustand());
