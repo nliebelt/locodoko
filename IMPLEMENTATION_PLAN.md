@@ -276,7 +276,7 @@ Vollständiger Codebase-Scan abgeschlossen. Wesentliche Befunde:
   - Validierung: kein Code zu ändern, nur Spec-Markdown.
 
 ### DOC-E2E-SPEC-UPDATE (Task 49)
-- [ ] **Dokumentation**: `specs/e2e-tests.md` Projektstruktur aktualisieren. Die folgenden 7 Testdateien existieren, sind aber nicht dokumentiert:
+- [x] **Dokumentation**: `specs/e2e-tests.md` Projektstruktur aktualisieren. Die folgenden 7 Testdateien existieren, sind aber nicht dokumentiert:
   - `reconnect.spec.ts` — Tab-Reload / Session-Recovery
   - `mehrere-runden.spec.ts` — Mehrere Runden nacheinander
   - `mehrere-runden-ohne-neunen.spec.ts` — Variante ohne Neunen
@@ -335,7 +335,7 @@ Vollständiger Codebase-Scan abgeschlossen. Wesentliche Befunde:
 
 **P14 (Spec-Sync, Keyboard-Nav, Refactoring, Plan-Run #122):**
 - [x] Task 48: DOC-SPEC-SYNC
-- [ ] Task 49: DOC-E2E-SPEC-UPDATE
+- [x] Task 49: DOC-E2E-SPEC-UPDATE
 - [ ] Task 50: FEAT-KEYBOARD-NAV-LOBBY
 - [ ] Task 51: REFACTOR-TISCHSZENE
 - [ ] Task 52: FEAT-BITMAPFONT (niedrige Priorität)

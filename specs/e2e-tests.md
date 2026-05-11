@@ -60,10 +60,18 @@ locodoko/
 │   ├── package.json               # eigenes npm-Projekt
 │   ├── playwright.config.ts       # baseURL via ENV konfigurierbar
 │   └── tests/
-│       ├── helpers.ts                   # Bridge-Wrapper + Animations-Helpers
-│       ├── partie-gegen-ki.spec.ts      # Testfall 1: Kritischer Pfad (Turbo)
-│       ├── rundenauswertung.spec.ts     # Testfall 2: Rundenauswertung (Turbo)
-│       └── vision-loop.spec.ts         # Testfall 4: Visuelle Verifikation + Animations-Keyframes
+│       ├── helpers.ts                              # Bridge-Wrapper + Animations-Helpers
+│       ├── armut-workflow.spec.ts                  # Armut-Tausch wird durchgeführt und Spiel läuft weiter
+│       ├── einladungslink.spec.ts                  # Spieler betritt Tisch automatisch via #join/{code} URL
+│       ├── mehrere-runden.spec.ts                  # Zwei vollständige Runden gegen KI ohne JS-Fehler
+│       ├── mehrere-runden-ohne-neunen.spec.ts      # Zwei Runden ohne Neunen (10 Stiche) ohne JS-Fehler
+│       ├── partie-gegen-ki.spec.ts                 # Kritischer Pfad: vollständige Partie gegen KI (Turbo)
+│       ├── reconnect.spec.ts                       # Session-Recovery nach Tab-Reload und Wiederverbindung
+│       ├── rundenauswertung.spec.ts                # Rundenauswertungs-Overlay nach Rundenende (Turbo)
+│       ├── schnellstart.spec.ts                    # Quick Game startet sofort Partie ohne Tischkonfiguration
+│       ├── solo-spielfluss.spec.ts                 # Solo-Spieltyp, Multiplikator und Geber-Konstanz
+│       ├── ungueltige-karte.spec.ts                # Fehler-Toast bei ungültiger Karte, Spiel läuft weiter
+│       └── vision-loop.spec.ts                     # Visuelle Verifikation + Animations-Keyframes
 ```
 
 Das `e2e/`-Verzeichnis ist ein eigenständiges npm-Projekt und **nicht** Teil des `frontend/`-Projekts. Es wird **nicht** von `mvn verify` ausgeführt.
