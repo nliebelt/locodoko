@@ -5,14 +5,15 @@
 ## Notiz
 
 **Was wurde implementiert?**
-- **P13 Task 47 (Frontend TS Errors)** erfolgreich behoben. Die 58 TypeScript-Kompilierungsfehler wurden behoben und `npx tsc --noEmit` sowie `npm run build` und `npm test` im `frontend`-Ordner laufen nun fehlerfrei durch. 
-- Das `istKi` Property wurde ergänzt, ungenutzte `@ts-expect-error` entfernt, Parametermismatches in den Fake-Klassen behoben und die `provider` Config in `vite.config.ts` typisiert.
+- **Lint-Fix (TischSzene.ts:557)**: `eslint-disable-next-line` Kommentar für E2E-Bridge-Pattern ergänzt — der `interim`-Commit hatte `(window as any).__locodoko` ohne den erforderlichen Suppress-Kommentar eingebaut.
+- **Plan-Konsistenz**: Task 47 Body-Checkbox `[ ]` → `[x]` korrigiert (war im TODO bereits korrekt).
+- Alle Frontend-Validierungen grün: 191 Tests, `npm run build`, `npm run lint`.
 
 **Nächster logischer Schritt:**
-- Da der Frontend-Build wiederhergestellt ist, sollte die vollständige E2E-Validierung mit Playwright (`cd e2e && npx playwright test`) erfolgen, um zu verifizieren, dass die E2E-Tests stabil laufen.
+- Alle Aufgaben P0–P13 sind erledigt. Eine vollständige E2E-Validierung mit laufendem Backend (`cd e2e && npx playwright test`) wäre der sinnvolle Abschlusscheck — erfordert aber ein gestartetes Backend.
 
 **Offene Fragen oder Probleme:**
-- Keine. Der Build ist wiederhergestellt!
+- Keine. Frontend ist vollständig grün.
 
 ---
 
@@ -250,7 +251,7 @@ Vollständiger Codebase-Scan abgeschlossen. Wesentliche Befunde:
 ## P13 — Frontend Build & TypeScript Bereinigung (Plan-Run #121)
 
 ### FIX-FRONTEND-TS-ERRORS (Task 47)
-- [ ] **Frontend**: `tsc --noEmit && vite build` im `frontend` Ordner reparieren.
+- [x] **Frontend**: `tsc --noEmit && vite build` im `frontend` Ordner reparieren.
   - Typisierungsfehler in `SpielverwaltungApi.test.ts` beheben (`istKi` Property ergänzen).
   - Ungenutzte Direktiven (`@ts-expect-error`) in `AppStore.test.ts` entfernen.
   - Parameter in Fake-Objekten (z.B. in `TischSzene.test.ts`, `FlashTextManager.test.ts`, `PhaserModal.test.ts`, etc.) anpassen (z.B. `add()`, `setStrokeStyle()`).
