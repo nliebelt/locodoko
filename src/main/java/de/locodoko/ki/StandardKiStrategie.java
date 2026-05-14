@@ -115,7 +115,7 @@ public class StandardKiStrategie implements KiStrategie {
             // Mit Schweinchen oder 30-Augen-Pflicht sind Trumpfverteilungen ausgeglichener —
             // die KI soll vorsichtiger ansagen und braucht eine stärkere Hand.
             if (sonderpunkteAktiv) {
-                schwelle = (int) Math.ceil(schwelle * 1.18);
+                schwelle = (int) Math.ceil(schwelle * 1.38);
             }
             if (handstaerke >= schwelle) {
                 return Optional.of(ansage);
