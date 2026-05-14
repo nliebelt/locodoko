@@ -227,6 +227,66 @@ describe('FlashTextManager', () => {
     expect(objects[0].destroy).toHaveBeenCalled();
   });
 
+  it('erzeugt bei NaechsterSpielerErwartet die korrekten UI-Komponenten', async () => {
+    const { mockSzene, timers } = baueFlashSzene();
+    const manager = new FlashTextManager(mockSzene as any);
+
+    const promise = manager.zeigeSpielevent('NaechsterSpielerErwartet', { spielerName: 'Anna' });
+
+    expect(mockSzene.add.container).toHaveBeenCalled();
+    expect(mockSzene.add.text).toHaveBeenCalledWith(
+      expect.any(Number), expect.any(Number), 'ANNA', expect.any(Object)
+    );
+
+    timers[timers.length - 1].callback();
+    const fadeOutTween = mockSzene.tweens.add.mock.calls.find((call: any) => call[0].alpha === 0)![0];
+    fadeOutTween.onComplete();
+
+    await promise;
+    expect(mockSzene.add.text).toHaveBeenCalledWith(
+      expect.any(Number), expect.any(Number), 'AM ZUG', expect.any(Object)
+    );
+  });
+
+  it('erzeugt bei StichAbgeschlossen die korrekten UI-Komponenten', async () => {
+    const { mockSzene } = baueFlashSzene();
+    const manager = new FlashTextManager(mockSzene as any);
+
+    const promise = manager.zeigeSpielevent('StichAbgeschlossen', { punkte: 5 });
+
+    expect(mockSzene.add.text).toHaveBeenCalledWith(
+      expect.any(Number), expect.any(Number), '+5', expect.any(Object)
+    );
+
+    // Score-Tween: erst einblenden, dann ausblenden
+    const einblendTween = mockSzene.tweens.add.mock.calls[0][0];
+    einblendTween.onComplete();
+
+    // Fade-Out-Tween nach Delay
+    const fadeOutTween = mockSzene.tweens.add.mock.calls.find((call: any) => call[0].alpha === 0)![0];
+    fadeOutTween.onComplete();
+
+    await promise;
+  });
+
+  it('erzeugt bei KarlchenGespielt die korrekten UI-Komponenten', async () => {
+    const { mockSzene, timers } = baueFlashSzene();
+    const manager = new FlashTextManager(mockSzene as any);
+
+    const promise = manager.zeigeSpielevent('KarlchenGespielt', { spielerName: 'Max' });
+
+    expect(mockSzene.add.text).toHaveBeenCalledWith(
+      expect.any(Number), expect.any(Number), 'KARLCHEN', expect.any(Object)
+    );
+    expect(mockSzene.cameras.main.shake).toHaveBeenCalled();
+
+    timers[timers.length - 1].callback();
+    const fadeOutTween = mockSzene.tweens.add.mock.calls.find((call: any) => call[0].alpha === 0)![0];
+    fadeOutTween.onComplete();
+
+    await promise;
+  });
+
   it('skaliert Shockwave-Dauer und Verzoegerung', () => {
     const { mockSzene } = baueFlashSzene();
     const manager = new FlashTextManager(mockSzene as any);

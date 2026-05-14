@@ -2,7 +2,7 @@
 
 | Feld           | Wert                                                                         |
 |----------------|------------------------------------------------------------------------------|
-| Status         | Noch nicht begonnen                                                          |
+| Status         | Abgeschlossen                                                                |
 | Priorität      | Hoch                                                                         |
 | Abhängigkeiten | frontend-visuelles-design.md, websocket-kommunikation.md, frontend-tischansicht.md |
 
@@ -104,16 +104,16 @@ Design-Referenz: `design_handoff/Doppelkopf Flash Text v3.html` (enthält direkt
 
 ## Definition of Done
 
-- [ ] `FlashTextManager`-Klasse vollständig implementiert
-- [ ] Alle 9 Event-Animationen
-- [ ] Foil-Shimmer-Effekt
-- [ ] Konfetti-Emitter (Standard + Mega)
-- [ ] Shockwave-Ringe (1–3×, zeitversetzt)
-- [ ] Screen Shake + Camera Flash
-- [ ] Integration in `TischSzene.ts` (ersetzt Toast-Aufrufe)
-- [ ] `destroy()`-Lifecycle korrekt implementiert
-- [ ] Unit-Tests für Manager-Logik (Event-Routing)
-- [ ] Visuelles Review via Vision Loop
+- [x] `FlashTextManager`-Klasse vollständig implementiert
+- [x] Alle 9 Event-Animationen
+- [x] Foil-Shimmer-Effekt
+- [x] Konfetti-Emitter (Standard + Mega)
+- [x] Shockwave-Ringe (1–3×, zeitversetzt)
+- [x] Screen Shake + Camera Flash
+- [x] Integration in `TischSzene.ts` (ersetzt Toast-Aufrufe)
+- [x] `destroy()`-Lifecycle korrekt implementiert
+- [x] Unit-Tests für Manager-Logik (Event-Routing)
+- [ ] Visuelles Review via Vision Loop (ausstehend — Backend muss laufen)
 
 ## Technische Hinweise
 

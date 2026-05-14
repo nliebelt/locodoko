@@ -21,7 +21,7 @@
   - Validation: `mvn test`
 
 ### FE-FLASHTEXT-FERTIGSTELLEN (Task 54)
-- [~] **Frontend** (Hohe Priorität): `FlashTextManager.ts` vollständig implementieren und validieren.
+- [x] **Frontend** (Hohe Priorität): `FlashTextManager.ts` vollständig implementieren und validieren.
   - **Kontext**: Spec `frontend-flash-text.md` trägt Status "Noch nicht begonnen", ist aber veraltet —
     `frontend/src/ui/FlashTextManager.ts` existiert bereits, alle 9 Events sind definiert und die Klasse
     ist in `TischSzene.ts` integriert. Die Spec-DoD wurde nie aktualisiert.
@@ -112,9 +112,9 @@
 
 ## Notiz
 
-**Implementiert (Task 53):** Ansage-Multiplikator in `StandardKiStrategie.java:118` von `1.18` auf `1.38` korrigiert — jetzt konsistent mit dem Solo-Schwellenwert in derselben Datei.
+**Implementiert (Task 54):** FlashTextManager.ts gegen Spec verifiziert — alle Werte (Foil-Shimmer-Farben, Konfetti-Mengen 70/150, Shockwave, Screen Shake, Camera Flash) stimmen exakt. Unit-Tests für alle 10 Events (9 Spielevents + VorbehaltStopp) ergänzt: NaechsterSpielerErwartet, StichAbgeschlossen und KarlchenGespielt lagen noch offen — jetzt 14 Tests, alle grün. Spec-Status auf "Abgeschlossen" gesetzt. Vision Loop steht noch aus (Backend war nicht verfügbar).
 
-**Nächster logischer Schritt:** FE-FLASHTEXT-FERTIGSTELLEN (Task 54) — FlashTextManager.ts Foil-Shimmer und Konfetti-Emitter gegen Spec verifizieren. Code existiert bereits, es geht um Verifikation und ggf. Korrekturen. Dann Vision Loop.
+**Nächster logischer Schritt:** FE-NAMEPLATES-FERTIGSTELLEN (Task 55) — Nameplate.ts analog verifizieren, Teamfarbe-Dynamik sicherstellen, Event-Mapping prüfen, Unit-Tests ergänzen, Spec abschließen.
 
 **Offene Fragen:** Keine.
 
