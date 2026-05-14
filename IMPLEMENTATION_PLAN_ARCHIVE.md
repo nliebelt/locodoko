@@ -482,3 +482,21 @@ Dieses Jubiläums-Run verfolgt die Strategie „Phaser, Phaser, Phaser“. Ziel 
 
 --- End of Run #99 ---
 
+---
+
+## Archiviert am 2026-05-14 (Plan-Run #122)
+
+> Fokus: Spec-Sync, Keyboard-Navigation Lobby, TischSzene-Refactoring. Alle Aufgaben bis auf Task 52 erledigt.
+
+### Zusammenfassung Plan-Run #122
+- **P0–P4:** Design-Tokens, FlashTextManager, Nameplates, Spielprotokoll, Punkte-Labels, PhaserModal, Lobby-Refactoring, Rundenauswertung 2.0, UI-Cleanup — alle erledigt.
+- **P5–P6:** FIX-SOLIST-AUFSPIELER, FIX-REGELKATALOG, FIX-DREISSIG-AUGEN-PFLICHT, FEAT-ARMUT-FRONTEND, FIX-SPEC-TISCHKONFIGURATION, FEAT-VERDRAHTUNG, FIX-HOCHZEIT-ANIMATION, FIX-E2E-TESTIDS, FIX-ARMUT-BESTIMMUNG, FEAT-SCHMEISSEN-FRONTEND — alle erledigt.
+- **P7:** FIX-ABAC-AUTHORIZATION (Task 21), FIX-TISCH-STATUS-ABBRUCH (Task 22), FIX-PRIVATE-TISCH-GUESTS (Task 23), REFACTOR-URL-CONSISTENCY (Task 24), FIX-KI-ARCHITECTURE-VIOLATION (Task 25), FEAT-EVENT-GAP-DETECTION (Task 26), REFACTOR-E2E-KEYBOARD (Task 27), DOC-SPEC-UPDATES (Task 28) — alle erledigt.
+- **P8:** REFACTOR-KI-ADAPTER-CLEANUP (Task 29), FIX-ESLINT-ANY (Task 30) — erledigt.
+- **P9:** FIX-ANIMATION-POSITIONS (Task 31–32), FIX-RENDER-GUARDS (Task 33), FIX-PROMISE-HANDLING (Task 34), REFACTOR-RENDER-KARTEN (Task 35), FEAT-VORBEHALT-ANIMATION (Task 36) — erledigt.
+- **P10:** FIX-FLICKER-KARTE-GESPIELT (Task 37), FIX-GHOST-CARDS (Task 38), FEAT-HOCHZEIT-HEART (Task 39), REFACTOR-ANIMATION-CLEANUP (Task 40), FEAT-ANIMATION-TESTS (Task 41) — erledigt.
+- **P11:** FIX-ESLINT-TESTS-1/2/3 (Task 42a–c), FIX-TISCHANSICHT-UI-TEXTE/LAYOUT/STICH (Task 43a–c), FEAT-E2E-HELPERS (Task 44a) — erledigt.
+- **P12:** FEAT-ANIMATION-LOGGING (Task 46), BUG-E2E-VISION-LOOP-TIMEOUT (Task 44b), FEAT-E2E-SOLO (Task 44c), DOC-SPEC-CLEANUP (Task 45) — erledigt.
+- **P13:** FIX-FRONTEND-TS-ERRORS (Task 47) — erledigt.
+- **P14:** DOC-SPEC-SYNC (Task 48), DOC-E2E-SPEC-UPDATE (Task 49), FEAT-KEYBOARD-NAV-LOBBY (Task 50), REFACTOR-TISCHSZENE (Task 51) — erledigt.
+- **Task 52 (FEAT-BITMAPFONT):** Offen (niedrige Priorität) → bleibt im aktiven Plan.
