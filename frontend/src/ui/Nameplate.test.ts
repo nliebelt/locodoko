@@ -49,7 +49,7 @@ vi.mock('phaser', () => ({
   }
 }));
 
-const { Nameplate } = await import('./Nameplate');
+const { Nameplate, ansageBadgeTyp, teamfarbeVonPartei } = await import('./Nameplate');
 
 describe('Nameplate', () => {
   let mockScene: any;
@@ -114,10 +114,72 @@ describe('Nameplate', () => {
     plate.showVorbehalt();
     const label = plate.list.find((o: any) => o.text === 'VORBEHALT?');
     expect(label).toBeDefined();
-    
+
     plate.clearVorbehalt();
     expect(label!.active).toBe(false);
-    });
-    });
+  });
+
+  it('setTeamfarbe setzt Balkenfarbe auf RE Gold', () => {
+    // Sicherstellen dass der Farbbalken (erstes Kind) nach setTeamfarbe mit RE-Gold neu gezeichnet wird
+    const plate = new Nameplate(mockScene, 0, 0, { name: 'P1', istKI: false, position: 'SUED' });
+    const balken = plate.list[0] as any;
+    vi.spyOn(balken, 'fillStyle');
+    plate.setTeamfarbe('re');
+    expect(balken.fillStyle).toHaveBeenCalledWith(0xffd700, 1);
+  });
+
+  it('setTeamfarbe setzt Balkenfarbe auf KONTRA Rot', () => {
+    const plate = new Nameplate(mockScene, 0, 0, { name: 'P1', istKI: false, position: 'SUED' });
+    const balken = plate.list[0] as any;
+    vi.spyOn(balken, 'fillStyle');
+    plate.setTeamfarbe('kontra');
+    expect(balken.fillStyle).toHaveBeenCalledWith(0xff4455, 1);
+  });
+
+  it('shake löst Wackel-Tween mit korrekten Parametern aus', () => {
+    // Fuchs/Karlchen-Feedback: yoyo, 3 Wiederholungen, 50ms — verhindert Regressions bei Shake-Werten
+    const plate = new Nameplate(mockScene, 100, 100, { name: 'P1', istKI: false, position: 'SUED' });
+    mockScene.tweens.add.mockClear();
+    plate.shake();
+    expect(mockScene.tweens.add).toHaveBeenCalledWith(expect.objectContaining({
+      yoyo: true,
+      repeat: 3,
+      duration: 50,
+    }));
+  });
+});
+
+describe('ansageBadgeTyp', () => {
+  it('erkennt alle RE-Ansagen', () => {
+    expect(ansageBadgeTyp('RE')).toBe('re');
+    expect(ansageBadgeTyp('RE_KEINE_90')).toBe('re');
+    expect(ansageBadgeTyp('RE_KEINE_60')).toBe('re');
+    expect(ansageBadgeTyp('RE_KEINE_30')).toBe('re');
+    expect(ansageBadgeTyp('RE_SCHWARZ')).toBe('re');
+  });
+
+  it('erkennt alle KONTRA-Ansagen', () => {
+    expect(ansageBadgeTyp('KONTRA')).toBe('kontra');
+    expect(ansageBadgeTyp('KONTRA_KEINE_90')).toBe('kontra');
+    expect(ansageBadgeTyp('KONTRA_KEINE_60')).toBe('kontra');
+    expect(ansageBadgeTyp('KONTRA_KEINE_30')).toBe('kontra');
+    expect(ansageBadgeTyp('KONTRA_SCHWARZ')).toBe('kontra');
+  });
+
+  it('gibt null für unbekannte Ansagen zurück', () => {
+    expect(ansageBadgeTyp('SOLO')).toBeNull();
+    expect(ansageBadgeTyp('')).toBeNull();
+  });
+});
+
+describe('teamfarbeVonPartei', () => {
+  it('gibt RE-Farbe Gold zurück', () => {
+    expect(teamfarbeVonPartei('re')).toBe(0xffd700);
+  });
+
+  it('gibt KONTRA-Farbe Rot zurück', () => {
+    expect(teamfarbeVonPartei('kontra')).toBe(0xff4455);
+  });
+});
 
 

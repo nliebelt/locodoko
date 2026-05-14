@@ -2,7 +2,7 @@
 
 | Feld           | Wert                                                                  |
 |----------------|-----------------------------------------------------------------------|
-| Status         | Noch nicht begonnen                                                   |
+| Status         | Abgeschlossen                                                         |
 | Priorität      | Hoch                                                                  |
 | Abhängigkeiten | frontend-visuelles-design.md, websocket-kommunikation.md, frontend-tischansicht.md |
 
@@ -105,17 +105,17 @@ Design-Referenz: `design_handoff/Doppelkopf Nameplates.html` (Variante C) und `d
 
 ## Definition of Done
 
-- [ ] `Nameplate`-Klasse vollständig implementiert
-- [ ] Alle 4 States (`default`, `amZug`, `geber`, implizit via `showVorbehalt`)
-- [ ] RE/KONTRA-Badge mit Bounce-Animation
-- [ ] Geber-Krone mit Floating-Animation
-- [ ] Vorbehalt-Label mit Pulse
-- [ ] Shake-Effekt
-- [ ] Teamfarbe dynamisch setzbar
-- [ ] 4 Nameplates in `TischSzene.ts` integriert
-- [ ] Event-Mapping vollständig
-- [ ] `destroy()`-Lifecycle korrekt
-- [ ] Unit-Tests für State-Logik
+- [x] `Nameplate`-Klasse vollständig implementiert
+- [x] Alle 4 States (`default`, `amZug`, `geber`, implizit via `showVorbehalt`)
+- [x] RE/KONTRA-Badge mit Bounce-Animation
+- [x] Geber-Krone mit Floating-Animation
+- [x] Vorbehalt-Label mit Pulse
+- [x] Shake-Effekt
+- [x] Teamfarbe dynamisch setzbar
+- [x] 4 Nameplates in `TischSzene.ts` integriert
+- [x] Event-Mapping vollständig
+- [x] `destroy()`-Lifecycle korrekt
+- [x] Unit-Tests für State-Logik
 - [ ] Visuelles Review via Vision Loop
 
 ## Technische Hinweise

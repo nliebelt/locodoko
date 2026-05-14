@@ -39,7 +39,7 @@
   - Validation: `cd frontend && npm test && npm run build`; dann Vision Loop.
 
 ### FE-NAMEPLATES-FERTIGSTELLEN (Task 55)
-- [~] **Frontend** (Hohe Priorität): `Nameplate.ts` vollständig implementieren und validieren.
+- [x] **Frontend** (Hohe Priorität): `Nameplate.ts` vollständig implementieren und validieren.
   - **Kontext**: Spec `frontend-nameplates.md` trägt Status "Noch nicht begonnen", ist veraltet —
     `frontend/src/ui/Nameplate.ts` existiert, States (`default`/`amZug`/`geber`), RE/KONTRA-Badges,
     Geber-Krone, Vorbehalt-Label und Shake-Effekt sind laut Code-Scan implementiert.
@@ -112,9 +112,9 @@
 
 ## Notiz
 
-**Implementiert (Task 54):** FlashTextManager.ts gegen Spec verifiziert — alle Werte (Foil-Shimmer-Farben, Konfetti-Mengen 70/150, Shockwave, Screen Shake, Camera Flash) stimmen exakt. Unit-Tests für alle 10 Events (9 Spielevents + VorbehaltStopp) ergänzt: NaechsterSpielerErwartet, StichAbgeschlossen und KarlchenGespielt lagen noch offen — jetzt 14 Tests, alle grün. Spec-Status auf "Abgeschlossen" gesetzt. Vision Loop steht noch aus (Backend war nicht verfügbar).
+**Implementiert (Task 55):** Nameplate.ts gegen Spec verifiziert — alle Methoden (setTeamfarbe, showAnsage, shake, showVorbehalt, destroy) vollständig implementiert. Event-Mapping war bereits komplett: setTeamfarbe() in TischKartenRenderer.ts:312, shake() in TischSzene.ts:265/271, showAnsage() in TischEreignisHandler.ts:80. Unit-Tests ergänzt: setTeamfarbe RE/KONTRA, shake, ansageBadgeTyp (RE/KONTRA/null), teamfarbeVonPartei — jetzt 9 neue Tests, insgesamt 202 Tests, alle grün. Spec-Status auf "Abgeschlossen" gesetzt. Vision Loop steht noch aus (Backend war nicht verfügbar).
 
-**Nächster logischer Schritt:** FE-NAMEPLATES-FERTIGSTELLEN (Task 55) — Nameplate.ts analog verifizieren, Teamfarbe-Dynamik sicherstellen, Event-Mapping prüfen, Unit-Tests ergänzen, Spec abschließen.
+**Nächster logischer Schritt:** BUG-E2E-TIMEOUT (Task 56) — `test.setTimeout(90_000)` in `e2e/tests/rundenauswertung.spec.ts` ergänzen. Schnelle, risikoarme Änderung.
 
 **Offene Fragen:** Keine.
 
