@@ -15,6 +15,7 @@ import {
 
 test.describe('Rundenauswertung', () => {
   test('Rundenauswertungs-Overlay erscheint nach Spielende und kann geschlossen werden', async ({ page }, testInfo) => {
+    test.setTimeout(90_000);
     aktiviereConsoleCapture(page, testInfo.title);
 
     await page.goto('/');

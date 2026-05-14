@@ -58,7 +58,7 @@
   - Validation: `cd frontend && npm test && npm run build`; dann Vision Loop.
 
 ### BUG-E2E-TIMEOUT (Task 56)
-- [ ] **E2E** (Mittlere Priorität): Fehlendes `test.setTimeout` in Rundenauswertungs-Test ergänzen.
+- [x] **E2E** (Mittlere Priorität): Fehlendes `test.setTimeout` in Rundenauswertungs-Test ergänzt.
   - `e2e/tests/rundenauswertung.spec.ts`: Am Anfang des langen Spielablauf-Tests
     `test.setTimeout(90_000)` setzen.
   - Ohne explizites Timeout greift der playwright.config.ts-Standard (300 s) — Hänger im Test
@@ -112,9 +112,9 @@
 
 ## Notiz
 
-**Implementiert (Task 55):** Nameplate.ts gegen Spec verifiziert — alle Methoden (setTeamfarbe, showAnsage, shake, showVorbehalt, destroy) vollständig implementiert. Event-Mapping war bereits komplett: setTeamfarbe() in TischKartenRenderer.ts:312, shake() in TischSzene.ts:265/271, showAnsage() in TischEreignisHandler.ts:80. Unit-Tests ergänzt: setTeamfarbe RE/KONTRA, shake, ansageBadgeTyp (RE/KONTRA/null), teamfarbeVonPartei — jetzt 9 neue Tests, insgesamt 202 Tests, alle grün. Spec-Status auf "Abgeschlossen" gesetzt. Vision Loop steht noch aus (Backend war nicht verfügbar).
+**Implementiert (Task 56):** `test.setTimeout(90_000)` als erste Anweisung im Test-Body von `e2e/tests/rundenauswertung.spec.ts` eingefügt. Verhindert, dass Hänger erst nach dem globalen 360-s-Timeout erkannt werden. E2E-Vollvalidierung nicht möglich (Backend nicht verfügbar).
 
-**Nächster logischer Schritt:** BUG-E2E-TIMEOUT (Task 56) — `test.setTimeout(90_000)` in `e2e/tests/rundenauswertung.spec.ts` ergänzen. Schnelle, risikoarme Änderung.
+**Nächster logischer Schritt:** REFACTOR-APPSTORE (Task 57) — `AppStore.ts` (856 Zeilen) auf fokussierte Sub-Module aufteilen. Wichtig: öffentliche API darf sich nicht ändern. Analyse zuerst.
 
 **Offene Fragen:** Keine.
 
