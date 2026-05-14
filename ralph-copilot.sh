@@ -51,7 +51,8 @@ fi
 ITERATION=0
 CONTEXT_FILE=".ralph-context.tmp"
 ITER_OUTPUT=".ralph-iter.tmp"
-LOG_FILE="ralph-$(date +%Y%m%d-%H%M%S).log"
+mkdir -p logs
+LOG_FILE="logs/ralph-copilot-$(date +%Y%m%d-%H%M%S).log"
 
 # --- Model selection ---
 MODEL_FLAG=""

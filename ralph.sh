@@ -56,7 +56,8 @@ fi
 
 ITERATION=0
 ITER_OUTPUT=".ralph-iter.tmp"
-LOG_FILE="ralph-$(date +%Y%m%d-%H%M%S).log"
+mkdir -p logs
+LOG_FILE="logs/ralph-$(date +%Y%m%d-%H%M%S).log"
 
 # --- Model selection ---
 # Default: sonnet für beide Modi (Pro account via `claude login`)

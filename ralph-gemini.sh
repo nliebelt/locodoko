@@ -54,7 +54,8 @@ fi
 
 ITERATION=0
 ITER_OUTPUT=".ralph-iter.tmp"
-LOG_FILE="ralph-gemini-$(date +%Y%m%d-%H%M%S).log"
+mkdir -p logs
+LOG_FILE="logs/ralph-gemini-$(date +%Y%m%d-%H%M%S).log"
 
 # --- Model selection ---
 # Default models optimized for cost/performance in their respective modes.
