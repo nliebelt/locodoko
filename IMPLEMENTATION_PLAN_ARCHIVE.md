@@ -480,6 +480,23 @@ Dieses Jubiläums-Run verfolgt die Strategie „Phaser, Phaser, Phaser“. Ziel 
 - [ ] Task 5: `TischUIManager` und `TischInputHandler` bereinigen.
 - [ ] Task 6: E2E-Tests (Bridge-basiert) fixen.
 
+--- End of Run #122 ---
+
+---
+
+## Archiviert am 2026-05-18 (Plan-Run #123)
+
+> Fokus: KI-Bugfix, FlashText/Nameplate Spec-Sync, E2E-Timeout, AppStore-Refactoring, TischSzene-Verkleinerung, Vision-Loop-Validierung.
+
+### Zusammenfassung Plan-Run #123
+- **Task 53 (BUG-KIANSAGE):** KI-Ansage-Multiplikator in `StandardKiStrategie.java` von 1.18 auf 1.38 korrigiert.
+- **Task 54 (FE-FLASHTEXT-FERTIGSTELLEN):** `FlashTextManager.ts` gegen Spec verifiziert, fehlende Unit-Tests für 3 Events ergänzt, `specs/frontend-flash-text.md` auf "Abgeschlossen" gesetzt.
+- **Task 55 (FE-NAMEPLATES-FERTIGSTELLEN):** `Nameplate.ts` Teamfarbe, Event-Mapping und Unit-Tests vervollständigt, `specs/frontend-nameplates.md` abgeschlossen.
+- **Task 56 (BUG-E2E-TIMEOUT):** `test.setTimeout(90_000)` in `rundenauswertung.spec.ts` ergänzt.
+- **Task 57 (REFACTOR-APPSTORE):** `AppStore.ts` (856 Zeilen) in `SessionStore.ts`, `PartieStore.ts`, `TischStore.ts` aufgeteilt; Fassade ~100 Zeilen.
+- **Task 58 (REFACTOR-TISCHSZENE-WEITER):** `TischSzene.ts` von 609 auf 238 Zeilen reduziert.
+- **Task 59 (FE-VORBEHALT-VISIONLOOP):** Vision-Loop bestätigt, `specs/frontend-vorbehalt-kartenauswahl.md` abgeschlossen.
+
 --- End of Run #99 ---
 
 ---
