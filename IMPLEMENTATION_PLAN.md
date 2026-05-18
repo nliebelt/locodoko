@@ -66,7 +66,7 @@
   - Validation: `cd e2e && npx playwright test rundenauswertung.spec.ts`
 
 ### REFACTOR-APPSTORE (Task 57)
-- [ ] **Frontend** (Mittlere Priorität): `AppStore.ts` (856 Zeilen) auf fokussierte Module aufteilen.
+- [x] **Frontend** (Mittlere Priorität): `AppStore.ts` (856 Zeilen) auf fokussierte Module aufteilen.
   - Ziel: Keine Klasse > 300 Zeilen (Architektur-Richtwert, `specs/architektur.md` Z. 124).
   - Zieldatei `AppStore.ts` soll als schlanke Fassade (~100 Zeilen) bestehen bleiben und an
     fokussierte Sub-Module delegieren. Vorschlag (nicht bindend — vor Umsetzung analysieren):
@@ -112,9 +112,9 @@
 
 ## Notiz
 
-**Implementiert (Task 56):** `test.setTimeout(90_000)` als erste Anweisung im Test-Body von `e2e/tests/rundenauswertung.spec.ts` eingefügt. Verhindert, dass Hänger erst nach dem globalen 360-s-Timeout erkannt werden. E2E-Vollvalidierung nicht möglich (Backend nicht verfügbar).
+**Implementiert (Task 57):** `AppStore.ts` (857 → 136 Zeilen) zur schlanken Fassade umgebaut. `SessionStore.ts`, `PartieStore.ts`, `TischStore.ts`, `StoreTypen.ts` waren bereits vollständig vorbereitet (untracked). AppStore delegiert jetzt an diese Sub-Module; alle Typen werden aus StoreTypen.ts re-exportiert für Rückwärtskompatibilität. `PartieStore.ts`: Lint-Fix für inline-`import()`-Typ-Annotationen ergänzt. Alle 202 Tests grün, Build + Lint sauber.
 
-**Nächster logischer Schritt:** REFACTOR-APPSTORE (Task 57) — `AppStore.ts` (856 Zeilen) auf fokussierte Sub-Module aufteilen. Wichtig: öffentliche API darf sich nicht ändern. Analyse zuerst.
+**Nächster logischer Schritt:** REFACTOR-TISCHSZENE-WEITER (Task 58) — `TischSzene.ts` (609 Zeilen) weiter aufteilen. Erst analysieren welche Render-Verantwortlichkeiten noch verbleiben.
 
 **Offene Fragen:** Keine.
 
