@@ -8,6 +8,20 @@ import { formatiereAnsage } from './tischFormatierer';
 /** Moegliche Animations-Geschwindigkeitsstufen: normal (1x), doppelt (2x), sofort (Infinity). */
 export type AnimationsGeschwindigkeit = 1 | 2 | typeof Infinity;
 
+const LS_GESCHWINDIGKEIT = 'locodoko.animationsgeschwindigkeit';
+
+export function ladeGeschwindigkeit(): AnimationsGeschwindigkeit {
+  const wert = localStorage.getItem(LS_GESCHWINDIGKEIT);
+  if (wert === '2') return 2;
+  if (wert === 'sofort') return Infinity;
+  return 1;
+}
+
+export function speichereGeschwindigkeit(faktor: AnimationsGeschwindigkeit): void {
+  const wert = faktor === Infinity ? 'sofort' : String(faktor);
+  localStorage.setItem(LS_GESCHWINDIGKEIT, wert);
+}
+
 /** Erzeugt einen einfachen Aktionsbutton auf der Tischebene. */
 export function erstellePhaserButton(
   szene: Phaser.Scene,

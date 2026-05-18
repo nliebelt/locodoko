@@ -201,7 +201,7 @@ describe('Animation Integration & Guards', () => {
   });
 
   it('Animation Guard: triggerRender wird während laufender Animation unterdrückt', () => {
-    const renderSpy = vi.spyOn(szene as any, 'renderTisch');
+    const renderSpy = vi.spyOn(szene.renderKontroller as any, 'renderTisch');
     
     // Animation läuft
     vi.spyOn(szene['animationen'], 'animationLaeuft', 'get').mockReturnValue(true);

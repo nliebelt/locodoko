@@ -4,6 +4,7 @@ import {
   type TischAnsichtModell,
 } from '../modelle/TischAnsichtModell';
 import type { AppZustand } from '../store/AppStore';
+import type { TischSzene } from './TischSzene';
 
 export interface TischInputKontext {
   getLetztesModell(): TischAnsichtModell | null;
@@ -171,6 +172,28 @@ export class TischInputHandler {
       return true;
     }
     return false;
+  }
+
+  /** Erstellt den TischInputKontext aus einer TischSzene-Referenz (type-safe Closure). */
+  static erstelleKontext(szene: TischSzene): TischInputKontext {
+    return {
+      getLetztesModell: () => szene.letztesModell ?? null,
+      getLetzterZustand: () => szene.letzterZustand,
+      getAusgewaehlteArmutKarten: () => szene.ausgewaehlteArmutKarten,
+      isSeitenladeOffen: () => szene.seitenladeOffen,
+      isEinstellungenOffen: () => szene.einstellungenOffen,
+      isSpielzugAnimationAktiv: () => !!szene.wartendeKartenId || (szene.animationen?.animationLaeuft ?? false),
+      isArmutAnnahmeAktiv: () => szene.armutAnnahmeAktiv,
+      setArmutAnnahmeAktiv: (v) => { szene.armutAnnahmeAktiv = v; },
+      getTastaturKarteIndex: () => szene.tastaturKarteIndex,
+      setTastaturKarteIndex: (v) => { szene.tastaturKarteIndex = v; },
+      getTastaturVorbehaltIndex: () => szene.tastaturVorbehaltIndex,
+      setTastaturVorbehaltIndex: (v) => { szene.tastaturVorbehaltIndex = v; },
+      togglSeitenlade: () => { szene.seitenladeOffen = !szene.seitenladeOffen; szene.triggerRender(); },
+      togglEinstellungen: () => { szene.einstellungenOffen = !szene.einstellungenOffen; szene.triggerRender(); },
+      renderTisch: (z, m) => { szene.renderTisch(z, m); },
+      spieleKarteMitAnimation: (k) => szene.animationOrchestrator.spieleKarteMitAnimation(k),
+    };
   }
 
   private verarbeiteKartenTaste(e: KeyboardEvent, modell: TischAnsichtModell): void {

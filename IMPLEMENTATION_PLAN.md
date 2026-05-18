@@ -79,7 +79,7 @@
   - Validation: `cd frontend && npm test && npm run build && npm run lint`
 
 ### REFACTOR-TISCHSZENE-WEITER (Task 58)
-- [ ] **Frontend** (Mittlere Priorität): `TischSzene.ts` (609 Zeilen nach Task 51) weiter aufteilen.
+- [x] **Frontend** (Mittlere Priorität): `TischSzene.ts` (609 Zeilen nach Task 51) weiter aufteilen.
   - Nach den Extraktionen aus Task 51 (`TischKartenRenderer`, `TischAnimationOrchestrator`,
     `TischEreignisHandler`, `TischRundenEndeController`) hat `TischSzene.ts` noch 609 Zeilen.
     Ziel: < 300 Zeilen.
@@ -112,9 +112,9 @@
 
 ## Notiz
 
-**Implementiert (Task 57):** `AppStore.ts` (857 → 136 Zeilen) zur schlanken Fassade umgebaut. `SessionStore.ts`, `PartieStore.ts`, `TischStore.ts`, `StoreTypen.ts` waren bereits vollständig vorbereitet (untracked). AppStore delegiert jetzt an diese Sub-Module; alle Typen werden aus StoreTypen.ts re-exportiert für Rückwärtskompatibilität. `PartieStore.ts`: Lint-Fix für inline-`import()`-Typ-Annotationen ergänzt. Alle 202 Tests grün, Build + Lint sauber.
+**Implementiert (Task 58):** `TischSzene.ts` (609 → 238 Zeilen) auf dünnen Orchestrator reduziert. 4 neue Sub-Module extrahiert: `TischRenderKontroller.ts` (renderTisch, triggerRender, Hintergrund, Resize), `TischZustandsKontroller.ts` (Armut, Tastaturnavigation, AnimationsSync), `TischBrücke.ts` (E2E-Bridge), `TischStoreAbonnements.ts` (3 Store-Subscriptions). `TischHudRenderer.ts` um `ladeGeschwindigkeit`/`speichereGeschwindigkeit` erweitert. `TischInputHandler.ts` um statische Factory `erstelleKontext()` ergänzt. 202 Tests grün, Build + Lint sauber.
 
-**Nächster logischer Schritt:** REFACTOR-TISCHSZENE-WEITER (Task 58) — `TischSzene.ts` (609 Zeilen) weiter aufteilen. Erst analysieren welche Render-Verantwortlichkeiten noch verbleiben.
+**Nächster logischer Schritt:** FE-VORBEHALT-VISIONLOOP (Task 59) — visueller Playwright-Check für Vorbehalt-Kartenauswahl (Backend muss laufen). Oder FEAT-BITMAPFONT (Task 52) wenn Performance-Probleme auftreten.
 
 **Offene Fragen:** Keine.
 
