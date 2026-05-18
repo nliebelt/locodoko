@@ -92,7 +92,7 @@
   - Validation: `cd frontend && npm test && npm run build && npm run lint`
 
 ### FE-VORBEHALT-VISIONLOOP (Task 59)
-- [ ] **Frontend** (Niedrige Priorität): Vision-Loop-Validierung für Vorbehalt-Kartenauswahl.
+- [x] **Frontend** (Niedrige Priorität): Vision-Loop-Validierung für Vorbehalt-Kartenauswahl.
   - Letzter offener DoD-Punkt in `specs/frontend-vorbehalt-kartenauswahl.md`.
   - Alle Implementierungs-DoD-Punkte sind abgehakt (Reconciliation-Pattern, animierter Wechsel,
     Tween-Abbruch) — nur visuelle Bestätigung fehlt noch.
@@ -112,10 +112,10 @@
 
 ## Notiz
 
-**Implementiert (Task 58):** `TischSzene.ts` (609 → 238 Zeilen) auf dünnen Orchestrator reduziert. 4 neue Sub-Module extrahiert: `TischRenderKontroller.ts` (renderTisch, triggerRender, Hintergrund, Resize), `TischZustandsKontroller.ts` (Armut, Tastaturnavigation, AnimationsSync), `TischBrücke.ts` (E2E-Bridge), `TischStoreAbonnements.ts` (3 Store-Subscriptions). `TischHudRenderer.ts` um `ladeGeschwindigkeit`/`speichereGeschwindigkeit` erweitert. `TischInputHandler.ts` um statische Factory `erstelleKontext()` ergänzt. 202 Tests grün, Build + Lint sauber.
+**Implementiert (Task 59):** Vision-Loop-Validierung für Vorbehalt-Kartenauswahl erfolgreich abgeschlossen. Backend lief, Vision Loop (`vision-loop.spec.ts`) über temporäre Playwright-Config ausgeführt (der Test ist in `testIgnore` gelistet). Screenshots bestätigen: Vorbehalt-Label (`Damensolo`) sichtbar und zentriert, 3 Animationsframes (0%/50%/100%) belegen animierten Kartenwechsel. Spec `frontend-vorbehalt-kartenauswahl.md` auf Status "Abgeschlossen" gesetzt, letzter DoD-Punkt abgehakt.
 
-**Nächster logischer Schritt:** FE-VORBEHALT-VISIONLOOP (Task 59) — visueller Playwright-Check für Vorbehalt-Kartenauswahl (Backend muss laufen). Oder FEAT-BITMAPFONT (Task 52) wenn Performance-Probleme auftreten.
+**Nächster logischer Schritt:** Alle Aufgaben mit konkreter Implementierung sind abgeschlossen. Nur noch FEAT-BITMAPFONT (Task 52) offen — aber nur bei messbaren Performance-Problemen auf Schwachgeräten.
 
-**Offene Fragen:** Keine.
+**Offene Fragen:** Hinweis für zukünftige Vision-Loop-Ausführungen: `vision-loop.spec.ts` steht in `testIgnore` in `playwright.config.ts`. Zum Ausführen eine temporäre Config ohne `testIgnore` im `e2e/`-Verzeichnis anlegen, oder `testIgnore` temporär kommentieren.
 
 ## Entdeckungen

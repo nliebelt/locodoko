@@ -2,7 +2,7 @@
 
 | Feld           | Wert                                                                         |
 |----------------|------------------------------------------------------------------------------|
-| Status         | In Bearbeitung                                                               |
+| Status         | Abgeschlossen                                                                |
 | Priorität      | Mittel                                                                       |
 | Abhängigkeiten | frontend-tischansicht.md, frontend-tastatursteuerung.md, trumpfhierarchie.md |
 
@@ -228,4 +228,4 @@ Render-Methoden bleiben unverändert.
 - [x] `renderHand()` auf Reconciliation-Pattern umgestellt (stabile Karten-Referenzen via `persistenteEigeneKarten`-Map + `gleiteZu()`)
 - [x] Animierter Vorbehalt-Wechsel implementiert (Y + X Tweens, 150 ms, via `Kartenansicht.gleiteZu()`)
 - [x] Tween-Abbruch bei WebSocket-Update während Animation (`killTweensOf` in `gleiteZu()` + Re-Render bei jedem Update)
-- [ ] Vision Loop (Playwright headed) bestätigt korrektes visuelles Ergebnis
+- [x] Vision Loop (Playwright headed) bestätigt korrektes visuelles Ergebnis
