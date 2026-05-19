@@ -1,18 +1,13 @@
 package de.locodoko.partie;
 
 import com.fasterxml.jackson.core.type.TypeReference;
-import de.locodoko.karten.Augen;
-import de.locodoko.karten.BubensoloTrumpfOrdnung;
-import de.locodoko.karten.DamensoloTrumpfOrdnung;
 import de.locodoko.karten.Farbe;
-import de.locodoko.karten.FleischlosTrumpfOrdnung;
 import de.locodoko.karten.Hand;
 import de.locodoko.karten.Karte;
 import de.locodoko.karten.Kartendeck;
 import de.locodoko.karten.Kartenwert;
 import de.locodoko.karten.NormaleTrumpfOrdnung;
 import de.locodoko.karten.SchweinchenTrumpfOrdnung;
-import de.locodoko.karten.VariableTrumpfsoloTrumpfOrdnung;
 import de.locodoko.karten.Spielregeln;
 import de.locodoko.karten.Spieltyp;
 import de.locodoko.karten.TrumpfOrdnung;
@@ -52,65 +47,65 @@ import java.util.UUID;
 @Table("spiel")
 public class Spiel extends AbstraktePersistenzEntity {
 
-    // -- Domain-Felder (transient, nicht in DB) --
+    // -- Domain-Felder (transient, nicht in DB; package-private fuer Helfer-Klassen) --
 
-    @Transient private Spielregeln spielregeln;
-    @Transient private Kartendeck kartendeck;
-    @Transient private TrumpfOrdnung trumpfOrdnung;
-    @Transient private Spieltyp spieltyp;
-    @Transient private SpielerPosition geber;
-    @Transient private Spielphase phase;
-    @Transient private Map<SpielerPosition, Hand> haende;
-    @Transient private List<VorbehaltMeldung> vorbehalte;
-    @Transient private Parteien parteien;
-    @Transient private Ansagen ansagen;
-    @Transient private List<Stich> abgeschlosseneStiche;
-    @Transient private Spielergebnis ergebnis;
+    @Transient Spielregeln spielregeln;
+    @Transient Kartendeck kartendeck;
+    @Transient TrumpfOrdnung trumpfOrdnung;
+    @Transient Spieltyp spieltyp;
+    @Transient SpielerPosition geber;
+    @Transient Spielphase phase;
+    @Transient Map<SpielerPosition, Hand> haende;
+    @Transient List<VorbehaltMeldung> vorbehalte;
+    @Transient Parteien parteien;
+    @Transient Ansagen ansagen;
+    @Transient List<Stich> abgeschlosseneStiche;
+    @Transient Spielergebnis ergebnis;
     /** Position des Solisten aus dem vorherigen Spiel; bestimmt den ersten Aufspieler. */
-    @Transient private SpielerPosition solistAufspieler;
+    @Transient SpielerPosition solistAufspieler;
     /** Spieler die in diesem Spiel bereits geschmissen haben — dürfen kein zweites Mal schmeißen. */
-    @Transient private Set<SpielerPosition> bereitsGeschmissen = EnumSet.noneOf(SpielerPosition.class);
+    @Transient Set<SpielerPosition> bereitsGeschmissen = EnumSet.noneOf(SpielerPosition.class);
     /** Anzahl der Einwürfe (Schmeißen oder abgelehnte Armut) in diesem Spiel — für Einwurf-Bockrunden-Trigger. */
-    @Transient private int einwurfZaehler = 0;
+    @Transient int einwurfZaehler = 0;
     @Transient private int spielNummer;
     @Transient private Partie partieRef;
 
-    // ── DB-Spalten (aus SpielEntity uebernommen) ────────────────────────
-    @Column("geber_position") private String geberPosition;
-    @Column("spieltyp") private String spieltypText;
-    @Column("phase") private String phaseText;
-    @Column("vorbehalte") private String vorbehalteJson;
-    @Column("ansagen") private String ansagenJson;
-    @Column("armut_spieler_position") private String armutSpielerPosition;
-    @Column("armut_aktueller_antwort_index") private int armutAktuellerAntwortIndex;
-    @Column("armut_angebot_abgegeben") private boolean armutAngebotAbgegeben;
-    @Column("armut_partner_spieler_position") private String armutPartnerSpielerPosition;
-    @Column("armut_angebotene_karten") private String armutAngeboteneKartenJson;
-    @Column("hochzeit_spieler_position") private String hochzeitSpielerPositionText;
-    @Column("hochzeit_geklaerte_stiche") private int hochzeitGeklaerteStiche;
-    @Column("hochzeit_partner_spieler_position") private String hochzeitPartnerSpielerPositionText;
-    @Column("hochzeit_stilles_solo") private boolean hochzeitStillesSolo;
-    @Column("pflicht_ansage_ausstehend") private String pflichtAnsageAusstehendJson = "[]";
-    @Column("schweinchen_aktiv") private boolean schweinchenAktivFlag;
-    @Column("bereits_geschmissen_json") private String bereitsGeschmisenJson = "[]";
-    @Column("einwurf_zaehler") private int einwurfZaehlerDb = 0;
-    @Column("aktueller_stich_aufspieler_position") private String aktuellerStichAufspielerPositionText;
-    @Column("aktueller_stich_karten") private String aktuellerStichKartenJson;
-    @Column("re_augen") private Integer reAugen;
-    @Column("kontra_augen") private Integer kontraAugen;
-    @Column("sieger_partei") private String siegerParteiText;
-    @Column("spielwert") private Integer spielwertPunkte;
-    @Column("grundwert") private Integer grundwertDb;
-    @Column("absage_punkte") private Integer absagePunkteDb;
-    @Column("gegen_die_alten_punkte") private Integer gegenDieAltenPunkteDb;
-    @Column("solo_multiplikator") private Integer soloMultiplikatorDb;
-    @Column("spielpunkte_sued") private Integer spielpunkteSued;
-    @Column("spielpunkte_west") private Integer spielpunkteWest;
-    @Column("spielpunkte_nord") private Integer spielpunkteNord;
-    @Column("spielpunkte_ost") private Integer spielpunkteOst;
-    @Column("haende_json") private String haendeJson;
-    @Column("stiche_json") private String sticheJson;
-    @Column("sonderpunkte_json") private String sonderpunkteJson = "[]";
+    // ── DB-Spalten (package-private fuer Helfer-Klassen) ────────────────────────
+    @Column("geber_position") String geberPosition;
+    @Column("spieltyp") String spieltypText;
+    @Column("phase") String phaseText;
+    @Column("vorbehalte") String vorbehalteJson;
+    @Column("ansagen") String ansagenJson;
+    @Column("armut_spieler_position") String armutSpielerPosition;
+    @Column("armut_aktueller_antwort_index") int armutAktuellerAntwortIndex;
+    @Column("armut_angebot_abgegeben") boolean armutAngebotAbgegeben;
+    @Column("armut_partner_spieler_position") String armutPartnerSpielerPosition;
+    @Column("armut_angebotene_karten") String armutAngeboteneKartenJson;
+    @Column("hochzeit_spieler_position") String hochzeitSpielerPositionText;
+    @Column("hochzeit_geklaerte_stiche") int hochzeitGeklaerteStiche;
+    @Column("hochzeit_partner_spieler_position") String hochzeitPartnerSpielerPositionText;
+    @Column("hochzeit_stilles_solo") boolean hochzeitStillesSolo;
+    @Column("pflicht_ansage_ausstehend") String pflichtAnsageAusstehendJson = "[]";
+    @Column("schweinchen_aktiv") boolean schweinchenAktivFlag;
+    @Column("bereits_geschmissen_json") String bereitsGeschmisenJson = "[]";
+    @Column("einwurf_zaehler") int einwurfZaehlerDb = 0;
+    @Column("aktueller_stich_aufspieler_position") String aktuellerStichAufspielerPositionText;
+    @Column("aktueller_stich_karten") String aktuellerStichKartenJson;
+    @Column("re_augen") Integer reAugen;
+    @Column("kontra_augen") Integer kontraAugen;
+    @Column("sieger_partei") String siegerParteiText;
+    @Column("spielwert") Integer spielwertPunkte;
+    @Column("grundwert") Integer grundwertDb;
+    @Column("absage_punkte") Integer absagePunkteDb;
+    @Column("gegen_die_alten_punkte") Integer gegenDieAltenPunkteDb;
+    @Column("solo_multiplikator") Integer soloMultiplikatorDb;
+    @Column("spielpunkte_sued") Integer spielpunkteSued;
+    @Column("spielpunkte_west") Integer spielpunkteWest;
+    @Column("spielpunkte_nord") Integer spielpunkteNord;
+    @Column("spielpunkte_ost") Integer spielpunkteOst;
+    @Column("haende_json") String haendeJson;
+    @Column("stiche_json") String sticheJson;
+    @Column("sonderpunkte_json") String sonderpunkteJson = "[]";
 
     // -- Konstruktoren --
 
@@ -119,7 +114,7 @@ public class Spiel extends AbstraktePersistenzEntity {
         super();
     }
 
-    private Spiel(
+    Spiel(
         Spielregeln spielregeln, Kartendeck kartendeck, TrumpfOrdnung trumpfOrdnung,
         Spieltyp spieltyp, SpielerPosition geber, Spielphase phase,
         Map<SpielerPosition, Hand> haende, List<VorbehaltMeldung> vorbehalte,
@@ -183,7 +178,7 @@ public class Spiel extends AbstraktePersistenzEntity {
         boolean schweinchenAktiv, SpielerPosition solistAufspieler, int einwurfZaehler
     ) {
         return new SpielBuilder().spielregeln(spielregeln).kartendeck(kartendeck)
-            .trumpfOrdnung(trumpfOrdnungFuerPersistiertenStand(spielregeln, spieltyp, schweinchenAktiv))
+            .trumpfOrdnung(SpielVorbehaltAufloesung.trumpfOrdnungFuerPersistiertenStand(spielregeln, spieltyp, schweinchenAktiv))
             .spieltyp(spieltyp).geber(geber).phase(phase).haende(haende).vorbehalte(vorbehalte)
             .parteien(parteien).ansagen(ansagen).abgeschlosseneStiche(abgeschlosseneStiche)
             .ergebnis(ergebnis).solistAufspieler(solistAufspieler).einwurfZaehler(einwurfZaehler).build();
@@ -210,8 +205,9 @@ public class Spiel extends AbstraktePersistenzEntity {
 
     public Spiel teileKartenAus() {
         pruefePhase(Spielphase.KartenAusteilen.class, "Karten austeilen");
-        Map<SpielerPosition, Hand> neueHaende = haendeAusDeck(kartendeck);
-        TrumpfOrdnung neueTrumpfOrdnung = hatSchweinchen(spielregeln, neueHaende) ? new SchweinchenTrumpfOrdnung(spielregeln) : trumpfOrdnung;
+        Map<SpielerPosition, Hand> neueHaende = SpielVorbehaltAufloesung.haendeAusDeck(kartendeck);
+        TrumpfOrdnung neueTrumpfOrdnung = SpielVorbehaltAufloesung.hatSchweinchen(spielregeln, neueHaende)
+            ? new SchweinchenTrumpfOrdnung(spielregeln) : trumpfOrdnung;
         return toBuilder().trumpfOrdnung(neueTrumpfOrdnung).phase(Spielphase.VORBEHALT_ANSAGE)
             .haende(neueHaende).vorbehalte(List.of()).parteien(null).ergebnis(null).build();
     }
@@ -240,75 +236,26 @@ public class Spiel extends AbstraktePersistenzEntity {
 
     public Spiel loeseVorbehalteAuf() {
         pruefePhase(Spielphase.VorbehaltAufloesung.class, "Vorbehalte aufloesen");
-        VorbehaltMeldung hoechsterVorbehalt = hoechsterVorbehalt().orElse(null);
-        if (hoechsterVorbehalt != null && hoechsterVorbehalt.ansage().istSchmeissen()) {
-            return eingeworfenesSpiel();
-        }
-        SpielerPosition ersterAufspieler = solistAufspieler != null ? solistAufspieler : geber.naechsteImUhrzeigersinn();
-        if (hoechsterVorbehalt == null) {
-            SpielerPosition stillesSoloSpieler = erkenneStillesSoloSpieler();
-            if (stillesSoloSpieler != null) {
-                return toBuilder().trumpfOrdnung(hatSchweinchen(spielregeln, haende) ? new SchweinchenTrumpfOrdnung(spielregeln) : new NormaleTrumpfOrdnung(spielregeln))
-                    .spieltyp(Spieltyp.SOLO_TRUMPF).phase(new Spielphase.Stichphase(Stich.neu(ersterAufspieler), Set.of(), null))
-                    .parteien(Parteien.ausSolo(stillesSoloSpieler)).ansagen(Ansagen.leer()).abgeschlosseneStiche(List.of()).ergebnis(null).solistAufspieler(null).build();
-            }
-        }
-        Parteien neueParteien = hoechsterVorbehalt == null ? Parteien.ausNormalspielHaenden(haende) : parteienFuer(hoechsterVorbehalt);
-        HochzeitStatus neuerHochzeitStatus = hoechsterVorbehalt != null && hoechsterVorbehalt.ansage() == VorbehaltAnsage.HOCHZEIT ? HochzeitStatus.gestartet(hoechsterVorbehalt.spielerPosition()) : null;
-        ArmutStatus neuerArmutStatus = hoechsterVorbehalt != null && hoechsterVorbehalt.ansage() == VorbehaltAnsage.ARMUT ? ArmutStatus.gestartet(hoechsterVorbehalt.spielerPosition()) : null;
-        Spielphase naechstePhase = neuerArmutStatus != null ? new Spielphase.ArmutTausch(neuerArmutStatus) : new Spielphase.Stichphase(Stich.neu(ersterAufspieler), Set.of(), neuerHochzeitStatus);
-        return toBuilder().trumpfOrdnung(trumpfOrdnungFuer(hoechsterVorbehalt)).spieltyp(spieltypFuer(hoechsterVorbehalt)).phase(naechstePhase)
-            .parteien(neueParteien).ansagen(Ansagen.leer()).abgeschlosseneStiche(List.of()).ergebnis(null).solistAufspieler(null).build();
+        return SpielVorbehaltAufloesung.aufloesen(toBuilder(), vorbehalte, trumpfOrdnung,
+            spielregeln, haende, geber, solistAufspieler, kartendeck, einwurfZaehler);
     }
 
     public Spiel legeArmutTrumpfkarten(SpielerPosition spielerPosition, List<Karte> angeboteneTrumpfkarten) {
         if (!(phase instanceof Spielphase.ArmutTausch armutTauschPhase)) { throw new IllegalStateException("Armut-Karten anbieten ist nur in Phase ARMUT_TAUSCH erlaubt, war aber " + phase.name()); }
-        Objects.requireNonNull(spielerPosition, "spielerPosition darf nicht null sein");
-        Objects.requireNonNull(angeboteneTrumpfkarten, "angeboteneTrumpfkarten duerfen nicht null sein");
-        ArmutStatus status = armutTauschPhase.armutStatus();
-        if (spielerPosition != status.armutSpieler()) { throw new IllegalStateException("Nur der Armut-Spieler darf Trumpfkarten anbieten"); }
-        if (status.angebotLiegtVor()) { throw new IllegalStateException("Die Trumpfkarten fuer die Armut wurden bereits angeboten"); }
-        Hand armutHand = handVon(spielerPosition);
-        long anzahlTruepfe = anzahlTruepfe(armutHand);
-        if (angeboteneTrumpfkarten.size() != anzahlTruepfe) { throw new IllegalStateException("Die Armut muss genau alle eigenen Trumpfkarten anbieten; erwartet: " + anzahlTruepfe); }
-        for (Karte karte : angeboteneTrumpfkarten) {
-            if (!armutHand.enthaelt(karte)) { throw new IllegalStateException("Angebotene Karte ist nicht auf der Hand des Armut-Spielers: " + karte); }
-            if (!trumpfOrdnung.istTrumpf(karte)) { throw new IllegalStateException("In der Armut duerfen nur Trumpfkarten angeboten werden: " + karte); }
-        }
-        Map<SpielerPosition, Hand> neueHaende = kopiereHaende();
-        neueHaende.put(spielerPosition, armutHand.ohneAlle(angeboteneTrumpfkarten));
-        return toBuilder().haende(neueHaende).phase(new Spielphase.ArmutTausch(status.mitAngebot(angeboteneTrumpfkarten))).build();
+        return SpielArmutTausch.legeArmutTrumpfkarten(toBuilder(), spielerPosition,
+            angeboteneTrumpfkarten, armutTauschPhase.armutStatus(), handVon(spielerPosition), trumpfOrdnung, haende);
     }
 
     public Spiel lehneArmutAb(SpielerPosition spielerPosition) {
         if (!(phase instanceof Spielphase.ArmutTausch armutTauschPhase)) { throw new IllegalStateException("Armut ablehnen ist nur in Phase ARMUT_TAUSCH erlaubt, war aber " + phase.name()); }
-        Objects.requireNonNull(spielerPosition, "spielerPosition darf nicht null sein");
-        ArmutStatus status = armutTauschPhase.armutStatus();
-        if (!status.angebotLiegtVor()) { throw new IllegalStateException("Die Armut kann erst nach dem Trumpf-Angebot abgelehnt werden"); }
-        ArmutStatus neuerStatus = status.mitAblehnung(spielerPosition);
-        if (neuerStatus.alleAntwortenErschoepft()) { return eingeworfenesSpiel(); }
-        return toBuilder().phase(new Spielphase.ArmutTausch(neuerStatus)).build();
+        return SpielArmutTausch.lehneArmutAb(toBuilder(), spielerPosition,
+            armutTauschPhase.armutStatus(), spielregeln, geber, einwurfZaehler, kartendeck);
     }
 
     public Spiel nimmArmutAn(SpielerPosition spielerPosition, List<Karte> rueckgabekarten) {
         if (!(phase instanceof Spielphase.ArmutTausch armutTauschPhase)) { throw new IllegalStateException("Armut annehmen ist nur in Phase ARMUT_TAUSCH erlaubt, war aber " + phase.name()); }
-        Objects.requireNonNull(spielerPosition, "spielerPosition darf nicht null sein");
-        Objects.requireNonNull(rueckgabekarten, "rueckgabekarten duerfen nicht null sein");
-        ArmutStatus status = armutTauschPhase.armutStatus();
-        if (!status.angebotLiegtVor()) { throw new IllegalStateException("Die Armut kann erst nach dem Trumpf-Angebot angenommen werden"); }
-        SpielerPosition erwarteterSpieler = status.aktuellerAntwortspieler().orElseThrow(() -> new IllegalStateException("Es gibt aktuell keinen moeglichen Armut-Partner"));
-        if (spielerPosition != erwarteterSpieler) { throw new IllegalStateException("Die Armut muss reihum beantwortet werden; erwartet: " + erwarteterSpieler); }
-        if (rueckgabekarten.size() != status.angeboteneTrumpfkarten().size()) { throw new IllegalStateException("Es muessen genau " + status.angeboteneTrumpfkarten().size() + " Karten zurueckgegeben werden"); }
-        Hand partnerHand = handVon(spielerPosition);
-        for (Karte karte : rueckgabekarten) { if (!partnerHand.enthaelt(karte)) { throw new IllegalStateException("Zurueckgegebene Karte ist nicht auf der Hand des annehmenden Spielers: " + karte); } }
-        Map<SpielerPosition, Hand> neueHaende = kopiereHaende();
-        neueHaende.put(spielerPosition, partnerHand.ohneAlle(rueckgabekarten).mitAllen(status.angeboteneTrumpfkarten()));
-        neueHaende.put(status.armutSpieler(), handVon(status.armutSpieler()).mitAllen(rueckgabekarten));
-        TrumpfOrdnung neueTrumpfOrdnung = new NormaleTrumpfOrdnung(spielregeln);
-        Parteien neueParteien = parteien.mitPartei(spielerPosition, Partei.RE).mitOffenenParteienFuerAlle(SpielerPosition.standardReihenfolge());
-        SpielerPosition ersterAufspieler = solistAufspieler != null ? solistAufspieler : geber.naechsteImUhrzeigersinn();
-        return toBuilder().trumpfOrdnung(neueTrumpfOrdnung).phase(new Spielphase.Stichphase(Stich.neu(ersterAufspieler), Set.of(), null))
-            .haende(neueHaende).parteien(neueParteien).ansagen(Ansagen.leer()).abgeschlosseneStiche(List.of()).ergebnis(null).solistAufspieler(null).build();
+        return SpielArmutTausch.nimmArmutAn(toBuilder(), spielerPosition, rueckgabekarten,
+            armutTauschPhase.armutStatus(), solistAufspieler, geber, haende, spielregeln, trumpfOrdnung, parteien);
     }
 
     public Optional<SpielerPosition> aktuellerSpieler() {
@@ -337,16 +284,16 @@ public class Spiel extends AbstraktePersistenzEntity {
         Objects.requireNonNull(spielerPosition, "spielerPosition darf nicht null sein");
         Objects.requireNonNull(karte, "karte darf nicht null sein");
         if (!stichphase.pflichtansageAusstehend().isEmpty()) { throw new IllegalStateException("Karte spielen ist erst erlaubt wenn alle ausstehenden Pflichtansagen gemacht wurden: " + stichphase.pflichtansageAusstehend()); }
-        
+
         boolean schweinchenVorherGemeldet = schweinchenGemeldetVon().isPresent();
         Hand hand = handVon(spielerPosition);
         Stich gespielterStich = stichphase.aktuellerStich().spieleKarte(spielerPosition, karte, hand, trumpfOrdnung);
         Map<SpielerPosition, Hand> neueHaende = kopiereHaende();
         neueHaende.put(spielerPosition, hand.ohne(karte));
-        
+
         List<SpielEreignis> ereignisse = new ArrayList<>();
         ereignisse.add(new SpielEreignis.KarteGespielt(spielerPosition, karte));
-        
+
         if (!schweinchenVorherGemeldet && istKaroAs(karte) && schweinchenAktiv()) {
             ereignisse.add(new SpielEreignis.SchweinchenGemeldet(spielerPosition));
         }
@@ -358,7 +305,7 @@ public class Spiel extends AbstraktePersistenzEntity {
         neueAbgeschlosseneStiche.add(gespielterStich);
         HochzeitStatus alterHochzeitStatus = stichphase.hochzeitStatus();
         HochzeitFortschritt hf = fortschrittNachVollstaendigemStich(gespielterStich, alterHochzeitStatus);
-        
+
         if (alterHochzeitStatus != null && alterHochzeitStatus.suchtPartner() && hf.status() != null && !hf.status().suchtPartner() && hf.status().partner().isPresent()) {
             ereignisse.add(new SpielEreignis.HochzeitPartnerGefunden(hf.status().partner().get()));
         }
@@ -453,8 +400,6 @@ public class Spiel extends AbstraktePersistenzEntity {
             .filter(gk -> istKaroAs(gk.karte())).findFirst().map(GespielteKarte::spieler));
     }
 
-    private static boolean istKaroAs(Karte k) { return k.farbe() == Farbe.KARO && k.wert() == Kartenwert.AS; }
-
     public boolean hatHerzDurchgegangenenStich() { return abgeschlosseneStiche.stream().anyMatch(this::istHerzDurchgegangen); }
     public int einwurfZaehler() { return einwurfZaehler; }
 
@@ -529,14 +474,11 @@ public class Spiel extends AbstraktePersistenzEntity {
     public void uebernehmeErgebnis(Spielergebnis spielergebnis) {
         Objects.requireNonNull(spielergebnis, "spielergebnis darf nicht null sein");
         SpielErgebnisEmbeddable erg = SpielErgebnisEmbeddable.aus(spielergebnis);
-        this.reAugen = erg.reAugen();
-        this.kontraAugen = erg.kontraAugen();
+        this.reAugen = erg.reAugen(); this.kontraAugen = erg.kontraAugen();
         this.siegerParteiText = erg.siegerPartei() != null ? erg.siegerPartei().name() : null;
         this.spielwertPunkte = erg.spielwert();
-        this.spielpunkteSued = erg.spielpunkteSued();
-        this.spielpunkteWest = erg.spielpunkteWest();
-        this.spielpunkteNord = erg.spielpunkteNord();
-        this.spielpunkteOst = erg.spielpunkteOst();
+        this.spielpunkteSued = erg.spielpunkteSued(); this.spielpunkteWest = erg.spielpunkteWest();
+        this.spielpunkteNord = erg.spielpunkteNord(); this.spielpunkteOst = erg.spielpunkteOst();
         List<SonderpunktJsonEintrag> sonderpunkte = new ArrayList<>();
         for (Map.Entry<Partei, List<SonderpunktEreignis>> eintrag : spielergebnis.sonderpunkteProPartei().entrySet()) {
             for (SonderpunktEreignis ereignis : eintrag.getValue()) {
@@ -554,8 +496,7 @@ public class Spiel extends AbstraktePersistenzEntity {
     public void setzeAktuellenStich(SpielerPosition aufspielerPosition, List<AktuellerStichKarteEmbeddable> neueKarten) {
         this.aktuellerStichAufspielerPositionText = aufspielerPosition != null ? aufspielerPosition.name() : null;
         this.aktuellerStichKartenJson = JsonKonverter.schreibeAlsJson(
-            Objects.requireNonNull(neueKarten, "neueKarten duerfen nicht null sein")
-        );
+            Objects.requireNonNull(neueKarten, "neueKarten duerfen nicht null sein"));
     }
 
     public void setzeHochzeitStatus(SpielerPosition spielerPosition, int geklaerteStiche, SpielerPosition partnerPosition, boolean stillesSolo) {
@@ -567,208 +508,16 @@ public class Spiel extends AbstraktePersistenzEntity {
 
     // -- Hydrierung: DB-Felder -> Domain-Felder --
 
-    public void hydriere(Spielregeln spielregeln) {
-        hydriere(spielregeln, null);
-    }
+    public void hydriere(Spielregeln spielregeln) { hydriere(spielregeln, null); }
 
     public void hydriere(Spielregeln spielregeln, SpielerPosition solistDesLetztenSpiels) {
         Objects.requireNonNull(spielregeln, "spielregeln darf nicht null sein");
-        this.spielregeln = spielregeln;
-        this.solistAufspieler = solistDesLetztenSpiels;
-        EnumMap<SpielerPosition, Hand> gh = new EnumMap<>(SpielerPosition.class);
-        for (HandJsonEintrag e : haendeAlsJson()) { gh.put(e.spielerPosition(), new Hand(e.karten().stream().map(Spiel::alsKarte).toList())); }
-        this.haende = Map.copyOf(gh);
-        this.vorbehalte = vorbehalteAlsEmbeddable().stream().map(e -> new VorbehaltMeldung(e.spielerPosition(), e.ansage())).toList();
-        this.ansagen = Ansagen.ausEreignissen(ansagenAlsEmbeddable().stream().map(e -> new AnsageEreignis(e.spielerPosition(), e.ansage())).toList());
-        this.abgeschlosseneStiche = sticheAlsJson().stream().map(Spiel::alsStich).toList();
-        this.spieltyp = Spieltyp.valueOf(spieltypText);
-        this.geber = SpielerPosition.valueOf(geberPosition);
-        List<Karte> alleKarten = new ArrayList<>();
-        haendeAlsJson().forEach(h -> h.karten().forEach(k -> alleKarten.add(alsKarte(k))));
-        sticheAlsJson().forEach(s -> s.gespielteKarten().forEach(k -> alleKarten.add(alsKarte(k))));
-        aktuellerStichKarten().forEach(k -> alleKarten.add(alsKarte(k)));
-        if ("ARMUT_TAUSCH".equals(phaseText) && armutPartnerSpielerPosition == null) { armutAngeboteneKartenDb().forEach(k -> alleKarten.add(alsKarte(k))); }
-        this.kartendeck = Kartendeck.ausKarten(alleKarten);
-        this.trumpfOrdnung = trumpfOrdnungFuerPersistiertenStand(spielregeln, this.spieltyp, schweinchenAktivFlag);
-        this.phase = hydrierePhase();
-        this.parteien = hydriereParteien().orElse(null);
-        this.ergebnis = hydriereErgebnis().orElse(null);
-        this.bereitsGeschmissen = hydriereBereitsGeschmissen();
-        this.einwurfZaehler = einwurfZaehlerDb;
-    }
-
-    private Spielphase hydrierePhase() {
-        return switch (phaseText) {
-            case "KARTEN_AUSTEILEN" -> Spielphase.KARTEN_AUSTEILEN;
-            case "VORBEHALT_ANSAGE" -> Spielphase.VORBEHALT_ANSAGE;
-            case "VORBEHALT_AUFLOESUNG" -> Spielphase.VORBEHALT_AUFLOESUNG;
-            case "ARMUT_TAUSCH" -> new Spielphase.ArmutTausch(hydriereArmutStatus().orElseThrow(() -> new IllegalStateException("ARMUT_TAUSCH ohne ArmutStatus")));
-            case "STICHPHASE" -> new Spielphase.Stichphase(hydriereAktuellenStich(), hydrierePflichtansageAusstehend(), hydriereHochzeitStatus().orElse(null));
-            case "AUSWERTUNG" -> Spielphase.AUSWERTUNG;
-            case "GESAMTSTAND_AKTUALISIEREN" -> Spielphase.GESAMTSTAND_AKTUALISIEREN;
-            default -> throw new IllegalStateException("Unbekannte Phase: " + phaseText);
-        };
-    }
-
-    private Optional<Parteien> hydriereParteien() {
-        if (!istAufgeloest(phaseText)) { return Optional.empty(); }
-        VorbehaltMeldung hoechster = hoechsterVorbehaltAusListe(vorbehalte).orElse(null);
-        Parteien basis;
-        if (hoechster == null) {
-            basis = spieltyp == Spieltyp.SOLO_TRUMPF && erkenneStillesSoloSpielerAusPersistenz() != null ? Parteien.ausSolo(erkenneStillesSoloSpielerAusPersistenz()) : parteienFuerNormalspiel();
-        } else {
-            Optional<Parteien> sp = switch (hoechster.ansage()) {
-                case SOLO_DAME, SOLO_BUBE, SOLO_TRUMPF, SOLO_TRUMPF_HERZ, SOLO_TRUMPF_PIK, SOLO_TRUMPF_KREUZ, SOLO_FLEISCHLOS -> Optional.of(Parteien.ausSolo(hoechster.spielerPosition()));
-                case HOCHZEIT -> Optional.of(hydriereParteienFuerHochzeit(hoechster.spielerPosition()));
-                case ARMUT -> Optional.of(hydriereParteienFuerArmut(hoechster.spielerPosition()));
-                case GESUND, SCHMEISSEN, SCHMEISSEN_FUENF_NEUNEN, SCHMEISSEN_WENIG_TRUMPF -> Optional.empty();
-            };
-            if (sp.isEmpty()) { return Optional.empty(); }
-            basis = sp.get();
-        }
-        List<SpielerPosition> offenbart = ansagen.ereignisse().stream().filter(e -> e.ansage().istGrundansage()).map(AnsageEreignis::spieler).toList();
-        if (!offenbart.isEmpty()) { basis = basis.mitOffenenParteienFuerAlle(offenbart); }
-        return Optional.of(basis);
-    }
-
-    private Parteien hydriereParteienFuerHochzeit(SpielerPosition hs) {
-        if (hochzeitPartnerSpielerPositionDb() != null) { return Parteien.ausHochzeit(hs).mitPartei(hochzeitPartnerSpielerPositionDb(), Partei.RE).mitOffenenParteienFuerAlle(SpielerPosition.standardReihenfolge()); }
-        return hochzeitStillesSolo ? Parteien.ausSolo(hs) : Parteien.ausHochzeit(hs);
-    }
-
-    private Parteien hydriereParteienFuerArmut(SpielerPosition as) {
-        Parteien p = Parteien.ausArmut(as);
-        return armutPartnerSpielerPositionDb() == null ? p : p.mitPartei(armutPartnerSpielerPositionDb(), Partei.RE).mitOffenenParteienFuerAlle(SpielerPosition.standardReihenfolge());
-    }
-
-    private Parteien parteienFuerNormalspiel() {
-        EnumSet<SpielerPosition> re = EnumSet.noneOf(SpielerPosition.class);
-        for (SpielerPosition pos : SpielerPosition.standardReihenfolge()) { if (hatKreuzDameAusPersistenz(pos)) { re.add(pos); } }
-        if (re.size() != 2) { throw new IllegalStateException("Ein Normalspiel braucht genau zwei Re-Spieler, gefunden: " + re.size()); }
-        EnumMap<SpielerPosition, Partei> pm = new EnumMap<>(SpielerPosition.class);
-        for (SpielerPosition pos : SpielerPosition.standardReihenfolge()) { pm.put(pos, re.contains(pos) ? Partei.RE : Partei.KONTRA); }
-        return Parteien.ausParteiMap(pm);
-    }
-
-    private boolean hatKreuzDameAusPersistenz(SpielerPosition pos) {
-        Hand h = haende.get(pos);
-        if (h != null && h.karten().stream().anyMatch(Spiel::istKreuzDame)) { return true; }
-        if (sticheAlsJson().stream().flatMap(s -> s.gespielteKarten().stream()).filter(k -> k.spielerPosition() == pos).map(Spiel::alsKarte).anyMatch(Spiel::istKreuzDame)) { return true; }
-        return aktuellerStichKarten().stream().filter(k -> k.spielerPosition() == pos).map(Spiel::alsKarte).anyMatch(Spiel::istKreuzDame);
-    }
-
-    private SpielerPosition erkenneStillesSoloSpielerAusPersistenz() {
-        for (SpielerPosition pos : SpielerPosition.standardReihenfolge()) {
-            Hand h = haende.get(pos);
-            long a = h == null ? 0 : h.karten().stream().filter(Spiel::istKreuzDame).count();
-            long b = sticheAlsJson().stream().flatMap(s -> s.gespielteKarten().stream()).filter(k -> k.spielerPosition() == pos).map(Spiel::alsKarte).filter(Spiel::istKreuzDame).count();
-            long c = aktuellerStichKarten().stream().filter(k -> k.spielerPosition() == pos).map(Spiel::alsKarte).filter(Spiel::istKreuzDame).count();
-            if (a + b + c >= 2) { return pos; }
-        }
-        return null;
-    }
-
-    private Optional<HochzeitStatus> hydriereHochzeitStatus() {
-        if (hochzeitSpielerPositionDb() != null) { return Optional.of(new HochzeitStatus(hochzeitSpielerPositionDb(), hochzeitGeklaerteStiche, hochzeitPartnerSpielerPositionDb(), hochzeitStillesSolo)); }
-        if (!istAufgeloest(phaseText)) { return Optional.empty(); }
-        return hoechsterVorbehaltAusListe(vorbehalte).filter(m -> m.ansage() == VorbehaltAnsage.HOCHZEIT).map(m -> HochzeitStatus.gestartet(m.spielerPosition()));
-    }
-
-    private Optional<ArmutStatus> hydriereArmutStatus() {
-        if (armutSpielerPositionDb() == null && !istAufgeloest(phaseText)) { return Optional.empty(); }
-        SpielerPosition as = armutSpielerPositionDb();
-        if (as == null) { as = hoechsterVorbehaltAusListe(vorbehalte).filter(m -> m.ansage() == VorbehaltAnsage.ARMUT).map(VorbehaltMeldung::spielerPosition).orElse(null); }
-        if (as == null) { return Optional.empty(); }
-        SpielerPosition fas = as;
-        List<SpielerPosition> reihenfolge = SpielerPosition.imUhrzeigersinnAb(fas.naechsteImUhrzeigersinn()).stream().filter(p -> p != fas).toList();
-        return Optional.of(new ArmutStatus(fas, reihenfolge, armutAktuellerAntwortIndex, armutAngeboteneKartenDb().stream().map(Spiel::alsKarte).toList(), armutAngebotAbgegeben, armutPartnerSpielerPositionDb()));
-    }
-
-    private Stich hydriereAktuellenStich() {
-        if (aktuellerStichAufspielerPosition() != null) { return Stich.ausPersistiertemStand(aktuellerStichAufspielerPosition(), aktuellerStichKarten().stream().map(Spiel::alsGespielteKarte).toList()); }
-        return Stich.neu(sticheAlsJson().isEmpty() ? SpielerPosition.valueOf(geberPosition).naechsteImUhrzeigersinn() : sticheAlsJson().getLast().gewinnerPosition());
-    }
-
-    private Set<Partei> hydrierePflichtansageAusstehend() {
-        List<String> n = pflichtansageAusstehendDb();
-        if (n.isEmpty()) { return Set.of(); }
-        EnumSet<Partei> r = EnumSet.noneOf(Partei.class);
-        n.forEach(name -> r.add(Partei.valueOf(name)));
-        return Set.copyOf(r);
-    }
-
-    private Set<SpielerPosition> hydriereBereitsGeschmissen() {
-        List<String> n = JsonKonverter.liesList(bereitsGeschmisenJson != null ? bereitsGeschmisenJson : "[]", new TypeReference<>() {});
-        if (n.isEmpty()) { return Set.of(); }
-        EnumSet<SpielerPosition> r = EnumSet.noneOf(SpielerPosition.class);
-        n.forEach(name -> r.add(SpielerPosition.valueOf(name)));
-        return Set.copyOf(r);
-    }
-
-    private Optional<Spielergebnis> hydriereErgebnis() {
-        SpielErgebnisEmbeddable e = ergebnisEmbeddable();
-        if (e == null) { return Optional.empty(); }
-        EnumMap<Partei, Augen> ap = new EnumMap<>(Partei.class);
-        ap.put(Partei.RE, new Augen(e.reAugen())); ap.put(Partei.KONTRA, new Augen(e.kontraAugen()));
-        EnumMap<SpielerPosition, Spielpunkte> sp = new EnumMap<>(SpielerPosition.class);
-        sp.put(SpielerPosition.SUED, new Spielpunkte(e.spielpunkteSued())); sp.put(SpielerPosition.WEST, new Spielpunkte(e.spielpunkteWest()));
-        sp.put(SpielerPosition.NORD, new Spielpunkte(e.spielpunkteNord())); sp.put(SpielerPosition.OST, new Spielpunkte(e.spielpunkteOst()));
-        EnumMap<Partei, List<SonderpunktEreignis>> spp = new EnumMap<>(Partei.class);
-        List<SonderpunktJsonEintrag> eintraege = sonderpunkteAlsJson();
-        spp.put(Partei.RE, eintraege.stream().filter(x -> x.partei() == Partei.RE).map(SonderpunktJsonEintrag::ereignis).toList());
-        spp.put(Partei.KONTRA, eintraege.stream().filter(x -> x.partei() == Partei.KONTRA).map(SonderpunktJsonEintrag::ereignis).toList());
-        Integer gw = e.grundwert(); Integer abp = e.absagePunkte(); Integer gdap = e.gegenDieAltenPunkte(); Integer sm = e.soloMultiplikator();
-        return Optional.of(new Spielergebnis(ap, e.siegerPartei(), new Spielpunkte(e.spielwert()),
-            gw != null ? gw : e.spielwert(), abp != null ? abp : 0, gdap != null ? gdap : 0, sm != null ? sm : 1, sp, spp));
+        SpielHydrierer.hydriere(this, spielregeln, solistDesLetztenSpiels);
     }
 
     // -- Sync: Domain-Felder -> DB-Felder --
 
-    public void syncZuPersistenz() {
-        if (spielregeln == null) return;
-        geberPosition = geber.name(); spieltypText = spieltyp.name(); phaseText = phase.name();
-        vorbehalteJson = JsonKonverter.schreibeAlsJson(vorbehalte.stream().map(m -> VorbehaltMeldungEmbeddable.neu(m.spielerPosition(), m.ansage())).toList());
-        ansagenJson = JsonKonverter.schreibeAlsJson(ansagen.ereignisse().stream().map(e -> AnsageEreignisEmbeddable.neu(e.spieler(), e.ansage())).toList());
-        if (ergebnis != null) { syncErgebnis(ergebnis); } else { leereErgebnis(); }
-        haendeJson = JsonKonverter.schreibeAlsJson(SpielerPosition.standardReihenfolge().stream().filter(haende::containsKey).map(p -> HandJsonEintrag.aus(p, haende.get(p).karten())).toList());
-        sticheJson = JsonKonverter.schreibeAlsJson(alsStichJsonEintraege());
-        aktuellerStich().ifPresentOrElse(s -> { aktuellerStichAufspielerPositionText = s.aufspieler().name(); aktuellerStichKartenJson = JsonKonverter.schreibeAlsJson(s.gespielteKarten().stream().map(AktuellerStichKarteEmbeddable::aus).toList()); },
-            () -> { aktuellerStichAufspielerPositionText = null; aktuellerStichKartenJson = "[]"; });
-        armutStatus().ifPresentOrElse(st -> { armutSpielerPosition = st.armutSpieler().name(); armutAktuellerAntwortIndex = st.aktuellerIndex(); armutAngebotAbgegeben = st.angebotLiegtVor();
-            armutPartnerSpielerPosition = st.partner().map(SpielerPosition::name).orElse(null); armutAngeboteneKartenJson = JsonKonverter.schreibeAlsJson(st.partner().isPresent() ? List.of() : st.angeboteneTrumpfkarten().stream().map(HandKarteEmbeddable::aus).toList()); },
-            () -> { armutSpielerPosition = null; armutAktuellerAntwortIndex = 0; armutAngebotAbgegeben = false; armutPartnerSpielerPosition = null; armutAngeboteneKartenJson = "[]"; });
-        hochzeitStatus().ifPresentOrElse(st -> { hochzeitSpielerPositionText = st.hochzeitSpieler().name(); hochzeitGeklaerteStiche = st.geklaerteStiche(); hochzeitPartnerSpielerPositionText = st.partner().map(SpielerPosition::name).orElse(null); hochzeitStillesSolo = st.stillesSolo(); },
-            () -> { hochzeitSpielerPositionText = null; hochzeitGeklaerteStiche = 0; hochzeitPartnerSpielerPositionText = null; hochzeitStillesSolo = false; });
-        pflichtAnsageAusstehendJson = JsonKonverter.schreibeAlsJson(pflichtansageAusstehend().stream().map(Enum::name).toList());
-        schweinchenAktivFlag = schweinchenAktiv();
-        bereitsGeschmisenJson = JsonKonverter.schreibeAlsJson(bereitsGeschmissen.stream().map(Enum::name).toList());
-        einwurfZaehlerDb = einwurfZaehler;
-    }
-
-    private void syncErgebnis(Spielergebnis se) {
-        SpielErgebnisEmbeddable e = SpielErgebnisEmbeddable.aus(se);
-        reAugen = e.reAugen(); kontraAugen = e.kontraAugen(); siegerParteiText = e.siegerPartei() != null ? e.siegerPartei().name() : null;
-        spielwertPunkte = e.spielwert(); grundwertDb = e.grundwert(); absagePunkteDb = e.absagePunkte();
-        gegenDieAltenPunkteDb = e.gegenDieAltenPunkte(); soloMultiplikatorDb = e.soloMultiplikator();
-        spielpunkteSued = e.spielpunkteSued(); spielpunkteWest = e.spielpunkteWest(); spielpunkteNord = e.spielpunkteNord(); spielpunkteOst = e.spielpunkteOst();
-        List<SonderpunktJsonEintrag> sonderpunkte = new ArrayList<>();
-        for (var eintrag : se.sonderpunkteProPartei().entrySet()) { for (SonderpunktEreignis er : eintrag.getValue()) { sonderpunkte.add(SonderpunktJsonEintrag.aus(eintrag.getKey(), er)); } }
-        this.sonderpunkteJson = JsonKonverter.schreibeAlsJson(sonderpunkte);
-    }
-
-    private void leereErgebnis() {
-        reAugen = null; kontraAugen = null; siegerParteiText = null; spielwertPunkte = null;
-        grundwertDb = null; absagePunkteDb = null; gegenDieAltenPunkteDb = null; soloMultiplikatorDb = null;
-        spielpunkteSued = null; spielpunkteWest = null; spielpunkteNord = null; spielpunkteOst = null;
-        sonderpunkteJson = "[]";
-    }
-
-    private List<StichJsonEintrag> alsStichJsonEintraege() {
-        List<StichJsonEintrag> res = new ArrayList<>();
-        int idx = 1;
-        for (Stich s : abgeschlosseneStiche) { res.add(new StichJsonEintrag(idx++, s.aufspieler(), s.gewinner(trumpfOrdnung).spieler(), s.augen().wert(), s.gespielteKarten().stream().map(AktuellerStichKarteEmbeddable::aus).toList())); }
-        return List.copyOf(res);
-    }
+    public void syncZuPersistenz() { SpielPersistenzSync.sync(this); }
 
     // -- Domain-Stand-Uebernahme --
 
@@ -788,9 +537,7 @@ public class Spiel extends AbstraktePersistenzEntity {
         if (!s.istVollstaendig()) return false;
         boolean alleFehlherz = s.gespielteKarten().stream().allMatch(gk -> gk.karte().farbe() == Farbe.HERZ && !trumpfOrdnung.istTrumpf(gk.karte()));
         if (!alleFehlherz) return false;
-        if (spielregeln.herzDurchgegangenNurHoch()) {
-            return s.gespielteKarten().stream().allMatch(gk -> gk.karte().wert() == Kartenwert.AS);
-        }
+        if (spielregeln.herzDurchgegangenNurHoch()) { return s.gespielteKarten().stream().allMatch(gk -> gk.karte().wert() == Kartenwert.AS); }
         return true;
     }
 
@@ -800,7 +547,7 @@ public class Spiel extends AbstraktePersistenzEntity {
         return Set.copyOf(copy);
     }
 
-    private SpielBuilder toBuilder() {
+    SpielBuilder toBuilder() {
         return new SpielBuilder().spielregeln(spielregeln).kartendeck(kartendeck).trumpfOrdnung(trumpfOrdnung)
             .spieltyp(spieltyp).geber(geber).phase(phase).haende(haende).vorbehalte(vorbehalte)
             .parteien(parteien).ansagen(ansagen).abgeschlosseneStiche(abgeschlosseneStiche)
@@ -810,35 +557,6 @@ public class Spiel extends AbstraktePersistenzEntity {
     }
 
     private Map<SpielerPosition, Hand> kopiereHaende() { EnumMap<SpielerPosition, Hand> k = new EnumMap<>(SpielerPosition.class); k.putAll(haende); return k; }
-    private Optional<VorbehaltMeldung> hoechsterVorbehalt() { return hoechsterVorbehaltAusListe(vorbehalte); }
-
-    private static Optional<VorbehaltMeldung> hoechsterVorbehaltAusListe(List<VorbehaltMeldung> vorbehalte) {
-        VorbehaltMeldung best = null;
-        for (VorbehaltMeldung m : vorbehalte) { if (!m.istVorbehalt()) continue; if (best == null || m.ansage().prioritaet() > best.ansage().prioritaet()) best = m; }
-        return Optional.ofNullable(best);
-    }
-
-    private Spieltyp spieltypFuer(VorbehaltMeldung hv) { return hv == null ? Spieltyp.NORMALSPIEL : hv.ansage().spieltyp().orElseThrow(() -> new IllegalStateException("Vorbehalt ohne Spieltyp kann nicht aufgeloest werden")); }
-
-    private TrumpfOrdnung trumpfOrdnungFuer(VorbehaltMeldung hv) {
-        return hv == null ? trumpfOrdnung : switch (hv.ansage()) {
-            case SOLO_DAME -> new DamensoloTrumpfOrdnung(); case SOLO_BUBE -> new BubensoloTrumpfOrdnung(); 
-            case SOLO_TRUMPF -> hatSchweinchen(spielregeln, haende) ? new SchweinchenTrumpfOrdnung(spielregeln) : new NormaleTrumpfOrdnung(spielregeln);
-            case HOCHZEIT, ARMUT -> new NormaleTrumpfOrdnung(spielregeln);
-            case SOLO_TRUMPF_HERZ -> new VariableTrumpfsoloTrumpfOrdnung(Farbe.HERZ, spielregeln); case SOLO_TRUMPF_PIK -> new VariableTrumpfsoloTrumpfOrdnung(Farbe.PIK, spielregeln);
-            case SOLO_TRUMPF_KREUZ -> new VariableTrumpfsoloTrumpfOrdnung(Farbe.KREUZ, spielregeln); case SOLO_FLEISCHLOS -> new FleischlosTrumpfOrdnung();
-            case GESUND, SCHMEISSEN, SCHMEISSEN_FUENF_NEUNEN, SCHMEISSEN_WENIG_TRUMPF -> throw new IllegalStateException("GESUND ist kein aufloesbarer Vorbehalt");
-        };
-    }
-
-    private Parteien parteienFuer(VorbehaltMeldung hv) {
-        return switch (hv.ansage()) {
-            case SOLO_DAME, SOLO_BUBE, SOLO_TRUMPF, SOLO_TRUMPF_HERZ, SOLO_TRUMPF_PIK, SOLO_TRUMPF_KREUZ, SOLO_FLEISCHLOS -> Parteien.ausSolo(hv.spielerPosition());
-            case HOCHZEIT -> Parteien.ausHochzeit(hv.spielerPosition()); case ARMUT -> Parteien.ausArmut(hv.spielerPosition());
-            case GESUND, SCHMEISSEN, SCHMEISSEN_FUENF_NEUNEN, SCHMEISSEN_WENIG_TRUMPF -> throw new IllegalStateException("GESUND ist kein aufloesbarer Vorbehalt");
-        };
-    }
-
     public int kartenProSpieler() { return kartendeck.karten().size() / SpielerPosition.standardReihenfolge().size(); }
     private <T extends Spielphase> void pruefePhase(Class<T> erw, String aktion) { if (!erw.isInstance(phase)) throw new IllegalStateException(aktion + " ist nur in Phase " + erw.getSimpleName() + " erlaubt, war aber " + phase.name()); }
 
@@ -855,88 +573,15 @@ public class Spiel extends AbstraktePersistenzEntity {
     }
 
     private long anzahlTruepfe(Hand h) { return h.karten().stream().filter(trumpfOrdnung::istTrumpf).count(); }
+    private static boolean istKaroAs(Karte k) { return k.farbe() == Farbe.KARO && k.wert() == Kartenwert.AS; }
 
-    private Spiel eingeworfenesSpiel() {
-        Kartendeck nd = kartendeck.gemischt();
-        return toBuilder().kartendeck(nd).trumpfOrdnung(new NormaleTrumpfOrdnung(spielregeln)).spieltyp(Spieltyp.NORMALSPIEL)
-            .phase(Spielphase.VORBEHALT_ANSAGE).haende(haendeAusDeck(nd)).vorbehalte(List.of()).parteien(null)
-            .ansagen(Ansagen.leer()).abgeschlosseneStiche(List.of()).ergebnis(null).solistAufspieler(null)
-            .einwurfZaehler(einwurfZaehler + 1).build();
-    }
-
-    private SpielerPosition erkenneStillesSoloSpieler() {
-        for (SpielerPosition pos : SpielerPosition.standardReihenfolge()) { Hand h = haende.get(pos); if (h != null && h.karten().stream().filter(k -> k.farbe() == Farbe.KREUZ && k.wert() == Kartenwert.DAME).count() >= 2) return pos; }
-        return null;
-    }
-
-    private static Map<SpielerPosition, Hand> haendeAusDeck(Kartendeck deck) {
-        List<Hand> l = deck.anVierSpielerAusteilen(); List<SpielerPosition> p = SpielerPosition.standardReihenfolge();
-        EnumMap<SpielerPosition, Hand> m = new EnumMap<>(SpielerPosition.class); for (int i = 0; i < p.size(); i++) m.put(p.get(i), l.get(i)); return Map.copyOf(m);
-    }
-
-    private static boolean hatSchweinchen(Spielregeln sr, Map<SpielerPosition, Hand> h) {
-        return sr.schweinchenAktiv() && h.values().stream().anyMatch(hand -> hand.karten().stream().filter(k -> k.farbe() == Farbe.KARO && k.wert() == Kartenwert.AS).count() == 2);
-    }
-
-    private static boolean istKreuzDame(Karte k) { return k.farbe() == Farbe.KREUZ && k.wert() == Kartenwert.DAME; }
-    private static boolean istAufgeloest(String pn) { return switch (pn) { case "ARMUT_TAUSCH", "STICHPHASE", "AUSWERTUNG", "GESAMTSTAND_AKTUALISIEREN" -> true; default -> false; }; }
-    private static Karte alsKarte(HandKarteEmbeddable k) { return new Karte(k.farbe(), k.wert(), k.exemplarIndex()); }
-    private static Karte alsKarte(AktuellerStichKarteEmbeddable k) { return new Karte(k.farbe(), k.wert(), k.exemplarIndex()); }
-    private static GespielteKarte alsGespielteKarte(AktuellerStichKarteEmbeddable k) { return new GespielteKarte(k.spielerPosition(), alsKarte(k), k.reihenfolge()); }
-    private static Stich alsStich(StichJsonEintrag e) { return Stich.ausPersistiertemStand(e.aufspielerPosition(), e.gespielteKarten().stream().map(Spiel::alsGespielteKarte).toList()); }
-
-    private static TrumpfOrdnung trumpfOrdnungFuerPersistiertenStand(Spielregeln sr, Spieltyp st, boolean sa) {
-        return switch (Objects.requireNonNull(st)) {
-            case NORMALSPIEL, SOLO_TRUMPF -> sa ? new SchweinchenTrumpfOrdnung(sr) : new NormaleTrumpfOrdnung(sr);
-            case HOCHZEIT, ARMUT -> new NormaleTrumpfOrdnung(sr);
-            case SOLO_TRUMPF_HERZ -> new VariableTrumpfsoloTrumpfOrdnung(Farbe.HERZ, sr); case SOLO_TRUMPF_PIK -> new VariableTrumpfsoloTrumpfOrdnung(Farbe.PIK, sr);
-            case SOLO_TRUMPF_KREUZ -> new VariableTrumpfsoloTrumpfOrdnung(Farbe.KREUZ, sr); case SOLO_DAME -> new DamensoloTrumpfOrdnung();
-            case SOLO_BUBE -> new BubensoloTrumpfOrdnung(); case SOLO_FLEISCHLOS -> new FleischlosTrumpfOrdnung();
-        };
-    }
+    // Package-private Setter fuer SpielBuilder
+    void setzeBereitsGeschmissen(Set<SpielerPosition> bereitsGeschmissen) { this.bereitsGeschmissen = bereitsGeschmissen; }
+    void setzeEinwurfZaehler(int einwurfZaehler) { this.einwurfZaehler = einwurfZaehler; }
+    void setPersistenceId(UUID persistenceId) { setzeId(persistenceId); }
+    void setPersistenceErstelltAm(Instant erstelltAm) { setzeErstelltAm(erstelltAm); }
+    void setPersistenceAktualisiertAm(Instant aktualisiertAm) { setzeAktualisiertAm(aktualisiertAm); }
+    void markiereAlsGeladenInternal() { markiereAlsGeladen(); }
 
     private record HochzeitFortschritt(Parteien parteien, HochzeitStatus status) {}
-
-    // -- SpielBuilder --
-
-    private static final class SpielBuilder {
-        private Spielregeln spielregeln; private Kartendeck kartendeck; private TrumpfOrdnung trumpfOrdnung;
-        private Spieltyp spieltyp; private SpielerPosition geber; private Spielphase phase;
-        private Map<SpielerPosition, Hand> haende; private List<VorbehaltMeldung> vorbehalte;
-        private Parteien parteien; private Ansagen ansagen; private List<Stich> abgeschlosseneStiche;
-        private Spielergebnis ergebnis; private SpielerPosition solistAufspieler;
-        private Set<SpielerPosition> bereitsGeschmissen;
-        private int einwurfZaehler;
-        private UUID persistenceId; private Instant persistenceErstelltAm; private Instant persistenceAktualisiertAm; private boolean persistenceIsNew = true;
-
-        SpielBuilder spielregeln(Spielregeln v) { this.spielregeln = v; return this; }
-        SpielBuilder kartendeck(Kartendeck v) { this.kartendeck = v; return this; }
-        SpielBuilder trumpfOrdnung(TrumpfOrdnung v) { this.trumpfOrdnung = v; return this; }
-        SpielBuilder spieltyp(Spieltyp v) { this.spieltyp = v; return this; }
-        SpielBuilder geber(SpielerPosition v) { this.geber = v; return this; }
-        SpielBuilder phase(Spielphase v) { this.phase = v; return this; }
-        SpielBuilder haende(Map<SpielerPosition, Hand> v) { this.haende = v; return this; }
-        SpielBuilder vorbehalte(List<VorbehaltMeldung> v) { this.vorbehalte = v; return this; }
-        SpielBuilder parteien(Parteien v) { this.parteien = v; return this; }
-        SpielBuilder ansagen(Ansagen v) { this.ansagen = v; return this; }
-        SpielBuilder abgeschlosseneStiche(List<Stich> v) { this.abgeschlosseneStiche = v; return this; }
-        SpielBuilder ergebnis(Spielergebnis v) { this.ergebnis = v; return this; }
-        SpielBuilder solistAufspieler(SpielerPosition v) { this.solistAufspieler = v; return this; }
-        SpielBuilder bereitsGeschmissen(Set<SpielerPosition> v) { this.bereitsGeschmissen = v; return this; }
-        SpielBuilder einwurfZaehler(int v) { this.einwurfZaehler = v; return this; }
-        SpielBuilder persistenceId(UUID v) { this.persistenceId = v; return this; }
-        SpielBuilder persistenceErstelltAm(Instant v) { this.persistenceErstelltAm = v; return this; }
-        SpielBuilder persistenceAktualisiertAm(Instant v) { this.persistenceAktualisiertAm = v; return this; }
-        SpielBuilder persistenceIsNew(boolean v) { this.persistenceIsNew = v; return this; }
-
-        Spiel build() {
-            Spiel spiel = new Spiel(spielregeln, kartendeck, trumpfOrdnung, spieltyp, geber, phase,
-                haende, vorbehalte, parteien, ansagen, abgeschlosseneStiche, ergebnis, solistAufspieler);
-            if (bereitsGeschmissen != null) { spiel.bereitsGeschmissen = bereitsGeschmissen; }
-            spiel.einwurfZaehler = einwurfZaehler;
-            if (persistenceId != null) { spiel.setzeId(persistenceId); spiel.setzeErstelltAm(persistenceErstelltAm); spiel.setzeAktualisiertAm(persistenceAktualisiertAm); if (!persistenceIsNew) spiel.markiereAlsGeladen(); }
-            spiel.syncZuPersistenz();
-            return spiel;
-        }
-    }
 }

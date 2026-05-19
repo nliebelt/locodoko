@@ -1,10 +1,10 @@
 # IMPLEMENTATION_PLAN — Locodoko Doppelkopf
 
-> Stand: 2026-05-18. Erledigte Aufgaben → `IMPLEMENTATION_PLAN_ARCHIVE.md`
+> Stand: 2026-05-19. Erledigte Aufgaben → `IMPLEMENTATION_PLAN_ARCHIVE.md`
 
 ## Notiz
 
-Task 60 erledigt: `renderVorbehaltLabel()` → `renderVorbehaltButtons()` — jede Vorbehalt-Option ist nun ein direkter Phaser-Button. Nächster logischer Schritt: Task 61 (REFACTOR-SPIEL) — `Spiel.java` aufteilen, Domain-Kern bleibt, Armut/Vorbehalt/Persistenz in separate package-private Helfer auslagern. Vision Loop empfohlen (Backend-State nach letztem Testlauf war nicht clean).
+Task 61 erledigt: `Spiel.java` von 942 auf 587 Zeilen reduziert (38%). Vier neue package-private Helfer: `SpielBuilder`, `SpielHydrierer`, `SpielPersistenzSync`, `SpielVorbehaltAufloesung`, `SpielArmutTausch`. Domain-Felder und DB-Spalten sind jetzt package-private (kein `private`) für direkten Zugriff durch Helfer — public API unverändert. 307 Tests grün. Nächster logischer Schritt: Task 62 (REFACTOR-TISCHANSICHTMODELL) — `TischAnsichtModell.ts` (825 Zeilen) aufteilen.
 
 ## Legende
 
@@ -27,15 +27,14 @@ Task 60 erledigt: `renderVorbehaltLabel()` → `renderVorbehaltButtons()` — je
 ---
 
 ### REFACTOR-SPIEL (Task 61)
-- [ ] **Backend-Refactoring** (Hohe Priorität): `Spiel.java` (942 Zeilen) aufteilen — deutlich über dem 300-Zeilen-Richtwert.
-  - **Analyse**: Die Klasse enthält vier logisch trennbare Bereiche:
-    1. **Domain-Logik** (Zeilen ~147–442): Factory-Methoden, Spielphasen, `spieleKarte()`, `werteAus()` — Kern, bleibt in `Spiel.java`.
-    2. **Persistenz-Mapping** (Zeilen ~488–554): DB-Accessoren (`haendeAlsJson()`, `sticheAlsJson()`, etc.) und Schreibmethoden (`fuegeHandHinzu()`, `ersetzeHaende()`, etc.) — kandidiert für Auslagerung in `SpielPersistenzMapper` (static helper class oder inner class).
-    3. **Armut-Tausch-Logik** (Zeilen ~264–312): `legeArmutTrumpfkarten()`, `lehneArmutAb()`, `nimmArmutAn()` — komplex genug für eigene Klasse `SpielArmutTausch` (package-private).
-    4. **Vorbehalt-Auflösung** (Zeilen ~219–262): `meldeVorbehalt()`, `loeseVorbehalteAuf()` — kandidiert für `SpielVorbehaltAufloesung`.
-  - **Constraint**: Architekturprinzip "Domain Model = Persistence Model" — kein separates Entity, `@Table` bleibt auf `Spiel`.
-  - Ziel: `Spiel.java` auf ≤ 400 Zeilen reduzieren (Domain-Kern + Accessors), Rest in fokussierte package-private Helfer/Builder auslagern.
-  - Alle bestehenden Tests müssen weiterhin grün sein: `mvn test`.
+- [x] **Backend-Refactoring** (Hohe Priorität): `Spiel.java` (942 Zeilen) aufteilen.
+  - `Spiel.java`: 942 → 587 Zeilen (Domain-Kern + Persistenz-Accessoren)
+  - `SpielBuilder.java`: 72 Zeilen (package-private Builder)
+  - `SpielHydrierer.java`: 238 Zeilen (DB → Domain Rekonstruktion)
+  - `SpielPersistenzSync.java`: 89 Zeilen (Domain → DB Sync)
+  - `SpielVorbehaltAufloesung.java`: 134 Zeilen (Vorbehalt-Auflösung + TrumpfOrdnung-Fabrik)
+  - `SpielArmutTausch.java`: 83 Zeilen (Armut-Tausch-Logik)
+  - 307 Tests grün.
 
 ---
 
