@@ -1,4 +1,5 @@
 import { SPIELER_POSITION, PARTEI, SPIELTYP } from '../modelle/SpielverwaltungDto';
+import { sortiereSichtbareHandkarten, istTrumpfFuerSpieltyp } from './TischKartenSortierung';
 import type {
   AbgeschlossenerStichAntwort,
   Ansage,
@@ -22,6 +23,8 @@ import type {
 /** Relative Sitzposition eines Spielers aus Sicht des eigenen Spielers (SUED = ich). */
 export type SpielerPosition = 'SUED' | 'WEST' | 'NORD' | 'OST';
 export { SPIELER_POSITION, PARTEI, SPIELTYP };
+export { istTrumpfFuerSpieltyp } from './TischKartenSortierung';
+export { vorbehaltZuSpieltypFuerSortierung, istHervorgehobeneKarteImVorbehalt, sortiereKartenFuerVorbehalt } from './TischVorbehaltModell';
 
 /**
  * View-Repraesentation eines einzelnen Spielers am Tisch.
@@ -355,42 +358,6 @@ function berechneSpielerankuendigungstext(spiel: LaufendesSpielAntwort | null | 
   return solist ? `${solist.name} spielt ${label}` : label;
 }
 
-/**
- * Prueft ob eine Karte im angegebenen Spieltyp als Trumpf gilt.
- * Wird fuer die visuelle Hervorhebung von Trumpfkarten in der Hand verwendet.
- * @param karte - Zu pruefende Karte
- * @param spieltyp - Aktueller Spieltyp (null = kein laufendes Spiel, Standard-Trumpf-Logik)
- * @returns true wenn die Karte Trumpf ist
- */
-export function istTrumpfFuerSpieltyp(
-  karte: KarteAntwort,
-  spieltyp: LaufendesSpielAntwort['spieltyp'] | null
-): boolean {
-  switch (spieltyp) {
-    case 'SOLO_DAME':
-      return karte.wert === 'DAME';
-    case 'SOLO_BUBE':
-      return karte.wert === 'BUBE';
-    case 'SOLO_FLEISCHLOS':
-      return false;
-    case 'SOLO_TRUMPF_HERZ':
-      return karte.wert === 'DAME' || karte.wert === 'BUBE' || karte.farbe === 'HERZ';
-    case 'SOLO_TRUMPF_PIK':
-      return karte.wert === 'DAME' || karte.wert === 'BUBE' || karte.farbe === 'PIK';
-    case 'SOLO_TRUMPF_KREUZ':
-      return karte.wert === 'DAME' || karte.wert === 'BUBE' || karte.farbe === 'KREUZ';
-    case 'SOLO_TRUMPF':
-    case 'NORMALSPIEL':
-    case 'HOCHZEIT':
-    case 'ARMUT':
-    default:
-      return karte.wert === 'DAME'
-        || karte.wert === 'BUBE'
-        || karte.farbe === 'KARO'
-        || (karte.farbe === 'HERZ' && karte.wert === 'ZEHN');
-  }
-}
-
 function bestimmeBezugsPositionAusPartie(
   laufendesSpiel: LaufendesSpielAntwort,
   spielerId: string | null,
@@ -667,159 +634,3 @@ function mappeLobbySpieler(
   };
 }
 
-function sortiereSichtbareHandkarten(
-  handkarten: KarteAntwort[],
-  spieltyp: LaufendesSpielAntwort['spieltyp'] | null,
-  schweinchenAktiv: boolean
-): KarteAntwort[] {
-  return [...handkarten].sort((links, rechts) => vergleicheKarten(links, rechts, spieltyp, schweinchenAktiv));
-}
-
-function vergleicheKarten(
-  links: KarteAntwort,
-  rechts: KarteAntwort,
-  spieltyp: LaufendesSpielAntwort['spieltyp'] | null,
-  schweinchenAktiv: boolean
-): number {
-  const linksTrumpf = istTrumpfFuerSpieltyp(links, spieltyp);
-  const rechtsTrumpf = istTrumpfFuerSpieltyp(rechts, spieltyp);
-  if (linksTrumpf !== rechtsTrumpf) {
-    return linksTrumpf ? -1 : 1;
-  }
-
-  if (linksTrumpf && rechtsTrumpf) {
-    const rangDifferenz = trumpfRang(rechts, spieltyp, schweinchenAktiv) - trumpfRang(links, spieltyp, schweinchenAktiv);
-    return rangDifferenz !== 0 ? rangDifferenz : links.id.localeCompare(rechts.id);
-  }
-
-  const farbenDifferenz = fehlFarbRang(links.farbe) - fehlFarbRang(rechts.farbe);
-  if (farbenDifferenz !== 0) {
-    return farbenDifferenz;
-  }
-  const wertDifferenz = fehlWertRang(rechts.wert) - fehlWertRang(links.wert);
-  return wertDifferenz !== 0 ? wertDifferenz : links.id.localeCompare(rechts.id);
-}
-
-function trumpfRang(karte: KarteAntwort, spieltyp: LaufendesSpielAntwort['spieltyp'] | null, schweinchenAktiv: boolean): number {
-  if (spieltyp === 'SOLO_DAME' || spieltyp === 'SOLO_BUBE') {
-    return soloTrumpfRang(karte.farbe);
-  }
-  if (spieltyp === 'SOLO_TRUMPF_HERZ') return farbsoloTrumpfRang(karte, 'HERZ');
-  if (spieltyp === 'SOLO_TRUMPF_PIK') return farbsoloTrumpfRang(karte, 'PIK');
-  if (spieltyp === 'SOLO_TRUMPF_KREUZ') return farbsoloTrumpfRang(karte, 'KREUZ');
-  return normaleTrumpfRang(karte, schweinchenAktiv);
-}
-
-// Trumpfrang im Farbsolo: Damen (Kreuz > Pik > Herz > Karo) > Buben > Farbtrümpfe (Ass > Zehn > König > Neun)
-function farbsoloTrumpfRang(karte: KarteAntwort, trumpfFarbe: KarteAntwort['farbe']): number {
-  if (karte.wert === 'DAME') {
-    return ({ KREUZ: 12, PIK: 11, HERZ: 10, KARO: 9 } as Record<KarteAntwort['farbe'], number>)[karte.farbe] ?? 0;
-  }
-  if (karte.wert === 'BUBE') {
-    return ({ KREUZ: 8, PIK: 7, HERZ: 6, KARO: 5 } as Record<KarteAntwort['farbe'], number>)[karte.farbe] ?? 0;
-  }
-  if (karte.farbe === trumpfFarbe) {
-    return ({ AS: 4, ZEHN: 3, KOENIG: 2, NEUN: 1 } as Record<KarteAntwort['wert'], number>)[karte.wert] ?? 0;
-  }
-  return 0;
-}
-
-function soloTrumpfRang(farbe: KarteAntwort['farbe']): number {
-  return ({
-    KARO: 1,
-    HERZ: 2,
-    PIK: 3,
-    KREUZ: 4
-  } as Record<KarteAntwort['farbe'], number>)[farbe] ?? 0;
-}
-
-function normaleTrumpfRang(karte: KarteAntwort, schweinchenAktiv: boolean): number {
-  if (schweinchenAktiv && karte.farbe === 'KARO' && karte.wert === 'AS') {
-    return karte.exemplarIndex === 1 ? 14 : 15;
-  }
-  const schluessel = `${karte.farbe}-${karte.wert}`;
-  return ({
-    'KARO-NEUN': 1,
-    'KARO-KOENIG': 2,
-    'KARO-ZEHN': 3,
-    'KARO-AS': 4,
-    'KARO-BUBE': 5,
-    'HERZ-BUBE': 6,
-    'PIK-BUBE': 7,
-    'KREUZ-BUBE': 8,
-    'KARO-DAME': 9,
-    'HERZ-DAME': 10,
-    'PIK-DAME': 11,
-    'KREUZ-DAME': 12,
-    'HERZ-ZEHN': 13
-  } as Record<string, number>)[schluessel] ?? 0;
-}
-
-function fehlFarbRang(farbe: KarteAntwort['farbe']): number {
-  return ({
-    KREUZ: 1,
-    PIK: 2,
-    HERZ: 3,
-    KARO: 4
-  } as Record<KarteAntwort['farbe'], number>)[farbe] ?? 99;
-}
-
-function fehlWertRang(wert: KarteAntwort['wert']): number {
-  return ({
-    NEUN: 1,
-    BUBE: 2,
-    DAME: 3,
-    KOENIG: 4,
-    ZEHN: 5,
-    AS: 6
-  } as Record<KarteAntwort['wert'], number>)[wert] ?? 0;
-}
-
-/**
- * Gibt den Spieltyp zurück der für die Preview-Sortierung im Vorbehalt-Modus
- * zu einer VorbehaltAnsage gehört. HOCHZEIT/ARMUT/SCHMEISSEN sortieren wie NORMALSPIEL.
- */
-export function vorbehaltZuSpieltypFuerSortierung(v: VorbehaltAnsage): LaufendesSpielAntwort['spieltyp'] {
-  switch (v) {
-    case 'SOLO_DAME': return 'SOLO_DAME';
-    case 'SOLO_BUBE': return 'SOLO_BUBE';
-    case 'SOLO_FLEISCHLOS': return 'SOLO_FLEISCHLOS';
-    case 'SOLO_TRUMPF': return 'SOLO_TRUMPF';
-    case 'SOLO_TRUMPF_HERZ': return 'SOLO_TRUMPF_HERZ';
-    case 'SOLO_TRUMPF_PIK': return 'SOLO_TRUMPF_PIK';
-    case 'SOLO_TRUMPF_KREUZ': return 'SOLO_TRUMPF_KREUZ';
-    default: return 'NORMALSPIEL';
-  }
-}
-
-/**
- * Gibt true zurück wenn die Karte im Kontext des Vorbehalts visuell hervorgehoben
- * werden soll (nach oben ragen). Reine Darstellungslogik.
- */
-export function istHervorgehobeneKarteImVorbehalt(karte: KarteAntwort, vorbehalt: VorbehaltAnsage): boolean {
-  switch (vorbehalt) {
-    case 'HOCHZEIT':
-      return karte.farbe === 'KREUZ' && karte.wert === 'DAME';
-    case 'SOLO_DAME':
-      return karte.wert === 'DAME';
-    case 'SOLO_BUBE':
-      return karte.wert === 'BUBE';
-    case 'SOLO_FLEISCHLOS':
-      return false;
-    case 'SCHMEISSEN':
-    case 'SCHMEISSEN_FUENF_NEUNEN':
-    case 'SCHMEISSEN_WENIG_TRUMPF':
-      return false;
-    default:
-      return istTrumpfFuerSpieltyp(karte, vorbehaltZuSpieltypFuerSortierung(vorbehalt));
-  }
-}
-
-/**
- * Sortiert Karten für die temporäre Vorbehalt-Preview.
- * Nutzt bestehende vergleicheKarten()-Logik mit gemapptem Spieltyp.
- */
-export function sortiereKartenFuerVorbehalt(karten: KarteAntwort[], vorbehalt: VorbehaltAnsage): KarteAntwort[] {
-  const spieltyp = vorbehaltZuSpieltypFuerSortierung(vorbehalt);
-  return [...karten].sort((a, b) => vergleicheKarten(a, b, spieltyp, false));
-}

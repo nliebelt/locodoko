@@ -4,7 +4,7 @@
 
 ## Notiz
 
-Task 61 erledigt: `Spiel.java` von 942 auf 587 Zeilen reduziert (38%). Vier neue package-private Helfer: `SpielBuilder`, `SpielHydrierer`, `SpielPersistenzSync`, `SpielVorbehaltAufloesung`, `SpielArmutTausch`. Domain-Felder und DB-Spalten sind jetzt package-private (kein `private`) für direkten Zugriff durch Helfer — public API unverändert. 307 Tests grün. Nächster logischer Schritt: Task 62 (REFACTOR-TISCHANSICHTMODELL) — `TischAnsichtModell.ts` (825 Zeilen) aufteilen.
+Task 62 erledigt: `TischAnsichtModell.ts` von 825 auf 637 Zeilen reduziert (−23%). Zwei neue Module extrahiert: `TischKartenSortierung.ts` (Trumpf-/Fehlrang-Logik + `istTrumpfFuerSpieltyp`, `vergleicheKarten`, `sortiereSichtbareHandkarten`) und `TischVorbehaltModell.ts` (`vorbehaltZuSpieltypFuerSortierung`, `istHervorgehobeneKarteImVorbehalt`, `sortiereKartenFuerVorbehalt`). `TischAnsichtModell.ts` re-exportiert die verlagerten Symbole für vollständige Rückwärtskompatibilität — kein Anpassungsbedarf in Importeuren. `TischArmutModell.ts` nicht erstellt: `bestimmeArmutAktion()` ist zu eng mit `SpielerAnsicht`-Typ und `mappeRelativePosition()` aus `TischAnsichtModell` verknüpft (zirkuläre Abhängigkeit). 202 Tests grün. Nächster logischer Schritt: Task 63 (REFACTOR-ANIMATIONEN-SERVICE) — `AnimationenService.ts` (807 Zeilen) aufteilen.
 
 ## Legende
 
@@ -39,13 +39,12 @@ Task 61 erledigt: `Spiel.java` von 942 auf 587 Zeilen reduziert (38%). Vier neue
 ---
 
 ### REFACTOR-TISCHANSICHTMODELL (Task 62)
-- [ ] **Frontend-Refactoring** (Mittlere Priorität): `TischAnsichtModell.ts` (825 Zeilen) aufteilen.
-  - View-Modell kapselt zu viele unabhängige Verantwortlichkeiten.
-  - Mögliche Aufteilung:
-    - `TischAnsichtModell.ts`: Kern-Daten (Spieler, Karten, Spieltyp) ≤ 300 Zeilen.
-    - `TischVorbehaltModell.ts`: Vorbehalt-Kartenauswahl-Logik (`sortiereKartenFuerVorbehalt()`, `istHervorgehobeneKarteImVorbehalt()`).
-    - `TischArmutModell.ts`: Armut-Aktion-Berechnung (`calcArmutAktion()` o.ä.).
-  - Tests: `cd frontend && npm test`.
+- [x] **Frontend-Refactoring** (Mittlere Priorität): `TischAnsichtModell.ts` (825 Zeilen) aufteilen.
+  - `TischAnsichtModell.ts`: 825 → 637 Zeilen (Typen + Mapper + Factories)
+  - `TischKartenSortierung.ts`: 130 Zeilen (Trumpf-/Fehlrang, `istTrumpfFuerSpieltyp`, `vergleicheKarten`)
+  - `TischVorbehaltModell.ts`: 52 Zeilen (Vorbehalt-Kartenauswahl-Logik)
+  - `TischArmutModell.ts` nicht erstellt — zirkuläre Abhängigkeit verhindert Auslagerung von `bestimmeArmutAktion()`.
+  - 202 Tests grün.
 
 ---
 
