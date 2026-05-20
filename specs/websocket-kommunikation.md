@@ -2,7 +2,7 @@
 
 | Feld           | Wert                                        |
 |----------------|---------------------------------------------|
-| Status         | Zu prüfen |
+| Status         | Implementiert |
 | Priorität      | Hoch                                        |
 | Abhängigkeiten | spielablauf.md, spieler-session.md          |
 

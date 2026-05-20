@@ -123,14 +123,14 @@ Die UI reagiert nicht mehr auf Zustandsänderungen durch Diffing (Vergleich alte
 - [ ] Seitliche HTML-Panels entfernt
 - [ ] „Du bist dran"-Hinweis und alle spielblockenden Overlays entfernt
 - [x] Floating Action Bar für Ansagen implementiert (auf Spielfläche, nicht blockierend)
-- [ ] Vorbehalt-Overlay implementiert (alle Optionen, Tastatur-Support, Karten bleiben sichtbar)
-- [ ] Armut-Dialog implementiert (auf Spielfläche)
-- [ ] Seitenlade implementiert
-- [ ] Einstellungs-Modal implementiert (Phaser-Implementierung abgeschlossen Plan-Run #85)
-- [ ] Toast-Notifications implementiert
-- [ ] Rundenende-Overlay integriert (Aufruf nach Spielende)
-- [ ] Alle Aktionen auch per Tastatur auslösbar
-- [ ] Frontend-Tests geschrieben und bestanden
+- [x] Vorbehalt-Overlay implementiert (alle Optionen, Tastatur-Support, Karten bleiben sichtbar)
+- [x] Armut-Dialog implementiert (auf Spielfläche)
+- [x] Seitenlade implementiert
+- [x] Einstellungs-Modal implementiert
+- [x] Toast-Notifications implementiert
+- [x] Rundenende-Overlay integriert (Aufruf nach Spielende)
+- [x] Alle Aktionen auch per Tastatur auslösbar
+- [x] Frontend-Tests geschrieben und bestanden
 
 ## Technische Hinweise
 

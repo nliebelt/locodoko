@@ -2,7 +2,7 @@
 
 | Feld           | Wert                                                                    |
 |----------------|-------------------------------------------------------------------------|
-| Status         | Zu prüfen |
+| Status         | Implementiert |
 | Priorität      | Hoch                                                                    |
 | Abhängigkeiten | kartendeck.md, websocket-kommunikation.md, frontend-visuelles-design.md |
 

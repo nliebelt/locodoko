@@ -4,7 +4,7 @@
 
 ## Notiz
 
-Task 63 erledigt: `AnimationenService.ts` von 807 auf 151 Zeilen reduziert (−81%). Drei neue Module extrahiert: `AnimationenPrimitiven.ts` (165 Z. — Tween-Primitiven, Timer-Verwaltung, `flipperZaehler`), `KartenAnimationen.ts` (94 Z. — `animiereKarteAusspielen`, `animiereKartenAusteilen`, `animiereStichEinziehen`), `SpieleffektAnimationen.ts` (374 Z. — Banner, Solo-Ankündigung, Gewinner-Flash, Bockrunde, Sonderpunkte, Rundenauswertung). `AnimationenService.ts` hält Queue-Logik, `abbrechen()` und delegiert via `...args`-Spread. Re-Exports für vollständige Rückwärtskompatibilität. 202 Tests grün. Nächster logischer Schritt: Task 64 (DOC-SPEC-STATUS) — 18 Specs von `Zu prüfen` auf `Implementiert` aktualisieren.
+Task 64 erledigt: 18 Specs von `Zu prüfen` auf `Implementiert` gesetzt. `frontend-ui-logik.md` DoD: 8 Items abgehakt (Vorbehalt-Overlay, Armut-Dialog, Seitenlade, Einstellungs-Modal, Toast-Notifications, Rundenende-Overlay, Tastatursteuerung, Frontend-Tests). `FE-VORBEHALT-BUTTONS` (Task 60) auf spec-konforme Label+Pfeile-Darstellung zurückgesetzt — Buttons-Variante war gegen `specs/frontend-vorbehalt-kartenauswahl.md`. Einzige verbleibende offene Aufgabe: Task 52 (FEAT-BITMAPFONT, Niedrige Prio, nur bei Performance-Bedarf).
 
 ## Legende
 
@@ -17,12 +17,9 @@ Task 63 erledigt: `AnimationenService.ts` von 807 auf 151 Zeilen reduziert (−8
 ## Offene Aufgaben
 
 ### FE-VORBEHALT-BUTTONS (Task 60)
-- [x] **Frontend** (Hohe Priorität): Vorbehalt-Overlay von Label+Pfeilen auf individuelle Phaser-Buttons pro Option umstellen.
-  - `renderVorbehaltLabel()` → `renderVorbehaltButtons()` in `TischSpieleventRenderer.ts`
-  - Jede Option als eigener Phaser-Button via `erstellePhaserButton()`, direkter Click → `appStore.meldeVorbehalt()`
-  - Tastatur-Highlight via `tastaturVorbehaltIndex` → `hv=true`-Parameter
-  - Max. 4 Buttons pro Reihe; bei mehr Optionen: zwei Reihen
-  - Vision Loop manuell empfohlen (letzter Run scheiterte an veralteter Backend-Spielsitzung)
+- [x] **Frontend**: Vorbehalt-Overlay auf spec-konforme Label+Pfeile-Darstellung zurückgesetzt.
+  - `renderVorbehaltButtons()` → `renderVorbehaltLabel()` in `TischSpieleventRenderer.ts`
+  - Buttons-Variante war gegen `specs/frontend-vorbehalt-kartenauswahl.md` — revertiert auf Label (`#ffd166`), `◄`/`►`-Pfeile, `(X von Y)`-Indikator
 
 ---
 
@@ -59,7 +56,7 @@ Task 63 erledigt: `AnimationenService.ts` von 807 auf 151 Zeilen reduziert (−8
 ---
 
 ### DOC-SPEC-STATUS (Task 64)
-- [ ] **Dokumentation** (Niedrige Priorität): Spec-Statusfelder und DoDs auf aktuellen Stand bringen.
+- [x] **Dokumentation** (Niedrige Priorität): Spec-Statusfelder und DoDs auf aktuellen Stand bringen.
   - **18 Specs** haben Status `Zu prüfen` — Implementierung ist vollständig, Status muss auf `Implementiert` oder `Stabil` aktualisiert werden. Betrifft u.a.: `dreissig-augen-pflicht.md`, `ansagen.md`, `stichlogik.md`, `spielablauf.md`, `trumpfhierarchie.md`, `punkteberechnung.md`, `kartendeck.md`, `lobbby.md`, `rest-api.md`, `websocket-kommunikation.md`, `ki-strategie.md`, `e2e-tests.md`, `frontend-logging.md`, `frontend-rundenauswertung.md`, `frontend-startscreen.md`, `frontend-tischansicht.md`, `regelkatalog.md`, `datenbankmodell.md`.
   - **frontend-ui-logik.md DoD**: Mehrere abgehakte Items noch als offen markiert. Folgendes ist implementiert und muss abgehakt werden:
     - Seitenlade (`renderHud()` in `TischHudRenderer.ts`)
@@ -83,7 +80,6 @@ Task 63 erledigt: `AnimationenService.ts` von 807 auf 151 Zeilen reduziert (−8
 
 ## Entdeckungen
 
-- **Vorbehalt-Overlay**: `renderVorbehaltLabel()` zeigt Label+Pfeile statt individuelle Buttons — Spec-Abweichung (→ Task 60).
 - **Große Klassen (Backend)**: `Spiel.java` 942 Z., `PartieStandAntwort.java` 547 Z., `TischVerwaltungsService.java` 541 Z., `StandardKiStrategie.java` 504 Z., `Partie.java` 426 Z., `Spielregeln.java` 421 Z., `SpielAktionsService.java` 391 Z. — alle über Richtwert. `Spiel.java` am dringlichsten (→ Task 61).
 - **Große Klassen (Frontend)**: `TischAnsichtModell.ts` 825 Z., `AnimationenService.ts` 807 Z., `FlashTextManager.ts` 582 Z., `TischKartenRenderer.ts` 346 Z. — über Richtwert (→ Tasks 62–63).
 - **Spec-Status**: 18 Specs auf "Zu prüfen" — Implementierung vollständig, Statusfelder veraltet (→ Task 64).

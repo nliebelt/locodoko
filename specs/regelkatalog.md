@@ -2,7 +2,7 @@
 
 | Feld           | Wert                                                              |
 |----------------|-------------------------------------------------------------------|
-| Status         | Zu prüfen |
+| Status         | Implementiert |
 | Priorität      | Mittel                                                            |
 | Abhängigkeiten | tischkonfiguration.md, bockrunden.md, schweinchen.md, dreissig-augen-pflicht.md |
 

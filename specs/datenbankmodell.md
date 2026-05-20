@@ -2,7 +2,7 @@
 
 | Feld           | Wert                                        |
 |----------------|---------------------------------------------|
-| Status         | Zu prüfen |
+| Status         | Implementiert |
 | Priorität      | Hoch                                        |
 | Abhängigkeiten | kartendeck.md, spielablauf.md, spieler-session.md, tischkonfiguration.md, punkteberechnung.md |
 

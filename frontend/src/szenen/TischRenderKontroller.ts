@@ -12,7 +12,7 @@ import {
   TEXTUR_HOLZ_DUNKEL,
 } from '../assets/AssetLoader';
 import { renderHud, renderTopBar, renderEinstellungsModal, speichereGeschwindigkeit } from './TischHudRenderer';
-import { renderAnsageButtons, renderArmutBereich, renderVorbehaltButtons } from './TischSpieleventRenderer';
+import { renderAnsageButtons, renderArmutBereich, renderVorbehaltLabel } from './TischSpieleventRenderer';
 import { berechneLayout } from './layout';
 import type { TischSzene } from './TischSzene';
 
@@ -138,7 +138,7 @@ export class TischRenderKontroller {
       };
       renderAnsageButtons(this.szene, ebene, modell, zustand, breite, hoehe, spieleventKontext);
       renderArmutBereich(this.szene, ebene, modell, zustand, breite, hoehe, spieleventKontext);
-      renderVorbehaltButtons(this.szene, ebene, modell, breite, hoehe, spieleventKontext);
+      renderVorbehaltLabel(this.szene, ebene, modell, breite, hoehe, spieleventKontext);
     }
 
     if (this.szene.einstellungenOffen) {

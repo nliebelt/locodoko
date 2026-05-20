@@ -2,7 +2,6 @@ import type Phaser from 'phaser';
 import { appStore } from '../anwendung';
 import { SPIELER_POSITION } from '../modelle/TischAnsichtModell';
 import type { TischAnsichtModell } from '../modelle/TischAnsichtModell';
-import type { VorbehaltAnsage } from '../modelle/SpielverwaltungDto';
 import type { AppZustand } from '../store/AppStore';
 import { berechneKartenGroesse, berechneKartenAbstand } from './layout';
 import { FONT_FAMILY } from '../ui/designTokens';
@@ -22,7 +21,7 @@ export interface TischSpieleventKontext {
   onArmutAnnahmeAktivSetzen: (v: boolean) => void;
 }
 
-export function renderVorbehaltButtons(
+export function renderVorbehaltLabel(
   szene: Phaser.Scene,
   ebene: Phaser.GameObjects.Container,
   modell: TischAnsichtModell,
@@ -36,48 +35,52 @@ export function renderVorbehaltButtons(
   const kG = berechneKartenGroesse(breite);
 
   const suedKartenY = hoehe * 0.91;
-  const basisY = suedKartenY - kG.h * 0.5 - kG.h * 0.28 - 18;
+  const labelY = suedKartenY - kG.h * 0.5 - kG.h * 0.28 - 18;
 
-  const bH = Math.round(Math.max(34, hoehe * 0.050));
-  const bW = Math.round(Math.min(150, breite * 0.13));
-  const ab = Math.round(breite * 0.008);
+  const labelFontSize = Math.round(Math.max(14, breite * 0.018));
   const kleinFontSize = Math.round(Math.max(9, breite * 0.009));
+  const pfeileAbstand = Math.round(Math.max(100, breite * 0.16));
 
-  const maxProReihe = Math.min(opt.length, 4);
-  const reihe1 = opt.slice(0, maxProReihe);
-  const reihe2 = opt.slice(maxProReihe);
+  const vorbehaltName = formatiereVorbehalt(opt[idx]) ?? opt[idx];
+  ebene.add(
+    szene.add.text(breite / 2, labelY, vorbehaltName, {
+      fontFamily: FONT_FAMILY, color: '#ffd166', fontSize: `${labelFontSize}px`,
+      stroke: '#000000', strokeThickness: 3
+    }).setOrigin(0.5)
+  );
 
-  const renderReihe = (reiheOpt: VorbehaltAnsage[], startGlobalIdx: number, y: number) => {
-    const gesamtBreite = reiheOpt.length * bW + (reiheOpt.length - 1) * ab;
-    const startX = breite / 2 - gesamtBreite / 2 + bW / 2;
-    reiheOpt.forEach((v, i) => {
-      erstellePhaserButton(
-        szene, ebene,
-        startX + i * (bW + ab), y,
-        bW, bH,
-        formatiereVorbehalt(v) ?? v,
-        () => { void appStore.meldeVorbehalt(v); },
-        false, false, startGlobalIdx + i === idx,
-        `btn-vorbehalt-${v.toLowerCase().replace(/_/g, '-')}`
-      );
-    });
-  };
+  const linksPfeil = szene.add.text(breite / 2 - pfeileAbstand, labelY, '◄', {
+    fontFamily: FONT_FAMILY, color: '#a3c4a8', fontSize: `${labelFontSize}px`
+  }).setOrigin(0.5).setInteractive({ useHandCursor: true });
+  linksPfeil.on('pointerdown', () => {
+    kontext.onTastaturVorbehaltIndexAendern((idx - 1 + opt.length) % opt.length);
+    kontext.onRenderTisch();
+  });
+  ebene.add(linksPfeil);
 
-  if (reihe2.length > 0) {
-    renderReihe(reihe1, 0, basisY - bH / 2 - 4);
-    renderReihe(reihe2, maxProReihe, basisY + bH / 2 + 4);
-  } else {
-    renderReihe(reihe1, 0, basisY);
-  }
+  const rechtsPfeil = szene.add.text(breite / 2 + pfeileAbstand, labelY, '►', {
+    fontFamily: FONT_FAMILY, color: '#a3c4a8', fontSize: `${labelFontSize}px`
+  }).setOrigin(0.5).setInteractive({ useHandCursor: true });
+  rechtsPfeil.on('pointerdown', () => {
+    kontext.onTastaturVorbehaltIndexAendern((idx + 1) % opt.length);
+    kontext.onRenderTisch();
+  });
+  ebene.add(rechtsPfeil);
+
+  ebene.add(
+    szene.add.text(breite / 2, labelY + labelFontSize * 0.8, `(${idx + 1} von ${opt.length})`, {
+      fontFamily: FONT_FAMILY, color: '#7a9a82', fontSize: `${kleinFontSize}px`
+    }).setOrigin(0.5)
+  );
 
   const aDek = modell.deklarierteVorbehalte.filter((d) => d.position !== SPIELER_POSITION.SUED);
   if (aDek.length > 0) {
-    const statusBasisY = (reihe2.length > 0 ? basisY - bH - 8 : basisY) - bH * 0.7;
+    const statusY = labelY - labelFontSize * 1.2;
     aDek.forEach((d, i) => {
       const sN = modell.spieler.find((s) => s.position === d.position)?.name ?? d.position;
       const hV = d.ansage !== 'GESUND';
       ebene.add(
-        szene.add.text(breite / 2, statusBasisY - i * (kleinFontSize + 4), `${sN}: ${hV ? '⚑ Vorbehalt' : '✓ Gesund'}`, {
+        szene.add.text(breite / 2, statusY - i * (kleinFontSize + 4), `${sN}: ${hV ? '⚑ Vorbehalt' : '✓ Gesund'}`, {
           fontFamily: FONT_FAMILY, color: hV ? '#ffd700' : '#aaffaa', fontSize: `${kleinFontSize}px`
         }).setOrigin(0.5)
       );
