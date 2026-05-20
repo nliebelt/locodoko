@@ -35,7 +35,7 @@ export function renderVorbehaltLabel(
   const kG = berechneKartenGroesse(breite);
 
   const suedKartenY = hoehe * 0.91;
-  const labelY = suedKartenY - kG.h * 0.5 - kG.h * 0.28 - 18;
+  const labelY = suedKartenY - kG.h * 0.5 - kG.h * 0.7 - 18;
 
   const labelFontSize = Math.round(Math.max(14, breite * 0.018));
   const kleinFontSize = Math.round(Math.max(9, breite * 0.009));

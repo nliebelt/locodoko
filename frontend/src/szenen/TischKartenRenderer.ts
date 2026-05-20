@@ -174,11 +174,13 @@ export class TischKartenRenderer {
       const istAus = k ? this.kontext.getAusgewaehlteArmutKarten().has(k.id) : false;
       const istTast = spieler.istSelbst && k !== undefined && this.kontext.getTastaturKarteIndex() >= 0 && modell.spielbareKarten[this.kontext.getTastaturKarteIndex()] === k.id;
       const istVorbEleviert = aktuellerVorbehalt && k ? istHervorgehobeneKarteImVorbehalt(k, aktuellerVorbehalt) : false;
-      const bV = (istAus || istTast) ? -auswV : (istVorbEleviert ? -elevV : 0);
+      const bV = (istAus || istTast) ? -auswV : (aktuellerVorbehalt && !istVorbEleviert ? elevV : 0);
 
       const { sprite: kA, wiederverwendet: istWiederverwendet } = this.erstelleOderAktualisiereKartenSprite(
         ebene, spieler, offen, k, x, y + bV, kG
       );
+
+      if (spieler.istSelbst && k) kA.setDepth(2 + i * 0.01);
 
       const istWartend = !!k && this.kontext.getWartendeKartenId() === k.id;
       kA.setVisible(!istWartend);
