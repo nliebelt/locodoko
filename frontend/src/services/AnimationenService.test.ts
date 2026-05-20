@@ -191,9 +191,9 @@ describe('AnimationenService', () => {
     service.setzeGeschwindigkeitsfaktor(1);
 
     const txt = szene.add.text(0, 0, '0') as unknown as Phaser.GameObjects.Text;
-    // Privat-Zugriff auf flipperZaehler fuer Coverage
+    // Privat-Zugriff auf flipperZaehler via primitiven (jetzt in AnimationenPrimitiven)
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    await (service as any).flipperZaehler(txt, 100, '+', 100);
+    await (service as any).primitiven.flipperZaehler(txt, 100, '+', 100);
     
     expect(txt.destroy).not.toHaveBeenCalled();
   });

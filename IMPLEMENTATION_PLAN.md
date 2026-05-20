@@ -1,10 +1,10 @@
 # IMPLEMENTATION_PLAN — Locodoko Doppelkopf
 
-> Stand: 2026-05-19. Erledigte Aufgaben → `IMPLEMENTATION_PLAN_ARCHIVE.md`
+> Stand: 2026-05-20. Erledigte Aufgaben → `IMPLEMENTATION_PLAN_ARCHIVE.md`
 
 ## Notiz
 
-Task 62 erledigt: `TischAnsichtModell.ts` von 825 auf 637 Zeilen reduziert (−23%). Zwei neue Module extrahiert: `TischKartenSortierung.ts` (Trumpf-/Fehlrang-Logik + `istTrumpfFuerSpieltyp`, `vergleicheKarten`, `sortiereSichtbareHandkarten`) und `TischVorbehaltModell.ts` (`vorbehaltZuSpieltypFuerSortierung`, `istHervorgehobeneKarteImVorbehalt`, `sortiereKartenFuerVorbehalt`). `TischAnsichtModell.ts` re-exportiert die verlagerten Symbole für vollständige Rückwärtskompatibilität — kein Anpassungsbedarf in Importeuren. `TischArmutModell.ts` nicht erstellt: `bestimmeArmutAktion()` ist zu eng mit `SpielerAnsicht`-Typ und `mappeRelativePosition()` aus `TischAnsichtModell` verknüpft (zirkuläre Abhängigkeit). 202 Tests grün. Nächster logischer Schritt: Task 63 (REFACTOR-ANIMATIONEN-SERVICE) — `AnimationenService.ts` (807 Zeilen) aufteilen.
+Task 63 erledigt: `AnimationenService.ts` von 807 auf 151 Zeilen reduziert (−81%). Drei neue Module extrahiert: `AnimationenPrimitiven.ts` (165 Z. — Tween-Primitiven, Timer-Verwaltung, `flipperZaehler`), `KartenAnimationen.ts` (94 Z. — `animiereKarteAusspielen`, `animiereKartenAusteilen`, `animiereStichEinziehen`), `SpieleffektAnimationen.ts` (374 Z. — Banner, Solo-Ankündigung, Gewinner-Flash, Bockrunde, Sonderpunkte, Rundenauswertung). `AnimationenService.ts` hält Queue-Logik, `abbrechen()` und delegiert via `...args`-Spread. Re-Exports für vollständige Rückwärtskompatibilität. 202 Tests grün. Nächster logischer Schritt: Task 64 (DOC-SPEC-STATUS) — 18 Specs von `Zu prüfen` auf `Implementiert` aktualisieren.
 
 ## Legende
 
@@ -49,12 +49,12 @@ Task 62 erledigt: `TischAnsichtModell.ts` von 825 auf 637 Zeilen reduziert (−2
 ---
 
 ### REFACTOR-ANIMATIONEN-SERVICE (Task 63)
-- [ ] **Frontend-Refactoring** (Mittlere Priorität): `AnimationenService.ts` (807 Zeilen) aufteilen.
-  - Mögliche Aufteilung:
-    - `AnimationenService.ts`: Öffentliche API + Queue-Orchestrierung ≤ 300 Zeilen.
-    - `KartenAnimationen.ts`: `animiereKarteAusspielen()`, `animiereKartenAusteilen()`, Stich-Einziehen.
-    - `SpieleffektAnimationen.ts`: Flash-Effekte, Shake, Kamera-Effekte (Delegation an FlashTextManager trennen).
-  - Tests: `cd frontend && npm test`.
+- [x] **Frontend-Refactoring** (Mittlere Priorität): `AnimationenService.ts` (807 Zeilen) aufteilen.
+  - `AnimationenService.ts`: 807 → 151 Zeilen (Queue-Orchestrierung + Delegation)
+  - `AnimationenPrimitiven.ts`: 165 Zeilen (Tween-Primitiven, Timer, `flipperZaehler`)
+  - `KartenAnimationen.ts`: 94 Zeilen (`animiereKarteAusspielen`, `animiereKartenAusteilen`, `animiereStichEinziehen`)
+  - `SpieleffektAnimationen.ts`: 374 Zeilen (Banner, Solo, Gewinner, Bockrunde, Sonderpunkte, Rundenauswertung)
+  - Vollständige Rückwärtskompatibilität via Re-Exports. 202 Tests grün.
 
 ---
 
