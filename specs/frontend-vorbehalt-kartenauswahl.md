@@ -11,7 +11,7 @@
 Die klassische Vorbehalt-Dialogbox (Buttons in einem Overlay-Fenster) wird durch eine
 **kartenbasierte Auswahl** ersetzt. Die Handkarten des Spielers werden selbst zum Menü:
 Beim Navigieren mit ←/→ sortieren sie sich gemäß der Trumpfhierarchie des aktuell
-ausgewählten Vorbehalts neu, und die spieltyp-relevanten Karten ragen nach oben heraus.
+ausgewählten Vorbehalts neu, und spieltyp-irrelevante Karten sinken leicht nach unten.
 Über der Hand erscheint der Name des Vorbehalts als großer Text.
 
 Das Feature ist ein **reines Client-Gimmick** — keine Backend-Änderungen, keine neuen
@@ -38,7 +38,7 @@ WebSocket-Nachrichten. Die Auswahl selbst (`appStore.meldeVorbehalt()`) bleibt u
 
 ### Label-Zeile
 
-- Zentriert über der Hand, ca. 20–25 px über dem oberen Kartenrand
+- Zentriert über der Hand, ca. 70% einer Kartenhöhe über dem oberen Kartenrand (`kG.h * 0.7`)
 - Großer Text: Vorbehalt-Name (z.B. „Damensolo", „Gesund", „Hochzeit")
 - Links/rechts davon: `◄` / `►` als Navigationspfeile (immer sichtbar, wrapping)
 - Rechts davon: Position-Indikator `(2 von 5)` in kleiner Schrift
@@ -46,8 +46,8 @@ WebSocket-Nachrichten. Die Auswahl selbst (`appStore.meldeVorbehalt()`) bleibt u
 
 ### Karten-Elevation
 
-Spieltyp-relevante Karten ragen **25 px nach oben** aus der normalen Hand-Grundlinie heraus.
-Die Zuordnung richtet sich nach dem aktuell ausgewählten Vorbehalt:
+Spieltyp-**irrelevante** Karten sinken **~22% einer Kartenhöhe nach unten** (`kG.h * 0.22`) aus der normalen Hand-Grundlinie heraus. Relevante Karten bleiben auf der Grundlinie — so bleibt die Oberkante des Fächers stabil und überlappt nie mit dem Label.
+Die Zuordnung (welche Karten relevant sind) richtet sich nach dem aktuell ausgewählten Vorbehalt:
 
 | Vorbehalt             | Hervorgehobene Karten                                     |
 |-----------------------|-----------------------------------------------------------|
@@ -137,7 +137,7 @@ export function sortiereKartenFuerVorbehalt(karten: KarteAntwort[], vorbehalt: V
 - **`renderVorbehaltDialog()`** wird gelöscht (ersetzt durch neue Darstellung in `renderHand`)
 - **`renderHand()`**: Im Vorbehalt-Modus
   1. Preview-Sort auf `sichtbareHandkarten` anwenden
-  2. Elevation-Flag pro Karte berechnen → Y-Offset `-25px`
+  2. Elevation-Flag pro Karte berechnen → irrelevante Karten: Y-Offset `+kG.h*0.22`, relevante: `0`
   3. Neue `renderVorbehaltLabel()`-Methode aufrufen (Text + Pfeile über der Hand)
 - **`renderVorbehaltLabel()`**: Neuer privater Renderer für Label, Pfeile und Positions-Indikator
 
@@ -168,7 +168,7 @@ When
   - Spieler drückt ← oder → und wechselt den Vorbehalt
 
 Then
-  - Karten gleiten animiert in ihre neue Y-Position (Elevation hoch/runter)
+  - Karten gleiten animiert in ihre neue Y-Position (irrelevante sinken, relevante kehren zur Grundlinie zurück)
   - Karten gleiten animiert in ihre neue X-Position (Reihenfolge gemäß neuem Spieltyp)
   - Animation dauert ~150–200 ms, danach ist die Hand im neuen Zustand stabil
   - Läuft ein WebSocket-Update während der Animation ein, wird die Animation abgebrochen
@@ -202,14 +202,15 @@ Render-Methoden bleiben unverändert.
 
 ## Akzeptanzkriterien
 
-- Im Vorbehalt-Modus erscheint **kein Dialog-Fenster** mehr — stattdessen Label + Kartenelevation
+- Im Vorbehalt-Modus erscheint **kein Dialog-Fenster** mehr — stattdessen Label + Kartenabsenkung irrelevanter Karten
 - Links/Rechts wechselt den Vorbehalt, die Karten sortieren und elevieren sich entsprechend
-- Beim Wechsel gleiten Karten animiert in ihre neue Position (Elevation + Sortierung)
+- Beim Wechsel gleiten Karten animiert in ihre neue Position (Absenkung + Sortierung)
+- Z-Reihenfolge im Fächer korrekt: jede eigene Karte erhält `depth = 2 + (FächerIndex × 0.01)`, sodass die rechteste Karte immer oben liegt
 - Label zeigt Vorbehalt-Name, Pfeile und Position-Indikator korrekt an
 - Enter bestätigt die aktuelle Auswahl korrekt
 - Standard-Vorbelegung ist `GESUND` (oder Index 0)
 - Klick auf eine Karte bestätigt die aktuelle Auswahl (nicht: wählt diese Karte aus)
-- Alle Vorbehalt-Typen zeigen die korrekte Elevation (Tabelle oben)
+- Alle Vorbehalt-Typen zeigen die korrekte Absenkung irrelevanter Karten (Tabelle oben)
 - Kein JS-Fehler wenn `moeglicheVorbehalte` leer ist (kein Vorbehalt-Modus aktiv)
 - Kein Tween-Konflikt bei WebSocket-Updates während der Animation
 - `npm run build` und `npm test` grün
