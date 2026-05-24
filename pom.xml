@@ -78,7 +78,7 @@
         <dependency>
             <groupId>org.postgresql</groupId>
             <artifactId>postgresql</artifactId>
-            <scope>runtime</scope>
+            <!-- compile statt runtime: PGobject wird in JSONB-Convertern zur Compile-Zeit benoetigt -->
         </dependency>
         <dependency>
             <groupId>org.springframework.boot</groupId>

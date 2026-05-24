@@ -4,23 +4,25 @@
 
 ## Notiz
 
-Build-Run 2026-05-24 (manuell nach Ralph-BLOCKED): **DB-1 (Spec-Updates, Task 67) abgeschlossen.**
+Build-Run 2026-05-24: **DB-3 (JSONB-Converter, Task 69) abgeschlossen.**
 
-Alle 8 Spec-Dateien aktualisiert + 1 neue Spec-Datei erstellt:
-- `architektur.md` + `architektur-spielkern.md`: Mutable Aggregate Root, Pattern A, Test-Schichten
-- `architektur-ddd.md`: §3 Spec-Widerspruch aufgelöst, Hybrid-Datenmodell-Abschnitt, DoD-Item abgehakt
-- `architektur-unified.md`: Db-Suffix-Konvention entfernt
-- `architektur-domain-events.md`: Pattern-A-Pflicht-Regel, erweiterte Event-Inventory-Tabelle, 3 Sequenzdiagramme
-- `datenbankmodell.md`: Komplett neu auf Basis des Hybrid-Schemas
-- `frontend-tastatursteuerung.md`: Status → Stabil (Hinweis auf FE-5)
-- `spieler-profil.md`: Falsches DoD-Häkchen Z. 80 korrigiert
-- `frontend-spielerprofil.md`: Neue Spec-Datei für FE-1/FE-2
+Implementiert:
+- `JsonbConverter.java` in `tisch.persistenz`: 11 Converter-Paare (22 Klassen) für alle JSONB-Spalten.
+  Jackson-Mixins für nicht-Record-Typen (Hand, Stich, Ansagen, Parteien, VorbehaltMeldung).
+  FAIL_ON_UNKNOWN_PROPERTIES=false gesetzt (deutsche `ist*`-Methoden werden von Jackson als is-Prefix erkannt).
+- `JsonbConverterKonfiguration.java`: @Bean JdbcCustomConversions — ObjectMapper NICHT per Injection
+  (zu früh im Spring-Kontext, vor JacksonAutoConfiguration).
+- `Parteien.java`: +`offenFuerAlle()` Getter + `ausPersistiertemStand()` Fabrikmethode für Mixin.
+- `pom.xml`: postgresql Scope von `runtime` auf `compile` gehoben (PGobject zur Compile-Zeit nötig).
+- `JsonbConverterTest.java`: 12 pure JUnit Roundtrip-Tests, alle grün. Gesamtzahl: 319 Tests (+12).
 
-**Nächster Schritt:** DB-3 (JSONB-Converter, Task 69) — schema-unabhängig, Einzel-Commit.
-Dann DB-4a (Spiel mutable machen), danach der Mega-Commit DB-2+4b+4c.
+**Nächster Schritt:** DB-4a (Task 70a) — Spiel.java mutable machen, Pattern A: alle Domain-Methoden
+mutieren `this` direkt + returnen `List<SpielEreignis>`. Erste Datei zuerst: `Spiel.java`.
+Danach der Mega-Commit: DB-2 + DB-4b + DB-4c gemeinsam.
 
-**Warum Ralph blockiert war:** Kontext-Fenster für DB-1 erschöpft nach 2 von 8 Spec-Dateien.
-Baseline war vollständig grün (307 Backend + 202 Frontend-Tests).
+**Entdeckung:** `ist*`-Präfix in deutschen Methoden (istVollstaendig, istVorbehalt) wird von Jackson als
+englisches `is`-Präfix erkannt → Serialisierung erzeugt unerwartete Felder. Lösung: @JsonIgnore via
+Mixin. Alle zukünftigen Jackson-Roundtrip-Tests sollten FAIL_ON_UNKNOWN_PROPERTIES=false verwenden.
 
 ## Legende
 
@@ -266,7 +268,7 @@ Konkret: Build-Modus erstellt für DB-2/4b/4c **drei separate Working-Tree-Ände
 ---
 
 ### DB-3: JSONB-CONVERTER (Task 69)
-- [ ] **Backend** (Hohe Priorität, mittlerer Aufwand): Custom Converter für die ~10 JSONB-Spalten, sodass Spring Data JDBC direkt Domain-VOs lädt/speichert.
+- [x] **Backend** (Hohe Priorität, mittlerer Aufwand): Custom Converter für die ~10 JSONB-Spalten, sodass Spring Data JDBC direkt Domain-VOs lädt/speichert.
   - **Erste Datei zuerst**: Neue Klasse `JsonbConverters.java` in `de.locodoko.tisch.persistence` (Adapter-Schicht laut Spec).
   - **Schritte**:
     1. `@Configuration`-Klasse `JsonbConverterConfig` in `tisch/persistence/` registriert pro Domain-Typ ein Reader+Writer-Converter-Paar.
@@ -676,6 +678,8 @@ Konkret: Build-Modus erstellt für DB-2/4b/4c **drei separate Working-Tree-Ände
 - **Test-Schichten heute schon sauber**: 50 Test-Dateien, 28 davon pure JUnit. Diese Trennung MUSS in DB-4 erhalten bleiben.
 - **Event-Architektur LLM-lesbar machen**: Drei Event-Schichten (`SpielEreignis` → `partie.ereignisse.*` → `PartieEreignisTyp`) sind konzeptionell richtig. DB-1 ergänzt `architektur-domain-events.md` um Event-Inventory-Tabelle + Pattern-A-Pflicht.
 - **Mega-Commit auf main statt Feature-Branch (Entscheidung Plan-Run 2026-05-24)**: User-Wunsch ist auf main zu bleiben. DB-2+DB-4b+DB-4c werden daher als **ein gemeinsamer Commit auf main** durchgeführt (Schema-Wechsel + `@Transient` weg + Hydrierer/Sync löschen). Vor und nach dem Commit grün; ca. 30-50 geänderte Dateien. Die anderen Tasks (DB-1, DB-3, DB-4a, DB-4d, DB-5..10) bleiben Einzel-Commits, weil sie schema-unabhängig sind.
+- **Jackson erkennt deutsche `ist*`-Methoden als `is`-Präfix-Getter** (entdeckt in DB-3): `istVollstaendig()` → `tVollstaendig`, `istVorbehalt()` → `tVorbehalt`. Lösung: @JsonIgnore via Mixin für alle betroffenen Methoden. FAIL_ON_UNKNOWN_PROPERTIES=false als Sicherheitsnetz. Bei DB-4 darauf achten, alle deutschen Methoden mit `ist*`-Präfix zu prüfen und via Mixin zu ignorieren.
+- **ObjectMapper-Injection in JdbcCustomConversions-Bean nicht möglich** (entdeckt in DB-3): Spring Data JDBC benötigt `JdbcCustomConversions` sehr früh im Kontext-Aufbau, bevor JacksonAutoConfiguration läuft. Lösung: `new ObjectMapper()` statt Spring-Bean-Injection in `JsonbConverterKonfiguration`.
 
 ### Frontend
 - **Statistik-UI fehlt komplett**: Backend hat `/spieler/{id}/profil`-Endpunkt mit allen Statistik-Daten (in OpenAPI dokumentiert), im Frontend gibt es keine Anzeige dafür. → FE-1, FE-2.

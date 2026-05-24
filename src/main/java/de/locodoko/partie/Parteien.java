@@ -112,6 +112,23 @@ public final class Parteien {
         return parteienNachSpieler;
     }
 
+    /** Liefert die Spieler-Positionen, deren Parteizugehoerigkeit oeffentlich bekannt ist. */
+    public Set<SpielerPosition> offenFuerAlle() {
+        return offenFuerAlle;
+    }
+
+    /**
+     * Erstellt Parteien aus einem persistierten Stand.
+     * Verwendet beim Laden aus der Datenbank via JSONB-Converter.
+     */
+    public static Parteien ausPersistiertemStand(
+            Map<SpielerPosition, Partei> parteienNachSpieler,
+            Set<SpielerPosition> offenFuerAlle) {
+        Objects.requireNonNull(parteienNachSpieler, "parteienNachSpieler duerfen nicht null sein");
+        Objects.requireNonNull(offenFuerAlle, "offenFuerAlle darf nicht null sein");
+        return new Parteien(parteienNachSpieler, offenFuerAlle);
+    }
+
     public Parteien mitPartei(SpielerPosition spielerPosition, Partei partei) {
         Objects.requireNonNull(spielerPosition, "spielerPosition darf nicht null sein");
         Objects.requireNonNull(partei, "partei darf nicht null sein");
