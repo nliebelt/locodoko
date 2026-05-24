@@ -2,7 +2,7 @@
 
 | Feld           | Wert                                                       |
 |----------------|------------------------------------------------------------|
-| Status         | In Bearbeitung |
+| Status         | Stabil — Vollständig nach FE-5 (Task 80) Plan-Run 2026-05-22 |
 | Priorität      | Mittel                                                     |
 | Abhängigkeiten | frontend-tischansicht.md, frontend-ui-logik.md, e2e-tests.md |
 

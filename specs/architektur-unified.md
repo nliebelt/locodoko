@@ -86,4 +86,4 @@ type PartieEreignis =
 
 - Java: Striktes **camelCase** für alle Felder und Methoden.
 - Database: **snake_case** für Spalten.
-- Domain vs. Persistence: Innerhalb von Entities werden persistierte Felder (falls sie von Domain-Logik abweichen) mit dem Suffix `Db` markiert (z. B. `statusDb`), um die Domain-Getter (`status()`) sauber zu halten.
+- Domain = Persistence: Nach dem Hybrid-Modell (Entscheidung 2026-05-22) entsprechen Domain-Felder direkt den DB-Spalten. Das frühere `*Db`-Suffix (z.B. `statusDb`) entfällt — es gibt keine separate Mapper-Schicht mehr. Alle Felder in Aggregate Roots tragen direkt `@Column`-Annotationen oder werden via JSONB-Converter persistiert.

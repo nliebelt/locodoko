@@ -67,22 +67,39 @@ spieler → partie.ereignisse     (Darf auf Domain-Events lauschen, aber keine i
 
 ### 3. Domain Design (Entities & Value Objects)
 
-**Keine separaten Entity-Klassen (Regel)**
-- Aggregate Roots tragen `@Table`, `@Id`, `@MappedCollection` direkt — kein `*Entity`-Pendant.
-- Persistenz-Infrastruktur-Klassen (Adapter, Mapping-Hilfsobjekte) gehören ins Modul `tisch/`, nicht in `partie/`.
-- `partie/` enthält ausschließlich fachliche Domain-Objekte.
+**Annotationsregel (Entscheidung 2026-05-22)**
+- Aggregate Roots in `partie/` tragen Spring Data JDBC-Annotationen direkt (`@Table`, `@Id`, `@Column`). Kein `*Entity`-Pendant, kein separater Mapper.
+- VOs (Hand, Stich, VorbehaltMeldung, AnsageEreignis, Parteien etc.) bleiben **annotation-frei** und werden via Custom JSONB-Converter persistiert.
+- **Adapter-Klassen** (komplexe Konverter-Implementierungen, DTO-Mapper) gehören weiterhin in `tisch/`.
 
-**Persistenz-Strategie für `Spiel` (Entscheidung 2026-04-15)**
-- `Spiel` bleibt **immutable** — SpielBuilder bleibt, kein mutable POJO.
-- Stiche und Hände als **JSON-Blob** in der `spiel`-Zeile (kein relationales `@MappedCollection` auf `stich`/`hand`-Tabellen). Laufender Spielzustand (aktuelle Hand, aktueller Stich, Phase) ist Byte-kompakt als JSON sinnvoller als normalisierte Relationen.
-- Nach Auswertung werden Stiche verworfen — kein Spielverlauf in DB (V1-Kompromiss).
-- `SpielEntity` und `PartieEntity` werden nach dem JSON-Blob-Umbau in `Spiel` und `Partie` gemergt (`@Table` direkt). `SpielPersistenzAdapter` fällt dann weg.
-- Migrationsreihenfolge: **R12** (Entities nach `tisch/`) → **R13** (JSON-Blob) → **R14** (Entity-Merge).
+**Persistenz-Strategie für `Spiel` (Entscheidung 2026-05-22, ersetzt 2026-04-15)**
+- `Spiel` ist ein **mutable Aggregate Root** (`@Table("laufendes_spiel")`). Business-Methoden mutieren direkt; kein Builder, kein `*Sync`-Mapper.
+- **Hybrides Modell**: strukturierte Spalten für Enums/Flags + JSONB für inner-Aggregate-State (Hände, Stiche, Vorbehalte, Ansagen, Parteien-Zuordnungen).
+- **Greenfield-Schema**: Da die DB nie produktiv ausgerollt wurde, ersetzt ein einziges initiales SQL-Changeset alle 22 YAML-Changesets. Keine Strangler-Migration.
+- Domain-VOs bleiben VOs: `Hand`, `Stich`, `VorbehaltMeldung`, `AnsageEreignis`, `Parteien`, `ArmutStatus`, `HochzeitStatus` erhalten ihre immutable Natur durch JSONB-Converter.
+- `SpielergebnisArchiv` ist ein eigenes Aggregate Root mit `@Table("spielergebnis_archiv")` — getrennt von `Spiel`.
 
-**Aggregate Roots (mutable über Methoden)**
-- Identität & Concurrency: Stabile ID; `@Version Long version` für Optimistic Locking.
+**Aggregate Roots (mutable über Business-Methoden)**
+- Identität & Concurrency: Stabile UUID-ID; `@Version Long version` für Optimistic Locking.
 - Kapselung: Interne Entities sind nach außen nur über das Root erreichbar.
-- Immutable Spiel: `Spiel` gibt bei jeder Mutation eine neue Instanz zurück (`toBuilder()…build()`).
+- Pattern A für Events: Jede Aggregate-Methode gibt `List<SpielEreignis>` zurück. Der aufrufende Service publiziert die Events nach erfolgreichem `save()`.
+
+### 3a. Hybrid-Datenmodell (Zielschema)
+
+```
+partie                   RELATIONAL — Stammdaten, @Version, regelvariante
+partie_teilnehmer        RELATIONAL — M:N Spieler↔Partie, Position, Zeitstempel
+laufendes_spiel          HYBRID — strukturierte Spalten + 10 JSONB-Felder
+spielergebnis_archiv     RELATIONAL — Statistik-queryable Ergebnisarchiv
+sonderpunkt_eintrag      RELATIONAL — FK-Child von spielergebnis_archiv
+spieler_statistik        RELATIONAL — Aggregat-Cache pro (spieler_id, regelvariante)
+tisch, spieler           existierend, unverändert
+```
+
+**JSONB-Felder in `laufendes_spiel`:**
+`haende`, `aktueller_stich`, `abgeschlossene_stiche`, `vorbehalt_meldungen`, `ansage_ereignisse`, `partei_zuordnungen`, `bereits_geschmissen`, `pflicht_ansage_ausstehend`, `armut_status`, `hochzeit_status`
+
+**VO bleibt VO (verbindlich):** Hand, Stich, GespielteKarte, VorbehaltMeldung, AnsageEreignis, Ansagen, Parteien, ArmutStatus, HochzeitStatus, Spielregeln — persistiert via JSONB ohne UUID-Identity.
 
 **Value Objects (immutable)**
 - Keine Identität (z.B. `Karte`, `Augen`, `Spielpunkte`).
@@ -172,7 +189,7 @@ Frontend-Typen und `AppStore` spiegeln die Fachmodelle des Backends (Details: `f
 - [x] `SpielerPosition` liegt in `de.locodoko.partie` (nicht in `karten`).
 - [x] Packages: `tisch/` (nicht `lobby/`), `spieler/` (nicht `session/`), `ki/` top-level.
 - [x] `event_publication`-Tabelle via Liquibase angelegt.
-- [ ] Keine `*Entity`-Klassen in `partie/` — alle in `tisch/` oder direkt gemergt (R12–R14).
+- [x] Keine `*Entity`-Klassen in `partie/` — `@Table` direkt auf Aggregate Roots, VOs bleiben annotation-frei (Entscheidung 2026-05-22).
 - [x] Frontend-Modelle folgen der fachlichen Struktur des Backends.
 - [x] Aggregate Roots mit `@Table` annotiert, Spring Data JDBC Repositories vorhanden.
 - [x] Liquibase Changesets für alle Schemaänderungen.

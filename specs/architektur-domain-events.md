@@ -18,6 +18,24 @@ Silikon oder Fleisch ist, spielt keine Rolle.
 
 ---
 
+## Event-Publikations-Pattern (Pflicht-Regel)
+
+**Einzig erlaubtes Pattern (Pattern A):** Aggregate-Methode gibt `List<SpielEreignis>` zurück → Service publiziert nach erfolgreichem `save()`:
+
+```java
+// Im Service — einzig erlaubtes Muster:
+List<SpielEreignis> ereignisse = spiel.spieleKarte(pos, karte);
+partieRepository.save(partie);                   // erst persistieren
+ereignisse.forEach(publisher::publishEvent);     // dann publishen
+```
+
+**Verboten:**
+- `@DomainEvents` / `@AfterDomainEventPublication` auf Aggregaten (Spring Data Event Buffer)
+- In-Aggregate-Event-Buffer (kein `List<SpielEreignis> domainEvents` im Aggregat)
+- `publisher.publishEvent(...)` vor `save()` (Zustand noch nicht persistiert)
+
+---
+
 ## Transaktions-Garantien
 
 **Gesetz:** Domain-Events dürfen niemals vor dem erfolgreichen Datenbank-Commit verarbeitet werden. Alle Listener mit Seiteneffekten (KI-Orchestrierung, WebSocket-Broadcasts) verwenden ausschließlich `@TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)`.
@@ -51,16 +69,19 @@ abgeschlossen.
 
 Werden von Spring Modulith innerhalb des Backends verarbeitet. Nie direkt an das Frontend gesendet.
 
-| Event | Ausgelöst durch | Listener |
-|-------|----------------|---------|
-| `NaechsterSpielerErwartet` | `SpielAktionsService` nach Kartenzug | `KiTischOrchestrator` |
-| `VorbehaltErwartet` | `SpielAktionsService` in VORBEHALT_ANSAGE-Phase | `KiTischOrchestrator` |
-| `SchweinchenGemeldet` | `SpielAktionsService` bei erster Dullen-Trumpf-Karte | — (kein WS-Broadcast implementiert) |
-| `FuchsGefangen` | `SpielAktionsService` nach Stich-Abschluss | — (Sonderpunkt in `neueSonderpunkte` des `STICH_ABGESCHLOSSEN`-Events) |
-| `KarlchenGespielt` | `SpielAktionsService` nach letztem Stich | — (Sonderpunkt in `neueSonderpunkte` des `STICH_ABGESCHLOSSEN`-Events) |
-| `DoppelkopfGestochen` | `SpielAktionsService` nach Stich-Abschluss | — (Sonderpunkt in `neueSonderpunkte` des `STICH_ABGESCHLOSSEN`-Events) |
-| `HochzeitPartnerGefunden` | `Spiel.java` nach Stich-Abschluss | — (kein WS-Broadcast implementiert) |
-| `SpielBeendet` | `PartieLifecycleService` | — (Seiten-Effekt: WS-Broadcast) |
+**Naming-Konvention:** Jedes Event heißt `XyzGeschehen` oder `XyzErwartet` (Passiv-Partizip / Adjektiv). Der optionale Listener heißt `onXyzGeschehen()` bzw. `onXyzErwartet()`. WS-Mapper sind Methoden in `TischEreignisMapper`.
+
+| Name | Producer-Methode | Consumer-Klasse | Trigger | Phase | WS-Mapping |
+|------|-----------------|-----------------|---------|-------|-----------|
+| `NaechsterSpielerErwartet` | `SpielAktionsService.verarbeiteKarte()` | `KiTischOrchestrator.onNaechsterSpielerErwartet()` | Nach Kartenzug, nächster Spieler ist KI | STICH | — (kein direktes WS-Event) |
+| `VorbehaltErwartet` | `SpielAktionsService.starteVorbehalt()` | `KiTischOrchestrator.onVorbehaltErwartet()` | Vorbehalt-Phase startet, nächster Spieler ist KI | VORBEHALT | — |
+| `AnsageErwartet` | `SpielAktionsService.verarbeiteKarte()` | `KiTischOrchestrator.onAnsageErwartet()` | Pflichtansage ausstehend, Spieler ist KI | STICH | — |
+| `SchweinchenGemeldet` | `SpielAktionsService` bei erster Dullen-Karte | — | Erste Dullen-Trumpf-Karte gespielt | STICH | — (V1: kein WS) |
+| `FuchsGefangen` | `SpielAktionsService.berechneStichSonderpunkte()` | — | Stich enthält gegnerischen Fuchs | STICH | `neueSonderpunkte` in `STICH_ABGESCHLOSSEN` |
+| `KarlchenGespielt` | `SpielAktionsService.berechneStichSonderpunkte()` | — | Letzter Stich, Kreuz-Bube gespielt | STICH | `neueSonderpunkte` in `STICH_ABGESCHLOSSEN` |
+| `DoppelkopfGestochen` | `SpielAktionsService.berechneStichSonderpunkte()` | — | Stich ≥ 40 Augen, beide Parteien beteiligt | STICH | `neueSonderpunkte` in `STICH_ABGESCHLOSSEN` |
+| `HochzeitPartnerGefunden` | `Spiel.schliesseStichAb()` nach Stich 1–3 | `KiTischOrchestrator` (WS-Broadcast) | Hochzeits-Klärung abgeschlossen | STICH | `HOCHZEIT_PARTNER_GEFUNDEN` WS-Event |
+| `SpielBeendet` | `PartieLifecycleService.beendeSpiel()` | `SpielerProfilService.onSpielBeendet()`, `TischEreignisMapper` | Alle Stiche gespielt, Auswertung fertig | — | `SPIEL_BEENDET` WS-Event |
 
 ### 2. WebSocket-Ereignisse (`PartieEreignisTyp`)
 
@@ -144,3 +165,62 @@ export interface PartieEreignisBatch {
 4. Stale Batches (`version ≤ letzteVersion`) werden verworfen.
 
 Verbindungsabbrüche werden zusätzlich durch den `VerbindungsabbruchService` behandelt (STOMP-Reconnect → SNAPSHOT).
+
+---
+
+## Sequenzdiagramme
+
+### KarteGespielt
+
+```
+Client (HTTP POST /api/tisch/{id}/karte)
+  │
+  ▼
+SpielAktionsService.spieleKarte(tischId, spielerId, karteId)
+  │  lädt Partie via partieRepository.findById()
+  │  ruft spiel.spieleKarte(pos, karte) → List<SpielEreignis>
+  │  partieRepository.save(partie)         ← Commit
+  │  publisher.publishEvent(KarteGespielt) ← nach save()
+  │
+  ├──▶ KiTischOrchestrator.onNaechsterSpielerErwartet()  [AFTER_COMMIT]
+  │      └─▶ SpielAktionsService.spieleKarte(...)         ← KI-Zug
+  │
+  └──▶ TischEreignisMapper → WS-Broadcast KARTE_GESPIELT  [AFTER_COMMIT]
+         payload: { hint: {pos, karteId}, partieStand: {...} }
+           ▼
+         AppStore._eventQueue → Animation → State-Patch
+```
+
+### StichAbgeschlossen
+
+```
+SpielAktionsService (nach 4. Karte im Stich)
+  │  spiel.schliesseStichAb() → List<SpielEreignis>
+  │    enthält ggf.: FuchsGefangen, KarlchenGespielt, DoppelkopfGestochen
+  │  partieRepository.save(partie)                 ← Commit
+  │  publisher.publishEvent(StichAbgeschlossen)    ← nach save()
+  │  publisher.publishEvent(FuchsGefangen)         ← nach save(), falls vorhanden
+  │
+  └──▶ TischEreignisMapper → WS-Broadcast STICH_ABGESCHLOSSEN  [AFTER_COMMIT]
+         payload: { stichGewinner, neueSonderpunkte: [...], partieStand: {...} }
+           ▼
+         AppStore: Stich-Animation → sonderpunkteListener → State-Patch
+```
+
+### SpielBeendet
+
+```
+PartieLifecycleService.beendeSpiel(tischId)
+  │  spiel.werteAus() → Spielergebnis
+  │  spielergebnisArchivRepository.save(archiv)   ← eigenes Aggregate
+  │  partieRepository.save(partie)                ← Commit
+  │  publisher.publishEvent(SpielBeendet)         ← nach save()
+  │
+  ├──▶ SpielerProfilService.onSpielBeendet()       [AFTER_COMMIT, async]
+  │      └─▶ spielerStatistikRepository.save(...)  ← Statistik-Update
+  │
+  └──▶ TischEreignisMapper → WS-Broadcast SPIEL_BEENDET  [AFTER_COMMIT]
+         payload: { ergebnis: {...}, partieStand: {...} }
+           ▼
+         AppStore → RundenEnde-Modal anzeigen
+```

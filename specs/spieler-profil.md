@@ -77,7 +77,7 @@ Kein Upload, kein CMS — alles serverside einfach und wartbar.
 - [x] `GET /join/{code}` → Redirect + Auto-Beitreten
 - [x] Gastgeber-Kicken Endpoint
 - [x] Frontend: Avatar + Anzeigename im HUD und Nameplate
-- [x] Frontend: Profil-Ansicht (Statistiken + Verlauf)
+- [ ] Frontend: Profil-Ansicht (Statistiken + Verlauf) — wird durch FE-1 (Task 77) + FE-2 (Task 78) Plan-Run 2026-05-22 erfüllt
 
 ## Technische Hinweise
 

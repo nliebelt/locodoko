@@ -25,7 +25,7 @@ Partie (Aggregate Root, @Version, PartieId)
 ```
 
 - **Partie** = geordnete Folge von Spielen. Verwaltet Gesamtpunktestand, Geberrotation, Bockrunden.
-- **Spiel** = eine Runde (Austeilen → Vorbehalte → Stiche → Auswertung). Immutable: jede Mutation → neue Instanz via `toBuilder()`.
+- **Spiel** = eine Runde (Austeilen → Vorbehalte → Stiche → Auswertung). Aggregate Root (mutable): Zustandsänderungen erfolgen über Business-Methoden, die fachliche Ereignisse als `List<SpielEreignis>` zurückgeben. Domain-VOs (Hand, Stich etc.) bleiben immutable.
 - **Stich** = 4 Karten. Kapselt die zentrale Spiellogik: Bedienpflicht, Stichgewinner, Reihenfolge.
 
 Sonderspiele (Hochzeit, Armut, Solos) sind integraler Teil des Spielkerns — kein separates Modul.
@@ -113,11 +113,12 @@ Detail-Specs: `frontend-architektur.md`, `frontend-animationen.md`, `frontend-ti
 ## Prinzipien
 
 1. **Deutsch.** Ubiquitous Language: DKV-Fachbegriffe in Code, Klassen, Methoden, Kommentaren.
-2. **Immutable.** Value Objects geben neue Instanzen zurück. Spiel via `toBuilder().build()`.
+2. **Value Objects sind immutable.** Hand, Stich, VorbehaltMeldung, AnsageEreignis, Parteien etc. geben neue Instanzen zurück.  
+   **Aggregate Roots sind mutable.** `Spiel` und `Partie` mutieren ihren Zustand über Business-Methoden (Pattern A), die Invarianten per Fail-Fast schützen und fachliche Ereignisse als `List<SpielEreignis>` zurückgeben.
 3. **Fail Fast.** Invarianten sofort im Aggregat per Exception schützen. Guard Clauses statt Arrow Code.
 4. **Tell, Don't Ask.** Logik im Domain-Objekt, nicht im Service. Business-Methoden statt Getter+externe Logik.
 5. **DB = Source of Truth.** Kein In-Memory-State. `@Version` für Optimistic Locking.
-6. **Domain Model = Persistence Model.** Keine separaten Entity-Klassen. `@Table` direkt auf Aggregaten.
+6. **Domain Model = Persistence Model.** Keine separaten Entity-Klassen. `@Table` direkt auf Aggregaten. **Hybrides Modell**: PostgreSQL relational für Stammdaten + Archive; JSONB für inner-Aggregate-State (Hände, Stiche, Vorbehalte, Ansagen). Domain-VOs bleiben annotation-frei, Custom Converter übernehmen die JSONB-Serialisierung.
 7. **Typed IDs.** `TischId`, `PartieId`, `SpielId`, `SpielerId` — nie nackte UUID in Signaturen.
 8. **YAGNI.** Einfachster Weg der das Problem vollständig löst. Keine vorzeitigen Abstraktionen.
 9. **Objektorientiertes Design & Kohäsion.** Bevorzuge echtes objektorientiertes Design, das Daten und Verhalten sinnvoll kapselt, anstatt gigantische, alles wissende Klassen ("God Objects") zu bauen.

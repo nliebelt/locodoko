@@ -36,7 +36,7 @@ Die Fachbegriffe folgen den offiziellen DKV-Doppelkopf-Regeln. Code, Klassen und
 ## Prinzipien
 
 - **Domain Model = Persistence Model**: Keine separaten Entity-Klassen.
-- **Immutable Spiel**: `Spiel` liefert bei jeder Mutation eine neue Instanz via `toBuilder()…build()`. Alle Mutations-Methoden sind seiteneffektfrei.
+- **Mutable Aggregate Root**: `Spiel` mutiert seinen Zustand direkt über Business-Methoden. Jede Methode (z.B. `spieleKarte()`, `meldeVorbehalt()`) schützt Invarianten per Fail-Fast und gibt `List<SpielEreignis>` zurück. Domain-VOs (Hand, Stich, VorbehaltMeldung, Parteien etc.) bleiben immutable.
 - **Tell, don't ask**: Phasen kennen ihre erlaubten Aktionen. Services fragen nicht ab, sie beauftragen.
 - **Ubiquitous Language**: Alle Klassen, Methoden, Felder auf Deutsch.
 
@@ -59,18 +59,21 @@ record SpielerId(UUID wert) { ... }
 
 ---
 
-## `Spiel` — Immutable Aggregate Root
+## `Spiel` — Aggregate Root (mutable)
 
-`Spiel` ist das zentrale Aggregate Root des Spielkerns. Jede Zustandsänderung liefert eine neue `Spiel`-Instanz. Intern nutzt `Spiel` einen **privaten `SpielBuilder`** (inner class, kein Lombok), damit Mutationsmethoden nur die relevanten Felder angeben müssen:
+`Spiel` ist das zentrale Aggregate Root des Spielkerns. Zustandsänderungen erfolgen durch direkte Mutationen in den Business-Methoden (Pattern A). Jede Business-Methode gibt `List<SpielEreignis>` zurück, die der aufrufende Service nach erfolgreichem `partieRepository.save()` via `ApplicationEventPublisher` publiziert.
 
 ```java
-return toBuilder()
-    .phase(Spielphase.STICHPHASE)
-    .pflichtansageAusstehend(Set.of())
-    .build();
+// Pattern A — einzig erlaubtes Muster:
+public List<SpielEreignis> spieleKarte(SpielerPosition pos, Karte karte) {
+    pruefePhase(Stichphase.class);
+    // ... Invarianten-Checks, direkte Mutation ...
+    this.aktuellerStich = aktuellerStich.mitGespielterKarte(pos, karte);
+    return List.of(new KarteGespielt(pos, karte));
+}
 ```
 
-Die `public static` Factory-Methoden (`neu()`, `neuMitSolistAufspieler()`, `ausPersistiertemStand()`) nutzen den Builder intern.
+Die `public static` Factory-Methoden (`neu()`, `neuMitSolistAufspieler()`) erzeugen neue Instanzen. `ausPersistiertemStand()` ist obsolet — Spring Data JDBC lädt Aggregate Roots direkt.
 
 ---
 
@@ -136,6 +139,19 @@ Alle Zustandsänderungen laufen ausschließlich über die Datenbank. Eine `Spiel
 - Domain Events und WebSocket-Broadcasts werden erst **nach** erfolgreichem DB-Commit ausgelöst (`@TransactionalEventListener(phase = AFTER_COMMIT)`).
 - Kein Spielzustand geht bei Server-Neustart verloren — die Datenbank ist die einzige Source of Truth.
 - Idempotenz im Frontend: Events mit `version ≤ letzteVersion` werden verworfen; bei Versionslücken fordert das Frontend automatisch einen HTTP-Snapshot an.
+
+---
+
+## Test-Schichten (Pflicht-Regel)
+
+Zwei klar getrennte Schichten — kein Mischen:
+
+| Schicht | Klassen-Suffix | Annotations | Scope |
+|---------|---------------|-------------|-------|
+| **Domain-Logik** | `*Test.java` | kein `@SpringBootTest`, pure JUnit | Invarianten, Spielregeln, Schnittstellen |
+| **Persistenz-Integration** | `*PersistenzIT.java` | `@DataJdbcTest` + Testcontainers Postgres | Save + Load Roundtrip, JSONB-Converter |
+
+**Regel**: Ein Test der heute ohne `@SpringBootTest` auskommt, darf **niemals** `@SpringBootTest` hinzubekommen. Tests die Persistenz brauchen, kommen in eigene `*PersistenzIT.java`-Klassen.
 
 ---
 

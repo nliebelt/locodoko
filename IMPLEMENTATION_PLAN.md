@@ -1,24 +1,26 @@
 # IMPLEMENTATION_PLAN — Locodoko Doppelkopf
 
-> Stand: 2026-05-22. Erledigte Aufgaben → `IMPLEMENTATION_PLAN_ARCHIVE.md`
+> Stand: 2026-05-24. Erledigte Aufgaben → `IMPLEMENTATION_PLAN_ARCHIVE.md`
 
 ## Notiz
 
-Plan-Run 2026-05-22 (Backend-Architektur-Review + 10 Grill-Runden + Web-Research Doppelkopf-Palast/Fuchstreff + tiefer Frontend-Review): Umfassendes Code-Review mit Fokus auf `specs/architektur*.md` und allen Frontend-Specs. **Wichtigste Entscheidungen und Befunde:**
+Build-Run 2026-05-24 (manuell nach Ralph-BLOCKED): **DB-1 (Spec-Updates, Task 67) abgeschlossen.**
 
-1. **Greenfield-DB-Schema** (Grill #9): DB wurde nie ausgerollt → ein initiales SQL-Changeset statt Strangler-Migration.
-2. **Hybrid PostgreSQL Modell** (Grill #9): relational für Partie-Stammdaten + Statistik-queryable Archive; JSONB für inner-Aggregate-State.
-3. **Mutable Aggregate `Spiel.java`** (Grill #1+#4): pragmatisch via `@Table` direkt; VOs bleiben VOs durch JSONB-Converter.
-4. **Statistik nach Doppelkopf-Vorbildern** (Grill #10): pro Regelvariante (TURNIER/SONDER/FREI) separat — Ableitung aus existierenden `Spielregeln`-Presets trivial möglich.
-5. **Frontend-Befunde (Final-Review):**
-   - **KRITISCHE Spec-Inkonsistenz**: `spieler-profil.md` Z. 80 markiert „Frontend: Profil-Ansicht" als erledigt, existiert aber NICHT. → FE-1 erfüllt es.
-   - **Spec-Verletzung BitmapFont**: `frontend-visuelles-design.md` verlangt Phaser BitmapFont; Code nutzt Web-Font. → FEAT-52 hochgestuft auf normale Priorität.
-   - **Spec-Verletzung E2E-Tests**: `frontend-tastatursteuerung.md` verlangt Tests via Tastatur; 8 von 11 E2E-Tests nutzen `appStore`-Direktaufrufe. → FE-5.
-   - **8 console-Stellen** statt 5 ursprünglich gezählt; **getypte Bridge fehlt**; **A11y minimal**. → FE-3, FE-6.
+Alle 8 Spec-Dateien aktualisiert + 1 neue Spec-Datei erstellt:
+- `architektur.md` + `architektur-spielkern.md`: Mutable Aggregate Root, Pattern A, Test-Schichten
+- `architektur-ddd.md`: §3 Spec-Widerspruch aufgelöst, Hybrid-Datenmodell-Abschnitt, DoD-Item abgehakt
+- `architektur-unified.md`: Db-Suffix-Konvention entfernt
+- `architektur-domain-events.md`: Pattern-A-Pflicht-Regel, erweiterte Event-Inventory-Tabelle, 3 Sequenzdiagramme
+- `datenbankmodell.md`: Komplett neu auf Basis des Hybrid-Schemas
+- `frontend-tastatursteuerung.md`: Status → Stabil (Hinweis auf FE-5)
+- `spieler-profil.md`: Falsches DoD-Häkchen Z. 80 korrigiert
+- `frontend-spielerprofil.md`: Neue Spec-Datei für FE-1/FE-2
 
-Plan: **10 Backend-Tasks (DB-1..DB-10) + 6 Frontend-Tasks (FE-1..FE-6) + FEAT-52 + DOC-65 = 18 Tasks**. Empfohlene Reihenfolge in „Empfohlene Build-Reihenfolge"-Sektion. FEAT-52 ist hochgestuft (Spec-Pflicht). Alle Tasks haben „Erste Datei zuerst"-Hinweise.
+**Nächster Schritt:** DB-3 (JSONB-Converter, Task 69) — schema-unabhängig, Einzel-Commit.
+Dann DB-4a (Spiel mutable machen), danach der Mega-Commit DB-2+4b+4c.
 
-**Status: PLAN-READY für Build-Modus-Nacht-Lauf.** Plan-Modus ist abgeschlossen.
+**Warum Ralph blockiert war:** Kontext-Fenster für DB-1 erschöpft nach 2 von 8 Spec-Dateien.
+Baseline war vollständig grün (307 Backend + 202 Frontend-Tests).
 
 ## Legende
 
@@ -193,7 +195,7 @@ Mit Postgres JSONB + Custom Converter dürfen die meisten Domain-VOs ihre VO-Nat
 ---
 
 ### DB-1: SPEC-ARCHITEKTUR-AKTUALISIEREN (Task 67)
-- [ ] **Dokumentation** (KRITISCH, blockiert alle folgenden Tasks): Specs an das Hybrid-Modell anpassen. Ziel: Specs sind in sich widerspruchsfrei und beschreiben das finale Modell.
+- [x] **Dokumentation** (KRITISCH, blockiert alle folgenden Tasks): Specs an das Hybrid-Modell anpassen. Ziel: Specs sind in sich widerspruchsfrei und beschreiben das finale Modell.
   - **Erste Datei zuerst**: `specs/architektur-ddd.md` — der enthält den heutigen Spec-Widerspruch (§3) und die veraltete JSON-Blob-Entscheidung von 2026-04-15.
   - **`specs/architektur.md`**:
     - Prinzip 2 „Immutable Spiel via `toBuilder().build()`" → **streichen**. Ersetzen durch: „Aggregate Roots sind mutable; Mutationen erfolgen über Business-Methoden (z.B. `spiel.spieleKarte()`), die Invarianten per Fail-Fast schützen und ihre fachlichen Ereignisse explizit als `List<SpielEreignis>` zurückgeben. Domain-VOs (Hand, Stich, Vorbehalt, Ansage, etc.) bleiben immutable."
