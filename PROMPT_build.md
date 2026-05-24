@@ -121,4 +121,17 @@
 
 ---
 
-Wenn alle Aufgaben erledigt sind: `<promise>COMPLETE</promise>`
+## Abschluss der Iteration
+
+Nach dem Commit: Prüfe wie viele offene Tasks noch übrig sind:
+
+```bash
+grep -c '^\- \[ \]' IMPLEMENTATION_PLAN.md
+```
+
+- **Ergebnis > 0** (noch offene Tasks): Gib **kein** Signal aus. Schreibe nichts mehr.
+  ralph.sh startet automatisch die nächste Iteration mit einem frischen Claude-Aufruf.
+- **Ergebnis = 0** (wirklich alle `[ ]` sind weg): Gib `<promise>COMPLETE</promise>` aus.
+
+**WICHTIG:** `<promise>COMPLETE</promise>` bedeutet „alle Tasks im Plan sind erledigt" —
+NICHT „ich habe meinen heutigen Task erledigt". Niemals nach einem einzelnen Task ausgeben.
