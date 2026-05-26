@@ -168,9 +168,10 @@ class SonderpunktDomainEreignisTest {
 
     private Partie partieMitSpiel(Spiel spiel) {
         Partie partie = Partie.neuePersistenz(1);
-        Spiel spielEntity = Spiel.neuePersistenz(1, spiel.geber(), spiel.spieltyp(), spiel.phase());
-        spielEntity.uebernehmeDomainStand(spiel);
-        partie.fuegeSpielHinzu(spielEntity);
+        spiel.setzeSpielNummer(1);
+        partie.fuegeSpielHinzu(spiel);
+        partie.setzeSpielregeln(spiel.spielregeln());
+        partie.initialisiereDomainFelderNachLaden();
         return partie;
     }
 

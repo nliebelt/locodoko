@@ -22,6 +22,7 @@ class PartieNachLadenCallback implements AfterConvertCallback<Partie> {
         for (Spiel spiel : partie.spiele()) {
             spiel.initialisierePersistenzDefaultsNachLaden();
         }
+        partie.initialisiereDomainFelderNachLaden();
         return partie;
     }
 }

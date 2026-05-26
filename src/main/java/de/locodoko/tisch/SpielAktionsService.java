@@ -94,14 +94,12 @@ public class SpielAktionsService {
             TischEntity tisch = ladeAktivenTischMitSpieler(tischId, verwalteterSpieler);
             Spiel laufendesSpiel = ladeLaufendesSpiel(tisch.partie());
             SpielerPosition position = spielerPositionVon(tisch, verwalteterSpieler);
-            laufendesSpiel.hydriere(tisch.konfiguration().alsSpielregeln());
             int einwurfZaehlerVorher = laufendesSpiel.einwurfZaehler();
             try {
                 laufendesSpiel.meldeVorbehalt(position, vorbehalt);
                 if (laufendesSpiel.phase() instanceof Spielphase.VorbehaltAufloesung) {
                     laufendesSpiel.loeseVorbehalteAuf();
                 }
-                laufendesSpiel.syncZuPersistenz();
             } catch (IllegalStateException exception) {
                 throw new SpielverwaltungKonfliktException("VORBEHALT_UNGUELTIG", exception.getMessage());
             }
@@ -127,7 +125,6 @@ public class SpielAktionsService {
             Spiel laufendesSpiel = ladeLaufendesSpiel(tisch.partie());
             SpielerPosition position = spielerPositionVon(tisch, verwalteterSpieler);
             List<Karte> karten = parseKarten(kartenIds);
-            laufendesSpiel.hydriere(tisch.konfiguration().alsSpielregeln());
             int einwurfZaehlerVorher = laufendesSpiel.einwurfZaehler();
             try {
                 if (laufendesSpiel.armutStatus()
@@ -139,7 +136,6 @@ public class SpielAktionsService {
                 } else {
                     laufendesSpiel.lehneArmutAb(position);
                 }
-                laufendesSpiel.syncZuPersistenz();
             } catch (IllegalStateException exception) {
                 throw new SpielverwaltungKonfliktException("ARMUT_ANTWORT_UNGUELTIG", exception.getMessage());
             }
@@ -165,13 +161,11 @@ public class SpielAktionsService {
             TischEntity tisch = ladeAktivenTischMitSpieler(tischId, verwalteterSpieler);
             Spiel laufendesSpiel = ladeLaufendesSpiel(tisch.partie());
             SpielerPosition position = spielerPositionVon(tisch, verwalteterSpieler);
-            laufendesSpiel.hydriere(tisch.konfiguration().alsSpielregeln());
             List<SpielEreignis> spielEreignisse;
             try {
                 LOGGER.trace("Spiele Karte {}", karteId);
                 spielEreignisse = laufendesSpiel.spieleKarte(position, parseKarte(karteId));
-                laufendesSpiel.syncZuPersistenz();
-                LOGGER.trace("Domain-Stand synchronisiert [events={}]", spielEreignisse.size());
+                LOGGER.trace("Domain-Stand aktualisiert [events={}]", spielEreignisse.size());
             } catch (IllegalStateException | UngueltigerSpielzugException exception) {
                 LOGGER.warn("Ungueltige Karte gespielt [spieler={}, karte={}]: {}", position, karteId, exception.getMessage());
                 if (tisch.partie() != null && verwalteterSpieler.sessionId() != null) {
@@ -204,10 +198,8 @@ public class SpielAktionsService {
             TischEntity tisch = ladeAktivenTischMitSpieler(tischId, verwalteterSpieler);
             Spiel laufendesSpiel = ladeLaufendesSpiel(tisch.partie());
             SpielerPosition position = spielerPositionVon(tisch, verwalteterSpieler);
-            laufendesSpiel.hydriere(tisch.konfiguration().alsSpielregeln());
             try {
                 laufendesSpiel.sageAn(position, ansage);
-                laufendesSpiel.syncZuPersistenz();
             } catch (IllegalStateException exception) {
                 throw new SpielverwaltungKonfliktException("ANSAGE_UNGUELTIG", exception.getMessage());
             }

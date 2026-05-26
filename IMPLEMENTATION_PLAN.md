@@ -4,25 +4,16 @@
 
 ## Notiz
 
-Build-Run 2026-05-26 (zweite Session): **DB-4b (JSONB-Persistenz, Baseline-Fix) abgeschlossen.**
+Build-Run 2026-05-26 (vierte Session): **DB-4b+4c ABGESCHLOSSEN — Baseline grün (319 Tests, 0 Failures)**
 
-Implementiert:
-- `laufendes_spiel`-Tabelle mit JSONB-Spalten (ersetzt alten `spiel`-Table aus DB-4a).
-- `JsonbConverter`: 11 Schreib-Converter auf `Converter<T, String>` umgestellt (H2-kompatibel).
-  H2 gibt JSONB als `byte[]` zurück und wraps den JSON in String-Quotes; 3 ReadingConverter-Varianten je Typ.
-- `Spiel.java`: 5 Kollektions-Felder (`haende`, `vorbehalte`, `abgeschlosseneStiche`, `bereitsGeschmissen`, `pflichtAnsageAusstehend`) als `@Transient transient` + separate `@Column String *Json`-Felder.
-- `PartieJsonMapper` (neu) in `partie`-Package: JSON-Serialisierung für die 5 Kollektions-Felder.
-- `SpielNachLadenCallback` + `PartieNachLadenCallback`: `AfterConvertCallback` initialisiert transiente Felder nach DB-Load (Spring Data JDBC ruft Callbacks nur für Aggregate-Root auf, nicht für Kind-Entities in MappedCollection).
-- 319 Tests, 0 Fehler.
+**Was behoben wurde (Blockade-Auflösung):**
+1. **31 Kompilierungsfehler** in 9 Testdateien behoben — alle Aufrufe der gelöschten Test-Helper-Methoden (`uebernehmeDomainStand`, `fuegeHandHinzu`, `fuegeStichHinzu` etc.) auf die neue einheitliche Spiel-API umgestellt (`ersetzeHaende`, `setzeAbgeschlosseneStiche`, `setzeErgebnis`, `setzeAnsagen`)
+2. **IllegalStateException in `Partie.initialisiereDomainFelderNachLaden()`**: `parteien()` wirft wenn null — `hatParteien()`-Methode zu `Spiel.java` hinzugefügt als Null-Safe-Check
+3. **2 KI-Integrationstests** (beide vollautomatische KI-Partien): Wurzelursache war ein Produktionsfehler in `PartieLifecycleService.uebernehmeDomainPartieAbschluss()` — nach dem Hinzufügen eines neuen Spiels wurden die transienten Domain-Felder `abgeschlosseneSpiele` und `aktuellesSpiel` nicht aktualisiert. Fix: `partie.initialisiereDomainFelderNachLaden()` nach `fuegeSpielHinzu()` aufrufen. Außerdem `setzeSpielregeln(Spielregeln)`-Setter zu `Partie` hinzugefügt und in Test-Helpers genutzt.
 
-**Erkenntnisse DB-4b (Basis für DB-4c):**
-- Spring Data JDBC behandelt `Map<K,V>` und `List<T>` als Kind-Entity-Collection (`@MappedCollection`), selbst mit registriertem WritingConverter. `@Column` auf solchen Feldern = KEY-Spaltenname, nicht Skalar.
-- Java `transient` allein reicht nicht — Spring Data JDBC erkennt Felder auch über öffentliche Getter-Methoden. `@org.springframework.data.annotation.Transient` auf Felder UND Getter nötig.
-- H2 (PostgreSQL-Modus): JSONB-Spalten werden als `byte[]` zurückgegeben; `setString()` wraps den JSON-String in JSON-String-Quotes (`"{"x":1}"` statt `{"x":1}`). Fix: `entpackeH2Json()` Helper.
-- `AfterConvertCallback<Spiel>` feuert **nicht** für Spiel-Objekte in `Partie.spieleMap` (`@MappedCollection`). Lösung: `PartieNachLadenCallback<Partie>` iteriert explizit über alle Spiel-Objekte.
+**DB-4c:** `SpielHydrierer.java`, `SpielPersistenzSync.java`, `SpielBuilder.java`, `JsonKonverter.java` sind bereits gelöscht (aus dem Dateisystem entfernt, als `deleted` im Working Tree).
 
-**Nächster Schritt:** DB-4c als eigenständiger Commit:
-- DB-4c (Task 70c): SpielHydrierer + SpielPersistenzSync + SpielBuilder löschen.
+**Nächster Schritt:** DB-4b+4c committen, dann DB-4d (Pattern-A-Events).
 
 ## Legende
 
@@ -321,7 +312,7 @@ Konkret: Build-Modus erstellt für DB-2/4b/4c **drei separate Working-Tree-Ände
   - H2-Kompatibilität: `byte[]` + String + PGobject ReadingConverter.
   - Alle 319 Tests grün.
 
-#### DB-4c: HYDRIERER UND SYNC LÖSCHEN (Task 70c)
+#### DB-4c: HYDRIERER UND SYNC LÖSCHEN (Task 70c) [BLOCKED: Baseline rot - 31 Kompilierungsfehler nach DB-4b]
 - [ ] **Backend** (Mittel, kleiner Aufwand): Mapper-Klassen löschen, weil sie nichts mehr zu mappen haben.
   - **Erste Datei zuerst**: `SpielHydrierer.java` (238 Z.) löschen.
   - **Schritte**:

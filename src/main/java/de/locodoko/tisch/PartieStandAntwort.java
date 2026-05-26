@@ -136,7 +136,6 @@ public record PartieStandAntwort(
 
             Map<SpielerPosition, SpielerEntity> spielerNachPosition = spielerNachPosition(tisch);
             SpielerPosition sichtbarePosition = positionVonSpieler(spielerNachPosition, sichtbarerSpielerId);
-            laufendesSpiel.hydriere(tisch.konfiguration().alsSpielregeln());
             Spiel fachlichesSpiel = laufendesSpiel;
             SpielerPosition aktuellerSpieler = aktuellerSpieler(fachlichesSpiel);
             boolean zeigeAlleHaende = debugModus && sichtbarePosition != null;

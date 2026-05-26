@@ -26,7 +26,7 @@ class SpielVorbehaltAufloesung {
             TrumpfOrdnung aktuelleOrdnung, Spielregeln spielregeln,
             Map<SpielerPosition, Hand> haende, SpielerPosition geber,
             SpielerPosition solistAufspieler, Kartendeck kartendeck, int einwurfZaehler) {
-        VorbehaltMeldung hoechsterVorbehalt = SpielHydrierer.hoechsterVorbehaltAusListe(vorbehalte).orElse(null);
+        VorbehaltMeldung hoechsterVorbehalt = hoechsterVorbehaltAusListe(vorbehalte).orElse(null);
         if (hoechsterVorbehalt != null && hoechsterVorbehalt.ansage().istSchmeissen()) {
             eingeworfenesSpiel(spiel, kartendeck, spielregeln, geber, einwurfZaehler);
             return;
@@ -133,6 +133,19 @@ class SpielVorbehaltAufloesung {
                 .filter(k -> k.farbe() == Farbe.KREUZ && k.wert() == Kartenwert.DAME).count() >= 2) return pos;
         }
         return null;
+    }
+
+    static java.util.Optional<VorbehaltMeldung> hoechsterVorbehaltAusListe(List<VorbehaltMeldung> vorbehalte) {
+        VorbehaltMeldung best = null;
+        for (VorbehaltMeldung meldung : vorbehalte) {
+            if (!meldung.istVorbehalt()) {
+                continue;
+            }
+            if (best == null || meldung.ansage().prioritaet() > best.ansage().prioritaet()) {
+                best = meldung;
+            }
+        }
+        return java.util.Optional.ofNullable(best);
     }
 
     static Map<SpielerPosition, Hand> haendeAusDeck(Kartendeck deck) {

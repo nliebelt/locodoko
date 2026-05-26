@@ -6,7 +6,7 @@ import de.locodoko.karten.Farbe;
 import de.locodoko.karten.Karte;
 import de.locodoko.karten.Kartenwert;
 import de.locodoko.karten.Spieltyp;
-import de.locodoko.partie.HandJsonEintrag;
+import de.locodoko.karten.Hand;
 import de.locodoko.partie.Partie;
 import de.locodoko.partie.Spiel;
 import de.locodoko.partie.Spielphase;
@@ -26,6 +26,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.context.WebApplicationContext;
 
 import java.util.List;
+import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.springframework.http.MediaType.APPLICATION_JSON;
@@ -85,14 +86,16 @@ class PartieControllerTest {
 
         Partie partie = Partie.neuePersistenz(8);
         Spiel spiel = Spiel.neuePersistenz(1, SpielerPosition.SUED, Spieltyp.NORMALSPIEL, Spielphase.VORBEHALT_ANSAGE);
-        spiel.fuegeHandHinzu(HandJsonEintrag.aus(SpielerPosition.SUED, List.of(
-            new Karte(Farbe.KREUZ, Kartenwert.DAME, 1),
-            new Karte(Farbe.HERZ, Kartenwert.ZEHN, 1)
-        )));
-        spiel.fuegeHandHinzu(HandJsonEintrag.aus(SpielerPosition.NORD, List.of(
-            new Karte(Farbe.KARO, Kartenwert.AS, 1),
-            new Karte(Farbe.PIK, Kartenwert.KOENIG, 1)
-        )));
+        spiel.ersetzeHaende(Map.of(
+            SpielerPosition.SUED, new Hand(List.of(
+                new Karte(Farbe.KREUZ, Kartenwert.DAME, 1),
+                new Karte(Farbe.HERZ, Kartenwert.ZEHN, 1)
+            )),
+            SpielerPosition.NORD, new Hand(List.of(
+                new Karte(Farbe.KARO, Kartenwert.AS, 1),
+                new Karte(Farbe.PIK, Kartenwert.KOENIG, 1)
+            ))
+        ));
         partie.fuegeSpielHinzu(spiel);
         tisch.setzePartie(partie);
         TischEntity gespeichert = tischRepository.saveAndFlush(tisch);

@@ -5,8 +5,8 @@ import de.locodoko.karten.Farbe;
 import de.locodoko.karten.Karte;
 import de.locodoko.karten.Kartendeck;
 import de.locodoko.karten.Kartenwert;
-import de.locodoko.partie.AktuellerStichKarteEmbeddable;
-import de.locodoko.partie.HandJsonEintrag;
+import de.locodoko.karten.Hand;
+import de.locodoko.partie.GespielteKarte;
 import de.locodoko.partie.SpielerPosition;
 import de.locodoko.karten.Spielregeln;
 import de.locodoko.karten.Spieltyp;
@@ -16,7 +16,7 @@ import de.locodoko.partie.Spielpunkte;
 import de.locodoko.partie.Spielphase;
 import de.locodoko.partie.Sonderpunkt;
 import de.locodoko.partie.SonderpunktEreignis;
-import de.locodoko.partie.StichJsonEintrag;
+import de.locodoko.partie.Stich;
 import de.locodoko.partie.Partie;
 import de.locodoko.partie.Spiel;
 import de.locodoko.spieler.SpielerEntity;
@@ -51,25 +51,22 @@ class PartieStandAntwortTest {
         Partie partie = Partie.neuePersistenz(8);
         Spiel spiel = Spiel.neuePersistenz(1, SpielerPosition.SUED, Spieltyp.NORMALSPIEL, Spielphase.GESAMTSTAND_AKTUALISIEREN);
 
-        StichJsonEintrag ersterStich = new StichJsonEintrag(1, SpielerPosition.SUED, SpielerPosition.WEST, 26,
-            List.of(
-                new AktuellerStichKarteEmbeddable(SpielerPosition.SUED, Farbe.KREUZ, Kartenwert.AS, 1, 0),
-                new AktuellerStichKarteEmbeddable(SpielerPosition.WEST, Farbe.KARO, Kartenwert.ZEHN, 1, 1),
-                new AktuellerStichKarteEmbeddable(SpielerPosition.NORD, Farbe.HERZ, Kartenwert.AS, 1, 2),
-                new AktuellerStichKarteEmbeddable(SpielerPosition.OST, Farbe.PIK, Kartenwert.AS, 1, 3)
-            ));
+        Stich ersterStich = Stich.ausPersistiertemStand(SpielerPosition.SUED, List.of(
+            new GespielteKarte(SpielerPosition.SUED, new Karte(Farbe.KREUZ, Kartenwert.AS, 1), 0),
+            new GespielteKarte(SpielerPosition.WEST, new Karte(Farbe.KARO, Kartenwert.ZEHN, 1), 1),
+            new GespielteKarte(SpielerPosition.NORD, new Karte(Farbe.HERZ, Kartenwert.AS, 1), 2),
+            new GespielteKarte(SpielerPosition.OST, new Karte(Farbe.PIK, Kartenwert.AS, 1), 3)
+        ));
 
-        StichJsonEintrag zweiterStich = new StichJsonEintrag(2, SpielerPosition.WEST, SpielerPosition.SUED, 18,
-            List.of(
-                new AktuellerStichKarteEmbeddable(SpielerPosition.WEST, Farbe.KREUZ, Kartenwert.ZEHN, 2, 0),
-                new AktuellerStichKarteEmbeddable(SpielerPosition.NORD, Farbe.KREUZ, Kartenwert.KOENIG, 1, 1),
-                new AktuellerStichKarteEmbeddable(SpielerPosition.OST, Farbe.KREUZ, Kartenwert.NEUN, 1, 2),
-                new AktuellerStichKarteEmbeddable(SpielerPosition.SUED, Farbe.KARO, Kartenwert.BUBE, 1, 3)
-            ));
+        Stich zweiterStich = Stich.ausPersistiertemStand(SpielerPosition.WEST, List.of(
+            new GespielteKarte(SpielerPosition.WEST, new Karte(Farbe.KREUZ, Kartenwert.ZEHN, 2), 0),
+            new GespielteKarte(SpielerPosition.NORD, new Karte(Farbe.KREUZ, Kartenwert.KOENIG, 1), 1),
+            new GespielteKarte(SpielerPosition.OST, new Karte(Farbe.KREUZ, Kartenwert.NEUN, 1), 2),
+            new GespielteKarte(SpielerPosition.SUED, new Karte(Farbe.KARO, Kartenwert.BUBE, 1), 3)
+        ));
 
-        spiel.fuegeStichHinzu(ersterStich);
-        spiel.fuegeStichHinzu(zweiterStich);
-        spiel.uebernehmeErgebnis(new Spielergebnis(
+        spiel.setzeAbgeschlosseneStiche(List.of(ersterStich, zweiterStich));
+        spiel.setzeErgebnis(new Spielergebnis(
             Map.of(Partei.RE, new Augen(151), Partei.KONTRA, new Augen(89)),
             Partei.RE,
             new Spielpunkte(3),
@@ -133,11 +130,13 @@ class PartieStandAntwortTest {
             new Karte(Farbe.KREUZ, Kartenwert.DAME, 1),
             new Karte(Farbe.HERZ, Kartenwert.ZEHN, 1)
         );
-        spiel.fuegeHandHinzu(HandJsonEintrag.aus(SpielerPosition.SUED, annasKarten));
-        spiel.fuegeHandHinzu(HandJsonEintrag.aus(SpielerPosition.NORD, List.of(
-            new Karte(Farbe.KARO, Kartenwert.AS, 1),
-            new Karte(Farbe.PIK, Kartenwert.KOENIG, 1)
-        )));
+        spiel.ersetzeHaende(Map.of(
+            SpielerPosition.SUED, new Hand(annasKarten),
+            SpielerPosition.NORD, new Hand(List.of(
+                new Karte(Farbe.KARO, Kartenwert.AS, 1),
+                new Karte(Farbe.PIK, Kartenwert.KOENIG, 1)
+            ))
+        ));
         partie.fuegeSpielHinzu(spiel);
         tisch.setzePartie(partie);
 
@@ -177,10 +176,12 @@ class PartieStandAntwortTest {
         Partie partie = Partie.neuePersistenz(8);
         partie.setzeBockrundenZaehlerDb(2);
         Spiel spiel = Spiel.neuePersistenz(1, SpielerPosition.SUED, Spieltyp.NORMALSPIEL, Spielphase.VORBEHALT_ANSAGE);
-        spiel.fuegeHandHinzu(HandJsonEintrag.aus(SpielerPosition.SUED, List.of()));
-        spiel.fuegeHandHinzu(HandJsonEintrag.aus(SpielerPosition.WEST, List.of()));
-        spiel.fuegeHandHinzu(HandJsonEintrag.aus(SpielerPosition.NORD, List.of()));
-        spiel.fuegeHandHinzu(HandJsonEintrag.aus(SpielerPosition.OST, List.of()));
+        spiel.ersetzeHaende(Map.of(
+            SpielerPosition.SUED, new Hand(List.of()),
+            SpielerPosition.WEST, new Hand(List.of()),
+            SpielerPosition.NORD, new Hand(List.of()),
+            SpielerPosition.OST, new Hand(List.of())
+        ));
         partie.fuegeSpielHinzu(spiel);
         tisch.setzePartie(partie);
 
@@ -207,10 +208,12 @@ class PartieStandAntwortTest {
 
         Partie partie = Partie.neuePersistenz(8);
         Spiel spiel = Spiel.neuePersistenz(1, SpielerPosition.SUED, Spieltyp.NORMALSPIEL, Spielphase.VORBEHALT_ANSAGE);
-        spiel.fuegeHandHinzu(HandJsonEintrag.aus(SpielerPosition.SUED, List.of()));
-        spiel.fuegeHandHinzu(HandJsonEintrag.aus(SpielerPosition.WEST, List.of()));
-        spiel.fuegeHandHinzu(HandJsonEintrag.aus(SpielerPosition.NORD, List.of()));
-        spiel.fuegeHandHinzu(HandJsonEintrag.aus(SpielerPosition.OST, List.of()));
+        spiel.ersetzeHaende(Map.of(
+            SpielerPosition.SUED, new Hand(List.of()),
+            SpielerPosition.WEST, new Hand(List.of()),
+            SpielerPosition.NORD, new Hand(List.of()),
+            SpielerPosition.OST, new Hand(List.of())
+        ));
         partie.fuegeSpielHinzu(spiel);
         tisch.setzePartie(partie);
 
@@ -266,7 +269,6 @@ class PartieStandAntwortTest {
         spiel.meldeGesund(SpielerPosition.OST);
         spiel.meldeGesund(SpielerPosition.SUED);
         spiel.loeseVorbehalteAuf();
-        spiel.syncZuPersistenz();
 
         Partie partie = Partie.neuePersistenz(8);
         partie.fuegeSpielHinzu(spiel);

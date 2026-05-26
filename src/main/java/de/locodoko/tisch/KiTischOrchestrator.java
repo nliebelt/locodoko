@@ -121,13 +121,10 @@ public class KiTischOrchestrator {
                 if (laufendesSpiel == null) {
                     return;
                 }
-                laufendesSpiel.hydriere(tisch.konfiguration().alsSpielregeln());
-
                 // Spielende: Auswertung abschliessen und naechstes Spiel starten
                 if (laufendesSpiel.phase() instanceof Spielphase.Auswertung
                         || laufendesSpiel.phase() instanceof Spielphase.GesamtstandAktualisieren) {
                     try {
-                        partie.hydriere(tisch.konfiguration().alsSpielregeln());
                         Partie neuePartie = partie.schliesseAktuellesSpielAbUndStarteNaechstes();
                         partieLifecycleService.uebernehmeDomainPartieAbschluss(tisch, laufendesSpiel, neuePartie);
                         partieRepository.saveAndFlush(partie);
@@ -164,7 +161,6 @@ public class KiTischOrchestrator {
                 try {
                     KiAktionErgebnis ergebnis = kiOrchestrierungService.fuehreAktionAus(
                             laufendesSpiel, position, schwierigkeit);
-                    laufendesSpiel.uebernehmeDomainStand(ergebnis.naechsterStand());
                     partieRepository.saveAndFlush(partie);
 
                     if (hatMenschlichenSpieler) {

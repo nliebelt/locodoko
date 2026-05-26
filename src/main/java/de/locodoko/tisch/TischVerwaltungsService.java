@@ -536,7 +536,6 @@ public class TischVerwaltungsService {
         Kartendeck kartendeck = Kartendeck.neu(tisch.konfiguration().alsSpielregeln()).gemischt();
         Spiel spiel = Spiel.neu(SpielerPosition.SUED, tisch.konfiguration().alsSpielregeln(), kartendeck);
         spiel.teileKartenAus();
-        spiel.syncZuPersistenz();
         spiel.setzeSpielNummer(1);
         return spiel;
     }

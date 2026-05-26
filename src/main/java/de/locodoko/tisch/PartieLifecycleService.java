@@ -66,7 +66,6 @@ public class PartieLifecycleService {
         }
         partie.setzeBockrundenZaehlerDb(neuePartie.bockrundenZaehler());
         partie.setzeSolistDesLetztenSpielsDb(neuePartie.solistDesLetztenSpiels().orElse(null));
-        abgeschlossenesSpiel.uebernehmeDomainStand(neuePartie.abgeschlosseneSpiele().getLast());
         if (neuePartie.istBeendet()) {
             partie.markiereAlsBeendet();
             veroeffentlicheSpielBeendet(tisch, abgeschlossenesSpiel, true);
@@ -88,6 +87,10 @@ public class PartieLifecycleService {
         Spiel neuesSpiel = neuePartie.aktuellesSpiel();
         neuesSpiel.setzeSpielNummer(partie.aktuellesSpielNummer() + 1);
         partie.fuegeSpielHinzu(neuesSpiel);
+        // Transiente Domain-Felder aktualisieren: abgeschlosseneSpiele und aktuellesSpiel
+        // muessen neu initialisiert werden, damit folgende Domain-Aufrufe auf der Entity
+        // (z.B. schliesseAktuellesSpielAbUndStarteNaechstes) korrekt arbeiten.
+        partie.initialisiereDomainFelderNachLaden();
         LOGGER.info("Naechstes Spiel gestartet [tischId={}, spielNr={}]", tisch.id(), neuesSpiel.spielNummer());
     }
 

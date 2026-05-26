@@ -20,7 +20,6 @@ import org.springframework.data.annotation.Transient;
 import org.springframework.data.relational.core.mapping.Column;
 import org.springframework.data.relational.core.mapping.Table;
 
-import java.time.Instant;
 import java.util.ArrayList;
 import java.util.EnumMap;
 import java.util.EnumSet;
@@ -29,7 +28,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
-import java.util.UUID;
 
 /**
  * Ein einzelnes Doppelkopf-Spiel innerhalb einer Partie.
@@ -110,22 +108,42 @@ public class Spiel extends AbstraktePersistenzEntity {
 
     public static Spiel neu(SpielerPosition geber, Spielregeln spielregeln, Kartendeck kartendeck) {
         Objects.requireNonNull(geber, "geber darf nicht null sein");
-        return new SpielBuilder().spielregeln(spielregeln).kartendeck(kartendeck)
-            .trumpfOrdnung(new NormaleTrumpfOrdnung(spielregeln)).spieltyp(Spieltyp.NORMALSPIEL)
-            .geber(geber).phase(Spielphase.KARTEN_AUSTEILEN).haende(Map.of()).vorbehalte(List.of())
-            .parteien(null).ansagen(Ansagen.leer()).abgeschlosseneStiche(List.of())
-            .ergebnis(null).solistAufspieler(null).build();
+        return new Spiel(
+            spielregeln,
+            kartendeck,
+            new NormaleTrumpfOrdnung(spielregeln),
+            Spieltyp.NORMALSPIEL,
+            geber,
+            Spielphase.KARTEN_AUSTEILEN,
+            Map.of(),
+            List.of(),
+            null,
+            Ansagen.leer(),
+            List.of(),
+            null,
+            null
+        );
     }
 
     /** Wie {@link #neu}, aber der Solist des vorherigen Spiels erhaelt das Anspielrecht. */
     public static Spiel neuMitSolistAufspieler(SpielerPosition geber, SpielerPosition solistAufspieler, Spielregeln spielregeln, Kartendeck kartendeck) {
         Objects.requireNonNull(geber, "geber darf nicht null sein");
         Objects.requireNonNull(solistAufspieler, "solistAufspieler darf nicht null sein");
-        return new SpielBuilder().spielregeln(spielregeln).kartendeck(kartendeck)
-            .trumpfOrdnung(new NormaleTrumpfOrdnung(spielregeln)).spieltyp(Spieltyp.NORMALSPIEL)
-            .geber(geber).phase(Spielphase.KARTEN_AUSTEILEN).haende(Map.of()).vorbehalte(List.of())
-            .parteien(null).ansagen(Ansagen.leer()).abgeschlosseneStiche(List.of())
-            .ergebnis(null).solistAufspieler(solistAufspieler).build();
+        return new Spiel(
+            spielregeln,
+            kartendeck,
+            new NormaleTrumpfOrdnung(spielregeln),
+            Spieltyp.NORMALSPIEL,
+            geber,
+            Spielphase.KARTEN_AUSTEILEN,
+            Map.of(),
+            List.of(),
+            null,
+            Ansagen.leer(),
+            List.of(),
+            null,
+            solistAufspieler
+        );
     }
 
     public static Spiel ausPersistiertemStand(
@@ -146,12 +164,24 @@ public class Spiel extends AbstraktePersistenzEntity {
         List<Stich> abgeschlosseneStiche, Spielergebnis ergebnis,
         boolean schweinchenAktiv, SpielerPosition solistAufspieler, int einwurfZaehler
     ) {
-        Spiel spiel = new SpielBuilder().spielregeln(spielregeln).kartendeck(kartendeck)
-            .trumpfOrdnung(SpielVorbehaltAufloesung.trumpfOrdnungFuerPersistiertenStand(spielregeln, spieltyp, schweinchenAktiv))
-            .spieltyp(spieltyp).geber(geber).phase(phase).haende(haende).vorbehalte(vorbehalte)
-            .parteien(parteien).ansagen(ansagen).abgeschlosseneStiche(abgeschlosseneStiche)
-            .ergebnis(ergebnis).solistAufspieler(solistAufspieler).einwurfZaehler(einwurfZaehler).build();
+        Spiel spiel = new Spiel(
+            spielregeln,
+            kartendeck,
+            SpielVorbehaltAufloesung.trumpfOrdnungFuerPersistiertenStand(spielregeln, spieltyp, schweinchenAktiv),
+            spieltyp,
+            geber,
+            phase,
+            haende,
+            vorbehalte,
+            parteien,
+            ansagen,
+            abgeschlosseneStiche,
+            ergebnis,
+            solistAufspieler
+        );
         spiel.schweinchenAktivFlag = schweinchenAktiv;
+        spiel.einwurfZaehler = einwurfZaehler;
+        spiel.synchronisierePersistenzFelderVorSpeichern();
         return spiel;
     }
 
@@ -478,6 +508,29 @@ public class Spiel extends AbstraktePersistenzEntity {
     public int spielNummer() { return spielNummer; }
     public void setzeSpielNummer(int spielNummer) { this.spielNummer = spielNummer; }
     public String phasenName() { return phaseText; }
+
+    /** Ersetzt die Haende aller Spieler (für Test-Setup und Integration-Tests). */
+    public void ersetzeHaende(Map<SpielerPosition, Hand> neueHaende) {
+        this.haende = new java.util.EnumMap<>(neueHaende);
+    }
+
+    /** Setzt das Spielergebnis direkt (für Test-Setup). */
+    public void setzeErgebnis(Spielergebnis neuesErgebnis) {
+        this.ergebnis = neuesErgebnis;
+    }
+
+    /** Setzt die Ansagen direkt (für Test-Setup). */
+    public void setzeAnsagen(Ansagen neueAnsagen) {
+        this.ansagen = neueAnsagen;
+    }
+
+    /** Prüft ohne Exception ob Parteien-Zuweisung bereits bekannt ist (z.B. nach DB-Laden). */
+    public boolean hatParteien() { return parteien != null; }
+
+    /** Setzt die abgeschlossenen Stiche (für Test-Setup). */
+    public void setzeAbgeschlosseneStiche(List<Stich> stiche) {
+        this.abgeschlosseneStiche = new java.util.ArrayList<>(stiche);
+    }
     public SpielerPosition geberPositionDb() { return geber; }
     public Spieltyp spieltypAusDb() { return spieltyp; }
     public SpielErgebnisEmbeddable dbErgebnis() { return ergebnisEmbeddable(); }
@@ -536,96 +589,18 @@ public class Spiel extends AbstraktePersistenzEntity {
     public boolean schweinchenAktivFlag() { return schweinchenAktivFlag; }
     public List<String> pflichtansageAusstehendDb() { return pflichtAnsageAusstehend.stream().map(Enum::name).toList(); }
 
-    public void fuegeHandHinzu(HandJsonEintrag hand) {
-        Objects.requireNonNull(hand, "hand darf nicht null sein");
-        EnumMap<SpielerPosition, Hand> aktuelleHaende = new EnumMap<>(SpielerPosition.class);
-        aktuelleHaende.putAll(haende);
-        aktuelleHaende.put(hand.spielerPosition(), new Hand(hand.karten().stream().map(k -> new de.locodoko.karten.Karte(k.farbe(), k.wert(), k.exemplarIndex())).toList()));
-        this.haende = Map.copyOf(aktuelleHaende);
-        this.haendeJson = PartieJsonMapper.serializeHaende(this.haende);
-    }
-
-    public void ersetzeHaende(List<HandJsonEintrag> neueHaende) {
+    /** Ersetzt die Handverteilung des Spiels, z. B. fuer kontrollierte Persistenz-Setups in Tests. */
+    public void setzeHaendeAusMap(Map<SpielerPosition, Hand> neueHaende) {
         Objects.requireNonNull(neueHaende, "neueHaende duerfen nicht null sein");
-        EnumMap<SpielerPosition, Hand> map = new EnumMap<>(SpielerPosition.class);
-        neueHaende.forEach(hand -> map.put(hand.spielerPosition(), new Hand(hand.karten().stream().map(k -> new de.locodoko.karten.Karte(k.farbe(), k.wert(), k.exemplarIndex())).toList())));
-        this.haende = Map.copyOf(map);
+        this.haende = Map.copyOf(neueHaende);
+        this.kartendeck = null;
         this.haendeJson = PartieJsonMapper.serializeHaende(this.haende);
     }
-
-    public void fuegeStichHinzu(StichJsonEintrag stich) {
-        Objects.requireNonNull(stich, "stich darf nicht null sein");
-        List<Stich> aktuelleStiche = new ArrayList<>(abgeschlosseneStiche);
-        aktuelleStiche.add(SpielHydrierer.alsStich(stich));
-        this.abgeschlosseneStiche = List.copyOf(aktuelleStiche);
-        this.abgeschlosseneStichJson = PartieJsonMapper.serializeStiche(this.abgeschlosseneStiche);
-    }
-
-    public void uebernehmeErgebnis(Spielergebnis spielergebnis) {
-        Objects.requireNonNull(spielergebnis, "spielergebnis darf nicht null sein");
-        this.ergebnis = spielergebnis;
-    }
-
-    public void ersetzeAnsagen(List<AnsageEreignisEmbeddable> neueAnsagen) {
-        Objects.requireNonNull(neueAnsagen, "neueAnsagen duerfen nicht null sein");
-        this.ansagen = Ansagen.ausEreignissen(neueAnsagen.stream().map(e -> new AnsageEreignis(e.spielerPosition(), e.ansage())).toList());
-    }
-
-    public void setzeAktuellenStich(SpielerPosition aufspielerPosition, List<AktuellerStichKarteEmbeddable> neueKarten) {
-        List<GespielteKarte> gespielteKarten = Objects.requireNonNull(neueKarten, "neueKarten duerfen nicht null sein").stream()
-            .map(SpielHydrierer::alsGespielteKarte)
-            .toList();
-        this.aktuellerStich = aufspielerPosition != null ? Stich.ausPersistiertemStand(aufspielerPosition, gespielteKarten) : null;
-        if (phase() instanceof Spielphase.Stichphase stichphase) {
-            setzePhase(new Spielphase.Stichphase(this.aktuellerStich != null ? this.aktuellerStich : rekonstruiereAktuellenStich(), stichphase.pflichtansageAusstehend(), stichphase.hochzeitStatus()));
-        }
-    }
-
-    public void setzeHochzeitStatus(SpielerPosition spielerPosition, int geklaerteStiche, SpielerPosition partnerPosition, boolean stillesSolo) {
-        this.hochzeitStatus = spielerPosition != null ? new HochzeitStatus(spielerPosition, geklaerteStiche, partnerPosition, stillesSolo) : null;
-        if (phase() instanceof Spielphase.Stichphase stichphase) {
-            setzePhase(new Spielphase.Stichphase(stichphase.aktuellerStich(), stichphase.pflichtansageAusstehend(), this.hochzeitStatus));
-        }
-    }
-
-    public void hydriere(Spielregeln spielregeln) { hydriere(spielregeln, null); }
-
-    public void hydriere(Spielregeln spielregeln, SpielerPosition solistDesLetztenSpiels) {
-        Objects.requireNonNull(spielregeln, "spielregeln darf nicht null sein");
-        SpielHydrierer.hydriere(this, spielregeln, solistDesLetztenSpiels);
-    }
-
-    public void syncZuPersistenz() { SpielPersistenzSync.sync(this); }
 
     /** Wird vom {@code SpielNachLadenCallback} nach dem DB-Laden aufgerufen. */
     public void initialisierePersistenzDefaultsNachLaden() { initialisierePersistenzDefaults(); }
 
-    public void uebernehmeDomainStand(Spiel quelle) {
-        spielregeln = quelle.spielregeln;
-        kartendeck = quelle.kartendeck;
-        trumpfOrdnung = quelle.trumpfOrdnung;
-        spieltyp = quelle.spieltyp;
-        geber = quelle.geber;
-        phaseText = quelle.phaseText;
-        haende = quelle.haende;
-        vorbehalte = quelle.vorbehalte;
-        parteien = quelle.parteien;
-        ansagen = quelle.ansagen;
-        abgeschlosseneStiche = quelle.abgeschlosseneStiche;
-        aktuellerStich = quelle.aktuellerStich;
-        pflichtAnsageAusstehend = quelle.pflichtAnsageAusstehend;
-        armutStatus = quelle.armutStatus;
-        hochzeitStatus = quelle.hochzeitStatus;
-        ergebnis = quelle.ergebnis;
-        solistAufspieler = quelle.solistAufspieler;
-        bereitsGeschmissen = quelle.bereitsGeschmissen;
-        einwurfZaehler = quelle.einwurfZaehler;
-        trumpfOrdnungTyp = quelle.trumpfOrdnungTyp;
-        schweinchenAktivFlag = quelle.schweinchenAktivFlag;
-        syncZuPersistenz();
-    }
-
-    void synchronisierePersistenzFelder() {
+    public void synchronisierePersistenzFelderVorSpeichern() {
         initialisierePersistenzDefaults();
         if (trumpfOrdnung != null) {
             setzeTrumpfOrdnung(trumpfOrdnung);
@@ -798,13 +773,6 @@ public class Spiel extends AbstraktePersistenzEntity {
     }
 
     private static boolean istKaroAs(Karte k) { return k.farbe() == Farbe.KARO && k.wert() == Kartenwert.AS; }
-
-    void setzeBereitsGeschmissen(Set<SpielerPosition> bereitsGeschmissen) { this.bereitsGeschmissen = bereitsGeschmissen; }
-    void setzeEinwurfZaehler(int einwurfZaehler) { this.einwurfZaehler = einwurfZaehler; }
-    void setPersistenceId(UUID persistenceId) { setzeId(persistenceId); }
-    void setPersistenceErstelltAm(Instant erstelltAm) { setzeErstelltAm(erstelltAm); }
-    void setPersistenceAktualisiertAm(Instant aktualisiertAm) { setzeAktualisiertAm(aktualisiertAm); }
-    void markiereAlsGeladenInternal() { markiereAlsGeladen(); }
 
     private record HochzeitFortschritt(Parteien parteien, HochzeitStatus status) {}
 }

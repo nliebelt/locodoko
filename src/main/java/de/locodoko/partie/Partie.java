@@ -36,19 +36,23 @@ public class Partie extends AbstraktePersistenzEntity {
     @Version
     private Long version;
 
-    // ── Domain-Felder (transient, nicht in DB) ──────────────────────────────
-    @Transient private int anzahlSpiele;
-    @Transient private Spielregeln spielregeln;
+    @Column("anzahl_spiele")
+    private int anzahlSpiele;
+
+    @Column("spielregeln")
+    private Spielregeln spielregeln;
+
     @Transient private SpielerPosition naechsterGeber;
     @Transient private List<Spiel> abgeschlosseneSpiele;
     @Transient private Spiel aktuellesSpiel;
     @Transient private Map<SpielerPosition, Integer> gesamtpunktestand;
-    @Transient private int bockrundenZaehler;
+
+    @Column("bockrunden_zaehler")
+    private int bockrundenZaehler = 0;
+
     @Transient private SpielerPosition solistDesLetztenSpiels;
 
     // ── DB-Spalten (aus Partie (ehemals PartieEntity)) ───────────────────────────
-    @Column("anzahl_spiele")
-    private int anzahlSpieleDb;
 
     @Column("aktuelles_spiel_nummer")
     private int aktuellesSpielNummer;
@@ -67,9 +71,6 @@ public class Partie extends AbstraktePersistenzEntity {
 
     @Column("punkte_ost")
     private int punkteOst = 0;
-
-    @Column("bockrunden_zaehler")
-    private int bockrundenZaehlerDb = 0;
 
     @Column("solist_des_letzten_spiels")
     private String solistDesLetztenSpielsDb = null;
@@ -140,7 +141,7 @@ public class Partie extends AbstraktePersistenzEntity {
     /** Erstellt eine neue Persistenz-Partie. */
     public static Partie neuePersistenz(int anzahlSpiele) {
         Partie p = new Partie();
-        p.anzahlSpieleDb = anzahlSpiele;
+        p.anzahlSpiele = anzahlSpiele;
         p.statusDb = PartieStatus.LAUFEND.name();
         return p;
     }
@@ -238,7 +239,6 @@ public class Partie extends AbstraktePersistenzEntity {
         Kartendeck kartendeck = Kartendeck.neu(abgeschlossenePartie.spielregeln()).gemischt();
         Partie partieNaechstesSpiel = abgeschlossenePartie.starteNaechstesSpiel(kartendeck);
         partieNaechstesSpiel.aktuellesSpiel().teileKartenAus();
-        partieNaechstesSpiel.aktuellesSpiel().syncZuPersistenz();
         return partieNaechstesSpiel;
     }
 
@@ -290,6 +290,11 @@ public class Partie extends AbstraktePersistenzEntity {
     }
 
     // ── Persistenz-Methoden (Entity-kompatibel) ─────────────────────────────
+
+    /** Setzt die Spielregeln direkt (fuer Test-Setup ohne DB-Laden). */
+    public void setzeSpielregeln(Spielregeln spielregeln) {
+        this.spielregeln = Objects.requireNonNull(spielregeln, "spielregeln duerfen nicht null sein");
+    }
 
     public void fuegeSpielHinzu(Spiel spiel) {
         Objects.requireNonNull(spiel, "spiel darf nicht null sein");
@@ -343,14 +348,14 @@ public class Partie extends AbstraktePersistenzEntity {
     }
 
     public int bockrundenZaehlerAusDb() {
-        return bockrundenZaehlerDb;
+        return bockrundenZaehler;
     }
 
     public void setzeBockrundenZaehlerDb(int bockrundenZaehler) {
         if (bockrundenZaehler < 0) {
             throw new IllegalArgumentException("bockrundenZaehler darf nicht negativ sein");
         }
-        this.bockrundenZaehlerDb = bockrundenZaehler;
+        this.bockrundenZaehler = bockrundenZaehler;
     }
 
     public SpielerPosition solistDesLetztenSpielsAusDb() {
@@ -371,46 +376,37 @@ public class Partie extends AbstraktePersistenzEntity {
     }
 
     public int anzahlSpieleAusDb() {
-        return anzahlSpieleDb;
+        return anzahlSpiele;
     }
 
-    // ── Hydrierung (DB → Domain) ────────────────────────────────────────────
-
-    /**
-     * Rekonstruiert Domain-Felder aus DB-Feldern nach dem Laden aus der Datenbank.
-     * Muss aufgerufen werden bevor Domain-Logik (schliesseAktuellesSpielAbUndStarteNaechstes usw.) verwendet wird.
-     */
-    public void hydriere(Spielregeln spielregeln) {
-        this.spielregeln = spielregeln;
-        this.anzahlSpiele = anzahlSpieleDb;
-        this.bockrundenZaehler = bockrundenZaehlerDb;
+    /** Rekonstruiert transiente Domain-Felder nach dem Laden aus der Datenbank. */
+    public void initialisiereDomainFelderNachLaden() {
         this.solistDesLetztenSpiels = solistDesLetztenSpielsDb != null ? SpielerPosition.valueOf(solistDesLetztenSpielsDb) : null;
+
         EnumMap<SpielerPosition, Integer> gps = new EnumMap<>(SpielerPosition.class);
         gps.put(SpielerPosition.SUED, punkteSued);
         gps.put(SpielerPosition.WEST, punkteWest);
         gps.put(SpielerPosition.NORD, punkteNord);
         gps.put(SpielerPosition.OST, punkteOst);
         this.gesamtpunktestand = Map.copyOf(gps);
-        // Spiele hydratisieren
+
         List<Spiel> sortierteSpiele = spieleMap.entrySet().stream()
             .sorted(Map.Entry.comparingByKey())
-            .peek(e -> {
-                e.getValue().setzeSpielNummer(e.getKey());
-                e.getValue().hydriere(spielregeln, null);
-            })
+            .peek(e -> e.getValue().setzeSpielNummer(e.getKey()))
             .map(Map.Entry::getValue)
             .toList();
         Spiel letztes = sortierteSpiele.isEmpty() ? null : sortierteSpiele.getLast();
-        if (letztes != null && letztes.dbErgebnis() == null) {
+        if (letztes != null && letztes.ergebnis().isEmpty()) {
             this.abgeschlosseneSpiele = sortierteSpiele.subList(0, sortierteSpiele.size() - 1);
             this.aktuellesSpiel = letztes;
         } else {
             this.abgeschlosseneSpiele = sortierteSpiele;
             this.aktuellesSpiel = null;
         }
+
         if (!abgeschlosseneSpiele.isEmpty()) {
             Spiel letztesAbgeschlossenes = abgeschlosseneSpiele.getLast();
-            boolean warSolo = letztesAbgeschlossenes.parteien() != null
+            boolean warSolo = letztesAbgeschlossenes.hatParteien()
                 && letztesAbgeschlossenes.parteien().spielerVon(Partei.RE).size() == 1;
             this.naechsterGeber = warSolo ? letztesAbgeschlossenes.geber() : letztesAbgeschlossenes.geber().naechsteImUhrzeigersinn();
         } else if (aktuellesSpiel != null) {

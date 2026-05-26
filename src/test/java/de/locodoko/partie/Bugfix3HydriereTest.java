@@ -45,12 +45,7 @@ class Bugfix3HydriereTest {
         spiel.meldeGesund(SpielerPosition.SUED);
         spiel.loeseVorbehalteAuf();
 
-        // Now simulate DB load
-        spiel.syncZuPersistenz();
-
-        System.out.println("schweinchenAktivFlag=" + spiel.schweinchenAktivFlag());
-
-        spiel.hydriere(regeln, null);
+        // DB load/save cycle removed - Domain = Persistenz nach DB-4b
 
         // WEST spielt karoAs1
         spiel.spieleKarte(SpielerPosition.WEST, karoAs1);

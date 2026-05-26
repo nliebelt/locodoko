@@ -14,17 +14,23 @@ import de.locodoko.spieler.SpielerEntity;
 
 import de.locodoko.karten.Augen;
 import de.locodoko.karten.Farbe;
+import de.locodoko.karten.Hand;
 import de.locodoko.karten.Karte;
 import de.locodoko.karten.Kartenwert;
 import de.locodoko.karten.Spielregeln;
 import de.locodoko.karten.Spieltyp;
 import de.locodoko.partie.Ansage;
+import de.locodoko.partie.AnsageEreignis;
+import de.locodoko.partie.Ansagen;
+import de.locodoko.partie.GespielteKarte;
 import de.locodoko.partie.Partei;
 import de.locodoko.partie.Spielergebnis;
 import de.locodoko.partie.Spielphase;
 import de.locodoko.partie.Spielpunkte;
 import de.locodoko.partie.Sonderpunkt;
 import de.locodoko.partie.SonderpunktEreignis;
+import de.locodoko.partie.HochzeitStatus;
+import de.locodoko.partie.Stich;
 import jakarta.validation.ConstraintViolationException;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -86,21 +92,22 @@ class PersistenzRepositoryTest {
         partie.setzeGesamtpunktestand(SpielerPosition.OST, -1);
 
         Spiel spiel = Spiel.neuePersistenz(1, SpielerPosition.SUED, Spieltyp.NORMALSPIEL, Spielphase.GESAMTSTAND_AKTUALISIEREN);
-        spiel.fuegeHandHinzu(HandJsonEintrag.aus(SpielerPosition.SUED, List.of(
-            new Karte(Farbe.KREUZ, Kartenwert.DAME, 1),
-            new Karte(Farbe.HERZ, Kartenwert.ZEHN, 2)
-        )));
-
-        spiel.fuegeStichHinzu(new StichJsonEintrag(
-            1, SpielerPosition.WEST, SpielerPosition.SUED, 28,
-            List.of(
-                new AktuellerStichKarteEmbeddable(SpielerPosition.WEST, Farbe.KREUZ, Kartenwert.AS, 1, 0),
-                new AktuellerStichKarteEmbeddable(SpielerPosition.NORD, Farbe.KREUZ, Kartenwert.ZEHN, 1, 1),
-                new AktuellerStichKarteEmbeddable(SpielerPosition.OST, Farbe.KREUZ, Kartenwert.KOENIG, 2, 2),
-                new AktuellerStichKarteEmbeddable(SpielerPosition.SUED, Farbe.KREUZ, Kartenwert.DAME, 1, 3)
-            )
+        spiel.ersetzeHaende(Map.of(
+            SpielerPosition.SUED, new Hand(List.of(
+                new Karte(Farbe.KREUZ, Kartenwert.DAME, 1),
+                new Karte(Farbe.HERZ, Kartenwert.ZEHN, 2)
+            ))
         ));
-        spiel.uebernehmeErgebnis(beispielErgebnis());
+
+        spiel.setzeAbgeschlosseneStiche(List.of(
+            Stich.ausPersistiertemStand(SpielerPosition.WEST, List.of(
+                new GespielteKarte(SpielerPosition.WEST, new Karte(Farbe.KREUZ, Kartenwert.AS, 1), 0),
+                new GespielteKarte(SpielerPosition.NORD, new Karte(Farbe.KREUZ, Kartenwert.ZEHN, 1), 1),
+                new GespielteKarte(SpielerPosition.OST, new Karte(Farbe.KREUZ, Kartenwert.KOENIG, 2), 2),
+                new GespielteKarte(SpielerPosition.SUED, new Karte(Farbe.KREUZ, Kartenwert.DAME, 1), 3)
+            ))
+        ));
+        spiel.setzeErgebnis(beispielErgebnis());
 
         partie.fuegeSpielHinzu(spiel);
         partie.markiereAlsBeendet();
@@ -160,9 +167,13 @@ class PersistenzRepositoryTest {
 
         Partie partie = Partie.neuePersistenz(24);
         Spiel spiel = Spiel.neuePersistenz(1, SpielerPosition.WEST, Spieltyp.NORMALSPIEL, new Spielphase.Stichphase(Stich.neu(SpielerPosition.WEST), Set.of(), null));
-        spiel.fuegeStichHinzu(new StichJsonEintrag(
-            1, SpielerPosition.WEST, SpielerPosition.WEST, 11,
-            List.of(new AktuellerStichKarteEmbeddable(SpielerPosition.WEST, Farbe.HERZ, Kartenwert.AS, 1, 0))
+        spiel.setzeAbgeschlosseneStiche(List.of(
+            Stich.ausPersistiertemStand(SpielerPosition.WEST, List.of(
+                new GespielteKarte(SpielerPosition.WEST, new Karte(Farbe.HERZ, Kartenwert.AS, 1), 0),
+                new GespielteKarte(SpielerPosition.NORD, new Karte(Farbe.HERZ, Kartenwert.NEUN, 1), 1),
+                new GespielteKarte(SpielerPosition.OST, new Karte(Farbe.PIK, Kartenwert.NEUN, 1), 2),
+                new GespielteKarte(SpielerPosition.SUED, new Karte(Farbe.KREUZ, Kartenwert.NEUN, 1), 3)
+            ))
         ));
         partie.fuegeSpielHinzu(spiel);
         tisch.setzePartie(partie);
@@ -233,16 +244,15 @@ class PersistenzRepositoryTest {
         tisch.fuegeSpielerHinzu(gast);
 
         Partie partie = Partie.neuePersistenz(1);
-        Spiel spiel = Spiel.neuePersistenz(1, SpielerPosition.SUED, Spieltyp.HOCHZEIT, new Spielphase.Stichphase(Stich.neu(SpielerPosition.SUED), Set.of(), null));
-        spiel.fuegeHandHinzu(HandJsonEintrag.aus(SpielerPosition.WEST, List.of(new Karte(Farbe.KREUZ, Kartenwert.DAME, 1))));
-        spiel.ersetzeAnsagen(List.of(AnsageEreignisEmbeddable.neu(SpielerPosition.WEST, Ansage.RE)));
-        spiel.setzeAktuellenStich(
-            SpielerPosition.WEST,
-            List.of(AktuellerStichKarteEmbeddable.aus(
-                new GespielteKarte(SpielerPosition.WEST, new Karte(Farbe.KREUZ, Kartenwert.AS, 1), 0)
-            ))
-        );
-        spiel.setzeHochzeitStatus(SpielerPosition.WEST, 2, SpielerPosition.NORD, false);
+        HochzeitStatus hochzeit = new HochzeitStatus(SpielerPosition.WEST, 2, SpielerPosition.NORD, false);
+        Stich stichMitKarte = Stich.ausPersistiertemStand(SpielerPosition.WEST, List.of(
+            new GespielteKarte(SpielerPosition.WEST, new Karte(Farbe.KREUZ, Kartenwert.AS, 1), 0)
+        ));
+        Spiel spiel = Spiel.neuePersistenz(1, SpielerPosition.SUED, Spieltyp.HOCHZEIT, new Spielphase.Stichphase(stichMitKarte, Set.of(), hochzeit));
+        spiel.ersetzeHaende(Map.of(
+            SpielerPosition.WEST, new Hand(List.of(new Karte(Farbe.KREUZ, Kartenwert.DAME, 1)))
+        ));
+        spiel.setzeAnsagen(Ansagen.ausEreignissen(List.of(new AnsageEreignis(SpielerPosition.WEST, Ansage.RE))));
         partie.fuegeSpielHinzu(spiel);
         tisch.setzePartie(partie);
 

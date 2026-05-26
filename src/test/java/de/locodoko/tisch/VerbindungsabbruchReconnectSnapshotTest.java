@@ -170,17 +170,15 @@ class VerbindungsabbruchReconnectSnapshotTest {
             Partie partie = Partie.neuePersistenz(2);
 
             // Spiel 1: vollständig abgeschlossen
-            Spiel spiel1Domain = gesundesStichspiel();
-            Spiel spiel1Entity = Spiel.neuePersistenz(1, spiel1Domain.geber(), spiel1Domain.spieltyp(), spiel1Domain.phase());
-            spiel1Entity.uebernehmeDomainStand(spiel1Domain);
-            spiel1Entity.uebernehmeErgebnis(minimalErgebnis());
-            partie.fuegeSpielHinzu(spiel1Entity);
+            Spiel spiel1 = gesundesStichspiel();
+            spiel1.setzeSpielNummer(1);
+            spiel1.setzeErgebnis(minimalErgebnis());
+            partie.fuegeSpielHinzu(spiel1);
 
             // Spiel 2: läuft noch (kein Ergebnis)
-            Spiel spiel2Domain = gesundesStichspiel();
-            Spiel spiel2Entity = Spiel.neuePersistenz(2, spiel2Domain.geber(), spiel2Domain.spieltyp(), spiel2Domain.phase());
-            spiel2Entity.uebernehmeDomainStand(spiel2Domain);
-            partie.fuegeSpielHinzu(spiel2Entity);
+            Spiel spiel2 = gesundesStichspiel();
+            spiel2.setzeSpielNummer(2);
+            partie.fuegeSpielHinzu(spiel2);
 
             tisch.setzePartie(partie);
             tischRepository.saveAndFlush(tisch);

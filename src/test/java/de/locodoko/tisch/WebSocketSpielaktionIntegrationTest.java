@@ -10,7 +10,7 @@ import de.locodoko.partie.Ansage;
 import de.locodoko.partie.Partei;
 import de.locodoko.partie.Spielphase;
 import de.locodoko.partie.VorbehaltAnsage;
-import de.locodoko.partie.HandJsonEintrag;
+import de.locodoko.karten.Hand;
 import de.locodoko.tisch.persistenz.PartieRepository;
 import de.locodoko.partie.Spiel;
 import de.locodoko.tisch.persistenz.SpielRepository;
@@ -455,9 +455,8 @@ class WebSocketSpielaktionIntegrationTest {
         transactionTemplate.executeWithoutResult(status -> {
             Spiel spiel = spielRepository.findAllByPartie_IdOrderBySpielNummerAsc(partieId).getFirst();
             Map<SpielerPosition, List<Karte>> verteilung = verteilungMitVorgaben(vorgaben);
-            List<HandJsonEintrag> neueHaende = verteilung.entrySet().stream()
-                .map(e -> HandJsonEintrag.aus(e.getKey(), e.getValue()))
-                .toList();
+            Map<SpielerPosition, Hand> neueHaende = verteilung.entrySet().stream()
+                .collect(java.util.stream.Collectors.toMap(Map.Entry::getKey, e -> new Hand(e.getValue())));
             spiel.ersetzeHaende(neueHaende);
             spielRepository.save(spiel);
         });

@@ -5,7 +5,7 @@ import de.locodoko.karten.Karte;
 import de.locodoko.karten.Kartendeck;
 import de.locodoko.karten.Kartenwert;
 import de.locodoko.karten.Spielregeln;
-import de.locodoko.partie.HandJsonEintrag;
+import de.locodoko.karten.Hand;
 import de.locodoko.partie.Spiel;
 import de.locodoko.partie.SpielerPosition;
 import de.locodoko.partie.VorbehaltAnsage;
@@ -276,9 +276,8 @@ class PartieEchtzeitVertragsTest {
         transactionTemplate.executeWithoutResult(status -> {
             Spiel spiel = spielRepository.findAllByPartie_IdOrderBySpielNummerAsc(partieId).getFirst();
             Map<SpielerPosition, List<Karte>> verteilung = verteilungMitVorgaben(vorgaben);
-            List<HandJsonEintrag> neueHaende = verteilung.entrySet().stream()
-                .map(e -> HandJsonEintrag.aus(e.getKey(), e.getValue()))
-                .toList();
+            Map<SpielerPosition, Hand> neueHaende = verteilung.entrySet().stream()
+                .collect(java.util.stream.Collectors.toMap(Map.Entry::getKey, e -> new Hand(e.getValue())));
             spiel.ersetzeHaende(neueHaende);
             spielRepository.save(spiel);
         });
