@@ -146,6 +146,13 @@ public class Spiel extends AbstraktePersistenzEntity {
         );
     }
 
+    /**
+     * Rekonstituiert einen Spielzustand für Tests.
+     *
+     * <p>War ursprünglich für {@code SpielHydrierer} gedacht (gelöscht in DB-4c). Heute ausschließlich
+     * in Tests verwendet, um komplexe Spielszenarien mit vollständigem Zustand aufzubauen.
+     * Spring Data JDBC lädt {@code Spiel} direkt via {@code SpielNachLadenCallback}.</p>
+     */
     public static Spiel ausPersistiertemStand(
         Spielregeln spielregeln, Kartendeck kartendeck, Spieltyp spieltyp,
         SpielerPosition geber, Spielphase phase, Map<SpielerPosition, Hand> haende,
@@ -157,6 +164,7 @@ public class Spiel extends AbstraktePersistenzEntity {
             vorbehalte, parteien, ansagen, abgeschlosseneStiche, ergebnis, schweinchenAktiv, solistAufspieler, 0);
     }
 
+    /** Wie {@link #ausPersistiertemStand(Spielregeln, Kartendeck, Spieltyp, SpielerPosition, Spielphase, Map, List, Parteien, Ansagen, List, Spielergebnis, boolean, SpielerPosition)}, zusätzlich mit {@code einwurfZaehler}. */
     public static Spiel ausPersistiertemStand(
         Spielregeln spielregeln, Kartendeck kartendeck, Spieltyp spieltyp,
         SpielerPosition geber, Spielphase phase, Map<SpielerPosition, Hand> haende,
@@ -185,7 +193,12 @@ public class Spiel extends AbstraktePersistenzEntity {
         return spiel;
     }
 
-    /** Erstellt eine minimale Persistenz-Entity ohne bereits hydrierte Domain-Helferfelder. */
+    /**
+     * Erstellt eine minimale Persistenz-Entity für Persistenz-Tests.
+     *
+     * <p>Nur für Tests: erzeugt ein {@code Spiel} mit Defaults für alle nicht gesetzten Felder.
+     * Wird ausschließlich in {@code PersistenzRepositoryTest} und ähnlichen Tests verwendet.</p>
+     */
     public static Spiel neuePersistenz(int spielNummer, SpielerPosition geberPosition, Spieltyp spieltyp, Spielphase phase) {
         Spiel spiel = new Spiel();
         spiel.spielNummer = spielNummer;

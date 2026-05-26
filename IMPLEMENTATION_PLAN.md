@@ -13,7 +13,7 @@ Build-Run 2026-05-26 (vierte Session): **DB-4b+4c ABGESCHLOSSEN — Baseline gr�
 
 **DB-4c:** `SpielHydrierer.java`, `SpielPersistenzSync.java`, `SpielBuilder.java`, `JsonKonverter.java` sind bereits gelöscht (aus dem Dateisystem entfernt, als `deleted` im Working Tree).
 
-**Nächster Schritt:** DB-4b+4c committen, dann DB-4d (Pattern-A-Events).
+**Nächster Schritt:** DB-5 (Spielergebnis-Archiv-Aggregate).
 
 ## Legende
 
@@ -330,14 +330,10 @@ Konkret: Build-Modus erstellt für DB-2/4b/4c **drei separate Working-Tree-Ände
     - Alle Tests grün.
 
 #### DB-4d: ARGUMENT-FACTORIES UND TEST-HELPER (Task 70d)
-- [ ] **Backend** (Mittel, klein): Saubere Test-Setup-Mechanismen.
-  - **Erste Datei zuerst**: `src/test/java/de/locodoko/partie/SpielTestBuilder.java` neu anlegen (falls Tests es brauchen).
-  - **Schritte**:
-    1. `Spiel.neu(...)`, `Spiel.neuMitSolistAufspieler(...)`, `Spiel.ausPersistiertemStand(...)`-Factories aufräumen — `ausPersistiertemStand` wird ggf. obsolet (Spring Data JDBC lädt direkt).
-    2. **Test-Data-Builder** für komplexe Szenarien: `SpielTestBuilder` mit Methoden wie `einSpiel().mitGeber(NORD).inPhase(STICHPHASE).mitAbgeschlossenenStichen(3).build()`. Nur einführen wenn Tests es wirklich brauchen, kein YAGNI-Violation.
-  - **Akzeptanz**:
-    - Bestehende Tests grün.
-    - Wenn TestBuilder eingeführt: keine Test-Klasse hat mehr als 20 Zeilen Setup für einen typischen Test.
+- [x] **Backend** (Mittel, klein): Saubere Test-Setup-Mechanismen.
+  - `Spiel.ausPersistiertemStand`: Javadoc hinzugefügt, klar als Test-Support markiert (SpielHydrierer gelöscht, Spring Data JDBC lädt direkt).
+  - `Spiel.neuePersistenz`: Javadoc präzisiert (nur für Persistenz-Tests).
+  - `SpielTestBuilder` **nicht** eingeführt — YAGNI: Test-Setup bereits <20 Zeilen, kein Bedarf.
 
 ---
 
