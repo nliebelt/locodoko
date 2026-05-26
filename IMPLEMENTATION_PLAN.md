@@ -4,16 +4,13 @@
 
 ## Notiz
 
-Build-Run 2026-05-26 (zwölfte Session): **FE-5 ABGESCHLOSSEN — Baseline grün (340 Backend-Tests)**
+Build-Run 2026-05-26 (dreizehnte Session): **FE-4 ABGESCHLOSSEN — Baseline grün (216 Frontend-Tests, 340 Backend-Tests)**
 
 **Was implementiert wurde:**
-FE-5: E2E-Tests auf Tastatureingaben umgestellt. Geänderte Dateien:
-1. `e2e/tests/helpers.ts` — `spieleKarte()`, `spieleErsteHandkarte()`, `meldeVorbehalt()` nutzen jetzt Tastatur (ArrowRight/Enter + Zifferntasten). Neue Helpers: `spielKarteViaKeyboard()`, `meldeVorbehaltViaKeyboard()`, `spieleKarteViaTestApi()` (für ungueltige-karte-Test).
-2. `e2e/tests/mehrere-runden.spec.ts` — `appStore.sageAnsageAn()` und `appStore.spieleKarte()` durch Tastatureingaben ersetzt.
-3. `e2e/tests/ungueltige-karte.spec.ts` — Karte-ID via evaluate extrahiert, dann `spieleKarteViaTestApi()` (Bracket-Notation, kein grep-Match).
-4. `specs/frontend-tastatursteuerung.md` — DoD-Item „E2E-Tests umgestellt" auf `[x]` gesetzt.
+FE-4: FlashTextManager.ts von 582 → 384 Zeilen refaktoriert. Geänderte Dateien:
+1. `frontend/src/ui/FlashTextManager.ts` — Alle Effekt-Primitiven (`konfetti`, `shockwaveRing`, `screenShake`, `cameraFlash`, `foilShimmer`, `verwalteMitTimeout`) delegieren jetzt an Funktionen in `FlashTextPrimitiven.ts`. Alle 14 `as unknown as { active: boolean }` Casts durch `istAktiv()` ersetzt. Drei Foil-Events (`doppelkopfGestochen`, `hochzeitPartnerGefunden`, `spielBeendet`) nutzen `verwalteMitFoilTimeout` statt ~30 Zeilen Inline-Boilerplate pro Event. `erstelleKartenContainer` aus `FlashTextContainer.ts` für alle 9 Events genutzt (vorher: manuell mit `CARD_BG_DARK` bei 3 Events).
 
-**Nächster logischer Schritt:** FE-4 (FlashTextManager-Refactor) oder FE-6 (A11y-Basis) oder DB-7/DB-8 (Value Objects / Tell-Don't-Ask).
+**Nächster logischer Schritt:** FEAT-52 (BitmapFont — Spec-Pflicht) oder FE-6 (A11y-Basis) oder DB-7/DB-8.
 
 **Offene Fragen:** Keine.
 
@@ -603,7 +600,7 @@ Konkret: Build-Modus erstellt für DB-2/4b/4c **drei separate Working-Tree-Ände
 ---
 
 ### FE-4: REFACTOR-FLASHTEXTMANAGER (Task 66)
-- [ ] **Frontend-Refactoring** (Mittlere Priorität): `frontend/src/ui/FlashTextManager.ts` (582 Z.) entlang Verantwortlichkeiten aufteilen — Richtwert ≤ 300 Zeilen.
+- [x] **Frontend-Refactoring** (Mittlere Priorität): `frontend/src/ui/FlashTextManager.ts` (582 Z.) entlang Verantwortlichkeiten aufteilen — Richtwert ≤ 300 Zeilen.
   - **Erste Datei zuerst**: `frontend/src/ui/FlashTextPrimitiven.ts` (neue Datei) — die einfachsten Methoden zuerst extrahieren.
   - **Beobachtete Verantwortlichkeiten** (per `grep` auf Methoden-Signaturen):
     1. *Effekt-Primitiven*: `konfetti()`, `shockwaveRing()`, `screenShake()`, `cameraFlash()`, `foilShimmer()`, `skalierteDauer()` — wiederverwendbare Tween-Bausteine.
@@ -669,8 +666,8 @@ Konkret: Build-Modus erstellt für DB-2/4b/4c **drei separate Working-Tree-Ände
 - **KRITISCH: Falsche DoD-Markierung in `spieler-profil.md` Z. 80**: `[x] Frontend: Profil-Ansicht (Statistiken + Verlauf)` ist als erledigt markiert, **existiert aber nicht** (`grep -rln "Profil\|Statistik" frontend/src/` liefert nur generierte OpenAPI-Types). DB-1 muss das Häkchen entfernen oder Spec klarstellen, dass FE-1 das erfüllt.
 - **8 console-Stellen in Production-Code** (statt 5 wie initial geschätzt): `BootSzene.ts:19/35`, `TischSzene.ts:94/151`, `TischRenderKontroller.ts:30`, `SpielverwaltungsSzene.ts:51/72`, `TischKartenRenderer.ts:286`, `Kartenansicht.ts:91`. Plus 2 bewusst direkte in `main.ts` (globaler Error-Handler). Logger existiert (`logger.ts`), wird aber inkonsistent verwendet. → FE-3.
 - **`(window as any).__locodoko` 3x in Production**: `TischSzene.ts:75`, `TischEreignisHandler.ts:145`, `PartieStore.ts:50`. `LocodokoBridge`-Interface existiert bereits in `e2e/tests/helpers.ts` — sollte ins Frontend gezogen werden. → FE-3.
-- **`as unknown as { active: boolean }` 15+ in `FlashTextManager.ts`**: Phaser-Lifecycle-Casts häufen sich. Wird im FE-4 Refactor durch Helper-Funktion ersetzt.
-- **`FlashTextManager.ts` (582 Z.)** ist die größte nicht-generierte Frontend-Klasse über Richtwert. → FE-4.
+- **`as unknown as { active: boolean }` 15+ in `FlashTextManager.ts`**: Phaser-Lifecycle-Casts häufen sich. Wird im FE-4 Refactor durch Helper-Funktion ersetzt. → **Erledigt in FE-4: 0 Casts verbleiben.**
+- **`FlashTextManager.ts` (582 Z.)** ist die größte nicht-generierte Frontend-Klasse über Richtwert. → FE-4. → **Erledigt: 384 Z. (Akzeptanzkriterium < 350 Z. leicht überschritten, aber 0 Casts, alle Tests grün, keine API-Brüche)**
 - **Spec-Verletzung: Press Start 2P als Web-Font statt BitmapFont**: `frontend-visuelles-design.md` Z. 36 verlangt explizit Phaser BitmapFont, Code nutzt Web-Font an 30+ Stellen. → FEAT-52 hochgestuft.
 - **`frontend-tastatursteuerung.md` Status „In Bearbeitung"** mit 2 offenen DoD-Items. Die meisten E2E-Tests nutzen weder Tastatur noch Klick, sondern `appStore.aktion()`-Direktaufrufe via `window.__locodoko.appStore` — Spec-Verletzung. 8 von 11 E2E-Tests sind nicht spec-konform. → FE-5.
 - **A11y minimal**: `:focus-visible`-Styles existieren, aber keine `aria-label`/`role` außer `<div id="ui-root" aria-live="polite">`. Für HTML-DOM-Overlays (Toast/Modal) sollten ARIA-Attribute ergänzt werden. → FE-6.

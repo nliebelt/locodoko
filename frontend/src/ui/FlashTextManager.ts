@@ -6,11 +6,21 @@ import {
   FARBE_PINK, FARBE_PINK_CSS,
   FARBE_ORANGE, FARBE_ORANGE_CSS,
   FARBE_GOLD, FARBE_GOLD_CSS,
-  CARD_BG_DARK,
   TEXT_GEDAEMPFT_CSS,
   FONT_FAMILY_FALLBACK,
   FONT_XS, FONT_SM, FONT_MD, FONT_LG, FONT_XL,
 } from './designTokens';
+import {
+  skalierteDauer, istAktiv,
+  konfetti as konfettiEff,
+  shockwaveRing as shockwaveEff,
+  screenShake as screenShakeEff,
+  cameraFlash as cameraFlashEff,
+  foilShimmer as foilShimmerEff,
+  verwalteMitTimeout as verwalteMitTimeoutEff,
+  verwalteMitFoilTimeout,
+} from './FlashTextPrimitiven';
+import { erstelleKartenContainer, cx as mitteX, cy as mitteY } from './FlashTextContainer';
 
 export type SpieleventTyp =
   | 'SpielGestartet'
@@ -37,7 +47,6 @@ export class FlashTextManager {
   private readonly verwalteteTimers: Phaser.Time.TimerEvent[] = [];
   private vorbehaltContainer?: Phaser.GameObjects.Container;
   private vorbehaltBlinkTween?: Phaser.Tweens.Tween;
-
   private geschwindigkeitsfaktor = 1;
 
   constructor(szene: Phaser.Scene) {
@@ -46,10 +55,6 @@ export class FlashTextManager {
 
   setzeGeschwindigkeitsfaktor(faktor: number): void {
     this.geschwindigkeitsfaktor = Math.max(0.01, faktor);
-  }
-
-  private skalierteDauer(dauer: number): number {
-    return Math.max(0, Math.round(dauer / this.geschwindigkeitsfaktor));
   }
 
   async zeigeSpielevent(event: SpieleventTyp, payload: SpieleventPayload = {}): Promise<void> {
@@ -80,9 +85,9 @@ export class FlashTextManager {
   destroy(): void {
     this.stoppeVorbehaltAnimation();
     for (const obj of this.verwalteteObjekte) {
-      if ((obj as unknown as { active: boolean }).active) {
+      if (istAktiv(obj)) {
         this.szene.tweens.killTweensOf(obj);
-        (obj as unknown as { destroy: () => void }).destroy();
+        obj.destroy();
       }
     }
     this.verwalteteObjekte.length = 0;
@@ -94,127 +99,35 @@ export class FlashTextManager {
 
   // ── Hilfsmethoden ──
 
-  private cx(): number { return this.szene.scale.gameSize.width / 2; }
-  private cy(): number { return this.szene.scale.gameSize.height / 2; }
-
-  private erstelleKartenContainer(x: number, y: number, randfarbe: number, breite = 240, hoehe = 90): Phaser.GameObjects.Container {
-    const container = this.szene.add.container(x, y);
-    container.setDepth(50);
-    const bg = this.szene.add.graphics();
-    bg.fillStyle(CARD_BG_DARK, 0.95);
-    bg.fillRoundedRect(-breite / 2, -hoehe / 2, breite, hoehe, 8);
-    bg.lineStyle(3, randfarbe, 1);
-    bg.strokeRoundedRect(-breite / 2, -hoehe / 2, breite, hoehe, 8);
-    container.add(bg);
-    return container;
-  }
-
-  private async verwalteMitTimeout(obj: Phaser.GameObjects.GameObject, ms: number): Promise<void> {
-    const skalierteMs = this.skalierteDauer(ms);
-    if (skalierteMs <= 0) {
-      if ((obj as unknown as { active: boolean }).active) {
-        (obj as unknown as { destroy: (children?: boolean) => void }).destroy(true);
-      }
-      return Promise.resolve();
-    }
-
-    this.verwalteteObjekte.push(obj);
-    return new Promise((resolve) => {
-      let resolved = false;
-      const complete = () => {
-        if (resolved) return;
-        resolved = true;
-        if ((obj as unknown as { active: boolean }).active) {
-          (obj as unknown as { destroy: (children?: boolean) => void }).destroy(true);
-        }
-        resolve();
-      };
-      
-      const fadeDauer = this.skalierteDauer(200);
-      const timer = this.szene.time.delayedCall(skalierteMs, () => {
-        if (!(obj as unknown as { active: boolean }).active) {
-          complete();
-          return;
-        }
-        this.szene.tweens.add({
-          targets: obj,
-          alpha: 0,
-          duration: fadeDauer,
-          onComplete: complete,
-        });
-        const idx = this.verwalteteObjekte.indexOf(obj);
-        if (idx !== -1) this.verwalteteObjekte.splice(idx, 1);
-      });
-      this.verwalteteTimers.push(timer);
-      
-      // Fallback-Timeout unabhaengig vom Phaser-Game-Loop
-      window.setTimeout(complete, skalierteMs + fadeDauer + 1000);
-    });
-  }
+  private cx(): number { return mitteX(this.szene); }
+  private cy(): number { return mitteY(this.szene); }
 
   konfetti(x: number, y: number, menge: number, farben = [0xffd700, 0xff88ff, 0x44ffee, 0xff8833]): void {
-    if (!this.szene.textures.exists('pixel')) return;
-    const emitter = this.szene.add.particles(x, y, 'pixel', {
-      speed: { min: 80, max: 200 },
-      angle: { min: 0, max: 360 },
-      gravityY: 300,
-      lifespan: this.skalierteDauer(1200),
-      tint: farben,
-      scale: { start: 4, end: 2 },
-      quantity: 0,
-      alpha: { start: 1, end: 0 },
-    });
-    emitter.setDepth(52);
-    emitter.explode(menge);
-    this.szene.time.delayedCall(this.skalierteDauer(1400), () => emitter.destroy());
+    konfettiEff(this.szene, this.geschwindigkeitsfaktor, x, y, menge, farben);
   }
 
   shockwaveRing(x: number, y: number, farbe: number, verzoegerung = 0): void {
-    const skalierteVerz = this.skalierteDauer(verzoegerung);
-    const ring = this.szene.add.circle(x, y, 30, 0, 0);
-    ring.setStrokeStyle(4, farbe, 1);
-    ring.setDepth(51);
-    this.szene.time.delayedCall(skalierteVerz, () => {
-      this.szene.tweens.add({
-        targets: ring,
-        scaleX: 5,
-        scaleY: 5,
-        alpha: 0,
-        ease: 'Sine.Out',
-        duration: this.skalierteDauer(550),
-        onComplete: () => ring.destroy(),
-      });
-    });
+    shockwaveEff(this.szene, this.geschwindigkeitsfaktor, x, y, farbe, verzoegerung);
   }
 
-  screenShake(): void {
-    if (this.geschwindigkeitsfaktor > 10) return; // Kein Shake im Turbo-Modus
-    this.szene.cameras.main.shake(350, 0.007);
-  }
+  screenShake(): void { screenShakeEff(this.szene, this.geschwindigkeitsfaktor); }
 
   cameraFlash(r: number, g: number, b: number, dauer: number): void {
-    if (this.geschwindigkeitsfaktor > 10) return; // Kein Flash im Turbo-Modus
-    this.szene.cameras.main.flash(this.skalierteDauer(dauer), r, g, b);
+    cameraFlashEff(this.szene, this.geschwindigkeitsfaktor, r, g, b, dauer);
+  }
+
+  private verwalteMitTimeout(obj: Phaser.GameObjects.GameObject, ms: number): Promise<void> {
+    return verwalteMitTimeoutEff(this.szene, this.geschwindigkeitsfaktor, obj, ms, this.verwalteteObjekte, this.verwalteteTimers);
   }
 
   private foilShimmer(text: Phaser.GameObjects.Text): Phaser.Time.TimerEvent {
-    const farben = [0xffd700, 0xff88ff, 0x44ffee, 0xff8833, 0x44aaff];
-    let ci = 0;
-    const timer = this.szene.time.addEvent({
-      delay: this.skalierteDauer(80),
-      repeat: -1,
-      callback: () => {
-        if ((text as unknown as { active: boolean }).active) text.setTint(farben[ci++ % farben.length]);
-      },
-    });
-    this.verwalteteTimers.push(timer);
-    return timer;
+    return foilShimmerEff(this.szene, this.geschwindigkeitsfaktor, text, this.verwalteteTimers);
   }
 
   // ── 9 Events ──
 
   private async spielGestartet(): Promise<void> {
-    const container = this.erstelleKartenContainer(this.cx(), this.cy(), FARBE_CYAN, 260, 105);
+    const container = erstelleKartenContainer(this.szene, this.cx(), this.cy(), FARBE_CYAN, 260, 105);
     const t1 = this.szene.add.text(0, -28, 'SPIEL', {
       fontFamily: FONT_FAMILY_FALLBACK, fontSize: `${FONT_XS}px`, color: FARBE_CYAN_CSS,
     }).setOrigin(0.5);
@@ -226,12 +139,12 @@ export class FlashTextManager {
     }).setOrigin(0.5);
     container.add([t1, t2, t3]);
     container.setScale(0, 1);
-    this.szene.tweens.add({ targets: container, scaleX: 1, ease: 'Back.Out', duration: this.skalierteDauer(380) });
+    this.szene.tweens.add({ targets: container, scaleX: 1, ease: 'Back.Out', duration: skalierteDauer(380, this.geschwindigkeitsfaktor) });
     await this.verwalteMitTimeout(container, 2500);
   }
 
   private async naechsterSpielerErwartet(spielerName: string): Promise<void> {
-    const container = this.erstelleKartenContainer(this.cx(), this.cy() * 0.38, FARBE_BLAU, 270, 80);
+    const container = erstelleKartenContainer(this.szene, this.cx(), this.cy() * 0.38, FARBE_BLAU, 270, 80);
     const t1 = this.szene.add.text(0, -15, 'AM ZUG', {
       fontFamily: FONT_FAMILY_FALLBACK, fontSize: `${FONT_XS}px`, color: TEXT_GEDAEMPFT_CSS,
     }).setOrigin(0.5);
@@ -244,14 +157,14 @@ export class FlashTextManager {
       targets: container,
       scaleX: [0.05, 1.22, 0.92, 1.06, 1],
       ease: 'Back.Out',
-      duration: this.skalierteDauer(400),
+      duration: skalierteDauer(400, this.geschwindigkeitsfaktor),
     });
     await this.verwalteMitTimeout(container, 2000);
   }
 
   private async vorbehaltErwartet(): Promise<void> {
     this.stoppeVorbehaltAnimation();
-    const container = this.erstelleKartenContainer(this.cx(), this.cy() * 0.35, FARBE_BLAU, 280, 82);
+    const container = erstelleKartenContainer(this.szene, this.cx(), this.cy() * 0.35, FARBE_BLAU, 280, 82);
     const t1 = this.szene.add.text(0, -12, 'VORBEHALT?', {
       fontFamily: FONT_FAMILY_FALLBACK, fontSize: `${FONT_SM}px`, color: FARBE_BLAU_CSS,
       stroke: '#005599', strokeThickness: 3,
@@ -262,10 +175,11 @@ export class FlashTextManager {
     container.add([t1, t2]);
     container.setScale(0.7, 1);
     container.setAlpha(0);
-    this.szene.tweens.add({ targets: container, scaleX: 1, alpha: 1, duration: this.skalierteDauer(450), ease: 'Sine.Out' });
+    this.szene.tweens.add({ targets: container, scaleX: 1, alpha: 1, duration: skalierteDauer(450, this.geschwindigkeitsfaktor), ease: 'Sine.Out' });
     this.vorbehaltBlinkTween = this.szene.tweens.add({
-      targets: t1, alpha: { from: 1, to: 0.5 }, yoyo: true, repeat: -1, duration: this.skalierteDauer(650),
-      ease: 'Sine.InOut', delay: this.skalierteDauer(500),
+      targets: t1, alpha: { from: 1, to: 0.5 }, yoyo: true, repeat: -1,
+      duration: skalierteDauer(650, this.geschwindigkeitsfaktor),
+      ease: 'Sine.InOut', delay: skalierteDauer(500, this.geschwindigkeitsfaktor),
     });
     this.vorbehaltContainer = container;
     return Promise.resolve();
@@ -278,10 +192,10 @@ export class FlashTextManager {
       fontFamily: FONT_FAMILY_FALLBACK, fontSize: `${FONT_XL}px`, color: FARBE_GRUEN_CSS,
       stroke: '#006633', strokeThickness: 4,
     }).setOrigin(0.5).setDepth(51).setAlpha(0).setScale(0.6);
-    
-    const skalierteDauerMain = this.skalierteDauer(360);
+
+    const skalierteDauerMain = skalierteDauer(360, this.geschwindigkeitsfaktor);
     if (skalierteDauerMain <= 0) {
-      if ((text as unknown as { active: boolean }).active) text.destroy();
+      if (istAktiv(text)) text.destroy();
       return Promise.resolve();
     }
 
@@ -290,12 +204,12 @@ export class FlashTextManager {
       const complete = () => {
         if (resolved) return;
         resolved = true;
-        if ((text as unknown as { active: boolean }).active) text.destroy();
+        if (istAktiv(text)) text.destroy();
         resolve();
       };
-      
-      const fadeDauer = this.skalierteDauer(300);
-      const delay = this.skalierteDauer(800);
+
+      const fadeDauer = skalierteDauer(300, this.geschwindigkeitsfaktor);
+      const delay = skalierteDauer(800, this.geschwindigkeitsfaktor);
 
       this.szene.tweens.add({
         targets: text,
@@ -303,21 +217,17 @@ export class FlashTextManager {
         scaleX: [0.6, 1.15, 1], scaleY: [0.6, 1.15, 1],
         alpha: { from: 0, to: 1 }, ease: 'Back.Out', duration: skalierteDauerMain,
         onComplete: () => {
-          this.szene.tweens.add({
-            targets: text, alpha: 0, delay: delay, duration: fadeDauer,
-            onComplete: complete,
-          });
+          this.szene.tweens.add({ targets: text, alpha: 0, delay, duration: fadeDauer, onComplete: complete });
         },
       });
       this.verwalteteObjekte.push(text);
-      
       window.setTimeout(complete, skalierteDauerMain + delay + fadeDauer + 1000);
     });
   }
 
   private async schweinchenGemeldet(spielerName?: string, x?: number, y?: number): Promise<void> {
     const posX = x ?? this.cx(), posY = y ?? this.cy();
-    const container = this.erstelleKartenContainer(posX, posY, FARBE_PINK, 290, 115);
+    const container = erstelleKartenContainer(this.szene, posX, posY, FARBE_PINK, 290, 115);
     const emoji = this.szene.add.text(0, -32, '🐷', { fontSize: '34px' }).setOrigin(0.5);
     const t1 = this.szene.add.text(0, 14, 'SCHWEINCHEN!', {
       fontFamily: FONT_FAMILY_FALLBACK, fontSize: `${FONT_SM}px`, color: FARBE_PINK_CSS,
@@ -333,7 +243,7 @@ export class FlashTextManager {
     this.szene.tweens.add({
       targets: container,
       scaleX: [0, 1.25, 0.9, 1.08, 1], scaleY: [0, 1.25, 0.9, 1.08, 1],
-      angle: [-30, 10, -4, 2, 0], ease: 'Back.Out', duration: this.skalierteDauer(600),
+      angle: [-30, 10, -4, 2, 0], ease: 'Back.Out', duration: skalierteDauer(600, this.geschwindigkeitsfaktor),
     });
     this.shockwaveRing(posX, posY, FARBE_PINK, 0);
     this.shockwaveRing(posX, posY, FARBE_PINK, 100);
@@ -343,7 +253,7 @@ export class FlashTextManager {
 
   private async fuchsGefangen(spielerName?: string, x?: number, y?: number): Promise<void> {
     const posX = x ?? this.cx(), posY = y ?? this.cy();
-    const container = this.erstelleKartenContainer(posX, posY, FARBE_ORANGE, 330, 100);
+    const container = erstelleKartenContainer(this.szene, posX, posY, FARBE_ORANGE, 330, 100);
     const buchstaben = 'FUCHS'.split('');
     const letterBreite = 38;
     const startX = -(buchstaben.length - 1) * letterBreite / 2;
@@ -355,9 +265,9 @@ export class FlashTextManager {
       l.setY(-60);
       l.setAngle(-20);
       container.add(l);
-      const timer = this.szene.time.delayedCall(this.skalierteDauer(i * 70), () => {
-        if (!(l as unknown as { active: boolean }).active) return;
-        this.szene.tweens.add({ targets: l, y: -22, alpha: 1, angle: 0, duration: this.skalierteDauer(280), ease: 'Back.Out' });
+      const timer = this.szene.time.delayedCall(skalierteDauer(i * 70, this.geschwindigkeitsfaktor), () => {
+        if (!istAktiv(l)) return;
+        this.szene.tweens.add({ targets: l, y: -22, alpha: 1, angle: 0, duration: skalierteDauer(280, this.geschwindigkeitsfaktor), ease: 'Back.Out' });
       });
       this.verwalteteTimers.push(timer);
     });
@@ -375,7 +285,7 @@ export class FlashTextManager {
 
   private async karlchenGespielt(spielerName?: string, x?: number, y?: number): Promise<void> {
     const posX = x ?? this.cx(), posY = y ?? this.cy();
-    const container = this.erstelleKartenContainer(posX, posY, FARBE_GOLD, 290, 105);
+    const container = erstelleKartenContainer(this.szene, posX, posY, FARBE_GOLD, 290, 105);
     const t1 = this.szene.add.text(0, -20, 'KARLCHEN', {
       fontFamily: FONT_FAMILY_FALLBACK, fontSize: `${FONT_LG}px`, color: FARBE_GOLD_CSS,
       stroke: '#7a5000', strokeThickness: 4,
@@ -389,7 +299,7 @@ export class FlashTextManager {
     this.szene.tweens.add({
       targets: container,
       scaleX: [0, 1.25, 0.9, 1.08, 1], scaleY: [0, 1.25, 0.9, 1.08, 1],
-      angle: [-30, 10, -4, 2, 0], ease: 'Back.Out', duration: this.skalierteDauer(600),
+      angle: [-30, 10, -4, 2, 0], ease: 'Back.Out', duration: skalierteDauer(600, this.geschwindigkeitsfaktor),
     });
     this.shockwaveRing(posX, posY, FARBE_GOLD, 0);
     this.shockwaveRing(posX, posY, FARBE_GOLD, 100);
@@ -399,13 +309,7 @@ export class FlashTextManager {
 
   private async doppelkopfGestochen(x?: number, y?: number): Promise<void> {
     const posX = x ?? this.cx(), posY = y ?? this.cy();
-    const container = this.szene.add.container(posX, posY);
-    container.setDepth(50);
-    const bg = this.szene.add.graphics();
-    bg.fillStyle(CARD_BG_DARK, 0.95);
-    bg.fillRoundedRect(-135, -68, 270, 136, 8);
-    bg.lineStyle(3, FARBE_GOLD, 1);
-    bg.strokeRoundedRect(-135, -68, 270, 136, 8);
+    const container = erstelleKartenContainer(this.szene, posX, posY, FARBE_GOLD, 270, 136);
     const hauptText = this.szene.add.text(0, -22, 'DOPPEL-\nKOPF', {
       fontFamily: FONT_FAMILY_FALLBACK, fontSize: `${FONT_XL}px`, color: FARBE_GOLD_CSS,
       align: 'center', lineSpacing: 4,
@@ -413,59 +317,23 @@ export class FlashTextManager {
     const subText = this.szene.add.text(0, 50, 'GESTOCHEN · +2', {
       fontFamily: FONT_FAMILY_FALLBACK, fontSize: `${FONT_XS}px`, color: FARBE_GOLD_CSS,
     }).setOrigin(0.5);
-    container.add([bg, hauptText, subText]);
+    container.add([hauptText, subText]);
     const foilTimer = this.foilShimmer(hauptText);
     container.setScale(5, 5);
     container.setAlpha(0);
-    this.szene.tweens.add({ targets: container, scaleX: 1, scaleY: 1, alpha: 1, ease: 'Expo.Out', duration: this.skalierteDauer(580) });
+    this.szene.tweens.add({ targets: container, scaleX: 1, scaleY: 1, alpha: 1, ease: 'Expo.Out', duration: skalierteDauer(580, this.geschwindigkeitsfaktor) });
     this.shockwaveRing(posX, posY, FARBE_GOLD, 0);
     this.shockwaveRing(posX, posY, FARBE_GOLD, 100);
     this.shockwaveRing(posX, posY, FARBE_GOLD, 200);
     this.konfetti(posX, posY, 70, [0xffd700, 0xff88ff, 0x44ffee, 0xff8833, 0xffffff]);
     this.cameraFlash(255, 215, 0, 300);
     this.screenShake();
-    this.verwalteteObjekte.push(container);
-
-    const skalierteWartezeit = this.skalierteDauer(3500);
-    const fadeDauer = this.skalierteDauer(200);
-    
-    if (skalierteWartezeit <= 0) {
-      foilTimer.remove(false);
-      if ((container as unknown as { active: boolean }).active) container.destroy(true);
-      return Promise.resolve();
-    }
-
-    return new Promise((resolve) => {
-      let resolved = false;
-      const complete = () => {
-        if (resolved) return;
-        resolved = true;
-        foilTimer.remove(false);
-        if ((container as unknown as { active: boolean }).active) container.destroy(true);
-        resolve();
-      };
-
-      const destroyTimer = this.szene.time.delayedCall(skalierteWartezeit, () => {
-        this.szene.tweens.add({
-          targets: container, alpha: 0, duration: fadeDauer,
-          onComplete: complete,
-        });
-      });
-      this.verwalteteTimers.push(destroyTimer);
-      
-      window.setTimeout(complete, skalierteWartezeit + fadeDauer + 1000);
-    });
+    await verwalteMitFoilTimeout(this.szene, this.geschwindigkeitsfaktor, container, foilTimer, 3500, 200, this.verwalteteObjekte, this.verwalteteTimers);
   }
 
   private async hochzeitPartnerGefunden(partnerName?: string, x?: number, y?: number): Promise<void> {
     const posX = x ?? this.cx(), posY = y ?? this.cy();
-    const container = this.szene.add.container(posX, posY);
-    container.setDepth(50);
-    const bg = this.szene.add.graphics();
-    bg.fillStyle(CARD_BG_DARK, 0.95);
-    bg.fillRoundedRect(-145, -72, 290, 144, 8);
-    bg.lineStyle(3, FARBE_GOLD, 1);
-    bg.strokeRoundedRect(-145, -72, 290, 144, 8);
+    const container = erstelleKartenContainer(this.szene, posX, posY, FARBE_GOLD, 290, 144);
     const emoji = this.szene.add.text(0, -50, '💍', { fontSize: '26px' }).setOrigin(0.5);
     const hauptText = this.szene.add.text(0, -16, 'HOCHZEIT!', {
       fontFamily: FONT_FAMILY_FALLBACK, fontSize: `${FONT_LG}px`, color: FARBE_GOLD_CSS,
@@ -477,106 +345,40 @@ export class FlashTextManager {
     const subText = this.szene.add.text(0, 30, subLabel, {
       fontFamily: FONT_FAMILY_FALLBACK, fontSize: `${FONT_XS}px`, color: FARBE_GOLD_CSS,
     }).setOrigin(0.5);
-    container.add([bg, emoji, hauptText, subText]);
+    container.add([emoji, hauptText, subText]);
     const foilTimer = this.foilShimmer(hauptText);
     container.setScale(0, 0);
     this.szene.tweens.add({
       targets: container,
       scaleX: [0, 1.25, 0.9, 1.08, 1], scaleY: [0, 1.25, 0.9, 1.08, 1],
-      angle: [-30, 10, -4, 2, 0], ease: 'Back.Out', duration: this.skalierteDauer(600),
+      angle: [-30, 10, -4, 2, 0], ease: 'Back.Out', duration: skalierteDauer(600, this.geschwindigkeitsfaktor),
     });
     this.shockwaveRing(posX, posY, FARBE_GOLD, 0);
     this.shockwaveRing(posX, posY, FARBE_GOLD, 150);
     this.konfetti(posX, posY, 60, [0xffd700, 0xffaacc, 0xffffff, 0xff88ff]);
     this.cameraFlash(255, 215, 0, 200);
-    this.verwalteteObjekte.push(container);
-
-    const skalierteWartezeit = this.skalierteDauer(3000);
-    const fadeDauer = this.skalierteDauer(200);
-    
-    if (skalierteWartezeit <= 0) {
-      foilTimer.remove(false);
-      if ((container as unknown as { active: boolean }).active) container.destroy(true);
-      return Promise.resolve();
-    }
-
-    return new Promise((resolve) => {
-      let resolved = false;
-      const complete = () => {
-        if (resolved) return;
-        resolved = true;
-        foilTimer.remove(false);
-        if ((container as unknown as { active: boolean }).active) container.destroy(true);
-        resolve();
-      };
-
-      const destroyTimer = this.szene.time.delayedCall(skalierteWartezeit, () => {
-        this.szene.tweens.add({
-          targets: container, alpha: 0, duration: fadeDauer,
-          onComplete: complete,
-        });
-      });
-      this.verwalteteTimers.push(destroyTimer);
-      
-      window.setTimeout(complete, skalierteWartezeit + fadeDauer + 1000);
-    });
+    await verwalteMitFoilTimeout(this.szene, this.geschwindigkeitsfaktor, container, foilTimer, 3000, 200, this.verwalteteObjekte, this.verwalteteTimers);
   }
 
   private async spielBeendet(): Promise<void> {
     const cx = this.cx(), cy = this.cy();
-    const container = this.szene.add.container(cx, cy);
-    container.setDepth(50);
-    const bg = this.szene.add.graphics();
-    bg.fillStyle(CARD_BG_DARK, 0.95);
-    bg.fillRoundedRect(-135, -58, 270, 116, 8);
-    bg.lineStyle(3, FARBE_GRUEN, 1);
-    bg.strokeRoundedRect(-135, -58, 270, 116, 8);
+    const container = erstelleKartenContainer(this.szene, cx, cy, FARBE_GRUEN, 270, 116);
     const hauptText = this.szene.add.text(0, -18, 'GEWONNEN', {
       fontFamily: FONT_FAMILY_FALLBACK, fontSize: `${FONT_XL}px`, color: FARBE_GRUEN_CSS,
     }).setOrigin(0.5);
     const subText = this.szene.add.text(0, 24, 'SPIEL BEENDET', {
       fontFamily: FONT_FAMILY_FALLBACK, fontSize: `${FONT_XS}px`, color: FARBE_GRUEN_CSS,
     }).setOrigin(0.5);
-    container.add([bg, hauptText, subText]);
+    container.add([hauptText, subText]);
     const foilTimer = this.foilShimmer(hauptText);
     container.setScale(5, 5);
     container.setAlpha(0);
-    this.szene.tweens.add({ targets: container, scaleX: 1, scaleY: 1, alpha: 1, ease: 'Expo.Out', duration: this.skalierteDauer(540) });
+    this.szene.tweens.add({ targets: container, scaleX: 1, scaleY: 1, alpha: 1, ease: 'Expo.Out', duration: skalierteDauer(540, this.geschwindigkeitsfaktor) });
     this.shockwaveRing(cx, cy, FARBE_GRUEN, 0);
     this.shockwaveRing(cx, cy, FARBE_GRUEN, 100);
     this.konfetti(cx, cy, 150, [0x44ff88, 0xffd700, 0xffffff, 0x44ffee, 0xff88ff]);
     this.cameraFlash(100, 255, 150, 400);
     this.screenShake();
-    this.verwalteteObjekte.push(container);
-
-    const skalierteWartezeit = this.skalierteDauer(4000);
-    const fadeDauer = this.skalierteDauer(200);
-    
-    if (skalierteWartezeit <= 0) {
-      foilTimer.remove(false);
-      if ((container as unknown as { active: boolean }).active) container.destroy(true);
-      return Promise.resolve();
-    }
-
-    return new Promise((resolve) => {
-      let resolved = false;
-      const complete = () => {
-        if (resolved) return;
-        resolved = true;
-        foilTimer.remove(false);
-        if ((container as unknown as { active: boolean }).active) container.destroy(true);
-        resolve();
-      };
-
-      const destroyTimer = this.szene.time.delayedCall(skalierteWartezeit, () => {
-        this.szene.tweens.add({
-          targets: container, alpha: 0, duration: fadeDauer,
-          onComplete: complete,
-        });
-      });
-      this.verwalteteTimers.push(destroyTimer);
-      
-      window.setTimeout(complete, skalierteWartezeit + fadeDauer + 1000);
-    });
+    await verwalteMitFoilTimeout(this.szene, this.geschwindigkeitsfaktor, container, foilTimer, 4000, 200, this.verwalteteObjekte, this.verwalteteTimers);
   }
 }
