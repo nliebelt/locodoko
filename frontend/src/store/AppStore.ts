@@ -17,6 +17,7 @@ import { TischStore } from './TischStore';
 import { PartieStore } from './PartieStore';
 import { erzeugeAnfangszustand } from './StoreTypen';
 import type { AppZustand, PartieEreignisListener, SonderpunkteListener, StoreAbo, UiMeldung } from './StoreTypen';
+import type { SpielerProfilAntwortGenerated } from '../generated/schema-types';
 
 export type { UiMeldung, UiKonfiguration, SpielprotokollEintrag, AppZustand, PartieEreignisListener, SonderpunkteListener, StoreAbo } from './StoreTypen';
 
@@ -64,6 +65,7 @@ export class AppStore {
   async einloggen(benutzername: string, passwort: string): Promise<void> { return this.session.einloggen(benutzername, passwort); }
   async ausloggen(): Promise<void> { return this.session.ausloggen(); }
   async alsGastStarten(): Promise<void> { return this.session.alsGastStarten(); }
+  async ladeSpielerProfil(spielerId: Uuid): Promise<SpielerProfilAntwortGenerated> { return this.session.ladeSpielerProfil(spielerId); }
 
   // --- Tisch ---
   async aktualisiereTischliste(): Promise<void> { return this.tisch.aktualisiereTischliste(); }

@@ -4,18 +4,20 @@
 
 ## Notiz
 
-Build-Run 2026-05-26 (neunte Session): **FE-3 ABGESCHLOSSEN — Baseline grün (340 Backend + 202 Frontend Tests)**
+Build-Run 2026-05-26 (zehnte Session): **FE-1 ABGESCHLOSSEN — Baseline grün (340 Backend + 213 Frontend Tests)**
 
 **Was implementiert wurde:**
-1. `frontend/src/e2eBruecke.ts` — neue Datei mit `LocodokoBridge`-Interface + `declare global { interface Window { __locodoko?: LocodokoBridge } }`
-2. `main.ts` — `(window as unknown as Record<string, unknown>)['__locodoko']` → `window.__locodoko` (getypter Zugriff)
-3. `TischBrücke.ts` — inline Typ durch Import aus `e2eBruecke.ts` + `window.__locodoko` statt komplexem Cast ersetzt
-4. `TischSzene.ts`, `TischEreignisHandler.ts`, `PartieStore.ts` — `(window as any).__locodoko` → `window.__locodoko` (0 `(window as any)` im Prod-Code)
-5. 8 console.* → Logger: TischRenderKontroller, BootSzene (2), TischSzene (2), SpielverwaltungsSzene (2), TischKartenRenderer, Kartenansicht
+1. `SpielverwaltungApi.ts` — neue Methode `ladeSpielerProfil(spielerId)` (GET `/api/spieler/{id}/profil`)
+2. `SessionStore.ts` — delegiert `ladeSpielerProfil` an API
+3. `AppStore.ts` — exponiert `ladeSpielerProfil` nach außen
+4. `SpielerProfilModal.ts` — neues HTML-Modal (DOM-basiert, hängt in `#ui-root`): Header mit Avatar + Name + Datum, Statistik-Karten (Spiele/Siege/Win-Rate/Punkte), Sonderpunkte-Bilanz (Fuchs/Karlchen/Doppelköpfe), Solo-Bilanz, Partie-Verlauf-Tabelle; XSS-geschützt via escapeHtml
+5. `SpielverwaltungsSzene.ts` — „👤 Mein Profil"-Button in Lobby (Tab-Reihenfolge: Quick Game → Neuen Tisch → Mein Profil)
+6. `components.css` — Profil-Modal-CSS-Klassen (`.ui-modal--profil`, `.ui-profil-karte`, `.ui-profil-tabelle` etc.)
+7. `SpielerProfilModal.test.ts` — 11 Unit-Tests (jsdom-Umgebung): Rendering, Win-Rate, XSS, Leer-Zustände, Schließen
 
-**Nächster Schritt:** FE-1 (Spieler-Profil-Modal mit Statistik) — hängt von DB-9 ab (erledigt). Vorbedingung erfüllt.
+**Nächster Schritt:** FE-2 (Partie-Historie im Profil) — Erweiterung von FE-1. Die `letztePartien`-Tabelle im Modal ist bereits implementiert (aus `SpielerProfilAntwort`), FE-2 könnte das weiter ausbauen. Alternativ: FE-5 (E2E auf Tastatur) hat keine Vorbedingungen.
 
-**Offene Fragen:** Keine.
+**Offene Fragen:** Das `statistik`-Feld in `SpielerProfilAntwort` ist eine einzelne Instanz (keine Map pro Regelvariante wie in der Spec beschrieben). Die Spec `frontend-spielerprofil.md` erwähnt Tab-Wechsel pro Regelvariante — das Backend liefert aktuell nur eine Gesamtstatistik. Falls Multi-Variante benötigt: Backend-API erweitern.
 
 ## Legende
 
@@ -480,7 +482,7 @@ Konkret: Build-Modus erstellt für DB-2/4b/4c **drei separate Working-Tree-Ände
 ---
 
 ### FE-1: SPIELER-PROFIL-SZENE UND STATISTIK-UI (Task 77)
-- [ ] **Frontend** (Mittlere Priorität, mittlerer Aufwand): Neue Phaser-Szene oder HTML-Modal für Spieler-Profil mit Statistiken. **Backend liefert bereits `/spieler/{id}/profil`-Daten — nur Frontend fehlt.**
+- [x] **Frontend** (Mittlere Priorität, mittlerer Aufwand): Neue Phaser-Szene oder HTML-Modal für Spieler-Profil mit Statistiken. **Backend liefert bereits `/spieler/{id}/profil`-Daten — nur Frontend fehlt.**
   - **Vorbedingung**: DB-9 muss abgeschlossen sein (DTO `SpielerProfilAntwort` hat dann Multi-Variante-Statistiken).
   - **Erster Schritt**: `npm run generate-types` ausführen, damit das neue DTO in `frontend/src/generated/api-types.ts` landet. Dann den neuen Typ aus `generated/schema-types.ts` re-exportieren.
   - **Erste Datei zuerst**: `frontend/src/szenen/SpielerProfilSzene.ts` oder als HTML-Modal `frontend/src/ui/SpielerProfilModal.ts` (Build-Modus wählt — Modal ist konsistent mit Einstellungs-Modal Pattern).

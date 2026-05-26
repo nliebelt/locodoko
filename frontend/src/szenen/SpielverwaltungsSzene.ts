@@ -6,6 +6,7 @@ import type { TischListenEintragAntwort, TischPresetAntwort } from '../modelle/S
 import { PhaserButton } from './PhaserButton';
 import { PhaserModal } from '../ui/PhaserModal';
 import { PhaserList } from '../ui/PhaserList';
+import { SpielerProfilModal } from '../ui/SpielerProfilModal';
 import { FONT_FAMILY, TEXT_HELL_CSS, FARBE_GOLD_WARM_CSS } from '../ui/designTokens';
 import { Logger } from '../logger';
 
@@ -116,6 +117,21 @@ export class SpielverwaltungsSzene extends Phaser.Scene {
     this.uiContainer.add(erstelleTischBtn);
     startY += 60;
 
+    const profilBtn = new PhaserButton(this, {
+      x: 640, y: startY, text: '👤 Mein Profil', typ: 'secondary',
+      callback: () => {
+        const spielerId = zustand.spieler?.spielerId;
+        if (spielerId) {
+          appStore.ladeSpielerProfil(spielerId)
+            .then(profil => SpielerProfilModal.oeffnenMitDaten(profil))
+            .catch(fehler => Logger.error('Profil laden fehlgeschlagen', fehler));
+        }
+      }
+    });
+    profilBtn.setName('btn-mein-profil');
+    this.uiContainer.add(profilBtn);
+    startY += 60;
+
     const logoutBtn = new PhaserButton(this, {
       x: 640, y: startY, text: '🚪  Abmelden', typ: 'secondary',
       callback: () => {
@@ -125,8 +141,8 @@ export class SpielverwaltungsSzene extends Phaser.Scene {
     logoutBtn.setName('btn-logout');
     this.uiContainer.add(logoutBtn);
 
-    // Tab-Reihenfolge: Quick Game → Neuen Tisch → (Session-Recovery falls sichtbar)
-    this.fokussierbareButtons = [quickGameBtn, erstelleTischBtn];
+    // Tab-Reihenfolge: Quick Game → Neuen Tisch → Mein Profil → (Session-Recovery falls sichtbar)
+    this.fokussierbareButtons = [quickGameBtn, erstelleTischBtn, profilBtn];
     if (sessionRecoveryBtn) {
       this.fokussierbareButtons.push(sessionRecoveryBtn);
     }

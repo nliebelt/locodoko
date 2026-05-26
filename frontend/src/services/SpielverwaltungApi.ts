@@ -9,6 +9,7 @@ import type {
   TischPresetAntwort,
   Uuid
 } from '../modelle/SpielverwaltungDto';
+import type { SpielerProfilAntwortGenerated } from '../generated/schema-types';
 import { Logger } from '../logger';
 
 const STANDARD_SPIELERNAME_PREFIX = 'Spieler';
@@ -207,5 +208,9 @@ export class SpielverwaltungApi {
 
   async kickeSpieler(tischId: Uuid, spielerId: Uuid): Promise<BestaetigungAntwort> {
     return holeJson<BestaetigungAntwort>(`/api/tische/${tischId}/spieler/${spielerId}`, { method: 'DELETE' });
+  }
+
+  async ladeSpielerProfil(spielerId: Uuid): Promise<SpielerProfilAntwortGenerated> {
+    return holeJson<SpielerProfilAntwortGenerated>(`/api/spieler/${spielerId}/profil`);
   }
 }

@@ -1,7 +1,8 @@
 import type { SpielverwaltungApi } from '../services/SpielverwaltungApi';
 import type { EchtzeitPort } from '../services/SpielverwaltungEchtzeit';
-import type { SpielverwaltungWebSocketFehlerAntwort, TischlisteEreignisAntwort } from '../modelle/SpielverwaltungDto';
+import type { SpielverwaltungWebSocketFehlerAntwort, TischlisteEreignisAntwort, Uuid } from '../modelle/SpielverwaltungDto';
 import type { AppZustand } from './StoreTypen';
+import type { SpielerProfilAntwortGenerated } from '../generated/schema-types';
 
 /**
  * Verwaltet Spieler-Authentifizierung, Session-Initialisierung und gemeinsame WebSocket-Abonnements.
@@ -60,6 +61,10 @@ export class SessionStore {
   async alsGastStarten(): Promise<void> {
     this.patchFn({ authentifiziert: true, bereich: 'SPIELVERWALTUNG' });
     await this.initialisieren();
+  }
+
+  async ladeSpielerProfil(spielerId: Uuid): Promise<SpielerProfilAntwortGenerated> {
+    return this.api.ladeSpielerProfil(spielerId);
   }
 
   trenneGemeinsameAbos(): void {
