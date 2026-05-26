@@ -413,6 +413,23 @@ public record Spielregeln(
         );
     }
 
+    /**
+     * Leitet die {@link Regelvariante} aus den aktiven Spielregeln ab.
+     *
+     * <p>Vergleicht die aktuellen Regelwerte mit den vier Factory-Presets:
+     * Exakte Uebereinstimmung mit {@link #dkvRegeln()} → TURNIER,
+     * Uebereinstimmung mit einem der anderen Presets → SONDER,
+     * andernfalls → FREI.</p>
+     *
+     * <p>Hinweis: Da {@link #standardRegeln()} und {@link #dkvRegeln()} identische
+     * Regelwerte erzeugen, werden Partien mit Standard-Regeln als TURNIER klassifiziert.</p>
+     */
+    public Regelvariante regelvariante() {
+        if (this.equals(dkvRegeln())) return Regelvariante.TURNIER;
+        if (this.equals(locoBlatRegeln()) || this.equals(ohneNeunenRegeln())) return Regelvariante.SONDER;
+        return Regelvariante.FREI;
+    }
+
     private static void pruefeMindestkarten(int wert, String feld) {
         if (wert < 1) {
             throw new IllegalArgumentException(feld + " muss mindestens 1 sein");

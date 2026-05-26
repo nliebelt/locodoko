@@ -10,6 +10,8 @@ import de.locodoko.partie.Partei;
 import de.locodoko.partie.Sonderpunkt;
 import de.locodoko.partie.SonderpunktEreignis;
 import de.locodoko.partie.ereignisse.SpielBeendet;
+import de.locodoko.karten.Regelvariante;
+import de.locodoko.karten.Spieltyp;
 import de.locodoko.spieler.SpielerEntity;
 import de.locodoko.spieler.SpielerRepository;
 import org.slf4j.Logger;
@@ -188,21 +190,32 @@ public class PartieLifecycleService {
                 .filter(e -> e.art() == Sonderpunkt.DOPPELKOPF && e.taeter() == pos)
                 .count();
 
-            boolean istSolist = abgeschlossenesSpiel.spieltyp().name().startsWith("SOLO") && playerPartei == Partei.RE;
+            Spieltyp spieltyp = abgeschlossenesSpiel.spieltyp();
+            boolean istSolist = spieltyp.name().startsWith("SOLO") && playerPartei == Partei.RE;
             int kumulativePunktestand = kumulativePunkte.getOrDefault(pos, 0);
+            boolean istReSpieler = playerPartei == Partei.RE;
+            String spieltypName = spieltyp == Spieltyp.NORMALSPIEL ? "" : spieltyp.name();
+
+            SpielerPosition armutSpieler = abgeschlossenesSpiel.armutSpielerPositionDb();
+            SpielerPosition armutPartner = abgeschlossenesSpiel.armutPartnerSpielerPositionDb();
+            boolean hatArmutAngesagt = spieltyp == Spieltyp.ARMUT && pos.equals(armutSpieler);
+            boolean hatArmutUebernommen = spieltyp == Spieltyp.ARMUT && pos.equals(armutPartner);
 
             spielerDaten.put(spieler.id(), new SpielBeendet.SpielerSpielDaten(
                 sieger, spielpunkte, fuchsGefangen, fuchsVerloren, karlchenGespielt, doppelkoepfe, istSolist,
-                kumulativePunktestand
+                kumulativePunktestand, istReSpieler, spieltypName, hatArmutAngesagt, hatArmutUebernommen
             ));
         }
+
+        Regelvariante regelvariante = abgeschlossenesSpiel.spielregeln().regelvariante();
 
         eventPublisher.publishEvent(new SpielBeendet(
             tisch.id(),
             tisch.name(),
             abgeschlossenesSpiel.spielNummer(),
             spielerDaten,
-            partieBeendet
+            partieBeendet,
+            regelvariante
         ));
     }
 }

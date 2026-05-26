@@ -45,9 +45,9 @@ public class SpielerProfilController {
     public ResponseEntity<SpielerProfilAntwort> ladeProfil(@PathVariable UUID id) {
         return spielerRepository.findById(id)
             .map(spieler -> {
-                SpielerStatistik statistik = spielerProfilService.ladeStatistik(id);
+                List<SpielerStatistik> statistiken = spielerProfilService.ladeStatistiken(id);
                 List<PartieErgebnisEintrag> partieErgebnisse = spielerProfilService.ladePartieErgebnisse(id);
-                return ResponseEntity.ok(SpielerProfilAntwort.aus(spieler, statistik, partieErgebnisse));
+                return ResponseEntity.ok(SpielerProfilAntwort.aus(spieler, statistiken, partieErgebnisse));
             })
             .orElse(ResponseEntity.notFound().build());
     }
@@ -80,9 +80,9 @@ public class SpielerProfilController {
                     spieler.setzeAvatarFarbe(anfrage.avatarFarbe());
                 }
                 spielerRepository.save(spieler);
-                SpielerStatistik statistik = spielerProfilService.ladeStatistik(id);
+                List<SpielerStatistik> statistiken = spielerProfilService.ladeStatistiken(id);
                 List<PartieErgebnisEintrag> partieErgebnisse = spielerProfilService.ladePartieErgebnisse(id);
-                return ResponseEntity.ok(SpielerProfilAntwort.aus(spieler, statistik, partieErgebnisse));
+                return ResponseEntity.ok(SpielerProfilAntwort.aus(spieler, statistiken, partieErgebnisse));
             })
             .orElse(ResponseEntity.notFound().build());
     }

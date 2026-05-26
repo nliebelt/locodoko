@@ -15,7 +15,8 @@ import java.util.UUID;
  * Service fuer Spieler-Profile und -Statistiken.
  *
  * <p>Lauscht auf {@link SpielBeendet}-Events und aktualisiert die
- * {@link SpielerStatistik} jedes beteiligten Spielers. KI-Spieler werden ignoriert.</p>
+ * {@link SpielerStatistik} jedes beteiligten Spielers pro Regelvariante.
+ * KI-Spieler werden ignoriert.</p>
  */
 @Service
 public class SpielerProfilService {
@@ -40,6 +41,8 @@ public class SpielerProfilService {
         LOGGER.info("SpielBeendet empfangen [tischId={}, spielNr={}, partieBeendet={}]",
             ereignis.tischId(), ereignis.spielNummer(), ereignis.partieBeendet());
 
+        String regelvarianteName = ereignis.regelvariante() != null ? ereignis.regelvariante().name() : "FREI";
+
         Map<UUID, Integer> kumulativePunkte = new java.util.HashMap<>();
         for (Map.Entry<UUID, SpielBeendet.SpielerSpielDaten> eintrag : ereignis.spielerDaten().entrySet()) {
             UUID spielerId = eintrag.getKey();
@@ -47,7 +50,7 @@ public class SpielerProfilService {
 
             spielerRepository.findById(spielerId).ifPresent(spieler -> {
                 if (spieler.istKi()) return;
-                aktualisiereStatistik(spielerId, daten);
+                aktualisiereStatistik(spielerId, regelvarianteName, daten);
                 kumulativePunkte.put(spielerId, daten.kumulativePartiePunkte());
             });
         }
@@ -57,10 +60,10 @@ public class SpielerProfilService {
         }
     }
 
-    /** Laedt oder erzeugt die Statistik eines Spielers und gibt sie zurueck. */
+    /** Laedt alle Statistik-Zeilen eines Spielers (eine pro Regelvariante). */
     @Transactional(readOnly = true)
-    public SpielerStatistik ladeStatistik(UUID spielerId) {
-        return statistikRepository.findBySpielerId(spielerId).orElse(SpielerStatistik.fuer(spielerId));
+    public List<SpielerStatistik> ladeStatistiken(UUID spielerId) {
+        return statistikRepository.findBySpielerId(spielerId);
     }
 
     /** Laedt die letzten Partie-Ergebnisse eines Spielers (max. 20, neueste zuerst). */
@@ -69,14 +72,16 @@ public class SpielerProfilService {
         return partieErgebnisRepository.findBySpielerId(spielerId);
     }
 
-    private void aktualisiereStatistik(UUID spielerId, SpielBeendet.SpielerSpielDaten daten) {
-        SpielerStatistik statistik = statistikRepository.findBySpielerId(spielerId)
-            .orElseGet(() -> SpielerStatistik.fuer(spielerId));
+    private void aktualisiereStatistik(UUID spielerId, String regelvariante, SpielBeendet.SpielerSpielDaten daten) {
+        SpielerStatistik statistik = statistikRepository.findBySpielerIdAndRegelvariante(spielerId, regelvariante)
+            .orElseGet(() -> SpielerStatistik.fuer(spielerId, regelvariante));
         statistik.verarbeiteSpiel(
             daten.sieger(), daten.spielpunkte(),
             daten.fuchsGefangen(), daten.fuchsVerloren(),
             daten.karlchenGespielt(), daten.doppelkoepfe(),
-            daten.istSolist()
+            daten.istSolist(), daten.istReSpieler(),
+            daten.spieltypName() != null ? daten.spieltypName() : "",
+            daten.hatArmutAngesagt(), daten.hatArmutUebernommen()
         );
         statistikRepository.save(statistik);
     }

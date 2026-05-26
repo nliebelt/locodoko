@@ -4,13 +4,15 @@ import io.swagger.v3.oas.annotations.media.Schema;
 
 import java.time.Instant;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 /**
  * REST-Antwort fuer {@code GET /api/spieler/{id}/profil}.
- * Oeffentlich sichtbares Spieler-Profil mit Statistiken und letzten Partien.
+ * Oeffentlich sichtbares Spieler-Profil mit Statistiken pro Regelvariante und letzten Partien.
  */
-@Schema(description = "Oeffentlich sichtbares Spieler-Profil mit Statistiken und letzten Partien.")
+@Schema(description = "Oeffentlich sichtbares Spieler-Profil mit Statistiken pro Regelvariante und letzten Partien.")
 public record SpielerProfilAntwort(
     @Schema(description = "Eindeutige Spieler-ID.", example = "a1b2c3d4-e5f6-7890-abcd-ef1234567890")
     UUID spielerId,
@@ -20,13 +22,13 @@ public record SpielerProfilAntwort(
     String avatarFarbe,
     @Schema(description = "Zeitpunkt der Profilerstellung.", example = "2026-01-15T10:00:00Z")
     Instant erstelltAm,
-    @Schema(description = "Spielstatistiken des Spielers.")
-    StatistikAntwort statistik,
+    @Schema(description = "Spielstatistiken des Spielers, gruppiert nach Regelvariante (TURNIER, SONDER, FREI).")
+    Map<String, StatistikAntwort> statistiken,
     @Schema(description = "Liste der letzten Partien des Spielers.")
     List<PartieErgebnisAntwort> letztePartien
 ) {
 
-    @Schema(description = "Aggregierte Spielstatistiken eines Spielers.")
+    @Schema(description = "Aggregierte Spielstatistiken eines Spielers fuer eine Regelvariante.")
     public record StatistikAntwort(
         @Schema(description = "Gesamtanzahl gespielter Spiele.", example = "42")
         int anzahlSpiele,
@@ -42,16 +44,35 @@ public record SpielerProfilAntwort(
         int karlchenGespielt,
         @Schema(description = "Anzahl erzielter Doppelkoepfe.", example = "1")
         int doppelkoepfe,
+        @Schema(description = "Anzahl Siege als Re-Partei.", example = "14")
+        int reSiege,
+        @Schema(description = "Anzahl Niederlagen als Re-Partei.", example = "8")
+        int reNiederlagen,
+        @Schema(description = "Anzahl Siege als Kontra-Partei.", example = "11")
+        int kontraSiege,
+        @Schema(description = "Anzahl Niederlagen als Kontra-Partei.", example = "9")
+        int kontraNiederlagen,
+        @Schema(description = "Anzahl gespielter Hochzeiten.", example = "3")
+        int hochzeitenGespielt,
+        @Schema(description = "Anzahl angesagter Armuten.", example = "2")
+        int armutenAngesagt,
+        @Schema(description = "Anzahl uebernommener Armuten.", example = "1")
+        int armutenUebernommen,
         @Schema(description = "Anzahl gewonnener Solos.", example = "4")
         int solosSiege,
         @Schema(description = "Anzahl verlorener Solos.", example = "2")
-        int solosNiederlagen
+        int solosNiederlagen,
+        @Schema(description = "JSONB-Karte Soloergebnisse pro Solo-Typ.", example = "{\"SOLO_DAME\":{\"siege\":2,\"niederlagen\":1}}")
+        String solosProTypJson
     ) {
         static StatistikAntwort aus(SpielerStatistik s) {
             return new StatistikAntwort(
                 s.anzahlSpiele(), s.anzahlSiege(), s.gesamtPunkte(),
                 s.fuchsGefangen(), s.fuchsVerloren(), s.karlchenGespielt(),
-                s.doppelkoepfe(), s.solosSiege(), s.solosNiederlagen()
+                s.doppelkoepfe(), s.reSiege(), s.reNiederlagen(),
+                s.kontraSiege(), s.kontraNiederlagen(), s.hochzeitenGespielt(),
+                s.armutenAngesagt(), s.armutenUebernommen(),
+                s.solosSiege(), s.solosNiederlagen(), s.solosProTypJson()
             );
         }
     }
@@ -76,14 +97,16 @@ public record SpielerProfilAntwort(
         }
     }
 
-    public static SpielerProfilAntwort aus(SpielerEntity spieler, SpielerStatistik statistik,
+    public static SpielerProfilAntwort aus(SpielerEntity spieler, List<SpielerStatistik> statistiken,
                                             List<PartieErgebnisEintrag> partieErgebnisse) {
+        Map<String, StatistikAntwort> statistikMap = statistiken.stream()
+            .collect(Collectors.toMap(SpielerStatistik::regelvariante, StatistikAntwort::aus));
         return new SpielerProfilAntwort(
             spieler.id(),
             spieler.anzeigeName(),
             spieler.avatarFarbe(),
             spieler.erstelltAm(),
-            StatistikAntwort.aus(statistik),
+            statistikMap,
             partieErgebnisse.stream().map(PartieErgebnisAntwort::aus).toList()
         );
     }

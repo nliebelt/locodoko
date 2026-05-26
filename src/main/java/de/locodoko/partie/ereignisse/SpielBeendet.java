@@ -1,5 +1,7 @@
 package de.locodoko.partie.ereignisse;
 
+import de.locodoko.karten.Regelvariante;
+
 import java.util.Map;
 import java.util.UUID;
 
@@ -19,7 +21,8 @@ public record SpielBeendet(
     String tischName,
     int spielNummer,
     Map<UUID, SpielerSpielDaten> spielerDaten,
-    boolean partieBeendet
+    boolean partieBeendet,
+    Regelvariante regelvariante
 ) {
 
     /**
@@ -28,6 +31,12 @@ public record SpielBeendet(
      * <p>{@code kumulativePartiePunkte}: akkumulierter Gesamtpunktestand dieses Spielers
      * innerhalb der Partie nach diesem Spiel. Wird fuer {@code PartieErgebnisEintrag}
      * benoetigt wenn {@code partieBeendet == true}.</p>
+     *
+     * <p>{@code istReSpieler}: ob der Spieler in diesem Spiel in der Re-Partei war.</p>
+     * <p>{@code spieltypName}: Name des {@code Spieltyp}-Enums (z.B. {@code "HOCHZEIT"},
+     * {@code "ARMUT"}, {@code "SOLO_DAME"}). Leer fuer {@code NORMALSPIEL}.</p>
+     * <p>{@code hatArmutAngesagt}: der Spieler hat in diesem Spiel Armut angesagt.</p>
+     * <p>{@code hatArmutUebernommen}: der Spieler hat die Armut eines anderen uebernommen.</p>
      */
     public record SpielerSpielDaten(
         boolean sieger,
@@ -37,6 +46,10 @@ public record SpielBeendet(
         int karlchenGespielt,
         int doppelkoepfe,
         boolean istSolist,
-        int kumulativePartiePunkte
+        int kumulativePartiePunkte,
+        boolean istReSpieler,
+        String spieltypName,
+        boolean hatArmutAngesagt,
+        boolean hatArmutUebernommen
     ) {}
 }

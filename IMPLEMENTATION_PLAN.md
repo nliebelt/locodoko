@@ -4,19 +4,23 @@
 
 ## Notiz
 
-Build-Run 2026-05-26 (sechste Session): **DB-6 ABGESCHLOSSEN — Baseline grün (326 Tests, 0 Failures)**
+Build-Run 2026-05-26 (siebte Session): **DB-9 ABGESCHLOSSEN — Baseline grün (340 Tests, 0 Failures)**
 
 **Was implementiert wurde:**
-1. `SpielzugKonfliktException.java` — neue Domain-Exception in `partie/` für Zustandskonflikte (HTTP 409-Äquivalent)
-2. `Spiel.java` — 13 × `IllegalStateException` durch `SpielzugKonfliktException` (Phasenfehler, falscher Spieler, Schmeiss-Recht) und 3 × `UngueltigerSpielzugException` (Vorbehalt regelwidrig, Pflichtansage ausstehend, Hochzeit-Ansage) ersetzt; `ansagen.fuegeHinzu()` in try-catch gewrapped
-3. `Partie.java` — 4 × `IllegalStateException` (bereits beendet, Spiel läuft, kein Spiel, nicht ausgewertet) durch `SpielzugKonfliktException` ersetzt
-4. `SpielAktionsService.java` — Catch-Blöcke auf neue Domain-Exceptions umgestellt; `UngueltigerSpielzugException` im `spieleKarte`-Pfad propagiert direkt (statt zu 409 gewrapped)
-5. `SpielverwaltungExceptionHandler.java` — neuer `@ExceptionHandler(UngueltigerSpielzugException.class)` → HTTP 422
-6. `SpielverwaltungWebSocketController.java` — `UngueltigerSpielzugException` zum `@MessageExceptionHandler` hinzugefügt
-7. `DomainExceptionHttpStatusTest.java` — 2 neue Tests: 422 für Regelverstoß, 409 für Konflikt
-8. `SpielTest.java`, `DreissigAugenPflichtTest.java`, `WebSocketSpielaktionIntegrationTest.java` — assertThrows angepasst
+1. `Regelvariante.java` — neues Enum in `karten/` (TURNIER, SONDER, FREI)
+2. `Spielregeln.java` — `regelvariante()` Methode: vergleicht mit 4 Factory-Presets, gibt TURNIER/SONDER/FREI zurück
+3. `SpielBeendet.java` — `regelvariante` Feld hinzugefügt; `SpielerSpielDaten` um `istReSpieler`, `spieltypName`, `hatArmutAngesagt`, `hatArmutUebernommen` erweitert
+4. `PartieLifecycleService.java` — berechnet alle neuen Felder aus Domain-Objekten (parteiVon, spieltyp, armutSpielerPositionDb)
+5. `SpielerStatistik.java` — Composite Key (spieler_id + regelvariante), alle neuen DB-Spalten, erweitertes `verarbeiteSpiel()`, JSON-Handling für solosProTyp
+6. `SpielerStatistikRepository.java` — `findBySpielerId` → `List<>`, neue Methode `findBySpielerIdAndRegelvariante()`
+7. `SpielerProfilService.java` — pro-Variante laden/erstellen, `ladeStatistiken()` statt `ladeStatistik()`
+8. `SpielerProfilAntwort.java` — `statistiken: Map<String, StatistikAntwort>` statt einzelner `statistik`; StatistikAntwort erweitert
+9. `SpielerProfilController.java` — auf `ladeStatistiken()` umgestellt
+10. Neue Tests: `RegelvarianteAbleitungTest` (5), `SpielerStatistikTest` (7); `SpielerStatistikIntegrationTest` (2 Tests) aktualisiert
 
-**Nächster Schritt:** DB-7 (Value Objects ausweiten: `Augen` in `SpielergebnisArchiv`, `BockrundenZaehler`).
+**Nächster Schritt:** DB-10 (PartieErgebnis-VIEW) — Ablöse der `partie_ergebnis_eintrag`-Tabelle durch SQL-VIEW.
+
+**Hinweis:** `standardRegeln()` und `dkvRegeln()` sind identisch → beide werden als TURNIER klassifiziert. Falls unterschiedliche Klassifikation gewünscht, müssten die Presets auseinandergehalten werden.
 
 **Offene Fragen:** Keine.
 
@@ -432,7 +436,7 @@ Konkret: Build-Modus erstellt für DB-2/4b/4c **drei separate Working-Tree-Ände
 ---
 
 ### DB-9: STATISTIK-ERWEITERUNG BACKEND (Task 75)
-- [ ] **Backend** (Mittlere Priorität, mittlerer Aufwand): `SpielerStatistik` um Doppelkopf-Vorbild-Statistiken erweitern, pro Regelvariante separat führen.
+- [x] **Backend** (Mittlere Priorität, mittlerer Aufwand): `SpielerStatistik` um Doppelkopf-Vorbild-Statistiken erweitern, pro Regelvariante separat führen.
   - **Erste Datei zuerst**: `src/main/resources/db/changelog/000-initial-schema.sql` (das in DB-2 erstellt wurde) — Tabellen-Definition für `spieler_statistik` schon mit den erweiterten Feldern + Composite Key `(spieler_id, regelvariante)`.
   - **`Regelvariante` Enum-Konkretisierung** (wichtig — die existierenden `Spielregeln`-Factory-Methoden ermöglichen einfache Klassifikation):
     - `Spielregeln.dkvRegeln()` → `Regelvariante.TURNIER` (Turnierspielregeln nach DDV)
