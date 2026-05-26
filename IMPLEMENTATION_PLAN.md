@@ -414,7 +414,7 @@ Konkret: Build-Modus erstellt für DB-2/4b/4c **drei separate Working-Tree-Ände
 ---
 
 ### DB-8: TELL-DON'T-ASK-AUDIT — KLEINER ALS GEDACHT (Task 74)
-- [ ] **Backend** (Niedrige Priorität, klein): Audit-Ergebnis — die Codebase ist hier weitgehend sauber. Nur 1 echter Verstoß.
+- [x] **Backend** (Niedrige Priorität, klein): Audit-Ergebnis — die Codebase ist hier weitgehend sauber. Nur 1 echter Verstoß.
   - **Erste Datei zuerst**: `KiOrchestrierungService.java` Z. 79 — einziger echter Verstoß.
   - **Konkrete Aktion**: 
     1. Aggregat-Methode `Spiel.parteiVon(SpielerPosition) : Partei` einführen, die `parteien.parteiVon(pos)` aufruft.

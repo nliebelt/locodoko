@@ -500,6 +500,7 @@ public class Spiel extends AbstraktePersistenzEntity {
     @Transient public List<Stich> abgeschlosseneStiche() { return abgeschlosseneStiche; }
     public Optional<Stich> aktuellerStich() { return phase() instanceof Spielphase.Stichphase s ? Optional.of(s.aktuellerStich()) : Optional.empty(); }
     public Parteien parteien() { if (parteien == null) throw new IllegalStateException("Die Parteien sind erst nach der Vorbehaltsaufloesung bekannt"); return parteien; }
+    public Partei parteiVon(SpielerPosition pos) { return parteien().parteiVon(pos); }
     public Ansagen ansagen() { return ansagen; }
     public Optional<Spielergebnis> ergebnis() { return Optional.ofNullable(ergebnis); }
     public Optional<HochzeitStatus> hochzeitStatus() { return phase() instanceof Spielphase.Stichphase s ? Optional.ofNullable(s.hochzeitStatus()) : Optional.empty(); }

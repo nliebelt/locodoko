@@ -76,7 +76,7 @@ public class KiOrchestrierungService {
             case Spielphase.Stichphase _ -> {
                 KiSpielzustand zustand = KiSpielzustand.aus(laufendesSpiel, spielerPosition);
                 if (!laufendesSpiel.pflichtansageAusstehend().isEmpty()) {
-                    Partei eigenePartei = laufendesSpiel.parteien().parteiVon(spielerPosition);
+                    Partei eigenePartei = laufendesSpiel.parteiVon(spielerPosition);
                     if (laufendesSpiel.pflichtansageAusstehend().contains(eigenePartei)) {
                         Ansage pflichtansage = eigenePartei == Partei.RE ? Ansage.RE : Ansage.KONTRA;
                         LOGGER.info("KI meldet Pflichtansage [spielerId={}, ansage={}]", spielerPosition, pflichtansage);
