@@ -79,10 +79,14 @@ public record SpielerProfilAntwort(
 
     @Schema(description = "Zusammenfassung einer abgeschlossenen Partie.")
     public record PartieErgebnisAntwort(
+        @Schema(description = "ID der Partie.", example = "a1b2c3d4-e5f6-7890-abcd-ef1234567890")
+        UUID partieId,
         @Schema(description = "Name des Tisches.", example = "Gemuetliche Runde")
         String tischName,
         @Schema(description = "Zeitpunkt der Partie.", example = "2026-04-15T14:30:00Z")
         Instant datum,
+        @Schema(description = "Regelvariante der Partie.", example = "TURNIER")
+        String regelvariante,
         @Schema(description = "Endpunktestand des Spielers.", example = "24")
         int endPunktestand,
         @Schema(description = "Rangplatz des Spielers in der Partie.", example = "1")
@@ -92,7 +96,8 @@ public record SpielerProfilAntwort(
     ) {
         static PartieErgebnisAntwort aus(PartieErgebnisEintrag e) {
             return new PartieErgebnisAntwort(
-                e.tischName(), e.datum(), e.endPunktestand(), e.rangplatz(), e.spielanzahl()
+                e.partieId(), e.tischName(), e.datum(), e.regelvariante(),
+                e.endPunktestand(), e.rangplatz(), e.spielanzahl()
             );
         }
     }

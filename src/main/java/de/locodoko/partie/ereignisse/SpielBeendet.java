@@ -29,8 +29,7 @@ public record SpielBeendet(
      * Statistik-relevante Daten eines einzelnen Spielers fuer ein abgeschlossenes Spiel.
      *
      * <p>{@code kumulativePartiePunkte}: akkumulierter Gesamtpunktestand dieses Spielers
-     * innerhalb der Partie nach diesem Spiel. Wird fuer {@code PartieErgebnisEintrag}
-     * benoetigt wenn {@code partieBeendet == true}.</p>
+     * innerhalb der Partie nach diesem Spiel.</p>
      *
      * <p>{@code istReSpieler}: ob der Spieler in diesem Spiel in der Re-Partei war.</p>
      * <p>{@code spieltypName}: Name des {@code Spieltyp}-Enums (z.B. {@code "HOCHZEIT"},

@@ -43,7 +43,6 @@ public class SpielerProfilService {
 
         String regelvarianteName = ereignis.regelvariante() != null ? ereignis.regelvariante().name() : "FREI";
 
-        Map<UUID, Integer> kumulativePunkte = new java.util.HashMap<>();
         for (Map.Entry<UUID, SpielBeendet.SpielerSpielDaten> eintrag : ereignis.spielerDaten().entrySet()) {
             UUID spielerId = eintrag.getKey();
             SpielBeendet.SpielerSpielDaten daten = eintrag.getValue();
@@ -51,12 +50,7 @@ public class SpielerProfilService {
             spielerRepository.findById(spielerId).ifPresent(spieler -> {
                 if (spieler.istKi()) return;
                 aktualisiereStatistik(spielerId, regelvarianteName, daten);
-                kumulativePunkte.put(spielerId, daten.kumulativePartiePunkte());
             });
-        }
-
-        if (ereignis.partieBeendet() && !kumulativePunkte.isEmpty()) {
-            speicherePartieErgebnis(ereignis.tischName(), ereignis.spielNummer(), kumulativePunkte);
         }
     }
 
@@ -66,9 +60,9 @@ public class SpielerProfilService {
         return statistikRepository.findBySpielerId(spielerId);
     }
 
-    /** Laedt die letzten Partie-Ergebnisse eines Spielers (max. 20, neueste zuerst). */
+    /** Laedt die Partie-Ergebnisse eines Spielers aus der VIEW (neueste zuerst). */
     @Transactional(readOnly = true)
-    public java.util.List<PartieErgebnisEintrag> ladePartieErgebnisse(UUID spielerId) {
+    public List<PartieErgebnisEintrag> ladePartieErgebnisse(UUID spielerId) {
         return partieErgebnisRepository.findBySpielerId(spielerId);
     }
 
@@ -84,32 +78,5 @@ public class SpielerProfilService {
             daten.hatArmutAngesagt(), daten.hatArmutUebernommen()
         );
         statistikRepository.save(statistik);
-    }
-
-    /**
-     * Speichert ein Partie-Ergebnis fuer jeden Spieler und rotiert aelteste Eintraege
-     * wenn mehr als {@link PartieErgebnisEintrag#MAXIMALE_EINTRAEGE} vorhanden sind.
-     *
-     * <p>Rangplatz: 1 = hoechster Punktestand. Bei Gleichstand erhaelt der erste
-     * Spieler in der Map-Reihenfolge den besseren Rang.</p>
-     */
-    private void speicherePartieErgebnis(String tischName, int spielanzahl,
-                                         Map<UUID, Integer> kumulativePunkteProSpieler) {
-        List<Map.Entry<UUID, Integer>> gerankt = kumulativePunkteProSpieler.entrySet().stream()
-            .sorted(Map.Entry.<UUID, Integer>comparingByValue().reversed())
-            .toList();
-
-        for (int i = 0; i < gerankt.size(); i++) {
-            UUID spielerId = gerankt.get(i).getKey();
-            int endPunktestand = gerankt.get(i).getValue();
-            int rangplatz = i + 1;
-
-            if (partieErgebnisRepository.zaehleProSpieler(spielerId) >= PartieErgebnisEintrag.MAXIMALE_EINTRAEGE) {
-                partieErgebnisRepository.loescheAeltestenEintrag(spielerId);
-            }
-            partieErgebnisRepository.save(
-                PartieErgebnisEintrag.erstelle(spielerId, tischName, endPunktestand, rangplatz, spielanzahl)
-            );
-        }
     }
 }

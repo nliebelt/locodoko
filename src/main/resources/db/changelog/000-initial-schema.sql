@@ -35,7 +35,8 @@ CREATE TABLE partie (
     regelvariante VARCHAR(20),
     spielregeln JSONB,
     erstellt_am TIMESTAMP WITH TIME ZONE,
-    aktualisiert_am TIMESTAMP WITH TIME ZONE
+    aktualisiert_am TIMESTAMP WITH TIME ZONE,
+    beendet_am TIMESTAMP WITH TIME ZONE
 );
 
 CREATE TABLE tisch (
@@ -195,14 +196,34 @@ CREATE TABLE event_publication (
 CREATE INDEX event_publication_by_listener_id_and_serialized_event_idx
     ON event_publication (listener_id, serialized_event);
 
-CREATE TABLE partie_ergebnis (
-    id UUID PRIMARY KEY,
-    spieler_id UUID NOT NULL REFERENCES spieler(id),
-    tisch_name VARCHAR(100),
-    datum TIMESTAMP WITH TIME ZONE,
-    end_punktestand INT,
-    rangplatz INT,
-    spielanzahl INT,
-    erstellt_am TIMESTAMP WITH TIME ZONE,
-    aktualisiert_am TIMESTAMP WITH TIME ZONE
-);
+-- partie_ergebnis_view: Berechnet Partiehistorie live aus partie + partie_teilnehmer + tisch.
+-- Loest die alte partie_ergebnis-Tabelle (max-20-Rotation) ab — keine Schreiblogik mehr noetig.
+CREATE VIEW partie_ergebnis_view AS
+SELECT
+    pt.spieler_id,
+    p.id                         AS partie_id,
+    t.name                       AS tisch_name,
+    p.beendet_am                 AS datum,
+    p.regelvariante,
+    CASE pt.spieler_position
+        WHEN 'SUED' THEN p.punkte_sued
+        WHEN 'WEST' THEN p.punkte_west
+        WHEN 'NORD' THEN p.punkte_nord
+        WHEN 'OST'  THEN p.punkte_ost
+        ELSE 0
+    END                          AS end_punktestand,
+    RANK() OVER (
+        PARTITION BY p.id
+        ORDER BY CASE pt.spieler_position
+            WHEN 'SUED' THEN p.punkte_sued
+            WHEN 'WEST' THEN p.punkte_west
+            WHEN 'NORD' THEN p.punkte_nord
+            WHEN 'OST'  THEN p.punkte_ost
+            ELSE 0
+        END DESC
+    )                            AS rangplatz,
+    p.aktuelles_spiel_nummer     AS spielanzahl
+FROM partie p
+JOIN partie_teilnehmer pt ON pt.partie_id = p.id
+LEFT JOIN tisch t ON t.partie_id = p.id
+WHERE p.status = 'BEENDET';

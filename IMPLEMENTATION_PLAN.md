@@ -4,19 +4,21 @@
 
 ## Notiz
 
-Build-Run 2026-05-26 (siebte Session): **DB-9 ABGESCHLOSSEN — Baseline grün (340 Tests, 0 Failures)**
+Build-Run 2026-05-26 (achte Session): **DB-10 ABGESCHLOSSEN — Baseline grün (340 Tests, 0 Failures)**
 
 **Was implementiert wurde:**
-1. `Regelvariante.java` — neues Enum in `karten/` (TURNIER, SONDER, FREI)
-2. `Spielregeln.java` — `regelvariante()` Methode: vergleicht mit 4 Factory-Presets, gibt TURNIER/SONDER/FREI zurück
-3. `SpielBeendet.java` — `regelvariante` Feld hinzugefügt; `SpielerSpielDaten` um `istReSpieler`, `spieltypName`, `hatArmutAngesagt`, `hatArmutUebernommen` erweitert
-4. `PartieLifecycleService.java` — berechnet alle neuen Felder aus Domain-Objekten (parteiVon, spieltyp, armutSpielerPositionDb)
-5. `SpielerStatistik.java` — Composite Key (spieler_id + regelvariante), alle neuen DB-Spalten, erweitertes `verarbeiteSpiel()`, JSON-Handling für solosProTyp
-6. `SpielerStatistikRepository.java` — `findBySpielerId` → `List<>`, neue Methode `findBySpielerIdAndRegelvariante()`
-7. `SpielerProfilService.java` — pro-Variante laden/erstellen, `ladeStatistiken()` statt `ladeStatistik()`
-8. `SpielerProfilAntwort.java` — `statistiken: Map<String, StatistikAntwort>` statt einzelner `statistik`; StatistikAntwort erweitert
-9. `SpielerProfilController.java` — auf `ladeStatistiken()` umgestellt
-10. Neue Tests: `RegelvarianteAbleitungTest` (5), `SpielerStatistikTest` (7); `SpielerStatistikIntegrationTest` (2 Tests) aktualisiert
+1. `000-initial-schema.sql` — `CREATE TABLE partie_ergebnis` ersetzt durch `CREATE VIEW partie_ergebnis_view` (JOIN über partie + partie_teilnehmer + tisch, RANK()-Window-Function für Rangplatz)
+2. `Partie.java` — `beendet_am`-Spalte hinzugefügt; `markiereAlsBeendet()` setzt `beendetAm = Instant.now()`
+3. `PartieErgebnisEintrag.java` — nicht mehr persistent (`AbstraktePersistenzEntity` entfernt), `@Table("partie_ergebnis_view")`, neue Felder `partieId` (`@Id`) und `regelvariante`, keine `erstelle()`-Factory mehr
+4. `PartieErgebnisRepository.java` — Rotations-Methoden (`zaehleProSpieler`, `loescheAeltestenEintrag`) entfernt; `findBySpielerId` liest aus VIEW
+5. `SpielerProfilService.java` — `speicherePartieErgebnis()`-Methode + Rotations-Logik vollständig entfernt
+6. `SpielerProfilAntwort.java` — `PartieErgebnisAntwort` um `partieId` und `regelvariante` erweitert
+7. `SpielBeendet.java` — veralteter Kommentar zu `PartieErgebnisEintrag` aktualisiert
+
+**Nächster Schritt:** FE-3 (Frontend-Cleanup: console.log → Logger, getypte Bridge) — klein, kann als Einstieg in Phase 3 dienen.
+
+**Offene Fragen:** Keine.
+
 
 **Nächster Schritt:** DB-10 (PartieErgebnis-VIEW) — Ablöse der `partie_ergebnis_eintrag`-Tabelle durch SQL-VIEW.
 
@@ -470,7 +472,7 @@ Konkret: Build-Modus erstellt für DB-2/4b/4c **drei separate Working-Tree-Ände
 ---
 
 ### DB-10: PARTIE-ERGEBNIS-VIEW (Task 76)
-- [ ] **Backend** (Niedrige Priorität, kleiner Aufwand): Ablöse der `partie_ergebnis_eintrag`-Tabelle (max-20-Rotation) durch eine SQL-VIEW.
+- [x] **Backend** (Niedrige Priorität, kleiner Aufwand): Ablöse der `partie_ergebnis_eintrag`-Tabelle (max-20-Rotation) durch eine SQL-VIEW.
   - **Erste Datei zuerst**: `src/main/resources/db/changelog/000-initial-schema.sql` — VIEW-Definition zusammen mit den Tabellen anlegen.
   - **Schritte**:
     1. SQL-VIEW definieren: `CREATE VIEW partie_ergebnis_view AS SELECT pt.spieler_id, p.id AS partie_id, t.name AS tisch_name, p.beendet_am AS datum, ... FROM partie p JOIN partie_teilnehmer pt ON pt.partie_id = p.id JOIN tisch t ON t.id = p.tisch_id WHERE p.status = 'BEENDET' ORDER BY p.beendet_am DESC;`

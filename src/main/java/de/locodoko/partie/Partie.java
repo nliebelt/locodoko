@@ -10,6 +10,7 @@ import org.springframework.data.relational.core.mapping.Column;
 import org.springframework.data.relational.core.mapping.MappedCollection;
 import org.springframework.data.relational.core.mapping.Table;
 
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.EnumMap;
 import java.util.LinkedHashMap;
@@ -74,6 +75,9 @@ public class Partie extends AbstraktePersistenzEntity {
 
     @Column("solist_des_letzten_spiels")
     private String solistDesLetztenSpielsDb = null;
+
+    @Column("beendet_am")
+    private Instant beendetAm = null;
 
     @MappedCollection(idColumn = "partie_id", keyColumn = "spiel_nummer")
     private Map<Integer, SpielergebnisArchiv> archivierteSpieleMap = new LinkedHashMap<>();
@@ -348,6 +352,7 @@ public class Partie extends AbstraktePersistenzEntity {
 
     public void markiereAlsBeendet() {
         this.statusDb = PartieStatus.BEENDET.name();
+        this.beendetAm = Instant.now();
     }
 
     public void markiereAlsAbgebrochen() {
