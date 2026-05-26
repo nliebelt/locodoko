@@ -4,7 +4,7 @@
 
 ## Notiz
 
-Build-Run 2026-05-26 (dreizehnte Session): **FE-4 ABGESCHLOSSEN — Baseline grün (216 Frontend-Tests, 340 Backend-Tests)**
+Build-Run 2026-05-26 (dreizehnte Session): **FE-4 + DOC-65 + FE-6 ABGESCHLOSSEN — Baseline grün (216 Frontend-Tests)**
 
 **Was implementiert wurde:**
 FE-4: FlashTextManager.ts von 582 → 384 Zeilen refaktoriert. Geänderte Dateien:
@@ -582,7 +582,7 @@ Konkret: Build-Modus erstellt für DB-2/4b/4c **drei separate Working-Tree-Ände
 ---
 
 ### FE-6: A11Y-BASIS-VERBESSERUNGEN (Task 81)
-- [ ] **Frontend** (Niedrige Priorität, kleiner Aufwand): Minimale Accessibility-Verbesserungen für HTML-Overlays.
+- [x] **Frontend** (Niedrige Priorität, kleiner Aufwand): Minimale Accessibility-Verbesserungen für HTML-Overlays.
   - **Erste Datei zuerst**: `frontend/index.html` — `lang="de"` ist bereits gesetzt. `<title>` ergänzen falls fehlt.
   - **Audit-Ergebnis**: `grep -rn "aria-\|role=" frontend/src/ --include="*.ts" | grep -v ".test.ts"` liefert 0 Stellen. `<div id="ui-root" aria-live="polite">` existiert in `index.html` — das ist gut.
   - **Schritte**:

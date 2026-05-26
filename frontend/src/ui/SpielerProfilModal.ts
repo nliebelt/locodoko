@@ -38,7 +38,7 @@ export class SpielerProfilModal {
     backdrop.className = 'ui-modal-backdrop';
     backdrop.setAttribute('role', 'dialog');
     backdrop.setAttribute('aria-modal', 'true');
-    backdrop.setAttribute('aria-label', 'Spieler-Profil');
+    backdrop.setAttribute('aria-labelledby', 'profil-dialog-titel');
 
     const modal = document.createElement('div');
     modal.className = 'ui-modal ui-modal--profil';
@@ -64,7 +64,7 @@ export class SpielerProfilModal {
       <div class="ui-profil-header">
         <div class="ui-profil-avatar" style="background-color: ${farbe}"></div>
         <div class="ui-profil-header-info">
-          <h2>${SpielerProfilModal.escapeHtml(name)}</h2>
+          <h2 id="profil-dialog-titel">${SpielerProfilModal.escapeHtml(name)}</h2>
           <span class="ui-profil-meta">Dabei seit ${datum}</span>
         </div>
         <button class="ui-profil-schliessen" aria-label="Profil schließen">✕</button>
@@ -131,7 +131,7 @@ export class SpielerProfilModal {
       <section class="ui-profil-abschnitt">
         <h3 class="ui-profil-abschnitt-titel">Letzte Partien</h3>
         <div class="ui-profil-tabelle-wrapper">
-          <table class="ui-profil-tabelle">
+          <table class="ui-profil-tabelle" aria-label="Partie-Verlauf">
             <thead><tr><th>Tisch</th><th>Datum</th><th>Spiele</th><th>Punkte</th><th>Platz</th></tr></thead>
             <tbody>${zeilen}</tbody>
           </table>
