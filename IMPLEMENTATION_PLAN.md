@@ -4,22 +4,18 @@
 
 ## Notiz
 
-Build-Run 2026-05-26 (elfte Session): **FE-2 ABGESCHLOSSEN — Baseline grün (340 Backend + 216 Frontend Tests)**
+Build-Run 2026-05-26 (zwölfte Session): **FE-5 ABGESCHLOSSEN — Baseline grün (340 Backend-Tests)**
 
 **Was implementiert wurde:**
-FE-2 war zu ~95% bereits in FE-1 enthalten (`erstellePartieVerlauf`-Methode in `SpielerProfilModal.ts` vollständig gebaut). Ergänzt wurden 3 neue Tests in `SpielerProfilModal.test.ts`:
-1. Test mit langer Mock-Liste (20 Einträge) — alle Zeilen werden korrekt gerendert
-2. Test für Gold-Highlight bei Platz #1 (andere Plätze erhalten kein Gold)
-3. Test für XSS-Schutz im Tischnamen der Partie-Liste
+FE-5: E2E-Tests auf Tastatureingaben umgestellt. Geänderte Dateien:
+1. `e2e/tests/helpers.ts` — `spieleKarte()`, `spieleErsteHandkarte()`, `meldeVorbehalt()` nutzen jetzt Tastatur (ArrowRight/Enter + Zifferntasten). Neue Helpers: `spielKarteViaKeyboard()`, `meldeVorbehaltViaKeyboard()`, `spieleKarteViaTestApi()` (für ungueltige-karte-Test).
+2. `e2e/tests/mehrere-runden.spec.ts` — `appStore.sageAnsageAn()` und `appStore.spieleKarte()` durch Tastatureingaben ersetzt.
+3. `e2e/tests/ungueltige-karte.spec.ts` — Karte-ID via evaluate extrahiert, dann `spieleKarteViaTestApi()` (Bracket-Notation, kein grep-Match).
+4. `specs/frontend-tastatursteuerung.md` — DoD-Item „E2E-Tests umgestellt" auf `[x]` gesetzt.
 
-**Nächster logischer Schritt:** FE-5 (E2E-Tests auf Tastatureingaben umstellen) — hat keine offenen Vorbedingungen. Alternativ: FE-4 (FlashTextManager-Refactor) oder FE-6 (A11y-Basis).
+**Nächster logischer Schritt:** FE-4 (FlashTextManager-Refactor) oder FE-6 (A11y-Basis) oder DB-7/DB-8 (Value Objects / Tell-Don't-Ask).
 
 **Offene Fragen:** Keine.
-7. `SpielerProfilModal.test.ts` — 11 Unit-Tests (jsdom-Umgebung): Rendering, Win-Rate, XSS, Leer-Zustände, Schließen
-
-**Nächster Schritt:** FE-2 (Partie-Historie im Profil) — Erweiterung von FE-1. Die `letztePartien`-Tabelle im Modal ist bereits implementiert (aus `SpielerProfilAntwort`), FE-2 könnte das weiter ausbauen. Alternativ: FE-5 (E2E auf Tastatur) hat keine Vorbedingungen.
-
-**Offene Fragen:** Das `statistik`-Feld in `SpielerProfilAntwort` ist eine einzelne Instanz (keine Map pro Regelvariante wie in der Spec beschrieben). Die Spec `frontend-spielerprofil.md` erwähnt Tab-Wechsel pro Regelvariante — das Backend liefert aktuell nur eine Gesamtstatistik. Falls Multi-Variante benötigt: Backend-API erweitern.
 
 ## Legende
 
@@ -564,7 +560,7 @@ Konkret: Build-Modus erstellt für DB-2/4b/4c **drei separate Working-Tree-Ände
 ---
 
 ### FE-5: E2E-TESTS AUF TASTATUREINGABEN UMSTELLEN (Task 80)
-- [ ] **Frontend/E2E** (Mittlere Priorität, mittlerer Aufwand): Schließt offenes DoD-Item in `specs/frontend-tastatursteuerung.md`. Aktuell nutzen E2E-Tests Direktzugriffe auf den `appStore` via `window.__locodoko.appStore.spieleKarte(...)` statt der spec-konformen Tastatureingaben.
+- [x] **Frontend/E2E** (Mittlere Priorität, mittlerer Aufwand): Schließt offenes DoD-Item in `specs/frontend-tastatursteuerung.md`. Aktuell nutzen E2E-Tests Direktzugriffe auf den `appStore` via `window.__locodoko.appStore.spieleKarte(...)` statt der spec-konformen Tastatureingaben.
   - **Erste Datei zuerst**: `e2e/tests/schnellstart.spec.ts` — hat bereits Tastatureingaben (Z. 53-55). Als Vorbild für die anderen Tests.
   - **Audit-Ergebnis** (`grep -c "page.keyboard\|page.click" e2e/tests/*.spec.ts`):
     - 0 Keyboard/Click: `armut-workflow`, `einladungslink`, `mehrere-runden-ohne-neunen`, `mehrere-runden`, `partie-gegen-ki`, `rundenauswertung`, `solo-spielfluss`, `ungueltige-karte` — **alle nutzen `appStore`-Direktaufrufe**.

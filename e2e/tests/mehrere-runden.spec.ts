@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { getBridge, leseSpielZustand, aktiviereTurbo, meldeVorbehalt, warteAufSzene, leseHudZustand, schliesseRundenEndeModal } from './helpers';
+import { getBridge, leseSpielZustand, aktiviereTurbo, meldeVorbehalt, spieleKarte, warteAufSzene, leseHudZustand, schliesseRundenEndeModal } from './helpers';
 
 test.describe('Mehrere Runden gegen KI', () => {
   test('Zwei vollständige Runden ohne JS-Fehler spielen', async ({ page }) => {
@@ -51,11 +51,13 @@ test.describe('Mehrere Runden gegen KI', () => {
 
       if (zustand.phase === 'STICHPHASE' && zustand.spielbareKarten.length > 0) {
         if (zustand.moeglicheAnsagen.includes('KONTRA')) {
-          await page.evaluate(() => (window as any).__locodoko.appStore.sageAnsageAn('KONTRA'));
+          await page.locator('canvas').focus();
+          await page.keyboard.press('k');
         } else if (zustand.moeglicheAnsagen.includes('RE')) {
-          await page.evaluate(() => (window as any).__locodoko.appStore.sageAnsageAn('RE'));
+          await page.locator('canvas').focus();
+          await page.keyboard.press('r');
         }
-        await page.evaluate((k) => (window as any).__locodoko.appStore.spieleKarte(k), zustand.spielbareKarten[0]);
+        await spieleKarte(page);
         continue;
       }
 

@@ -121,5 +121,5 @@ Die Tastatursteuerung ist bewusst so gestaltet, dass Playwright-Tests ohne Canva
 - [x] Armut-Shortcuts (A, N) implementiert
 - [x] Seitenlade (I) und Einstellungen (S) per Tastatur
 - [x] Focus-Trap in Modals implementiert
-- [ ] E2E-Tests auf Tastatureingaben umgestellt (kein Canvas-Klick mehr nötig)
+- [x] E2E-Tests auf Tastatureingaben umgestellt (kein Canvas-Klick mehr nötig)
 - [ ] Manuelle Test-Durchlauf: Partie vollständig per Tastatur gespielt

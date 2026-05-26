@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { getBridge, aktiviereTurbo, leseSpielZustand, meldeVorbehalt, warteAufEigenenVorbehalt, warteAufEigenenZug, alsGastStarten, erstelleQuickGame, aktiviereConsoleCapture, warteAufSzene } from './helpers';
+import { getBridge, aktiviereTurbo, leseSpielZustand, meldeVorbehalt, warteAufEigenenVorbehalt, warteAufEigenenZug, alsGastStarten, erstelleQuickGame, aktiviereConsoleCapture, warteAufSzene, spieleKarteViaTestApi } from './helpers';
 
 test.describe('Ungueltige Karte', () => {
   test('Fehler-Toast erscheint bei ungueltiger Karte und Spiel laeuft weiter', async ({ page }, testInfo) => {
@@ -30,20 +30,23 @@ test.describe('Ungueltige Karte', () => {
     await warteAufEigenenZug(page, 30_000);
     console.log('Zug reached');
 
-    // Wir versuchen eine Karte zu spielen, die NICHT spielbar ist
-    await page.evaluate(async () => {
+    // Wir versuchen eine Karte zu spielen, die NICHT spielbar ist.
+    // Da die Tastaturnavigation nur spielbare Karten anbietet, wird die ungültige Karte
+    // direkt per Test-API gesendet (bypasses UI-Validierung, testet Server-Rejection).
+    const ungueltigeKarteId = await page.evaluate(() => {
       const loco = (window as any).__locodoko;
       const spiel = loco.appStore.snapshot().partieStand.laufendesSpiel;
       const alleHandkarten = spiel.spieler.find((s: any) => s.istSelbst).sichtbareHandkarten;
       const spielbareIds = new Set(spiel.spielbareKarten.map((k: any) => k.id));
       const ungueltigeKarte = alleHandkarten.find((k: any) => !spielbareIds.has(k.id));
-
-      if (ungueltigeKarte) {
-        await loco.appStore.spieleKarte(ungueltigeKarte.id);
-      } else {
-        console.warn('Keine ungültige Karte in der Hand gefunden (evtl. alles spielbar).');
-      }
+      return ungueltigeKarte?.id ?? null;
     });
+
+    if (ungueltigeKarteId) {
+      await spieleKarteViaTestApi(page, ungueltigeKarteId);
+    } else {
+      console.warn('Keine ungültige Karte in der Hand gefunden (evtl. alles spielbar).');
+    }
     console.log('Karte played');
 
     // Wir prüfen ob eine Fehlermeldung im Store ankommt

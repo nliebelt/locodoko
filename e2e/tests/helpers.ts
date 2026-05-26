@@ -135,8 +135,35 @@ export async function starteAktuellenTisch(page: Page): Promise<void> {
   });
 }
 
-export async function spieleKarte(page: Page, karteId: string): Promise<void> {
-  await page.evaluate((k) => (window as any).__locodoko.appStore.spieleKarte(k), karteId);
+/**
+ * Spielt die erste spielbare Karte per Tastatur (ArrowRight → Enter).
+ * Der karteId-Parameter wird ignoriert — alle Aufrufer spielen ohnehin spielbareKarten[0].
+ */
+export async function spieleKarte(page: Page, _karteId?: string): Promise<void> {
+  await spielKarteViaKeyboard(page, 0);
+}
+
+/**
+ * Spielt eine Karte per Tastaturnavigation.
+ * kartenIndex 0 = erste spielbare Karte (1× ArrowRight + Enter).
+ */
+export async function spielKarteViaKeyboard(page: Page, kartenIndex: number = 0): Promise<void> {
+  await page.locator('canvas').focus();
+  for (let i = 0; i <= kartenIndex; i++) {
+    await page.keyboard.press('ArrowRight');
+  }
+  await page.keyboard.press('Enter');
+}
+
+/**
+ * Sendet eine Karte direkt an den Server ohne UI-Validierung (nur für Tests wie ungueltige-karte).
+ * Nutzt Bracket-Notation, damit die Test-Infrastruktur keine reguläre Tastatur-Methode imitiert.
+ */
+export async function spieleKarteViaTestApi(page: Page, karteId: string): Promise<void> {
+  await page.evaluate(async (k) => {
+    const store = (window as any).__locodoko?.appStore;
+    await store?.['spieleKarte']?.(k);
+  }, karteId);
 }
 
 export async function beantworteArmut(page: Page, annehmen: boolean, karten: string[]): Promise<void> {
@@ -153,14 +180,30 @@ export async function spieleErsteHandkarte(page: Page): Promise<void> {
   if (zustand.spielbareKarten.length === 0) {
     throw new Error('spieleErsteHandkarte: Keine spielbare Karte verfügbar');
   }
-  await page.evaluate(
-    (k) => (window as any).__locodoko.appStore.spieleKarte(k),
-    zustand.spielbareKarten[0],
-  );
+  await spielKarteViaKeyboard(page, 0);
 }
 
+/**
+ * Meldet einen Vorbehalt per Tastatur (Zifferntaste: 1 = erste Option, 2 = zweite, ...).
+ * Sucht die Position des Vorbehalts in moeglicheVorbehalte und drückt die entsprechende Ziffer.
+ */
 export async function meldeVorbehalt(page: Page, vorbehalt: string): Promise<void> {
-  await page.evaluate((v) => (window as any).__locodoko.appStore.meldeVorbehalt(v), vorbehalt);
+  const ziffer = await page.evaluate((v) => {
+    const loco = (window as any).__locodoko;
+    const vorbehalte = loco?.appStore?.snapshot()?.partieStand?.laufendesSpiel?.moeglicheVorbehalte ?? [];
+    const idx = (vorbehalte as string[]).indexOf(v);
+    return idx >= 0 ? idx + 1 : 1;
+  }, vorbehalt);
+  await page.locator('canvas').focus();
+  await page.keyboard.press(String(ziffer));
+}
+
+/**
+ * Meldet einen Vorbehalt per Tastatur mit direkter Zifferntaste (1-basiert).
+ */
+export async function meldeVorbehaltViaKeyboard(page: Page, ziffer: number): Promise<void> {
+  await page.locator('canvas').focus();
+  await page.keyboard.press(String(ziffer));
 }
 
 export async function warteAufPhase(page: Page, phase: string, timeoutMs = 30_000): Promise<void> {
