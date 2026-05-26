@@ -157,12 +157,13 @@ class SonderpunktDomainEreignisTest {
             }
         }
 
-        Spiel spiel = Spiel.neu(SpielerPosition.SUED, spielregeln, Kartendeck.ausKarten(deckKarten))
-            .teileKartenAus();
+        Spiel spiel = Spiel.neu(SpielerPosition.SUED, spielregeln, Kartendeck.ausKarten(deckKarten));
+        spiel.teileKartenAus();
         for (SpielerPosition pos : SpielerPosition.imUhrzeigersinnAb(SpielerPosition.WEST)) {
-            spiel = spiel.meldeVorbehalt(pos, VorbehaltAnsage.GESUND);
+            spiel.meldeVorbehalt(pos, VorbehaltAnsage.GESUND);
         }
-        return spiel.loeseVorbehalteAuf();
+        spiel.loeseVorbehalteAuf();
+        return spiel;
     }
 
     private Partie partieMitSpiel(Spiel spiel) {

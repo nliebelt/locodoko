@@ -153,7 +153,7 @@ class HochzeitTest {
         // Ansage-Zeitfenster (= nur aktueller Spieler) greifen.
         Spiel spiel = hochzeitSpielNachVorbehaltsaufloesung();
         // WEST (Hochzeit-Spieler) spielt erste Karte → NORD wird naechster Spieler (erwarteterSpieler)
-        spiel = spiel.spieleKarte(SpielerPosition.WEST, spiel.gueltigeKartenFuer(SpielerPosition.WEST).getFirst()).neuerStand();
+        spiel.spieleKarte(SpielerPosition.WEST, spiel.gueltigeKartenFuer(SpielerPosition.WEST).getFirst());
 
         assertTrue(spiel.hochzeitStatus().orElseThrow().suchtPartner(),
             "Hochzeit muss nach dem ersten Zug des Hochzeit-Spielers noch einen Partner suchen.");
@@ -247,8 +247,8 @@ class HochzeitTest {
             "NORD (jetzt RE) muss die Pflichtansage RE machen koennen.");
 
         // Nach der Pflichtansage muss spieleKarte wieder moeglich sein (Spiel nicht blockiert)
-        Spiel nachAnsage = nachStich.sageAn(SpielerPosition.NORD, Ansage.RE);
-        assertTrue(nachAnsage.pflichtansageAusstehend().isEmpty(),
+        nachStich.sageAn(SpielerPosition.NORD, Ansage.RE);
+        assertTrue(nachStich.pflichtansageAusstehend().isEmpty(),
             "Nach RE-Ansage muss die Pflichtansage erfuellt sein.");
     }
 
@@ -259,18 +259,19 @@ class HochzeitTest {
      * WEST ist Hochzeit-Spieler (hat beide Kreuz-Damen), SUED ist Geber, WEST ist Aufspieler.
      */
     private Spiel hochzeitSpielNachVorbehaltsaufloesung() {
-        return Spiel.neu(SpielerPosition.SUED, spielregeln, kartendeckMitVerteiltenHaenden(Map.of(
+        Spiel spiel = Spiel.neu(SpielerPosition.SUED, spielregeln, kartendeckMitVerteiltenHaenden(Map.of(
                 SpielerPosition.WEST, List.of(
                     new Karte(Farbe.KREUZ, Kartenwert.DAME, 1),
                     new Karte(Farbe.KREUZ, Kartenwert.DAME, 2)
                 )
-            )))
-            .teileKartenAus()
-            .meldeVorbehalt(SpielerPosition.WEST, VorbehaltAnsage.HOCHZEIT)
-            .meldeGesund(SpielerPosition.NORD)
-            .meldeGesund(SpielerPosition.OST)
-            .meldeGesund(SpielerPosition.SUED)
-            .loeseVorbehalteAuf();
+            )));
+        spiel.teileKartenAus();
+        spiel.meldeVorbehalt(SpielerPosition.WEST, VorbehaltAnsage.HOCHZEIT);
+        spiel.meldeGesund(SpielerPosition.NORD);
+        spiel.meldeGesund(SpielerPosition.OST);
+        spiel.meldeGesund(SpielerPosition.SUED);
+        spiel.loeseVorbehalteAuf();
+        return spiel;
     }
 
     /**
@@ -306,7 +307,7 @@ class HochzeitTest {
         // Hochzeit: WEST allein RE, alle anderen KONTRA — so wie nach loeseVorbehalteAuf()
         Parteien parteien = Parteien.ausHochzeit(aufspieler);
 
-        return Spiel.ausPersistiertemStand(
+        Spiel spiel = Spiel.ausPersistiertemStand(
             regeln,
             Kartendeck.ausKarten(alleKarten),
             Spieltyp.HOCHZEIT,
@@ -320,7 +321,9 @@ class HochzeitTest {
             null,
             false,
             null
-        ).spieleKarte(vierterSpieler, karte4).neuerStand();
+        );
+        spiel.spieleKarte(vierterSpieler, karte4);
+        return spiel;
     }
 
     private Kartendeck kartendeckMitVerteiltenHaenden(Map<SpielerPosition, List<Karte>> vorgaben) {

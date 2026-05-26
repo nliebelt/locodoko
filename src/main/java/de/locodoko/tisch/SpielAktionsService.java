@@ -9,7 +9,6 @@ import de.locodoko.partie.PartieId;
 import de.locodoko.tisch.persistenz.PartieRepository;
 import de.locodoko.partie.PartieStatus;
 import de.locodoko.partie.Spiel;
-import de.locodoko.partie.SpielAktion;
 import de.locodoko.partie.SpielEreignis;
 import de.locodoko.partie.SonderpunktEreignis;
 import de.locodoko.partie.VorbehaltAnsage;
@@ -98,11 +97,11 @@ public class SpielAktionsService {
             laufendesSpiel.hydriere(tisch.konfiguration().alsSpielregeln());
             int einwurfZaehlerVorher = laufendesSpiel.einwurfZaehler();
             try {
-                Spiel nachVorbehalt = laufendesSpiel.meldeVorbehalt(position, vorbehalt);
-                Spiel aktualisiertesSpiel = nachVorbehalt.phase() instanceof Spielphase.VorbehaltAufloesung
-                    ? nachVorbehalt.loeseVorbehalteAuf()
-                    : nachVorbehalt;
-                laufendesSpiel.uebernehmeDomainStand(aktualisiertesSpiel);
+                laufendesSpiel.meldeVorbehalt(position, vorbehalt);
+                if (laufendesSpiel.phase() instanceof Spielphase.VorbehaltAufloesung) {
+                    laufendesSpiel.loeseVorbehalteAuf();
+                }
+                laufendesSpiel.syncZuPersistenz();
             } catch (IllegalStateException exception) {
                 throw new SpielverwaltungKonfliktException("VORBEHALT_UNGUELTIG", exception.getMessage());
             }
@@ -131,14 +130,16 @@ public class SpielAktionsService {
             laufendesSpiel.hydriere(tisch.konfiguration().alsSpielregeln());
             int einwurfZaehlerVorher = laufendesSpiel.einwurfZaehler();
             try {
-                Spiel aktualisiertesSpiel = laufendesSpiel.armutStatus()
-                    .filter(status -> position == status.armutSpieler() && !status.angebotLiegtVor())
-                    .map(status -> laufendesSpiel.legeArmutTrumpfkarten(position, karten))
-                    .orElseGet(() -> angenommen
-                        ? laufendesSpiel.nimmArmutAn(position, karten)
-                        : laufendesSpiel.lehneArmutAb(position)
-                    );
-                laufendesSpiel.uebernehmeDomainStand(aktualisiertesSpiel);
+                if (laufendesSpiel.armutStatus()
+                        .filter(status -> position == status.armutSpieler() && !status.angebotLiegtVor())
+                        .isPresent()) {
+                    laufendesSpiel.legeArmutTrumpfkarten(position, karten);
+                } else if (angenommen) {
+                    laufendesSpiel.nimmArmutAn(position, karten);
+                } else {
+                    laufendesSpiel.lehneArmutAb(position);
+                }
+                laufendesSpiel.syncZuPersistenz();
             } catch (IllegalStateException exception) {
                 throw new SpielverwaltungKonfliktException("ARMUT_ANTWORT_UNGUELTIG", exception.getMessage());
             }
@@ -168,10 +169,9 @@ public class SpielAktionsService {
             List<SpielEreignis> spielEreignisse;
             try {
                 LOGGER.trace("Spiele Karte {}", karteId);
-                SpielAktion aktionsErgebnis = laufendesSpiel.spieleKarte(position, parseKarte(karteId));
-                laufendesSpiel.uebernehmeDomainStand(aktionsErgebnis.neuerStand());
-                spielEreignisse = aktionsErgebnis.ereignisse();
-                LOGGER.trace("Domain-Stand uebernommen [events={}]", spielEreignisse.size());
+                spielEreignisse = laufendesSpiel.spieleKarte(position, parseKarte(karteId));
+                laufendesSpiel.syncZuPersistenz();
+                LOGGER.trace("Domain-Stand synchronisiert [events={}]", spielEreignisse.size());
             } catch (IllegalStateException | UngueltigerSpielzugException exception) {
                 LOGGER.warn("Ungueltige Karte gespielt [spieler={}, karte={}]: {}", position, karteId, exception.getMessage());
                 if (tisch.partie() != null && verwalteterSpieler.sessionId() != null) {
@@ -206,8 +206,8 @@ public class SpielAktionsService {
             SpielerPosition position = spielerPositionVon(tisch, verwalteterSpieler);
             laufendesSpiel.hydriere(tisch.konfiguration().alsSpielregeln());
             try {
-                Spiel aktualisiertesSpiel = laufendesSpiel.sageAn(position, ansage);
-                laufendesSpiel.uebernehmeDomainStand(aktualisiertesSpiel);
+                laufendesSpiel.sageAn(position, ansage);
+                laufendesSpiel.syncZuPersistenz();
             } catch (IllegalStateException exception) {
                 throw new SpielverwaltungKonfliktException("ANSAGE_UNGUELTIG", exception.getMessage());
             }

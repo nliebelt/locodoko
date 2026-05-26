@@ -37,31 +37,38 @@ public final class Tisch {
     }
 
     public Tisch teileKartenAus() {
-        return mitAktuellemSpiel(partie.aktuellesSpiel().teileKartenAus());
+        partie.aktuellesSpiel().teileKartenAus();
+        return this;
     }
 
     public Tisch meldeGesund(SpielerPosition spielerPosition) {
-        return mitAktuellemSpiel(partie.aktuellesSpiel().meldeGesund(spielerPosition));
+        partie.aktuellesSpiel().meldeGesund(spielerPosition);
+        return this;
     }
 
     public Tisch meldeVorbehalt(SpielerPosition spielerPosition, VorbehaltAnsage vorbehaltAnsage) {
-        return mitAktuellemSpiel(partie.aktuellesSpiel().meldeVorbehalt(spielerPosition, vorbehaltAnsage));
+        partie.aktuellesSpiel().meldeVorbehalt(spielerPosition, vorbehaltAnsage);
+        return this;
     }
 
     public Tisch loeseVorbehalteAuf() {
-        return mitAktuellemSpiel(partie.aktuellesSpiel().loeseVorbehalteAuf());
+        partie.aktuellesSpiel().loeseVorbehalteAuf();
+        return this;
     }
 
     public Tisch spieleKarte(SpielerPosition spielerPosition, Karte karte) {
-        return mitAktuellemSpiel(partie.aktuellesSpiel().spieleKarte(spielerPosition, karte).neuerStand());
+        partie.aktuellesSpiel().spieleKarte(spielerPosition, karte);
+        return this;
     }
 
     public Tisch sageAn(SpielerPosition spielerPosition, Ansage ansage) {
-        return mitAktuellemSpiel(partie.aktuellesSpiel().sageAn(spielerPosition, ansage));
+        partie.aktuellesSpiel().sageAn(spielerPosition, ansage);
+        return this;
     }
 
     public Tisch werteAktuellesSpielAus() {
-        return mitAktuellemSpiel(partie.aktuellesSpiel().werteAus());
+        partie.aktuellesSpiel().werteAus();
+        return this;
     }
 
     public Tisch schliesseAktuellesSpielAb() {
@@ -84,7 +91,4 @@ public final class Tisch {
         return partie.aktuellesSpiel().kannAnsagen(spielerPosition, ansage);
     }
 
-    private Tisch mitAktuellemSpiel(Spiel spiel) {
-        return new Tisch(tischId, partie.mitAktuellemSpiel(spiel));
-    }
 }

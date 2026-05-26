@@ -259,13 +259,13 @@ class PartieStandAntwortTest {
             deck = ctor.newInstance(deckKarten);
         } catch (Exception e) { /* ignoriert */ }
 
-        Spiel spiel = Spiel.neu(SpielerPosition.SUED, regeln, deck)
-            .teileKartenAus()
-            .meldeGesund(SpielerPosition.WEST)
-            .meldeGesund(SpielerPosition.NORD)
-            .meldeGesund(SpielerPosition.OST)
-            .meldeGesund(SpielerPosition.SUED)
-            .loeseVorbehalteAuf();
+        Spiel spiel = Spiel.neu(SpielerPosition.SUED, regeln, deck);
+        spiel.teileKartenAus();
+        spiel.meldeGesund(SpielerPosition.WEST);
+        spiel.meldeGesund(SpielerPosition.NORD);
+        spiel.meldeGesund(SpielerPosition.OST);
+        spiel.meldeGesund(SpielerPosition.SUED);
+        spiel.loeseVorbehalteAuf();
         spiel.syncZuPersistenz();
 
         Partie partie = Partie.neuePersistenz(8);

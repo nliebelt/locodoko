@@ -222,11 +222,13 @@ class KiOrchestrierungServiceIntegrationTest {
         }
 
         Kartendeck deck = Kartendeck.ausKarten(deckKarten);
-        Spiel spiel = Spiel.neu(SpielerPosition.SUED, spielregeln, deck).teileKartenAus();
+        Spiel spiel = Spiel.neu(SpielerPosition.SUED, spielregeln, deck);
+        spiel.teileKartenAus();
         for (SpielerPosition position : SpielerPosition.imUhrzeigersinnAb(SpielerPosition.WEST)) {
-            spiel = spiel.meldeVorbehalt(position, VorbehaltAnsage.GESUND);
+            spiel.meldeVorbehalt(position, VorbehaltAnsage.GESUND);
         }
-        return spiel.loeseVorbehalteAuf();
+        spiel.loeseVorbehalteAuf();
+        return spiel;
     }
 
     private Map<SpielerPosition, List<Karte>> verteilungMitVorgaben(Map<SpielerPosition, List<Karte>> vorgaben) {
@@ -472,9 +474,9 @@ class KiOrchestrierungServiceIntegrationTest {
             // Korrekt interleavtes Deck damit WEST wirklich Karo-As-1 bekommt
             Spiel domainSpiel = gesundesStichspielInterleavt(spielregeln, vorgaben);
             // Drei Karten direkt ueber Domain spielen: WEST (Fuchs), NORD (schwaech. Trumpf), OST (staerk. Trumpf, gewinnt)
-            domainSpiel = domainSpiel.spieleKarte(SpielerPosition.WEST, karte(Farbe.KARO, Kartenwert.AS, 1)).neuerStand();
-            domainSpiel = domainSpiel.spieleKarte(SpielerPosition.NORD, karte(Farbe.KARO, Kartenwert.NEUN, 1)).neuerStand();
-            domainSpiel = domainSpiel.spieleKarte(SpielerPosition.OST, karte(Farbe.PIK, Kartenwert.BUBE, 1)).neuerStand();
+            domainSpiel.spieleKarte(SpielerPosition.WEST, karte(Farbe.KARO, Kartenwert.AS, 1));
+            domainSpiel.spieleKarte(SpielerPosition.NORD, karte(Farbe.KARO, Kartenwert.NEUN, 1));
+            domainSpiel.spieleKarte(SpielerPosition.OST, karte(Farbe.PIK, Kartenwert.BUBE, 1));
             // Jetzt ist SUED (Mensch) dran — Stich hat 3 Karten, OST fuehrt
             tisch.setzePartie(partieMitSpiel(domainSpiel, 1));
             TischEntity gespeichert = tischRepository.saveAndFlush(tisch);
@@ -524,11 +526,13 @@ class KiOrchestrierungServiceIntegrationTest {
         }
         List<Karte> deckKarten = deckReihenfolgeFuerHaende(volleHaende);
         Kartendeck deck = Kartendeck.ausKarten(deckKarten);
-        Spiel spiel = Spiel.neu(SpielerPosition.SUED, spielregeln, deck).teileKartenAus();
+        Spiel spiel = Spiel.neu(SpielerPosition.SUED, spielregeln, deck);
+        spiel.teileKartenAus();
         for (SpielerPosition position : SpielerPosition.imUhrzeigersinnAb(SpielerPosition.WEST)) {
-            spiel = spiel.meldeVorbehalt(position, VorbehaltAnsage.GESUND);
+            spiel.meldeVorbehalt(position, VorbehaltAnsage.GESUND);
         }
-        return spiel.loeseVorbehalteAuf();
+        spiel.loeseVorbehalteAuf();
+        return spiel;
     }
 
     private Spiel gesundesHochzeitSpiel(Spielregeln spielregeln, Map<SpielerPosition, List<Karte>> haende) {
@@ -553,15 +557,17 @@ class KiOrchestrierungServiceIntegrationTest {
 
         List<Karte> deckKarten = deckReihenfolgeFuerHaende(volleHaende);
         Kartendeck deck = Kartendeck.ausKarten(deckKarten);
-        Spiel spiel = Spiel.neu(SpielerPosition.SUED, spielregeln, deck).teileKartenAus();
-        
+        Spiel spiel = Spiel.neu(SpielerPosition.SUED, spielregeln, deck);
+        spiel.teileKartenAus();
+
         // Vorbehalte melden
-        spiel = spiel.meldeVorbehalt(SpielerPosition.WEST, VorbehaltAnsage.HOCHZEIT);
-        spiel = spiel.meldeVorbehalt(SpielerPosition.NORD, VorbehaltAnsage.GESUND);
-        spiel = spiel.meldeVorbehalt(SpielerPosition.OST, VorbehaltAnsage.GESUND);
-        spiel = spiel.meldeVorbehalt(SpielerPosition.SUED, VorbehaltAnsage.GESUND);
-        
-        return spiel.loeseVorbehalteAuf();
+        spiel.meldeVorbehalt(SpielerPosition.WEST, VorbehaltAnsage.HOCHZEIT);
+        spiel.meldeVorbehalt(SpielerPosition.NORD, VorbehaltAnsage.GESUND);
+        spiel.meldeVorbehalt(SpielerPosition.OST, VorbehaltAnsage.GESUND);
+        spiel.meldeVorbehalt(SpielerPosition.SUED, VorbehaltAnsage.GESUND);
+
+        spiel.loeseVorbehalteAuf();
+        return spiel;
     }
 
     private Map<SpielerPosition, List<Karte>> verteilungFuerHochzeit(Map<SpielerPosition, List<Karte>> vorgaben) {

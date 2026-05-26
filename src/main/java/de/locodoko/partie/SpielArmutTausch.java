@@ -14,7 +14,7 @@ import java.util.Objects;
 /** Verarbeitet die drei Armut-Tausch-Aktionen: Anbieten, Ablehnen und Annehmen. */
 class SpielArmutTausch {
 
-    static Spiel legeArmutTrumpfkarten(SpielBuilder builder, SpielerPosition spielerPosition,
+    static void legeArmutTrumpfkarten(Spiel spiel, SpielerPosition spielerPosition,
             List<Karte> angeboteneTrumpfkarten, ArmutStatus status,
             Hand armutHand, TrumpfOrdnung trumpfOrdnung, Map<SpielerPosition, Hand> haende) {
         Objects.requireNonNull(spielerPosition, "spielerPosition darf nicht null sein");
@@ -29,22 +29,24 @@ class SpielArmutTausch {
         }
         Map<SpielerPosition, Hand> neueHaende = kopiereHaende(haende);
         neueHaende.put(spielerPosition, armutHand.ohneAlle(angeboteneTrumpfkarten));
-        return builder.haende(neueHaende).phase(new Spielphase.ArmutTausch(status.mitAngebot(angeboteneTrumpfkarten))).build();
+        spiel.haende = neueHaende;
+        spiel.phase = new Spielphase.ArmutTausch(status.mitAngebot(angeboteneTrumpfkarten));
     }
 
-    static Spiel lehneArmutAb(SpielBuilder builder, SpielerPosition spielerPosition,
+    static void lehneArmutAb(Spiel spiel, SpielerPosition spielerPosition,
             ArmutStatus status, Spielregeln spielregeln, SpielerPosition geber,
             int einwurfZaehler, de.locodoko.karten.Kartendeck kartendeck) {
         Objects.requireNonNull(spielerPosition, "spielerPosition darf nicht null sein");
         if (!status.angebotLiegtVor()) { throw new IllegalStateException("Die Armut kann erst nach dem Trumpf-Angebot abgelehnt werden"); }
         ArmutStatus neuerStatus = status.mitAblehnung(spielerPosition);
         if (neuerStatus.alleAntwortenErschoepft()) {
-            return SpielVorbehaltAufloesung.eingeworfenesSpiel(builder, kartendeck, spielregeln, geber, einwurfZaehler);
+            SpielVorbehaltAufloesung.eingeworfenesSpiel(spiel, kartendeck, spielregeln, geber, einwurfZaehler);
+            return;
         }
-        return builder.phase(new Spielphase.ArmutTausch(neuerStatus)).build();
+        spiel.phase = new Spielphase.ArmutTausch(neuerStatus);
     }
 
-    static Spiel nimmArmutAn(SpielBuilder builder, SpielerPosition spielerPosition,
+    static void nimmArmutAn(Spiel spiel, SpielerPosition spielerPosition,
             List<Karte> rueckgabekarten, ArmutStatus status, SpielerPosition solistAufspieler,
             SpielerPosition geber, Map<SpielerPosition, Hand> haende, Spielregeln spielregeln,
             TrumpfOrdnung aktuelleOrdnung, Parteien aktuelleParteien) {
@@ -65,14 +67,17 @@ class SpielArmutTausch {
         Map<SpielerPosition, Hand> neueHaende = kopiereHaende(haende);
         neueHaende.put(spielerPosition, partnerHand.ohneAlle(rueckgabekarten).mitAllen(status.angeboteneTrumpfkarten()));
         neueHaende.put(status.armutSpieler(), haende.get(status.armutSpieler()).mitAllen(rueckgabekarten));
-        TrumpfOrdnung neueTrumpfOrdnung = new NormaleTrumpfOrdnung(spielregeln);
         Parteien neueParteien = aktuelleParteien.mitPartei(spielerPosition, Partei.RE)
             .mitOffenenParteienFuerAlle(SpielerPosition.standardReihenfolge());
         SpielerPosition ersterAufspieler = solistAufspieler != null ? solistAufspieler : geber.naechsteImUhrzeigersinn();
-        return builder.trumpfOrdnung(neueTrumpfOrdnung)
-            .phase(new Spielphase.Stichphase(Stich.neu(ersterAufspieler), java.util.Set.of(), null))
-            .haende(neueHaende).parteien(neueParteien).ansagen(Ansagen.leer())
-            .abgeschlosseneStiche(List.of()).ergebnis(null).solistAufspieler(null).build();
+        spiel.trumpfOrdnung = new NormaleTrumpfOrdnung(spielregeln);
+        spiel.phase = new Spielphase.Stichphase(Stich.neu(ersterAufspieler), java.util.Set.of(), null);
+        spiel.haende = neueHaende;
+        spiel.parteien = neueParteien;
+        spiel.ansagen = Ansagen.leer();
+        spiel.abgeschlosseneStiche = List.of();
+        spiel.ergebnis = null;
+        spiel.solistAufspieler = null;
     }
 
     private static Map<SpielerPosition, Hand> kopiereHaende(Map<SpielerPosition, Hand> haende) {

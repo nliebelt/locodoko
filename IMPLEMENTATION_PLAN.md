@@ -4,25 +4,28 @@
 
 ## Notiz
 
-Build-Run 2026-05-24: **DB-3 (JSONB-Converter, Task 69) abgeschlossen.**
+Build-Run 2026-05-26: **DB-4a (Spiel mutable machen, Task 70a) abgeschlossen.**
 
 Implementiert:
-- `JsonbConverter.java` in `tisch.persistenz`: 11 Converter-Paare (22 Klassen) für alle JSONB-Spalten.
-  Jackson-Mixins für nicht-Record-Typen (Hand, Stich, Ansagen, Parteien, VorbehaltMeldung).
-  FAIL_ON_UNKNOWN_PROPERTIES=false gesetzt (deutsche `ist*`-Methoden werden von Jackson als is-Prefix erkannt).
-- `JsonbConverterKonfiguration.java`: @Bean JdbcCustomConversions — ObjectMapper NICHT per Injection
-  (zu früh im Spring-Kontext, vor JacksonAutoConfiguration).
-- `Parteien.java`: +`offenFuerAlle()` Getter + `ausPersistiertemStand()` Fabrikmethode für Mixin.
-- `pom.xml`: postgresql Scope von `runtime` auf `compile` gehoben (PGobject zur Compile-Zeit nötig).
-- `JsonbConverterTest.java`: 12 pure JUnit Roundtrip-Tests, alle grün. Gesamtzahl: 319 Tests (+12).
+- `Spiel.java`: Alle Domain-Methoden mutieren `this` direkt und returnen `List<SpielEreignis>` (Pattern A).
+  Signaturen: `teileKartenAus()`, `meldeGesund()`, `meldeVorbehalt()`, `loeseVorbehalteAuf()`,
+  `spieleKarte()`, `werteAus()`, `sageAn()`, `nimmArmutAn()`, `bieteTauschAn()`.
+- `SpielAktion.java` gelöscht — Klasse war Wrapper für `(neuerStand, ereignisse)` und ist
+  mit mutablem Aggregat überflüssig.
+- `TischVerwaltungsService.java`: `syncZuPersistenz()` nach `teileKartenAus()` ergänzt.
+- `Partie.java`: `syncZuPersistenz()` nach `teileKartenAus()` in `schliesseAktuellesSpielAbUndStarteNaechstes()` ergänzt.
+- 9 Test-Dateien auf mutable Pattern umgestellt (Chains aufgetrennt, SpielAktion durch `List<SpielEreignis>` ersetzt).
+- 319 Tests, 0 Fehler.
 
-**Nächster Schritt:** DB-4a (Task 70a) — Spiel.java mutable machen, Pattern A: alle Domain-Methoden
-mutieren `this` direkt + returnen `List<SpielEreignis>`. Erste Datei zuerst: `Spiel.java`.
-Danach der Mega-Commit: DB-2 + DB-4b + DB-4c gemeinsam.
+**Nächster Schritt:** DB-2 + DB-4b + DB-4c als EIN MEGA-COMMIT auf main:
+- DB-2 (Task 68): Initial-Schema (ein einziges SQL-Changeset, alte 22 YAMLs archiviert).
+- DB-4b (Task 70b): @Transient-Felder weg, JSONB-Persistenz direkt in Spiel.java.
+- DB-4c (Task 70c): SpielHydrierer + SpielPersistenzSync + SpielBuilder löschen.
 
-**Entdeckung:** `ist*`-Präfix in deutschen Methoden (istVollstaendig, istVorbehalt) wird von Jackson als
-englisches `is`-Präfix erkannt → Serialisierung erzeugt unerwartete Felder. Lösung: @JsonIgnore via
-Mixin. Alle zukünftigen Jackson-Roundtrip-Tests sollten FAIL_ON_UNKNOWN_PROPERTIES=false verwenden.
+**Entdeckung (DB-4a):** Bei jeder Mutation von `Spiel`-Domain-State in Produktionscode muss
+`syncZuPersistenz()` danach aufgerufen werden, sonst bleiben JSON-Blob-Felder veraltet.
+Betrifft alle Stellen, wo `teileKartenAus()` in Services aufgerufen wird.
+Wird in DB-4c obsolet (wenn syncZuPersistenz() gelöscht wird).
 
 ## Legende
 
@@ -301,7 +304,7 @@ Konkret: Build-Modus erstellt für DB-2/4b/4c **drei separate Working-Tree-Ände
 **Risiko-Task:** Betrifft `Spiel.java` (587 Z.), `Partie.java` (426 Z.), `SpielHydrierer.java` (238 Z. — wird gelöscht), `SpielPersistenzSync.java` (89 Z. — wird gelöscht), `SpielBuilder.java` (72 Z. — wird gelöscht) + alle Service-Aufrufer + Test-Suite. Zerlegung in 4 Sub-Tasks.
 
 #### DB-4a: SPIEL MUTABLE MACHEN (Task 70a)
-- [ ] **Backend** (Hoch, großer Aufwand): Alle Domain-Methoden in `Spiel` umstellen: mutieren direkt + returnen `List<SpielEreignis>` (Pattern A).
+- [x] **Backend** (Hoch, großer Aufwand): Alle Domain-Methoden in `Spiel` umstellen: mutieren direkt + returnen `List<SpielEreignis>` (Pattern A).
   - **Erste Datei zuerst**: `Spiel.java` — beginne mit `teileKartenAus()` als Pilot (kleinste Methode, klare Mutation).
   - **Schritte**:
     1. Pro Domain-Methode: `return toBuilder().feld(neu).build()` → `this.feld = neu; return List.of(/*Events*/);`.

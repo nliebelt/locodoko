@@ -22,24 +22,29 @@ import java.util.Objects;
 /** Berechnet das Ergebnis der Vorbehalt-Auflösung und erzeugt eingeworfene Spiele. */
 class SpielVorbehaltAufloesung {
 
-    static Spiel aufloesen(SpielBuilder builder, List<VorbehaltMeldung> vorbehalte,
+    static void aufloesen(Spiel spiel, List<VorbehaltMeldung> vorbehalte,
             TrumpfOrdnung aktuelleOrdnung, Spielregeln spielregeln,
             Map<SpielerPosition, Hand> haende, SpielerPosition geber,
             SpielerPosition solistAufspieler, Kartendeck kartendeck, int einwurfZaehler) {
         VorbehaltMeldung hoechsterVorbehalt = SpielHydrierer.hoechsterVorbehaltAusListe(vorbehalte).orElse(null);
         if (hoechsterVorbehalt != null && hoechsterVorbehalt.ansage().istSchmeissen()) {
-            return eingeworfenesSpiel(builder, kartendeck, spielregeln, geber, einwurfZaehler);
+            eingeworfenesSpiel(spiel, kartendeck, spielregeln, geber, einwurfZaehler);
+            return;
         }
         SpielerPosition ersterAufspieler = solistAufspieler != null ? solistAufspieler : geber.naechsteImUhrzeigersinn();
         if (hoechsterVorbehalt == null) {
             SpielerPosition stillesSoloSpieler = erkenneStillesSoloSpieler(haende);
             if (stillesSoloSpieler != null) {
                 boolean schweinchen = hatSchweinchen(spielregeln, haende);
-                return builder.trumpfOrdnung(schweinchen ? new SchweinchenTrumpfOrdnung(spielregeln) : new NormaleTrumpfOrdnung(spielregeln))
-                    .spieltyp(Spieltyp.SOLO_TRUMPF)
-                    .phase(new Spielphase.Stichphase(Stich.neu(ersterAufspieler), java.util.Set.of(), null))
-                    .parteien(Parteien.ausSolo(stillesSoloSpieler))
-                    .ansagen(Ansagen.leer()).abgeschlosseneStiche(List.of()).ergebnis(null).solistAufspieler(null).build();
+                spiel.trumpfOrdnung = schweinchen ? new SchweinchenTrumpfOrdnung(spielregeln) : new NormaleTrumpfOrdnung(spielregeln);
+                spiel.spieltyp = Spieltyp.SOLO_TRUMPF;
+                spiel.phase = new Spielphase.Stichphase(Stich.neu(ersterAufspieler), java.util.Set.of(), null);
+                spiel.parteien = Parteien.ausSolo(stillesSoloSpieler);
+                spiel.ansagen = Ansagen.leer();
+                spiel.abgeschlosseneStiche = List.of();
+                spiel.ergebnis = null;
+                spiel.solistAufspieler = null;
+                return;
             }
         }
         Parteien neueParteien = hoechsterVorbehalt == null ? Parteien.ausNormalspielHaenden(haende) : parteienFuer(hoechsterVorbehalt);
@@ -50,20 +55,31 @@ class SpielVorbehaltAufloesung {
         Spielphase naechstePhase = neuerArmutStatus != null
             ? new Spielphase.ArmutTausch(neuerArmutStatus)
             : new Spielphase.Stichphase(Stich.neu(ersterAufspieler), java.util.Set.of(), neuerHochzeitStatus);
-        return builder.trumpfOrdnung(trumpfOrdnungFuer(hoechsterVorbehalt, aktuelleOrdnung, spielregeln, haende))
-            .spieltyp(spieltypFuer(hoechsterVorbehalt)).phase(naechstePhase)
-            .parteien(neueParteien).ansagen(Ansagen.leer()).abgeschlosseneStiche(List.of())
-            .ergebnis(null).solistAufspieler(null).build();
+        spiel.trumpfOrdnung = trumpfOrdnungFuer(hoechsterVorbehalt, aktuelleOrdnung, spielregeln, haende);
+        spiel.spieltyp = spieltypFuer(hoechsterVorbehalt);
+        spiel.phase = naechstePhase;
+        spiel.parteien = neueParteien;
+        spiel.ansagen = Ansagen.leer();
+        spiel.abgeschlosseneStiche = List.of();
+        spiel.ergebnis = null;
+        spiel.solistAufspieler = null;
     }
 
-    static Spiel eingeworfenesSpiel(SpielBuilder builder, Kartendeck aktuellesKartendeck,
+    static void eingeworfenesSpiel(Spiel spiel, Kartendeck aktuellesKartendeck,
             Spielregeln spielregeln, SpielerPosition geber, int einwurfZaehler) {
         Kartendeck nd = aktuellesKartendeck.gemischt();
-        return builder.kartendeck(nd).trumpfOrdnung(new NormaleTrumpfOrdnung(spielregeln))
-            .spieltyp(Spieltyp.NORMALSPIEL).phase(Spielphase.VORBEHALT_ANSAGE)
-            .haende(haendeAusDeck(nd)).vorbehalte(List.of()).parteien(null)
-            .ansagen(Ansagen.leer()).abgeschlosseneStiche(List.of()).ergebnis(null)
-            .solistAufspieler(null).einwurfZaehler(einwurfZaehler + 1).build();
+        spiel.kartendeck = nd;
+        spiel.trumpfOrdnung = new NormaleTrumpfOrdnung(spielregeln);
+        spiel.spieltyp = Spieltyp.NORMALSPIEL;
+        spiel.phase = Spielphase.VORBEHALT_ANSAGE;
+        spiel.haende = haendeAusDeck(nd);
+        spiel.vorbehalte = List.of();
+        spiel.parteien = null;
+        spiel.ansagen = Ansagen.leer();
+        spiel.abgeschlosseneStiche = List.of();
+        spiel.ergebnis = null;
+        spiel.solistAufspieler = null;
+        spiel.einwurfZaehler = einwurfZaehler + 1;
     }
 
     static TrumpfOrdnung trumpfOrdnungFuerPersistiertenStand(Spielregeln sr, Spieltyp st, boolean sa) {

@@ -167,8 +167,8 @@ class KiOrchestrierungServiceFehlerTest {
             Spielregeln spielregeln = Spielregeln.standardRegeln();
             TischEntity tisch = allKiTisch();
             // Spiel in VORBEHALT_ANSAGE-Phase (noch kein Vorbehalt gemeldet)
-            Spiel spiel = Spiel.neu(SpielerPosition.SUED, spielregeln, Kartendeck.neu(spielregeln).gemischt())
-                .teileKartenAus();
+            Spiel spiel = Spiel.neu(SpielerPosition.SUED, spielregeln, Kartendeck.neu(spielregeln).gemischt());
+            spiel.teileKartenAus();
             tisch.setzePartie(partieMitSpiel(spiel, 1));
             TischEntity gespeichert = tischRepository.saveAndFlush(tisch);
 
@@ -217,12 +217,13 @@ class KiOrchestrierungServiceFehlerTest {
         for (long startzahl = 0; startzahl < 100; startzahl++) {
             try {
                 Spiel spiel = Spiel.neu(SpielerPosition.SUED, spielregeln,
-                        Kartendeck.neu(spielregeln).gemischt(new java.util.Random(startzahl)))
-                    .teileKartenAus();
+                        Kartendeck.neu(spielregeln).gemischt(new java.util.Random(startzahl)));
+                spiel.teileKartenAus();
                 for (SpielerPosition position : SpielerPosition.imUhrzeigersinnAb(SpielerPosition.WEST)) {
-                    spiel = spiel.meldeVorbehalt(position, VorbehaltAnsage.GESUND);
+                    spiel.meldeVorbehalt(position, VorbehaltAnsage.GESUND);
                 }
-                return spiel.loeseVorbehalteAuf();
+                spiel.loeseVorbehalteAuf();
+                return spiel;
             } catch (IllegalStateException e) {
                 // Ungueltige Kartenverteilung (z.B. beide Kreuz-Damen in einer Hand) — neue Startzahl
             }

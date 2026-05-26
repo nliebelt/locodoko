@@ -195,12 +195,12 @@ class DreissigAugenPflichtTest {
             Partei.KONTRA, haende, naechsterStich, mitPflicht
         );
 
-        Spiel nachAnsage = geblockt.sageAn(SpielerPosition.WEST, Ansage.KONTRA);
+        geblockt.sageAn(SpielerPosition.WEST, Ansage.KONTRA);
 
-        assertTrue(nachAnsage.pflichtansageAusstehend().isEmpty(),
+        assertTrue(geblockt.pflichtansageAusstehend().isEmpty(),
             "Nach der Grundansage darf kein Pflichtansage-Block mehr bestehen.");
         assertDoesNotThrow(
-            () -> nachAnsage.spieleKarte(SpielerPosition.WEST, folgeKarte),
+            () -> geblockt.spieleKarte(SpielerPosition.WEST, folgeKarte),
             "Nach der Grundansage muss spieleKarte() erlaubt sein.");
     }
 
@@ -293,7 +293,7 @@ class DreissigAugenPflichtTest {
             ? normalspielParteien()
             : Parteien.ausSolo(SpielerPosition.SUED);
 
-        return Spiel.ausPersistiertemStand(
+        Spiel spiel = Spiel.ausPersistiertemStand(
             regeln,
             Kartendeck.ausKarten(alleKarten),
             spieltyp,
@@ -307,7 +307,9 @@ class DreissigAugenPflichtTest {
             null,
             false,
             null
-        ).spieleKarte(vierterSpieler, karte4).neuerStand();
+        );
+        spiel.spieleKarte(vierterSpieler, karte4);
+        return spiel;
     }
 
     /**

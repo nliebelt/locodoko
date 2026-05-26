@@ -47,23 +47,23 @@ class Bugfix3Test {
             deck = ctor.newInstance(deckKarten);
         } catch (Exception e) {}
 
-        Spiel spiel = Spiel.neu(SpielerPosition.SUED, regeln, deck)
-            .teileKartenAus()
-            .meldeGesund(SpielerPosition.WEST)
-            .meldeGesund(SpielerPosition.NORD)
-            .meldeGesund(SpielerPosition.OST)
-            .meldeGesund(SpielerPosition.SUED)
-            .loeseVorbehalteAuf();
+        Spiel spiel = Spiel.neu(SpielerPosition.SUED, regeln, deck);
+        spiel.teileKartenAus();
+        spiel.meldeGesund(SpielerPosition.WEST);
+        spiel.meldeGesund(SpielerPosition.NORD);
+        spiel.meldeGesund(SpielerPosition.OST);
+        spiel.meldeGesund(SpielerPosition.SUED);
+        spiel.loeseVorbehalteAuf();
 
         // WEST spielt karoAs1
-        SpielAktion a1 = spiel.spieleKarte(SpielerPosition.WEST, karoAs1);
+        spiel.spieleKarte(SpielerPosition.WEST, karoAs1);
         // NORD spielt Dulle 1
-        SpielAktion a2 = a1.neuerStand().spieleKarte(SpielerPosition.NORD, dulle1);
-        
+        spiel.spieleKarte(SpielerPosition.NORD, dulle1);
+
         // Let's assert NORD is not winning, but WEST is
-        Stich stich = a2.neuerStand().aktuellerStich().get();
-        GespielteKarte gewinner = stich.gewinner(a2.neuerStand().trumpfOrdnung());
-        
+        Stich stich = spiel.aktuellerStich().get();
+        GespielteKarte gewinner = stich.gewinner(spiel.trumpfOrdnung());
+
         assertEquals(SpielerPosition.WEST, gewinner.spieler(), "Karo Ass muss die Dulle schlagen");
     }
 }

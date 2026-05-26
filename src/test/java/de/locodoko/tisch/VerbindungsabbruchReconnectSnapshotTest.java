@@ -192,11 +192,13 @@ class VerbindungsabbruchReconnectSnapshotTest {
     private Spiel gesundesStichspiel() {
         Spielregeln regeln = Spielregeln.standardRegeln();
         Kartendeck deck = Kartendeck.neu(regeln);
-        Spiel spiel = Spiel.neu(SpielerPosition.SUED, regeln, deck).teileKartenAus();
+        Spiel spiel = Spiel.neu(SpielerPosition.SUED, regeln, deck);
+        spiel.teileKartenAus();
         for (SpielerPosition position : SpielerPosition.imUhrzeigersinnAb(SpielerPosition.WEST)) {
-            spiel = spiel.meldeVorbehalt(position, VorbehaltAnsage.GESUND);
+            spiel.meldeVorbehalt(position, VorbehaltAnsage.GESUND);
         }
-        return spiel.loeseVorbehalteAuf();
+        spiel.loeseVorbehalteAuf();
+        return spiel;
     }
 
     private Spielergebnis minimalErgebnis() {

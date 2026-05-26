@@ -118,7 +118,8 @@ class ArmutTest {
         // "doppelt" behalten oder gar nicht entfernen — beide Faelle korrumpieren den Tausch.
         Spiel spiel = armutSpiel_VorAngebot();
 
-        Spiel nachAngebot = spiel.legeArmutTrumpfkarten(SpielerPosition.WEST, List.of(karoBube1, karoBube2));
+        spiel.legeArmutTrumpfkarten(SpielerPosition.WEST, List.of(karoBube1, karoBube2));
+        Spiel nachAngebot = spiel;
 
         assertFalse(nachAngebot.handVon(SpielerPosition.WEST).enthaelt(karoBube1),
             "Karo-Bube 1 muss nach dem Angebot von der Hand des Armut-Spielers verschwunden sein.");
@@ -139,35 +140,35 @@ class ArmutTest {
         // Zusaetzlich muss der annehmende Spieler als zweiter RE-Partner eingetragen werden.
         // Ohne diesen Test koennte ein einseitiger Tausch den Gesamtkartenbestand veraendern
         // oder die Parteiverteilung (RE/KONTRA) falsch setzen.
-        Spiel nachAngebot = armutSpiel_VorAngebot()
-            .legeArmutTrumpfkarten(SpielerPosition.WEST, List.of(karoBube1, karoBube2));
+        Spiel nachAngebot = armutSpiel_VorAngebot();
+        nachAngebot.legeArmutTrumpfkarten(SpielerPosition.WEST, List.of(karoBube1, karoBube2));
 
         // NORD gibt seine ersten 2 Karten zurueck (PIK_ZEHN 1+2, beides Non-Trumpf)
         List<Karte> rueckgabekarten = List.of(
             new Karte(Farbe.PIK, Kartenwert.ZEHN, 1),
             new Karte(Farbe.PIK, Kartenwert.ZEHN, 2));
-        Spiel nachAnnahme = nachAngebot.nimmArmutAn(SpielerPosition.NORD, rueckgabekarten);
+        nachAngebot.nimmArmutAn(SpielerPosition.NORD, rueckgabekarten);
 
         // Phase muss STICHPHASE sein
-        assertInstanceOf(Spielphase.Stichphase.class, nachAnnahme.phase(),
+        assertInstanceOf(Spielphase.Stichphase.class, nachAngebot.phase(),
             "Nach der Annahme muss das Spiel in die Stichphase wechseln.");
 
         // NORD hat die Trumpfkarten erhalten
-        assertTrue(nachAnnahme.handVon(SpielerPosition.NORD).enthaelt(karoBube1),
+        assertTrue(nachAngebot.handVon(SpielerPosition.NORD).enthaelt(karoBube1),
             "Karo-Bube 1 muss nach der Annahme auf NORDs Hand liegen.");
-        assertTrue(nachAnnahme.handVon(SpielerPosition.NORD).enthaelt(karoBube2),
+        assertTrue(nachAngebot.handVon(SpielerPosition.NORD).enthaelt(karoBube2),
             "Karo-Bube 2 muss nach der Annahme auf NORDs Hand liegen.");
 
         // WEST hat die Rueckgabekarten erhalten
-        assertTrue(nachAnnahme.handVon(SpielerPosition.WEST).enthaelt(rueckgabekarten.get(0)),
+        assertTrue(nachAngebot.handVon(SpielerPosition.WEST).enthaelt(rueckgabekarten.get(0)),
             "Erste Rueckgabekarte muss nach dem Tausch auf WESTs Hand liegen.");
-        assertTrue(nachAnnahme.handVon(SpielerPosition.WEST).enthaelt(rueckgabekarten.get(1)),
+        assertTrue(nachAngebot.handVon(SpielerPosition.WEST).enthaelt(rueckgabekarten.get(1)),
             "Zweite Rueckgabekarte muss nach dem Tausch auf WESTs Hand liegen.");
 
         // NORD ist jetzt RE-Partner
-        assertEquals(Partei.RE, nachAnnahme.parteien().parteiVon(SpielerPosition.NORD),
+        assertEquals(Partei.RE, nachAngebot.parteien().parteiVon(SpielerPosition.NORD),
             "Der annehmende Spieler NORD muss als RE-Partei eingetragen sein.");
-        assertEquals(Partei.RE, nachAnnahme.parteien().parteiVon(SpielerPosition.WEST),
+        assertEquals(Partei.RE, nachAngebot.parteien().parteiVon(SpielerPosition.WEST),
             "Der Armut-Spieler WEST bleibt RE.");
     }
 
@@ -179,17 +180,16 @@ class ArmutTest {
         // neu eingeworfen (neue Karten, neue Vorbehalt-Runde). Ohne diesen Test
         // koennte der Einwurf ausbleiben und das Spiel in einem inkonsistenten Zustand
         // haengen bleiben, in dem niemand mehr einen Zug machen kann.
-        Spiel nachAngebot = armutSpiel_VorAngebot()
-            .legeArmutTrumpfkarten(SpielerPosition.WEST, List.of(karoBube1, karoBube2));
+        Spiel nachAngebot = armutSpiel_VorAngebot();
+        nachAngebot.legeArmutTrumpfkarten(SpielerPosition.WEST, List.of(karoBube1, karoBube2));
 
-        Spiel nachAllenAblehnungen = nachAngebot
-            .lehneArmutAb(SpielerPosition.NORD)
-            .lehneArmutAb(SpielerPosition.OST)
-            .lehneArmutAb(SpielerPosition.SUED);
+        nachAngebot.lehneArmutAb(SpielerPosition.NORD);
+        nachAngebot.lehneArmutAb(SpielerPosition.OST);
+        nachAngebot.lehneArmutAb(SpielerPosition.SUED);
 
-        assertEquals(Spielphase.VORBEHALT_ANSAGE, nachAllenAblehnungen.phase(),
+        assertEquals(Spielphase.VORBEHALT_ANSAGE, nachAngebot.phase(),
             "Nach Ablehnung aller Spieler muss das Spiel neu eingeworfen werden (VORBEHALT_ANSAGE).");
-        assertTrue(nachAllenAblehnungen.armutStatus().isEmpty(),
+        assertTrue(nachAngebot.armutStatus().isEmpty(),
             "Nach dem Einwurf darf kein ArmutStatus mehr aktiv sein.");
     }
 

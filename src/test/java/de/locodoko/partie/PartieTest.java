@@ -59,11 +59,12 @@ class PartieTest {
         partie = partie.schliesseAktuellesSpielAb();
 
         partie = partie.starteNaechstesSpiel(Kartendeck.neu(spielregeln));
-        Spiel naechstesSpiel = partie.aktuellesSpiel().teileKartenAus();
+        Spiel naechstesSpiel = partie.aktuellesSpiel();
+        naechstesSpiel.teileKartenAus();
         while (naechstesSpiel.naechsterVorbehaltSpieler().isPresent()) {
-            naechstesSpiel = naechstesSpiel.meldeGesund(naechstesSpiel.naechsterVorbehaltSpieler().orElseThrow());
+            naechstesSpiel.meldeGesund(naechstesSpiel.naechsterVorbehaltSpieler().orElseThrow());
         }
-        naechstesSpiel = naechstesSpiel.loeseVorbehalteAuf();
+        naechstesSpiel.loeseVorbehalteAuf();
 
         assertEquals(solist, naechstesSpiel.aktuellerSpieler().orElseThrow(),
             "Der Solist muss im Folge-Spiel als erster Aufspieler fungieren.");
@@ -142,13 +143,14 @@ class PartieTest {
         Partie partie = Partie.neu(1, SpielerPosition.SUED, ohneNeunen);
 
         partie = partie.starteNaechstesSpiel(Kartendeck.neu(ohneNeunen));
-        Spiel spiel = partie.aktuellesSpiel().teileKartenAus();
+        Spiel spiel = partie.aktuellesSpiel();
+        spiel.teileKartenAus();
 
         // Vorbehalte
         while (spiel.naechsterVorbehaltSpieler().isPresent()) {
-            spiel = spiel.meldeGesund(spiel.naechsterVorbehaltSpieler().get());
+            spiel.meldeGesund(spiel.naechsterVorbehaltSpieler().get());
         }
-        spiel = spiel.loeseVorbehalteAuf();
+        spiel.loeseVorbehalteAuf();
 
         // 10 Stiche spielen
         for (int i = 0; i < 10; i++) {
@@ -156,7 +158,7 @@ class PartieTest {
             for (int j = 0; j < 4; j++) {
                 SpielerPosition aktueller = spiel.aktuellerSpieler().orElseThrow();
                 Karte karte = spiel.gueltigeKartenFuer(aktueller).getFirst();
-                spiel = spiel.spieleKarte(aktueller, karte).neuerStand();
+                spiel.spieleKarte(aktueller, karte);
             }
         }
 
@@ -165,21 +167,24 @@ class PartieTest {
     }
 
     private Spiel spieleSoloZuEnde(Spiel spiel, SpielerPosition solist) {
-        Spiel aktuellesSpiel = spiel.teileKartenAus();
+        spiel.teileKartenAus();
         // Solist meldet SOLO_TRUMPF, alle anderen GESUND
-        while (aktuellesSpiel.naechsterVorbehaltSpieler().isPresent()) {
-            SpielerPosition naechster = aktuellesSpiel.naechsterVorbehaltSpieler().orElseThrow();
-            aktuellesSpiel = naechster.equals(solist)
-                ? aktuellesSpiel.meldeVorbehalt(naechster, VorbehaltAnsage.SOLO_TRUMPF)
-                : aktuellesSpiel.meldeGesund(naechster);
+        while (spiel.naechsterVorbehaltSpieler().isPresent()) {
+            SpielerPosition naechster = spiel.naechsterVorbehaltSpieler().orElseThrow();
+            if (naechster.equals(solist)) {
+                spiel.meldeVorbehalt(naechster, VorbehaltAnsage.SOLO_TRUMPF);
+            } else {
+                spiel.meldeGesund(naechster);
+            }
         }
-        aktuellesSpiel = aktuellesSpiel.loeseVorbehalteAuf();
-        while (aktuellesSpiel.phase() instanceof Spielphase.Stichphase) {
-            SpielerPosition spieler = aktuellesSpiel.aktuellerSpieler().orElseThrow();
-            Karte karte = aktuellesSpiel.gueltigeKartenFuer(spieler).getFirst();
-            aktuellesSpiel = aktuellesSpiel.spieleKarte(spieler, karte).neuerStand();
+        spiel.loeseVorbehalteAuf();
+        while (spiel.phase() instanceof Spielphase.Stichphase) {
+            SpielerPosition spieler = spiel.aktuellerSpieler().orElseThrow();
+            Karte karte = spiel.gueltigeKartenFuer(spieler).getFirst();
+            spiel.spieleKarte(spieler, karte);
         }
-        return aktuellesSpiel.werteAus();
+        spiel.werteAus();
+        return spiel;
     }
 
     @Test
@@ -239,35 +244,37 @@ class PartieTest {
     }
 
     private Spiel spieleBisAuswertungMitRegeln(Spiel spiel, Spielregeln regeln) {
-        Spiel aktuellesSpiel = spiel.teileKartenAus();
-        while (aktuellesSpiel.naechsterVorbehaltSpieler().isPresent()) {
-            aktuellesSpiel = aktuellesSpiel.meldeGesund(aktuellesSpiel.naechsterVorbehaltSpieler().orElseThrow());
+        spiel.teileKartenAus();
+        while (spiel.naechsterVorbehaltSpieler().isPresent()) {
+            spiel.meldeGesund(spiel.naechsterVorbehaltSpieler().orElseThrow());
         }
-        aktuellesSpiel = aktuellesSpiel.loeseVorbehalteAuf();
-        while (aktuellesSpiel.phase() instanceof Spielphase.Stichphase) {
-            SpielerPosition spieler = aktuellesSpiel.aktuellerSpieler().orElseThrow();
-            Karte karte = aktuellesSpiel.gueltigeKartenFuer(spieler).getFirst();
-            aktuellesSpiel = aktuellesSpiel.spieleKarte(spieler, karte).neuerStand();
+        spiel.loeseVorbehalteAuf();
+        while (spiel.phase() instanceof Spielphase.Stichphase) {
+            SpielerPosition spieler = spiel.aktuellerSpieler().orElseThrow();
+            Karte karte = spiel.gueltigeKartenFuer(spieler).getFirst();
+            spiel.spieleKarte(spieler, karte);
         }
-        return aktuellesSpiel;
+        return spiel;
     }
 
     private Spiel spieleAutomatischZuEndeMitRegeln(Spiel spiel, Spielregeln regeln) {
         Spiel aktuellesSpiel = spieleBisAuswertungMitRegeln(spiel, regeln);
-        return aktuellesSpiel.werteAus();
+        aktuellesSpiel.werteAus();
+        return aktuellesSpiel;
     }
 
     private Spiel spieleAutomatischZuEnde(Spiel spiel) {
-        Spiel aktuellesSpiel = spiel.teileKartenAus();
-        while (aktuellesSpiel.naechsterVorbehaltSpieler().isPresent()) {
-            aktuellesSpiel = aktuellesSpiel.meldeGesund(aktuellesSpiel.naechsterVorbehaltSpieler().orElseThrow());
+        spiel.teileKartenAus();
+        while (spiel.naechsterVorbehaltSpieler().isPresent()) {
+            spiel.meldeGesund(spiel.naechsterVorbehaltSpieler().orElseThrow());
         }
-        aktuellesSpiel = aktuellesSpiel.loeseVorbehalteAuf();
-        while (aktuellesSpiel.phase() instanceof Spielphase.Stichphase) {
-            SpielerPosition spieler = aktuellesSpiel.aktuellerSpieler().orElseThrow();
-            Karte karte = aktuellesSpiel.gueltigeKartenFuer(spieler).getFirst();
-            aktuellesSpiel = aktuellesSpiel.spieleKarte(spieler, karte).neuerStand();
+        spiel.loeseVorbehalteAuf();
+        while (spiel.phase() instanceof Spielphase.Stichphase) {
+            SpielerPosition spieler = spiel.aktuellerSpieler().orElseThrow();
+            Karte karte = spiel.gueltigeKartenFuer(spieler).getFirst();
+            spiel.spieleKarte(spieler, karte);
         }
-        return aktuellesSpiel.werteAus();
+        spiel.werteAus();
+        return spiel;
     }
 }

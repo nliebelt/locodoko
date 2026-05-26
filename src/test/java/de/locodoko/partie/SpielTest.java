@@ -25,13 +25,13 @@ class SpielTest {
 
     @Test
     void loestTrumpfsoloMitSitzreihenfolgeAufUndOffenbartParteienVonBeginnAn() {
-        Spiel spiel = Spiel.neu(SpielerPosition.SUED, spielregeln, kartendeckMitKontrolliertenHaenden())
-            .teileKartenAus()
-            .meldeGesund(SpielerPosition.WEST)
-            .meldeVorbehalt(SpielerPosition.NORD, VorbehaltAnsage.SOLO_TRUMPF)
-            .meldeVorbehalt(SpielerPosition.OST, VorbehaltAnsage.SOLO_TRUMPF)
-            .meldeGesund(SpielerPosition.SUED)
-            .loeseVorbehalteAuf();
+        Spiel spiel = Spiel.neu(SpielerPosition.SUED, spielregeln, kartendeckMitKontrolliertenHaenden());
+        spiel.teileKartenAus();
+        spiel.meldeGesund(SpielerPosition.WEST);
+        spiel.meldeVorbehalt(SpielerPosition.NORD, VorbehaltAnsage.SOLO_TRUMPF);
+        spiel.meldeVorbehalt(SpielerPosition.OST, VorbehaltAnsage.SOLO_TRUMPF);
+        spiel.meldeGesund(SpielerPosition.SUED);
+        spiel.loeseVorbehalteAuf();
 
         assertEquals(Spieltyp.SOLO_TRUMPF, spiel.spieltyp(),
             "Das hoechste Solo muss in der Vorbehaltsaufloesung wirksam werden, damit Sonderspiele regelkonform vor dem ersten Stich starten.");
@@ -52,14 +52,14 @@ class SpielTest {
         Spiel spiel = Spiel.neu(SpielerPosition.SUED, spielregeln, kartendeckMitVerteiltenHaenden(Map.of(
                 SpielerPosition.WEST, List.of(ausgespieltesKaro),
                 SpielerPosition.NORD, List.of(karoZumBedienen, damenTrumpf)
-            )))
-            .teileKartenAus()
-            .meldeVorbehalt(SpielerPosition.WEST, VorbehaltAnsage.SOLO_DAME)
-            .meldeGesund(SpielerPosition.NORD)
-            .meldeGesund(SpielerPosition.OST)
-            .meldeGesund(SpielerPosition.SUED)
-            .loeseVorbehalteAuf()
-            .spieleKarte(SpielerPosition.WEST, ausgespieltesKaro).neuerStand();
+            )));
+        spiel.teileKartenAus();
+        spiel.meldeVorbehalt(SpielerPosition.WEST, VorbehaltAnsage.SOLO_DAME);
+        spiel.meldeGesund(SpielerPosition.NORD);
+        spiel.meldeGesund(SpielerPosition.OST);
+        spiel.meldeGesund(SpielerPosition.SUED);
+        spiel.loeseVorbehalteAuf();
+        spiel.spieleKarte(SpielerPosition.WEST, ausgespieltesKaro);
 
         assertEquals(Spieltyp.SOLO_DAME, spiel.spieltyp(),
             "Damensolo muss als eigener Spieltyp aufgeloest werden, damit Stichlogik und Parteibildung dasselbe Regelprofil sehen.");
@@ -83,15 +83,15 @@ class SpielTest {
                 SpielerPosition.NORD, List.of(kreuzBube),
                 SpielerPosition.OST,  List.of(kreuzKoenig),
                 SpielerPosition.SUED, List.of(kreuzNeun)
-            )))
-            .teileKartenAus()
-            .meldeVorbehalt(SpielerPosition.WEST, VorbehaltAnsage.SOLO_DAME)
-            .meldeGesund(SpielerPosition.NORD)
-            .meldeGesund(SpielerPosition.OST)
-            .meldeGesund(SpielerPosition.SUED)
-            .loeseVorbehalteAuf();
+            )));
+        spiel.teileKartenAus();
+        spiel.meldeVorbehalt(SpielerPosition.WEST, VorbehaltAnsage.SOLO_DAME);
+        spiel.meldeGesund(SpielerPosition.NORD);
+        spiel.meldeGesund(SpielerPosition.OST);
+        spiel.meldeGesund(SpielerPosition.SUED);
+        spiel.loeseVorbehalteAuf();
 
-        spiel = spieleStich(spiel, kreuzAs, kreuzBube, kreuzKoenig, kreuzNeun);
+        spieleStich(spiel, kreuzAs, kreuzBube, kreuzKoenig, kreuzNeun);
 
         assertEquals(SpielerPosition.WEST, spiel.abgeschlosseneStiche().getFirst().gewinner(spiel.trumpfOrdnung()).spieler(),
             "Im Damensolo ist Kreuz-Bube Fehlfarbe Kreuz (fehlRang 2), kein Trump; Kreuz-As (fehlRang 6) muss den Stich gewinnen, nicht der Bube.");
@@ -111,15 +111,15 @@ class SpielTest {
                 SpielerPosition.NORD, List.of(herzDame),
                 SpielerPosition.OST,  List.of(herzKoenig),
                 SpielerPosition.SUED, List.of(herzNeun)
-            )))
-            .teileKartenAus()
-            .meldeVorbehalt(SpielerPosition.WEST, VorbehaltAnsage.SOLO_BUBE)
-            .meldeGesund(SpielerPosition.NORD)
-            .meldeGesund(SpielerPosition.OST)
-            .meldeGesund(SpielerPosition.SUED)
-            .loeseVorbehalteAuf();
+            )));
+        spiel.teileKartenAus();
+        spiel.meldeVorbehalt(SpielerPosition.WEST, VorbehaltAnsage.SOLO_BUBE);
+        spiel.meldeGesund(SpielerPosition.NORD);
+        spiel.meldeGesund(SpielerPosition.OST);
+        spiel.meldeGesund(SpielerPosition.SUED);
+        spiel.loeseVorbehalteAuf();
 
-        spiel = spieleStich(spiel, herzAs, herzDame, herzKoenig, herzNeun);
+        spieleStich(spiel, herzAs, herzDame, herzKoenig, herzNeun);
 
         assertEquals(SpielerPosition.WEST, spiel.abgeschlosseneStiche().getFirst().gewinner(spiel.trumpfOrdnung()).spieler(),
             "Im Bubensolo ist Herz-Dame Fehlfarbe Herz (fehlRang 3), kein Trump; Herz-As (fehlRang 6) muss den Stich gewinnen, nicht die Dame.");
@@ -127,13 +127,13 @@ class SpielTest {
 
     @Test
     void entscheidetBeiVerschiedenenSoloTypenNachSitzreihenfolge() {
-        Spiel spiel = Spiel.neu(SpielerPosition.SUED, spielregeln, kartendeckMitKontrolliertenHaenden())
-            .teileKartenAus()
-            .meldeVorbehalt(SpielerPosition.WEST, VorbehaltAnsage.SOLO_BUBE)
-            .meldeVorbehalt(SpielerPosition.NORD, VorbehaltAnsage.SOLO_DAME)
-            .meldeVorbehalt(SpielerPosition.OST, VorbehaltAnsage.SOLO_FLEISCHLOS)
-            .meldeGesund(SpielerPosition.SUED)
-            .loeseVorbehalteAuf();
+        Spiel spiel = Spiel.neu(SpielerPosition.SUED, spielregeln, kartendeckMitKontrolliertenHaenden());
+        spiel.teileKartenAus();
+        spiel.meldeVorbehalt(SpielerPosition.WEST, VorbehaltAnsage.SOLO_BUBE);
+        spiel.meldeVorbehalt(SpielerPosition.NORD, VorbehaltAnsage.SOLO_DAME);
+        spiel.meldeVorbehalt(SpielerPosition.OST, VorbehaltAnsage.SOLO_FLEISCHLOS);
+        spiel.meldeGesund(SpielerPosition.SUED);
+        spiel.loeseVorbehalteAuf();
 
         assertEquals(Spieltyp.SOLO_BUBE, spiel.spieltyp(),
             "Zwischen verschiedenen Soli gibt es keine Zusatzrangfolge; bei gleicher Prioritaet muss die fruehere Sitzposition gewinnen.");
@@ -151,15 +151,15 @@ class SpielTest {
                 SpielerPosition.NORD, List.of(hoehereHerzkarte),
                 SpielerPosition.OST, List.of(karoAbwurf),
                 SpielerPosition.SUED, List.of(kreuzAbwurf)
-            )))
-            .teileKartenAus()
-            .meldeVorbehalt(SpielerPosition.WEST, VorbehaltAnsage.SOLO_FLEISCHLOS)
-            .meldeGesund(SpielerPosition.NORD)
-            .meldeGesund(SpielerPosition.OST)
-            .meldeGesund(SpielerPosition.SUED)
-            .loeseVorbehalteAuf();
+            )));
+        spiel.teileKartenAus();
+        spiel.meldeVorbehalt(SpielerPosition.WEST, VorbehaltAnsage.SOLO_FLEISCHLOS);
+        spiel.meldeGesund(SpielerPosition.NORD);
+        spiel.meldeGesund(SpielerPosition.OST);
+        spiel.meldeGesund(SpielerPosition.SUED);
+        spiel.loeseVorbehalteAuf();
 
-        spiel = spieleStich(spiel, ersterHerzstich, hoehereHerzkarte, karoAbwurf, kreuzAbwurf);
+        spieleStich(spiel, ersterHerzstich, hoehereHerzkarte, karoAbwurf, kreuzAbwurf);
 
         assertEquals(Spieltyp.SOLO_FLEISCHLOS, spiel.spieltyp(),
             "Fleischlos braucht einen eigenen Spieltyp, damit die Stichlogik vollstaendig ohne Trumpf arbeitet.");
@@ -175,13 +175,13 @@ class SpielTest {
                     karte(Farbe.KREUZ, Kartenwert.DAME, 1),
                     karte(Farbe.KREUZ, Kartenwert.DAME, 2)
                 )
-            )))
-            .teileKartenAus()
-            .meldeVorbehalt(SpielerPosition.WEST, VorbehaltAnsage.HOCHZEIT)
-            .meldeGesund(SpielerPosition.NORD)
-            .meldeGesund(SpielerPosition.OST)
-            .meldeGesund(SpielerPosition.SUED)
-            .loeseVorbehalteAuf();
+            )));
+        spiel.teileKartenAus();
+        spiel.meldeVorbehalt(SpielerPosition.WEST, VorbehaltAnsage.HOCHZEIT);
+        spiel.meldeGesund(SpielerPosition.NORD);
+        spiel.meldeGesund(SpielerPosition.OST);
+        spiel.meldeGesund(SpielerPosition.SUED);
+        spiel.loeseVorbehalteAuf();
 
         assertEquals(Spieltyp.HOCHZEIT, spiel.spieltyp(),
             "Die Hochzeit muss als eigener Spieltyp aufloesbar sein, damit Vorbehalt-Phase und Stichphase denselben Fachzustand sehen.");
@@ -205,17 +205,17 @@ class SpielTest {
                 SpielerPosition.NORD, List.of(karte(Farbe.KREUZ, Kartenwert.AS, 1)),
                 SpielerPosition.OST, List.of(karte(Farbe.KREUZ, Kartenwert.ZEHN, 1)),
                 SpielerPosition.SUED, List.of(karte(Farbe.KREUZ, Kartenwert.NEUN, 1))
-            )))
-            .teileKartenAus()
-            .meldeVorbehalt(SpielerPosition.WEST, VorbehaltAnsage.HOCHZEIT)
-            .meldeGesund(SpielerPosition.NORD)
-            .meldeGesund(SpielerPosition.OST)
-            .meldeGesund(SpielerPosition.SUED)
-            .loeseVorbehalteAuf()
-            .spieleKarte(SpielerPosition.WEST, karte(Farbe.KREUZ, Kartenwert.KOENIG, 1)).neuerStand()
-            .spieleKarte(SpielerPosition.NORD, karte(Farbe.KREUZ, Kartenwert.AS, 1)).neuerStand()
-            .spieleKarte(SpielerPosition.OST, karte(Farbe.KREUZ, Kartenwert.ZEHN, 1)).neuerStand()
-            .spieleKarte(SpielerPosition.SUED, karte(Farbe.KREUZ, Kartenwert.NEUN, 1)).neuerStand();
+            )));
+        spiel.teileKartenAus();
+        spiel.meldeVorbehalt(SpielerPosition.WEST, VorbehaltAnsage.HOCHZEIT);
+        spiel.meldeGesund(SpielerPosition.NORD);
+        spiel.meldeGesund(SpielerPosition.OST);
+        spiel.meldeGesund(SpielerPosition.SUED);
+        spiel.loeseVorbehalteAuf();
+        spiel.spieleKarte(SpielerPosition.WEST, karte(Farbe.KREUZ, Kartenwert.KOENIG, 1));
+        spiel.spieleKarte(SpielerPosition.NORD, karte(Farbe.KREUZ, Kartenwert.AS, 1));
+        spiel.spieleKarte(SpielerPosition.OST, karte(Farbe.KREUZ, Kartenwert.ZEHN, 1));
+        spiel.spieleKarte(SpielerPosition.SUED, karte(Farbe.KREUZ, Kartenwert.NEUN, 1));
 
         assertEquals(List.of(SpielerPosition.WEST, SpielerPosition.NORD), spiel.parteien().spielerVon(Partei.RE),
             "Der erste fremde Stichgewinner muss sofort Partner werden, damit Augen und Sonderpunkte der richtigen Partei zufallen.");
@@ -253,25 +253,25 @@ class SpielTest {
                     karte(Farbe.PIK, Kartenwert.NEUN, 1),
                     karte(Farbe.KARO, Kartenwert.NEUN, 1)
                 )
-            )))
-            .teileKartenAus()
-            .meldeVorbehalt(SpielerPosition.WEST, VorbehaltAnsage.HOCHZEIT)
-            .meldeGesund(SpielerPosition.NORD)
-            .meldeGesund(SpielerPosition.OST)
-            .meldeGesund(SpielerPosition.SUED)
-            .loeseVorbehalteAuf();
+            )));
+        spiel.teileKartenAus();
+        spiel.meldeVorbehalt(SpielerPosition.WEST, VorbehaltAnsage.HOCHZEIT);
+        spiel.meldeGesund(SpielerPosition.NORD);
+        spiel.meldeGesund(SpielerPosition.OST);
+        spiel.meldeGesund(SpielerPosition.SUED);
+        spiel.loeseVorbehalteAuf();
 
-        spiel = spieleStich(spiel,
+        spieleStich(spiel,
             karte(Farbe.KREUZ, Kartenwert.AS, 1),
             karte(Farbe.KREUZ, Kartenwert.KOENIG, 1),
             karte(Farbe.KREUZ, Kartenwert.ZEHN, 1),
             karte(Farbe.KREUZ, Kartenwert.NEUN, 1));
-        spiel = spieleStich(spiel,
+        spieleStich(spiel,
             karte(Farbe.PIK, Kartenwert.AS, 1),
             karte(Farbe.PIK, Kartenwert.KOENIG, 1),
             karte(Farbe.PIK, Kartenwert.ZEHN, 1),
             karte(Farbe.PIK, Kartenwert.NEUN, 1));
-        spiel = spieleStich(spiel,
+        spieleStich(spiel,
             karte(Farbe.KREUZ, Kartenwert.DAME, 1),
             karte(Farbe.KARO, Kartenwert.KOENIG, 1),
             karte(Farbe.KARO, Kartenwert.ZEHN, 1),
@@ -318,28 +318,28 @@ class SpielTest {
                     karte(Farbe.PIK, Kartenwert.NEUN, 1),
                     karte(Farbe.KARO, Kartenwert.NEUN, 1)
                 )
-            )))
-            .teileKartenAus()
-            .meldeVorbehalt(SpielerPosition.WEST, VorbehaltAnsage.HOCHZEIT)
-            .meldeGesund(SpielerPosition.NORD)
-            .meldeGesund(SpielerPosition.OST)
-            .meldeGesund(SpielerPosition.SUED)
-            .loeseVorbehalteAuf();
+            )));
+        spiel.teileKartenAus();
+        spiel.meldeVorbehalt(SpielerPosition.WEST, VorbehaltAnsage.HOCHZEIT);
+        spiel.meldeGesund(SpielerPosition.NORD);
+        spiel.meldeGesund(SpielerPosition.OST);
+        spiel.meldeGesund(SpielerPosition.SUED);
+        spiel.loeseVorbehalteAuf();
 
         // Stich 1: WEST gewinnt mit Kreuz-AS (hoechste Kreuz-Fehlfarbe)
-        spiel = spieleStich(spiel,
+        spieleStich(spiel,
             karte(Farbe.KREUZ, Kartenwert.AS, 1),
             karte(Farbe.KREUZ, Kartenwert.KOENIG, 1),
             karte(Farbe.KREUZ, Kartenwert.ZEHN, 1),
             karte(Farbe.KREUZ, Kartenwert.NEUN, 1));
         // Stich 2: WEST gewinnt mit Pik-AS
-        spiel = spieleStich(spiel,
+        spieleStich(spiel,
             karte(Farbe.PIK, Kartenwert.AS, 1),
             karte(Farbe.PIK, Kartenwert.KOENIG, 1),
             karte(Farbe.PIK, Kartenwert.ZEHN, 1),
             karte(Farbe.PIK, Kartenwert.NEUN, 1));
         // Stich 3: WEST gewinnt mit Kreuz-DAME (Trump) — loest stilles Solo aus
-        spiel = spieleStich(spiel,
+        spieleStich(spiel,
             karte(Farbe.KREUZ, Kartenwert.DAME, 1),
             karte(Farbe.KARO, Kartenwert.KOENIG, 1),
             karte(Farbe.KARO, Kartenwert.ZEHN, 1),
@@ -356,7 +356,7 @@ class SpielTest {
         while (spiel.phase() instanceof Spielphase.Stichphase) {
             SpielerPosition aktuellerSpieler = spiel.aktuellerSpieler().orElseThrow();
             Karte naechsteKarte = spiel.gueltigeKartenFuer(aktuellerSpieler).getFirst();
-            spiel = spiel.spieleKarte(aktuellerSpieler, naechsteKarte).neuerStand();
+            spiel.spieleKarte(aktuellerSpieler, naechsteKarte);
         }
 
         assertEquals(12, spiel.abgeschlosseneStiche().size(),
@@ -367,7 +367,7 @@ class SpielTest {
             "Die RE-Partei muss am Ende des stillen Solos unveraendert nur WEST enthalten, damit die Punkteberechnung korrekt arbeitet.");
 
         // Auswertung ausfuehren und Invarianten pruefen
-        spiel = spiel.werteAus();
+        spiel.werteAus();
 
         assertEquals(Spielphase.GESAMTSTAND_AKTUALISIEREN, spiel.phase());
         Spielergebnis ergebnis = spiel.ergebnis().orElseThrow();
@@ -385,8 +385,8 @@ class SpielTest {
     void lehntHochzeitOhneBeideKreuzDamenOderBeiDeaktivierterRegelAb() {
         Spiel spielMitNurEinerKreuzDame = Spiel.neu(SpielerPosition.SUED, spielregeln, kartendeckMitVerteiltenHaenden(Map.of(
                 SpielerPosition.WEST, List.of(karte(Farbe.KREUZ, Kartenwert.DAME, 1))
-            )))
-            .teileKartenAus();
+            )));
+        spielMitNurEinerKreuzDame.teileKartenAus();
 
         assertThrows(IllegalStateException.class,
             () -> spielMitNurEinerKreuzDame.meldeVorbehalt(SpielerPosition.WEST, VorbehaltAnsage.HOCHZEIT),
@@ -398,8 +398,8 @@ class SpielTest {
                     karte(Farbe.KREUZ, Kartenwert.DAME, 1),
                     karte(Farbe.KREUZ, Kartenwert.DAME, 2)
                 )
-            )))
-            .teileKartenAus();
+            )));
+        deaktiviertesSpiel.teileKartenAus();
 
         assertThrows(IllegalStateException.class,
             () -> deaktiviertesSpiel.meldeVorbehalt(SpielerPosition.WEST, VorbehaltAnsage.HOCHZEIT),
@@ -413,13 +413,13 @@ class SpielTest {
                     karte(Farbe.KREUZ, Kartenwert.DAME, 1),
                     karte(Farbe.KREUZ, Kartenwert.DAME, 2)
                 )
-            )))
-            .teileKartenAus()
-            .meldeVorbehalt(SpielerPosition.WEST, VorbehaltAnsage.HOCHZEIT)
-            .meldeVorbehalt(SpielerPosition.NORD, VorbehaltAnsage.SOLO_TRUMPF)
-            .meldeGesund(SpielerPosition.OST)
-            .meldeGesund(SpielerPosition.SUED)
-            .loeseVorbehalteAuf();
+            )));
+        spiel.teileKartenAus();
+        spiel.meldeVorbehalt(SpielerPosition.WEST, VorbehaltAnsage.HOCHZEIT);
+        spiel.meldeVorbehalt(SpielerPosition.NORD, VorbehaltAnsage.SOLO_TRUMPF);
+        spiel.meldeGesund(SpielerPosition.OST);
+        spiel.meldeGesund(SpielerPosition.SUED);
+        spiel.loeseVorbehalteAuf();
 
         assertEquals(Spieltyp.SOLO_TRUMPF, spiel.spieltyp(),
             "Soli muessen in der Vorbehaltsaufloesung ueber der Hochzeit liegen, sonst stimmt die Prioritaetsregel nicht.");
@@ -437,24 +437,24 @@ class SpielTest {
         Spiel spiel = Spiel.neu(SpielerPosition.SUED, spielregeln, kartendeckMitVerteiltenHaenden(Map.of(
                 SpielerPosition.WEST, handMitDreiTruepfen(ersteArmutskarte, zweiteArmutskarte, dritteArmutskarte),
                 SpielerPosition.OST, gegenhandFuerArmutAnnahme(rueckgabeEins, rueckgabeZwei, rueckgabeDrei)
-            )))
-            .teileKartenAus()
-            .meldeVorbehalt(SpielerPosition.WEST, VorbehaltAnsage.ARMUT)
-            .meldeGesund(SpielerPosition.NORD)
-            .meldeGesund(SpielerPosition.OST)
-            .meldeGesund(SpielerPosition.SUED)
-            .loeseVorbehalteAuf();
+            )));
+        spiel.teileKartenAus();
+        spiel.meldeVorbehalt(SpielerPosition.WEST, VorbehaltAnsage.ARMUT);
+        spiel.meldeGesund(SpielerPosition.NORD);
+        spiel.meldeGesund(SpielerPosition.OST);
+        spiel.meldeGesund(SpielerPosition.SUED);
+        spiel.loeseVorbehalteAuf();
 
         assertInstanceOf(Spielphase.ArmutTausch.class, spiel.phase(),
             "Armut braucht eine eigene Tauschphase vor dem ersten Stich, damit Angebot und Annahme serverseitig validiert werden.");
         assertEquals(Spieltyp.ARMUT, spiel.spieltyp());
 
-        spiel = spiel.legeArmutTrumpfkarten(SpielerPosition.WEST, List.of(ersteArmutskarte, zweiteArmutskarte, dritteArmutskarte));
+        spiel.legeArmutTrumpfkarten(SpielerPosition.WEST, List.of(ersteArmutskarte, zweiteArmutskarte, dritteArmutskarte));
         assertEquals(SpielerPosition.NORD, spiel.armutStatus().orElseThrow().aktuellerAntwortspieler().orElseThrow(),
             "Nach dem verdeckten Angebot muss die Annahme links vom Armut-Spieler beginnen und im Uhrzeigersinn weiterlaufen.");
 
-        spiel = spiel.lehneArmutAb(SpielerPosition.NORD)
-            .nimmArmutAn(SpielerPosition.OST, List.of(rueckgabeEins, rueckgabeZwei, rueckgabeDrei));
+        spiel.lehneArmutAb(SpielerPosition.NORD);
+        spiel.nimmArmutAn(SpielerPosition.OST, List.of(rueckgabeEins, rueckgabeZwei, rueckgabeDrei));
 
         assertInstanceOf(Spielphase.Stichphase.class, spiel.phase());
         assertEquals(List.of(SpielerPosition.WEST, SpielerPosition.OST), spiel.parteien().spielerVon(Partei.RE),
@@ -494,8 +494,8 @@ class SpielTest {
                     karte(Farbe.PIK, Kartenwert.ZEHN, 1),
                     karte(Farbe.PIK, Kartenwert.NEUN, 1)
                 )
-            )))
-            .teileKartenAus();
+            )));
+        spielMitVierTruepfen.teileKartenAus();
 
         assertThrows(IllegalStateException.class,
             () -> spielMitVierTruepfen.meldeVorbehalt(SpielerPosition.WEST, VorbehaltAnsage.ARMUT),
@@ -508,8 +508,8 @@ class SpielTest {
                     karte(Farbe.KREUZ, Kartenwert.BUBE, 1),
                     karte(Farbe.KARO, Kartenwert.AS, 1)
                 )
-            )))
-            .teileKartenAus();
+            )));
+        deaktiviertesSpiel.teileKartenAus();
 
         assertThrows(IllegalStateException.class,
             () -> deaktiviertesSpiel.meldeVorbehalt(SpielerPosition.WEST, VorbehaltAnsage.ARMUT),
@@ -524,21 +524,21 @@ class SpielTest {
                     karte(Farbe.KREUZ, Kartenwert.BUBE, 1),
                     karte(Farbe.KARO, Kartenwert.AS, 1)
                 )
-            )))
-            .teileKartenAus()
-            .meldeVorbehalt(SpielerPosition.WEST, VorbehaltAnsage.ARMUT)
-            .meldeGesund(SpielerPosition.NORD)
-            .meldeGesund(SpielerPosition.OST)
-            .meldeGesund(SpielerPosition.SUED)
-            .loeseVorbehalteAuf()
-            .legeArmutTrumpfkarten(SpielerPosition.WEST, List.of(
-                karte(Farbe.KREUZ, Kartenwert.DAME, 1),
-                karte(Farbe.KREUZ, Kartenwert.BUBE, 1),
-                karte(Farbe.KARO, Kartenwert.AS, 1)
-            ))
-            .lehneArmutAb(SpielerPosition.NORD)
-            .lehneArmutAb(SpielerPosition.OST)
-            .lehneArmutAb(SpielerPosition.SUED);
+            )));
+        spiel.teileKartenAus();
+        spiel.meldeVorbehalt(SpielerPosition.WEST, VorbehaltAnsage.ARMUT);
+        spiel.meldeGesund(SpielerPosition.NORD);
+        spiel.meldeGesund(SpielerPosition.OST);
+        spiel.meldeGesund(SpielerPosition.SUED);
+        spiel.loeseVorbehalteAuf();
+        spiel.legeArmutTrumpfkarten(SpielerPosition.WEST, List.of(
+            karte(Farbe.KREUZ, Kartenwert.DAME, 1),
+            karte(Farbe.KREUZ, Kartenwert.BUBE, 1),
+            karte(Farbe.KARO, Kartenwert.AS, 1)
+        ));
+        spiel.lehneArmutAb(SpielerPosition.NORD);
+        spiel.lehneArmutAb(SpielerPosition.OST);
+        spiel.lehneArmutAb(SpielerPosition.SUED);
 
         assertEquals(Spielphase.VORBEHALT_ANSAGE, spiel.phase(),
             "Wenn niemand die Armut annimmt, muss sofort neu gemischt und wieder mit einer frischen Vorbehaltsrunde gestartet werden.");
@@ -555,8 +555,8 @@ class SpielTest {
     @Test
     void lehntTrumpfsoloAbWennEsPerRegelnDeaktiviertIst() {
         Spielregeln soloDeaktiviert = spielregeln.mitSoloTrumpfAktiv(false);
-        Spiel spiel = Spiel.neu(SpielerPosition.SUED, soloDeaktiviert, kartendeckMitKontrolliertenHaenden())
-            .teileKartenAus();
+        Spiel spiel = Spiel.neu(SpielerPosition.SUED, soloDeaktiviert, kartendeckMitKontrolliertenHaenden());
+        spiel.teileKartenAus();
 
         assertThrows(IllegalStateException.class,
             () -> spiel.meldeVorbehalt(SpielerPosition.WEST, VorbehaltAnsage.SOLO_TRUMPF),
@@ -565,12 +565,12 @@ class SpielTest {
 
     @Test
     void lehntDamensoloBubensoloUndFleischlosBeiDeaktivierterRegelAb() {
-        Spiel damensoloDeaktiviert = Spiel.neu(SpielerPosition.SUED, spielregeln.mitSoloDameAktiv(false), kartendeckMitKontrolliertenHaenden())
-            .teileKartenAus();
-        Spiel bubensoloDeaktiviert = Spiel.neu(SpielerPosition.SUED, spielregeln.mitSoloBubeAktiv(false), kartendeckMitKontrolliertenHaenden())
-            .teileKartenAus();
-        Spiel fleischlosDeaktiviert = Spiel.neu(SpielerPosition.SUED, spielregeln.mitSoloFleischlosAktiv(false), kartendeckMitKontrolliertenHaenden())
-            .teileKartenAus();
+        Spiel damensoloDeaktiviert = Spiel.neu(SpielerPosition.SUED, spielregeln.mitSoloDameAktiv(false), kartendeckMitKontrolliertenHaenden());
+        damensoloDeaktiviert.teileKartenAus();
+        Spiel bubensoloDeaktiviert = Spiel.neu(SpielerPosition.SUED, spielregeln.mitSoloBubeAktiv(false), kartendeckMitKontrolliertenHaenden());
+        bubensoloDeaktiviert.teileKartenAus();
+        Spiel fleischlosDeaktiviert = Spiel.neu(SpielerPosition.SUED, spielregeln.mitSoloFleischlosAktiv(false), kartendeckMitKontrolliertenHaenden());
+        fleischlosDeaktiviert.teileKartenAus();
 
         assertThrows(IllegalStateException.class,
             () -> damensoloDeaktiviert.meldeVorbehalt(SpielerPosition.WEST, VorbehaltAnsage.SOLO_DAME),
@@ -588,13 +588,13 @@ class SpielTest {
         // 5 Koenige auf der Hand von WEST muss Schmeissen ermoeglichen — sofortiges Neu-Austeilen
         Spielregeln regelnMitSchmeissen = Spielregeln.locoBlatRegeln();
         Kartendeck deck = kartendeckMitFuenfKoenigenAufWest();
-        Spiel spiel = Spiel.neu(SpielerPosition.SUED, regelnMitSchmeissen, deck)
-            .teileKartenAus()
-            .meldeVorbehalt(SpielerPosition.WEST, VorbehaltAnsage.SCHMEISSEN)
-            .meldeGesund(SpielerPosition.NORD)
-            .meldeGesund(SpielerPosition.OST)
-            .meldeGesund(SpielerPosition.SUED)
-            .loeseVorbehalteAuf();
+        Spiel spiel = Spiel.neu(SpielerPosition.SUED, regelnMitSchmeissen, deck);
+        spiel.teileKartenAus();
+        spiel.meldeVorbehalt(SpielerPosition.WEST, VorbehaltAnsage.SCHMEISSEN);
+        spiel.meldeGesund(SpielerPosition.NORD);
+        spiel.meldeGesund(SpielerPosition.OST);
+        spiel.meldeGesund(SpielerPosition.SUED);
+        spiel.loeseVorbehalteAuf();
 
         assertInstanceOf(Spielphase.VorbehaltAnsage.class, spiel.phase(),
             "Nach Schmeissen muss neu ausgeteilt werden — das Spiel muss zurueck in die Vorbehalt-Ansage-Phase wechseln.");
@@ -607,13 +607,13 @@ class SpielTest {
         // Auch wenn ein anderer Spieler ein Solo anmeldet, hat Schmeissen Vorrang
         Spielregeln regelnMitSchmeissen = Spielregeln.locoBlatRegeln();
         Kartendeck deck = kartendeckMitFuenfKoenigenAufWest();
-        Spiel spiel = Spiel.neu(SpielerPosition.SUED, regelnMitSchmeissen, deck)
-            .teileKartenAus()
-            .meldeVorbehalt(SpielerPosition.WEST, VorbehaltAnsage.SCHMEISSEN)
-            .meldeVorbehalt(SpielerPosition.NORD, VorbehaltAnsage.SOLO_TRUMPF)
-            .meldeGesund(SpielerPosition.OST)
-            .meldeGesund(SpielerPosition.SUED)
-            .loeseVorbehalteAuf();
+        Spiel spiel = Spiel.neu(SpielerPosition.SUED, regelnMitSchmeissen, deck);
+        spiel.teileKartenAus();
+        spiel.meldeVorbehalt(SpielerPosition.WEST, VorbehaltAnsage.SCHMEISSEN);
+        spiel.meldeVorbehalt(SpielerPosition.NORD, VorbehaltAnsage.SOLO_TRUMPF);
+        spiel.meldeGesund(SpielerPosition.OST);
+        spiel.meldeGesund(SpielerPosition.SUED);
+        spiel.loeseVorbehalteAuf();
 
         assertInstanceOf(Spielphase.VorbehaltAnsage.class, spiel.phase(),
             "Schmeissen muss hoehere Prioritaet als ein Solo haben — das Spiel muss neu ausgeteilt werden.");
@@ -624,8 +624,8 @@ class SpielTest {
         // 4 Koenige reichen nicht zum Schmeissen
         Spielregeln regelnMitSchmeissen = Spielregeln.locoBlatRegeln();
         Kartendeck deck = kartendeckMitVierKoenigenAufWest();
-        Spiel spiel = Spiel.neu(SpielerPosition.SUED, regelnMitSchmeissen, deck)
-            .teileKartenAus();
+        Spiel spiel = Spiel.neu(SpielerPosition.SUED, regelnMitSchmeissen, deck);
+        spiel.teileKartenAus();
 
         assertFalse(VorbehaltAnsage.SCHMEISSEN.istZulaessig(spiel.handVon(SpielerPosition.WEST), regelnMitSchmeissen),
             "Vier Koenige genuegen nicht zum Schmeissen — die Schwelle liegt bei fuenf.");
@@ -636,8 +636,8 @@ class SpielTest {
         // DKV-Turnier-Regeln deaktivieren Schmeissen
         Spielregeln dkvRegeln = Spielregeln.dkvRegeln();
         Kartendeck deck = kartendeckMitFuenfKoenigenAufWest();
-        Spiel spiel = Spiel.neu(SpielerPosition.SUED, dkvRegeln, deck)
-            .teileKartenAus();
+        Spiel spiel = Spiel.neu(SpielerPosition.SUED, dkvRegeln, deck);
+        spiel.teileKartenAus();
 
         assertFalse(VorbehaltAnsage.SCHMEISSEN.istZulaessig(spiel.handVon(SpielerPosition.WEST), dkvRegeln),
             "Im DKV-Turnier-Modus darf Schmeissen nicht moeglich sein, auch wenn ein Spieler fuenf Koenige hat.");
@@ -651,8 +651,8 @@ class SpielTest {
         // schmeissenAktiv explizit deaktiviert
         Spielregeln regelnOhneSchmeissen = Spielregeln.locoBlatRegeln().mitSchmeissenAktiv(false);
         Kartendeck deck = kartendeckMitFuenfKoenigenAufWest();
-        Spiel spiel = Spiel.neu(SpielerPosition.SUED, regelnOhneSchmeissen, deck)
-            .teileKartenAus();
+        Spiel spiel = Spiel.neu(SpielerPosition.SUED, regelnOhneSchmeissen, deck);
+        spiel.teileKartenAus();
 
         assertFalse(VorbehaltAnsage.SCHMEISSEN.istZulaessig(spiel.handVon(SpielerPosition.WEST), regelnOhneSchmeissen),
             "Wenn schmeissenAktiv=false, darf Schmeissen nicht zulaessig sein.");
@@ -667,22 +667,21 @@ class SpielTest {
         Spielregeln regeln = Spielregeln.locoBlatRegeln();
         Kartendeck deck = kartendeckMitFuenfKoenigenAufWest();
         // Erster Schmeiss-Zyklus
-        Spiel nachErstemSchmeissen = Spiel.neu(SpielerPosition.SUED, regeln, deck)
-            .teileKartenAus()
-            .meldeVorbehalt(SpielerPosition.WEST, VorbehaltAnsage.SCHMEISSEN)
-            .meldeGesund(SpielerPosition.NORD)
-            .meldeGesund(SpielerPosition.OST)
-            .meldeGesund(SpielerPosition.SUED)
-            .loeseVorbehalteAuf();
+        Spiel nachErstemSchmeissen = Spiel.neu(SpielerPosition.SUED, regeln, deck);
+        nachErstemSchmeissen.teileKartenAus();
+        nachErstemSchmeissen.meldeVorbehalt(SpielerPosition.WEST, VorbehaltAnsage.SCHMEISSEN);
+        nachErstemSchmeissen.meldeGesund(SpielerPosition.NORD);
+        nachErstemSchmeissen.meldeGesund(SpielerPosition.OST);
+        nachErstemSchmeissen.meldeGesund(SpielerPosition.SUED);
+        nachErstemSchmeissen.loeseVorbehalteAuf();
 
         // Spiel ist jetzt wieder in VORBEHALT_ANSAGE mit neuen Karten
         assertInstanceOf(Spielphase.VorbehaltAnsage.class, nachErstemSchmeissen.phase(),
             "Nach erstem Schmeissen muss Neudeal stattgefunden haben.");
 
         // Zweites Schmeissen desselben Spielers muss abgelehnt werden
-        Spiel spielNachNeuausteilen = nachErstemSchmeissen;
         assertThrows(IllegalStateException.class,
-            () -> spielNachNeuausteilen.meldeVorbehalt(SpielerPosition.WEST, VorbehaltAnsage.SCHMEISSEN),
+            () -> nachErstemSchmeissen.meldeVorbehalt(SpielerPosition.WEST, VorbehaltAnsage.SCHMEISSEN),
             "Ein Spieler darf das Schmeiss-Recht pro Spiel nur einmal nutzen — "
             + "sonst koennte ein Spieler mit schlechter Hand beliebig oft neu austeilen.");
     }
@@ -694,7 +693,7 @@ class SpielTest {
         assertEquals(Spielphase.KARTEN_AUSTEILEN, spiel.phase(),
             "Ein neues Spiel muss mit dem Austeilen beginnen, damit spaetere Schnittstellen die Phasen stabil orchestrieren koennen.");
 
-        spiel = spiel.teileKartenAus();
+        spiel.teileKartenAus();
         assertEquals(Spielphase.VORBEHALT_ANSAGE, spiel.phase());
         assertEquals(12, spiel.handVon(SpielerPosition.SUED).karten().size(),
             "Jeder Spieler braucht im Normalspiel 12 Karten, weil darauf die komplette Stichfolge basiert.");
@@ -702,11 +701,11 @@ class SpielTest {
         for (SpielerPosition position : SpielerPosition.imUhrzeigersinnAb(SpielerPosition.WEST)) {
             assertEquals(position, spiel.naechsterVorbehaltSpieler().orElseThrow(),
                 "Die Vorbehaltsrunde muss links vom Geber starten und im Uhrzeigersinn laufen.");
-            spiel = spiel.meldeGesund(position);
+            spiel.meldeGesund(position);
         }
         assertEquals(Spielphase.VORBEHALT_AUFLOESUNG, spiel.phase());
 
-        spiel = spiel.loeseVorbehalteAuf();
+        spiel.loeseVorbehalteAuf();
         assertInstanceOf(Spielphase.Stichphase.class, spiel.phase());
         assertEquals(Partei.RE, spiel.parteien().parteiVon(SpielerPosition.SUED));
         assertEquals(Partei.RE, spiel.parteien().parteiVon(SpielerPosition.WEST));
@@ -720,14 +719,14 @@ class SpielTest {
         while (spiel.phase() instanceof Spielphase.Stichphase) {
             SpielerPosition aktuellerSpieler = spiel.aktuellerSpieler().orElseThrow();
             Karte karte = spiel.gueltigeKartenFuer(aktuellerSpieler).getFirst();
-            spiel = spiel.spieleKarte(aktuellerSpieler, karte).neuerStand();
+            spiel.spieleKarte(aktuellerSpieler, karte);
         }
 
         assertEquals(12, spiel.abgeschlosseneStiche().size(),
             "Ein vollstaendiges Normalspiel braucht 12 Stiche, sonst kann keine belastbare Endauswertung stattfinden.");
         assertEquals(Spielphase.AUSWERTUNG, spiel.phase());
 
-        spiel = spiel.werteAus();
+        spiel.werteAus();
 
         assertEquals(Spielphase.GESAMTSTAND_AKTUALISIEREN, spiel.phase());
         Spielergebnis ergebnis = spiel.ergebnis().orElseThrow();
@@ -743,48 +742,45 @@ class SpielTest {
     @Test
     void lehntUngueltigeZustandsuebergaengeAb() {
         Spiel spiel = Spiel.neu(SpielerPosition.OST, spielregeln, Kartendeck.neu(spielregeln));
-        Spiel neuesSpiel = spiel;
 
-        assertThrows(IllegalStateException.class, () -> neuesSpiel.meldeGesund(SpielerPosition.SUED),
+        assertThrows(IllegalStateException.class, () -> spiel.meldeGesund(SpielerPosition.SUED),
             "Ohne ausgeteilte Karten darf kein Spieler Vorbehalte melden, sonst verliert die Zustandsmaschine ihre Autoritaet.");
 
-        spiel = spiel.teileKartenAus();
-        Spiel spielMitAusgeteiltenKarten = spiel;
-        assertThrows(IllegalStateException.class, spielMitAusgeteiltenKarten::loeseVorbehalteAuf,
+        spiel.teileKartenAus();
+        assertThrows(IllegalStateException.class, spiel::loeseVorbehalteAuf,
             "Vorbehalte duerfen erst nach vier Meldungen aufgeloest werden, damit kein Spieler uebersprungen wird.");
 
-        spiel = spiel.meldeGesund(SpielerPosition.SUED)
-            .meldeGesund(SpielerPosition.WEST)
-            .meldeGesund(SpielerPosition.NORD)
-            .meldeGesund(SpielerPosition.OST)
-            .loeseVorbehalteAuf();
+        spiel.meldeGesund(SpielerPosition.SUED);
+        spiel.meldeGesund(SpielerPosition.WEST);
+        spiel.meldeGesund(SpielerPosition.NORD);
+        spiel.meldeGesund(SpielerPosition.OST);
+        spiel.loeseVorbehalteAuf();
 
-        Spiel laufendesStichspiel = spiel;
-        assertThrows(IllegalStateException.class, () -> laufendesStichspiel.werteAus(),
+        assertThrows(IllegalStateException.class, spiel::werteAus,
             "Eine Auswertung vor dem letzten Stich wuerde unvollstaendige Augenstaende in den Gesamtstand schleusen.");
     }
 
     @Test
     void laesstAnsagenNurFuerDenAktuellenSpielerUndNurImRegelkonformenFensterZu() {
-        Spiel spiel = Spiel.neu(SpielerPosition.SUED, spielregeln, kartendeckMitKontrolliertenHaenden())
-            .teileKartenAus()
-            .meldeGesund(SpielerPosition.WEST)
-            .meldeGesund(SpielerPosition.NORD)
-            .meldeGesund(SpielerPosition.OST)
-            .meldeGesund(SpielerPosition.SUED)
-            .loeseVorbehalteAuf();
+        Spiel spiel = Spiel.neu(SpielerPosition.SUED, spielregeln, kartendeckMitKontrolliertenHaenden());
+        spiel.teileKartenAus();
+        spiel.meldeGesund(SpielerPosition.WEST);
+        spiel.meldeGesund(SpielerPosition.NORD);
+        spiel.meldeGesund(SpielerPosition.OST);
+        spiel.meldeGesund(SpielerPosition.SUED);
+        spiel.loeseVorbehalteAuf();
 
         assertTrue(spiel.kannAnsagen(SpielerPosition.WEST, Ansage.RE),
             "Vor dem ersten Ausspiel muss der aktuelle Re-Spieler seine Partei ansagen koennen, sonst fehlen die Kernereignisse der Stichphase.");
         assertFalse(spiel.kannAnsagen(SpielerPosition.NORD, Ansage.KONTRA),
             "Nur der aktuelle Spieler darf ansagen, damit Reihenfolge und Zeitfenster an den echten Spielzug gekoppelt bleiben.");
 
-        spiel = spiel.sageAn(SpielerPosition.WEST, Ansage.RE);
+        spiel.sageAn(SpielerPosition.WEST, Ansage.RE);
         assertTrue(spiel.ansagen().offenbartParteiVon(SpielerPosition.WEST),
             "Die Grundansage muss im Spielzustand festgehalten werden, damit UIs und Auswertung dieselbe Wahrheit sehen.");
 
-        Spiel spielMitGespielterKarte = spiel.spieleKarte(SpielerPosition.WEST, spiel.gueltigeKartenFuer(SpielerPosition.WEST).getFirst()).neuerStand();
-        assertTrue(spielMitGespielterKarte.kannAnsagen(SpielerPosition.NORD, Ansage.KONTRA),
+        spiel.spieleKarte(SpielerPosition.WEST, spiel.gueltigeKartenFuer(SpielerPosition.WEST).getFirst());
+        assertTrue(spiel.kannAnsagen(SpielerPosition.NORD, Ansage.KONTRA),
             "Nach dem Ausspiel muss der naechste aktuelle Spieler regelkonform eigene Ansagen taetigen koennen.");
     }
 
@@ -793,23 +789,23 @@ class SpielTest {
         // Warum wichtig: Das Backend ist einzige Wahrheitsquelle. Nach einer Re/Kontra-Ansage muss
         // die Parteizugehoerigkeit direkt in parteien.offenFuerAlle reflektiert sein, nicht nur
         // in der Ansagehistorie — sonst muss die Praesentationsschicht Domaenenlogik duplizieren.
-        Spiel spiel = Spiel.neu(SpielerPosition.SUED, spielregeln, kartendeckMitKontrolliertenHaenden())
-            .teileKartenAus()
-            .meldeGesund(SpielerPosition.WEST)
-            .meldeGesund(SpielerPosition.NORD)
-            .meldeGesund(SpielerPosition.OST)
-            .meldeGesund(SpielerPosition.SUED)
-            .loeseVorbehalteAuf();
+        Spiel spiel = Spiel.neu(SpielerPosition.SUED, spielregeln, kartendeckMitKontrolliertenHaenden());
+        spiel.teileKartenAus();
+        spiel.meldeGesund(SpielerPosition.WEST);
+        spiel.meldeGesund(SpielerPosition.NORD);
+        spiel.meldeGesund(SpielerPosition.OST);
+        spiel.meldeGesund(SpielerPosition.SUED);
+        spiel.loeseVorbehalteAuf();
 
         assertTrue(spiel.parteien().sichtAufPartei(SpielerPosition.NORD, SpielerPosition.WEST).isEmpty(),
             "Im Normalspiel sind Parteien anfangs verdeckt — nur die eigene Position ist sicher bekannt.");
 
-        Spiel spielNachReAnsage = spiel.sageAn(SpielerPosition.WEST, Ansage.RE);
+        spiel.sageAn(SpielerPosition.WEST, Ansage.RE);
 
-        assertTrue(spielNachReAnsage.parteien().sichtAufPartei(SpielerPosition.NORD, SpielerPosition.WEST).isPresent(),
+        assertTrue(spiel.parteien().sichtAufPartei(SpielerPosition.NORD, SpielerPosition.WEST).isPresent(),
             "Nach einer Grundansage muss die Parteizugehoerigkeit im Domainmodell sichtbar sein.");
         assertEquals(Partei.RE,
-            spielNachReAnsage.parteien().sichtAufPartei(SpielerPosition.NORD, SpielerPosition.WEST).orElseThrow(),
+            spiel.parteien().sichtAufPartei(SpielerPosition.NORD, SpielerPosition.WEST).orElseThrow(),
             "Der ansagende Re-Spieler muss fuer alle als RE erkennbar sein.");
     }
 
@@ -823,13 +819,13 @@ class SpielTest {
                     karte(Farbe.KREUZ, Kartenwert.DAME, 1),
                     karte(Farbe.KREUZ, Kartenwert.DAME, 2)
                 )
-            )))
-            .teileKartenAus()
-            .meldeGesund(SpielerPosition.WEST)
-            .meldeGesund(SpielerPosition.NORD)
-            .meldeGesund(SpielerPosition.OST)
-            .meldeGesund(SpielerPosition.SUED)
-            .loeseVorbehalteAuf();
+            )));
+        spiel.teileKartenAus();
+        spiel.meldeGesund(SpielerPosition.WEST);
+        spiel.meldeGesund(SpielerPosition.NORD);
+        spiel.meldeGesund(SpielerPosition.OST);
+        spiel.meldeGesund(SpielerPosition.SUED);
+        spiel.loeseVorbehalteAuf();
 
         assertEquals(Spieltyp.SOLO_TRUMPF, spiel.spieltyp(),
             "Ein Spieler mit beiden Kreuz-Damen ohne Hochzeit-Vorbehalt muss defensiv als Trumpfsolo weiterlaufen, damit kein Server-Crash entsteht.");
@@ -843,13 +839,13 @@ class SpielTest {
         // Warum wichtig: SOLO_TRUMPF_HERZ braucht eine eigene TrumpfOrdnung, bei der Herz-Karten
         // (statt Karo) die Fehltrumpfe bilden. Ohne diesen Test koennte versehentlich NormaleTrumpfOrdnung
         // aktiv bleiben und Herz-Karten als Fehlfarbe behandeln.
-        Spiel spiel = Spiel.neu(SpielerPosition.SUED, spielregeln, kartendeckMitKontrolliertenHaenden())
-            .teileKartenAus()
-            .meldeGesund(SpielerPosition.WEST)
-            .meldeVorbehalt(SpielerPosition.NORD, VorbehaltAnsage.SOLO_TRUMPF_HERZ)
-            .meldeGesund(SpielerPosition.OST)
-            .meldeGesund(SpielerPosition.SUED)
-            .loeseVorbehalteAuf();
+        Spiel spiel = Spiel.neu(SpielerPosition.SUED, spielregeln, kartendeckMitKontrolliertenHaenden());
+        spiel.teileKartenAus();
+        spiel.meldeGesund(SpielerPosition.WEST);
+        spiel.meldeVorbehalt(SpielerPosition.NORD, VorbehaltAnsage.SOLO_TRUMPF_HERZ);
+        spiel.meldeGesund(SpielerPosition.OST);
+        spiel.meldeGesund(SpielerPosition.SUED);
+        spiel.loeseVorbehalteAuf();
 
         assertEquals(Spieltyp.SOLO_TRUMPF_HERZ, spiel.spieltyp());
         assertEquals(List.of(SpielerPosition.NORD), spiel.parteien().spielerVon(Partei.RE),
@@ -867,13 +863,13 @@ class SpielTest {
     @Test
     void loestPiksoloUndKreuzsoloMitKorrekterParteibildungAuf() {
         // Warum wichtig: Alle drei variablen Trumpfsoli muessen denselben Solo-Spieler als RE markieren.
-        Spiel pikspiel = Spiel.neu(SpielerPosition.SUED, spielregeln, kartendeckMitKontrolliertenHaenden())
-            .teileKartenAus()
-            .meldeVorbehalt(SpielerPosition.WEST, VorbehaltAnsage.SOLO_TRUMPF_PIK)
-            .meldeGesund(SpielerPosition.NORD)
-            .meldeGesund(SpielerPosition.OST)
-            .meldeGesund(SpielerPosition.SUED)
-            .loeseVorbehalteAuf();
+        Spiel pikspiel = Spiel.neu(SpielerPosition.SUED, spielregeln, kartendeckMitKontrolliertenHaenden());
+        pikspiel.teileKartenAus();
+        pikspiel.meldeVorbehalt(SpielerPosition.WEST, VorbehaltAnsage.SOLO_TRUMPF_PIK);
+        pikspiel.meldeGesund(SpielerPosition.NORD);
+        pikspiel.meldeGesund(SpielerPosition.OST);
+        pikspiel.meldeGesund(SpielerPosition.SUED);
+        pikspiel.loeseVorbehalteAuf();
 
         assertEquals(Spieltyp.SOLO_TRUMPF_PIK, pikspiel.spieltyp());
         assertEquals(List.of(SpielerPosition.WEST), pikspiel.parteien().spielerVon(Partei.RE));
@@ -882,13 +878,13 @@ class SpielTest {
         assertFalse(pikspiel.trumpfOrdnung().istTrumpf(karte(Farbe.KARO, Kartenwert.AS, 1)),
             "Im Piksolo sind Karo-Karten (ausser Dame/Bube) Fehlfarbe.");
 
-        Spiel kreuzspiel = Spiel.neu(SpielerPosition.SUED, spielregeln, kartendeckMitKontrolliertenHaenden())
-            .teileKartenAus()
-            .meldeVorbehalt(SpielerPosition.WEST, VorbehaltAnsage.SOLO_TRUMPF_KREUZ)
-            .meldeGesund(SpielerPosition.NORD)
-            .meldeGesund(SpielerPosition.OST)
-            .meldeGesund(SpielerPosition.SUED)
-            .loeseVorbehalteAuf();
+        Spiel kreuzspiel = Spiel.neu(SpielerPosition.SUED, spielregeln, kartendeckMitKontrolliertenHaenden());
+        kreuzspiel.teileKartenAus();
+        kreuzspiel.meldeVorbehalt(SpielerPosition.WEST, VorbehaltAnsage.SOLO_TRUMPF_KREUZ);
+        kreuzspiel.meldeGesund(SpielerPosition.NORD);
+        kreuzspiel.meldeGesund(SpielerPosition.OST);
+        kreuzspiel.meldeGesund(SpielerPosition.SUED);
+        kreuzspiel.loeseVorbehalteAuf();
 
         assertEquals(Spieltyp.SOLO_TRUMPF_KREUZ, kreuzspiel.spieltyp());
         assertEquals(List.of(SpielerPosition.WEST), kreuzspiel.parteien().spielerVon(Partei.RE));
@@ -896,13 +892,55 @@ class SpielTest {
             "Im Kreuzsolo sind Kreuz-Karten (ausser Dame/Bube) Trumpf.");
     }
 
-    private Spiel spieleStich(Spiel spiel, Karte ersteKarte, Karte zweiteKarte, Karte dritteKarte, Karte vierteKarte) {
-        Spiel aktuellesSpiel = spiel;
-        for (Karte karte : List.of(ersteKarte, zweiteKarte, dritteKarte, vierteKarte)) {
-            SpielerPosition spieler = aktuellesSpiel.aktuellerSpieler().orElseThrow();
-            aktuellesSpiel = aktuellesSpiel.spieleKarte(spieler, karte).neuerStand();
+    /**
+     * BUG-DKV-PRESET: Regression-Test — DKV-Turnier-Preset muss nach 12 Stichen (48-Karten-Spiel)
+     * korrekt in die Auswertung uebergehen und ein gueltiges Spielergebnis liefern.
+     * Sichert ab dass dkvRegeln() (ohneNeunen=false) ein vollstaendiges Normalspiel ermoeglicht.
+     */
+    @Test
+    void spielSchliesstAbMitDkvPreset() {
+        Spielregeln dkvRegeln = Spielregeln.dkvRegeln();
+        Spiel spiel = Spiel.neu(SpielerPosition.SUED, dkvRegeln, Kartendeck.neu(dkvRegeln));
+
+        spiel.teileKartenAus();
+        assertEquals(12, spiel.handVon(SpielerPosition.SUED).karten().size(),
+            "DKV spielt mit 48 Karten (ohneNeunen=false): jeder Spieler erhaelt 12 Karten.");
+
+        while (spiel.naechsterVorbehaltSpieler().isPresent()) {
+            spiel.meldeGesund(spiel.naechsterVorbehaltSpieler().orElseThrow());
         }
-        return aktuellesSpiel;
+        spiel.loeseVorbehalteAuf();
+
+        while (spiel.phase() instanceof Spielphase.Stichphase) {
+            SpielerPosition spieler = spiel.aktuellerSpieler().orElseThrow();
+            spiel.spieleKarte(spieler, spiel.gueltigeKartenFuer(spieler).getFirst());
+        }
+
+        assertEquals(12, spiel.abgeschlosseneStiche().size(),
+            "DKV braucht exakt 12 Stiche — bei weniger Stichen ist die Auswertung fehlerhaft (BUG-DKV-PRESET).");
+        assertEquals(Spielphase.AUSWERTUNG, spiel.phase(),
+            "Nach dem 12. Stich muss das Spiel die AUSWERTUNG-Phase erreichen.");
+
+        spiel.werteAus();
+
+        assertEquals(Spielphase.GESAMTSTAND_AKTUALISIEREN, spiel.phase());
+        Spielergebnis ergebnis = spiel.ergebnis().orElseThrow();
+        assertEquals(240, ergebnis.augenVon(Partei.RE).wert() + ergebnis.augenVon(Partei.KONTRA).wert(),
+            "48-Karten-Spiel hat 240 Augen gesamt.");
+        assertEquals(0,
+            ergebnis.spielpunkteVon(SpielerPosition.SUED).wert()
+            + ergebnis.spielpunkteVon(SpielerPosition.WEST).wert()
+            + ergebnis.spielpunkteVon(SpielerPosition.NORD).wert()
+            + ergebnis.spielpunkteVon(SpielerPosition.OST).wert(),
+            "Spielpunkte muessen nullsummig sein.");
+    }
+
+    private Spiel spieleStich(Spiel spiel, Karte ersteKarte, Karte zweiteKarte, Karte dritteKarte, Karte vierteKarte) {
+        for (Karte karte : List.of(ersteKarte, zweiteKarte, dritteKarte, vierteKarte)) {
+            SpielerPosition spieler = spiel.aktuellerSpieler().orElseThrow();
+            spiel.spieleKarte(spieler, karte);
+        }
+        return spiel;
     }
 
     private Kartendeck kartendeckMitVerteiltenHaenden(Map<SpielerPosition, List<Karte>> vorgaben) {
@@ -1126,49 +1164,6 @@ class SpielTest {
 
     private Karte karte(Farbe farbe, Kartenwert wert, int exemplarIndex) {
         return new Karte(farbe, wert, exemplarIndex);
-    }
-
-    /**
-     * BUG-DKV-PRESET: Regression-Test — DKV-Turnier-Preset muss nach 12 Stichen (48-Karten-Spiel)
-     * korrekt in die Auswertung uebergehen und ein gueltiges Spielergebnis liefern.
-     * Sichert ab dass dkvRegeln() (ohneNeunen=false) ein vollstaendiges Normalspiel ermoeglicht.
-     */
-    @Test
-    void spielSchliesstAbMitDkvPreset() {
-        Spielregeln dkvRegeln = Spielregeln.dkvRegeln();
-        Spiel spiel = Spiel.neu(SpielerPosition.SUED, dkvRegeln, Kartendeck.neu(dkvRegeln));
-
-        spiel = spiel.teileKartenAus();
-        assertEquals(12, spiel.handVon(SpielerPosition.SUED).karten().size(),
-            "DKV spielt mit 48 Karten (ohneNeunen=false): jeder Spieler erhaelt 12 Karten.");
-
-        while (spiel.naechsterVorbehaltSpieler().isPresent()) {
-            spiel = spiel.meldeGesund(spiel.naechsterVorbehaltSpieler().orElseThrow());
-        }
-        spiel = spiel.loeseVorbehalteAuf();
-
-        while (spiel.phase() instanceof Spielphase.Stichphase) {
-            SpielerPosition spieler = spiel.aktuellerSpieler().orElseThrow();
-            spiel = spiel.spieleKarte(spieler, spiel.gueltigeKartenFuer(spieler).getFirst()).neuerStand();
-        }
-
-        assertEquals(12, spiel.abgeschlosseneStiche().size(),
-            "DKV braucht exakt 12 Stiche — bei weniger Stichen ist die Auswertung fehlerhaft (BUG-DKV-PRESET).");
-        assertEquals(Spielphase.AUSWERTUNG, spiel.phase(),
-            "Nach dem 12. Stich muss das Spiel die AUSWERTUNG-Phase erreichen.");
-
-        spiel = spiel.werteAus();
-
-        assertEquals(Spielphase.GESAMTSTAND_AKTUALISIEREN, spiel.phase());
-        Spielergebnis ergebnis = spiel.ergebnis().orElseThrow();
-        assertEquals(240, ergebnis.augenVon(Partei.RE).wert() + ergebnis.augenVon(Partei.KONTRA).wert(),
-            "48-Karten-Spiel hat 240 Augen gesamt.");
-        assertEquals(0,
-            ergebnis.spielpunkteVon(SpielerPosition.SUED).wert()
-            + ergebnis.spielpunkteVon(SpielerPosition.WEST).wert()
-            + ergebnis.spielpunkteVon(SpielerPosition.NORD).wert()
-            + ergebnis.spielpunkteVon(SpielerPosition.OST).wert(),
-            "Spielpunkte muessen nullsummig sein.");
     }
 
     private Kartendeck kartendeckAus(List<Karte> karten) {

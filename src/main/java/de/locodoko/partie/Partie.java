@@ -228,16 +228,18 @@ public class Partie extends AbstraktePersistenzEntity {
 
     public Partie schliesseAktuellesSpielAbUndStarteNaechstes() {
         Spiel spiel = aktuellesSpiel();
-        Partie partieNachAuswertung = spiel.phase() instanceof Spielphase.Auswertung
-            ? mitAktuellemSpiel(spiel.werteAus())
-            : this;
-        Partie abgeschlossenePartie = partieNachAuswertung.schliesseAktuellesSpielAb();
+        if (spiel.phase() instanceof Spielphase.Auswertung) {
+            spiel.werteAus();
+        }
+        Partie abgeschlossenePartie = schliesseAktuellesSpielAb();
         if (abgeschlossenePartie.istBeendet()) {
             return abgeschlossenePartie;
         }
         Kartendeck kartendeck = Kartendeck.neu(abgeschlossenePartie.spielregeln()).gemischt();
         Partie partieNaechstesSpiel = abgeschlossenePartie.starteNaechstesSpiel(kartendeck);
-        return partieNaechstesSpiel.mitAktuellemSpiel(partieNaechstesSpiel.aktuellesSpiel().teileKartenAus());
+        partieNaechstesSpiel.aktuellesSpiel().teileKartenAus();
+        partieNaechstesSpiel.aktuellesSpiel().syncZuPersistenz();
+        return partieNaechstesSpiel;
     }
 
     // ── Domain-Getter ───────────────────────────────────────────────────────
