@@ -618,7 +618,7 @@ Konkret: Build-Modus erstellt für DB-2/4b/4c **drei separate Working-Tree-Ände
 ---
 
 ### DOC-65: FRONTEND-UI-LOGIK-DOD SCHLIESSEN (Task 65)
-- [ ] **Dokumentation** (Niedrige Priorität, Aufwand: minimal): Zwei DoD-Häkchen in `specs/frontend-ui-logik.md` schließen.
+- [x] **Dokumentation** (Niedrige Priorität, Aufwand: minimal): Zwei DoD-Häkchen in `specs/frontend-ui-logik.md` schließen.
   - Zeile 123: `- [ ] Seitliche HTML-Panels entfernt` → `[x]`. Beleg: `frontend/index.html` enthält nur `#spiel-root` und `#ui-root`; `grep -rn "seitlich\|sidePanel\|side-panel" frontend/src/` liefert kein Ergebnis.
   - Zeile 124: `- [ ] „Du bist dran"-Hinweis und alle spielblockenden Overlays entfernt` → `[x]`. Beleg: `grep -rn "Du bist dran" frontend/src/` liefert kein Ergebnis.
   - Keine Code-Änderungen, nur Spec-Update.

@@ -120,8 +120,8 @@ Die UI reagiert nicht mehr auf Zustandsänderungen durch Diffing (Vergleich alte
 
 ## Definition of Done
 
-- [ ] Seitliche HTML-Panels entfernt
-- [ ] „Du bist dran"-Hinweis und alle spielblockenden Overlays entfernt
+- [x] Seitliche HTML-Panels entfernt
+- [x] „Du bist dran"-Hinweis und alle spielblockenden Overlays entfernt
 - [x] Floating Action Bar für Ansagen implementiert (auf Spielfläche, nicht blockierend)
 - [x] Vorbehalt-Overlay implementiert (alle Optionen, Tastatur-Support, Karten bleiben sichtbar)
 - [x] Armut-Dialog implementiert (auf Spielfläche)
