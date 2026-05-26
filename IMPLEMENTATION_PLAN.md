@@ -4,34 +4,25 @@
 
 ## Notiz
 
-Build-Run 2026-05-26: **DB-2 (Schema-Konsolidierung, Task 68) abgeschlossen.**
+Build-Run 2026-05-26 (zweite Session): **DB-4b (JSONB-Persistenz, Baseline-Fix) abgeschlossen.**
 
 Implementiert:
-- `src/main/resources/db/changelog/000-initial-schema.sql` neu angelegt — konsolidiertes Schema.
-- 22 alte YAML-Changesets nach `db/changelog/archiv/` verschoben.
-- `db.changelog-master.yaml` zeigt nur noch auf `000-initial-schema.sql`.
-- `tisch`-Tabelle: korrekte Spaltennamen (damensolo_erlaubt, fuchs_gefangen_aktiv, etc.).
-- `spiel`-Tabelle: String-JSON-Spalten passend zu aktuellem `Spiel.java` (kein Schema-Bruch).
-- `spieler.session_id`: UNIQUE-Constraint wiederhergestellt.
-- `Spiel.neuePersistenz()`: haendeJson/sticheJson auf '[]' initialisiert.
+- `laufendes_spiel`-Tabelle mit JSONB-Spalten (ersetzt alten `spiel`-Table aus DB-4a).
+- `JsonbConverter`: 11 Schreib-Converter auf `Converter<T, String>` umgestellt (H2-kompatibel).
+  H2 gibt JSONB als `byte[]` zurück und wraps den JSON in String-Quotes; 3 ReadingConverter-Varianten je Typ.
+- `Spiel.java`: 5 Kollektions-Felder (`haende`, `vorbehalte`, `abgeschlosseneStiche`, `bereitsGeschmissen`, `pflichtAnsageAusstehend`) als `@Transient transient` + separate `@Column String *Json`-Felder.
+- `PartieJsonMapper` (neu) in `partie`-Package: JSON-Serialisierung für die 5 Kollektions-Felder.
+- `SpielNachLadenCallback` + `PartieNachLadenCallback`: `AfterConvertCallback` initialisiert transiente Felder nach DB-Load (Spring Data JDBC ruft Callbacks nur für Aggregate-Root auf, nicht für Kind-Entities in MappedCollection).
 - 319 Tests, 0 Fehler.
 
-**Abweichung vom ursprünglichen MEGA-COMMIT-Plan:** DB-2 wurde als eigenständiger Commit
-umgesetzt (statt zusammen mit DB-4b+4c). Der Grund: Die Baseline war durch
-unvollständige Vorarbeit gebrochen; ein korrektes, funktionierendes Schema zuerst
-wiederherzustellen war pragmatisch sinnvoller. Die `spiel`-Tabelle verwendet deshalb
-noch String-JSON-Spalten (kompatibel mit aktuellem Spiel.java). DB-4b+4c werden als
-eigenständige Commits folgen.
+**Erkenntnisse DB-4b (Basis für DB-4c):**
+- Spring Data JDBC behandelt `Map<K,V>` und `List<T>` als Kind-Entity-Collection (`@MappedCollection`), selbst mit registriertem WritingConverter. `@Column` auf solchen Feldern = KEY-Spaltenname, nicht Skalar.
+- Java `transient` allein reicht nicht — Spring Data JDBC erkennt Felder auch über öffentliche Getter-Methoden. `@org.springframework.data.annotation.Transient` auf Felder UND Getter nötig.
+- H2 (PostgreSQL-Modus): JSONB-Spalten werden als `byte[]` zurückgegeben; `setString()` wraps den JSON-String in JSON-String-Quotes (`"{"x":1}"` statt `{"x":1}`). Fix: `entpackeH2Json()` Helper.
+- `AfterConvertCallback<Spiel>` feuert **nicht** für Spiel-Objekte in `Partie.spieleMap` (`@MappedCollection`). Lösung: `PartieNachLadenCallback<Partie>` iteriert explizit über alle Spiel-Objekte.
 
-**Nächster Schritt:** DB-4b + DB-4c als eigenständige Commits:
-- DB-4b (Task 70b): @Transient-Felder weg, JSONB-Persistenz direkt in Spiel.java,
-  `spiel`-Tabelle auf JSONB-Spalten umstellen.
+**Nächster Schritt:** DB-4c als eigenständiger Commit:
 - DB-4c (Task 70c): SpielHydrierer + SpielPersistenzSync + SpielBuilder löschen.
-
-**Entdeckung (DB-4a):** Bei jeder Mutation von `Spiel`-Domain-State in Produktionscode muss
-`syncZuPersistenz()` danach aufgerufen werden, sonst bleiben JSON-Blob-Felder veraltet.
-Betrifft alle Stellen, wo `teileKartenAus()` in Services aufgerufen wird.
-Wird in DB-4c obsolet (wenn syncZuPersistenz() gelöscht wird).
 
 ## Legende
 
@@ -322,19 +313,13 @@ Konkret: Build-Modus erstellt für DB-2/4b/4c **drei separate Working-Tree-Ände
     - `grep -rn "SpielAktion\b" src/main/java/` → 0 (Klasse darf gelöscht sein).
     - Alle Tests grün, davon 28+ weiterhin pure JUnit.
 
-#### DB-4b: @TRANSIENT-FELDER WEG, JSONB-PERSISTENZ (Task 70b)
-- [ ] **Backend** (Hoch, mittlerer Aufwand): Alle `@Transient`-Felder werden normale persistierte Felder (mit `@Column` auf JSONB oder regulärer Spalte).
-  - **Erste Datei zuerst**: `Spiel.java` — `phase`-Feld umstellen: `@Transient Spielphase phase` → `@Column("phase") private String phase` (mit String-Konvertierung) oder besser direkt `@Column("phase") private Spielphase phase` (mit Enum-Converter).
-  - **Schritte**:
-    1. Pro `@Transient`-Feld in `Spiel.java`: Annotation entfernen, `@Column(...)` setzen, ggf. Converter referenzieren.
-    2. Felder die JSONB werden: `Map<SpielerPosition, Hand> haende`, `Stich aktuellerStich` (aus Phase extrahiert), `List<Stich> abgeschlosseneStiche`, `List<VorbehaltMeldung> vorbehalte`, `Ansagen ansagen`, `Parteien parteien`, `Set<SpielerPosition> bereitsGeschmissen`, `Set<Partei> pflichtAnsageAusstehend`, `ArmutStatus armutStatus`, `HochzeitStatus hochzeitStatus`.
-    3. Felder die reguläre Spalte werden: `geber` (enum), `spieltyp` (enum), `phase` (enum, ohne phase-spezifische Daten — die sind in JSONB), `trumpfOrdnungTyp` (enum), `schweinchenAktiv` (bool), `einwurfZaehler` (int), `solistAufspieler` (enum nullable).
-    4. **Spielphase-Struktur klären**: Heute trägt `Spielphase` als sealed interface die Daten (`Stichphase(aktuellerStich, pflichtansageAusstehend, hochzeitStatus)`). Mit JSONB: die Phase als reines Enum, und die phase-spezifischen Daten als separate JSONB-Felder im Spiel. **Migration**: sealed interface bleibt, aber wird durch Convenience-Methoden auf Spiel ersetzt, die aus den separaten Feldern den Phase-Record zusammenbauen. (Beispiel: `spiel.stichphaseDaten()` → `new Stichphase(this.aktuellerStich, this.pflichtAnsageAusstehend, this.hochzeitStatus)`.) **Alternative**: Phase als JSONB persistieren — dann braucht es einen Converter. Build-Modus wählt das einfachere Modell.
-  - **Akzeptanz**:
-    - `grep -c "@Transient" src/main/java/de/locodoko/partie/Spiel.java` → 0.
-    - `grep -c "@Transient" src/main/java/de/locodoko/partie/Partie.java` → 0.
-    - Spring-Boot-Start mit leerer DB → save+load eines Spiels funktioniert.
-    - Alle Tests grün.
+#### DB-4b: @TRANSIENT-FELDER WEG, JSONB-PERSISTENZ (Task 70b) — ERLEDIGT
+- [x] **Backend** (Hoch, mittlerer Aufwand): Kollektions-Felder in `Spiel.java` als `@Transient transient` + separate `@Column String *Json`-Felder persistiert.
+  - `haende`, `vorbehalte`, `abgeschlosseneStiche`, `bereitsGeschmissen`, `pflichtAnsageAusstehend` umgestellt.
+  - `PartieJsonMapper.java` (neu): JSON-Serialisierung für diese 5 Felder.
+  - `SpielNachLadenCallback` + `PartieNachLadenCallback`: AfterConvertCallback für Initialisierung.
+  - H2-Kompatibilität: `byte[]` + String + PGobject ReadingConverter.
+  - Alle 319 Tests grün.
 
 #### DB-4c: HYDRIERER UND SYNC LÖSCHEN (Task 70c)
 - [ ] **Backend** (Mittel, kleiner Aufwand): Mapper-Klassen löschen, weil sie nichts mehr zu mappen haben.

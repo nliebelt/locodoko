@@ -10,7 +10,7 @@ import java.util.List;
 /**
  * Spring-Konfiguration fuer die JSONB-Custom-Converter.
  *
- * <p>Registriert alle elf Converter-Paare aus {@link JsonbConverter} als
+ * <p>Registriert alle JSONB-Converter-Paare aus {@link JsonbConverter} als
  * {@link JdbcCustomConversions}-Bean, damit Spring Data JDBC sie automatisch
  * fuer passende Spaltentypen (PGobject ↔ Domain-VO) verwendet.</p>
  *
@@ -34,28 +34,68 @@ class JsonbConverterKonfiguration {
     JdbcCustomConversions jdbcCustomConversions() {
         ObjectMapper mapper = JsonbConverter.konfiguriereObjectMapper(new ObjectMapper());
         return new JdbcCustomConversions(List.of(
+                // H2: byte[] → String fuer @Column-String-Felder (haendeJson, etc.)
+                new JsonbConverter.JsonbBytesZuStringConverter(mapper),
+                // haende
                 new JsonbConverter.HaendeSchreibConverter(mapper),
                 new JsonbConverter.HaendeLeseConverter(mapper),
+                new JsonbConverter.HaendeStringLeseConverter(mapper),
+                new JsonbConverter.HaendeBytesLeseConverter(mapper),
+                // aktueller_stich
                 new JsonbConverter.StichSchreibConverter(mapper),
                 new JsonbConverter.StichLeseConverter(mapper),
+                new JsonbConverter.StichStringLeseConverter(mapper),
+                new JsonbConverter.StichBytesLeseConverter(mapper),
+                // abgeschlossene_stiche
                 new JsonbConverter.StichListeSchreibConverter(mapper),
                 new JsonbConverter.StichListeLeseConverter(mapper),
+                new JsonbConverter.StichListeStringLeseConverter(mapper),
+                new JsonbConverter.StichListeBytesLeseConverter(mapper),
+                // vorbehalt_meldungen
                 new JsonbConverter.VorbehaltMeldungListeSchreibConverter(mapper),
                 new JsonbConverter.VorbehaltMeldungListeLeseConverter(mapper),
+                new JsonbConverter.VorbehaltMeldungListeStringLeseConverter(mapper),
+                new JsonbConverter.VorbehaltMeldungListeBytesLeseConverter(mapper),
+                // ansage_ereignisse
                 new JsonbConverter.AnsagenSchreibConverter(mapper),
                 new JsonbConverter.AnsagenLeseConverter(mapper),
+                new JsonbConverter.AnsagenStringLeseConverter(mapper),
+                new JsonbConverter.AnsagenBytesLeseConverter(mapper),
+                // partei_zuordnungen
                 new JsonbConverter.ParteienSchreibConverter(mapper),
                 new JsonbConverter.ParteienLeseConverter(mapper),
+                new JsonbConverter.ParteienStringLeseConverter(mapper),
+                new JsonbConverter.ParteienBytesLeseConverter(mapper),
+                // bereits_geschmissen
                 new JsonbConverter.SpielerPositionSetSchreibConverter(mapper),
                 new JsonbConverter.SpielerPositionSetLeseConverter(mapper),
+                new JsonbConverter.SpielerPositionSetStringLeseConverter(mapper),
+                new JsonbConverter.SpielerPositionSetBytesLeseConverter(mapper),
+                // pflicht_ansage_ausstehend
                 new JsonbConverter.ParteiSetSchreibConverter(mapper),
                 new JsonbConverter.ParteiSetLeseConverter(mapper),
+                new JsonbConverter.ParteiSetStringLeseConverter(mapper),
+                new JsonbConverter.ParteiSetBytesLeseConverter(mapper),
+                // armut_status
                 new JsonbConverter.ArmutStatusSchreibConverter(mapper),
                 new JsonbConverter.ArmutStatusLeseConverter(mapper),
+                new JsonbConverter.ArmutStatusStringLeseConverter(mapper),
+                new JsonbConverter.ArmutStatusBytesLeseConverter(mapper),
+                // hochzeit_status
                 new JsonbConverter.HochzeitStatusSchreibConverter(mapper),
                 new JsonbConverter.HochzeitStatusLeseConverter(mapper),
+                new JsonbConverter.HochzeitStatusStringLeseConverter(mapper),
+                new JsonbConverter.HochzeitStatusBytesLeseConverter(mapper),
+                // spielregeln
                 new JsonbConverter.SpielregelnSchreibConverter(mapper),
-                new JsonbConverter.SpielregelnLeseConverter(mapper)
+                new JsonbConverter.SpielregelnLeseConverter(mapper),
+                new JsonbConverter.SpielregelnStringLeseConverter(mapper),
+                new JsonbConverter.SpielregelnBytesLeseConverter(mapper),
+                // ergebnis
+                new JsonbConverter.SpielergebnisSchreibConverter(mapper),
+                new JsonbConverter.SpielergebnisLeseConverter(mapper),
+                new JsonbConverter.SpielergebnisStringLeseConverter(mapper),
+                new JsonbConverter.SpielergebnisBytesLeseConverter(mapper)
         ));
     }
 }

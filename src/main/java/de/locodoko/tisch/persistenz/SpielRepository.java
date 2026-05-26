@@ -20,7 +20,7 @@ import java.util.UUID;
 public interface SpielRepository extends CrudRepository<Spiel, UUID> {
 
     /** Liefert alle Spiele einer Partie, sortiert nach Spielnummer. */
-    @Query("SELECT * FROM spiel WHERE partie_id = :partieId ORDER BY spiel_nummer ASC")
+    @Query("SELECT * FROM laufendes_spiel WHERE partie_id = :partieId ORDER BY spiel_nummer ASC")
     List<Spiel> findAllByPartie_IdOrderBySpielNummerAsc(UUID partieId);
 
     /** Liefert alle Spiele einer Partie (typisierte ID), sortiert nach Spielnummer. */

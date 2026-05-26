@@ -92,7 +92,7 @@ class PersistenzRepositoryTest {
         )));
 
         spiel.fuegeStichHinzu(new StichJsonEintrag(
-            1, SpielerPosition.WEST, SpielerPosition.SUED, 32,
+            1, SpielerPosition.WEST, SpielerPosition.SUED, 28,
             List.of(
                 new AktuellerStichKarteEmbeddable(SpielerPosition.WEST, Farbe.KREUZ, Kartenwert.AS, 1, 0),
                 new AktuellerStichKarteEmbeddable(SpielerPosition.NORD, Farbe.KREUZ, Kartenwert.ZEHN, 1, 1),
@@ -138,7 +138,7 @@ class PersistenzRepositoryTest {
         assertEquals(Kartenwert.ZEHN, geladeneHand.karten().get(1).wert());
 
         StichJsonEintrag geladenerStich = geladenesSpiel.sticheAlsJson().getFirst();
-        assertEquals(32, geladenerStich.augen());
+        assertEquals(28, geladenerStich.augen());
         assertEquals(4, geladenerStich.gespielteKarten().size());
         assertEquals(Kartenwert.DAME, geladenerStich.gespielteKarten().getLast().wert());
 

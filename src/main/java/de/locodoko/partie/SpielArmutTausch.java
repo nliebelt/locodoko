@@ -30,7 +30,7 @@ class SpielArmutTausch {
         Map<SpielerPosition, Hand> neueHaende = kopiereHaende(haende);
         neueHaende.put(spielerPosition, armutHand.ohneAlle(angeboteneTrumpfkarten));
         spiel.haende = neueHaende;
-        spiel.phase = new Spielphase.ArmutTausch(status.mitAngebot(angeboteneTrumpfkarten));
+        spiel.setzePhase(new Spielphase.ArmutTausch(status.mitAngebot(angeboteneTrumpfkarten)));
     }
 
     static void lehneArmutAb(Spiel spiel, SpielerPosition spielerPosition,
@@ -43,7 +43,7 @@ class SpielArmutTausch {
             SpielVorbehaltAufloesung.eingeworfenesSpiel(spiel, kartendeck, spielregeln, geber, einwurfZaehler);
             return;
         }
-        spiel.phase = new Spielphase.ArmutTausch(neuerStatus);
+        spiel.setzePhase(new Spielphase.ArmutTausch(neuerStatus));
     }
 
     static void nimmArmutAn(Spiel spiel, SpielerPosition spielerPosition,
@@ -70,8 +70,8 @@ class SpielArmutTausch {
         Parteien neueParteien = aktuelleParteien.mitPartei(spielerPosition, Partei.RE)
             .mitOffenenParteienFuerAlle(SpielerPosition.standardReihenfolge());
         SpielerPosition ersterAufspieler = solistAufspieler != null ? solistAufspieler : geber.naechsteImUhrzeigersinn();
-        spiel.trumpfOrdnung = new NormaleTrumpfOrdnung(spielregeln);
-        spiel.phase = new Spielphase.Stichphase(Stich.neu(ersterAufspieler), java.util.Set.of(), null);
+        spiel.setzeTrumpfOrdnung(new NormaleTrumpfOrdnung(spielregeln));
+        spiel.setzePhase(new Spielphase.Stichphase(Stich.neu(ersterAufspieler), java.util.Set.of(), null));
         spiel.haende = neueHaende;
         spiel.parteien = neueParteien;
         spiel.ansagen = Ansagen.leer();

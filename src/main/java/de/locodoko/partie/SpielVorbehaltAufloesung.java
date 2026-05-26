@@ -36,9 +36,9 @@ class SpielVorbehaltAufloesung {
             SpielerPosition stillesSoloSpieler = erkenneStillesSoloSpieler(haende);
             if (stillesSoloSpieler != null) {
                 boolean schweinchen = hatSchweinchen(spielregeln, haende);
-                spiel.trumpfOrdnung = schweinchen ? new SchweinchenTrumpfOrdnung(spielregeln) : new NormaleTrumpfOrdnung(spielregeln);
                 spiel.spieltyp = Spieltyp.SOLO_TRUMPF;
-                spiel.phase = new Spielphase.Stichphase(Stich.neu(ersterAufspieler), java.util.Set.of(), null);
+                spiel.setzeTrumpfOrdnung(schweinchen ? new SchweinchenTrumpfOrdnung(spielregeln) : new NormaleTrumpfOrdnung(spielregeln));
+                spiel.setzePhase(new Spielphase.Stichphase(Stich.neu(ersterAufspieler), java.util.Set.of(), null));
                 spiel.parteien = Parteien.ausSolo(stillesSoloSpieler);
                 spiel.ansagen = Ansagen.leer();
                 spiel.abgeschlosseneStiche = List.of();
@@ -55,9 +55,9 @@ class SpielVorbehaltAufloesung {
         Spielphase naechstePhase = neuerArmutStatus != null
             ? new Spielphase.ArmutTausch(neuerArmutStatus)
             : new Spielphase.Stichphase(Stich.neu(ersterAufspieler), java.util.Set.of(), neuerHochzeitStatus);
-        spiel.trumpfOrdnung = trumpfOrdnungFuer(hoechsterVorbehalt, aktuelleOrdnung, spielregeln, haende);
         spiel.spieltyp = spieltypFuer(hoechsterVorbehalt);
-        spiel.phase = naechstePhase;
+        spiel.setzeTrumpfOrdnung(trumpfOrdnungFuer(hoechsterVorbehalt, aktuelleOrdnung, spielregeln, haende));
+        spiel.setzePhase(naechstePhase);
         spiel.parteien = neueParteien;
         spiel.ansagen = Ansagen.leer();
         spiel.abgeschlosseneStiche = List.of();
@@ -69,9 +69,9 @@ class SpielVorbehaltAufloesung {
             Spielregeln spielregeln, SpielerPosition geber, int einwurfZaehler) {
         Kartendeck nd = aktuellesKartendeck.gemischt();
         spiel.kartendeck = nd;
-        spiel.trumpfOrdnung = new NormaleTrumpfOrdnung(spielregeln);
         spiel.spieltyp = Spieltyp.NORMALSPIEL;
-        spiel.phase = Spielphase.VORBEHALT_ANSAGE;
+        spiel.setzeTrumpfOrdnung(new NormaleTrumpfOrdnung(spielregeln));
+        spiel.setzePhase(Spielphase.VORBEHALT_ANSAGE);
         spiel.haende = haendeAusDeck(nd);
         spiel.vorbehalte = List.of();
         spiel.parteien = null;

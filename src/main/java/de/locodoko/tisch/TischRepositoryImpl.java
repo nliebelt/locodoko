@@ -190,11 +190,7 @@ class TischRepositoryImpl implements TischRepository {
 
         // Partie laden
         if (tisch.partieId() != null) {
-            partieRepository.findById(PartieId.von(tisch.partieId())).ifPresent(partie -> {
-                // Spiel-Partie-Rueckreferenz setzen
-                partie.spiele().forEach(spiel -> spiel.setzePartieRef(partie));
-                tisch.setzePartieTransient(partie);
-            });
+            partieRepository.findById(PartieId.von(tisch.partieId())).ifPresent(tisch::setzePartieTransient);
         }
 
         return tisch;

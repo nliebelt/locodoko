@@ -20,8 +20,6 @@ import de.locodoko.partie.VorbehaltAnsage;
 import de.locodoko.partie.VorbehaltMeldung;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.postgresql.util.PGobject;
-
 import java.util.EnumMap;
 import java.util.EnumSet;
 import java.util.List;
@@ -33,7 +31,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 /**
  * Roundtrip-Tests fuer alle JSONB-Converter-Paare.
  *
- * <p>Jeder Test prueft: Domain-VO → PGobject (via SchreibConverter) → Domain-VO (via LeseConverter)
+ * <p>Jeder Test prueft: Domain-VO → String/JSON (via SchreibConverter) → Domain-VO (via StringLeseConverter)
  * und stellt sicher, dass die rekonstruierte Instanz inhaltlich identisch mit der urspruenglichen ist.
  * Kein Spring-Kontext noetig — reine Jackson-Serialisierungslogik.</p>
  */
@@ -68,16 +66,14 @@ class JsonbConverterTest {
     void hand_wirdAlsJsonbRoundtrip_korrektRekonstruiert() {
         Hand hand = new Hand(List.of(kreuzDame1(), herz10()));
         var schreibConverter = new JsonbConverter.HaendeSchreibConverter(mapper);
-        var leseConverter = new JsonbConverter.HaendeLeseConverter(mapper);
 
         Map<SpielerPosition, Hand> haende = new EnumMap<>(SpielerPosition.class);
         haende.put(SpielerPosition.NORD, hand);
         haende.put(SpielerPosition.SUED, new Hand(List.of(new Karte(Farbe.PIK, Kartenwert.AS, 1))));
 
-        PGobject pgObject = schreibConverter.convert(haende);
-        Map<SpielerPosition, Hand> rekonstruiert = leseConverter.convert(pgObject);
+        String jsonString = schreibConverter.convert(haende);
+        Map<SpielerPosition, Hand> rekonstruiert = new JsonbConverter.HaendeStringLeseConverter(mapper).convert(jsonString);
 
-        assertThat(pgObject.getType()).isEqualTo("jsonb");
         assertThat(rekonstruiert.get(SpielerPosition.NORD).karten()).isEqualTo(hand.karten());
         assertThat(rekonstruiert.get(SpielerPosition.SUED).karten()).hasSize(1);
     }
@@ -95,10 +91,9 @@ class JsonbConverterTest {
         GespielteKarte gespielteKarte = new GespielteKarte(SpielerPosition.NORD, kreuzDame1(), 0);
         Stich stich = Stich.ausPersistiertemStand(SpielerPosition.NORD, List.of(gespielteKarte));
         var schreibConverter = new JsonbConverter.StichSchreibConverter(mapper);
-        var leseConverter = new JsonbConverter.StichLeseConverter(mapper);
 
-        PGobject pgObject = schreibConverter.convert(stich);
-        Stich rekonstruiert = leseConverter.convert(pgObject);
+        String jsonString = schreibConverter.convert(stich);
+        Stich rekonstruiert = new JsonbConverter.StichStringLeseConverter(mapper).convert(jsonString);
 
         assertThat(rekonstruiert.aufspieler()).isEqualTo(SpielerPosition.NORD);
         assertThat(rekonstruiert.gespielteKarten()).hasSize(1);
@@ -119,10 +114,9 @@ class JsonbConverterTest {
                 new GespielteKarte(SpielerPosition.NORD, kreuzDame1(), 0)));
         Stich stich2 = Stich.ausPersistiertemStand(SpielerPosition.WEST, List.of());
         var schreibConverter = new JsonbConverter.StichListeSchreibConverter(mapper);
-        var leseConverter = new JsonbConverter.StichListeLeseConverter(mapper);
 
-        PGobject pgObject = schreibConverter.convert(List.of(stich1, stich2));
-        List<Stich> rekonstruiert = leseConverter.convert(pgObject);
+        String jsonString = schreibConverter.convert(List.of(stich1, stich2));
+        List<Stich> rekonstruiert = new JsonbConverter.StichListeStringLeseConverter(mapper).convert(jsonString);
 
         assertThat(rekonstruiert).hasSize(2);
         assertThat(rekonstruiert.get(0).aufspieler()).isEqualTo(SpielerPosition.NORD);
@@ -141,10 +135,9 @@ class JsonbConverterTest {
         VorbehaltMeldung meldung1 = new VorbehaltMeldung(SpielerPosition.NORD, VorbehaltAnsage.GESUND);
         VorbehaltMeldung meldung2 = new VorbehaltMeldung(SpielerPosition.OST, VorbehaltAnsage.HOCHZEIT);
         var schreibConverter = new JsonbConverter.VorbehaltMeldungListeSchreibConverter(mapper);
-        var leseConverter = new JsonbConverter.VorbehaltMeldungListeLeseConverter(mapper);
 
-        PGobject pgObject = schreibConverter.convert(List.of(meldung1, meldung2));
-        List<VorbehaltMeldung> rekonstruiert = leseConverter.convert(pgObject);
+        String jsonString = schreibConverter.convert(List.of(meldung1, meldung2));
+        List<VorbehaltMeldung> rekonstruiert = new JsonbConverter.VorbehaltMeldungListeStringLeseConverter(mapper).convert(jsonString);
 
         assertThat(rekonstruiert).hasSize(2);
         assertThat(rekonstruiert.get(0)).isEqualTo(meldung1);
@@ -164,10 +157,9 @@ class JsonbConverterTest {
         AnsageEreignis ereignis2 = new AnsageEreignis(SpielerPosition.OST, Ansage.KONTRA);
         Ansagen ansagen = Ansagen.ausEreignissen(List.of(ereignis1, ereignis2));
         var schreibConverter = new JsonbConverter.AnsagenSchreibConverter(mapper);
-        var leseConverter = new JsonbConverter.AnsagenLeseConverter(mapper);
 
-        PGobject pgObject = schreibConverter.convert(ansagen);
-        Ansagen rekonstruiert = leseConverter.convert(pgObject);
+        String jsonString = schreibConverter.convert(ansagen);
+        Ansagen rekonstruiert = new JsonbConverter.AnsagenStringLeseConverter(mapper).convert(jsonString);
 
         assertThat(rekonstruiert.ereignisse()).hasSize(2);
         assertThat(rekonstruiert.ereignisse().get(0).spieler()).isEqualTo(SpielerPosition.NORD);
@@ -192,10 +184,9 @@ class JsonbConverterTest {
         parteienMap.put(SpielerPosition.WEST, Partei.KONTRA);
         Parteien parteien = Parteien.ausPersistiertemStand(parteienMap, Set.of(SpielerPosition.NORD));
         var schreibConverter = new JsonbConverter.ParteienSchreibConverter(mapper);
-        var leseConverter = new JsonbConverter.ParteienLeseConverter(mapper);
 
-        PGobject pgObject = schreibConverter.convert(parteien);
-        Parteien rekonstruiert = leseConverter.convert(pgObject);
+        String jsonString = schreibConverter.convert(parteien);
+        Parteien rekonstruiert = new JsonbConverter.ParteienStringLeseConverter(mapper).convert(jsonString);
 
         assertThat(rekonstruiert.parteiVon(SpielerPosition.NORD)).isEqualTo(Partei.RE);
         assertThat(rekonstruiert.parteiVon(SpielerPosition.SUED)).isEqualTo(Partei.KONTRA);
@@ -213,10 +204,9 @@ class JsonbConverterTest {
     void spielerPositionSet_wirdAlsJsonbRoundtrip_korrektRekonstruiert() {
         Set<SpielerPosition> positionen = EnumSet.of(SpielerPosition.NORD, SpielerPosition.OST);
         var schreibConverter = new JsonbConverter.SpielerPositionSetSchreibConverter(mapper);
-        var leseConverter = new JsonbConverter.SpielerPositionSetLeseConverter(mapper);
 
-        PGobject pgObject = schreibConverter.convert(positionen);
-        Set<SpielerPosition> rekonstruiert = leseConverter.convert(pgObject);
+        String jsonString = schreibConverter.convert(positionen);
+        Set<SpielerPosition> rekonstruiert = new JsonbConverter.SpielerPositionSetStringLeseConverter(mapper).convert(jsonString);
 
         assertThat(rekonstruiert).containsExactlyInAnyOrder(SpielerPosition.NORD, SpielerPosition.OST);
     }
@@ -233,10 +223,9 @@ class JsonbConverterTest {
     void parteiSet_wirdAlsJsonbRoundtrip_korrektRekonstruiert() {
         Set<Partei> parteien = EnumSet.of(Partei.RE);
         var schreibConverter = new JsonbConverter.ParteiSetSchreibConverter(mapper);
-        var leseConverter = new JsonbConverter.ParteiSetLeseConverter(mapper);
 
-        PGobject pgObject = schreibConverter.convert(parteien);
-        Set<Partei> rekonstruiert = leseConverter.convert(pgObject);
+        String jsonString = schreibConverter.convert(parteien);
+        Set<Partei> rekonstruiert = new JsonbConverter.ParteiSetStringLeseConverter(mapper).convert(jsonString);
 
         assertThat(rekonstruiert).containsExactly(Partei.RE);
     }
@@ -253,10 +242,9 @@ class JsonbConverterTest {
     void armutStatus_ohnePartner_wirdAlsJsonbRoundtrip_korrektRekonstruiert() {
         ArmutStatus status = ArmutStatus.gestartet(SpielerPosition.NORD);
         var schreibConverter = new JsonbConverter.ArmutStatusSchreibConverter(mapper);
-        var leseConverter = new JsonbConverter.ArmutStatusLeseConverter(mapper);
 
-        PGobject pgObject = schreibConverter.convert(status);
-        ArmutStatus rekonstruiert = leseConverter.convert(pgObject);
+        String jsonString = schreibConverter.convert(status);
+        ArmutStatus rekonstruiert = new JsonbConverter.ArmutStatusStringLeseConverter(mapper).convert(jsonString);
 
         assertThat(rekonstruiert.armutSpieler()).isEqualTo(SpielerPosition.NORD);
         assertThat(rekonstruiert.partnerSpieler()).isNull();
@@ -275,10 +263,9 @@ class JsonbConverterTest {
     void hochzeitStatus_wirdAlsJsonbRoundtrip_korrektRekonstruiert() {
         HochzeitStatus status = HochzeitStatus.gestartet(SpielerPosition.WEST);
         var schreibConverter = new JsonbConverter.HochzeitStatusSchreibConverter(mapper);
-        var leseConverter = new JsonbConverter.HochzeitStatusLeseConverter(mapper);
 
-        PGobject pgObject = schreibConverter.convert(status);
-        HochzeitStatus rekonstruiert = leseConverter.convert(pgObject);
+        String jsonString = schreibConverter.convert(status);
+        HochzeitStatus rekonstruiert = new JsonbConverter.HochzeitStatusStringLeseConverter(mapper).convert(jsonString);
 
         assertThat(rekonstruiert.hochzeitSpieler()).isEqualTo(SpielerPosition.WEST);
         assertThat(rekonstruiert.geklaerteStiche()).isEqualTo(0);
@@ -298,10 +285,9 @@ class JsonbConverterTest {
     void spielregeln_wirdAlsJsonbRoundtrip_korrektRekonstruiert() {
         Spielregeln spielregeln = Spielregeln.locoBlatRegeln();
         var schreibConverter = new JsonbConverter.SpielregelnSchreibConverter(mapper);
-        var leseConverter = new JsonbConverter.SpielregelnLeseConverter(mapper);
 
-        PGobject pgObject = schreibConverter.convert(spielregeln);
-        Spielregeln rekonstruiert = leseConverter.convert(pgObject);
+        String jsonString = schreibConverter.convert(spielregeln);
+        Spielregeln rekonstruiert = new JsonbConverter.SpielregelnStringLeseConverter(mapper).convert(jsonString);
 
         assertThat(rekonstruiert).isEqualTo(spielregeln);
         assertThat(rekonstruiert.ohneNeunen()).isTrue();
@@ -309,21 +295,25 @@ class JsonbConverterTest {
         assertThat(rekonstruiert.schweinchenAktiv()).isTrue();
     }
 
-    // ---- Test 12: PGobject-Typ ----
+    // ---- Test 12: Schreib-Converter-Output ----
 
     /**
-     * Warum wichtig: Alle Schreib-Converter muessen als PGobject-Typ "jsonb" setzen,
-     * nicht "text". PostgreSQL unterscheidet diese Typen — ein falscher Typ wuerde
-     * beim Speichern in eine JSONB-Spalte zu einem Typ-Fehler fuehren.
+     * Warum wichtig: Alle Schreib-Converter muessen gueltigen JSON-String zurueckgeben,
+     * damit PostgreSQL (JSONB-Spalte) und H2 (JSON-Spalte) den Wert korrekt speichern koennen.
      */
     @Test
-    void alleSchreibConverter_setzenPGobjectTypAufJsonb() {
+    void alleSchreibConverter_gebenGueltigenJsonString_zurueck() {
         ObjectMapper m = mapper;
-        assertThat(new JsonbConverter.StichSchreibConverter(m)
-                .convert(Stich.neu(SpielerPosition.NORD)).getType()).isEqualTo("jsonb");
-        assertThat(new JsonbConverter.AnsagenSchreibConverter(m)
-                .convert(Ansagen.leer()).getType()).isEqualTo("jsonb");
-        assertThat(new JsonbConverter.SpielregelnSchreibConverter(m)
-                .convert(Spielregeln.standardRegeln()).getType()).isEqualTo("jsonb");
+        String stichJson = new JsonbConverter.StichSchreibConverter(m)
+                .convert(Stich.neu(SpielerPosition.NORD));
+        assertThat(stichJson).startsWith("{").endsWith("}");
+
+        String ansagenJson = new JsonbConverter.AnsagenSchreibConverter(m)
+                .convert(Ansagen.leer());
+        assertThat(ansagenJson).contains("ereignisse");
+
+        String spielregelnJson = new JsonbConverter.SpielregelnSchreibConverter(m)
+                .convert(Spielregeln.standardRegeln());
+        assertThat(spielregelnJson).startsWith("{").endsWith("}");
     }
 }

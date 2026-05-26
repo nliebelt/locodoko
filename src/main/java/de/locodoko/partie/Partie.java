@@ -294,7 +294,6 @@ public class Partie extends AbstraktePersistenzEntity {
     public void fuegeSpielHinzu(Spiel spiel) {
         Objects.requireNonNull(spiel, "spiel darf nicht null sein");
         spieleMap.put(spiel.spielNummer(), spiel);
-        spiel.setzePartieRef(this);
         aktuellesSpielNummer = Math.max(aktuellesSpielNummer, spiel.spielNummer());
     }
 
@@ -302,7 +301,6 @@ public class Partie extends AbstraktePersistenzEntity {
     public void ersetzeSpiel(Spiel spiel) {
         Objects.requireNonNull(spiel, "spiel darf nicht null sein");
         spieleMap.put(spiel.spielNummer(), spiel);
-        spiel.setzePartieRef(this);
     }
 
     public void setzeGesamtpunktestand(SpielerPosition spielerPosition, int spielpunkte) {
@@ -335,14 +333,11 @@ public class Partie extends AbstraktePersistenzEntity {
         return statusAusDb();
     }
 
-    /** Gibt die Spiele aus der spieleMap sortiert zurueck, setzt spielNummer und partieRef. */
+    /** Gibt die Spiele aus der spieleMap sortiert zurueck und setzt die Spielnummer. */
     public List<Spiel> spiele() {
         return spieleMap.entrySet().stream()
             .sorted(Map.Entry.comparingByKey())
-            .peek(eintrag -> {
-                eintrag.getValue().setzeSpielNummer(eintrag.getKey());
-                eintrag.getValue().setzePartieRef(this);
-            })
+            .peek(eintrag -> eintrag.getValue().setzeSpielNummer(eintrag.getKey()))
             .map(Map.Entry::getValue)
             .toList();
     }
@@ -401,7 +396,6 @@ public class Partie extends AbstraktePersistenzEntity {
             .sorted(Map.Entry.comparingByKey())
             .peek(e -> {
                 e.getValue().setzeSpielNummer(e.getKey());
-                e.getValue().setzePartieRef(this);
                 e.getValue().hydriere(spielregeln, null);
             })
             .map(Map.Entry::getValue)
