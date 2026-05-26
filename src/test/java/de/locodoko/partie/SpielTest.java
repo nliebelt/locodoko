@@ -6,6 +6,8 @@ import de.locodoko.karten.Kartendeck;
 import de.locodoko.karten.Kartenwert;
 import de.locodoko.karten.Spielregeln;
 import de.locodoko.karten.Spieltyp;
+import de.locodoko.karten.UngueltigerSpielzugException;
+import de.locodoko.partie.SpielzugKonfliktException;
 import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
@@ -388,7 +390,7 @@ class SpielTest {
             )));
         spielMitNurEinerKreuzDame.teileKartenAus();
 
-        assertThrows(IllegalStateException.class,
+        assertThrows(UngueltigerSpielzugException.class,
             () -> spielMitNurEinerKreuzDame.meldeVorbehalt(SpielerPosition.WEST, VorbehaltAnsage.HOCHZEIT),
             "Nur beide Kreuz-Damen rechtfertigen die Hochzeit; sonst wuerde ein normales Re/Kontra-Spiel faelschlich umetikettiert.");
 
@@ -401,7 +403,7 @@ class SpielTest {
             )));
         deaktiviertesSpiel.teileKartenAus();
 
-        assertThrows(IllegalStateException.class,
+        assertThrows(UngueltigerSpielzugException.class,
             () -> deaktiviertesSpiel.meldeVorbehalt(SpielerPosition.WEST, VorbehaltAnsage.HOCHZEIT),
             "Die Tischkonfiguration muss Hochzeit serverseitig sperren koennen, damit Frontend und Backend dieselbe Regelbasis teilen.");
     }
@@ -497,7 +499,7 @@ class SpielTest {
             )));
         spielMitVierTruepfen.teileKartenAus();
 
-        assertThrows(IllegalStateException.class,
+        assertThrows(UngueltigerSpielzugException.class,
             () -> spielMitVierTruepfen.meldeVorbehalt(SpielerPosition.WEST, VorbehaltAnsage.ARMUT),
             "Armut darf nur mit hoechstens drei Truepfen angemeldet werden, damit das Sonderspiel auf echte Mangellagen beschraenkt bleibt.");
 
@@ -511,7 +513,7 @@ class SpielTest {
             )));
         deaktiviertesSpiel.teileKartenAus();
 
-        assertThrows(IllegalStateException.class,
+        assertThrows(UngueltigerSpielzugException.class,
             () -> deaktiviertesSpiel.meldeVorbehalt(SpielerPosition.WEST, VorbehaltAnsage.ARMUT),
             "Die Tischkonfiguration muss Armut serverseitig sperren koennen, damit Frontend und Backend dieselben Sonderspiel-Regeln teilen.");
     }
@@ -558,7 +560,7 @@ class SpielTest {
         Spiel spiel = Spiel.neu(SpielerPosition.SUED, soloDeaktiviert, kartendeckMitKontrolliertenHaenden());
         spiel.teileKartenAus();
 
-        assertThrows(IllegalStateException.class,
+        assertThrows(UngueltigerSpielzugException.class,
             () -> spiel.meldeVorbehalt(SpielerPosition.WEST, VorbehaltAnsage.SOLO_TRUMPF),
             "Deaktivierte Sonderspiele muessen serverseitig geblockt werden, damit Tischkonfigurationen spaeter verbindlich bleiben.");
     }
@@ -572,13 +574,13 @@ class SpielTest {
         Spiel fleischlosDeaktiviert = Spiel.neu(SpielerPosition.SUED, spielregeln.mitSoloFleischlosAktiv(false), kartendeckMitKontrolliertenHaenden());
         fleischlosDeaktiviert.teileKartenAus();
 
-        assertThrows(IllegalStateException.class,
+        assertThrows(UngueltigerSpielzugException.class,
             () -> damensoloDeaktiviert.meldeVorbehalt(SpielerPosition.WEST, VorbehaltAnsage.SOLO_DAME),
             "Die Tischkonfiguration muss auch Damensoli serverseitig sperren koennen, damit keine UI einen verbotenen Vorbehalt durchdrueckt.");
-        assertThrows(IllegalStateException.class,
+        assertThrows(UngueltigerSpielzugException.class,
             () -> bubensoloDeaktiviert.meldeVorbehalt(SpielerPosition.WEST, VorbehaltAnsage.SOLO_BUBE),
             "Bubensoli brauchen dieselbe serverseitige Regelhoheit wie andere Vorbehalte, damit Vorbehalt-Phase und Konfiguration konsistent bleiben.");
-        assertThrows(IllegalStateException.class,
+        assertThrows(UngueltigerSpielzugException.class,
             () -> fleischlosDeaktiviert.meldeVorbehalt(SpielerPosition.WEST, VorbehaltAnsage.SOLO_FLEISCHLOS),
             "Fleischlos muss ebenfalls deaktivierbar sein, sonst waere die Tischkonfiguration fuer Soli nicht vollstaendig.");
     }
@@ -641,7 +643,7 @@ class SpielTest {
 
         assertFalse(VorbehaltAnsage.SCHMEISSEN.istZulaessig(spiel.handVon(SpielerPosition.WEST), dkvRegeln),
             "Im DKV-Turnier-Modus darf Schmeissen nicht moeglich sein, auch wenn ein Spieler fuenf Koenige hat.");
-        assertThrows(IllegalStateException.class,
+        assertThrows(UngueltigerSpielzugException.class,
             () -> spiel.meldeVorbehalt(SpielerPosition.WEST, VorbehaltAnsage.SCHMEISSEN),
             "Deaktiviertes Schmeissen muss serverseitig geblockt werden.");
     }
@@ -680,7 +682,7 @@ class SpielTest {
             "Nach erstem Schmeissen muss Neudeal stattgefunden haben.");
 
         // Zweites Schmeissen desselben Spielers muss abgelehnt werden
-        assertThrows(IllegalStateException.class,
+        assertThrows(SpielzugKonfliktException.class,
             () -> nachErstemSchmeissen.meldeVorbehalt(SpielerPosition.WEST, VorbehaltAnsage.SCHMEISSEN),
             "Ein Spieler darf das Schmeiss-Recht pro Spiel nur einmal nutzen — "
             + "sonst koennte ein Spieler mit schlechter Hand beliebig oft neu austeilen.");
@@ -743,11 +745,11 @@ class SpielTest {
     void lehntUngueltigeZustandsuebergaengeAb() {
         Spiel spiel = Spiel.neu(SpielerPosition.OST, spielregeln, Kartendeck.neu(spielregeln));
 
-        assertThrows(IllegalStateException.class, () -> spiel.meldeGesund(SpielerPosition.SUED),
+        assertThrows(SpielzugKonfliktException.class, () -> spiel.meldeGesund(SpielerPosition.SUED),
             "Ohne ausgeteilte Karten darf kein Spieler Vorbehalte melden, sonst verliert die Zustandsmaschine ihre Autoritaet.");
 
         spiel.teileKartenAus();
-        assertThrows(IllegalStateException.class, spiel::loeseVorbehalteAuf,
+        assertThrows(SpielzugKonfliktException.class, spiel::loeseVorbehalteAuf,
             "Vorbehalte duerfen erst nach vier Meldungen aufgeloest werden, damit kein Spieler uebersprungen wird.");
 
         spiel.meldeGesund(SpielerPosition.SUED);
@@ -756,7 +758,7 @@ class SpielTest {
         spiel.meldeGesund(SpielerPosition.OST);
         spiel.loeseVorbehalteAuf();
 
-        assertThrows(IllegalStateException.class, spiel::werteAus,
+        assertThrows(SpielzugKonfliktException.class, spiel::werteAus,
             "Eine Auswertung vor dem letzten Stich wuerde unvollstaendige Augenstaende in den Gesamtstand schleusen.");
     }
 

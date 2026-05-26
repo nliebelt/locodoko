@@ -3,6 +3,7 @@ package de.locodoko.tisch;
 import de.locodoko.spieler.SpielerNameAenderungNichtErlaubtException;
 import de.locodoko.spieler.SpielerSessionUngueltigException;
 import de.locodoko.spieler.SpielerZugriffVerweigertException;
+import de.locodoko.karten.UngueltigerSpielzugException;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -56,6 +57,13 @@ public class SpielverwaltungExceptionHandler {
         LOGGER.warn("Ressource nicht gefunden: {}", exception.getMessage());
         return ResponseEntity.status(HttpStatus.NOT_FOUND)
             .body(new ApiFehlerAntwort(exception.fehlerCode(), exception.getMessage()));
+    }
+
+    @ExceptionHandler(UngueltigerSpielzugException.class)
+    public ResponseEntity<ApiFehlerAntwort> behandleRegelverstoß(UngueltigerSpielzugException exception) {
+        LOGGER.warn("Regelverstoß beim Spielzug: {}", exception.getMessage());
+        return ResponseEntity.status(HttpStatus.UNPROCESSABLE_ENTITY)
+            .body(new ApiFehlerAntwort("SPIELZUG_UNGUELTIG", exception.getMessage()));
     }
 
     @ExceptionHandler(SpielverwaltungKonfliktException.class)

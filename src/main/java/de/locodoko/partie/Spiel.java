@@ -1,5 +1,6 @@
 package de.locodoko.partie;
 
+import de.locodoko.karten.UngueltigerSpielzugException;
 import de.locodoko.karten.BubensoloTrumpfOrdnung;
 import de.locodoko.karten.DamensoloTrumpfOrdnung;
 import de.locodoko.karten.Farbe;
@@ -248,15 +249,15 @@ public class Spiel extends AbstraktePersistenzEntity {
         pruefePhase(Spielphase.VorbehaltAnsage.class, "Gesund melden");
         Objects.requireNonNull(spielerPosition, "spielerPosition darf nicht null sein");
         Objects.requireNonNull(vorbehaltAnsage, "vorbehaltAnsage darf nicht null sein");
-        SpielerPosition erwarteterSpieler = naechsterVorbehaltSpieler().orElseThrow(() -> new IllegalStateException("Es werden keine Vorbehalte mehr erwartet"));
+        SpielerPosition erwarteterSpieler = naechsterVorbehaltSpieler().orElseThrow(() -> new SpielzugKonfliktException("Es werden keine Vorbehalte mehr erwartet"));
         if (spielerPosition != erwarteterSpieler) {
-            throw new IllegalStateException("Vorbehalte muessen in Sitzreihenfolge gemeldet werden; erwartet: " + erwarteterSpieler);
+            throw new SpielzugKonfliktException("Vorbehalte muessen in Sitzreihenfolge gemeldet werden; erwartet: " + erwarteterSpieler);
         }
         if (vorbehaltAnsage.istSchmeissen() && bereitsGeschmissen.contains(spielerPosition)) {
-            throw new IllegalStateException("Spieler " + spielerPosition + " hat das Schmeiss-Recht in diesem Spiel bereits genutzt");
+            throw new SpielzugKonfliktException("Spieler " + spielerPosition + " hat das Schmeiss-Recht in diesem Spiel bereits genutzt");
         }
         if (!vorbehaltAnsage.istZulaessig(handVon(spielerPosition), spielregeln)) {
-            throw new IllegalStateException("Vorbehalt " + vorbehaltAnsage + " ist fuer " + spielerPosition + " nach den Spielregeln nicht zulaessig");
+            throw new UngueltigerSpielzugException("Vorbehalt " + vorbehaltAnsage + " ist fuer " + spielerPosition + " nach den Spielregeln nicht zulaessig");
         }
         List<VorbehaltMeldung> neueVorbehalte = new ArrayList<>(vorbehalte);
         neueVorbehalte.add(new VorbehaltMeldung(spielerPosition, vorbehaltAnsage));
@@ -277,7 +278,7 @@ public class Spiel extends AbstraktePersistenzEntity {
     public List<SpielEreignis> legeArmutTrumpfkarten(SpielerPosition spielerPosition, List<Karte> angeboteneTrumpfkarten) {
         Spielphase aktuellePhase = phase();
         if (!(aktuellePhase instanceof Spielphase.ArmutTausch armutTauschPhase)) {
-            throw new IllegalStateException("Armut-Karten anbieten ist nur in Phase ARMUT_TAUSCH erlaubt, war aber " + aktuellePhase.name());
+            throw new SpielzugKonfliktException("Armut-Karten anbieten ist nur in Phase ARMUT_TAUSCH erlaubt, war aber " + aktuellePhase.name());
         }
         SpielArmutTausch.legeArmutTrumpfkarten(this, spielerPosition,
             angeboteneTrumpfkarten, armutTauschPhase.armutStatus(), handVon(spielerPosition), trumpfOrdnung(), haende);
@@ -287,7 +288,7 @@ public class Spiel extends AbstraktePersistenzEntity {
     public List<SpielEreignis> lehneArmutAb(SpielerPosition spielerPosition) {
         Spielphase aktuellePhase = phase();
         if (!(aktuellePhase instanceof Spielphase.ArmutTausch armutTauschPhase)) {
-            throw new IllegalStateException("Armut ablehnen ist nur in Phase ARMUT_TAUSCH erlaubt, war aber " + aktuellePhase.name());
+            throw new SpielzugKonfliktException("Armut ablehnen ist nur in Phase ARMUT_TAUSCH erlaubt, war aber " + aktuellePhase.name());
         }
         SpielArmutTausch.lehneArmutAb(this, spielerPosition,
             armutTauschPhase.armutStatus(), spielregeln, geber, einwurfZaehler, effektivesKartendeck());
@@ -297,7 +298,7 @@ public class Spiel extends AbstraktePersistenzEntity {
     public List<SpielEreignis> nimmArmutAn(SpielerPosition spielerPosition, List<Karte> rueckgabekarten) {
         Spielphase aktuellePhase = phase();
         if (!(aktuellePhase instanceof Spielphase.ArmutTausch armutTauschPhase)) {
-            throw new IllegalStateException("Armut annehmen ist nur in Phase ARMUT_TAUSCH erlaubt, war aber " + aktuellePhase.name());
+            throw new SpielzugKonfliktException("Armut annehmen ist nur in Phase ARMUT_TAUSCH erlaubt, war aber " + aktuellePhase.name());
         }
         SpielArmutTausch.nimmArmutAn(this, spielerPosition, rueckgabekarten,
             armutTauschPhase.armutStatus(), solistAufspieler, geber, haende, spielregeln, trumpfOrdnung(), parteien);
@@ -324,12 +325,12 @@ public class Spiel extends AbstraktePersistenzEntity {
     public List<Karte> gueltigeKartenFuer(SpielerPosition spielerPosition) {
         Spielphase aktuellePhase = phase();
         if (!(aktuellePhase instanceof Spielphase.Stichphase stichphase)) {
-            throw new IllegalStateException("gueltige Karten abfragen ist nur in Phase STICHPHASE erlaubt, war aber " + aktuellePhase.name());
+            throw new SpielzugKonfliktException("gueltige Karten abfragen ist nur in Phase STICHPHASE erlaubt, war aber " + aktuellePhase.name());
         }
         Objects.requireNonNull(spielerPosition, "spielerPosition darf nicht null sein");
-        SpielerPosition erw = aktuellerSpieler().orElseThrow(() -> new IllegalStateException("Es gibt aktuell keinen erwarteten Spieler"));
+        SpielerPosition erw = aktuellerSpieler().orElseThrow(() -> new SpielzugKonfliktException("Es gibt aktuell keinen erwarteten Spieler"));
         if (spielerPosition != erw) {
-            throw new IllegalStateException("Gueltige Karten koennen nur fuer den aktuellen Spieler abgefragt werden; erwartet: " + erw);
+            throw new SpielzugKonfliktException("Gueltige Karten koennen nur fuer den aktuellen Spieler abgefragt werden; erwartet: " + erw);
         }
         return stichphase.aktuellerStich().gueltigeKarten(handVon(spielerPosition), trumpfOrdnung());
     }
@@ -337,12 +338,12 @@ public class Spiel extends AbstraktePersistenzEntity {
     public List<SpielEreignis> spieleKarte(SpielerPosition spielerPosition, Karte karte) {
         Spielphase aktuellePhase = phase();
         if (!(aktuellePhase instanceof Spielphase.Stichphase stichphase)) {
-            throw new IllegalStateException("Karte spielen ist nur in Phase STICHPHASE erlaubt, war aber " + aktuellePhase.name());
+            throw new SpielzugKonfliktException("Karte spielen ist nur in Phase STICHPHASE erlaubt, war aber " + aktuellePhase.name());
         }
         Objects.requireNonNull(spielerPosition, "spielerPosition darf nicht null sein");
         Objects.requireNonNull(karte, "karte darf nicht null sein");
         if (!stichphase.pflichtansageAusstehend().isEmpty()) {
-            throw new IllegalStateException("Karte spielen ist erst erlaubt wenn alle ausstehenden Pflichtansagen gemacht wurden: " + stichphase.pflichtansageAusstehend());
+            throw new UngueltigerSpielzugException("Karte spielen ist erst erlaubt wenn alle ausstehenden Pflichtansagen gemacht wurden: " + stichphase.pflichtansageAusstehend());
         }
 
         boolean schweinchenVorherGemeldet = schweinchenGemeldetVon().isPresent();
@@ -428,18 +429,19 @@ public class Spiel extends AbstraktePersistenzEntity {
     public List<SpielEreignis> sageAn(SpielerPosition spielerPosition, Ansage ansage) {
         Spielphase aktuellePhase = phase();
         if (!(aktuellePhase instanceof Spielphase.Stichphase stichphase)) {
-            throw new IllegalStateException("Ansage taetigen ist nur in Phase STICHPHASE erlaubt, war aber " + aktuellePhase.name());
+            throw new SpielzugKonfliktException("Ansage taetigen ist nur in Phase STICHPHASE erlaubt, war aber " + aktuellePhase.name());
         }
         Objects.requireNonNull(spielerPosition, "spielerPosition darf nicht null sein");
         Objects.requireNonNull(ansage, "ansage darf nicht null sein");
-        SpielerPosition erw = aktuellerSpieler().orElseThrow(() -> new IllegalStateException("Es gibt aktuell keinen erwarteten Spieler"));
+        SpielerPosition erw = aktuellerSpieler().orElseThrow(() -> new SpielzugKonfliktException("Es gibt aktuell keinen erwarteten Spieler"));
         if (spielerPosition != erw) {
-            throw new IllegalStateException("Ansagen duerfen nur vom aktuellen Spieler kommen; erwartet: " + erw);
+            throw new SpielzugKonfliktException("Ansagen duerfen nur vom aktuellen Spieler kommen; erwartet: " + erw);
         }
         if (stichphase.hochzeitStatus() != null && stichphase.hochzeitStatus().suchtPartner() && spielerPosition != stichphase.hochzeitStatus().hochzeitSpieler()) {
-            throw new IllegalStateException("Vor der Klaerung der Hochzeit darf nur der Hochzeits-Spieler Ansagen taetigen");
+            throw new UngueltigerSpielzugException("Vor der Klaerung der Hochzeit darf nur der Hochzeits-Spieler Ansagen taetigen");
         }
-        Ansagen neueAnsagen = ansagen.fuegeHinzu(spielerPosition, ansage, parteien(), spielregeln, effektiveKartenAnzahlFuer(spielerPosition, ansage, stichphase.pflichtansageAusstehend()));
+        try {
+            Ansagen neueAnsagen = ansagen.fuegeHinzu(spielerPosition, ansage, parteien(), spielregeln, effektiveKartenAnzahlFuer(spielerPosition, ansage, stichphase.pflichtansageAusstehend()));
         Parteien aktualisierteParteien = ansage.istGrundansage() ? parteien.mitOffenenParteienFuerAlle(List.of(spielerPosition)) : parteien;
         Set<Partei> aktualisiertesPflichtansageAusstehend = stichphase.pflichtansageAusstehend();
         if (ansage.istGrundansage() && !stichphase.pflichtansageAusstehend().isEmpty()) {
@@ -450,11 +452,14 @@ public class Spiel extends AbstraktePersistenzEntity {
                 aktualisiertesPflichtansageAusstehend = m.isEmpty() ? Set.of() : Set.copyOf(m);
             }
         }
-        this.parteien = aktualisierteParteien;
-        this.ansagen = neueAnsagen;
-        setzePhase(new Spielphase.Stichphase(stichphase.aktuellerStich(), aktualisiertesPflichtansageAusstehend, stichphase.hochzeitStatus()));
-        this.solistAufspieler = null;
-        return List.of();
+            this.parteien = aktualisierteParteien;
+            this.ansagen = neueAnsagen;
+            setzePhase(new Spielphase.Stichphase(stichphase.aktuellerStich(), aktualisiertesPflichtansageAusstehend, stichphase.hochzeitStatus()));
+            this.solistAufspieler = null;
+            return List.of();
+        } catch (IllegalStateException ex) {
+            throw new UngueltigerSpielzugException(ex.getMessage());
+        }
     }
 
     private int effektiveKartenAnzahlFuer(SpielerPosition pos, Ansage ansage, Set<Partei> pflichtansageAusstehend) {
@@ -775,7 +780,7 @@ public class Spiel extends AbstraktePersistenzEntity {
 
     private Map<SpielerPosition, Hand> kopiereHaende() { EnumMap<SpielerPosition, Hand> k = new EnumMap<>(SpielerPosition.class); k.putAll(haende); return k; }
     public int kartenProSpieler() { return effektivesKartendeck().karten().size() / SpielerPosition.standardReihenfolge().size(); }
-    private <T extends Spielphase> void pruefePhase(Class<T> erw, String aktion) { Spielphase aktuellePhase = phase(); if (!erw.isInstance(aktuellePhase)) throw new IllegalStateException(aktion + " ist nur in Phase " + erw.getSimpleName() + " erlaubt, war aber " + aktuellePhase.name()); }
+    private <T extends Spielphase> void pruefePhase(Class<T> erw, String aktion) { Spielphase aktuellePhase = phase(); if (!erw.isInstance(aktuellePhase)) throw new SpielzugKonfliktException(aktion + " ist nur in Phase " + erw.getSimpleName() + " erlaubt, war aber " + aktuellePhase.name()); }
 
     private HochzeitFortschritt fortschrittNachVollstaendigemStich(Stich gs, HochzeitStatus ahs) {
         if (ahs == null || !ahs.suchtPartner()) { return new HochzeitFortschritt(parteien, ahs); }

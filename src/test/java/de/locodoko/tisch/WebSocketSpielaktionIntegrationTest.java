@@ -6,6 +6,7 @@ import de.locodoko.karten.Kartenwert;
 import de.locodoko.karten.Kartendeck;
 import de.locodoko.partie.SpielerPosition;
 import de.locodoko.karten.Spielregeln;
+import de.locodoko.karten.UngueltigerSpielzugException;
 import de.locodoko.partie.Ansage;
 import de.locodoko.partie.Partei;
 import de.locodoko.partie.Spielphase;
@@ -230,8 +231,9 @@ class WebSocketSpielaktionIntegrationTest {
         findeBenutzerNachricht(setup.sessionIds().get(SpielerPosition.WEST), "/queue/partie/" + setup.partieId(), PartieEreignisBatch.class);
         nachrichtenSpeicher.leeren();
 
-        SpielverwaltungKonfliktException exception = assertThrows(
-            SpielverwaltungKonfliktException.class,
+        // Bedienpflicht-Verletzung ist ein Regelverstoß → UngueltigerSpielzugException (422, nicht 409)
+        UngueltigerSpielzugException exception = assertThrows(
+            UngueltigerSpielzugException.class,
             () -> webSocketController.spieleKarte(
                 setup.tischId(),
                 new KarteSpielenAnfrage("PIK-AS-1"),
@@ -239,7 +241,8 @@ class WebSocketSpielaktionIntegrationTest {
             )
         );
 
-        assertEquals("KARTE_UNGUELTIG", exception.fehlerCode());
+        assertTrue(exception.getMessage().contains("Bedienpflicht"),
+            "Die Fehlermeldung muss die Bedienpflicht als Ursache nennen.");
         assertTrue(nachrichtenSpeicher.nachrichten().isEmpty(),
             "Ein bedienpflichtwidriger Zug darf keine WebSocket-Folgeevents ausloesen, damit alle Clients auf demselben unveraenderten Stichstand bleiben.");
     }

@@ -4,19 +4,21 @@
 
 ## Notiz
 
-Build-Run 2026-05-26 (fünfte Session): **DB-5 ABGESCHLOSSEN — Baseline grün (324 Tests, 0 Failures)**
+Build-Run 2026-05-26 (sechste Session): **DB-6 ABGESCHLOSSEN — Baseline grün (326 Tests, 0 Failures)**
 
 **Was implementiert wurde:**
-1. `SpielergebnisArchiv.java` — neues `@Table("spielergebnis_archiv")`-Entity als `@MappedCollection`-Kind in `Partie`
-2. `SonderpunktEintrag.java` — FK-Kind von `SpielergebnisArchiv`, persistiert Sonderpunkt-Ereignisse
-3. `SpielergebnisArchivRepository.java` — Read-Only-Repository für direkte DB-Abfragen
-4. `Partie.java` — `archivierteSpieleMap` als `@MappedCollection`, `fuegeArchivHinzu()`, `anzahlAbgeschlossenerSpiele()`, `abgeschlosseneSpiele()` gibt jetzt `List<SpielergebnisArchiv>` zurück
-5. `PartieLifecycleService.java` — erstellt `SpielergebnisArchiv.aus(...)` beim Spielabschluss und fügt es via `partie.fuegeArchivHinzu()` hinzu
-6. `SpielergebnisArchivTest.java` — pure JUnit-Tests für Factory-Methode
+1. `SpielzugKonfliktException.java` — neue Domain-Exception in `partie/` für Zustandskonflikte (HTTP 409-Äquivalent)
+2. `Spiel.java` — 13 × `IllegalStateException` durch `SpielzugKonfliktException` (Phasenfehler, falscher Spieler, Schmeiss-Recht) und 3 × `UngueltigerSpielzugException` (Vorbehalt regelwidrig, Pflichtansage ausstehend, Hochzeit-Ansage) ersetzt; `ansagen.fuegeHinzu()` in try-catch gewrapped
+3. `Partie.java` — 4 × `IllegalStateException` (bereits beendet, Spiel läuft, kein Spiel, nicht ausgewertet) durch `SpielzugKonfliktException` ersetzt
+4. `SpielAktionsService.java` — Catch-Blöcke auf neue Domain-Exceptions umgestellt; `UngueltigerSpielzugException` im `spieleKarte`-Pfad propagiert direkt (statt zu 409 gewrapped)
+5. `SpielverwaltungExceptionHandler.java` — neuer `@ExceptionHandler(UngueltigerSpielzugException.class)` → HTTP 422
+6. `SpielverwaltungWebSocketController.java` — `UngueltigerSpielzugException` zum `@MessageExceptionHandler` hinzugefügt
+7. `DomainExceptionHttpStatusTest.java` — 2 neue Tests: 422 für Regelverstoß, 409 für Konflikt
+8. `SpielTest.java`, `DreissigAugenPflichtTest.java`, `WebSocketSpielaktionIntegrationTest.java` — assertThrows angepasst
 
-**DB-4c:** `SpielHydrierer.java`, `SpielPersistenzSync.java`, `SpielBuilder.java`, `JsonKonverter.java` waren bereits gelöscht (vorherige Session).
+**Nächster Schritt:** DB-7 (Value Objects ausweiten: `Augen` in `SpielergebnisArchiv`, `BockrundenZaehler`).
 
-**Nächster Schritt:** DB-6 (Domain-Exceptions in Spiel.java und Partie.java).
+**Offene Fragen:** Keine.
 
 ## Legende
 
@@ -363,7 +365,7 @@ Konkret: Build-Modus erstellt für DB-2/4b/4c **drei separate Working-Tree-Ände
 ---
 
 ### DB-6: DOMAIN-EXCEPTIONS IN SPIEL.JAVA UND PARTIE.JAVA (Task 72)
-- [ ] **Backend** (Mittlere Priorität, kleiner Aufwand): Die `IllegalStateException`/`IllegalArgumentException`-Würfe in `Spiel.java` (16 Stellen) **und** `Partie.java` (7 Stellen) durch Domain-spezifische Exceptions ersetzen.
+- [x] **Backend** (Mittlere Priorität, kleiner Aufwand): Die `IllegalStateException`/`IllegalArgumentException`-Würfe in `Spiel.java` (16 Stellen) **und** `Partie.java` (7 Stellen) durch Domain-spezifische Exceptions ersetzen.
   - **Zusätzliche 7 Stellen in `Partie.java`** (gefunden im Final-Review):
     - Z. 100 „Eine Partie muss mindestens ein Spiel enthalten" — Programmierfehler, `IllegalArgumentException` BLEIBT.
     - Z. 109 „bockrundenZaehler darf nicht negativ sein" — Programmierfehler, BLEIBT.

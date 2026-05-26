@@ -3,6 +3,7 @@ package de.locodoko.tisch;
 import de.locodoko.karten.Karte;
 import de.locodoko.partie.SpielerPosition;
 import de.locodoko.karten.UngueltigerSpielzugException;
+import de.locodoko.partie.SpielzugKonfliktException;
 import de.locodoko.partie.Ansage;
 import de.locodoko.partie.Partie;
 import de.locodoko.partie.PartieId;
@@ -100,7 +101,7 @@ public class SpielAktionsService {
                 if (laufendesSpiel.phase() instanceof Spielphase.VorbehaltAufloesung) {
                     laufendesSpiel.loeseVorbehalteAuf();
                 }
-            } catch (IllegalStateException exception) {
+            } catch (SpielzugKonfliktException | UngueltigerSpielzugException exception) {
                 throw new SpielverwaltungKonfliktException("VORBEHALT_UNGUELTIG", exception.getMessage());
             }
             partieRepository.saveAndFlush(tisch.partie());
@@ -136,7 +137,7 @@ public class SpielAktionsService {
                 } else {
                     laufendesSpiel.lehneArmutAb(position);
                 }
-            } catch (IllegalStateException exception) {
+            } catch (SpielzugKonfliktException | UngueltigerSpielzugException exception) {
                 throw new SpielverwaltungKonfliktException("ARMUT_ANTWORT_UNGUELTIG", exception.getMessage());
             }
             partieRepository.saveAndFlush(tisch.partie());
@@ -166,7 +167,18 @@ public class SpielAktionsService {
                 LOGGER.trace("Spiele Karte {}", karteId);
                 spielEreignisse = laufendesSpiel.spieleKarte(position, parseKarte(karteId));
                 LOGGER.trace("Domain-Stand aktualisiert [events={}]", spielEreignisse.size());
-            } catch (IllegalStateException | UngueltigerSpielzugException exception) {
+            } catch (UngueltigerSpielzugException exception) {
+                LOGGER.warn("Regelverstoß beim Kartenspielen [spieler={}, karte={}]: {}", position, karteId, exception.getMessage());
+                if (tisch.partie() != null && verwalteterSpieler.sessionId() != null) {
+                    PartieStandAntwort stand = PartieStandAntwort.aus(tisch, verwalteterSpieler.id());
+                    tischEchtzeitService.planeAnBenutzer(
+                        verwalteterSpieler.sessionId(),
+                        "/queue/partie/" + tisch.partie().id(),
+                        new PartieEreignisBatch(stand.version(), List.of(PartieEreignisAntwort.aktionAbgelehnt(stand, "KARTE_UNGUELTIG")))
+                    );
+                }
+                throw exception;
+            } catch (SpielzugKonfliktException exception) {
                 LOGGER.warn("Ungueltige Karte gespielt [spieler={}, karte={}]: {}", position, karteId, exception.getMessage());
                 if (tisch.partie() != null && verwalteterSpieler.sessionId() != null) {
                     PartieStandAntwort stand = PartieStandAntwort.aus(tisch, verwalteterSpieler.id());
@@ -200,7 +212,7 @@ public class SpielAktionsService {
             SpielerPosition position = spielerPositionVon(tisch, verwalteterSpieler);
             try {
                 laufendesSpiel.sageAn(position, ansage);
-            } catch (IllegalStateException exception) {
+            } catch (SpielzugKonfliktException | UngueltigerSpielzugException exception) {
                 throw new SpielverwaltungKonfliktException("ANSAGE_UNGUELTIG", exception.getMessage());
             }
             partieRepository.saveAndFlush(tisch.partie());

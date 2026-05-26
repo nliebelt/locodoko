@@ -3,6 +3,7 @@ package de.locodoko.tisch;
 import de.locodoko.spieler.SpielerEntity;
 import de.locodoko.spieler.SpielerSessionService;
 import de.locodoko.spieler.SpielerSessionUngueltigException;
+import de.locodoko.karten.UngueltigerSpielzugException;
 import de.locodoko.tisch.PartieStandAntwort;
 import de.locodoko.tisch.SpielAktionsService;
 import de.locodoko.tisch.TischAntwort;
@@ -135,6 +136,7 @@ public class SpielverwaltungWebSocketController {
         SpielerSessionUngueltigException.class,
         SpielverwaltungNichtGefundenException.class,
         SpielverwaltungKonfliktException.class,
+        UngueltigerSpielzugException.class,
         IllegalArgumentException.class
     })
     @SendToUser(value = "/queue/fehler", broadcast = false)
@@ -157,6 +159,9 @@ public class SpielverwaltungWebSocketController {
                 sessionException.fehlerCode(),
                 sessionException.getMessage()
             );
+        }
+        if (exception instanceof UngueltigerSpielzugException ue) {
+            return SpielverwaltungWebSocketFehlerAntwort.fachlicherFehler("SPIELZUG_UNGUELTIG", ue.getMessage());
         }
         return SpielverwaltungWebSocketFehlerAntwort.fachlicherFehler("ANFRAGE_UNGUELTIG", exception.getMessage());
     }

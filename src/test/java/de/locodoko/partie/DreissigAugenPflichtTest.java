@@ -7,6 +7,7 @@ import de.locodoko.karten.Kartendeck;
 import de.locodoko.karten.Kartenwert;
 import de.locodoko.karten.Spielregeln;
 import de.locodoko.karten.Spieltyp;
+import de.locodoko.karten.UngueltigerSpielzugException;
 import org.junit.jupiter.api.Test;
 
 import java.util.EnumMap;
@@ -179,9 +180,9 @@ class DreissigAugenPflichtTest {
             Partei.KONTRA, haende, naechsterStich, mitPflicht
         );
 
-        assertThrows(IllegalStateException.class,
+        assertThrows(UngueltigerSpielzugException.class,
             () -> geblockt.spieleKarte(SpielerPosition.WEST, folgeKarte),
-            "spieleKarte() muss bei ausstehender Pflichtansage eine IllegalStateException werfen.");
+            "spieleKarte() muss bei ausstehender Pflichtansage eine UngueltigerSpielzugException werfen.");
     }
 
     @Test

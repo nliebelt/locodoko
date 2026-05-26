@@ -154,10 +154,10 @@ public class Partie extends AbstraktePersistenzEntity {
     public Partie starteNaechstesSpiel(Kartendeck kartendeck) {
         Objects.requireNonNull(kartendeck, "kartendeck darf nicht null sein");
         if (istBeendet()) {
-            throw new IllegalStateException("Die Partie ist bereits beendet");
+            throw new SpielzugKonfliktException("Die Partie ist bereits beendet");
         }
         if (aktuellesSpiel != null) {
-            throw new IllegalStateException("Es laeuft bereits ein Spiel");
+            throw new SpielzugKonfliktException("Es laeuft bereits ein Spiel");
         }
         Spiel neuesSpiel = solistDesLetztenSpiels != null
             ? Spiel.neuMitSolistAufspieler(naechsterGeber, solistDesLetztenSpiels, spielregeln, kartendeck)
@@ -178,7 +178,7 @@ public class Partie extends AbstraktePersistenzEntity {
     public Partie mitAktuellemSpiel(Spiel spiel) {
         Objects.requireNonNull(spiel, "spiel darf nicht null sein");
         if (aktuellesSpiel == null) {
-            throw new IllegalStateException("Es gibt kein aktuelles Spiel");
+            throw new SpielzugKonfliktException("Es gibt kein aktuelles Spiel");
         }
         return new Partie(anzahlSpiele, spielregeln, naechsterGeber, abgeschlosseneSpieleIntern, spiel, gesamtpunktestand, bockrundenZaehler, solistDesLetztenSpiels, version);
     }
@@ -186,7 +186,7 @@ public class Partie extends AbstraktePersistenzEntity {
     public Partie schliesseAktuellesSpielAb() {
         Spiel spiel = aktuellesSpiel();
         if (!(spiel.phase() instanceof Spielphase.GesamtstandAktualisieren)) {
-            throw new IllegalStateException("Nur vollstaendig ausgewertete Spiele duerfen abgeschlossen werden");
+            throw new SpielzugKonfliktException("Nur vollstaendig ausgewertete Spiele duerfen abgeschlossen werden");
         }
         Spielergebnis ergebnis = spiel.ergebnis()
             .orElseThrow(() -> new IllegalStateException("Ein abgeschlossenes Spiel braucht ein Ergebnis"));
