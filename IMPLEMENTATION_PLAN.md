@@ -4,16 +4,19 @@
 
 ## Notiz
 
-Build-Run 2026-05-26 (vierte Session): **DB-4b+4c ABGESCHLOSSEN — Baseline grün (319 Tests, 0 Failures)**
+Build-Run 2026-05-26 (fünfte Session): **DB-5 ABGESCHLOSSEN — Baseline grün (324 Tests, 0 Failures)**
 
-**Was behoben wurde (Blockade-Auflösung):**
-1. **31 Kompilierungsfehler** in 9 Testdateien behoben — alle Aufrufe der gelöschten Test-Helper-Methoden (`uebernehmeDomainStand`, `fuegeHandHinzu`, `fuegeStichHinzu` etc.) auf die neue einheitliche Spiel-API umgestellt (`ersetzeHaende`, `setzeAbgeschlosseneStiche`, `setzeErgebnis`, `setzeAnsagen`)
-2. **IllegalStateException in `Partie.initialisiereDomainFelderNachLaden()`**: `parteien()` wirft wenn null — `hatParteien()`-Methode zu `Spiel.java` hinzugefügt als Null-Safe-Check
-3. **2 KI-Integrationstests** (beide vollautomatische KI-Partien): Wurzelursache war ein Produktionsfehler in `PartieLifecycleService.uebernehmeDomainPartieAbschluss()` — nach dem Hinzufügen eines neuen Spiels wurden die transienten Domain-Felder `abgeschlosseneSpiele` und `aktuellesSpiel` nicht aktualisiert. Fix: `partie.initialisiereDomainFelderNachLaden()` nach `fuegeSpielHinzu()` aufrufen. Außerdem `setzeSpielregeln(Spielregeln)`-Setter zu `Partie` hinzugefügt und in Test-Helpers genutzt.
+**Was implementiert wurde:**
+1. `SpielergebnisArchiv.java` — neues `@Table("spielergebnis_archiv")`-Entity als `@MappedCollection`-Kind in `Partie`
+2. `SonderpunktEintrag.java` — FK-Kind von `SpielergebnisArchiv`, persistiert Sonderpunkt-Ereignisse
+3. `SpielergebnisArchivRepository.java` — Read-Only-Repository für direkte DB-Abfragen
+4. `Partie.java` — `archivierteSpieleMap` als `@MappedCollection`, `fuegeArchivHinzu()`, `anzahlAbgeschlossenerSpiele()`, `abgeschlosseneSpiele()` gibt jetzt `List<SpielergebnisArchiv>` zurück
+5. `PartieLifecycleService.java` — erstellt `SpielergebnisArchiv.aus(...)` beim Spielabschluss und fügt es via `partie.fuegeArchivHinzu()` hinzu
+6. `SpielergebnisArchivTest.java` — pure JUnit-Tests für Factory-Methode
 
-**DB-4c:** `SpielHydrierer.java`, `SpielPersistenzSync.java`, `SpielBuilder.java`, `JsonKonverter.java` sind bereits gelöscht (aus dem Dateisystem entfernt, als `deleted` im Working Tree).
+**DB-4c:** `SpielHydrierer.java`, `SpielPersistenzSync.java`, `SpielBuilder.java`, `JsonKonverter.java` waren bereits gelöscht (vorherige Session).
 
-**Nächster Schritt:** DB-5 (Spielergebnis-Archiv-Aggregate).
+**Nächster Schritt:** DB-6 (Domain-Exceptions in Spiel.java und Partie.java).
 
 ## Legende
 
@@ -312,8 +315,8 @@ Konkret: Build-Modus erstellt für DB-2/4b/4c **drei separate Working-Tree-Ände
   - H2-Kompatibilität: `byte[]` + String + PGobject ReadingConverter.
   - Alle 319 Tests grün.
 
-#### DB-4c: HYDRIERER UND SYNC LÖSCHEN (Task 70c) [BLOCKED: Baseline rot - 31 Kompilierungsfehler nach DB-4b]
-- [ ] **Backend** (Mittel, kleiner Aufwand): Mapper-Klassen löschen, weil sie nichts mehr zu mappen haben.
+#### DB-4c: HYDRIERER UND SYNC LÖSCHEN (Task 70c) [x]
+- [x] **Backend** (Mittel, kleiner Aufwand): Mapper-Klassen gelöscht.
   - **Erste Datei zuerst**: `SpielHydrierer.java` (238 Z.) löschen.
   - **Schritte**:
     1. `SpielHydrierer.java` löschen.
@@ -338,7 +341,7 @@ Konkret: Build-Modus erstellt für DB-2/4b/4c **drei separate Working-Tree-Ände
 ---
 
 ### DB-5: SPIELERGEBNIS-ARCHIV-AGGREGATE (Task 71)
-- [ ] **Backend** (Hohe Priorität, kein Code-Bruch der bestehenden Spielablauf-Logik): Eigenes Aggregate für abgeschlossene Spiele, ersetzt das heutige `Spielergebnis`-Embedded in `Spiel`.
+- [x] **Backend** (Hohe Priorität): Eigenes Aggregate für abgeschlossene Spiele eingeführt.
   - **Erste Datei zuerst**: `SpielergebnisArchiv.java` in `partie/` als neues `@Table("spielergebnis_archiv")`-Aggregate mit `@MappedCollection<SonderpunktEintrag>`. Tabelle ist in DB-2 bereits angelegt.
   - **Schritte**:
     1. Domain-Klasse `SpielergebnisArchiv` mit allen Ergebnis-Feldern (siehe Daten-Modell).

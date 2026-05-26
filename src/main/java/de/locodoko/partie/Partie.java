@@ -43,7 +43,7 @@ public class Partie extends AbstraktePersistenzEntity {
     private Spielregeln spielregeln;
 
     @Transient private SpielerPosition naechsterGeber;
-    @Transient private List<Spiel> abgeschlosseneSpiele;
+    @Transient private List<Spiel> abgeschlosseneSpieleIntern;
     @Transient private Spiel aktuellesSpiel;
     @Transient private Map<SpielerPosition, Integer> gesamtpunktestand;
 
@@ -76,6 +76,9 @@ public class Partie extends AbstraktePersistenzEntity {
     private String solistDesLetztenSpielsDb = null;
 
     @MappedCollection(idColumn = "partie_id", keyColumn = "spiel_nummer")
+    private Map<Integer, SpielergebnisArchiv> archivierteSpieleMap = new LinkedHashMap<>();
+
+    @MappedCollection(idColumn = "partie_id", keyColumn = "spiel_nummer")
     private Map<Integer, Spiel> spieleMap = new LinkedHashMap<>();
 
     // ── Konstruktoren ───────────────────────────────────────────────────────
@@ -89,7 +92,7 @@ public class Partie extends AbstraktePersistenzEntity {
         int anzahlSpiele,
         Spielregeln spielregeln,
         SpielerPosition naechsterGeber,
-        List<Spiel> abgeschlosseneSpiele,
+        List<Spiel> abgeschlosseneSpieleIntern,
         Spiel aktuellesSpiel,
         Map<SpielerPosition, Integer> gesamtpunktestand,
         int bockrundenZaehler,
@@ -103,7 +106,7 @@ public class Partie extends AbstraktePersistenzEntity {
         this.anzahlSpiele = anzahlSpiele;
         this.spielregeln = Objects.requireNonNull(spielregeln, "spielregeln duerfen nicht null sein");
         this.naechsterGeber = Objects.requireNonNull(naechsterGeber, "naechsterGeber darf nicht null sein");
-        this.abgeschlosseneSpiele = List.copyOf(abgeschlosseneSpiele);
+        this.abgeschlosseneSpieleIntern = List.copyOf(abgeschlosseneSpieleIntern);
         this.aktuellesSpiel = aktuellesSpiel;
         this.gesamtpunktestand = Map.copyOf(gesamtpunktestand);
         if (bockrundenZaehler < 0) {
@@ -120,14 +123,14 @@ public class Partie extends AbstraktePersistenzEntity {
         int anzahlSpiele,
         Spielregeln spielregeln,
         SpielerPosition naechsterGeber,
-        List<Spiel> abgeschlosseneSpiele,
+        List<Spiel> abgeschlosseneSpieleIntern,
         Spiel aktuellesSpiel,
         Map<SpielerPosition, Integer> gesamtpunktestand,
         int bockrundenZaehler,
         SpielerPosition solistDesLetztenSpiels,
         Long version
     ) {
-        return new Partie(anzahlSpiele, spielregeln, naechsterGeber, abgeschlosseneSpiele, aktuellesSpiel, gesamtpunktestand, bockrundenZaehler, solistDesLetztenSpiels, version);
+        return new Partie(anzahlSpiele, spielregeln, naechsterGeber, abgeschlosseneSpieleIntern, aktuellesSpiel, gesamtpunktestand, bockrundenZaehler, solistDesLetztenSpiels, version);
     }
 
     public static Partie neu(int anzahlSpiele, SpielerPosition ersterGeber, Spielregeln spielregeln) {
@@ -163,7 +166,7 @@ public class Partie extends AbstraktePersistenzEntity {
             anzahlSpiele,
             spielregeln,
             naechsterGeber,
-            abgeschlosseneSpiele,
+            abgeschlosseneSpieleIntern,
             neuesSpiel,
             gesamtpunktestand,
             bockrundenZaehler,
@@ -177,7 +180,7 @@ public class Partie extends AbstraktePersistenzEntity {
         if (aktuellesSpiel == null) {
             throw new IllegalStateException("Es gibt kein aktuelles Spiel");
         }
-        return new Partie(anzahlSpiele, spielregeln, naechsterGeber, abgeschlosseneSpiele, spiel, gesamtpunktestand, bockrundenZaehler, solistDesLetztenSpiels, version);
+        return new Partie(anzahlSpiele, spielregeln, naechsterGeber, abgeschlosseneSpieleIntern, spiel, gesamtpunktestand, bockrundenZaehler, solistDesLetztenSpiels, version);
     }
 
     public Partie schliesseAktuellesSpielAb() {
@@ -208,7 +211,7 @@ public class Partie extends AbstraktePersistenzEntity {
         }
 
         int neuerBockrundenZaehler = (bockrundenZaehler > 0 ? bockrundenZaehler - 1 : 0) + neueTrigger;
-        List<Spiel> neueAbgeschlosseneSpiele = new ArrayList<>(abgeschlosseneSpiele);
+        List<Spiel> neueAbgeschlosseneSpiele = new ArrayList<>(abgeschlosseneSpieleIntern);
         neueAbgeschlosseneSpiele.add(spiel);
 
         boolean warSolo = spiel.parteien() != null && spiel.parteien().spielerVon(Partei.RE).size() == 1;
@@ -245,7 +248,7 @@ public class Partie extends AbstraktePersistenzEntity {
     // ── Domain-Getter ───────────────────────────────────────────────────────
 
     public boolean istBeendet() {
-        return abgeschlosseneSpiele != null && abgeschlosseneSpiele.size() >= anzahlSpiele;
+        return abgeschlosseneSpieleIntern != null && abgeschlosseneSpieleIntern.size() >= anzahlSpiele;
     }
 
     public int anzahlSpiele() {
@@ -260,8 +263,27 @@ public class Partie extends AbstraktePersistenzEntity {
         return naechsterGeber;
     }
 
-    public List<Spiel> abgeschlosseneSpiele() {
-        return abgeschlosseneSpiele;
+    /**
+     * Liefert die abgeschlossenen Spiele als persistierte Archiv-Aggregate.
+     *
+     * <p>Diese Liste wird aus der Datenbank geladen (via {@code @MappedCollection})
+     * und enthält alle abgeschlossenen Spiele mit ihren Ergebnissen und Sonderpunkten.</p>
+     */
+    public List<SpielergebnisArchiv> abgeschlosseneSpiele() {
+        return archivierteSpieleMap.entrySet().stream()
+            .sorted(Map.Entry.comparingByKey())
+            .map(Map.Entry::getValue)
+            .toList();
+    }
+
+    /**
+     * Anzahl der abgeschlossenen Spiele gemaess dem laufenden Domain-Stand.
+     *
+     * <p>Wird fuer Domain-Logik (Bockrunden, {@code istBeendet()}) verwendet,
+     * da {@code abgeschlosseneSpiele()} die persistierte Archiv-Liste zurueckgibt.</p>
+     */
+    public int anzahlAbgeschlossenerSpiele() {
+        return abgeschlosseneSpieleIntern != null ? abgeschlosseneSpieleIntern.size() : 0;
     }
 
     public Optional<Spiel> aktuellesSpielOptional() {
@@ -300,6 +322,12 @@ public class Partie extends AbstraktePersistenzEntity {
         Objects.requireNonNull(spiel, "spiel darf nicht null sein");
         spieleMap.put(spiel.spielNummer(), spiel);
         aktuellesSpielNummer = Math.max(aktuellesSpielNummer, spiel.spielNummer());
+    }
+
+    /** Fuegt ein Spielergebnis-Archiv zur Partie hinzu (wird beim Spielende aufgerufen). */
+    public void fuegeArchivHinzu(SpielergebnisArchiv archiv) {
+        Objects.requireNonNull(archiv, "archiv darf nicht null sein");
+        archivierteSpieleMap.put(archiv.spielNummer(), archiv);
     }
 
     /** Ersetzt ein Spiel in der spieleMap (fuer Domain-Ergebnisuebernahme). */
@@ -397,15 +425,15 @@ public class Partie extends AbstraktePersistenzEntity {
             .toList();
         Spiel letztes = sortierteSpiele.isEmpty() ? null : sortierteSpiele.getLast();
         if (letztes != null && letztes.ergebnis().isEmpty()) {
-            this.abgeschlosseneSpiele = sortierteSpiele.subList(0, sortierteSpiele.size() - 1);
+            this.abgeschlosseneSpieleIntern = sortierteSpiele.subList(0, sortierteSpiele.size() - 1);
             this.aktuellesSpiel = letztes;
         } else {
-            this.abgeschlosseneSpiele = sortierteSpiele;
+            this.abgeschlosseneSpieleIntern = sortierteSpiele;
             this.aktuellesSpiel = null;
         }
 
-        if (!abgeschlosseneSpiele.isEmpty()) {
-            Spiel letztesAbgeschlossenes = abgeschlosseneSpiele.getLast();
+        if (!abgeschlosseneSpieleIntern.isEmpty()) {
+            Spiel letztesAbgeschlossenes = abgeschlosseneSpieleIntern.getLast();
             boolean warSolo = letztesAbgeschlossenes.hatParteien()
                 && letztesAbgeschlossenes.parteien().spielerVon(Partei.RE).size() == 1;
             this.naechsterGeber = warSolo ? letztesAbgeschlossenes.geber() : letztesAbgeschlossenes.geber().naechsteImUhrzeigersinn();

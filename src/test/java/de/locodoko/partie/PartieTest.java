@@ -33,7 +33,7 @@ class PartieTest {
         partie = partie.schliesseAktuellesSpielAb();
 
         assertTrue(partie.istBeendet(), "Nach der konfigurierten Spielanzahl muss die Partie sauber enden.");
-        assertEquals(2, partie.abgeschlosseneSpiele().size());
+        assertEquals(2, partie.anzahlAbgeschlossenerSpiele());
         assertEquals(0, partie.gesamtpunktestand().values().stream().mapToInt(Integer::intValue).sum());
     }
 
@@ -93,7 +93,7 @@ class PartieTest {
 
         Partie neuePartie = partie.schliesseAktuellesSpielAbUndStarteNaechstes();
 
-        assertEquals(1, neuePartie.abgeschlosseneSpiele().size(),
+        assertEquals(1, neuePartie.anzahlAbgeschlossenerSpiele(),
             "Nach einem Spiel muss genau ein abgeschlossenes Spiel in der Partie vorliegen.");
         assertTrue(neuePartie.aktuellesSpielOptional().isPresent(),
             "Die Partie muss nach dem Abschluss ein neues laufendes Spiel besitzen.");
@@ -132,7 +132,7 @@ class PartieTest {
 
         Partie neuePartie = partie.schliesseAktuellesSpielAbUndStarteNaechstes();
 
-        assertEquals(1, neuePartie.abgeschlosseneSpiele().size());
+        assertEquals(1, neuePartie.anzahlAbgeschlossenerSpiele());
     }
 
     @Test
@@ -205,7 +205,7 @@ class PartieTest {
 
         assertFalse(partie.istBeendet(),
             "Die Partie darf nach dem ersten von zwei Spielen nicht beendet sein.");
-        assertEquals(1, partie.abgeschlosseneSpiele().size());
+        assertEquals(1, partie.anzahlAbgeschlossenerSpiele());
 
         // Zweites Spiel durchspielen
         Kartendeck deck2 = Kartendeck.neu(dkvRegeln).gemischt(new java.util.Random(43));
@@ -217,7 +217,7 @@ class PartieTest {
 
         assertTrue(partie.istBeendet(),
             "Die DKV-Partie muss nach dem zweiten Spiel korrekt als beendet markiert sein.");
-        assertEquals(2, partie.abgeschlosseneSpiele().size());
+        assertEquals(2, partie.anzahlAbgeschlossenerSpiele());
         assertEquals(0, partie.gesamtpunktestand().values().stream().mapToInt(Integer::intValue).sum(),
             "Der Gesamtpunktestand muss nullsummig bleiben.");
     }
@@ -237,7 +237,7 @@ class PartieTest {
 
         Partie neuePartie = partie.schliesseAktuellesSpielAbUndStarteNaechstes();
 
-        assertEquals(1, neuePartie.abgeschlosseneSpiele().size(),
+        assertEquals(1, neuePartie.anzahlAbgeschlossenerSpiele(),
             "Nach dem ersten DKV-Spiel muss genau ein abgeschlossenes Spiel vorliegen.");
         assertTrue(neuePartie.aktuellesSpielOptional().isPresent(),
             "Die DKV-Partie muss nach dem Abschluss ein neues laufendes Spiel besitzen.");

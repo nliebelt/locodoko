@@ -3,6 +3,7 @@ package de.locodoko.tisch;
 import de.locodoko.partie.Partie;
 import de.locodoko.partie.SpielerPosition;
 import de.locodoko.partie.Spiel;
+import de.locodoko.partie.SpielergebnisArchiv;
 import de.locodoko.partie.Spielergebnis;
 import de.locodoko.partie.Parteien;
 import de.locodoko.partie.Partei;
@@ -61,6 +62,19 @@ public class PartieLifecycleService {
      */
     public void uebernehmeDomainPartieAbschluss(TischEntity tisch, Spiel abgeschlossenesSpiel, Partie neuePartie) {
         Partie partie = tisch.partie();
+
+        // Archiv-Eintrag fuer das abgeschlossene Spiel erstellen (wird via Cascade gespeichert).
+        abgeschlossenesSpiel.ergebnis().ifPresent(ergebnis -> {
+            SpielergebnisArchiv archiv = SpielergebnisArchiv.aus(
+                ergebnis,
+                partie.getId(),
+                abgeschlossenesSpiel.spielNummer(),
+                abgeschlossenesSpiel.geber(),
+                abgeschlossenesSpiel.spieltyp()
+            );
+            partie.fuegeArchivHinzu(archiv);
+        });
+
         for (SpielerPosition position : SpielerPosition.standardReihenfolge()) {
             partie.setzeGesamtpunktestand(position, neuePartie.gesamtpunktestand().get(position));
         }
