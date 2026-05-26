@@ -4,22 +4,28 @@
 
 ## Notiz
 
-Build-Run 2026-05-26: **DB-4a (Spiel mutable machen, Task 70a) abgeschlossen.**
+Build-Run 2026-05-26: **DB-2 (Schema-Konsolidierung, Task 68) abgeschlossen.**
 
 Implementiert:
-- `Spiel.java`: Alle Domain-Methoden mutieren `this` direkt und returnen `List<SpielEreignis>` (Pattern A).
-  Signaturen: `teileKartenAus()`, `meldeGesund()`, `meldeVorbehalt()`, `loeseVorbehalteAuf()`,
-  `spieleKarte()`, `werteAus()`, `sageAn()`, `nimmArmutAn()`, `bieteTauschAn()`.
-- `SpielAktion.java` gelöscht — Klasse war Wrapper für `(neuerStand, ereignisse)` und ist
-  mit mutablem Aggregat überflüssig.
-- `TischVerwaltungsService.java`: `syncZuPersistenz()` nach `teileKartenAus()` ergänzt.
-- `Partie.java`: `syncZuPersistenz()` nach `teileKartenAus()` in `schliesseAktuellesSpielAbUndStarteNaechstes()` ergänzt.
-- 9 Test-Dateien auf mutable Pattern umgestellt (Chains aufgetrennt, SpielAktion durch `List<SpielEreignis>` ersetzt).
+- `src/main/resources/db/changelog/000-initial-schema.sql` neu angelegt — konsolidiertes Schema.
+- 22 alte YAML-Changesets nach `db/changelog/archiv/` verschoben.
+- `db.changelog-master.yaml` zeigt nur noch auf `000-initial-schema.sql`.
+- `tisch`-Tabelle: korrekte Spaltennamen (damensolo_erlaubt, fuchs_gefangen_aktiv, etc.).
+- `spiel`-Tabelle: String-JSON-Spalten passend zu aktuellem `Spiel.java` (kein Schema-Bruch).
+- `spieler.session_id`: UNIQUE-Constraint wiederhergestellt.
+- `Spiel.neuePersistenz()`: haendeJson/sticheJson auf '[]' initialisiert.
 - 319 Tests, 0 Fehler.
 
-**Nächster Schritt:** DB-2 + DB-4b + DB-4c als EIN MEGA-COMMIT auf main:
-- DB-2 (Task 68): Initial-Schema (ein einziges SQL-Changeset, alte 22 YAMLs archiviert).
-- DB-4b (Task 70b): @Transient-Felder weg, JSONB-Persistenz direkt in Spiel.java.
+**Abweichung vom ursprünglichen MEGA-COMMIT-Plan:** DB-2 wurde als eigenständiger Commit
+umgesetzt (statt zusammen mit DB-4b+4c). Der Grund: Die Baseline war durch
+unvollständige Vorarbeit gebrochen; ein korrektes, funktionierendes Schema zuerst
+wiederherzustellen war pragmatisch sinnvoller. Die `spiel`-Tabelle verwendet deshalb
+noch String-JSON-Spalten (kompatibel mit aktuellem Spiel.java). DB-4b+4c werden als
+eigenständige Commits folgen.
+
+**Nächster Schritt:** DB-4b + DB-4c als eigenständige Commits:
+- DB-4b (Task 70b): @Transient-Felder weg, JSONB-Persistenz direkt in Spiel.java,
+  `spiel`-Tabelle auf JSONB-Spalten umstellen.
 - DB-4c (Task 70c): SpielHydrierer + SpielPersistenzSync + SpielBuilder löschen.
 
 **Entdeckung (DB-4a):** Bei jeder Mutation von `Spiel`-Domain-State in Produktionscode muss
@@ -233,7 +239,7 @@ Mit Postgres JSONB + Custom Converter dürfen die meisten Domain-VOs ihre VO-Nat
 ---
 
 ### DB-2: INITIAL-SCHEMA (Task 68)
-- [ ] **Backend** (Hohe Priorität, kein Code-Bruch — nur SQL): Ein einziges initiales Liquibase-Changeset, das das finale Schema definiert. Alte 22 YAMLs werden archiviert.
+- [x] **Backend** (Hohe Priorität, kein Code-Bruch — nur SQL): Ein einziges initiales Liquibase-Changeset, das das finale Schema definiert. Alte 22 YAMLs werden archiviert.
   - **Erste Datei zuerst**: `src/main/resources/db/changelog/000-initial-schema.sql` neu anlegen (SQL-formatted Liquibase).
   - **Tabellen im Initial-Schema** (vollständige Liste):
     1. **Aus dem alten Schema übernehmen** (bestehende Tabellen, ggf. erweitert):
