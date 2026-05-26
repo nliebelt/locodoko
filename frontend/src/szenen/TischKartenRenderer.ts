@@ -13,6 +13,7 @@ import type { TischAnsichtModell, SpielerPosition } from '../modelle/TischAnsich
 import type { KarteAntwort, VorbehaltAnsage } from '../modelle/SpielverwaltungDto';
 import type { AnimierbareKartenobjekte } from '../services/AnimationenService';
 import { FONT_FAMILY } from '../ui/designTokens';
+import { Logger } from '../logger';
 import {
   stichSlotPositionen,
   berechneKartenGroesse,
@@ -283,7 +284,7 @@ export class TischKartenRenderer {
           kA.removeAllListeners?.('pointerout');
           kA.removeAllListeners?.('pointerdown');
         } catch (e) {
-          console.warn('[TischSzene] Fehler beim Deaktivieren der Interaktion', e);
+          Logger.error('Fehler beim Deaktivieren der Interaktion', e);
         }
       }
     }

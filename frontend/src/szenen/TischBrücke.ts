@@ -1,19 +1,10 @@
 import { appStore } from '../anwendung';
+import '../e2eBruecke';
 import type { TischSzene } from './TischSzene';
 
 /** Richtet die window.__locodoko E2E-Bridge-API fuer Playwright-Tests ein. */
 export function richteE2EBrückeEin(szene: TischSzene): void {
-  const bridge = (window as {
-    __locodoko?: {
-      setzeAnimationsGeschwindigkeit?: (f: number) => void;
-      setzeKiVerzoegerung?: (ms: number) => void;
-      isOverlaySichtbar?: () => boolean;
-      isIdle?: (ignoreStore?: boolean) => boolean;
-      getHudState?: () => { stichzaehler: string; spieltyp: string; startBtnSichtbar: boolean; rundenEndeSichtbar: boolean };
-      schliesseRundenEndeModal?: () => void;
-      _rundenEndeModalGezeigt?: number;
-    };
-  }).__locodoko;
+  const bridge = window.__locodoko;
 
   if (!bridge) return;
 

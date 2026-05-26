@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 import './styles.css';
 import { appStore } from './anwendung';
+import './e2eBruecke';
 import { BootSzene } from './szenen/BootSzene';
 import { LoginSzene } from './szenen/LoginSzene';
 import { SpielverwaltungsSzene } from './szenen/SpielverwaltungsSzene';
@@ -36,7 +37,7 @@ window.addEventListener('beforeunload', () => {
 
 // Test-Hook: Bridge für E2E-Tests.
 // Ermoeglicht zuverlässigen Zugriff auf Store und Szenen-Status.
-(window as unknown as Record<string, unknown>)['__locodoko'] = {
+window.__locodoko = {
   appStore,
   getAktuelleSzene: () => {
     const aktiveSzenen = spiel.scene.getScenes(true);

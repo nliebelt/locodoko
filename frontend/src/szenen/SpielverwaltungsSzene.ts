@@ -7,6 +7,7 @@ import { PhaserButton } from './PhaserButton';
 import { PhaserModal } from '../ui/PhaserModal';
 import { PhaserList } from '../ui/PhaserList';
 import { FONT_FAMILY, TEXT_HELL_CSS, FARBE_GOLD_WARM_CSS } from '../ui/designTokens';
+import { Logger } from '../logger';
 
 export class SpielverwaltungsSzene extends Phaser.Scene {
   private abmeldenStore?: () => void;
@@ -48,7 +49,7 @@ export class SpielverwaltungsSzene extends Phaser.Scene {
     // Load presets ahead of time for the modal
     appStore.ladePresets().then(p => {
       this.presets = p;
-    }).catch(console.error);
+    }).catch((e) => Logger.error('Preset-Laden fehlgeschlagen', e));
 
     this.abmeldenStore?.();
     this.abmeldenStore = appStore.abonniere((zustand) => {
@@ -69,7 +70,7 @@ export class SpielverwaltungsSzene extends Phaser.Scene {
     if (pendingCode) {
       sessionStorage.removeItem('pendingJoinCode');
       void appStore.betreteTischViaCode(pendingCode).catch((e) => {
-        console.error('Automatischer Beitritt fehlgeschlagen', e);
+        Logger.error('Automatischer Beitritt fehlgeschlagen', e);
         this.renderUi(appStore.snapshot());
       });
       return;

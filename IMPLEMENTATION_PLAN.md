@@ -4,25 +4,16 @@
 
 ## Notiz
 
-Build-Run 2026-05-26 (achte Session): **DB-10 ABGESCHLOSSEN — Baseline grün (340 Tests, 0 Failures)**
+Build-Run 2026-05-26 (neunte Session): **FE-3 ABGESCHLOSSEN — Baseline grün (340 Backend + 202 Frontend Tests)**
 
 **Was implementiert wurde:**
-1. `000-initial-schema.sql` — `CREATE TABLE partie_ergebnis` ersetzt durch `CREATE VIEW partie_ergebnis_view` (JOIN über partie + partie_teilnehmer + tisch, RANK()-Window-Function für Rangplatz)
-2. `Partie.java` — `beendet_am`-Spalte hinzugefügt; `markiereAlsBeendet()` setzt `beendetAm = Instant.now()`
-3. `PartieErgebnisEintrag.java` — nicht mehr persistent (`AbstraktePersistenzEntity` entfernt), `@Table("partie_ergebnis_view")`, neue Felder `partieId` (`@Id`) und `regelvariante`, keine `erstelle()`-Factory mehr
-4. `PartieErgebnisRepository.java` — Rotations-Methoden (`zaehleProSpieler`, `loescheAeltestenEintrag`) entfernt; `findBySpielerId` liest aus VIEW
-5. `SpielerProfilService.java` — `speicherePartieErgebnis()`-Methode + Rotations-Logik vollständig entfernt
-6. `SpielerProfilAntwort.java` — `PartieErgebnisAntwort` um `partieId` und `regelvariante` erweitert
-7. `SpielBeendet.java` — veralteter Kommentar zu `PartieErgebnisEintrag` aktualisiert
+1. `frontend/src/e2eBruecke.ts` — neue Datei mit `LocodokoBridge`-Interface + `declare global { interface Window { __locodoko?: LocodokoBridge } }`
+2. `main.ts` — `(window as unknown as Record<string, unknown>)['__locodoko']` → `window.__locodoko` (getypter Zugriff)
+3. `TischBrücke.ts` — inline Typ durch Import aus `e2eBruecke.ts` + `window.__locodoko` statt komplexem Cast ersetzt
+4. `TischSzene.ts`, `TischEreignisHandler.ts`, `PartieStore.ts` — `(window as any).__locodoko` → `window.__locodoko` (0 `(window as any)` im Prod-Code)
+5. 8 console.* → Logger: TischRenderKontroller, BootSzene (2), TischSzene (2), SpielverwaltungsSzene (2), TischKartenRenderer, Kartenansicht
 
-**Nächster Schritt:** FE-3 (Frontend-Cleanup: console.log → Logger, getypte Bridge) — klein, kann als Einstieg in Phase 3 dienen.
-
-**Offene Fragen:** Keine.
-
-
-**Nächster Schritt:** DB-10 (PartieErgebnis-VIEW) — Ablöse der `partie_ergebnis_eintrag`-Tabelle durch SQL-VIEW.
-
-**Hinweis:** `standardRegeln()` und `dkvRegeln()` sind identisch → beide werden als TURNIER klassifiziert. Falls unterschiedliche Klassifikation gewünscht, müssten die Presets auseinandergehalten werden.
+**Nächster Schritt:** FE-1 (Spieler-Profil-Modal mit Statistik) — hängt von DB-9 ab (erledigt). Vorbedingung erfüllt.
 
 **Offene Fragen:** Keine.
 
@@ -524,7 +515,7 @@ Konkret: Build-Modus erstellt für DB-2/4b/4c **drei separate Working-Tree-Ände
 ---
 
 ### FE-3: FRONTEND-CLEANUP — LOGGING UND TYPEN (Task 79)
-- [ ] **Frontend** (Mittlere Priorität, kleiner Aufwand): Code-Smells aus dem Frontend-Review beseitigen.
+- [x] **Frontend** (Mittlere Priorität, kleiner Aufwand): Code-Smells aus dem Frontend-Review beseitigen.
   - **Erste Datei zuerst**: `frontend/src/main.ts` — definiere und exportiere ein getyptes Interface `LocodokoBridge` für `window.__locodoko`. Das `LocodokoBridge`-Interface existiert bereits in `e2e/tests/helpers.ts` (Z. 9-30) — als Basis übernehmen und nach Frontend ziehen.
   - **Vollständige `console`-Stellen-Liste** (8 Stellen, davon 2 bewusst direkt):
     - `main.ts:12` — `console.error` im globalen Window-Error-Handler. **BLEIBT** (siehe Kommentar Z. 10: „Nutzt console.error direkt, damit Exceptions nie unbemerkt bleiben").

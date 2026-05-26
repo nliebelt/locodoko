@@ -2,6 +2,7 @@ import Phaser from 'phaser';
 import { registriereBasisTexturen, TEXTUR_FILZ, ladeHintergrundbilder } from '../assets/AssetLoader';
 import { appStore } from '../anwendung';
 import { FONT_FAMILY } from '../ui/designTokens';
+import { Logger } from '../logger';
 
 /**
  * BootSzene ist der Einstiegspunkt des Phaser-Spiels.
@@ -16,7 +17,7 @@ export class BootSzene extends Phaser.Scene {
   }
 
   preload(): void {
-    console.log('[BootSzene] preload: lade Hintergruende...');
+    Logger.szene('preload: lade Hintergruende...');
     ladeHintergrundbilder(this);
     
     // Wir lassen Phaser wissen, dass wir eine externe Schriftart verwenden wollen.
@@ -32,7 +33,7 @@ export class BootSzene extends Phaser.Scene {
     try {
       registriereBasisTexturen(this);
     } catch (error) {
-      console.error('[BootSzene TEXTURE ERROR]', error);
+      Logger.error('Textur-Initialisierung fehlgeschlagen', error);
       this.statusText?.setText('Fehler bei der Textur-Initialisierung. Bitte pruefe Logs.');
       return; 
     }

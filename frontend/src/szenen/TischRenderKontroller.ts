@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 import type { AppZustand } from '../store/AppStore';
 import type { Tischhintergrund } from '../modelle/SpielverwaltungDto';
+import { Logger } from '../logger';
 import {
   TEXTUR_BILD_OVAL_1,
   TEXTUR_BILD_OVAL_2,
@@ -27,7 +28,7 @@ function texturFuerTischhintergrund(bg: Tischhintergrund): string {
     OVAL_2: TEXTUR_BILD_OVAL_2,
     RUND_1: TEXTUR_BILD_RUND_1,
   } as Record<Tischhintergrund, string>)[bg];
-  console.log(`[TischSzene] Hintergrund-Mapping: ${bg} -> ${tex}`);
+  Logger.szene(`Hintergrund-Mapping: ${bg} -> ${tex}`);
   return tex;
 }
 

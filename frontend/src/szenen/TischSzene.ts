@@ -71,8 +71,7 @@ export class TischSzene extends Phaser.Scene {
     const storeIdle = ignoreStore ? true : appStore.isIdle();
     const animationenLaeuft = this.animationen?.animationLaeuft ?? false;
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- E2E Bridge Pattern
-    const loco = (window as any).__locodoko;
+    const loco = window.__locodoko;
     if (loco) {
       loco._idleDebug = {
         storeIdle,
@@ -91,7 +90,7 @@ export class TischSzene extends Phaser.Scene {
   }
 
   preload(): void {
-    console.log('[TischSzene] preload: lade Assets...');
+    Logger.szene('preload: lade Assets...');
     ladeKartenBilderVorab(this);
     ladeHintergrundbilder(this);
   }
@@ -148,7 +147,7 @@ export class TischSzene extends Phaser.Scene {
   }
 
   public initialisiereZustand(): void {
-    console.log('[TischSzene] initialisiereZustand');
+    Logger.szene('initialisiereZustand');
     this.animationen?.abbrechen();
     this.kartenRenderer?.loeseEigeneKartenAuf();
     this.kartenRenderer?.versteckeLetztesStichOverlay();

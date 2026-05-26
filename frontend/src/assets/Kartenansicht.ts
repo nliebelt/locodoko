@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 import { FONT_FAMILY } from '../ui/designTokens';
 import { TEXTUR_KARTE_RUECKSEITE, texturSchluesselFuerKarte } from './AssetLoader';
+import { Logger } from '../logger';
 
 type Karteninhalt =
   | { typ: 'offen'; farbe: string; wert: string }
@@ -88,7 +89,7 @@ export class Kartenansicht extends Phaser.GameObjects.Container {
       this.add(this.bild);
     } else {
       if (textur) {
-        console.warn(`Textur ${textur} nicht gefunden! Nutze Fallback.`, optionen.inhalt);
+        Logger.error(`Textur ${textur} nicht gefunden, nutze Fallback`, optionen.inhalt);
       }
       this.renderFallback(szene, optionen.inhalt);
     }
