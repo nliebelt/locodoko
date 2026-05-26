@@ -191,6 +191,8 @@ public class Spiel extends AbstraktePersistenzEntity {
         spiel.geberPosition = geberPosition.name();
         spiel.spieltypText = spieltyp.name();
         spiel.phaseText = phase.name();
+        spiel.haendeJson = "[]";
+        spiel.sticheJson = "[]";
         return spiel;
     }
 
