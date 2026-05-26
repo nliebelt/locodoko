@@ -34,6 +34,9 @@ class JsonbConverterKonfiguration {
     JdbcCustomConversions jdbcCustomConversions() {
         ObjectMapper mapper = JsonbConverter.konfiguriereObjectMapper(new ObjectMapper());
         return new JdbcCustomConversions(List.of(
+                // Augen VO ↔ Integer
+                new AugenConverter.AugenSchreibConverter(),
+                new AugenConverter.AugenLeseConverter(),
                 // H2: byte[] → String fuer @Column-String-Felder (haendeJson, etc.)
                 new JsonbConverter.JsonbBytesZuStringConverter(mapper),
                 // haende

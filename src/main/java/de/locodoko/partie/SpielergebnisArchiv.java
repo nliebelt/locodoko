@@ -1,5 +1,6 @@
 package de.locodoko.partie;
 
+import de.locodoko.karten.Augen;
 import de.locodoko.karten.Spieltyp;
 
 import org.springframework.data.annotation.Id;
@@ -55,10 +56,10 @@ public class SpielergebnisArchiv {
     private Spieltyp soloTyp;
 
     @Column("re_augen")
-    private int reAugen;
+    private Augen reAugen;
 
     @Column("kontra_augen")
-    private int kontraAugen;
+    private Augen kontraAugen;
 
     @Column("sieger_partei")
     private Partei siegerPartei;
@@ -103,7 +104,7 @@ public class SpielergebnisArchiv {
         UUID id, UUID partieId, int spielNummer,
         SpielerPosition geberPosition, Spieltyp spieltyp,
         boolean istSolo, Spieltyp soloTyp,
-        int reAugen, int kontraAugen, Partei siegerPartei,
+        Augen reAugen, Augen kontraAugen, Partei siegerPartei,
         int spielwert, int grundwert, int absagePunkte,
         int gegenDieAltenPunkte, int soloMultiplikator,
         int spielpunkteSued, int spielpunkteWest,
@@ -117,8 +118,8 @@ public class SpielergebnisArchiv {
         this.spieltyp = Objects.requireNonNull(spieltyp, "spieltyp darf nicht null sein");
         this.istSolo = istSolo;
         this.soloTyp = soloTyp;
-        this.reAugen = reAugen;
-        this.kontraAugen = kontraAugen;
+        this.reAugen = Objects.requireNonNull(reAugen, "reAugen darf nicht null sein");
+        this.kontraAugen = Objects.requireNonNull(kontraAugen, "kontraAugen darf nicht null sein");
         this.siegerPartei = Objects.requireNonNull(siegerPartei, "siegerPartei darf nicht null sein");
         this.spielwert = spielwert;
         this.grundwert = grundwert;
@@ -171,8 +172,8 @@ public class SpielergebnisArchiv {
             UUID.randomUUID(), partieId, spielNummer,
             geberPosition, spieltyp,
             istSolo, soloTyp,
-            ergebnis.augenVon(Partei.RE).wert(),
-            ergebnis.augenVon(Partei.KONTRA).wert(),
+            ergebnis.augenVon(Partei.RE),
+            ergebnis.augenVon(Partei.KONTRA),
             ergebnis.siegerPartei(),
             ergebnis.spielwert().wert(),
             ergebnis.grundwert(),
@@ -196,8 +197,8 @@ public class SpielergebnisArchiv {
     public Spieltyp spieltyp() { return spieltyp; }
     public boolean istSolo() { return istSolo; }
     public Spieltyp soloTyp() { return soloTyp; }
-    public int reAugen() { return reAugen; }
-    public int kontraAugen() { return kontraAugen; }
+    public Augen reAugen() { return reAugen; }
+    public Augen kontraAugen() { return kontraAugen; }
     public Partei siegerPartei() { return siegerPartei; }
     public int spielwert() { return spielwert; }
     public int grundwert() { return grundwert; }

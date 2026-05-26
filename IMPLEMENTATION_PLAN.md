@@ -398,7 +398,7 @@ Konkret: Build-Modus erstellt für DB-2/4b/4c **drei separate Working-Tree-Ände
 ---
 
 ### DB-7: VALUE OBJECTS AUSWEITEN (Task 73)
-- [ ] **Backend** (Niedrige Priorität, mittlerer Aufwand): Primitive Obsession beheben.
+- [x] **Backend** (Niedrige Priorität, mittlerer Aufwand): Primitive Obsession beheben.
   - **Erste Datei zuerst**: `Augen.java` (existiert schon) — konsequent verwenden, beginne mit `SpielergebnisArchiv` (`reAugen`/`kontraAugen` von `int` zu `Augen`).
   - **Begrenzung**: maximal 1 neues VO pro Commit, sonst zu großer Blast-Radius.
   - **Kandidaten**:
