@@ -138,4 +138,47 @@ describe('SpielerProfilModal', () => {
     expect(uiRoot.innerHTML).toContain('&lt;script&gt;');
     modal.schliessen();
   });
+
+  it('zeigt lange Partie-Liste mit allen Einträgen vollständig an', () => {
+    // Viele Partien dürfen nicht abgeschnitten werden — alle Zeilen müssen gerendert werden
+    const vielePartien = Array.from({ length: 20 }, (_, i) => ({
+      tischName: `Tisch ${i + 1}`,
+      datum: `2026-0${(i % 9) + 1}-01T10:00:00Z`,
+      endPunktestand: (i + 1) * 3,
+      rangplatz: (i % 4) + 1,
+      spielanzahl: 10 + i
+    }));
+    const modal = SpielerProfilModal.oeffnenMitDaten(erstelleTestProfil({ letztePartien: vielePartien }));
+    const zeilen = uiRoot.querySelectorAll('.ui-profil-tabelle tbody tr');
+    expect(zeilen.length).toBe(20);
+    expect(uiRoot.innerHTML).toContain('Tisch 1');
+    expect(uiRoot.innerHTML).toContain('Tisch 20');
+    modal.schliessen();
+  });
+
+  it('hebt den ersten Platz gold hervor', () => {
+    // Goldene Platzierung muss visuell erkennbar sein
+    const modal = SpielerProfilModal.oeffnenMitDaten(erstelleTestProfil({
+      letztePartien: [
+        { tischName: 'Sieger-Tisch', datum: '2026-05-01T10:00:00Z', endPunktestand: 30, rangplatz: 1, spielanzahl: 8 },
+        { tischName: 'Andere Runde', datum: '2026-04-01T10:00:00Z', endPunktestand: 5, rangplatz: 3, spielanzahl: 5 }
+      ]
+    }));
+    expect(uiRoot.innerHTML).toContain('ui-profil-rang--gold');
+    // Platz 3 darf kein Gold erhalten
+    const zeilen = uiRoot.querySelectorAll('.ui-profil-tabelle tbody tr');
+    expect(zeilen[0].innerHTML).toContain('ui-profil-rang--gold');
+    expect(zeilen[1].innerHTML).not.toContain('ui-profil-rang--gold');
+    modal.schliessen();
+  });
+
+  it('schützt gegen XSS im Tischnamen der Partie-Liste', () => {
+    // Tischname kann ebenfalls Benutzereingabe sein
+    const modal = SpielerProfilModal.oeffnenMitDaten(erstelleTestProfil({
+      letztePartien: [{ tischName: '<img src=x onerror=alert(1)>', datum: '2026-05-01T10:00:00Z', endPunktestand: 5, rangplatz: 2, spielanzahl: 4 }]
+    }));
+    expect(uiRoot.innerHTML).not.toContain('<img src=x');
+    expect(uiRoot.innerHTML).toContain('&lt;img');
+    modal.schliessen();
+  });
 });

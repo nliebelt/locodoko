@@ -4,15 +4,17 @@
 
 ## Notiz
 
-Build-Run 2026-05-26 (zehnte Session): **FE-1 ABGESCHLOSSEN — Baseline grün (340 Backend + 213 Frontend Tests)**
+Build-Run 2026-05-26 (elfte Session): **FE-2 ABGESCHLOSSEN — Baseline grün (340 Backend + 216 Frontend Tests)**
 
 **Was implementiert wurde:**
-1. `SpielverwaltungApi.ts` — neue Methode `ladeSpielerProfil(spielerId)` (GET `/api/spieler/{id}/profil`)
-2. `SessionStore.ts` — delegiert `ladeSpielerProfil` an API
-3. `AppStore.ts` — exponiert `ladeSpielerProfil` nach außen
-4. `SpielerProfilModal.ts` — neues HTML-Modal (DOM-basiert, hängt in `#ui-root`): Header mit Avatar + Name + Datum, Statistik-Karten (Spiele/Siege/Win-Rate/Punkte), Sonderpunkte-Bilanz (Fuchs/Karlchen/Doppelköpfe), Solo-Bilanz, Partie-Verlauf-Tabelle; XSS-geschützt via escapeHtml
-5. `SpielverwaltungsSzene.ts` — „👤 Mein Profil"-Button in Lobby (Tab-Reihenfolge: Quick Game → Neuen Tisch → Mein Profil)
-6. `components.css` — Profil-Modal-CSS-Klassen (`.ui-modal--profil`, `.ui-profil-karte`, `.ui-profil-tabelle` etc.)
+FE-2 war zu ~95% bereits in FE-1 enthalten (`erstellePartieVerlauf`-Methode in `SpielerProfilModal.ts` vollständig gebaut). Ergänzt wurden 3 neue Tests in `SpielerProfilModal.test.ts`:
+1. Test mit langer Mock-Liste (20 Einträge) — alle Zeilen werden korrekt gerendert
+2. Test für Gold-Highlight bei Platz #1 (andere Plätze erhalten kein Gold)
+3. Test für XSS-Schutz im Tischnamen der Partie-Liste
+
+**Nächster logischer Schritt:** FE-5 (E2E-Tests auf Tastatureingaben umstellen) — hat keine offenen Vorbedingungen. Alternativ: FE-4 (FlashTextManager-Refactor) oder FE-6 (A11y-Basis).
+
+**Offene Fragen:** Keine.
 7. `SpielerProfilModal.test.ts` — 11 Unit-Tests (jsdom-Umgebung): Rendering, Win-Rate, XSS, Leer-Zustände, Schließen
 
 **Nächster Schritt:** FE-2 (Partie-Historie im Profil) — Erweiterung von FE-1. Die `letztePartien`-Tabelle im Modal ist bereits implementiert (aus `SpielerProfilAntwort`), FE-2 könnte das weiter ausbauen. Alternativ: FE-5 (E2E auf Tastatur) hat keine Vorbedingungen.
@@ -505,7 +507,7 @@ Konkret: Build-Modus erstellt für DB-2/4b/4c **drei separate Working-Tree-Ände
 ---
 
 ### FE-2: PROFIL-DETAILSEITE — PARTIE-HISTORIE (Task 78)
-- [ ] **Frontend** (Niedrige Priorität, kleiner Aufwand): Erweiterung von FE-1 um eine scrollbare Partie-Historie.
+- [x] **Frontend** (Niedrige Priorität, kleiner Aufwand): Erweiterung von FE-1 um eine scrollbare Partie-Historie.
   - **Erste Datei zuerst**: Die in FE-1 angelegte `SpielerProfilModal.ts` (bzw. Szene) — neue Sektion „Letzte Partien".
   - **Schritte**:
     1. Backend-Endpunkt nutzt bereits `partie_ergebnis_view` (DB-10). DTO liefert eine Liste von `PartieErgebnisEintrag` ohne Limit.
