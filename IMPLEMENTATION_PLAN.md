@@ -4,13 +4,17 @@
 
 ## Notiz
 
-Build-Run 2026-05-26 (dreizehnte Session): **FE-4 + DOC-65 + FE-6 ABGESCHLOSSEN — Baseline grün (216 Frontend-Tests)**
+Build-Run 2026-05-26 (dreizehnte Session): **FE-4 + DOC-65 + FE-6 + DB-8 + DB-7 + FEAT-52 ABGESCHLOSSEN — alle bekannten Tasks erledigt**
 
 **Was implementiert wurde:**
-FE-4: FlashTextManager.ts von 582 → 384 Zeilen refaktoriert. Geänderte Dateien:
-1. `frontend/src/ui/FlashTextManager.ts` — Alle Effekt-Primitiven (`konfetti`, `shockwaveRing`, `screenShake`, `cameraFlash`, `foilShimmer`, `verwalteMitTimeout`) delegieren jetzt an Funktionen in `FlashTextPrimitiven.ts`. Alle 14 `as unknown as { active: boolean }` Casts durch `istAktiv()` ersetzt. Drei Foil-Events (`doppelkopfGestochen`, `hochzeitPartnerGefunden`, `spielBeendet`) nutzen `verwalteMitFoilTimeout` statt ~30 Zeilen Inline-Boilerplate pro Event. `erstelleKartenContainer` aus `FlashTextContainer.ts` für alle 9 Events genutzt (vorher: manuell mit `CARD_BG_DARK` bei 3 Events).
+- FE-4: FlashTextManager.ts 582→384 Zeilen, 0 `as unknown as` Casts, Effekte delegieren an FlashTextPrimitiven/FlashTextContainer.
+- DOC-65: Frontend-UI-Logik DoD (2 Häkchen) geschlossen.
+- FE-6: SpielerProfilModal — 5 aria/role-Attribute (role=dialog, aria-modal, aria-labelledby, aria-label×2).
+- DB-8: Spiel.parteiVon() eingeführt, KiOrchestrierungService Tell-Don't-Ask behoben.
+- DB-7: Augen VO in SpielergebnisArchiv (reAugen/kontraAugen: int→Augen), AugenConverter für Spring Data JDBC.
+- FEAT-52: pressStart2P.png/xml Bitmap-Atlas, ladeBitmapFont() in AssetLoader/BootSzene, FONT_BITMAP_KEY in designTokens, Spec-DoD [x].
 
-**Nächster logischer Schritt:** FEAT-52 (BitmapFont — Spec-Pflicht) oder FE-6 (A11y-Basis) oder DB-7/DB-8.
+**Nächster logischer Schritt:** Alle bekannten Tasks erledigt. Neue Tasks durch User oder weiteres Spec-Review.
 
 **Offene Fragen:** Keine.
 
@@ -626,7 +630,7 @@ Konkret: Build-Modus erstellt für DB-2/4b/4c **drei separate Working-Tree-Ände
 ---
 
 ### FEAT-52: BITMAPFONT (Task 52) — STATUS-UPGRADE: SPEC-PFLICHT
-- [ ] **Frontend** (Mittlere Priorität — **hochgestuft** weil Spec-Verletzung): Press Start 2P als Phaser BitmapFont laden statt Web-Font.
+- [x] **Frontend** (Mittlere Priorität — **hochgestuft** weil Spec-Verletzung): Press Start 2P als Phaser BitmapFont laden statt Web-Font.
   - **Spec-Bezug**: `specs/frontend-visuelles-design.md` Z. 36 sagt explizit: „Wird als Phaser `BitmapFont` geladen (`this.load.bitmapFont`) für performantes Gameplay-Rendering." Aktueller Code nutzt aber Web-Font (`fontFamily: FONT_FAMILY` 30+ Stellen).
   - **Erste Datei zuerst**: `frontend/src/assets/AssetLoader.ts` — `preload()`-Hook erweitern für `this.load.bitmapFont('pressStart2P', ...)`.
   - **Schritte**:

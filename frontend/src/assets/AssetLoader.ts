@@ -13,6 +13,9 @@ export const TEXTUR_KARTE_VERDECKT = 'karte-verdeckt';
 export const TEXTUR_KARTE_RUECKSEITE = 'card_back';
 export const TEXTUR_PIXEL = 'pixel';
 
+/** Schlüssel für den Press-Start-2P Bitmap-Font (Phaser BitmapText). */
+export const BITMAP_FONT_PRESS_START_2P = 'pressStart2P';
+
 /**
  * Mapping von Doppelkopf-Farbbezeichnungen auf englische PNG-Dateinamen-Bestandteile.
  * Entspricht den heruntergeladenen vectorized-playing-cards in /public/assets/cards/.
@@ -103,6 +106,20 @@ export function registriereBasisTexturen(szene: Phaser.Scene): void {
   registriereKarteOffen(szene);
   registriereKarteVerdeckt(szene);
   registrierePixelTextur(szene);
+}
+
+/**
+ * Laedt den Press-Start-2P Bitmap-Font fuer performantes Gameplay-Rendering.
+ * Muss in der preload()-Methode der Boot-Szene aufgerufen werden.
+ */
+export function ladeBitmapFont(szene: Phaser.Scene): void {
+  if (!szene.cache.bitmapFont.exists(BITMAP_FONT_PRESS_START_2P)) {
+    szene.load.bitmapFont(
+      BITMAP_FONT_PRESS_START_2P,
+      '/assets/fonts/pressStart2P.png',
+      '/assets/fonts/pressStart2P.xml'
+    );
+  }
 }
 
 export function registrierePixelTextur(szene: Phaser.Scene): void {

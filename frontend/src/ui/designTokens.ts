@@ -106,6 +106,8 @@ export const KARTENRUECKEN_MUSTER_CSS = '#d8f3dc';
 // =============================================================================
 export const FONT_FAMILY              = "'Press Start 2P'";
 export const FONT_FAMILY_FALLBACK     = "'Press Start 2P', monospace";
+/** Phaser BitmapFont-Schlüssel für Press Start 2P (Gameplay-Rendering). */
+export const FONT_BITMAP_KEY          = 'pressStart2P';
 export const FONT_XS                  = 8;
 export const FONT_SM                  = 10;
 export const FONT_MD                  = 14;

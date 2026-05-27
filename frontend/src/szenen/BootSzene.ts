@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { registriereBasisTexturen, TEXTUR_FILZ, ladeHintergrundbilder } from '../assets/AssetLoader';
+import { registriereBasisTexturen, TEXTUR_FILZ, ladeHintergrundbilder, ladeBitmapFont } from '../assets/AssetLoader';
 import { appStore } from '../anwendung';
 import { FONT_FAMILY } from '../ui/designTokens';
 import { Logger } from '../logger';
@@ -19,6 +19,7 @@ export class BootSzene extends Phaser.Scene {
   preload(): void {
     Logger.szene('preload: lade Hintergruende...');
     ladeHintergrundbilder(this);
+    ladeBitmapFont(this);
     
     // Wir lassen Phaser wissen, dass wir eine externe Schriftart verwenden wollen.
     // Da sie in CSS definiert ist, muessen wir sicherstellen, dass sie geladen ist,

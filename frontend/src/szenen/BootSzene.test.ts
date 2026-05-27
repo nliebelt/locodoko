@@ -11,7 +11,8 @@ vi.mock('../anwendung', () => ({
 vi.mock('../assets/AssetLoader', () => ({
   registriereBasisTexturen: vi.fn(),
   TEXTUR_FILZ: 'filz',
-  ladeHintergrundbilder: vi.fn()
+  ladeHintergrundbilder: vi.fn(),
+  ladeBitmapFont: vi.fn()
 }));
 
 vi.mock('phaser', () => ({
