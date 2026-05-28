@@ -4,11 +4,11 @@
 
 ## Notiz
 
-**Session 18 (2026-05-28):** REFACTOR-DOMAIN-3 abgeschlossen.
+**Session 19 (2026-05-28):** REFACTOR-DOMAIN-4 abgeschlossen.
 
-`PartieStandAntwort.java` liest nun direkt aus Domain-VOs statt via Persistenz-Adapter-Getter. Geändert: `ergebnisEmbeddable()` → `ergebnis().isEmpty/isPresent/get()`, `haendeAlsJson()` → `haende().get(position)`, `sticheAlsJson()` → `abgeschlosseneStiche()` mit Index-Counter, `sonderpunkteAlsJson()` → `ergebnis.sonderpunkteVon(partei)`, `spieltypAusDb()` → `spieltyp()`, `phasenName()` → `phase().name()`, `geberPosition()` → `geber()`. `LetztesSpielergebnisAntwort` nutzt jetzt `Spielergebnis`-VO direkt (statt `SpielErgebnisEmbeddable`). `SpielerImSpielAntwort` nimmt `Hand` statt `HandJsonEintrag`. `AbgeschlossenerStichAntwort` iteriert über `List<Stich>`. 23 Adapter-Getter aus `Spiel.java` gelöscht. Alle Callsites (KiTischOrchestrator, SpielAktionsService, PartieLifecycleService, PersistenzRepositoryTest, TischControllerTest, KiOrchestrierungServiceFehlerTest) umgestellt. 348 Backend-Tests grün.
+Die 8 parasitären DTO-/Embeddable-Klassen (`HandJsonEintrag`, `StichJsonEintrag`, `AktuellerStichKarteEmbeddable`, `HandKarteEmbeddable`, `SpielErgebnisEmbeddable`, `VorbehaltMeldungEmbeddable`, `AnsageEreignisEmbeddable`, `SonderpunktJsonEintrag`) wurden nach Verifikation vollständig gelöscht. Keine externen Aufrufer nach DOMAIN-3. 348 Backend-Tests weiterhin grün.
 
-**Nächster Schritt:** REFACTOR-DOMAIN-4: Embeddable/JsonEintrag-Klassen löschen.
+**Nächster Schritt:** REFACTOR-DOMAIN-5: SpielTestBuilder + Setter im Production-Code löschen.
 
 
 **REFACTOR-DOMAIN-VISUAL-BASELINE:** Erfordert laufendes Backend (`mvn spring-boot:run`) + Playwright headed. Weiterhin übersprungen.
@@ -179,7 +179,7 @@ Bevor REFACTOR-DOMAIN startet: manueller Browser-Test durch User.
 
   **Folge:** Die 23 Adapter-Getter in `Spiel.java` werden unbenutzt — alle in einem Commit löschen.
 
-- [ ] **REFACTOR-DOMAIN-4: Embeddable/JsonEintrag-Klassen löschen** — Folgt zwingend auf DOMAIN-3.
+- [x] **REFACTOR-DOMAIN-4: Embeddable/JsonEintrag-Klassen löschen** — Folgt zwingend auf DOMAIN-3.
 
   Die acht parasitären DTO-Klassen (`HandJsonEintrag`, `StichJsonEintrag`, `AktuellerStichKarteEmbeddable`, `HandKarteEmbeddable`, `SpielErgebnisEmbeddable`, `VorbehaltMeldungEmbeddable`, `AnsageEreignisEmbeddable`, `SonderpunktJsonEintrag`) sind nach DOMAIN-3 nur noch von `PartieStandAntwort` über interne `Karte`-/`GespielteKarte`-Konversionen genutzt. Konversionen direkt im DTO-Mapper inline halten oder durch echte API-DTOs ersetzen.
 
