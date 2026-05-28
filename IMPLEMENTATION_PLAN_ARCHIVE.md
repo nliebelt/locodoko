@@ -2,6 +2,45 @@
 
 ---
 
+## Archiviert am 2026-05-27 (REFACTOR-SPIEL-HYBRID — 13. Session)
+
+> Fokus: Vollständiger Umbau der Persistenz- und Domain-Schicht + Frontend-Verbesserungen. Alle 21 Tasks erledigt (Sessions 1–13, 2026-05-22 bis 2026-05-26).
+
+### Zusammenfassung REFACTOR-SPIEL-HYBRID
+
+**Backend — Persistenz & Domain (DB-1 … DB-10):**
+- **DB-1:** Specs (architektur*.md, datenbankmodell.md, spieler-profil.md) auf Hybrid-Modell aktualisiert. Widersprüche in architektur-ddd.md §3 aufgelöst.
+- **DB-2:** Ein initiales SQL-Changeset (`000-initial-schema.sql`) ersetzt die 22 alten YAML-Changesets (ins `archiv/`-Verzeichnis verschoben). Greenfield-Schema mit `partie`, `partie_teilnehmer`, `laufendes_spiel`, `spielergebnis_archiv`, `sonderpunkt_eintrag`, `spieler_statistik`, VIEW `partie_ergebnis_view`.
+- **DB-3:** 11 Custom JSONB-Converter-Paare für `Hand`, `Stich`, `VorbehaltMeldung`, `Ansagen`, `Parteien`, `ArmutStatus`, `HochzeitStatus`, `Spielregeln` u. a. Roundtrip-Tests grün.
+- **DB-4a:** `Spiel.java` mutable (Pattern A): Domain-Methoden mutieren direkt + returnen `List<SpielEreignis>`. `SpielAktion`-Klasse gelöscht. `toBuilder()` aus `partie/` vollständig entfernt.
+- **DB-4b:** `@Transient`-Felder weg, JSONB-Persistenz via `PartieJsonMapper`. `SpielNachLadenCallback` + `PartieNachLadenCallback` als AfterConvertCallback.
+- **DB-4c:** `SpielHydrierer.java` (238 Z.), `SpielPersistenzSync.java` (89 Z.), `SpielBuilder.java` (72 Z.) gelöscht. Alle Aufrufer bereinigt.
+- **DB-4d:** `Spiel.ausPersistiertemStand` und `Spiel.neuePersistenz` mit Javadoc als Test-Support markiert. `SpielTestBuilder` bewusst nicht eingeführt (YAGNI).
+- **DB-5:** `SpielergebnisArchiv` als eigenständiges Aggregate-Root (`@Table`) mit `@MappedCollection<SonderpunktEintrag>` eingeführt. `Partie.abgeschlosseneSpiele()` liefert `List<SpielergebnisArchiv>`.
+- **DB-6:** 16 `IllegalStateException`-Würfe in `Spiel.java` + 4 in `Partie.java` durch Domain-Exceptions (`UngueltigerSpielzugException` → HTTP 422, `SpielverwaltungKonfliktException` → HTTP 409) ersetzt.
+- **DB-7:** `Augen`-VO konsequent in `SpielergebnisArchiv` (`reAugen`/`kontraAugen`: `int` → `Augen`). `AugenConverter` für Spring Data JDBC.
+- **DB-8:** `Spiel.parteiVon(SpielerPosition)` eingeführt. 1 echter Tell-Don't-Ask-Verstoß in `KiOrchestrierungService` behoben.
+- **DB-9:** `Regelvariante`-Enum (TURNIER/SONDER/FREI), `Spielregeln.regelvariante()`. `SpielerStatistik` auf Composite-Key `(spieler_id, regelvariante)` + neue Felder (Re/Kontra-Quote, Solos-pro-Typ JSONB, Schweinchen, Hochzeiten, Armuten).
+- **DB-10:** `partie_ergebnis_eintrag`-Tabelle (max-20-Rotation) durch SQL-VIEW `partie_ergebnis_view` abgelöst (Window-Funktion RANK()). Rotations-Logik aus `SpielerProfilService` gelöscht.
+
+**Frontend (FE-1 … FE-6, FEAT-52, DOC-65):**
+- **FE-1:** `SpielerProfilModal.ts` — neues HTML-Modal mit Statistiken pro Regelvariante (Tab-Wechsel, Win-Rate, Re/Kontra, Solos-pro-Typ, Sonderpunkte-Bilanz).
+- **FE-2:** Partie-Historie-Sektion im Profil-Modal (scrollbar, leer-State, Mock-Tests).
+- **FE-3:** 8 `console.log/error`-Stellen → `Logger`; `(window as any).__locodoko` → typisiertes `LocodokoBridge`-Interface in `e2eBruecke.ts`.
+- **FE-4:** `FlashTextManager.ts` 582 → 384 Zeilen, 0 `as unknown as`-Casts, Effekte delegieren an `FlashTextPrimitiven` / `FlashTextContainer`.
+- **FE-5:** 8 E2E-Tests von `appStore`-Direktaufrufen auf Tastatureingaben (`page.keyboard`) umgestellt. `specs/frontend-tastatursteuerung.md` Status auf „Stabil" geändert.
+- **FE-6:** SpielerProfilModal — 5 ARIA/role-Attribute (`role=dialog`, `aria-modal`, `aria-labelledby`, `aria-label`×2).
+- **FEAT-52:** `pressStart2P.png/xml` Bitmap-Atlas erzeugt. `ladeBitmapFont()` in `AssetLoader`/`BootSzene`. `FONT_BITMAP_KEY` in `designTokens`. Spec-DoD abgehakt.
+- **DOC-65:** 2 DoD-Häkchen in `specs/frontend-ui-logik.md` (seitliche Panels, Du-bist-dran-Hinweis) geschlossen.
+
+**Entdeckungen (für nächsten Plan-Run relevant):**
+- Jackson `ist*`-Präfix-Getter-Problem: `@JsonIgnore`-Mixin-Lösung dokumentiert in Plan-Notiz.
+- `ObjectMapper`-Injection in `JdbcCustomConversions` nicht möglich (zu früher Context-Aufbau) → `new ObjectMapper()` als Workaround.
+- `FlashTextManager.ts` Akzeptanzkriterium „< 350 Zeilen" leicht überschritten (384 Z.), aber 0 Casts und alle Tests grün — akzeptiert.
+- DB-9 noch nicht vollständig: `SpielerProfilAntwort` noch nicht auf `Map<Regelvariante, SpielerStatistikDto>` umgestellt (Frontend-seitig ausstehend für FE-1/FE-2). Verifizieren im nächsten Plan-Run.
+
+---
+
 ## Archiviert am 2026-05-04 (Plan-Run #99)
 
 > Fokus: Integrations-Lücken & Polishing (Statistiken, Security, UX). Alle Aufgaben erledigt.
