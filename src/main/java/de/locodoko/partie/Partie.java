@@ -146,9 +146,10 @@ public class Partie extends AbstraktePersistenzEntity {
     }
 
     /** Erstellt eine neue Persistenz-Partie. */
-    public static Partie neuePersistenz(int anzahlSpiele) {
+    public static Partie neuePersistenz(int anzahlSpiele, Spielregeln spielregeln) {
         Partie p = new Partie();
         p.anzahlSpiele = anzahlSpiele;
+        p.spielregeln = Objects.requireNonNull(spielregeln, "spielregeln duerfen nicht null sein");
         p.statusDb = PartieStatus.LAUFEND.name();
         return p;
     }

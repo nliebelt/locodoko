@@ -20,6 +20,7 @@ import org.springframework.transaction.annotation.Transactional;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import de.locodoko.karten.Spielregeln;
 
 /**
  * Tests für den {@link SpielerSessionCleanupService}.
@@ -171,7 +172,7 @@ class SpielerSessionCleanupServiceTest {
      */
     @Test
     void spielerBleibtAnAktivenTischNachSessionAblauf() {
-        Partie partie = Partie.neuePersistenz(5);
+        Partie partie = Partie.neuePersistenz(5, Spielregeln.standardRegeln());
         partieRepository.save(partie);
 
         TischEntity tisch = TischEntity.neu("Aktiver Tisch", spieler, TischkonfigurationEmbeddable.standard());

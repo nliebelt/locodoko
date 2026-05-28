@@ -168,7 +168,7 @@ class VerbindungsabbruchReconnectSnapshotTest {
             tischRepository.save(tisch);
 
             // Partie mit zwei Spielen anlegen
-            Partie partie = Partie.neuePersistenz(2);
+            Partie partie = Partie.neuePersistenz(2, Spielregeln.standardRegeln());
 
             // Spiel 1: vollständig abgeschlossen
             Spiel spiel1 = gesundesStichspiel();

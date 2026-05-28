@@ -35,6 +35,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import de.locodoko.karten.Spielregeln;
 
 /**
  * Integrationstests fuer {@link PartieController}.
@@ -85,7 +86,7 @@ class PartieControllerTest {
         tisch.fuegeSpielerHinzu(clara);  // → NORD (Index 2)
         tisch.fuegeSpielerHinzu(dirk);   // → OST  (Index 3)
 
-        Partie partie = Partie.neuePersistenz(8);
+        Partie partie = Partie.neuePersistenz(8, Spielregeln.standardRegeln());
         Spiel spiel = SpielTestBuilder.ausNeuePersistenz(1, SpielerPosition.SUED, Spieltyp.NORMALSPIEL, Spielphase.VORBEHALT_ANSAGE)
             .mitHaenden(Map.of(
                 SpielerPosition.SUED, new Hand(List.of(

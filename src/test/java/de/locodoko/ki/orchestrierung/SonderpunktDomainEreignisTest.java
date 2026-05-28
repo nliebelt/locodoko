@@ -167,7 +167,7 @@ class SonderpunktDomainEreignisTest {
     }
 
     private Partie partieMitSpiel(Spiel spiel) {
-        Partie partie = Partie.neuePersistenz(1);
+        Partie partie = Partie.neuePersistenz(1, Spielregeln.standardRegeln());
         spiel.setzeSpielNummer(1);
         partie.fuegeSpielHinzu(spiel);
         partie.setzeSpielregeln(spiel.spielregeln());

@@ -233,7 +233,7 @@ class KiOrchestrierungServiceFehlerTest {
 
     /** Verpackt ein Domain-Spiel in eine Partie. */
     private Partie partieMitSpiel(Spiel spiel, int anzahlSpiele) {
-        Partie partie = Partie.neuePersistenz(anzahlSpiele);
+        Partie partie = Partie.neuePersistenz(anzahlSpiele, Spielregeln.standardRegeln());
         spiel.setzeSpielNummer(1);
         partie.fuegeSpielHinzu(spiel);
         partie.setzeSpielregeln(spiel.spielregeln());

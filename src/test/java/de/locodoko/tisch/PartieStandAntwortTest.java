@@ -50,7 +50,7 @@ class PartieStandAntwortTest {
         tisch.fuegeSpielerHinzu(SpielerEntity.menschlich("Clara", "session-clara"));
         tisch.fuegeSpielerHinzu(SpielerEntity.menschlich("Dirk", "session-dirk"));
 
-        Partie partie = Partie.neuePersistenz(8);
+        Partie partie = Partie.neuePersistenz(8, Spielregeln.standardRegeln());
 
         Stich ersterStich = Stich.ausPersistiertemStand(SpielerPosition.SUED, List.of(
             new GespielteKarte(SpielerPosition.SUED, new Karte(Farbe.KREUZ, Kartenwert.AS, 1), 0),
@@ -126,7 +126,7 @@ class PartieStandAntwortTest {
         tisch.fuegeSpielerHinzu(SpielerEntity.menschlich("Clara", "session-clara"));
         tisch.fuegeSpielerHinzu(SpielerEntity.menschlich("Dirk", "session-dirk"));
 
-        Partie partie = Partie.neuePersistenz(8);
+        Partie partie = Partie.neuePersistenz(8, Spielregeln.standardRegeln());
 
         List<Karte> annasKarten = List.of(
             new Karte(Farbe.KREUZ, Kartenwert.DAME, 1),
@@ -177,7 +177,7 @@ class PartieStandAntwortTest {
         tisch.fuegeSpielerHinzu(SpielerEntity.menschlich("Clara", "session-clara"));
         tisch.fuegeSpielerHinzu(SpielerEntity.menschlich("Dirk", "session-dirk"));
 
-        Partie partie = Partie.neuePersistenz(8);
+        Partie partie = Partie.neuePersistenz(8, Spielregeln.standardRegeln());
         partie.setzeBockrundenZaehlerDb(2);
         Spiel spiel = SpielTestBuilder.ausNeuePersistenz(1, SpielerPosition.SUED, Spieltyp.NORMALSPIEL, Spielphase.VORBEHALT_ANSAGE)
             .mitHaenden(Map.of(
@@ -211,7 +211,7 @@ class PartieStandAntwortTest {
         tisch.fuegeSpielerHinzu(SpielerEntity.menschlich("Clara", "session-clara"));
         tisch.fuegeSpielerHinzu(SpielerEntity.menschlich("Dirk", "session-dirk"));
 
-        Partie partie = Partie.neuePersistenz(8);
+        Partie partie = Partie.neuePersistenz(8, Spielregeln.standardRegeln());
         Spiel spiel = SpielTestBuilder.ausNeuePersistenz(1, SpielerPosition.SUED, Spieltyp.NORMALSPIEL, Spielphase.VORBEHALT_ANSAGE)
             .mitHaenden(Map.of(
                 SpielerPosition.SUED, new Hand(List.of()),
@@ -276,7 +276,7 @@ class PartieStandAntwortTest {
         spiel.meldeGesund(SpielerPosition.SUED);
         spiel.loeseVorbehalteAuf();
 
-        Partie partie = Partie.neuePersistenz(8);
+        Partie partie = Partie.neuePersistenz(8, Spielregeln.standardRegeln());
         partie.fuegeSpielHinzu(spiel);
         tisch.setzePartie(partie);
 

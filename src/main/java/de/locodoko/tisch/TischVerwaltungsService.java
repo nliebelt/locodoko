@@ -253,7 +253,7 @@ public class TischVerwaltungsService {
         while (!tisch.istVoll()) {
             tisch.fuegeSpielerHinzu(kiSpielerFabrik.erzeugeNaechstenSpieler());
         }
-        Partie partie = Partie.neuePersistenz(tisch.konfiguration().anzahlSpiele());
+        Partie partie = Partie.neuePersistenz(tisch.konfiguration().anzahlSpiele(), tisch.konfiguration().alsSpielregeln());
         partie.fuegeSpielHinzu(erzeugeErstesSpiel(tisch));
         Partie gespeichertePartie = partieRepository.saveAndFlush(partie);
         tisch.setzePartie(gespeichertePartie);
@@ -332,7 +332,7 @@ public class TischVerwaltungsService {
                 s.hebeKiUebernahmeAuf();
                 spielerRepository.save(s);
             });
-        Partie neuePartie = Partie.neuePersistenz(tisch.konfiguration().anzahlSpiele());
+        Partie neuePartie = Partie.neuePersistenz(tisch.konfiguration().anzahlSpiele(), tisch.konfiguration().alsSpielregeln());
         neuePartie.fuegeSpielHinzu(erzeugeErstesSpiel(tisch));
         Partie gespeichertePartie = partieRepository.saveAndFlush(neuePartie);
         tisch.setzePartie(gespeichertePartie);
@@ -416,7 +416,7 @@ public class TischVerwaltungsService {
         while (!tisch.istVoll()) {
             tisch.fuegeSpielerHinzu(kiSpielerFabrik.erzeugeNaechstenSpieler());
         }
-        Partie partie = Partie.neuePersistenz(tisch.konfiguration().anzahlSpiele());
+        Partie partie = Partie.neuePersistenz(tisch.konfiguration().anzahlSpiele(), tisch.konfiguration().alsSpielregeln());
         partie.fuegeSpielHinzu(erzeugeErstesSpiel(tisch));
         Partie gespeichertePartie = partieRepository.saveAndFlush(partie);
         tisch.setzePartie(gespeichertePartie);

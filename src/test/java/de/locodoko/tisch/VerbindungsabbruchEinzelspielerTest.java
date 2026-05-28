@@ -15,6 +15,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.transaction.annotation.Transactional;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import de.locodoko.karten.Spielregeln;
 
 /**
  * Prüft das Timeout-Verhalten des {@link VerbindungsabbruchService} bei Einzelspieler-Tischen.
@@ -57,7 +58,7 @@ class VerbindungsabbruchEinzelspielerTest {
         tisch.fuegeSpielerHinzu(ki2);
         tisch.fuegeSpielerHinzu(ki3);
         // setzePartie setzt Status auf IM_SPIEL; tischRepository.save speichert die Partie kaskadiert
-        tisch.setzePartie(Partie.neuePersistenz(6));
+        tisch.setzePartie(Partie.neuePersistenz(6, Spielregeln.standardRegeln()));
         tischRepository.save(tisch);
     }
 
