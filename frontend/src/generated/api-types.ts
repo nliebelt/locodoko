@@ -513,6 +513,12 @@ export interface components {
         /** @description Zusammenfassung einer abgeschlossenen Partie. */
         PartieErgebnisAntwort: {
             /**
+             * Format: uuid
+             * @description ID der Partie.
+             * @example a1b2c3d4-e5f6-7890-abcd-ef1234567890
+             */
+            partieId?: string;
+            /**
              * @description Name des Tisches.
              * @example Gemuetliche Runde
              */
@@ -523,6 +529,11 @@ export interface components {
              * @example 2026-04-15T14:30:00Z
              */
             datum?: string;
+            /**
+             * @description Regelvariante der Partie.
+             * @example TURNIER
+             */
+            regelvariante?: string;
             /**
              * Format: int32
              * @description Endpunktestand des Spielers.
@@ -542,7 +553,7 @@ export interface components {
              */
             spielanzahl?: number;
         };
-        /** @description Oeffentlich sichtbares Spieler-Profil mit Statistiken und letzten Partien. */
+        /** @description Oeffentlich sichtbares Spieler-Profil mit Statistiken pro Regelvariante und letzten Partien. */
         SpielerProfilAntwort: {
             /**
              * Format: uuid
@@ -566,12 +577,14 @@ export interface components {
              * @example 2026-01-15T10:00:00Z
              */
             erstelltAm?: string;
-            /** @description Spielstatistiken des Spielers. */
-            statistik?: components["schemas"]["StatistikAntwort"];
+            /** @description Spielstatistiken des Spielers, gruppiert nach Regelvariante (TURNIER, SONDER, FREI). */
+            statistiken?: {
+                [key: string]: components["schemas"]["StatistikAntwort"];
+            };
             /** @description Liste der letzten Partien des Spielers. */
             letztePartien?: components["schemas"]["PartieErgebnisAntwort"][];
         };
-        /** @description Aggregierte Spielstatistiken eines Spielers. */
+        /** @description Aggregierte Spielstatistiken eines Spielers fuer eine Regelvariante. */
         StatistikAntwort: {
             /**
              * Format: int32
@@ -617,6 +630,48 @@ export interface components {
             doppelkoepfe?: number;
             /**
              * Format: int32
+             * @description Anzahl Siege als Re-Partei.
+             * @example 14
+             */
+            reSiege?: number;
+            /**
+             * Format: int32
+             * @description Anzahl Niederlagen als Re-Partei.
+             * @example 8
+             */
+            reNiederlagen?: number;
+            /**
+             * Format: int32
+             * @description Anzahl Siege als Kontra-Partei.
+             * @example 11
+             */
+            kontraSiege?: number;
+            /**
+             * Format: int32
+             * @description Anzahl Niederlagen als Kontra-Partei.
+             * @example 9
+             */
+            kontraNiederlagen?: number;
+            /**
+             * Format: int32
+             * @description Anzahl gespielter Hochzeiten.
+             * @example 3
+             */
+            hochzeitenGespielt?: number;
+            /**
+             * Format: int32
+             * @description Anzahl angesagter Armuten.
+             * @example 2
+             */
+            armutenAngesagt?: number;
+            /**
+             * Format: int32
+             * @description Anzahl uebernommener Armuten.
+             * @example 1
+             */
+            armutenUebernommen?: number;
+            /**
+             * Format: int32
              * @description Anzahl gewonnener Solos.
              * @example 4
              */
@@ -627,6 +682,16 @@ export interface components {
              * @example 2
              */
             solosNiederlagen?: number;
+            /**
+             * @description JSONB-Karte Soloergebnisse pro Solo-Typ.
+             * @example {
+             *       "SOLO_DAME": {
+             *         "siege": 2,
+             *         "niederlagen": 1
+             *       }
+             *     }
+             */
+            solosProTypJson?: string;
         };
         SpielerNameAnfrage: {
             name?: string;

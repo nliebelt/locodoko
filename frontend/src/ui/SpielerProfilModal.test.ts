@@ -9,16 +9,18 @@ function erstelleTestProfil(ueberschreiben: Partial<SpielerProfilAntwortGenerate
     anzeigeName: 'TestSpieler',
     avatarFarbe: '#ff5733',
     erstelltAm: '2026-01-01T00:00:00Z',
-    statistik: {
-      anzahlSpiele: 10,
-      anzahlSiege: 6,
-      gesamtPunkte: 42,
-      fuchsGefangen: 3,
-      fuchsVerloren: 1,
-      karlchenGespielt: 2,
-      doppelkoepfe: 1,
-      solosSiege: 2,
-      solosNiederlagen: 1
+    statistiken: {
+      TURNIER: {
+        anzahlSpiele: 10,
+        anzahlSiege: 6,
+        gesamtPunkte: 42,
+        fuchsGefangen: 3,
+        fuchsVerloren: 1,
+        karlchenGespielt: 2,
+        doppelkoepfe: 1,
+        solosSiege: 2,
+        solosNiederlagen: 1
+      }
     },
     letztePartien: [],
     ...ueberschreiben
@@ -57,7 +59,7 @@ describe('SpielerProfilModal', () => {
   it('berechnet Win-Rate korrekt aus Siege/Spiele', () => {
     // Falsche Win-Rate würde Spieler über Leistung täuschen
     const modal = SpielerProfilModal.oeffnenMitDaten(erstelleTestProfil({
-      statistik: { anzahlSpiele: 4, anzahlSiege: 1, gesamtPunkte: 10 }
+      statistiken: { TURNIER: { anzahlSpiele: 4, anzahlSiege: 1, gesamtPunkte: 10 } }
     }));
     expect(uiRoot.innerHTML).toContain('25%');
     modal.schliessen();
@@ -66,7 +68,7 @@ describe('SpielerProfilModal', () => {
   it('zeigt 0% Win-Rate wenn noch keine Spiele gespielt', () => {
     // Division durch 0 darf nicht zu NaN oder Crash führen
     const modal = SpielerProfilModal.oeffnenMitDaten(erstelleTestProfil({
-      statistik: { anzahlSpiele: 0, anzahlSiege: 0, gesamtPunkte: 0 }
+      statistiken: { TURNIER: { anzahlSpiele: 0, anzahlSiege: 0, gesamtPunkte: 0 } }
     }));
     expect(uiRoot.innerHTML).toContain('0%');
     modal.schliessen();
@@ -83,7 +85,7 @@ describe('SpielerProfilModal', () => {
 
   it('zeigt Leer-Hinweis wenn keine Statistiken vorhanden', () => {
     // Leerer Zustand muss kommuniziert werden, nicht einfach fehlen
-    const modal = SpielerProfilModal.oeffnenMitDaten(erstelleTestProfil({ statistik: undefined }));
+    const modal = SpielerProfilModal.oeffnenMitDaten(erstelleTestProfil({ statistiken: undefined }));
     expect(uiRoot.innerHTML).toContain('Noch keine Statistiken vorhanden');
     modal.schliessen();
   });

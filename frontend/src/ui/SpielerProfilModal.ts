@@ -60,6 +60,8 @@ export class SpielerProfilModal {
       ? new Date(profil.erstelltAm).toLocaleDateString('de-DE')
       : '—';
 
+    const statistik = profil.statistiken?.['TURNIER'];
+
     return `
       <div class="ui-profil-header">
         <div class="ui-profil-avatar" style="background-color: ${farbe}"></div>
@@ -69,8 +71,8 @@ export class SpielerProfilModal {
         </div>
         <button class="ui-profil-schliessen" aria-label="Profil schließen">✕</button>
       </div>
-      ${profil.statistik
-        ? SpielerProfilModal.erstelleStatistikAbschnitt(profil.statistik)
+      ${statistik
+        ? SpielerProfilModal.erstelleStatistikAbschnitt(statistik)
         : '<p class="ui-profil-leer">Noch keine Statistiken vorhanden.</p>'}
       ${SpielerProfilModal.erstellePartieVerlauf(profil.letztePartien ?? [])}
     `;
