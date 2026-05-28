@@ -174,7 +174,7 @@ describe('AppStore', () => {
         { spielerId: 'spieler-1', name: 'Nora', istKi: false, aktiverTischId: null },
         [{ id: 'tisch-1', name: 'Testtisch', spielerAnzahl: 1, status: 'WARTEND', kurzKonfiguration: { ohneNeunen: false, anzahlSpiele: 8 } }],
         baueTisch()
-      ) as SpielverwaltungApi,
+      ) as unknown as SpielverwaltungApi,
       echtzeit
     );
 
@@ -199,7 +199,7 @@ describe('AppStore', () => {
         { spielerId: 'spieler-1', name: 'Nora', istKi: false, aktiverTischId: null },
         [],
         tisch
-      ) as SpielverwaltungApi,
+      ) as unknown as SpielverwaltungApi,
       echtzeit
     );
 
@@ -253,7 +253,7 @@ describe('AppStore', () => {
         { spielerId: 'spieler-1', name: 'Nora', istKi: false, aktiverTischId: null },
         [],
         tisch
-      ) as SpielverwaltungApi,
+      ) as unknown as SpielverwaltungApi,
       echtzeit
     );
 
@@ -281,7 +281,7 @@ describe('AppStore', () => {
         { spielerId: 'spieler-1', name: 'Nora', istKi: false, aktiverTischId: null },
         [],
         tisch
-      ) as SpielverwaltungApi,
+      ) as unknown as SpielverwaltungApi,
       echtzeit
     );
 
@@ -302,7 +302,7 @@ describe('AppStore', () => {
         { spielerId: 'spieler-1', name: 'Nora', istKi: false, aktiverTischId: null },
         [],
         baueTisch('tisch-reconnect')
-      ) as SpielverwaltungApi,
+      ) as unknown as SpielverwaltungApi,
       echtzeit
     );
     await store.initialisieren();
@@ -326,7 +326,7 @@ describe('AppStore', () => {
         { spielerId: 'spieler-1', name: 'Nora', istKi: false, aktiverTischId: null },
         [],
         tisch
-      ) as SpielverwaltungApi,
+      ) as unknown as SpielverwaltungApi,
       echtzeit
     );
     await store.initialisieren();
@@ -366,7 +366,7 @@ describe('AppStore', () => {
         { spielerId: 'spieler-1', name: 'Nora', istKi: false, aktiverTischId: null },
         [],
         tisch
-      ) as SpielverwaltungApi,
+      ) as unknown as SpielverwaltungApi,
       echtzeit
     );
     store.setzeKiKartenVerzögerung(5); // Kleines Delay als async Barrier
@@ -450,7 +450,7 @@ describe('AppStore', () => {
         { spielerId: 'spieler-1', name: 'Nora', istKi: false, aktiverTischId: null },
         [],
         tisch
-      ) as SpielverwaltungApi,
+      ) as unknown as SpielverwaltungApi,
       echtzeit
     );
     store.setzeKiKartenVerzögerung(5);
@@ -542,7 +542,7 @@ describe('AppStore', () => {
         { spielerId: 'spieler-1', name: 'Nora', istKi: false, aktiverTischId: null },
         [],
         tisch
-      ) as SpielverwaltungApi,
+      ) as unknown as SpielverwaltungApi,
       echtzeit
     );
     store.setzeKiKartenVerzögerung(5);
@@ -606,7 +606,7 @@ describe('AppStore', () => {
         { spielerId: 'spieler-1', name: 'Nora', istKi: false, aktiverTischId: null },
         [{ id: 'tisch-1', name: 'Erster Tisch', spielerAnzahl: 1, status: 'WARTEND', kurzKonfiguration: { ohneNeunen: false, anzahlSpiele: 8 } }],
         baueTisch()
-      ) as SpielverwaltungApi,
+      ) as unknown as SpielverwaltungApi,
       echtzeit
     );
 
@@ -637,7 +637,7 @@ describe('AppStore', () => {
         { spielerId: 'spieler-1', name: 'Nora', istKi: false, aktiverTischId: null },
         [],
         tisch
-      ) as SpielverwaltungApi,
+      ) as unknown as SpielverwaltungApi,
       echtzeit
     );
     store.setzeKiKartenVerzögerung(0);
@@ -709,7 +709,7 @@ describe('AppStore', () => {
         { spielerId: 'spieler-1', name: 'Nora', istKi: false, aktiverTischId: null },
         [],
         tisch
-      ) as SpielverwaltungApi,
+      ) as unknown as SpielverwaltungApi,
       echtzeit
     );
     store.setzeKiKartenVerzögerung(0);
@@ -785,7 +785,7 @@ describe('AppStore', () => {
     const echtzeit = new FakeEchtzeit();
     const tischMitPartie = { ...baueTisch('tisch-4'), partieId: 'partie-4' } as TischAntwort;
     const store = new AppStore(
-      new FakeApi({ spielerId: 'spieler-1', name: 'Nora', istKi: false, aktiverTischId: null }, [], tischMitPartie) as SpielverwaltungApi,
+      new FakeApi({ spielerId: 'spieler-1', name: 'Nora', istKi: false, aktiverTischId: null }, [], tischMitPartie) as unknown as SpielverwaltungApi,
       echtzeit
     );
     store.setzeKiKartenVerzögerung(0);
@@ -850,7 +850,7 @@ describe('AppStore', () => {
     const echtzeit = new FakeEchtzeit();
     const tischMitPartie = { ...baueTisch('tisch-ki-delay'), partieId: 'partie-ki' } as TischAntwort;
     const store = new AppStore(
-      new FakeApi({ spielerId: 'spieler-1', name: 'Nora', istKi: false, aktiverTischId: null }, [], tischMitPartie) as SpielverwaltungApi,
+      new FakeApi({ spielerId: 'spieler-1', name: 'Nora', istKi: false, aktiverTischId: null }, [], tischMitPartie) as unknown as SpielverwaltungApi,
       echtzeit
     );
     store.setzeKiKartenVerzögerung(30);
@@ -899,7 +899,7 @@ describe('AppStore', () => {
     const echtzeit = new FakeEchtzeit();
     const tischMitPartie = { ...baueTisch('tisch-ki-nodelay'), partieId: 'partie-ki-nd' } as TischAntwort;
     const store = new AppStore(
-      new FakeApi({ spielerId: 'spieler-1', name: 'Nora', istKi: false, aktiverTischId: null }, [], tischMitPartie) as SpielverwaltungApi,
+      new FakeApi({ spielerId: 'spieler-1', name: 'Nora', istKi: false, aktiverTischId: null }, [], tischMitPartie) as unknown as SpielverwaltungApi,
       echtzeit
     );
     store.setzeKiKartenVerzögerung(0);
@@ -945,7 +945,7 @@ describe('AppStore', () => {
         { spielerId: 'spieler-1', name: 'Nora', istKi: false, aktiverTischId: null },
         [],
         baueTisch()
-      ) as SpielverwaltungApi,
+      ) as unknown as SpielverwaltungApi,
       echtzeit
     );
 

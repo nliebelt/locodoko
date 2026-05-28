@@ -2,4 +2,6 @@ import { SpielverwaltungApi } from './services/SpielverwaltungApi';
 import { SpielverwaltungEchtzeit } from './services/SpielverwaltungEchtzeit';
 import { AppStore } from './store/AppStore';
 
-export const appStore = new AppStore(new SpielverwaltungApi(), new SpielverwaltungEchtzeit());
+const api = new SpielverwaltungApi();
+export const appStore = new AppStore(api, new SpielverwaltungEchtzeit());
+api.setzeMeldungCallback((text, typ) => appStore.setMeldung(text, typ));

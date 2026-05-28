@@ -93,6 +93,7 @@ export class AppStore {
 
   // --- Sonstiges ---
   quittiereMeldung(): void { this.patch({ meldung: null }); }
+  setMeldung(text: string, typ: 'info' | 'fehler'): void { this.patch({ meldung: { typ, text } }); }
   setzeKiKartenVerzögerung(ms: number): void { this.patch({ uiKonfiguration: { ...this.zustand.uiKonfiguration, kiVerzoegerungMs: ms } }); }
   toggleDebugModus(): void {
     const debugModus = !this.zustand.debugModus;

@@ -113,5 +113,35 @@ describe('SpielverwaltungApi', () => {
     const result = await api.ausloggen();
     expect(result).toBeUndefined();
   });
+
+  it('zeigt fachlichen Toast bei HTTP 422 (UngueltigerSpielzug)', async () => {
+    // Spieler muss Regelverstoß-Grund lesen können, nicht nur einen generischen Fehler
+    const toastTexte: string[] = [];
+    api.setzeMeldungCallback((text) => toastTexte.push(text));
+    const mockFehler = { fehlerCode: 'SPIELZUG_UNGUELTIG', nachricht: 'Du musst Trumpf bedienen' };
+    vi.mocked(fetch).mockResolvedValue({
+      ok: false,
+      status: 422,
+      text: async () => JSON.stringify(mockFehler)
+    } as Response);
+
+    await expect(api.ladeTisch('t1')).rejects.toThrow(SpielverwaltungFehler);
+    expect(toastTexte).toContain('Du musst Trumpf bedienen');
+  });
+
+  it('zeigt Reload-Hinweis bei HTTP 409 (Spielzustand-Konflikt)', async () => {
+    // Spieler muss bei Konflikt auf Neulade-Möglichkeit hingewiesen werden
+    const toastTexte: string[] = [];
+    api.setzeMeldungCallback((text) => toastTexte.push(text));
+    const mockFehler = { fehlerCode: 'PARTIE_LAEUFT_BEREITS', nachricht: 'Partie läuft bereits' };
+    vi.mocked(fetch).mockResolvedValue({
+      ok: false,
+      status: 409,
+      text: async () => JSON.stringify(mockFehler)
+    } as Response);
+
+    await expect(api.listeTische()).rejects.toThrow(SpielverwaltungFehler);
+    expect(toastTexte[0]).toContain('veraltet');
+  });
 });
 

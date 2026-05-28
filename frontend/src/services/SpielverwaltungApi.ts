@@ -28,9 +28,6 @@ export class SpielverwaltungFehler extends Error {
   }
 }
 
-/**
- * Ruft den lokal gespeicherten Spielernamen aus dem LocalStorage ab.
- */
 function leseGespeichertenSpielernamen(): string | null {
   if (typeof window === 'undefined') {
     return null;
@@ -39,9 +36,6 @@ function leseGespeichertenSpielernamen(): string | null {
   return window.localStorage.getItem(SPIELERNAME_SPEICHER_SCHLUESSEL);
 }
 
-/**
- * Speichert den Spielernamen im LocalStorage für zukünftige Sitzungen.
- */
 function speichereSpielernamen(name: string): void {
   if (typeof window === 'undefined') {
     return;
@@ -50,9 +44,6 @@ function speichereSpielernamen(name: string): void {
   window.localStorage.setItem(SPIELERNAME_SPEICHER_SCHLUESSEL, name);
 }
 
-/**
- * Generiert einen zufälligen Standard-Spielernamen, falls kein Name gesetzt ist.
- */
 function generiereStandardSpielernamen(): string {
   const suffix = Math.floor(1000 + Math.random() * 9000);
   return `${STANDARD_SPIELERNAME_PREFIX} ${suffix}`;
@@ -82,19 +73,22 @@ async function leseAntwort<T>(antwort: Response): Promise<T | null> {
   return JSON.parse(text) as T;
 }
 
-async function holeJson<T>(pfad: string, init?: RequestInit): Promise<T> {
+async function holeJson<T>(
+  pfad: string,
+  init?: RequestInit,
+  meldungCallback?: (text: string, typ: 'info' | 'fehler') => void
+): Promise<T> {
   const methode = init?.method ?? 'GET';
   Logger.api(`[HOLE_JSON] Requesting: ${methode} ${pfad}`);
   try {
     const antwort = await fetch(pfad, Object.assign({}, {
-      // Define base options with logic for init/defaults
       method: init?.method ?? 'GET',
       body: init?.body,
       credentials: init?.credentials ?? 'include',
       headers: {
         Accept: 'application/json',
         ...(init?.body ? { 'Content-Type': 'application/json' } : {}),
-        ...(init?.headers || {}), // Merge init's headers
+        ...(init?.headers || {}),
       },
       mode: init?.mode,
       redirect: init?.redirect,
@@ -107,6 +101,13 @@ async function holeJson<T>(pfad: string, init?: RequestInit): Promise<T> {
     if (!antwort.ok) {
       Logger.api('API Error Response', { url: pfad, status: antwort.status, body: daten });
       if (istApiFehlerAntwort(daten)) {
+        if (antwort.status === 422) {
+          // Fachliche Ablehnung: Regelverstoß — Server-Nachricht direkt anzeigen
+          meldungCallback?.(daten.nachricht, 'fehler');
+        } else if (antwort.status === 409) {
+          // Konflikt: Spielstand veraltet oder gleichzeitige Aktion
+          meldungCallback?.('Spielstand veraltet – bitte Seite neu laden', 'fehler');
+        }
         throw new SpielverwaltungFehler(daten.fehlerCode, daten.nachricht);
       }
 
@@ -116,16 +117,27 @@ async function holeJson<T>(pfad: string, init?: RequestInit): Promise<T> {
     return daten as T;
   } catch (error) {
     Logger.api(`[HOLE_JSON] Fetch/Parse Error for ${pfad}`, { error });
-    throw error; // Re-throw to be caught by caller
+    throw error;
   }
 }
 
 export class SpielverwaltungApi {
+  private meldungCallback?: (text: string, typ: 'info' | 'fehler') => void;
+
+  /** Verbindet den API-Fehler-Handler mit der UI-Meldungsanzeige (z.B. AppStore.setMeldung). */
+  setzeMeldungCallback(cb: (text: string, typ: 'info' | 'fehler') => void): void {
+    this.meldungCallback = cb;
+  }
+
+  private async hol<T>(pfad: string, init?: RequestInit): Promise<T> {
+    return holeJson<T>(pfad, init, this.meldungCallback);
+  }
+
   async initialisiereSpielerSession(): Promise<SpielerSessionAntwort> {
     const bevorzugterName = leseGespeichertenSpielernamen() ?? generiereStandardSpielernamen();
     Logger.api('Attempting to initialize player session...');
     try {
-      const spieler = await holeJson<SpielerSessionAntwort>('/api/spieler/session', {
+      const spieler = await this.hol<SpielerSessionAntwort>('/api/spieler/session', {
         method: 'POST',
         body: JSON.stringify({ name: bevorzugterName })
       });
@@ -139,78 +151,78 @@ export class SpielverwaltungApi {
   }
 
   async listeTische(): Promise<TischListenEintragAntwort[]> {
-    return holeJson<TischListenEintragAntwort[]>('/api/tische');
+    return this.hol<TischListenEintragAntwort[]>('/api/tische');
   }
 
   async ladeTisch(tischId: Uuid): Promise<TischAntwort> {
-    return holeJson<TischAntwort>(`/api/tische/${tischId}`);
+    return this.hol<TischAntwort>(`/api/tische/${tischId}`);
   }
 
   async gibPresets(): Promise<TischPresetAntwort[]> {
-    return holeJson<TischPresetAntwort[]>('/api/tische/presets');
+    return this.hol<TischPresetAntwort[]>('/api/tische/presets');
   }
 
   async erstelleTisch(name: string, konfiguration?: Partial<TischKonfigurationDto>, privat?: boolean, presetName?: string): Promise<TischAntwort> {
-    return holeJson<TischAntwort>('/api/tische', {
+    return this.hol<TischAntwort>('/api/tische', {
       method: 'POST',
       body: JSON.stringify({ name, konfiguration, privat: privat ?? false, presetName })
     });
   }
 
   async schnellstart(): Promise<TischAntwort> {
-    return holeJson<TischAntwort>('/api/tische/schnellstart', { method: 'POST' });
+    return this.hol<TischAntwort>('/api/tische/schnellstart', { method: 'POST' });
   }
 
   async betreteTisch(tischId: Uuid): Promise<TischAntwort> {
-    return holeJson<TischAntwort>(`/api/tische/${tischId}/beitreten`, { method: 'POST' });
+    return this.hol<TischAntwort>(`/api/tische/${tischId}/beitreten`, { method: 'POST' });
   }
 
   async betreteTischViaCode(einladungsCode: string): Promise<TischAntwort> {
-    return holeJson<TischAntwort>(`/api/tische/beitreten/${encodeURIComponent(einladungsCode)}`, { method: 'POST' });
+    return this.hol<TischAntwort>(`/api/tische/beitreten/${encodeURIComponent(einladungsCode)}`, { method: 'POST' });
   }
 
   async verlasseTisch(tischId: Uuid): Promise<BestaetigungAntwort> {
-    return holeJson<BestaetigungAntwort>(`/api/tische/${tischId}/verlassen`, { method: 'POST' });
+    return this.hol<BestaetigungAntwort>(`/api/tische/${tischId}/verlassen`, { method: 'POST' });
   }
 
   async starteTisch(tischId: Uuid): Promise<BestaetigungAntwort> {
-    return holeJson<BestaetigungAntwort>(`/api/tische/${tischId}/starten`, { method: 'POST' });
+    return this.hol<BestaetigungAntwort>(`/api/tische/${tischId}/starten`, { method: 'POST' });
   }
 
   async starteNeuePartie(tischId: Uuid): Promise<BestaetigungAntwort> {
-    return holeJson<BestaetigungAntwort>(`/api/tische/${tischId}/neue-partie`, { method: 'POST' });
+    return this.hol<BestaetigungAntwort>(`/api/tische/${tischId}/neue-partie`, { method: 'POST' });
   }
 
   async aktualisiereTischKonfiguration(tischId: Uuid, konfiguration: TischKonfigurationDto): Promise<TischKonfigurationDto> {
-    return holeJson<TischKonfigurationDto>(`/api/tische/${tischId}/konfiguration`, {
+    return this.hol<TischKonfigurationDto>(`/api/tische/${tischId}/konfiguration`, {
       method: 'PUT',
       body: JSON.stringify(konfiguration)
     });
   }
 
   async registrieren(benutzername: string, passwort: string, email?: string): Promise<AuthentifizierungsAntwort> {
-    return holeJson<AuthentifizierungsAntwort>('/api/auth/register', {
+    return this.hol<AuthentifizierungsAntwort>('/api/auth/register', {
       method: 'POST',
       body: JSON.stringify({ benutzername, passwort, email: email || null })
     });
   }
 
   async einloggen(benutzername: string, passwort: string): Promise<AuthentifizierungsAntwort> {
-    return holeJson<AuthentifizierungsAntwort>('/api/auth/login', {
+    return this.hol<AuthentifizierungsAntwort>('/api/auth/login', {
       method: 'POST',
       body: JSON.stringify({ benutzername, passwort })
     });
   }
 
   async ausloggen(): Promise<void> {
-    await holeJson<void>('/api/auth/logout', { method: 'POST' });
+    await this.hol<void>('/api/auth/logout', { method: 'POST' });
   }
 
   async kickeSpieler(tischId: Uuid, spielerId: Uuid): Promise<BestaetigungAntwort> {
-    return holeJson<BestaetigungAntwort>(`/api/tische/${tischId}/spieler/${spielerId}`, { method: 'DELETE' });
+    return this.hol<BestaetigungAntwort>(`/api/tische/${tischId}/spieler/${spielerId}`, { method: 'DELETE' });
   }
 
   async ladeSpielerProfil(spielerId: Uuid): Promise<SpielerProfilAntwortGenerated> {
-    return holeJson<SpielerProfilAntwortGenerated>(`/api/spieler/${spielerId}/profil`);
+    return this.hol<SpielerProfilAntwortGenerated>(`/api/spieler/${spielerId}/profil`);
   }
 }
