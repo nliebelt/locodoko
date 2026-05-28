@@ -1,29 +1,18 @@
 # IMPLEMENTATION_PLAN — Locodoko Doppelkopf
 
-> Stand: 2026-05-28 (Plan-Run nach Session 13). Erledigte Aufgaben → `IMPLEMENTATION_PLAN_ARCHIVE.md`
+> Stand: 2026-05-28 (Plan-Run nach Session 24). Erledigte Aufgaben → `IMPLEMENTATION_PLAN_ARCHIVE.md`
 
 ## Notiz
 
+**Session 25 (2026-05-28):** REFACTOR-DOMAIN-7 abgeschlossen. Leere Methode `initialisierePersistenzDefaultsNachLaden()` und veralteter SpielNachLadenCallback-Kommentar aus `Spiel.java` gelöscht. 348 Tests weiterhin grün. Nächster Schritt: REFACTOR-TISCHANSICHT-1 (TischAnsichtModell.ts aufteilen) oder REFACTOR-DOMAIN-VISUAL-BASELINE (braucht laufendes Backend).
+
+**Session 24 (2026-05-28):** Plan-Scan. REFACTOR-DOMAIN-1..6 vollständig abgeschlossen. Keine Spec/Code-Abweichungen gefunden. Zwei neue Cleanup-Tasks identifiziert (REFACTOR-DOMAIN-7, REFACTOR-TISCHANSICHT-1). IST-Zustand: Backend 348 Tests grün, Frontend 221 Tests grün.
+
 **Session 23 (2026-05-28):** BUG-PARTIE-SPIELREGELN behoben. `Partie.neuePersistenz` setzte `spielregeln` nie → NPE beim letzten Stich. Fix: Signatur auf `neuePersistenz(int, Spielregeln)` erweitert, 3 Call-Sites in `TischVerwaltungsService` + alle Test-Aufrufe angepasst. 348 Tests grün.
 
-**Nächster Schritt:** SMOKE-UI-1 — manueller Browser-Test durch User (Backend läuft bereits).
+**IST-Zustand 2026-05-28 (verifiziert nach Session 24):** Backend 348 Tests grün, Frontend 221 Tests grün. Alle REFACTOR-DOMAIN-1..6 Tasks erledigt. `Spiel.java` 530 Zeilen (sauber, kein alter Workaround-Code). `PartieStandAntwort.java` 529 Zeilen (Größe durch nested Wire-Format-DTOs begründet, kein Rückstand).
 
-**IST-Zustand 2026-05-28 (nach BUG-PARTIE-SPIELREGELN):** Backend 348 Tests grün, Bug im Spielabschluss gefixt.
-
-Verbleibende offene Tasks: REFACTOR-DOMAIN-VISUAL-BASELINE + SMOKE-UI-1 — beide erfordern laufendes Backend + Playwright headed bzw. manuellen Browser-Test durch User. Netzwerkzugriff in Agenten-Umgebung gesperrt → kein automatisierter Vision-Loop möglich.
-
-**Nächster Schritt:** User führt SMOKE-UI-1 manuell durch (`mvn spring-boot:run` → Browser → Schnellstart → Partie gegen 3 KI). Danach REFACTOR-DOMAIN-VISUAL-BASELINE per Vision-Loop abschliessen.
-
-
-**REFACTOR-DOMAIN-VISUAL-BASELINE:** Erfordert laufendes Backend (`mvn spring-boot:run`) + Playwright headed. Weiterhin übersprungen.
-
-**IST-Zustand 2026-05-28 (verifiziert):** Backend 348 Tests grün, Frontend 221 Tests grün, `npm run build` + `npm run lint` clean.
-
-**User-Entscheidung 2026-05-28:**
-1. P1 (Profil-Fix) zuerst, kein Smoke-Test davor.
-2. P2 neu: FE-FEHLER-422 (Frontend-Handling für Domain-Exceptions aus DB-6).
-3. Nach P1+P2 ist UI vollständig testbar → manueller Browser-Smoke-Test.
-4. P3 (REFACTOR-DOMAIN-1..6) als geschlossener Block durchziehen, Verifikation am Ende. Test-Suite trägt das Vertrauen während des Refactors.
+**Nächster Schritt:** SMOKE-UI-1 — manueller Browser-Test durch User (`mvn spring-boot:run` → Browser → Schnellstart → Partie gegen 3 KI). Danach REFACTOR-DOMAIN-VISUAL-BASELINE per Vision-Loop abschliessen.
 
 **Offene Fragen für User:** Keine — Build-Modus kann starten.
 
@@ -211,29 +200,55 @@ Bevor REFACTOR-DOMAIN startet: manueller Browser-Test durch User.
 
 ---
 
-## Entdeckungen (Plan-Scan 2026-05-28)
+### Priorität 4 — Strukturbereinigung nach REFACTOR-DOMAIN
 
-### Bestätigte Code/Spec-Verstöße
+Kleine Folge-Aufgaben die durch den REFACTOR-DOMAIN-Block freigelegt wurden. Unabhängig voneinander, jederzeit durchführbar.
 
-1. **Frontend zeigt veraltetes Statistik-Schema.** `api-types.ts` von 2026-05-18 (vor DB-9 vom 2026-05-26). Modal nutzt `profil.statistik` (singular) statt `profil.statistiken` (Map). Mock-Tests grün, weil Mocks dem alten Schema folgen — Integration läuft ins Leere. → BUG-PROFIL-TYPES.
-2. **Spec `frontend-spielerprofil.md` fordert Multi-Variante-Tabs** (Mockup Zeilen 28–53), Modal hat keine. → FEAT-PROFIL-TABS.
-3. **Spec-Status „Geplant"** in `frontend-spielerprofil.md` obwohl FE-1/FE-2 archiviert. → DOC-PROFIL-STATUS.
-4. **DoD-Haken offen** in `spieler-profil.md` (Frontend-Profil-Ansicht). → DOC-PROFIL-STATUS.
+- [x] **REFACTOR-DOMAIN-7: Totes Lifecycle-Artefakt in `Spiel.java` löschen**
 
-### Domain-Schichten-Vermischung (Priorität 3, zusammenhängender Block)
+  `Spiel.java:498` enthält die leere Methode `public void initialisierePersistenzDefaultsNachLaden() { }`. Der Kommentar in Zeile 497 referenziert einen `SpielNachLadenCallback`, der nach REFACTOR-DOMAIN-1 gelöscht wurde. Die Methode wird nirgends aufgerufen (Grep bestätigt: nur Deklaration, kein Aufrufer). Der Kommentar in `Spiel.java:132` benennt den gelöschten Callback ebenfalls.
 
-5. **`Spiel.java` ist Mischwesen** aus Domain/Persistenz/DTO: 5 `@Transient` + Schatten-`*Json`-Felder, sealed Interfaces (`Spielphase`, `TrumpfOrdnung`) als String-Diskriminator persistiert, 23 `…Db()`/`…Embeddable()`/`…AlsJson()`-Adapter-Getter, 5 Test-Setter im Production-Aggregate, Persistenz-Lifecycle-Hooks im Domain-Objekt. → REFACTOR-DOMAIN-1..6.
-6. **Acht parasitäre DTO-Klassen** im `partie/`-Modul (HandJsonEintrag, StichJsonEintrag, AktuellerStichKarteEmbeddable, HandKarteEmbeddable, SpielErgebnisEmbeddable, VorbehaltMeldungEmbeddable, AnsageEreignisEmbeddable, SonderpunktJsonEintrag) — Reste aus vor-DB-3-Zeit, heute nur noch von `PartieStandAntwort` über Adapter-Getter konsumiert. → REFACTOR-DOMAIN-4.
-7. **`PartieStandAntwort.java` (546 Zeilen)** liest Domain-Zustand via Persistenz-Form statt direkt aus Domain-VOs. → REFACTOR-DOMAIN-3.
-8. **`PartieJsonMapper.java` + zwei `new ObjectMapper()`** — verschwindet mit DOMAIN-1, der Rest mit DOMAIN-6.
-9. **Vier `@JsonIgnore`-Mixins gegen Jackson `ist*`-Property-Heuristik** — wird mit DOMAIN-6 via `AccessorNamingStrategy` global gelöst.
+  **Aufgabe:** Methode `initialisierePersistenzDefaultsNachLaden()` (Zeile 497–498) und den veralteten Kommentar in Zeile 132 löschen.
 
-### Klassengrößen-Folgeschäden (lösen sich durch P3)
+  **DoD:** `mvn test` grün, Methode nicht mehr vorhanden. **Risiko:** Sehr gering. **Aufwand:** < 30 Minuten.
 
-- Nach REFACTOR-DOMAIN: `Spiel.java` 797 → ~350–400 Zeilen, `PartieStandAntwort.java` 546 → ~300 Zeilen, `JsonbConverter.java` 679 → leichter durch entfallene Mixins (~600).
-- Verbleibend offen, falls relevant: `TischAnsichtModell.ts` 636, `TischVerwaltungsService.java` 542, `StandardKiStrategie.java` 504, `Partie.java` 451 — eigenständige Tasks bei Bedarf.
+- [ ] **REFACTOR-TISCHANSICHT-1: `TischAnsichtModell.ts` (636 Zeilen) aufteilen**
+
+  `frontend/src/modelle/TischAnsichtModell.ts` (636 Zeilen) überschreitet den Architektur-Richtwert von ~300 Zeilen deutlich. Laut `architektur.md` Prinzip 9 ist das ein starkes Signal zur Aufteilung.
+
+  **Analyse zuerst:** Welche Verantwortlichkeiten stecken im Modell?
+  - Sitzordnung relativ zum eigenen Spieler (relative Positionen, Namensauflösung)
+  - Kartenhand-Berechnungen (wählbare Karten, Kartenreihenfolge)
+  - Phasen-spezifische Sichtbarkeit (Vorbehalt-Dialog, Ansage-Buttons)
+  - Rundenauswertungs-Daten
+
+  **Kandidaten für Extraktion:** `KartenAuswahlModell.ts` (Handkarten-Logik) und/oder `SitzordnungModell.ts` (Positionsmapping). TischAnsichtModell bleibt als Fassade.
+
+  **Erste Datei zuerst:** TischAnsichtModell.ts lesen, Verantwortlichkeiten grob identifizieren, dann kleinste extrahierbare Einheit herauslösen. Pro Extraktion ein Commit + `npm test` grün.
+
+  **DoD:** `TischAnsichtModell.ts` ≤ 350 Zeilen. Alle 221 Frontend-Tests grün. **Risiko:** Mittel (Frontend-Tests decken Regressionen ab). **Aufwand:** 1–2 Sessions.
+
+---
+
+## Entdeckungen (Plan-Scan 2026-05-28, Session 24)
+
+### Neue Befunde → Tasks
+
+1. **Tote Methode `Spiel.initialisierePersistenzDefaultsNachLaden()`** (Zeile 497–498): leer, nicht aufgerufen, referenzierter `SpielNachLadenCallback` existiert nicht mehr. → REFACTOR-DOMAIN-7.
+2. **`TischAnsichtModell.ts` (636 Zeilen)**: doppelt so groß wie Architektur-Richtwert (~300). → REFACTOR-TISCHANSICHT-1.
+
+### Bestätigte Klassengrößen (keine unmittelbaren Tasks, zur Orientierung)
+
+| Klasse | Zeilen | Richtwert | Hinweis |
+|---|---|---|---|
+| `PartieStandAntwort.java` | 529 | ~300 | Größe begründet durch 10+ nested Wire-Format-Record-DTOs — kein Refactoring-Rückstand |
+| `Spiel.java` | 530 | 350–400 | REFACTOR-DOMAIN erledigt, verbleibende Größe durch Domain-Komplexität |
+| `TischVerwaltungsService.java` | 542 | ~300 | Eigenständige Task bei Bedarf |
+| `StandardKiStrategie.java` | 504 | ~300 | Eigenständige Task bei Bedarf |
+| `Partie.java` | 452 | ~300 | Eigenständige Task bei Bedarf |
 
 ### Keine Befunde
+- Alle 7 geprüften Spec-Bereiche (E2E-Tests, Verbindungsabbruch, FlashTextManager, Nameplates, Tastatursteuerung, Bockrunden, Datenbankmodell) konsistent mit Code.
 - Spielkern (alle Sonderspiele, Stichlogik, Trumpfhierarchie, Ansagen, Punkteberechnung): Spec-Status „Implementiert", keine ungetesteten Pfade entdeckt.
 - Event-Vertrag, Module-Abhängigkeiten, Typed IDs, Domain-Exceptions: konsistent mit Architektur-Spec.
 

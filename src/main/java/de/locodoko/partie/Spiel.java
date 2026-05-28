@@ -128,8 +128,7 @@ public class Spiel extends AbstraktePersistenzEntity {
      * Rekonstituiert einen Spielzustand für Tests.
      *
      * <p>War ursprünglich für {@code SpielHydrierer} gedacht (gelöscht in DB-4c). Heute ausschließlich
-     * in Tests verwendet, um komplexe Spielszenarien mit vollständigem Zustand aufzubauen.
-     * Spring Data JDBC lädt {@code Spiel} direkt via {@code SpielNachLadenCallback}.</p>
+     * in Tests verwendet, um komplexe Spielszenarien mit vollständigem Zustand aufzubauen.</p>
      */
     public static Spiel ausPersistiertemStand(
         Spielregeln spielregeln, Kartendeck kartendeck, Spieltyp spieltyp,
@@ -493,9 +492,6 @@ public class Spiel extends AbstraktePersistenzEntity {
     public boolean hatParteien() { return parteien != null; }
 
     public SpielerPosition aktuellerStichAufspielerPosition() { return aktuellerStich().map(Stich::aufspieler).orElse(null); }
-
-    /** Wird vom {@code SpielNachLadenCallback} nach dem DB-Laden aufgerufen. */
-    public void initialisierePersistenzDefaultsNachLaden() { }
 
     void setzePhase(Spielphase neuePhase) {
         this.phase = Objects.requireNonNull(neuePhase, "phase darf nicht null sein");
