@@ -4,11 +4,11 @@
 
 ## Notiz
 
-**Session 20 (2026-05-28):** REFACTOR-DOMAIN-5 abgeschlossen.
+**Session 21 (2026-05-28):** REFACTOR-DOMAIN-6 abgeschlossen.
 
-`SpielTestBuilder` (in `src/test/java/de/locodoko/partie/`) eingeführt — Fluent-Builder mit Package-Private Feldzugriff auf `Spiel`. Methoden: `ausNeuePersistenz(...)`, `von(Spiel)`, `mitHaenden(...)`, `mitAbgeschlossenenStichen(...)`, `mitErgebnis(...)`, `mitAnsagen(...)`. Alle 5 Test-Setter in `Spiel.java` gelöscht (`ersetzeHaende`, `setzeErgebnis`, `setzeAnsagen`, `setzeAbgeschlosseneStiche`, `setzeHaendeAusMap`). Aufrufer in 5 Testdateien auf den Builder umgestellt (`PersistenzRepositoryTest`, `PartieStandAntwortTest`, `VerbindungsabbruchReconnectSnapshotTest`, `PartieControllerTest`, `WebSocketSpielaktionIntegrationTest`, `PartieEchtzeitVertragsTest`). 348 Backend-Tests weiterhin grün.
+`JsonbConverterKonfiguration.java`: `new ObjectMapper()` als `@Bean jsonbObjectMapper()` extrahiert. `jdbcCustomConversions()` ruft jetzt `jsonbObjectMapper()` als intra-Config-Bean-Call auf. `JsonbConverter.java`: `NurEchteIsGetterStrategieProvider` + `NurEchteIsGetterStrategie` (extends `DefaultAccessorNamingStrategy`) als private static final classes eingeführt. `konfiguriereObjectMapper()` registriert die Strategie via `.setAccessorNaming(new NurEchteIsGetterStrategieProvider())`. `VorbehaltMeldungMixin` komplett gelöscht (hatte nur `@JsonIgnore`). `@JsonIgnore` auf `StichMixin.istVollstaendig()` entfernt. `.addMixIn(VorbehaltMeldung.class, ...)` entfernt. Import `@JsonIgnore` entfernt. 348 Backend-Tests grün.
 
-**Nächster Schritt:** REFACTOR-DOMAIN-6: ObjectMapper als Spring-Bean + Jackson `ist*`-Heuristik global.
+**Nächster Schritt:** REFACTOR-DOMAIN-VISUAL-BASELINE (erfordert laufendes Backend + Playwright headed — weiterhin übersprungen). Alle REFACTOR-DOMAIN-Tasks abgeschlossen. Nächste offene Task: SMOKE-UI-1 (manuell durch User).
 
 
 **REFACTOR-DOMAIN-VISUAL-BASELINE:** Erfordert laufendes Backend (`mvn spring-boot:run`) + Playwright headed. Weiterhin übersprungen.
@@ -195,7 +195,7 @@ Bevor REFACTOR-DOMAIN startet: manueller Browser-Test durch User.
 
   **Folge:** Alle 5 Setter in Spiel.java löschen. `setzeSpielNummer` bleibt erhalten (wird in `Partie.java:378/428` und `PartieLifecycleService.java:104` aus echtem Production-Code für Geberrotation aufgerufen — kein Test-Setter).
 
-- [ ] **REFACTOR-DOMAIN-6: ObjectMapper als Spring-Bean + Jackson `ist*`-Heuristik global**
+- [x] **REFACTOR-DOMAIN-6: ObjectMapper als Spring-Bean + Jackson `ist*`-Heuristik global**
 
   Nach DOMAIN-1 ist `PartieJsonMapper` weg und es bleibt nur `new ObjectMapper()` in `JsonbConverterKonfiguration.java:35`. Den als `@Bean jsonbObjectMapper` extrahieren, in `jdbcCustomConversions(@Lazy ObjectMapper)` injizieren.
 

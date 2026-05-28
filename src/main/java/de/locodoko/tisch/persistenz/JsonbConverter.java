@@ -1,12 +1,16 @@
 package de.locodoko.tisch.persistenz;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonValue;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.cfg.MapperConfig;
+import com.fasterxml.jackson.databind.introspect.AccessorNamingStrategy;
+import com.fasterxml.jackson.databind.introspect.AnnotatedClass;
+import com.fasterxml.jackson.databind.introspect.AnnotatedMethod;
+import com.fasterxml.jackson.databind.introspect.DefaultAccessorNamingStrategy;
 import de.locodoko.karten.BubensoloTrumpfOrdnung;
 import de.locodoko.karten.DamensoloTrumpfOrdnung;
 import de.locodoko.karten.Farbe;
@@ -93,20 +97,6 @@ public final class JsonbConverter {
 
         @JsonProperty("gespielteKarten")
         abstract List<GespielteKarte> gespielteKarten();
-
-        /** Berechnetes Feld — nicht persistieren. "ist" wird von Jackson als "is"-Prefix erkannt. */
-        @JsonIgnore
-        abstract boolean istVollstaendig();
-    }
-
-    /**
-     * Mixin fuer {@link VorbehaltMeldung}: Unterdrückt istVorbehalt(),
-     * das Jackson faelschlicherweise als "is"-Prefix-Getter erkennt.
-     */
-    private abstract static class VorbehaltMeldungMixin {
-        /** Berechnetes Feld — nicht persistieren. */
-        @JsonIgnore
-        abstract boolean istVorbehalt();
     }
 
     /** Mixin fuer {@link Ansagen}: Factory-Methode als JsonCreator, Getter als Property. */
@@ -246,20 +236,56 @@ public final class JsonbConverter {
         abstract List<Karte> karten();
     }
 
+    // ---- AccessorNamingStrategy: unterdrückt "ist*"-Heuristik ----
+
+    /**
+     * Provider-Fabrik fuer {@link NurEchteIsGetterStrategie}.
+     *
+     * <p>Registriert eine Strategie, die nur {@code is} + Großbuchstabe als
+     * Boolean-Property-Getter erkennt. Damit werden Deutsche {@code ist*}-Methoden
+     * (z.B. {@code istVollstaendig()}) nicht faelschlicherweise als Properties behandelt.</p>
+     */
+    private static final class NurEchteIsGetterStrategieProvider extends DefaultAccessorNamingStrategy.Provider {
+        @Override
+        public AccessorNamingStrategy forDeserialization(MapperConfig<?> config,
+                AnnotatedClass valueClass, AccessorNamingStrategy defaultStrategy) {
+            return new NurEchteIsGetterStrategie();
+        }
+
+        @Override
+        public AccessorNamingStrategy forSerialization(MapperConfig<?> config,
+                AnnotatedClass valueClass, AccessorNamingStrategy defaultStrategy) {
+            return new NurEchteIsGetterStrategie();
+        }
+    }
+
+    /** Erkennt nur {@code is} + Großbuchstabe als Boolean-Getter; ignoriert {@code ist*}. */
+    private static final class NurEchteIsGetterStrategie extends DefaultAccessorNamingStrategy {
+        @Override
+        public String findNameForIsGetter(AnnotatedMethod am, String defaultName) {
+            String name = am.getName();
+            if (name.startsWith("is") && name.length() > 2 && Character.isUpperCase(name.charAt(2))) {
+                return defaultName;
+            }
+            return null;
+        }
+    }
+
     // ---- ObjectMapper-Konfiguration ----
 
     /**
      * Konfiguriert einen ObjectMapper mit allen noetigen Mixin-Registrierungen fuer
-     * die Domain-VO-Typen. Wird von {@link JsonbConverterKonfiguration} aufgerufen.
+     * die Domain-VO-Typen und der {@link NurEchteIsGetterStrategieProvider AccessorNamingStrategy}.
+     * Wird von {@link JsonbConverterKonfiguration} aufgerufen.
      */
     static ObjectMapper konfiguriereObjectMapper(ObjectMapper basis) {
         return basis.copy()
                 .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
+                .setAccessorNaming(new NurEchteIsGetterStrategieProvider())
                 .addMixIn(Hand.class, HandMixin.class)
                 .addMixIn(Stich.class, StichMixin.class)
                 .addMixIn(Ansagen.class, AnsagenMixin.class)
                 .addMixIn(Parteien.class, ParteienMixin.class)
-                .addMixIn(VorbehaltMeldung.class, VorbehaltMeldungMixin.class)
                 .addMixIn(Haende.class, HaendeMixin.class)
                 .addMixIn(VorbehaltMeldungen.class, VorbehaltMeldungenMixin.class)
                 .addMixIn(Stichverlauf.class, StichverlaufMixin.class)

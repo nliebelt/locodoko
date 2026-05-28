@@ -14,13 +14,25 @@ import java.util.List;
  * {@link JdbcCustomConversions}-Bean, damit Spring Data JDBC sie automatisch
  * fuer passende Spaltentypen (PGobject ↔ Domain-VO) verwendet.</p>
  *
- * <p>Hinweis: Der ObjectMapper wird hier bewusst nicht per Spring-Injection
- * bezogen, da {@code jdbcCustomConversions} sehr frueh im Spring-Kontext
- * benoetigt wird (vor JacksonAutoConfiguration). Ein eigener ObjectMapper
- * mit den noetigen Mixins genuegt vollstaendig.</p>
+ * <p>Der JSONB-ObjectMapper wird als eigener Spring-Bean {@link #jsonbObjectMapper()}
+ * bereitgestellt — unabhaengig vom HTTP-/WebSocket-ObjectMapper der
+ * JacksonAutoConfiguration. Die Domain-spezifischen Mixins und die
+ * {@code AccessorNamingStrategy} belasten damit nicht die REST-Serialisierung.</p>
  */
 @Configuration
 class JsonbConverterKonfiguration {
+
+    /**
+     * Konfigurierter ObjectMapper fuer JSONB-Serialisierung/Deserialisierung.
+     *
+     * <p>Warum eigener Bean: Die JSONB-Converter benoetigen Domain-spezifische Mixins
+     * und eine {@code NurEchteIsGetterStrategie}. Diese Konfiguration soll nicht den
+     * HTTP-/WebSocket-ObjectMapper beeinflussen.</p>
+     */
+    @Bean
+    ObjectMapper jsonbObjectMapper() {
+        return JsonbConverter.konfiguriereObjectMapper(new ObjectMapper());
+    }
 
     /**
      * Registriert alle JSONB-Converter-Paare fuer Spring Data JDBC.
@@ -32,7 +44,7 @@ class JsonbConverterKonfiguration {
      */
     @Bean
     JdbcCustomConversions jdbcCustomConversions() {
-        ObjectMapper mapper = JsonbConverter.konfiguriereObjectMapper(new ObjectMapper());
+        ObjectMapper mapper = jsonbObjectMapper();
         return new JdbcCustomConversions(List.of(
                 // Augen VO ↔ Integer
                 new AugenConverter.AugenSchreibConverter(),
