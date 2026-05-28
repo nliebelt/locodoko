@@ -4,11 +4,13 @@
 
 ## Notiz
 
-**Session 14 (2026-05-28):** BUG-PROFIL-TYPES + FEAT-PROFIL-TABS abgeschlossen.
+**Session 15 (2026-05-28):** REFACTOR-DOMAIN-0 abgeschlossen.
 
-`api-types.ts` regeneriert (Map-Schema), `SpielerProfilModal.ts` hat jetzt Tab-Leiste (TURNIER/SONDER/FREI) mit `role="tablist"` + `aria-selected`, Tab-Click wechselt Statistik-Container, alle 17 Felder inkl. Re/Kontra-Block, Hochzeiten/Armuten, Solos-pro-Typ. CSS-Klassen für Tab-Leiste und Re/Kontra ergänzt. 219 Frontend-Tests grün, Build + Lint clean.
+`PartieStandAntwortWireFormatTest.java` neu angelegt in `src/test/java/de/locodoko/tisch/`. Schweinchen-Normalspiel mit 2 abgeschlossenen Stichen, 1 RE-Ansage, 4 GESUND-Vorbehalten, schweinchenAktiv=true. Baseline `wire-format-baseline.json` (294 Zeilen) in `src/test/resources/` eingecheckt. UUIDs + Avatar-Farben werden vor Vergleich normalisiert — Test ist deterministisch. Test selbst-bootstrappend (schreibt Baseline wenn fehlt). 341 Backend-Tests grün.
 
-**Nächster Schritt:** SMOKE-UI-1 — manueller Browser-Test (Backend starten, Schnellstart, Profil-Modal, ungültige Karte). Danach P3: REFACTOR-DOMAIN-0 (Wire-Format-Pinning-Test).
+**Nächster Schritt:** REFACTOR-DOMAIN-VISUAL-BASELINE — Vision-Loop laufen lassen (erfordert laufendes Backend + headed Browser). Danach REFACTOR-DOMAIN-1.
+
+**REFACTOR-DOMAIN-VISUAL-BASELINE:** Erfordert laufendes Backend (`mvn spring-boot:run`) + Playwright headed. In dieser Session übersprungen (Network-Zugriff blockiert). Vor REFACTOR-DOMAIN-1 manuell nachholen.
 
 **IST-Zustand 2026-05-28 (verifiziert):** Backend 340 Tests grün, Frontend 216 Tests grün, `npm run build` + `npm run lint` clean. Spielfluss (Schnellstart → Vorbehalt → Stiche → Auswertung) durch E2E-Specs gedeckt — **Spiel ist heute im Browser testbar**, `mvn spring-boot:run` startet. Profil-Modal ist die einzige sichtbare Schwachstelle.
 
@@ -119,7 +121,7 @@ Bevor REFACTOR-DOMAIN startet: manueller Browser-Test durch User.
 
 ---
 
-- [ ] **REFACTOR-DOMAIN-0: Wire-Format-Pinning-Test** — Vorbereitung, blockiert DOMAIN-1.
+- [x] **REFACTOR-DOMAIN-0: Wire-Format-Pinning-Test** — Vorbereitung, blockiert DOMAIN-1.
 
   `PartieStandAntwort` ist das WebSocket-Wire-Format-DTO (eingebettet in 6 Event-Records in `PartieEreignisAntwort.java`). Frontend hängt direkt an der JSON-Struktur. DOMAIN-3 ändert die interne Mapping-Quelle — die JSON-Ausgabe muss byte-identisch bleiben. JUnit-Object-Tests sehen das nicht.
 
