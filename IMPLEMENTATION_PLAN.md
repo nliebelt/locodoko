@@ -4,7 +4,7 @@
 
 ## Notiz
 
-**Session 25 (2026-05-28):** REFACTOR-DOMAIN-7 abgeschlossen. Leere Methode `initialisierePersistenzDefaultsNachLaden()` und veralteter SpielNachLadenCallback-Kommentar aus `Spiel.java` gelöscht. 348 Tests weiterhin grün. Nächster Schritt: REFACTOR-TISCHANSICHT-1 (TischAnsichtModell.ts aufteilen) oder REFACTOR-DOMAIN-VISUAL-BASELINE (braucht laufendes Backend).
+**Session 25 (2026-05-28):** REFACTOR-DOMAIN-7 + REFACTOR-TISCHANSICHT-1 abgeschlossen. `TischAnsichtModell.ts` von 636 → 347 Zeilen durch Extraktion in `SitzordnungModell.ts` (Positions-Utilities, 30 Zeilen) und `TischAnsichtMapper.ts` (alle privaten Mapping-Funktionen, 290 Zeilen). 221 Frontend-Tests + Build + Lint grün. Nächster Schritt: SMOKE-UI-1 (manuell, User) oder REFACTOR-DOMAIN-VISUAL-BASELINE (braucht laufendes Backend).
 
 **Session 24 (2026-05-28):** Plan-Scan. REFACTOR-DOMAIN-1..6 vollständig abgeschlossen. Keine Spec/Code-Abweichungen gefunden. Zwei neue Cleanup-Tasks identifiziert (REFACTOR-DOMAIN-7, REFACTOR-TISCHANSICHT-1). IST-Zustand: Backend 348 Tests grün, Frontend 221 Tests grün.
 
@@ -212,7 +212,7 @@ Kleine Folge-Aufgaben die durch den REFACTOR-DOMAIN-Block freigelegt wurden. Una
 
   **DoD:** `mvn test` grün, Methode nicht mehr vorhanden. **Risiko:** Sehr gering. **Aufwand:** < 30 Minuten.
 
-- [ ] **REFACTOR-TISCHANSICHT-1: `TischAnsichtModell.ts` (636 Zeilen) aufteilen**
+- [x] **REFACTOR-TISCHANSICHT-1: `TischAnsichtModell.ts` (636 Zeilen) aufteilen**
 
   `frontend/src/modelle/TischAnsichtModell.ts` (636 Zeilen) überschreitet den Architektur-Richtwert von ~300 Zeilen deutlich. Laut `architektur.md` Prinzip 9 ist das ein starkes Signal zur Aufteilung.
 
