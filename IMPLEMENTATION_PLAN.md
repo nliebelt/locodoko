@@ -4,11 +4,11 @@
 
 ## Notiz
 
-**Session 17 (2026-05-28):** REFACTOR-DOMAIN-2 abgeschlossen.
+**Session 18 (2026-05-28):** REFACTOR-DOMAIN-3 abgeschlossen.
 
-`Spielphase` und `TrumpfOrdnung` von String-Diskriminator + separaten Spalten auf JSONB-polymorphe Serialisierung umgestellt. Jackson `@JsonTypeInfo(use=NAME)` + `@JsonSubTypes` auf Interfaces. Mixins für alle 6 `TrumpfOrdnung`-Implementierungen + `Kartendeck` in `JsonbConverter.java`. 12 neue Converter-Klassen (Spielphase, TrumpfOrdnung, Kartendeck) + Konfiguration. Schema: `phase`/`trumpf_ordnung_typ` → JSONB, `schweinchen_aktiv`/`aktueller_stich`/`pflicht_ansage_ausstehend`/`armut_status`/`hochzeit_status` entfernt, `kartendeck` JSONB ergänzt. `Spiel.java`: `phaseText`, `trumpfOrdnungTyp`, `schweinchenAktivFlag`, `aktuellerStich`, `pflichtAnsageAusstehend`, `armutStatus`, `hochzeitStatus` entfernt; `kartendeck` und `trumpfOrdnung` direkt persistiert. `rekonstruiereTrumpfOrdnung`, `rekonstruiereKartendeck`, `rekonstruiereAktuellenStich`, `bestimmeTrumpfOrdnungTyp`, `bestimmeTrumpfOrdnungTypAusSpieltyp`, `effektiveTrumpfOrdnung`, `effektivesKartendeck`, `initialisierePersistenzDefaults` gelöscht. 348 Backend-Tests grün.
+`PartieStandAntwort.java` liest nun direkt aus Domain-VOs statt via Persistenz-Adapter-Getter. Geändert: `ergebnisEmbeddable()` → `ergebnis().isEmpty/isPresent/get()`, `haendeAlsJson()` → `haende().get(position)`, `sticheAlsJson()` → `abgeschlosseneStiche()` mit Index-Counter, `sonderpunkteAlsJson()` → `ergebnis.sonderpunkteVon(partei)`, `spieltypAusDb()` → `spieltyp()`, `phasenName()` → `phase().name()`, `geberPosition()` → `geber()`. `LetztesSpielergebnisAntwort` nutzt jetzt `Spielergebnis`-VO direkt (statt `SpielErgebnisEmbeddable`). `SpielerImSpielAntwort` nimmt `Hand` statt `HandJsonEintrag`. `AbgeschlossenerStichAntwort` iteriert über `List<Stich>`. 23 Adapter-Getter aus `Spiel.java` gelöscht. Alle Callsites (KiTischOrchestrator, SpielAktionsService, PartieLifecycleService, PersistenzRepositoryTest, TischControllerTest, KiOrchestrierungServiceFehlerTest) umgestellt. 348 Backend-Tests grün.
 
-**Nächster Schritt:** REFACTOR-DOMAIN-3: PartieStandAntwort entgiften.
+**Nächster Schritt:** REFACTOR-DOMAIN-4: Embeddable/JsonEintrag-Klassen löschen.
 
 
 **REFACTOR-DOMAIN-VISUAL-BASELINE:** Erfordert laufendes Backend (`mvn spring-boot:run`) + Playwright headed. Weiterhin übersprungen.
@@ -164,7 +164,7 @@ Bevor REFACTOR-DOMAIN startet: manueller Browser-Test durch User.
 
   **Risiko:** Mittel. Polymorpher JSON-Roundtrip pro Subtyp testen.
 
-- [ ] **REFACTOR-DOMAIN-3: PartieStandAntwort entgiften** — DTO-Mapper liest direkt aus Domain-VOs.
+- [x] **REFACTOR-DOMAIN-3: PartieStandAntwort entgiften** — DTO-Mapper liest direkt aus Domain-VOs.
 
   Heute liest `PartieStandAntwort.java` (546 Zeilen) den Domain-Zustand via Persistenz-Getter (`spiel.ergebnisEmbeddable()`, `spiel.haendeAlsJson()`, `spiel.sticheAlsJson()`, `spiel.armutSpielerPositionDb()`, etc.). Jeden dieser Aufrufe auf den echten Domain-Getter umstellen (`spiel.ergebnis().get()`, `spiel.haende()`, `spiel.stiche()`, `spiel.armutStatus().map(...)`, etc.).
 

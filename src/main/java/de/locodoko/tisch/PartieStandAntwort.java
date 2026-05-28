@@ -1,5 +1,6 @@
 package de.locodoko.tisch;
 
+import de.locodoko.karten.Hand;
 import de.locodoko.karten.Karte;
 import de.locodoko.karten.Spielregeln;
 import de.locodoko.partie.ArmutStatus;
@@ -10,14 +11,14 @@ import de.locodoko.partie.AnsageEreignis;
 import de.locodoko.partie.Partei;
 import de.locodoko.partie.Partie;
 import de.locodoko.partie.Spiel;
+import de.locodoko.partie.Spielergebnis;
 import de.locodoko.partie.Spielphase;
 import de.locodoko.partie.Sonderpunkt;
+import de.locodoko.partie.SonderpunktEreignis;
+import de.locodoko.partie.Stich;
 import de.locodoko.partie.VorbehaltAnsage;
 import de.locodoko.partie.VorbehaltMeldung;
-import de.locodoko.partie.HandJsonEintrag;
-import de.locodoko.partie.StichJsonEintrag;
 import de.locodoko.partie.PartieStatus;
-import de.locodoko.partie.SpielErgebnisEmbeddable;
 import de.locodoko.spieler.SpielerEntity;
 import io.swagger.v3.oas.annotations.media.Schema;
 
@@ -71,11 +72,11 @@ public record PartieStandAntwort(
         Partie partie = tisch.partie();
         Spielregeln spielregeln = tisch.konfiguration().alsSpielregeln();
         Spiel laufendesSpiel = partie.spiele().stream()
-            .filter(spiel -> spiel.ergebnisEmbeddable() == null)
+            .filter(spiel -> spiel.ergebnis().isEmpty())
             .reduce((erstes, zweites) -> zweites)
             .orElse(null);
         Spiel letztesAbgeschlossenesSpiel = partie.spiele().stream()
-            .filter(spiel -> spiel.ergebnisEmbeddable() != null)
+            .filter(spiel -> spiel.ergebnis().isPresent())
             .reduce((erstes, zweites) -> zweites)
             .orElse(null);
         return new PartieStandAntwort(
@@ -83,7 +84,7 @@ public record PartieStandAntwort(
             partie.version(),
             partie.statusAusDb(),
             partie.anzahlSpieleAusDb(),
-            partie.spiele().stream().filter(spiel -> spiel.ergebnisEmbeddable() != null).toList().size(),
+            partie.spiele().stream().filter(spiel -> spiel.ergebnis().isPresent()).toList().size(),
             partie.gesamtpunktestandAusDb(),
             LetztesSpielergebnisAntwort.aus(letztesAbgeschlossenesSpiel),
             AbgeschlossenerStichAntwort.aus(laufendesSpiel != null ? laufendesSpiel : letztesAbgeschlossenesSpiel),
@@ -143,14 +144,14 @@ public record PartieStandAntwort(
 
             List<SpielerImSpielAntwort> spieler = new ArrayList<>();
             for (SpielerPosition position : SpielerPosition.standardReihenfolge()) {
-                HandJsonEintrag hand = handVon(laufendesSpiel, position);
+                Hand hand = handVon(laufendesSpiel, position);
                 spieler.add(SpielerImSpielAntwort.aus(
                     position,
                     spielerNachPosition.get(position),
                     hand,
                     sichtbarePosition,
                     aktuellerSpieler,
-                    laufendesSpiel.geberPosition(),
+                    laufendesSpiel.geber(),
                     zeigeAlleHaende,
                     gewonneneStiche.getOrDefault(position, 0),
                     parteiSicht(fachlichesSpiel, sichtbarePosition, position)
@@ -161,9 +162,9 @@ public record PartieStandAntwort(
 
             return new LaufendesSpielAntwort(
                 laufendesSpiel.spielNummer(),
-                laufendesSpiel.spieltypAusDb(),
-                laufendesSpiel.phasenName(),
-                laufendesSpiel.geberPosition(),
+                laufendesSpiel.spieltyp(),
+                laufendesSpiel.phase().name(),
+                laufendesSpiel.geber(),
                 aktuellerSpieler,
                 spieler,
                 sichtbarePosition != null && sichtbarePosition == aktuellerSpieler && fachlichesSpiel.phase() instanceof Spielphase.Stichphase
@@ -249,11 +250,8 @@ public record PartieStandAntwort(
                 .orElse(null);
         }
 
-        private static HandJsonEintrag handVon(Spiel laufendesSpiel, SpielerPosition position) {
-            return laufendesSpiel.haendeAlsJson().stream()
-                .filter(hand -> hand.spielerPosition() == position)
-                .findFirst()
-                .orElse(null);
+        private static Hand handVon(Spiel laufendesSpiel, SpielerPosition position) {
+            return laufendesSpiel.haende().get(position);
         }
     }
 
@@ -292,7 +290,7 @@ public record PartieStandAntwort(
         static SpielerImSpielAntwort aus(
             SpielerPosition position,
             SpielerEntity spielerEntity,
-            HandJsonEintrag hand,
+            Hand hand,
             SpielerPosition sichtbarePosition,
             SpielerPosition aktuellerSpieler,
             SpielerPosition geberPosition,
@@ -302,7 +300,6 @@ public record PartieStandAntwort(
         ) {
             List<KarteAntwort> sichtbareHandkarten = hand != null && (zeigeAlleHaende || position == sichtbarePosition)
                 ? hand.karten().stream()
-                    .map(karte -> new Karte(karte.farbe(), karte.wert(), karte.exemplarIndex()))
                     .map(KarteAntwort::aus)
                     .toList()
                 : null;
@@ -364,19 +361,6 @@ public record PartieStandAntwort(
                 gespielteKarte.reihenfolge()
             );
         }
-
-        static GespielteKarteAntwort aus(de.locodoko.partie.AktuellerStichKarteEmbeddable karteEmbeddable) {
-            return new GespielteKarteAntwort(
-                karteEmbeddable.spielerPosition(),
-                new KarteAntwort(
-                    "%s-%s-%d".formatted(karteEmbeddable.farbe().name(), karteEmbeddable.wert().name(), karteEmbeddable.exemplarIndex()),
-                    karteEmbeddable.farbe().name(),
-                    karteEmbeddable.wert().name(),
-                    karteEmbeddable.exemplarIndex()
-                ),
-                karteEmbeddable.reihenfolge()
-            );
-        }
     }
 
     @Schema(description = "Einzelnes Ansage-Ereignis in der Ansage-Historie.")
@@ -412,16 +396,20 @@ public record PartieStandAntwort(
             if (spiel == null) {
                 return List.of();
             }
-            return spiel.sticheAlsJson().stream()
-                .map(stich -> new AbgeschlossenerStichAntwort(
+            List<Stich> stiche = spiel.abgeschlosseneStiche();
+            List<AbgeschlossenerStichAntwort> ergebnis = new ArrayList<>();
+            for (int i = 0; i < stiche.size(); i++) {
+                Stich stich = stiche.get(i);
+                ergebnis.add(new AbgeschlossenerStichAntwort(
                     spiel.spielNummer(),
-                    stich.stichNummer(),
-                    stich.aufspielerPosition(),
-                    stich.gewinnerPosition(),
-                    stich.augen(),
+                    i + 1,
+                    stich.aufspieler(),
+                    stich.gewinner(spiel.trumpfOrdnung()).spieler(),
+                    stich.augen().wert(),
                     stich.gespielteKarten().stream().map(GespielteKarteAntwort::aus).toList()
-                ))
-                .toList();
+                ));
+            }
+            return List.copyOf(ergebnis);
         }
     }
 
@@ -464,57 +452,52 @@ public record PartieStandAntwort(
     ) {
 
         static LetztesSpielergebnisAntwort aus(Spiel spiel) {
-            if (spiel == null || spiel.ergebnisEmbeddable() == null) {
+            if (spiel == null || spiel.ergebnis().isEmpty()) {
                 return null;
             }
 
-            SpielErgebnisEmbeddable ergebnis = spiel.ergebnisEmbeddable();
+            Spielergebnis ergebnis = spiel.ergebnis().get();
             EnumMap<Partei, Integer> augenProPartei = new EnumMap<>(Partei.class);
-            augenProPartei.put(Partei.RE, ergebnis.reAugen());
-            augenProPartei.put(Partei.KONTRA, ergebnis.kontraAugen());
+            augenProPartei.put(Partei.RE, ergebnis.augenVon(Partei.RE).wert());
+            augenProPartei.put(Partei.KONTRA, ergebnis.augenVon(Partei.KONTRA).wert());
 
             EnumMap<SpielerPosition, Integer> spielpunkteProSpieler = new EnumMap<>(SpielerPosition.class);
-            spielpunkteProSpieler.put(SpielerPosition.SUED, ergebnis.spielpunkteSued());
-            spielpunkteProSpieler.put(SpielerPosition.WEST, ergebnis.spielpunkteWest());
-            spielpunkteProSpieler.put(SpielerPosition.NORD, ergebnis.spielpunkteNord());
-            spielpunkteProSpieler.put(SpielerPosition.OST, ergebnis.spielpunkteOst());
+            spielpunkteProSpieler.put(SpielerPosition.SUED, ergebnis.spielpunkteVon(SpielerPosition.SUED).wert());
+            spielpunkteProSpieler.put(SpielerPosition.WEST, ergebnis.spielpunkteVon(SpielerPosition.WEST).wert());
+            spielpunkteProSpieler.put(SpielerPosition.NORD, ergebnis.spielpunkteVon(SpielerPosition.NORD).wert());
+            spielpunkteProSpieler.put(SpielerPosition.OST, ergebnis.spielpunkteVon(SpielerPosition.OST).wert());
 
             EnumMap<Partei, List<SonderpunktEreignisDto>> sonderpunkteProPartei = new EnumMap<>(Partei.class);
             for (Partei partei : Partei.values()) {
                 sonderpunkteProPartei.put(
                     partei,
-                    spiel.sonderpunkteAlsJson().stream()
-                        .filter(sp -> sp.partei() == partei)
-                        .map(sp -> new SonderpunktEreignisDto(sp.ereignis().art(), sp.ereignis().taeter(), sp.ereignis().opfer()))
+                    ergebnis.sonderpunkteVon(partei).stream()
+                        .map(sp -> new SonderpunktEreignisDto(sp.art(), sp.taeter(), sp.opfer()))
                         .toList()
                 );
             }
 
-            Integer dbGrundwert = ergebnis.grundwert();
-            Integer dbAbsagePunkte = ergebnis.absagePunkte();
-            Integer dbGegenDieAltenPunkte = ergebnis.gegenDieAltenPunkte();
-            Integer dbSoloMultiplikator = ergebnis.soloMultiplikator();
-
-            int grundwert = dbGrundwert != null ? dbGrundwert : ergebnis.spielwert();
-            int absagePunkte = dbAbsagePunkte != null ? dbAbsagePunkte : 0;
-            int gegenDieAltenPunkte = dbGegenDieAltenPunkte != null ? dbGegenDieAltenPunkte : 0;
+            int grundwert = ergebnis.grundwert();
+            int absagePunkte = ergebnis.absagePunkte();
+            int gegenDieAltenPunkte = ergebnis.gegenDieAltenPunkte();
+            int spielwert = ergebnis.spielwert().wert();
 
             List<PunkteKomponenteAntwort> aufschluesselung = new ArrayList<>();
             aufschluesselung.add(new PunkteKomponenteAntwort("GRUNDWERT", "Grundwert", grundwert));
             if (absagePunkte != 0) aufschluesselung.add(new PunkteKomponenteAntwort("ABSAGE", "Absagen", absagePunkte));
             if (gegenDieAltenPunkte != 0) aufschluesselung.add(new PunkteKomponenteAntwort("GEGEN_DIE_ALTEN", "Gegen die Alten", gegenDieAltenPunkte));
-            int sonderpunkteWert = ergebnis.spielwert() - grundwert - absagePunkte - gegenDieAltenPunkte;
+            int sonderpunkteWert = spielwert - grundwert - absagePunkte - gegenDieAltenPunkte;
             if (sonderpunkteWert != 0) aufschluesselung.add(new PunkteKomponenteAntwort("SONDERPUNKTE", "Sonderpunkte", sonderpunkteWert));
 
             return new LetztesSpielergebnisAntwort(
                 spiel.spielNummer(),
-                spiel.spieltypAusDb(),
+                spiel.spieltyp(),
                 ergebnis.siegerPartei(),
-                ergebnis.spielwert(),
+                spielwert,
                 grundwert,
                 absagePunkte,
                 gegenDieAltenPunkte,
-                dbSoloMultiplikator != null ? dbSoloMultiplikator : 1,
+                ergebnis.soloMultiplikator(),
                 Map.copyOf(augenProPartei),
                 Map.copyOf(spielpunkteProSpieler),
                 Map.copyOf(sonderpunkteProPartei),

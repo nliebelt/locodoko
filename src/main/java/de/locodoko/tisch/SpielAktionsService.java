@@ -303,10 +303,10 @@ public class SpielAktionsService {
     private void triggereKi(TischEntity tisch) {
         if (tisch.partie().statusAusDb() != PartieStatus.BEENDET) {
             tisch.partie().spiele().stream()
-                .filter(s -> s.ergebnisEmbeddable() == null)
+                .filter(s -> s.ergebnis().isEmpty())
                 .reduce((a, b) -> b)
                 .ifPresent(laufendesSpiel -> {
-                    if ("VORBEHALT_ANSAGE".equals(laufendesSpiel.phasenName())) {
+                    if (laufendesSpiel.phase() instanceof Spielphase.VorbehaltAnsage) {
                         eventPublisher.publishEvent(new VorbehaltErwartet(tisch.id()));
                     } else {
                         eventPublisher.publishEvent(new NaechsterSpielerErwartet(tisch.id()));
@@ -344,7 +344,7 @@ public class SpielAktionsService {
 
     private Spiel ladeLaufendesSpiel(Partie partie) {
         return partie.spiele().stream()
-            .filter(spiel -> spiel.ergebnisEmbeddable() == null)
+            .filter(spiel -> spiel.ergebnis().isEmpty())
             .reduce((erstes, zweites) -> zweites)
             .orElseThrow(() -> new SpielverwaltungKonfliktException(
                 "SPIEL_NICHT_AKTIV",

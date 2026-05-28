@@ -171,9 +171,9 @@ class TischControllerTest {
         assertEquals(1, geladen.partie().spiele().size(),
             "Beim Start muss bereits ein echtes erstes Spiel angelegt werden, damit die Tischansicht sofort Handkarten und Phase aus einem stabilen Snapshot lesen kann.");
         Spiel erstesSpiel = geladen.partie().spiele().getFirst();
-        assertEquals(4, erstesSpiel.haendeAlsJson().size(),
+        assertEquals(4, erstesSpiel.haende().size(),
             "Das erste Spiel muss alle vier Haende enthalten, weil die spielbare Tischansicht ohne nachgelagerten Platzhalter direkt mit echten Karten startet.");
-        assertEquals(10, erstesSpiel.haendeAlsJson().getFirst().karten().size(),
+        assertEquals(10, erstesSpiel.haende().values().iterator().next().karten().size(),
             "Jeder Spieler braucht direkt nach dem Start eine vollstaendige Hand, damit Vorbehalt-Phase und Kartendarstellung denselben serverseitigen Wahrheitsstand sehen.");
     }
 

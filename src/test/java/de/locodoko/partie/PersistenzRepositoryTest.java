@@ -131,23 +131,22 @@ class PersistenzRepositoryTest {
         assertEquals(3, geladenePartie.gesamtpunktestandAusDb().get(SpielerPosition.SUED));
 
         Spiel geladenesSpiel = spielRepository.findAllByPartie_IdOrderBySpielNummerAsc(geladenePartie.id()).getFirst();
-        assertEquals(Partei.RE, geladenesSpiel.ergebnisEmbeddable().siegerPartei());
-        assertEquals(240, geladenesSpiel.ergebnisEmbeddable().reAugen() + geladenesSpiel.ergebnisEmbeddable().kontraAugen(),
+        assertEquals(Partei.RE, geladenesSpiel.ergebnis().get().siegerPartei());
+        assertEquals(240, geladenesSpiel.ergebnis().get().augenVon(Partei.RE).wert() + geladenesSpiel.ergebnis().get().augenVon(Partei.KONTRA).wert(),
             "Der Ergebnis-Snapshot muss die 240-Augen-Invariante abbilden, damit spaetere Auswertungen reproduzierbar bleiben.");
-        assertEquals(1, geladenesSpiel.haendeAlsJson().size());
-        assertEquals(1, geladenesSpiel.sticheAlsJson().size());
-        assertEquals(2, geladenesSpiel.sonderpunkteAlsJson().size());
+        assertEquals(1, geladenesSpiel.haende().size());
+        assertEquals(1, geladenesSpiel.abgeschlosseneStiche().size());
+        assertEquals(2, geladenesSpiel.ergebnis().get().sonderpunkteVon(Partei.RE).size() + geladenesSpiel.ergebnis().get().sonderpunkteVon(Partei.KONTRA).size());
 
-        HandJsonEintrag geladeneHand = geladenesSpiel.haendeAlsJson().stream()
-            .filter(h -> h.spielerPosition() == SpielerPosition.SUED)
-            .findFirst().orElseThrow();
+        Hand geladeneHand = geladenesSpiel.haende().get(SpielerPosition.SUED);
+        assertNotNull(geladeneHand, "Hand von SUED muss vorhanden sein");
         assertEquals(2, geladeneHand.karten().size());
         assertEquals(Kartenwert.ZEHN, geladeneHand.karten().get(1).wert());
 
-        StichJsonEintrag geladenerStich = geladenesSpiel.sticheAlsJson().getFirst();
-        assertEquals(28, geladenerStich.augen());
+        Stich geladenerStich = geladenesSpiel.abgeschlosseneStiche().getFirst();
+        assertEquals(28, geladenerStich.augen().wert());
         assertEquals(4, geladenerStich.gespielteKarten().size());
-        assertEquals(Kartenwert.DAME, geladenerStich.gespielteKarten().getLast().wert());
+        assertEquals(Kartenwert.DAME, geladenerStich.gespielteKarten().getLast().karte().wert());
 
         assertTrue(spielerRepository.findBySessionId("session-ada").isPresent(),
             "Die Session-basierte Spieleridentifikation braucht eine direkte Repository-Suche, damit dieselbe Person serverseitig wiedererkannt wird.");
@@ -260,15 +259,15 @@ class PersistenzRepositoryTest {
 
         // Spring Data JDBC liest immer direkt aus der DB — kein Cache-Clear noetig
         Spiel geladenesSpiel = spielRepository.findAllByPartie_IdOrderBySpielNummerAsc(gespeichert.partie().id()).getFirst();
-        assertEquals(1, geladenesSpiel.ansagenAlsEmbeddable().size(),
+        assertEquals(1, geladenesSpiel.ansagen().ereignisse().size(),
             "Die Ansagehistorie muss im laufenden Spiel persistiert bleiben, damit Snapshots und Reconnects denselben oeffentlichen Ansagezustand wiederherstellen koennen.");
-        assertEquals(Ansage.RE, geladenesSpiel.ansagenAlsEmbeddable().getFirst().ansage());
+        assertEquals(Ansage.RE, geladenesSpiel.ansagen().ereignisse().getFirst().ansage());
         assertEquals(SpielerPosition.WEST, geladenesSpiel.aktuellerStichAufspielerPosition());
-        assertEquals(1, geladenesSpiel.aktuellerStichKarten().size(),
+        assertEquals(1, geladenesSpiel.aktuellerStich().map(s -> s.gespielteKarten().size()).orElse(0),
             "Die laufende Stichmitte muss gespeichert werden, damit nach einem Broadcast oder Reload keine bereits ausgespielten Karten verschwinden.");
-        assertEquals(SpielerPosition.WEST, geladenesSpiel.hochzeitSpielerPositionDb());
-        assertEquals(2, geladenesSpiel.hochzeitGeklaerteSticheDb());
-        assertEquals(SpielerPosition.NORD, geladenesSpiel.hochzeitPartnerSpielerPositionDb());
+        assertEquals(SpielerPosition.WEST, geladenesSpiel.hochzeitStatus().map(HochzeitStatus::hochzeitSpieler).orElse(null));
+        assertEquals(2, geladenesSpiel.hochzeitStatus().map(HochzeitStatus::geklaerteStiche).orElse(0));
+        assertEquals(SpielerPosition.NORD, geladenesSpiel.hochzeitStatus().flatMap(HochzeitStatus::partner).orElse(null));
     }
 
     private Spielergebnis beispielErgebnis() {

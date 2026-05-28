@@ -488,7 +488,6 @@ public class Spiel extends AbstraktePersistenzEntity {
 
     public int spielNummer() { return spielNummer; }
     public void setzeSpielNummer(int spielNummer) { this.spielNummer = spielNummer; }
-    public String phasenName() { return phase.name(); }
 
     /** Ersetzt die Haende aller Spieler (für Test-Setup und Integration-Tests). */
     public void ersetzeHaende(Map<SpielerPosition, Hand> neueHaende) {
@@ -512,83 +511,8 @@ public class Spiel extends AbstraktePersistenzEntity {
     public void setzeAbgeschlosseneStiche(List<Stich> stiche) {
         this.abgeschlosseneStiche = Stichverlauf.aus(stiche);
     }
-    public SpielerPosition geberPositionDb() { return geber; }
-    public Spieltyp spieltypAusDb() { return spieltyp; }
-    public SpielErgebnisEmbeddable dbErgebnis() { return ergebnisEmbeddable(); }
-    public SpielerPosition geberPosition() { return geber; }
-
-    public SpielErgebnisEmbeddable ergebnisEmbeddable() {
-        return ergebnis != null ? SpielErgebnisEmbeddable.aus(ergebnis) : null;
-    }
-
-    public List<HandJsonEintrag> haendeAlsJson() {
-        return SpielerPosition.standardReihenfolge().stream()
-            .filter(haende::enthaelt)
-            .map(p -> HandJsonEintrag.aus(p, haende.handVon(p).karten()))
-            .toList();
-    }
-
-    public List<StichJsonEintrag> sticheAlsJson() {
-        List<StichJsonEintrag> res = new ArrayList<>();
-        int idx = 1;
-        for (Stich stich : abgeschlosseneStiche.stiche()) {
-            res.add(new StichJsonEintrag(idx++, stich.aufspieler(), stich.gewinner(trumpfOrdnung).spieler(),
-                stich.augen().wert(), stich.gespielteKarten().stream().map(AktuellerStichKarteEmbeddable::aus).toList()));
-        }
-        return List.copyOf(res);
-    }
-
-    public List<AktuellerStichKarteEmbeddable> aktuellerStichKarten() {
-        return aktuellerStich().map(stich -> stich.gespielteKarten().stream().map(AktuellerStichKarteEmbeddable::aus).toList()).orElse(List.of());
-    }
-
-    public List<SonderpunktJsonEintrag> sonderpunkteAlsJson() {
-        if (ergebnis == null) {
-            return List.of();
-        }
-        List<SonderpunktJsonEintrag> sonderpunkte = new ArrayList<>();
-        for (Map.Entry<Partei, List<SonderpunktEreignis>> eintrag : ergebnis.sonderpunkteProPartei().entrySet()) {
-            for (SonderpunktEreignis ereignis : eintrag.getValue()) {
-                sonderpunkte.add(SonderpunktJsonEintrag.aus(eintrag.getKey(), ereignis));
-            }
-        }
-        return List.copyOf(sonderpunkte);
-    }
 
     public SpielerPosition aktuellerStichAufspielerPosition() { return aktuellerStich().map(Stich::aufspieler).orElse(null); }
-    public List<VorbehaltMeldungEmbeddable> vorbehalteAlsEmbeddable() { return vorbehalte.meldungen().stream().map(e -> VorbehaltMeldungEmbeddable.neu(e.spielerPosition(), e.ansage())).toList(); }
-    public List<AnsageEreignisEmbeddable> ansagenAlsEmbeddable() { return ansagen.ereignisse().stream().map(e -> AnsageEreignisEmbeddable.neu(e.spieler(), e.ansage())).toList(); }
-    public SpielerPosition armutSpielerPositionDb() {
-        return armutStatus().map(ArmutStatus::armutSpieler).orElse(null);
-    }
-    public int armutAktuellerAntwortIndexDb() {
-        return armutStatus().map(ArmutStatus::aktuellerIndex).orElse(0);
-    }
-    public boolean armutAngebotAbgegebenDb() {
-        return armutStatus().map(ArmutStatus::angebotLiegtVor).orElse(false);
-    }
-    public SpielerPosition armutPartnerSpielerPositionDb() {
-        return armutStatus().flatMap(ArmutStatus::partner).orElse(null);
-    }
-    public List<HandKarteEmbeddable> armutAngeboteneKartenDb() {
-        return armutStatus().map(s -> s.angeboteneTrumpfkarten().stream().map(HandKarteEmbeddable::aus).toList()).orElse(List.of());
-    }
-    public SpielerPosition hochzeitSpielerPositionDb() {
-        return hochzeitStatus().map(HochzeitStatus::hochzeitSpieler).orElse(null);
-    }
-    public int hochzeitGeklaerteSticheDb() {
-        return hochzeitStatus().map(HochzeitStatus::geklaerteStiche).orElse(0);
-    }
-    public SpielerPosition hochzeitPartnerSpielerPositionDb() {
-        return hochzeitStatus().flatMap(HochzeitStatus::partner).orElse(null);
-    }
-    public boolean hochzeitStillesSoloDb() {
-        return hochzeitStatus().map(HochzeitStatus::stillesSolo).orElse(false);
-    }
-    public boolean schweinchenAktivFlag() { return schweinchenAktiv(); }
-    public List<String> pflichtansageAusstehendDb() {
-        return pflichtansageAusstehend().stream().map(Enum::name).toList();
-    }
 
     /** Ersetzt die Handverteilung des Spiels, z. B. fuer kontrollierte Persistenz-Setups in Tests. */
     public void setzeHaendeAusMap(Map<SpielerPosition, Hand> neueHaende) {

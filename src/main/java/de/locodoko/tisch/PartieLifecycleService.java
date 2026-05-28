@@ -3,6 +3,7 @@ package de.locodoko.tisch;
 import de.locodoko.partie.Partie;
 import de.locodoko.partie.SpielerPosition;
 import de.locodoko.partie.Spiel;
+import de.locodoko.partie.ArmutStatus;
 import de.locodoko.partie.SpielergebnisArchiv;
 import de.locodoko.partie.Spielergebnis;
 import de.locodoko.partie.Parteien;
@@ -196,8 +197,8 @@ public class PartieLifecycleService {
             boolean istReSpieler = playerPartei == Partei.RE;
             String spieltypName = spieltyp == Spieltyp.NORMALSPIEL ? "" : spieltyp.name();
 
-            SpielerPosition armutSpieler = abgeschlossenesSpiel.armutSpielerPositionDb();
-            SpielerPosition armutPartner = abgeschlossenesSpiel.armutPartnerSpielerPositionDb();
+            SpielerPosition armutSpieler = abgeschlossenesSpiel.armutStatus().map(ArmutStatus::armutSpieler).orElse(null);
+            SpielerPosition armutPartner = abgeschlossenesSpiel.armutStatus().flatMap(ArmutStatus::partner).orElse(null);
             boolean hatArmutAngesagt = spieltyp == Spieltyp.ARMUT && pos.equals(armutSpieler);
             boolean hatArmutUebernommen = spieltyp == Spieltyp.ARMUT && pos.equals(armutPartner);
 

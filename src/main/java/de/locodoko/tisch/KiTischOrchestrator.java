@@ -190,7 +190,7 @@ public class KiTischOrchestrator {
 
     private Spiel findeLaufendesSpiel(Partie partie) {
         return partie.spiele().stream()
-                .filter(s -> s.ergebnisEmbeddable() == null)
+                .filter(s -> s.ergebnis().isEmpty())
                 .reduce((a, b) -> b)
                 .orElse(null);
     }
