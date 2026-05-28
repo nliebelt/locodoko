@@ -29,7 +29,7 @@ class SpielArmutTausch {
         }
         Map<SpielerPosition, Hand> neueHaende = kopiereHaende(haende);
         neueHaende.put(spielerPosition, armutHand.ohneAlle(angeboteneTrumpfkarten));
-        spiel.haende = neueHaende;
+        spiel.haende = Haende.aus(neueHaende);
         spiel.setzePhase(new Spielphase.ArmutTausch(status.mitAngebot(angeboteneTrumpfkarten)));
     }
 
@@ -72,10 +72,10 @@ class SpielArmutTausch {
         SpielerPosition ersterAufspieler = solistAufspieler != null ? solistAufspieler : geber.naechsteImUhrzeigersinn();
         spiel.setzeTrumpfOrdnung(new NormaleTrumpfOrdnung(spielregeln));
         spiel.setzePhase(new Spielphase.Stichphase(Stich.neu(ersterAufspieler), java.util.Set.of(), null));
-        spiel.haende = neueHaende;
+        spiel.haende = Haende.aus(neueHaende);
         spiel.parteien = neueParteien;
         spiel.ansagen = Ansagen.leer();
-        spiel.abgeschlosseneStiche = List.of();
+        spiel.abgeschlosseneStiche = Stichverlauf.leer();
         spiel.ergebnis = null;
         spiel.solistAufspieler = null;
     }

@@ -37,28 +37,26 @@ class JsonbConverterKonfiguration {
                 // Augen VO ↔ Integer
                 new AugenConverter.AugenSchreibConverter(),
                 new AugenConverter.AugenLeseConverter(),
-                // H2: byte[] → String fuer @Column-String-Felder (haendeJson, etc.)
-                new JsonbConverter.JsonbBytesZuStringConverter(mapper),
-                // haende
-                new JsonbConverter.HaendeSchreibConverter(mapper),
-                new JsonbConverter.HaendeLeseConverter(mapper),
-                new JsonbConverter.HaendeStringLeseConverter(mapper),
-                new JsonbConverter.HaendeBytesLeseConverter(mapper),
+                // haende (Wrapper-VO)
+                new JsonbConverter.HaendeVOSchreibConverter(mapper),
+                new JsonbConverter.HaendeVOLeseConverter(mapper),
+                new JsonbConverter.HaendeVOStringLeseConverter(mapper),
+                new JsonbConverter.HaendeVOBytesLeseConverter(mapper),
                 // aktueller_stich
                 new JsonbConverter.StichSchreibConverter(mapper),
                 new JsonbConverter.StichLeseConverter(mapper),
                 new JsonbConverter.StichStringLeseConverter(mapper),
                 new JsonbConverter.StichBytesLeseConverter(mapper),
-                // abgeschlossene_stiche
-                new JsonbConverter.StichListeSchreibConverter(mapper),
-                new JsonbConverter.StichListeLeseConverter(mapper),
-                new JsonbConverter.StichListeStringLeseConverter(mapper),
-                new JsonbConverter.StichListeBytesLeseConverter(mapper),
-                // vorbehalt_meldungen
-                new JsonbConverter.VorbehaltMeldungListeSchreibConverter(mapper),
-                new JsonbConverter.VorbehaltMeldungListeLeseConverter(mapper),
-                new JsonbConverter.VorbehaltMeldungListeStringLeseConverter(mapper),
-                new JsonbConverter.VorbehaltMeldungListeBytesLeseConverter(mapper),
+                // abgeschlossene_stiche (Wrapper-VO)
+                new JsonbConverter.StichverlaufVOSchreibConverter(mapper),
+                new JsonbConverter.StichverlaufVOLeseConverter(mapper),
+                new JsonbConverter.StichverlaufVOStringLeseConverter(mapper),
+                new JsonbConverter.StichverlaufVOBytesLeseConverter(mapper),
+                // vorbehalt_meldungen (Wrapper-VO)
+                new JsonbConverter.VorbehaltMeldungenVOSchreibConverter(mapper),
+                new JsonbConverter.VorbehaltMeldungenVOLeseConverter(mapper),
+                new JsonbConverter.VorbehaltMeldungenVOStringLeseConverter(mapper),
+                new JsonbConverter.VorbehaltMeldungenVOBytesLeseConverter(mapper),
                 // ansage_ereignisse
                 new JsonbConverter.AnsagenSchreibConverter(mapper),
                 new JsonbConverter.AnsagenLeseConverter(mapper),
@@ -69,16 +67,16 @@ class JsonbConverterKonfiguration {
                 new JsonbConverter.ParteienLeseConverter(mapper),
                 new JsonbConverter.ParteienStringLeseConverter(mapper),
                 new JsonbConverter.ParteienBytesLeseConverter(mapper),
-                // bereits_geschmissen
-                new JsonbConverter.SpielerPositionSetSchreibConverter(mapper),
-                new JsonbConverter.SpielerPositionSetLeseConverter(mapper),
-                new JsonbConverter.SpielerPositionSetStringLeseConverter(mapper),
-                new JsonbConverter.SpielerPositionSetBytesLeseConverter(mapper),
-                // pflicht_ansage_ausstehend
-                new JsonbConverter.ParteiSetSchreibConverter(mapper),
-                new JsonbConverter.ParteiSetLeseConverter(mapper),
-                new JsonbConverter.ParteiSetStringLeseConverter(mapper),
-                new JsonbConverter.ParteiSetBytesLeseConverter(mapper),
+                // bereits_geschmissen (Wrapper-VO)
+                new JsonbConverter.GeschmisseneSpielerVOSchreibConverter(mapper),
+                new JsonbConverter.GeschmisseneSpielerVOLeseConverter(mapper),
+                new JsonbConverter.GeschmisseneSpielerVOStringLeseConverter(mapper),
+                new JsonbConverter.GeschmisseneSpielerVOBytesLeseConverter(mapper),
+                // pflicht_ansage_ausstehend (Wrapper-VO)
+                new JsonbConverter.PflichtAnsagenVOSchreibConverter(mapper),
+                new JsonbConverter.PflichtAnsagenVOLeseConverter(mapper),
+                new JsonbConverter.PflichtAnsagenVOStringLeseConverter(mapper),
+                new JsonbConverter.PflichtAnsagenVOBytesLeseConverter(mapper),
                 // armut_status
                 new JsonbConverter.ArmutStatusSchreibConverter(mapper),
                 new JsonbConverter.ArmutStatusLeseConverter(mapper),

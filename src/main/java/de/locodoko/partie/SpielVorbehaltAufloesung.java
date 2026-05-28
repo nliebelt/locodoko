@@ -41,7 +41,7 @@ class SpielVorbehaltAufloesung {
                 spiel.setzePhase(new Spielphase.Stichphase(Stich.neu(ersterAufspieler), java.util.Set.of(), null));
                 spiel.parteien = Parteien.ausSolo(stillesSoloSpieler);
                 spiel.ansagen = Ansagen.leer();
-                spiel.abgeschlosseneStiche = List.of();
+                spiel.abgeschlosseneStiche = Stichverlauf.leer();
                 spiel.ergebnis = null;
                 spiel.solistAufspieler = null;
                 return;
@@ -60,7 +60,7 @@ class SpielVorbehaltAufloesung {
         spiel.setzePhase(naechstePhase);
         spiel.parteien = neueParteien;
         spiel.ansagen = Ansagen.leer();
-        spiel.abgeschlosseneStiche = List.of();
+        spiel.abgeschlosseneStiche = Stichverlauf.leer();
         spiel.ergebnis = null;
         spiel.solistAufspieler = null;
     }
@@ -72,11 +72,11 @@ class SpielVorbehaltAufloesung {
         spiel.spieltyp = Spieltyp.NORMALSPIEL;
         spiel.setzeTrumpfOrdnung(new NormaleTrumpfOrdnung(spielregeln));
         spiel.setzePhase(Spielphase.VORBEHALT_ANSAGE);
-        spiel.haende = haendeAusDeck(nd);
-        spiel.vorbehalte = List.of();
+        spiel.haende = Haende.aus(haendeAusDeck(nd));
+        spiel.vorbehalte = VorbehaltMeldungen.leer();
         spiel.parteien = null;
         spiel.ansagen = Ansagen.leer();
-        spiel.abgeschlosseneStiche = List.of();
+        spiel.abgeschlosseneStiche = Stichverlauf.leer();
         spiel.ergebnis = null;
         spiel.solistAufspieler = null;
         spiel.einwurfZaehler = einwurfZaehler + 1;

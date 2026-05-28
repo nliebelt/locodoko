@@ -3,6 +3,7 @@ package de.locodoko.tisch.persistenz;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonValue;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -12,15 +13,20 @@ import de.locodoko.karten.Spielregeln;
 import de.locodoko.partie.AnsageEreignis;
 import de.locodoko.partie.Ansagen;
 import de.locodoko.partie.ArmutStatus;
+import de.locodoko.partie.GeschmisseneSpieler;
 import de.locodoko.partie.GespielteKarte;
+import de.locodoko.partie.Haende;
 import de.locodoko.partie.HochzeitStatus;
 import de.locodoko.partie.Partei;
 import de.locodoko.partie.Parteien;
+import de.locodoko.partie.PflichtAnsagen;
 import de.locodoko.partie.SpielerPosition;
 import de.locodoko.partie.Spielergebnis;
 import de.locodoko.partie.Stich;
+import de.locodoko.partie.Stichverlauf;
 import de.locodoko.partie.VorbehaltAnsage;
 import de.locodoko.partie.VorbehaltMeldung;
+import de.locodoko.partie.VorbehaltMeldungen;
 import org.postgresql.util.PGobject;
 import org.springframework.core.convert.converter.Converter;
 import org.springframework.data.convert.ReadingConverter;
@@ -124,6 +130,51 @@ public final class JsonbConverter {
         abstract Set<SpielerPosition> offenFuerAlle();
     }
 
+    /** Mixin fuer {@link Haende}: JSON-Wert ist die interne Map; Factory-Methode als JsonCreator. */
+    private abstract static class HaendeMixin {
+        @JsonCreator
+        public static Haende aus(Map<SpielerPosition, Hand> haende) { return null; }
+
+        @JsonValue
+        abstract Map<SpielerPosition, Hand> alsMap();
+    }
+
+    /** Mixin fuer {@link VorbehaltMeldungen}: JSON-Wert ist die interne Liste. */
+    private abstract static class VorbehaltMeldungenMixin {
+        @JsonCreator
+        public static VorbehaltMeldungen aus(List<VorbehaltMeldung> meldungen) { return null; }
+
+        @JsonValue
+        abstract List<VorbehaltMeldung> meldungen();
+    }
+
+    /** Mixin fuer {@link Stichverlauf}: JSON-Wert ist die interne Liste. */
+    private abstract static class StichverlaufMixin {
+        @JsonCreator
+        public static Stichverlauf aus(List<Stich> stiche) { return null; }
+
+        @JsonValue
+        abstract List<Stich> stiche();
+    }
+
+    /** Mixin fuer {@link GeschmisseneSpieler}: JSON-Wert ist das interne Set. */
+    private abstract static class GeschmisseneSpielerMixin {
+        @JsonCreator
+        public static GeschmisseneSpieler aus(Set<SpielerPosition> positionen) { return null; }
+
+        @JsonValue
+        abstract Set<SpielerPosition> alsSet();
+    }
+
+    /** Mixin fuer {@link PflichtAnsagen}: JSON-Wert ist das interne Set. */
+    private abstract static class PflichtAnsagenMixin {
+        @JsonCreator
+        public static PflichtAnsagen aus(Set<Partei> parteien) { return null; }
+
+        @JsonValue
+        abstract Set<Partei> alsSet();
+    }
+
     // ---- ObjectMapper-Konfiguration ----
 
     /**
@@ -137,7 +188,12 @@ public final class JsonbConverter {
                 .addMixIn(Stich.class, StichMixin.class)
                 .addMixIn(Ansagen.class, AnsagenMixin.class)
                 .addMixIn(Parteien.class, ParteienMixin.class)
-                .addMixIn(VorbehaltMeldung.class, VorbehaltMeldungMixin.class);
+                .addMixIn(VorbehaltMeldung.class, VorbehaltMeldungMixin.class)
+                .addMixIn(Haende.class, HaendeMixin.class)
+                .addMixIn(VorbehaltMeldungen.class, VorbehaltMeldungenMixin.class)
+                .addMixIn(Stichverlauf.class, StichverlaufMixin.class)
+                .addMixIn(GeschmisseneSpieler.class, GeschmisseneSpielerMixin.class)
+                .addMixIn(PflichtAnsagen.class, PflichtAnsagenMixin.class);
     }
 
     // ---- Hilfs-Methoden ----
@@ -675,5 +731,196 @@ public final class JsonbConverter {
         public SpielergebnisBytesLeseConverter(ObjectMapper mapper) { this.mapper = mapper; }
         @Override
         public Spielergebnis convert(byte[] source) { return fromBytes(mapper, source, Spielergebnis.class); }
+    }
+
+    // ---- Wrapper-VO-Converter (DOMAIN-1) ----
+
+    /** haende: Haende ↔ JSONB (serialisiert als Map<SpielerPosition, Hand>) */
+    @WritingConverter
+    public static class HaendeVOSchreibConverter implements Converter<Haende, String> {
+        private final ObjectMapper mapper;
+        public HaendeVOSchreibConverter(ObjectMapper mapper) { this.mapper = mapper; }
+        @Override
+        public String convert(Haende source) { return toJsonString(mapper, source); }
+    }
+
+    @ReadingConverter
+    public static class HaendeVOLeseConverter implements Converter<PGobject, Haende> {
+        private final ObjectMapper mapper;
+        public HaendeVOLeseConverter(ObjectMapper mapper) { this.mapper = mapper; }
+        @Override
+        public Haende convert(PGobject source) { return fromPGobject(mapper, source, Haende.class); }
+    }
+
+    @ReadingConverter
+    public static class HaendeVOStringLeseConverter implements Converter<String, Haende> {
+        private final ObjectMapper mapper;
+        public HaendeVOStringLeseConverter(ObjectMapper mapper) { this.mapper = mapper; }
+        @Override
+        public Haende convert(String source) { return fromString(mapper, source, Haende.class); }
+    }
+
+    @ReadingConverter
+    public static class HaendeVOBytesLeseConverter implements Converter<byte[], Haende> {
+        private final ObjectMapper mapper;
+        public HaendeVOBytesLeseConverter(ObjectMapper mapper) { this.mapper = mapper; }
+        @Override
+        public Haende convert(byte[] source) { return fromBytes(mapper, source, Haende.class); }
+    }
+
+    /** vorbehalt_meldungen: VorbehaltMeldungen ↔ JSONB */
+    @WritingConverter
+    public static class VorbehaltMeldungenVOSchreibConverter implements Converter<VorbehaltMeldungen, String> {
+        private final ObjectMapper mapper;
+        public VorbehaltMeldungenVOSchreibConverter(ObjectMapper mapper) { this.mapper = mapper; }
+        @Override
+        public String convert(VorbehaltMeldungen source) { return toJsonString(mapper, source); }
+    }
+
+    @ReadingConverter
+    public static class VorbehaltMeldungenVOLeseConverter implements Converter<PGobject, VorbehaltMeldungen> {
+        private final ObjectMapper mapper;
+        public VorbehaltMeldungenVOLeseConverter(ObjectMapper mapper) { this.mapper = mapper; }
+        @Override
+        public VorbehaltMeldungen convert(PGobject source) {
+            return fromPGobject(mapper, source, VorbehaltMeldungen.class);
+        }
+    }
+
+    @ReadingConverter
+    public static class VorbehaltMeldungenVOStringLeseConverter implements Converter<String, VorbehaltMeldungen> {
+        private final ObjectMapper mapper;
+        public VorbehaltMeldungenVOStringLeseConverter(ObjectMapper mapper) { this.mapper = mapper; }
+        @Override
+        public VorbehaltMeldungen convert(String source) {
+            return fromString(mapper, source, VorbehaltMeldungen.class);
+        }
+    }
+
+    @ReadingConverter
+    public static class VorbehaltMeldungenVOBytesLeseConverter implements Converter<byte[], VorbehaltMeldungen> {
+        private final ObjectMapper mapper;
+        public VorbehaltMeldungenVOBytesLeseConverter(ObjectMapper mapper) { this.mapper = mapper; }
+        @Override
+        public VorbehaltMeldungen convert(byte[] source) {
+            return fromBytes(mapper, source, VorbehaltMeldungen.class);
+        }
+    }
+
+    /** abgeschlossene_stiche: Stichverlauf ↔ JSONB */
+    @WritingConverter
+    public static class StichverlaufVOSchreibConverter implements Converter<Stichverlauf, String> {
+        private final ObjectMapper mapper;
+        public StichverlaufVOSchreibConverter(ObjectMapper mapper) { this.mapper = mapper; }
+        @Override
+        public String convert(Stichverlauf source) { return toJsonString(mapper, source); }
+    }
+
+    @ReadingConverter
+    public static class StichverlaufVOLeseConverter implements Converter<PGobject, Stichverlauf> {
+        private final ObjectMapper mapper;
+        public StichverlaufVOLeseConverter(ObjectMapper mapper) { this.mapper = mapper; }
+        @Override
+        public Stichverlauf convert(PGobject source) {
+            return fromPGobject(mapper, source, Stichverlauf.class);
+        }
+    }
+
+    @ReadingConverter
+    public static class StichverlaufVOStringLeseConverter implements Converter<String, Stichverlauf> {
+        private final ObjectMapper mapper;
+        public StichverlaufVOStringLeseConverter(ObjectMapper mapper) { this.mapper = mapper; }
+        @Override
+        public Stichverlauf convert(String source) {
+            return fromString(mapper, source, Stichverlauf.class);
+        }
+    }
+
+    @ReadingConverter
+    public static class StichverlaufVOBytesLeseConverter implements Converter<byte[], Stichverlauf> {
+        private final ObjectMapper mapper;
+        public StichverlaufVOBytesLeseConverter(ObjectMapper mapper) { this.mapper = mapper; }
+        @Override
+        public Stichverlauf convert(byte[] source) {
+            return fromBytes(mapper, source, Stichverlauf.class);
+        }
+    }
+
+    /** bereits_geschmissen: GeschmisseneSpieler ↔ JSONB */
+    @WritingConverter
+    public static class GeschmisseneSpielerVOSchreibConverter implements Converter<GeschmisseneSpieler, String> {
+        private final ObjectMapper mapper;
+        public GeschmisseneSpielerVOSchreibConverter(ObjectMapper mapper) { this.mapper = mapper; }
+        @Override
+        public String convert(GeschmisseneSpieler source) { return toJsonString(mapper, source); }
+    }
+
+    @ReadingConverter
+    public static class GeschmisseneSpielerVOLeseConverter implements Converter<PGobject, GeschmisseneSpieler> {
+        private final ObjectMapper mapper;
+        public GeschmisseneSpielerVOLeseConverter(ObjectMapper mapper) { this.mapper = mapper; }
+        @Override
+        public GeschmisseneSpieler convert(PGobject source) {
+            return fromPGobject(mapper, source, GeschmisseneSpieler.class);
+        }
+    }
+
+    @ReadingConverter
+    public static class GeschmisseneSpielerVOStringLeseConverter implements Converter<String, GeschmisseneSpieler> {
+        private final ObjectMapper mapper;
+        public GeschmisseneSpielerVOStringLeseConverter(ObjectMapper mapper) { this.mapper = mapper; }
+        @Override
+        public GeschmisseneSpieler convert(String source) {
+            return fromString(mapper, source, GeschmisseneSpieler.class);
+        }
+    }
+
+    @ReadingConverter
+    public static class GeschmisseneSpielerVOBytesLeseConverter implements Converter<byte[], GeschmisseneSpieler> {
+        private final ObjectMapper mapper;
+        public GeschmisseneSpielerVOBytesLeseConverter(ObjectMapper mapper) { this.mapper = mapper; }
+        @Override
+        public GeschmisseneSpieler convert(byte[] source) {
+            return fromBytes(mapper, source, GeschmisseneSpieler.class);
+        }
+    }
+
+    /** pflicht_ansage_ausstehend: PflichtAnsagen ↔ JSONB */
+    @WritingConverter
+    public static class PflichtAnsagenVOSchreibConverter implements Converter<PflichtAnsagen, String> {
+        private final ObjectMapper mapper;
+        public PflichtAnsagenVOSchreibConverter(ObjectMapper mapper) { this.mapper = mapper; }
+        @Override
+        public String convert(PflichtAnsagen source) { return toJsonString(mapper, source); }
+    }
+
+    @ReadingConverter
+    public static class PflichtAnsagenVOLeseConverter implements Converter<PGobject, PflichtAnsagen> {
+        private final ObjectMapper mapper;
+        public PflichtAnsagenVOLeseConverter(ObjectMapper mapper) { this.mapper = mapper; }
+        @Override
+        public PflichtAnsagen convert(PGobject source) {
+            return fromPGobject(mapper, source, PflichtAnsagen.class);
+        }
+    }
+
+    @ReadingConverter
+    public static class PflichtAnsagenVOStringLeseConverter implements Converter<String, PflichtAnsagen> {
+        private final ObjectMapper mapper;
+        public PflichtAnsagenVOStringLeseConverter(ObjectMapper mapper) { this.mapper = mapper; }
+        @Override
+        public PflichtAnsagen convert(String source) {
+            return fromString(mapper, source, PflichtAnsagen.class);
+        }
+    }
+
+    @ReadingConverter
+    public static class PflichtAnsagenVOBytesLeseConverter implements Converter<byte[], PflichtAnsagen> {
+        private final ObjectMapper mapper;
+        public PflichtAnsagenVOBytesLeseConverter(ObjectMapper mapper) { this.mapper = mapper; }
+        @Override
+        public PflichtAnsagen convert(byte[] source) {
+            return fromBytes(mapper, source, PflichtAnsagen.class);
+        }
     }
 }

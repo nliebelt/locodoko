@@ -4,15 +4,15 @@
 
 ## Notiz
 
-**Session 15 (2026-05-28):** REFACTOR-DOMAIN-0 abgeschlossen.
+**Session 16 (2026-05-28):** REFACTOR-DOMAIN-1 abgeschlossen.
 
-`PartieStandAntwortWireFormatTest.java` neu angelegt in `src/test/java/de/locodoko/tisch/`. Schweinchen-Normalspiel mit 2 abgeschlossenen Stichen, 1 RE-Ansage, 4 GESUND-Vorbehalten, schweinchenAktiv=true. Baseline `wire-format-baseline.json` (294 Zeilen) in `src/test/resources/` eingecheckt. UUIDs + Avatar-Farben werden vor Vergleich normalisiert — Test ist deterministisch. Test selbst-bootstrappend (schreibt Baseline wenn fehlt). 341 Backend-Tests grün.
+5 Wrapper-VOs (`Haende`, `VorbehaltMeldungen`, `Stichverlauf`, `GeschmisseneSpieler`, `PflichtAnsagen`) eingeführt. `Spiel.java` von `@Transient + @Column String *Json`-Paaren auf direkte `@Column`-VO-Felder umgestellt. `PartieJsonMapper.java`, `SpielVorSpeichernCallback`, `SpielNachLadenCallback`, `PartieVorSpeichernCallback` gelöscht. `PartieNachLadenCallback` bereinigt (nur noch `partie.initialisiereDomainFelderNachLaden()`). 20 neue Converter-Klassen in `JsonbConverter.java`, Konfiguration in `JsonbConverterKonfiguration.java` aktualisiert. 348 Backend-Tests grün (7 neue in `HaendeTest`).
 
-**Nächster Schritt:** REFACTOR-DOMAIN-VISUAL-BASELINE — Vision-Loop laufen lassen (erfordert laufendes Backend + headed Browser). Danach REFACTOR-DOMAIN-1.
+**Nächster Schritt:** REFACTOR-DOMAIN-VISUAL-BASELINE überspringen (headed Browser). Weiter mit REFACTOR-DOMAIN-2.
 
-**REFACTOR-DOMAIN-VISUAL-BASELINE:** Erfordert laufendes Backend (`mvn spring-boot:run`) + Playwright headed. In dieser Session übersprungen (Network-Zugriff blockiert). Vor REFACTOR-DOMAIN-1 manuell nachholen.
+**REFACTOR-DOMAIN-VISUAL-BASELINE:** Erfordert laufendes Backend (`mvn spring-boot:run`) + Playwright headed. Weiterhin übersprungen.
 
-**IST-Zustand 2026-05-28 (verifiziert):** Backend 340 Tests grün, Frontend 216 Tests grün, `npm run build` + `npm run lint` clean. Spielfluss (Schnellstart → Vorbehalt → Stiche → Auswertung) durch E2E-Specs gedeckt — **Spiel ist heute im Browser testbar**, `mvn spring-boot:run` startet. Profil-Modal ist die einzige sichtbare Schwachstelle.
+**IST-Zustand 2026-05-28 (verifiziert):** Backend 348 Tests grün, Frontend 221 Tests grün, `npm run build` + `npm run lint` clean.
 
 **User-Entscheidung 2026-05-28:**
 1. P1 (Profil-Fix) zuerst, kein Smoke-Test davor.
@@ -141,7 +141,7 @@ Bevor REFACTOR-DOMAIN startet: manueller Browser-Test durch User.
 
 ---
 
-- [ ] **REFACTOR-DOMAIN-1: Wrapper-VOs für Kollektionen** — Eliminiert Workaround #1. *(blockiert durch DOMAIN-0)*
+- [x] **REFACTOR-DOMAIN-1: Wrapper-VOs für Kollektionen** — Eliminiert Workaround #1. *(blockiert durch DOMAIN-0)*
 
   Fünf neue VOs einführen: `Haende` (über `Map<SpielerPosition, Hand>`), `VorbehaltMeldungen` (über `List<VorbehaltMeldung>`), `Stichverlauf` (über `List<Stich>`), `GeschmisseneSpieler` (über `Set<SpielerPosition>`), `PflichtAnsagen` (über `Set<Partei>`). Jeweils als Record oder finale Klasse mit Map.copyOf/List.copyOf im Konstruktor. Domain-Methoden auf den Wrappern (`Haende.handVon(pos)`, `Stichverlauf.letzter()`, etc.) statt Collection-Methoden im Spiel-Aggregate.
 
