@@ -2,7 +2,7 @@
 
 | Feld           | Wert                                                              |
 |----------------|-------------------------------------------------------------------|
-| Status         | Geplant — FE-1 (Task 77) + FE-2 (Task 78), Plan-Run 2026-05-22   |
+| Status         | Implementiert — BUG-PROFIL-TYPES + FEAT-PROFIL-TABS, Session 14 2026-05-28 |
 | Priorität      | Mittel                                                            |
 | Abhängigkeiten | spieler-profil.md, frontend-architektur.md, frontend-visuelles-design.md |
 | Vorbedingung   | DB-9 (Task 75) — `SpielerProfilAntwort` mit Multi-Variante-Statistiken |

@@ -8,7 +8,7 @@
 
 `api-types.ts` regeneriert (Map-Schema), `SpielerProfilModal.ts` hat jetzt Tab-Leiste (TURNIER/SONDER/FREI) mit `role="tablist"` + `aria-selected`, Tab-Click wechselt Statistik-Container, alle 17 Felder inkl. Re/Kontra-Block, Hochzeiten/Armuten, Solos-pro-Typ. CSS-Klassen für Tab-Leiste und Re/Kontra ergänzt. 219 Frontend-Tests grün, Build + Lint clean.
 
-**Nächster Schritt:** DOC-PROFIL-STATUS — Spec-Status in `frontend-spielerprofil.md` auf „Implementiert" setzen und offenen DoD-Haken in `spieler-profil.md` schließen.
+**Nächster Schritt:** FE-FEHLER-422 — Frontend behandelt HTTP 422 (UngueltigerSpielzugException) und 409 (SpielverwaltungKonfliktException) mit fachlichen Toast-Meldungen statt generischem Fehler.
 
 **IST-Zustand 2026-05-28 (verifiziert):** Backend 340 Tests grün, Frontend 216 Tests grün, `npm run build` + `npm run lint` clean. Spielfluss (Schnellstart → Vorbehalt → Stiche → Auswertung) durch E2E-Specs gedeckt — **Spiel ist heute im Browser testbar**, `mvn spring-boot:run` startet. Profil-Modal ist die einzige sichtbare Schwachstelle.
 
@@ -77,7 +77,7 @@
 
   **DoD:** Bei ungültigem Spielzug zeigt UI fachlichen Toast, nicht generischen 500-Fehler. E2E grün.
 
-- [ ] **DOC-PROFIL-STATUS** — Nach Abschluss BUG-PROFIL-TYPES + FEAT-PROFIL-TABS:
+- [x] **DOC-PROFIL-STATUS** — Nach Abschluss BUG-PROFIL-TYPES + FEAT-PROFIL-TABS:
   - `specs/frontend-spielerprofil.md` Status „Geplant" → „Implementiert".
   - `specs/spieler-profil.md` letzten DoD-Haken `[ ] Frontend: Profil-Ansicht` schließen.
 
