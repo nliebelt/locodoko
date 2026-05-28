@@ -4,7 +4,7 @@
 
 ## Notiz
 
-**Session 25 (2026-05-28):** REFACTOR-DOMAIN-7 + REFACTOR-TISCHANSICHT-1 abgeschlossen. `TischAnsichtModell.ts` von 636 → 347 Zeilen durch Extraktion in `SitzordnungModell.ts` (Positions-Utilities, 30 Zeilen) und `TischAnsichtMapper.ts` (alle privaten Mapping-Funktionen, 290 Zeilen). 221 Frontend-Tests + Build + Lint grün. Nächster Schritt: SMOKE-UI-1 (manuell, User) oder REFACTOR-DOMAIN-VISUAL-BASELINE (braucht laufendes Backend).
+**Session 25 (2026-05-28):** REFACTOR-DOMAIN-7 + REFACTOR-TISCHANSICHT-1 + REFACTOR-DOMAIN-VISUAL-BASELINE abgeschlossen. `TischAnsichtModell.ts` von 636 → 347 Zeilen durch Extraktion in `SitzordnungModell.ts` (30 Zeilen) und `TischAnsichtMapper.ts` (290 Zeilen). Screenshots als Post-Refactor-Baseline in `e2e/screenshots/baseline-nach-refactor/` eingecheckt (7 Szenen visuell korrekt). Einzige verbleibende offene Aufgabe: SMOKE-UI-1 (manueller Browser-Test durch User).
 
 **Session 24 (2026-05-28):** Plan-Scan. REFACTOR-DOMAIN-1..6 vollständig abgeschlossen. Keine Spec/Code-Abweichungen gefunden. Zwei neue Cleanup-Tasks identifiziert (REFACTOR-DOMAIN-7, REFACTOR-TISCHANSICHT-1). IST-Zustand: Backend 348 Tests grün, Frontend 221 Tests grün.
 
@@ -125,7 +125,7 @@ Bevor REFACTOR-DOMAIN startet: manueller Browser-Test durch User.
 
   **Risiko:** Gering. Aufwand: 1 Session.
 
-- [ ] **REFACTOR-DOMAIN-VISUAL-BASELINE** — Parallel zu DOMAIN-0, vor DOMAIN-1.
+- [x] **REFACTOR-DOMAIN-VISUAL-BASELINE** — Parallel zu DOMAIN-0, vor DOMAIN-1.
 
   Vision-Loop einmal komplett laufen lassen, Screenshots in `e2e/screenshots/baseline-vor-refactor/` einchecken. Deckt: LoginSzene, Lobby, TischSzene Start, Vorbehalt-Phase, Stich-Verlauf, Rundenauswertung.
 
