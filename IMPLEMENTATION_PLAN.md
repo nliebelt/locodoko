@@ -4,11 +4,11 @@
 
 ## Notiz
 
-**Session 21 (2026-05-28):** REFACTOR-DOMAIN-6 abgeschlossen.
+**Session 22 (2026-05-28):** Baseline-Validierung: Backend 348 Tests grün, Frontend 221 Tests grün.
 
-`JsonbConverterKonfiguration.java`: `new ObjectMapper()` als `@Bean jsonbObjectMapper()` extrahiert. `jdbcCustomConversions()` ruft jetzt `jsonbObjectMapper()` als intra-Config-Bean-Call auf. `JsonbConverter.java`: `NurEchteIsGetterStrategieProvider` + `NurEchteIsGetterStrategie` (extends `DefaultAccessorNamingStrategy`) als private static final classes eingeführt. `konfiguriereObjectMapper()` registriert die Strategie via `.setAccessorNaming(new NurEchteIsGetterStrategieProvider())`. `VorbehaltMeldungMixin` komplett gelöscht (hatte nur `@JsonIgnore`). `@JsonIgnore` auf `StichMixin.istVollstaendig()` entfernt. `.addMixIn(VorbehaltMeldung.class, ...)` entfernt. Import `@JsonIgnore` entfernt. 348 Backend-Tests grün.
+Verbleibende offene Tasks: REFACTOR-DOMAIN-VISUAL-BASELINE + SMOKE-UI-1 — beide erfordern laufendes Backend + Playwright headed bzw. manuellen Browser-Test durch User. Netzwerkzugriff in Agenten-Umgebung gesperrt → kein automatisierter Vision-Loop möglich.
 
-**Nächster Schritt:** REFACTOR-DOMAIN-VISUAL-BASELINE (erfordert laufendes Backend + Playwright headed — weiterhin übersprungen). Alle REFACTOR-DOMAIN-Tasks abgeschlossen. Nächste offene Task: SMOKE-UI-1 (manuell durch User).
+**Nächster Schritt:** User führt SMOKE-UI-1 manuell durch (`mvn spring-boot:run` → Browser → Schnellstart → Partie gegen 3 KI). Danach REFACTOR-DOMAIN-VISUAL-BASELINE per Vision-Loop abschliessen.
 
 
 **REFACTOR-DOMAIN-VISUAL-BASELINE:** Erfordert laufendes Backend (`mvn spring-boot:run`) + Playwright headed. Weiterhin übersprungen.
