@@ -91,23 +91,23 @@ class PersistenzRepositoryTest {
         partie.setzeGesamtpunktestand(SpielerPosition.NORD, -1);
         partie.setzeGesamtpunktestand(SpielerPosition.OST, -1);
 
-        Spiel spiel = Spiel.neuePersistenz(1, SpielerPosition.SUED, Spieltyp.NORMALSPIEL, Spielphase.GESAMTSTAND_AKTUALISIEREN);
-        spiel.ersetzeHaende(Map.of(
-            SpielerPosition.SUED, new Hand(List.of(
-                new Karte(Farbe.KREUZ, Kartenwert.DAME, 1),
-                new Karte(Farbe.HERZ, Kartenwert.ZEHN, 2)
+        Spiel spiel = SpielTestBuilder.ausNeuePersistenz(1, SpielerPosition.SUED, Spieltyp.NORMALSPIEL, Spielphase.GESAMTSTAND_AKTUALISIEREN)
+            .mitHaenden(Map.of(
+                SpielerPosition.SUED, new Hand(List.of(
+                    new Karte(Farbe.KREUZ, Kartenwert.DAME, 1),
+                    new Karte(Farbe.HERZ, Kartenwert.ZEHN, 2)
+                ))
             ))
-        ));
-
-        spiel.setzeAbgeschlosseneStiche(List.of(
-            Stich.ausPersistiertemStand(SpielerPosition.WEST, List.of(
-                new GespielteKarte(SpielerPosition.WEST, new Karte(Farbe.KREUZ, Kartenwert.AS, 1), 0),
-                new GespielteKarte(SpielerPosition.NORD, new Karte(Farbe.KREUZ, Kartenwert.ZEHN, 1), 1),
-                new GespielteKarte(SpielerPosition.OST, new Karte(Farbe.KREUZ, Kartenwert.KOENIG, 2), 2),
-                new GespielteKarte(SpielerPosition.SUED, new Karte(Farbe.KREUZ, Kartenwert.DAME, 1), 3)
+            .mitAbgeschlossenenStichen(List.of(
+                Stich.ausPersistiertemStand(SpielerPosition.WEST, List.of(
+                    new GespielteKarte(SpielerPosition.WEST, new Karte(Farbe.KREUZ, Kartenwert.AS, 1), 0),
+                    new GespielteKarte(SpielerPosition.NORD, new Karte(Farbe.KREUZ, Kartenwert.ZEHN, 1), 1),
+                    new GespielteKarte(SpielerPosition.OST, new Karte(Farbe.KREUZ, Kartenwert.KOENIG, 2), 2),
+                    new GespielteKarte(SpielerPosition.SUED, new Karte(Farbe.KREUZ, Kartenwert.DAME, 1), 3)
+                ))
             ))
-        ));
-        spiel.setzeErgebnis(beispielErgebnis());
+            .mitErgebnis(beispielErgebnis())
+            .bauen();
 
         partie.fuegeSpielHinzu(spiel);
         partie.markiereAlsBeendet();
@@ -165,15 +165,16 @@ class PersistenzRepositoryTest {
         tisch.fuegeSpielerHinzu(ki);
 
         Partie partie = Partie.neuePersistenz(24);
-        Spiel spiel = Spiel.neuePersistenz(1, SpielerPosition.WEST, Spieltyp.NORMALSPIEL, new Spielphase.Stichphase(Stich.neu(SpielerPosition.WEST), Set.of(), null));
-        spiel.setzeAbgeschlosseneStiche(List.of(
-            Stich.ausPersistiertemStand(SpielerPosition.WEST, List.of(
-                new GespielteKarte(SpielerPosition.WEST, new Karte(Farbe.HERZ, Kartenwert.AS, 1), 0),
-                new GespielteKarte(SpielerPosition.NORD, new Karte(Farbe.HERZ, Kartenwert.NEUN, 1), 1),
-                new GespielteKarte(SpielerPosition.OST, new Karte(Farbe.PIK, Kartenwert.NEUN, 1), 2),
-                new GespielteKarte(SpielerPosition.SUED, new Karte(Farbe.KREUZ, Kartenwert.NEUN, 1), 3)
+        Spiel spiel = SpielTestBuilder.ausNeuePersistenz(1, SpielerPosition.WEST, Spieltyp.NORMALSPIEL, new Spielphase.Stichphase(Stich.neu(SpielerPosition.WEST), Set.of(), null))
+            .mitAbgeschlossenenStichen(List.of(
+                Stich.ausPersistiertemStand(SpielerPosition.WEST, List.of(
+                    new GespielteKarte(SpielerPosition.WEST, new Karte(Farbe.HERZ, Kartenwert.AS, 1), 0),
+                    new GespielteKarte(SpielerPosition.NORD, new Karte(Farbe.HERZ, Kartenwert.NEUN, 1), 1),
+                    new GespielteKarte(SpielerPosition.OST, new Karte(Farbe.PIK, Kartenwert.NEUN, 1), 2),
+                    new GespielteKarte(SpielerPosition.SUED, new Karte(Farbe.KREUZ, Kartenwert.NEUN, 1), 3)
+                ))
             ))
-        ));
+            .bauen();
         partie.fuegeSpielHinzu(spiel);
         tisch.setzePartie(partie);
         TischEntity gespeichert = tischRepository.saveAndFlush(tisch);
@@ -247,11 +248,12 @@ class PersistenzRepositoryTest {
         Stich stichMitKarte = Stich.ausPersistiertemStand(SpielerPosition.WEST, List.of(
             new GespielteKarte(SpielerPosition.WEST, new Karte(Farbe.KREUZ, Kartenwert.AS, 1), 0)
         ));
-        Spiel spiel = Spiel.neuePersistenz(1, SpielerPosition.SUED, Spieltyp.HOCHZEIT, new Spielphase.Stichphase(stichMitKarte, Set.of(), hochzeit));
-        spiel.ersetzeHaende(Map.of(
-            SpielerPosition.WEST, new Hand(List.of(new Karte(Farbe.KREUZ, Kartenwert.DAME, 1)))
-        ));
-        spiel.setzeAnsagen(Ansagen.ausEreignissen(List.of(new AnsageEreignis(SpielerPosition.WEST, Ansage.RE))));
+        Spiel spiel = SpielTestBuilder.ausNeuePersistenz(1, SpielerPosition.SUED, Spieltyp.HOCHZEIT, new Spielphase.Stichphase(stichMitKarte, Set.of(), hochzeit))
+            .mitHaenden(Map.of(
+                SpielerPosition.WEST, new Hand(List.of(new Karte(Farbe.KREUZ, Kartenwert.DAME, 1)))
+            ))
+            .mitAnsagen(Ansagen.ausEreignissen(List.of(new AnsageEreignis(SpielerPosition.WEST, Ansage.RE))))
+            .bauen();
         partie.fuegeSpielHinzu(spiel);
         tisch.setzePartie(partie);
 

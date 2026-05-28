@@ -16,9 +16,11 @@ import de.locodoko.partie.Spielpunkte;
 import de.locodoko.partie.Spielphase;
 import de.locodoko.partie.Sonderpunkt;
 import de.locodoko.partie.SonderpunktEreignis;
+import de.locodoko.partie.SpielTestBuilder;
 import de.locodoko.partie.Stich;
 import de.locodoko.partie.Partie;
 import de.locodoko.partie.Spiel;
+
 import de.locodoko.spieler.SpielerEntity;
 import de.locodoko.tisch.TischEntity;
 import de.locodoko.tisch.TischkonfigurationEmbeddable;
@@ -49,7 +51,6 @@ class PartieStandAntwortTest {
         tisch.fuegeSpielerHinzu(SpielerEntity.menschlich("Dirk", "session-dirk"));
 
         Partie partie = Partie.neuePersistenz(8);
-        Spiel spiel = Spiel.neuePersistenz(1, SpielerPosition.SUED, Spieltyp.NORMALSPIEL, Spielphase.GESAMTSTAND_AKTUALISIEREN);
 
         Stich ersterStich = Stich.ausPersistiertemStand(SpielerPosition.SUED, List.of(
             new GespielteKarte(SpielerPosition.SUED, new Karte(Farbe.KREUZ, Kartenwert.AS, 1), 0),
@@ -65,23 +66,25 @@ class PartieStandAntwortTest {
             new GespielteKarte(SpielerPosition.SUED, new Karte(Farbe.KARO, Kartenwert.BUBE, 1), 3)
         ));
 
-        spiel.setzeAbgeschlosseneStiche(List.of(ersterStich, zweiterStich));
-        spiel.setzeErgebnis(new Spielergebnis(
-            Map.of(Partei.RE, new Augen(151), Partei.KONTRA, new Augen(89)),
-            Partei.RE,
-            new Spielpunkte(3),
-            1, 1, 1, 1,
-            Map.of(
-                SpielerPosition.SUED, new Spielpunkte(3),
-                SpielerPosition.WEST, new Spielpunkte(3),
-                SpielerPosition.NORD, new Spielpunkte(-3),
-                SpielerPosition.OST, new Spielpunkte(-3)
-            ),
-            Map.of(
-                Partei.RE, List.of(new SonderpunktEreignis(Sonderpunkt.DOPPELKOPF, SpielerPosition.SUED, null)),
-                Partei.KONTRA, List.of(new SonderpunktEreignis(Sonderpunkt.FUCHS_GEFANGEN, SpielerPosition.NORD, SpielerPosition.SUED))
-            )
-        ));
+        Spiel spiel = SpielTestBuilder.ausNeuePersistenz(1, SpielerPosition.SUED, Spieltyp.NORMALSPIEL, Spielphase.GESAMTSTAND_AKTUALISIEREN)
+            .mitAbgeschlossenenStichen(List.of(ersterStich, zweiterStich))
+            .mitErgebnis(new Spielergebnis(
+                Map.of(Partei.RE, new Augen(151), Partei.KONTRA, new Augen(89)),
+                Partei.RE,
+                new Spielpunkte(3),
+                1, 1, 1, 1,
+                Map.of(
+                    SpielerPosition.SUED, new Spielpunkte(3),
+                    SpielerPosition.WEST, new Spielpunkte(3),
+                    SpielerPosition.NORD, new Spielpunkte(-3),
+                    SpielerPosition.OST, new Spielpunkte(-3)
+                ),
+                Map.of(
+                    Partei.RE, List.of(new SonderpunktEreignis(Sonderpunkt.DOPPELKOPF, SpielerPosition.SUED, null)),
+                    Partei.KONTRA, List.of(new SonderpunktEreignis(Sonderpunkt.FUCHS_GEFANGEN, SpielerPosition.NORD, SpielerPosition.SUED))
+                )
+            ))
+            .bauen();
 
         partie.fuegeSpielHinzu(spiel);
         partie.setzeGesamtpunktestand(SpielerPosition.SUED, 3);
@@ -124,19 +127,20 @@ class PartieStandAntwortTest {
         tisch.fuegeSpielerHinzu(SpielerEntity.menschlich("Dirk", "session-dirk"));
 
         Partie partie = Partie.neuePersistenz(8);
-        Spiel spiel = Spiel.neuePersistenz(1, SpielerPosition.SUED, Spieltyp.NORMALSPIEL, Spielphase.VORBEHALT_ANSAGE);
 
         List<Karte> annasKarten = List.of(
             new Karte(Farbe.KREUZ, Kartenwert.DAME, 1),
             new Karte(Farbe.HERZ, Kartenwert.ZEHN, 1)
         );
-        spiel.ersetzeHaende(Map.of(
-            SpielerPosition.SUED, new Hand(annasKarten),
-            SpielerPosition.NORD, new Hand(List.of(
-                new Karte(Farbe.KARO, Kartenwert.AS, 1),
-                new Karte(Farbe.PIK, Kartenwert.KOENIG, 1)
+        Spiel spiel = SpielTestBuilder.ausNeuePersistenz(1, SpielerPosition.SUED, Spieltyp.NORMALSPIEL, Spielphase.VORBEHALT_ANSAGE)
+            .mitHaenden(Map.of(
+                SpielerPosition.SUED, new Hand(annasKarten),
+                SpielerPosition.NORD, new Hand(List.of(
+                    new Karte(Farbe.KARO, Kartenwert.AS, 1),
+                    new Karte(Farbe.PIK, Kartenwert.KOENIG, 1)
+                ))
             ))
-        ));
+            .bauen();
         partie.fuegeSpielHinzu(spiel);
         tisch.setzePartie(partie);
 
@@ -175,13 +179,14 @@ class PartieStandAntwortTest {
 
         Partie partie = Partie.neuePersistenz(8);
         partie.setzeBockrundenZaehlerDb(2);
-        Spiel spiel = Spiel.neuePersistenz(1, SpielerPosition.SUED, Spieltyp.NORMALSPIEL, Spielphase.VORBEHALT_ANSAGE);
-        spiel.ersetzeHaende(Map.of(
-            SpielerPosition.SUED, new Hand(List.of()),
-            SpielerPosition.WEST, new Hand(List.of()),
-            SpielerPosition.NORD, new Hand(List.of()),
-            SpielerPosition.OST, new Hand(List.of())
-        ));
+        Spiel spiel = SpielTestBuilder.ausNeuePersistenz(1, SpielerPosition.SUED, Spieltyp.NORMALSPIEL, Spielphase.VORBEHALT_ANSAGE)
+            .mitHaenden(Map.of(
+                SpielerPosition.SUED, new Hand(List.of()),
+                SpielerPosition.WEST, new Hand(List.of()),
+                SpielerPosition.NORD, new Hand(List.of()),
+                SpielerPosition.OST, new Hand(List.of())
+            ))
+            .bauen();
         partie.fuegeSpielHinzu(spiel);
         tisch.setzePartie(partie);
 
@@ -207,13 +212,14 @@ class PartieStandAntwortTest {
         tisch.fuegeSpielerHinzu(SpielerEntity.menschlich("Dirk", "session-dirk"));
 
         Partie partie = Partie.neuePersistenz(8);
-        Spiel spiel = Spiel.neuePersistenz(1, SpielerPosition.SUED, Spieltyp.NORMALSPIEL, Spielphase.VORBEHALT_ANSAGE);
-        spiel.ersetzeHaende(Map.of(
-            SpielerPosition.SUED, new Hand(List.of()),
-            SpielerPosition.WEST, new Hand(List.of()),
-            SpielerPosition.NORD, new Hand(List.of()),
-            SpielerPosition.OST, new Hand(List.of())
-        ));
+        Spiel spiel = SpielTestBuilder.ausNeuePersistenz(1, SpielerPosition.SUED, Spieltyp.NORMALSPIEL, Spielphase.VORBEHALT_ANSAGE)
+            .mitHaenden(Map.of(
+                SpielerPosition.SUED, new Hand(List.of()),
+                SpielerPosition.WEST, new Hand(List.of()),
+                SpielerPosition.NORD, new Hand(List.of()),
+                SpielerPosition.OST, new Hand(List.of())
+            ))
+            .bauen();
         partie.fuegeSpielHinzu(spiel);
         tisch.setzePartie(partie);
 

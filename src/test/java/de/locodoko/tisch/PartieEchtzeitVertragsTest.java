@@ -7,6 +7,7 @@ import de.locodoko.karten.Kartenwert;
 import de.locodoko.karten.Spielregeln;
 import de.locodoko.karten.Hand;
 import de.locodoko.partie.Spiel;
+import de.locodoko.partie.SpielTestBuilder;
 import de.locodoko.partie.SpielerPosition;
 import de.locodoko.partie.VorbehaltAnsage;
 import de.locodoko.spieler.SpielerNameAnfrage;
@@ -278,7 +279,7 @@ class PartieEchtzeitVertragsTest {
             Map<SpielerPosition, List<Karte>> verteilung = verteilungMitVorgaben(vorgaben);
             Map<SpielerPosition, Hand> neueHaende = verteilung.entrySet().stream()
                 .collect(java.util.stream.Collectors.toMap(Map.Entry::getKey, e -> new Hand(e.getValue())));
-            spiel.ersetzeHaende(neueHaende);
+            SpielTestBuilder.von(spiel).mitHaenden(neueHaende);
             spielRepository.save(spiel);
         });
     }

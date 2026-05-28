@@ -14,6 +14,7 @@ import de.locodoko.partie.VorbehaltAnsage;
 import de.locodoko.karten.Hand;
 import de.locodoko.tisch.persistenz.PartieRepository;
 import de.locodoko.partie.Spiel;
+import de.locodoko.partie.SpielTestBuilder;
 import de.locodoko.tisch.persistenz.SpielRepository;
 import de.locodoko.tisch.TischEntity;
 import de.locodoko.tisch.TischRepository;
@@ -460,7 +461,7 @@ class WebSocketSpielaktionIntegrationTest {
             Map<SpielerPosition, List<Karte>> verteilung = verteilungMitVorgaben(vorgaben);
             Map<SpielerPosition, Hand> neueHaende = verteilung.entrySet().stream()
                 .collect(java.util.stream.Collectors.toMap(Map.Entry::getKey, e -> new Hand(e.getValue())));
-            spiel.ersetzeHaende(neueHaende);
+            SpielTestBuilder.von(spiel).mitHaenden(neueHaende);
             spielRepository.save(spiel);
         });
     }

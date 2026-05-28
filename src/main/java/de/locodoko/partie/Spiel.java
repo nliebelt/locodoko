@@ -489,36 +489,10 @@ public class Spiel extends AbstraktePersistenzEntity {
     public int spielNummer() { return spielNummer; }
     public void setzeSpielNummer(int spielNummer) { this.spielNummer = spielNummer; }
 
-    /** Ersetzt die Haende aller Spieler (für Test-Setup und Integration-Tests). */
-    public void ersetzeHaende(Map<SpielerPosition, Hand> neueHaende) {
-        this.haende = Haende.aus(neueHaende);
-    }
-
-    /** Setzt das Spielergebnis direkt (für Test-Setup). */
-    public void setzeErgebnis(Spielergebnis neuesErgebnis) {
-        this.ergebnis = neuesErgebnis;
-    }
-
-    /** Setzt die Ansagen direkt (für Test-Setup). */
-    public void setzeAnsagen(Ansagen neueAnsagen) {
-        this.ansagen = neueAnsagen;
-    }
-
     /** Prüft ohne Exception ob Parteien-Zuweisung bereits bekannt ist (z.B. nach DB-Laden). */
     public boolean hatParteien() { return parteien != null; }
 
-    /** Setzt die abgeschlossenen Stiche (für Test-Setup). */
-    public void setzeAbgeschlosseneStiche(List<Stich> stiche) {
-        this.abgeschlosseneStiche = Stichverlauf.aus(stiche);
-    }
-
     public SpielerPosition aktuellerStichAufspielerPosition() { return aktuellerStich().map(Stich::aufspieler).orElse(null); }
-
-    /** Ersetzt die Handverteilung des Spiels, z. B. fuer kontrollierte Persistenz-Setups in Tests. */
-    public void setzeHaendeAusMap(Map<SpielerPosition, Hand> neueHaende) {
-        Objects.requireNonNull(neueHaende, "neueHaende duerfen nicht null sein");
-        this.haende = Haende.aus(neueHaende);
-    }
 
     /** Wird vom {@code SpielNachLadenCallback} nach dem DB-Laden aufgerufen. */
     public void initialisierePersistenzDefaultsNachLaden() { }

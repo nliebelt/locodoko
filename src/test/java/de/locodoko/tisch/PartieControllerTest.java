@@ -9,6 +9,7 @@ import de.locodoko.karten.Spieltyp;
 import de.locodoko.karten.Hand;
 import de.locodoko.partie.Partie;
 import de.locodoko.partie.Spiel;
+import de.locodoko.partie.SpielTestBuilder;
 import de.locodoko.partie.Spielphase;
 import de.locodoko.partie.SpielerPosition;
 import de.locodoko.spieler.SpielerEntity;
@@ -85,17 +86,18 @@ class PartieControllerTest {
         tisch.fuegeSpielerHinzu(dirk);   // → OST  (Index 3)
 
         Partie partie = Partie.neuePersistenz(8);
-        Spiel spiel = Spiel.neuePersistenz(1, SpielerPosition.SUED, Spieltyp.NORMALSPIEL, Spielphase.VORBEHALT_ANSAGE);
-        spiel.ersetzeHaende(Map.of(
-            SpielerPosition.SUED, new Hand(List.of(
-                new Karte(Farbe.KREUZ, Kartenwert.DAME, 1),
-                new Karte(Farbe.HERZ, Kartenwert.ZEHN, 1)
-            )),
-            SpielerPosition.NORD, new Hand(List.of(
-                new Karte(Farbe.KARO, Kartenwert.AS, 1),
-                new Karte(Farbe.PIK, Kartenwert.KOENIG, 1)
+        Spiel spiel = SpielTestBuilder.ausNeuePersistenz(1, SpielerPosition.SUED, Spieltyp.NORMALSPIEL, Spielphase.VORBEHALT_ANSAGE)
+            .mitHaenden(Map.of(
+                SpielerPosition.SUED, new Hand(List.of(
+                    new Karte(Farbe.KREUZ, Kartenwert.DAME, 1),
+                    new Karte(Farbe.HERZ, Kartenwert.ZEHN, 1)
+                )),
+                SpielerPosition.NORD, new Hand(List.of(
+                    new Karte(Farbe.KARO, Kartenwert.AS, 1),
+                    new Karte(Farbe.PIK, Kartenwert.KOENIG, 1)
+                ))
             ))
-        ));
+            .bauen();
         partie.fuegeSpielHinzu(spiel);
         tisch.setzePartie(partie);
         TischEntity gespeichert = tischRepository.saveAndFlush(tisch);

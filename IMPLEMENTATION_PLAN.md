@@ -4,11 +4,11 @@
 
 ## Notiz
 
-**Session 19 (2026-05-28):** REFACTOR-DOMAIN-4 abgeschlossen.
+**Session 20 (2026-05-28):** REFACTOR-DOMAIN-5 abgeschlossen.
 
-Die 8 parasitären DTO-/Embeddable-Klassen (`HandJsonEintrag`, `StichJsonEintrag`, `AktuellerStichKarteEmbeddable`, `HandKarteEmbeddable`, `SpielErgebnisEmbeddable`, `VorbehaltMeldungEmbeddable`, `AnsageEreignisEmbeddable`, `SonderpunktJsonEintrag`) wurden nach Verifikation vollständig gelöscht. Keine externen Aufrufer nach DOMAIN-3. 348 Backend-Tests weiterhin grün.
+`SpielTestBuilder` (in `src/test/java/de/locodoko/partie/`) eingeführt — Fluent-Builder mit Package-Private Feldzugriff auf `Spiel`. Methoden: `ausNeuePersistenz(...)`, `von(Spiel)`, `mitHaenden(...)`, `mitAbgeschlossenenStichen(...)`, `mitErgebnis(...)`, `mitAnsagen(...)`. Alle 5 Test-Setter in `Spiel.java` gelöscht (`ersetzeHaende`, `setzeErgebnis`, `setzeAnsagen`, `setzeAbgeschlosseneStiche`, `setzeHaendeAusMap`). Aufrufer in 5 Testdateien auf den Builder umgestellt (`PersistenzRepositoryTest`, `PartieStandAntwortTest`, `VerbindungsabbruchReconnectSnapshotTest`, `PartieControllerTest`, `WebSocketSpielaktionIntegrationTest`, `PartieEchtzeitVertragsTest`). 348 Backend-Tests weiterhin grün.
 
-**Nächster Schritt:** REFACTOR-DOMAIN-5: SpielTestBuilder + Setter im Production-Code löschen.
+**Nächster Schritt:** REFACTOR-DOMAIN-6: ObjectMapper als Spring-Bean + Jackson `ist*`-Heuristik global.
 
 
 **REFACTOR-DOMAIN-VISUAL-BASELINE:** Erfordert laufendes Backend (`mvn spring-boot:run`) + Playwright headed. Weiterhin übersprungen.
@@ -187,7 +187,7 @@ Bevor REFACTOR-DOMAIN startet: manueller Browser-Test durch User.
 
   **Folge:** `partie/`-Modul wird ~8 Klassen leichter. `PartieStandAntwort.java` schrumpft von 546 → ~300 Zeilen.
 
-- [ ] **REFACTOR-DOMAIN-5: SpielTestBuilder + Setter im Production-Code löschen**
+- [x] **REFACTOR-DOMAIN-5: SpielTestBuilder + Setter im Production-Code löschen**
 
   Heute existieren `setzeErgebnis`, `setzeAnsagen`, `setzeAbgeschlosseneStiche`, `setzeHaendeAusMap`, `ersetzeHaende` rein für Test-Setup. Spec-Prinzip 2 (Mutable Aggregate via Business-Methoden) verletzt. DB-4d hatte SpielTestBuilder mit „YAGNI bewusst nicht eingeführt" abgehakt — das war zu früh; nach DOMAIN-1..4 ist die Test-Schmerzgrenze sichtbar.
 

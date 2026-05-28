@@ -9,6 +9,7 @@ import de.locodoko.karten.Spielregeln;
 import de.locodoko.partie.Partie;
 import de.locodoko.partie.Partei;
 import de.locodoko.partie.Spiel;
+import de.locodoko.partie.SpielTestBuilder;
 import de.locodoko.partie.Spielergebnis;
 import de.locodoko.partie.Spielpunkte;
 import de.locodoko.partie.SpielerPosition;
@@ -172,7 +173,7 @@ class VerbindungsabbruchReconnectSnapshotTest {
             // Spiel 1: vollständig abgeschlossen
             Spiel spiel1 = gesundesStichspiel();
             spiel1.setzeSpielNummer(1);
-            spiel1.setzeErgebnis(minimalErgebnis());
+            SpielTestBuilder.von(spiel1).mitErgebnis(minimalErgebnis());
             partie.fuegeSpielHinzu(spiel1);
 
             // Spiel 2: läuft noch (kein Ergebnis)
