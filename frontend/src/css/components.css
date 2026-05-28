@@ -413,6 +413,99 @@
   padding: 8px 0;
 }
 
+.ui-profil-tabs {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.ui-profil-tab {
+  background: none;
+  border: 2px solid #2d5a3d;
+  color: #a3c4a8;
+  font-family: 'Press Start 2P', monospace;
+  font-size: 8px;
+  cursor: pointer;
+  padding: 6px 12px;
+  box-shadow: 2px 2px 0 #000;
+  transition: box-shadow 0.1s, border-color 0.1s, color 0.1s;
+}
+
+.ui-profil-tab:hover {
+  border-color: #4ade80;
+  color: #f8f9fa;
+}
+
+.ui-profil-tab--aktiv {
+  border-color: #ffd166;
+  color: #ffd166;
+  box-shadow: none;
+}
+
+.ui-profil-tab--aktiv:focus-visible,
+.ui-profil-tab:focus-visible {
+  outline: 2px solid #ffd166;
+  outline-offset: 2px;
+}
+
+.ui-profil-statistik-container {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.ui-profil-re-kontra {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.ui-profil-re-kontra-zeile {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-family: 'Press Start 2P', monospace;
+  font-size: 8px;
+  color: #f8f9fa;
+}
+
+.ui-profil-re-kontra-label {
+  min-width: 52px;
+  color: #a3c4a8;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.ui-profil-re-kontra-rate {
+  margin-left: auto;
+  color: #ffd166;
+}
+
+.ui-profil-solos-liste {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.ui-profil-solo-eintrag {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  font-family: 'Press Start 2P', monospace;
+  font-size: 8px;
+  color: #f8f9fa;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid #2d5a3d;
+  padding: 4px 8px;
+}
+
+.ui-profil-solo-typ {
+  color: #a3c4a8;
+}
+
 @media (max-width: 980px) {
   .ui-panel,
   .ui-panel--compact,

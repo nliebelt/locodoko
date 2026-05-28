@@ -183,4 +183,48 @@ describe('SpielerProfilModal', () => {
     expect(uiRoot.innerHTML).toContain('&lt;img');
     modal.schliessen();
   });
+
+  it('zeigt drei Tabs für TURNIER, SONDER und FREI', () => {
+    // Spieler müssen zwischen Regelvarianten wechseln können
+    SpielerProfilModal.oeffnenMitDaten(erstelleTestProfil());
+    const tabs = uiRoot.querySelectorAll('[role="tab"]');
+    expect(tabs.length).toBe(3);
+    const texte = Array.from(tabs).map(t => t.textContent?.trim());
+    expect(texte).toContain('Turnier');
+    expect(texte).toContain('Sonder');
+    expect(texte).toContain('Frei');
+  });
+
+  it('Tab-Klick wechselt den angezeigten Statistik-Inhalt', () => {
+    // Tab-Navigation muss tatsächlich andere Daten zeigen
+    const profil = erstelleTestProfil({
+      statistiken: {
+        TURNIER: { anzahlSpiele: 10, anzahlSiege: 6, gesamtPunkte: 42 },
+        SONDER: { anzahlSpiele: 5, anzahlSiege: 2, gesamtPunkte: 7 },
+      }
+    });
+    SpielerProfilModal.oeffnenMitDaten(profil);
+    // Turnier ist initial aktiv — zeigt 10 Spiele
+    expect(uiRoot.querySelector('.ui-profil-statistik-container')?.innerHTML).toContain('10');
+    // Klick auf Sonder-Tab
+    const sonderTab = Array.from(uiRoot.querySelectorAll('[role="tab"]')).find(t => t.textContent?.includes('Sonder')) as HTMLButtonElement;
+    sonderTab.click();
+    // Statistik-Container zeigt jetzt SONDER-Daten mit 5 Spielen
+    expect(uiRoot.querySelector('.ui-profil-statistik-container')?.innerHTML).toContain('5');
+    expect(sonderTab.getAttribute('aria-selected')).toBe('true');
+    expect(sonderTab.classList.contains('ui-profil-tab--aktiv')).toBe(true);
+  });
+
+  it('Tab-Klick auf leere Variante zeigt Leer-Hinweis', () => {
+    // Fehlende Statistiken für eine Variante müssen kommuniziert werden
+    const profil = erstelleTestProfil({
+      statistiken: {
+        TURNIER: { anzahlSpiele: 10, anzahlSiege: 6, gesamtPunkte: 42 },
+      }
+    });
+    SpielerProfilModal.oeffnenMitDaten(profil);
+    const freiTab = Array.from(uiRoot.querySelectorAll('[role="tab"]')).find(t => t.textContent?.includes('Frei')) as HTMLButtonElement;
+    freiTab.click();
+    expect(uiRoot.querySelector('.ui-profil-statistik-container')?.innerHTML).toContain('Noch keine Statistiken vorhanden');
+  });
 });

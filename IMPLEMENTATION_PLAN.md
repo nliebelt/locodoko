@@ -4,11 +4,11 @@
 
 ## Notiz
 
-**Session 14 (2026-05-28):** BUG-PROFIL-TYPES abgeschlossen.
+**Session 14 (2026-05-28):** BUG-PROFIL-TYPES + FEAT-PROFIL-TABS abgeschlossen.
 
-`api-types.ts` aus `target/openapi.json` regeneriert — `SpielerProfilAntwort` hat jetzt `statistiken: { [key: string]: StatistikAntwort }` (Map) mit 17 Feldern statt dem alten Singular-`statistik`. `SpielerProfilModal.ts` liest nun `profil.statistiken?.['TURNIER']` als Default-Variante. Tests auf Map-Struktur umgestellt. 216 Frontend-Tests grün, Build + Lint clean.
+`api-types.ts` regeneriert (Map-Schema), `SpielerProfilModal.ts` hat jetzt Tab-Leiste (TURNIER/SONDER/FREI) mit `role="tablist"` + `aria-selected`, Tab-Click wechselt Statistik-Container, alle 17 Felder inkl. Re/Kontra-Block, Hochzeiten/Armuten, Solos-pro-Typ. CSS-Klassen für Tab-Leiste und Re/Kontra ergänzt. 219 Frontend-Tests grün, Build + Lint clean.
 
-**Nächster Schritt:** FEAT-PROFIL-TABS — Tab-Leiste (TURNIER / SONDER / FREI) mit vollständigen 17 Feldern und Tab-Click-Logik im Modal einbauen.
+**Nächster Schritt:** DOC-PROFIL-STATUS — Spec-Status in `frontend-spielerprofil.md` auf „Implementiert" setzen und offenen DoD-Haken in `spieler-profil.md` schließen.
 
 **IST-Zustand 2026-05-28 (verifiziert):** Backend 340 Tests grün, Frontend 216 Tests grün, `npm run build` + `npm run lint` clean. Spielfluss (Schnellstart → Vorbehalt → Stiche → Auswertung) durch E2E-Specs gedeckt — **Spiel ist heute im Browser testbar**, `mvn spring-boot:run` startet. Profil-Modal ist die einzige sichtbare Schwachstelle.
 
@@ -45,7 +45,7 @@
 
   **DoD:** Modal zeigt mit echter Backend-Antwort Statistiken an (manuell verifiziert via `mvn spring-boot:run` + Vision-Loop).
 
-- [ ] **FEAT-PROFIL-TABS** — Tab-Wechsel TURNIER/SONDER/FREI + alle 17 Statistik-Felder im Modal.
+- [x] **FEAT-PROFIL-TABS** — Tab-Wechsel TURNIER/SONDER/FREI + alle 17 Statistik-Felder im Modal.
 
   Spec-Pflicht aus `specs/frontend-spielerprofil.md` (Tab-Leiste, Re/Kontra-Block, Solos-pro-Typ aus `solosProTypJson`, Hochzeiten/Armuten). Modal aktuell zeigt nur Subset (anzahlSpiele, anzahlSiege, gesamtPunkte, fuchsGefangen/verloren, karlchen, doppelkoepfe).
 
