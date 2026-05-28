@@ -4,11 +4,12 @@
 
 ## Notiz
 
-**Session 16 (2026-05-28):** REFACTOR-DOMAIN-1 abgeschlossen.
+**Session 17 (2026-05-28):** REFACTOR-DOMAIN-2 abgeschlossen.
 
-5 Wrapper-VOs (`Haende`, `VorbehaltMeldungen`, `Stichverlauf`, `GeschmisseneSpieler`, `PflichtAnsagen`) eingeführt. `Spiel.java` von `@Transient + @Column String *Json`-Paaren auf direkte `@Column`-VO-Felder umgestellt. `PartieJsonMapper.java`, `SpielVorSpeichernCallback`, `SpielNachLadenCallback`, `PartieVorSpeichernCallback` gelöscht. `PartieNachLadenCallback` bereinigt (nur noch `partie.initialisiereDomainFelderNachLaden()`). 20 neue Converter-Klassen in `JsonbConverter.java`, Konfiguration in `JsonbConverterKonfiguration.java` aktualisiert. 348 Backend-Tests grün (7 neue in `HaendeTest`).
+`Spielphase` und `TrumpfOrdnung` von String-Diskriminator + separaten Spalten auf JSONB-polymorphe Serialisierung umgestellt. Jackson `@JsonTypeInfo(use=NAME)` + `@JsonSubTypes` auf Interfaces. Mixins für alle 6 `TrumpfOrdnung`-Implementierungen + `Kartendeck` in `JsonbConverter.java`. 12 neue Converter-Klassen (Spielphase, TrumpfOrdnung, Kartendeck) + Konfiguration. Schema: `phase`/`trumpf_ordnung_typ` → JSONB, `schweinchen_aktiv`/`aktueller_stich`/`pflicht_ansage_ausstehend`/`armut_status`/`hochzeit_status` entfernt, `kartendeck` JSONB ergänzt. `Spiel.java`: `phaseText`, `trumpfOrdnungTyp`, `schweinchenAktivFlag`, `aktuellerStich`, `pflichtAnsageAusstehend`, `armutStatus`, `hochzeitStatus` entfernt; `kartendeck` und `trumpfOrdnung` direkt persistiert. `rekonstruiereTrumpfOrdnung`, `rekonstruiereKartendeck`, `rekonstruiereAktuellenStich`, `bestimmeTrumpfOrdnungTyp`, `bestimmeTrumpfOrdnungTypAusSpieltyp`, `effektiveTrumpfOrdnung`, `effektivesKartendeck`, `initialisierePersistenzDefaults` gelöscht. 348 Backend-Tests grün.
 
-**Nächster Schritt:** REFACTOR-DOMAIN-VISUAL-BASELINE überspringen (headed Browser). Weiter mit REFACTOR-DOMAIN-2.
+**Nächster Schritt:** REFACTOR-DOMAIN-3: PartieStandAntwort entgiften.
+
 
 **REFACTOR-DOMAIN-VISUAL-BASELINE:** Erfordert laufendes Backend (`mvn spring-boot:run`) + Playwright headed. Weiterhin übersprungen.
 
@@ -149,7 +150,7 @@ Bevor REFACTOR-DOMAIN startet: manueller Browser-Test durch User.
 
   **Folge:** `synchronisierePersistenzFelderVorSpeichern()`, `initialisierePersistenzDefaultsNachLaden()`, `initialisierePersistenzDefaults()` (Persistenz-Teile), `setzeHaendeAusMap`, `ersetzeHaende`, `setzeAbgeschlosseneStiche` entfallen. `PartieJsonMapper.java` komplett löschen. `SpielVorSpeichernCallback` + `PartieVorSpeichernCallback` + `SpielNachLadenCallback` + `PartieNachLadenCallback` entfallen.
 
-- [ ] **REFACTOR-DOMAIN-2: Spielphase + TrumpfOrdnung als JSONB** — Eliminiert Workaround #2.
+- [x] **REFACTOR-DOMAIN-2: Spielphase + TrumpfOrdnung als JSONB** — Eliminiert Workaround #2. ✅ Session 17.
 
   Beide sind sealed Interfaces mit konkreten Implementierungen. Jackson kann das mit `@JsonTypeInfo(use = NAME) @JsonSubTypes(...)` auf den Interfaces — kein Reflection-Trick, sondern Standard-Polymorphismus.
 

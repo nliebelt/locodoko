@@ -40,6 +40,9 @@ public final class VariableTrumpfsoloTrumpfOrdnung implements TrumpfOrdnung {
         this.spielregeln = Objects.requireNonNull(spielregeln, "spielregeln duerfen nicht null sein");
     }
 
+    Farbe trumpfFarbe() { return trumpfFarbe; }
+    Spielregeln spielregeln() { return spielregeln; }
+
     @Override
     public boolean istTrumpf(Karte karte) {
         if (karte.wert() == Kartenwert.DAME || karte.wert() == Kartenwert.BUBE) {

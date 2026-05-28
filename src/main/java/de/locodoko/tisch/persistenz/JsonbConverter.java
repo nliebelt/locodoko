@@ -7,9 +7,18 @@ import com.fasterxml.jackson.annotation.JsonValue;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import de.locodoko.karten.BubensoloTrumpfOrdnung;
+import de.locodoko.karten.DamensoloTrumpfOrdnung;
+import de.locodoko.karten.Farbe;
+import de.locodoko.karten.FleischlosTrumpfOrdnung;
 import de.locodoko.karten.Hand;
 import de.locodoko.karten.Karte;
+import de.locodoko.karten.Kartendeck;
+import de.locodoko.karten.NormaleTrumpfOrdnung;
+import de.locodoko.karten.SchweinchenTrumpfOrdnung;
 import de.locodoko.karten.Spielregeln;
+import de.locodoko.karten.TrumpfOrdnung;
+import de.locodoko.karten.VariableTrumpfsoloTrumpfOrdnung;
 import de.locodoko.partie.AnsageEreignis;
 import de.locodoko.partie.Ansagen;
 import de.locodoko.partie.ArmutStatus;
@@ -22,6 +31,7 @@ import de.locodoko.partie.Parteien;
 import de.locodoko.partie.PflichtAnsagen;
 import de.locodoko.partie.SpielerPosition;
 import de.locodoko.partie.Spielergebnis;
+import de.locodoko.partie.Spielphase;
 import de.locodoko.partie.Stich;
 import de.locodoko.partie.Stichverlauf;
 import de.locodoko.partie.VorbehaltAnsage;
@@ -175,6 +185,67 @@ public final class JsonbConverter {
         abstract Set<Partei> alsSet();
     }
 
+    // ---- Mixins fuer TrumpfOrdnung-Implementierungen ----
+
+    /** Mixin fuer {@link NormaleTrumpfOrdnung}: serialisiert als {"spielregeln": {...}}. */
+    private abstract static class NormaleTrumpfOrdnungMixin {
+        @JsonCreator
+        NormaleTrumpfOrdnungMixin(@JsonProperty("spielregeln") Spielregeln spielregeln) {}
+
+        @JsonProperty("spielregeln")
+        abstract Spielregeln spielregeln();
+    }
+
+    /** Mixin fuer {@link SchweinchenTrumpfOrdnung}: serialisiert als {"spielregeln": {...}}. */
+    private abstract static class SchweinchenTrumpfOrdnungMixin {
+        @JsonCreator
+        SchweinchenTrumpfOrdnungMixin(@JsonProperty("spielregeln") Spielregeln spielregeln) {}
+
+        @JsonProperty("spielregeln")
+        abstract Spielregeln spielregeln();
+    }
+
+    /** Mixin fuer {@link BubensoloTrumpfOrdnung}: keine Felder, no-arg. */
+    private abstract static class BubensoloTrumpfOrdnungMixin {
+        @JsonCreator
+        BubensoloTrumpfOrdnungMixin() {}
+    }
+
+    /** Mixin fuer {@link DamensoloTrumpfOrdnung}: keine Felder, no-arg. */
+    private abstract static class DamensoloTrumpfOrdnungMixin {
+        @JsonCreator
+        DamensoloTrumpfOrdnungMixin() {}
+    }
+
+    /** Mixin fuer {@link FleischlosTrumpfOrdnung}: keine Felder, no-arg. */
+    private abstract static class FleischlosTrumpfOrdnungMixin {
+        @JsonCreator
+        FleischlosTrumpfOrdnungMixin() {}
+    }
+
+    /** Mixin fuer {@link VariableTrumpfsoloTrumpfOrdnung}: serialisiert als {"trumpfFarbe": "...", "spielregeln": {...}}. */
+    private abstract static class VariableTrumpfsoloTrumpfOrdnungMixin {
+        @JsonCreator
+        VariableTrumpfsoloTrumpfOrdnungMixin(
+                @JsonProperty("trumpfFarbe") Farbe trumpfFarbe,
+                @JsonProperty("spielregeln") Spielregeln spielregeln) {}
+
+        @JsonProperty("trumpfFarbe")
+        abstract Farbe trumpfFarbe();
+
+        @JsonProperty("spielregeln")
+        abstract Spielregeln spielregeln();
+    }
+
+    /** Mixin fuer {@link Kartendeck}: serialisiert als JSON-Array der Karten. */
+    private abstract static class KartendeckMixin {
+        @JsonCreator
+        public static Kartendeck ausKarten(Collection<Karte> karten) { return null; }
+
+        @JsonValue
+        abstract List<Karte> karten();
+    }
+
     // ---- ObjectMapper-Konfiguration ----
 
     /**
@@ -193,7 +264,14 @@ public final class JsonbConverter {
                 .addMixIn(VorbehaltMeldungen.class, VorbehaltMeldungenMixin.class)
                 .addMixIn(Stichverlauf.class, StichverlaufMixin.class)
                 .addMixIn(GeschmisseneSpieler.class, GeschmisseneSpielerMixin.class)
-                .addMixIn(PflichtAnsagen.class, PflichtAnsagenMixin.class);
+                .addMixIn(PflichtAnsagen.class, PflichtAnsagenMixin.class)
+                .addMixIn(NormaleTrumpfOrdnung.class, NormaleTrumpfOrdnungMixin.class)
+                .addMixIn(SchweinchenTrumpfOrdnung.class, SchweinchenTrumpfOrdnungMixin.class)
+                .addMixIn(BubensoloTrumpfOrdnung.class, BubensoloTrumpfOrdnungMixin.class)
+                .addMixIn(DamensoloTrumpfOrdnung.class, DamensoloTrumpfOrdnungMixin.class)
+                .addMixIn(FleischlosTrumpfOrdnung.class, FleischlosTrumpfOrdnungMixin.class)
+                .addMixIn(VariableTrumpfsoloTrumpfOrdnung.class, VariableTrumpfsoloTrumpfOrdnungMixin.class)
+                .addMixIn(Kartendeck.class, KartendeckMixin.class);
     }
 
     // ---- Hilfs-Methoden ----
@@ -922,5 +1000,106 @@ public final class JsonbConverter {
         public PflichtAnsagen convert(byte[] source) {
             return fromBytes(mapper, source, PflichtAnsagen.class);
         }
+    }
+
+    // ---- DOMAIN-2: Spielphase, TrumpfOrdnung, Kartendeck ----
+
+    /** phase: Spielphase ↔ JSONB (polymorphisch via @JsonTypeInfo) */
+    @WritingConverter
+    public static class SpielphaseSchreibConverter implements Converter<Spielphase, String> {
+        private final ObjectMapper mapper;
+        public SpielphaseSchreibConverter(ObjectMapper mapper) { this.mapper = mapper; }
+        @Override
+        public String convert(Spielphase source) { return toJsonString(mapper, source); }
+    }
+
+    @ReadingConverter
+    public static class SpielphaseLeseConverter implements Converter<PGobject, Spielphase> {
+        private final ObjectMapper mapper;
+        public SpielphaseLeseConverter(ObjectMapper mapper) { this.mapper = mapper; }
+        @Override
+        public Spielphase convert(PGobject source) { return fromPGobject(mapper, source, Spielphase.class); }
+    }
+
+    @ReadingConverter
+    public static class SpielphaseStringLeseConverter implements Converter<String, Spielphase> {
+        private final ObjectMapper mapper;
+        public SpielphaseStringLeseConverter(ObjectMapper mapper) { this.mapper = mapper; }
+        @Override
+        public Spielphase convert(String source) { return fromString(mapper, source, Spielphase.class); }
+    }
+
+    @ReadingConverter
+    public static class SpielphaseBytesLeseConverter implements Converter<byte[], Spielphase> {
+        private final ObjectMapper mapper;
+        public SpielphaseBytesLeseConverter(ObjectMapper mapper) { this.mapper = mapper; }
+        @Override
+        public Spielphase convert(byte[] source) { return fromBytes(mapper, source, Spielphase.class); }
+    }
+
+    /** trumpf_ordnung_typ: TrumpfOrdnung ↔ JSONB (polymorphisch via @JsonTypeInfo) */
+    @WritingConverter
+    public static class TrumpfOrdnungSchreibConverter implements Converter<TrumpfOrdnung, String> {
+        private final ObjectMapper mapper;
+        public TrumpfOrdnungSchreibConverter(ObjectMapper mapper) { this.mapper = mapper; }
+        @Override
+        public String convert(TrumpfOrdnung source) { return toJsonString(mapper, source); }
+    }
+
+    @ReadingConverter
+    public static class TrumpfOrdnungLeseConverter implements Converter<PGobject, TrumpfOrdnung> {
+        private final ObjectMapper mapper;
+        public TrumpfOrdnungLeseConverter(ObjectMapper mapper) { this.mapper = mapper; }
+        @Override
+        public TrumpfOrdnung convert(PGobject source) { return fromPGobject(mapper, source, TrumpfOrdnung.class); }
+    }
+
+    @ReadingConverter
+    public static class TrumpfOrdnungStringLeseConverter implements Converter<String, TrumpfOrdnung> {
+        private final ObjectMapper mapper;
+        public TrumpfOrdnungStringLeseConverter(ObjectMapper mapper) { this.mapper = mapper; }
+        @Override
+        public TrumpfOrdnung convert(String source) { return fromString(mapper, source, TrumpfOrdnung.class); }
+    }
+
+    @ReadingConverter
+    public static class TrumpfOrdnungBytesLeseConverter implements Converter<byte[], TrumpfOrdnung> {
+        private final ObjectMapper mapper;
+        public TrumpfOrdnungBytesLeseConverter(ObjectMapper mapper) { this.mapper = mapper; }
+        @Override
+        public TrumpfOrdnung convert(byte[] source) { return fromBytes(mapper, source, TrumpfOrdnung.class); }
+    }
+
+    /** kartendeck: Kartendeck ↔ JSONB (serialisiert als JSON-Array der Karten) */
+    @WritingConverter
+    public static class KartendeckSchreibConverter implements Converter<Kartendeck, String> {
+        private final ObjectMapper mapper;
+        public KartendeckSchreibConverter(ObjectMapper mapper) { this.mapper = mapper; }
+        @Override
+        public String convert(Kartendeck source) { return toJsonString(mapper, source); }
+    }
+
+    @ReadingConverter
+    public static class KartendeckLeseConverter implements Converter<PGobject, Kartendeck> {
+        private final ObjectMapper mapper;
+        public KartendeckLeseConverter(ObjectMapper mapper) { this.mapper = mapper; }
+        @Override
+        public Kartendeck convert(PGobject source) { return fromPGobject(mapper, source, Kartendeck.class); }
+    }
+
+    @ReadingConverter
+    public static class KartendeckStringLeseConverter implements Converter<String, Kartendeck> {
+        private final ObjectMapper mapper;
+        public KartendeckStringLeseConverter(ObjectMapper mapper) { this.mapper = mapper; }
+        @Override
+        public Kartendeck convert(String source) { return fromString(mapper, source, Kartendeck.class); }
+    }
+
+    @ReadingConverter
+    public static class KartendeckBytesLeseConverter implements Converter<byte[], Kartendeck> {
+        private final ObjectMapper mapper;
+        public KartendeckBytesLeseConverter(ObjectMapper mapper) { this.mapper = mapper; }
+        @Override
+        public Kartendeck convert(byte[] source) { return fromBytes(mapper, source, Kartendeck.class); }
     }
 }

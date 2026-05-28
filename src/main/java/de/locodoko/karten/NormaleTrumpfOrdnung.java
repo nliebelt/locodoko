@@ -37,6 +37,8 @@ public final class NormaleTrumpfOrdnung implements TrumpfOrdnung {
         this.spielregeln = spielregeln;
     }
 
+    Spielregeln spielregeln() { return spielregeln; }
+
     @Override
     public boolean istTrumpf(Karte karte) {
         if (karte.wert() == Kartenwert.DAME || karte.wert() == Kartenwert.BUBE) {

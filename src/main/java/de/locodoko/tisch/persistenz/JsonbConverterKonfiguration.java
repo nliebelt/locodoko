@@ -96,7 +96,22 @@ class JsonbConverterKonfiguration {
                 new JsonbConverter.SpielergebnisSchreibConverter(mapper),
                 new JsonbConverter.SpielergebnisLeseConverter(mapper),
                 new JsonbConverter.SpielergebnisStringLeseConverter(mapper),
-                new JsonbConverter.SpielergebnisBytesLeseConverter(mapper)
+                new JsonbConverter.SpielergebnisBytesLeseConverter(mapper),
+                // phase (Spielphase JSONB)
+                new JsonbConverter.SpielphaseSchreibConverter(mapper),
+                new JsonbConverter.SpielphaseLeseConverter(mapper),
+                new JsonbConverter.SpielphaseStringLeseConverter(mapper),
+                new JsonbConverter.SpielphaseBytesLeseConverter(mapper),
+                // trumpf_ordnung_typ (TrumpfOrdnung JSONB)
+                new JsonbConverter.TrumpfOrdnungSchreibConverter(mapper),
+                new JsonbConverter.TrumpfOrdnungLeseConverter(mapper),
+                new JsonbConverter.TrumpfOrdnungStringLeseConverter(mapper),
+                new JsonbConverter.TrumpfOrdnungBytesLeseConverter(mapper),
+                // kartendeck (Kartendeck JSONB)
+                new JsonbConverter.KartendeckSchreibConverter(mapper),
+                new JsonbConverter.KartendeckLeseConverter(mapper),
+                new JsonbConverter.KartendeckStringLeseConverter(mapper),
+                new JsonbConverter.KartendeckBytesLeseConverter(mapper)
         ));
     }
 }

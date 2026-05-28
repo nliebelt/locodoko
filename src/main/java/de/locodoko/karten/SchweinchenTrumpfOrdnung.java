@@ -16,6 +16,8 @@ public final class SchweinchenTrumpfOrdnung implements TrumpfOrdnung {
         this.basis = new NormaleTrumpfOrdnung(spielregeln);
     }
 
+    Spielregeln spielregeln() { return basis.spielregeln(); }
+
     @Override
     public boolean istTrumpf(Karte karte) {
         return basis.istTrumpf(karte);

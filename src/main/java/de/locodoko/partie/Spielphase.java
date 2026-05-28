@@ -1,5 +1,7 @@
 package de.locodoko.partie;
 
+import com.fasterxml.jackson.annotation.JsonSubTypes;
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
 
 import java.util.Objects;
 import java.util.Set;
@@ -15,6 +17,16 @@ import java.util.Set;
  * Vorbehalt aufloesen (optional: Armut-Tausch) → Stichphase → Auswertung →
  * Gesamtstand aktualisieren.</p>
  */
+@JsonTypeInfo(use = JsonTypeInfo.Id.NAME, property = "typ")
+@JsonSubTypes({
+    @JsonSubTypes.Type(value = Spielphase.KartenAusteilen.class,          name = "KARTEN_AUSTEILEN"),
+    @JsonSubTypes.Type(value = Spielphase.VorbehaltAnsage.class,          name = "VORBEHALT_ANSAGE"),
+    @JsonSubTypes.Type(value = Spielphase.VorbehaltAufloesung.class,      name = "VORBEHALT_AUFLOESUNG"),
+    @JsonSubTypes.Type(value = Spielphase.ArmutTausch.class,              name = "ARMUT_TAUSCH"),
+    @JsonSubTypes.Type(value = Spielphase.Stichphase.class,               name = "STICHPHASE"),
+    @JsonSubTypes.Type(value = Spielphase.Auswertung.class,               name = "AUSWERTUNG"),
+    @JsonSubTypes.Type(value = Spielphase.GesamtstandAktualisieren.class, name = "GESAMTSTAND_AKTUALISIEREN")
+})
 public sealed interface Spielphase {
 
     /** Phasenname fuer Persistenz und API-Serialisierung (kompatibel zur alten Enum-Benennung). */
