@@ -4,7 +4,11 @@
 
 ## Notiz
 
-**Session 22 (2026-05-28):** Baseline-Validierung: Backend 348 Tests grün, Frontend 221 Tests grün.
+**Session 23 (2026-05-28):** BUG-PARTIE-SPIELREGELN behoben. `Partie.neuePersistenz` setzte `spielregeln` nie → NPE beim letzten Stich. Fix: Signatur auf `neuePersistenz(int, Spielregeln)` erweitert, 3 Call-Sites in `TischVerwaltungsService` + alle Test-Aufrufe angepasst. 348 Tests grün.
+
+**Nächster Schritt:** SMOKE-UI-1 — manueller Browser-Test durch User (Backend läuft bereits).
+
+**IST-Zustand 2026-05-28 (nach BUG-PARTIE-SPIELREGELN):** Backend 348 Tests grün, Bug im Spielabschluss gefixt.
 
 Verbleibende offene Tasks: REFACTOR-DOMAIN-VISUAL-BASELINE + SMOKE-UI-1 — beide erfordern laufendes Backend + Playwright headed bzw. manuellen Browser-Test durch User. Netzwerkzugriff in Agenten-Umgebung gesperrt → kein automatisierter Vision-Loop möglich.
 
