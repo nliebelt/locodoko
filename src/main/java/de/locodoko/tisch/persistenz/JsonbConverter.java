@@ -4,11 +4,13 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonValue;
 import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.BeanDescription;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.cfg.MapperConfig;
 import com.fasterxml.jackson.databind.introspect.AccessorNamingStrategy;
 import com.fasterxml.jackson.databind.introspect.AnnotatedClass;
+import com.fasterxml.jackson.databind.introspect.AnnotatedField;
 import com.fasterxml.jackson.databind.introspect.AnnotatedMethod;
 import com.fasterxml.jackson.databind.introspect.DefaultAccessorNamingStrategy;
 import de.locodoko.karten.BubensoloTrumpfOrdnung;
@@ -245,29 +247,58 @@ public final class JsonbConverter {
      * Boolean-Property-Getter erkennt. Damit werden Deutsche {@code ist*}-Methoden
      * (z.B. {@code istVollstaendig()}) nicht faelschlicherweise als Properties behandelt.</p>
      */
-    private static final class NurEchteIsGetterStrategieProvider extends DefaultAccessorNamingStrategy.Provider {
+    private static final class NurEchteIsGetterStrategieProvider extends AccessorNamingStrategy.Provider {
+        private final DefaultAccessorNamingStrategy.Provider standard = new DefaultAccessorNamingStrategy.Provider();
+
         @Override
-        public AccessorNamingStrategy forDeserialization(MapperConfig<?> config,
-                AnnotatedClass valueClass, AccessorNamingStrategy defaultStrategy) {
-            return new NurEchteIsGetterStrategie();
+        public AccessorNamingStrategy forPOJO(MapperConfig<?> config, AnnotatedClass valueClass) {
+            return new NurEchteIsGetterStrategie(standard.forPOJO(config, valueClass));
         }
 
         @Override
-        public AccessorNamingStrategy forSerialization(MapperConfig<?> config,
-                AnnotatedClass valueClass, AccessorNamingStrategy defaultStrategy) {
-            return new NurEchteIsGetterStrategie();
+        public AccessorNamingStrategy forBuilder(MapperConfig<?> config, AnnotatedClass builderClass, BeanDescription valueTypeDesc) {
+            return new NurEchteIsGetterStrategie(standard.forBuilder(config, builderClass, valueTypeDesc));
+        }
+
+        @Override
+        public AccessorNamingStrategy forRecord(MapperConfig<?> config, AnnotatedClass recordClass) {
+            return new NurEchteIsGetterStrategie(standard.forRecord(config, recordClass));
         }
     }
 
-    /** Erkennt nur {@code is} + Großbuchstabe als Boolean-Getter; ignoriert {@code ist*}. */
-    private static final class NurEchteIsGetterStrategie extends DefaultAccessorNamingStrategy {
+    /**
+     * Erkennt nur {@code is} + Großbuchstabe als Boolean-Getter; ignoriert {@code ist*}.
+     * Delegiert alle uebrigen Namensentscheidungen an die Jackson-Standardstrategie.
+     */
+    private static final class NurEchteIsGetterStrategie extends AccessorNamingStrategy {
+        private final AccessorNamingStrategy standard;
+
+        NurEchteIsGetterStrategie(AccessorNamingStrategy standard) {
+            this.standard = standard;
+        }
+
         @Override
         public String findNameForIsGetter(AnnotatedMethod am, String defaultName) {
             String name = am.getName();
             if (name.startsWith("is") && name.length() > 2 && Character.isUpperCase(name.charAt(2))) {
-                return defaultName;
+                return standard.findNameForIsGetter(am, defaultName);
             }
             return null;
+        }
+
+        @Override
+        public String findNameForRegularGetter(AnnotatedMethod am, String defaultName) {
+            return standard.findNameForRegularGetter(am, defaultName);
+        }
+
+        @Override
+        public String findNameForMutator(AnnotatedMethod am, String defaultName) {
+            return standard.findNameForMutator(am, defaultName);
+        }
+
+        @Override
+        public String modifyFieldName(AnnotatedField af, String name) {
+            return standard.modifyFieldName(af, name);
         }
     }
 
