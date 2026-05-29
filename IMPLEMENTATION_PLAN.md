@@ -8,7 +8,7 @@
 
 **Nächster Schritt:** Nur noch `REFACTOR-TISCHVERWALTUNG` offen (struktureller Service-Split, Risiko mittel). Empfohlener erster Schritt laut Task: Konfigurations-Methoden (`ladeKonfiguration`, `aktualisiereKonfiguration`, `gibPresets`) in `TischKonfigurationsService` extrahieren, Controller-Aufrufer anpassen, pro Extraktion ein Commit + `mvn test`.
 
-**Offene Fragen für User:** Warten auf Freigabe für den strukturellen `TischVerwaltungsService`-Split (mehrere vertretbare Schnittgrenzen). SMOKE-UI-1 bleibt user-getrieben.
+**Offene Fragen für User:** `REFACTOR-TISCHVERWALTUNG` analysiert — der „kleine" Konfig-Schnitt ist durch stark geteilte private Helfer blockiert (Details im Task). Empfehlung: erst VORTASK `REFACTOR-TISCH-ZUGRIFF` (geteilte Helfer → Collaborator), dann Konfig-Extraktion — oder angesichts A2-Priorität „niedrig" vorerst lassen. SMOKE-UI-1 bleibt user-getrieben.
 
 ## Legende
 
@@ -82,6 +82,8 @@
   **Erste Datei zuerst:** `src/main/java/de/locodoko/tisch/TischVerwaltungsService.java` — Verantwortlichkeiten gruppieren, die kleinste kohärente Einheit zuerst extrahieren (Konfiguration: `ladeKonfiguration`, `aktualisiereKonfiguration`, `gibPresets` → `TischKonfigurationsService`). Aufrufer in `TischController`/`PartieController` umstellen. Pro Extraktion ein Commit + `mvn test`.
 
   **DoD:** Jede resultierende Klasse ≤ ~300 Z.; alle Aufrufer angepasst; `cd /home/agent/workspace && mvn test` grün. **Risiko:** mittel.
+
+  **Befund Session 26 (blockiert „kleinen" Schnitt):** Die Konfig-Methoden teilen stark genutzte private Helfer mit dem restlichen Service — `ladeTischEntity` (12×), `ladeTischEntityMitSperre` (9×), `ladeSpieler` (9×), `veroeffentlicheTischAktualisierung` (9×), `pruefeWartendenTisch` (5×) — plus `listeOffeneTische()`. Eine duplikationsfreie Konfig-Extraktion erfordert daher **zuerst** das Herausziehen dieser geteilten Lade-/Guard-/Publish-Helfer in einen gemeinsamen Collaborator (z.B. `@Component TischZugriff` + `TischEreignisVeroeffentlichung`), was ~12 Aufrufstellen im Service berührt. → **Empfohlener Zuschnitt: VORTASK `REFACTOR-TISCH-ZUGRIFF`** (geteilte Helfer in Collaborator extrahieren, alle Aufrufer in TVS umstellen, `mvn test`), **dann** `TischKonfigurationsService` extrahieren. Beide je eigene Iteration. Ohne diese Vortask würde der Split Helfer duplizieren (verletzt „keine Duplikate").
 
 ### Offen — user-getrieben
 
