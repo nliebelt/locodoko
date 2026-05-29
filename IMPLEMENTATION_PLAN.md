@@ -10,7 +10,7 @@
 
 **Nächster Schritt:** `REFACTOR-TISCHVERWALTUNG` — Konfig-Extraktion ist jetzt durch die erledigte VORTASK `REFACTOR-TISCH-ZUGRIFF` entsperrt und kann sauber als eigene Iteration erfolgen.
 
-**Offene Fragen für User:** Keine. SMOKE-UI-1 bleibt user-getrieben.
+**Offene Fragen für User:** Keine. Beide offenen Tasks (`REFACTOR-TISCHVERWALTUNG`, `VISION-SMOKE-1`) sind autonom build-mode-tauglich — der manuelle `SMOKE-UI-1` wurde durch die headless Vision-Loop ersetzt.
 
 ## Legende
 
@@ -22,9 +22,10 @@
 
 Erledigt (Session 26): DOC-PUNKTE-HINWEISE ✓ · SPEC-ARCH-HIERARCHIE ✓ · DOC-AGENTS-DEDUP ✓ · REFACTOR-SAGEAN ✓ · REFACTOR-JSONB-CONVERTER ✓ · BUG-JACKSON-ACCESSORNAMING ✓ · REFACTOR-TISCH-ZUGRIFF ✓
 
-Nächste offene Task:
+Nächste offene Tasks:
 
 1. **REFACTOR-TISCHVERWALTUNG** — Konfig-Extraktion (Vorbedingung REFACTOR-TISCH-ZUGRIFF erfüllt)
+2. **VISION-SMOKE-1** — visueller End-to-End-Smoke-Test (autonom, headless; letzte Task)
 
 ---
 
@@ -92,14 +93,19 @@ Nächste offene Task:
 
   **DoD:** Jede resultierende Klasse ≤ ~300 Z.; alle Aufrufer angepasst; `cd /home/agent/workspace && mvn clean test` grün. **Risiko:** mittel.
 
-### Offen — user-getrieben
+### Abschluss-Verifikation — visueller Smoke-Test (autonom)
 
-- [ ] **SMOKE-UI-1** — User-getriebener manueller Smoke-Test:
-  - `mvn spring-boot:run` starten.
-  - Browser öffnen, Schnellstart, eine Partie gegen 3 KI-Spieler spielen.
-  - Profil-Modal öffnen, drei Tabs durchklicken.
-  - Ungültige Karte spielen — Toast erwartet.
-  - Befunde als BUG-…-Tasks im Plan aufnehmen.
+- [ ] **VISION-SMOKE-1** — Visueller End-to-End-Smoke-Test über die Vision-Loop (ersetzt den früheren manuellen `SMOKE-UI-1`).
+
+  Screenshottet die wichtigsten Spielzustände automatisiert und headless — kein User/Browser nötig.
+
+  **Schritte:**
+  1. Backend starten (serviert das eingebaute Frontend auf :8081): im Projektroot `mvn spring-boot:run` im Hintergrund; warten bis `curl -s http://localhost:8081/actuator/health` „UP" liefert. (Falls das Frontend nicht mitgebaut ist: vorher `cd frontend && npm run build`.)
+  2. Vision-Loop headless ausführen: `cd e2e && npx playwright test --config=playwright.config.vision.ts`.
+  3. Alle erzeugten Screenshots in `e2e/screenshots/` mit dem Read-Tool einlesen und visuell prüfen (Positionen, Überlappungen, Alpha-Werte, fehlende Elemente, Texte).
+  4. Backend-Prozess wieder stoppen.
+
+  **DoD:** Vision-Loop läuft grün durch; alle Screenshots visuell ohne Defekt befunden. Etwaige visuelle Mängel als neue `BUG-…`-Tasks unter „Entdeckungen" eintragen (im selben Lauf nicht fixen — der Plan-/Build-Modus arbeitet sie als eigene Tasks ab).
 
 ---
 
