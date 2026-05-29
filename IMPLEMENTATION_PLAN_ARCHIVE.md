@@ -556,3 +556,34 @@ Dieses Jubiläums-Run verfolgt die Strategie „Phaser, Phaser, Phaser“. Ziel 
 - **P13:** FIX-FRONTEND-TS-ERRORS (Task 47) — erledigt.
 - **P14:** DOC-SPEC-SYNC (Task 48), DOC-E2E-SPEC-UPDATE (Task 49), FEAT-KEYBOARD-NAV-LOBBY (Task 50), REFACTOR-TISCHSZENE (Task 51) — erledigt.
 - **Task 52 (FEAT-BITMAPFONT):** Offen (niedrige Priorität) → bleibt im aktiven Plan.
+
+---
+
+## Plan-Run Session 17–25 (2026-05, REFACTOR-DOMAIN + Profil)
+
+> Verschoben aus `IMPLEMENTATION_PLAN.md` bei der Plan-Überarbeitung Session 26 (Gesamt-Review).
+> Alle Tasks erledigt und mit grünen Tests committet.
+
+### Priorität 1 — Spielerprofil (erledigt)
+- **BUG-PROFIL-TYPES** — `api-types.ts` regeneriert, `SpielerProfilModal` auf `statistiken: Map`-Struktur umgestellt.
+- **FEAT-PROFIL-TABS** — Tab-Wechsel TURNIER/SONDER/FREI + alle 17 Statistik-Felder im Modal.
+
+### Priorität 2 — Frontend-Fehler-Handling (erledigt)
+- **FE-FEHLER-422** — Frontend unterscheidet HTTP 422 (UngueltigerSpielzug) / 409 (Konflikt) / generisch.
+- **DOC-PROFIL-STATUS** — `frontend-spielerprofil.md` + `spieler-profil.md` auf „Implementiert" gesetzt.
+
+### Priorität 3 — Domain-Schichten-Bereinigung (erledigt)
+- **REFACTOR-DOMAIN-0** — Wire-Format-Pinning-Test (`PartieStandAntwortWireFormatTest` + `wire-format-baseline.json`).
+- **REFACTOR-DOMAIN-VISUAL-BASELINE** — Vision-Loop-Screenshots vor/nach Refactor eingecheckt.
+- **REFACTOR-DOMAIN-1** — Wrapper-VOs (`Haende`, `VorbehaltMeldungen`, `Stichverlauf`, `GeschmisseneSpieler`, `PflichtAnsagen`); Schatten-`*Json`-Felder + Callbacks + `PartieJsonMapper` eliminiert.
+- **REFACTOR-DOMAIN-2** — `Spielphase` + `TrumpfOrdnung` als JSONB via `@JsonTypeInfo`/`@JsonSubTypes`; String-Rekonstruktoren gelöscht.
+- **REFACTOR-DOMAIN-3** — `PartieStandAntwort` liest direkt aus Domain-VOs; 23 Adapter-Getter in `Spiel.java` entfernt.
+- **REFACTOR-DOMAIN-4** — 8 parasitäre Embeddable/JsonEintrag-Klassen gelöscht.
+- **REFACTOR-DOMAIN-5** — `SpielTestBuilder` eingeführt, 5 Test-Setter aus `Spiel.java` entfernt.
+- **REFACTOR-DOMAIN-6** — `ObjectMapper` als Spring-Bean + globale `ist*`-AccessorNamingStrategy; Jackson-Mixins reduziert.
+- **REFACTOR-DOMAIN-7** — Tote Methode `Spiel.initialisierePersistenzDefaultsNachLaden()` + veralteter Kommentar gelöscht.
+
+### Priorität 4 — Strukturbereinigung (erledigt)
+- **REFACTOR-TISCHANSICHT-1** — `TischAnsichtModell.ts` 636 → 347 Zeilen (Extraktion `SitzordnungModell.ts`, `TischAnsichtMapper.ts`).
+
+**Endzustand Session 25:** Backend grün, Frontend 221 grün. `Spiel.java` 526 Z., Modulgrenzen sauber.

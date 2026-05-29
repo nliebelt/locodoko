@@ -89,7 +89,8 @@ Die Punkteberechnung bestimmt am Ende eines Spiels, welche Partei gewonnen hat u
 ## Technische Hinweise
 
 - **Bounded Context**: Punkteberechnung
-- `PunkteRechner`-Service mit Methode `berechneErgebnis(Spiel)` → `SpielErgebnis`
-- `SpielErgebnis` enthält: Augen pro Partei, Spielpunkte pro Spieler, Sonderpunkte-Aufschlüsselung inkl. Labels.
+- `PunkteRechner` mit Methode `berechneNormalspielErgebnis(stiche, parteien, trumpfOrdnung, ansagen, spielregeln)` → `Spielergebnis` (reine Funktion, kein `Spiel`-Parameter).
+- `Spielergebnis` (Record) enthält: Augen pro Partei, Sieger-Partei, Spielwert, Grundwert, Absage-Punkte, Gegen-die-Alten-Punkte, Spielpunkte pro Spieler und Sonderpunkte pro Partei.
+- Die nutzerlesbare **Point-Provenance-Liste** (`punkteAufschluesselung: { label, wert }[]`, Anf. 16–17) wird aus diesen Komponenten im Wire-DTO `PartieStandAntwort` (`PunkteKomponenteAntwort[]`) erzeugt — nicht im Domänen-Record.
 - Die Berechnung ist eine reine Funktion ohne Seiteneffekte (leicht testbar)
 - Partiestand als Aggregate oder Value Object, das nach jedem Spiel aktualisiert wird
