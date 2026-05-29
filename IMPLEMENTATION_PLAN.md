@@ -67,7 +67,7 @@
 
 ### Priorität 3 — Refactorings (mittel, je eigene Iteration)
 
-- [ ] **REFACTOR-JSONB-CONVERTER** — Boilerplate in `JsonbConverter.java` (1131 Z.) reduzieren.
+- [x] **REFACTOR-JSONB-CONVERTER** — Boilerplate in `JsonbConverter.java` (1131 Z.) reduzieren. **Realisiert:** Dead-Code-Entfernung — 14 ungenutzte Converter (rohe `Map`/`List`/`Set` aus der Prä-VO-Zeit, durch die VO-Wrapper ersetzt, nirgends registriert) + 5 tote Tests gelöscht → 1131 → 917 Z. Eine zusätzliche generische Basisklasse für die verbleibenden 60 (registrierten) Converter ist optional und niedrig priorisiert (Spring-Typauflösung via konkrete Subklassen nötig).
 
   Pro Domänentyp existieren ~3 nahezu identische Converter-Klassen (`…SchreibConverter` / `…LeseConverter`(PGobject) / `…StringLeseConverter`(String)) über ~12 Typen ⇒ ~36 Klassen mit gleichem Rumpf (`toJsonString` / `fromPGobject` / `fromString`).
 
@@ -102,7 +102,7 @@ Siehe vollständigen Bericht `specs/review-2026-05-28.md`. Bestätigte, **nicht*
 
 | Klasse | Zeilen | Hinweis |
 |---|---|---|
-| `JsonbConverter.java` | 1131 | → REFACTOR-JSONB-CONVERTER |
+| `JsonbConverter.java` | 917 | REFACTOR-JSONB-CONVERTER erledigt (Dead-Code entfernt); optionale Generik offen |
 | `TischVerwaltungsService.java` | 542 | → REFACTOR-TISCHVERWALTUNG |
 | `PartieStandAntwort.java` | 529 | durch >10 nested Wire-Format-DTOs begründet — kein Rückstand |
 | `Spiel.java` | 526 | Domain-Komplexität, REFACTOR-DOMAIN erledigt |
