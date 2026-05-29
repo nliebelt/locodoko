@@ -32,7 +32,7 @@
     `git diff --stat HEAD~1` — damit weißt du sofort welche Dateien der letzte Ralph berührt hat.
 
 0c. **Vor-Validierung**: Stelle sicher dass der Baseline grün ist, bevor du anfängst:
-    - `cd /home/agent/workspace && mvn test -q` (Backend)
+    - `cd /home/agent/workspace && mvn clean test -q` (Backend — **`clean` ist Pflicht**: inkrementelle Builds maskieren Compile-Brüche durch veraltete `.class` in `target/`)
     - `cd /home/agent/workspace/frontend && npm test --silent` (Frontend)
     Falls einer ROT ist: das ist nicht dein Bug — markiere als `[BLOCKED: Baseline rot — <kurzer Fehler>]`
     in @IMPLEMENTATION_PLAN.md und gib `<promise>BLOCKED</promise>` aus.
@@ -68,7 +68,7 @@
    Falls die Task einen „Erste Datei zuerst"-Hinweis hat: dort starten.
 
 2. Validierung — abhängig vom Task-Prefix und davon, was tatsächlich geändert wurde:
-   - `FEAT-` / `BUG-` / `DB-` (Backend-Aufgaben): `cd /home/agent/workspace && mvn test`
+   - `FEAT-` / `BUG-` / `DB-` (Backend-Aufgaben): `cd /home/agent/workspace && mvn clean test` (`clean` ist Pflicht — sonst bleiben Compile-Brüche durch veraltete `target/`-Klassen unsichtbar)
      - Bei `DB-`-Tasks die DTOs ändern: zusätzlich `cd /home/agent/workspace/frontend && npm run generate-types`
        (OpenAPI-Schema-Synchronisierung) + `npm test && npm run build && npm run lint`.
    - `FE-` / `UI-` (Frontend-Aufgaben): `cd /home/agent/workspace/frontend && npm run generate-types && npm test && npm run build && npm run lint`

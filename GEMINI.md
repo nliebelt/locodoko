@@ -9,7 +9,9 @@ Vollständiges Paket: `mvn clean package` (baut Frontend ein, erzeugt JAR)
 
 ## Validation nach Implementierung
 
-1. `mvn test` — Backend-Tests
+> **Backend immer mit `mvn clean test` validieren, nicht nur `mvn test`.** Inkrementelle Builds verwenden teils veraltete `.class`-Dateien aus `target/` und maskieren so Compile-Brüche in unverändert wirkenden Dateien.
+
+1. `mvn clean test` — Backend-Tests
 2. `cd frontend && npm test && npm run build && npm run lint` — Frontend komplett
 3. `cd e2e && npm run test` - e2e Test müssen laufen
 4. Logs auf Warnungen und Fehler prüfen
