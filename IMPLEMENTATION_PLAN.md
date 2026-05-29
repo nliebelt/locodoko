@@ -8,9 +8,9 @@
 
 **Wichtig (Session 26):** Der Clean-Build (`mvn clean package`/`verify`) war vorbestehend gebrochen (Jackson-API-Drift in `JsonbConverter`), maskiert durch inkrementelle `mvn test`-Läufe mit stale `target/`. Behoben via `BUG-JACKSON-ACCESSORNAMING`. **Lehre:** Validierung künftig mit `mvn clean test` (nicht nur `mvn test`), sonst bleiben Compile-Brüche unsichtbar.
 
-**Nächster Schritt:** `REFACTOR-TISCHVERWALTUNG` — Konfig-Extraktion ist jetzt durch die erledigte VORTASK `REFACTOR-TISCH-ZUGRIFF` entsperrt und kann sauber als eigene Iteration erfolgen.
+**Session 27 (2026-05-29):** `REFACTOR-TISCHVERWALTUNG` abgeschlossen. `gibPresets`, `ladeKonfiguration`, `aktualisiereKonfiguration` aus `TischVerwaltungsService` (509 → ~470 Z.) in neuen `@Service TischKonfigurationsService` extrahiert (Deps: `TischZugriff`, `TischRepository`, `TischEchtzeitService`). `TischController` auf Constructor-Injection des neuen Service umgestellt. `mvn clean test` grün.
 
-**Offene Fragen für User:** Keine. Beide offenen Tasks (`REFACTOR-TISCHVERWALTUNG`, `VISION-SMOKE-1`) sind autonom build-mode-tauglich — der manuelle `SMOKE-UI-1` wurde durch die headless Vision-Loop ersetzt.
+**Nächster Schritt:** `VISION-SMOKE-1` — visueller End-to-End-Smoke-Test (letzte offene Task).
 
 ## Legende
 
@@ -85,7 +85,7 @@ Nächste offene Tasks:
 
   `ladeTischEntity`, `ladeTischEntityMitSperre`, `ladeSpieler`, `pruefeWartendenTisch` aus `TischVerwaltungsService` (542 → 508 Z.) in `TischZugriff` (63 Z.) gezogen. **Bonus:** `SpielAktionsService` hatte eigene Duplikate von `ladeTischEntity`/`ladeSpieler` — ebenfalls auf `TischZugriff` umgestellt, die verwaiste `spielerRepository`-Dependency entfernt. Test-Spy `SpionTischVerwaltungsService` an neuen Konstruktor angepasst. `mvn clean test` grün.
 
-- [ ] **REFACTOR-TISCHVERWALTUNG** — `TischVerwaltungsService` (jetzt 508 Z.) weiter aufteilen (Konfiguration extrahieren).
+- [x] **REFACTOR-TISCHVERWALTUNG** — `TischVerwaltungsService` (jetzt 508 Z.) weiter aufteilen (Konfiguration extrahieren).
 
   **Vorbedingung erfüllt:** `REFACTOR-TISCH-ZUGRIFF` ist erledigt — die geteilten Helfer liegen jetzt in `TischZugriff`, eine Konfig-Extraktion dupliziert daher nichts mehr.
 

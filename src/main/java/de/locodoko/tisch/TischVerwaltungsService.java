@@ -100,23 +100,6 @@ public class TischVerwaltungsService {
         };
     }
 
-    public List<TischPresetAntwort> gibPresets() {
-        return List.of(
-            new TischPresetAntwort(
-                "LOCO_BLATT",
-                "Loco-Blatt (Hausregeln)",
-                "Alle Sonderregeln aktiv, ohne Neunen (40 Karten). Ideal fuer schnelle, dynamische Runden.",
-                TischKonfigurationDto.aus(TischkonfigurationEmbeddable.locoBlatRegeln())
-            ),
-            new TischPresetAntwort(
-                "DKV_TURNIER",
-                "DKV-Turnier",
-                "Offizielle Turnierregeln des Deutschen Doppelkopf-Verbandes. Ohne Sonderpunkte, mit Neunen (48 Karten).",
-                TischKonfigurationDto.aus(TischkonfigurationEmbeddable.dkvRegeln())
-            )
-        );
-    }
-
     @Transactional
     public TischAntwort betreteTisch(TischId tischId, SpielerEntity spieler) {
         SpielerEntity verwalteterSpieler = tischZugriff.ladeSpieler(SpielerId.von(spieler.id()));
@@ -350,42 +333,6 @@ public class TischVerwaltungsService {
             TischEreignisAntwort.spielGestartet(tischAntwort, PartieStandAntwort.aus(gespeicherterTisch))
         );
         veroeffentlichePartieAktualisierung(gespeicherterTisch);
-    }
-
-    @Transactional(readOnly = true)
-    public TischKonfigurationDto ladeKonfiguration(TischId tischId) {
-        return TischKonfigurationDto.aus(tischZugriff.ladeTischEntity(tischId).konfiguration());
-    }
-
-    @Transactional
-    public TischKonfigurationDto aktualisiereKonfiguration(
-        TischId tischId,
-        SpielerEntity spieler,
-        TischKonfigurationDto konfiguration
-    ) {
-        SpielerEntity verwalteterSpieler = tischZugriff.ladeSpieler(SpielerId.von(spieler.id()));
-        TischEntity tisch = tischZugriff.ladeTischEntityMitSperre(tischId);
-        tischZugriff.pruefeWartendenTisch(
-            tisch,
-            "TISCH_KONFIGURATION_GESPERRT",
-            "Die Tischkonfiguration darf nach Spielbeginn nicht mehr geaendert werden."
-        );
-        if (!tisch.erstelltVon().id().equals(verwalteterSpieler.id())) {
-            throw new SpielverwaltungKonfliktException(
-                "TISCH_KONFIGURATION_NICHT_ERLAUBT",
-                "Nur der Tischersteller darf die Konfiguration aendern."
-            );
-        }
-        tisch.aktualisiereKonfiguration(konfiguration.alsEmbeddable());
-        TischEntity gespeicherterTisch = tischRepository.saveAndFlush(tisch);
-        veroeffentlicheTischAktualisierung(
-            TischlisteEreignisAntwort.aktualisiert(listeOffeneTische()),
-            TischEreignisAntwort.aktualisiert(
-                TischEreignisTyp.TISCH_KONFIGURATION_AKTUALISIERT,
-                TischAntwort.aus(gespeicherterTisch)
-            )
-        );
-        return TischKonfigurationDto.aus(gespeicherterTisch.konfiguration());
     }
 
     /**

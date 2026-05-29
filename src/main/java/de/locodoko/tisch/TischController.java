@@ -45,10 +45,16 @@ public class TischController {
     private static final Logger LOGGER = LoggerFactory.getLogger(TischController.class);
 
     private final TischVerwaltungsService tischVerwaltungsService;
+    private final TischKonfigurationsService tischKonfigurationsService;
     private final SpielerSessionService spielerSessionService;
 
-    public TischController(TischVerwaltungsService tischVerwaltungsService, SpielerSessionService spielerSessionService) {
+    public TischController(
+        TischVerwaltungsService tischVerwaltungsService,
+        TischKonfigurationsService tischKonfigurationsService,
+        SpielerSessionService spielerSessionService
+    ) {
         this.tischVerwaltungsService = tischVerwaltungsService;
+        this.tischKonfigurationsService = tischKonfigurationsService;
         this.spielerSessionService = spielerSessionService;
     }
 
@@ -65,7 +71,7 @@ public class TischController {
     @GetMapping("/presets")
     public List<TischPresetAntwort> gibPresets() {
         LOGGER.info("Regel-Presets abgefragt");
-        return tischVerwaltungsService.gibPresets();
+        return tischKonfigurationsService.gibPresets();
     }
 
     @Operation(summary = "Neuen Tisch erstellen", description = "Erstellt einen neuen Tisch mit dem angegebenen Namen und der Konfiguration. Der anfragende Spieler wird automatisch Ersteller und Teilnehmer.")
@@ -216,7 +222,7 @@ public class TischController {
         MDC.put("tischId", id.toString());
         try {
             LOGGER.info("Konfiguration fuer Tisch {} abgefragt", id);
-            return tischVerwaltungsService.ladeKonfiguration(TischId.von(id));
+            return tischKonfigurationsService.ladeKonfiguration(TischId.von(id));
         } finally {
             MDC.clear();
         }
@@ -241,7 +247,7 @@ public class TischController {
         try {
             SpielerEntity spieler = ladeAktivenSpieler(request);
             LOGGER.info("Spieler {} aktualisiert die Konfiguration von Tisch {}", spieler.id(), id);
-            return tischVerwaltungsService.aktualisiereKonfiguration(TischId.von(id), spieler, konfiguration);
+            return tischKonfigurationsService.aktualisiereKonfiguration(TischId.von(id), spieler, konfiguration);
         } finally {
             MDC.clear();
         }
