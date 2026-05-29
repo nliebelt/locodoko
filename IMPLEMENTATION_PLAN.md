@@ -4,11 +4,11 @@
 
 ## Notiz
 
-**Session 26 (2026-05-29):** Vollständiger Code- & Spec-Review durchgeführt (Bericht: `specs/review-2026-05-28.md`). Ergebnis: Modulgrenzen sauber, Spielkern regelkonform (`PunkteRechner`, `Stich` geprüft), keine offenen Korrektheits-Bugs. Backend `mvn test` grün, Frontend 221 grün. Der abgeschlossene REFACTOR-DOMAIN-Block (P1–P4, Session 17–25) wurde ins Archiv verschoben. Aus dem Review entstanden 6 neue Tasks (Doku-Hygiene + Code-Qualität + 2 mittlere Refactorings), siehe unten.
+**Session 26 (2026-05-29):** Vollständiger Code- & Spec-Review (Bericht: `specs/review-2026-05-28.md`), Plan überarbeitet, dann 5 der 6 Review-Tasks im Build-Modus abgearbeitet und einzeln committet: DOC-PUNKTE-HINWEISE, SPEC-ARCH-HIERARCHIE, DOC-AGENTS-DEDUP, REFACTOR-SAGEAN, REFACTOR-JSONB-CONVERTER (Dead-Code: 1131→917 Z.). `mvn test` nach jeder Code-Task grün. Der abgeschlossene REFACTOR-DOMAIN-Block (Session 17–25) ist im Archiv.
 
-**Nächster Schritt:** Build-Reihenfolge strikt von oben nach unten abarbeiten — erst die risikoarmen DOC/SPEC-Tasks, dann `REFACTOR-SAGEAN`, zuletzt die zwei mittleren Refactorings (`REFACTOR-JSONB-CONVERTER`, `REFACTOR-TISCHVERWALTUNG`).
+**Nächster Schritt:** Nur noch `REFACTOR-TISCHVERWALTUNG` offen (struktureller Service-Split, Risiko mittel). Empfohlener erster Schritt laut Task: Konfigurations-Methoden (`ladeKonfiguration`, `aktualisiereKonfiguration`, `gibPresets`) in `TischKonfigurationsService` extrahieren, Controller-Aufrufer anpassen, pro Extraktion ein Commit + `mvn test`.
 
-**Offene Fragen für User:** Keine — Build-Modus kann starten. SMOKE-UI-1 bleibt user-getrieben.
+**Offene Fragen für User:** Warten auf Freigabe für den strukturellen `TischVerwaltungsService`-Split (mehrere vertretbare Schnittgrenzen). SMOKE-UI-1 bleibt user-getrieben.
 
 ## Legende
 
