@@ -2,9 +2,12 @@
 
 | Feld           | Wert                                                        |
 |----------------|-------------------------------------------------------------|
-| Status         | Aktive Vorgabe                                              |
-| Priorität      | Kritisch                                                    |
+| Status         | Detail-Spec (konsolidiert in architektur.md)                |
+| Priorität      | Mittel                                                      |
 | Bezug          | architektur.md, websocket-kommunikation.md                  |
+
+> **Hinweis:** Single Source of Truth ist `architektur.md`. Dieses Dokument vertieft das
+> Synchronisations-Modell (Snapshot+Hint, Optimistic Locking) — bei Widersprüchen gilt `architektur.md`.
 
 ## Kernprinzipien
 

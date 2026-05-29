@@ -5,7 +5,7 @@ Dieses Verzeichnis enthält alle funktionalen und nicht funktionalen Anforderung
 WICHTIG: Die Spezifikationen beschreiben das *Was* und *Warum* (Fachlichkeit und Regeln), aber nicht zwingend das exakte *Wie* (konkrete Variablennamen oder Code-Strukturen, sofern nicht architektonisch relevant).
 
 ## 1. Übergreifende Architektur & Prinzipien
-- **`architektur.md`**: Kompakte Referenz — Domain Model, Module, Event-Vertrag, Coding-Prinzipien. **Wird bei jedem Scan/Build geladen.**
+- **`architektur.md`**: **Single Source of Truth** — Domain Model, Module, Event-Vertrag, Coding-Prinzipien. **Wird bei jedem Scan/Build geladen.** Die übrigen `architektur-*.md` sind Detail-Specs; bei Widersprüchen gilt `architektur.md`.
 - **`architektur-ddd.md`**: Detail-Spec für Spring Modulith Konfiguration & Persistenz-Strategie.
 - **`architektur-unified.md`**: Hybrides Snapshot+Hint-Modell, Optimistic Locking, Transaktionsgarantien und Quiescence Pattern.
 - **`architektur-spielkern.md`**: Glossar (DKV-Begriffe), Typed IDs, Spielkern-Prinzipien.

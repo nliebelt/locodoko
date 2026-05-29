@@ -2,9 +2,12 @@
 
 | Feld           | Wert                                                        |
 |----------------|-------------------------------------------------------------|
-| Status         | Aktive Vorgabe                                              |
-| Priorität      | Kritisch                                                    |
+| Status         | Detail-Spec (konsolidiert in architektur.md)                |
+| Priorität      | Mittel                                                      |
 | Abhängigkeiten | architektur.md, architektur-spielkern.md                    |
+
+> **Hinweis:** Single Source of Truth ist `architektur.md`. Dieses Dokument vertieft den
+> Event-Vertrag, die Event-Queue und Transaktionsgrenzen — bei Widersprüchen gilt `architektur.md`.
 
 ## Ziel
 

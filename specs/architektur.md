@@ -2,7 +2,7 @@
 
 | Feld           | Wert                                      |
 |----------------|-------------------------------------------|
-| Status         | Aktive Vorgabe                            |
+| Status         | Aktive Vorgabe — Single Source of Truth   |
 | Priorität      | Kritisch                                  |
 | Letztes Update | 2026-05-06 — Konsolidiert (architektur-ddd.md, Frontend-Modell, Prinzipien) |
 
