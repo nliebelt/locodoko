@@ -57,7 +57,7 @@
 
 ### Priorität 2 — Code-Qualität
 
-- [ ] **REFACTOR-SAGEAN** — Einrückung + Extraktion in `Spiel.sageAn`.
+- [x] **REFACTOR-SAGEAN** — Einrückung + Extraktion in `Spiel.sageAn`.
 
   Im `try`-Block von `Spiel.sageAn` (≈ Z. 414–433) ist `Ansagen neueAnsagen = …` eingerückt, die folgenden Anweisungen springen auf Methoden-Ebene zurück — funktional korrekt, aber irreführend. Der Pflichtansage-Abzug (Z. ~418–425) gehört in eine eigene private Methode.
 

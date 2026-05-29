@@ -413,16 +413,10 @@ public class Spiel extends AbstraktePersistenzEntity {
         }
         try {
             Ansagen neueAnsagen = ansagen.fuegeHinzu(spielerPosition, ansage, parteien(), spielregeln, effektiveKartenAnzahlFuer(spielerPosition, ansage, stichphase.pflichtansageAusstehend()));
-        Parteien aktualisierteParteien = ansage.istGrundansage() ? parteien.mitOffenenParteienFuerAlle(List.of(spielerPosition)) : parteien;
-        Set<Partei> aktualisiertesPflichtansageAusstehend = stichphase.pflichtansageAusstehend();
-        if (ansage.istGrundansage() && !stichphase.pflichtansageAusstehend().isEmpty()) {
-            Partei partei = parteien.parteiVon(spielerPosition);
-            if (stichphase.pflichtansageAusstehend().contains(partei)) {
-                EnumSet<Partei> m = EnumSet.copyOf(stichphase.pflichtansageAusstehend());
-                m.remove(partei);
-                aktualisiertesPflichtansageAusstehend = m.isEmpty() ? Set.of() : Set.copyOf(m);
-            }
-        }
+            Parteien aktualisierteParteien = ansage.istGrundansage() ? parteien.mitOffenenParteienFuerAlle(List.of(spielerPosition)) : parteien;
+            Set<Partei> aktualisiertesPflichtansageAusstehend = ansage.istGrundansage()
+                ? entferneErfuellteGrundansagePflicht(stichphase.pflichtansageAusstehend(), spielerPosition)
+                : stichphase.pflichtansageAusstehend();
             this.parteien = aktualisierteParteien;
             this.ansagen = neueAnsagen;
             this.phase = new Spielphase.Stichphase(stichphase.aktuellerStich(), aktualisiertesPflichtansageAusstehend, stichphase.hochzeitStatus());
@@ -431,6 +425,20 @@ public class Spiel extends AbstraktePersistenzEntity {
         } catch (IllegalStateException ex) {
             throw new UngueltigerSpielzugException(ex.getMessage());
         }
+    }
+
+    /** Entfernt die Pflichtansage-Marke der Partei des Spielers, wenn eine Grundansage diese 30-Augen-Pflicht erfuellt. */
+    private Set<Partei> entferneErfuellteGrundansagePflicht(Set<Partei> pflichtansageAusstehend, SpielerPosition spielerPosition) {
+        if (pflichtansageAusstehend.isEmpty()) {
+            return pflichtansageAusstehend;
+        }
+        Partei partei = parteien.parteiVon(spielerPosition);
+        if (!pflichtansageAusstehend.contains(partei)) {
+            return pflichtansageAusstehend;
+        }
+        EnumSet<Partei> verbleibend = EnumSet.copyOf(pflichtansageAusstehend);
+        verbleibend.remove(partei);
+        return verbleibend.isEmpty() ? Set.of() : Set.copyOf(verbleibend);
     }
 
     private int effektiveKartenAnzahlFuer(SpielerPosition pos, Ansage ansage, Set<Partei> pflichtansageAusstehend) {
