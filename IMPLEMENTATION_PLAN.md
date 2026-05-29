@@ -20,12 +20,11 @@
 
 ## Empfohlene Build-Reihenfolge (verbindlich)
 
-1. DOC-PUNKTE-HINWEISE
-2. SPEC-ARCH-HIERARCHIE
-3. DOC-AGENTS-DEDUP
-4. REFACTOR-SAGEAN
-5. REFACTOR-JSONB-CONVERTER
-6. REFACTOR-TISCHVERWALTUNG
+Erledigt (Session 26): DOC-PUNKTE-HINWEISE ✓ · SPEC-ARCH-HIERARCHIE ✓ · DOC-AGENTS-DEDUP ✓ · REFACTOR-SAGEAN ✓ · REFACTOR-JSONB-CONVERTER ✓ · BUG-JACKSON-ACCESSORNAMING ✓ · REFACTOR-TISCH-ZUGRIFF ✓
+
+Nächste offene Task:
+
+1. **REFACTOR-TISCHVERWALTUNG** — Konfig-Extraktion (Vorbedingung REFACTOR-TISCH-ZUGRIFF erfüllt)
 
 ---
 
@@ -113,7 +112,7 @@ Siehe vollständigen Bericht `specs/review-2026-05-28.md`. Bestätigte, **nicht*
 | Klasse | Zeilen | Hinweis |
 |---|---|---|
 | `JsonbConverter.java` | 917 | REFACTOR-JSONB-CONVERTER erledigt (Dead-Code entfernt); optionale Generik offen |
-| `TischVerwaltungsService.java` | 542 | → REFACTOR-TISCHVERWALTUNG |
+| `TischVerwaltungsService.java` | 508 | → REFACTOR-TISCHVERWALTUNG (Konfig-Extraktion) |
 | `PartieStandAntwort.java` | 529 | durch >10 nested Wire-Format-DTOs begründet — kein Rückstand |
 | `Spiel.java` | 526 | Domain-Komplexität, REFACTOR-DOMAIN erledigt |
 | `StandardKiStrategie.java` | 504 | bei Bedarf |
@@ -131,7 +130,7 @@ Siehe vollständigen Bericht `specs/review-2026-05-28.md`. Bestätigte, **nicht*
 
 1. **Erste Datei zuerst:** Jeder Task enthält einen „Erste Datei zuerst"-Hinweis.
 2. **Pro Task ein Commit.** Keine Bündelung mehrerer Tasks in einem PR.
-3. **Bei Unklarheit: kleinste Änderung + `mvn test`.** Nicht spekulativ refaktorieren.
+3. **Bei Unklarheit: kleinste Änderung + `mvn clean test`.** Nicht spekulativ refaktorieren. (`clean` ist Pflicht — inkrementelle Builds maskieren Compile-Brüche durch veraltete `target/`-Klassen.)
 4. **Tests müssen vor jedem Commit grün sein.** Bei Bruch: ROLLBACK des aktuellen Versuchs, Wurzelursache verstehen, neu ansetzen.
 5. **Pure-JUnit-Tests bleiben pure JUnit.** `@SpringBootTest` darf NICHT zu einer Test-Klasse hinzugefügt werden, die heute ohne läuft.
 6. **VO bleibt VO wo möglich:** Postgres JSONB + Custom Converter ermöglichen immutable VOs.
