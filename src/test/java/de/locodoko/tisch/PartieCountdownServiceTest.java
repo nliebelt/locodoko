@@ -158,7 +158,7 @@ class PartieCountdownServiceTest {
         final List<TischId> autoStartAufrufe = new ArrayList<>();
 
         SpionTischVerwaltungsService() {
-            super(null, null, null, null, null, null);
+            super(null, null, null, null, null, null, null);
         }
 
         @Override

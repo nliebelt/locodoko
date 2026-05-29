@@ -6,9 +6,11 @@
 
 **Session 26 (2026-05-29):** Vollständiger Code- & Spec-Review (Bericht: `specs/review-2026-05-28.md`), Plan überarbeitet, dann 5 der 6 Review-Tasks im Build-Modus abgearbeitet und einzeln committet: DOC-PUNKTE-HINWEISE, SPEC-ARCH-HIERARCHIE, DOC-AGENTS-DEDUP, REFACTOR-SAGEAN, REFACTOR-JSONB-CONVERTER (Dead-Code: 1131→917 Z.). `mvn test` nach jeder Code-Task grün. Der abgeschlossene REFACTOR-DOMAIN-Block (Session 17–25) ist im Archiv.
 
-**Nächster Schritt:** Nur noch `REFACTOR-TISCHVERWALTUNG` offen (struktureller Service-Split, Risiko mittel). Empfohlener erster Schritt laut Task: Konfigurations-Methoden (`ladeKonfiguration`, `aktualisiereKonfiguration`, `gibPresets`) in `TischKonfigurationsService` extrahieren, Controller-Aufrufer anpassen, pro Extraktion ein Commit + `mvn test`.
+**Wichtig (Session 26):** Der Clean-Build (`mvn clean package`/`verify`) war vorbestehend gebrochen (Jackson-API-Drift in `JsonbConverter`), maskiert durch inkrementelle `mvn test`-Läufe mit stale `target/`. Behoben via `BUG-JACKSON-ACCESSORNAMING`. **Lehre:** Validierung künftig mit `mvn clean test` (nicht nur `mvn test`), sonst bleiben Compile-Brüche unsichtbar.
 
-**Offene Fragen für User:** `REFACTOR-TISCHVERWALTUNG` analysiert — der „kleine" Konfig-Schnitt ist durch stark geteilte private Helfer blockiert (Details im Task). Empfehlung: erst VORTASK `REFACTOR-TISCH-ZUGRIFF` (geteilte Helfer → Collaborator), dann Konfig-Extraktion — oder angesichts A2-Priorität „niedrig" vorerst lassen. SMOKE-UI-1 bleibt user-getrieben.
+**Nächster Schritt:** `REFACTOR-TISCHVERWALTUNG` — Konfig-Extraktion ist jetzt durch die erledigte VORTASK `REFACTOR-TISCH-ZUGRIFF` entsperrt und kann sauber als eigene Iteration erfolgen.
+
+**Offene Fragen für User:** Keine. SMOKE-UI-1 bleibt user-getrieben.
 
 ## Legende
 
@@ -75,15 +77,21 @@
 
   **DoD:** Datei deutlich < 1131 Z., keine Verhaltensänderung. `PartieStandAntwortWireFormatTest` + alle JSONB-Roundtrip-Tests + `mvn test` grün. **Risiko:** mittel — pro Typ ein Schritt, Tests zwischen jedem Schritt.
 
-- [ ] **REFACTOR-TISCHVERWALTUNG** — `TischVerwaltungsService` (542 Z., 14 public-Methoden) aufteilen.
+- [x] **BUG-JACKSON-ACCESSORNAMING** — Clean-Build repariert (vorbestehend, beim TischZugriff-Refactor entdeckt).
 
-  Der Service mischt Tisch-Lebenszyklus, Konfiguration und Beitritt/Schnellstart/Einladung. Architektur-Prinzip 9 (≤ ~300 Z.) verletzt.
+  `JsonbConverter.NurEchteIsGetterStrategie(Provider)` (aus REFACTOR-DOMAIN-6) kompilierte nicht gegen Jackson 2.21.2: `DefaultAccessorNamingStrategy` hat keinen no-arg-Konstruktor mehr, und `Provider.forDeserialization/forSerialization` existieren nicht. `mvn clean compile` war gebrochen — maskiert dadurch, dass `mvn test` inkrementell eine veraltete `.class` aus `target/` wiederverwendete. **Fix:** Provider auf `AccessorNamingStrategy.Provider` (forPOJO/forBuilder/forRecord) umgestellt, Strategie delegiert an die Standardstrategie und überschreibt nur `findNameForIsGetter`. `mvn clean test` grün.
 
-  **Erste Datei zuerst:** `src/main/java/de/locodoko/tisch/TischVerwaltungsService.java` — Verantwortlichkeiten gruppieren, die kleinste kohärente Einheit zuerst extrahieren (Konfiguration: `ladeKonfiguration`, `aktualisiereKonfiguration`, `gibPresets` → `TischKonfigurationsService`). Aufrufer in `TischController`/`PartieController` umstellen. Pro Extraktion ein Commit + `mvn test`.
+- [x] **REFACTOR-TISCH-ZUGRIFF** — Geteilte Lade-/Guard-Helfer in `@Component TischZugriff` extrahiert (VORTASK für die Konfig-Extraktion).
 
-  **DoD:** Jede resultierende Klasse ≤ ~300 Z.; alle Aufrufer angepasst; `cd /home/agent/workspace && mvn test` grün. **Risiko:** mittel.
+  `ladeTischEntity`, `ladeTischEntityMitSperre`, `ladeSpieler`, `pruefeWartendenTisch` aus `TischVerwaltungsService` (542 → 508 Z.) in `TischZugriff` (63 Z.) gezogen. **Bonus:** `SpielAktionsService` hatte eigene Duplikate von `ladeTischEntity`/`ladeSpieler` — ebenfalls auf `TischZugriff` umgestellt, die verwaiste `spielerRepository`-Dependency entfernt. Test-Spy `SpionTischVerwaltungsService` an neuen Konstruktor angepasst. `mvn clean test` grün.
 
-  **Befund Session 26 (blockiert „kleinen" Schnitt):** Die Konfig-Methoden teilen stark genutzte private Helfer mit dem restlichen Service — `ladeTischEntity` (12×), `ladeTischEntityMitSperre` (9×), `ladeSpieler` (9×), `veroeffentlicheTischAktualisierung` (9×), `pruefeWartendenTisch` (5×) — plus `listeOffeneTische()`. Eine duplikationsfreie Konfig-Extraktion erfordert daher **zuerst** das Herausziehen dieser geteilten Lade-/Guard-/Publish-Helfer in einen gemeinsamen Collaborator (z.B. `@Component TischZugriff` + `TischEreignisVeroeffentlichung`), was ~12 Aufrufstellen im Service berührt. → **Empfohlener Zuschnitt: VORTASK `REFACTOR-TISCH-ZUGRIFF`** (geteilte Helfer in Collaborator extrahieren, alle Aufrufer in TVS umstellen, `mvn test`), **dann** `TischKonfigurationsService` extrahieren. Beide je eigene Iteration. Ohne diese Vortask würde der Split Helfer duplizieren (verletzt „keine Duplikate").
+- [ ] **REFACTOR-TISCHVERWALTUNG** — `TischVerwaltungsService` (jetzt 508 Z.) weiter aufteilen (Konfiguration extrahieren).
+
+  **Vorbedingung erfüllt:** `REFACTOR-TISCH-ZUGRIFF` ist erledigt — die geteilten Helfer liegen jetzt in `TischZugriff`, eine Konfig-Extraktion dupliziert daher nichts mehr.
+
+  **Erste Datei zuerst:** `src/main/java/de/locodoko/tisch/TischVerwaltungsService.java` — `ladeKonfiguration`, `aktualisiereKonfiguration`, `gibPresets` → neuer `TischKonfigurationsService` (Deps: `TischZugriff`, `TischRepository`, `TischEchtzeitService`; für die Liste-Aktualisierung `listeOffeneTische()` wiederverwenden). Aufrufer in `TischController` (Z. 66, 219, 244) umstellen. Pro Extraktion ein Commit + `mvn clean test`.
+
+  **DoD:** Jede resultierende Klasse ≤ ~300 Z.; alle Aufrufer angepasst; `cd /home/agent/workspace && mvn clean test` grün. **Risiko:** mittel.
 
 ### Offen — user-getrieben
 

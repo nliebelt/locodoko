@@ -20,7 +20,6 @@ import de.locodoko.partie.ereignisse.NaechsterSpielerErwartet;
 import de.locodoko.partie.ereignisse.VorbehaltErwartet;
 import de.locodoko.spieler.SpielerEntity;
 import de.locodoko.spieler.SpielerId;
-import de.locodoko.spieler.SpielerRepository;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -36,22 +35,22 @@ public class SpielAktionsService {
 
     private final TischRepository tischRepository;
     private final PartieRepository partieRepository;
-    private final SpielerRepository spielerRepository;
     private final ApplicationEventPublisher eventPublisher;
     private final TischEchtzeitService tischEchtzeitService;
+    private final TischZugriff tischZugriff;
 
     public SpielAktionsService(
         TischRepository tischRepository,
         PartieRepository partieRepository,
-        SpielerRepository spielerRepository,
         ApplicationEventPublisher eventPublisher,
-        TischEchtzeitService tischEchtzeitService
+        TischEchtzeitService tischEchtzeitService,
+        TischZugriff tischZugriff
     ) {
         this.tischRepository = tischRepository;
         this.partieRepository = partieRepository;
-        this.spielerRepository = spielerRepository;
         this.eventPublisher = eventPublisher;
         this.tischEchtzeitService = tischEchtzeitService;
+        this.tischZugriff = tischZugriff;
     }
 
     @Transactional(readOnly = true)
@@ -91,7 +90,7 @@ public class SpielAktionsService {
         }
         MDC.put("tischId", tischId.toString());
         try {
-            SpielerEntity verwalteterSpieler = ladeSpieler(SpielerId.von(spieler.id()));
+            SpielerEntity verwalteterSpieler = tischZugriff.ladeSpieler(SpielerId.von(spieler.id()));
             TischEntity tisch = ladeAktivenTischMitSpieler(tischId, verwalteterSpieler);
             Spiel laufendesSpiel = ladeLaufendesSpiel(tisch.partie());
             SpielerPosition position = spielerPositionVon(tisch, verwalteterSpieler);
@@ -121,7 +120,7 @@ public class SpielAktionsService {
     public PartieStandAntwort verarbeiteArmutAntwort(TischId tischId, SpielerEntity spieler, List<String> kartenIds, boolean angenommen) {
         MDC.put("tischId", tischId.toString());
         try {
-            SpielerEntity verwalteterSpieler = ladeSpieler(SpielerId.von(spieler.id()));
+            SpielerEntity verwalteterSpieler = tischZugriff.ladeSpieler(SpielerId.von(spieler.id()));
             TischEntity tisch = ladeAktivenTischMitSpieler(tischId, verwalteterSpieler);
             Spiel laufendesSpiel = ladeLaufendesSpiel(tisch.partie());
             SpielerPosition position = spielerPositionVon(tisch, verwalteterSpieler);
@@ -158,7 +157,7 @@ public class SpielAktionsService {
         MDC.put("tischId", tischId.toString());
         try {
             LOGGER.debug("AKTION spieleKarte [spielerId={}, karteId={}]", spieler.id(), karteId);
-            SpielerEntity verwalteterSpieler = ladeSpieler(SpielerId.von(spieler.id()));
+            SpielerEntity verwalteterSpieler = tischZugriff.ladeSpieler(SpielerId.von(spieler.id()));
             TischEntity tisch = ladeAktivenTischMitSpieler(tischId, verwalteterSpieler);
             Spiel laufendesSpiel = ladeLaufendesSpiel(tisch.partie());
             SpielerPosition position = spielerPositionVon(tisch, verwalteterSpieler);
@@ -206,7 +205,7 @@ public class SpielAktionsService {
         }
         MDC.put("tischId", tischId.toString());
         try {
-            SpielerEntity verwalteterSpieler = ladeSpieler(SpielerId.von(spieler.id()));
+            SpielerEntity verwalteterSpieler = tischZugriff.ladeSpieler(SpielerId.von(spieler.id()));
             TischEntity tisch = ladeAktivenTischMitSpieler(tischId, verwalteterSpieler);
             Spiel laufendesSpiel = ladeLaufendesSpiel(tisch.partie());
             SpielerPosition position = spielerPositionVon(tisch, verwalteterSpieler);
@@ -324,7 +323,7 @@ public class SpielAktionsService {
     }
 
     private TischEntity ladeAktivenTischMitSpieler(TischId tischId, SpielerEntity spieler) {
-        TischEntity tisch = ladeTischEntity(tischId);
+        TischEntity tisch = tischZugriff.ladeTischEntity(tischId);
         if (!tisch.enthaeltSpieler(spieler)) {
             throw new SpielverwaltungKonfliktException("SPIELER_NICHT_AM_TISCH", "Der Spieler sitzt nicht an diesem Tisch.");
         }
@@ -334,14 +333,6 @@ public class SpielAktionsService {
         return tisch;
     }
 
-    private TischEntity ladeTischEntity(TischId tischId) {
-        return tischRepository.findById(tischId)
-            .orElseThrow(() -> new SpielverwaltungNichtGefundenException(
-                "TISCH_NICHT_GEFUNDEN",
-                "Es wurde kein Tisch mit der ID " + tischId + " gefunden."
-            ));
-    }
-
     private Spiel ladeLaufendesSpiel(Partie partie) {
         return partie.spiele().stream()
             .filter(spiel -> spiel.ergebnis().isEmpty())
@@ -349,14 +340,6 @@ public class SpielAktionsService {
             .orElseThrow(() -> new SpielverwaltungKonfliktException(
                 "SPIEL_NICHT_AKTIV",
                 "Die Partie besitzt aktuell kein laufendes Spiel."
-            ));
-    }
-
-    private SpielerEntity ladeSpieler(SpielerId spielerId) {
-        return spielerRepository.findById(spielerId)
-            .orElseThrow(() -> new SpielverwaltungNichtGefundenException(
-                "SPIELER_NICHT_GEFUNDEN",
-                "Es wurde kein Spieler mit der ID " + spielerId + " gefunden."
             ));
     }
 

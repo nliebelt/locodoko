@@ -32,6 +32,7 @@ public class TischVerwaltungsService {
     private final KiSpielerFabrik kiSpielerFabrik;
     private final ApplicationEventPublisher eventPublisher;
     private final TischEchtzeitService tischEchtzeitService;
+    private final TischZugriff tischZugriff;
 
     public TischVerwaltungsService(
         TischRepository tischRepository,
@@ -39,7 +40,8 @@ public class TischVerwaltungsService {
         SpielerRepository spielerRepository,
         KiSpielerFabrik kiSpielerFabrik,
         ApplicationEventPublisher eventPublisher,
-        TischEchtzeitService tischEchtzeitService
+        TischEchtzeitService tischEchtzeitService,
+        TischZugriff tischZugriff
     ) {
         this.tischRepository = tischRepository;
         this.partieRepository = partieRepository;
@@ -47,6 +49,7 @@ public class TischVerwaltungsService {
         this.kiSpielerFabrik = kiSpielerFabrik;
         this.eventPublisher = eventPublisher;
         this.tischEchtzeitService = tischEchtzeitService;
+        this.tischZugriff = tischZugriff;
     }
 
     @Transactional(readOnly = true)
@@ -60,7 +63,7 @@ public class TischVerwaltungsService {
 
     @Transactional
     public TischAntwort erstelleTisch(SpielerEntity spieler, TischErstellenAnfrage anfrage) {
-        SpielerEntity verwalteterSpieler = ladeSpieler(SpielerId.von(spieler.id()));
+        SpielerEntity verwalteterSpieler = tischZugriff.ladeSpieler(SpielerId.von(spieler.id()));
         pruefeDassSpielerAnKeinemTischSitzt(verwalteterSpieler);
 
         TischkonfigurationEmbeddable konfiguration;
@@ -116,10 +119,10 @@ public class TischVerwaltungsService {
 
     @Transactional
     public TischAntwort betreteTisch(TischId tischId, SpielerEntity spieler) {
-        SpielerEntity verwalteterSpieler = ladeSpieler(SpielerId.von(spieler.id()));
+        SpielerEntity verwalteterSpieler = tischZugriff.ladeSpieler(SpielerId.von(spieler.id()));
         pruefeDassSpielerAnKeinemTischSitzt(verwalteterSpieler);
-        TischEntity tisch = ladeTischEntityMitSperre(tischId);
-        pruefeWartendenTisch(tisch, "TISCH_BEREITS_GESTARTET", "Ein gestarteter Tisch kann nicht mehr betreten werden.");
+        TischEntity tisch = tischZugriff.ladeTischEntityMitSperre(tischId);
+        tischZugriff.pruefeWartendenTisch(tisch, "TISCH_BEREITS_GESTARTET", "Ein gestarteter Tisch kann nicht mehr betreten werden.");
         if (tisch.zugangsmodus() == Zugangsmodus.PRIVAT && verwalteterSpieler.istGast()) {
             throw new SpielerZugriffVerweigertException(
                 "Private Tische koennen nur von eingeloggten Spielern betreten werden."
@@ -140,8 +143,8 @@ public class TischVerwaltungsService {
 
     @Transactional
     public BestaetigungAntwort verlasseTisch(TischId tischId, SpielerEntity spieler) {
-        SpielerEntity verwalteterSpieler = ladeSpieler(SpielerId.von(spieler.id()));
-        TischEntity tisch = ladeTischEntityMitSperre(tischId);
+        SpielerEntity verwalteterSpieler = tischZugriff.ladeSpieler(SpielerId.von(spieler.id()));
+        TischEntity tisch = tischZugriff.ladeTischEntityMitSperre(tischId);
 
         if (!tisch.enthaeltSpieler(verwalteterSpieler)) {
             throw new SpielverwaltungKonfliktException(
@@ -180,8 +183,8 @@ public class TischVerwaltungsService {
      */
     @Transactional
     public BestaetigungAntwort kickeSpieler(TischId tischId, SpielerId zielSpielerId, SpielerEntity gastgeber) {
-        SpielerEntity verwalteterGastgeber = ladeSpieler(SpielerId.von(gastgeber.id()));
-        TischEntity tisch = ladeTischEntityMitSperre(tischId);
+        SpielerEntity verwalteterGastgeber = tischZugriff.ladeSpieler(SpielerId.von(gastgeber.id()));
+        TischEntity tisch = tischZugriff.ladeTischEntityMitSperre(tischId);
 
         if (!tisch.erstelltVon().id().equals(verwalteterGastgeber.id())) {
             throw new SpielverwaltungKonfliktException(
@@ -195,7 +198,7 @@ public class TischVerwaltungsService {
                 "Der Gastgeber kann sich nicht selbst kicken."
             );
         }
-        pruefeWartendenTisch(tisch, "KICK_IM_SPIEL", "Spieler koennen waehrend einer laufenden Partie nicht gekickt werden.");
+        tischZugriff.pruefeWartendenTisch(tisch, "KICK_IM_SPIEL", "Spieler koennen waehrend einer laufenden Partie nicht gekickt werden.");
 
         SpielerEntity zielSpieler = tisch.spieler().stream()
             .filter(s -> zielSpielerId.wert().equals(s.id()))
@@ -235,9 +238,9 @@ public class TischVerwaltungsService {
 
     @Transactional
     public TischAntwort starteTisch(TischId tischId, SpielerEntity spieler) {
-        SpielerEntity verwalteterSpieler = ladeSpieler(SpielerId.von(spieler.id()));
-        TischEntity tisch = ladeTischEntityMitSperre(tischId);
-        pruefeWartendenTisch(tisch, "TISCH_BEREITS_GESTARTET", "Der Tisch wurde bereits gestartet.");
+        SpielerEntity verwalteterSpieler = tischZugriff.ladeSpieler(SpielerId.von(spieler.id()));
+        TischEntity tisch = tischZugriff.ladeTischEntityMitSperre(tischId);
+        tischZugriff.pruefeWartendenTisch(tisch, "TISCH_BEREITS_GESTARTET", "Der Tisch wurde bereits gestartet.");
         if (!tisch.erstelltVon().id().equals(verwalteterSpieler.id())) {
             throw new SpielverwaltungKonfliktException(
                 "TISCH_START_NICHT_ERLAUBT",
@@ -280,8 +283,8 @@ public class TischVerwaltungsService {
      */
     @Transactional
     public BestaetigungAntwort starteNeuePartie(TischId tischId, SpielerEntity spieler) {
-        ladeSpieler(SpielerId.von(spieler.id())); // Session validieren
-        TischEntity tisch = ladeTischEntityMitSperre(tischId);
+        tischZugriff.ladeSpieler(SpielerId.von(spieler.id())); // Session validieren
+        TischEntity tisch = tischZugriff.ladeTischEntityMitSperre(tischId);
         if (tisch.status() != TischStatus.IM_SPIEL) {
             throw new SpielverwaltungKonfliktException(
                 "TISCH_NICHT_IM_SPIEL",
@@ -309,7 +312,7 @@ public class TischVerwaltungsService {
      */
     @Transactional
     public void starteNeuePartieAutomat(TischId tischId) {
-        TischEntity tisch = ladeTischEntityMitSperre(tischId);
+        TischEntity tisch = tischZugriff.ladeTischEntityMitSperre(tischId);
         if (tisch.status() != TischStatus.IM_SPIEL) {
             LOGGER.warn("Auto-Start abgebrochen: Tisch nicht IM_SPIEL [tischId={}]", tischId);
             return;
@@ -351,7 +354,7 @@ public class TischVerwaltungsService {
 
     @Transactional(readOnly = true)
     public TischKonfigurationDto ladeKonfiguration(TischId tischId) {
-        return TischKonfigurationDto.aus(ladeTischEntity(tischId).konfiguration());
+        return TischKonfigurationDto.aus(tischZugriff.ladeTischEntity(tischId).konfiguration());
     }
 
     @Transactional
@@ -360,9 +363,9 @@ public class TischVerwaltungsService {
         SpielerEntity spieler,
         TischKonfigurationDto konfiguration
     ) {
-        SpielerEntity verwalteterSpieler = ladeSpieler(SpielerId.von(spieler.id()));
-        TischEntity tisch = ladeTischEntityMitSperre(tischId);
-        pruefeWartendenTisch(
+        SpielerEntity verwalteterSpieler = tischZugriff.ladeSpieler(SpielerId.von(spieler.id()));
+        TischEntity tisch = tischZugriff.ladeTischEntityMitSperre(tischId);
+        tischZugriff.pruefeWartendenTisch(
             tisch,
             "TISCH_KONFIGURATION_GESPERRT",
             "Die Tischkonfiguration darf nach Spielbeginn nicht mehr geaendert werden."
@@ -392,12 +395,12 @@ public class TischVerwaltungsService {
      */
     @Transactional
     public TischAntwort schnellEinsteigen(SpielerEntity spieler) {
-        SpielerEntity verwalteterSpieler = ladeSpieler(SpielerId.von(spieler.id()));
+        SpielerEntity verwalteterSpieler = tischZugriff.ladeSpieler(SpielerId.von(spieler.id()));
         pruefeDassSpielerAnKeinemTischSitzt(verwalteterSpieler);
 
         TischEntity tisch = sucheOffenenTisch()
             .map(offenerTisch -> {
-                TischEntity gesperrt = ladeTischEntityMitSperre(TischId.von(offenerTisch.id()));
+                TischEntity gesperrt = tischZugriff.ladeTischEntityMitSperre(TischId.von(offenerTisch.id()));
                 if (gesperrt.istVoll() || gesperrt.status() != TischStatus.WARTEND) {
                     return null;
                 }
@@ -447,7 +450,7 @@ public class TischVerwaltungsService {
 
     @Transactional(readOnly = true)
     public TischAntwort ladeTisch(TischId tischId) {
-        return TischAntwort.aus(ladeTischEntity(tischId));
+        return TischAntwort.aus(tischZugriff.ladeTischEntity(tischId));
     }
 
     /**
@@ -486,37 +489,6 @@ public class TischVerwaltungsService {
             });
     }
 
-    TischEntity ladeTischEntity(TischId tischId) {
-        return tischRepository.findById(tischId)
-            .orElseThrow(() -> new SpielverwaltungNichtGefundenException(
-                "TISCH_NICHT_GEFUNDEN",
-                "Es wurde kein Tisch mit der ID " + tischId + " gefunden."
-            ));
-    }
-
-    /**
-     * Laedt einen Tisch mit exklusiver Datenbanksperre (PESSIMISTIC_WRITE).
-     * Muss fuer alle schreibenden Operationen verwendet werden, die zuerst den
-     * Tischzustand pruefen (z.B. istVoll, Status WARTEND) und dann mutieren —
-     * sonst koennen zwei gleichzeitige Requests beide die Pruefung bestehen und
-     * den Tisch in einen inkonsistenten Zustand bringen.
-     */
-    private TischEntity ladeTischEntityMitSperre(TischId tischId) {
-        return tischRepository.findByIdWithLock(tischId)
-            .orElseThrow(() -> new SpielverwaltungNichtGefundenException(
-                "TISCH_NICHT_GEFUNDEN",
-                "Es wurde kein Tisch mit der ID " + tischId + " gefunden."
-            ));
-    }
-
-    private SpielerEntity ladeSpieler(SpielerId spielerId) {
-        return spielerRepository.findById(spielerId)
-            .orElseThrow(() -> new SpielverwaltungNichtGefundenException(
-                "SPIELER_NICHT_GEFUNDEN",
-                "Es wurde kein Spieler mit der ID " + spielerId + " gefunden."
-            ));
-    }
-
     private void pruefeDassSpielerAnKeinemTischSitzt(SpielerEntity spieler) {
         tischRepository.findBySpieler_Id(SpielerId.von(spieler.id())).ifPresent(tisch -> {
             throw new SpielverwaltungKonfliktException(
@@ -524,12 +496,6 @@ public class TischVerwaltungsService {
                 "Ein Spieler darf gleichzeitig nur an einem Tisch sitzen."
             );
         });
-    }
-
-    private void pruefeWartendenTisch(TischEntity tisch, String fehlerCode, String nachricht) {
-        if (tisch.status() != TischStatus.WARTEND) {
-            throw new SpielverwaltungKonfliktException(fehlerCode, nachricht);
-        }
     }
 
     private Spiel erzeugeErstesSpiel(TischEntity tisch) {
