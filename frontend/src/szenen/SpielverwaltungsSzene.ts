@@ -217,14 +217,17 @@ export class SpielverwaltungsSzene extends Phaser.Scene {
       fontFamily: FONT_FAMILY, fontSize: '18px', color: hervorgehoben ? FARBE_GOLD_WARM_CSS : TEXT_HELL_CSS
     }).setOrigin(0, 0.5);
     c.add(nameTxt);
+    this.kuerzeText(nameTxt, 240);
 
-    const spielerTxt = this.add.text(30, 0, hervorgehoben ? 'Laufend' : `${tisch.spielerAnzahl}/4`, {
-      fontFamily: FONT_FAMILY, fontSize: '16px', color: TEXT_HELL_CSS
-    }).setOrigin(0, 0.5);
-    c.add(spielerTxt);
+    if (!hervorgehoben) {
+      const spielerTxt = this.add.text(10, 0, `${tisch.spielerAnzahl}/4`, {
+        fontFamily: FONT_FAMILY, fontSize: '16px', color: TEXT_HELL_CSS
+      }).setOrigin(0, 0.5);
+      c.add(spielerTxt);
+    }
 
     const btn = new PhaserButton(this, {
-      x: 200, y: 0, text: buttonText, typ: hervorgehoben ? 'secondary' : 'primary', breite: 150, hoehe: 36,
+      x: 175, y: 0, text: buttonText, typ: hervorgehoben ? 'secondary' : 'primary', breite: 215, hoehe: 36,
       callback: () => {
         if (hervorgehoben) {
           void appStore.reconnecteTisch(tisch.id);
@@ -234,6 +237,15 @@ export class SpielverwaltungsSzene extends Phaser.Scene {
       }
     });
     c.add(btn);
+  }
+
+  private kuerzeText(txt: Phaser.GameObjects.Text, maxBreite: number): void {
+    if (txt.width <= maxBreite) return;
+    let s = txt.text;
+    while (s.length > 1 && txt.width > maxBreite) {
+      s = s.slice(0, -1);
+      txt.setText(s + '…');
+    }
   }
 
   private zeigeErstelleTischModal(zustand: AppZustand): void {

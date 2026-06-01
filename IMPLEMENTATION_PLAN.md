@@ -4,7 +4,7 @@
 
 ## Notiz
 
-**Session 29 (2026-06-01):** `BUG-EINSTELLUNGEN-MODAL` behoben. Ursache: In `TischInputHandler.verarbeiteTastatureingabe` hatte der `vorbehaltAktiv`-Check absoluten Vorrang — da das Spiel im Turbo-Modus innerhalb von Sekunden zur Vorbehalt-Phase springt, wurde 's' an `verarbeiteVorbehaltTaste` weitergeleitet und machte nichts. Fix: Navigation-Shortcuts ('i', 's') und Modal-Close-Shortcuts (Escape) VOR den Vorbehalt-Check verschoben, damit sie in jedem Spielzustand funktionieren. Neuer Regressions-Test in `TischInputHandler.test.ts`. Vision-Loop grün, Screenshot 08 zeigt jetzt das Einstellungen-Modal korrekt. Nächster Task: `BUG-LOBBY-TISCHEINTRAG`.
+**Session 29 (2026-06-01):** `BUG-EINSTELLUNGEN-MODAL` + `BUG-LOBBY-TISCHEINTRAG` behoben. Modal-Fix: In `TischInputHandler` Navigation-Shortcuts ('i', 's') vor `vorbehaltAktiv`-Check verschoben — im Turbo-Modus war die Vorbehalt-Phase bereits aktiv beim 's'-Druck. Lobby-Fix: Button-Text "Beitreten"/"Fortsetzen" lief dunkelgrün (#14361f) auf dunklem Hintergrund aus dem 150px-Button über (Zeichenbreite ~20.5px → 9 Zeichen = 185px). Behoben: `spielerTxt` auf x=10, nur für nicht-hervorgehobene Einträge; Button x=175, breite=215. Neuer Regressions-Test im Handler. Vision-Loop grün, alle Screenshots ohne Overflow. **Alle Tasks erledigt.**
 
 **Session 28 (2026-06-01):** `VISION-SMOKE-1` abgeschlossen. Frontend neu gebaut (uncommittete Bridge-Erweiterung `drueckeSzenenButton` + SpielverwaltungsSzene Fokus-Fix). Vision-Loop grün (1 passed, 37.4s). Zwei visuelle Mängel entdeckt und als BUG-Tasks eingetragen: `BUG-EINSTELLUNGEN-MODAL` und `BUG-LOBBY-TISCHEINTRAG`.
 
@@ -121,7 +121,7 @@ Siehe vollständigen Bericht `specs/review-2026-05-28.md`. Bestätigte, **nicht*
 
   **DoD:** `08-einstellungen-modal.png` zeigt ein sichtbares Settings-Overlay; Test bleibt grün.
 
-- [ ] **BUG-LOBBY-TISCHEINTRAG** — In `01-lobby.png` / `11-offene-tische.png`: Tischeintrag-Text „Schnellstart von Spieler…" wird abgeschnitten und überlappt mit dem „Beitreten"-Button; Spieler-ID-Zahl rendert nicht vollständig.
+- [x] **BUG-LOBBY-TISCHEINTRAG** — In `01-lobby.png` / `11-offene-tische.png`: Tischeintrag-Text „Schnellstart von Spieler…" wird abgeschnitten und überlappt mit dem „Beitreten"-Button; Spieler-ID-Zahl rendert nicht vollständig.
 
   Der Tischlisten-Eintrag zeigt den Namen linksbündig und den „Beitreten"-Button rechtsbündig, aber die Breite des Textfeldes überschreitet die Spaltenbreite. Könnte ein fehlendes `clip`/`overflow: hidden` oder eine falsch berechnete Zeilenbreite in `SpielverwaltungsSzene.ts` sein.
 
