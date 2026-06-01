@@ -55,14 +55,43 @@ export class TischInputHandler {
       return;
     }
 
-    // 1. Vorbehalt-Dialog hat absoluten Vorrang — keine anderen Shortcuts moeglich
+    // 1. Navigationskuerzel (immer verfuegbar, auch waehrend Vorbehalt/Armut): I=Seitenlade, S=Einstellungen
+    if (e.key === 'i' || e.key === 'I') {
+      this.kontext.togglSeitenlade();
+      e.preventDefault();
+      return;
+    }
+    if (e.key === 's' || e.key === 'S') {
+      this.kontext.togglEinstellungen();
+      e.preventDefault();
+      return;
+    }
+
+    // 2. Seitenlade (Phaser): Escape schliesst
+    if (this.kontext.isSeitenladeOffen() && e.key === 'Escape') {
+      this.kontext.togglSeitenlade();
+      e.preventDefault();
+      return;
+    }
+
+    // 3. Einstellungs-Modal (Phaser): Escape schliesst
+    if (this.kontext.isEinstellungenOffen()) {
+      if (e.key === 'Escape') {
+        this.kontext.togglEinstellungen();
+        e.preventDefault();
+      }
+      // Keine Focus-Trap fuer Phaser-Modal noetig/moeglich via DOM
+      return;
+    }
+
+    // 4. Vorbehalt-Dialog hat absoluten Vorrang — keine anderen Shortcuts moeglich
     const vorbehaltAktiv = modell.aktuellerSpieler === SPIELER_POSITION.SUED && modell.moeglicheVorbehalte.length > 0;
     if (vorbehaltAktiv) {
       this.verarbeiteVorbehaltTaste(e, modell);
       return;
     }
 
-    // 2. Armut-Antwort-Shortcuts (Annehmen / Ablehnen) — direkt ohne DOM-Button-Suche
+    // 5. Armut-Antwort-Shortcuts (Annehmen / Ablehnen) — direkt ohne DOM-Button-Suche
     if (modell.aktuellerSpieler === SPIELER_POSITION.SUED
         && modell.armutAktion?.modus === 'ANTWORTEN'
         && !this.kontext.isArmutAnnahmeAktiv()) {
@@ -84,35 +113,6 @@ export class TischInputHandler {
         e.preventDefault();
         return;
       }
-    }
-
-    // 3. Seitenlade (Phaser): Escape schliesst
-    if (this.kontext.isSeitenladeOffen() && e.key === 'Escape') {
-      this.kontext.togglSeitenlade();
-      e.preventDefault();
-      return;
-    }
-
-    // 6. Einstellungs-Modal (Phaser): Escape schliesst
-    if (this.kontext.isEinstellungenOffen()) {
-      if (e.key === 'Escape') {
-        this.kontext.togglEinstellungen();
-        e.preventDefault();
-      }
-      // Keine Focus-Trap fuer Phaser-Modal noetig/moeglich via DOM
-      return;
-    }
-
-    // 6. Navigationskuerzel: I=Seitenlade, S=Einstellungen
-    if (e.key === 'i' || e.key === 'I') {
-      this.kontext.togglSeitenlade();
-      e.preventDefault();
-      return;
-    }
-    if (e.key === 's' || e.key === 'S') {
-      this.kontext.togglEinstellungen();
-      e.preventDefault();
-      return;
     }
 
     // 7. Ansage-Kuerzel (nur moeglich wenn am Zug und Karten vorhanden)

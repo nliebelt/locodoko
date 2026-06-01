@@ -4,15 +4,11 @@
 
 ## Notiz
 
-**Session 26 (2026-05-29):** Vollständiger Code- & Spec-Review (Bericht: `specs/review-2026-05-28.md`), Plan überarbeitet, dann 5 der 6 Review-Tasks im Build-Modus abgearbeitet und einzeln committet: DOC-PUNKTE-HINWEISE, SPEC-ARCH-HIERARCHIE, DOC-AGENTS-DEDUP, REFACTOR-SAGEAN, REFACTOR-JSONB-CONVERTER (Dead-Code: 1131→917 Z.). `mvn test` nach jeder Code-Task grün. Der abgeschlossene REFACTOR-DOMAIN-Block (Session 17–25) ist im Archiv.
-
-**Wichtig (Session 26):** Der Clean-Build (`mvn clean package`/`verify`) war vorbestehend gebrochen (Jackson-API-Drift in `JsonbConverter`), maskiert durch inkrementelle `mvn test`-Läufe mit stale `target/`. Behoben via `BUG-JACKSON-ACCESSORNAMING`. **Lehre:** Validierung künftig mit `mvn clean test` (nicht nur `mvn test`), sonst bleiben Compile-Brüche unsichtbar.
-
-**Session 27 (2026-05-29):** `REFACTOR-TISCHVERWALTUNG` abgeschlossen. `gibPresets`, `ladeKonfiguration`, `aktualisiereKonfiguration` aus `TischVerwaltungsService` (509 → ~470 Z.) in neuen `@Service TischKonfigurationsService` extrahiert (Deps: `TischZugriff`, `TischRepository`, `TischEchtzeitService`). `TischController` auf Constructor-Injection des neuen Service umgestellt. `mvn clean test` grün.
+**Session 29 (2026-06-01):** `BUG-EINSTELLUNGEN-MODAL` behoben. Ursache: In `TischInputHandler.verarbeiteTastatureingabe` hatte der `vorbehaltAktiv`-Check absoluten Vorrang — da das Spiel im Turbo-Modus innerhalb von Sekunden zur Vorbehalt-Phase springt, wurde 's' an `verarbeiteVorbehaltTaste` weitergeleitet und machte nichts. Fix: Navigation-Shortcuts ('i', 's') und Modal-Close-Shortcuts (Escape) VOR den Vorbehalt-Check verschoben, damit sie in jedem Spielzustand funktionieren. Neuer Regressions-Test in `TischInputHandler.test.ts`. Vision-Loop grün, Screenshot 08 zeigt jetzt das Einstellungen-Modal korrekt. Nächster Task: `BUG-LOBBY-TISCHEINTRAG`.
 
 **Session 28 (2026-06-01):** `VISION-SMOKE-1` abgeschlossen. Frontend neu gebaut (uncommittete Bridge-Erweiterung `drueckeSzenenButton` + SpielverwaltungsSzene Fokus-Fix). Vision-Loop grün (1 passed, 37.4s). Zwei visuelle Mängel entdeckt und als BUG-Tasks eingetragen: `BUG-EINSTELLUNGEN-MODAL` und `BUG-LOBBY-TISCHEINTRAG`.
 
-**Alle geplanten Tasks erledigt.** Entdeckte Bugs stehen unter „Entdeckungen" für die nächste Iteration bereit.
+**Session 27 (2026-05-29):** `REFACTOR-TISCHVERWALTUNG` abgeschlossen. `gibPresets`, `ladeKonfiguration`, `aktualisiereKonfiguration` aus `TischVerwaltungsService` (509 → ~470 Z.) in neuen `@Service TischKonfigurationsService` extrahiert (Deps: `TischZugriff`, `TischRepository`, `TischEchtzeitService`). `TischController` auf Constructor-Injection des neuen Service umgestellt. `mvn clean test` grün.
 
 ## Legende
 
@@ -117,7 +113,7 @@ Siehe vollständigen Bericht `specs/review-2026-05-28.md`. Bestätigte, **nicht*
 
 ### Visuelle Mängel aus VISION-SMOKE-1 (Session 28, 2026-06-01)
 
-- [ ] **BUG-EINSTELLUNGEN-MODAL** — `08-einstellungen-modal.png` ist visuell identisch mit `07-seitenlade-offen.png`; das Einstellungen-Modal öffnet sich nach `s`-Tastendruck nicht sichtbar.
+- [x] **BUG-EINSTELLUNGEN-MODAL** — `08-einstellungen-modal.png` ist visuell identisch mit `07-seitenlade-offen.png`; das Einstellungen-Modal öffnet sich nach `s`-Tastendruck nicht sichtbar.
 
   Gefunden im Vision-Loop. Der Test drückt `s` nach dem Schließen der Seitenlade (`i`-Toggle), wartet 1000ms und screenshottet — aber das Modal erscheint nicht. Mögliche Ursachen: (a) Fokus liegt nach Seitenlade-Schließen nicht mehr auf dem Canvas, sodass der Tastendruck nicht ankommt; (b) das Einstellungen-Modal hat kein eigenes Render-Element oder rendert hinter anderen Ebenen.
 

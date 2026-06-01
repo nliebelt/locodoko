@@ -62,6 +62,7 @@ test.describe('Vision Loop — UI Screenshots', () => {
     await page.keyboard.press('i');
 
     console.log('Opening Einstellungen...');
+    await page.locator('canvas').focus();
     await page.keyboard.press('s');
     await page.waitForTimeout(1000);
     await screenshot(page, '08-einstellungen-modal');

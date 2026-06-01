@@ -112,6 +112,13 @@ describe('TischInputHandler', () => {
     expect(mockKontext.togglSeitenlade).toHaveBeenCalledTimes(2);
   });
 
+  it('öffnet Einstellungen auch während aktiver Vorbehalt-Auswahl', () => {
+    mockModell.moeglicheVorbehalte = ['GESUND', 'HOCHZEIT'];
+    (handler as any).verarbeiteTastatureingabe(new KeyboardEvent('keydown', { key: 's' }));
+    expect(mockKontext.togglEinstellungen).toHaveBeenCalled();
+    expect(mockStore.meldeVorbehalt).not.toHaveBeenCalled();
+  });
+
   it('behandelt Armut-Antwort (A, N)', () => {
     mockModell.armutAktion = { modus: 'ANTWORTEN', kartenAnzahl: 0 };
     
