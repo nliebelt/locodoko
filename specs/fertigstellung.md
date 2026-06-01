@@ -48,8 +48,14 @@ Netcup 🇩🇪, Scaleway 🇫🇷. Plattformwahl bewusst aufgeschoben.
 7. **OPS-GRAFANA-MONITORING** — Grafana Cloud Free-Tier (Actuator + Micrometer + Prometheus).
    → eigene Spec `betrieb-monitoring.md`.
 8. **OPS-DOMAIN** — Domain + DNS + TLS (Reverse-Proxy/Let's Encrypt, OAuth-Redirect, WS-Origins).
-9. **DOC-LLM-WIKI** — LLM-zugängliche Wissensbasis aus den Specs (Karpathy-Stil): konsolidierter
-   Einstieg, eindeutige Begriffe, flache Hierarchie, explizite Querverweise.
+9. **DOC-DOCS-SITE** — Öffentliche Docs-/Wiki-Seite, damit Menschen außerhalb des GitHub-Kontexts
+   das Projekt verstehen/„lernen" können; zugleich LLM-tauglich (Karpathy: eindeutige Begriffe,
+   flache Hierarchie, explizite Querverweise). Empfohlen **MkDocs Material** (rendert die vorhandenen
+   Specs direkt, GitHub-Pages-Deploy); Alternativen Docusaurus/Starlight. Bindet den Metrik-Report ein.
+9a. **QA-CODE-METRICS** — Codebase mit Mess-/Analyse-Tooling vermessen (Größe `scc`/`cloc`; Java
+   JaCoCo/SpotBugs/PMD/Checkstyle + Modulith/ArchUnit; TS ESLint/`knip`/`madge`/`depcheck`;
+   Cross `lizard`; Dashboard SonarQube Community/SonarCloud). Ergebnis: Refactoring-Kandidaten als
+   Tasks **und** ein Report für die Docs-Seite.
 10. **FE-UI-FINAL-REVIEW** — finales UI/UX-Review; „nicht schöne" Stellen systematisch katalogisieren
     (Vision-Loop → Befunde als `FE-…`-Tasks). → ggf. `frontend-visuelles-design.md` präzisieren.
 11. **SPEC-RECHT** — Rechtstexte für DE-Betrieb: **Impressum (§5 DDG) und Datenschutzerklärung

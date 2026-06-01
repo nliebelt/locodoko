@@ -38,10 +38,11 @@ Produktreife & Specs (P4, Session 30 Teil 2 — zuerst als Spec erfassen):
 7. **SPEC-SQL-REVIEW** — kritisches Schema-Review vor erster echter DB (Normalform, Audit, Indizes)
 8. **OPS-GRAFANA-MONITORING** — Grafana Cloud Free-Tier (Actuator/Micrometer/Prometheus)
 9. **OPS-DOMAIN** — Domain + DNS + TLS (Reverse-Proxy, OAuth-Redirect, WS-Origins)
-10. **DOC-LLM-WIKI** — LLM-zugängliche Wissensbasis aus den Specs (Karpathy-Stil)
-11. **FE-UI-FINAL-REVIEW** — finales UI/UX-Review, Mängel katalogisieren
-12. **SPEC-RECHT** — Impressum + Datenschutz (Pflicht) + AGB, vor Live-Gang
-13. **OPS-EMAIL** — Email-Versand Registrierung/Passwort-Reset (niedrig, kein Blocker)
+10. **DOC-DOCS-SITE** — öffentliche Docs-/Wiki-Seite (MkDocs Material empf.), LLM-tauglich
+11. **QA-CODE-METRICS** — Code-Metriken/Static-Analysis → Refactoring-Kandidaten + Report fürs Wiki
+12. **FE-UI-FINAL-REVIEW** — finales UI/UX-Review, Mängel katalogisieren
+13. **SPEC-RECHT** — Impressum + Datenschutz (Pflicht) + AGB, vor Live-Gang
+14. **OPS-EMAIL** — Email-Versand Registrierung/Passwort-Reset (niedrig, kein Blocker)
 
 Entscheidungen: **DECISION-AUTH** ✓ beide behalten · **DECISION-LIZENZ** aufgeschoben (Steam-Frage offen, Tendenz Apache vs. proprietär/AGPL)
 
@@ -149,13 +150,29 @@ Entscheidungen: **DECISION-AUTH** ✓ beide behalten · **DECISION-LIZENZ** aufg
 
   **DoD:** Domain zeigt per HTTPS auf die App, OAuth-Redirect + WS-Origins konfiguriert. **Risiko:** niedrig. **[teilw. abhängig von Plattformwahl]**
 
-- [ ] **DOC-LLM-WIKI** — LLM-zugängliche Wissensbasis aus den Specs (Karpathy-Stil).
+- [ ] **DOC-DOCS-SITE** — Öffentliche Docs-/Wiki-Seite (zugleich LLM-tauglich, Karpathy-Stil).
 
-  Referenz: Karpathy-Gist (LLM-freundliche Doku). Ziel: die ~47 Specs für Mensch **und** LLM navigierbar machen — konsolidierter Einstieg, klare Querverweise, ggf. generierter Index/Wiki.
+  Zweck: Menschen außerhalb des GitHub-Kontexts sollen das Projekt verstehen/„lernen" können; gleichzeitig LLM-freundlich (eindeutige Begriffe, flache Hierarchie, explizite Querverweise, optional `llms.txt`/generiertes Bundle). Die ~47 Markdown-Specs liegen bereits passend vor.
 
-  **Erste Datei zuerst:** Konzept in `specs/README.md` erweitern oder neue `specs/llm-wiki.md` — Struktur festlegen (z.B. ein generiertes Single-File-Bundle aller Specs + Glossar + „Wo finde ich was"-Index; oder MkDocs/Docusaurus-Site). Karpathy-Prinzipien (eindeutige Begriffe, flache Hierarchie, explizite Verweise) anwenden.
+  **Empfehlung:** **MkDocs Material** (geringste Reibung — rendert die vorhandenen `specs/*.md` direkt, Volltextsuche, GitHub-Pages-Deploy). Alternativen: Docusaurus, Astro Starlight. Framework final offen.
 
-  **DoD:** Konzept-Spec vorhanden; (Build) generierter Wiki-/Bundle-Output. **Risiko:** niedrig.
+  **Erste Datei zuerst:** `mkdocs.yml` im Root (Navigation aus `specs/README.md` ableiten) — oder zuerst Konzept in neuer `specs/docs-site.md`. Karpathy-Prinzipien anwenden; den Code-Metrik-Report aus `QA-CODE-METRICS` als eigene Seite einbinden.
+
+  **DoD:** Docs-Seite baut lokal + als GitHub-Pages-Deploy; alle Specs navigierbar/durchsuchbar. **Risiko:** niedrig.
+
+- [ ] **QA-CODE-METRICS** — Codebase mit Mess-/Analyse-Tooling vermessen: Refactoring-Kandidaten + Report für die Docs-Seite.
+
+  Ziel: Größe, Komplexität, Duplikate, Coverage, Architektur sichtbar machen → konkrete `REFACTOR-…`/`FE-…`-Tasks ableiten **und** einen schönen Report fürs Wiki erzeugen.
+
+  **Werkzeuge (Vorschlag):**
+  - Größe/Sprachen: `scc` (oder `cloc`) — LOC, Komplexitätsindex, COCOMO.
+  - Java: JaCoCo (Coverage), SpotBugs, PMD (zykl. Komplexität), Checkstyle. Architektur: Spring-Modulith-Modularity-Tests / `jdeps` / ArchUnit.
+  - TS/Frontend: ESLint (vorhanden) + Komplexitätsregeln, `knip`/`ts-prune` (toter Code), `madge` (zyklische Abhängigkeiten + Graph), `depcheck` (ungenutzte Deps).
+  - Cross-Language: `lizard` (Komplexität). Gesamtbild: **SonarQube Community** (lokal via Docker) oder **SonarCloud** (frei für öffentliche Repos) — Maintainability, Duplikate, Tech-Debt, Hotspots in einem Dashboard.
+
+  **Erste Datei zuerst:** Tooling als Skript-Target (z.B. `scripts/metrics.sh`) + pom-Plugins; Ergebnis als Markdown/HTML-Report unter `docs/` für die Docs-Seite. Refactoring-Befunde als neue Tasks unter „Entdeckungen".
+
+  **DoD:** reproduzierbarer Metrik-Report erzeugt + in Docs-Seite eingebunden; mind. die Top-Refactoring-Kandidaten als Tasks erfasst. **Risiko:** niedrig (additiv, kein Produktivcode-Change).
 
 - [ ] **FE-UI-FINAL-REVIEW** — Finales UI/UX-Review; „nicht schöne" Stellen katalogisieren.
 
