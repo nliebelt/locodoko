@@ -42,5 +42,24 @@ window.__locodoko = {
   getAktuelleSzene: () => {
     const aktiveSzenen = spiel.scene.getScenes(true);
     return aktiveSzenen.length > 0 ? aktiveSzenen[0].scene.key : null;
-  }
+  },
+  drueckeSzenenButton: (name: string) => {
+    function sucheBtnRekursiv(items: Phaser.GameObjects.GameObject[]): boolean {
+      for (const item of items) {
+        if (item.name === name) {
+          const btn = item as unknown as { trigger?: () => void };
+          if (btn.trigger) { btn.trigger(); return true; }
+        }
+        const kinder = (item as unknown as { list?: Phaser.GameObjects.GameObject[] }).list;
+        if (kinder && kinder.length > 0 && sucheBtnRekursiv(kinder)) return true;
+      }
+      return false;
+    }
+    const aktiveSzenen = spiel.scene.getScenes(true);
+    for (const szene of aktiveSzenen) {
+      const items = (szene.children as unknown as { list: Phaser.GameObjects.GameObject[] }).list;
+      if (sucheBtnRekursiv(items)) return true;
+    }
+    return false;
+  },
 };

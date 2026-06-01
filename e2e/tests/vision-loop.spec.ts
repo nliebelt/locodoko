@@ -42,12 +42,10 @@ test.describe('Vision Loop — UI Screenshots', () => {
 
     // ── 2. Neuen Tisch Modal ────────────────────────────────────────────────
     console.log('Opening Erstelle Tisch Modal...');
-    await page.keyboard.press('Tab'); // Quick Game
-    await page.keyboard.press('Tab'); // Neuen Tisch
-    await page.keyboard.press('Enter');
+    await page.evaluate(() => (window as any).__locodoko.drueckeSzenenButton('btn-neuer-tisch'));
     await page.waitForTimeout(1000);
     await screenshot(page, '12-neuer-tisch-modal');
-    await page.keyboard.press('Escape'); // Schliesst das Modal
+    await page.evaluate(() => (window as any).__locodoko.drueckeSzenenButton('btn-abbrechen'));
 
     // ── 3. Quick Game starten ─────────────────────────────────────────────────
     console.log('Starting Quick Game...');
@@ -88,6 +86,17 @@ test.describe('Vision Loop — UI Screenshots', () => {
     await aktiviereTurbo(page);
     await meldeVorbehalt(page, 'GESUND');
     await warteAufNaechstesEreignis(page, 30_000); // Warten bis SPIEL_GESTARTET + Austeilen durch
+
+    // Ggf. ARMUT-Phase überbrücken (zufälliger Kartenausgang, KI kann ARMUT haben)
+    {
+      const phase = await page.evaluate(() =>
+        (window as any).__locodoko?.appStore?.snapshot()?.partieStand?.laufendesSpiel?.phase
+      );
+      if (phase === 'ARMUT_TAUSCH') {
+        await beantworteArmut(page, false, []);
+        await warteAufNaechstesEreignis(page, 30_000);
+      }
+    }
 
     // ── 6. Stich-Animation (Slow-Motion 0.2×) ───────────────────────────────
     console.log('Waiting for own move (STICHPHASE)...');

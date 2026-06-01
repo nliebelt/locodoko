@@ -10,6 +10,8 @@ import type { AppStore } from './store/AppStore';
 export interface LocodokoBridge {
   appStore: AppStore;
   getAktuelleSzene: () => string | null;
+  /** Löst den Callback eines benannten PhaserButtons in der aktiven Szene aus (für E2E-Tests). */
+  drueckeSzenenButton?: (name: string) => boolean;
   isIdle?: (ignoreStore?: boolean) => boolean;
   isOverlaySichtbar?: () => boolean;
   setzeAnimationsGeschwindigkeit?: (f: number) => void;

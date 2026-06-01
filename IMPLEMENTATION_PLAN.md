@@ -10,7 +10,9 @@
 
 **Session 27 (2026-05-29):** `REFACTOR-TISCHVERWALTUNG` abgeschlossen. `gibPresets`, `ladeKonfiguration`, `aktualisiereKonfiguration` aus `TischVerwaltungsService` (509 → ~470 Z.) in neuen `@Service TischKonfigurationsService` extrahiert (Deps: `TischZugriff`, `TischRepository`, `TischEchtzeitService`). `TischController` auf Constructor-Injection des neuen Service umgestellt. `mvn clean test` grün.
 
-**Nächster Schritt:** `VISION-SMOKE-1` — visueller End-to-End-Smoke-Test (letzte offene Task).
+**Session 28 (2026-06-01):** `VISION-SMOKE-1` abgeschlossen. Frontend neu gebaut (uncommittete Bridge-Erweiterung `drueckeSzenenButton` + SpielverwaltungsSzene Fokus-Fix). Vision-Loop grün (1 passed, 37.4s). Zwei visuelle Mängel entdeckt und als BUG-Tasks eingetragen: `BUG-EINSTELLUNGEN-MODAL` und `BUG-LOBBY-TISCHEINTRAG`.
+
+**Alle geplanten Tasks erledigt.** Entdeckte Bugs stehen unter „Entdeckungen" für die nächste Iteration bereit.
 
 ## Legende
 
@@ -20,12 +22,12 @@
 
 ## Empfohlene Build-Reihenfolge (verbindlich)
 
-Erledigt (Session 26): DOC-PUNKTE-HINWEISE ✓ · SPEC-ARCH-HIERARCHIE ✓ · DOC-AGENTS-DEDUP ✓ · REFACTOR-SAGEAN ✓ · REFACTOR-JSONB-CONVERTER ✓ · BUG-JACKSON-ACCESSORNAMING ✓ · REFACTOR-TISCH-ZUGRIFF ✓
+Erledigt (Session 26–28): DOC-PUNKTE-HINWEISE ✓ · SPEC-ARCH-HIERARCHIE ✓ · DOC-AGENTS-DEDUP ✓ · REFACTOR-SAGEAN ✓ · REFACTOR-JSONB-CONVERTER ✓ · BUG-JACKSON-ACCESSORNAMING ✓ · REFACTOR-TISCH-ZUGRIFF ✓ · REFACTOR-TISCHVERWALTUNG ✓ · VISION-SMOKE-1 ✓
 
-Nächste offene Tasks:
+Nächste offene Tasks (aus Entdeckungen Session 28):
 
-1. **REFACTOR-TISCHVERWALTUNG** — Konfig-Extraktion (Vorbedingung REFACTOR-TISCH-ZUGRIFF erfüllt)
-2. **VISION-SMOKE-1** — visueller End-to-End-Smoke-Test (autonom, headless; letzte Task)
+1. **BUG-EINSTELLUNGEN-MODAL** — Settings-Modal öffnet sich nicht sichtbar (Screenshot 08 = Screenshot 07)
+2. **BUG-LOBBY-TISCHEINTRAG** — Text-Overflow im Tischlisten-Eintrag (Lobby)
 
 ---
 
@@ -95,7 +97,7 @@ Nächste offene Tasks:
 
 ### Abschluss-Verifikation — visueller Smoke-Test (autonom)
 
-- [ ] **VISION-SMOKE-1** — Visueller End-to-End-Smoke-Test über die Vision-Loop (ersetzt den früheren manuellen `SMOKE-UI-1`).
+- [x] **VISION-SMOKE-1** — Visueller End-to-End-Smoke-Test über die Vision-Loop (ersetzt den früheren manuellen `SMOKE-UI-1`).
 
   Screenshottet die wichtigsten Spielzustände automatisiert und headless — kein User/Browser nötig.
 
@@ -112,6 +114,24 @@ Nächste offene Tasks:
 ## Entdeckungen (Gesamt-Review Session 26, 2026-05-29)
 
 Siehe vollständigen Bericht `specs/review-2026-05-28.md`. Bestätigte, **nicht** als akute Tasks geführte Befunde:
+
+### Visuelle Mängel aus VISION-SMOKE-1 (Session 28, 2026-06-01)
+
+- [ ] **BUG-EINSTELLUNGEN-MODAL** — `08-einstellungen-modal.png` ist visuell identisch mit `07-seitenlade-offen.png`; das Einstellungen-Modal öffnet sich nach `s`-Tastendruck nicht sichtbar.
+
+  Gefunden im Vision-Loop. Der Test drückt `s` nach dem Schließen der Seitenlade (`i`-Toggle), wartet 1000ms und screenshottet — aber das Modal erscheint nicht. Mögliche Ursachen: (a) Fokus liegt nach Seitenlade-Schließen nicht mehr auf dem Canvas, sodass der Tastendruck nicht ankommt; (b) das Einstellungen-Modal hat kein eigenes Render-Element oder rendert hinter anderen Ebenen.
+
+  **Erste Datei zuerst:** `e2e/tests/vision-loop.spec.ts` — vor `page.keyboard.press('s')` ein `await page.locator('canvas').focus()` einfügen. Falls das Modal danach erscheint: nur Timing-Bug im Test. Falls nicht: `frontend/src/szenen/TischSzene.ts` nach dem Einstellungen-Key-Handler durchsuchen.
+
+  **DoD:** `08-einstellungen-modal.png` zeigt ein sichtbares Settings-Overlay; Test bleibt grün.
+
+- [ ] **BUG-LOBBY-TISCHEINTRAG** — In `01-lobby.png` / `11-offene-tische.png`: Tischeintrag-Text „Schnellstart von Spieler…" wird abgeschnitten und überlappt mit dem „Beitreten"-Button; Spieler-ID-Zahl rendert nicht vollständig.
+
+  Der Tischlisten-Eintrag zeigt den Namen linksbündig und den „Beitreten"-Button rechtsbündig, aber die Breite des Textfeldes überschreitet die Spaltenbreite. Könnte ein fehlendes `clip`/`overflow: hidden` oder eine falsch berechnete Zeilenbreite in `SpielverwaltungsSzene.ts` sein.
+
+  **Erste Datei zuerst:** `frontend/src/szenen/SpielverwaltungsSzene.ts` — Tischlisten-Render-Methode (`renderTischListe`) auf Text-Breite und Clipping prüfen.
+
+  **DoD:** Tischeintrag zeigt vollständige, nicht überlappende Texte; `01-lobby.png` + `11-offene-tische.png` ohne Overflow.
 
 ### Klassengrößen über Richtwert (~300 Z.) — beobachten, kein akuter Rückstand
 

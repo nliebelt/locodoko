@@ -81,10 +81,10 @@ export class SpielverwaltungsSzene extends Phaser.Scene {
   }
 
   private renderUi(zustand: AppZustand): void {
+    const gespeicherterFokusIndex = this.fokusIndex;
     this.uiContainer?.removeAll(true);
     if (!this.uiContainer) return;
 
-    this.fokusIndex = -1;
     this.fokussierbareButtons = [];
 
     let startY = 220;
@@ -145,6 +145,12 @@ export class SpielverwaltungsSzene extends Phaser.Scene {
     this.fokussierbareButtons = [quickGameBtn, erstelleTischBtn, profilBtn];
     if (sessionRecoveryBtn) {
       this.fokussierbareButtons.push(sessionRecoveryBtn);
+    }
+
+    // Fokus bei Re-Render erhalten (verhindert Race zwischen WS-Update und Tastatur-Navigation)
+    this.fokusIndex = Math.min(gespeicherterFokusIndex, this.fokussierbareButtons.length - 1);
+    if (this.fokusIndex >= 0) {
+      this.fokussierbareButtons[this.fokusIndex].setFocus(true);
     }
 
     // List of tables
