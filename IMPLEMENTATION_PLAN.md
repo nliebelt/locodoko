@@ -26,21 +26,23 @@ Spec-getriebene Tasks: **alle erledigt** (Code feature-complete gegenüber allen
 
 Nächste offene Tasks — Fertigstellung (Session 30). **Zwei Meilensteine:** **M1 = Closed Beta auf locodoko.de** (eingeladene Kollegen, Feedback sammeln) · **M2 = Public Go-Live**.
 
-**Beta-Entscheidungen (Session 30, Teil 3):** Daten **erhalten** → Schema final + Backups **vor** M1; Zugang via **locodoko.de** (Domain+TLS); **Google OAuth aktiv** in der Beta. Damit ist M1 faktisch ein **erster echter Deploy** (kein Wegwerf-Test) — Schema-Gate, Backups und Domain/OAuth sind M1-Blocker. Geräte: Browser/Online; Mobile-Optimierung erst M2.
+**Beta-Entscheidungen (Session 30, Teil 3+4):** Daten **erhalten** → Schema final + Backups **vor** M1; Zugang via **locodoko.de** (Domain+TLS); **Google OAuth aktiv**. Damit ist M1 faktisch ein **erster echter Deploy**. Weiter (Teil 4): **EU-Ops pragmatisch** (Grafana/Sentry mit EU-Region + AVV ok, kein Self-Hosting nötig); **Beta nicht gated** (kein Site-Gate, kein SEO/noindex-Fokus → `BETA-ACCESS` optional); **Sessions persistieren** (`spring-session-jdbc`) + **Build-Info** (`/actuator/info`); Admin-Tooling + Rollback-Doku **erwogen, zurückgestellt**. Passwort-Reset/`OPS-EMAIL` **zurückgestellt** (Freunde nutzen Apple → ggf. „Sign in with Apple" statt Email-Reset prüfen, siehe Beobachtungen). Mobile: nominell M2 — **aber Freunde auf iPhone → Beta wird vermutlich mobil/Safari getestet** (Re-Evaluierung empfohlen).
 
 **Meilenstein 1 — Closed Beta (locodoko.de, eingeladene Kollegen, Daten erhalten):**
 1. **BUG-PROD-CHANGELOG** (P0) — App bootet gegen Postgres
 2. **SPEC-SQL-REVIEW** — Schema final + Changelog-Konsolidierung. **Gate (Daten bleiben erhalten!).**
 3. **DEPLOY-COMPOSE-SMOKE** — finales Schema gegen echtes Postgres, Partie durchspielen
 4. **BACKUP-DB** — `pg_dump`-Backups + Restore-Test, ab Tag 1 (Daten erhalten!)
-5. **OPS-DOMAIN** — locodoko.de + DNS + TLS (Reverse-Proxy)
-6. **DEPLOY-OAUTH-SENTINEL** + **OAuth-Credentials** — Google-Login aktiv, Redirect-URI auf locodoko.de
-7. **BETA-ACCESS** — Registrierung invite-only/Whitelist (heute offen!)
+5. **SESSION-PERSISTENZ** — `spring-session-jdbc`, damit Redeploys Kollegen nicht ausloggen
+6. **OPS-DOMAIN** — locodoko.de + DNS + TLS (Reverse-Proxy; WebSocket-Upgrade beachten!)
+7. **DEPLOY-OAUTH-SENTINEL** + **OAuth-Credentials** — Google-Login aktiv, Redirect-URI auf locodoko.de
 8. **DOC-ENV-DEPLOY** — Server-ENV/Secrets + Roll-out-Anleitung
 9. **OPS-COMPOSE-HARDENING** — `app`-Service restart-Policy + Healthcheck
-10. **CD-DEPLOY (manuell)** — erster echter Deploy auf hosting.de (**Plattformwahl nötig**)
-11. **FEAT-FEEDBACK** — leichter „Feedback geben"-Link/Form für die Beta
-- *Empfohlen für M1 (Debugging/Sicherheit):* OPS-GRAFANA-MONITORING + OPS-LOGS-LOKI; minimaler Datenschutzhinweis (Subset SPEC-RECHT, da Google-OAuth Daten verarbeitet); SECURITY-REVIEW vor Exposition auf öffentlicher Domain.
+10. **OPS-BUILD-INFO** — `/actuator/info` mit Git-SHA/Version (Beta-Debugging, klein)
+11. **CD-DEPLOY (manuell)** — erster echter Deploy auf hosting.de (**Plattformwahl nötig**)
+12. **FEAT-FEEDBACK** — leichter „Feedback geben"-Link/Form für die Beta
+- *Empfohlen für M1:* OPS-GRAFANA-MONITORING + OPS-LOGS-LOKI (SaaS EU-Region ok); minimaler Datenschutzhinweis (Subset SPEC-RECHT, da Google-OAuth Daten verarbeitet); SECURITY-REVIEW vor Exposition.
+- *Optional/zurückgestellt:* BETA-ACCESS (Beta muss nicht gated sein), Admin-Tooling, Rollback-Doku.
 
 **Meilenstein 2 — Public Go-Live:**
 - **SPEC-RECHT** (Impressum + Datenschutz Pflicht + AGB) · **SECURITY-REVIEW** · **CI/CD automatisiert** (CI-BUILD-TEST → CI-DOCKER-BUILD → CD-DEPLOY) · **VERIFY-MULTIPLAYER** · **FE-SPIELREGELN-HILFE** (Onboarding, da DoKo komplex) · **FEAT-BUGREPORT** (voll) · **DOC-DOCS-SITE** · **QA-CODE-METRICS** · **FE-UI-FINAL-REVIEW** · **FE-MOBILE** (Touch/Portrait) · **OPS-EMAIL** · **DECISION-LIZENZ**
@@ -235,13 +237,33 @@ Entscheidungen: **DECISION-AUTH** ✓ beide behalten · **DECISION-LIZENZ** aufg
 
   **DoD:** Tägliches Backup läuft, Restore nachweislich getestet, Ablage außerhalb des DB-Volumes. **Risiko:** niedrig-mittel (Datensicherheit).
 
-- [ ] **BETA-ACCESS** (M1) — Registrierung invite-only/Whitelist für die Closed Beta.
+- [ ] **BETA-ACCESS** (optional — Session 30 Teil 4: Beta muss **nicht** gated sein) — Registrierung invite-only/Whitelist.
 
-  `/register` ist heute **offen** (jeder mit der URL kann Accounts anlegen). Für eine geschlossene Beta auf öffentlicher Domain muss die Registrierung gated sein.
+  `/register` ist heute **offen** (jeder mit der URL kann Accounts anlegen). User-Entscheidung: für die Beta kein Gating nötig, SEO/noindex bewusst kein Thema. **Restrisiko:** Fremde mit URL-Kenntnis können Accounts anlegen — akzeptiert. Bei Bedarf später reaktivieren.
 
-  **Erste Datei zuerst:** `src/main/java/de/locodoko/spieler/AuthentifizierungsController.java` (`/register`) — Gating via Einladungscode/Whitelist (z.B. ENV-Liste erlaubter Emails/Codes oder Invite-Token). Tisch-Einladungslinks existieren bereits, betreffen aber nur Tisch-Beitritt, nicht die Account-Anlage.
+  **Erste Datei zuerst (falls reaktiviert):** `src/main/java/de/locodoko/spieler/AuthentifizierungsController.java` (`/register`) — Gating via Einladungscode/Whitelist (ENV-Liste oder Invite-Token).
 
-  **DoD:** Ohne gültigen Invite/Whitelist-Eintrag schlägt `/register` fehl; eingeladene Kollegen kommen rein. Tests grün. **Risiko:** niedrig.
+  **DoD:** (falls umgesetzt) Ohne gültigen Invite schlägt `/register` fehl. **Risiko:** niedrig.
+
+- [ ] **SESSION-PERSISTENZ** (M1) — HTTP-Sessions in Postgres statt in-memory.
+
+  Aktuell kein `spring-session` → Sessions liegen im RAM. Folge: **jeder Redeploy/Neustart loggt alle Spieler aus** und setzt das In-memory-Disconnect-Tracking zurück. Spiele überleben (DB = Wahrheit), aber die Beta wird bei häufigen Deploys unangenehm.
+
+  **Erste Datei zuerst:** `pom.xml` — `spring-session-jdbc`; `application.properties` `spring.session.store-type=jdbc`; Liquibase-Changeset für die Session-Tabellen (in `SPEC-SQL-REVIEW` mitdenken). Prüfen, ob das In-memory-Disconnect-Tracking in `VerbindungsabbruchService` ebenfalls neustart-robust sein muss.
+
+  **DoD:** Nach App-Neustart bleiben angemeldete Spieler eingeloggt; Session-Tabelle in Postgres. **Risiko:** niedrig-mittel.
+
+- [ ] **OPS-BUILD-INFO** (M1, klein) — Version/Build-Info über Actuator.
+
+  Fürs Beta-Debugging: „welcher Build läuft?".
+
+  **Erste Datei zuerst:** `pom.xml` — `spring-boot-maven-plugin` `build-info`-Goal (erzeugt `META-INF/build-info.properties`); Git-SHA via `git-commit-id-maven-plugin`. `/actuator/info` exponieren (gesichert).
+
+  **DoD:** `/actuator/info` liefert Version + Git-SHA. **Risiko:** niedrig.
+
+- [ ] **~~ADMIN-TOOLING~~ / ~~ROLLBACK-DOKU~~** — erwogen, **zurückgestellt** (Session 30 Teil 4).
+
+  Real fehlend, aber bewusst nicht im aktiven Backlog: (a) Admin-/Betreiber-Tooling (hängenden Tisch beenden, User sperren, aktive Tische sehen) — kein `admin`/`moderation`-Code vorhanden; (b) Rollback-Strategie (Image-Tags + dokumentierter Rückfall). Bei Betriebsproblemen in der Beta reaktivieren.
 
 - [ ] **OPS-COMPOSE-HARDENING** (M1) — `app`-Service betriebsfest machen.
 

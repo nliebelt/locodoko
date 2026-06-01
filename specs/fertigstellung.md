@@ -33,9 +33,10 @@ Netcup 🇩🇪, Scaleway 🇫🇷. Plattformwahl bewusst aufgeschoben.
 (Session 30): Beta-Daten **erhalten** → Schema final + Backups **vor** M1; Zugang via **locodoko.de**
 (Domain+TLS); **Google OAuth aktiv**. Damit ist M1 ein **erster echter Deploy** (kein Wegwerf-Test).
 M1-Blocker: `BUG-PROD-CHANGELOG`, `SPEC-SQL-REVIEW`, `DEPLOY-COMPOSE-SMOKE`, `BACKUP-DB`,
-`OPS-DOMAIN`, `DEPLOY-OAUTH-SENTINEL` + OAuth-Credentials, `BETA-ACCESS` (invite-only),
-`DOC-ENV-DEPLOY`, `OPS-COMPOSE-HARDENING`, `CD-DEPLOY (manuell)`, `FEAT-FEEDBACK`. Empfohlen:
-Monitoring + Logs, minimaler Datenschutzhinweis, `SECURITY-REVIEW`.
+`SESSION-PERSISTENZ`, `OPS-DOMAIN`, `DEPLOY-OAUTH-SENTINEL` + OAuth-Credentials, `DOC-ENV-DEPLOY`,
+`OPS-COMPOSE-HARDENING`, `OPS-BUILD-INFO`, `CD-DEPLOY (manuell)`, `FEAT-FEEDBACK`. Empfohlen:
+Monitoring + Logs (SaaS EU-Region ok), minimaler Datenschutzhinweis, `SECURITY-REVIEW`.
+Optional/zurückgestellt: `BETA-ACCESS` (Beta nicht gated), Admin-Tooling, Rollback-Doku.
 
 **M2 — Public Go-Live.** Voller `SPEC-RECHT` (Impressum/Datenschutz/AGB), `SECURITY-REVIEW`,
 automatisiertes CI/CD, `VERIFY-MULTIPLAYER`, `FE-SPIELREGELN-HILFE`, `FEAT-BUGREPORT`,
@@ -95,13 +96,19 @@ automatisiertes CI/CD, `VERIFY-MULTIPLAYER`, `FE-SPIELREGELN-HILFE`, `FEAT-BUGRE
 
 14. **BACKUP-DB** (M1) — automatische Postgres-Backups (`pg_dump`, rotierend, off-volume) +
     verifizierter Restore. Aktuell **kein** Backup-Mechanismus; Beta-Daten erhalten → Pflicht ab Tag 1.
-15. **BETA-ACCESS** (M1) — Registrierung invite-only/Whitelist. `/register` ist heute **offen**.
+15. **SESSION-PERSISTENZ** (M1) — `spring-session-jdbc`; Sessions liegen heute in-memory → Redeploys
+    loggen alle aus + Disconnect-Tracking wird zurückgesetzt.
 16. **OPS-COMPOSE-HARDENING** (M1) — `app`-Service `restart`-Policy + Healthcheck (fehlt; Postgres hat beides).
-17. **FEAT-FEEDBACK** (M1, leicht) — „Feedback geben"-Link/Form für die Beta (leichter als FEAT-BUGREPORT).
-18. **SECURITY-REVIEW** (M1 empfohlen / M2 Pflicht) — vor öffentlicher Exposition: Auth/Rate-Limit, CORS,
+17. **OPS-BUILD-INFO** (M1, klein) — `/actuator/info` mit Git-SHA/Version fürs Beta-Debugging.
+18. **FEAT-FEEDBACK** (M1, leicht) — „Feedback geben"-Link/Form für die Beta (leichter als FEAT-BUGREPORT).
+19. **SECURITY-REVIEW** (M1 empfohlen / M2 Pflicht) — vor öffentlicher Exposition: Auth/Rate-Limit, CORS,
     WS-`allowed-origins` (in prod auskommentiert!), Secrets, Cookie-Flags, OAuth-Redirect, CVEs.
-19. **FE-SPIELREGELN-HILFE** (M2) — In-App-Regeln/Onboarding (keine Spielerklärung vorhanden; DoKo komplex).
-20. **FE-MOBILE** (M2) — Mobile-/Touch-/Portrait-Tauglichkeit (`Scale.FIT` skaliert, aber nicht optimiert).
+20. **FE-SPIELREGELN-HILFE** (M2) — In-App-Regeln/Onboarding (keine Spielerklärung vorhanden; DoKo komplex).
+21. **FE-MOBILE** (M2, evtl. vorziehen) — Mobile-/Touch-/Portrait (`Scale.FIT` skaliert, aber nicht optimiert).
+    **Freunde auf iPhone → Beta wird vermutlich mobil/Safari getestet** → Re-Evaluierung empfohlen.
+22. **BETA-ACCESS** (optional, zurückgestellt) — Registrierungs-Gating. Beta muss nicht gated sein (Entscheidung Teil 4).
+23. **ADMIN-TOOLING / ROLLBACK-DOKU** (zurückgestellt) — hängenden Tisch beenden, User sperren, aktive Tische;
+    Image-Tags + Rollback. Erwogen, bei Betriebsproblemen reaktivieren.
 
 ## Offene Entscheidungen
 
@@ -109,7 +116,13 @@ automatisiertes CI/CD, `VERIFY-MULTIPLAYER`, `FE-SPIELREGELN-HILFE`, `FEAT-BUGRE
   (Google OAuth2 + Username/Passwort/bcrypt). `authentifizierung.md` bleibt unverändert.
 - **Beta-Daten:** ✅ **erhalten** — Kollegen-Spiele/Statistiken bleiben → Schema final + Backups vor M1.
 - **Beta-Zugang:** ✅ via **locodoko.de** im Browser (Domain+TLS in M1), **Google OAuth aktiv** in der Beta.
-- **Mobile:** ⏸️ erst M2 (für die Beta Desktop/Browser ausreichend).
+  Beta **nicht gated** (kein Site-Gate, SEO später) → `BETA-ACCESS` optional.
+- **EU-Ops:** ✅ **pragmatisch** — Grafana/Sentry mit EU-Region + AVV ausreichend (kein Self-Hosting).
+  (Hinweis: EU-Regel gilt damit für Server-Standort, nicht Firmen-Jurisdiktion.)
+- **Sessions:** ✅ persistieren (`spring-session-jdbc`) + Build-Info; Admin-Tooling/Rollback zurückgestellt.
+- **Passwort-Reset / Email:** ⏸️ zurückgestellt. Freunde nutzen Apple → **„Sign in with Apple"** als
+  zusätzlicher OAuth-Provider statt Email-Reset prüfen (offene Idee).
+- **Mobile:** ⏸️ nominell M2 — **aber Apple/iPhone-Nutzer testen vermutlich mobil** → ggf. vorziehen.
 - **Lizenz:** ⏸️ **aufgeschoben.** Tendenz Apache-2.0. Zielkonflikt: mögliche spätere
   **Steam-/kommerzielle Veröffentlichung** — eine permissive Lizenz (Apache/MIT) erlaubt Dritten den
   kommerziellen Nachbau. Wer Verwertung offenhalten will: eher **proprietär** oder **AGPL-3.0**.
@@ -118,13 +131,13 @@ automatisiertes CI/CD, `VERIFY-MULTIPLAYER`, `FE-SPIELREGELN-HILFE`, `FEAT-BUGRE
 ## Checklisten
 
 ### M1 — Closed Beta (locodoko.de, Daten erhalten)
-- [ ] BUG-PROD-CHANGELOG behoben, prod-Stack verifiziert (1, 3)
-- [ ] **Schema final (SPEC-SQL-REVIEW)** — vor M1, da Daten erhalten bleiben (6)
+- [ ] BUG-PROD-CHANGELOG behoben, prod-Stack verifiziert
+- [ ] **Schema final (SPEC-SQL-REVIEW)** — vor M1, da Daten erhalten bleiben
 - [ ] Backups laufen + Restore getestet (14)
-- [ ] locodoko.de + HTTPS aktiv, Google-OAuth-Redirect/WS-Origins gesetzt (8)
-- [ ] Registrierung invite-only (15)
-- [ ] app-Service restart/Healthcheck (16); erster Deploy auf hosting.de
-- [ ] Feedback-Kanal (17); minimaler Datenschutzhinweis; SECURITY-REVIEW (18)
+- [ ] Session-Persistenz aktiv (15) — Redeploys loggen nicht aus
+- [ ] locodoko.de + HTTPS aktiv, Google-OAuth-Redirect/WS-Origins gesetzt (WS-Upgrade im Proxy!)
+- [ ] app-Service restart/Healthcheck (16) + Build-Info (17); erster Deploy auf hosting.de
+- [ ] Feedback-Kanal (18); minimaler Datenschutzhinweis; SECURITY-REVIEW (19)
 
 ### M2 — Public Go-Live (zusätzlich)
 - [ ] Impressum + Datenschutzerklärung + AGB veröffentlicht (11)
