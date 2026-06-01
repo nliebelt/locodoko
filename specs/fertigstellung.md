@@ -52,6 +52,13 @@ Netcup 🇩🇪, Scaleway 🇫🇷. Plattformwahl bewusst aufgeschoben.
    JSONB-Strategie, Liquibase-Konsolidierung. Greenfield → jetzt sauber ziehbar. → `datenbankmodell.md`.
 7. **OPS-GRAFANA-MONITORING** — Grafana Cloud Free-Tier (Actuator + Micrometer + Prometheus).
    → eigene Spec `betrieb-monitoring.md`.
+7a. **OPS-LOGS-LOKI** — strukturierte JSON-Logs (MDC `tischId`/`partieId`/`correlationId`) nach
+   Grafana Cloud Loki (Free, ~14 Tage Retention), per LogQL abfragbar. Versand via Alloy/Promtail-
+   Sidecar. Retention begrenzt → relevante Ausschnitte für Tickets snapshotten.
+7b. **FEAT-BUGREPORT** — In-App-„Bug melden" mit redigiertem Session-Kontext → GitHub-Issue via
+   server-seitigem Token, angereichert mit Log-Ausschnitt (correlationId) + Grafana-Deep-Link.
+   Datenschutz/Redaktion kritisch (öffentliches vs. privates Issue-Repo). Sentry (Free, EU) als
+   automatische Fehlererfassung empfohlen. GitHub-Issue-Templates mitnehmen. → eigene Spec `bugreport.md`.
 8. **OPS-DOMAIN** — Domain + DNS + TLS (Reverse-Proxy/Let's Encrypt, OAuth-Redirect, WS-Origins).
 9. **DOC-DOCS-SITE** — Öffentliche Docs-/Wiki-Seite, damit Menschen außerhalb des GitHub-Kontexts
    das Projekt verstehen/„lernen" können; zugleich LLM-tauglich (Karpathy: eindeutige Begriffe,

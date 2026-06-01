@@ -41,10 +41,12 @@ Nächste offene Tasks — Fertigstellung öffentlicher Betrieb (Session 30). **S
 
 **Phase C — Reife & Sichtbarkeit (parallel/danach, keine Blocker):**
 10. **OPS-GRAFANA-MONITORING** — Grafana Cloud Free-Tier (Actuator/Micrometer/Prometheus)
-11. **DOC-DOCS-SITE** — öffentliche Docs-/Wiki-Seite (MkDocs Material empf.), LLM-tauglich
-12. **QA-CODE-METRICS** — Code-Metriken/Static-Analysis → Refactoring-Kandidaten + Report fürs Wiki
-13. **FE-UI-FINAL-REVIEW** — finales UI/UX-Review, Mängel katalogisieren
-14. **OPS-EMAIL** — Email-Versand Registrierung/Passwort-Reset (niedrig, kein Blocker)
+11. **OPS-LOGS-LOKI** — Logs nach Grafana Cloud Loki (Free), per LogQL abfragbar (Teil von Monitoring)
+12. **FEAT-BUGREPORT** — In-App-Bugreport mit Kontext → GitHub-Issue + Log-Verknüpfung (Sentry empfohlen)
+13. **DOC-DOCS-SITE** — öffentliche Docs-/Wiki-Seite (MkDocs Material empf.), LLM-tauglich
+14. **QA-CODE-METRICS** — Code-Metriken/Static-Analysis → Refactoring-Kandidaten + Report fürs Wiki
+15. **FE-UI-FINAL-REVIEW** — finales UI/UX-Review, Mängel katalogisieren
+16. **OPS-EMAIL** — Email-Versand Registrierung/Passwort-Reset (niedrig, kein Blocker)
 
 Entscheidungen: **DECISION-AUTH** ✓ beide behalten · **DECISION-LIZENZ** aufgeschoben (Steam-Frage offen, Tendenz Apache vs. proprietär/AGPL)
 
@@ -143,6 +145,24 @@ Entscheidungen: **DECISION-AUTH** ✓ beide behalten · **DECISION-LIZENZ** aufg
   **Erste Datei zuerst:** neue `specs/betrieb-monitoring.md` (Was wird überwacht: JVM, HTTP-Latenzen, aktive Tische/Partien, WS-Verbindungen, Fehlerrate; welche Dashboards/Alerts). Dann Build-Tasks: `micrometer-registry-prometheus` ins `pom.xml`, `/actuator/prometheus` exponieren (gesichert), Grafana Alloy/Agent als Sidecar im `docker-compose.yml` zum remote_write an Grafana Cloud (Token via ENV, kein Secret im Repo).
 
   **DoD:** Spec beschreibt Monitoring-Konzept; (Build) Metriken erscheinen im Grafana-Cloud-Dashboard. **Risiko:** niedrig-mittel.
+
+- [ ] **OPS-LOGS-LOKI** — Strukturierte Logs nach Grafana Cloud Loki (Free-Tier), per LogQL abfragbar.
+
+  Grafana Cloud Free enthält Loki (~50 GB Ingest, ~14 Tage Retention — für Hobby/Live-Debugging ausreichend). Das Backend loggt bereits JSON mit MDC-Feldern `tischId`/`partieId` → ideal für Loki-Labels/LogQL. Versand via Grafana Alloy/Promtail-Sidecar, Token via ENV. **Retention begrenzt → für Bug-Tickets relevante Log-Ausschnitte beim Erstellen ins Ticket snapshotten (siehe `FEAT-BUGREPORT`), nicht nur verlinken.**
+
+  **Erste Datei zuerst:** `specs/betrieb-monitoring.md` (Abschnitt Log-Pipeline) + Alloy-Service im `docker-compose.yml`. Sicherstellen, dass eine `correlationId` pro Request im MDC liegt (für die Bugreport-Verknüpfung).
+
+  **DoD:** Logs erscheinen in Grafana Cloud, per `tischId`/`partieId`/Level/`correlationId` filterbar. **Risiko:** niedrig-mittel.
+
+- [ ] **FEAT-BUGREPORT** — In-App-Bugreport mit Session-Kontext → GitHub-Issue (+ Log-Verknüpfung). **[hängt an OPS-LOGS-LOKI für den Deep-Link]**
+
+  Frontend: „Bug melden"-Dialog (Beschreibung + optional Screenshot), erfasst automatisch `correlationId`, `tischId`/`partieId`, `sessionId`, Client/Browser und **redigierten** AppStore-Zustand (keine Passwörter, keine fremden Hände). Backend-Endpoint reichert mit serverseitigem Log-Ausschnitt zur `correlationId` an und erstellt ein GitHub-Issue via **server-seitigem Token** (nie im Frontend) mit redigiertem Kontext + Log-Snapshot + Grafana-LogQL-Deep-Link.
+
+  **Sicherheit/Datenschutz:** Auth erforderlich, Rate-Limiting (`RateLimitingFilter` vorhanden), PII-Redaktion. **Offene Sub-Entscheidung:** Issues im öffentlichen Repo (sichtbar!) vs. separatem privaten Issue-Repo — bei öffentlichem Repo strenge Redaktion zwingend. **Ergänzung empfohlen:** Sentry (Free, EU-Region) für automatische Fehlererfassung (Frontend+Backend) parallel zum user-initiierten Button. **GitHub-Hygiene mitnehmen:** `.github/ISSUE_TEMPLATE/` (Bug-/Feature-Vorlagen).
+
+  **Erste Datei zuerst:** neue `specs/bugreport.md` (Flow, Redaktions-/Datenschutzregeln, Repo-Ziel, Sentry-Entscheidung) — dann Build (Frontend-Dialog, Backend-Endpoint, GitHub-API).
+
+  **DoD:** Report aus der App erzeugt ein GitHub-Issue mit redigiertem Kontext + Log-Verknüpfung; nachweislich keine sensiblen Daten geleakt. **Risiko:** mittel (Datenschutz/Redaktion).
 
 - [ ] **OPS-DOMAIN** — Domain + DNS + TLS für den öffentlichen Betrieb.
 
