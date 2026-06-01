@@ -29,6 +29,11 @@ Netcup 🇩🇪, Scaleway 🇫🇷. Plattformwahl bewusst aufgeschoben.
 
 ## Backlog
 
+> **Kritische Reihenfolge:** `SPEC-SQL-REVIEW` (6) muss **vor dem ersten echten Deploy** (`CD-DEPLOY`)
+> abgeschlossen sein. Solange greenfield, ist das Schema frei umziehbar; nach dem Live-Gang erzwingt
+> jede Änderung eine Liquibase-Migration gegen produktive Daten. Daher gehört das Schema-Review
+> faktisch in Phase A (direkt nach `BUG-PROD-CHANGELOG`), nicht ans Ende.
+
 ### Deploy-Strang (technisch, blockierend)
 
 1. **BUG-PROD-CHANGELOG** (P0, verifizierter Bug) — prod-Profil lädt eine nicht existierende
@@ -77,6 +82,7 @@ Netcup 🇩🇪, Scaleway 🇫🇷. Plattformwahl bewusst aufgeschoben.
 ## Live-Gang-Blocker (Checkliste vor öffentlichem Betrieb)
 
 - [ ] BUG-PROD-CHANGELOG behoben, prod-Stack verifiziert (1, 2)
+- [ ] **Schema final (SPEC-SQL-REVIEW)** — vor erstem echten Deploy, solange greenfield (6)
 - [ ] Impressum + Datenschutzerklärung veröffentlicht (11)
 - [ ] Domain + HTTPS aktiv, OAuth-Redirect/WS-Origins gesetzt (8)
 - [ ] Mensch-gegen-Mensch verifiziert (13)

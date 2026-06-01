@@ -24,24 +24,26 @@ Erledigt (Session 26–28): DOC-PUNKTE-HINWEISE ✓ · SPEC-ARCH-HIERARCHIE ✓ 
 
 Spec-getriebene Tasks: **alle erledigt** (Code feature-complete gegenüber allen 47 Specs).
 
-Nächste offene Tasks — Fertigstellung öffentlicher Betrieb (Session 30, verbindliche Reihenfolge):
+Nächste offene Tasks — Fertigstellung öffentlicher Betrieb (Session 30). **Schlüssel-Reihenfolge:** Das DB-Schema muss **vor dem ersten echten Deploy** final sein — danach erzwingt jede Änderung eine Liquibase-Migration gegen Live-Daten (jetzt noch greenfield, frei umziehbar).
 
+**Phase A — vor dem ersten echten Deploy (greenfield-Fenster, Schema festklopfen):**
 1. **BUG-PROD-CHANGELOG** (P0, Deploy-Blocker) — prod-Profil lädt fehlende Changelog-Datei
-2. **DEPLOY-COMPOSE-SMOKE** — prod-Stack hochfahren + Partie durchspielen (hängt an 1)
-3. **DOC-ENV-DEPLOY** — `.env.example` + README für Betrieb vervollständigen
-4. **DEPLOY-OAUTH-SENTINEL** — Google-Login nur bei konfigurierten Credentials (klein)
-5. **CI-BUILD-TEST** → **CI-DOCKER-BUILD** → **CD-DEPLOY** (CD blockiert bis Plattformwahl; EU/DE-Hosting Pflicht. Favorit: **hosting.de** — DE-Anbieter, User hat Account)
-6. **VERIFY-MULTIPLAYER** — Mensch-gegen-Mensch E2E, vor Live-Gang (niedrig)
+2. **SPEC-SQL-REVIEW** — kritisches Schema-Review (Normalform, Audit, Indizes) + Changelog-Konsolidierung. **Gate für CD-DEPLOY.**
+3. **DEPLOY-COMPOSE-SMOKE** — prod-Stack hochfahren, **finales** Schema gegen echtes Postgres validieren, Partie durchspielen
 
-Produktreife & Specs (P4, Session 30 Teil 2 — zuerst als Spec erfassen):
+**Phase B — Betrieb scharfschalten (vor Live-Gang):**
+4. **SPEC-RECHT** — Impressum + Datenschutz (Pflicht in DE) + AGB
+5. **OPS-DOMAIN** — Domain + DNS + TLS (Reverse-Proxy, OAuth-Redirect, WS-Origins)
+6. **DOC-ENV-DEPLOY** — `.env.example` + README für Betrieb
+7. **DEPLOY-OAUTH-SENTINEL** — Google-Login nur bei konfigurierten Credentials
+8. **CI-BUILD-TEST** → **CI-DOCKER-BUILD** → **CD-DEPLOY** (echter Deploy; blockiert bis: SPEC-SQL-REVIEW ✓ + SPEC-RECHT ✓ + OPS-DOMAIN ✓ + Plattformwahl. EU/DE-Hosting Pflicht, Favorit **hosting.de**)
+9. **VERIFY-MULTIPLAYER** — Mensch-gegen-Mensch E2E, vor Live-Gang
 
-7. **SPEC-SQL-REVIEW** — kritisches Schema-Review vor erster echter DB (Normalform, Audit, Indizes)
-8. **OPS-GRAFANA-MONITORING** — Grafana Cloud Free-Tier (Actuator/Micrometer/Prometheus)
-9. **OPS-DOMAIN** — Domain + DNS + TLS (Reverse-Proxy, OAuth-Redirect, WS-Origins)
-10. **DOC-DOCS-SITE** — öffentliche Docs-/Wiki-Seite (MkDocs Material empf.), LLM-tauglich
-11. **QA-CODE-METRICS** — Code-Metriken/Static-Analysis → Refactoring-Kandidaten + Report fürs Wiki
-12. **FE-UI-FINAL-REVIEW** — finales UI/UX-Review, Mängel katalogisieren
-13. **SPEC-RECHT** — Impressum + Datenschutz (Pflicht) + AGB, vor Live-Gang
+**Phase C — Reife & Sichtbarkeit (parallel/danach, keine Blocker):**
+10. **OPS-GRAFANA-MONITORING** — Grafana Cloud Free-Tier (Actuator/Micrometer/Prometheus)
+11. **DOC-DOCS-SITE** — öffentliche Docs-/Wiki-Seite (MkDocs Material empf.), LLM-tauglich
+12. **QA-CODE-METRICS** — Code-Metriken/Static-Analysis → Refactoring-Kandidaten + Report fürs Wiki
+13. **FE-UI-FINAL-REVIEW** — finales UI/UX-Review, Mängel katalogisieren
 14. **OPS-EMAIL** — Email-Versand Registrierung/Passwort-Reset (niedrig, kein Blocker)
 
 Entscheidungen: **DECISION-AUTH** ✓ beide behalten · **DECISION-LIZENZ** aufgeschoben (Steam-Frage offen, Tendenz Apache vs. proprietär/AGPL)
@@ -104,7 +106,7 @@ Entscheidungen: **DECISION-AUTH** ✓ beide behalten · **DECISION-LIZENZ** aufg
 
   **DoD:** Nach Push auf `main` liegt ein lauffähiges Image in GHCR; lokal `docker run` startet die App (gegen externe Postgres-ENV). **Risiko:** niedrig.
 
-- [ ] **CD-DEPLOY** — Auto-Deploy auf die Zielplattform. **[BLOCKED: Plattformwahl offen]**
+- [ ] **CD-DEPLOY** — Auto-Deploy auf die Zielplattform. **[BLOCKED: Plattformwahl offen + Voraussetzungen SPEC-SQL-REVIEW ✓, SPEC-RECHT ✓, OPS-DOMAIN ✓ — kein echter Deploy mit unfertigem Schema/ohne Rechtstexte/Domain]**
 
   **Harte Anforderung:** Europäisches Hosting, Server in der EU/Deutschland (Datenresidenz). Daher US-Anbieter (Fly.io, Railway) ausgeschlossen, auch wenn sie EU-Regionen anbieten. Engere Wahl: Hetzner (🇩🇪), Scaleway (🇫🇷), Netcup (🇩🇪), OVHcloud (🇫🇷). Tendenz: günstiger VPS via `docker compose`.
 
@@ -126,9 +128,9 @@ Entscheidungen: **DECISION-AUTH** ✓ beide behalten · **DECISION-LIZENZ** aufg
 
 > User-Wunsch: diese Themen sollen **zuerst als Specs erfasst** werden, bevor implementiert wird. Jede Task produziert (auch) eine Spec.
 
-- [ ] **SPEC-SQL-REVIEW** — Extrem kritisches Schema-/SQL-Review **vor** dem Aufbau der ersten echten DB.
+- [ ] **SPEC-SQL-REVIEW** — Extrem kritisches Schema-/SQL-Review **vor** dem Aufbau der ersten echten DB. **[GATE für CD-DEPLOY — gehört in Phase A]**
 
-  Greenfield (keine Migration nötig) → das Schema kann jetzt sauber gezogen werden, bevor produktiv Daten liegen. Hängt fachlich mit `BUG-PROD-CHANGELOG` zusammen (Changelog-Hygiene). Prüfen: Normalformen (3NF), Audit-Spalten (`erstellt_am`, `geaendert_am`, ggf. `erstellt_von` als `timestamptz`), Primär-/Fremdschlüssel + ON DELETE, Indizes (insb. Fremdschlüssel + Abfragepfade `tischId`/`partieId`/`spielerId`), Datentypen (UUID, `timestamptz` statt `timestamp`, `numeric` statt float für Punkte), NOT-NULL/CHECK-Constraints, Namenskonventionen, JSONB-Spalten (Validierung/GIN-Index sinnvoll?), Liquibase-Changelog-Konsolidierung (`archiv/` vs. aktiv).
+  Greenfield (keine Migration nötig) → das Schema kann jetzt sauber gezogen werden, bevor produktiv Daten liegen. **Nach dem ersten echten Deploy kostet jede Schema-Änderung eine Liquibase-Migration gegen Live-Daten** — deshalb zwingend im greenfield-Fenster, direkt nach `BUG-PROD-CHANGELOG` und vor `CD-DEPLOY`. Hängt fachlich mit `BUG-PROD-CHANGELOG` zusammen (Changelog-Hygiene). Prüfen: Normalformen (3NF), Audit-Spalten (`erstellt_am`, `geaendert_am`, ggf. `erstellt_von` als `timestamptz`), Primär-/Fremdschlüssel + ON DELETE, Indizes (insb. Fremdschlüssel + Abfragepfade `tischId`/`partieId`/`spielerId`), Datentypen (UUID, `timestamptz` statt `timestamp`, `numeric` statt float für Punkte), NOT-NULL/CHECK-Constraints, Namenskonventionen, JSONB-Spalten (Validierung/GIN-Index sinnvoll?), Liquibase-Changelog-Konsolidierung (`archiv/` vs. aktiv).
 
   **Erste Datei zuerst:** `specs/datenbankmodell.md` — Review-Befunde + Soll-Schema dokumentieren. Daraus dann (eigene Build-Tasks) konsolidiertes Liquibase-Changelog. Gegen echtes Postgres 17 validieren (siehe `DEPLOY-COMPOSE-SMOKE`).
 
