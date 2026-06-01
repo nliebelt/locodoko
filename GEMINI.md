@@ -23,3 +23,12 @@ Code, Kommentare, Klassen, Methoden auf **Deutsch**. Fachbegriffe: Stich, Trumpf
 ## Architektur (Details → specs/architektur.md)
 
 Module: `partie/` (Domain-Kern), `karten/` (Shared Kernel), `spieler/` (Identität/Auth), `ki/` (Autonomer Agent), `tisch/` (Application Layer + Delivery). Spring Data JDBC (kein JPA) + Liquibase. Frontend: Phaser 3, TypeScript strict, AppStore + Snapshot+Hint Modell. Backend = einzige Wahrheitsquelle.
+
+## Projektstatus & Fertigstellung
+
+Der Spielkern ist **feature-complete** (alle fachlichen Specs *Implementiert/Stabil/Abgeschlossen*). Offen ist die Fertigstellung für den **öffentlichen Betrieb** (Deployment, Ops, Recht, Reife, offene Entscheidungen):
+
+- **Roadmap (fachlich):** `specs/fertigstellung.md` — Backlog, Live-Gang-Blocker, offene Entscheidungen.
+- **Task-Liste (operativ):** `IMPLEMENTATION_PLAN.md`, Sektion „Fertigstellung — Öffentlicher Betrieb" — kleingranular mit „Erste Datei zuerst"-Hinweisen.
+
+Erster, blockierender Task: **BUG-PROD-CHANGELOG** (prod-Profil lädt fehlende Liquibase-Changelog-Datei → App bootet nicht gegen Postgres). Hosting-Anforderung: EU/DE.

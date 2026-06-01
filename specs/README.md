@@ -4,6 +4,12 @@ Dieses Verzeichnis enthält alle funktionalen und nicht funktionalen Anforderung
 
 WICHTIG: Die Spezifikationen beschreiben das *Was* und *Warum* (Fachlichkeit und Regeln), aber nicht zwingend das exakte *Wie* (konkrete Variablennamen oder Code-Strukturen, sofern nicht architektonisch relevant).
 
+## 0. Projektstatus & Fertigstellung
+Der Spielkern ist feature-complete (alle fachlichen Specs *Implementiert/Stabil/Abgeschlossen*).
+Was noch zum **öffentlichen Betrieb** fehlt (Deployment, Ops, Recht, Reife, offene Entscheidungen):
+- **`fertigstellung.md`**: Fertigstellungs- & Betriebs-Roadmap (fachliche Heimat des Backlogs).
+  Operative Task-Liste mit Umsetzungshinweisen → `../IMPLEMENTATION_PLAN.md`.
+
 ## 1. Übergreifende Architektur & Prinzipien
 - **`architektur.md`**: **Single Source of Truth** — Domain Model, Module, Event-Vertrag, Coding-Prinzipien. **Wird bei jedem Scan/Build geladen.** Die übrigen `architektur-*.md` sind Detail-Specs; bei Widersprüchen gilt `architektur.md`.
 - **`architektur-ddd.md`**: Detail-Spec für Spring Modulith Konfiguration & Persistenz-Strategie.

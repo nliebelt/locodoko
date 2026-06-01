@@ -4,6 +4,8 @@
 
 ## Notiz
 
+**Session 30 (2026-06-01) — Plan-Lauf „Fertigstellung öffentlicher Betrieb":** Gesamt-Scan ergab: Code ist gegenüber allen 47 Specs feature-complete (Status durchgehend Implementiert/Stabil/Abgeschlossen), `mvn clean test` grün. Keine offenen Spec-Lücken. Ziel laut User: **öffentlich betrieben**; Fokus **Deployment & Ops + CI/CD** (Mehrspieler-Verifikation bewusst zurückgestellt). Neuer, **verifizierter Deploy-Blocker** entdeckt: prod-Profil lädt eine nicht existierende Liquibase-Changelog-Datei → App bootet nicht gegen Postgres (`BUG-PROD-CHANGELOG`). Daraus neue Sektion „## Fertigstellung — Öffentlicher Betrieb". Plan-Modus: nichts implementiert.
+
 **Session 29 (2026-06-01):** `BUG-EINSTELLUNGEN-MODAL` + `BUG-LOBBY-TISCHEINTRAG` behoben. Modal-Fix: In `TischInputHandler` Navigation-Shortcuts ('i', 's') vor `vorbehaltAktiv`-Check verschoben — im Turbo-Modus war die Vorbehalt-Phase bereits aktiv beim 's'-Druck. Lobby-Fix: Button-Text "Beitreten"/"Fortsetzen" lief dunkelgrün (#14361f) auf dunklem Hintergrund aus dem 150px-Button über (Zeichenbreite ~20.5px → 9 Zeichen = 185px). Behoben: `spielerTxt` auf x=10, nur für nicht-hervorgehobene Einträge; Button x=175, breite=215. Neuer Regressions-Test im Handler. Vision-Loop grün, alle Screenshots ohne Overflow. **Alle Tasks erledigt.**
 
 **Session 28 (2026-06-01):** `VISION-SMOKE-1` abgeschlossen. Frontend neu gebaut (uncommittete Bridge-Erweiterung `drueckeSzenenButton` + SpielverwaltungsSzene Fokus-Fix). Vision-Loop grün (1 passed, 37.4s). Zwei visuelle Mängel entdeckt und als BUG-Tasks eingetragen: `BUG-EINSTELLUNGEN-MODAL` und `BUG-LOBBY-TISCHEINTRAG`.
@@ -20,14 +22,174 @@
 
 Erledigt (Session 26–28): DOC-PUNKTE-HINWEISE ✓ · SPEC-ARCH-HIERARCHIE ✓ · DOC-AGENTS-DEDUP ✓ · REFACTOR-SAGEAN ✓ · REFACTOR-JSONB-CONVERTER ✓ · BUG-JACKSON-ACCESSORNAMING ✓ · REFACTOR-TISCH-ZUGRIFF ✓ · REFACTOR-TISCHVERWALTUNG ✓ · VISION-SMOKE-1 ✓
 
-Nächste offene Tasks (aus Entdeckungen Session 28):
+Spec-getriebene Tasks: **alle erledigt** (Code feature-complete gegenüber allen 47 Specs).
 
-1. **BUG-EINSTELLUNGEN-MODAL** — Settings-Modal öffnet sich nicht sichtbar (Screenshot 08 = Screenshot 07)
-2. **BUG-LOBBY-TISCHEINTRAG** — Text-Overflow im Tischlisten-Eintrag (Lobby)
+Nächste offene Tasks — Fertigstellung öffentlicher Betrieb (Session 30, verbindliche Reihenfolge):
+
+1. **BUG-PROD-CHANGELOG** (P0, Deploy-Blocker) — prod-Profil lädt fehlende Changelog-Datei
+2. **DEPLOY-COMPOSE-SMOKE** — prod-Stack hochfahren + Partie durchspielen (hängt an 1)
+3. **DOC-ENV-DEPLOY** — `.env.example` + README für Betrieb vervollständigen
+4. **DEPLOY-OAUTH-SENTINEL** — Google-Login nur bei konfigurierten Credentials (klein)
+5. **CI-BUILD-TEST** → **CI-DOCKER-BUILD** → **CD-DEPLOY** (CD blockiert bis Plattformwahl; EU/DE-Hosting Pflicht. Favorit: **hosting.de** — DE-Anbieter, User hat Account)
+6. **VERIFY-MULTIPLAYER** — Mensch-gegen-Mensch E2E, vor Live-Gang (niedrig)
+
+Produktreife & Specs (P4, Session 30 Teil 2 — zuerst als Spec erfassen):
+
+7. **SPEC-SQL-REVIEW** — kritisches Schema-Review vor erster echter DB (Normalform, Audit, Indizes)
+8. **OPS-GRAFANA-MONITORING** — Grafana Cloud Free-Tier (Actuator/Micrometer/Prometheus)
+9. **OPS-DOMAIN** — Domain + DNS + TLS (Reverse-Proxy, OAuth-Redirect, WS-Origins)
+10. **DOC-LLM-WIKI** — LLM-zugängliche Wissensbasis aus den Specs (Karpathy-Stil)
+11. **FE-UI-FINAL-REVIEW** — finales UI/UX-Review, Mängel katalogisieren
+12. **SPEC-RECHT** — Impressum + Datenschutz (Pflicht) + AGB, vor Live-Gang
+13. **OPS-EMAIL** — Email-Versand Registrierung/Passwort-Reset (niedrig, kein Blocker)
+
+Entscheidungen: **DECISION-AUTH** ✓ beide behalten · **DECISION-LIZENZ** aufgeschoben (Steam-Frage offen, Tendenz Apache vs. proprietär/AGPL)
 
 ---
 
-## Offene Aufgaben
+## Fertigstellung — Öffentlicher Betrieb (Session 30, 2026-06-01)
+
+> Ziel: Locodoko öffentlich betreiben (günstiges Hosting, Tendenz VPS via docker-compose; Plattform final offen). Fokus Deployment & Ops + CI/CD. Reihenfolge verbindlich: erst Deploy-Blocker, dann verifizierter Stack, dann CI/CD.
+
+### Priorität 0 — Deploy-Blocker (verifizierter Bug)
+
+- [ ] **BUG-PROD-CHANGELOG** — prod-Profil referenziert eine nicht existierende Liquibase-Changelog-Datei.
+
+  `application-prod.properties` Z. 5: `spring.liquibase.change-log=classpath:db/changelog/db.changelog-baseline.yaml`. Diese Datei existiert nur unter `db/changelog/archiv/db.changelog-baseline.yaml` (archiviert), **nicht** am referenzierten Pfad. Das dev-Profil nutzt korrekt `classpath:db/changelog/db.changelog-master.yaml` (existiert, inkludiert `000-initial-schema.sql`). Folge: Im prod-Profil scheitert die Liquibase-Initialisierung beim Start → App bootet nicht gegen Postgres. Dieser Pfad wurde mangels CI/verifiziertem Deploy nie real ausgeführt.
+
+  **Erste Datei zuerst:** `src/main/resources/application-prod.properties` Z. 5 — auf `classpath:db/changelog/db.changelog-master.yaml` umstellen (identisch zu dev). **Achtung H2 vs. Postgres:** dev läuft H2 im PostgreSQL-Modus, prod echtes Postgres 17. Verifizieren, dass `000-initial-schema.sql` ohne H2-spezifische Syntax gegen echtes Postgres durchläuft (siehe `DEPLOY-COMPOSE-SMOKE`). Falls Postgres-Inkompatibilität auftritt: dialektspezifisches Changeset statt blindem Umbiegen.
+
+  **DoD:** prod-Profil zeigt auf eine existierende Changelog-Datei; `grep -rn "baseline" src/main/resources/application-prod.properties` leer; App startet im prod-Profil gegen Postgres und migriert sauber (Nachweis via `DEPLOY-COMPOSE-SMOKE`). **Risiko:** mittel (SQL-Dialekt).
+
+### Priorität 1 — Deployment & Ops
+
+- [ ] **DEPLOY-COMPOSE-SMOKE** — Vollen prod-Stack lokal hochfahren und eine Partie durchspielen. **[hängt an BUG-PROD-CHANGELOG]**
+
+  Vorhandene Bausteine: `docker-compose.yml` (Services `postgres` + `app`, Profil `prod`, ENV-Wiring inkl. `LOCODOKO_DB_*`/`GOOGLE_CLIENT_*`), `Dockerfile.app` (Multi-Stage: `mvn package` baut Frontend ein → schlankes JRE-Image). Bislang nie real verifiziert.
+
+  **Schritte:** 1. `docker compose --profile prod up --build -d`. 2. Warten bis `postgres` healthy + `curl -s http://localhost:8081/actuator/health` „UP". 3. Liquibase-Migration im App-Log prüfen (keine Fehler). 4. Im Browser/E2E eine Partie gegen KI bis zur Auswertung durchspielen. 5. Stack wieder runterfahren.
+
+  **DoD:** prod-Stack startet reproduzierbar, Health UP, eine Partie läuft bis Auswertung durch. Etwaige Fehler als eigene `BUG-…`-Tasks. **Risiko:** mittel.
+
+- [ ] **DOC-ENV-DEPLOY** — `.env.example` + README für öffentlichen Betrieb vervollständigen.
+
+  `.env.example` enthält aktuell nur `GH_TOKEN` (Agent-Container), nicht die von `docker-compose.yml`/prod erwarteten Variablen. README ist auf Devmode-Stichworte beschränkt.
+
+  **Erste Datei zuerst:** `.env.example` — ergänzen: `LOCODOKO_DB_USERNAME`, `LOCODOKO_DB_PASSWORD`, `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `LOCODOKO_WEBSOCKET_ALLOWED_ORIGINS` (mit Kommentaren/Beispielwerten). Dann `README.md` — Abschnitt „Öffentlicher Betrieb": JAR-Build (`mvn clean package`), Start via `docker compose --profile prod up -d`, Google-OAuth2 einrichten (Redirect-URI `https://<domain>/login/oauth2/code/google`), HTTPS/Reverse-Proxy-Hinweis wegen `server.servlet.session.cookie.secure=true`, `LOCODOKO_WEBSOCKET_ALLOWED_ORIGINS` auf die Domain setzen.
+
+  **DoD:** `.env.example` deckt alle prod-ENV ab; README erklärt einen Deploy von Null. Kein Code-Change, kein Test.
+
+- [ ] **DEPLOY-OAUTH-SENTINEL** — „Mit Google anmelden" nur anzeigen/aktiv, wenn OAuth2 konfiguriert ist (klein, optional).
+
+  `application.properties` Z. 19–20 setzt `client-id/secret` auf Default-Sentinel `disabled`. Ohne echte Credentials registriert Spring trotzdem einen Google-Client mit ID „disabled" → ein „Login mit Google"-Button liefe ins Leere. Passwort-Login funktioniert unabhängig.
+
+  **Erste Datei zuerst:** `src/main/java/de/locodoko/spieler/SecurityConfig.java` — OAuth2-Login nur registrieren, wenn `GOOGLE_CLIENT_ID` ≠ `disabled`/leer (z.B. `@ConditionalOnProperty` oder bedingte `ClientRegistrationRepository`-Bean). Frontend-Login-Button entsprechend ausblenden, wenn Provider fehlt.
+
+  **DoD:** Ohne gesetzte Google-Credentials startet die App, zeigt keinen Google-Button und Passwort-Login funktioniert; mit Credentials erscheint der Button. Bestehende Auth-Tests grün. **Risiko:** niedrig.
+
+### Priorität 2 — CI/CD (volle Pipeline)
+
+- [ ] **CI-BUILD-TEST** — GitHub Actions Workflow für Build + Tests bei jedem Push/PR auf `main`.
+
+  Aktuell kein `.github/workflows/`. Bei agentengetriebenem Workflow fängt nichts rote Builds ab.
+
+  **Erste Datei zuerst:** `.github/workflows/ci.yml` — Job `backend`: Temurin 25 (siehe `Dockerfile.app`), `mvn clean verify`. Job `frontend`: Node 22, `cd frontend && npm ci && npm test && npm run build && npm run lint`. Trigger: `push`/`pull_request` auf `main`. Caching für Maven + npm.
+
+  **DoD:** Workflow läuft auf GitHub grün durch (beide Jobs). Badge optional in README. **Risiko:** niedrig.
+
+- [ ] **CI-DOCKER-BUILD** — Produktions-Image bauen und in GHCR pushen. **[hängt an CI-BUILD-TEST, DEPLOY-COMPOSE-SMOKE]**
+
+  **Erste Datei zuerst:** `.github/workflows/ci.yml` erweitern (oder `release.yml`) — Job baut `Dockerfile.app`, taggt mit Commit-SHA + `latest`, pusht nach `ghcr.io/<owner>/locodoko` (nur auf `main`/Tag, via `GITHUB_TOKEN`/`packages: write`).
+
+  **DoD:** Nach Push auf `main` liegt ein lauffähiges Image in GHCR; lokal `docker run` startet die App (gegen externe Postgres-ENV). **Risiko:** niedrig.
+
+- [ ] **CD-DEPLOY** — Auto-Deploy auf die Zielplattform. **[BLOCKED: Plattformwahl offen]**
+
+  **Harte Anforderung:** Europäisches Hosting, Server in der EU/Deutschland (Datenresidenz). Daher US-Anbieter (Fly.io, Railway) ausgeschlossen, auch wenn sie EU-Regionen anbieten. Engere Wahl: Hetzner (🇩🇪), Scaleway (🇫🇷), Netcup (🇩🇪), OVHcloud (🇫🇷). Tendenz: günstiger VPS via `docker compose`.
+
+  Bis zur Plattformentscheidung: kein automatischer Deploy-Step. Stattdessen dokumentierter manueller Roll-out (`docker compose pull && docker compose --profile prod up -d` auf dem Zielserver) als Teil von `DOC-ENV-DEPLOY`. Sobald Plattform feststeht: entsperren und konkretisieren (bei VPS: GitHub Action → SSH → `docker compose pull && up -d`).
+
+  **DoD (bei Entsperrung):** Push auf `main` → automatischer Deploy der neuen Version auf die EU-Zielplattform; Health-Check nach Deploy. **Risiko:** abhängig von Plattform.
+
+### Priorität 3 — Vor Live-Gang (niedrig, aber laut Spec Multiplayer-Blocker)
+
+- [ ] **VERIFY-MULTIPLAYER** — E2E-Verifikation Mensch-gegen-Mensch über mehrere unabhängige Sessions.
+
+  `authentifizierung.md` nennt dies selbst den „Blocker für echten Multiplayer". Bestehende E2E testen v.a. Spiel gegen KI (`partie-gegen-ki.spec.ts`, `solo-spielfluss.spec.ts`, `reconnect.spec.ts`). Echtes Mensch-gegen-Mensch (mehrere reale Sessions/Logins an einem Tisch) ist bisher nicht als E2E abgedeckt.
+
+  **Erste Datei zuerst:** `e2e/tests/` — neues Spec mit 2–4 unabhängigen Browser-Contexts (getrennte Sessions/Logins), die denselben Tisch betreten und eine Partie bis zur Auswertung durchspielen. Prüfen: Snapshot+Hint-Sync zwischen allen Clients, korrekte Sicht pro Spieler (keine fremden Hände sichtbar), Stichannahme reihum.
+
+  **DoD:** grünes E2E mit ≥2 menschlichen Sessions an einem Tisch, eine Partie durchgespielt. Vor dem öffentlichen Live-Gang erledigen. **Risiko:** mittel (Test-Orchestrierung mehrerer Sessions).
+
+### Priorität 4 — Produktreife & offene Entscheidungen (Session 30, Teil 2)
+
+> User-Wunsch: diese Themen sollen **zuerst als Specs erfasst** werden, bevor implementiert wird. Jede Task produziert (auch) eine Spec.
+
+- [ ] **SPEC-SQL-REVIEW** — Extrem kritisches Schema-/SQL-Review **vor** dem Aufbau der ersten echten DB.
+
+  Greenfield (keine Migration nötig) → das Schema kann jetzt sauber gezogen werden, bevor produktiv Daten liegen. Hängt fachlich mit `BUG-PROD-CHANGELOG` zusammen (Changelog-Hygiene). Prüfen: Normalformen (3NF), Audit-Spalten (`erstellt_am`, `geaendert_am`, ggf. `erstellt_von` als `timestamptz`), Primär-/Fremdschlüssel + ON DELETE, Indizes (insb. Fremdschlüssel + Abfragepfade `tischId`/`partieId`/`spielerId`), Datentypen (UUID, `timestamptz` statt `timestamp`, `numeric` statt float für Punkte), NOT-NULL/CHECK-Constraints, Namenskonventionen, JSONB-Spalten (Validierung/GIN-Index sinnvoll?), Liquibase-Changelog-Konsolidierung (`archiv/` vs. aktiv).
+
+  **Erste Datei zuerst:** `specs/datenbankmodell.md` — Review-Befunde + Soll-Schema dokumentieren. Daraus dann (eigene Build-Tasks) konsolidiertes Liquibase-Changelog. Gegen echtes Postgres 17 validieren (siehe `DEPLOY-COMPOSE-SMOKE`).
+
+  **DoD:** `datenbankmodell.md` enthält reviewtes Soll-Schema mit Audit-Konzept + Index-/Constraint-Liste; offene Schema-Änderungen als nachgelagerte `REFACTOR-DB-…`-Tasks. **Risiko:** mittel-hoch (Schema ist Fundament).
+
+- [ ] **OPS-GRAFANA-MONITORING** — Monitoring via Grafana Cloud (Free-Tier).
+
+  Spring Boot Actuator + Micrometer → Prometheus-Endpoint → Grafana Cloud (Free: Metriken/Logs/Traces). Free-Account vorhanden.
+
+  **Erste Datei zuerst:** neue `specs/betrieb-monitoring.md` (Was wird überwacht: JVM, HTTP-Latenzen, aktive Tische/Partien, WS-Verbindungen, Fehlerrate; welche Dashboards/Alerts). Dann Build-Tasks: `micrometer-registry-prometheus` ins `pom.xml`, `/actuator/prometheus` exponieren (gesichert), Grafana Alloy/Agent als Sidecar im `docker-compose.yml` zum remote_write an Grafana Cloud (Token via ENV, kein Secret im Repo).
+
+  **DoD:** Spec beschreibt Monitoring-Konzept; (Build) Metriken erscheinen im Grafana-Cloud-Dashboard. **Risiko:** niedrig-mittel.
+
+- [ ] **OPS-DOMAIN** — Domain + DNS + TLS für den öffentlichen Betrieb.
+
+  Wird gebraucht: OAuth2-Redirect-URI, `cookie.secure=true` (erzwingt HTTPS), `LOCODOKO_WEBSOCKET_ALLOWED_ORIGINS`. prod-Props referenzieren bereits beispielhaft `locodoko.de`.
+
+  **Erste Datei zuerst:** Abschnitt in `DOC-ENV-DEPLOY`/README bzw. `specs/betrieb-monitoring.md`-Nachbarspec: Domain wählen+registrieren (EU-Registrar), DNS auf den Server zeigen, TLS via Reverse-Proxy (Caddy/Traefik + Let's Encrypt) vor der App, HTTP→HTTPS-Redirect. OAuth-Redirect-URI + WS-Origins auf die finale Domain setzen.
+
+  **DoD:** Domain zeigt per HTTPS auf die App, OAuth-Redirect + WS-Origins konfiguriert. **Risiko:** niedrig. **[teilw. abhängig von Plattformwahl]**
+
+- [ ] **DOC-LLM-WIKI** — LLM-zugängliche Wissensbasis aus den Specs (Karpathy-Stil).
+
+  Referenz: Karpathy-Gist (LLM-freundliche Doku). Ziel: die ~47 Specs für Mensch **und** LLM navigierbar machen — konsolidierter Einstieg, klare Querverweise, ggf. generierter Index/Wiki.
+
+  **Erste Datei zuerst:** Konzept in `specs/README.md` erweitern oder neue `specs/llm-wiki.md` — Struktur festlegen (z.B. ein generiertes Single-File-Bundle aller Specs + Glossar + „Wo finde ich was"-Index; oder MkDocs/Docusaurus-Site). Karpathy-Prinzipien (eindeutige Begriffe, flache Hierarchie, explizite Verweise) anwenden.
+
+  **DoD:** Konzept-Spec vorhanden; (Build) generierter Wiki-/Bundle-Output. **Risiko:** niedrig.
+
+- [ ] **FE-UI-FINAL-REVIEW** — Finales UI/UX-Review; „nicht schöne" Stellen katalogisieren.
+
+  User empfindet viele UI-Details als unschön. Systematisch erfassen statt punktuell fixen.
+
+  **Erste Datei zuerst:** Vision-Loop über alle Spielzustände laufen lassen (`cd e2e && npx playwright test --config=playwright.config.vision.ts`), Screenshots in `e2e/screenshots/` einlesen und gegen `specs/frontend-visuelles-design.md` prüfen. Befunde als priorisierte `FE-…`-Einzeltasks unter „Entdeckungen" eintragen (Spacing, Farben, Typografie, Alignment, Animationen).
+
+  **DoD:** Katalog konkreter UI-Mängel als Tasks; `frontend-visuelles-design.md` bei Bedarf präzisiert. **Risiko:** niedrig.
+
+- [x] **DECISION-AUTH** — **Entschieden (Session 30): beide Methoden behalten** (Google OAuth2 + Username/Passwort/bcrypt). `authentifizierung.md` ist damit konsistent, kein Code-Change nötig.
+
+- [ ] **SPEC-RECHT** — Rechtstexte für öffentlichen Betrieb in DE (Pflicht-Voraussetzung für Live-Gang).
+
+  Für einen öffentlich betriebenen Dienst in Deutschland gesetzlich erforderlich: **Impressum** (§5 DDG), **Datenschutzerklärung** (DSGVO — Accounts, Google-OAuth-Datenfluss, Statistiken). **AGB/Nutzungsbedingungen** empfohlen (Haftung, Verhaltensregeln, Account-Sperrung).
+
+  **Erste Datei zuerst:** neue `specs/recht-impressum-datenschutz.md` — Inhalte/Pflichtangaben skizzieren (Impressum-Felder, verarbeitete Datenarten, Rechtsgrundlagen, Drittland-Hinweis Google-OAuth, Lösch-/Auskunftsrechte). Dann Build-Task: Frontend-Seiten/Footer-Links (`/impressum`, `/datenschutz`, `/agb`). **Hinweis:** konkrete Rechtstexte ggf. anwaltlich/Generator prüfen — die Spec definiert nur Struktur & Pflichtangaben.
+
+  **DoD:** Spec mit Pflichtangaben vorhanden; (Build) Seiten verlinkt und erreichbar. **Risiko:** niedrig (Inhalt), rechtlich relevant.
+
+- [ ] **OPS-EMAIL** — Email-Versand für Registrierungs-Verifizierung + Passwort-Reset (V2).
+
+  Aktuell keine Email-Infra. Auth-Spec stellt Email optional, Passwort-Reset V2. Bei Bedarf: EU-Transaktionsmail-Anbieter mit Free-Tier (Brevo 🇫🇷, Mailjet 🇫🇷) oder SMTP. Kein Launch-Blocker, aber sinnvoll gegen Fake-Accounts.
+
+  **Erste Datei zuerst:** `authentifizierung.md` — Abschnitt „Email-Verifizierung & Passwort-Reset (V2)" konkretisieren (Anbieterwahl EU, Double-Opt-In, Reset-Token-Ablauf). Dann Build-Tasks (Spring Mail / Anbieter-API, ENV-Secrets).
+
+  **DoD:** Spec definiert Email-Flows + EU-Anbieter; (Build) Verifizierungs-/Reset-Mail wird versendet. **Risiko:** niedrig-mittel. **[Priorität niedrig — kein Launch-Blocker]**
+
+- [ ] **DECISION-LIZENZ** — Projektlizenz festlegen + `LICENSE`-Datei anlegen. **[WARTET AUF USER-ENTSCHEIDUNG — bewusst aufgeschoben]**
+
+  Tendenz Apache-2.0. **Aber:** User erwägt evtl. spätere Steam-/kommerzielle Veröffentlichung. **Zielkonflikt:** Eine permissive Lizenz (Apache/MIT) erlaubt jedem — auch Dritten — das Spiel nachzubauen und kommerziell (auch auf Steam) zu vertreiben, was einer eigenen bezahlten Veröffentlichung den Boden entziehen kann. Wer kommerzielle Verwertung offenhalten will, wählt eher **proprietär** oder **AGPL-3.0** (Copyleft hält Klone offen, erlaubt aber Dual-Licensing). Entscheidung an anderer Stelle, wenn Steam-Frage geklärt ist.
+
+---
+
+## Offene Aufgaben (Spec-getriebene Tasks — alle erledigt)
 
 ### Priorität 1 — Doku-Hygiene (klein, risikoarm)
 
