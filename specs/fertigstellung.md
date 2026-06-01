@@ -27,6 +27,20 @@ gegeneinander (und gegen KI). Hosting-Anforderung: **europäisch, Server in der 
 Hosting-Favorit: **hosting.de** (DE-Anbieter, Account vorhanden); Alternativen: Hetzner 🇩🇪,
 Netcup 🇩🇪, Scaleway 🇫🇷. Plattformwahl bewusst aufgeschoben.
 
+## Meilensteine
+
+**M1 — Closed Beta auf locodoko.de** (eingeladene Kollegen, Feedback sammeln). Entscheidungen
+(Session 30): Beta-Daten **erhalten** → Schema final + Backups **vor** M1; Zugang via **locodoko.de**
+(Domain+TLS); **Google OAuth aktiv**. Damit ist M1 ein **erster echter Deploy** (kein Wegwerf-Test).
+M1-Blocker: `BUG-PROD-CHANGELOG`, `SPEC-SQL-REVIEW`, `DEPLOY-COMPOSE-SMOKE`, `BACKUP-DB`,
+`OPS-DOMAIN`, `DEPLOY-OAUTH-SENTINEL` + OAuth-Credentials, `BETA-ACCESS` (invite-only),
+`DOC-ENV-DEPLOY`, `OPS-COMPOSE-HARDENING`, `CD-DEPLOY (manuell)`, `FEAT-FEEDBACK`. Empfohlen:
+Monitoring + Logs, minimaler Datenschutzhinweis, `SECURITY-REVIEW`.
+
+**M2 — Public Go-Live.** Voller `SPEC-RECHT` (Impressum/Datenschutz/AGB), `SECURITY-REVIEW`,
+automatisiertes CI/CD, `VERIFY-MULTIPLAYER`, `FE-SPIELREGELN-HILFE`, `FEAT-BUGREPORT`,
+`DOC-DOCS-SITE`, `QA-CODE-METRICS`, `FE-UI-FINAL-REVIEW`, `FE-MOBILE`, `OPS-EMAIL`, `DECISION-LIZENZ`.
+
 ## Backlog
 
 > **Kritische Reihenfolge:** `SPEC-SQL-REVIEW` (6) muss **vor dem ersten echten Deploy** (`CD-DEPLOY`)
@@ -77,20 +91,45 @@ Netcup 🇩🇪, Scaleway 🇫🇷. Plattformwahl bewusst aufgeschoben.
 13. **VERIFY-MULTIPLAYER** — E2E-Verifikation Mensch-gegen-Mensch über mehrere echte Sessions.
     Laut `authentifizierung.md` der „Blocker für echten Multiplayer". Vor Live-Gang.
 
+### Beta/Go-Live (Session 30, Teil 3)
+
+14. **BACKUP-DB** (M1) — automatische Postgres-Backups (`pg_dump`, rotierend, off-volume) +
+    verifizierter Restore. Aktuell **kein** Backup-Mechanismus; Beta-Daten erhalten → Pflicht ab Tag 1.
+15. **BETA-ACCESS** (M1) — Registrierung invite-only/Whitelist. `/register` ist heute **offen**.
+16. **OPS-COMPOSE-HARDENING** (M1) — `app`-Service `restart`-Policy + Healthcheck (fehlt; Postgres hat beides).
+17. **FEAT-FEEDBACK** (M1, leicht) — „Feedback geben"-Link/Form für die Beta (leichter als FEAT-BUGREPORT).
+18. **SECURITY-REVIEW** (M1 empfohlen / M2 Pflicht) — vor öffentlicher Exposition: Auth/Rate-Limit, CORS,
+    WS-`allowed-origins` (in prod auskommentiert!), Secrets, Cookie-Flags, OAuth-Redirect, CVEs.
+19. **FE-SPIELREGELN-HILFE** (M2) — In-App-Regeln/Onboarding (keine Spielerklärung vorhanden; DoKo komplex).
+20. **FE-MOBILE** (M2) — Mobile-/Touch-/Portrait-Tauglichkeit (`Scale.FIT` skaliert, aber nicht optimiert).
+
 ## Offene Entscheidungen
 
 - **Authentifizierung:** ✅ entschieden (Session 30) — **beide Methoden behalten**
   (Google OAuth2 + Username/Passwort/bcrypt). `authentifizierung.md` bleibt unverändert.
+- **Beta-Daten:** ✅ **erhalten** — Kollegen-Spiele/Statistiken bleiben → Schema final + Backups vor M1.
+- **Beta-Zugang:** ✅ via **locodoko.de** im Browser (Domain+TLS in M1), **Google OAuth aktiv** in der Beta.
+- **Mobile:** ⏸️ erst M2 (für die Beta Desktop/Browser ausreichend).
 - **Lizenz:** ⏸️ **aufgeschoben.** Tendenz Apache-2.0. Zielkonflikt: mögliche spätere
   **Steam-/kommerzielle Veröffentlichung** — eine permissive Lizenz (Apache/MIT) erlaubt Dritten den
   kommerziellen Nachbau. Wer Verwertung offenhalten will: eher **proprietär** oder **AGPL-3.0**.
   Entscheidung, sobald die Steam-Frage geklärt ist.
 
-## Live-Gang-Blocker (Checkliste vor öffentlichem Betrieb)
+## Checklisten
 
-- [ ] BUG-PROD-CHANGELOG behoben, prod-Stack verifiziert (1, 2)
-- [ ] **Schema final (SPEC-SQL-REVIEW)** — vor erstem echten Deploy, solange greenfield (6)
-- [ ] Impressum + Datenschutzerklärung veröffentlicht (11)
-- [ ] Domain + HTTPS aktiv, OAuth-Redirect/WS-Origins gesetzt (8)
+### M1 — Closed Beta (locodoko.de, Daten erhalten)
+- [ ] BUG-PROD-CHANGELOG behoben, prod-Stack verifiziert (1, 3)
+- [ ] **Schema final (SPEC-SQL-REVIEW)** — vor M1, da Daten erhalten bleiben (6)
+- [ ] Backups laufen + Restore getestet (14)
+- [ ] locodoko.de + HTTPS aktiv, Google-OAuth-Redirect/WS-Origins gesetzt (8)
+- [ ] Registrierung invite-only (15)
+- [ ] app-Service restart/Healthcheck (16); erster Deploy auf hosting.de
+- [ ] Feedback-Kanal (17); minimaler Datenschutzhinweis; SECURITY-REVIEW (18)
+
+### M2 — Public Go-Live (zusätzlich)
+- [ ] Impressum + Datenschutzerklärung + AGB veröffentlicht (11)
+- [ ] SECURITY-REVIEW vollständig, kritische Findings behoben (18)
+- [ ] Automatisiertes CI/CD (5)
 - [ ] Mensch-gegen-Mensch verifiziert (13)
+- [ ] In-App-Spielregeln/Onboarding (19)
 - [ ] Lizenz entschieden

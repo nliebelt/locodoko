@@ -24,29 +24,26 @@ Erledigt (Session 26–28): DOC-PUNKTE-HINWEISE ✓ · SPEC-ARCH-HIERARCHIE ✓ 
 
 Spec-getriebene Tasks: **alle erledigt** (Code feature-complete gegenüber allen 47 Specs).
 
-Nächste offene Tasks — Fertigstellung öffentlicher Betrieb (Session 30). **Schlüssel-Reihenfolge:** Das DB-Schema muss **vor dem ersten echten Deploy** final sein — danach erzwingt jede Änderung eine Liquibase-Migration gegen Live-Daten (jetzt noch greenfield, frei umziehbar).
+Nächste offene Tasks — Fertigstellung (Session 30). **Zwei Meilensteine:** **M1 = Closed Beta auf locodoko.de** (eingeladene Kollegen, Feedback sammeln) · **M2 = Public Go-Live**.
 
-**Phase A — vor dem ersten echten Deploy (greenfield-Fenster, Schema festklopfen):**
-1. **BUG-PROD-CHANGELOG** (P0, Deploy-Blocker) — prod-Profil lädt fehlende Changelog-Datei
-2. **SPEC-SQL-REVIEW** — kritisches Schema-Review (Normalform, Audit, Indizes) + Changelog-Konsolidierung. **Gate für CD-DEPLOY.**
-3. **DEPLOY-COMPOSE-SMOKE** — prod-Stack hochfahren, **finales** Schema gegen echtes Postgres validieren, Partie durchspielen
+**Beta-Entscheidungen (Session 30, Teil 3):** Daten **erhalten** → Schema final + Backups **vor** M1; Zugang via **locodoko.de** (Domain+TLS); **Google OAuth aktiv** in der Beta. Damit ist M1 faktisch ein **erster echter Deploy** (kein Wegwerf-Test) — Schema-Gate, Backups und Domain/OAuth sind M1-Blocker. Geräte: Browser/Online; Mobile-Optimierung erst M2.
 
-**Phase B — Betrieb scharfschalten (vor Live-Gang):**
-4. **SPEC-RECHT** — Impressum + Datenschutz (Pflicht in DE) + AGB
-5. **OPS-DOMAIN** — Domain + DNS + TLS (Reverse-Proxy, OAuth-Redirect, WS-Origins)
-6. **DOC-ENV-DEPLOY** — `.env.example` + README für Betrieb
-7. **DEPLOY-OAUTH-SENTINEL** — Google-Login nur bei konfigurierten Credentials
-8. **CI-BUILD-TEST** → **CI-DOCKER-BUILD** → **CD-DEPLOY** (echter Deploy; blockiert bis: SPEC-SQL-REVIEW ✓ + SPEC-RECHT ✓ + OPS-DOMAIN ✓ + Plattformwahl. EU/DE-Hosting Pflicht, Favorit **hosting.de**)
-9. **VERIFY-MULTIPLAYER** — Mensch-gegen-Mensch E2E, vor Live-Gang
+**Meilenstein 1 — Closed Beta (locodoko.de, eingeladene Kollegen, Daten erhalten):**
+1. **BUG-PROD-CHANGELOG** (P0) — App bootet gegen Postgres
+2. **SPEC-SQL-REVIEW** — Schema final + Changelog-Konsolidierung. **Gate (Daten bleiben erhalten!).**
+3. **DEPLOY-COMPOSE-SMOKE** — finales Schema gegen echtes Postgres, Partie durchspielen
+4. **BACKUP-DB** — `pg_dump`-Backups + Restore-Test, ab Tag 1 (Daten erhalten!)
+5. **OPS-DOMAIN** — locodoko.de + DNS + TLS (Reverse-Proxy)
+6. **DEPLOY-OAUTH-SENTINEL** + **OAuth-Credentials** — Google-Login aktiv, Redirect-URI auf locodoko.de
+7. **BETA-ACCESS** — Registrierung invite-only/Whitelist (heute offen!)
+8. **DOC-ENV-DEPLOY** — Server-ENV/Secrets + Roll-out-Anleitung
+9. **OPS-COMPOSE-HARDENING** — `app`-Service restart-Policy + Healthcheck
+10. **CD-DEPLOY (manuell)** — erster echter Deploy auf hosting.de (**Plattformwahl nötig**)
+11. **FEAT-FEEDBACK** — leichter „Feedback geben"-Link/Form für die Beta
+- *Empfohlen für M1 (Debugging/Sicherheit):* OPS-GRAFANA-MONITORING + OPS-LOGS-LOKI; minimaler Datenschutzhinweis (Subset SPEC-RECHT, da Google-OAuth Daten verarbeitet); SECURITY-REVIEW vor Exposition auf öffentlicher Domain.
 
-**Phase C — Reife & Sichtbarkeit (parallel/danach, keine Blocker):**
-10. **OPS-GRAFANA-MONITORING** — Grafana Cloud Free-Tier (Actuator/Micrometer/Prometheus)
-11. **OPS-LOGS-LOKI** — Logs nach Grafana Cloud Loki (Free), per LogQL abfragbar (Teil von Monitoring)
-12. **FEAT-BUGREPORT** — In-App-Bugreport mit Kontext → GitHub-Issue + Log-Verknüpfung (Sentry empfohlen)
-13. **DOC-DOCS-SITE** — öffentliche Docs-/Wiki-Seite (MkDocs Material empf.), LLM-tauglich
-14. **QA-CODE-METRICS** — Code-Metriken/Static-Analysis → Refactoring-Kandidaten + Report fürs Wiki
-15. **FE-UI-FINAL-REVIEW** — finales UI/UX-Review, Mängel katalogisieren
-16. **OPS-EMAIL** — Email-Versand Registrierung/Passwort-Reset (niedrig, kein Blocker)
+**Meilenstein 2 — Public Go-Live:**
+- **SPEC-RECHT** (Impressum + Datenschutz Pflicht + AGB) · **SECURITY-REVIEW** · **CI/CD automatisiert** (CI-BUILD-TEST → CI-DOCKER-BUILD → CD-DEPLOY) · **VERIFY-MULTIPLAYER** · **FE-SPIELREGELN-HILFE** (Onboarding, da DoKo komplex) · **FEAT-BUGREPORT** (voll) · **DOC-DOCS-SITE** · **QA-CODE-METRICS** · **FE-UI-FINAL-REVIEW** · **FE-MOBILE** (Touch/Portrait) · **OPS-EMAIL** · **DECISION-LIZENZ**
 
 Entscheidungen: **DECISION-AUTH** ✓ beide behalten · **DECISION-LIZENZ** aufgeschoben (Steam-Frage offen, Tendenz Apache vs. proprietär/AGPL)
 
@@ -225,6 +222,66 @@ Entscheidungen: **DECISION-AUTH** ✓ beide behalten · **DECISION-LIZENZ** aufg
 - [ ] **DECISION-LIZENZ** — Projektlizenz festlegen + `LICENSE`-Datei anlegen. **[WARTET AUF USER-ENTSCHEIDUNG — bewusst aufgeschoben]**
 
   Tendenz Apache-2.0. **Aber:** User erwägt evtl. spätere Steam-/kommerzielle Veröffentlichung. **Zielkonflikt:** Eine permissive Lizenz (Apache/MIT) erlaubt jedem — auch Dritten — das Spiel nachzubauen und kommerziell (auch auf Steam) zu vertreiben, was einer eigenen bezahlten Veröffentlichung den Boden entziehen kann. Wer kommerzielle Verwertung offenhalten will, wählt eher **proprietär** oder **AGPL-3.0** (Copyleft hält Klone offen, erlaubt aber Dual-Licensing). Entscheidung an anderer Stelle, wenn Steam-Frage geklärt ist.
+
+### Priorität 5 — Beta/Go-Live-Tasks (Session 30, Teil 3)
+
+> Aus der Meilenstein-Planung (M1 Closed Beta / M2 Public). M1-Blocker zuerst.
+
+- [ ] **BACKUP-DB** (M1) — Automatische Postgres-Backups + verifizierter Restore.
+
+  Aktuell **kein** Backup-Mechanismus. Beta-Daten sollen erhalten bleiben → Backups ab Tag 1 Pflicht.
+
+  **Erste Datei zuerst:** `docker-compose.yml` — Backup-Sidecar oder Cron (`pg_dump` der `locodoko`-DB, täglich, rotierend, off-volume; idealerweise off-site/verschlüsselt). Restore-Prozedur dokumentieren in `DOC-ENV-DEPLOY`/README und **einmal real testen** (Backup → frische DB → Restore → App startet).
+
+  **DoD:** Tägliches Backup läuft, Restore nachweislich getestet, Ablage außerhalb des DB-Volumes. **Risiko:** niedrig-mittel (Datensicherheit).
+
+- [ ] **BETA-ACCESS** (M1) — Registrierung invite-only/Whitelist für die Closed Beta.
+
+  `/register` ist heute **offen** (jeder mit der URL kann Accounts anlegen). Für eine geschlossene Beta auf öffentlicher Domain muss die Registrierung gated sein.
+
+  **Erste Datei zuerst:** `src/main/java/de/locodoko/spieler/AuthentifizierungsController.java` (`/register`) — Gating via Einladungscode/Whitelist (z.B. ENV-Liste erlaubter Emails/Codes oder Invite-Token). Tisch-Einladungslinks existieren bereits, betreffen aber nur Tisch-Beitritt, nicht die Account-Anlage.
+
+  **DoD:** Ohne gültigen Invite/Whitelist-Eintrag schlägt `/register` fehl; eingeladene Kollegen kommen rein. Tests grün. **Risiko:** niedrig.
+
+- [ ] **OPS-COMPOSE-HARDENING** (M1) — `app`-Service betriebsfest machen.
+
+  Der `app`-Service in `docker-compose.yml` hat (anders als `postgres`) **keine `restart`-Policy und keinen Healthcheck**.
+
+  **Erste Datei zuerst:** `docker-compose.yml` (`app`-Service) — `restart: unless-stopped` + `healthcheck` auf `/actuator/health`; ggf. `depends_on: postgres condition: service_healthy` (bereits vorhanden prüfen).
+
+  **DoD:** App startet nach Crash/Reboot automatisch neu; Healthcheck grün. **Risiko:** niedrig.
+
+- [ ] **FEAT-FEEDBACK** (M1, leicht) — „Feedback geben"-Kanal für die Beta.
+
+  Für schnelles Kollegen-Feedback; bewusst **leichter** als `FEAT-BUGREPORT` (kein GitHub/Log-Pipeline nötig).
+
+  **Erste Datei zuerst:** Frontend — Button/Link „Feedback" mit kurzem Formular (Freitext) → simpler Backend-Endpoint, der in `logs/locodoko.log` schreibt oder an einen Webhook (z.B. Discord/Matrix) sendet. Alternativ erstmal nur ein externer Link (Discord/Formular).
+
+  **DoD:** Beta-Tester können aus der App Feedback abgeben; landet auffindbar (Log/Webhook). **Risiko:** niedrig.
+
+- [ ] **SECURITY-REVIEW** (M1 empfohlen / M2 Pflicht) — Sicherheits-Review vor öffentlicher Exposition.
+
+  Vor dem Stellen auf eine öffentliche Domain. Es existiert das `/security-review`-Tooling.
+
+  **Prüfumfang:** Auth-Endpunkte + Rate-Limiting, CORS + WebSocket-`allowed-origins` (in prod auskommentiert!), Secret-Handling (keine Secrets im Image/Repo), Session-Cookie-Flags, Input-Validierung, OAuth-Redirect-Whitelist, Abhängigkeits-CVEs.
+
+  **DoD:** Review durchgeführt, Findings als `BUG-…`-Tasks erfasst, kritische vor Exposition behoben. **Risiko:** mittel.
+
+- [ ] **FE-SPIELREGELN-HILFE** (M2) — In-App-Spielregeln/Onboarding.
+
+  Keine spielerklärende Hilfe erkennbar (nur Regel-*Presets* der Tischkonfig). Doppelkopf ist komplex → für ein öffentliches Publikum nötig; für DoKo-kundige Kollegen in M1 entbehrlich.
+
+  **Erste Datei zuerst:** Frontend — Regel-/Hilfe-Overlay (Trumpfhierarchie, Ansagen, Sonderspiele) verlinkt aus Lobby + Tisch. Inhalte aus `specs/` ableitbar.
+
+  **DoD:** Erreichbare Regelhilfe in der App. **Risiko:** niedrig.
+
+- [ ] **FE-MOBILE** (M2) — Mobile-/Touch-/Portrait-Tauglichkeit.
+
+  Phaser nutzt `Scale.FIT` auf 1280×720 — skaliert (letterboxed), aber **nicht** mobil-optimiert (Portrait, Touch-Targets, kleine Karten). Entscheidung Mobile erst M2.
+
+  **Erste Datei zuerst:** `frontend/src/main.ts` (Scale-Config) + Tisch-Layout — Touch-Bedienung, Portrait-Handling, Karten-Trefferflächen. Vision-Loop mit mobilen Viewports erweitern.
+
+  **DoD:** Spielbar auf gängigen Mobil-Viewports; Vision-Screenshots ohne Layout-Brüche. **Risiko:** mittel.
 
 ---
 
