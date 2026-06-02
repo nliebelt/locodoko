@@ -4,7 +4,7 @@
 
 ## Notiz
 
-**Session 31 (2026-06-02) — BUG-PROD-CHANGELOG + SPEC-SQL-REVIEW + SESSION-PERSISTENZ + OPS-COMPOSE-HARDENING erledigt:** Changelog-Pfad korrigiert; Schema-Review in `datenbankmodell.md` dokumentiert; `spring-session-jdbc` hinzugefügt; `docker-compose.yml` `app`-Service mit `restart: unless-stopped` + Healthcheck (`/actuator/health`, interval 30s, start_period 60s); `Dockerfile.app` Runtime-Stage: `curl` installiert. Nächster Task in Block A: **OPS-BUILD-INFO** (`/actuator/info` mit Git-SHA).
+**Session 31 (2026-06-02) — Alle Block-A-Ops-Tasks erledigt:** BUG-PROD-CHANGELOG (Changelog-Pfad), SPEC-SQL-REVIEW (Schema-Review), SESSION-PERSISTENZ (spring-session-jdbc), OPS-COMPOSE-HARDENING (restart+Healthcheck), OPS-BUILD-INFO (git-commit-id-maven-plugin → git.properties; `management.info.git.enabled=true`; `/actuator/info` liefert Branch + Abbrev-SHA + Timestamp). Nächster Task in Block A: **BACKUP-DB** (Backup-Skript + Restore-Doku).
 
 **Session 29 (2026-06-01):** `BUG-EINSTELLUNGEN-MODAL` + `BUG-LOBBY-TISCHEINTRAG` behoben. Modal-Fix: In `TischInputHandler` Navigation-Shortcuts ('i', 's') vor `vorbehaltAktiv`-Check verschoben — im Turbo-Modus war die Vorbehalt-Phase bereits aktiv beim 's'-Druck. Lobby-Fix: Button-Text "Beitreten"/"Fortsetzen" lief dunkelgrün (#14361f) auf dunklem Hintergrund aus dem 150px-Button über (Zeichenbreite ~20.5px → 9 Zeichen = 185px). Behoben: `spielerTxt` auf x=10, nur für nicht-hervorgehobene Einträge; Button x=175, breite=215. Neuer Regressions-Test im Handler. Vision-Loop grün, alle Screenshots ohne Overflow. **Alle Tasks erledigt.**
 
@@ -261,7 +261,7 @@ Entscheidungen: **DECISION-AUTH** ✓ beide behalten · **DECISION-LIZENZ** aufg
 
   **DoD:** Nach App-Neustart bleiben angemeldete Spieler eingeloggt; Session-Tabelle in Postgres. **Risiko:** niedrig-mittel.
 
-- [ ] **OPS-BUILD-INFO** (M1, klein) — Version/Build-Info über Actuator.
+- [x] **OPS-BUILD-INFO** (M1, klein) — Version/Build-Info über Actuator.
 
   Fürs Beta-Debugging: „welcher Build läuft?".
 
