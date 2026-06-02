@@ -9,9 +9,11 @@ import jakarta.servlet.http.HttpSession;
 import jakarta.validation.Valid;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -33,6 +35,9 @@ public class AuthentifizierungsController {
     private final PasswordEncoder passwordEncoder;
     private final SpielerSessionEigenschaften eigenschaften;
 
+    @Value("${spring.security.oauth2.client.registration.google.client-id:disabled}")
+    private String googleClientId;
+
     public AuthentifizierungsController(SpielerRepository spielerRepository,
                                         PasswordEncoder passwordEncoder,
                                         SpielerSessionEigenschaften eigenschaften) {
@@ -40,6 +45,18 @@ public class AuthentifizierungsController {
         this.passwordEncoder = passwordEncoder;
         this.eigenschaften = eigenschaften;
     }
+
+    @Operation(summary = "Auth-Konfiguration abfragen", description = "Liefert, welche Login-Methoden aktiviert sind.")
+    @ApiResponse(responseCode = "200", description = "Konfiguration")
+    @GetMapping("/konfiguration")
+    public ResponseEntity<AuthKonfigurationAntwort> gibKonfiguration() {
+        boolean googleAktiv = googleClientId != null
+            && !googleClientId.isBlank()
+            && !googleClientId.equals("disabled");
+        return ResponseEntity.ok(new AuthKonfigurationAntwort(googleAktiv));
+    }
+
+    public record AuthKonfigurationAntwort(boolean googleOAuth2Aktiv) {}
 
     @Operation(summary = "Neuen Spieler registrieren", description = "Erstellt einen neuen Spieler mit Benutzername und Passwort. Loggt den Spieler automatisch ein.")
     @ApiResponses({

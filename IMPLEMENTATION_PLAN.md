@@ -4,7 +4,7 @@
 
 ## Notiz
 
-**Session 31 (2026-06-02) — Block-A-Tasks 1–6 erledigt:** BUG-PROD-CHANGELOG, SPEC-SQL-REVIEW, SESSION-PERSISTENZ, OPS-COMPOSE-HARDENING, OPS-BUILD-INFO, BACKUP-DB (`scripts/backup-db.sh` + `scripts/restore-db.sh`, `backups/` in .gitignore). Nächster Task in Block A: **DEPLOY-OAUTH-SENTINEL** (Google-Button nur anzeigen wenn Credentials gesetzt).
+**Session 31 (2026-06-02) — Block-A-Tasks 1–7 erledigt:** BUG-PROD-CHANGELOG, SPEC-SQL-REVIEW, SESSION-PERSISTENZ, OPS-COMPOSE-HARDENING, OPS-BUILD-INFO, BACKUP-DB, DEPLOY-OAUTH-SENTINEL (GET `/api/auth/konfiguration`, SecurityConfig konditioniert oauth2Login, LoginSzene.ts fetcht Konfig → Google-Button nur wenn Credentials gesetzt; 223 Tests grün). Nächster Task in Block A: **DOC-ENV-DEPLOY** (`.env.example` + README Deployment-Anleitung).
 
 **Session 29 (2026-06-01):** `BUG-EINSTELLUNGEN-MODAL` + `BUG-LOBBY-TISCHEINTRAG` behoben. Modal-Fix: In `TischInputHandler` Navigation-Shortcuts ('i', 's') vor `vorbehaltAktiv`-Check verschoben — im Turbo-Modus war die Vorbehalt-Phase bereits aktiv beim 's'-Druck. Lobby-Fix: Button-Text "Beitreten"/"Fortsetzen" lief dunkelgrün (#14361f) auf dunklem Hintergrund aus dem 150px-Button über (Zeichenbreite ~20.5px → 9 Zeichen = 185px). Behoben: `spielerTxt` auf x=10, nur für nicht-hervorgehobene Einträge; Button x=175, breite=215. Neuer Regressions-Test im Handler. Vision-Loop grün, alle Screenshots ohne Overflow. **Alle Tasks erledigt.**
 
@@ -91,7 +91,7 @@ Entscheidungen: **DECISION-AUTH** ✓ beide behalten · **DECISION-LIZENZ** aufg
 
   **DoD:** `.env.example` deckt alle prod-ENV ab; README erklärt einen Deploy von Null. Kein Code-Change, kein Test.
 
-- [ ] **DEPLOY-OAUTH-SENTINEL** — „Mit Google anmelden" nur anzeigen/aktiv, wenn OAuth2 konfiguriert ist (klein, optional).
+- [x] **DEPLOY-OAUTH-SENTINEL** — „Mit Google anmelden" nur anzeigen/aktiv, wenn OAuth2 konfiguriert ist (klein, optional).
 
   `application.properties` Z. 19–20 setzt `client-id/secret` auf Default-Sentinel `disabled`. Ohne echte Credentials registriert Spring trotzdem einen Google-Client mit ID „disabled" → ein „Login mit Google"-Button liefe ins Leere. Passwort-Login funktioniert unabhängig.
 

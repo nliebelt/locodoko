@@ -37,7 +37,11 @@ export class LoginSzene extends Phaser.Scene {
       callback: () => void appStore.erstelleQuickGame()
     });
 
-    this.baueLoginUi();
+    // Konfiguration laden: Google-Button nur anzeigen wenn OAuth2 aktiv
+    void fetch('/api/auth/konfiguration')
+      .then(r => r.json() as Promise<{ googleOAuth2Aktiv: boolean }>)
+      .then(konfig => this.baueLoginUi(konfig.googleOAuth2Aktiv))
+      .catch(() => this.baueLoginUi(false));
 
     this.abmeldenStore?.();
     this.abmeldenStore = appStore.abonniere((zustand) => {
@@ -51,8 +55,7 @@ export class LoginSzene extends Phaser.Scene {
     });
   }
 
-  private baueLoginUi(): void {
-    // Einfache Gast-Anmeldung (Phaser-Button)
+  private baueLoginUi(googleOAuth2Aktiv: boolean): void {
     new PhaserButton(this, {
       x: 640, y: 350,
       text: '👤 Als Gast spielen',
@@ -60,12 +63,14 @@ export class LoginSzene extends Phaser.Scene {
       callback: () => void appStore.alsGastStarten()
     });
 
-    new PhaserButton(this, {
-      x: 640, y: 430,
-      text: '🔑 Mit Google anmelden',
-      typ: 'secondary',
-      callback: () => { window.location.href = '/oauth2/authorization/google'; }
-    });
+    if (googleOAuth2Aktiv) {
+      new PhaserButton(this, {
+        x: 640, y: 430,
+        text: '🔑 Mit Google anmelden',
+        typ: 'secondary',
+        callback: () => { window.location.href = '/oauth2/authorization/google'; }
+      });
+    }
 
     this.add.text(640, 280, 'Wähle deinen Zugang:', {
       fontFamily: FONT_FAMILY,

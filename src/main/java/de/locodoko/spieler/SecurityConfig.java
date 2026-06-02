@@ -1,5 +1,6 @@
 package de.locodoko.spieler;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnWebApplication;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -26,6 +27,9 @@ public class SecurityConfig {
 
     private final OAuth2ErfolgsHandler oAuth2ErfolgsHandler;
     private final RateLimitingFilter rateLimitingFilter;
+
+    @Value("${spring.security.oauth2.client.registration.google.client-id:disabled}")
+    private String googleClientId;
 
     public SecurityConfig(OAuth2ErfolgsHandler oAuth2ErfolgsHandler, RateLimitingFilter rateLimitingFilter) {
         this.oAuth2ErfolgsHandler = oAuth2ErfolgsHandler;
@@ -61,14 +65,17 @@ public class SecurityConfig {
                 // Alle anderen Anfragen erfordern Spring-Security-Authentifizierung
                 .anyRequest().authenticated()
             )
-            .oauth2Login(oauth2 -> oauth2
-                .successHandler(oAuth2ErfolgsHandler)
-            )
             .formLogin(form -> form.disable())
             .csrf(csrf -> csrf.disable())
             .sessionManagement(session -> session
                 .sessionFixation(fix -> fix.changeSessionId())
             );
+
+        // OAuth2-Login nur aktivieren wenn echte Google-Credentials konfiguriert sind
+        if (googleClientId != null && !googleClientId.isBlank() && !googleClientId.equals("disabled")) {
+            http.oauth2Login(oauth2 -> oauth2.successHandler(oAuth2ErfolgsHandler));
+        }
+
         return http.build();
     }
 }
