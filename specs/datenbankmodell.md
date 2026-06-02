@@ -365,3 +365,71 @@ Audit-Spalten sind vorhanden aber inkonsistent:
 | `event_publication` | `publication_date TIMESTAMPTZ NOT NULL` | `completion_date TIMESTAMPTZ` | Spring Modulith managed |
 
 **Befund:** `erstellt_am` ist auf allen Haupttabellen vorhanden und als `TIMESTAMP WITH TIME ZONE` korrekt. Nullable-Status ist leicht problematisch — in der App werden Werte gesetzt, aber die DB erzwingt es nicht.
+
+---
+
+## Gegencheck Opus (2026-06-02)
+
+> Zweiter, unabhängiger Review gegen die **kanonische Quelle** `000-initial-schema.sql` *und*
+> den Code (nicht nur gegen diese Spec, die nachweislich gedriftet war). Ralphs erste Befundliste
+> war korrekt umgesetzt, aber unvollständig. Alle Punkte noch im Greenfield-Fenster.
+
+### Neu gefunden — als `REFACTOR-DB-5…10` erfasst
+
+#### REFACTOR-DB-5: `benutzername` ohne UNIQUE — Korrektheit/Sicherheit (P-hoch)
+
+`spieler.benutzername` hat **keinen** UNIQUE-Constraint. Die Registrierung
+(`AuthentifizierungsController:72`) prüft Duplikate nur per `findByBenutzername(...).isPresent()`
+→ **Race Condition**: zwei gleichzeitige Registrierungen mit gleichem Namen passieren beide
+den Check und legen beide an. Danach ist `findByBenutzername` (erwartet `Optional`) mehrdeutig
+→ Login-Bruch. **Fix:** partieller UNIQUE-Index `WHERE benutzername IS NOT NULL` (OAuth2-Spieler
+haben NULL). `email` analog prüfen (für späteren Passwort-Reset). **Risiko:** niedrig im
+Greenfield, hoch wenn übersehen.
+
+#### REFACTOR-DB-6: Audit-Spalten NOT NULL + DB-DEFAULT
+
+`erstellt_am`/`aktualisiert_am` sind auf `spieler`, `partie`, `tisch`, `laufendes_spiel`,
+`spieler_statistik` durchweg **nullable** (Audit-Tabelle oben sagt selbst „sollten NOT NULL sein").
+**Fix:** `NOT NULL DEFAULT NOW()` — die DB erzwingt und befüllt, unabhängig von der App.
+
+#### REFACTOR-DB-7: Audit-of-who (`erstellt_von`) + ON-DELETE-Politik
+
+Nur `tisch.erstellt_von_spieler_id` hält den Akteur. **Fix:** `erstellt_von_spieler_id UUID`
+auf `partie` ergänzen (der Spieler, der die Partie am Tisch startete). **Konvention:** nullable,
+NULL = System/KI-Auslöser (kein Party-Pattern — bewusst pragmatisch-minimal). **ON DELETE für
+alle Creator-FKs** auf `SET NULL` (Audit-Spur bleibt anonymisiert beim DSGVO-Löschen), nicht CASCADE.
+
+#### REFACTOR-DB-8: NOT-NULL-Abdeckung vervollständigen
+
+REFACTOR-DB-2 deckte nur 5 Archiv-Spalten. Weiterhin nullable, aber bei Spielabschluss **immer gesetzt**:
+- `spielergebnis_archiv`: `geber_position`, `spieltyp`, `absage_punkte`, `gegen_die_alten_punkte`,
+  `solo_multiplikator`, `spielpunkte_{sued,west,nord,ost}`, `abgeschlossen_am`
+- `sonderpunkt_eintrag`: `partei`, `sonderpunkt_typ`
+- `partie`: `regelvariante`, `spielregeln`
+- `tisch`: `zugangsmodus` (→ `NOT NULL DEFAULT 'OFFEN'`)
+
+#### REFACTOR-DB-9: `event_publication` ohne PRIMARY KEY
+
+`event_publication.id UUID NOT NULL` hat **keinen PK** (nur ein Index auf `listener_id, serialized_event`).
+Spring Moduliths Default-Schema definiert PK auf `id`. **Fix:** `PRIMARY KEY (id)` ergänzen.
+
+#### REFACTOR-DB-10: ON-DELETE-Politik für DSGVO-Löschrecht
+
+Keine Lösch-Logik im `spieler`-Paket vorhanden — das Löschrecht aus `recht-impressum-datenschutz.md`
+ist ungebaut. **Jetzt** die FK-Politik festlegen, bevor gebaut wird: `partie_teilnehmer.spieler_id`,
+`spieler_statistik.spieler_id`, `tisch_spieler.spieler_id`, `tisch.erstellt_von_spieler_id`,
+`spieler_rating.spieler_id` (neu) — pro FK entscheiden SET NULL (Historie anonym erhalten) vs.
+CASCADE (mitlöschen) vs. RESTRICT (aktiver Spieler nicht löschbar). Empfehlung: Statistik/Rating CASCADE,
+Archiv/Teilnahme SET NULL (Spielhistorie der Mitspieler bleibt korrekt).
+
+### Changelog-Konsolidierung — ✓ entschieden: konsolidieren (echtes Greenfield)
+
+Alle Fixes (`002`–`004` + Gegencheck DB-5…10) werden **direkt in `000-initial-schema.sql`
+eingepflegt**, additive Changesets `002`–`004` entfallen. Der erste reale Deploy bekommt *ein*
+klares Initial-Schema. `001-spring-session-schema.sql` bleibt eigenständig (Fremd-Schema).
+H2-Tests unkritisch (Neuaufbau je Lauf); persistente Dev-DB ggf. `clearCheckSums`.
+
+### Ranking/Saison — Greenfield-Reservierung (siehe `statistik-ranking.md`)
+
+Aus dem Plattform-Benchmark: `spieler_rating` (μ/σ), `saison`, `spielergebnis_archiv.saison_id`
+**jetzt** als Schema reservieren (Build der Wertungslogik = M2). Details in `statistik-ranking.md`.

@@ -31,6 +31,7 @@ Verwaltung der Spieler, ihrer Sessions und der virtuellen "Räume" (Tische).
 Application Layer: Orchestrierung, Delivery (REST, WebSocket).
 - **Tisch-Logik:** `lobby.md`, `tischkonfiguration.md`.
 - **Spieler-Logik:** `spieler-profil.md`, `authentifizierung.md`, `spieler-session.md`, `verbindungsabbruch.md`.
+- **Statistik & Ranking:** `statistik-ranking.md` (Plattform-Benchmark + Greenfield-Schema für Rating/Saison).
 - **API & Kommunikation:** `websocket-kommunikation.md`, `rest-api.md`.
 
 ## 4. KI (ki/)

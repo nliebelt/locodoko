@@ -151,7 +151,9 @@ Entscheidungen: **DECISION-AUTH** ✓ beide behalten · **DECISION-LIZENZ** aufg
 
   **Erste Datei zuerst:** neue `specs/betrieb-monitoring.md` (Was wird überwacht: JVM, HTTP-Latenzen, aktive Tische/Partien, WS-Verbindungen, Fehlerrate; welche Dashboards/Alerts). Dann Build-Tasks: `micrometer-registry-prometheus` ins `pom.xml`, `/actuator/prometheus` exponieren (gesichert), Grafana Alloy/Agent als Sidecar im `docker-compose.yml` zum remote_write an Grafana Cloud (Token via ENV, kein Secret im Repo).
 
-  **DoD:** Spec beschreibt Monitoring-Konzept; (Build) Metriken erscheinen im Grafana-Cloud-Dashboard. **Risiko:** niedrig-mittel.
+  **Loco-Domain-Metriken (aus `statistik-ranking.md`):** zusätzlich zu Infra-Metriken ein „Locodoko in Zahlen"-Dashboard aus **aggregierten** Micrometer-Metern an den bestehenden Domain-Events: Spieltyp-Verteilung (Counter `spieltyp`), Re-/Kontra-Siege (`partei`), Sonderpunkte (`typ`), Hochzeiten/Armuten, Augen/Spiel (Histogram), aktive Tische/Partien (Gauge), Spiele/Stunde (`regelvariante`), Bockrunden. **Hart einhalten:** niedrige Kardinalität, **kein `spieler_id`-Label** (Per-Spieler-Stats bleiben in Postgres). Dasselbe „Spiel abgeschlossen"-Event speist DB-Statistik *und* Counter.
+
+  **DoD:** Spec beschreibt Monitoring-Konzept (Infra + Loco-Domain-Metriken); (Build) Metriken erscheinen im Grafana-Cloud-Dashboard. **Risiko:** niedrig-mittel.
 
 - [ ] **OPS-LOGS-LOKI** — Strukturierte Logs nach Grafana Cloud Loki (Free-Tier), per LogQL abfragbar.
 
@@ -443,6 +445,38 @@ Alle noch im Greenfield-Fenster (vor erstem echten Deploy). Details und Audit-Ko
 - [x] **REFACTOR-DB-2** — `spielergebnis_archiv`: Spalten `re_augen`, `kontra_augen`, `sieger_partei`, `spielwert`, `grundwert` sind nullable, werden aber immer gesetzt. NOT NULL-Constraints als Changeset `003-archiv-not-null.sql`. **Risiko:** niedrig.
 
 - [x] **REFACTOR-DB-3** — `spieler_statistik.solos_pro_typ JSONB` nullable → `JSONB NOT NULL DEFAULT '{}'` per Changeset `004-statistik-solos-not-null.sql`. Fix in `SpielerStatistik.fuer()`: `solosProTypJson = "{}"` initialisiert. **Risiko:** niedrig.
+
+### Schema-Gegencheck Opus (Session 36, 2026-06-02)
+
+> Zweiter, unabhängiger Review gegen `000-initial-schema.sql` + Code. Befunde in `specs/datenbankmodell.md#gegencheck-opus-2026-06-02`. Alle noch im Greenfield-Fenster. **Vor `CD-DEPLOY` abarbeiten** (GATE), Reihenfolge nach Priorität.
+
+- [ ] **REFACTOR-DB-5** (P-hoch) — `spieler.benutzername` ohne UNIQUE → Race Condition bei Registrierung (`AuthentifizierungsController:72` prüft nur per Query). Partieller UNIQUE-Index `WHERE benutzername IS NOT NULL` (OAuth2 = NULL); `email` analog prüfen. **Erste Datei zuerst:** neues Changeset (oder Konsolidierung in `000`). **DoD:** zwei parallele Registrierungen mit gleichem Namen scheitern an der DB; bestehende Auth-Tests grün + Regressions-Test. **Risiko:** niedrig im Greenfield.
+
+- [ ] **REFACTOR-DB-6** — Audit `erstellt_am`/`aktualisiert_am` nullable auf `spieler`, `partie`, `tisch`, `laufendes_spiel`, `spieler_statistik` → `NOT NULL DEFAULT NOW()` (DB erzwingt + befüllt). **DoD:** Spalten NOT NULL; `mvn clean test` grün. **Risiko:** niedrig.
+
+- [ ] **REFACTOR-DB-7** — Audit-of-who: `erstellt_von_spieler_id UUID` auf `partie` ergänzen (nullable, NULL = System/KI). ON DELETE aller Creator-FKs auf `SET NULL`. Entity + Schreibpfad mitziehen. **DoD:** neue Partien tragen den Ersteller; `mvn clean test` grün. **Risiko:** mittel (Schreibpfad).
+
+- [ ] **REFACTOR-DB-8** — NOT-NULL-Abdeckung vervollständigen (Ergänzung zu DB-2): `spielergebnis_archiv` (`geber_position`, `spieltyp`, `absage_punkte`, `gegen_die_alten_punkte`, `solo_multiplikator`, `spielpunkte_*`, `abgeschlossen_am`), `sonderpunkt_eintrag` (`partei`, `sonderpunkt_typ`), `partie` (`regelvariante`, `spielregeln`), `tisch.zugangsmodus` (`DEFAULT 'OFFEN'`). **DoD:** Constraints gesetzt, App setzt alle Werte; `mvn clean test` grün. **Risiko:** niedrig-mittel.
+
+- [ ] **REFACTOR-DB-9** — `event_publication` ohne PRIMARY KEY → `PRIMARY KEY (id)` ergänzen (Spring-Modulith-Default). **DoD:** PK vorhanden; Outbox-Tests grün. **Risiko:** niedrig.
+
+- [ ] **REFACTOR-DB-10** — DSGVO-ON-DELETE-Politik für alle `spieler`-referenzierenden FKs festlegen (`partie_teilnehmer`, `spieler_statistik`, `tisch_spieler`, `tisch.erstellt_von_spieler_id`, `spieler_rating`). Empfehlung: Statistik/Rating CASCADE, Archiv/Teilnahme SET NULL. **Vorbedingung-Entscheidung:** koppelt an späteres Lösch-Feature — Politik **jetzt** im Schema, Feature später. **DoD:** ON-DELETE auf allen FKs explizit; dokumentiert. **Risiko:** niedrig (Schema), mittel (Semantik).
+
+### Statistik & Ranking (Session 36 — entschieden: Stufe 0+1, TrueSkill; Saison/Liga aufgeschoben)
+
+> Vollständig in `specs/statistik-ranking.md`. **Umfang entschieden:** Stufe 0 (abgeleitete Kennzahlen) + Stufe 1 (TrueSkill-Rating + ewige Bestenliste, 1 neue UI-Szene). Saison/Liga **aufgeschoben** — additive Erweiterung später (risikoarm; `spielergebnis_archiv` erlaubt rückwirkende Berechnung). **Wichtige Trennung:** Per-Spieler-Statistik → Postgres/API; aggregierte Domain-Metriken → Prometheus/Grafana (nie `spieler_id` als Label).
+
+- [ ] **STAT-DERIVED** (Stufe 0) — Abgeleitete Kennzahlen (Ø Punkte/Spiel, Siegquote, Ø Augen) im Profil-Endpoint/View, analog `partie_ergebnis_view`. **DoD:** Kennzahlen im Profil sichtbar; `mvn clean test` + `npm test` grün. **Risiko:** niedrig.
+
+- [ ] **STAT-RATING** (Stufe 1) — TrueSkill-Rating. `rating_mu`/`rating_sigma NUMERIC(8,4)` an die bestehende `spieler_statistik` (in `000` konsolidiert; Defaults μ=25, σ=8.3333). TrueSkill-Update im **selben Pro-Spiel-Statistikpfad** beim Event „Spiel abgeschlossen". **Erste Datei zuerst:** `000-initial-schema.sql` (Spalten) + der Statistik-Fortschreibungs-Service. **DoD:** Rating wird pro Spiel fortgeschrieben; Roundtrip-Test; `mvn clean test` grün. **Risiko:** mittel (Korrektheit der TrueSkill-Formel — Bibliothek prüfen).
+
+- [ ] **FE-LEADERBOARD** (Stufe 1) — Neue Bestenlisten-Szene + Endpoint, sortiert nach `rating_mu − 3·rating_sigma` (pro Regelvariante, ewige Liste). **Erste Datei zuerst:** Backend-Endpoint, dann neue Phaser-Szene + Lobby-Verlinkung. **DoD:** Bestenliste in der App erreichbar; Vision-Loop ohne Layout-Bruch; Tests grün. **Risiko:** niedrig-mittel (UI).
+
+- [x] **DECISION-RATING-ALGO** — ✓ **TrueSkill** (Session 36). 4-Spieler mit wechselnden Parteien; ELO ist 1-gegen-1. Schema (μ/σ) bleibt algorithmus-agnostisch.
+
+- [ ] **STAT-SAISON-LIGA** (aufgeschoben) — Saisons (Reset/Listen/Rollover-Job) + Ligen (Auf-/Abstieg). Additive Erweiterung (neue Tabellen `saison` + saison-Rating + nullable `spielergebnis_archiv.saison_id`). Nur bauen, falls öffentlich/wachsend. **[WARTET — keine Greenfield-Dringlichkeit, rückwirkend aus Archiv berechenbar]**
+
+- [ ] **CHANGELOG-KONSOLIDIERUNG** (✓ entschieden: echtes Greenfield → konsolidieren) — `002`–`004` + alle Gegencheck-Fixes (DB-5…10) **direkt in `000-initial-schema.sql`** einpflegen statt additiver `005…`-Changesets. Ergebnis: ein einziges, sauberes Initial-Schema beim ersten Deploy. **Methode:** jeder DB-Task editiert `000` direkt (kein neues Changeset). `001-spring-session-schema.sql` bleibt eigenständig (Fremd-Schema). H2-Tests unkritisch (Neuaufbau je Lauf); persistente Dev-DB ggf. `clearCheckSums`. **DoD:** nur `000` + `001` aktiv, `002`–`004` entfernt, `mvn clean test` grün. **Risiko:** niedrig im Greenfield.
 
 ---
 
