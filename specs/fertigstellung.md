@@ -120,8 +120,9 @@ automatisiertes CI/CD, `VERIFY-MULTIPLAYER`, `FE-SPIELREGELN-HILFE`, `FEAT-BUGRE
 - **EU-Ops:** ✅ **pragmatisch** — Grafana/Sentry mit EU-Region + AVV ausreichend (kein Self-Hosting).
   (Hinweis: EU-Regel gilt damit für Server-Standort, nicht Firmen-Jurisdiktion.)
 - **Sessions:** ✅ persistieren (`spring-session-jdbc`) + Build-Info; Admin-Tooling/Rollback zurückgestellt.
-- **Passwort-Reset / Email:** ⏸️ zurückgestellt. Freunde nutzen Apple → **„Sign in with Apple"** als
-  zusätzlicher OAuth-Provider statt Email-Reset prüfen (offene Idee).
+- **Auth-Provider:** ✅ **Google + Username/Passwort** bleibt; **„Sign in with Apple" verworfen**
+  (99 €/Jahr Developer Program + JWT-Client-Secret-Rotation für reine UX; Apple-Nutzer nutzen Google im Safari).
+- **Passwort-Reset / Email:** ⏸️ zurückgestellt → Beta-Fallback: manueller Reset durch Betreiber.
 - **Mobile:** ⏸️ nominell M2 — **aber Apple/iPhone-Nutzer testen vermutlich mobil** → ggf. vorziehen.
 - **Lizenz:** ⏸️ **aufgeschoben.** Tendenz Apache-2.0. Zielkonflikt: mögliche spätere
   **Steam-/kommerzielle Veröffentlichung** — eine permissive Lizenz (Apache/MIT) erlaubt Dritten den
