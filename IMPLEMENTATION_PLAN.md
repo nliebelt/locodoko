@@ -4,7 +4,7 @@
 
 ## Notiz
 
-**Session 34 (2026-06-02) — REFACTOR-DB-1/2/3 abgeschlossen:** Drei Schema-Changesets angelegt: `002-fk-indexes.sql` (FK-Indizes), `003-archiv-not-null.sql` (NOT NULL für `spielergebnis_archiv`-Spalten), `004-statistik-solos-not-null.sql` (JSONB NOT NULL DEFAULT '{}' für `solos_pro_typ`). Fix in `SpielerStatistik.fuer()` — `solosProTypJson = "{}"` initialisiert, da Spring Data JDBC alle Spalten explizit in INSERT aufnimmt (DB-Default greift nicht). `mvn clean test` grün (343 Tests). Greenfield-Fenster genutzt — Schema jetzt konsistent vor erstem Deploy. Nächste Tasks: CI-DOCKER-BUILD (wartet auf DEPLOY-COMPOSE-SMOKE = MENSCH) oder autonome Tasks wie DOC-DOCS-SITE, QA-CODE-METRICS, SPEC-RECHT.
+**Session 35 (2026-06-02) — SPEC-RECHT abgeschlossen:** `specs/recht-impressum-datenschutz.md` angelegt. Enthält: Impressum-Pflichtangaben (§5 DDG), vollständige Datenschutzerklärung-Struktur (DSGVO Art. 13/14 — alle DB-Felder aufgeschlüsselt, Google-OAuth2-Drittland-Transfer, Betroffenenrechte, Speicherdauer, Hosting-Datenresidenz), AGB-Mindeststruktur, Checkliste vor M2, konkrete Build-Tasks (Frontend-Seiten `/impressum`/`/datenschutz`/`/agb`, Footer-Links, AVV). Keine Code-Änderung nötig (DOC-Task). Nächste autonome Tasks: DOC-DOCS-SITE, QA-CODE-METRICS oder SECURITY-REVIEW (Skill verfügbar).
 
 **Session 29 (2026-06-01):** `BUG-EINSTELLUNGEN-MODAL` + `BUG-LOBBY-TISCHEINTRAG` behoben. Modal-Fix: In `TischInputHandler` Navigation-Shortcuts ('i', 's') vor `vorbehaltAktiv`-Check verschoben — im Turbo-Modus war die Vorbehalt-Phase bereits aktiv beim 's'-Druck. Lobby-Fix: Button-Text "Beitreten"/"Fortsetzen" lief dunkelgrün (#14361f) auf dunklem Hintergrund aus dem 150px-Button über (Zeichenbreite ~20.5px → 9 Zeichen = 185px). Behoben: `spielerTxt` auf x=10, nur für nicht-hervorgehobene Einträge; Button x=175, breite=215. Neuer Regressions-Test im Handler. Vision-Loop grün, alle Screenshots ohne Overflow. **Alle Tasks erledigt.**
 
@@ -213,7 +213,7 @@ Entscheidungen: **DECISION-AUTH** ✓ beide behalten · **DECISION-LIZENZ** aufg
 
 - [x] **DECISION-AUTH** — **Entschieden (Session 30): beide Methoden behalten** (Google OAuth2 + Username/Passwort/bcrypt). `authentifizierung.md` ist damit konsistent, kein Code-Change nötig.
 
-- [ ] **SPEC-RECHT** — Rechtstexte für öffentlichen Betrieb in DE (Pflicht-Voraussetzung für Live-Gang).
+- [x] **SPEC-RECHT** — Rechtstexte für öffentlichen Betrieb in DE (Pflicht-Voraussetzung für Live-Gang).
 
   Für einen öffentlich betriebenen Dienst in Deutschland gesetzlich erforderlich: **Impressum** (§5 DDG), **Datenschutzerklärung** (DSGVO — Accounts, Google-OAuth-Datenfluss, Statistiken). **AGB/Nutzungsbedingungen** empfohlen (Haftung, Verhaltensregeln, Account-Sperrung).
 
