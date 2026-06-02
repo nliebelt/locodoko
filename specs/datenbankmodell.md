@@ -270,7 +270,7 @@ Die `regelvariante`-Spalte in `partie` und `spieler_statistik` wird aus den `Spi
 ## Liquibase-Strategie
 
 - **Einziges Changeset**: `src/main/resources/db/changelog/000-initial-schema.sql`
-- **Master-Changelog**: `db.changelog-master.sql` (SQL-Format, inkludiert nur `000-initial-schema.sql`)
+- **Master-Changelog**: `db.changelog-master.yaml` (YAML-Format, inkludiert nur `000-initial-schema.sql`)
 - **Archiv**: Alle 22 alten YAML-Changesets in `db/changelog/archiv/` (historische Referenz, nicht aktiv)
 - **Neue Changesets**: Nummeriert ab `001-*.sql` für spätere Schema-Erweiterungen
 
@@ -281,8 +281,87 @@ Die `regelvariante`-Spalte in `partie` und `spieler_statistik` wird aus den `Spi
 - [x] Spring Data JDBC (kein JPA) in `pom.xml`
 - [x] `event_publication`-Tabelle via Liquibase angelegt
 - [x] Repositories für alle Aggregate Roots vorhanden
-- [ ] `000-initial-schema.sql` mit vollständigem Hybrid-Schema (Task DB-2, Task 68)
-- [ ] JSONB Custom Converter für alle ~10 JSONB-Felder (Task DB-3, Task 69)
-- [ ] `spielergebnis_archiv` + `sonderpunkt_eintrag` als eigenes Aggregate (Task DB-5, Task 71)
-- [ ] `spieler_statistik` mit Composite-Key (spieler_id, regelvariante) (Task DB-9, Task 75)
-- [ ] VIEW `partie_ergebnis_view` (Task DB-10, Task 76)
+- [x] `000-initial-schema.sql` mit vollständigem Hybrid-Schema
+- [x] JSONB Custom Converter für alle JSONB-Felder (`JsonbConverter.java`)
+- [x] `spielergebnis_archiv` + `sonderpunkt_eintrag` als eigenes Aggregate
+- [x] `spieler_statistik` mit Composite-Key (spieler_id, regelvariante)
+- [x] VIEW `partie_ergebnis_view`
+
+---
+
+## Schema-Review (SPEC-SQL-REVIEW, 2026-06-02)
+
+> Greenfield-Fenster: Vor dem ersten echten Deploy ist Schema-Änderung kostenlos.
+> Kanonische Quelle: `src/main/resources/db/changelog/000-initial-schema.sql`.
+> Diese Sektion dokumentiert Soll-Stand, Abweichungen zur alten Spec-Beschreibung und offene Punkte.
+
+### Positiv-Befunde (bereits korrekt)
+
+- **TIMESTAMP WITH TIME ZONE** — alle Timestamp-Spalten nutzen korrekt `TIMESTAMP WITH TIME ZONE` (war in der Spec-Tabellen-Beschreibung fälschlich als `TIMESTAMP` dokumentiert)
+- **UUID Primary Keys** — durchgängig UUID, keine Serial-Integers
+- **ON DELETE CASCADE** — korrekt bei `laufendes_spiel`, `spielergebnis_archiv`, `sonderpunkt_eintrag`, `partie_teilnehmer`
+- **JSONB statt flachem JSON** — alle State-Felder als `JSONB`, korrekte Default-Werte (`'{}'`, `'[]'`, strukturierte Defaults)
+- **Optimistic Locking** — `partie.version BIGINT NOT NULL DEFAULT 0` für `@Version`
+- **`partie_ergebnis_view`** — materialisiert Rang + Punkte live aus relativen Tabellen (kein Schreibaufwand mehr)
+- **`event_publication`** — Spring Modulith Outbox-Tabelle vollständig (inkl. `status`, `completion_attempts`, `last_resubmission_date`)
+
+### Abweichungen: Spec vs. tatsächliches SQL
+
+| Thema | Spec (alt, falsch) | SQL (Wahrheit) |
+|---|---|---|
+| `spieler.benutzername` | `UNIQUE NOT NULL` | nullable (kein UNIQUE-Constraint) |
+| `spieler.ist_ki` | Spaltenname | tatsächlich `ki` |
+| `laufendes_spiel.phase` | `VARCHAR(30) NOT NULL` | `JSONB NOT NULL DEFAULT '{"typ":"VORBEHALT_ANSAGE"}'` |
+| `laufendes_spiel.trumpf_ordnung_typ` | `VARCHAR(30) NOT NULL` | `JSONB NOT NULL DEFAULT '{"typ":"NORMAL"}'` |
+| `laufendes_spiel.schweinchen_aktiv` | als Spalte beschrieben | nicht vorhanden (ist in `spielregeln` JSONB) |
+| `laufendes_spiel.pflicht_ansage_ausstehend` | als Spalte beschrieben | nicht vorhanden |
+| `laufendes_spiel.aktueller_stich` | als nullable JSONB Spalte | nicht vorhanden (Stich liegt in `abgeschlossene_stiche`) |
+| Master-Changelog | `db.changelog-master.sql` | `db.changelog-master.yaml` |
+
+### Offene Punkte — als REFACTOR-DB-Tasks erfasst
+
+#### REFACTOR-DB-1: FK-Spalten ohne Index (Abfrageperformance)
+
+Folgende Fremdschlüssel-Spalten haben keinen Index. Bei wachsender Datenmenge entstehen Sequential-Scans:
+
+| Tabelle | Spalte | Risiko |
+|---|---|---|
+| `tisch` | `partie_id` | Niedrig (max. 1 aktive Partie pro Tisch) |
+| `partie_teilnehmer` | `spieler_id` | Mittel (Abfrage Spielerhistorie) |
+| `spieler_statistik` | `spieler_id` | Mittel (Profilabfrage) |
+| `spielergebnis_archiv` | `partie_id` | Mittel (Partiehistorie) |
+| `sonderpunkt_eintrag` | `spielergebnis_archiv_id` | Niedrig (selten abgefragt) |
+
+**Empfehlung:** Indexes vor Go-Live als `001-fk-indexes.sql` hinzufügen.
+
+#### REFACTOR-DB-2: Nullable-Spalten in `spielergebnis_archiv` (Datenintegrität)
+
+Spalten wie `re_augen`, `kontra_augen`, `sieger_partei`, `spielwert`, `grundwert` sind nullable, werden aber immer gesetzt wenn ein Spiel abgeschlossen ist. `NOT NULL`-Constraints würden Datenlücken verhindern.
+
+**Empfehlung:** Constraints prüfen und per Changeset `002-archiv-not-null.sql` hinzufügen.
+
+#### REFACTOR-DB-3: `spieler_statistik.solos_pro_typ` nullable
+
+`solos_pro_typ JSONB` ist nullable, sollte `JSONB NOT NULL DEFAULT '{}'` sein (konsistent mit anderen Statistik-Feldern).
+
+#### REFACTOR-DB-4: JSONB GIN-Indexes (optional, bei Abfragebedarf)
+
+Wenn JSONB-Felder direkt abgefragt werden (z.B. `haende @> '{"NORD": ...}'`), sind GIN-Indexes sinnvoll. Aktuell kein bekannter Abfragepfad — zurückstellen bis konkrete Abfragen entstehen.
+
+### Audit-Konzept (Ist-Stand)
+
+Audit-Spalten sind vorhanden aber inkonsistent:
+
+| Tabelle | `erstellt_am` | `aktualisiert_am` | Bemerkung |
+|---|---|---|---|
+| `spieler` | ✅ `TIMESTAMPTZ` nullable | ✅ `TIMESTAMPTZ` nullable | sollten NOT NULL sein |
+| `partie` | ✅ `TIMESTAMPTZ` nullable | ✅ `TIMESTAMPTZ` nullable | sollten NOT NULL sein |
+| `tisch` | ✅ `TIMESTAMPTZ` nullable | ✅ `TIMESTAMPTZ` nullable | sollten NOT NULL sein |
+| `laufendes_spiel` | ✅ `TIMESTAMPTZ` nullable | ✅ `TIMESTAMPTZ` nullable | via App gesetzt |
+| `spieler_statistik` | ✅ `TIMESTAMPTZ` nullable | ✅ + `zuletzt_aktualisiert` | leicht redundant |
+| `spielergebnis_archiv` | `abgeschlossen_am TIMESTAMPTZ` nullable | — | ausreichend |
+| `partie_teilnehmer` | `beigetreten_am TIMESTAMPTZ` nullable | — | fachliche Spalte |
+| `sonderpunkt_eintrag` | — | — | keine nötig |
+| `event_publication` | `publication_date TIMESTAMPTZ NOT NULL` | `completion_date TIMESTAMPTZ` | Spring Modulith managed |
+
+**Befund:** `erstellt_am` ist auf allen Haupttabellen vorhanden und als `TIMESTAMP WITH TIME ZONE` korrekt. Nullable-Status ist leicht problematisch — in der App werden Werte gesetzt, aber die DB erzwingt es nicht.

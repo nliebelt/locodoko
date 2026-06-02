@@ -4,7 +4,7 @@
 
 ## Notiz
 
-**Session 31 (2026-06-02) — BUG-PROD-CHANGELOG behoben:** `application-prod.properties` Z. 5 auf `classpath:db/changelog/db.changelog-master.yaml` umgestellt (von `db.changelog-baseline.yaml`, das nur in `archiv/` lag). `mvn clean test` grün. Nächster Task: **SPEC-SQL-REVIEW** (Schema-Review + Changelog-Konsolidierung, vor erstem echten Deploy).
+**Session 31 (2026-06-02) — BUG-PROD-CHANGELOG + SPEC-SQL-REVIEW erledigt:** Changelog-Pfad in prod-Profil korrigiert. Schema-Review abgeschlossen: `specs/datenbankmodell.md` um Review-Sektion mit Befunden, Audit-Konzept, Abweichungstabelle und Indexempfehlungen ergänzt. Drei REFACTOR-DB-Tasks unter Entdeckungen eingetragen (FK-Indizes, NOT-NULL-Constraints, solos_pro_typ). Nächster Task in Block A: **SESSION-PERSISTENZ** (`spring-session-jdbc`, damit Redeploys Spieler nicht ausloggen).
 
 **Session 29 (2026-06-01):** `BUG-EINSTELLUNGEN-MODAL` + `BUG-LOBBY-TISCHEINTRAG` behoben. Modal-Fix: In `TischInputHandler` Navigation-Shortcuts ('i', 's') vor `vorbehaltAktiv`-Check verschoben — im Turbo-Modus war die Vorbehalt-Phase bereits aktiv beim 's'-Druck. Lobby-Fix: Button-Text "Beitreten"/"Fortsetzen" lief dunkelgrün (#14361f) auf dunklem Hintergrund aus dem 150px-Button über (Zeichenbreite ~20.5px → 9 Zeichen = 185px). Behoben: `spielerTxt` auf x=10, nur für nicht-hervorgehobene Einträge; Button x=175, breite=215. Neuer Regressions-Test im Handler. Vision-Loop grün, alle Screenshots ohne Overflow. **Alle Tasks erledigt.**
 
@@ -137,7 +137,7 @@ Entscheidungen: **DECISION-AUTH** ✓ beide behalten · **DECISION-LIZENZ** aufg
 
 > User-Wunsch: diese Themen sollen **zuerst als Specs erfasst** werden, bevor implementiert wird. Jede Task produziert (auch) eine Spec.
 
-- [ ] **SPEC-SQL-REVIEW** — Extrem kritisches Schema-/SQL-Review **vor** dem Aufbau der ersten echten DB. **[GATE für CD-DEPLOY — gehört in Phase A]**
+- [x] **SPEC-SQL-REVIEW** — Extrem kritisches Schema-/SQL-Review **vor** dem Aufbau der ersten echten DB. **[GATE für CD-DEPLOY — gehört in Phase A]**
 
   Greenfield (keine Migration nötig) → das Schema kann jetzt sauber gezogen werden, bevor produktiv Daten liegen. **Nach dem ersten echten Deploy kostet jede Schema-Änderung eine Liquibase-Migration gegen Live-Daten** — deshalb zwingend im greenfield-Fenster, direkt nach `BUG-PROD-CHANGELOG` und vor `CD-DEPLOY`. Hängt fachlich mit `BUG-PROD-CHANGELOG` zusammen (Changelog-Hygiene). Prüfen: Normalformen (3NF), Audit-Spalten (`erstellt_am`, `geaendert_am`, ggf. `erstellt_von` als `timestamptz`), Primär-/Fremdschlüssel + ON DELETE, Indizes (insb. Fremdschlüssel + Abfragepfade `tischId`/`partieId`/`spielerId`), Datentypen (UUID, `timestamptz` statt `timestamp`, `numeric` statt float für Punkte), NOT-NULL/CHECK-Constraints, Namenskonventionen, JSONB-Spalten (Validierung/GIN-Index sinnvoll?), Liquibase-Changelog-Konsolidierung (`archiv/` vs. aktiv).
 
@@ -433,6 +433,16 @@ Siehe vollständigen Bericht `specs/review-2026-05-28.md`. Bestätigte, **nicht*
 - Spielkern: `PunkteRechner` (Re≥121/Kontra≥120, Ansagen ×2/×4, Absagen, Gegen-die-Alten, Solo ×3, Nullsumme), `Stich` (Trumpf-/Fehl-/Dullen-Logik) regelkonform.
 - Point Provenance: korrekt im Wire-DTO `PartieStandAntwort` (`PunkteKomponenteAntwort[]`).
 - Keine TODO/FIXME/`System.out`/`printStackTrace` im Produktivcode.
+
+### Schema-Befunde aus SPEC-SQL-REVIEW (Session 31, 2026-06-02)
+
+Alle noch im Greenfield-Fenster (vor erstem echten Deploy). Details und Audit-Konzept in `specs/datenbankmodell.md#schema-review`.
+
+- [ ] **REFACTOR-DB-1** — FK-Spalten ohne Index: `tisch.partie_id`, `partie_teilnehmer.spieler_id`, `spieler_statistik.spieler_id`, `spielergebnis_archiv.partie_id`, `sonderpunkt_eintrag.spielergebnis_archiv_id`. Changeset `001-fk-indexes.sql` hinzufügen. **Risiko:** niedrig (Abfrageperformance, nicht Korrektheit).
+
+- [ ] **REFACTOR-DB-2** — `spielergebnis_archiv`: Spalten `re_augen`, `kontra_augen`, `sieger_partei`, `spielwert`, `grundwert` sind nullable, werden aber immer gesetzt. `NOT NULL`-Constraints als Changeset `002-archiv-not-null.sql`. **Risiko:** niedrig.
+
+- [ ] **REFACTOR-DB-3** — `spieler_statistik.solos_pro_typ JSONB` nullable → `JSONB NOT NULL DEFAULT '{}'` per Changeset. **Risiko:** niedrig.
 
 ---
 
