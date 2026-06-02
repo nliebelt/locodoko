@@ -30,20 +30,26 @@ Nächste offene Tasks — Fertigstellung (Session 30). **Zwei Meilensteine:** **
 
 **Beta-Entscheidungen (Session 30, Teil 3+4):** Daten **erhalten** → Schema final + Backups **vor** M1; Zugang via **`zock.locodoko.de`** (Domain+TLS); **Google OAuth aktiv**. Damit ist M1 faktisch ein **erster echter Deploy**. Weiter (Teil 4): **EU-Ops pragmatisch** (Grafana/Sentry mit EU-Region + AVV ok, kein Self-Hosting nötig); **Beta nicht gated** (kein Site-Gate, kein SEO/noindex-Fokus → `BETA-ACCESS` optional); **Sessions persistieren** (`spring-session-jdbc`) + **Build-Info** (`/actuator/info`); Admin-Tooling + Rollback-Doku **erwogen, zurückgestellt**. **Auth bleibt Google + Username/Passwort** — „Sign in with Apple" verworfen (99 €/Jahr + JWT-Rotation für reine UX; Apple-Nutzer können Google im Safari nutzen). Passwort-Reset/`OPS-EMAIL` **zurückgestellt** → Fallback in der Beta: manueller Reset durch Betreiber. Mobile: nominell M2 — **aber Freunde auf iPhone → Beta wird vermutlich mobil/Safari getestet** (Re-Evaluierung empfohlen).
 
-**Meilenstein 1 — Closed Beta (locodoko.de, eingeladene Kollegen, Daten erhalten):**
+**Meilenstein 1 — Closed Beta (`zock.locodoko.de`, eingeladene Kollegen, Daten erhalten).**
+**Loop-Hinweis:** Ralph arbeitet **Block A** strikt der Reihe nach ab (alles autonom verifizierbar via `mvn`/`npm`). **Block B** trägt `Vorbedingung: MENSCH` — diese Tasks **überspringen**, bis die externe Voraussetzung (Server/Domain/Google-Account) erfüllt ist.
+
+**Block A — Ralph-autonom (sofort, ohne externe Voraussetzung):**
 1. **BUG-PROD-CHANGELOG** (P0) — App bootet gegen Postgres
-2. **SPEC-SQL-REVIEW** — Schema final + Changelog-Konsolidierung. **Gate (Daten bleiben erhalten!).**
-3. **DEPLOY-COMPOSE-SMOKE** — finales Schema gegen echtes Postgres, Partie durchspielen
-4. **BACKUP-DB** — `pg_dump`-Backups + Restore-Test, ab Tag 1 (Daten erhalten!)
-5. **SESSION-PERSISTENZ** — `spring-session-jdbc`, damit Redeploys Kollegen nicht ausloggen
-6. **OPS-DOMAIN** — `zock.locodoko.de` + DNS + TLS (Reverse-Proxy; WebSocket-Upgrade beachten!); Apex→Redirect
-7. **DEPLOY-OAUTH-SENTINEL** + **OAuth-Credentials** — Google-Login aktiv, Redirect-URI auf `zock.locodoko.de`
-8. **DOC-ENV-DEPLOY** — Server-ENV/Secrets + Roll-out-Anleitung
-9. **OPS-COMPOSE-HARDENING** — `app`-Service restart-Policy + Healthcheck
-10. **OPS-BUILD-INFO** — `/actuator/info` mit Git-SHA/Version (Beta-Debugging, klein)
-11. **CD-DEPLOY (manuell)** — erster echter Deploy auf hosting.de (**Plattformwahl nötig**)
-12. **FEAT-FEEDBACK** — leichter „Feedback geben"-Link/Form für die Beta
-- *Empfohlen für M1:* OPS-GRAFANA-MONITORING + OPS-LOGS-LOKI (SaaS EU-Region ok); minimaler Datenschutzhinweis (Subset SPEC-RECHT, da Google-OAuth Daten verarbeitet); SECURITY-REVIEW vor Exposition.
+2. **SPEC-SQL-REVIEW** — Schema final + Changelog-Konsolidierung. **Gate (Daten bleiben erhalten!).** (Schema-Entscheidungen: Mensch sollte gegenlesen — kein Loop-Blocker.)
+3. **SESSION-PERSISTENZ** — `spring-session-jdbc`, damit Redeploys Kollegen nicht ausloggen
+4. **OPS-COMPOSE-HARDENING** — `app`-Service restart-Policy + Healthcheck
+5. **OPS-BUILD-INFO** — `/actuator/info` mit Git-SHA/Version (klein)
+6. **BACKUP-DB** — Backup-/Restore-**Skript** + Doku (echter Restore-Drill auf Server = Mensch, kein Loop-Blocker)
+7. **DEPLOY-OAUTH-SENTINEL** — Code: Google-Login nur bei gesetzten Credentials (Code autonom; echte Credentials = Block B)
+8. **DOC-ENV-DEPLOY** — `.env.example` + README-Roll-out (echte Secret-Werte = Mensch)
+9. **FEAT-FEEDBACK** — leichter „Feedback geben"-Link/Form (Log/Datei; Webhook-URL = Mensch falls Discord)
+
+**Block B — Vorbedingung: MENSCH (Ralph überspringt, bis erfüllt):**
+10. **OAuth-Credentials** — *Vorbedingung: MENSCH* (Google Cloud Console: Client-ID/Secret + Redirect-URI `zock.locodoko.de`)
+11. **OPS-DOMAIN** — *Vorbedingung: MENSCH* (Server/DNS/TLS) — Ralph kann nur die Reverse-Proxy-Config vorbereiten
+12. **DEPLOY-COMPOSE-SMOKE** — *Vorbedingung: MENSCH* (Docker + echtes Postgres laufen lassen)
+13. **CD-DEPLOY (manuell)** — *Vorbedingung: MENSCH* (Server, SSH, Plattformwahl hosting.de)
+- *Empfohlen für M1:* OPS-GRAFANA-MONITORING + OPS-LOGS-LOKI (Instrumentierung autonom; Grafana-Cloud-Token = Mensch); minimaler Datenschutzhinweis; SECURITY-REVIEW vor Exposition.
 - *Optional/zurückgestellt:* BETA-ACCESS (Beta muss nicht gated sein), Admin-Tooling, Rollback-Doku.
 
 **Meilenstein 2 — Public Go-Live:**
@@ -69,7 +75,7 @@ Entscheidungen: **DECISION-AUTH** ✓ beide behalten · **DECISION-LIZENZ** aufg
 
 ### Priorität 1 — Deployment & Ops
 
-- [ ] **DEPLOY-COMPOSE-SMOKE** — Vollen prod-Stack lokal hochfahren und eine Partie durchspielen. **[hängt an BUG-PROD-CHANGELOG]**
+- [ ] **DEPLOY-COMPOSE-SMOKE** — Vollen prod-Stack lokal hochfahren und eine Partie durchspielen. **[Vorbedingung: MENSCH — Docker + echtes Postgres; hängt an BUG-PROD-CHANGELOG. Ralph: überspringen, nicht autonom abschließbar]**
 
   Vorhandene Bausteine: `docker-compose.yml` (Services `postgres` + `app`, Profil `prod`, ENV-Wiring inkl. `LOCODOKO_DB_*`/`GOOGLE_CLIENT_*`), `Dockerfile.app` (Multi-Stage: `mvn package` baut Frontend ein → schlankes JRE-Image). Bislang nie real verifiziert.
 
@@ -165,7 +171,7 @@ Entscheidungen: **DECISION-AUTH** ✓ beide behalten · **DECISION-LIZENZ** aufg
 
   **DoD:** Report aus der App erzeugt ein GitHub-Issue mit redigiertem Kontext + Log-Verknüpfung; nachweislich keine sensiblen Daten geleakt. **Risiko:** mittel (Datenschutz/Redaktion).
 
-- [ ] **OPS-DOMAIN** — Domain + DNS + TLS für den öffentlichen Betrieb. **Schema festgelegt:** App = `zock.locodoko.de`, Wiki = `docs.locodoko.de` (GitHub Pages), Apex `locodoko.de` = Landing/Redirect.
+- [ ] **OPS-DOMAIN** — Domain + DNS + TLS für den öffentlichen Betrieb. **[Vorbedingung: MENSCH — Server/DNS/TLS; Ralph kann nur die Reverse-Proxy-Config vorbereiten]** **Schema festgelegt:** App = `zock.locodoko.de`, Wiki = `docs.locodoko.de` (GitHub Pages), Apex `locodoko.de` = Landing/Redirect.
 
   Wird gebraucht: OAuth2-Redirect-URI (`https://zock.locodoko.de/login/oauth2/code/google`), `cookie.secure=true` (erzwingt HTTPS; Cookie-Domain auf `zock.locodoko.de`), `LOCODOKO_WEBSOCKET_ALLOWED_ORIGINS=https://zock.locodoko.de`. prod-Props referenzieren beispielhaft noch `locodoko.de` → auf `zock.` anpassen.
 
