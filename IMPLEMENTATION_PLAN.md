@@ -4,7 +4,7 @@
 
 ## Notiz
 
-**Session 30 (2026-06-01) — Plan-Lauf „Fertigstellung öffentlicher Betrieb":** Gesamt-Scan ergab: Code ist gegenüber allen 47 Specs feature-complete (Status durchgehend Implementiert/Stabil/Abgeschlossen), `mvn clean test` grün. Keine offenen Spec-Lücken. Ziel laut User: **öffentlich betrieben**; Fokus **Deployment & Ops + CI/CD** (Mehrspieler-Verifikation bewusst zurückgestellt). Neuer, **verifizierter Deploy-Blocker** entdeckt: prod-Profil lädt eine nicht existierende Liquibase-Changelog-Datei → App bootet nicht gegen Postgres (`BUG-PROD-CHANGELOG`). Daraus neue Sektion „## Fertigstellung — Öffentlicher Betrieb". Plan-Modus: nichts implementiert.
+**Session 31 (2026-06-02) — BUG-PROD-CHANGELOG behoben:** `application-prod.properties` Z. 5 auf `classpath:db/changelog/db.changelog-master.yaml` umgestellt (von `db.changelog-baseline.yaml`, das nur in `archiv/` lag). `mvn clean test` grün. Nächster Task: **SPEC-SQL-REVIEW** (Schema-Review + Changelog-Konsolidierung, vor erstem echten Deploy).
 
 **Session 29 (2026-06-01):** `BUG-EINSTELLUNGEN-MODAL` + `BUG-LOBBY-TISCHEINTRAG` behoben. Modal-Fix: In `TischInputHandler` Navigation-Shortcuts ('i', 's') vor `vorbehaltAktiv`-Check verschoben — im Turbo-Modus war die Vorbehalt-Phase bereits aktiv beim 's'-Druck. Lobby-Fix: Button-Text "Beitreten"/"Fortsetzen" lief dunkelgrün (#14361f) auf dunklem Hintergrund aus dem 150px-Button über (Zeichenbreite ~20.5px → 9 Zeichen = 185px). Behoben: `spielerTxt` auf x=10, nur für nicht-hervorgehobene Einträge; Button x=175, breite=215. Neuer Regressions-Test im Handler. Vision-Loop grün, alle Screenshots ohne Overflow. **Alle Tasks erledigt.**
 
@@ -65,7 +65,7 @@ Entscheidungen: **DECISION-AUTH** ✓ beide behalten · **DECISION-LIZENZ** aufg
 
 ### Priorität 0 — Deploy-Blocker (verifizierter Bug)
 
-- [ ] **BUG-PROD-CHANGELOG** — prod-Profil referenziert eine nicht existierende Liquibase-Changelog-Datei.
+- [x] **BUG-PROD-CHANGELOG** — prod-Profil referenziert eine nicht existierende Liquibase-Changelog-Datei.
 
   `application-prod.properties` Z. 5: `spring.liquibase.change-log=classpath:db/changelog/db.changelog-baseline.yaml`. Diese Datei existiert nur unter `db/changelog/archiv/db.changelog-baseline.yaml` (archiviert), **nicht** am referenzierten Pfad. Das dev-Profil nutzt korrekt `classpath:db/changelog/db.changelog-master.yaml` (existiert, inkludiert `000-initial-schema.sql`). Folge: Im prod-Profil scheitert die Liquibase-Initialisierung beim Start → App bootet nicht gegen Postgres. Dieser Pfad wurde mangels CI/verifiziertem Deploy nie real ausgeführt.
 
