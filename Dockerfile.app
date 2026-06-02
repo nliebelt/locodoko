@@ -20,6 +20,9 @@ RUN mvn clean package -DskipTests -q
 # --- Runtime-Stage ---
 FROM eclipse-temurin:25-jre
 
+RUN apt-get update && apt-get install -y --no-install-recommends curl \
+    && rm -rf /var/lib/apt/lists/*
+
 RUN groupadd --gid 1000 app && useradd --uid 1000 --gid 1000 -m app
 
 WORKDIR /app
