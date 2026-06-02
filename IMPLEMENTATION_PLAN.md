@@ -4,7 +4,7 @@
 
 ## Notiz
 
-**Session 31 (2026-06-02) — BUG-PROD-CHANGELOG + SPEC-SQL-REVIEW erledigt:** Changelog-Pfad in prod-Profil korrigiert. Schema-Review abgeschlossen: `specs/datenbankmodell.md` um Review-Sektion mit Befunden, Audit-Konzept, Abweichungstabelle und Indexempfehlungen ergänzt. Drei REFACTOR-DB-Tasks unter Entdeckungen eingetragen (FK-Indizes, NOT-NULL-Constraints, solos_pro_typ). Nächster Task in Block A: **SESSION-PERSISTENZ** (`spring-session-jdbc`, damit Redeploys Spieler nicht ausloggen).
+**Session 31 (2026-06-02) — BUG-PROD-CHANGELOG + SPEC-SQL-REVIEW + SESSION-PERSISTENZ erledigt:** Changelog-Pfad korrigiert; Schema-Review in `datenbankmodell.md` dokumentiert (3 REFACTOR-DB-Tasks); `spring-session-jdbc` hinzugefügt (`001-spring-session-schema.sql`, `db.changelog-master.yaml` erweitert, `application.properties` mit `spring.session.store-type=jdbc`). `VerbindungsabbruchService` bleibt in-memory (bekannte Einschränkung: Disconnect-Tracking nach Neustart zurückgesetzt, Spielstatus ist DB-sicher). Nächster Task in Block A: **OPS-COMPOSE-HARDENING** (`restart`-Policy + Healthcheck für `app`-Service).
 
 **Session 29 (2026-06-01):** `BUG-EINSTELLUNGEN-MODAL` + `BUG-LOBBY-TISCHEINTRAG` behoben. Modal-Fix: In `TischInputHandler` Navigation-Shortcuts ('i', 's') vor `vorbehaltAktiv`-Check verschoben — im Turbo-Modus war die Vorbehalt-Phase bereits aktiv beim 's'-Druck. Lobby-Fix: Button-Text "Beitreten"/"Fortsetzen" lief dunkelgrün (#14361f) auf dunklem Hintergrund aus dem 150px-Button über (Zeichenbreite ~20.5px → 9 Zeichen = 185px). Behoben: `spielerTxt` auf x=10, nur für nicht-hervorgehobene Einträge; Button x=175, breite=215. Neuer Regressions-Test im Handler. Vision-Loop grün, alle Screenshots ohne Overflow. **Alle Tasks erledigt.**
 
@@ -253,7 +253,7 @@ Entscheidungen: **DECISION-AUTH** ✓ beide behalten · **DECISION-LIZENZ** aufg
 
   **DoD:** (falls umgesetzt) Ohne gültigen Invite schlägt `/register` fehl. **Risiko:** niedrig.
 
-- [ ] **SESSION-PERSISTENZ** (M1) — HTTP-Sessions in Postgres statt in-memory.
+- [x] **SESSION-PERSISTENZ** (M1) — HTTP-Sessions in Postgres statt in-memory.
 
   Aktuell kein `spring-session` → Sessions liegen im RAM. Folge: **jeder Redeploy/Neustart loggt alle Spieler aus** und setzt das In-memory-Disconnect-Tracking zurück. Spiele überleben (DB = Wahrheit), aber die Beta wird bei häufigen Deploys unangenehm.
 
