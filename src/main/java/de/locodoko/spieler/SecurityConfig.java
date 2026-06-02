@@ -55,6 +55,8 @@ public class SecurityConfig {
                 .requestMatchers("/api/system/**").permitAll()
                 // Frontend-Logging (diagnostisch)
                 .requestMatchers("/api/debug/**").permitAll()
+                // Beta-Feedback
+                .requestMatchers("/api/feedback").permitAll()
                 // WebSocket-Handshake
                 .requestMatchers("/ws/**").permitAll()
                 // Infrastruktur und statische Ressourcen

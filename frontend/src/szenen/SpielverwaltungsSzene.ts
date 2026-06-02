@@ -140,6 +140,14 @@ export class SpielverwaltungsSzene extends Phaser.Scene {
     });
     logoutBtn.setName('btn-logout');
     this.uiContainer.add(logoutBtn);
+    startY += 60;
+
+    const feedbackBtn = new PhaserButton(this, {
+      x: 640, y: startY, text: '💬 Feedback', typ: 'secondary',
+      callback: () => this.zeigeFeedbackDialog()
+    });
+    feedbackBtn.setName('btn-feedback');
+    this.uiContainer.add(feedbackBtn);
 
     // Tab-Reihenfolge: Quick Game → Neuen Tisch → Mein Profil → (Session-Recovery falls sichtbar)
     this.fokussierbareButtons = [quickGameBtn, erstelleTischBtn, profilBtn];
@@ -237,6 +245,73 @@ export class SpielverwaltungsSzene extends Phaser.Scene {
       }
     });
     c.add(btn);
+  }
+
+  private zeigeFeedbackDialog(): void {
+    const backdrop = document.createElement('div');
+    backdrop.className = 'ui-modal-backdrop';
+    backdrop.setAttribute('role', 'dialog');
+    backdrop.setAttribute('aria-modal', 'true');
+    backdrop.setAttribute('aria-labelledby', 'feedback-dialog-titel');
+
+    const modal = document.createElement('div');
+    modal.className = 'ui-modal';
+    modal.style.cssText = 'max-width:480px;padding:24px;';
+    modal.innerHTML = [
+      '<h2 id="feedback-dialog-titel" style="margin:0 0 16px;color:#ffd700;font-size:18px;">',
+      '&#x1F4AC; Feedback senden</h2>',
+      '<textarea id="feedback-text" rows="6"',
+      ' style="width:100%;box-sizing:border-box;padding:8px;background:#1a2a1a;color:#f0f0f0;',
+      'border:1px solid #4ade80;border-radius:4px;font-size:14px;resize:vertical;"',
+      ' placeholder="Dein Feedback f&#xFC;r die Beta..."></textarea>',
+      '<p id="feedback-status" style="margin:8px 0;min-height:20px;font-size:13px;color:#4ade80;"></p>',
+      '<div style="display:flex;gap:12px;justify-content:flex-end;margin-top:8px;">',
+      '<button id="feedback-abbrechen"',
+      ' style="padding:8px 16px;background:transparent;color:#a0a0a0;border:1px solid #a0a0a0;',
+      'border-radius:4px;cursor:pointer;">Abbrechen</button>',
+      '<button id="feedback-senden"',
+      ' style="padding:8px 16px;background:#4ade80;color:#0a1a0a;border:none;',
+      'border-radius:4px;cursor:pointer;font-weight:bold;">Senden</button>',
+      '</div>'
+    ].join('');
+    backdrop.appendChild(modal);
+
+    const uiRoot = document.getElementById('ui-root');
+    if (!uiRoot) return;
+    uiRoot.appendChild(backdrop);
+
+    const textarea = modal.querySelector('#feedback-text') as HTMLTextAreaElement;
+    const statusEl = modal.querySelector('#feedback-status') as HTMLParagraphElement;
+    const sendenBtn = modal.querySelector('#feedback-senden') as HTMLButtonElement;
+    const abbrechenBtn = modal.querySelector('#feedback-abbrechen') as HTMLButtonElement;
+
+    const schliessen = () => backdrop.remove();
+    backdrop.addEventListener('click', (e) => { if (e.target === backdrop) schliessen(); });
+    abbrechenBtn.addEventListener('click', schliessen);
+
+    sendenBtn.addEventListener('click', () => {
+      const text = textarea.value.trim();
+      if (!text) {
+        statusEl.style.color = '#ff4455';
+        statusEl.textContent = 'Bitte gib einen Text ein.';
+        return;
+      }
+      sendenBtn.disabled = true;
+      statusEl.style.color = '#4ade80';
+      statusEl.textContent = 'Wird gesendet…';
+      appStore.gibFeedback(text)
+        .then(() => {
+          statusEl.textContent = 'Danke für dein Feedback!';
+          setTimeout(schliessen, 1500);
+        })
+        .catch(() => {
+          statusEl.style.color = '#ff4455';
+          statusEl.textContent = 'Senden fehlgeschlagen. Bitte nochmal versuchen.';
+          sendenBtn.disabled = false;
+        });
+    });
+
+    textarea.focus();
   }
 
   private kuerzeText(txt: Phaser.GameObjects.Text, maxBreite: number): void {

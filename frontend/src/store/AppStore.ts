@@ -33,7 +33,7 @@ export class AppStore {
   private readonly tisch: TischStore;
   private readonly partie: PartieStore;
 
-  constructor(api: SpielverwaltungApi, private readonly echtzeit: EchtzeitPort) {
+  constructor(private readonly api: SpielverwaltungApi, private readonly echtzeit: EchtzeitPort) {
     const patchFn = (a: Partial<AppZustand>) => this.patch(a);
     const gibZustand = () => this.zustand;
     const resetZustand = () => { this.zustand = erzeugeAnfangszustand(); this.veroeffentliche(); };
@@ -66,6 +66,7 @@ export class AppStore {
   async ausloggen(): Promise<void> { return this.session.ausloggen(); }
   async alsGastStarten(): Promise<void> { return this.session.alsGastStarten(); }
   async ladeSpielerProfil(spielerId: Uuid): Promise<SpielerProfilAntwortGenerated> { return this.session.ladeSpielerProfil(spielerId); }
+  async gibFeedback(text: string): Promise<void> { return this.api.gibFeedback(text); }
 
   // --- Tisch ---
   async aktualisiereTischliste(): Promise<void> { return this.tisch.aktualisiereTischliste(); }

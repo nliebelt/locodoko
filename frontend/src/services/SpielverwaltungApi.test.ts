@@ -143,5 +143,21 @@ describe('SpielverwaltungApi', () => {
     await expect(api.listeTische()).rejects.toThrow(SpielverwaltungFehler);
     expect(toastTexte[0]).toContain('veraltet');
   });
+
+  it('sendet Feedback an Backend', async () => {
+    // Feedback-Endpoint muss POST /api/feedback mit korrektem Body aufrufen
+    vi.mocked(fetch).mockResolvedValue({
+      ok: true,
+      status: 200,
+      text: async () => ''
+    } as Response);
+
+    await api.gibFeedback('Tolles Spiel!');
+
+    expect(fetch).toHaveBeenCalledWith('/api/feedback', expect.objectContaining({
+      method: 'POST',
+      body: JSON.stringify({ text: 'Tolles Spiel!' })
+    }));
+  });
 });
 

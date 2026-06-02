@@ -225,4 +225,11 @@ export class SpielverwaltungApi {
   async ladeSpielerProfil(spielerId: Uuid): Promise<SpielerProfilAntwortGenerated> {
     return this.hol<SpielerProfilAntwortGenerated>(`/api/spieler/${spielerId}/profil`);
   }
+
+  async gibFeedback(text: string): Promise<void> {
+    await this.hol<void>('/api/feedback', {
+      method: 'POST',
+      body: JSON.stringify({ text })
+    });
+  }
 }
