@@ -24,9 +24,11 @@ Erledigt (Session 26–28): DOC-PUNKTE-HINWEISE ✓ · SPEC-ARCH-HIERARCHIE ✓ 
 
 Spec-getriebene Tasks: **alle erledigt** (Code feature-complete gegenüber allen 47 Specs).
 
-Nächste offene Tasks — Fertigstellung (Session 30). **Zwei Meilensteine:** **M1 = Closed Beta auf locodoko.de** (eingeladene Kollegen, Feedback sammeln) · **M2 = Public Go-Live**.
+Nächste offene Tasks — Fertigstellung (Session 30). **Zwei Meilensteine:** **M1 = Closed Beta auf `zock.locodoko.de`** (eingeladene Kollegen, Feedback sammeln) · **M2 = Public Go-Live**.
 
-**Beta-Entscheidungen (Session 30, Teil 3+4):** Daten **erhalten** → Schema final + Backups **vor** M1; Zugang via **locodoko.de** (Domain+TLS); **Google OAuth aktiv**. Damit ist M1 faktisch ein **erster echter Deploy**. Weiter (Teil 4): **EU-Ops pragmatisch** (Grafana/Sentry mit EU-Region + AVV ok, kein Self-Hosting nötig); **Beta nicht gated** (kein Site-Gate, kein SEO/noindex-Fokus → `BETA-ACCESS` optional); **Sessions persistieren** (`spring-session-jdbc`) + **Build-Info** (`/actuator/info`); Admin-Tooling + Rollback-Doku **erwogen, zurückgestellt**. **Auth bleibt Google + Username/Passwort** — „Sign in with Apple" verworfen (99 €/Jahr + JWT-Rotation für reine UX; Apple-Nutzer können Google im Safari nutzen). Passwort-Reset/`OPS-EMAIL` **zurückgestellt** → Fallback in der Beta: manueller Reset durch Betreiber. Mobile: nominell M2 — **aber Freunde auf iPhone → Beta wird vermutlich mobil/Safari getestet** (Re-Evaluierung empfohlen).
+**Domain-Schema (Session 30, Teil 4 — sticky, da OAuth/Cookies/WS daran gebunden):** App = **`zock.locodoko.de`** · Wiki = **`docs.locodoko.de`** (MkDocs auf GitHub Pages, gratis) · Apex **`locodoko.de`** = Landing/Redirect. Permanente Wahl (kein „beta."-Umzug), da Beta-Daten erhalten bleiben.
+
+**Beta-Entscheidungen (Session 30, Teil 3+4):** Daten **erhalten** → Schema final + Backups **vor** M1; Zugang via **`zock.locodoko.de`** (Domain+TLS); **Google OAuth aktiv**. Damit ist M1 faktisch ein **erster echter Deploy**. Weiter (Teil 4): **EU-Ops pragmatisch** (Grafana/Sentry mit EU-Region + AVV ok, kein Self-Hosting nötig); **Beta nicht gated** (kein Site-Gate, kein SEO/noindex-Fokus → `BETA-ACCESS` optional); **Sessions persistieren** (`spring-session-jdbc`) + **Build-Info** (`/actuator/info`); Admin-Tooling + Rollback-Doku **erwogen, zurückgestellt**. **Auth bleibt Google + Username/Passwort** — „Sign in with Apple" verworfen (99 €/Jahr + JWT-Rotation für reine UX; Apple-Nutzer können Google im Safari nutzen). Passwort-Reset/`OPS-EMAIL` **zurückgestellt** → Fallback in der Beta: manueller Reset durch Betreiber. Mobile: nominell M2 — **aber Freunde auf iPhone → Beta wird vermutlich mobil/Safari getestet** (Re-Evaluierung empfohlen).
 
 **Meilenstein 1 — Closed Beta (locodoko.de, eingeladene Kollegen, Daten erhalten):**
 1. **BUG-PROD-CHANGELOG** (P0) — App bootet gegen Postgres
@@ -34,8 +36,8 @@ Nächste offene Tasks — Fertigstellung (Session 30). **Zwei Meilensteine:** **
 3. **DEPLOY-COMPOSE-SMOKE** — finales Schema gegen echtes Postgres, Partie durchspielen
 4. **BACKUP-DB** — `pg_dump`-Backups + Restore-Test, ab Tag 1 (Daten erhalten!)
 5. **SESSION-PERSISTENZ** — `spring-session-jdbc`, damit Redeploys Kollegen nicht ausloggen
-6. **OPS-DOMAIN** — locodoko.de + DNS + TLS (Reverse-Proxy; WebSocket-Upgrade beachten!)
-7. **DEPLOY-OAUTH-SENTINEL** + **OAuth-Credentials** — Google-Login aktiv, Redirect-URI auf locodoko.de
+6. **OPS-DOMAIN** — `zock.locodoko.de` + DNS + TLS (Reverse-Proxy; WebSocket-Upgrade beachten!); Apex→Redirect
+7. **DEPLOY-OAUTH-SENTINEL** + **OAuth-Credentials** — Google-Login aktiv, Redirect-URI auf `zock.locodoko.de`
 8. **DOC-ENV-DEPLOY** — Server-ENV/Secrets + Roll-out-Anleitung
 9. **OPS-COMPOSE-HARDENING** — `app`-Service restart-Policy + Healthcheck
 10. **OPS-BUILD-INFO** — `/actuator/info` mit Git-SHA/Version (Beta-Debugging, klein)
@@ -163,13 +165,13 @@ Entscheidungen: **DECISION-AUTH** ✓ beide behalten · **DECISION-LIZENZ** aufg
 
   **DoD:** Report aus der App erzeugt ein GitHub-Issue mit redigiertem Kontext + Log-Verknüpfung; nachweislich keine sensiblen Daten geleakt. **Risiko:** mittel (Datenschutz/Redaktion).
 
-- [ ] **OPS-DOMAIN** — Domain + DNS + TLS für den öffentlichen Betrieb.
+- [ ] **OPS-DOMAIN** — Domain + DNS + TLS für den öffentlichen Betrieb. **Schema festgelegt:** App = `zock.locodoko.de`, Wiki = `docs.locodoko.de` (GitHub Pages), Apex `locodoko.de` = Landing/Redirect.
 
-  Wird gebraucht: OAuth2-Redirect-URI, `cookie.secure=true` (erzwingt HTTPS), `LOCODOKO_WEBSOCKET_ALLOWED_ORIGINS`. prod-Props referenzieren bereits beispielhaft `locodoko.de`.
+  Wird gebraucht: OAuth2-Redirect-URI (`https://zock.locodoko.de/login/oauth2/code/google`), `cookie.secure=true` (erzwingt HTTPS; Cookie-Domain auf `zock.locodoko.de`), `LOCODOKO_WEBSOCKET_ALLOWED_ORIGINS=https://zock.locodoko.de`. prod-Props referenzieren beispielhaft noch `locodoko.de` → auf `zock.` anpassen.
 
-  **Erste Datei zuerst:** Abschnitt in `DOC-ENV-DEPLOY`/README bzw. `specs/betrieb-monitoring.md`-Nachbarspec: Domain wählen+registrieren (EU-Registrar), DNS auf den Server zeigen, TLS via Reverse-Proxy (Caddy/Traefik + Let's Encrypt) vor der App, HTTP→HTTPS-Redirect. OAuth-Redirect-URI + WS-Origins auf die finale Domain setzen.
+  **Erste Datei zuerst:** DNS-Records (`zock` + `docs` CNAME/A) beim Registrar; TLS via Reverse-Proxy (Caddy/Traefik + Let's Encrypt) vor der App, **WebSocket-Upgrade-Header durchreichen** (Snapshot+Hint bricht sonst), HTTP→HTTPS-Redirect; Apex → 301 auf `zock.` (bis Landing existiert). `application-prod.properties` + `.env`: Redirect-URI, Cookie-Domain, WS-Origins auf `zock.locodoko.de`.
 
-  **DoD:** Domain zeigt per HTTPS auf die App, OAuth-Redirect + WS-Origins konfiguriert. **Risiko:** niedrig. **[teilw. abhängig von Plattformwahl]**
+  **DoD:** `https://zock.locodoko.de` zeigt auf die App, WS funktioniert durch den Proxy, OAuth-Redirect + WS-Origins gesetzt. **Risiko:** niedrig. **[abhängig von Plattformwahl/Server]**
 
 - [ ] **DOC-DOCS-SITE** — Öffentliche Docs-/Wiki-Seite (zugleich LLM-tauglich, Karpathy-Stil).
 
@@ -179,7 +181,7 @@ Entscheidungen: **DECISION-AUTH** ✓ beide behalten · **DECISION-LIZENZ** aufg
 
   **Erste Datei zuerst:** `mkdocs.yml` im Root (Navigation aus `specs/README.md` ableiten) — oder zuerst Konzept in neuer `specs/docs-site.md`. Karpathy-Prinzipien anwenden; den Code-Metrik-Report aus `QA-CODE-METRICS` als eigene Seite einbinden.
 
-  **DoD:** Docs-Seite baut lokal + als GitHub-Pages-Deploy; alle Specs navigierbar/durchsuchbar. **Risiko:** niedrig.
+  **DoD:** Docs-Seite baut lokal + als GitHub-Pages-Deploy unter **`docs.locodoko.de`** (Pages-Custom-Domain via CNAME); alle Specs navigierbar/durchsuchbar; kann die Spielregeln hosten (entlastet `FE-SPIELREGELN-HILFE` → App verlinkt nur dorthin). **Risiko:** niedrig.
 
 - [ ] **QA-CODE-METRICS** — Codebase mit Mess-/Analyse-Tooling vermessen: Refactoring-Kandidaten + Report für die Docs-Seite.
 

@@ -29,8 +29,12 @@ Netcup 🇩🇪, Scaleway 🇫🇷. Plattformwahl bewusst aufgeschoben.
 
 ## Meilensteine
 
-**M1 — Closed Beta auf locodoko.de** (eingeladene Kollegen, Feedback sammeln). Entscheidungen
-(Session 30): Beta-Daten **erhalten** → Schema final + Backups **vor** M1; Zugang via **locodoko.de**
+**Domain-Schema (sticky, da OAuth/Cookies/WS gebunden):** App = **`zock.locodoko.de`** ·
+Wiki = **`docs.locodoko.de`** (MkDocs auf GitHub Pages, gratis) · Apex **`locodoko.de`** = Landing/Redirect.
+Permanente Wahl (kein „beta."-Umzug, da Daten erhalten bleiben).
+
+**M1 — Closed Beta auf `zock.locodoko.de`** (eingeladene Kollegen, Feedback sammeln). Entscheidungen
+(Session 30): Beta-Daten **erhalten** → Schema final + Backups **vor** M1; Zugang via **`zock.locodoko.de`**
 (Domain+TLS); **Google OAuth aktiv**. Damit ist M1 ein **erster echter Deploy** (kein Wegwerf-Test).
 M1-Blocker: `BUG-PROD-CHANGELOG`, `SPEC-SQL-REVIEW`, `DEPLOY-COMPOSE-SMOKE`, `BACKUP-DB`,
 `SESSION-PERSISTENZ`, `OPS-DOMAIN`, `DEPLOY-OAUTH-SENTINEL` + OAuth-Credentials, `DOC-ENV-DEPLOY`,
@@ -74,7 +78,8 @@ automatisiertes CI/CD, `VERIFY-MULTIPLAYER`, `FE-SPIELREGELN-HILFE`, `FEAT-BUGRE
    server-seitigem Token, angereichert mit Log-Ausschnitt (correlationId) + Grafana-Deep-Link.
    Datenschutz/Redaktion kritisch (öffentliches vs. privates Issue-Repo). Sentry (Free, EU) als
    automatische Fehlererfassung empfohlen. GitHub-Issue-Templates mitnehmen. → eigene Spec `bugreport.md`.
-8. **OPS-DOMAIN** — Domain + DNS + TLS (Reverse-Proxy/Let's Encrypt, OAuth-Redirect, WS-Origins).
+8. **OPS-DOMAIN** — `zock.locodoko.de` + DNS + TLS (Reverse-Proxy/Let's Encrypt, **WS-Upgrade durchreichen!**,
+   OAuth-Redirect `https://zock.locodoko.de/login/oauth2/code/google`, WS-Origins, Cookie-Domain). Apex→Redirect.
 9. **DOC-DOCS-SITE** — Öffentliche Docs-/Wiki-Seite, damit Menschen außerhalb des GitHub-Kontexts
    das Projekt verstehen/„lernen" können; zugleich LLM-tauglich (Karpathy: eindeutige Begriffe,
    flache Hierarchie, explizite Querverweise). Empfohlen **MkDocs Material** (rendert die vorhandenen
@@ -115,7 +120,9 @@ automatisiertes CI/CD, `VERIFY-MULTIPLAYER`, `FE-SPIELREGELN-HILFE`, `FEAT-BUGRE
 - **Authentifizierung:** ✅ entschieden (Session 30) — **beide Methoden behalten**
   (Google OAuth2 + Username/Passwort/bcrypt). `authentifizierung.md` bleibt unverändert.
 - **Beta-Daten:** ✅ **erhalten** — Kollegen-Spiele/Statistiken bleiben → Schema final + Backups vor M1.
-- **Beta-Zugang:** ✅ via **locodoko.de** im Browser (Domain+TLS in M1), **Google OAuth aktiv** in der Beta.
+- **Domain-Schema:** ✅ App = **`zock.locodoko.de`**, Wiki = **`docs.locodoko.de`** (GitHub Pages),
+  Apex = Landing/Redirect. Permanent (kein „beta."-Umzug). OAuth/Cookies/WS an `zock.` gebunden.
+- **Beta-Zugang:** ✅ via **`zock.locodoko.de`** im Browser, **Google OAuth aktiv** in der Beta.
   Beta **nicht gated** (kein Site-Gate, SEO später) → `BETA-ACCESS` optional.
 - **EU-Ops:** ✅ **pragmatisch** — Grafana/Sentry mit EU-Region + AVV ausreichend (kein Self-Hosting).
   (Hinweis: EU-Regel gilt damit für Server-Standort, nicht Firmen-Jurisdiktion.)
@@ -136,7 +143,7 @@ automatisiertes CI/CD, `VERIFY-MULTIPLAYER`, `FE-SPIELREGELN-HILFE`, `FEAT-BUGRE
 - [ ] **Schema final (SPEC-SQL-REVIEW)** — vor M1, da Daten erhalten bleiben
 - [ ] Backups laufen + Restore getestet (14)
 - [ ] Session-Persistenz aktiv (15) — Redeploys loggen nicht aus
-- [ ] locodoko.de + HTTPS aktiv, Google-OAuth-Redirect/WS-Origins gesetzt (WS-Upgrade im Proxy!)
+- [ ] zock.locodoko.de + HTTPS aktiv, Google-OAuth-Redirect/WS-Origins gesetzt (WS-Upgrade im Proxy!)
 - [ ] app-Service restart/Healthcheck (16) + Build-Info (17); erster Deploy auf hosting.de
 - [ ] Feedback-Kanal (18); minimaler Datenschutzhinweis; SECURITY-REVIEW (19)
 
