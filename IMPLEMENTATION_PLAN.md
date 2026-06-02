@@ -4,7 +4,7 @@
 
 ## Notiz
 
-**Session 34 (2026-06-02) — REFACTOR-DB-1 abgeschlossen:** `002-fk-indexes.sql` angelegt mit 5 CREATE INDEX-Statements für FK-Spalten ohne Index (`tisch.partie_id`, `partie_teilnehmer.spieler_id`, `spieler_statistik.spieler_id`, `spielergebnis_archiv.partie_id`, `sonderpunkt_eintrag.spielergebnis_archiv_id`). `db.changelog-master.yaml` auf neues Changeset erweitert. `mvn clean test` grün (343 Tests). Nächste Tasks: **REFACTOR-DB-2** (NOT NULL-Constraints `spielergebnis_archiv`) + **REFACTOR-DB-3** (JSONB NOT NULL DEFAULT).
+**Session 34 (2026-06-02) — REFACTOR-DB-1/2/3 abgeschlossen:** Drei Schema-Changesets angelegt: `002-fk-indexes.sql` (FK-Indizes), `003-archiv-not-null.sql` (NOT NULL für `spielergebnis_archiv`-Spalten), `004-statistik-solos-not-null.sql` (JSONB NOT NULL DEFAULT '{}' für `solos_pro_typ`). Fix in `SpielerStatistik.fuer()` — `solosProTypJson = "{}"` initialisiert, da Spring Data JDBC alle Spalten explizit in INSERT aufnimmt (DB-Default greift nicht). `mvn clean test` grün (343 Tests). Greenfield-Fenster genutzt — Schema jetzt konsistent vor erstem Deploy. Nächste Tasks: CI-DOCKER-BUILD (wartet auf DEPLOY-COMPOSE-SMOKE = MENSCH) oder autonome Tasks wie DOC-DOCS-SITE, QA-CODE-METRICS, SPEC-RECHT.
 
 **Session 29 (2026-06-01):** `BUG-EINSTELLUNGEN-MODAL` + `BUG-LOBBY-TISCHEINTRAG` behoben. Modal-Fix: In `TischInputHandler` Navigation-Shortcuts ('i', 's') vor `vorbehaltAktiv`-Check verschoben — im Turbo-Modus war die Vorbehalt-Phase bereits aktiv beim 's'-Druck. Lobby-Fix: Button-Text "Beitreten"/"Fortsetzen" lief dunkelgrün (#14361f) auf dunklem Hintergrund aus dem 150px-Button über (Zeichenbreite ~20.5px → 9 Zeichen = 185px). Behoben: `spielerTxt` auf x=10, nur für nicht-hervorgehobene Einträge; Button x=175, breite=215. Neuer Regressions-Test im Handler. Vision-Loop grün, alle Screenshots ohne Overflow. **Alle Tasks erledigt.**
 
@@ -440,9 +440,9 @@ Alle noch im Greenfield-Fenster (vor erstem echten Deploy). Details und Audit-Ko
 
 - [x] **REFACTOR-DB-1** — FK-Spalten ohne Index: `tisch.partie_id`, `partie_teilnehmer.spieler_id`, `spieler_statistik.spieler_id`, `spielergebnis_archiv.partie_id`, `sonderpunkt_eintrag.spielergebnis_archiv_id`. Changeset `002-fk-indexes.sql` hinzugefügt (`001` war durch Spring-Session belegt). **Risiko:** niedrig (Abfrageperformance, nicht Korrektheit).
 
-- [ ] **REFACTOR-DB-2** — `spielergebnis_archiv`: Spalten `re_augen`, `kontra_augen`, `sieger_partei`, `spielwert`, `grundwert` sind nullable, werden aber immer gesetzt. `NOT NULL`-Constraints als Changeset `002-archiv-not-null.sql`. **Risiko:** niedrig.
+- [x] **REFACTOR-DB-2** — `spielergebnis_archiv`: Spalten `re_augen`, `kontra_augen`, `sieger_partei`, `spielwert`, `grundwert` sind nullable, werden aber immer gesetzt. NOT NULL-Constraints als Changeset `003-archiv-not-null.sql`. **Risiko:** niedrig.
 
-- [ ] **REFACTOR-DB-3** — `spieler_statistik.solos_pro_typ JSONB` nullable → `JSONB NOT NULL DEFAULT '{}'` per Changeset. **Risiko:** niedrig.
+- [x] **REFACTOR-DB-3** — `spieler_statistik.solos_pro_typ JSONB` nullable → `JSONB NOT NULL DEFAULT '{}'` per Changeset `004-statistik-solos-not-null.sql`. Fix in `SpielerStatistik.fuer()`: `solosProTypJson = "{}"` initialisiert. **Risiko:** niedrig.
 
 ---
 

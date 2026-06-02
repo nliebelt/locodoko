@@ -89,6 +89,7 @@ public class SpielerStatistik extends AbstraktePersistenzEntity {
         SpielerStatistik statistik = new SpielerStatistik();
         statistik.spielerId = spielerId;
         statistik.regelvariante = regelvariante;
+        statistik.solosProTypJson = "{}";
         return statistik;
     }
 
