@@ -4,7 +4,7 @@
 
 ## Notiz
 
-**Session 32 (2026-06-02) — FEAT-FEEDBACK abgeschlossen:** Backend: `FeedbackController` (`POST /api/feedback`, log + opt. Discord-Webhook via `LOCODOKO_FEEDBACK_WEBHOOK_URL`) + SecurityConfig (`/api/feedback` permitAll). Frontend: `SpielverwaltungApi.gibFeedback()`, `AppStore.gibFeedback()`, DOM-basierter `zeigeFeedbackDialog()` in `SpielverwaltungsSzene`, „💬 Feedback"-Button in der Lobby. **Block A vollständig abgeschlossen.** Nächste offene Tasks: Block B (MENSCH-Vorbedingung) und Priorität 2 CI/CD (CI-BUILD-TEST, CI-DOCKER-BUILD).
+**Session 33 (2026-06-02) — CI-BUILD-TEST abgeschlossen:** `.github/workflows/ci.yml` angelegt. Zwei parallele Jobs: `backend` (Temurin 25, `mvn clean verify -Dskip.frontend=true`, Maven-Cache) und `frontend` (Node 22, `npm ci && npm run test && npm run build && npm run lint`, npm-Cache). Trigger: push + pull_request auf `main`; `concurrency` bricht laufende Runs bei neuem Push ab. Nächste offene Tasks: **CI-DOCKER-BUILD** (hängt an DEPLOY-COMPOSE-SMOKE = MENSCH) sowie Schema-Refactorings REFACTOR-DB-1/2/3 (autonom, Greenfield-Fenster läuft ab!).
 
 **Session 29 (2026-06-01):** `BUG-EINSTELLUNGEN-MODAL` + `BUG-LOBBY-TISCHEINTRAG` behoben. Modal-Fix: In `TischInputHandler` Navigation-Shortcuts ('i', 's') vor `vorbehaltAktiv`-Check verschoben — im Turbo-Modus war die Vorbehalt-Phase bereits aktiv beim 's'-Druck. Lobby-Fix: Button-Text "Beitreten"/"Fortsetzen" lief dunkelgrün (#14361f) auf dunklem Hintergrund aus dem 150px-Button über (Zeichenbreite ~20.5px → 9 Zeichen = 185px). Behoben: `spielerTxt` auf x=10, nur für nicht-hervorgehobene Einträge; Button x=175, breite=215. Neuer Regressions-Test im Handler. Vision-Loop grün, alle Screenshots ohne Overflow. **Alle Tasks erledigt.**
 
@@ -101,7 +101,7 @@ Entscheidungen: **DECISION-AUTH** ✓ beide behalten · **DECISION-LIZENZ** aufg
 
 ### Priorität 2 — CI/CD (volle Pipeline)
 
-- [ ] **CI-BUILD-TEST** — GitHub Actions Workflow für Build + Tests bei jedem Push/PR auf `main`.
+- [x] **CI-BUILD-TEST** — GitHub Actions Workflow für Build + Tests bei jedem Push/PR auf `main`.
 
   Aktuell kein `.github/workflows/`. Bei agentengetriebenem Workflow fängt nichts rote Builds ab.
 
