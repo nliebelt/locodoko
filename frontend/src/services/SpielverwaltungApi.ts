@@ -76,7 +76,8 @@ async function leseAntwort<T>(antwort: Response): Promise<T | null> {
 async function holeJson<T>(
   pfad: string,
   init?: RequestInit,
-  meldungCallback?: (text: string, typ: 'info' | 'fehler') => void
+  meldungCallback?: (text: string, typ: 'info' | 'fehler') => void,
+  correlationIdCallback?: (id: string) => void
 ): Promise<T> {
   const methode = init?.method ?? 'GET';
   Logger.api(`[HOLE_JSON] Requesting: ${methode} ${pfad}`);
@@ -97,6 +98,10 @@ async function holeJson<T>(
       signal: init?.signal,
     }, init));
     Logger.api(`${methode} ${pfad}`, { status: antwort.status });
+    const corrId = antwort.headers?.get('X-Correlation-Id');
+    if (corrId) {
+      correlationIdCallback?.(corrId);
+    }
     const daten = await leseAntwort<unknown>(antwort);
     if (!antwort.ok) {
       Logger.api('API Error Response', { url: pfad, status: antwort.status, body: daten });
@@ -123,14 +128,20 @@ async function holeJson<T>(
 
 export class SpielverwaltungApi {
   private meldungCallback?: (text: string, typ: 'info' | 'fehler') => void;
+  private correlationIdCallback?: (id: string) => void;
 
   /** Verbindet den API-Fehler-Handler mit der UI-Meldungsanzeige (z.B. AppStore.setMeldung). */
   setzeMeldungCallback(cb: (text: string, typ: 'info' | 'fehler') => void): void {
     this.meldungCallback = cb;
   }
 
+  /** Verbindet den Correlation-ID-Handler mit dem AppStore-Ringpuffer. */
+  setzeCorrelationIdCallback(cb: (id: string) => void): void {
+    this.correlationIdCallback = cb;
+  }
+
   private async hol<T>(pfad: string, init?: RequestInit): Promise<T> {
-    return holeJson<T>(pfad, init, this.meldungCallback);
+    return holeJson<T>(pfad, init, this.meldungCallback, this.correlationIdCallback);
   }
 
   async initialisiereSpielerSession(): Promise<SpielerSessionAntwort> {

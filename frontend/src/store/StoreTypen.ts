@@ -43,6 +43,8 @@ export interface AppZustand {
   /** Verbleibende Sekunden des Countdown nach Partie-Ende; null wenn kein Countdown aktiv. */
   countdownSekunden: number | null;
   spielProtokollEintraege: SpielprotokollEintrag[];
+  /** Ringpuffer der letzten empfangenen X-Correlation-Id-Werte (max. 20). */
+  correlationIds: string[];
 }
 
 export type PartieEreignisListener = (ereignis: PartieEreignisAntwort) => void | Promise<void>;
@@ -64,6 +66,7 @@ export function erzeugeAnfangszustand(): AppZustand {
     meldung: null,
     uiKonfiguration: { kiVerzoegerungMs: 800 },
     countdownSekunden: null,
-    spielProtokollEintraege: []
+    spielProtokollEintraege: [],
+    correlationIds: []
   };
 }

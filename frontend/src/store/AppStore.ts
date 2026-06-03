@@ -34,6 +34,7 @@ export class AppStore {
   private readonly partie: PartieStore;
 
   constructor(private readonly api: SpielverwaltungApi, private readonly echtzeit: EchtzeitPort) {
+    api.setzeCorrelationIdCallback?.(id => this.fuegeCorrelationIdHinzu(id));
     const patchFn = (a: Partial<AppZustand>) => this.patch(a);
     const gibZustand = () => this.zustand;
     const resetZustand = () => { this.zustand = erzeugeAnfangszustand(); this.veroeffentliche(); };
@@ -93,6 +94,10 @@ export class AppStore {
   beantworteArmut(angenommen: boolean, kartenIds: string[]): void { const t = this.zustand.aktuellerTisch?.id; if (t) this.tisch.sendeSpielaktion(`/app/tisch/${t}/armut-antwort`, { angenommen, kartenIds }); }
 
   // --- Sonstiges ---
+  fuegeCorrelationIdHinzu(id: string): void {
+    const ids = [...this.zustand.correlationIds, id];
+    this.patch({ correlationIds: ids.slice(-20) });
+  }
   quittiereMeldung(): void { this.patch({ meldung: null }); }
   setMeldung(text: string, typ: 'info' | 'fehler'): void { this.patch({ meldung: { typ, text } }); }
   setzeKiKartenVerzögerung(ms: number): void { this.patch({ uiKonfiguration: { ...this.zustand.uiKonfiguration, kiVerzoegerungMs: ms } }); }
