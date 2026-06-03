@@ -1,8 +1,10 @@
 # IMPLEMENTATION_PLAN — Locodoko Doppelkopf
 
-> Stand: 2026-05-29 (Plan-Überarbeitung nach Gesamt-Review). Erledigte Aufgaben → `IMPLEMENTATION_PLAN_ARCHIVE.md`
+> Stand: 2026-06-03 (Session 36). Erledigte Aufgaben → `IMPLEMENTATION_PLAN_ARCHIVE.md`
 
 ## Notiz
+
+**Session 36 (2026-06-03) — Planungssession (Opus), kein Produktivcode außer noindex:** Schema-Gegencheck gegen `000-initial-schema.sql` → **REFACTOR-DB-5…10** + **CHANGELOG-KONSOLIDIERUNG** (echtes Greenfield: alle Fixes direkt in `000`, additive Changesets raus). Statistik entschieden: **Stufe 0+1, TrueSkill** (`specs/statistik-ranking.md`) → **STAT-DERIVED / STAT-RATING / FE-LEADERBOARD**; Saison/Liga aufgeschoben. Bugreport-Design (`specs/bugreport.md`) → **OBS-CORRELATION-ID / FEAT-BUGREPORT / OBS-SENTRY**. Grafana: Per-Spieler-Stats → DB, aggregierte „Loco"-Metriken → Prometheus (in OPS-GRAFANA-MONITORING). Recht: Impressum für Closed Beta **Risk-Accept**; **noindex** (meta + `robots.txt`) live, `X-Robots-Tag`-Notiz in OPS-DOMAIN. Commits: `67730d2`, `d2da790`, `886f184`, `c259c6a`. **→ Neue autonome Queue siehe unten („Nächste autonome Queue").**
 
 **Session 35 (2026-06-02) — SPEC-RECHT abgeschlossen:** `specs/recht-impressum-datenschutz.md` angelegt. Enthält: Impressum-Pflichtangaben (§5 DDG), vollständige Datenschutzerklärung-Struktur (DSGVO Art. 13/14 — alle DB-Felder aufgeschlüsselt, Google-OAuth2-Drittland-Transfer, Betroffenenrechte, Speicherdauer, Hosting-Datenresidenz), AGB-Mindeststruktur, Checkliste vor M2, konkrete Build-Tasks (Frontend-Seiten `/impressum`/`/datenschutz`/`/agb`, Footer-Links, AVV). Keine Code-Änderung nötig (DOC-Task). Nächste autonome Tasks: DOC-DOCS-SITE, QA-CODE-METRICS oder SECURITY-REVIEW (Skill verfügbar).
 
@@ -28,10 +30,41 @@ Nächste offene Tasks — Fertigstellung (Session 30). **Zwei Meilensteine:** **
 
 **Domain-Schema (Session 30, Teil 4 — sticky, da OAuth/Cookies/WS daran gebunden):** App = **`zock.locodoko.de`** · Wiki = **`docs.locodoko.de`** (MkDocs auf GitHub Pages, gratis) · Apex **`locodoko.de`** = Landing/Redirect. Permanente Wahl (kein „beta."-Umzug), da Beta-Daten erhalten bleiben.
 
-**Beta-Entscheidungen (Session 30, Teil 3+4):** Daten **erhalten** → Schema final + Backups **vor** M1; Zugang via **`zock.locodoko.de`** (Domain+TLS); **Google OAuth aktiv**. Damit ist M1 faktisch ein **erster echter Deploy**. Weiter (Teil 4): **EU-Ops pragmatisch** (Grafana/Sentry mit EU-Region + AVV ok, kein Self-Hosting nötig); **Beta nicht gated** (kein Site-Gate, kein SEO/noindex-Fokus → `BETA-ACCESS` optional); **Sessions persistieren** (`spring-session-jdbc`) + **Build-Info** (`/actuator/info`); Admin-Tooling + Rollback-Doku **erwogen, zurückgestellt**. **Auth bleibt Google + Username/Passwort** — „Sign in with Apple" verworfen (99 €/Jahr + JWT-Rotation für reine UX; Apple-Nutzer können Google im Safari nutzen). Passwort-Reset/`OPS-EMAIL` **zurückgestellt** → Fallback in der Beta: manueller Reset durch Betreiber. Mobile: nominell M2 — **aber Freunde auf iPhone → Beta wird vermutlich mobil/Safari getestet** (Re-Evaluierung empfohlen).
+**Beta-Entscheidungen (Session 30, Teil 3+4):** Daten **erhalten** → Schema final + Backups **vor** M1; Zugang via **`zock.locodoko.de`** (Domain+TLS); **Google OAuth aktiv**. Damit ist M1 faktisch ein **erster echter Deploy**. Weiter (Teil 4): **EU-Ops pragmatisch** (Grafana/Sentry mit EU-Region + AVV ok, kein Self-Hosting nötig); **Beta-Zugang** (Session 36 aktualisiert): kein hartes Site-Gate, aber **noindex aktiv** (meta + `robots.txt`) → aus Suchmaschinen raus; `BETA-ACCESS` (invite-only) optional, aber **Hebel für den Impressum-Risk-Accept** (ohne öffentliche Registrierung greift „privat, nicht geschäftsmäßig"); **Sessions persistieren** (`spring-session-jdbc`) + **Build-Info** (`/actuator/info`); Admin-Tooling + Rollback-Doku **erwogen, zurückgestellt**. **Auth bleibt Google + Username/Passwort** — „Sign in with Apple" verworfen (99 €/Jahr + JWT-Rotation für reine UX; Apple-Nutzer können Google im Safari nutzen). Passwort-Reset/`OPS-EMAIL` **zurückgestellt** → Fallback in der Beta: manueller Reset durch Betreiber. Mobile: nominell M2 — **aber Freunde auf iPhone → Beta wird vermutlich mobil/Safari getestet** (Re-Evaluierung empfohlen).
 
 **Meilenstein 1 — Closed Beta (`zock.locodoko.de`, eingeladene Kollegen, Daten erhalten).**
 **Loop-Hinweis:** Ralph arbeitet **Block A** strikt der Reihe nach ab (alles autonom verifizierbar via `mvn`/`npm`). **Block B** trägt `Vorbedingung: MENSCH` — diese Tasks **überspringen**, bis die externe Voraussetzung (Server/Domain/Google-Account) erfüllt ist.
+
+### Nächste autonome Queue (Stand Session 36) — Ralph der Reihe nach, **kein MENSCH nötig**
+
+> Ursprüngliches Block A (1–9) + CI-BUILD-TEST + REFACTOR-DB-1/2/3 + SPEC-RECHT + SPEC-BUGREPORT: **alle ✓**.
+> Diese Queue ist komplett **Ralph-autonom** (verifizierbar via `mvn clean test` / `npm`). **Pro Task ein Commit.**
+
+**A) Schema-Greenfield (GATE für CD-DEPLOY — zuerst; jeder Task editiert `000-initial-schema.sql` direkt):**
+1. **REFACTOR-DB-5** — `benutzername` UNIQUE (echter Bug, Race Condition)
+2. **REFACTOR-DB-6** — Audit-Spalten NOT NULL + DEFAULT
+3. **REFACTOR-DB-7** — `erstellt_von` auf `partie` + ON-DELETE-Politik
+4. **REFACTOR-DB-8** — NOT-NULL-Abdeckung vervollständigen
+5. **REFACTOR-DB-9** — `event_publication` PRIMARY KEY
+6. **REFACTOR-DB-10** — DSGVO-ON-DELETE-Politik
+7. **CHANGELOG-KONSOLIDIERUNG** — `002`–`004` in `000` auflösen → ein sauberes Initial-Schema
+
+**B) Statistik (Stufe 0+1) + correlationId-Vortask:**
+8. **OBS-CORRELATION-ID** — `CorrelationIdFilter` (breit nützlich, auch für Loki/Bugreport)
+9. **STAT-DERIVED** — abgeleitete Kennzahlen im Profil
+10. **STAT-RATING** — TrueSkill (`rating_mu`/`rating_sigma` an `spieler_statistik`)
+11. **FE-LEADERBOARD** — Bestenlisten-Szene (danach Vision-Loop)
+
+**C) Qualität & Produktreife (additiv, jederzeit autonom):**
+12. **QA-CODE-METRICS** — Metrik-Report
+13. **SECURITY-REVIEW** — `/security-review`-Skill
+14. **VERIFY-MULTIPLAYER** — Mehr-Session-E2E
+15. **FE-UI-FINAL-REVIEW** — Vision-Loop → Mängelkatalog
+16. **FE-SPIELREGELN-HILFE** — Regel-Overlay
+
+**Teil-autonom (Code/Spec jetzt, finaler Secret/Wiring später vom MENSCH):** OPS-GRAFANA-MONITORING + OPS-LOGS-LOKI (Instrumentierung/Alloy-Config autonom, Token MENSCH) · FEAT-BUGREPORT (Overlay+Endpoint autonom, privates Repo+Token MENSCH) · OBS-SENTRY (Code autonom, DSN MENSCH) · OPS-DOMAIN (Reverse-Proxy-Config autonom) · DOC-DOCS-SITE (MkDocs baut autonom, Custom-Domain-DNS MENSCH).
+
+**Erst danach MENSCH nötig (Deploy-Phase):** OAuth-Credentials · DEPLOY-COMPOSE-SMOKE · CD-DEPLOY.
 
 **Block A — Ralph-autonom (sofort, ohne externe Voraussetzung):**
 1. **BUG-PROD-CHANGELOG** (P0) — App bootet gegen Postgres
