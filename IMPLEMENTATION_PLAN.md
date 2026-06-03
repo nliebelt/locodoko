@@ -4,7 +4,7 @@
 
 ## Notiz
 
-**Session 40 (2026-06-03) — REFACTOR-DB-9 abgeschlossen:** `event_publication.id` PRIMARY KEY ergänzt. In `000-initial-schema.sql` Z. 187: `id UUID NOT NULL` → `id UUID PRIMARY KEY` (Spring-Modulith-Default; `PRIMARY KEY` impliziert `NOT NULL`). 344 Tests grün. **→ Nächste Task: REFACTOR-DB-10** (DSGVO-ON-DELETE-Politik für alle `spieler`-referenzierenden FKs).
+**Session 41 (2026-06-03) — REFACTOR-DB-10 abgeschlossen:** DSGVO-ON-DELETE-Politik in `000-initial-schema.sql` gesetzt. `tisch_spieler.spieler_id` → `ON DELETE CASCADE` (Tisch-Sitzplatz entfernt); `partie_teilnehmer.spieler_id` → nullable + `ON DELETE SET NULL` (Spielhistorie anonymisiert); `spieler_statistik.spieler_id` → `ON DELETE CASCADE` (Statistik mit Spieler gelöscht). `tisch.erstellt_von_spieler_id` + `partie.erstellt_von_spieler_id` waren bereits aus DB-7 auf `ON DELETE SET NULL`. Tests grün. **→ Nächste Task: CHANGELOG-KONSOLIDIERUNG** (002–004 in 000 auflösen → ein sauberes Initial-Schema).
 
 **Session 35 (2026-06-02) — SPEC-RECHT abgeschlossen:** `specs/recht-impressum-datenschutz.md` angelegt. Enthält: Impressum-Pflichtangaben (§5 DDG), vollständige Datenschutzerklärung-Struktur (DSGVO Art. 13/14 — alle DB-Felder aufgeschlüsselt, Google-OAuth2-Drittland-Transfer, Betroffenenrechte, Speicherdauer, Hosting-Datenresidenz), AGB-Mindeststruktur, Checkliste vor M2, konkrete Build-Tasks (Frontend-Seiten `/impressum`/`/datenschutz`/`/agb`, Footer-Links, AVV). Keine Code-Änderung nötig (DOC-Task). Nächste autonome Tasks: DOC-DOCS-SITE, QA-CODE-METRICS oder SECURITY-REVIEW (Skill verfügbar).
 
@@ -493,7 +493,7 @@ Alle noch im Greenfield-Fenster (vor erstem echten Deploy). Details und Audit-Ko
 
 - [x] **REFACTOR-DB-9** — `event_publication` ohne PRIMARY KEY → `PRIMARY KEY (id)` ergänzen (Spring-Modulith-Default). **DoD:** PK vorhanden; Outbox-Tests grün. **Risiko:** niedrig.
 
-- [ ] **REFACTOR-DB-10** — DSGVO-ON-DELETE-Politik für alle `spieler`-referenzierenden FKs festlegen (`partie_teilnehmer`, `spieler_statistik`, `tisch_spieler`, `tisch.erstellt_von_spieler_id`, `spieler_rating`). Empfehlung: Statistik/Rating CASCADE, Archiv/Teilnahme SET NULL. **Vorbedingung-Entscheidung:** koppelt an späteres Lösch-Feature — Politik **jetzt** im Schema, Feature später. **DoD:** ON-DELETE auf allen FKs explizit; dokumentiert. **Risiko:** niedrig (Schema), mittel (Semantik).
+- [x] **REFACTOR-DB-10** — DSGVO-ON-DELETE-Politik für alle `spieler`-referenzierenden FKs festlegen (`partie_teilnehmer`, `spieler_statistik`, `tisch_spieler`, `tisch.erstellt_von_spieler_id`, `spieler_rating`). Empfehlung: Statistik/Rating CASCADE, Archiv/Teilnahme SET NULL. **Vorbedingung-Entscheidung:** koppelt an späteres Lösch-Feature — Politik **jetzt** im Schema, Feature später. **DoD:** ON-DELETE auf allen FKs explizit; dokumentiert. **Risiko:** niedrig (Schema), mittel (Semantik).
 
 ### Statistik & Ranking (Session 36 — entschieden: Stufe 0+1, TrueSkill; Saison/Liga aufgeschoben)
 

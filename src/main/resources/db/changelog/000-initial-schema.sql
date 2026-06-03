@@ -83,7 +83,7 @@ CREATE TABLE tisch (
 
 CREATE TABLE tisch_spieler (
     tisch_id UUID NOT NULL REFERENCES tisch(id) ON DELETE CASCADE,
-    spieler_id UUID NOT NULL REFERENCES spieler(id),
+    spieler_id UUID NOT NULL REFERENCES spieler(id) ON DELETE CASCADE,
     tisch_spieler_key VARCHAR(10) NOT NULL,
     PRIMARY KEY (tisch_id, spieler_id)
 );
@@ -148,7 +148,7 @@ CREATE TABLE sonderpunkt_eintrag (
 CREATE TABLE partie_teilnehmer (
     id UUID PRIMARY KEY,
     partie_id UUID NOT NULL REFERENCES partie(id) ON DELETE CASCADE,
-    spieler_id UUID NOT NULL REFERENCES spieler(id),
+    spieler_id UUID REFERENCES spieler(id) ON DELETE SET NULL,
     spieler_position VARCHAR(10) NOT NULL,
     beigetreten_am TIMESTAMP WITH TIME ZONE,
     ausgeschieden_am TIMESTAMP WITH TIME ZONE,
@@ -157,7 +157,7 @@ CREATE TABLE partie_teilnehmer (
 
 CREATE TABLE spieler_statistik (
     id UUID PRIMARY KEY,
-    spieler_id UUID NOT NULL REFERENCES spieler(id),
+    spieler_id UUID NOT NULL REFERENCES spieler(id) ON DELETE CASCADE,
     regelvariante VARCHAR(20) NOT NULL DEFAULT 'FREI',
     anzahl_spiele INT NOT NULL DEFAULT 0,
     anzahl_siege INT NOT NULL DEFAULT 0,
