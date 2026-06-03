@@ -184,7 +184,7 @@ CREATE TABLE spieler_statistik (
 );
 
 CREATE TABLE event_publication (
-    id UUID NOT NULL,
+    id UUID PRIMARY KEY,
     listener_id VARCHAR(512) NOT NULL,
     event_type VARCHAR(512) NOT NULL,
     serialized_event TEXT NOT NULL,

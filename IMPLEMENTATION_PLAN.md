@@ -4,7 +4,7 @@
 
 ## Notiz
 
-**Session 39 (2026-06-03) — REFACTOR-DB-8 abgeschlossen:** NOT-NULL-Abdeckung vervollständigt. Schema (`000-initial-schema.sql`): `spielergebnis_archiv.geber_position/spieltyp` NOT NULL; `absage_punkte/gegen_die_alten_punkte/solo_multiplikator/spielpunkte_*` NOT NULL DEFAULT 0; `abgeschlossen_am` NOT NULL DEFAULT NOW(); `sonderpunkt_eintrag.partei/sonderpunkt_typ` NOT NULL; `partie.regelvariante/spielregeln` NOT NULL; `tisch.zugangsmodus` NOT NULL DEFAULT 'OFFEN'. Zusätzlich: `Partie.java` um Feld `@Column("regelvariante") private String regelvariante` ergänzt — wird im privaten Konstruktor aus `spielregeln.regelvariante().name()` abgeleitet (deckt alle Domain-Operationen ab) und in `neuePersistenz()` explizit gesetzt. Dadurch ist `partie_ergebnis_view.regelvariante` ab sofort korrekt befüllt (war vorher immer NULL). 344 Tests grün. **→ Nächste Task: REFACTOR-DB-9** (event_publication PRIMARY KEY).
+**Session 40 (2026-06-03) — REFACTOR-DB-9 abgeschlossen:** `event_publication.id` PRIMARY KEY ergänzt. In `000-initial-schema.sql` Z. 187: `id UUID NOT NULL` → `id UUID PRIMARY KEY` (Spring-Modulith-Default; `PRIMARY KEY` impliziert `NOT NULL`). 344 Tests grün. **→ Nächste Task: REFACTOR-DB-10** (DSGVO-ON-DELETE-Politik für alle `spieler`-referenzierenden FKs).
 
 **Session 35 (2026-06-02) — SPEC-RECHT abgeschlossen:** `specs/recht-impressum-datenschutz.md` angelegt. Enthält: Impressum-Pflichtangaben (§5 DDG), vollständige Datenschutzerklärung-Struktur (DSGVO Art. 13/14 — alle DB-Felder aufgeschlüsselt, Google-OAuth2-Drittland-Transfer, Betroffenenrechte, Speicherdauer, Hosting-Datenresidenz), AGB-Mindeststruktur, Checkliste vor M2, konkrete Build-Tasks (Frontend-Seiten `/impressum`/`/datenschutz`/`/agb`, Footer-Links, AVV). Keine Code-Änderung nötig (DOC-Task). Nächste autonome Tasks: DOC-DOCS-SITE, QA-CODE-METRICS oder SECURITY-REVIEW (Skill verfügbar).
 
@@ -491,7 +491,7 @@ Alle noch im Greenfield-Fenster (vor erstem echten Deploy). Details und Audit-Ko
 
 - [x] **REFACTOR-DB-8** — NOT-NULL-Abdeckung vervollständigen (Ergänzung zu DB-2): `spielergebnis_archiv` (`geber_position`, `spieltyp`, `absage_punkte`, `gegen_die_alten_punkte`, `solo_multiplikator`, `spielpunkte_*`, `abgeschlossen_am`), `sonderpunkt_eintrag` (`partei`, `sonderpunkt_typ`), `partie` (`regelvariante`, `spielregeln`), `tisch.zugangsmodus` (`DEFAULT 'OFFEN'`). **DoD:** Constraints gesetzt, App setzt alle Werte; `mvn clean test` grün. **Risiko:** niedrig-mittel.
 
-- [ ] **REFACTOR-DB-9** — `event_publication` ohne PRIMARY KEY → `PRIMARY KEY (id)` ergänzen (Spring-Modulith-Default). **DoD:** PK vorhanden; Outbox-Tests grün. **Risiko:** niedrig.
+- [x] **REFACTOR-DB-9** — `event_publication` ohne PRIMARY KEY → `PRIMARY KEY (id)` ergänzen (Spring-Modulith-Default). **DoD:** PK vorhanden; Outbox-Tests grün. **Risiko:** niedrig.
 
 - [ ] **REFACTOR-DB-10** — DSGVO-ON-DELETE-Politik für alle `spieler`-referenzierenden FKs festlegen (`partie_teilnehmer`, `spieler_statistik`, `tisch_spieler`, `tisch.erstellt_von_spieler_id`, `spieler_rating`). Empfehlung: Statistik/Rating CASCADE, Archiv/Teilnahme SET NULL. **Vorbedingung-Entscheidung:** koppelt an späteres Lösch-Feature — Politik **jetzt** im Schema, Feature später. **DoD:** ON-DELETE auf allen FKs explizit; dokumentiert. **Risiko:** niedrig (Schema), mittel (Semantik).
 
