@@ -41,6 +41,9 @@ public class Partie extends AbstraktePersistenzEntity {
     @Column("anzahl_spiele")
     private int anzahlSpiele;
 
+    @Column("regelvariante")
+    private String regelvariante;
+
     @Column("spielregeln")
     private Spielregeln spielregeln;
 
@@ -113,6 +116,7 @@ public class Partie extends AbstraktePersistenzEntity {
         }
         this.anzahlSpiele = anzahlSpiele;
         this.spielregeln = Objects.requireNonNull(spielregeln, "spielregeln duerfen nicht null sein");
+        this.regelvariante = spielregeln.regelvariante().name();
         this.naechsterGeber = Objects.requireNonNull(naechsterGeber, "naechsterGeber darf nicht null sein");
         this.abgeschlosseneSpieleIntern = List.copyOf(abgeschlosseneSpieleIntern);
         this.aktuellesSpiel = aktuellesSpiel;
@@ -154,6 +158,7 @@ public class Partie extends AbstraktePersistenzEntity {
         Partie p = new Partie();
         p.anzahlSpiele = anzahlSpiele;
         p.spielregeln = Objects.requireNonNull(spielregeln, "spielregeln duerfen nicht null sein");
+        p.regelvariante = spielregeln.regelvariante().name();
         p.statusDb = PartieStatus.LAUFEND.name();
         p.erstelltVonSpielerId = erstelltVon;
         return p;
