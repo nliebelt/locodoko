@@ -4,7 +4,7 @@
 
 ## Notiz
 
-**Session 37 (2026-06-03) — REFACTOR-DB-5 abgeschlossen:** `spieler.benutzername` und `spieler.email` erhalten UNIQUE-Indizes in `000-initial-schema.sql` (kein neues Changeset — Greenfield). H2 unterstützt keine partiellen Indizes mit `WHERE`; einfache UNIQUE-Constraints sind funktional äquivalent (SQL-Standard: NULL ≠ NULL in UNIQUE → mehrere OAuth2-NULL-Werte erlaubt). Controller fängt `DataIntegrityViolationException` ab → 409 (Race-Condition-Sicherheitsnetz). Regressions-Test `datenbankVerhindertDoppeltenBenutzernamen()` hinzugefügt. 344 Tests grün. **→ Nächste Task: REFACTOR-DB-6** (Audit-Spalten NOT NULL + DEFAULT).
+**Session 38 (2026-06-03) — REFACTOR-DB-6 abgeschlossen:** `erstellt_am`/`aktualisiert_am` in 5 Tabellen (`spieler`, `partie`, `tisch`, `laufendes_spiel`, `spieler_statistik`) auf `NOT NULL DEFAULT NOW()` gesetzt — direkt in `000-initial-schema.sql` (Greenfield). `AbstraktePersistenzEntity()` setzt diese im Konstruktor bereits immer → kein Java-Code-Change nötig. 344 Tests grün. **→ Nächste Task: REFACTOR-DB-7** (Audit-of-who: `erstellt_von_spieler_id` auf `partie` + ON-DELETE-Politik).
 
 **Session 35 (2026-06-02) — SPEC-RECHT abgeschlossen:** `specs/recht-impressum-datenschutz.md` angelegt. Enthält: Impressum-Pflichtangaben (§5 DDG), vollständige Datenschutzerklärung-Struktur (DSGVO Art. 13/14 — alle DB-Felder aufgeschlüsselt, Google-OAuth2-Drittland-Transfer, Betroffenenrechte, Speicherdauer, Hosting-Datenresidenz), AGB-Mindeststruktur, Checkliste vor M2, konkrete Build-Tasks (Frontend-Seiten `/impressum`/`/datenschutz`/`/agb`, Footer-Links, AVV). Keine Code-Änderung nötig (DOC-Task). Nächste autonome Tasks: DOC-DOCS-SITE, QA-CODE-METRICS oder SECURITY-REVIEW (Skill verfügbar).
 
@@ -485,7 +485,7 @@ Alle noch im Greenfield-Fenster (vor erstem echten Deploy). Details und Audit-Ko
 
 - [x] **REFACTOR-DB-5** (P-hoch) — `spieler.benutzername` ohne UNIQUE → Race Condition bei Registrierung (`AuthentifizierungsController:72` prüft nur per Query). UNIQUE-Indizes auf `benutzername` und `email` direkt in `000-initial-schema.sql` (H2-kompatibel: SQL-Standard-UNIQUE erlaubt mehrere NULLs). Controller fängt `DataIntegrityViolationException` ab → 409. Regressions-Test hinzugefügt. **DoD erfüllt.** **Risiko:** niedrig im Greenfield.
 
-- [ ] **REFACTOR-DB-6** — Audit `erstellt_am`/`aktualisiert_am` nullable auf `spieler`, `partie`, `tisch`, `laufendes_spiel`, `spieler_statistik` → `NOT NULL DEFAULT NOW()` (DB erzwingt + befüllt). **DoD:** Spalten NOT NULL; `mvn clean test` grün. **Risiko:** niedrig.
+- [x] **REFACTOR-DB-6** — Audit `erstellt_am`/`aktualisiert_am` nullable auf `spieler`, `partie`, `tisch`, `laufendes_spiel`, `spieler_statistik` → `NOT NULL DEFAULT NOW()` (DB erzwingt + befüllt). **DoD:** Spalten NOT NULL; `mvn clean test` grün. **Risiko:** niedrig.
 
 - [ ] **REFACTOR-DB-7** — Audit-of-who: `erstellt_von_spieler_id UUID` auf `partie` ergänzen (nullable, NULL = System/KI). ON DELETE aller Creator-FKs auf `SET NULL`. Entity + Schreibpfad mitziehen. **DoD:** neue Partien tragen den Ersteller; `mvn clean test` grün. **Risiko:** mittel (Schreibpfad).
 

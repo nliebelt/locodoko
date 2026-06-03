@@ -15,8 +15,8 @@ CREATE TABLE spieler (
     email VARCHAR(255),
     anzeige_name VARCHAR(100),
     avatar_farbe VARCHAR(50),
-    erstellt_am TIMESTAMP WITH TIME ZONE,
-    aktualisiert_am TIMESTAMP WITH TIME ZONE
+    erstellt_am TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+    aktualisiert_am TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
 );
 
 -- UNIQUE-Constraints auf benutzername und email.
@@ -39,8 +39,8 @@ CREATE TABLE partie (
     naechster_geber VARCHAR(10),
     regelvariante VARCHAR(20),
     spielregeln JSONB,
-    erstellt_am TIMESTAMP WITH TIME ZONE,
-    aktualisiert_am TIMESTAMP WITH TIME ZONE,
+    erstellt_am TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+    aktualisiert_am TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
     beendet_am TIMESTAMP WITH TIME ZONE
 );
 
@@ -75,8 +75,8 @@ CREATE TABLE tisch (
     herz_durchgegangen_nur_hoch BOOLEAN NOT NULL DEFAULT FALSE,
     einladungs_code VARCHAR(20),
     zugangsmodus VARCHAR(30),
-    erstellt_am TIMESTAMP WITH TIME ZONE,
-    aktualisiert_am TIMESTAMP WITH TIME ZONE,
+    erstellt_am TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+    aktualisiert_am TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
     erstellt_von_spieler_id UUID REFERENCES spieler(id)
 );
 
@@ -106,8 +106,8 @@ CREATE TABLE laufendes_spiel (
     bereits_geschmissen JSONB NOT NULL DEFAULT '[]',
     kartendeck JSONB,
     ergebnis JSONB,
-    erstellt_am TIMESTAMP WITH TIME ZONE,
-    aktualisiert_am TIMESTAMP WITH TIME ZONE,
+    erstellt_am TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+    aktualisiert_am TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
     UNIQUE(partie_id, spiel_nummer)
 );
 
@@ -177,8 +177,8 @@ CREATE TABLE spieler_statistik (
     solos_niederlagen INT NOT NULL DEFAULT 0,
     solos_pro_typ JSONB,
     zuletzt_aktualisiert TIMESTAMP WITH TIME ZONE,
-    erstellt_am TIMESTAMP WITH TIME ZONE,
-    aktualisiert_am TIMESTAMP WITH TIME ZONE,
+    erstellt_am TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+    aktualisiert_am TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
     UNIQUE(spieler_id, regelvariante)
 );
 
