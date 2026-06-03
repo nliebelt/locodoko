@@ -1,0 +1,4 @@
+# Closed Beta: komplettes Crawling unterbinden.
+# Bei Public Go-Live (M2) anpassen/entfernen (siehe index.html noindex + OPS-DOMAIN).
+User-agent: *
+Disallow: /

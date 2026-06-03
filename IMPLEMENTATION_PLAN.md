@@ -177,6 +177,8 @@ Entscheidungen: **DECISION-AUTH** ✓ beide behalten · **DECISION-LIZENZ** aufg
 
   **Erste Datei zuerst:** DNS-Records (`zock` + `docs` CNAME/A) beim Registrar; TLS via Reverse-Proxy (Caddy/Traefik + Let's Encrypt) vor der App, **WebSocket-Upgrade-Header durchreichen** (Snapshot+Hint bricht sonst), HTTP→HTTPS-Redirect; Apex → 301 auf `zock.` (bis Landing existiert). `application-prod.properties` + `.env`: Redirect-URI, Cookie-Domain, WS-Origins auf `zock.locodoko.de`.
 
+  **Closed-Beta-noindex (Forts.):** `index.html` trägt bereits `<meta robots noindex,nofollow>`, `frontend/public/robots.txt` setzt `Disallow: /`. Im Reverse-Proxy zusätzlich **`X-Robots-Tag: noindex, nofollow`** als Response-Header setzen (wirkt auch für Nicht-HTML-Antworten, schwerer zu übersehen). **Bei Public Go-Live (M2) alle drei zurücknehmen.**
+
   **DoD:** `https://zock.locodoko.de` zeigt auf die App, WS funktioniert durch den Proxy, OAuth-Redirect + WS-Origins gesetzt. **Risiko:** niedrig. **[abhängig von Plattformwahl/Server]**
 
 - [ ] **DOC-DOCS-SITE** — Öffentliche Docs-/Wiki-Seite (zugleich LLM-tauglich, Karpathy-Stil).
