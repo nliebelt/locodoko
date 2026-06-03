@@ -58,7 +58,7 @@ class VerbindungsabbruchEinzelspielerTest {
         tisch.fuegeSpielerHinzu(ki2);
         tisch.fuegeSpielerHinzu(ki3);
         // setzePartie setzt Status auf IM_SPIEL; tischRepository.save speichert die Partie kaskadiert
-        tisch.setzePartie(Partie.neuePersistenz(6, Spielregeln.standardRegeln()));
+        tisch.setzePartie(Partie.neuePersistenz(6, Spielregeln.standardRegeln(), null));
         tischRepository.save(tisch);
     }
 

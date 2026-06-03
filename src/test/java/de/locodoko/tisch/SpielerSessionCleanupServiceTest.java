@@ -172,7 +172,7 @@ class SpielerSessionCleanupServiceTest {
      */
     @Test
     void spielerBleibtAnAktivenTischNachSessionAblauf() {
-        Partie partie = Partie.neuePersistenz(5, Spielregeln.standardRegeln());
+        Partie partie = Partie.neuePersistenz(5, Spielregeln.standardRegeln(), null);
         partieRepository.save(partie);
 
         TischEntity tisch = TischEntity.neu("Aktiver Tisch", spieler, TischkonfigurationEmbeddable.standard());

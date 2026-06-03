@@ -181,7 +181,7 @@ class KiOrchestrierungServiceIntegrationTest {
     }
 
     private Partie partieMitSpiel(Spiel spiel, int anzahlSpiele) {
-        Partie partie = Partie.neuePersistenz(anzahlSpiele, Spielregeln.standardRegeln());
+        Partie partie = Partie.neuePersistenz(anzahlSpiele, Spielregeln.standardRegeln(), null);
         spiel.setzeSpielNummer(1);
         partie.fuegeSpielHinzu(spiel);
         partie.setzeSpielregeln(spiel.spielregeln());

@@ -41,7 +41,8 @@ CREATE TABLE partie (
     spielregeln JSONB,
     erstellt_am TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
     aktualisiert_am TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
-    beendet_am TIMESTAMP WITH TIME ZONE
+    beendet_am TIMESTAMP WITH TIME ZONE,
+    erstellt_von_spieler_id UUID REFERENCES spieler(id) ON DELETE SET NULL
 );
 
 CREATE TABLE tisch (
@@ -77,7 +78,7 @@ CREATE TABLE tisch (
     zugangsmodus VARCHAR(30),
     erstellt_am TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
     aktualisiert_am TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
-    erstellt_von_spieler_id UUID REFERENCES spieler(id)
+    erstellt_von_spieler_id UUID REFERENCES spieler(id) ON DELETE SET NULL
 );
 
 CREATE TABLE tisch_spieler (

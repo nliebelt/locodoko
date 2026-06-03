@@ -239,7 +239,7 @@ public class TischVerwaltungsService {
         while (!tisch.istVoll()) {
             tisch.fuegeSpielerHinzu(kiSpielerFabrik.erzeugeNaechstenSpieler());
         }
-        Partie partie = Partie.neuePersistenz(tisch.konfiguration().anzahlSpiele(), tisch.konfiguration().alsSpielregeln());
+        Partie partie = Partie.neuePersistenz(tisch.konfiguration().anzahlSpiele(), tisch.konfiguration().alsSpielregeln(), verwalteterSpieler.id());
         partie.fuegeSpielHinzu(erzeugeErstesSpiel(tisch));
         Partie gespeichertePartie = partieRepository.saveAndFlush(partie);
         tisch.setzePartie(gespeichertePartie);
@@ -283,7 +283,7 @@ public class TischVerwaltungsService {
                 "Neue Partie kann nur nach vollstaendigem Abschluss der aktuellen Partie gestartet werden."
             );
         }
-        starteNaechstePartieIntern(tisch);
+        starteNaechstePartieIntern(tisch, spieler.id());
         return new BestaetigungAntwort("Neue Partie gestartet.");
     }
 
@@ -308,17 +308,17 @@ public class TischVerwaltungsService {
             LOGGER.warn("Auto-Start abgebrochen: Partie nicht BEENDET [tischId={}]", tischId);
             return;
         }
-        starteNaechstePartieIntern(tisch);
+        starteNaechstePartieIntern(tisch, null);
     }
 
-    private void starteNaechstePartieIntern(TischEntity tisch) {
+    private void starteNaechstePartieIntern(TischEntity tisch, UUID erstelltVon) {
         tisch.spieler().stream()
             .filter(s -> !s.istKi() && s.istKiUebernommen())
             .forEach(s -> {
                 s.hebeKiUebernahmeAuf();
                 spielerRepository.save(s);
             });
-        Partie neuePartie = Partie.neuePersistenz(tisch.konfiguration().anzahlSpiele(), tisch.konfiguration().alsSpielregeln());
+        Partie neuePartie = Partie.neuePersistenz(tisch.konfiguration().anzahlSpiele(), tisch.konfiguration().alsSpielregeln(), erstelltVon);
         neuePartie.fuegeSpielHinzu(erzeugeErstesSpiel(tisch));
         Partie gespeichertePartie = partieRepository.saveAndFlush(neuePartie);
         tisch.setzePartie(gespeichertePartie);
@@ -366,7 +366,7 @@ public class TischVerwaltungsService {
         while (!tisch.istVoll()) {
             tisch.fuegeSpielerHinzu(kiSpielerFabrik.erzeugeNaechstenSpieler());
         }
-        Partie partie = Partie.neuePersistenz(tisch.konfiguration().anzahlSpiele(), tisch.konfiguration().alsSpielregeln());
+        Partie partie = Partie.neuePersistenz(tisch.konfiguration().anzahlSpiele(), tisch.konfiguration().alsSpielregeln(), verwalteterSpieler.id());
         partie.fuegeSpielHinzu(erzeugeErstesSpiel(tisch));
         Partie gespeichertePartie = partieRepository.saveAndFlush(partie);
         tisch.setzePartie(gespeichertePartie);

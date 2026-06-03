@@ -85,7 +85,7 @@ class PersistenzRepositoryTest {
         tisch.fuegeSpielerHinzu(gast);
         tisch.fuegeSpielerHinzu(ki);
 
-        Partie partie = Partie.neuePersistenz(12, Spielregeln.standardRegeln());
+        Partie partie = Partie.neuePersistenz(12, Spielregeln.standardRegeln(), null);
         partie.setzeGesamtpunktestand(SpielerPosition.SUED, 3);
         partie.setzeGesamtpunktestand(SpielerPosition.WEST, -1);
         partie.setzeGesamtpunktestand(SpielerPosition.NORD, -1);
@@ -164,7 +164,7 @@ class PersistenzRepositoryTest {
         tisch.fuegeSpielerHinzu(erstelltVon);
         tisch.fuegeSpielerHinzu(ki);
 
-        Partie partie = Partie.neuePersistenz(24, Spielregeln.standardRegeln());
+        Partie partie = Partie.neuePersistenz(24, Spielregeln.standardRegeln(), null);
         Spiel spiel = SpielTestBuilder.ausNeuePersistenz(1, SpielerPosition.WEST, Spieltyp.NORMALSPIEL, new Spielphase.Stichphase(Stich.neu(SpielerPosition.WEST), Set.of(), null))
             .mitAbgeschlossenenStichen(List.of(
                 Stich.ausPersistiertemStand(SpielerPosition.WEST, List.of(
@@ -243,7 +243,7 @@ class PersistenzRepositoryTest {
         tisch.fuegeSpielerHinzu(erstelltVon);
         tisch.fuegeSpielerHinzu(gast);
 
-        Partie partie = Partie.neuePersistenz(1, Spielregeln.standardRegeln());
+        Partie partie = Partie.neuePersistenz(1, Spielregeln.standardRegeln(), null);
         HochzeitStatus hochzeit = new HochzeitStatus(SpielerPosition.WEST, 2, SpielerPosition.NORD, false);
         Stich stichMitKarte = Stich.ausPersistiertemStand(SpielerPosition.WEST, List.of(
             new GespielteKarte(SpielerPosition.WEST, new Karte(Farbe.KREUZ, Kartenwert.AS, 1), 0)

@@ -12,6 +12,7 @@ import org.springframework.data.relational.core.mapping.Table;
 
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.UUID;
 import java.util.EnumMap;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -79,6 +80,9 @@ public class Partie extends AbstraktePersistenzEntity {
     @Column("beendet_am")
     private Instant beendetAm = null;
 
+    @Column("erstellt_von_spieler_id")
+    private UUID erstelltVonSpielerId = null;
+
     @MappedCollection(idColumn = "partie_id", keyColumn = "spiel_nummer")
     private Map<Integer, SpielergebnisArchiv> archivierteSpieleMap = new LinkedHashMap<>();
 
@@ -145,12 +149,13 @@ public class Partie extends AbstraktePersistenzEntity {
         return new Partie(anzahlSpiele, spielregeln, ersterGeber, List.of(), null, gesamtpunktestand, 0, null, null);
     }
 
-    /** Erstellt eine neue Persistenz-Partie. */
-    public static Partie neuePersistenz(int anzahlSpiele, Spielregeln spielregeln) {
+    /** Erstellt eine neue Persistenz-Partie. NULL = System/KI als Ersteller. */
+    public static Partie neuePersistenz(int anzahlSpiele, Spielregeln spielregeln, UUID erstelltVon) {
         Partie p = new Partie();
         p.anzahlSpiele = anzahlSpiele;
         p.spielregeln = Objects.requireNonNull(spielregeln, "spielregeln duerfen nicht null sein");
         p.statusDb = PartieStatus.LAUFEND.name();
+        p.erstelltVonSpielerId = erstelltVon;
         return p;
     }
 
@@ -362,6 +367,10 @@ public class Partie extends AbstraktePersistenzEntity {
 
     public int aktuellesSpielNummer() {
         return aktuellesSpielNummer;
+    }
+
+    public UUID erstelltVonSpielerId() {
+        return erstelltVonSpielerId;
     }
 
     public PartieStatus statusAusDb() {

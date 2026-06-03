@@ -229,7 +229,7 @@ class PartieStandAntwortWireFormatTest {
         );
         spiel.setzeSpielNummer(1);
 
-        Partie partie = Partie.neuePersistenz(12, Spielregeln.standardRegeln());
+        Partie partie = Partie.neuePersistenz(12, Spielregeln.standardRegeln(), null);
         partie.fuegeSpielHinzu(spiel);
         tisch.setzePartie(partie);
 

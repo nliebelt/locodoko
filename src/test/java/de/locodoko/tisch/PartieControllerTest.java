@@ -86,7 +86,7 @@ class PartieControllerTest {
         tisch.fuegeSpielerHinzu(clara);  // → NORD (Index 2)
         tisch.fuegeSpielerHinzu(dirk);   // → OST  (Index 3)
 
-        Partie partie = Partie.neuePersistenz(8, Spielregeln.standardRegeln());
+        Partie partie = Partie.neuePersistenz(8, Spielregeln.standardRegeln(), null);
         Spiel spiel = SpielTestBuilder.ausNeuePersistenz(1, SpielerPosition.SUED, Spieltyp.NORMALSPIEL, Spielphase.VORBEHALT_ANSAGE)
             .mitHaenden(Map.of(
                 SpielerPosition.SUED, new Hand(List.of(

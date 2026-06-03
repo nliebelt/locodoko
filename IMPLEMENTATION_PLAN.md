@@ -4,7 +4,7 @@
 
 ## Notiz
 
-**Session 38 (2026-06-03) — REFACTOR-DB-6 abgeschlossen:** `erstellt_am`/`aktualisiert_am` in 5 Tabellen (`spieler`, `partie`, `tisch`, `laufendes_spiel`, `spieler_statistik`) auf `NOT NULL DEFAULT NOW()` gesetzt — direkt in `000-initial-schema.sql` (Greenfield). `AbstraktePersistenzEntity()` setzt diese im Konstruktor bereits immer → kein Java-Code-Change nötig. 344 Tests grün. **→ Nächste Task: REFACTOR-DB-7** (Audit-of-who: `erstellt_von_spieler_id` auf `partie` + ON-DELETE-Politik).
+**Session 39 (2026-06-03) — REFACTOR-DB-7 abgeschlossen:** `erstellt_von_spieler_id UUID REFERENCES spieler(id) ON DELETE SET NULL` in `partie`-Tabelle hinzugefügt (direkt in `000-initial-schema.sql`). Zusätzlich: `tisch.erstellt_von_spieler_id` FK um `ON DELETE SET NULL` ergänzt (fehlte bisher). Entity `Partie.java`: Feld + Getter + `neuePersistenz(int, Spielregeln, UUID)` mit nullable `erstelltVon`. Service `TischVerwaltungsService`: alle 4 Aufrufstellen migriert (starteTisch + schnellEinsteigen → Spieler-ID, starteNaechstePartieIntern via starteNeuePartie → Spieler-ID; starteNeuePartieAutomat → null). 11 Test-Dateien auf 3-Parameter-Aufruf aktualisiert. 344 Tests grün. **→ Nächste Task: REFACTOR-DB-8** (NOT-NULL-Abdeckung vervollständigen).
 
 **Session 35 (2026-06-02) — SPEC-RECHT abgeschlossen:** `specs/recht-impressum-datenschutz.md` angelegt. Enthält: Impressum-Pflichtangaben (§5 DDG), vollständige Datenschutzerklärung-Struktur (DSGVO Art. 13/14 — alle DB-Felder aufgeschlüsselt, Google-OAuth2-Drittland-Transfer, Betroffenenrechte, Speicherdauer, Hosting-Datenresidenz), AGB-Mindeststruktur, Checkliste vor M2, konkrete Build-Tasks (Frontend-Seiten `/impressum`/`/datenschutz`/`/agb`, Footer-Links, AVV). Keine Code-Änderung nötig (DOC-Task). Nächste autonome Tasks: DOC-DOCS-SITE, QA-CODE-METRICS oder SECURITY-REVIEW (Skill verfügbar).
 
@@ -487,7 +487,7 @@ Alle noch im Greenfield-Fenster (vor erstem echten Deploy). Details und Audit-Ko
 
 - [x] **REFACTOR-DB-6** — Audit `erstellt_am`/`aktualisiert_am` nullable auf `spieler`, `partie`, `tisch`, `laufendes_spiel`, `spieler_statistik` → `NOT NULL DEFAULT NOW()` (DB erzwingt + befüllt). **DoD:** Spalten NOT NULL; `mvn clean test` grün. **Risiko:** niedrig.
 
-- [ ] **REFACTOR-DB-7** — Audit-of-who: `erstellt_von_spieler_id UUID` auf `partie` ergänzen (nullable, NULL = System/KI). ON DELETE aller Creator-FKs auf `SET NULL`. Entity + Schreibpfad mitziehen. **DoD:** neue Partien tragen den Ersteller; `mvn clean test` grün. **Risiko:** mittel (Schreibpfad).
+- [x] **REFACTOR-DB-7** — Audit-of-who: `erstellt_von_spieler_id UUID` auf `partie` ergänzen (nullable, NULL = System/KI). ON DELETE aller Creator-FKs auf `SET NULL`. Entity + Schreibpfad mitziehen. **DoD:** neue Partien tragen den Ersteller; `mvn clean test` grün. **Risiko:** mittel (Schreibpfad).
 
 - [ ] **REFACTOR-DB-8** — NOT-NULL-Abdeckung vervollständigen (Ergänzung zu DB-2): `spielergebnis_archiv` (`geber_position`, `spieltyp`, `absage_punkte`, `gegen_die_alten_punkte`, `solo_multiplikator`, `spielpunkte_*`, `abgeschlossen_am`), `sonderpunkt_eintrag` (`partei`, `sonderpunkt_typ`), `partie` (`regelvariante`, `spielregeln`), `tisch.zugangsmodus` (`DEFAULT 'OFFEN'`). **DoD:** Constraints gesetzt, App setzt alle Werte; `mvn clean test` grün. **Risiko:** niedrig-mittel.
 

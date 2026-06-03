@@ -72,7 +72,7 @@ class TischControllerTest {
 
         TischEntity gestarteterTisch = TischEntity.neu("Gestartet", bert, TischkonfigurationEmbeddable.standard());
         gestarteterTisch.fuegeSpielerHinzu(bert);
-        gestarteterTisch.setzePartie(Partie.neuePersistenz(24, Spielregeln.standardRegeln()));
+        gestarteterTisch.setzePartie(Partie.neuePersistenz(24, Spielregeln.standardRegeln(), null));
         tischRepository.saveAndFlush(gestarteterTisch);
 
         mockMvc.perform(get("/api/tische"))
@@ -277,7 +277,7 @@ class TischControllerTest {
 
         TischEntity tisch = TischEntity.neu("Standtisch", ada, TischkonfigurationEmbeddable.standard());
         tisch.fuegeSpielerHinzu(ada);
-        Partie partie = Partie.neuePersistenz(16, Spielregeln.standardRegeln());
+        Partie partie = Partie.neuePersistenz(16, Spielregeln.standardRegeln(), null);
         partie.setzeGesamtpunktestand(SpielerPosition.SUED, 4);
         partie.setzeGesamtpunktestand(SpielerPosition.WEST, -2);
         partie.setzeGesamtpunktestand(SpielerPosition.NORD, -1);
@@ -300,7 +300,7 @@ class TischControllerTest {
         SpielerEntity ada = spielerRepository.saveAndFlush(SpielerEntity.menschlich("Ada401", "session-401-ada"));
         TischEntity tisch = TischEntity.neu("Tisch401", ada, TischkonfigurationEmbeddable.standard());
         tisch.fuegeSpielerHinzu(ada);
-        tisch.setzePartie(Partie.neuePersistenz(8, Spielregeln.standardRegeln()));
+        tisch.setzePartie(Partie.neuePersistenz(8, Spielregeln.standardRegeln(), null));
         TischEntity gespeichert = tischRepository.saveAndFlush(tisch);
 
         mockMvc.perform(get("/api/partien/{id}/stand", gespeichert.partie().id()))
@@ -361,7 +361,7 @@ class TischControllerTest {
 
         TischEntity tisch = TischEntity.neu("AbbruchTisch", ada, TischkonfigurationEmbeddable.standard());
         tisch.fuegeSpielerHinzu(ada);
-        Partie partie = Partie.neuePersistenz(8, Spielregeln.standardRegeln());
+        Partie partie = Partie.neuePersistenz(8, Spielregeln.standardRegeln(), null);
         tisch.setzePartie(partie);
         TischEntity gespeichert = tischRepository.saveAndFlush(tisch);
         UUID tischId = gespeichert.id();
@@ -393,7 +393,7 @@ class TischControllerTest {
 
         TischEntity tisch = TischEntity.neu("NeuePartieTisch", ada, TischkonfigurationEmbeddable.standard());
         tisch.fuegeSpielerHinzu(ada);
-        Partie beendetePartie = Partie.neuePersistenz(8, Spielregeln.standardRegeln());
+        Partie beendetePartie = Partie.neuePersistenz(8, Spielregeln.standardRegeln(), null);
         beendetePartie.markiereAlsBeendet();
         tisch.setzePartie(beendetePartie);
         TischEntity gespeichert = tischRepository.saveAndFlush(tisch);
@@ -425,7 +425,7 @@ class TischControllerTest {
 
         TischEntity tisch = TischEntity.neu("LaufendTisch", ada, TischkonfigurationEmbeddable.standard());
         tisch.fuegeSpielerHinzu(ada);
-        Partie laufendePartie = Partie.neuePersistenz(8, Spielregeln.standardRegeln());
+        Partie laufendePartie = Partie.neuePersistenz(8, Spielregeln.standardRegeln(), null);
         tisch.setzePartie(laufendePartie);
         TischEntity gespeichert = tischRepository.saveAndFlush(tisch);
 
