@@ -19,6 +19,11 @@ CREATE TABLE spieler (
     aktualisiert_am TIMESTAMP WITH TIME ZONE
 );
 
+-- UNIQUE-Constraints auf benutzername und email.
+-- SQL-Standard: NULL != NULL in UNIQUE-Constraints → mehrere OAuth2-Spieler (benutzername/email = NULL) sind erlaubt.
+CREATE UNIQUE INDEX spieler_benutzername_unique ON spieler(benutzername);
+CREATE UNIQUE INDEX spieler_email_unique ON spieler(email);
+
 CREATE TABLE partie (
     id UUID PRIMARY KEY,
     version BIGINT NOT NULL DEFAULT 0,

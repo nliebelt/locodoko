@@ -10,6 +10,7 @@ import jakarta.validation.Valid;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -80,7 +81,12 @@ public class AuthentifizierungsController {
         spieler.setzeSessionId(session.getId());
         session.setMaxInactiveInterval((int) eigenschaften.getTimeout().toSeconds());
 
-        spieler = spielerRepository.saveAndFlush(spieler);
+        try {
+            spieler = spielerRepository.saveAndFlush(spieler);
+        } catch (DataIntegrityViolationException e) {
+            // DB-Constraint greift bei Race Condition (zwei parallele Registrierungen mit gleichem Benutzernamen/E-Mail).
+            return ResponseEntity.status(HttpStatus.CONFLICT).build();
+        }
         LOGGER.info("Neuer Spieler registriert: {} (benutzername={})", spieler.id(), anfrage.benutzername());
 
         return ResponseEntity.status(HttpStatus.CREATED).body(AuthentifizierungsAntwort.aus(spieler));

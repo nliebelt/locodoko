@@ -5,6 +5,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
@@ -52,6 +53,19 @@ class AuthentifizierungsControllerTest {
             .andExpect(jsonPath("$.spielerId").isNotEmpty());
 
         assertTrue(spielerRepository.findByBenutzername("testuser").isPresent());
+    }
+
+    @Test
+    @Transactional
+    void datenbankVerhindertDoppeltenBenutzernamen() {
+        // Testet den DB-Level-UNIQUE-Constraint direkt (umgeht den Anwendungs-Pre-Check).
+        // Stellt sicher, dass Race Conditions bei paralleler Registrierung auf DB-Ebene abgefangen werden.
+        SpielerEntity erster = SpielerEntity.mitPasswort("race_constraint_test", "hash1", null);
+        spielerRepository.save(erster);
+
+        SpielerEntity zweiter = SpielerEntity.mitPasswort("race_constraint_test", "hash2", null);
+        assertThrows(DataIntegrityViolationException.class,
+            () -> spielerRepository.save(zweiter));
     }
 
     @Test
