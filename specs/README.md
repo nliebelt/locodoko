@@ -33,6 +33,7 @@ Application Layer: Orchestrierung, Delivery (REST, WebSocket).
 - **Spieler-Logik:** `spieler-profil.md`, `authentifizierung.md`, `spieler-session.md`, `verbindungsabbruch.md`.
 - **Statistik & Ranking:** `statistik-ranking.md` (Plattform-Benchmark + Greenfield-Schema für Rating/Saison).
 - **API & Kommunikation:** `websocket-kommunikation.md`, `rest-api.md`.
+- **Betrieb & Diagnose:** `bugreport.md` (In-App-Bugreport + Sentry + correlationId-Kette).
 
 ## 4. KI (ki/)
 Autonomer Agent der auf Events reagiert und regelkonforme Züge spielt.

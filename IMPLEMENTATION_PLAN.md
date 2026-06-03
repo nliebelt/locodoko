@@ -163,15 +163,13 @@ Entscheidungen: **DECISION-AUTH** ✓ beide behalten · **DECISION-LIZENZ** aufg
 
   **DoD:** Logs erscheinen in Grafana Cloud, per `tischId`/`partieId`/Level/`correlationId` filterbar. **Risiko:** niedrig-mittel.
 
-- [ ] **FEAT-BUGREPORT** — In-App-Bugreport mit Session-Kontext → GitHub-Issue (+ Log-Verknüpfung). **[hängt an OPS-LOGS-LOKI für den Deep-Link]**
+- [x] **SPEC-BUGREPORT** — Design entschieden, `specs/bugreport.md` angelegt (Session 36, 2026-06-03). Entscheidungen: Issue-Ziel **Option A** (öffentliches Code-Repo + separates **privates** Bugreport-Repo); **kein Screenshot** in M1 (→ M2); **Sentry ja** (Free, EU-Region, ohne Session-Replay); Trigger **`Shift+F1`** (nicht F12). Daraus die drei Build-Tasks:
 
-  Frontend: „Bug melden"-Dialog (Beschreibung + optional Screenshot), erfasst automatisch `correlationId`, `tischId`/`partieId`, `sessionId`, Client/Browser und **redigierten** AppStore-Zustand (keine Passwörter, keine fremden Hände). Backend-Endpoint reichert mit serverseitigem Log-Ausschnitt zur `correlationId` an und erstellt ein GitHub-Issue via **server-seitigem Token** (nie im Frontend) mit redigiertem Kontext + Log-Snapshot + Grafana-LogQL-Deep-Link.
+- [ ] **OBS-CORRELATION-ID** (Vortask, schon M1-nützlich für Loki) — `CorrelationIdFilter` (`OncePerRequestFilter`): liest/erzeugt `X-Correlation-Id`, ins MDC (neben `tischId`/`partieId`) + als Response-Header zurück. Frontend: Header je Response lesen, letzte N als Ringpuffer im AppStore. **Erste Datei zuerst:** neuer Filter in `de.locodoko.spieler` (oder Infra-Paket). **DoD:** correlationId erscheint im JSON-Log + Response-Header; Frontend puffert; Tests grün. **Risiko:** niedrig.
 
-  **Sicherheit/Datenschutz:** Auth erforderlich, Rate-Limiting (`RateLimitingFilter` vorhanden), PII-Redaktion. **Offene Sub-Entscheidung:** Issues im öffentlichen Repo (sichtbar!) vs. separatem privaten Issue-Repo — bei öffentlichem Repo strenge Redaktion zwingend. **Ergänzung empfohlen:** Sentry (Free, EU-Region) für automatische Fehlererfassung (Frontend+Backend) parallel zum user-initiierten Button. **GitHub-Hygiene mitnehmen:** `.github/ISSUE_TEMPLATE/` (Bug-/Feature-Vorlagen).
+- [ ] **FEAT-BUGREPORT** — In-App-Bugreport laut `specs/bugreport.md`. **[hängt an OBS-CORRELATION-ID + OPS-LOGS-LOKI für den Deep-Link]** Frontend: Overlay (`Shift+F1` + Floating-Button, Beschreibung + Schweregrad, **kein** Screenshot), erfasst correlationIds, `tischId`/`partieId`, `sessionId`, Client/Build-SHA, **redigierten** AppStore-Zustand. Backend `BugReportController` (Muster `FeedbackController`, Auth + `RateLimitingFilter`): Log-Ausschnitt zur correlationId in den Issue-Body **snapshotten** + Grafana-LogQL-Deep-Link, Issue via serverseitigem Token im **privaten** Repo. **DoD:** Report erzeugt Issue mit redigiertem Kontext; nachweislich keine sensiblen Daten geleakt. **Risiko:** mittel (Datenschutz/Redaktion).
 
-  **Erste Datei zuerst:** neue `specs/bugreport.md` (Flow, Redaktions-/Datenschutzregeln, Repo-Ziel, Sentry-Entscheidung) — dann Build (Frontend-Dialog, Backend-Endpoint, GitHub-API).
-
-  **DoD:** Report aus der App erzeugt ein GitHub-Issue mit redigiertem Kontext + Log-Verknüpfung; nachweislich keine sensiblen Daten geleakt. **Risiko:** mittel (Datenschutz/Redaktion).
+- [ ] **OBS-SENTRY** — Automatische Fehlererfassung Frontend (`@sentry/browser`) + Backend (`sentry-spring-boot`), **Free-Tier EU-Region** + AVV. `correlationId` als Sentry-Tag (Querverweis Sentry↔Issue↔Loki). **Session-Replay bewusst AUS** (Datenschutz). **DoD:** Frontend-/Backend-Fehler erscheinen in Sentry mit correlationId-Tag. **Risiko:** niedrig.
 
 - [ ] **OPS-DOMAIN** — Domain + DNS + TLS für den öffentlichen Betrieb. **[Vorbedingung: MENSCH — Server/DNS/TLS; Ralph kann nur die Reverse-Proxy-Config vorbereiten]** **Schema festgelegt:** App = `zock.locodoko.de`, Wiki = `docs.locodoko.de` (GitHub Pages), Apex `locodoko.de` = Landing/Redirect.
 
