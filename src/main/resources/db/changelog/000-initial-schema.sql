@@ -120,11 +120,11 @@ CREATE TABLE spielergebnis_archiv (
     spieltyp VARCHAR(30) NOT NULL,
     ist_solo BOOLEAN NOT NULL DEFAULT FALSE,
     solo_typ VARCHAR(30),
-    re_augen INT,
-    kontra_augen INT,
-    sieger_partei VARCHAR(10),
-    spielwert INT,
-    grundwert INT,
+    re_augen INT NOT NULL,
+    kontra_augen INT NOT NULL,
+    sieger_partei VARCHAR(10) NOT NULL,
+    spielwert INT NOT NULL,
+    grundwert INT NOT NULL,
     absage_punkte INT NOT NULL DEFAULT 0,
     gegen_die_alten_punkte INT NOT NULL DEFAULT 0,
     solo_multiplikator INT NOT NULL DEFAULT 0,
@@ -176,7 +176,7 @@ CREATE TABLE spieler_statistik (
     armuten_uebernommen INT NOT NULL DEFAULT 0,
     solos_siege INT NOT NULL DEFAULT 0,
     solos_niederlagen INT NOT NULL DEFAULT 0,
-    solos_pro_typ JSONB,
+    solos_pro_typ JSONB NOT NULL DEFAULT '{}',
     zuletzt_aktualisiert TIMESTAMP WITH TIME ZONE,
     erstellt_am TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
     aktualisiert_am TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
@@ -229,3 +229,19 @@ FROM partie p
 JOIN partie_teilnehmer pt ON pt.partie_id = p.id
 LEFT JOIN tisch t ON t.partie_id = p.id
 WHERE p.status = 'BEENDET';
+
+-- FK-Indizes fuer Abfrageperformance (Spielerhistorie, Partiehistorie, Sonderpunkte)
+CREATE INDEX idx_tisch_partie_id
+    ON tisch (partie_id);
+
+CREATE INDEX idx_partie_teilnehmer_spieler_id
+    ON partie_teilnehmer (spieler_id);
+
+CREATE INDEX idx_spieler_statistik_spieler_id
+    ON spieler_statistik (spieler_id);
+
+CREATE INDEX idx_spielergebnis_archiv_partie_id
+    ON spielergebnis_archiv (partie_id);
+
+CREATE INDEX idx_sonderpunkt_eintrag_spielergebnis_archiv_id
+    ON sonderpunkt_eintrag (spielergebnis_archiv_id);

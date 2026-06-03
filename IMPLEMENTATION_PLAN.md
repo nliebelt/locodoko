@@ -4,7 +4,7 @@
 
 ## Notiz
 
-**Session 41 (2026-06-03) — REFACTOR-DB-10 abgeschlossen:** DSGVO-ON-DELETE-Politik in `000-initial-schema.sql` gesetzt. `tisch_spieler.spieler_id` → `ON DELETE CASCADE` (Tisch-Sitzplatz entfernt); `partie_teilnehmer.spieler_id` → nullable + `ON DELETE SET NULL` (Spielhistorie anonymisiert); `spieler_statistik.spieler_id` → `ON DELETE CASCADE` (Statistik mit Spieler gelöscht). `tisch.erstellt_von_spieler_id` + `partie.erstellt_von_spieler_id` waren bereits aus DB-7 auf `ON DELETE SET NULL`. Tests grün. **→ Nächste Task: CHANGELOG-KONSOLIDIERUNG** (002–004 in 000 auflösen → ein sauberes Initial-Schema).
+**Session 42 (2026-06-03) — CHANGELOG-KONSOLIDIERUNG abgeschlossen:** `002-fk-indexes.sql`, `003-archiv-not-null.sql`, `004-statistik-solos-not-null.sql` direkt in `000-initial-schema.sql` eingeflossen und gelöscht. `db.changelog-master.yaml` enthält nur noch `000` + `001`. Im Schema: FK-Indizes ans Ende der Datei, `re_augen`/`kontra_augen`/`sieger_partei`/`spielwert`/`grundwert` jetzt NOT NULL, `solos_pro_typ` NOT NULL DEFAULT '{}'. Tests grün. **→ Nächste Task: OBS-CORRELATION-ID** (Erstes offenes Task in Block B/C-Reihe).
 
 **Session 35 (2026-06-02) — SPEC-RECHT abgeschlossen:** `specs/recht-impressum-datenschutz.md` angelegt. Enthält: Impressum-Pflichtangaben (§5 DDG), vollständige Datenschutzerklärung-Struktur (DSGVO Art. 13/14 — alle DB-Felder aufgeschlüsselt, Google-OAuth2-Drittland-Transfer, Betroffenenrechte, Speicherdauer, Hosting-Datenresidenz), AGB-Mindeststruktur, Checkliste vor M2, konkrete Build-Tasks (Frontend-Seiten `/impressum`/`/datenschutz`/`/agb`, Footer-Links, AVV). Keine Code-Änderung nötig (DOC-Task). Nächste autonome Tasks: DOC-DOCS-SITE, QA-CODE-METRICS oder SECURITY-REVIEW (Skill verfügbar).
 
@@ -47,7 +47,7 @@ Nächste offene Tasks — Fertigstellung (Session 30). **Zwei Meilensteine:** **
 4. **REFACTOR-DB-8** — NOT-NULL-Abdeckung vervollständigen
 5. **REFACTOR-DB-9** — `event_publication` PRIMARY KEY
 6. **REFACTOR-DB-10** — DSGVO-ON-DELETE-Politik
-7. **CHANGELOG-KONSOLIDIERUNG** — `002`–`004` in `000` auflösen → ein sauberes Initial-Schema
+7. [x] **CHANGELOG-KONSOLIDIERUNG** — `002`–`004` in `000` auflösen → ein sauberes Initial-Schema
 
 **B) Statistik (Stufe 0+1) + correlationId-Vortask:**
 8. **OBS-CORRELATION-ID** — `CorrelationIdFilter` (breit nützlich, auch für Loki/Bugreport)
@@ -509,7 +509,7 @@ Alle noch im Greenfield-Fenster (vor erstem echten Deploy). Details und Audit-Ko
 
 - [ ] **STAT-SAISON-LIGA** (aufgeschoben) — Saisons (Reset/Listen/Rollover-Job) + Ligen (Auf-/Abstieg). Additive Erweiterung (neue Tabellen `saison` + saison-Rating + nullable `spielergebnis_archiv.saison_id`). Nur bauen, falls öffentlich/wachsend. **[WARTET — keine Greenfield-Dringlichkeit, rückwirkend aus Archiv berechenbar]**
 
-- [ ] **CHANGELOG-KONSOLIDIERUNG** (✓ entschieden: echtes Greenfield → konsolidieren) — `002`–`004` + alle Gegencheck-Fixes (DB-5…10) **direkt in `000-initial-schema.sql`** einpflegen statt additiver `005…`-Changesets. Ergebnis: ein einziges, sauberes Initial-Schema beim ersten Deploy. **Methode:** jeder DB-Task editiert `000` direkt (kein neues Changeset). `001-spring-session-schema.sql` bleibt eigenständig (Fremd-Schema). H2-Tests unkritisch (Neuaufbau je Lauf); persistente Dev-DB ggf. `clearCheckSums`. **DoD:** nur `000` + `001` aktiv, `002`–`004` entfernt, `mvn clean test` grün. **Risiko:** niedrig im Greenfield.
+- [x] **CHANGELOG-KONSOLIDIERUNG** (✓ entschieden: echtes Greenfield → konsolidieren) — `002`–`004` + alle Gegencheck-Fixes (DB-5…10) **direkt in `000-initial-schema.sql`** einpflegen statt additiver `005…`-Changesets. Ergebnis: ein einziges, sauberes Initial-Schema beim ersten Deploy. **Methode:** jeder DB-Task editiert `000` direkt (kein neues Changeset). `001-spring-session-schema.sql` bleibt eigenständig (Fremd-Schema). H2-Tests unkritisch (Neuaufbau je Lauf); persistente Dev-DB ggf. `clearCheckSums`. **DoD:** nur `000` + `001` aktiv, `002`–`004` entfernt, `mvn clean test` grün. **Risiko:** niedrig im Greenfield.
 
 ---
 
