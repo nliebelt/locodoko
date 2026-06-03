@@ -127,7 +127,9 @@ export class SpielerProfilModal {
 
     const anzahl = statistik.anzahlSpiele ?? 0;
     const siege = statistik.anzahlSiege ?? 0;
-    const winRate = anzahl > 0 ? Math.round((siege / anzahl) * 100) : 0;
+    const siegquote = statistik.siegquote ?? (anzahl > 0 ? Math.round((siege / anzahl) * 100) : 0);
+    const punkteProSpiel = statistik.durchschnittlichePunkteProSpiel?.toFixed(2) ?? '—';
+    const augenProSpiel = statistik.durchschnittlicheAugenProSpiel?.toFixed(1) ?? '—';
 
     const reSpieleGesamt = (statistik.reSiege ?? 0) + (statistik.reNiederlagen ?? 0);
     const reRate = reSpieleGesamt > 0
@@ -144,8 +146,12 @@ export class SpielerProfilModal {
         <div class="ui-profil-karten">
           <div class="ui-profil-karte">${anzahl}<span>Spiele</span></div>
           <div class="ui-profil-karte">${siege}<span>Siege</span></div>
-          <div class="ui-profil-karte ui-profil-karte--akzent">${winRate}%<span>Win-Rate</span></div>
+          <div class="ui-profil-karte ui-profil-karte--akzent">${Math.round(siegquote)}%<span>Win-Rate</span></div>
           <div class="ui-profil-karte">${statistik.gesamtPunkte ?? 0}<span>Punkte</span></div>
+        </div>
+        <div class="ui-profil-karten">
+          <div class="ui-profil-karte">${punkteProSpiel}<span>Ø Pkt/Spiel</span></div>
+          <div class="ui-profil-karte">${augenProSpiel}<span>Ø Augen/Spiel</span></div>
         </div>
       </section>
       <section class="ui-profil-abschnitt">

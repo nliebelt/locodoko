@@ -12,7 +12,7 @@ class SpielerStatistikTest {
     @Test
     void reSiegerWirdKorrektGezaehlt() {
         SpielerStatistik s = SpielerStatistik.fuer(java.util.UUID.randomUUID(), "TURNIER");
-        s.verarbeiteSpiel(true, 3, 0, 0, 0, 0, false, true, "", false, false);
+        s.verarbeiteSpiel(true, 3, 0, 0, 0, 0, false, true, "", false, false, 130);
 
         assertThat(s.reSiege()).isEqualTo(1);
         assertThat(s.reNiederlagen()).isEqualTo(0);
@@ -24,7 +24,7 @@ class SpielerStatistikTest {
     @Test
     void kontraNiederlageWirdKorrektGezaehlt() {
         SpielerStatistik s = SpielerStatistik.fuer(java.util.UUID.randomUUID(), "SONDER");
-        s.verarbeiteSpiel(false, -2, 0, 0, 0, 0, false, false, "", false, false);
+        s.verarbeiteSpiel(false, -2, 0, 0, 0, 0, false, false, "", false, false, 110);
 
         assertThat(s.kontraNiederlagen()).isEqualTo(1);
         assertThat(s.kontraSiege()).isEqualTo(0);
@@ -35,7 +35,7 @@ class SpielerStatistikTest {
     @Test
     void hochzeitWirdGezaehlt() {
         SpielerStatistik s = SpielerStatistik.fuer(java.util.UUID.randomUUID(), "TURNIER");
-        s.verarbeiteSpiel(true, 2, 0, 0, 0, 0, false, true, "HOCHZEIT", false, false);
+        s.verarbeiteSpiel(true, 2, 0, 0, 0, 0, false, true, "HOCHZEIT", false, false, 125);
 
         assertThat(s.hochzeitenGespielt()).isEqualTo(1);
     }
@@ -43,7 +43,7 @@ class SpielerStatistikTest {
     @Test
     void armutAngesagtWirdGezaehlt() {
         SpielerStatistik s = SpielerStatistik.fuer(java.util.UUID.randomUUID(), "TURNIER");
-        s.verarbeiteSpiel(false, -1, 0, 0, 0, 0, false, true, "ARMUT", true, false);
+        s.verarbeiteSpiel(false, -1, 0, 0, 0, 0, false, true, "ARMUT", true, false, 118);
 
         assertThat(s.armutenAngesagt()).isEqualTo(1);
         assertThat(s.armutenUebernommen()).isEqualTo(0);
@@ -52,7 +52,7 @@ class SpielerStatistikTest {
     @Test
     void armutUebernommenWirdGezaehlt() {
         SpielerStatistik s = SpielerStatistik.fuer(java.util.UUID.randomUUID(), "FREI");
-        s.verarbeiteSpiel(true, 4, 0, 0, 0, 0, false, true, "ARMUT", false, true);
+        s.verarbeiteSpiel(true, 4, 0, 0, 0, 0, false, true, "ARMUT", false, true, 140);
 
         assertThat(s.armutenUebernommen()).isEqualTo(1);
         assertThat(s.armutenAngesagt()).isEqualTo(0);
@@ -61,7 +61,7 @@ class SpielerStatistikTest {
     @Test
     void soloSiegWirdInSolosProTypGespeichert() {
         SpielerStatistik s = SpielerStatistik.fuer(java.util.UUID.randomUUID(), "TURNIER");
-        s.verarbeiteSpiel(true, 6, 0, 0, 0, 0, true, true, "SOLO_DAME", false, false);
+        s.verarbeiteSpiel(true, 6, 0, 0, 0, 0, true, true, "SOLO_DAME", false, false, 150);
 
         assertThat(s.solosSiege()).isEqualTo(1);
         assertThat(s.solosNiederlagen()).isEqualTo(0);
@@ -72,7 +72,7 @@ class SpielerStatistikTest {
     @Test
     void soloNiederlageWirdInSolosProTypGespeichert() {
         SpielerStatistik s = SpielerStatistik.fuer(java.util.UUID.randomUUID(), "TURNIER");
-        s.verarbeiteSpiel(false, -3, 0, 0, 0, 0, true, true, "SOLO_BUBE", false, false);
+        s.verarbeiteSpiel(false, -3, 0, 0, 0, 0, true, true, "SOLO_BUBE", false, false, 90);
 
         assertThat(s.solosSiege()).isEqualTo(0);
         assertThat(s.solosNiederlagen()).isEqualTo(1);
@@ -85,8 +85,21 @@ class SpielerStatistikTest {
         SpielerStatistik s = SpielerStatistik.fuer(java.util.UUID.randomUUID(), "TURNIER");
         assertThat(s.zuletztAktualisiert()).isNull();
 
-        s.verarbeiteSpiel(true, 1, 0, 0, 0, 0, false, true, "", false, false);
+        s.verarbeiteSpiel(true, 1, 0, 0, 0, 0, false, true, "", false, false, 135);
 
         assertThat(s.zuletztAktualisiert()).isNotNull();
+    }
+
+    @Test
+    void augenWerdenAkkumuliertUndDurchschnittBerechnet() {
+        SpielerStatistik s = SpielerStatistik.fuer(java.util.UUID.randomUUID(), "TURNIER");
+        // Spiel 1: RE-Seite mit 130 Augen
+        s.verarbeiteSpiel(true, 3, 0, 0, 0, 0, false, true, "", false, false, 130);
+        // Spiel 2: KONTRA-Seite mit 110 Augen
+        s.verarbeiteSpiel(false, -2, 0, 0, 0, 0, false, false, "", false, false, 110);
+
+        assertThat(s.gesamtAugen()).isEqualTo(240);
+        // Ø = 240 / 2 = 120.0
+        assertThat(s.durchschnittlicheAugenProSpiel()).isEqualTo(120.0);
     }
 }

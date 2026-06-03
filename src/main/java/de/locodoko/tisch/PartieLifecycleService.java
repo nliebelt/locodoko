@@ -202,9 +202,12 @@ public class PartieLifecycleService {
             boolean hatArmutAngesagt = spieltyp == Spieltyp.ARMUT && pos.equals(armutSpieler);
             boolean hatArmutUebernommen = spieltyp == Spieltyp.ARMUT && pos.equals(armutPartner);
 
+            int teamAugen = ergebnis.augenVon(playerPartei).wert();
+
             spielerDaten.put(spieler.id(), new SpielBeendet.SpielerSpielDaten(
                 sieger, spielpunkte, fuchsGefangen, fuchsVerloren, karlchenGespielt, doppelkoepfe, istSolist,
-                kumulativePunktestand, istReSpieler, spieltypName, hatArmutAngesagt, hatArmutUebernommen
+                kumulativePunktestand, istReSpieler, spieltypName, hatArmutAngesagt, hatArmutUebernommen,
+                teamAugen
             ));
         }
 

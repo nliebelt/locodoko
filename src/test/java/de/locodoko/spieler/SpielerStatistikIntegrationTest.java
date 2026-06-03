@@ -45,7 +45,7 @@ class SpielerStatistikIntegrationTest {
         transactionTemplate.executeWithoutResult(status -> {
             SpielBeendet.SpielerSpielDaten daten = new SpielBeendet.SpielerSpielDaten(
                 true, 3, 1, 0, 1, 0, false, 3,
-                true, "", false, false
+                true, "", false, false, 130
             );
             SpielBeendet event = new SpielBeendet(
                 UUID.randomUUID(), "TestTisch", 1, Map.of(spielerId, daten), false,
@@ -79,7 +79,7 @@ class SpielerStatistikIntegrationTest {
         // Turnier-Spiel
         transactionTemplate.executeWithoutResult(status -> {
             SpielBeendet.SpielerSpielDaten daten = new SpielBeendet.SpielerSpielDaten(
-                true, 2, 0, 0, 0, 0, false, 2, true, "", false, false
+                true, 2, 0, 0, 0, 0, false, 2, true, "", false, false, 125
             );
             eventPublisher.publishEvent(new SpielBeendet(
                 UUID.randomUUID(), "Tisch1", 1, Map.of(spielerId, daten), false, Regelvariante.TURNIER
@@ -89,7 +89,7 @@ class SpielerStatistikIntegrationTest {
         // Sonder-Spiel
         transactionTemplate.executeWithoutResult(status -> {
             SpielBeendet.SpielerSpielDaten daten = new SpielBeendet.SpielerSpielDaten(
-                false, -1, 0, 0, 0, 0, false, -1, false, "", false, false
+                false, -1, 0, 0, 0, 0, false, -1, false, "", false, false, 115
             );
             eventPublisher.publishEvent(new SpielBeendet(
                 UUID.randomUUID(), "Tisch2", 1, Map.of(spielerId, daten), false, Regelvariante.SONDER

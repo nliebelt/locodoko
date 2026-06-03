@@ -63,16 +63,32 @@ public record SpielerProfilAntwort(
         @Schema(description = "Anzahl verlorener Solos.", example = "2")
         int solosNiederlagen,
         @Schema(description = "JSONB-Karte Soloergebnisse pro Solo-Typ.", example = "{\"SOLO_DAME\":{\"siege\":2,\"niederlagen\":1}}")
-        String solosProTypJson
+        String solosProTypJson,
+        @Schema(description = "Durchschnittliche Punkte pro Spiel (gerundet auf 2 Dezimalstellen).", example = "2.86")
+        double durchschnittlichePunkteProSpiel,
+        @Schema(description = "Siegquote in Prozent (0–100).", example = "59.52")
+        double siegquote,
+        @Schema(description = "Durchschnittliche Team-Augen pro Spiel.", example = "126.5")
+        double durchschnittlicheAugenProSpiel
     ) {
         static StatistikAntwort aus(SpielerStatistik s) {
+            double durchschnittlichePunkte = s.anzahlSpiele() > 0
+                ? Math.round((double) s.gesamtPunkte() / s.anzahlSpiele() * 100.0) / 100.0
+                : 0.0;
+            double siegquote = s.anzahlSpiele() > 0
+                ? Math.round((double) s.anzahlSiege() / s.anzahlSpiele() * 10000.0) / 100.0
+                : 0.0;
+            double durchschnittlicheAugen = s.anzahlSpiele() > 0
+                ? Math.round(s.durchschnittlicheAugenProSpiel() * 100.0) / 100.0
+                : 0.0;
             return new StatistikAntwort(
                 s.anzahlSpiele(), s.anzahlSiege(), s.gesamtPunkte(),
                 s.fuchsGefangen(), s.fuchsVerloren(), s.karlchenGespielt(),
                 s.doppelkoepfe(), s.reSiege(), s.reNiederlagen(),
                 s.kontraSiege(), s.kontraNiederlagen(), s.hochzeitenGespielt(),
                 s.armutenAngesagt(), s.armutenUebernommen(),
-                s.solosSiege(), s.solosNiederlagen(), s.solosProTypJson()
+                s.solosSiege(), s.solosNiederlagen(), s.solosProTypJson(),
+                durchschnittlichePunkte, siegquote, durchschnittlicheAugen
             );
         }
     }

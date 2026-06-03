@@ -4,7 +4,7 @@
 
 ## Notiz
 
-**Session 43 (2026-06-03) — OBS-CORRELATION-ID abgeschlossen:** `CorrelationIdFilter` (`OncePerRequestFilter`, `@Component`, Paket `de.locodoko.spieler`) liest/erzeugt `X-Correlation-Id`, schreibt ins MDC (`"correlationId"`) und setzt Response-Header. Frontend: `AppZustand.correlationIds: string[]` (Ringpuffer max. 20), `SpielverwaltungApi.setzeCorrelationIdCallback()`, `AppStore.fuegeCorrelationIdHinzu()`. 4 reine JUnit-Tests grün, Backend BUILD SUCCESS, Frontend 224/224. **→ Nächste Task: STAT-DERIVED** (Stufe 0 — abgeleitete Kennzahlen im Profil).
+**Session 44 (2026-06-03) — STAT-DERIVED abgeschlossen:** Abgeleitete Kennzahlen (Ø Punkte/Spiel, Siegquote, Ø Augen) im Spielerprofil implementiert. Schema: `gesamt_augen INT NOT NULL DEFAULT 0` in `spieler_statistik`. Event: `teamAugen` in `SpielBeendet.SpielerSpielDaten` (aus `Spielergebnis.augenVon(playerPartei)`). Entity: `SpielerStatistik.verarbeiteSpiel()` akkumuliert Augen; berechnete Methode `durchschnittlicheAugenProSpiel()`. DTO: `StatistikAntwort` mit `durchschnittlichePunkteProSpiel`, `siegquote`, `durchschnittlicheAugenProSpiel` (backend-berechnet, gerundet). Frontend: Modal zeigt zwei zusätzliche Karten (Ø Pkt/Spiel, Ø Augen/Spiel). Backend 349/349, Frontend 224/224. **→ Nächste Task: STAT-RATING** (Stufe 1 — TrueSkill).
 
 **Session 35 (2026-06-02) — SPEC-RECHT abgeschlossen:** `specs/recht-impressum-datenschutz.md` angelegt. Enthält: Impressum-Pflichtangaben (§5 DDG), vollständige Datenschutzerklärung-Struktur (DSGVO Art. 13/14 — alle DB-Felder aufgeschlüsselt, Google-OAuth2-Drittland-Transfer, Betroffenenrechte, Speicherdauer, Hosting-Datenresidenz), AGB-Mindeststruktur, Checkliste vor M2, konkrete Build-Tasks (Frontend-Seiten `/impressum`/`/datenschutz`/`/agb`, Footer-Links, AVV). Keine Code-Änderung nötig (DOC-Task). Nächste autonome Tasks: DOC-DOCS-SITE, QA-CODE-METRICS oder SECURITY-REVIEW (Skill verfügbar).
 
@@ -499,7 +499,7 @@ Alle noch im Greenfield-Fenster (vor erstem echten Deploy). Details und Audit-Ko
 
 > Vollständig in `specs/statistik-ranking.md`. **Umfang entschieden:** Stufe 0 (abgeleitete Kennzahlen) + Stufe 1 (TrueSkill-Rating + ewige Bestenliste, 1 neue UI-Szene). Saison/Liga **aufgeschoben** — additive Erweiterung später (risikoarm; `spielergebnis_archiv` erlaubt rückwirkende Berechnung). **Wichtige Trennung:** Per-Spieler-Statistik → Postgres/API; aggregierte Domain-Metriken → Prometheus/Grafana (nie `spieler_id` als Label).
 
-- [ ] **STAT-DERIVED** (Stufe 0) — Abgeleitete Kennzahlen (Ø Punkte/Spiel, Siegquote, Ø Augen) im Profil-Endpoint/View, analog `partie_ergebnis_view`. **DoD:** Kennzahlen im Profil sichtbar; `mvn clean test` + `npm test` grün. **Risiko:** niedrig.
+- [x] **STAT-DERIVED** (Stufe 0) — Abgeleitete Kennzahlen (Ø Punkte/Spiel, Siegquote, Ø Augen) im Profil-Endpoint/View, analog `partie_ergebnis_view`. **DoD:** Kennzahlen im Profil sichtbar; `mvn clean test` + `npm test` grün. **Risiko:** niedrig.
 
 - [ ] **STAT-RATING** (Stufe 1) — TrueSkill-Rating. `rating_mu`/`rating_sigma NUMERIC(8,4)` an die bestehende `spieler_statistik` (in `000` konsolidiert; Defaults μ=25, σ=8.3333). TrueSkill-Update im **selben Pro-Spiel-Statistikpfad** beim Event „Spiel abgeschlossen". **Erste Datei zuerst:** `000-initial-schema.sql` (Spalten) + der Statistik-Fortschreibungs-Service. **DoD:** Rating wird pro Spiel fortgeschrieben; Roundtrip-Test; `mvn clean test` grün. **Risiko:** mittel (Korrektheit der TrueSkill-Formel — Bibliothek prüfen).
 

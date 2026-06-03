@@ -49,6 +49,8 @@ public record SpielBeendet(
         boolean istReSpieler,
         String spieltypName,
         boolean hatArmutAngesagt,
-        boolean hatArmutUebernommen
+        boolean hatArmutUebernommen,
+        /** Augen des Spielerteams in diesem Spiel (RE oder KONTRA, je nach Partei). */
+        int teamAugen
     ) {}
 }

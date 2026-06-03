@@ -692,6 +692,24 @@ export interface components {
              *     }
              */
             solosProTypJson?: string;
+            /**
+             * Format: double
+             * @description Durchschnittliche Punkte pro Spiel (gerundet auf 2 Dezimalstellen).
+             * @example 2.86
+             */
+            durchschnittlichePunkteProSpiel?: number;
+            /**
+             * Format: double
+             * @description Siegquote in Prozent (0–100).
+             * @example 59.52
+             */
+            siegquote?: number;
+            /**
+             * Format: double
+             * @description Durchschnittliche Team-Augen pro Spiel.
+             * @example 126.5
+             */
+            durchschnittlicheAugenProSpiel?: number;
         };
         SpielerNameAnfrage: {
             name?: string;

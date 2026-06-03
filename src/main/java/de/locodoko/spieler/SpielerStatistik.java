@@ -78,6 +78,9 @@ public class SpielerStatistik extends AbstraktePersistenzEntity {
     @Column("solos_pro_typ")
     private String solosProTypJson;
 
+    @Column("gesamt_augen")
+    private int gesamtAugen;
+
     @Column("zuletzt_aktualisiert")
     private Instant zuletztAktualisiert;
 
@@ -113,7 +116,13 @@ public class SpielerStatistik extends AbstraktePersistenzEntity {
     public int solosSiege() { return solosSiege; }
     public int solosNiederlagen() { return solosNiederlagen; }
     public String solosProTypJson() { return solosProTypJson; }
+    public int gesamtAugen() { return gesamtAugen; }
     public Instant zuletztAktualisiert() { return zuletztAktualisiert; }
+
+    /** Durchschnittliche Team-Augen pro Spiel (0.0 wenn noch kein Spiel). */
+    public double durchschnittlicheAugenProSpiel() {
+        return anzahlSpiele > 0 ? (double) gesamtAugen / anzahlSpiele : 0.0;
+    }
 
     /**
      * Aktualisiert die Statistik nach einem abgeschlossenen Spiel.
@@ -129,14 +138,17 @@ public class SpielerStatistik extends AbstraktePersistenzEntity {
      * @param spieltypName        Name des Spieltyps (leer fuer NORMALSPIEL)
      * @param hatArmutAngesagt    ob der Spieler Armut angesagt hat
      * @param hatArmutUebernommen ob der Spieler eine Armut uebernommen hat
+     * @param teamAugen           Augen des Spielerteams in diesem Spiel
      */
     public void verarbeiteSpiel(boolean sieger, int spielpunkte, int neuerFuchsGefangen,
                                 int neuerFuchsVerloren, int neuerKarlchenGespielt,
                                 int neueDoppelkoepfe, boolean istSolist, boolean istReSpieler,
-                                String spieltypName, boolean hatArmutAngesagt, boolean hatArmutUebernommen) {
+                                String spieltypName, boolean hatArmutAngesagt, boolean hatArmutUebernommen,
+                                int teamAugen) {
         this.anzahlSpiele++;
         if (sieger) this.anzahlSiege++;
         this.gesamtPunkte += spielpunkte;
+        this.gesamtAugen += teamAugen;
         this.fuchsGefangen += neuerFuchsGefangen;
         this.fuchsVerloren += neuerFuchsVerloren;
         this.karlchenGespielt += neuerKarlchenGespielt;

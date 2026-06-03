@@ -75,7 +75,8 @@ public class SpielerProfilService {
             daten.karlchenGespielt(), daten.doppelkoepfe(),
             daten.istSolist(), daten.istReSpieler(),
             daten.spieltypName() != null ? daten.spieltypName() : "",
-            daten.hatArmutAngesagt(), daten.hatArmutUebernommen()
+            daten.hatArmutAngesagt(), daten.hatArmutUebernommen(),
+            daten.teamAugen()
         );
         statistikRepository.save(statistik);
     }
