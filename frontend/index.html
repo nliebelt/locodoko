@@ -2,7 +2,7 @@
 <html lang="de">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
     <!-- Closed Beta: aus Suchmaschinen heraushalten. Bei Public Go-Live (M2) entfernen. -->
     <meta name="robots" content="noindex, nofollow" />
     <title>Loco Doko</title>
@@ -15,6 +15,11 @@
     <div id="app-shell">
       <div id="spiel-root"></div>
       <div id="ui-root" aria-live="polite"></div>
+    </div>
+    <!-- Querformat-Hinweis: nur auf Touch-Geräten im Hochformat sichtbar (rein per CSS-Media-Query). -->
+    <div id="orientierung-hinweis" role="alertdialog" aria-live="assertive">
+      <div class="orientierung-icon" aria-hidden="true"></div>
+      <p>Bitte drehe dein Gerät ins Querformat, um Loco Doko zu spielen.</p>
     </div>
     <script type="module" src="/src/main.ts"></script>
   </body>

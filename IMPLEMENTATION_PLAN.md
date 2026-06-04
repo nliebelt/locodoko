@@ -335,13 +335,7 @@ Entscheidungen: **DECISION-AUTH** ✓ beide behalten · **DECISION-LIZENZ** aufg
 
   **DoD:** Erreichbare Regelhilfe in der App. **Risiko:** niedrig.
 
-- [ ] **FE-MOBILE-SMOKE** (M1 — Session 60 vorgezogen, Low-Risk-Scheibe) — Mobile spielbar machen **ohne** Layout-Umbau.
-
-  Begründung (Session 60): Freunde testen auf iPhone/Safari. Tippen funktioniert bereits (Phaser Pointer = Touch), aber feste 1280×720-Querformat-Leinwand wird im Portrait winzig und es fehlt ein Dreh-Hinweis. Diese Scheibe ist isoliert (kein Eingriff in Spiellogik/Tisch-Layout) → daher M1.
-
-  **Erste Datei zuerst:** `frontend/src/main.ts` + `frontend/index.html` — (a) `<meta name="viewport">` prüfen/ergänzen (`width=device-width, initial-scale=1, viewport-fit=cover`); (b) Orientierungs-Overlay „Bitte Gerät ins Querformat drehen" bei Portrait (CSS `@media (orientation: portrait)` oder Phaser `scale.lockOrientation`/Resize-Listener), das die Leinwand verdeckt; (c) `Scale.FIT` bleibt, aber `autoCenter` + `expandParent` für volle Querformat-Nutzung prüfen. Vision-Loop um einen mobilen Viewport (z.B. iPhone 14, Landscape + Portrait) erweitern.
-
-  **DoD:** Im Querformat auf iPhone-Viewport spielbar (Karten tippbar), im Portrait erscheint der Dreh-Hinweis statt einer winzigen Leinwand; Vision-Screenshots (mobil) ohne Bruch; `npm test && npm run build && npm run lint` grün. **Risiko:** niedrig.
+- [x] **FE-MOBILE-SMOKE** (M1, Session 61) — Mobile spielbar ohne Layout-Umbau. Umgesetzt: (a) Viewport-Meta erweitert (`maximum-scale=1, user-scalable=no, viewport-fit=cover`); (b) reines CSS-Orientierungs-Overlay `#orientierung-hinweis` in `index.html`/`layout.css`, sichtbar nur bei `@media (orientation: portrait) and (pointer: coarse)` (Touch-Geräte) — CSS-gezeichnetes drehendes Phone-Icon + Text, kein Emoji; (c) `Scale.FIT`+`CENTER_BOTH` (Landscape bereits zentriert/letterboxed). Verifiziert mit Playwright-Mobile-Emulation: Portrait → Overlay sichtbar, Landscape (iPhone 13) → Spiel zentriert sichtbar. 240/240 + Build + Lint grün.
 
 - [ ] **FE-MOBILE** (M2) — Voller Mobile-/Touch-/Portrait-Umbau (nach FE-MOBILE-SMOKE).
 
@@ -533,6 +527,8 @@ Alle noch im Greenfield-Fenster (vor erstem echten Deploy). Details und Audit-Ko
 > Vision-Loop grün (39.8s). Befunde aus Screenshots 01–12 gegen `specs/frontend-visuelles-design.md` geprüft. Details in `e2e/screenshots/`.
 
 **P-Hoch:**
+
+- [ ] **BUG-LOGIN-BUTTON-TEXTCLIPPING** (entdeckt Session 61, FE-MOBILE-SMOKE-Verifikation) — In der `LoginSzene` ragt der Button-Text über die helle Button-Fläche hinaus: „Als Gast spielen" → letztes „n" liegt außerhalb der Box, „SCHNELLSTART (K)" wird rechts beschnitten. Vom Canvas (Phaser) gezeichnet, also viewport-unabhängig (auch Desktop betroffen, nicht durch Mobile-Viewport verursacht). **Erste Datei zuerst:** `frontend/src/szenen/LoginSzene.ts` — Button-Hintergrundbreite an Textbreite koppeln (analog zu den behobenen FE-UI-Clippings) oder Schriftgröße/Padding anpassen. **DoD:** Button-Text vollständig innerhalb der Fläche; Vision-/Mobile-Screenshot ohne Clipping. **Risiko:** niedrig.
 
 - [x] **FE-RANGLISTE-BUTTON-CLIPPING** — Der „Rangliste"-Button (Trophy-Icon + Text) oben rechts wird in der Lobby an der rechten Viewport-Kante abgeschnitten (sichtbar in `01-lobby.png`, `11-offene-tische.png`). Trophy-Icon und Text teilweise außerhalb des sichtbaren Bereichs. **Erste Datei zuerst:** `frontend/src/szenen/SpielverwaltungsSzene.ts` — Button-X-Position so anpassen, dass min. 8–16px Abstand zum rechten Rand bleibt. **DoD:** Button vollständig sichtbar, kein Clipping. **Risiko:** niedrig.
 

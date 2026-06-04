@@ -36,6 +36,52 @@
   justify-content: center;
 }
 
+/* Querformat-Hinweis — standardmaeßig versteckt; nur Touch-Geraete im Hochformat zeigen ihn. */
+#orientierung-hinweis {
+  display: none;
+}
+
+@media (orientation: portrait) and (pointer: coarse) {
+  #orientierung-hinweis {
+    display: flex;
+    position: fixed;
+    inset: 0;
+    z-index: 1000;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 28px;
+    padding: max(32px, env(safe-area-inset-top)) 32px max(32px, env(safe-area-inset-bottom));
+    text-align: center;
+    background: var(--farbe-hintergrund);
+    color: var(--farbe-text-primaer);
+    font-family: var(--schrift-familie);
+  }
+
+  #orientierung-hinweis p {
+    max-width: 440px;
+    margin: 0;
+    font-size: 12px;
+    line-height: 1.9;
+    color: var(--farbe-text-primaer);
+  }
+
+  /* CSS-gezeichnetes Smartphone, das sich vom Hoch- ins Querformat dreht. */
+  .orientierung-icon {
+    width: 54px;
+    height: 92px;
+    border: var(--rahmen-neo);
+    border-radius: 8px;
+    box-shadow: var(--schatten-button);
+    animation: orientierung-drehen 2s ease-in-out infinite;
+  }
+}
+
+@keyframes orientierung-drehen {
+  0%, 35% { transform: rotate(0deg); }
+  65%, 100% { transform: rotate(-90deg); }
+}
+
 .hud-topbar {
   position: absolute;
   top: 0;
