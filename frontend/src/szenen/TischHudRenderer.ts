@@ -130,7 +130,8 @@ export function renderTopBar(
     zentrumsText += ` · Spiel ${spiel.spielNummer}/${zustand.partieStand?.anzahlSpiele ?? '?'}`;
     if (modell.spieltyp) zentrumsText += ` · ${modell.spieltyp}`;
   } else if (tisch) {
-    zentrumsText += ` · ${tisch.status}`;
+    const statusMap: Record<string, string> = { WARTEND: 'Wartend', IM_SPIEL: 'Im Spiel', BEENDET: 'Beendet' };
+    zentrumsText += ` · ${statusMap[tisch.status] ?? tisch.status}`;
   }
   ebene.add(szene.add.text(breite / 2, barH / 2, zentrumsText, { fontFamily: FONT_FAMILY, color: '#f8f9fa', fontSize: `${schriftM}px` }).setOrigin(0.5));
   let rightX = breite - 15;

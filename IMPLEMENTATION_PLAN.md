@@ -537,7 +537,7 @@ Alle noch im Greenfield-Fenster (vor erstem echten Deploy). Details und Audit-Ko
 
 **P-Mittel:**
 
-- [ ] **FE-RUNDENAUSWERTUNG-LESBARKEIT** — Das Rundenauswertungs-Overlay (`05-rundenauswertung-overlay.png`): Spielstatistiken in sehr kleiner Schrift mit niedrigem Kontrast auf dunklem Hintergrund — kaum lesbar. Außerdem: Status-Header zeigt rohes Enum `IM_SPIEL` statt deutschem Label „Im Spiel". **Erste Datei zuerst:** Render-Code des Rundenauswertungs-Overlays (in `TischSzene.ts` oder `TischEreignisHandler.ts`) — Font-Größe auf min. SM (10px) erhöhen, Kontrast anpassen, Enum-Mapping `IM_SPIEL → Im Spiel` ergänzen. **DoD:** Overlay-Text lesbar; kein rohes Enum sichtbar; Vision-Loop grün. **Risiko:** niedrig.
+- [x] **FE-RUNDENAUSWERTUNG-LESBARKEIT** — Das Rundenauswertungs-Overlay (`05-rundenauswertung-overlay.png`): Spielstatistiken in sehr kleiner Schrift mit niedrigem Kontrast auf dunklem Hintergrund — kaum lesbar. Außerdem: Status-Header zeigt rohes Enum `IM_SPIEL` statt deutschem Label „Im Spiel". **Erste Datei zuerst:** Render-Code des Rundenauswertungs-Overlays (in `TischSzene.ts` oder `TischEreignisHandler.ts`) — Font-Größe auf min. SM (10px) erhöhen, Kontrast anpassen, Enum-Mapping `IM_SPIEL → Im Spiel` ergänzen. **DoD:** Overlay-Text lesbar; kein rohes Enum sichtbar; Vision-Loop grün. **Risiko:** niedrig.
 
 - [ ] **FE-VORBEHALT-AUSWAHL-FEEDBACK** — Die drei Vorbehalt-Wechsel-Frames (`02-vorbehalt-wechsel-0/50/100`) zeigen alle denselben Text „Dasensolo" ohne erkennbares „aktuell ausgewählt"-Feedback (kein Cursor-Hervorhebung, kein farbiger Rahmen, kein Pfeil). Spec fordert klaren Selektions-Indikator für den Neo-Brutalism-Stil. **Erste Datei zuerst:** `frontend/src/szenen/TischSzene.ts` — aktuelle Auswahl mit Goldrahmen (`#ffd166`, 2px) oder `▶`-Prefix hervorheben. **DoD:** Aktuell gewählter Vorbehalt klar visuell markiert; Vision-Loop grün. **Risiko:** niedrig.
 
@@ -564,4 +564,6 @@ Alle noch im Greenfield-Fenster (vor erstem echten Deploy). Details und Audit-Ko
 
 - **Test-Suite bricht und in 3 Versuchen nicht reparierbar**: Stoppen, Iteration abbrechen, Notiz unter „Entdeckungen". Nicht stapeln.
 - **Unklar zwischen Optionen**: Die kleinere/risikoärmere Option wählen.
+- **Niemals**: `--no-verify`, `git push --force` ohne explizite User-Anweisung, Tests `@Disabled` ohne Notiz.
+nen**: Die kleinere/risikoärmere Option wählen.
 - **Niemals**: `--no-verify`, `git push --force` ohne explizite User-Anweisung, Tests `@Disabled` ohne Notiz.

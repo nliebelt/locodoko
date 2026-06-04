@@ -241,16 +241,16 @@ export class SpieleffektAnimationen {
     // ── 2. Spieltyp + Nummer ──────────────────────────────────────────────
     const kopf = fuege(
       this.p.szene.add.text(cx, y, `${daten.spieltypLabel}  ·  ${daten.spielNummerText}`, {
-        fontFamily: FONT, fontSize: '14px', color: '#7a9aaa',
+        fontFamily: FONT, fontSize: '16px', color: '#b0bec5',
       }).setOrigin(0.5, 0).setDepth(TIEFE + 1).setAlpha(0)
     );
     await this.p.tweenAlpha(kopf, 1, 250);
-    y += 44;
+    y += 48;
 
     // ── 3. Sieger-Banner (Scale-Bounce) ───────────────────────────────────
     const sieger = fuege(
       this.p.szene.add.text(cx, y, `${daten.siegerPartei} gewinnt!`, {
-        fontFamily: FONT, fontSize: '42px', color: siegerFarbe,
+        fontFamily: FONT, fontSize: '48px', color: siegerFarbe,
         stroke: '#000000', strokeThickness: 7,
       }).setOrigin(0.5, 0).setDepth(TIEFE + 1).setAlpha(0).setScale(0.5)
     );
@@ -259,18 +259,18 @@ export class SpieleffektAnimationen {
       this.p.tweenScale(sieger, 1.1, 320),
     ]);
     await this.p.tweenScale(sieger, 1.0, 140);
-    y += 74;
+    y += 84;
 
     // ── 4. Parteien: Spielernamen + Augen ─────────────────────────────────
     const reZeile = `RE: ${daten.reSpielerNamen}  (${daten.augenRe} Augen)`;
     const kontraZeile = `KONTRA: ${daten.kontraSpielerNamen}  (${daten.augenKontra} Augen)`;
     const parteien = fuege(
       this.p.szene.add.text(cx, y, `${reZeile}    ·    ${kontraZeile}`, {
-        fontFamily: FONT, fontSize: '11px', color: '#99bbcc', align: 'center',
+        fontFamily: FONT, fontSize: '14px', color: '#ccddef', align: 'center',
       }).setOrigin(0.5, 0).setDepth(TIEFE + 1).setAlpha(0)
     );
     await this.p.tweenAlpha(parteien, 1, 220);
-    y += 34;
+    y += 38;
 
     // ── Trennlinie ────────────────────────────────────────────────────────
     const linie1 = fuege(
@@ -278,25 +278,25 @@ export class SpieleffektAnimationen {
         .setDepth(TIEFE + 1).setAlpha(0)
     );
     await this.p.tweenAlpha(linie1, 0.45, 180);
-    y += 22;
+    y += 24;
 
     // ── 5. Punkte-Berechnung: Zeilen nacheinander ─────────────────────────
     const berLabel = fuege(
       this.p.szene.add.text(cx, y, 'Punkte-Berechnung', {
-        fontFamily: FONT, fontSize: '10px', color: '#557766',
+        fontFamily: FONT, fontSize: '12px', color: '#7ba08c',
       }).setOrigin(0.5, 0).setDepth(TIEFE + 1).setAlpha(0)
     );
     await this.p.tweenAlpha(berLabel, 1, 130);
-    y += 22;
+    y += 24;
 
     for (const zeile of daten.berechnungZeilen) {
       const zobj = fuege(
         this.p.szene.add.text(cx, y, zeile, {
-          fontFamily: FONT, fontSize: '13px', color: '#aabbcc',
+          fontFamily: FONT, fontSize: '16px', color: '#ddeeff',
         }).setOrigin(0.5, 0).setDepth(TIEFE + 1).setAlpha(0)
       );
       await this.p.tweenAlpha(zobj, 1, 120);
-      y += 25;
+      y += 28;
     }
 
     await this.p.warte(80);
@@ -304,12 +304,12 @@ export class SpieleffektAnimationen {
     // ── 6. Gesamt-Flipper ─────────────────────────────────────────────────
     const gesamtObj = fuege(
       this.p.szene.add.text(cx, y, 'Gesamt:  +0', {
-        fontFamily: FONT, fontSize: '20px', color: '#e8f0e8',
+        fontFamily: FONT, fontSize: '24px', color: '#f0f8f0',
       }).setOrigin(0.5, 0).setDepth(TIEFE + 1).setAlpha(0)
     );
     await this.p.tweenAlpha(gesamtObj, 1, 150);
     await this.p.flipperZaehler(gesamtObj, daten.spielwert, 'Gesamt:  +', 650);
-    y += 42;
+    y += 48;
 
     // ── Trennlinie 2 ──────────────────────────────────────────────────────
     const linie2 = fuege(
@@ -317,16 +317,16 @@ export class SpieleffektAnimationen {
         .setDepth(TIEFE + 1).setAlpha(0)
     );
     await this.p.tweenAlpha(linie2, 0.45, 180);
-    y += 22;
+    y += 24;
 
     // ── 7. Spielpunkte pro Spieler mit Flipper ────────────────────────────
     const spLabel = fuege(
       this.p.szene.add.text(cx, y, 'Spielpunkte', {
-        fontFamily: FONT, fontSize: '10px', color: '#557766',
+        fontFamily: FONT, fontSize: '12px', color: '#7ba08c',
       }).setOrigin(0.5, 0).setDepth(TIEFE + 1).setAlpha(0)
     );
     await this.p.tweenAlpha(spLabel, 1, 130);
-    y += 22;
+    y += 24;
 
     const panelW = Math.min(breite * 0.58, 440);
     const linkX = cx - panelW / 2;
@@ -335,14 +335,14 @@ export class SpieleffektAnimationen {
     for (const eintrag of daten.spielpunkte) {
       const nameObj = fuege(
         this.p.szene.add.text(linkX, y, eintrag.istSelbst ? `▸ ${eintrag.name}` : eintrag.name, {
-          fontFamily: FONT, fontSize: '14px',
-          color: eintrag.istSelbst ? '#f0f4f0' : '#99aabb',
+          fontFamily: FONT, fontSize: '16px',
+          color: eintrag.istSelbst ? '#ffffff' : '#b3cddf',
         }).setOrigin(0, 0).setDepth(TIEFE + 1).setAlpha(0)
       );
       const pfx = eintrag.punkte >= 0 ? '+' : '';
       const punkteObj = fuege(
         this.p.szene.add.text(rechtsX, y, `${pfx}0`, {
-          fontFamily: FONT, fontSize: '14px',
+          fontFamily: FONT, fontSize: '16px',
           color: eintrag.punkte >= 0 ? '#7edd94' : '#ff8877',
         }).setOrigin(1, 0).setDepth(TIEFE + 1).setAlpha(0)
       );
@@ -351,10 +351,10 @@ export class SpieleffektAnimationen {
         this.p.tweenAlpha(punkteObj, 1, 120),
       ]);
       await this.p.flipperZaehler(punkteObj, eintrag.punkte, pfx, 480);
-      y += 30;
+      y += 34;
     }
 
-    y += 8;
+    y += 12;
 
     // ── 8. Gesamtstand kompakt ────────────────────────────────────────────
     const gsText = daten.gesamtstand
@@ -363,7 +363,7 @@ export class SpieleffektAnimationen {
       .join('  ·  ');
     const gsObj = fuege(
       this.p.szene.add.text(cx, y, `Gesamtstand: ${gsText}`, {
-        fontFamily: FONT, fontSize: '9px', color: '#557766',
+        fontFamily: FONT, fontSize: '13px', color: '#88aa99',
       }).setOrigin(0.5, 0).setDepth(TIEFE + 1).setAlpha(0)
     );
     await this.p.tweenAlpha(gsObj, 1, 200);
