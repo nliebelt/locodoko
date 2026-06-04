@@ -9,7 +9,7 @@ import type {
   TischPresetAntwort,
   Uuid
 } from '../modelle/SpielverwaltungDto';
-import type { SpielerProfilAntwortGenerated } from '../generated/schema-types';
+import type { BestenlisteAntwortGenerated, SpielerProfilAntwortGenerated } from '../generated/schema-types';
 import { Logger } from '../logger';
 
 const STANDARD_SPIELERNAME_PREFIX = 'Spieler';
@@ -235,6 +235,10 @@ export class SpielverwaltungApi {
 
   async ladeSpielerProfil(spielerId: Uuid): Promise<SpielerProfilAntwortGenerated> {
     return this.hol<SpielerProfilAntwortGenerated>(`/api/spieler/${spielerId}/profil`);
+  }
+
+  async ladeBestenliste(regelvariante: string): Promise<BestenlisteAntwortGenerated> {
+    return this.hol<BestenlisteAntwortGenerated>(`/api/spieler/leaderboard?regelvariante=${encodeURIComponent(regelvariante)}`);
   }
 
   async gibFeedback(text: string): Promise<void> {

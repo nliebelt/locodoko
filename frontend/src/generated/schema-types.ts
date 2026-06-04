@@ -42,6 +42,8 @@ export type SpielerProfilAntwortGenerated = components['schemas']['SpielerProfil
 export type StatistikAntwortGenerated = components['schemas']['StatistikAntwort'];
 export type PartieErgebnisAntwortGenerated = components['schemas']['PartieErgebnisAntwort'];
 export type AuthentifizierungsAntwortGenerated = components['schemas']['AuthentifizierungsAntwort'];
+export type BestenlisteAntwortGenerated = components['schemas']['BestenlisteAntwort'];
+export type BestenlisteEintragAntwortGenerated = components['schemas']['BestenlisteEintragAntwort'];
 
 // --- System ---
 export type SystemstatusAntwortGenerated = components['schemas']['SystemstatusAntwort'];

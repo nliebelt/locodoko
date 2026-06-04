@@ -178,6 +178,8 @@ CREATE TABLE spieler_statistik (
     solos_niederlagen INT NOT NULL DEFAULT 0,
     solos_pro_typ JSONB NOT NULL DEFAULT '{}',
     gesamt_augen INT NOT NULL DEFAULT 0,
+    rating_mu NUMERIC(8,4) NOT NULL DEFAULT 25.0,
+    rating_sigma NUMERIC(8,4) NOT NULL DEFAULT 8.3333,
     zuletzt_aktualisiert TIMESTAMP WITH TIME ZONE,
     erstellt_am TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
     aktualisiert_am TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),

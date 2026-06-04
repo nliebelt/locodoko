@@ -45,6 +45,11 @@ export class SpielverwaltungsSzene extends Phaser.Scene {
       color: '#a3c4a8'
     }).setOrigin(0.5);
 
+    new PhaserButton(this, {
+      x: 1170, y: 45, text: '🏆 Rangliste', typ: 'secondary', breite: 200, hoehe: 40,
+      callback: () => this.scene.start('BestenlisterSzene')
+    });
+
     this.uiContainer = this.add.container(0, 0);
 
     // Load presets ahead of time for the modal

@@ -17,7 +17,7 @@ import { TischStore } from './TischStore';
 import { PartieStore } from './PartieStore';
 import { erzeugeAnfangszustand } from './StoreTypen';
 import type { AppZustand, PartieEreignisListener, SonderpunkteListener, StoreAbo, UiMeldung } from './StoreTypen';
-import type { SpielerProfilAntwortGenerated } from '../generated/schema-types';
+import type { BestenlisteAntwortGenerated, SpielerProfilAntwortGenerated } from '../generated/schema-types';
 
 export type { UiMeldung, UiKonfiguration, SpielprotokollEintrag, AppZustand, PartieEreignisListener, SonderpunkteListener, StoreAbo } from './StoreTypen';
 
@@ -67,6 +67,7 @@ export class AppStore {
   async ausloggen(): Promise<void> { return this.session.ausloggen(); }
   async alsGastStarten(): Promise<void> { return this.session.alsGastStarten(); }
   async ladeSpielerProfil(spielerId: Uuid): Promise<SpielerProfilAntwortGenerated> { return this.session.ladeSpielerProfil(spielerId); }
+  async ladeBestenliste(regelvariante = 'TURNIER'): Promise<BestenlisteAntwortGenerated> { return this.api.ladeBestenliste(regelvariante); }
   async gibFeedback(text: string): Promise<void> { return this.api.gibFeedback(text); }
 
   // --- Tisch ---

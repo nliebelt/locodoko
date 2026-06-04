@@ -15,4 +15,7 @@ public interface SpielerStatistikRepository extends CrudRepository<SpielerStatis
 
     @Query("SELECT * FROM spieler_statistik WHERE spieler_id = :spielerId AND regelvariante = :regelvariante")
     Optional<SpielerStatistik> findBySpielerIdAndRegelvariante(UUID spielerId, String regelvariante);
+
+    @Query("SELECT * FROM spieler_statistik WHERE regelvariante = :regelvariante AND anzahl_spiele > 0 ORDER BY (rating_mu - 3 * rating_sigma) DESC LIMIT 50")
+    List<SpielerStatistik> findTopByRegelvarianteGeordertNachRating(String regelvariante);
 }

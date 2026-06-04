@@ -69,7 +69,13 @@ public record SpielerProfilAntwort(
         @Schema(description = "Siegquote in Prozent (0–100).", example = "59.52")
         double siegquote,
         @Schema(description = "Durchschnittliche Team-Augen pro Spiel.", example = "126.5")
-        double durchschnittlicheAugenProSpiel
+        double durchschnittlicheAugenProSpiel,
+        @Schema(description = "TrueSkill-Skill-Mean (mu).", example = "27.43")
+        double ratingMu,
+        @Schema(description = "TrueSkill-Skill-Sigma (Unsicherheit).", example = "7.85")
+        double ratingSigma,
+        @Schema(description = "Konservatives TrueSkill-Rating fuer Bestenliste: mu - 3*sigma.", example = "4.08")
+        double konservativesRating
     ) {
         static StatistikAntwort aus(SpielerStatistik s) {
             double durchschnittlichePunkte = s.anzahlSpiele() > 0
@@ -88,7 +94,10 @@ public record SpielerProfilAntwort(
                 s.kontraSiege(), s.kontraNiederlagen(), s.hochzeitenGespielt(),
                 s.armutenAngesagt(), s.armutenUebernommen(),
                 s.solosSiege(), s.solosNiederlagen(), s.solosProTypJson(),
-                durchschnittlichePunkte, siegquote, durchschnittlicheAugen
+                durchschnittlichePunkte, siegquote, durchschnittlicheAugen,
+                Math.round(s.ratingMu() * 100.0) / 100.0,
+                Math.round(s.ratingSigma() * 100.0) / 100.0,
+                Math.round(s.konservativesRating() * 100.0) / 100.0
             );
         }
     }

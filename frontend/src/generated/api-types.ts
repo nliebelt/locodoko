@@ -52,6 +52,29 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/spieler/leaderboard": {
+        parameters: {
+            query?: {
+                /** @description Regelvariante (TURNIER, SONDER, FREI) */
+                regelvariante?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Bestenliste abrufen
+         * @description Gibt die Top-50 Spieler fuer eine Regelvariante zurueck, sortiert nach konservativem TrueSkill-Rating.
+         */
+        get: operations["ladeBestenliste"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/spieler/session": {
         parameters: {
             query?: never;
@@ -218,6 +241,26 @@ export interface paths {
          * @description Fuegt den anfragenden Spieler einem Tisch hinzu, der ueber seinen Einladungscode identifiziert wird.
          */
         post: operations["betreteTischViaCode"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/feedback": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Feedback einreichen
+         * @description Schreibt Feedback ins Log, optional an Discord-Webhook.
+         */
+        post: operations["einreichen"];
         delete?: never;
         options?: never;
         head?: never;
@@ -401,6 +444,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/auth/konfiguration": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Auth-Konfiguration abfragen
+         * @description Liefert, welche Login-Methoden aktiviert sind.
+         */
+        get: operations["gibKonfiguration_1"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/tische/{id}/spieler/{spielerId}": {
         parameters: {
             query?: never;
@@ -509,6 +572,55 @@ export interface components {
         ProfilAktualisierungAnfrage: {
             anzeigeName?: string;
             avatarFarbe?: string;
+        };
+        /** @description Ewige Bestenliste fuer eine Regelvariante, sortiert nach konservativem TrueSkill-Rating. */
+        BestenlisteAntwort: {
+            /** @description Regelvariante dieser Bestenliste. */
+            regelvariante?: string;
+            /** @description Eintraege der Bestenliste, aufsteigend nach Rang sortiert. */
+            eintraege?: components["schemas"]["BestenlisteEintragAntwort"][];
+        };
+        /** @description Einzelner Eintrag in der Bestenliste. */
+        BestenlisteEintragAntwort: {
+            /**
+             * Format: int32
+             * @description Rangplatz (1 = bester).
+             */
+            rang?: number;
+            /**
+             * Format: uuid
+             * @description Spieler-ID.
+             */
+            spielerId?: string;
+            /** @description Anzeigename des Spielers. */
+            spielerName?: string;
+            /** @description Avatar-Farbe als Hex-String. */
+            avatarFarbe?: string;
+            /**
+             * Format: double
+             * @description Konservatives TrueSkill-Rating fuer Bestenliste: mu - 3*sigma.
+             */
+            konservativesRating?: number;
+            /**
+             * Format: double
+             * @description TrueSkill-Skill-Mean (mu).
+             */
+            ratingMu?: number;
+            /**
+             * Format: double
+             * @description TrueSkill-Skill-Sigma (Unsicherheit).
+             */
+            ratingSigma?: number;
+            /**
+             * Format: int32
+             * @description Anzahl gespielter Spiele.
+             */
+            anzahlSpiele?: number;
+            /**
+             * Format: double
+             * @description Siegquote in Prozent (0-100).
+             */
+            siegquote?: number;
         };
         /** @description Zusammenfassung einer abgeschlossenen Partie. */
         PartieErgebnisAntwort: {
@@ -710,6 +822,24 @@ export interface components {
              * @example 126.5
              */
             durchschnittlicheAugenProSpiel?: number;
+            /**
+             * Format: double
+             * @description TrueSkill-Skill-Mean (mu).
+             * @example 27.43
+             */
+            ratingMu?: number;
+            /**
+             * Format: double
+             * @description TrueSkill-Skill-Sigma (Unsicherheit).
+             * @example 7.85
+             */
+            ratingSigma?: number;
+            /**
+             * Format: double
+             * @description Konservatives TrueSkill-Rating fuer Bestenliste: mu - 3*sigma.
+             * @example 4.08
+             */
+            konservativesRating?: number;
         };
         SpielerNameAnfrage: {
             name?: string;
@@ -820,6 +950,9 @@ export interface components {
              * @example Tisch erfolgreich verlassen.
              */
             nachricht?: string;
+        };
+        FeedbackAnfrage: {
+            text?: string;
         };
         FrontendLogAnfrage: {
             kategorie?: string;
@@ -1289,6 +1422,9 @@ export interface components {
              * @enum {string}
              */
             ansage?: "GESUND" | "SOLO_DAME" | "SOLO_BUBE" | "SOLO_TRUMPF" | "SOLO_TRUMPF_HERZ" | "SOLO_TRUMPF_PIK" | "SOLO_TRUMPF_KREUZ" | "SOLO_FLEISCHLOS" | "HOCHZEIT" | "ARMUT" | "SCHMEISSEN" | "SCHMEISSEN_FUENF_NEUNEN" | "SCHMEISSEN_WENIG_TRUMPF";
+        };
+        AuthKonfigurationAntwort: {
+            googleOAuth2Aktiv?: boolean;
         };
         /** @description Strukturierte Fehlerantwort fuer REST-Endpunkte. */
         ApiFehlerAntwort: {
@@ -2258,6 +2394,28 @@ export interface operations {
             };
         };
     };
+    einreichen: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["FeedbackAnfrage"];
+            };
+        };
+        responses: {
+            /** @description Feedback erhalten */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     logge: {
         parameters: {
             query?: never;
@@ -2537,6 +2695,26 @@ export interface operations {
             };
         };
     };
+    gibKonfiguration_1: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Konfiguration */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["AuthKonfigurationAntwort"];
+                };
+            };
+        };
+    };
     kickeSpieler: {
         parameters: {
             query?: never;
@@ -2585,6 +2763,29 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["BestaetigungAntwort"];
+                };
+            };
+        };
+    };
+    ladeBestenliste: {
+        parameters: {
+            query?: {
+                /** @description Regelvariante (TURNIER, SONDER, FREI) */
+                regelvariante?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Bestenliste erfolgreich abgerufen */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["BestenlisteAntwort"];
                 };
             };
         };

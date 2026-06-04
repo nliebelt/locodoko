@@ -7,6 +7,8 @@ import org.springframework.modulith.events.ApplicationModuleListener;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -35,7 +37,7 @@ public class SpielerProfilService {
         this.partieErgebnisRepository = partieErgebnisRepository;
     }
 
-    /** Aktualisiert Statistiken aller beteiligten menschlichen Spieler nach einem Spiel. */
+    /** Aktualisiert Statistiken und TrueSkill-Rating aller beteiligten menschlichen Spieler nach einem Spiel. */
     @ApplicationModuleListener
     void beiSpielBeendet(SpielBeendet ereignis) {
         LOGGER.info("SpielBeendet empfangen [tischId={}, spielNr={}, partieBeendet={}]",
@@ -43,14 +45,61 @@ public class SpielerProfilService {
 
         String regelvarianteName = ereignis.regelvariante() != null ? ereignis.regelvariante().name() : "FREI";
 
-        for (Map.Entry<UUID, SpielBeendet.SpielerSpielDaten> eintrag : ereignis.spielerDaten().entrySet()) {
-            UUID spielerId = eintrag.getKey();
-            SpielBeendet.SpielerSpielDaten daten = eintrag.getValue();
-
+        // Alle menschlichen Spieler-Statistiken vorab laden (Grundlage fuer TrueSkill-Update)
+        Map<UUID, SpielerStatistik> statsMap = new LinkedHashMap<>();
+        for (UUID spielerId : ereignis.spielerDaten().keySet()) {
             spielerRepository.findById(spielerId).ifPresent(spieler -> {
-                if (spieler.istKi()) return;
-                aktualisiereStatistik(spielerId, regelvarianteName, daten);
+                if (!spieler.istKi()) {
+                    SpielerStatistik stat = statistikRepository
+                        .findBySpielerIdAndRegelvariante(spielerId, regelvarianteName)
+                        .orElseGet(() -> SpielerStatistik.fuer(spielerId, regelvarianteName));
+                    statsMap.put(spielerId, stat);
+                }
             });
+        }
+
+        // TrueSkill-Rating aktualisieren (benoetigt alle Spieler gleichzeitig)
+        aktualisiereRatings(statsMap, ereignis.spielerDaten());
+
+        // Individuelle Spielstatistik aktualisieren und speichern
+        for (Map.Entry<UUID, SpielerStatistik> eintrag : statsMap.entrySet()) {
+            UUID spielerId = eintrag.getKey();
+            SpielBeendet.SpielerSpielDaten daten = ereignis.spielerDaten().get(spielerId);
+            SpielerStatistik statistik = eintrag.getValue();
+            statistik.verarbeiteSpiel(
+                daten.sieger(), daten.spielpunkte(), daten.fuchsGefangen(), daten.fuchsVerloren(),
+                daten.karlchenGespielt(), daten.doppelkoepfe(), daten.istSolist(), daten.istReSpieler(),
+                daten.spieltypName() != null ? daten.spieltypName() : "",
+                daten.hatArmutAngesagt(), daten.hatArmutUebernommen(), daten.teamAugen()
+            );
+            statistikRepository.save(statistik);
+        }
+    }
+
+    private void aktualisiereRatings(Map<UUID, SpielerStatistik> statsMap,
+                                      Map<UUID, SpielBeendet.SpielerSpielDaten> spielerDaten) {
+        List<SpielerStatistik> reTeam = new ArrayList<>();
+        List<SpielerStatistik> kontraTeam = new ArrayList<>();
+        boolean reSieger = false;
+
+        for (Map.Entry<UUID, SpielerStatistik> eintrag : statsMap.entrySet()) {
+            UUID spielerId = eintrag.getKey();
+            SpielBeendet.SpielerSpielDaten daten = spielerDaten.get(spielerId);
+            if (daten.istReSpieler()) {
+                reTeam.add(eintrag.getValue());
+                if (daten.sieger()) reSieger = true;
+            } else {
+                kontraTeam.add(eintrag.getValue());
+            }
+        }
+
+        // TrueSkill benoetigt mindestens einen Spieler pro Team
+        if (reTeam.isEmpty() || kontraTeam.isEmpty()) return;
+
+        if (reSieger) {
+            TrueSkillRechner.aktualisiereZweiTeams(reTeam, kontraTeam);
+        } else {
+            TrueSkillRechner.aktualisiereZweiTeams(kontraTeam, reTeam);
         }
     }
 
@@ -66,18 +115,5 @@ public class SpielerProfilService {
         return partieErgebnisRepository.findBySpielerId(spielerId);
     }
 
-    private void aktualisiereStatistik(UUID spielerId, String regelvariante, SpielBeendet.SpielerSpielDaten daten) {
-        SpielerStatistik statistik = statistikRepository.findBySpielerIdAndRegelvariante(spielerId, regelvariante)
-            .orElseGet(() -> SpielerStatistik.fuer(spielerId, regelvariante));
-        statistik.verarbeiteSpiel(
-            daten.sieger(), daten.spielpunkte(),
-            daten.fuchsGefangen(), daten.fuchsVerloren(),
-            daten.karlchenGespielt(), daten.doppelkoepfe(),
-            daten.istSolist(), daten.istReSpieler(),
-            daten.spieltypName() != null ? daten.spieltypName() : "",
-            daten.hatArmutAngesagt(), daten.hatArmutUebernommen(),
-            daten.teamAugen()
-        );
-        statistikRepository.save(statistik);
-    }
+
 }

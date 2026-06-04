@@ -15,6 +15,7 @@ import org.springframework.web.context.WebApplicationContext;
 import java.util.UUID;
 
 import static org.springframework.http.MediaType.APPLICATION_JSON;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -94,6 +95,19 @@ class SpielerProfilControllerTest {
                 .contentType(APPLICATION_JSON)
                 .content("{\"anzeigeName\":\"Angreifer\"}"))
             .andExpect(status().isUnauthorized());
+    }
+
+    /**
+     * Bestenliste liefert leere Liste fuer Regelvariante ohne Spieler.
+     * Stellt sicher dass der Endpoint immer eine gueltige Antwort liefert.
+     */
+    @Test
+    void bestenlisteGibtLeereListeFuerUnbekannteRegelvariante() throws Exception {
+        mockMvc.perform(get("/api/spieler/leaderboard")
+                .param("regelvariante", "TURNIER"))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.regelvariante").value("TURNIER"))
+            .andExpect(jsonPath("$.eintraege").isArray());
     }
 
     private MvcResult registriereSpieler(String benutzername, String passwort) throws Exception {

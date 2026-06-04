@@ -6,6 +6,7 @@ import { BootSzene } from './szenen/BootSzene';
 import { LoginSzene } from './szenen/LoginSzene';
 import { SpielverwaltungsSzene } from './szenen/SpielverwaltungsSzene';
 import { TischSzene } from './szenen/TischSzene';
+import { BestenlisterSzene } from './szenen/BestenlisterSzene';
 
 // Globaler Error-Handler — auch im Prod-Build aktiv, damit stumme Fehler sichtbar werden.
 // Nutzt console.error direkt (kein Logger-Dev-Switch), damit Exceptions nie unbemerkt bleiben.
@@ -27,7 +28,7 @@ const spiel = new Phaser.Game({
     width: 1280,
     height: 720
   },
-  scene: [BootSzene, LoginSzene, SpielverwaltungsSzene, TischSzene]
+  scene: [BootSzene, LoginSzene, SpielverwaltungsSzene, TischSzene, BestenlisterSzene]
 });
 
 window.addEventListener('beforeunload', () => {

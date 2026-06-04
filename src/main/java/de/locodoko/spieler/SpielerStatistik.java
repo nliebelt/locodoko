@@ -81,6 +81,12 @@ public class SpielerStatistik extends AbstraktePersistenzEntity {
     @Column("gesamt_augen")
     private int gesamtAugen;
 
+    @Column("rating_mu")
+    private double ratingMu = TrueSkillRechner.MU_INIT;
+
+    @Column("rating_sigma")
+    private double ratingSigma = TrueSkillRechner.SIGMA_INIT;
+
     @Column("zuletzt_aktualisiert")
     private Instant zuletztAktualisiert;
 
@@ -117,7 +123,17 @@ public class SpielerStatistik extends AbstraktePersistenzEntity {
     public int solosNiederlagen() { return solosNiederlagen; }
     public String solosProTypJson() { return solosProTypJson; }
     public int gesamtAugen() { return gesamtAugen; }
+    public double ratingMu() { return ratingMu; }
+    public double ratingSigma() { return ratingSigma; }
+    /** Konservative Skill-Schaetzung fuer die Bestenliste: μ − 3σ. */
+    public double konservativesRating() { return ratingMu - 3.0 * ratingSigma; }
     public Instant zuletztAktualisiert() { return zuletztAktualisiert; }
+
+    /** Aktualisiert das TrueSkill-Rating nach einem Spiel (aufgerufen vom {@link TrueSkillRechner}). */
+    void aktualisiereRating(double neueMu, double neueSigma) {
+        this.ratingMu = neueMu;
+        this.ratingSigma = neueSigma;
+    }
 
     /** Durchschnittliche Team-Augen pro Spiel (0.0 wenn noch kein Spiel). */
     public double durchschnittlicheAugenProSpiel() {
