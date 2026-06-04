@@ -89,7 +89,7 @@ export class TischKartenRenderer {
         const ky = pos.y + (istVertikal ? versatz : 0);
         ebene.add(this.erstelleKartenansicht(kx, ky, stapelW, stapelH, { verdeckt: true }).setAngle(pos.winkel).setAlpha(0.88));
       }
-      ebene.add(this.szene.add.text(pos.x, pos.y + Math.round(stapelH * 0.65), `${spieler.stiche}`, { fontFamily: FONT_FAMILY, color: '#ffd166', fontSize: `${Math.round(Math.max(10, breite * 0.009))}px`, backgroundColor: '#0d3d1e', padding: { x: 3, y: 1 } }).setOrigin(0.5));
+      ebene.add(this.szene.add.text(pos.x, pos.y + Math.round(stapelH * 0.65), `${spieler.stiche}`, { fontFamily: FONT_FAMILY, color: '#ffd166', fontSize: `${Math.round(Math.max(14, breite * 0.012))}px`, backgroundColor: '#0d3d1e', padding: { x: 4, y: 2 } }).setOrigin(0.5));
       const letzterStichDesSpielers = modell.letzteAbgeschlosseneStiche.filter((s) => s.gewinnerPosition === spieler.position).at(-1);
       if (letzterStichDesSpielers) {
         const hitZone = this.szene.add.rectangle(pos.x, pos.y, stapelW * 1.3, stapelH * 1.3 + stapelH * 0.65, 0xffffff, 0).setInteractive({ useHandCursor: true });

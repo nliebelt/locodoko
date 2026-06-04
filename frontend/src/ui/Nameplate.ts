@@ -20,6 +20,13 @@ const BREITE = 200;
 const HOEHE = 44;
 const BALKEN_B = 5;
 
+// Press Start 2P ist ~8px pro Zeichen bei 10px Fontgröße; 16 Zeichen passen sicher vor Badges
+const MAX_NAMEZEICHEN = 16;
+function kuerzteName(name: string | undefined): string {
+  if (!name) return '';
+  return name.length > MAX_NAMEZEICHEN ? name.substring(0, MAX_NAMEZEICHEN - 1) + '…' : name;
+}
+
 const BORDER_DEFAULT = 0x3d2860;
 const BG_DEFAULT = 0x120e1a;
 const BG_AM_ZUG = 0x1c1428;
@@ -59,7 +66,7 @@ export class Nameplate extends Phaser.GameObjects.Container {
       scene,
       -BREITE / 2 + BALKEN_B + 8,
       -5,
-      daten.name,
+      kuerzteName(daten.name),
       { fontSize: `${FONT_SM}px`, fontFamily: FONT_FAMILY, color: '#f0e6ff' }
     ).setOrigin(0, 0.5);
     this.add(this.nameText);

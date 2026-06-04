@@ -1,8 +1,10 @@
 # IMPLEMENTATION_PLAN — Locodoko Doppelkopf
 
-> Stand: 2026-06-03 (Session 36). Erledigte Aufgaben → `IMPLEMENTATION_PLAN_ARCHIVE.md`
+> Stand: 2026-06-04 (Session 57). Erledigte Aufgaben → `IMPLEMENTATION_PLAN_ARCHIVE.md`
 
 ## Notiz
+
+**Session 58 (2026-06-04) — FE-NAMEPLATE-TEXTABSCHNEIDUNG abgeschlossen:** `Nameplate.ts` — Spielernamen werden jetzt auf max. 16 Zeichen gekürzt (Press Start 2P ~8px/Zeichen → passt sicher vor Badges). `kuerzteName()` defensiv gegen `undefined` (Testdaten). `TischKartenRenderer.ts` — Stich-Zähler Font-Größe von `max(10px, breite×0.009)` auf `max(14px, breite×0.012)` erhöht + Padding von {x:3,y:1} auf {x:4,y:2} für bessere Lesbarkeit. 240/240 Tests grün, Build+Lint sauber. **→ Nächster Task: REFACTOR-FE-EREIGNISHANDLER.**
 
 **Session 56 (2026-06-04) — FE-LOBBY-BUTTON-ICONS abgeschlossen:** Die unleserlichen "blauer Kreis" und "oranges Rechteck" Platzhalter waren tatsächlich die Emojis 👤 und 🚪, die vom verwendeten Pixel-Font ('Press Start 2P') in Kombination mit dem Browser Canvas Fallback auf manchen Systemen fehlerhaft gerendert wurden. Gemäß der Aufgabenbeschreibung ("Icons klar lesbar oder entfernt") wurden sie aus den Button-Texten in `SpielverwaltungsSzene.ts` entfernt, um ein sauberes Erscheinungsbild ohne visuelle Bugs zu gewährleisten. Die dazugehörigen Unit-Tests in `SpielverwaltungsSzene.test.ts` wurden auf die neuen Texte ('Mein Profil', 'Abmelden') aktualisiert. 240/240 Tests grün, Build+Lint sauber. **→ Nächster Task: FE-NAMEPLATE-TEXTABSCHNEIDUNG (P-Niedrig)**.
 
@@ -37,34 +39,20 @@ Nächste offene Tasks — Fertigstellung (Session 30). **Zwei Meilensteine:** **
 **Meilenstein 1 — Closed Beta (`zock.locodoko.de`, eingeladene Kollegen, Daten erhalten).**
 **Loop-Hinweis:** Ralph arbeitet **Block A** strikt der Reihe nach ab (alles autonom verifizierbar via `mvn`/`npm`). **Block B** trägt `Vorbedingung: MENSCH` — diese Tasks **überspringen**, bis die externe Voraussetzung (Server/Domain/Google-Account) erfüllt ist.
 
-### Nächste autonome Queue (Stand Session 36) — Ralph der Reihe nach, **kein MENSCH nötig**
+### Nächste autonome Queue (Stand Session 57) — Ralph der Reihe nach, **kein MENSCH nötig**
 
-> Ursprüngliches Block A (1–9) + CI-BUILD-TEST + REFACTOR-DB-1/2/3 + SPEC-RECHT + SPEC-BUGREPORT: **alle ✓**.
+> Blöcke A (Schema 1–7), B (Statistik 8–11), C (Qualität 12–16) + alle Block-A-Ops (1–9): **komplett ✓**.
+> Alle UI-Mängel aus FE-UI-FINAL-REVIEW: **6/6 ✓** (RANGLISTE-BUTTON-CLIPPING, NEUER-TISCH-MODAL-LAYOUT, RUNDENAUSWERTUNG-LESBARKEIT, VORBEHALT-AUSWAHL-FEEDBACK, LOBBY-BUTTON-ICONS, BUG-EINSTELLUNGEN-MODAL).
 > Diese Queue ist komplett **Ralph-autonom** (verifizierbar via `mvn clean test` / `npm`). **Pro Task ein Commit.**
 
-**A) Schema-Greenfield (GATE für CD-DEPLOY — zuerst; jeder Task editiert `000-initial-schema.sql` direkt):**
-1. **REFACTOR-DB-5** — `benutzername` UNIQUE (echter Bug, Race Condition)
-2. **REFACTOR-DB-6** — Audit-Spalten NOT NULL + DEFAULT
-3. **REFACTOR-DB-7** — `erstellt_von` auf `partie` + ON-DELETE-Politik
-4. **REFACTOR-DB-8** — NOT-NULL-Abdeckung vervollständigen
-5. **REFACTOR-DB-9** — `event_publication` PRIMARY KEY
-6. **REFACTOR-DB-10** — DSGVO-ON-DELETE-Politik
-7. [x] **CHANGELOG-KONSOLIDIERUNG** — `002`–`004` in `000` auflösen → ein sauberes Initial-Schema
+**D) Verbleibende autonome Tasks (UI-Polish + Refactoring + Docs):**
+1. **FE-NAMEPLATE-TEXTABSCHNEIDUNG** (P-Niedrig) — Spieler-Nameplate zeigt abgeschnittenen Text bei langen Namen/Stich-Zähler
+2. **REFACTOR-FE-EREIGNISHANDLER** — `verarbeitePartieEreignis` (138 Z., Komplexität 68) in Dispatcher + Gruppen-Methoden aufteilen
+3. **REFACTOR-FE-PARTIESTORE** — `_verarbeiteEventQueue` (128 Z., Komplexität 60) analog aufteilen
+4. **REFACTOR-FE-KARTENRENDERER** — `renderKartenFaecher` + `setzeKartenInteraktion` (~60 Z. je, Komplexität 53/32) — am Schwellenwert, optionales Refactoring
+5. **DOC-DOCS-SITE** — MkDocs-Material-Seite für `docs.locodoko.de` (baut autonom, Custom-Domain-DNS MENSCH)
 
-**B) Statistik (Stufe 0+1) + correlationId-Vortask:**
-8. **OBS-CORRELATION-ID** — `CorrelationIdFilter` (breit nützlich, auch für Loki/Bugreport)
-9. **STAT-DERIVED** — abgeleitete Kennzahlen im Profil
-10. **STAT-RATING** — TrueSkill (`rating_mu`/`rating_sigma` an `spieler_statistik`)
-11. **FE-LEADERBOARD** — Bestenlisten-Szene (danach Vision-Loop)
-
-**C) Qualität & Produktreife (additiv, jederzeit autonom):**
-12. [x] **QA-CODE-METRICS** — Metrik-Report
-13. [x] **SECURITY-REVIEW** — `/security-review`-Skill
-14. [x] **VERIFY-MULTIPLAYER** — Mehr-Session-E2E
-15. [x] **FE-UI-FINAL-REVIEW** — Vision-Loop → Mängelkatalog
-16. [x] **FE-SPIELREGELN-HILFE** — Regel-Overlay
-
-**Teil-autonom (Code/Spec jetzt, finaler Secret/Wiring später vom MENSCH):** OPS-GRAFANA-MONITORING + OPS-LOGS-LOKI (Instrumentierung/Alloy-Config autonom, Token MENSCH) · FEAT-BUGREPORT (Overlay+Endpoint autonom, privates Repo+Token MENSCH) · OBS-SENTRY (Code autonom, DSN MENSCH) · OPS-DOMAIN (Reverse-Proxy-Config autonom) · DOC-DOCS-SITE (MkDocs baut autonom, Custom-Domain-DNS MENSCH).
+**Teil-autonom (Code/Spec jetzt, finaler Secret/Wiring später vom MENSCH):** OPS-GRAFANA-MONITORING + OPS-LOGS-LOKI (Instrumentierung/Alloy-Config autonom, Token MENSCH) · FEAT-BUGREPORT (Overlay+Endpoint autonom, privates Repo+Token MENSCH) · OBS-SENTRY (Code autonom, DSN MENSCH) · OPS-DOMAIN (Reverse-Proxy-Config autonom).
 
 **Erst danach MENSCH nötig (Deploy-Phase):** OAuth-Credentials · DEPLOY-COMPOSE-SMOKE · CD-DEPLOY.
 
@@ -226,7 +214,7 @@ Entscheidungen: **DECISION-AUTH** ✓ beide behalten · **DECISION-LIZENZ** aufg
 
   **DoD:** Docs-Seite baut lokal + als GitHub-Pages-Deploy unter **`docs.locodoko.de`** (Pages-Custom-Domain via CNAME); alle Specs navigierbar/durchsuchbar; kann die Spielregeln hosten (entlastet `FE-SPIELREGELN-HILFE` → App verlinkt nur dorthin). **Risiko:** niedrig.
 
-- [ ] **QA-CODE-METRICS** — Codebase mit Mess-/Analyse-Tooling vermessen: Refactoring-Kandidaten + Report für die Docs-Seite.
+- [x] **QA-CODE-METRICS** — Codebase mit Mess-/Analyse-Tooling vermessen: Refactoring-Kandidaten + Report für die Docs-Seite.
 
   Ziel: Größe, Komplexität, Duplikate, Coverage, Architektur sichtbar machen → konkrete `REFACTOR-…`/`FE-…`-Tasks ableiten **und** einen schönen Report fürs Wiki erzeugen.
 
@@ -240,7 +228,7 @@ Entscheidungen: **DECISION-AUTH** ✓ beide behalten · **DECISION-LIZENZ** aufg
 
   **DoD:** reproduzierbarer Metrik-Report erzeugt + in Docs-Seite eingebunden; mind. die Top-Refactoring-Kandidaten als Tasks erfasst. **Risiko:** niedrig (additiv, kein Produktivcode-Change).
 
-- [ ] **FE-UI-FINAL-REVIEW** — Finales UI/UX-Review; „nicht schöne" Stellen katalogisieren.
+- [x] **FE-UI-FINAL-REVIEW** — Finales UI/UX-Review; „nicht schöne" Stellen katalogisieren.
 
   User empfindet viele UI-Details als unschön. Systematisch erfassen statt punktuell fixen.
 
@@ -545,9 +533,9 @@ Alle noch im Greenfield-Fenster (vor erstem echten Deploy). Details und Audit-Ko
 
 **P-Niedrig:**
 
-- [ ] **FE-LOBBY-BUTTON-ICONS** — „Mein Profil"-Button zeigt blauen Kreis, „Abmelden"-Button zeigt oranges Rechteck — sehen wie Debug-Platzhalter aus, keine semantische Icon-Bedeutung erkennbar (`01-lobby.png`). **Erste Datei zuerst:** `frontend/src/szenen/SpielverwaltungsSzene.ts` — Phaser-Sprite oder Emoji-Alternative (z.B. 👤 / 🚪) verwenden, oder Button-Icons entfernen falls kein passendes Asset vorhanden. **DoD:** Icons klar lesbar oder entfernt; kein Platzhalter-Grafik sichtbar. **Risiko:** niedrig.
+- [x] **FE-LOBBY-BUTTON-ICONS** — „Mein Profil"-Button zeigt blauen Kreis, „Abmelden"-Button zeigt oranges Rechteck — sehen wie Debug-Platzhalter aus, keine semantische Icon-Bedeutung erkennbar (`01-lobby.png`). **Erste Datei zuerst:** `frontend/src/szenen/SpielverwaltungsSzene.ts` — Phaser-Sprite oder Emoji-Alternative (z.B. 👤 / 🚪) verwenden, oder Button-Icons entfernen falls kein passendes Asset vorhanden. **DoD:** Icons klar lesbar oder entfernt; kein Platzhalter-Grafik sichtbar. **Risiko:** niedrig.
 
-- [ ] **FE-NAMEPLATE-TEXTABSCHNEIDUNG** — In `03-stich-ausspielen-100.png` erscheint „Gu" als abgeschnittener Text im Spieler-Nameplate (vermutlich Stich-Zähler „Gu" statt vollständiger Abkürzung). Nameplate-Breite oder Font-Größe für den Stich-Zähler anpassen. **Erste Datei zuerst:** `frontend/src/szenen/TischSzene.ts` / Nameplate-Render-Methode — Textfeld-Breite prüfen und bei Bedarf anpassen. **DoD:** Stich-Zähler vollständig lesbar; Vision-Loop grün. **Risiko:** niedrig.
+- [x] **FE-NAMEPLATE-TEXTABSCHNEIDUNG** — In `03-stich-ausspielen-100.png` erscheint „Gu" als abgeschnittener Text im Spieler-Nameplate (vermutlich Stich-Zähler „Gu" statt vollständiger Abkürzung). Nameplate-Breite oder Font-Größe für den Stich-Zähler anpassen. **Erste Datei zuerst:** `frontend/src/szenen/TischSzene.ts` / Nameplate-Render-Methode — Textfeld-Breite prüfen und bei Bedarf anpassen. **DoD:** Stich-Zähler vollständig lesbar; Vision-Loop grün. **Risiko:** niedrig.
 
 ---
 
