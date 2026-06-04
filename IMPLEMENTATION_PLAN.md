@@ -4,7 +4,7 @@
 
 ## Notiz
 
-**Session 53 (2026-06-04) — FE-NEUER-TISCH-MODAL-LAYOUT abgeschlossen:** `SpielverwaltungsSzene.ts` — Modal-Höhe 300→380px (Action-Buttons lagen bei abs. y=470, "Offene Tische" bei y=500 → Overlap; jetzt 510, Modal-Panel deckt y=500 ab). Preset-Arrow-Positionen ±200→±165 (60px Clearance zum Modal-Rand). Preset-Value-Font 20px→14px (Text passt jetzt zwischen die Arrows ohne Overlap). 240/240 Tests, Build+Lint sauber. Vision-Loop manuell empfohlen (Backend war beim Commit nicht aktiv). **→ Nächster Task: FE-RUNDENAUSWERTUNG-LESBARKEIT (P-Mittel)**.
+**Session 55 (2026-06-04) — FE-VORBEHALT-AUSWAHL-FEEDBACK abgeschlossen:** `TischSpieleventRenderer.ts` — Aktuell ausgewählter Vorbehalt hat nun einen Goldrahmen (`#ffd166`, 2px, 0.6 Alpha Panel) zur besseren Sichtbarkeit, wie in der Spec für den Neo-Brutalism-Stil gefordert. Die vorige Task `FE-RUNDENAUSWERTUNG-LESBARKEIT` war bereits durch einen Vor-Agenten abgeschlossen worden. 240/240 Tests, Build+Lint sauber. **→ Nächster Task: FE-LOBBY-BUTTON-ICONS (P-Niedrig)**.
 
 **Session 35 (2026-06-02) — SPEC-RECHT abgeschlossen:** `specs/recht-impressum-datenschutz.md` angelegt. Enthält: Impressum-Pflichtangaben (§5 DDG), vollständige Datenschutzerklärung-Struktur (DSGVO Art. 13/14 — alle DB-Felder aufgeschlüsselt, Google-OAuth2-Drittland-Transfer, Betroffenenrechte, Speicherdauer, Hosting-Datenresidenz), AGB-Mindeststruktur, Checkliste vor M2, konkrete Build-Tasks (Frontend-Seiten `/impressum`/`/datenschutz`/`/agb`, Footer-Links, AVV). Keine Code-Änderung nötig (DOC-Task). Nächste autonome Tasks: DOC-DOCS-SITE, QA-CODE-METRICS oder SECURITY-REVIEW (Skill verfügbar).
 
@@ -539,7 +539,7 @@ Alle noch im Greenfield-Fenster (vor erstem echten Deploy). Details und Audit-Ko
 
 - [x] **FE-RUNDENAUSWERTUNG-LESBARKEIT** — Das Rundenauswertungs-Overlay (`05-rundenauswertung-overlay.png`): Spielstatistiken in sehr kleiner Schrift mit niedrigem Kontrast auf dunklem Hintergrund — kaum lesbar. Außerdem: Status-Header zeigt rohes Enum `IM_SPIEL` statt deutschem Label „Im Spiel". **Erste Datei zuerst:** Render-Code des Rundenauswertungs-Overlays (in `TischSzene.ts` oder `TischEreignisHandler.ts`) — Font-Größe auf min. SM (10px) erhöhen, Kontrast anpassen, Enum-Mapping `IM_SPIEL → Im Spiel` ergänzen. **DoD:** Overlay-Text lesbar; kein rohes Enum sichtbar; Vision-Loop grün. **Risiko:** niedrig.
 
-- [ ] **FE-VORBEHALT-AUSWAHL-FEEDBACK** — Die drei Vorbehalt-Wechsel-Frames (`02-vorbehalt-wechsel-0/50/100`) zeigen alle denselben Text „Dasensolo" ohne erkennbares „aktuell ausgewählt"-Feedback (kein Cursor-Hervorhebung, kein farbiger Rahmen, kein Pfeil). Spec fordert klaren Selektions-Indikator für den Neo-Brutalism-Stil. **Erste Datei zuerst:** `frontend/src/szenen/TischSzene.ts` — aktuelle Auswahl mit Goldrahmen (`#ffd166`, 2px) oder `▶`-Prefix hervorheben. **DoD:** Aktuell gewählter Vorbehalt klar visuell markiert; Vision-Loop grün. **Risiko:** niedrig.
+- [x] **FE-VORBEHALT-AUSWAHL-FEEDBACK** — Die drei Vorbehalt-Wechsel-Frames (`02-vorbehalt-wechsel-0/50/100`) zeigen alle denselben Text „Dasensolo" ohne erkennbares „aktuell ausgewählt"-Feedback (kein Cursor-Hervorhebung, kein farbiger Rahmen, kein Pfeil). Spec fordert klaren Selektions-Indikator für den Neo-Brutalism-Stil. **Erste Datei zuerst:** `frontend/src/szenen/TischSzene.ts` — aktuelle Auswahl mit Goldrahmen (`#ffd166`, 2px) oder `▶`-Prefix hervorheben. **DoD:** Aktuell gewählter Vorbehalt klar visuell markiert; Vision-Loop grün. **Risiko:** niedrig.
 
 **P-Niedrig:**
 

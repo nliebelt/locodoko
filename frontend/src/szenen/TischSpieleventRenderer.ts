@@ -42,12 +42,25 @@ export function renderVorbehaltLabel(
   const pfeileAbstand = Math.round(Math.max(100, breite * 0.16));
 
   const vorbehaltName = formatiereVorbehalt(opt[idx]) ?? opt[idx];
-  ebene.add(
-    szene.add.text(breite / 2, labelY, vorbehaltName, {
-      fontFamily: FONT_FAMILY, color: '#ffd166', fontSize: `${labelFontSize}px`,
-      stroke: '#000000', strokeThickness: 3
-    }).setOrigin(0.5)
-  );
+  
+  const textObj = szene.add.text(breite / 2, labelY, vorbehaltName, {
+    fontFamily: FONT_FAMILY, color: '#ffd166', fontSize: `${labelFontSize}px`,
+    stroke: '#000000', strokeThickness: 3
+  }).setOrigin(0.5);
+
+  const paddingX = 16;
+  const paddingY = 8;
+  const bgRect = szene.add.rectangle(
+    breite / 2, 
+    labelY, 
+    textObj.width + paddingX * 2, 
+    textObj.height + paddingY * 2, 
+    0x000000, 
+    0.6
+  ).setStrokeStyle(2, 0xffd166, 1);
+
+  ebene.add(bgRect);
+  ebene.add(textObj);
 
   const linksPfeil = szene.add.text(breite / 2 - pfeileAbstand, labelY, '◄', {
     fontFamily: FONT_FAMILY, color: '#a3c4a8', fontSize: `${labelFontSize}px`
