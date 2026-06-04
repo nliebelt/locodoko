@@ -128,7 +128,7 @@ export class SpielverwaltungsSzene extends Phaser.Scene {
     startY += 60;
 
     const profilBtn = new PhaserButton(this, {
-      x: 640, y: startY, text: '👤 Mein Profil', typ: 'secondary',
+      x: 640, y: startY, text: 'Mein Profil', typ: 'secondary',
       callback: () => {
         const spielerId = zustand.spieler?.spielerId;
         if (spielerId) {
@@ -143,7 +143,7 @@ export class SpielverwaltungsSzene extends Phaser.Scene {
     startY += 60;
 
     const logoutBtn = new PhaserButton(this, {
-      x: 640, y: startY, text: '🚪  Abmelden', typ: 'secondary',
+      x: 640, y: startY, text: 'Abmelden', typ: 'secondary',
       callback: () => {
         void appStore.ausloggen().then(() => this.scene.start('LoginSzene'));
       }

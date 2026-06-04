@@ -116,7 +116,7 @@ describe('SpielverwaltungsSzene', () => {
 
   it('behandelt Logout', async () => {
     szene.create();
-    const logoutCall = (PhaserButton as any).mock.calls.find((call: any) => call[1].text === '🚪  Abmelden');
+    const logoutCall = (PhaserButton as any).mock.calls.find((call: any) => call[1].text === 'Abmelden');
     await logoutCall[1].callback();
     expect(mockStore.ausloggen).toHaveBeenCalled();
     expect(szene.scene.start).toHaveBeenCalledWith('LoginSzene');
