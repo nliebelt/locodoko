@@ -4,7 +4,7 @@
 
 ## Notiz
 
-**Session 46 (2026-06-04) — FE-LEADERBOARD abgeschlossen:** Ewige TrueSkill-Bestenliste implementiert. Backend war bereits vollständig (`BestenlisteAntwort.java`, `GET /api/spieler/leaderboard`, `SpielerStatistikRepository.findTopByRegelvarianteGeordertNachRating`). Frontend: neue Phaser-Szene `BestenlisterSzene` (Tabs für TURNIER/SONDER/FREI, Rang+Name+Rating+μ+Spiele+Siege%, Ladestate, Leer-/Fehlerzustand). `SpielverwaltungApi.ladeBestenliste()` + `AppStore.ladeBestenliste()` ergänzt. Schema-Typ-Export `BestenlisteAntwortGenerated` + `BestenlisteEintragAntwortGenerated` in `schema-types.ts`. Fehlenden `ladeBestenliste`-Eintrag in `operations`-Interface von `api-types.ts` manuell ergänzt (Lücke aus vorheriger Teilgenerierung). `🏆 Rangliste`-Button in `SpielverwaltungsSzene` (top-right, außerhalb `renderUi` um Layout-Konflikte zu vermeiden). 9 neue Tests in `BestenlisterSzene.test.ts`. Backend 356/356, Frontend 233/233. Vision-Loop empfohlen (Backend war nicht aktiv). **→ Nächste Tasks: QA-CODE-METRICS, SECURITY-REVIEW oder VERIFY-MULTIPLAYER**.
+**Session 47 (2026-06-04) — QA-CODE-METRICS abgeschlossen:** Metrik-Report erzeugt. JaCoCo-Plugin in `pom.xml` ergänzt (Surefire-argLine auf `@{argLine}` umgestellt). `scripts/metrics.sh` — reproduzierbares Skript (Backend mvn clean test + JaCoCo, Frontend vitest coverage, ESLint-Komplexität, Modul-Größen, Architektur-Check). Bericht unter `docs/metrics.md`. Backend 198 Java-Dateien / 15.436 LOC, Coverage 84% Instructions / 83% Lines / 71% Branches. Frontend 53 TS-Dateien / 9.092 LOC, Coverage 79%. Kritische Komplexitäts-Hotspots: `TischEreignisHandler.verarbeitePartieEreignis` (68), `PartieStore._verarbeiteEventQueue` (60), `TischKartenRenderer.renderKartenFaecher` (53). Alle Modul-Grenzen OK. Refactoring-Kandidaten als neue Tasks unter Entdeckungen eingetragen. Backend 356/356 grün. **→ Nächste Tasks: SECURITY-REVIEW oder VERIFY-MULTIPLAYER**.
 
 **Session 35 (2026-06-02) — SPEC-RECHT abgeschlossen:** `specs/recht-impressum-datenschutz.md` angelegt. Enthält: Impressum-Pflichtangaben (§5 DDG), vollständige Datenschutzerklärung-Struktur (DSGVO Art. 13/14 — alle DB-Felder aufgeschlüsselt, Google-OAuth2-Drittland-Transfer, Betroffenenrechte, Speicherdauer, Hosting-Datenresidenz), AGB-Mindeststruktur, Checkliste vor M2, konkrete Build-Tasks (Frontend-Seiten `/impressum`/`/datenschutz`/`/agb`, Footer-Links, AVV). Keine Code-Änderung nötig (DOC-Task). Nächste autonome Tasks: DOC-DOCS-SITE, QA-CODE-METRICS oder SECURITY-REVIEW (Skill verfügbar).
 
@@ -56,7 +56,7 @@ Nächste offene Tasks — Fertigstellung (Session 30). **Zwei Meilensteine:** **
 11. **FE-LEADERBOARD** — Bestenlisten-Szene (danach Vision-Loop)
 
 **C) Qualität & Produktreife (additiv, jederzeit autonom):**
-12. **QA-CODE-METRICS** — Metrik-Report
+12. [x] **QA-CODE-METRICS** — Metrik-Report
 13. **SECURITY-REVIEW** — `/security-review`-Skill
 14. **VERIFY-MULTIPLAYER** — Mehr-Session-E2E
 15. **FE-UI-FINAL-REVIEW** — Vision-Loop → Mängelkatalog
@@ -510,6 +510,16 @@ Alle noch im Greenfield-Fenster (vor erstem echten Deploy). Details und Audit-Ko
 - [ ] **STAT-SAISON-LIGA** (aufgeschoben) — Saisons (Reset/Listen/Rollover-Job) + Ligen (Auf-/Abstieg). Additive Erweiterung (neue Tabellen `saison` + saison-Rating + nullable `spielergebnis_archiv.saison_id`). Nur bauen, falls öffentlich/wachsend. **[WARTET — keine Greenfield-Dringlichkeit, rückwirkend aus Archiv berechenbar]**
 
 - [x] **CHANGELOG-KONSOLIDIERUNG** (✓ entschieden: echtes Greenfield → konsolidieren) — `002`–`004` + alle Gegencheck-Fixes (DB-5…10) **direkt in `000-initial-schema.sql`** einpflegen statt additiver `005…`-Changesets. Ergebnis: ein einziges, sauberes Initial-Schema beim ersten Deploy. **Methode:** jeder DB-Task editiert `000` direkt (kein neues Changeset). `001-spring-session-schema.sql` bleibt eigenständig (Fremd-Schema). H2-Tests unkritisch (Neuaufbau je Lauf); persistente Dev-DB ggf. `clearCheckSums`. **DoD:** nur `000` + `001` aktiv, `002`–`004` entfernt, `mvn clean test` grün. **Risiko:** niedrig im Greenfield.
+
+### Komplexitäts-Hotspots aus QA-CODE-METRICS (Session 47, 2026-06-04)
+
+> Vollständig in `docs/metrics.md`. ESLint-Komplexitätsmessung + JaCoCo-Coverage (Backend 83% Lines / 71% Branches, Frontend 79%). Alle Modul-Grenzen OK.
+
+- [ ] **REFACTOR-FE-EREIGNISHANDLER** — `TischEreignisHandler.verarbeitePartieEreignis` hat zyklomatische Komplexität **68** (ESLint-Befund). Die Methode ist ein monolithischer Switch über alle Ereignistypen. Aufteilen in separate private Methoden je Ereignisgruppe (Spielzug, Ansage, Rundenende, Verbindung). **Erste Datei zuerst:** `frontend/src/szenen/TischEreignisHandler.ts` — `verarbeitePartieEreignis` in Dispatcher + je eine Methode pro Gruppe. **DoD:** Komplexität < 20; `npm test && npm run build` grün. **Risiko:** mittel (viel Logik).
+
+- [ ] **REFACTOR-FE-PARTIESTORE** — `PartieStore._verarbeiteEventQueue` hat Komplexität **60**. Dispatcher-Methoden für Ereignisgruppen extrahieren (analog REFACTOR-FE-EREIGNISHANDLER). **Erste Datei zuerst:** `frontend/src/store/PartieStore.ts`. **DoD:** Komplexität < 20; Tests grün. **Risiko:** mittel.
+
+- [ ] **REFACTOR-FE-KARTENRENDERER** — `TischKartenRenderer.renderKartenFaecher` hat Komplexität **53** + `setzeKartenInteraktion` Komplexität **32**. Render-Schritte (Positionierung, Interaktion, Animation) in separate Methoden aufteilen. **Erste Datei zuerst:** `frontend/src/szenen/TischKartenRenderer.ts`. **DoD:** Top-Methoden < 20; Tests grün. **Risiko:** niedrig-mittel.
 
 ---
 
