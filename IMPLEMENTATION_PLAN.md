@@ -4,7 +4,7 @@
 
 ## Notiz
 
-**Session 51 (2026-06-04) — FE-SPIELREGELN-HILFE abgeschlossen:** `HilfeSzene.ts` (4 Tabs: Trumpfhierarchie / Ansagen / Sonderspiele / Punktesystem). Zugänge: Lobby-Button „? Spielregeln" (x=950 links von Rangliste) + H/h-Taste am Tisch + TopBar-„?"-Icon (gelb, zwischen 📋 und ←). Overlay-Modus (scene.launch) vom Tisch, Vollbild-Modus (scene.start) aus der Lobby. 240/240 Tests grün, Build+Lint sauber. **→ Nächster Task: FE-RANGLISTE-BUTTON-CLIPPING (P-Hoch)**.
+**Session 52 (2026-06-04) — FE-RANGLISTE-BUTTON-CLIPPING abgeschlossen:** `SpielverwaltungsSzene.ts` — Rangliste-Button von x=1170 auf x=1160 verschoben. Shadow-Rand war bei 1274px (nur 6px vom Canvas-Rand) → jetzt 1264px (16px Clearance). 240/240 Tests grün, Build+Lint sauber. **→ Nächster Task: FE-NEUER-TISCH-MODAL-LAYOUT (P-Hoch)**.
 
 **Session 35 (2026-06-02) — SPEC-RECHT abgeschlossen:** `specs/recht-impressum-datenschutz.md` angelegt. Enthält: Impressum-Pflichtangaben (§5 DDG), vollständige Datenschutzerklärung-Struktur (DSGVO Art. 13/14 — alle DB-Felder aufgeschlüsselt, Google-OAuth2-Drittland-Transfer, Betroffenenrechte, Speicherdauer, Hosting-Datenresidenz), AGB-Mindeststruktur, Checkliste vor M2, konkrete Build-Tasks (Frontend-Seiten `/impressum`/`/datenschutz`/`/agb`, Footer-Links, AVV). Keine Code-Änderung nötig (DOC-Task). Nächste autonome Tasks: DOC-DOCS-SITE, QA-CODE-METRICS oder SECURITY-REVIEW (Skill verfügbar).
 
@@ -531,7 +531,7 @@ Alle noch im Greenfield-Fenster (vor erstem echten Deploy). Details und Audit-Ko
 
 **P-Hoch:**
 
-- [ ] **FE-RANGLISTE-BUTTON-CLIPPING** — Der „Rangliste"-Button (Trophy-Icon + Text) oben rechts wird in der Lobby an der rechten Viewport-Kante abgeschnitten (sichtbar in `01-lobby.png`, `11-offene-tische.png`). Trophy-Icon und Text teilweise außerhalb des sichtbaren Bereichs. **Erste Datei zuerst:** `frontend/src/szenen/SpielverwaltungsSzene.ts` — Button-X-Position so anpassen, dass min. 8–16px Abstand zum rechten Rand bleibt. **DoD:** Button vollständig sichtbar, kein Clipping. **Risiko:** niedrig.
+- [x] **FE-RANGLISTE-BUTTON-CLIPPING** — Der „Rangliste"-Button (Trophy-Icon + Text) oben rechts wird in der Lobby an der rechten Viewport-Kante abgeschnitten (sichtbar in `01-lobby.png`, `11-offene-tische.png`). Trophy-Icon und Text teilweise außerhalb des sichtbaren Bereichs. **Erste Datei zuerst:** `frontend/src/szenen/SpielverwaltungsSzene.ts` — Button-X-Position so anpassen, dass min. 8–16px Abstand zum rechten Rand bleibt. **DoD:** Button vollständig sichtbar, kein Clipping. **Risiko:** niedrig.
 
 - [ ] **FE-NEUER-TISCH-MODAL-LAYOUT** — Im „Neuen Tisch erstellen"-Modal (`12-neuer-tisch-modal.png`): (a) Linker `<`-Pfeil-Button des Preset-Selektors wird am linken Modal-Rand abgeschnitten; (b) „Abbrechen"- und „Erstellen"-Buttons liegen zu nah beieinander und überlappen die darunter liegende „Offene Tische"-Sektion. **Erste Datei zuerst:** `frontend/src/szenen/SpielverwaltungsSzene.ts` — Modal-Höhe erhöhen, Preset-Selektor mit innerem Padding, Button-Abstände/Positionen korrigieren. **DoD:** Kein Clipping des Pfeil-Buttons; Buttons überlappen nicht; Vision-Loop grün. **Risiko:** niedrig-mittel.
 

@@ -51,7 +51,7 @@ export class SpielverwaltungsSzene extends Phaser.Scene {
     });
 
     new PhaserButton(this, {
-      x: 1170, y: 45, text: '🏆 Rangliste', typ: 'secondary', breite: 200, hoehe: 40,
+      x: 1160, y: 45, text: '🏆 Rangliste', typ: 'secondary', breite: 200, hoehe: 40,
       callback: () => this.scene.start('BestenlisterSzene')
     });
 
