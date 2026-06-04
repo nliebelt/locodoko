@@ -4,7 +4,7 @@
 
 ## Notiz
 
-**Session 58 (2026-06-04) — FE-NAMEPLATE-TEXTABSCHNEIDUNG abgeschlossen:** `Nameplate.ts` — Spielernamen werden jetzt auf max. 16 Zeichen gekürzt (Press Start 2P ~8px/Zeichen → passt sicher vor Badges). `kuerzteName()` defensiv gegen `undefined` (Testdaten). `TischKartenRenderer.ts` — Stich-Zähler Font-Größe von `max(10px, breite×0.009)` auf `max(14px, breite×0.012)` erhöht + Padding von {x:3,y:1} auf {x:4,y:2} für bessere Lesbarkeit. 240/240 Tests grün, Build+Lint sauber. **→ Nächster Task: REFACTOR-FE-EREIGNISHANDLER.**
+**Session 59 (2026-06-04) — REFACTOR-FE-EREIGNISHANDLER abgeschlossen:** `TischEreignisHandler.ts` — `verarbeitePartieEreignis` (138 Z., CC 68) in Dispatcher + 4 private Gruppen-Methoden aufgeteilt: `verarbeiteSpielfluss` (SPIEL_GESTARTET/BEENDET), `verarbeiteSpielzug` (KARTE_GESPIELT/STICH_ABGESCHLOSSEN), `verarbeiteAnsagen` (ANSAGE_ERFOLGT/SCHWEINCHEN_GEMELDET/HOCHZEIT_PARTNER_GEFUNDEN), `verarbeiteSynchronisation` (SNAPSHOT/AKTION_ABGELEHNT). Dispatcher-CC jetzt ~5, jede Gruppen-Methode ~3–7. 240/240 Tests grün, Build+Lint sauber. **→ Nächster Task: REFACTOR-FE-PARTIESTORE.**
 
 **Session 56 (2026-06-04) — FE-LOBBY-BUTTON-ICONS abgeschlossen:** Die unleserlichen "blauer Kreis" und "oranges Rechteck" Platzhalter waren tatsächlich die Emojis 👤 und 🚪, die vom verwendeten Pixel-Font ('Press Start 2P') in Kombination mit dem Browser Canvas Fallback auf manchen Systemen fehlerhaft gerendert wurden. Gemäß der Aufgabenbeschreibung ("Icons klar lesbar oder entfernt") wurden sie aus den Button-Texten in `SpielverwaltungsSzene.ts` entfernt, um ein sauberes Erscheinungsbild ohne visuelle Bugs zu gewährleisten. Die dazugehörigen Unit-Tests in `SpielverwaltungsSzene.test.ts` wurden auf die neuen Texte ('Mein Profil', 'Abmelden') aktualisiert. 240/240 Tests grün, Build+Lint sauber. **→ Nächster Task: FE-NAMEPLATE-TEXTABSCHNEIDUNG (P-Niedrig)**.
 
@@ -509,7 +509,7 @@ Alle noch im Greenfield-Fenster (vor erstem echten Deploy). Details und Audit-Ko
 
 > Vollständig in `docs/metrics.md`. ESLint-Komplexitätsmessung + JaCoCo-Coverage (Backend 83% Lines / 71% Branches, Frontend 79%). Alle Modul-Grenzen OK.
 
-- [ ] **REFACTOR-FE-EREIGNISHANDLER** — `TischEreignisHandler.verarbeitePartieEreignis` hat zyklomatische Komplexität **68** (ESLint-Befund). Die Methode ist ein monolithischer Switch über alle Ereignistypen. Aufteilen in separate private Methoden je Ereignisgruppe (Spielzug, Ansage, Rundenende, Verbindung). **Erste Datei zuerst:** `frontend/src/szenen/TischEreignisHandler.ts` — `verarbeitePartieEreignis` in Dispatcher + je eine Methode pro Gruppe. **DoD:** Komplexität < 20; `npm test && npm run build` grün. **Risiko:** mittel (viel Logik).
+- [x] **REFACTOR-FE-EREIGNISHANDLER** — `TischEreignisHandler.verarbeitePartieEreignis` hat zyklomatische Komplexität **68** (ESLint-Befund). Die Methode ist ein monolithischer Switch über alle Ereignistypen. Aufteilen in separate private Methoden je Ereignisgruppe (Spielzug, Ansage, Rundenende, Verbindung). **Erste Datei zuerst:** `frontend/src/szenen/TischEreignisHandler.ts` — `verarbeitePartieEreignis` in Dispatcher + je eine Methode pro Gruppe. **DoD:** Komplexität < 20; `npm test && npm run build` grün. **Risiko:** mittel (viel Logik).
 
 - [ ] **REFACTOR-FE-PARTIESTORE** — `PartieStore._verarbeiteEventQueue` hat Komplexität **60**. Dispatcher-Methoden für Ereignisgruppen extrahieren (analog REFACTOR-FE-EREIGNISHANDLER). **Erste Datei zuerst:** `frontend/src/store/PartieStore.ts`. **DoD:** Komplexität < 20; Tests grün. **Risiko:** mittel.
 

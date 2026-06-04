@@ -11,7 +11,32 @@ export class TischEreignisHandler {
 
   public async verarbeitePartieEreignis(ereignis: PartieEreignisAntwort): Promise<void> {
     Logger.szene('Verarbeite PartieEreignis', { typ: ereignis.ereignisTyp });
-    
+
+    switch (ereignis.ereignisTyp) {
+      case 'SPIEL_GESTARTET':
+      case 'SPIEL_BEENDET':
+        await this.verarbeiteSpielfluss(ereignis);
+        break;
+
+      case 'KARTE_GESPIELT':
+      case 'STICH_ABGESCHLOSSEN':
+        await this.verarbeiteSpielzug(ereignis);
+        break;
+
+      case 'ANSAGE_ERFOLGT':
+      case 'SCHWEINCHEN_GEMELDET':
+      case 'HOCHZEIT_PARTNER_GEFUNDEN':
+        await this.verarbeiteAnsagen(ereignis);
+        break;
+
+      case 'SNAPSHOT':
+      case 'AKTION_ABGELEHNT':
+        await this.verarbeiteSynchronisation(ereignis);
+        break;
+    }
+  }
+
+  private async verarbeiteSpielfluss(ereignis: PartieEreignisAntwort): Promise<void> {
     switch (ereignis.ereignisTyp) {
       case 'SPIEL_GESTARTET': {
         this.szene.rundenEndeController.schliesseRundenEndeModal();
@@ -38,6 +63,32 @@ export class TischEreignisHandler {
         break;
       }
 
+      case 'SPIEL_BEENDET': {
+        const m = this.szene.erstelleModell({ ...appStore.snapshot(), partieStand: ereignis.partieStand });
+        const spielNr = m.letztesSpielergebnis?.spielNummer ?? null;
+        Logger.szene('Verarbeite SPIEL_BEENDET', { spielNr, bereitsGezeigt: this.szene._letzterGezeigterSpielBeendet });
+        if (spielNr !== null && spielNr === this.szene._letzterGezeigterSpielBeendet) break;
+        this.szene._letzterGezeigterSpielBeendet = spielNr;
+
+        await this.szene.animationen?.reiheEin(async () => {
+          await this.szene.flashTextManager?.zeigeSpielevent('SpielBeendet');
+          await this.szene.animationOrchestrator.zeigeGewinnerFlash(m);
+        });
+
+        appStore.pausiereQueue();
+
+        if (m.partieBeendet) {
+          this.szene.rundenEndeController.zeigePartieEndeModal(m);
+        } else {
+          void this.szene.rundenEndeController.zeigeRundenEndeModal(m);
+        }
+        break;
+      }
+    }
+  }
+
+  private async verarbeiteSpielzug(ereignis: PartieEreignisAntwort): Promise<void> {
+    switch (ereignis.ereignisTyp) {
       case 'KARTE_GESPIELT': {
         const e = ereignis as KarteGespieltEreignis;
         const eventModell = this.szene.erstelleModell({ ...appStore.snapshot(), partieStand: e.partieStand });
@@ -69,7 +120,11 @@ export class TischEreignisHandler {
         }
         break;
       }
+    }
+  }
 
+  private async verarbeiteAnsagen(ereignis: PartieEreignisAntwort): Promise<void> {
+    switch (ereignis.ereignisTyp) {
       case 'ANSAGE_ERFOLGT': {
         const historie = ereignis.partieStand.laufendesSpiel?.ansageHistorie;
         const letzteAnsage = historie && historie.length > 0 ? historie[historie.length - 1] : null;
@@ -96,36 +151,18 @@ export class TischEreignisHandler {
         const e = ereignis as HochzeitPartnerGefundenEreignis;
         const partner = this.szene.letztesModell?.spieler.find((s) => s.absolutePosition === e.partnerPosition);
         const solist = this.szene.letztesModell?.spieler.find((s) => s.position === SPIELER_POSITION.SUED);
-        
+
         if (partner) this.szene.nameplates.get(partner.position)?.setHochzeitPartner(true);
         if (solist) this.szene.nameplates.get(solist.position)?.setHochzeitPartner(true);
 
         await this.szene.animationen?.reiheEin(() => this.szene.flashTextManager!.zeigeSpielevent('HochzeitPartnerGefunden', { spielerName: partner?.name ?? 'Spieler' }));
         break;
       }
+    }
+  }
 
-      case 'SPIEL_BEENDET': {
-        const m = this.szene.erstelleModell({ ...appStore.snapshot(), partieStand: ereignis.partieStand });
-        const spielNr = m.letztesSpielergebnis?.spielNummer ?? null;
-        Logger.szene('Verarbeite SPIEL_BEENDET', { spielNr, bereitsGezeigt: this.szene._letzterGezeigterSpielBeendet });
-        if (spielNr !== null && spielNr === this.szene._letzterGezeigterSpielBeendet) break;
-        this.szene._letzterGezeigterSpielBeendet = spielNr;
-
-        await this.szene.animationen?.reiheEin(async () => {
-          await this.szene.flashTextManager?.zeigeSpielevent('SpielBeendet');
-          await this.szene.animationOrchestrator.zeigeGewinnerFlash(m);
-        });
-
-        appStore.pausiereQueue();
-
-        if (m.partieBeendet) {
-          this.szene.rundenEndeController.zeigePartieEndeModal(m);
-        } else {
-          void this.szene.rundenEndeController.zeigeRundenEndeModal(m);
-        }
-        break;
-      }
-
+  private async verarbeiteSynchronisation(ereignis: PartieEreignisAntwort): Promise<void> {
+    switch (ereignis.ereignisTyp) {
       case 'SNAPSHOT': {
         const ps = ereignis.partieStand;
         if (ps && !ps.laufendesSpiel && ps.letztesSpielergebnis) {
