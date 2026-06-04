@@ -1,5 +1,6 @@
 package de.locodoko.spieler;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -17,6 +18,7 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.client.RestClient;
 
 import java.time.Instant;
+import java.util.Map;
 
 /**
  * Nimmt Beta-Feedback entgegen und schreibt es ins Application-Log.
@@ -29,8 +31,14 @@ public class FeedbackController {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(FeedbackController.class);
 
+    private final ObjectMapper objectMapper;
+
     @Value("${locodoko.feedback.webhook-url:}")
     private String webhookUrl;
+
+    public FeedbackController(ObjectMapper objectMapper) {
+        this.objectMapper = objectMapper;
+    }
 
     @Operation(summary = "Feedback einreichen", description = "Schreibt Feedback ins Log, optional an Discord-Webhook.")
     @ApiResponse(responseCode = "200", description = "Feedback erhalten")
@@ -40,8 +48,8 @@ public class FeedbackController {
 
         if (webhookUrl != null && !webhookUrl.isBlank()) {
             try {
-                var body = "{\"content\": \"**Feedback (" + Instant.now() + "):**\\n" +
-                    anfrage.text().replace("\"", "\\\"").replace("\n", "\\n") + "\"}";
+                var payload = Map.of("content", "**Feedback (" + Instant.now() + "):**\n" + anfrage.text());
+                var body = objectMapper.writeValueAsString(payload);
                 RestClient.create().post()
                     .uri(webhookUrl)
                     .header("Content-Type", "application/json")

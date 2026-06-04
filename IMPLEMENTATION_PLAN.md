@@ -4,7 +4,7 @@
 
 ## Notiz
 
-**Session 47 (2026-06-04) — QA-CODE-METRICS abgeschlossen:** Metrik-Report erzeugt. JaCoCo-Plugin in `pom.xml` ergänzt (Surefire-argLine auf `@{argLine}` umgestellt). `scripts/metrics.sh` — reproduzierbares Skript (Backend mvn clean test + JaCoCo, Frontend vitest coverage, ESLint-Komplexität, Modul-Größen, Architektur-Check). Bericht unter `docs/metrics.md`. Backend 198 Java-Dateien / 15.436 LOC, Coverage 84% Instructions / 83% Lines / 71% Branches. Frontend 53 TS-Dateien / 9.092 LOC, Coverage 79%. Kritische Komplexitäts-Hotspots: `TischEreignisHandler.verarbeitePartieEreignis` (68), `PartieStore._verarbeiteEventQueue` (60), `TischKartenRenderer.renderKartenFaecher` (53). Alle Modul-Grenzen OK. Refactoring-Kandidaten als neue Tasks unter Entdeckungen eingetragen. Backend 356/356 grün. **→ Nächste Tasks: SECURITY-REVIEW oder VERIFY-MULTIPLAYER**.
+**Session 48 (2026-06-04) — SECURITY-REVIEW abgeschlossen:** Vollständiger Security-Review via `/security-review`-Skill. 7 Kandidaten untersucht, 6 als False Positives ausgeschieden (Log-Spoofing ausgeschlossen per Regel; CORS-Wildcard-WebSocket durch `SameSite=Strict` mitigiert; Actuator/Swagger/Error-Messages sind Hardening-Maßnahmen ohne direkte Exploitability; Exception-Handler deckt Spring-Error-Disclosure ab). **Einziger True Positive (Confidence 8/10):** `FeedbackController.java` — unvollständiges JSON-Escaping beim Discord-Webhook-Versand (fehlende Backslash-Escaping → JSON-Injection möglich). **Direkt behoben:** String-Konkatenation durch `ObjectMapper.writeValueAsString(Map.of(...))` ersetzt. Backend 356/356 grün. **→ Nächster Task: VERIFY-MULTIPLAYER**.
 
 **Session 35 (2026-06-02) — SPEC-RECHT abgeschlossen:** `specs/recht-impressum-datenschutz.md` angelegt. Enthält: Impressum-Pflichtangaben (§5 DDG), vollständige Datenschutzerklärung-Struktur (DSGVO Art. 13/14 — alle DB-Felder aufgeschlüsselt, Google-OAuth2-Drittland-Transfer, Betroffenenrechte, Speicherdauer, Hosting-Datenresidenz), AGB-Mindeststruktur, Checkliste vor M2, konkrete Build-Tasks (Frontend-Seiten `/impressum`/`/datenschutz`/`/agb`, Footer-Links, AVV). Keine Code-Änderung nötig (DOC-Task). Nächste autonome Tasks: DOC-DOCS-SITE, QA-CODE-METRICS oder SECURITY-REVIEW (Skill verfügbar).
 
@@ -57,7 +57,7 @@ Nächste offene Tasks — Fertigstellung (Session 30). **Zwei Meilensteine:** **
 
 **C) Qualität & Produktreife (additiv, jederzeit autonom):**
 12. [x] **QA-CODE-METRICS** — Metrik-Report
-13. **SECURITY-REVIEW** — `/security-review`-Skill
+13. [x] **SECURITY-REVIEW** — `/security-review`-Skill
 14. **VERIFY-MULTIPLAYER** — Mehr-Session-E2E
 15. **FE-UI-FINAL-REVIEW** — Vision-Loop → Mängelkatalog
 16. **FE-SPIELREGELN-HILFE** — Regel-Overlay
@@ -324,7 +324,7 @@ Entscheidungen: **DECISION-AUTH** ✓ beide behalten · **DECISION-LIZENZ** aufg
 
   **DoD:** Beta-Tester können aus der App Feedback abgeben; landet auffindbar (Log/Webhook). **Risiko:** niedrig.
 
-- [ ] **SECURITY-REVIEW** (M1 empfohlen / M2 Pflicht) — Sicherheits-Review vor öffentlicher Exposition.
+- [x] **SECURITY-REVIEW** (M1 empfohlen / M2 Pflicht) — Sicherheits-Review vor öffentlicher Exposition.
 
   Vor dem Stellen auf eine öffentliche Domain. Es existiert das `/security-review`-Tooling.
 
@@ -510,6 +510,10 @@ Alle noch im Greenfield-Fenster (vor erstem echten Deploy). Details und Audit-Ko
 - [ ] **STAT-SAISON-LIGA** (aufgeschoben) — Saisons (Reset/Listen/Rollover-Job) + Ligen (Auf-/Abstieg). Additive Erweiterung (neue Tabellen `saison` + saison-Rating + nullable `spielergebnis_archiv.saison_id`). Nur bauen, falls öffentlich/wachsend. **[WARTET — keine Greenfield-Dringlichkeit, rückwirkend aus Archiv berechenbar]**
 
 - [x] **CHANGELOG-KONSOLIDIERUNG** (✓ entschieden: echtes Greenfield → konsolidieren) — `002`–`004` + alle Gegencheck-Fixes (DB-5…10) **direkt in `000-initial-schema.sql`** einpflegen statt additiver `005…`-Changesets. Ergebnis: ein einziges, sauberes Initial-Schema beim ersten Deploy. **Methode:** jeder DB-Task editiert `000` direkt (kein neues Changeset). `001-spring-session-schema.sql` bleibt eigenständig (Fremd-Schema). H2-Tests unkritisch (Neuaufbau je Lauf); persistente Dev-DB ggf. `clearCheckSums`. **DoD:** nur `000` + `001` aktiv, `002`–`004` entfernt, `mvn clean test` grün. **Risiko:** niedrig im Greenfield.
+
+### Security-Review-Befunde (Session 48, 2026-06-04)
+
+- [x] **BUG-FEEDBACK-JSON-INJECTION** (behoben) — `FeedbackController.java:43–44`: manuelles JSON-Escaping fehlte Backslash-Behandlung. Angreifer konnte via `\\"` die JSON-Struktur brechen und beliebige Felder in den Discord-Webhook-Payload injizieren (z.B. `"tts":true`, `@here`-Mentions). **Fix:** String-Konkatenation durch `ObjectMapper.writeValueAsString(Map.of(...))` ersetzt. Confidence 8/10. Kein Secrets-Leak, kein Datenverlust — nur Discord-Channel-Missbrauch möglich. **Risiko:** niedrig (nur relevant, wenn Webhook-URL gesetzt).
 
 ### Komplexitäts-Hotspots aus QA-CODE-METRICS (Session 47, 2026-06-04)
 
