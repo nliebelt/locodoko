@@ -79,6 +79,11 @@ services:
       LOCODOKO_DB_PASSWORD: ${LOCODOKO_DB_PASSWORD:-locodoko}
       GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-disabled}
       GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-disabled}
+      SENTRY_DSN: ${SENTRY_DSN:-}
+      SENTRY_ENVIRONMENT: ${SENTRY_ENVIRONMENT:-produktion}
+    volumes:
+      # Strukturierte JSON-Logs teilen, damit der Alloy-Sidecar sie an Loki schicken kann.
+      - applogs:/app/logs
     ports:
       - "8081:8081"
     healthcheck:
@@ -90,5 +95,30 @@ services:
     profiles:
       - prod
 
+  # --- Grafana Alloy: Metriken (/actuator/prometheus) + Logs (Loki) an Grafana Cloud ---
+  # OPS-GRAFANA-MONITORING / OPS-LOGS-LOKI. Tokens/URLs via ENV (siehe .env.example), nie im Repo.
+  alloy:
+    image: grafana/alloy:latest
+    container_name: locodoko-alloy
+    restart: unless-stopped
+    depends_on:
+      - app
+    command:
+      - run
+      - /etc/alloy/config.alloy
+      - --storage.path=/var/lib/alloy/data
+    volumes:
+      - ./monitoring/alloy/config.alloy:/etc/alloy/config.alloy:ro
+      - applogs:/logs:ro
+    environment:
+      GRAFANA_PROM_URL: ${GRAFANA_PROM_URL:-}
+      GRAFANA_PROM_USER: ${GRAFANA_PROM_USER:-}
+      GRAFANA_LOKI_URL: ${GRAFANA_LOKI_URL:-}
+      GRAFANA_LOKI_USER: ${GRAFANA_LOKI_USER:-}
+      GRAFANA_CLOUD_TOKEN: ${GRAFANA_CLOUD_TOKEN:-}
+    profiles:
+      - prod
+
 volumes:
   pgdata:
+  applogs:

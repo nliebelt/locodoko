@@ -114,6 +114,12 @@
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-actuator</artifactId>
         </dependency>
+        <!-- Micrometer Prometheus-Registry: /actuator/prometheus für Grafana-Cloud-Scrape (via Alloy). -->
+        <dependency>
+            <groupId>io.micrometer</groupId>
+            <artifactId>micrometer-registry-prometheus</artifactId>
+            <scope>runtime</scope>
+        </dependency>
         <!-- Spring Session JDBC: Sessions in Postgres speichern, Redeploys loggen Spieler nicht aus -->
         <dependency>
             <groupId>org.springframework.session</groupId>

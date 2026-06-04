@@ -173,7 +173,7 @@ Entscheidungen: **DECISION-AUTH** ✓ beide behalten · **DECISION-LIZENZ** aufg
 
   **DoD:** `datenbankmodell.md` enthält reviewtes Soll-Schema mit Audit-Konzept + Index-/Constraint-Liste; offene Schema-Änderungen als nachgelagerte `REFACTOR-DB-…`-Tasks. **Risiko:** mittel-hoch (Schema ist Fundament).
 
-- [ ] **OPS-GRAFANA-MONITORING** — Monitoring via Grafana Cloud (Free-Tier).
+- [x] **OPS-GRAFANA-MONITORING** (Code/Config, Session 61) — `specs/betrieb-monitoring.md` + `micrometer-registry-prometheus`, `/actuator/prometheus` exponiert (`management`-Props), Domain-Metriken `de.locodoko.betrieb.SpielMetriken` (eigenes Blatt-Modul — `system` wäre Modul-Zyklus). Niedrig-kardinale Counter/Summary an `SpielBeendet` (Regelvariante, Spieltyp, Sieger-Partei, Sonderpunkte, Armut, Re-Augen), **kein `spieler_id`-Label**. Alloy-Sidecar (`monitoring/alloy/config.alloy` + `docker-compose.yml` prod) für remote_write, Tokens via ENV. **Verifiziert:** App läuft, `/actuator/prometheus` liefert JVM/HTTP + `locodoko_spiel_re_augen` (mit `application`-Label). `mvn clean test` grün (357 Tests, Modulgrenzen ok). **Mensch:** Grafana-Account/Tokens/Dashboards + Actuator-Härtung (prod).
 
   Spring Boot Actuator + Micrometer → Prometheus-Endpoint → Grafana Cloud (Free: Metriken/Logs/Traces). Free-Account vorhanden.
 
@@ -183,7 +183,7 @@ Entscheidungen: **DECISION-AUTH** ✓ beide behalten · **DECISION-LIZENZ** aufg
 
   **DoD:** Spec beschreibt Monitoring-Konzept (Infra + Loco-Domain-Metriken); (Build) Metriken erscheinen im Grafana-Cloud-Dashboard. **Risiko:** niedrig-mittel.
 
-- [ ] **OPS-LOGS-LOKI** — Strukturierte Logs nach Grafana Cloud Loki (Free-Tier), per LogQL abfragbar.
+- [x] **OPS-LOGS-LOKI** (Code/Config, Session 61) — Alloy-Sidecar versendet die ECS-JSON-Logs (`/app/logs/locodoko.log` via geteiltes `applogs`-Volume) an Grafana Cloud Loki. `tischId`/`partieId`/`correlationId` bleiben Loginhalt (LogQL `| json`, **nicht** Label = Kardinalität), `job`/Level als Label. Config in `monitoring/alloy/config.alloy`, Compose-Service + Volume ergänzt, Doku in `specs/betrieb-monitoring.md`. **Mensch:** Loki-Tokens/URL + Retention-Hinweis (Bug-Ticket-Snapshot statt nur Link → `FEAT-BUGREPORT`).
 
   Grafana Cloud Free enthält Loki (~50 GB Ingest, ~14 Tage Retention — für Hobby/Live-Debugging ausreichend). Das Backend loggt bereits JSON mit MDC-Feldern `tischId`/`partieId` → ideal für Loki-Labels/LogQL. Versand via Grafana Alloy/Promtail-Sidecar, Token via ENV. **Retention begrenzt → für Bug-Tickets relevante Log-Ausschnitte beim Erstellen ins Ticket snapshotten (siehe `FEAT-BUGREPORT`), nicht nur verlinken.**
 
