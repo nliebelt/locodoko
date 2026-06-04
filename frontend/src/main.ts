@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import * as Sentry from '@sentry/browser';
 import './styles.css';
 import { appStore } from './anwendung';
 import './e2eBruecke';
@@ -8,6 +9,27 @@ import { SpielverwaltungsSzene } from './szenen/SpielverwaltungsSzene';
 import { TischSzene } from './szenen/TischSzene';
 import { BestenlisterSzene } from './szenen/BestenlisterSzene';
 import { HilfeSzene } from './szenen/HilfeSzene';
+
+// Sentry-Fehlererfassung. Ohne VITE_SENTRY_DSN deaktiviert (No-Op).
+// Bewusst OHNE Session-Replay (Datenschutz) und ohne Performance-Tracing.
+// Die letzte bekannte X-Correlation-Id wird als Tag angehaengt, um Frontend-Fehler
+// mit Backend-Logs (Loki) und In-App-Bugreports zu verknuepfen.
+const sentryDsn = import.meta.env.VITE_SENTRY_DSN;
+if (sentryDsn) {
+  Sentry.init({
+    dsn: sentryDsn,
+    environment: import.meta.env.VITE_SENTRY_ENVIRONMENT ?? 'lokal',
+    tracesSampleRate: 0,
+    sendDefaultPii: false,
+    beforeSend(event) {
+      const ids = appStore.snapshot().correlationIds;
+      if (ids.length > 0) {
+        event.tags = { ...event.tags, correlationId: ids[ids.length - 1] };
+      }
+      return event;
+    }
+  });
+}
 
 // Globaler Error-Handler — auch im Prod-Build aktiv, damit stumme Fehler sichtbar werden.
 // Nutzt console.error direkt (kein Logger-Dev-Switch), damit Exceptions nie unbemerkt bleiben.
