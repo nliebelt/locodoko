@@ -4,6 +4,10 @@
 
 ## Notiz
 
+**Session 61 (2026-06-04) — REFACTOR-FE-PARTIESTORE abgeschlossen + Stash-Aufräumung:** `PartieStore.ts` — `_verarbeiteEventQueue` (~127 Z., CC 60) zu schlankem Dispatcher (**CC < 20**, DoD erfüllt) umgebaut; alle Phasen in private Methoden ausgelagert (`_mussAufQuiescenceWarten`/`_warteAufQuiescence`, `_pruefeStorePatchErlaubnis`, `_merkeVerpasstesSpielBeendet`, `_brauchtKiVerzoegerung`, `_patcheVorListenern`, `_benachrichtigeListener`, `_verarbeiteNachListenern`, `_protokolliereSpielBeendet`). **Timing-Falle (kostete eine Iteration):** ein naiver Auslager-Ansatz brach 3 AppStore-Tests, weil jedes `await someAsync()` einen zusätzlichen Microtask-Tick erzeugt (auch bei No-Op-Body) und die Tests die Queue nur mit einem einzigen `await Promise.resolve()` treiben → Listener wurden zu spät aufgerufen. **Lösung:** Quiescence-Warten und KI-Verzögerung hinter **synchrone Guard-Prädikate** legen, sodass nur bei echtem Warten ge-`await`et wird; Doc-Kommentar hält das Invariant fest. 240/240 Tests grün, Build+Lint sauber. Außerdem 2 uralte Stashes (375 Commits alt, auf `e61be97`, überholt) entfernt. **→ Nächster Task: REFACTOR-FE-KARTENRENDERER, dann FE-MOBILE-SMOKE.**
+
+**Session 60 (2026-06-04) — Planungslauf + Grill-Session (User-Entscheidungen):** Plan gegen Code gescannt → aktuell/korrekt, kein Drift außer Specs-Zahl (Plan nennt „47", real **53** — neue: recht, bugreport, statistik-ranking, frontend-nameplates, frontend-flash-text, frontend-spielerprofil; alle im Backlog erfasst). Frontend 240/240 grün. **Grill-Entscheidungen:** (1) **Deploy-Plattform bleibt offen** → CD-DEPLOY/OPS-DOMAIN bleiben [BLOCKED], Ralph nur autonome Vorbereitung. (2) **Mobile vorziehen, aber nur die Low-Risk-Scheibe** → neuer Task **FE-MOBILE-SMOKE** (M1: Orientierungs-Hinweis + Landscape-Optimierung + Mobile-Vision-Viewport), voller Umbau **FE-MOBILE** bleibt M2 (mittleres Risiko, breiter Layout-Eingriff). (3) **Nächster autonomer Task: Refactors** → REFACTOR-FE-PARTIESTORE, dann KARTENRENDERER, dann FE-MOBILE-SMOKE. (4) **DECISION-LIZENZ bleibt offen** (Code faktisch „all rights reserved", kein Beta-Blocker). **→ In Arbeit: REFACTOR-FE-PARTIESTORE.**
+
 **Session 59 (2026-06-04) — REFACTOR-FE-EREIGNISHANDLER abgeschlossen:** `TischEreignisHandler.ts` — `verarbeitePartieEreignis` (138 Z., CC 68) in Dispatcher + 4 private Gruppen-Methoden aufgeteilt: `verarbeiteSpielfluss` (SPIEL_GESTARTET/BEENDET), `verarbeiteSpielzug` (KARTE_GESPIELT/STICH_ABGESCHLOSSEN), `verarbeiteAnsagen` (ANSAGE_ERFOLGT/SCHWEINCHEN_GEMELDET/HOCHZEIT_PARTNER_GEFUNDEN), `verarbeiteSynchronisation` (SNAPSHOT/AKTION_ABGELEHNT). Dispatcher-CC jetzt ~5, jede Gruppen-Methode ~3–7. 240/240 Tests grün, Build+Lint sauber. **→ Nächster Task: REFACTOR-FE-PARTIESTORE.**
 
 **Session 56 (2026-06-04) — FE-LOBBY-BUTTON-ICONS abgeschlossen:** Die unleserlichen "blauer Kreis" und "oranges Rechteck" Platzhalter waren tatsächlich die Emojis 👤 und 🚪, die vom verwendeten Pixel-Font ('Press Start 2P') in Kombination mit dem Browser Canvas Fallback auf manchen Systemen fehlerhaft gerendert wurden. Gemäß der Aufgabenbeschreibung ("Icons klar lesbar oder entfernt") wurden sie aus den Button-Texten in `SpielverwaltungsSzene.ts` entfernt, um ein sauberes Erscheinungsbild ohne visuelle Bugs zu gewährleisten. Die dazugehörigen Unit-Tests in `SpielverwaltungsSzene.test.ts` wurden auf die neuen Texte ('Mein Profil', 'Abmelden') aktualisiert. 240/240 Tests grün, Build+Lint sauber. **→ Nächster Task: FE-NAMEPLATE-TEXTABSCHNEIDUNG (P-Niedrig)**.
@@ -45,12 +49,13 @@ Nächste offene Tasks — Fertigstellung (Session 30). **Zwei Meilensteine:** **
 > Alle UI-Mängel aus FE-UI-FINAL-REVIEW: **6/6 ✓** (RANGLISTE-BUTTON-CLIPPING, NEUER-TISCH-MODAL-LAYOUT, RUNDENAUSWERTUNG-LESBARKEIT, VORBEHALT-AUSWAHL-FEEDBACK, LOBBY-BUTTON-ICONS, BUG-EINSTELLUNGEN-MODAL).
 > Diese Queue ist komplett **Ralph-autonom** (verifizierbar via `mvn clean test` / `npm`). **Pro Task ein Commit.**
 
-**D) Verbleibende autonome Tasks (UI-Polish + Refactoring + Docs):**
-1. **FE-NAMEPLATE-TEXTABSCHNEIDUNG** (P-Niedrig) — Spieler-Nameplate zeigt abgeschnittenen Text bei langen Namen/Stich-Zähler
-2. **REFACTOR-FE-EREIGNISHANDLER** — `verarbeitePartieEreignis` (138 Z., Komplexität 68) in Dispatcher + Gruppen-Methoden aufteilen
-3. **REFACTOR-FE-PARTIESTORE** — `_verarbeiteEventQueue` (128 Z., Komplexität 60) analog aufteilen
-4. **REFACTOR-FE-KARTENRENDERER** — `renderKartenFaecher` + `setzeKartenInteraktion` (~60 Z. je, Komplexität 53/32) — am Schwellenwert, optionales Refactoring
-5. **DOC-DOCS-SITE** — MkDocs-Material-Seite für `docs.locodoko.de` (baut autonom, Custom-Domain-DNS MENSCH)
+**D) Verbleibende autonome Tasks (Reihenfolge Session 60):**
+1. ~~FE-NAMEPLATE-TEXTABSCHNEIDUNG~~ ✓ (Session 57)
+2. ~~REFACTOR-FE-EREIGNISHANDLER~~ ✓ (Session 59)
+3. ~~REFACTOR-FE-PARTIESTORE~~ ✓ (Session 61) — `_verarbeiteEventQueue` (CC 60) in Dispatcher + synchrone Phasen-Methoden aufgeteilt; `await`-Phasen bewusst inline (Microtask-Timing)
+4. **REFACTOR-FE-KARTENRENDERER** — `renderKartenFaecher` + `setzeKartenInteraktion` (~60 Z. je, Komplexität 53/32) — am Schwellenwert, optionales Refactoring ← **nächster**
+5. **FE-MOBILE-SMOKE** (M1, Session 60 vorgezogen) — Orientierungs-Hinweis + Landscape-Optimierung + Mobile-Vision-Viewport (Low-Risk)
+6. **DOC-DOCS-SITE** — MkDocs-Material-Seite für `docs.locodoko.de` (baut autonom, Custom-Domain-DNS MENSCH)
 
 **Teil-autonom (Code/Spec jetzt, finaler Secret/Wiring später vom MENSCH):** OPS-GRAFANA-MONITORING + OPS-LOGS-LOKI (Instrumentierung/Alloy-Config autonom, Token MENSCH) · FEAT-BUGREPORT (Overlay+Endpoint autonom, privates Repo+Token MENSCH) · OBS-SENTRY (Code autonom, DSN MENSCH) · OPS-DOMAIN (Reverse-Proxy-Config autonom).
 
@@ -330,13 +335,21 @@ Entscheidungen: **DECISION-AUTH** ✓ beide behalten · **DECISION-LIZENZ** aufg
 
   **DoD:** Erreichbare Regelhilfe in der App. **Risiko:** niedrig.
 
-- [ ] **FE-MOBILE** (M2) — Mobile-/Touch-/Portrait-Tauglichkeit.
+- [ ] **FE-MOBILE-SMOKE** (M1 — Session 60 vorgezogen, Low-Risk-Scheibe) — Mobile spielbar machen **ohne** Layout-Umbau.
 
-  Phaser nutzt `Scale.FIT` auf 1280×720 — skaliert (letterboxed), aber **nicht** mobil-optimiert (Portrait, Touch-Targets, kleine Karten). Entscheidung Mobile erst M2.
+  Begründung (Session 60): Freunde testen auf iPhone/Safari. Tippen funktioniert bereits (Phaser Pointer = Touch), aber feste 1280×720-Querformat-Leinwand wird im Portrait winzig und es fehlt ein Dreh-Hinweis. Diese Scheibe ist isoliert (kein Eingriff in Spiellogik/Tisch-Layout) → daher M1.
 
-  **Erste Datei zuerst:** `frontend/src/main.ts` (Scale-Config) + Tisch-Layout — Touch-Bedienung, Portrait-Handling, Karten-Trefferflächen. Vision-Loop mit mobilen Viewports erweitern.
+  **Erste Datei zuerst:** `frontend/src/main.ts` + `frontend/index.html` — (a) `<meta name="viewport">` prüfen/ergänzen (`width=device-width, initial-scale=1, viewport-fit=cover`); (b) Orientierungs-Overlay „Bitte Gerät ins Querformat drehen" bei Portrait (CSS `@media (orientation: portrait)` oder Phaser `scale.lockOrientation`/Resize-Listener), das die Leinwand verdeckt; (c) `Scale.FIT` bleibt, aber `autoCenter` + `expandParent` für volle Querformat-Nutzung prüfen. Vision-Loop um einen mobilen Viewport (z.B. iPhone 14, Landscape + Portrait) erweitern.
 
-  **DoD:** Spielbar auf gängigen Mobil-Viewports; Vision-Screenshots ohne Layout-Brüche. **Risiko:** mittel.
+  **DoD:** Im Querformat auf iPhone-Viewport spielbar (Karten tippbar), im Portrait erscheint der Dreh-Hinweis statt einer winzigen Leinwand; Vision-Screenshots (mobil) ohne Bruch; `npm test && npm run build && npm run lint` grün. **Risiko:** niedrig.
+
+- [ ] **FE-MOBILE** (M2) — Voller Mobile-/Touch-/Portrait-Umbau (nach FE-MOBILE-SMOKE).
+
+  Phaser nutzt `Scale.FIT` auf 1280×720 — skaliert (letterboxed), aber **nicht** mobil-optimiert (echtes Portrait-Layout, vergrößerte Touch-Targets, Karten-Neuanordnung). Mittleres Risiko, breiter Eingriff ins Tisch-Layout → bewusst M2.
+
+  **Erste Datei zuerst:** `frontend/src/main.ts` (Scale-Config) + Tisch-Layout — Portrait-Layout, Karten-Trefferflächen, HUD-Nameplates für schmale Viewports. Vision-Loop mit mobilen Portrait-Viewports erweitern.
+
+  **DoD:** Im Portrait nativ spielbar (kein Letterboxing nötig); Vision-Screenshots ohne Layout-Brüche. **Risiko:** mittel.
 
 ---
 
@@ -511,7 +524,7 @@ Alle noch im Greenfield-Fenster (vor erstem echten Deploy). Details und Audit-Ko
 
 - [x] **REFACTOR-FE-EREIGNISHANDLER** — `TischEreignisHandler.verarbeitePartieEreignis` hat zyklomatische Komplexität **68** (ESLint-Befund). Die Methode ist ein monolithischer Switch über alle Ereignistypen. Aufteilen in separate private Methoden je Ereignisgruppe (Spielzug, Ansage, Rundenende, Verbindung). **Erste Datei zuerst:** `frontend/src/szenen/TischEreignisHandler.ts` — `verarbeitePartieEreignis` in Dispatcher + je eine Methode pro Gruppe. **DoD:** Komplexität < 20; `npm test && npm run build` grün. **Risiko:** mittel (viel Logik).
 
-- [ ] **REFACTOR-FE-PARTIESTORE** — `PartieStore._verarbeiteEventQueue` hat Komplexität **60**. Dispatcher-Methoden für Ereignisgruppen extrahieren (analog REFACTOR-FE-EREIGNISHANDLER). **Erste Datei zuerst:** `frontend/src/store/PartieStore.ts`. **DoD:** Komplexität < 20; Tests grün. **Risiko:** mittel.
+- [x] **REFACTOR-FE-PARTIESTORE** — `PartieStore._verarbeiteEventQueue` (CC 60) → Dispatcher CC < 20 (Session 61). Phasen ausgelagert; Quiescence/KI-Verzögerung hinter synchrone Guard-Prädikate (Microtask-Timing-Invariant, Doc-Kommentar). 240/240 grün.
 
 - [ ] **REFACTOR-FE-KARTENRENDERER** — `TischKartenRenderer.renderKartenFaecher` hat Komplexität **53** + `setzeKartenInteraktion` Komplexität **32**. Render-Schritte (Positionierung, Interaktion, Animation) in separate Methoden aufteilen. **Erste Datei zuerst:** `frontend/src/szenen/TischKartenRenderer.ts`. **DoD:** Top-Methoden < 20; Tests grün. **Risiko:** niedrig-mittel.
 

@@ -125,133 +125,166 @@ export class PartieStore {
     this._verpassterSpielBeendet = null;
   }
 
+  /**
+   * Dispatcher: Verarbeitet die Ereignis-Warteschlange sequentiell. Pro Ereignis durchläuft er
+   * Quiescence-Warten → Store-Patch-Entscheidung → KI-Verzögerung → Vor-Listener-Patch → Listener
+   * → Nach-Listener-Verarbeitung, jeweils in eigene Methoden ausgelagert.
+   *
+   * **Timing-Invariant:** Quiescence-Warten und KI-Verzögerung werden nur dann `await`et, wenn ihr
+   * synchrones Guard-Prädikat (`_mussAufQuiescenceWarten` / `_brauchtKiVerzoegerung`) echtes Warten
+   * meldet. Ohne diese Guards würde jedes `await someAsync()` einen zusätzlichen Microtask-Tick
+   * erzeugen (auch bei No-Op-Body) und die synchrone Leerung der Queue verzögern — worauf die
+   * AppStore-Tests sich verlassen (sie treiben die Queue mit einem einzigen `await Promise.resolve()`).
+   */
   async _verarbeiteEventQueue(): Promise<void> {
     if (this._verarbeiteEventLaeuft || this._queuePausiert) return;
     this._verarbeiteEventLaeuft = true;
     try {
       while (this._eventQueue.length > 0 && !this._queuePausiert) {
-
-        // Quiescence Pattern: Warten bis alle Animationen/Szenen-Logik des VORHERIGEN Events beendet sind
-        if (typeof window !== 'undefined') {
-          const locodoko = (window as { __locodoko?: { isIdle?: (f: boolean) => boolean } }).__locodoko;
-          if (locodoko && typeof locodoko.isIdle === 'function') {
-            while (!locodoko.isIdle(true) && !this._queuePausiert && this._eventQueue.length > 0) {
-              await new Promise<void>((r) => setTimeout(r, 50));
-            }
-          }
-        }
-
+        if (this._mussAufQuiescenceWarten()) await this._warteAufQuiescence();
         if (this._queuePausiert || this._eventQueue.length === 0) break;
 
         const ereignis = this._eventQueue.shift();
         if (!ereignis) break;
 
-        const darfStorePatchen = !!ereignis.partieStand && this._darfPartieStandAktualisieren(ereignis.partieStand, ereignis.version);
-        if (!darfStorePatchen && ereignis.partieStand) {
-          Logger.websocket('Verarbeite Ereignis ohne Store-Patch (neuerer Snapshot vorhanden)', {
-            typ: ereignis.ereignisTyp,
-            version: ereignis.version,
-            storeVersion: this.gibZustand().partieStand?.version
-          });
-        }
-
+        const darfStorePatchen = this._pruefeStorePatchErlaubnis(ereignis);
         this._aktuelleSequenzId++;
+        this._merkeVerpasstesSpielBeendet(ereignis);
 
-        if (ereignis.ereignisTyp === 'SPIEL_BEENDET') {
-          if (this._eventListener.size === 0) {
-            this._verpassterSpielBeendet = ereignis;
-          } else {
-            this._verpassterSpielBeendet = null;
-          }
+        if (this._brauchtKiVerzoegerung(ereignis)) {
+          const generationVorDelay = this._queueGeneration;
+          await new Promise<void>((r) => setTimeout(r, this.gibZustand().uiKonfiguration.kiVerzoegerungMs));
+          if (this._queuePausiert || this._queueGeneration !== generationVorDelay) break;
         }
 
-        // KI-Verzögerung: Menschlicheres Spielgefühl bei KI-Kartenzügen (nur wenn Menschen am Tisch sind).
-        if (ereignis.ereignisTyp === 'KARTE_GESPIELT' && this.gibZustand().uiKonfiguration.kiVerzoegerungMs > 0) {
-          const spielerImSpiel = this.gibZustand().partieStand?.laufendesSpiel?.spieler ?? [];
-          const istKiZug = spielerImSpiel.find(s => s.position === (ereignis as KarteGespieltEreignis).spielerPosition)?.istKi ?? false;
-          const hatMenschlicheSpieler = this.gibZustand().aktuellerTisch?.spieler.some(s => !s.istKi);
-          if (istKiZug && hatMenschlicheSpieler) {
-            const generationVorDelay = this._queueGeneration;
-            await new Promise<void>((r) => setTimeout(r, this.gibZustand().uiKonfiguration.kiVerzoegerungMs));
-            if (this._queuePausiert || this._queueGeneration !== generationVorDelay) break;
-          }
-        }
-
-        // State VOR den Listenern patchen für flüssige Übergänge (KARTE_GESPIELT)
-        const prevStand = this.gibZustand().partieStand;
-        if (darfStorePatchen) {
-          if (ereignis.ereignisTyp === 'KARTE_GESPIELT') {
-            if (prevStand) {
-              const syntheticStand = this._synthetischerKarteGespielt(prevStand, ereignis as KarteGespieltEreignis);
-              this.patchFn({ partieStand: syntheticStand });
-            } else {
-              this.patchFn({ partieStand: ereignis.partieStand });
-            }
-          } else if (ereignis.partieStand && ereignis.ereignisTyp !== 'STICH_ABGESCHLOSSEN' && ereignis.ereignisTyp !== 'SPIEL_BEENDET') {
-            this.patchFn({ partieStand: ereignis.partieStand });
-          }
-        }
-
-        try {
-          for (const l of this._eventListener) {
-            const res = l(ereignis);
-            if (res instanceof Promise) await res;
-          }
-        } catch (e) {
-          Logger.error('Event-Listener hat einen Fehler geworfen', e);
-        }
-
-        switch (ereignis.ereignisTyp) {
-          case 'SNAPSHOT':
-            this._eventQueue.length = 0;
-            break;
-          case 'KARTE_GESPIELT':
-            break;
-          case 'STICH_ABGESCHLOSSEN': {
-            if (darfStorePatchen) this.patchFn({ partieStand: ereignis.partieStand });
-            if (ereignis.neueSonderpunkte.length) this._sonderpunkteListener.forEach((l) => l(ereignis.neueSonderpunkte));
-            break;
-          }
-          case 'SPIEL_BEENDET': {
-            if (darfStorePatchen) this.patchFn({ partieStand: ereignis.partieStand });
-            const erg = ereignis.partieStand.letztesSpielergebnis;
-            if (erg) {
-              const zustand = this.gibZustand();
-              const geber = zustand.partieStand?.laufendesSpiel?.geber ?? 'SUED';
-              const istBockrunde = (zustand.partieStand?.laufendesSpiel?.bockrundenZaehler ?? 0) > 0;
-              const punkteProSpieler = {} as Record<string, { pkt: number; stand: number }>;
-              Object.keys(erg.spielpunkteProSpieler).forEach((pos) => {
-                punkteProSpieler[pos] = {
-                  pkt: erg.spielpunkteProSpieler[pos as SpielerPosition] ?? 0,
-                  stand: ereignis.partieStand.gesamtpunktestand?.[pos as SpielerPosition] ?? 0
-                };
-              });
-              this.patchFn({
-                spielProtokollEintraege: [
-                  ...zustand.spielProtokollEintraege,
-                  {
-                    nr: erg.spielNummer,
-                    geber,
-                    spieltyp: erg.spieltyp,
-                    istBockrunde,
-                    punkteProSpieler
-                  }
-                ]
-              });
-            }
-            break;
-          }
-          case 'ANSAGE_ERFOLGT':
-          case 'SCHWEINCHEN_GEMELDET':
-          case 'HOCHZEIT_PARTNER_GEFUNDEN':
-          case 'SPIEL_GESTARTET':
-          case 'AKTION_ABGELEHNT':
-            break;
-        }
+        this._patcheVorListenern(ereignis, darfStorePatchen);
+        await this._benachrichtigeListener(ereignis);
+        this._verarbeiteNachListenern(ereignis, darfStorePatchen);
       }
     } finally {
       this._verarbeiteEventLaeuft = false;
     }
+  }
+
+  /**
+   * Quiescence-Guard: Meldet synchron, ob auf das Ende der Animationen/Szenen-Logik des VORHERIGEN
+   * Events gewartet werden muss. Nur wenn `true`, wird `_warteAufQuiescence` `await`et (Timing-Invariant).
+   */
+  private _mussAufQuiescenceWarten(): boolean {
+    if (typeof window === 'undefined') return false;
+    const locodoko = (window as { __locodoko?: { isIdle?: (f: boolean) => boolean } }).__locodoko;
+    if (!locodoko || typeof locodoko.isIdle !== 'function') return false;
+    return !locodoko.isIdle(true);
+  }
+
+  /** Wartet (pollend) bis die Szene idle ist, die Queue pausiert oder leer läuft. */
+  private async _warteAufQuiescence(): Promise<void> {
+    const locodoko = (window as { __locodoko?: { isIdle?: (f: boolean) => boolean } }).__locodoko;
+    const isIdle = locodoko?.isIdle;
+    if (!isIdle) return;
+    while (!isIdle(true) && !this._queuePausiert && this._eventQueue.length > 0) {
+      await new Promise<void>((r) => setTimeout(r, 50));
+    }
+  }
+
+  /** Entscheidet, ob der Store für dieses Ereignis gepatcht werden darf, und protokolliert eine Ablehnung. */
+  private _pruefeStorePatchErlaubnis(ereignis: PartieEreignisAntwort): boolean {
+    const darfStorePatchen = !!ereignis.partieStand && this._darfPartieStandAktualisieren(ereignis.partieStand, ereignis.version);
+    if (!darfStorePatchen && ereignis.partieStand) {
+      Logger.websocket('Verarbeite Ereignis ohne Store-Patch (neuerer Snapshot vorhanden)', {
+        typ: ereignis.ereignisTyp,
+        version: ereignis.version,
+        storeVersion: this.gibZustand().partieStand?.version
+      });
+    }
+    return darfStorePatchen;
+  }
+
+  /**
+   * KI-Verzögerungs-Guard: Menschlicheres Spielgefühl bei KI-Kartenzügen (nur wenn Menschen am Tisch
+   * sind). Meldet synchron, ob vor der Verarbeitung verzögert werden muss.
+   */
+  private _brauchtKiVerzoegerung(ereignis: PartieEreignisAntwort): boolean {
+    if (ereignis.ereignisTyp !== 'KARTE_GESPIELT' || this.gibZustand().uiKonfiguration.kiVerzoegerungMs <= 0) return false;
+    const spielerImSpiel = this.gibZustand().partieStand?.laufendesSpiel?.spieler ?? [];
+    const istKiZug = spielerImSpiel.find(s => s.position === (ereignis as KarteGespieltEreignis).spielerPosition)?.istKi ?? false;
+    const hatMenschlicheSpieler = this.gibZustand().aktuellerTisch?.spieler.some(s => !s.istKi) ?? false;
+    return istKiZug && hatMenschlicheSpieler;
+  }
+
+  /** Ruft alle abonnierten Event-Listener sequentiell auf (ein Listener-Fehler bricht die Verarbeitung nicht ab). */
+  private async _benachrichtigeListener(ereignis: PartieEreignisAntwort): Promise<void> {
+    try {
+      for (const l of this._eventListener) {
+        const res = l(ereignis);
+        if (res instanceof Promise) await res;
+      }
+    } catch (e) {
+      Logger.error('Event-Listener hat einen Fehler geworfen', e);
+    }
+  }
+
+  /** Merkt sich ein SPIEL_BEENDET-Ereignis, falls (noch) kein Listener abonniert ist. */
+  private _merkeVerpasstesSpielBeendet(ereignis: PartieEreignisAntwort): void {
+    if (ereignis.ereignisTyp !== 'SPIEL_BEENDET') return;
+    this._verpassterSpielBeendet = this._eventListener.size === 0 ? ereignis : null;
+  }
+
+  /** Patcht den Store VOR den Listenern für flüssige Übergänge (synthetischer Zwischenstand bei KARTE_GESPIELT). */
+  private _patcheVorListenern(ereignis: PartieEreignisAntwort, darfStorePatchen: boolean): void {
+    if (!darfStorePatchen) return;
+    if (ereignis.ereignisTyp === 'KARTE_GESPIELT') {
+      const prevStand = this.gibZustand().partieStand;
+      const neuerStand = prevStand
+        ? this._synthetischerKarteGespielt(prevStand, ereignis as KarteGespieltEreignis)
+        : ereignis.partieStand;
+      this.patchFn({ partieStand: neuerStand });
+    } else if (ereignis.partieStand && ereignis.ereignisTyp !== 'STICH_ABGESCHLOSSEN' && ereignis.ereignisTyp !== 'SPIEL_BEENDET') {
+      this.patchFn({ partieStand: ereignis.partieStand });
+    }
+  }
+
+  /** Nachbearbeitung je Ereignistyp NACH den Listenern (Store-Patch für Schluss-Events, Protokoll, Sonderpunkte). */
+  private _verarbeiteNachListenern(ereignis: PartieEreignisAntwort, darfStorePatchen: boolean): void {
+    switch (ereignis.ereignisTyp) {
+      case 'SNAPSHOT':
+        this._eventQueue.length = 0;
+        break;
+      case 'STICH_ABGESCHLOSSEN':
+        if (darfStorePatchen) this.patchFn({ partieStand: ereignis.partieStand });
+        if (ereignis.neueSonderpunkte.length) this._sonderpunkteListener.forEach((l) => l(ereignis.neueSonderpunkte));
+        break;
+      case 'SPIEL_BEENDET':
+        if (darfStorePatchen) this.patchFn({ partieStand: ereignis.partieStand });
+        this._protokolliereSpielBeendet(ereignis);
+        break;
+      // KARTE_GESPIELT, ANSAGE_ERFOLGT, SCHWEINCHEN_GEMELDET, HOCHZEIT_PARTNER_GEFUNDEN,
+      // SPIEL_GESTARTET, AKTION_ABGELEHNT: keine Nachverarbeitung nötig.
+      default:
+        break;
+    }
+  }
+
+  /** Hängt einen Eintrag für das abgeschlossene Spiel ans Spielprotokoll an. */
+  private _protokolliereSpielBeendet(ereignis: Extract<PartieEreignisAntwort, { ereignisTyp: 'SPIEL_BEENDET' }>): void {
+    const erg = ereignis.partieStand.letztesSpielergebnis;
+    if (!erg) return;
+    const zustand = this.gibZustand();
+    const geber = zustand.partieStand?.laufendesSpiel?.geber ?? 'SUED';
+    const istBockrunde = (zustand.partieStand?.laufendesSpiel?.bockrundenZaehler ?? 0) > 0;
+    const punkteProSpieler = {} as Record<string, { pkt: number; stand: number }>;
+    Object.keys(erg.spielpunkteProSpieler).forEach((pos) => {
+      punkteProSpieler[pos] = {
+        pkt: erg.spielpunkteProSpieler[pos as SpielerPosition] ?? 0,
+        stand: ereignis.partieStand.gesamtpunktestand?.[pos as SpielerPosition] ?? 0
+      };
+    });
+    this.patchFn({
+      spielProtokollEintraege: [
+        ...zustand.spielProtokollEintraege,
+        { nr: erg.spielNummer, geber, spieltyp: erg.spieltyp, istBockrunde, punkteProSpieler }
+      ]
+    });
   }
 
   private _synthetischerKarteGespielt(prevStand: PartieStandAntwort, ereignis: KarteGespieltEreignis): PartieStandAntwort {
