@@ -4,7 +4,7 @@
 
 ## Notiz
 
-**Session 49 (2026-06-04) — VERIFY-MULTIPLAYER abgeschlossen:** Neues E2E-Spec `e2e/tests/multiplayer.spec.ts` mit 2 unabhängigen Browser-Kontexten (eigene HTTP-Sessions/Cookies). Spieler 1 erstellt Tisch (nicht-privat, KI füllt 2 verbleibende Plätze), Spieler 2 tritt via `#join/{code}` bei. Beide spielen parallel (Promise.all) bis Rundenauswertung. Verifiziert: (1) Session-Isolation (keine fremden handKarten im Snapshot), (2) Overlay bei beiden Clients (Snapshot+Hint-Sync), (3) identische SpielNummer (Divergenz-Check), (4) keine JS-Fehler in beiden Contexts. Test grün in 51.5s. **→ Nächster Task: FE-UI-FINAL-REVIEW**.
+**Session 50 (2026-06-04) — FE-UI-FINAL-REVIEW abgeschlossen:** Vision-Loop grün (39.8s). 6 UI-Mängel katalogisiert und als FE-Tasks unter „Entdeckungen" eingetragen (2× P-Hoch, 2× P-Mittel, 2× P-Niedrig). Wichtigste Befunde: Rangliste-Button rechts abgeschnitten (P-Hoch), Layout-Überlappungen im "Neuen Tisch"-Modal (P-Hoch), schlechte Lesbarkeit des Rundenauswertungs-Overlays inkl. rohem Enum "IM_SPIEL" (P-Mittel). **→ Nächster Task: FE-SPIELREGELN-HILFE**.
 
 **Session 35 (2026-06-02) — SPEC-RECHT abgeschlossen:** `specs/recht-impressum-datenschutz.md` angelegt. Enthält: Impressum-Pflichtangaben (§5 DDG), vollständige Datenschutzerklärung-Struktur (DSGVO Art. 13/14 — alle DB-Felder aufgeschlüsselt, Google-OAuth2-Drittland-Transfer, Betroffenenrechte, Speicherdauer, Hosting-Datenresidenz), AGB-Mindeststruktur, Checkliste vor M2, konkrete Build-Tasks (Frontend-Seiten `/impressum`/`/datenschutz`/`/agb`, Footer-Links, AVV). Keine Code-Änderung nötig (DOC-Task). Nächste autonome Tasks: DOC-DOCS-SITE, QA-CODE-METRICS oder SECURITY-REVIEW (Skill verfügbar).
 
@@ -59,7 +59,7 @@ Nächste offene Tasks — Fertigstellung (Session 30). **Zwei Meilensteine:** **
 12. [x] **QA-CODE-METRICS** — Metrik-Report
 13. [x] **SECURITY-REVIEW** — `/security-review`-Skill
 14. [x] **VERIFY-MULTIPLAYER** — Mehr-Session-E2E
-15. **FE-UI-FINAL-REVIEW** — Vision-Loop → Mängelkatalog
+15. [x] **FE-UI-FINAL-REVIEW** — Vision-Loop → Mängelkatalog
 16. **FE-SPIELREGELN-HILFE** — Regel-Overlay
 
 **Teil-autonom (Code/Spec jetzt, finaler Secret/Wiring später vom MENSCH):** OPS-GRAFANA-MONITORING + OPS-LOGS-LOKI (Instrumentierung/Alloy-Config autonom, Token MENSCH) · FEAT-BUGREPORT (Overlay+Endpoint autonom, privates Repo+Token MENSCH) · OBS-SENTRY (Code autonom, DSN MENSCH) · OPS-DOMAIN (Reverse-Proxy-Config autonom) · DOC-DOCS-SITE (MkDocs baut autonom, Custom-Domain-DNS MENSCH).
@@ -524,6 +524,28 @@ Alle noch im Greenfield-Fenster (vor erstem echten Deploy). Details und Audit-Ko
 - [ ] **REFACTOR-FE-PARTIESTORE** — `PartieStore._verarbeiteEventQueue` hat Komplexität **60**. Dispatcher-Methoden für Ereignisgruppen extrahieren (analog REFACTOR-FE-EREIGNISHANDLER). **Erste Datei zuerst:** `frontend/src/store/PartieStore.ts`. **DoD:** Komplexität < 20; Tests grün. **Risiko:** mittel.
 
 - [ ] **REFACTOR-FE-KARTENRENDERER** — `TischKartenRenderer.renderKartenFaecher` hat Komplexität **53** + `setzeKartenInteraktion` Komplexität **32**. Render-Schritte (Positionierung, Interaktion, Animation) in separate Methoden aufteilen. **Erste Datei zuerst:** `frontend/src/szenen/TischKartenRenderer.ts`. **DoD:** Top-Methoden < 20; Tests grün. **Risiko:** niedrig-mittel.
+
+### UI-Mängel aus FE-UI-FINAL-REVIEW (Session 50, 2026-06-04)
+
+> Vision-Loop grün (39.8s). Befunde aus Screenshots 01–12 gegen `specs/frontend-visuelles-design.md` geprüft. Details in `e2e/screenshots/`.
+
+**P-Hoch:**
+
+- [ ] **FE-RANGLISTE-BUTTON-CLIPPING** — Der „Rangliste"-Button (Trophy-Icon + Text) oben rechts wird in der Lobby an der rechten Viewport-Kante abgeschnitten (sichtbar in `01-lobby.png`, `11-offene-tische.png`). Trophy-Icon und Text teilweise außerhalb des sichtbaren Bereichs. **Erste Datei zuerst:** `frontend/src/szenen/SpielverwaltungsSzene.ts` — Button-X-Position so anpassen, dass min. 8–16px Abstand zum rechten Rand bleibt. **DoD:** Button vollständig sichtbar, kein Clipping. **Risiko:** niedrig.
+
+- [ ] **FE-NEUER-TISCH-MODAL-LAYOUT** — Im „Neuen Tisch erstellen"-Modal (`12-neuer-tisch-modal.png`): (a) Linker `<`-Pfeil-Button des Preset-Selektors wird am linken Modal-Rand abgeschnitten; (b) „Abbrechen"- und „Erstellen"-Buttons liegen zu nah beieinander und überlappen die darunter liegende „Offene Tische"-Sektion. **Erste Datei zuerst:** `frontend/src/szenen/SpielverwaltungsSzene.ts` — Modal-Höhe erhöhen, Preset-Selektor mit innerem Padding, Button-Abstände/Positionen korrigieren. **DoD:** Kein Clipping des Pfeil-Buttons; Buttons überlappen nicht; Vision-Loop grün. **Risiko:** niedrig-mittel.
+
+**P-Mittel:**
+
+- [ ] **FE-RUNDENAUSWERTUNG-LESBARKEIT** — Das Rundenauswertungs-Overlay (`05-rundenauswertung-overlay.png`): Spielstatistiken in sehr kleiner Schrift mit niedrigem Kontrast auf dunklem Hintergrund — kaum lesbar. Außerdem: Status-Header zeigt rohes Enum `IM_SPIEL` statt deutschem Label „Im Spiel". **Erste Datei zuerst:** Render-Code des Rundenauswertungs-Overlays (in `TischSzene.ts` oder `TischEreignisHandler.ts`) — Font-Größe auf min. SM (10px) erhöhen, Kontrast anpassen, Enum-Mapping `IM_SPIEL → Im Spiel` ergänzen. **DoD:** Overlay-Text lesbar; kein rohes Enum sichtbar; Vision-Loop grün. **Risiko:** niedrig.
+
+- [ ] **FE-VORBEHALT-AUSWAHL-FEEDBACK** — Die drei Vorbehalt-Wechsel-Frames (`02-vorbehalt-wechsel-0/50/100`) zeigen alle denselben Text „Dasensolo" ohne erkennbares „aktuell ausgewählt"-Feedback (kein Cursor-Hervorhebung, kein farbiger Rahmen, kein Pfeil). Spec fordert klaren Selektions-Indikator für den Neo-Brutalism-Stil. **Erste Datei zuerst:** `frontend/src/szenen/TischSzene.ts` — aktuelle Auswahl mit Goldrahmen (`#ffd166`, 2px) oder `▶`-Prefix hervorheben. **DoD:** Aktuell gewählter Vorbehalt klar visuell markiert; Vision-Loop grün. **Risiko:** niedrig.
+
+**P-Niedrig:**
+
+- [ ] **FE-LOBBY-BUTTON-ICONS** — „Mein Profil"-Button zeigt blauen Kreis, „Abmelden"-Button zeigt oranges Rechteck — sehen wie Debug-Platzhalter aus, keine semantische Icon-Bedeutung erkennbar (`01-lobby.png`). **Erste Datei zuerst:** `frontend/src/szenen/SpielverwaltungsSzene.ts` — Phaser-Sprite oder Emoji-Alternative (z.B. 👤 / 🚪) verwenden, oder Button-Icons entfernen falls kein passendes Asset vorhanden. **DoD:** Icons klar lesbar oder entfernt; kein Platzhalter-Grafik sichtbar. **Risiko:** niedrig.
+
+- [ ] **FE-NAMEPLATE-TEXTABSCHNEIDUNG** — In `03-stich-ausspielen-100.png` erscheint „Gu" als abgeschnittener Text im Spieler-Nameplate (vermutlich Stich-Zähler „Gu" statt vollständiger Abkürzung). Nameplate-Breite oder Font-Größe für den Stich-Zähler anpassen. **Erste Datei zuerst:** `frontend/src/szenen/TischSzene.ts` / Nameplate-Render-Methode — Textfeld-Breite prüfen und bei Bedarf anpassen. **DoD:** Stich-Zähler vollständig lesbar; Vision-Loop grün. **Risiko:** niedrig.
 
 ---
 
