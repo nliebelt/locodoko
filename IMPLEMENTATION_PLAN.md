@@ -49,15 +49,15 @@ Nächste offene Tasks — Fertigstellung (Session 30). **Zwei Meilensteine:** **
 > Alle UI-Mängel aus FE-UI-FINAL-REVIEW: **6/6 ✓** (RANGLISTE-BUTTON-CLIPPING, NEUER-TISCH-MODAL-LAYOUT, RUNDENAUSWERTUNG-LESBARKEIT, VORBEHALT-AUSWAHL-FEEDBACK, LOBBY-BUTTON-ICONS, BUG-EINSTELLUNGEN-MODAL).
 > Diese Queue ist komplett **Ralph-autonom** (verifizierbar via `mvn clean test` / `npm`). **Pro Task ein Commit.**
 
-**D) Verbleibende autonome Tasks (Reihenfolge Session 60):**
-1. ~~FE-NAMEPLATE-TEXTABSCHNEIDUNG~~ ✓ (Session 57)
-2. ~~REFACTOR-FE-EREIGNISHANDLER~~ ✓ (Session 59)
-3. ~~REFACTOR-FE-PARTIESTORE~~ ✓ (Session 61) — `_verarbeiteEventQueue` (CC 60) in Dispatcher + synchrone Phasen-Methoden aufgeteilt; `await`-Phasen bewusst inline (Microtask-Timing)
-4. **REFACTOR-FE-KARTENRENDERER** — `renderKartenFaecher` + `setzeKartenInteraktion` (~60 Z. je, Komplexität 53/32) — am Schwellenwert, optionales Refactoring ← **nächster**
-5. **FE-MOBILE-SMOKE** (M1, Session 60 vorgezogen) — Orientierungs-Hinweis + Landscape-Optimierung + Mobile-Vision-Viewport (Low-Risk)
-6. **DOC-DOCS-SITE** — MkDocs-Material-Seite für `docs.locodoko.de` (baut autonom, Custom-Domain-DNS MENSCH)
+**D) Verbleibende autonome Tasks (Reihenfolge Session 62):**
+1. ~~FE-NAMEPLATE-TEXTABSCHNEIDUNG~~ ✓ (S57) · ~~REFACTOR-FE-EREIGNISHANDLER~~ ✓ (S59) · ~~REFACTOR-FE-PARTIESTORE~~ ✓ (S61) · ~~REFACTOR-FE-KARTENRENDERER~~ ✓ (S61) · ~~FE-MOBILE-SMOKE~~ ✓ (S61) · ~~OBS-SENTRY~~ ✓ (S61, Code) · ~~OPS-GRAFANA-MONITORING~~ ✓ · ~~OPS-LOGS-LOKI~~ ✓ (S61, Code/Config)
+2. **FEAT-BUGREPORT** ← **nächster** — Overlay (`Shift+F1`) + `BugReportController` + Redaktion **laut `specs/bugreport.md`** autonom baubar; GitHub-Issue-Versand **env-gated** (Repo + Token = MENSCH, analog Sentry). Loki-Deep-Link nutzbar (OPS-LOGS-LOKI ✓).
+3. **DOC-DOCS-SITE** — MkDocs-Material-Seite für `docs.locodoko.de` (baut autonom, Custom-Domain-DNS MENSCH).
+4. **BUG-LOGIN-BUTTON-TEXTCLIPPING** (klein, P-hoch) — Login-Buttons schneiden Text ab (`LoginSzene.ts`), viewport-unabhängig. Siehe UI-Mängel-Sektion.
 
-**Teil-autonom (Code/Spec jetzt, finaler Secret/Wiring später vom MENSCH):** OPS-GRAFANA-MONITORING + OPS-LOGS-LOKI (Instrumentierung/Alloy-Config autonom, Token MENSCH) · FEAT-BUGREPORT (Overlay+Endpoint autonom, privates Repo+Token MENSCH) · OBS-SENTRY (Code autonom, DSN MENSCH) · OPS-DOMAIN (Reverse-Proxy-Config autonom).
+**Hinweis Build-Loop:** Diese Queue ist Ralph-autonom (Verifikation `mvn clean test` / `npm test && npm run build && npm run lint`, UI-Tasks zusätzlich Vision-Loop). **Pro Task ein Commit.** Env-gated externe Dienste (Sentry/Grafana/Loki/Bugreport-GitHub) sind ohne Secrets No-Ops → Build bleibt grün.
+
+**Externe Voraussetzung MENSCH (kein Ralph):** OPS-DOMAIN (Reverse-Proxy-Config autonom vorbereitbar, aber Server/DNS/TLS = MENSCH) · DEPLOY-COMPOSE-SMOKE (Docker + echtes Postgres) · CD-DEPLOY/CI-DOCKER-BUILD (Plattformwahl offen, **bewusst vertagt**).
 
 **Erst danach MENSCH nötig (Deploy-Phase):** OAuth-Credentials · DEPLOY-COMPOSE-SMOKE · CD-DEPLOY.
 
