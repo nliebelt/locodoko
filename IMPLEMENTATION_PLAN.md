@@ -520,7 +520,7 @@ Alle noch im Greenfield-Fenster (vor erstem echten Deploy). Details und Audit-Ko
 
 - [x] **REFACTOR-FE-PARTIESTORE** — `PartieStore._verarbeiteEventQueue` (CC 60) → Dispatcher CC < 20 (Session 61). Phasen ausgelagert; Quiescence/KI-Verzögerung hinter synchrone Guard-Prädikate (Microtask-Timing-Invariant, Doc-Kommentar). 240/240 grün.
 
-- [ ] **REFACTOR-FE-KARTENRENDERER** — `TischKartenRenderer.renderKartenFaecher` hat Komplexität **53** + `setzeKartenInteraktion` Komplexität **32**. Render-Schritte (Positionierung, Interaktion, Animation) in separate Methoden aufteilen. **Erste Datei zuerst:** `frontend/src/szenen/TischKartenRenderer.ts`. **DoD:** Top-Methoden < 20; Tests grün. **Risiko:** niedrig-mittel.
+- [x] **REFACTOR-FE-KARTENRENDERER** (Session 61) — `renderKartenFaecher` (CC 53) + `setzeKartenInteraktion` (CC 32) → alle Methoden CC < 20. `renderKartenFaecher` ist jetzt Dispatcher (`berechneFaecherKontext` → Schleife über `rendereHandkarte`, das `berechneKartenFlags`/`kartenAlpha` nutzt); `setzeKartenInteraktion` delegiert an `entferneKartenListener`/`setzeSpielInteraktion`/`deaktiviereKartenInteraktion`. Öffentliche Signaturen unverändert. 240/240 + Build + Lint grün.
 
 ### UI-Mängel aus FE-UI-FINAL-REVIEW (Session 50, 2026-06-04)
 
