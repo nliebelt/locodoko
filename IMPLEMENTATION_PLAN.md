@@ -4,7 +4,7 @@
 
 ## Notiz
 
-**Session 48 (2026-06-04) — SECURITY-REVIEW abgeschlossen:** Vollständiger Security-Review via `/security-review`-Skill. 7 Kandidaten untersucht, 6 als False Positives ausgeschieden (Log-Spoofing ausgeschlossen per Regel; CORS-Wildcard-WebSocket durch `SameSite=Strict` mitigiert; Actuator/Swagger/Error-Messages sind Hardening-Maßnahmen ohne direkte Exploitability; Exception-Handler deckt Spring-Error-Disclosure ab). **Einziger True Positive (Confidence 8/10):** `FeedbackController.java` — unvollständiges JSON-Escaping beim Discord-Webhook-Versand (fehlende Backslash-Escaping → JSON-Injection möglich). **Direkt behoben:** String-Konkatenation durch `ObjectMapper.writeValueAsString(Map.of(...))` ersetzt. Backend 356/356 grün. **→ Nächster Task: VERIFY-MULTIPLAYER**.
+**Session 49 (2026-06-04) — VERIFY-MULTIPLAYER abgeschlossen:** Neues E2E-Spec `e2e/tests/multiplayer.spec.ts` mit 2 unabhängigen Browser-Kontexten (eigene HTTP-Sessions/Cookies). Spieler 1 erstellt Tisch (nicht-privat, KI füllt 2 verbleibende Plätze), Spieler 2 tritt via `#join/{code}` bei. Beide spielen parallel (Promise.all) bis Rundenauswertung. Verifiziert: (1) Session-Isolation (keine fremden handKarten im Snapshot), (2) Overlay bei beiden Clients (Snapshot+Hint-Sync), (3) identische SpielNummer (Divergenz-Check), (4) keine JS-Fehler in beiden Contexts. Test grün in 51.5s. **→ Nächster Task: FE-UI-FINAL-REVIEW**.
 
 **Session 35 (2026-06-02) — SPEC-RECHT abgeschlossen:** `specs/recht-impressum-datenschutz.md` angelegt. Enthält: Impressum-Pflichtangaben (§5 DDG), vollständige Datenschutzerklärung-Struktur (DSGVO Art. 13/14 — alle DB-Felder aufgeschlüsselt, Google-OAuth2-Drittland-Transfer, Betroffenenrechte, Speicherdauer, Hosting-Datenresidenz), AGB-Mindeststruktur, Checkliste vor M2, konkrete Build-Tasks (Frontend-Seiten `/impressum`/`/datenschutz`/`/agb`, Footer-Links, AVV). Keine Code-Änderung nötig (DOC-Task). Nächste autonome Tasks: DOC-DOCS-SITE, QA-CODE-METRICS oder SECURITY-REVIEW (Skill verfügbar).
 
@@ -58,7 +58,7 @@ Nächste offene Tasks — Fertigstellung (Session 30). **Zwei Meilensteine:** **
 **C) Qualität & Produktreife (additiv, jederzeit autonom):**
 12. [x] **QA-CODE-METRICS** — Metrik-Report
 13. [x] **SECURITY-REVIEW** — `/security-review`-Skill
-14. **VERIFY-MULTIPLAYER** — Mehr-Session-E2E
+14. [x] **VERIFY-MULTIPLAYER** — Mehr-Session-E2E
 15. **FE-UI-FINAL-REVIEW** — Vision-Loop → Mängelkatalog
 16. **FE-SPIELREGELN-HILFE** — Regel-Overlay
 
@@ -158,7 +158,7 @@ Entscheidungen: **DECISION-AUTH** ✓ beide behalten · **DECISION-LIZENZ** aufg
 
 ### Priorität 3 — Vor Live-Gang (niedrig, aber laut Spec Multiplayer-Blocker)
 
-- [ ] **VERIFY-MULTIPLAYER** — E2E-Verifikation Mensch-gegen-Mensch über mehrere unabhängige Sessions.
+- [x] **VERIFY-MULTIPLAYER** — E2E-Verifikation Mensch-gegen-Mensch über mehrere unabhängige Sessions.
 
   `authentifizierung.md` nennt dies selbst den „Blocker für echten Multiplayer". Bestehende E2E testen v.a. Spiel gegen KI (`partie-gegen-ki.spec.ts`, `solo-spielfluss.spec.ts`, `reconnect.spec.ts`). Echtes Mensch-gegen-Mensch (mehrere reale Sessions/Logins an einem Tisch) ist bisher nicht als E2E abgedeckt.
 
