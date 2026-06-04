@@ -48,6 +48,7 @@ export interface TischHudTopBarKontext {
   onToggleEinstellungen: () => void;
   onToggleSeitenlade: () => void;
   onToggleSpielprotokoll: () => void;
+  onToggleHilfe: () => void;
 }
 
 export function renderHud(
@@ -144,6 +145,9 @@ export function renderTopBar(
   rightX -= 35;
   const protokollIcon = szene.add.text(rightX, barH / 2, '📋', { fontFamily: FONT_FAMILY, fontSize: `${iconSize}px` }).setOrigin(1, 0.5).setAlpha(kontext.spielprotokollOffen ? 1 : 0.6).setInteractive({ useHandCursor: true });
   protokollIcon.on('pointerdown', kontext.onToggleSpielprotokoll);
+  rightX -= 35;
+  const hilfeIcon = szene.add.text(rightX, barH / 2, '?', { fontFamily: FONT_FAMILY, fontSize: `${iconSize}px`, color: '#f8c94e' }).setOrigin(1, 0.5).setInteractive({ useHandCursor: true });
+  hilfeIcon.on('pointerdown', kontext.onToggleHilfe);
   rightX -= 35;
   const leaveIcon = szene.add.text(rightX, barH / 2, '←', { fontFamily: FONT_FAMILY, fontSize: `${iconSize}px`, color: '#ef4444' }).setOrigin(1, 0.5).setInteractive({ useHandCursor: true });
   leaveIcon.on('pointerdown', () => {

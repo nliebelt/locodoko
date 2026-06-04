@@ -21,6 +21,7 @@ export interface TischInputKontext {
   setTastaturVorbehaltIndex(v: number): void;
   togglSeitenlade(): void;
   togglEinstellungen(): void;
+  togglHilfe(): void;
   renderTisch(zustand: AppZustand, modell?: TischAnsichtModell): void;
   spieleKarteMitAnimation(karteId: string): Promise<void>;
 }
@@ -63,6 +64,11 @@ export class TischInputHandler {
     }
     if (e.key === 's' || e.key === 'S') {
       this.kontext.togglEinstellungen();
+      e.preventDefault();
+      return;
+    }
+    if (e.key === 'h' || e.key === 'H') {
+      this.kontext.togglHilfe();
       e.preventDefault();
       return;
     }
@@ -191,6 +197,7 @@ export class TischInputHandler {
       setTastaturVorbehaltIndex: (v) => { szene.tastaturVorbehaltIndex = v; },
       togglSeitenlade: () => { szene.seitenladeOffen = !szene.seitenladeOffen; szene.triggerRender(); },
       togglEinstellungen: () => { szene.einstellungenOffen = !szene.einstellungenOffen; szene.triggerRender(); },
+      togglHilfe: () => { szene.scene.launch('HilfeSzene', { modus: 'overlay' }); },
       renderTisch: (z, m) => { szene.renderTisch(z, m); },
       spieleKarteMitAnimation: (k) => szene.animationOrchestrator.spieleKarteMitAnimation(k),
     };

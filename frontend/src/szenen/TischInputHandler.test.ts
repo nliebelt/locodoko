@@ -39,6 +39,7 @@ describe('TischInputHandler', () => {
       setTastaturVorbehaltIndex: vi.fn(),
       togglSeitenlade: vi.fn(),
       togglEinstellungen: vi.fn(),
+      togglHilfe: vi.fn(),
       renderTisch: vi.fn(),
       spieleKarteMitAnimation: vi.fn()
     };

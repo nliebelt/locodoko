@@ -4,7 +4,7 @@
 
 ## Notiz
 
-**Session 50 (2026-06-04) — FE-UI-FINAL-REVIEW abgeschlossen:** Vision-Loop grün (39.8s). 6 UI-Mängel katalogisiert und als FE-Tasks unter „Entdeckungen" eingetragen (2× P-Hoch, 2× P-Mittel, 2× P-Niedrig). Wichtigste Befunde: Rangliste-Button rechts abgeschnitten (P-Hoch), Layout-Überlappungen im "Neuen Tisch"-Modal (P-Hoch), schlechte Lesbarkeit des Rundenauswertungs-Overlays inkl. rohem Enum "IM_SPIEL" (P-Mittel). **→ Nächster Task: FE-SPIELREGELN-HILFE**.
+**Session 51 (2026-06-04) — FE-SPIELREGELN-HILFE abgeschlossen:** `HilfeSzene.ts` (4 Tabs: Trumpfhierarchie / Ansagen / Sonderspiele / Punktesystem). Zugänge: Lobby-Button „? Spielregeln" (x=950 links von Rangliste) + H/h-Taste am Tisch + TopBar-„?"-Icon (gelb, zwischen 📋 und ←). Overlay-Modus (scene.launch) vom Tisch, Vollbild-Modus (scene.start) aus der Lobby. 240/240 Tests grün, Build+Lint sauber. **→ Nächster Task: FE-RANGLISTE-BUTTON-CLIPPING (P-Hoch)**.
 
 **Session 35 (2026-06-02) — SPEC-RECHT abgeschlossen:** `specs/recht-impressum-datenschutz.md` angelegt. Enthält: Impressum-Pflichtangaben (§5 DDG), vollständige Datenschutzerklärung-Struktur (DSGVO Art. 13/14 — alle DB-Felder aufgeschlüsselt, Google-OAuth2-Drittland-Transfer, Betroffenenrechte, Speicherdauer, Hosting-Datenresidenz), AGB-Mindeststruktur, Checkliste vor M2, konkrete Build-Tasks (Frontend-Seiten `/impressum`/`/datenschutz`/`/agb`, Footer-Links, AVV). Keine Code-Änderung nötig (DOC-Task). Nächste autonome Tasks: DOC-DOCS-SITE, QA-CODE-METRICS oder SECURITY-REVIEW (Skill verfügbar).
 
@@ -60,7 +60,7 @@ Nächste offene Tasks — Fertigstellung (Session 30). **Zwei Meilensteine:** **
 13. [x] **SECURITY-REVIEW** — `/security-review`-Skill
 14. [x] **VERIFY-MULTIPLAYER** — Mehr-Session-E2E
 15. [x] **FE-UI-FINAL-REVIEW** — Vision-Loop → Mängelkatalog
-16. **FE-SPIELREGELN-HILFE** — Regel-Overlay
+16. [x] **FE-SPIELREGELN-HILFE** — Regel-Overlay
 
 **Teil-autonom (Code/Spec jetzt, finaler Secret/Wiring später vom MENSCH):** OPS-GRAFANA-MONITORING + OPS-LOGS-LOKI (Instrumentierung/Alloy-Config autonom, Token MENSCH) · FEAT-BUGREPORT (Overlay+Endpoint autonom, privates Repo+Token MENSCH) · OBS-SENTRY (Code autonom, DSN MENSCH) · OPS-DOMAIN (Reverse-Proxy-Config autonom) · DOC-DOCS-SITE (MkDocs baut autonom, Custom-Domain-DNS MENSCH).
 
@@ -332,7 +332,7 @@ Entscheidungen: **DECISION-AUTH** ✓ beide behalten · **DECISION-LIZENZ** aufg
 
   **DoD:** Review durchgeführt, Findings als `BUG-…`-Tasks erfasst, kritische vor Exposition behoben. **Risiko:** mittel.
 
-- [ ] **FE-SPIELREGELN-HILFE** (M2) — In-App-Spielregeln/Onboarding.
+- [x] **FE-SPIELREGELN-HILFE** (M2) — In-App-Spielregeln/Onboarding.
 
   Keine spielerklärende Hilfe erkennbar (nur Regel-*Presets* der Tischkonfig). Doppelkopf ist komplex → für ein öffentliches Publikum nötig; für DoKo-kundige Kollegen in M1 entbehrlich.
 

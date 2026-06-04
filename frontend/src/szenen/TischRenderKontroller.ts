@@ -118,6 +118,7 @@ export class TischRenderKontroller {
       onToggleEinstellungen: () => { this.szene.einstellungenOffen = !this.szene.einstellungenOffen; this.renderTisch(zustand, modell); },
       onToggleSeitenlade: () => { this.szene.seitenladeOffen = !this.szene.seitenladeOffen; this.renderTisch(zustand, modell); },
       onToggleSpielprotokoll: () => { this.szene.toggleSpielprotokoll(modell, zustand); },
+      onToggleHilfe: () => { this.szene.scene.launch('HilfeSzene', { modus: 'overlay' }); },
     });
 
     if (this.szene.seitenladeOffen) {
