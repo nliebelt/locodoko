@@ -352,7 +352,7 @@ export class SpielverwaltungsSzene extends Phaser.Scene {
     const modal = new PhaserModal(this, 640, 360, {
       titel: 'Neuen Tisch erstellen',
       breite: 500,
-      hoehe: 300,
+      hoehe: 380,
       zeigeSchliessenButton: true,
       onClose: closeCallback,
       aktionen: [
@@ -367,11 +367,11 @@ export class SpielverwaltungsSzene extends Phaser.Scene {
     const presetLabel = this.add.text(0, -60, 'Regel-Preset:', { fontFamily: FONT_FAMILY, fontSize: '16px', color: TEXT_HELL_CSS }).setOrigin(0.5);
     cc.add(presetLabel);
 
-    const presetValue = this.add.text(0, -30, currentPreset?.label || 'Lädt...', { fontFamily: FONT_FAMILY, fontSize: '20px', color: '#fff' }).setOrigin(0.5);
+    const presetValue = this.add.text(0, -30, currentPreset?.label || 'Lädt...', { fontFamily: FONT_FAMILY, fontSize: '14px', color: '#fff' }).setOrigin(0.5);
     cc.add(presetValue);
 
     const prevBtn = new PhaserButton(this, {
-      x: -200, y: -30, text: '<', breite: 40, callback: () => {
+      x: -165, y: -30, text: '<', breite: 40, callback: () => {
         if (this.presets.length === 0) return;
         this.currentPresetIndex = (this.currentPresetIndex - 1 + this.presets.length) % this.presets.length;
         currentPreset = this.presets[this.currentPresetIndex];
@@ -381,7 +381,7 @@ export class SpielverwaltungsSzene extends Phaser.Scene {
     cc.add(prevBtn);
 
     const nextBtn = new PhaserButton(this, {
-      x: 200, y: -30, text: '>', breite: 40, callback: () => {
+      x: 165, y: -30, text: '>', breite: 40, callback: () => {
         if (this.presets.length === 0) return;
         this.currentPresetIndex = (this.currentPresetIndex + 1) % this.presets.length;
         currentPreset = this.presets[this.currentPresetIndex];
