@@ -47,12 +47,12 @@ export class SpielverwaltungsSzene extends Phaser.Scene {
     }).setOrigin(0.5);
 
     new PhaserButton(this, {
-      x: 950, y: 45, text: '? Spielregeln', typ: 'secondary', breite: 190, hoehe: 40,
+      x: 880, y: 45, text: '? Spielregeln', typ: 'secondary', breite: 190, hoehe: 40,
       callback: () => this.scene.start('HilfeSzene', { herkunft: 'SpielverwaltungsSzene' }),
     });
 
     new PhaserButton(this, {
-      x: 1160, y: 45, text: '🏆 Rangliste', typ: 'secondary', breite: 200, hoehe: 40,
+      x: 1120, y: 45, text: '🏆 Rangliste', typ: 'secondary', breite: 200, hoehe: 40,
       callback: () => this.scene.start('BestenlisterSzene')
     });
 

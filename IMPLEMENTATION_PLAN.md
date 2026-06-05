@@ -4,7 +4,7 @@
 
 ## Notiz
 
-**Session 70 (2026-06-05) — BUG-LOBBY-OFFENE-TISCHE-OVERLAP abgeschlossen:** `SpielverwaltungsSzene.ts`: „Offene Tische"-Header Y=500→570 (50px unterhalb des Bug-melden-Buttons bei Y=520, ~25px Gap zur Button-Unterkante). „Keine offenen Tische"-Message Y=560→630. PhaserList Y=620→645, hoehe=180→150 (passt exakt in 720px-Leinwand, zeigt 2 Tischeinträge). Backend nicht verfügbar → Vision Loop ausgelassen, manueller Screenshot-Check empfohlen. 240/240 Tests grün, Build + Lint clean. **Nächste autonome Queue: BUG-LOBBY-TOPRIGHT-CLIPPING → OPS-EMAIL → FE-MOBILE.**
+**Session 70 (2026-06-05) — BUG-LOBBY-OFFENE-TISCHE-OVERLAP + BUG-LOBBY-TOPRIGHT-CLIPPING abgeschlossen:** (1) „Offene Tische"-Header Y=500→570 (50px unterhalb Bug-melden-Button Y=520), Message Y=560→630, PhaserList Y=645/hoehe=150 (passt in 720px). (2) „? Spielregeln" X=950→880, „🏆 Rangliste" X=1160→1120 — beide Buttons deutlich vom rechten Viewport-Rand entfernt; Rangliste-Shadow überlappt nicht mehr den Spielregeln-Text. Backend offline → Vision Loop ausgelassen, manueller Check empfohlen. 240/240 Tests grün. **Nächste autonome Queue: OPS-EMAIL → FE-MOBILE.**
 
 **Session 68 (2026-06-05) — FE-VISUAL-REVIEW-BALATRO abgeschlossen:** Vision-Loop grün (1/1, 41.5s). Nameplates: alle 4 Positionen korrekt positioniert (SUED/NORD/WEST/OST), Player-Namen sichtbar, KONTRA-Badge angezeigt. FlashTextManager: VorbehaltErwartet-Banner (Gesund/Vorbehalt-Auswahl) sichtbar animiert — DoD erfüllt. Zwei Layout-Bugs entdeckt und unter Entdeckungen erfasst: (1) **BUG-LOBBY-OFFENE-TISCHE-OVERLAP** — "Offene Tische"-Header überlappt mit "Bug melden"-Button in der Lobby; (2) **BUG-LOBBY-TOPRIGHT-CLIPPING** — "? Spielregeln" und "🏆 Rangliste" oben-rechts überschreiten den rechten Viewport-Rand (1280px). **Nächste autonome Queue: OPS-EMAIL → FE-MOBILE.**
 
@@ -74,7 +74,7 @@ Nächste offene Tasks — Fertigstellung (Session 30). **Zwei Meilensteine:** **
 **E) Neue autonome Queue (ab Session 67):**
 1. ~~FE-VISUAL-REVIEW-BALATRO~~ ✓ (S68) — Vision-Loop grün (1/1, 41.5s). Nameplates korrekt positioniert, FlashText-Animationen sichtbar. Zwei Lobby-Layout-Bugs erfasst (→ Entdeckungen).
 2. ~~BUG-LOBBY-OFFENE-TISCHE-OVERLAP~~ ✓ (S70) — Header Y=570, Liste Y=645/hoehe=150; kein Overlap mehr.
-3. **BUG-LOBBY-TOPRIGHT-CLIPPING** (P-Mittel) — `SpielverwaltungsSzene.ts` X-Positionen „? Spielregeln" + „🏆 Rangliste" min. 8px vom rechten Rand. Vision-Loop + DoD (→ Entdeckungen).
+3. ~~BUG-LOBBY-TOPRIGHT-CLIPPING~~ ✓ (S70) — Spielregeln X=880, Rangliste X=1120; min. 46px Abstand zum rechten Rand.
 4. **OPS-EMAIL** (Prio 4, DOC + Code) — `authentifizierung.md` Abschnitt „Email-Verifizierung & Passwort-Reset (V2)" konkretisieren (EU-Anbieter Brevo 🇫🇷/Mailjet 🇫🇷 oder SMTP, Double-Opt-In, Reset-Token-Ablauf, Token-TTL) + Spring-Mail-Integration (`spring-boot-starter-mail`, Template-Engine, ENV `SMTP_HOST`/`SMTP_USER`/`SMTP_PASSWORD`). Env-gated: ohne `SMTP_HOST` No-Op (kein Test-Bruch). Kein M1-Blocker, aber nützlich gegen Fake-Accounts (M2). **DoD:** Spec definiert Email-Flows + EU-Anbieter; Verifikations-/Reset-Mail wird bei gesetztem SMTP-Host versendet; Tests grün. **Risiko:** niedrig-mittel.
 5. **FE-MOBILE** (M2, mittleres Risiko) — Voller Mobile-/Touch-/Portrait-Umbau nach `FE-MOBILE-SMOKE`. Erst nach FE-VISUAL-REVIEW-BALATRO ansetzen. Spec `specs/frontend-tischansicht.md` + `frontend-visuelles-design.md` konsultieren. **Risiko:** mittel (breiter Layout-Eingriff).
 
@@ -581,7 +581,7 @@ Alle noch im Greenfield-Fenster (vor erstem echten Deploy). Details und Audit-Ko
 
 - [x] **BUG-LOBBY-OFFENE-TISCHE-OVERLAP** (entdeckt Session 68, behoben Session 70) — Header Y=570, Message Y=630, Liste Y=645/hoehe=150. Kein Overlap mehr. Vision-Loop ausgelassen (Backend offline), manueller Check empfohlen.
 
-- [ ] **BUG-LOBBY-TOPRIGHT-CLIPPING** (entdeckt Session 68) — In `01-lobby.png` und `11-offene-tische.png` sind die Buttons oben rechts beschnitten: „? Spielregeln" wird als „? Spielrege" dargestellt (letzte 2 Zeichen „ln" fehlen), „🏆 Rangliste" reicht bis an den rechten Viewport-Rand (1280px). Wahrscheinlich durch Hinzufügen des Spielregeln-Buttons (FE-SPIELREGELN-HILFE) ohne Anpassung der X-Positionen des bestehenden Rangliste-Buttons. **Erste Datei zuerst:** `frontend/src/szenen/SpielverwaltungsSzene.ts` — X-Positionen beider oben-rechts-Buttons so setzen, dass min. 8px Abstand zum rechten Rand bleibt (analog zu FE-RANGLISTE-BUTTON-CLIPPING, Session 50). **DoD:** Beide Buttons vollständig sichtbar ohne Clipping; Vision-Loop grün. **Risiko:** niedrig.
+- [x] **BUG-LOBBY-TOPRIGHT-CLIPPING** (entdeckt Session 68, behoben Session 70) — Spielregeln X=880, Rangliste X=1120; Shadow-Overlap eliminiert, beide Buttons vollständig im Viewport.
 
 ---
 
