@@ -47,6 +47,7 @@ vi.mock('phaser', () => ({
 vi.mock('../szenen/PhaserButton', () => ({
   PhaserButton: class extends FakeContainer {
     focus = false;
+    breite = 140;
     constructor() { super({}); }
     setFocus(f: boolean) { this.focus = f; }
     trigger() { if ((this as any).onpointerdown) (this as any).onpointerdown(); }

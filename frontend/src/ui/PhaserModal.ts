@@ -78,13 +78,24 @@ export class PhaserModal extends Phaser.GameObjects.Container {
     this.contentContainer = new Phaser.GameObjects.Container(scene, 0, 0);
     this.add(this.contentContainer);
 
-    // Aktionen (Buttons am unteren Rand)
+    // Aktionen (Buttons am unteren Rand).
+    // PhaserButton skaliert seine Breite auf Textbreite + Padding (die `breite`-Option
+    // ist nur ein Minimum). Ein fixes Spaltenraster wuerde daher bei langen Labels
+    // (z.B. "Abbrechen"/"Erstellen") ueberlappen — stattdessen die Buttons zuerst
+    // erzeugen und anhand ihrer tatsaechlichen Renderbreite zentriert anordnen.
     if (aktionen.length > 0) {
-      const startX = -((aktionen.length - 1) * 160) / 2;
-      aktionen.forEach((akt, index) => {
-        const btnOpt = { ...akt, x: startX + index * 160, y: hoehe / 2 - 40, breite: akt.breite || 140, hoehe: akt.hoehe || 40 };
+      const luecke = 24;
+      const buttons = aktionen.map((akt) => {
+        const btnOpt = { ...akt, x: 0, y: hoehe / 2 - 40, breite: akt.breite ?? 140, hoehe: akt.hoehe ?? 40 };
         const btn = new PhaserButton(scene, btnOpt);
         if (akt.testId) btn.setName(akt.testId);
+        return btn;
+      });
+      const gesamtBreite = buttons.reduce((summe, btn) => summe + btn.breite, 0) + luecke * (buttons.length - 1);
+      let cursor = -gesamtBreite / 2;
+      buttons.forEach((btn) => {
+        btn.x = cursor + btn.breite / 2;
+        cursor += btn.breite + luecke;
         this.add(btn);
         this.addFocusable(btn);
       });

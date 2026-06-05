@@ -383,11 +383,17 @@ export class SpielverwaltungsSzene extends Phaser.Scene {
     const presetLabel = this.add.text(0, -60, 'Regel-Preset:', { fontFamily: FONT_FAMILY, fontSize: '16px', color: TEXT_HELL_CSS }).setOrigin(0.5);
     cc.add(presetLabel);
 
-    const presetValue = this.add.text(0, -30, currentPreset?.label || 'Lädt...', { fontFamily: FONT_FAMILY, fontSize: '14px', color: '#fff' }).setOrigin(0.5);
+    // WordWrap als Sicherheitsnetz: lange Labels (z.B. "Loco-Blatt (Hausregeln)")
+    // bleiben innerhalb des Bereichs zwischen den ‹ ›-Pfeilen statt unter deren
+    // (auto-skalierte) Buttons zu laufen und beidseitig abgeschnitten zu wirken.
+    const presetValue = this.add.text(0, -30, currentPreset?.label || 'Lädt...', {
+      fontFamily: FONT_FAMILY, fontSize: '13px', color: '#fff', align: 'center',
+      wordWrap: { width: 330 }
+    }).setOrigin(0.5);
     cc.add(presetValue);
 
     const prevBtn = new PhaserButton(this, {
-      x: -165, y: -30, text: '<', breite: 40, callback: () => {
+      x: -205, y: -30, text: '<', breite: 40, callback: () => {
         if (this.presets.length === 0) return;
         this.currentPresetIndex = (this.currentPresetIndex - 1 + this.presets.length) % this.presets.length;
         currentPreset = this.presets[this.currentPresetIndex];
@@ -397,7 +403,7 @@ export class SpielverwaltungsSzene extends Phaser.Scene {
     cc.add(prevBtn);
 
     const nextBtn = new PhaserButton(this, {
-      x: 165, y: -30, text: '>', breite: 40, callback: () => {
+      x: 205, y: -30, text: '>', breite: 40, callback: () => {
         if (this.presets.length === 0) return;
         this.currentPresetIndex = (this.currentPresetIndex + 1) % this.presets.length;
         currentPreset = this.presets[this.currentPresetIndex];
