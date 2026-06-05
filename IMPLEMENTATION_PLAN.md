@@ -1,8 +1,12 @@
 # IMPLEMENTATION_PLAN — Locodoko Doppelkopf
 
-> Stand: 2026-06-04 (Session 57). Erledigte Aufgaben → `IMPLEMENTATION_PLAN_ARCHIVE.md`
+> Stand: 2026-06-05 (Session 67 — Planungslauf). Erledigte Aufgaben → `IMPLEMENTATION_PLAN_ARCHIVE.md`
 
 ## Notiz
+
+**Session 68 (2026-06-05) — FE-VISUAL-REVIEW-BALATRO abgeschlossen:** Vision-Loop grün (1/1, 41.5s). Nameplates: alle 4 Positionen korrekt positioniert (SUED/NORD/WEST/OST), Player-Namen sichtbar, KONTRA-Badge angezeigt. FlashTextManager: VorbehaltErwartet-Banner (Gesund/Vorbehalt-Auswahl) sichtbar animiert — DoD erfüllt. Zwei Layout-Bugs entdeckt und unter Entdeckungen erfasst: (1) **BUG-LOBBY-OFFENE-TISCHE-OVERLAP** — "Offene Tische"-Header überlappt mit "Bug melden"-Button in der Lobby; (2) **BUG-LOBBY-TOPRIGHT-CLIPPING** — "? Spielregeln" und "🏆 Rangliste" oben-rechts überschreiten den rechten Viewport-Rand (1280px). **Nächste autonome Queue: OPS-EMAIL → FE-MOBILE.**
+
+**Session 67 (2026-06-05) — Planungslauf:** Code-Scan ergab: `FlashTextManager` (`frontend/src/ui/FlashTextManager.ts`) + `Nameplate` (`frontend/src/ui/Nameplate.ts`) vollständig implementiert, aber nicht im Plan erfasst → als erledigt nachgetragen. Beide Specs (`frontend-flash-text.md`, `frontend-nameplates.md`) tragen Status „Abgeschlossen" mit einem offenen DoD-Item: „Visuelles Review via Vision Loop" → **FE-VISUAL-REVIEW-BALATRO** als nächsten autonomen Task eingetragen. `frontend-spielerprofil.md` ebenfalls "Implementiert" (Session 14, HTML-Modal). BUG-LOGIN-BUTTON-TEXTCLIPPING (Session 66) vollständig abgeschlossen. M1-Blocker sind ausschließlich MENSCH-abhängig (Server/DNS/TLS/OAuth-Credentials/Docker+Postgres). **Nächste autonome Queue: FE-VISUAL-REVIEW-BALATRO → OPS-EMAIL → FE-MOBILE.**
 
 **Session 66 (2026-06-05) — BUG-GEMINI-CLI-QUOTA-DISPLAY abgeschlossen:** `ralph-gemini.sh` — jq-Pipeline um `.type == "error"`-Handler erweitert: QUOTA/429/RESOURCE_EXHAUSTED-Fehler werden gelb + explizit ausgegeben statt still zu verschwinden (vorher durch `else empty` gefiltert). Nach der Pipeline: Quota-Check auf ITER_OUTPUT → Loop-Abbruch bei 429 (weitere Iterationen würden ohnehin scheitern). "Unknown error" bleibt als roter API-Fehler sichtbar (nicht mehr maskiert). 360 Backend + 240 Frontend-Tests grün. **Nächster Task: OPS-EMAIL (DOC, Prio 4) oder FE-MOBILE (M2) — beide autonom, kein MENSCH nötig.**
 
@@ -49,7 +53,7 @@ Nächste offene Tasks — Fertigstellung (Session 30). **Zwei Meilensteine:** **
 **Meilenstein 1 — Closed Beta (`zock.locodoko.de`, eingeladene Kollegen, Daten erhalten).**
 **Loop-Hinweis:** Ralph arbeitet **Block A** strikt der Reihe nach ab (alles autonom verifizierbar via `mvn`/`npm`). **Block B** trägt `Vorbedingung: MENSCH` — diese Tasks **überspringen**, bis die externe Voraussetzung (Server/Domain/Google-Account) erfüllt ist.
 
-### Nächste autonome Queue (Stand Session 57) — Ralph der Reihe nach, **kein MENSCH nötig**
+### Nächste autonome Queue (Stand Session 67) — Ralph der Reihe nach, **kein MENSCH nötig**
 
 > Blöcke A (Schema 1–7), B (Statistik 8–11), C (Qualität 12–16) + alle Block-A-Ops (1–9): **komplett ✓**.
 > Alle UI-Mängel aus FE-UI-FINAL-REVIEW: **6/6 ✓** (RANGLISTE-BUTTON-CLIPPING, NEUER-TISCH-MODAL-LAYOUT, RUNDENAUSWERTUNG-LESBARKEIT, VORBEHALT-AUSWAHL-FEEDBACK, LOBBY-BUTTON-ICONS, BUG-EINSTELLUNGEN-MODAL).
@@ -57,9 +61,18 @@ Nächste offene Tasks — Fertigstellung (Session 30). **Zwei Meilensteine:** **
 
 **D) Verbleibende autonome Tasks (Reihenfolge Session 62):**
 1. ~~FE-NAMEPLATE-TEXTABSCHNEIDUNG~~ ✓ (S57) · ~~REFACTOR-FE-EREIGNISHANDLER~~ ✓ (S59) · ~~REFACTOR-FE-PARTIESTORE~~ ✓ (S61) · ~~REFACTOR-FE-KARTENRENDERER~~ ✓ (S61) · ~~FE-MOBILE-SMOKE~~ ✓ (S61) · ~~OBS-SENTRY~~ ✓ (S61, Code) · ~~OPS-GRAFANA-MONITORING~~ ✓ · ~~OPS-LOGS-LOKI~~ ✓ (S61, Code/Config)
-2. **FEAT-BUGREPORT** ← **nächster** — Overlay (`Shift+F1`) + `BugReportController` + Redaktion **laut `specs/bugreport.md`** autonom baubar; GitHub-Issue-Versand **env-gated** (Repo + Token = MENSCH, analog Sentry). Loki-Deep-Link nutzbar (OPS-LOGS-LOKI ✓).
+2. ~~FEAT-BUGREPORT~~ ✓ (S63) — Overlay (`Shift+F1`) + `BugReportController` + Redaktion laut `specs/bugreport.md`. GitHub-Issue-Versand env-gated.
 3. ~~DOC-DOCS-SITE~~ ✓ (S64) — MkDocs-Material-Seite für `docs.locodoko.de`.
-4. **BUG-LOGIN-BUTTON-TEXTCLIPPING** (klein, P-hoch) — Login-Buttons schneiden Text ab (`LoginSzene.ts`), viewport-unabhängig. Siehe UI-Mängel-Sektion.
+4. ~~BUG-LOGIN-BUTTON-TEXTCLIPPING~~ ✓ (S66) — Login-Buttons: PhaserButton passt Breite automatisch an Textlänge an.
+
+*Nachgetragen (Session-67-Scan — im Plan bisher fehlend):*
+- ~~FE-FLASH-TEXT~~ ✓ — `FlashTextManager` in `frontend/src/ui/FlashTextManager.ts`; alle 9 Events animiert (SpielGestartet bis SpielBeendet), Foil-Shimmer, Konfetti-Emitter, Shockwave-Ringe, Screen Shake, Camera Flash. Instanziiert in `TischSzene.ts:108`. Spec `frontend-flash-text.md` Status „Abgeschlossen".
+- ~~FE-NAMEPLATES~~ ✓ — `Nameplate` in `frontend/src/ui/Nameplate.ts`; alle States (default/amZug/geber/vorbehalt), RE/KONTRA-Badge mit Bounce, Geber-Krone floating, Vorbehalt-Pulse, Shake-Effekt, Teamfarbe dynamisch. Vier Instanzen in `TischSzene.ts:47`. Spec `frontend-nameplates.md` Status „Abgeschlossen".
+
+**E) Neue autonome Queue (ab Session 67):**
+1. ~~FE-VISUAL-REVIEW-BALATRO~~ ✓ (S68) — Vision-Loop grün (1/1, 41.5s). Nameplates korrekt positioniert, FlashText-Animationen sichtbar. Zwei Lobby-Layout-Bugs erfasst (→ Entdeckungen).
+2. **OPS-EMAIL** (Prio 4, DOC + Code) — `authentifizierung.md` Abschnitt „Email-Verifizierung & Passwort-Reset (V2)" konkretisieren (EU-Anbieter Brevo 🇫🇷/Mailjet 🇫🇷 oder SMTP, Double-Opt-In, Reset-Token-Ablauf, Token-TTL) + Spring-Mail-Integration (`spring-boot-starter-mail`, Template-Engine, ENV `SMTP_HOST`/`SMTP_USER`/`SMTP_PASSWORD`). Env-gated: ohne `SMTP_HOST` No-Op (kein Test-Bruch). Kein M1-Blocker, aber nützlich gegen Fake-Accounts (M2). **DoD:** Spec definiert Email-Flows + EU-Anbieter; Verifikations-/Reset-Mail wird bei gesetztem SMTP-Host versendet; Tests grün. **Risiko:** niedrig-mittel.
+3. **FE-MOBILE** (M2, mittleres Risiko) — Voller Mobile-/Touch-/Portrait-Umbau nach `FE-MOBILE-SMOKE`. Erst nach FE-VISUAL-REVIEW-BALATRO ansetzen. Spec `specs/frontend-tischansicht.md` + `frontend-visuelles-design.md` konsultieren. **Risiko:** mittel (breiter Layout-Eingriff).
 
 **Hinweis Build-Loop:** Diese Queue ist Ralph-autonom (Verifikation `mvn clean test` / `npm test && npm run build && npm run lint`, UI-Tasks zusätzlich Vision-Loop). **Pro Task ein Commit.** Env-gated externe Dienste (Sentry/Grafana/Loki/Bugreport-GitHub) sind ohne Secrets No-Ops → Build bleibt grün.
 
@@ -555,6 +568,16 @@ Alle noch im Greenfield-Fenster (vor erstem echten Deploy). Details und Audit-Ko
 - [x] **FE-LOBBY-BUTTON-ICONS** — „Mein Profil"-Button zeigt blauen Kreis, „Abmelden"-Button zeigt oranges Rechteck — sehen wie Debug-Platzhalter aus, keine semantische Icon-Bedeutung erkennbar (`01-lobby.png`). **Erste Datei zuerst:** `frontend/src/szenen/SpielverwaltungsSzene.ts` — Phaser-Sprite oder Emoji-Alternative (z.B. 👤 / 🚪) verwenden, oder Button-Icons entfernen falls kein passendes Asset vorhanden. **DoD:** Icons klar lesbar oder entfernt; kein Platzhalter-Grafik sichtbar. **Risiko:** niedrig.
 
 - [x] **FE-NAMEPLATE-TEXTABSCHNEIDUNG** — In `03-stich-ausspielen-100.png` erscheint „Gu" als abgeschnittener Text im Spieler-Nameplate (vermutlich Stich-Zähler „Gu" statt vollständiger Abkürzung). Nameplate-Breite oder Font-Größe für den Stich-Zähler anpassen. **Erste Datei zuerst:** `frontend/src/szenen/TischSzene.ts` / Nameplate-Render-Methode — Textfeld-Breite prüfen und bei Bedarf anpassen. **DoD:** Stich-Zähler vollständig lesbar; Vision-Loop grün. **Risiko:** niedrig.
+
+### UI-Mängel aus FE-VISUAL-REVIEW-BALATRO (Session 68, 2026-06-05)
+
+> Vision-Loop grün (41.5s). Screenshots `01-lobby.png` / `11-offene-tische.png` zeigen zwei Layout-Fehler in der Lobby.
+
+**P-Mittel:**
+
+- [ ] **BUG-LOBBY-OFFENE-TISCHE-OVERLAP** (entdeckt Session 68) — In `01-lobby.png` und `11-offene-tische.png` überlappt der goldene „Offene Tische"-Abschnittsheader den darunter liegenden „Bug melden (Shift+F1)"-Button: beide Elemente teilen dieselbe Y-Position (~y=498/518). Seit FEAT-BUGREPORT (Session 63) wurde der Button in `SpielverwaltungsSzene.ts` hinzugefügt; der Abstandsberechnung fehlt der Button-Offset. **Erste Datei zuerst:** `frontend/src/szenen/SpielverwaltungsSzene.ts` — Y-Position von „Offene Tische"-Header nach unten verschieben, um den „Bug melden"-Button nicht zu überdecken. **DoD:** Kein Overlap sichtbar in `01-lobby.png`; Vision-Loop grün. **Risiko:** niedrig.
+
+- [ ] **BUG-LOBBY-TOPRIGHT-CLIPPING** (entdeckt Session 68) — In `01-lobby.png` und `11-offene-tische.png` sind die Buttons oben rechts beschnitten: „? Spielregeln" wird als „? Spielrege" dargestellt (letzte 2 Zeichen „ln" fehlen), „🏆 Rangliste" reicht bis an den rechten Viewport-Rand (1280px). Wahrscheinlich durch Hinzufügen des Spielregeln-Buttons (FE-SPIELREGELN-HILFE) ohne Anpassung der X-Positionen des bestehenden Rangliste-Buttons. **Erste Datei zuerst:** `frontend/src/szenen/SpielverwaltungsSzene.ts` — X-Positionen beider oben-rechts-Buttons so setzen, dass min. 8px Abstand zum rechten Rand bleibt (analog zu FE-RANGLISTE-BUTTON-CLIPPING, Session 50). **DoD:** Beide Buttons vollständig sichtbar ohne Clipping; Vision-Loop grün. **Risiko:** niedrig.
 
 ---
 
