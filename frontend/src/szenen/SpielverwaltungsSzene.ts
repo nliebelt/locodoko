@@ -210,23 +210,23 @@ export class SpielverwaltungsSzene extends Phaser.Scene {
     const wartendeTische = tische.filter(t => t.status === 'WARTEND');
     const eigeneLaufendeTische = tische.filter(t => t.status === 'IM_SPIEL' && aktiverTischId === t.id);
 
-    this.add.text(640, 500, 'Offene Tische', {
+    this.add.text(640, 570, 'Offene Tische', {
       fontFamily: FONT_FAMILY,
       fontSize: '24px',
       color: FARBE_GOLD_WARM_CSS
     }).setOrigin(0.5);
 
     if (wartendeTische.length === 0 && eigeneLaufendeTische.length === 0) {
-      const msg = this.add.text(640, 560, 'Keine offenen Tische. Starte ein Quick Game!', {
+      const msg = this.add.text(640, 630, 'Keine offenen Tische. Starte ein Quick Game!', {
         fontFamily: FONT_FAMILY, fontSize: '16px', color: TEXT_HELL_CSS
       }).setOrigin(0.5);
       this.uiContainer?.add(msg);
       return;
     }
 
-    this.offeneTischeListe = new PhaserList(this, 640, 620, {
+    this.offeneTischeListe = new PhaserList(this, 640, 645, {
       breite: 600,
-      hoehe: 180,
+      hoehe: 150,
       elementHoehe: 60,
       items: [...eigeneLaufendeTische, ...wartendeTische],
       renderElement: (item: unknown, c: Phaser.GameObjects.Container) => this.renderTischEintrag(item as TischListenEintragAntwort, c, aktiverTischId)
