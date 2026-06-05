@@ -15,6 +15,10 @@ CREATE TABLE spieler (
     email VARCHAR(255),
     anzeige_name VARCHAR(100),
     avatar_farbe VARCHAR(50),
+    email_verifiziert BOOLEAN NOT NULL DEFAULT FALSE,
+    email_verification_token VARCHAR(255),
+    password_reset_token VARCHAR(255),
+    password_reset_token_ablauf TIMESTAMP WITH TIME ZONE,
     erstellt_am TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
     aktualisiert_am TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
 );

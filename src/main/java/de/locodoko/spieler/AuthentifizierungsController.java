@@ -7,6 +7,8 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -18,6 +20,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
@@ -35,16 +38,19 @@ public class AuthentifizierungsController {
     private final SpielerRepository spielerRepository;
     private final PasswordEncoder passwordEncoder;
     private final SpielerSessionEigenschaften eigenschaften;
+    private final MailService mailService;
 
     @Value("${spring.security.oauth2.client.registration.google.client-id:disabled}")
     private String googleClientId;
 
     public AuthentifizierungsController(SpielerRepository spielerRepository,
                                         PasswordEncoder passwordEncoder,
-                                        SpielerSessionEigenschaften eigenschaften) {
+                                        SpielerSessionEigenschaften eigenschaften,
+                                        MailService mailService) {
         this.spielerRepository = spielerRepository;
         this.passwordEncoder = passwordEncoder;
         this.eigenschaften = eigenschaften;
+        this.mailService = mailService;
     }
 
     @Operation(summary = "Auth-Konfiguration abfragen", description = "Liefert, welche Login-Methoden aktiviert sind.")
@@ -81,6 +87,11 @@ public class AuthentifizierungsController {
         spieler.setzeSessionId(session.getId());
         session.setMaxInactiveInterval((int) eigenschaften.getTimeout().toSeconds());
 
+        String verifikationsToken = null;
+        if (anfrage.email() != null && !anfrage.email().isBlank()) {
+            verifikationsToken = spieler.erzeugeEmailVerifizierungsToken();
+        }
+
         try {
             spieler = spielerRepository.saveAndFlush(spieler);
         } catch (DataIntegrityViolationException e) {
@@ -88,6 +99,10 @@ public class AuthentifizierungsController {
             return ResponseEntity.status(HttpStatus.CONFLICT).build();
         }
         LOGGER.info("Neuer Spieler registriert: {} (benutzername={})", spieler.id(), anfrage.benutzername());
+
+        if (verifikationsToken != null) {
+            mailService.sendeVerifizierungsEmail(anfrage.email(), verifikationsToken);
+        }
 
         return ResponseEntity.status(HttpStatus.CREATED).body(AuthentifizierungsAntwort.aus(spieler));
     }
@@ -127,4 +142,62 @@ public class AuthentifizierungsController {
         }
         return ResponseEntity.ok().build();
     }
+
+    @Operation(summary = "Email-Adresse verifizieren", description = "Bestätigt die Email-Adresse anhand des per Email versendeten Tokens.")
+    @ApiResponses({
+        @ApiResponse(responseCode = "200", description = "Email verifiziert"),
+        @ApiResponse(responseCode = "404", description = "Token ungültig oder unbekannt")
+    })
+    @GetMapping("/email-verifizieren")
+    public ResponseEntity<Void> emailVerifizieren(@RequestParam String token) {
+        SpielerEntity spieler = spielerRepository.findByEmailVerificationToken(token).orElse(null);
+        if (spieler == null) {
+            return ResponseEntity.notFound().build();
+        }
+        spieler.verifiziereMail();
+        spielerRepository.saveAndFlush(spieler);
+        LOGGER.info("Email verifiziert [spielerId={}]", spieler.id());
+        return ResponseEntity.ok().build();
+    }
+
+    @Operation(summary = "Passwort-Reset anfordern", description = "Sendet eine Reset-Email an die angegebene Adresse (falls bekannt). Antwortet immer 200 (kein User-Enumeration-Leak).")
+    @ApiResponse(responseCode = "200", description = "Anfrage entgegengenommen")
+    @PostMapping("/passwort-reset-anfragen")
+    public ResponseEntity<Void> passwortResetAnfragen(@Valid @RequestBody PasswortResetAnfrageAnfrage anfrage) {
+        spielerRepository.findByEmail(anfrage.email()).ifPresent(spieler -> {
+            String token = spieler.erzeugePasswordResetToken();
+            spielerRepository.saveAndFlush(spieler);
+            mailService.sendePasswortResetEmail(spieler.email(), token);
+            LOGGER.info("Passwort-Reset angefordert [spielerId={}]", spieler.id());
+        });
+        return ResponseEntity.ok().build();
+    }
+
+    @Operation(summary = "Passwort zurücksetzen", description = "Setzt das Passwort anhand eines gültigen Reset-Tokens.")
+    @ApiResponses({
+        @ApiResponse(responseCode = "200", description = "Passwort geändert"),
+        @ApiResponse(responseCode = "400", description = "Token abgelaufen"),
+        @ApiResponse(responseCode = "404", description = "Token ungültig oder unbekannt")
+    })
+    @PostMapping("/passwort-reset")
+    public ResponseEntity<Void> passwortReset(@Valid @RequestBody PasswortResetAnfrage anfrage) {
+        SpielerEntity spieler = spielerRepository.findByPasswordResetToken(anfrage.token()).orElse(null);
+        if (spieler == null) {
+            return ResponseEntity.notFound().build();
+        }
+        if (!spieler.istPasswordResetTokenGueltig()) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
+        }
+        spieler.setzeNeuesPasswort(passwordEncoder.encode(anfrage.neuesPasswort()));
+        spielerRepository.saveAndFlush(spieler);
+        LOGGER.info("Passwort zurückgesetzt [spielerId={}]", spieler.id());
+        return ResponseEntity.ok().build();
+    }
+
+    public record PasswortResetAnfrageAnfrage(@NotBlank String email) {}
+
+    public record PasswortResetAnfrage(
+        @NotBlank String token,
+        @NotBlank @Size(min = 8) String neuesPasswort
+    ) {}
 }

@@ -6,7 +6,9 @@ import jakarta.validation.constraints.NotBlank;
 import org.springframework.data.relational.core.mapping.Column;
 import org.springframework.data.relational.core.mapping.Table;
 
+import java.time.OffsetDateTime;
 import java.util.List;
+import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
 
 /**
@@ -61,6 +63,22 @@ public class SpielerEntity extends AbstraktePersistenzEntity {
     @Column("avatar_farbe")
     private String avatarFarbe;
 
+    /** Ob die Email-Adresse per Bestaetigungs-Link verifiziert wurde. OAuth2-Spieler gelten als verifiziert. */
+    @Column("email_verifiziert")
+    private boolean emailVerifiziert;
+
+    /** Token fuer die Email-Verifizierung (Double-Opt-In). Null nach Verifizierung. */
+    @Column("email_verification_token")
+    private String emailVerifizierungsToken;
+
+    /** Token fuer Passwort-Reset. Null wenn kein Reset laeuft. */
+    @Column("password_reset_token")
+    private String passwordResetToken;
+
+    /** Ablaufzeitpunkt des Passwort-Reset-Tokens (30 Minuten nach Anfrage). */
+    @Column("password_reset_token_ablauf")
+    private OffsetDateTime passwordResetTokenAblauf;
+
     private static final List<String> AVATAR_FARBEN = List.of(
         "#e63946", "#457b9d", "#2a9d8f", "#e9c46a", "#f4a261",
         "#264653", "#6a4c93", "#1982c4", "#8ac926", "#ff595e",
@@ -109,6 +127,7 @@ public class SpielerEntity extends AbstraktePersistenzEntity {
         spieler.authentifizierungsMethode = AuthentifizierungsMethode.OAUTH2_GOOGLE.name();
         spieler.externalId = externalId;
         spieler.email = email;
+        spieler.emailVerifiziert = true; // Google hat die Email bereits verifiziert
         spieler.avatarFarbe = zufaelligeFarbe();
         return spieler;
     }
@@ -169,6 +188,55 @@ public class SpielerEntity extends AbstraktePersistenzEntity {
 
     public String email() {
         return email;
+    }
+
+    public boolean istEmailVerifiziert() {
+        return emailVerifiziert;
+    }
+
+    public String emailVerifizierungsToken() {
+        return emailVerifizierungsToken;
+    }
+
+    public String passwordResetToken() {
+        return passwordResetToken;
+    }
+
+    public OffsetDateTime passwordResetTokenAblauf() {
+        return passwordResetTokenAblauf;
+    }
+
+    /** Setzt einen neuen Email-Verifizierungstoken (UUID). */
+    public String erzeugeEmailVerifizierungsToken() {
+        this.emailVerifizierungsToken = UUID.randomUUID().toString();
+        return this.emailVerifizierungsToken;
+    }
+
+    /** Bestätigt die Email-Adresse und loescht den Token. */
+    public void verifiziereMail() {
+        this.emailVerifiziert = true;
+        this.emailVerifizierungsToken = null;
+    }
+
+    /** Erzeugt einen Passwort-Reset-Token mit 30-Minuten-TTL. */
+    public String erzeugePasswordResetToken() {
+        this.passwordResetToken = UUID.randomUUID().toString();
+        this.passwordResetTokenAblauf = OffsetDateTime.now().plusMinutes(30);
+        return this.passwordResetToken;
+    }
+
+    /** Setzt das Passwort und loescht den Reset-Token. */
+    public void setzeNeuesPasswort(String passwortHash) {
+        this.passwortHash = passwortHash;
+        this.passwordResetToken = null;
+        this.passwordResetTokenAblauf = null;
+    }
+
+    /** Gibt {@code true} zurueck, wenn der Passwort-Reset-Token noch gueltig (nicht abgelaufen) ist. */
+    public boolean istPasswordResetTokenGueltig() {
+        return passwordResetToken != null
+            && passwordResetTokenAblauf != null
+            && OffsetDateTime.now().isBefore(passwordResetTokenAblauf);
     }
 
     /** Setzt die Session-ID (wird nach Login gesetzt, damit der alte Session-Flow weiterhin funktioniert). */

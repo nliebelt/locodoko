@@ -143,4 +143,58 @@ das `@PreAuthorize`-Interface bleibt gleich, nur das dahinterliegende `@Componen
 - `LoginSzene.ts` — Frontend-Loginscreen mit Google- und Passwort-Login vor
   SpielverwaltungsSzene.
 
-**V2-Items (bewusst zurückgestellt):** Gast-Modus, Passwort-Reset.
+**V1 vollständig implementiert.** V2 (Email-Verifizierung & Passwort-Reset) folgt unten.
+
+## Email-Verifizierung & Passwort-Reset (V2)
+
+**Anbieter:** Standard-SMTP — kompatibel mit Brevo (🇫🇷), Mailjet (🇫🇷) oder eigenem SMTP.
+Configuration via ENV-Variablen (`SMTP_HOST`, `SMTP_USER`, `SMTP_PASSWORD`).
+**Ohne `SMTP_HOST`:** alle Email-Operationen sind No-Ops (kein Test-Bruch, kein Startup-Fehler).
+
+### Email-Verifizierung (Double-Opt-In)
+
+- Beim Registrieren via Passwort-Auth: `emailVerifizierungsToken` (UUID) wird generiert und
+  per Email versendet (sofern Email-Adresse angegeben und SMTP konfiguriert).
+- OAuth2-Spieler (Google): Email gilt automatisch als verifiziert (`emailVerifiziert = true`).
+- Endpoint: `GET /api/auth/email-verifizieren?token=<token>` — setzt `emailVerifiziert = true`,
+  löscht Token. Ungültiger Token → 404. Bereits verifiziert → 200 (idempotent).
+- Token-TTL: keine serverseitige Ablaufzeit (Link kann jederzeit aktiviert werden).
+- UI: Hinweis nach Registrierung, falls Email angegeben. Keine Feature-Gates in M1.
+
+### Passwort-Reset
+
+- Endpoint: `POST /api/auth/passwort-reset-anfragen` — Body `{email}`.
+  Immer 200 (kein User-Enumeration-Leak). Bei bekannter Email: Token (UUID) erzeugen,
+  `passwordResetTokenAblauf = jetzt + 30 Minuten`, Email senden.
+- Endpoint: `POST /api/auth/passwort-reset` — Body `{token, neuesPasswort}`.
+  Findet Spieler per Token. Prüft TTL → 400 bei Ablauf. Setzt neues BCrypt-Passwort,
+  löscht Token + Ablauf. Ungültiger Token → 404.
+
+### Datenmodell (neue Spalten in `spieler`)
+
+| Spalte | Typ | Default |
+|---|---|---|
+| `email_verifiziert` | `BOOLEAN NOT NULL` | `FALSE` |
+| `email_verification_token` | `VARCHAR(255)` | NULL |
+| `password_reset_token` | `VARCHAR(255)` | NULL |
+| `password_reset_token_ablauf` | `TIMESTAMP WITH TIME ZONE` | NULL |
+
+### Spring-Mail-Konfiguration
+
+```properties
+spring.mail.host=${SMTP_HOST:}
+spring.mail.port=${SMTP_PORT:587}
+spring.mail.username=${SMTP_USER:}
+spring.mail.password=${SMTP_PASSWORD:}
+spring.mail.properties.mail.smtp.auth=true
+spring.mail.properties.mail.smtp.starttls.enable=true
+locodoko.mail.absender=${MAIL_ABSENDER:noreply@locodoko.de}
+locodoko.mail.basis-url=${APP_BASIS_URL:http://localhost:8081}
+```
+
+### Implementierungshinweise
+
+- `MailService` in `de.locodoko.spieler`: prüft ob `SMTP_HOST` gesetzt ist; falls nein,
+  alle Methoden sind No-Ops (kein `JavaMailSender`-Aufruf).
+- Email-Inhalte als einfache HTML-Strings (kein Thymeleaf erforderlich).
+- `SpielerRepository`: neue Queries `findByEmailVerificationToken`, `findByPasswordResetToken`.

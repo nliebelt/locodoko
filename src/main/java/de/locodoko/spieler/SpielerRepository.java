@@ -40,6 +40,18 @@ public interface SpielerRepository extends CrudRepository<SpielerEntity, UUID> {
     @Query("SELECT * FROM spieler WHERE external_id = :externalId")
     Optional<SpielerEntity> findByExternalId(String externalId);
 
+    /** Sucht einen Spieler anhand seiner Email-Adresse (fuer Passwort-Reset). */
+    @Query("SELECT * FROM spieler WHERE email = :email")
+    Optional<SpielerEntity> findByEmail(String email);
+
+    /** Sucht einen Spieler anhand seines Email-Verifizierungstokens. */
+    @Query("SELECT * FROM spieler WHERE email_verification_token = :token")
+    Optional<SpielerEntity> findByEmailVerificationToken(String token);
+
+    /** Sucht einen Spieler anhand seines Passwort-Reset-Tokens. */
+    @Query("SELECT * FROM spieler WHERE password_reset_token = :token")
+    Optional<SpielerEntity> findByPasswordResetToken(String token);
+
     /** Liefert alle KI-Spieler sortiert nach Erstellungszeitpunkt. */
     @Query("SELECT * FROM spieler WHERE ki = true ORDER BY erstellt_am ASC")
     List<SpielerEntity> findAllByKiTrueOrderByErstelltAmAsc();
