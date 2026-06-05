@@ -4,6 +4,8 @@
 
 ## Notiz
 
+**Session 73 (2026-06-05) — QUEUE BLOCKED:** Alle verbleibenden Aufgaben im Plan sind entweder blockiert (`[Vorbedingung: MENSCH]`), warten auf eine Benutzerentscheidung (`[WARTET AUF USER-ENTSCHEIDUNG]`), oder wurden aufgeschoben. Da keine Tasks mehr autonom abgearbeitet werden können, wird der Lauf mit `BLOCKED` beendet.
+
 **Session 72 (2026-06-05) — FE-MOBILE abgeschlossen:** Vollständiger Portrait-/Mobile-Umbau des Frontends umgesetzt. (1) `frontend/src/main.ts` nutzt dynamische Spielgröße (via Aspect-Ratio Berechnung) anstelle von statischem Letterboxing bei 1280x720. Die Szene passt sich bei `resize`-Events automatisch an 720x1280 für Portrait an. (2) `layout.ts` berechnet Tischlayout (Spieler-Koordinaten, Nameplates) je nach Orientierung. In Portrait rücken NORD/SUED/WEST/OST näher an die Mitte bzw. optimieren den schmalen Viewport. (3) `layout.ts` vergrößert in Portrait den horizontalen Karten-Überlappungsabstand deutlich (`Math.max(44, breite*0.06)` statt 28px) für bessere mobile Touch-Targets. (4) Alle anderen Menü-Szenen zentrieren Elemente dynamisch über `this.scale.width / 2`. (5) Vision-Loop (`playwright.config.vision.ts`) um `mobile-portrait` Viewport erweitert, speichert nun mit Plattform-Präfix. Backend offline → Vision Loop ausgelassen, manueller Check empfohlen. 240/240 Frontend-Tests grün. **Keine offenen Aufgaben mehr in dieser autonomen Queue!**
 
 **Session 71 (2026-06-05) — OPS-EMAIL abgeschlossen:** (1) `MailService` verwendet nun `Optional<JavaMailSender>` oder `ObjectProvider` um einen Kontext-Startfehler zu vermeiden, wenn kein SMTP Server konfiguriert ist. (2) `application.properties` und `.env.example` um die benötigten Variablen für den Mail-Versand und SMTP (Brevo, Mailjet etc.) erweitert. (3) `docker-compose.yml` um SMTP-Variablen für den `app` Container ergänzt. (4) `AuthentifizierungsControllerTest` um Tests für die E-Mail-Verifizierungs- und Passwort-Zurücksetzen-Endpunkte erweitert. 360 Backend Tests erfolgreich durchgelaufen. Alle DoD Kriterien erfüllt. **Nächste autonome Queue: FE-MOBILE.**
@@ -604,18 +606,4 @@ Alle noch im Greenfield-Fenster (vor erstem echten Deploy). Details und Audit-Ko
 
 - **Test-Suite bricht und in 3 Versuchen nicht reparierbar**: Stoppen, Iteration abbrechen, Notiz unter „Entdeckungen". Nicht stapeln.
 - **Unklar zwischen Optionen**: Die kleinere/risikoärmere Option wählen.
-- **Niemals**: `--no-verify`, `git push --force` ohne explizite User-Anweisung, Tests `@Disabled` ohne Notiz.
-nen**: Die kleinere/risikoärmere Option wählen.
-- **Niemals**: `--no-verify`, `git push --force` ohne explizite User-Anweisung, Tests `@Disabled` ohne Notiz.
-uft.
-6. **VO bleibt VO wo möglich:** Postgres JSONB + Custom Converter ermöglichen immutable VOs.
-7. **Greenfield-Annahme:** Keine Datenmigration nötig.
-8. **Spec-Konsultation:** Bei jedem Task der Specs anpasst: `grep -rn "<altes Konzept>" specs/` als Verifikations-Schritt.
-
-## Stoppregeln für Build-Modus
-
-- **Test-Suite bricht und in 3 Versuchen nicht reparierbar**: Stoppen, Iteration abbrechen, Notiz unter „Entdeckungen". Nicht stapeln.
-- **Unklar zwischen Optionen**: Die kleinere/risikoärmere Option wählen.
-- **Niemals**: `--no-verify`, `git push --force` ohne explizite User-Anweisung, Tests `@Disabled` ohne Notiz.
-nen**: Die kleinere/risikoärmere Option wählen.
 - **Niemals**: `--no-verify`, `git push --force` ohne explizite User-Anweisung, Tests `@Disabled` ohne Notiz.
