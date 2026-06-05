@@ -81,6 +81,12 @@ services:
       GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-disabled}
       SENTRY_DSN: ${SENTRY_DSN:-}
       SENTRY_ENVIRONMENT: ${SENTRY_ENVIRONMENT:-produktion}
+      SMTP_HOST: ${SMTP_HOST:-}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_USER: ${SMTP_USER:-}
+      SMTP_PASSWORD: ${SMTP_PASSWORD:-}
+      MAIL_ABSENDER: ${MAIL_ABSENDER:-noreply@locodoko.de}
+      APP_BASIS_URL: ${APP_BASIS_URL:-http://localhost:8081}
     volumes:
       # Strukturierte JSON-Logs teilen, damit der Alloy-Sidecar sie an Loki schicken kann.
       - applogs:/app/logs

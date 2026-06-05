@@ -15,6 +15,7 @@ import org.springframework.web.context.WebApplicationContext;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.springframework.http.MediaType.APPLICATION_JSON;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -200,4 +201,75 @@ class AuthentifizierungsControllerTest {
         SpielerEntity spieler = spielerRepository.findByBenutzername("sessionlogin").orElseThrow();
         assertNotNull(spieler.sessionId(), "SessionId muss nach Login gesetzt sein");
     }
+
+    // --- Email-Verifizierung und Passwort-Reset ---
+
+    @Test
+    @Transactional
+    void emailVerifizierenMitGueltigemTokenGibt200() throws Exception {
+        SpielerEntity spieler = SpielerEntity.mitPasswort("verifyuser", "hash", "test@example.com");
+        String token = spieler.erzeugeEmailVerifizierungsToken();
+        spielerRepository.save(spieler);
+
+        mockMvc.perform(get("/api/auth/email-verifizieren").param("token", token))
+            .andExpect(status().isOk());
+
+        SpielerEntity updated = spielerRepository.findById(spieler.id()).orElseThrow();
+        assertTrue(updated.istEmailVerifiziert(), "Email muss verifiziert sein");
+        assertNull(updated.emailVerifizierungsToken(), "Token muss nach Verifizierung geloescht sein");
+    }
+
+    @Test
+    void emailVerifizierenMitUngueltigemTokenGibt404() throws Exception {
+        mockMvc.perform(get("/api/auth/email-verifizieren").param("token", "ungueltig"))
+            .andExpect(status().isNotFound());
+    }
+
+    @Test
+    @Transactional
+    void passwortResetAnfragenGibtImmer200() throws Exception {
+        SpielerEntity spieler = SpielerEntity.mitPasswort("resetuser", "hash", "reset@example.com");
+        spielerRepository.save(spieler);
+
+        AuthentifizierungsController.PasswortResetAnfrageAnfrage anfrage = new AuthentifizierungsController.PasswortResetAnfrageAnfrage("reset@example.com");
+
+        mockMvc.perform(post("/api/auth/passwort-reset-anfragen")
+                .contentType(APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(anfrage)))
+            .andExpect(status().isOk());
+
+        SpielerEntity updated = spielerRepository.findById(spieler.id()).orElseThrow();
+        assertNotNull(updated.passwordResetToken(), "Reset-Token muss erzeugt worden sein");
+        assertNotNull(updated.passwordResetTokenAblauf(), "Ablauf muss gesetzt sein");
+    }
+
+    @Test
+    @Transactional
+    void passwortResetMitGueltigemTokenAendertPasswort() throws Exception {
+        SpielerEntity spieler = SpielerEntity.mitPasswort("resetuser2", "hash", "reset2@example.com");
+        String token = spieler.erzeugePasswordResetToken();
+        spielerRepository.save(spieler);
+
+        AuthentifizierungsController.PasswortResetAnfrage anfrage = new AuthentifizierungsController.PasswortResetAnfrage(token, "neuesSicheresPasswort");
+
+        mockMvc.perform(post("/api/auth/passwort-reset")
+                .contentType(APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(anfrage)))
+            .andExpect(status().isOk());
+
+        SpielerEntity updated = spielerRepository.findById(spieler.id()).orElseThrow();
+        assertNull(updated.passwordResetToken(), "Token muss nach Reset geloescht sein");
+        assertNotEquals("hash", updated.passwortHash(), "Passwort muss geaendert worden sein");
+    }
+
+    @Test
+    void passwortResetMitUngueltigemTokenGibt404() throws Exception {
+        AuthentifizierungsController.PasswortResetAnfrage anfrage = new AuthentifizierungsController.PasswortResetAnfrage("ungueltig", "neuesPasswort123");
+
+        mockMvc.perform(post("/api/auth/passwort-reset")
+                .contentType(APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(anfrage)))
+            .andExpect(status().isNotFound());
+    }
+
 }

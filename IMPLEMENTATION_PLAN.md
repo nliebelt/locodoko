@@ -4,6 +4,8 @@
 
 ## Notiz
 
+**Session 71 (2026-06-05) — OPS-EMAIL abgeschlossen:** (1) `MailService` verwendet nun `Optional<JavaMailSender>` oder `ObjectProvider` um einen Kontext-Startfehler zu vermeiden, wenn kein SMTP Server konfiguriert ist. (2) `application.properties` und `.env.example` um die benötigten Variablen für den Mail-Versand und SMTP (Brevo, Mailjet etc.) erweitert. (3) `docker-compose.yml` um SMTP-Variablen für den `app` Container ergänzt. (4) `AuthentifizierungsControllerTest` um Tests für die E-Mail-Verifizierungs- und Passwort-Zurücksetzen-Endpunkte erweitert. 360 Backend Tests erfolgreich durchgelaufen. Alle DoD Kriterien erfüllt. **Nächste autonome Queue: FE-MOBILE.**
+
 **Session 70 (2026-06-05) — BUG-LOBBY-OFFENE-TISCHE-OVERLAP + BUG-LOBBY-TOPRIGHT-CLIPPING abgeschlossen:** (1) „Offene Tische"-Header Y=500→570 (50px unterhalb Bug-melden-Button Y=520), Message Y=560→630, PhaserList Y=645/hoehe=150 (passt in 720px). (2) „? Spielregeln" X=950→880, „🏆 Rangliste" X=1160→1120 — beide Buttons deutlich vom rechten Viewport-Rand entfernt; Rangliste-Shadow überlappt nicht mehr den Spielregeln-Text. Backend offline → Vision Loop ausgelassen, manueller Check empfohlen. 240/240 Tests grün. **Nächste autonome Queue: OPS-EMAIL → FE-MOBILE.**
 
 **Session 68 (2026-06-05) — FE-VISUAL-REVIEW-BALATRO abgeschlossen:** Vision-Loop grün (1/1, 41.5s). Nameplates: alle 4 Positionen korrekt positioniert (SUED/NORD/WEST/OST), Player-Namen sichtbar, KONTRA-Badge angezeigt. FlashTextManager: VorbehaltErwartet-Banner (Gesund/Vorbehalt-Auswahl) sichtbar animiert — DoD erfüllt. Zwei Layout-Bugs entdeckt und unter Entdeckungen erfasst: (1) **BUG-LOBBY-OFFENE-TISCHE-OVERLAP** — "Offene Tische"-Header überlappt mit "Bug melden"-Button in der Lobby; (2) **BUG-LOBBY-TOPRIGHT-CLIPPING** — "? Spielregeln" und "🏆 Rangliste" oben-rechts überschreiten den rechten Viewport-Rand (1280px). **Nächste autonome Queue: OPS-EMAIL → FE-MOBILE.**
@@ -75,7 +77,7 @@ Nächste offene Tasks — Fertigstellung (Session 30). **Zwei Meilensteine:** **
 1. ~~FE-VISUAL-REVIEW-BALATRO~~ ✓ (S68) — Vision-Loop grün (1/1, 41.5s). Nameplates korrekt positioniert, FlashText-Animationen sichtbar. Zwei Lobby-Layout-Bugs erfasst (→ Entdeckungen).
 2. ~~BUG-LOBBY-OFFENE-TISCHE-OVERLAP~~ ✓ (S70) — Header Y=570, Liste Y=645/hoehe=150; kein Overlap mehr.
 3. ~~BUG-LOBBY-TOPRIGHT-CLIPPING~~ ✓ (S70) — Spielregeln X=880, Rangliste X=1120; min. 46px Abstand zum rechten Rand.
-4. **OPS-EMAIL** (Prio 4, DOC + Code) — `authentifizierung.md` Abschnitt „Email-Verifizierung & Passwort-Reset (V2)" konkretisieren (EU-Anbieter Brevo 🇫🇷/Mailjet 🇫🇷 oder SMTP, Double-Opt-In, Reset-Token-Ablauf, Token-TTL) + Spring-Mail-Integration (`spring-boot-starter-mail`, Template-Engine, ENV `SMTP_HOST`/`SMTP_USER`/`SMTP_PASSWORD`). Env-gated: ohne `SMTP_HOST` No-Op (kein Test-Bruch). Kein M1-Blocker, aber nützlich gegen Fake-Accounts (M2). **DoD:** Spec definiert Email-Flows + EU-Anbieter; Verifikations-/Reset-Mail wird bei gesetztem SMTP-Host versendet; Tests grün. **Risiko:** niedrig-mittel.
+4. ~~OPS-EMAIL~~ ✓ (Prio 4, DOC + Code) — `authentifizierung.md` Abschnitt „Email-Verifizierung & Passwort-Reset (V2)" konkretisieren (EU-Anbieter Brevo 🇫🇷/Mailjet 🇫🇷 oder SMTP, Double-Opt-In, Reset-Token-Ablauf, Token-TTL) + Spring-Mail-Integration (`spring-boot-starter-mail`, Template-Engine, ENV `SMTP_HOST`/`SMTP_USER`/`SMTP_PASSWORD`). Env-gated: ohne `SMTP_HOST` No-Op (kein Test-Bruch). Kein M1-Blocker, aber nützlich gegen Fake-Accounts (M2). **DoD:** Spec definiert Email-Flows + EU-Anbieter; Verifikations-/Reset-Mail wird bei gesetztem SMTP-Host versendet; Tests grün. **Risiko:** niedrig-mittel.
 5. **FE-MOBILE** (M2, mittleres Risiko) — Voller Mobile-/Touch-/Portrait-Umbau nach `FE-MOBILE-SMOKE`. Erst nach FE-VISUAL-REVIEW-BALATRO ansetzen. Spec `specs/frontend-tischansicht.md` + `frontend-visuelles-design.md` konsultieren. **Risiko:** mittel (breiter Layout-Eingriff).
 
 **Hinweis Build-Loop:** Diese Queue ist Ralph-autonom (Verifikation `mvn clean test` / `npm test && npm run build && npm run lint`, UI-Tasks zusätzlich Vision-Loop). **Pro Task ein Commit.** Env-gated externe Dienste (Sentry/Grafana/Loki/Bugreport-GitHub) sind ohne Secrets No-Ops → Build bleibt grün.
@@ -278,7 +280,7 @@ Entscheidungen: **DECISION-AUTH** ✓ beide behalten · **DECISION-LIZENZ** aufg
 
   **DoD:** Spec mit Pflichtangaben vorhanden; (Build) Seiten verlinkt und erreichbar. **Risiko:** niedrig (Inhalt), rechtlich relevant.
 
-- [ ] **OPS-EMAIL** — Email-Versand für Registrierungs-Verifizierung + Passwort-Reset (V2).
+- [x] **OPS-EMAIL** — Email-Versand für Registrierungs-Verifizierung + Passwort-Reset (V2).
 
   Aktuell keine Email-Infra. Auth-Spec stellt Email optional, Passwort-Reset V2. Bei Bedarf: EU-Transaktionsmail-Anbieter mit Free-Tier (Brevo 🇫🇷, Mailjet 🇫🇷) oder SMTP. Kein Launch-Blocker, aber sinnvoll gegen Fake-Accounts.
 

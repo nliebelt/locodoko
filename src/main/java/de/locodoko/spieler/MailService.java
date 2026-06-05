@@ -1,5 +1,7 @@
 package de.locodoko.spieler;
 
+import java.util.Optional;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -19,13 +21,13 @@ public class MailService {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(MailService.class);
 
-    private final JavaMailSender mailSender;
+    private final Optional<JavaMailSender> mailSender;
     private final String smtpHost;
     private final String absender;
     private final String basisUrl;
 
     public MailService(
-            JavaMailSender mailSender,
+            Optional<JavaMailSender> mailSender,
             @Value("${spring.mail.host:}") String smtpHost,
             @Value("${locodoko.mail.absender:noreply@locodoko.de}") String absender,
             @Value("${locodoko.mail.basis-url:http://localhost:8081}") String basisUrl) {
@@ -37,7 +39,7 @@ public class MailService {
 
     /** Gibt {@code true} zurueck, wenn Email-Versand konfiguriert ist (SMTP_HOST gesetzt). */
     public boolean istAktiv() {
-        return smtpHost != null && !smtpHost.isBlank();
+        return smtpHost != null && !smtpHost.isBlank() && mailSender.isPresent();
     }
 
     /**
@@ -83,17 +85,19 @@ public class MailService {
     }
 
     private void sende(String empfaenger, String betreff, String htmlInhalt) {
-        try {
-            MimeMessage nachricht = mailSender.createMimeMessage();
-            MimeMessageHelper helper = new MimeMessageHelper(nachricht, false, "UTF-8");
-            helper.setFrom(absender);
-            helper.setTo(empfaenger);
-            helper.setSubject(betreff);
-            helper.setText(htmlInhalt, true);
-            mailSender.send(nachricht);
-            LOGGER.info("Email versendet [empfaenger={}, betreff={}]", empfaenger, betreff);
-        } catch (MessagingException e) {
-            LOGGER.error("Email-Versand fehlgeschlagen [empfaenger={}, betreff={}]: {}", empfaenger, betreff, e.getMessage());
-        }
+        mailSender.ifPresent(sender -> {
+            try {
+                MimeMessage nachricht = sender.createMimeMessage();
+                MimeMessageHelper helper = new MimeMessageHelper(nachricht, false, "UTF-8");
+                helper.setFrom(absender);
+                helper.setTo(empfaenger);
+                helper.setSubject(betreff);
+                helper.setText(htmlInhalt, true);
+                sender.send(nachricht);
+                LOGGER.info("Email versendet [empfaenger={}, betreff={}]", empfaenger, betreff);
+            } catch (MessagingException e) {
+                LOGGER.error("Email-Versand fehlgeschlagen [empfaenger={}, betreff={}]: {}", empfaenger, betreff, e.getMessage());
+            }
+        });
     }
 }
