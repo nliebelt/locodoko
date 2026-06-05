@@ -8,7 +8,7 @@ import type {
   Uuid,
   VorbehaltAnsage
 } from '../modelle/SpielverwaltungDto';
-import type { SpielverwaltungApi } from '../services/SpielverwaltungApi';
+import type { SpielverwaltungApi, BugReportAnfrage, BugReportAntwort } from '../services/SpielverwaltungApi';
 import { SpielverwaltungFehler } from '../services/SpielverwaltungApi';
 import type { EchtzeitPort } from '../services/SpielverwaltungEchtzeit';
 import { Logger } from '../logger';
@@ -20,6 +20,7 @@ import type { AppZustand, PartieEreignisListener, SonderpunkteListener, StoreAbo
 import type { BestenlisteAntwortGenerated, SpielerProfilAntwortGenerated } from '../generated/schema-types';
 
 export type { UiMeldung, UiKonfiguration, SpielprotokollEintrag, AppZustand, PartieEreignisListener, SonderpunkteListener, StoreAbo } from './StoreTypen';
+export type { BugReportAnfrage, BugReportAntwort } from '../services/SpielverwaltungApi';
 
 /**
  * Zentraler Zustandsspeicher der Anwendung.
@@ -69,6 +70,7 @@ export class AppStore {
   async ladeSpielerProfil(spielerId: Uuid): Promise<SpielerProfilAntwortGenerated> { return this.session.ladeSpielerProfil(spielerId); }
   async ladeBestenliste(regelvariante = 'TURNIER'): Promise<BestenlisteAntwortGenerated> { return this.api.ladeBestenliste(regelvariante); }
   async gibFeedback(text: string): Promise<void> { return this.api.gibFeedback(text); }
+  async meldeBugReport(anfrage: BugReportAnfrage): Promise<BugReportAntwort> { return this.api.meldeBugReport(anfrage); }
 
   // --- Tisch ---
   async aktualisiereTischliste(): Promise<void> { return this.tisch.aktualisiereTischliste(); }

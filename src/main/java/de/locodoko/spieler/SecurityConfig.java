@@ -55,8 +55,9 @@ public class SecurityConfig {
                 .requestMatchers("/api/system/**").permitAll()
                 // Frontend-Logging (diagnostisch)
                 .requestMatchers("/api/debug/**").permitAll()
-                // Beta-Feedback
+                // Beta-Feedback und In-App-Bugreport (Auth wird im Controller geprüft)
                 .requestMatchers("/api/feedback").permitAll()
+                .requestMatchers("/api/bugreport").permitAll()
                 // WebSocket-Handshake
                 .requestMatchers("/ws/**").permitAll()
                 // Infrastruktur und statische Ressourcen

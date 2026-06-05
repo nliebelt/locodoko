@@ -9,6 +9,7 @@ import { PhaserList } from '../ui/PhaserList';
 import { SpielerProfilModal } from '../ui/SpielerProfilModal';
 import { FONT_FAMILY, TEXT_HELL_CSS, FARBE_GOLD_WARM_CSS } from '../ui/designTokens';
 import { Logger } from '../logger';
+import { zeigeBugreportDialog } from './bugreportDialog';
 
 export class SpielverwaltungsSzene extends Phaser.Scene {
   private abmeldenStore?: () => void;
@@ -158,6 +159,14 @@ export class SpielverwaltungsSzene extends Phaser.Scene {
     });
     feedbackBtn.setName('btn-feedback');
     this.uiContainer.add(feedbackBtn);
+    startY += 60;
+
+    const bugreportBtn = new PhaserButton(this, {
+      x: 640, y: startY, text: 'Bug melden (Shift+F1)', typ: 'secondary',
+      callback: () => zeigeBugreportDialog(appStore.snapshot())
+    });
+    bugreportBtn.setName('btn-bugreport');
+    this.uiContainer.add(bugreportBtn);
 
     // Tab-Reihenfolge: Quick Game → Neuen Tisch → Mein Profil → (Session-Recovery falls sichtbar)
     this.fokussierbareButtons = [quickGameBtn, erstelleTischBtn, profilBtn];

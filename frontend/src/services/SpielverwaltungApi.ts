@@ -247,4 +247,27 @@ export class SpielverwaltungApi {
       body: JSON.stringify({ text })
     });
   }
+
+  async meldeBugReport(anfrage: BugReportAnfrage): Promise<BugReportAntwort> {
+    return this.hol<BugReportAntwort>('/api/bugreport', {
+      method: 'POST',
+      body: JSON.stringify(anfrage)
+    });
+  }
+}
+
+export interface BugReportAnfrage {
+  beschreibung: string;
+  schweregrad: string;
+  correlationIds: string[];
+  tischId: string | null;
+  partieId: string | null;
+  userAgent: string;
+  viewport: string;
+  buildSha: string | null;
+  zustandZusammenfassung: string | null;
+}
+
+export interface BugReportAntwort {
+  issueUrl: string | null;
 }

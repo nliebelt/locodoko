@@ -9,6 +9,7 @@ import { SpielverwaltungsSzene } from './szenen/SpielverwaltungsSzene';
 import { TischSzene } from './szenen/TischSzene';
 import { BestenlisterSzene } from './szenen/BestenlisterSzene';
 import { HilfeSzene } from './szenen/HilfeSzene';
+import { zeigeBugreportDialog } from './szenen/bugreportDialog';
 
 // Sentry-Fehlererfassung. Ohne VITE_SENTRY_DSN deaktiviert (No-Op).
 // Bewusst OHNE Session-Replay (Datenschutz) und ohne Performance-Tracing.
@@ -52,6 +53,14 @@ const spiel = new Phaser.Game({
     height: 720
   },
   scene: [BootSzene, LoginSzene, SpielverwaltungsSzene, TischSzene, BestenlisterSzene, HilfeSzene]
+});
+
+// Globaler Shift+F1 Hotkey für den Bugreport-Dialog (von überall aus erreichbar)
+document.addEventListener('keydown', (e) => {
+  if (e.shiftKey && e.key === 'F1') {
+    e.preventDefault();
+    zeigeBugreportDialog(appStore.snapshot());
+  }
 });
 
 window.addEventListener('beforeunload', () => {
