@@ -4,7 +4,7 @@
 
 ## Notiz
 
-**Session 65 (2026-06-05) — BUG-LOGIN-BUTTON-TEXTCLIPPING abgeschlossen:** `PhaserButton.ts` — Text-Objekt wird jetzt **vor** den Hintergrund-Rechtecken erstellt; effektive Breite = `max(300, textObj.width + 40)`. In jsdom-Tests liefert `canvas.measureText` 0 → kein Regressions-Risiko (Fallback auf 300px). Im Browser passt sich die Button-Breite automatisch an lange Texte an (kein Clipping mehr für „Als Gast spielen" / „SCHNELLSTART (KI)"). 240/240 Tests, Build + Lint grün. **Nächster Task: BUG-GEMINI-CLI-QUOTA-DISPLAY (P-Mittel) oder nächster autonomer Task ohne MENSCH-Vorbedingung.**
+**Session 66 (2026-06-05) — BUG-GEMINI-CLI-QUOTA-DISPLAY abgeschlossen:** `ralph-gemini.sh` — jq-Pipeline um `.type == "error"`-Handler erweitert: QUOTA/429/RESOURCE_EXHAUSTED-Fehler werden gelb + explizit ausgegeben statt still zu verschwinden (vorher durch `else empty` gefiltert). Nach der Pipeline: Quota-Check auf ITER_OUTPUT → Loop-Abbruch bei 429 (weitere Iterationen würden ohnehin scheitern). "Unknown error" bleibt als roter API-Fehler sichtbar (nicht mehr maskiert). 360 Backend + 240 Frontend-Tests grün. **Nächster Task: OPS-EMAIL (DOC, Prio 4) oder FE-MOBILE (M2) — beide autonom, kein MENSCH nötig.**
 
 **Session 64 (2026-06-05) — DOC-DOCS-SITE abgeschlossen:** MkDocs-Material-Dokumentationsseite für `docs.locodoko.de` (GitHub Pages). `mkdocs.yml` mit `docs_dir: docs`, `site_dir: site`, Material-Theme (de, Dark/Light-Toggle, Tabs, Search). `docs/specs` → Symlink auf `../specs` (alle 52 Specs erreichbar ohne Kopie). `docs/index.md` — Karpathy-style Landing-Page (Schnell-Orientierung, Modulstruktur, Ubiquitous Language). `.github/workflows/ci-docs.yml` — Build + Deploy auf GitHub Pages (nur bei Push auf main wenn specs/docs/mkdocs.yml geändert; pinned `mkdocs-material==9.5.49`). `site/` in `.gitignore`. MkDocs-Build lokal verifiziert (grün, strict). **Nächster Task: BUG-LOGIN-BUTTON-TEXTCLIPPING.**
 
@@ -100,7 +100,7 @@ Entscheidungen: **DECISION-AUTH** ✓ beide behalten · **DECISION-LIZENZ** aufg
 ### Priorität 0 — Deploy-Blocker (verifizierter Bug)
 
 - [x] **BUG-PROD-CHANGELOG** — prod-Profil referenziert eine nicht existierende Liquibase-Changelog-Datei.
-- [ ] **BUG-GEMINI-CLI-QUOTA-DISPLAY** (P-Mittel) — Gemini CLI zeigt falsche Quota-Werte an.
+- [x] **BUG-GEMINI-CLI-QUOTA-DISPLAY** (P-Mittel) — Gemini CLI zeigt falsche Quota-Werte an.
   - **Problem:** CLI-Übersicht zeigt z.B. 2% Nutzung für Modelle, während die API mit `QUOTA_EXHAUSTED` (429) ablehnt. Der Fehler wird im Script als `[API Error: An unknown error occurred.]` maskiert.
   - **Hintergrund:** Wahrscheinlich Cache-Verzögerung in der CLI-Anzeige oder Diskrepanz zwischen globaler Pro-Quota und modell-spezifischen Limits.
   - **Aktion:** Dokumentation im Bugreport-System; Script-Anpassung in `ralph-gemini.sh` erwägen, um 429er Fehler expliziter auszugeben statt "unknown error".

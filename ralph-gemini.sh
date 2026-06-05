@@ -57,7 +57,6 @@ ITER_OUTPUT=".ralph-iter.tmp"
 mkdir -p logs
 LOG_FILE="logs/ralph-gemini-$(date +%Y%m%d-%H%M%S).log"
 
-# --- Model selection ---
 # Default models optimized for cost/performance in their respective modes.
 if [ -n "${MODEL:-}" ]; then
     EFFECTIVE_MODEL="$MODEL"
@@ -151,11 +150,24 @@ while true; do
               elif .output != null and (.output | tostring) != "" and (.output | tostring) != "null" then
                 "\u001b[32m[✓ \(.output | tostring | .[0:120] | gsub("\n";" "))]\u001b[0m\n"
               else empty end
+            elif .type == "error" then
+              if (.error // "" | ascii_downcase | test("quota|429|resource_exhausted|rate.?limit")) then
+                "[1;33m[⚠ QUOTA ERSCHÖPFT (429): Gemini API-Limit erreicht — starte mit anderem Modell: MODEL=gemini-2.5-flash ./ralph-gemini.sh][0m\n"
+              else
+                "[31m[✗ API-Fehler: \(.error // "Unbekannter Fehler" | tostring | .[0:300] | gsub("\n";" "))][0m\n"
+              end
             elif .type == "result" then
               "\nTokens: \(.stats.input_tokens) in / \(.stats.output_tokens) out\n"
             else empty end
           ' 2>/dev/null \
         || true
+
+    # Quota-Erschöpfung (429) erkennen: Loop abbrechen, da weitere Iterationen ebenfalls scheitern würden
+    if jq -e 'select(.type == "error" and (.error // "" | ascii_downcase | test("quota|429|resource_exhausted|rate.?limit")))' "$ITER_OUTPUT" >/dev/null 2>&1; then
+        echo ""
+        echo "━━━ QUOTA ERSCHÖPFT: Gemini API (429) hat abgelehnt. Warte oder wechsle Modell: MODEL=gemini-2.5-flash ./ralph-gemini.sh ━━━"
+        break
+    fi
 
     # Append raw JSON to log
     echo "--- Iteration $ITERATION ($MODE) $(date) ---" >> "$LOG_FILE"
