@@ -28,7 +28,7 @@ export class PhaserButton extends Phaser.GameObjects.Container implements Focusa
   private callback: () => void;
 
   constructor(scene: Phaser.Scene, optionen: ButtonOptionen) {
-    const { x, y, text, typ = 'primary', breite = 300, hoehe = 50, callback, testId, deaktiviert = false } = optionen;
+    const { x, y, text, typ = 'primary', hoehe = 50, callback, testId, deaktiviert = false } = optionen;
     super(scene, x, y);
     if (testId) this.setName(testId);
 
@@ -38,16 +38,21 @@ export class PhaserButton extends Phaser.GameObjects.Container implements Focusa
 
     // Kinder direkt ueber Konstruktoren erstellen (nicht scene.add.*),
     // damit sie nicht doppelt in der Scene DisplayList landen → verhindert Double-Destroy-Crash
-    const schatten = new Phaser.GameObjects.Rectangle(scene, 4, 4, breite, hoehe, 0x000000, 0.5);
-
-    this.hintergrund = new Phaser.GameObjects.Rectangle(scene, 0, 0, breite, hoehe, bgFarbe);
-    this.hintergrund.setStrokeStyle(2, 0xf8f9fa);
-
     const textObj = new Phaser.GameObjects.Text(scene, 0, 0, text, {
       fontFamily: FONT_FAMILY,
       fontSize: '20px',
       color: textFarbe
     }).setOrigin(0.5);
+
+    // Mindestbreite: explizit oder Text-Breite + 40px Padding (je 20px Seite).
+    // textObj.width ist in Phaser nach Erstellung verfügbar; in jsdom-Tests liefert
+    // canvas.measureText 0 → Fallback auf explizite oder Default-Breite 300px.
+    const breite = Math.max(optionen.breite ?? 300, textObj.width > 0 ? textObj.width + 40 : 0);
+
+    const schatten = new Phaser.GameObjects.Rectangle(scene, 4, 4, breite, hoehe, 0x000000, 0.5);
+
+    this.hintergrund = new Phaser.GameObjects.Rectangle(scene, 0, 0, breite, hoehe, bgFarbe);
+    this.hintergrund.setStrokeStyle(2, 0xf8f9fa);
 
     this.add([schatten, this.hintergrund, textObj]);
 
