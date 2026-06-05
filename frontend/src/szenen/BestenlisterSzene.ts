@@ -32,9 +32,9 @@ export class BestenlisterSzene extends Phaser.Scene {
   create(): void {
     registriereBasisTexturen(this);
 
-    this.add.tileSprite(640, 360, 1280, 720, TEXTUR_FILZ).setAlpha(0.95);
+    this.add.tileSprite(this.scale.width / 2, this.scale.height / 2, this.scale.width, this.scale.height, TEXTUR_FILZ).setAlpha(0.95);
 
-    this.add.text(640, 45, 'BESTENLISTE', {
+    this.add.text(this.scale.width / 2, 45, 'BESTENLISTE', {
       fontFamily: FONT_FAMILY,
       fontSize: '48px',
       color: '#f8f9fa'
@@ -87,7 +87,7 @@ export class BestenlisterSzene extends Phaser.Scene {
   private ladeBestenliste(): void {
     this.raeumInhaltAb();
 
-    const ladeText = this.add.text(640, 400, 'Lade Bestenliste…', {
+    const ladeText = this.add.text(this.scale.width / 2, 400, 'Lade Bestenliste…', {
       fontFamily: FONT_FAMILY,
       fontSize: '18px',
       color: '#a3c4a8'
@@ -99,7 +99,7 @@ export class BestenlisterSzene extends Phaser.Scene {
       .catch(fehler => {
         Logger.error('Bestenliste laden fehlgeschlagen', fehler);
         this.raeumInhaltAb();
-        const txt = this.add.text(640, 400, 'Fehler beim Laden der Bestenliste', {
+        const txt = this.add.text(this.scale.width / 2, 400, 'Fehler beim Laden der Bestenliste', {
           fontFamily: FONT_FAMILY,
           fontSize: '18px',
           color: '#ff6b6b'
@@ -114,7 +114,7 @@ export class BestenlisterSzene extends Phaser.Scene {
     const eintraege = antwort.eintraege ?? [];
 
     if (eintraege.length === 0) {
-      const txt = this.add.text(640, 400, 'Noch keine Ranglisteneinträge — spiele zuerst eine Partie!', {
+      const txt = this.add.text(this.scale.width / 2, 400, 'Noch keine Ranglisteneinträge — spiele zuerst eine Partie!', {
         fontFamily: FONT_FAMILY,
         fontSize: '18px',
         color: '#a3c4a8'
@@ -137,7 +137,7 @@ export class BestenlisterSzene extends Phaser.Scene {
     });
 
     // Trennlinie
-    const sep = this.add.rectangle(640, headerY + 22, 1200, 1, 0x4a7c59).setOrigin(0.5, 0.5);
+    const sep = this.add.rectangle(this.scale.width / 2, headerY + 22, 1200, 1, 0x4a7c59).setOrigin(0.5, 0.5);
     this.inhaltElemente.push(sep);
 
     // Datenzeilen (max. 15)

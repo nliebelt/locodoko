@@ -11,12 +11,21 @@ export default defineConfig({
     screenshot: 'off',
     video: 'off',
     trace: 'off',
-    viewport: { width: 1280, height: 720 },
   },
   projects: [
     {
-      name: 'chromium',
-      use: { ...devices['Desktop Chrome'] },
+      name: 'desktop',
+      use: { 
+        ...devices['Desktop Chrome'],
+        viewport: { width: 1280, height: 720 },
+      },
+    },
+    {
+      name: 'mobile-portrait',
+      use: {
+        ...devices['Pixel 5'],
+        viewport: { width: 393, height: 851 }, // Force a portrait aspect ratio for mobile
+      },
     },
   ],
   reporter: [['list']],

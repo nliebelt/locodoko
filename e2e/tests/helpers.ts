@@ -283,12 +283,13 @@ export async function leseRundenauswertung(page: Page): Promise<{ spieltypLabel:
  * Nimmt einen Screenshot auf und speichert ihn in e2e/screenshots/.
  * Erstellt das Verzeichnis falls nicht vorhanden.
  */
-export async function screenshot(page: Page, name: string): Promise<void> {
+export async function screenshot(page: Page, name: string, prefix: string = ''): Promise<void> {
   const screenshotDir = path.join(process.cwd(), 'screenshots');
   if (!fs.existsSync(screenshotDir)) {
     fs.mkdirSync(screenshotDir, { recursive: true });
   }
-  const pfad = path.join(screenshotDir, `${name}.png`);
+  const prefixStr = prefix ? `${prefix}-` : '';
+  const pfad = path.join(screenshotDir, `${prefixStr}${name}.png`);
   await page.screenshot({ path: pfad });
 }
 
@@ -302,20 +303,20 @@ export async function screenshot(page: Page, name: string): Promise<void> {
  * @param name - Basisname für die Dateien (z.B. 'stich-einzug')
  * @param animationsMs - Erwartete Dauer der Animation bei 1x Geschwindigkeit in ms
  */
-export async function screenshotKeyframes(page: Page, name: string, animationsMs: number): Promise<void> {
+export async function screenshotKeyframes(page: Page, name: string, animationsMs: number, prefix: string = ''): Promise<void> {
   // t=0
-  await screenshot(page, `${name}-0`);
+  await screenshot(page, `${name}-0`, prefix);
 
   // t=50%
   // Slow-Motion-Faktor 0.2 bedeutet 5x langsamere Geschwindigkeit.
   // Mitte = (animationsMs * 5) * 0.5
   const waitMs = Math.round(animationsMs * 5 * 0.5);
   await page.waitForTimeout(waitMs);
-  await screenshot(page, `${name}-50`);
+  await screenshot(page, `${name}-50`, prefix);
 
   // t=100%
   await warteAufNaechstesEreignis(page, 20_000); // Wartet auf isIdle
-  await screenshot(page, `${name}-100`);
+  await screenshot(page, `${name}-100`, prefix);
 }
 
 /**

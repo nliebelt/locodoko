@@ -33,18 +33,18 @@ test.describe('Vision Loop — UI Screenshots', () => {
 
     await warteAufSzene(page, 'SpielverwaltungsSzene');
     await page.waitForTimeout(2000);
-    await screenshot(page, '01-lobby');
+    await screenshot(page, '01-lobby', testInfo.project.name);
 
     // ── 1. Offene Tische (Permanent sichtbar in neuer Lobby) ──────────────────
     console.log('Taking screenshot of Offene Tische...');
     await page.waitForTimeout(1000);
-    await screenshot(page, '11-offene-tische');
+    await screenshot(page, '11-offene-tische', testInfo.project.name);
 
     // ── 2. Neuen Tisch Modal ────────────────────────────────────────────────
     console.log('Opening Erstelle Tisch Modal...');
     await page.evaluate(() => (window as any).__locodoko.drueckeSzenenButton('btn-neuer-tisch'));
     await page.waitForTimeout(1000);
-    await screenshot(page, '12-neuer-tisch-modal');
+    await screenshot(page, '12-neuer-tisch-modal', testInfo.project.name);
     await page.evaluate(() => (window as any).__locodoko.drueckeSzenenButton('btn-abbrechen'));
 
     // ── 3. Quick Game starten ─────────────────────────────────────────────────
@@ -58,14 +58,14 @@ test.describe('Vision Loop — UI Screenshots', () => {
     console.log('Opening Seitenlade...');
     await page.keyboard.press('i');
     await page.waitForTimeout(1000);
-    await screenshot(page, '07-seitenlade-offen');
+    await screenshot(page, '07-seitenlade-offen', testInfo.project.name);
     await page.keyboard.press('i');
 
     console.log('Opening Einstellungen...');
     await page.locator('canvas').focus();
     await page.keyboard.press('s');
     await page.waitForTimeout(1000);
-    await screenshot(page, '08-einstellungen-modal');
+    await screenshot(page, '08-einstellungen-modal', testInfo.project.name);
     await page.keyboard.press('Escape');
 
     // ── 5. Vorbehalt-Animation (Slow-Motion 0.2×) ───────────────────────────
@@ -75,12 +75,12 @@ test.describe('Vision Loop — UI Screenshots', () => {
 
     console.log('Waiting for own Vorbehalt choice...');
     await warteAufEigenenVorbehalt(page);
-    await screenshot(page, '02-vorbehalt-phase');
+    await screenshot(page, '02-vorbehalt-phase', testInfo.project.name);
     
     // Vorbehalt wechseln (animiert)
     console.log('Changing Vorbehalt choice (animated)...');
     await page.keyboard.press('ArrowRight');
-    await screenshotKeyframes(page, '02-vorbehalt-wechsel', 200);
+    await screenshotKeyframes(page, '02-vorbehalt-wechsel', 200, testInfo.project.name);
 
     // Turbo vor meldeVorbehalt: SPIEL_GESTARTET-Animation (12.5s bei 0.2×) würde sonst
     // den 10s-Timeout von warteAufNaechstesEreignis sprengen.
@@ -103,15 +103,15 @@ test.describe('Vision Loop — UI Screenshots', () => {
     console.log('Waiting for own move (STICHPHASE)...');
     await warteAufEigenenZug(page, 30_000);
     await setzeAnimationsGeschwindigkeit(page, 0.2); // Slow Motion für visuellen Stich-Screenshot
-    await screenshot(page, '03-stichphase-eigener-zug');
+    await screenshot(page, '03-stichphase-eigener-zug', testInfo.project.name);
 
     console.log('Playing first card (animated)...');
     await spieleErsteHandkarte(page);
     // Nur Startzustand und Mittelpunkt aufnehmen — kein isIdle()-Wait, da der volle Stich
     // (3 KI-Züge + Einziehen + Flash-Texts) bei 0.2× ~31s dauert und den 20s-Timeout sprengen würde.
-    await screenshot(page, '03-stich-ausspielen-0');
+    await screenshot(page, '03-stich-ausspielen-0', testInfo.project.name);
     await page.waitForTimeout(Math.round(400 * 5 * 0.5)); // Mitte der Karte-ausspielen-Animation
-    await screenshot(page, '03-stich-ausspielen-50');
+    await screenshot(page, '03-stich-ausspielen-50', testInfo.project.name);
 
     // ── 7. Rest der Partie (Turbo) ──────────────────────────────────────────
     console.log('Playing rest of game (Turbo)...');
@@ -137,7 +137,7 @@ test.describe('Vision Loop — UI Screenshots', () => {
       if (modalCount > 0) {
         await setzeAnimationsGeschwindigkeit(page, 1.0); // Normal speed for modal
         await page.waitForTimeout(500); // Wait for fade in
-        await screenshot(page, '05-rundenauswertung-overlay');
+        await screenshot(page, '05-rundenauswertung-overlay', testInfo.project.name);
         console.log('Screenshot: 05-rundenauswertung-overlay');
         rundeAbgeschlossen = true;
         break;

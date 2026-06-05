@@ -121,9 +121,9 @@ vi.mock('./PhaserButton', () => ({
 
 vi.mock('phaser', () => ({
   default: {
-    Scene: class {
+    Scene: class { scale: any = { width: 1280, height: 720 };
       add: any;
-      scale: any;
+      
       scene: any;
       tweens: any;
       time: any;

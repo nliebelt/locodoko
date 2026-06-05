@@ -38,15 +38,15 @@ export class BootSzene extends Phaser.Scene {
       this.statusText?.setText('Fehler bei der Textur-Initialisierung. Bitte pruefe Logs.');
       return; 
     }
-    this.add.tileSprite(640, 360, 1280, 720, TEXTUR_FILZ).setTint(0x0d5f34);
+    this.add.tileSprite(this.scale.width / 2, this.scale.height / 2, this.scale.width, this.scale.height, TEXTUR_FILZ).setTint(0x0d5f34);
     
-    this.add.text(640, 280, 'Loco Doko', {
+    this.add.text(this.scale.width / 2, 280, 'Loco Doko', {
       fontFamily: FONT_FAMILY,
       color: '#f8f9fa',
       fontSize: '42px'
     }).setOrigin(0.5);
 
-    this.statusText = this.add.text(640, 360, 'Initialisiere Spieler-Session...', {
+    this.statusText = this.add.text(this.scale.width / 2, this.scale.height / 2, 'Initialisiere Spieler-Session...', {
       fontFamily: FONT_FAMILY,
       color: '#d8f3dc',
       fontSize: '18px',

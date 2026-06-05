@@ -16,15 +16,15 @@ export class LoginSzene extends Phaser.Scene {
   }
 
   create(): void {
-    this.add.tileSprite(640, 360, 1280, 720, TEXTUR_FILZ).setAlpha(0.95);
+    this.add.tileSprite(this.scale.width / 2, this.scale.height / 2, this.scale.width, this.scale.height, TEXTUR_FILZ).setAlpha(0.95);
 
-    this.add.text(640, 100, 'LOCO DOKO', {
+    this.add.text(this.scale.width / 2, 100, 'LOCO DOKO', {
       fontFamily: FONT_FAMILY,
       fontSize: '60px',
       color: '#f8f9fa'
     }).setOrigin(0.5).setShadow(3, 3, '#000', 0);
 
-    this.add.text(640, 170, 'Dullen. Füchse. Wahnsinn.', {
+    this.add.text(this.scale.width / 2, 170, 'Dullen. Füchse. Wahnsinn.', {
       fontFamily: FONT_FAMILY,
       fontSize: '20px',
       color: '#a3c4a8'
@@ -32,7 +32,7 @@ export class LoginSzene extends Phaser.Scene {
 
     // Phaser-basierter Schnellstart (funktioniert immer)
     new PhaserButton(this, {
-      x: 640, y: 620,
+      x: this.scale.width / 2, y: 620,
       text: '⚡ SCHNELLSTART (KI)',
       callback: () => void appStore.erstelleQuickGame()
     });
@@ -57,7 +57,7 @@ export class LoginSzene extends Phaser.Scene {
 
   private baueLoginUi(googleOAuth2Aktiv: boolean): void {
     new PhaserButton(this, {
-      x: 640, y: 350,
+      x: this.scale.width / 2, y: 350,
       text: '👤 Als Gast spielen',
       typ: 'primary',
       callback: () => void appStore.alsGastStarten()
@@ -65,14 +65,14 @@ export class LoginSzene extends Phaser.Scene {
 
     if (googleOAuth2Aktiv) {
       new PhaserButton(this, {
-        x: 640, y: 430,
+        x: this.scale.width / 2, y: 430,
         text: '🔑 Mit Google anmelden',
         typ: 'secondary',
         callback: () => { window.location.href = '/oauth2/authorization/google'; }
       });
     }
 
-    this.add.text(640, 280, 'Wähle deinen Zugang:', {
+    this.add.text(this.scale.width / 2, 280, 'Wähle deinen Zugang:', {
       fontFamily: FONT_FAMILY,
       fontSize: '16px',
       color: '#f8f9fa'

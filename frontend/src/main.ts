@@ -42,6 +42,10 @@ window.addEventListener('unhandledrejection', (event) => {
   console.error('[UNHANDLED PROMISE]', event.reason);
 });
 
+const isPortrait = window.innerHeight > window.innerWidth;
+const startWidth = isPortrait ? 720 : 1280;
+const startHeight = isPortrait ? Math.round(720 * (window.innerHeight / window.innerWidth)) : 720;
+
 const spiel = new Phaser.Game({
   type: Phaser.AUTO,
   parent: 'spiel-root',
@@ -49,10 +53,19 @@ const spiel = new Phaser.Game({
   scale: {
     mode: Phaser.Scale.FIT,
     autoCenter: Phaser.Scale.CENTER_BOTH,
-    width: 1280,
-    height: 720
+    width: startWidth,
+    height: startHeight
   },
   scene: [BootSzene, LoginSzene, SpielverwaltungsSzene, TischSzene, BestenlisterSzene, HilfeSzene]
+});
+
+window.addEventListener('resize', () => {
+  const isPortraitNow = window.innerHeight > window.innerWidth;
+  const targetW = isPortraitNow ? 720 : 1280;
+  const targetH = isPortraitNow ? Math.round(720 * (window.innerHeight / window.innerWidth)) : 720;
+  if (spiel.scale.width !== targetW || spiel.scale.height !== targetH) {
+    spiel.scale.setGameSize(targetW, targetH);
+  }
 });
 
 // Globaler Shift+F1 Hotkey für den Bugreport-Dialog (von überall aus erreichbar)

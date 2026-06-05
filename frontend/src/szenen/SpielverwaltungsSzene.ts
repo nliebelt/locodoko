@@ -32,15 +32,15 @@ export class SpielverwaltungsSzene extends Phaser.Scene {
   create(): void {
     registriereBasisTexturen(this);
 
-    this.add.tileSprite(640, 360, 1280, 720, TEXTUR_FILZ).setAlpha(0.95);
+    this.add.tileSprite(this.scale.width / 2, this.scale.height / 2, this.scale.width, this.scale.height, TEXTUR_FILZ).setAlpha(0.95);
 
-    this.add.text(640, 80, 'LOCO DOKO', {
+    this.add.text(this.scale.width / 2, 80, 'LOCO DOKO', {
       fontFamily: FONT_FAMILY,
       fontSize: '60px',
       color: '#f8f9fa'
     }).setOrigin(0.5).setShadow(3, 3, '#000', 0);
 
-    this.add.text(640, 140, 'Dullen. Füchse. Wahnsinn.', {
+    this.add.text(this.scale.width / 2, 140, 'Dullen. Füchse. Wahnsinn.', {
       fontFamily: FONT_FAMILY,
       fontSize: '20px',
       color: '#a3c4a8'
@@ -104,7 +104,7 @@ export class SpielverwaltungsSzene extends Phaser.Scene {
     let sessionRecoveryBtn: PhaserButton | undefined;
     if (aktiverTischId) {
       sessionRecoveryBtn = new PhaserButton(this, {
-        x: 640, y: startY, text: 'Zurück zum Spiel', typ: 'primary',
+        x: this.scale.width / 2, y: startY, text: 'Zurück zum Spiel', typ: 'primary',
         callback: () => void appStore.reconnecteTisch(aktiverTischId)
       });
       sessionRecoveryBtn.setName('btn-session-recovery');
@@ -113,7 +113,7 @@ export class SpielverwaltungsSzene extends Phaser.Scene {
     }
 
     const quickGameBtn = new PhaserButton(this, {
-      x: 640, y: startY, text: '▶  Quick Game', typ: 'primary',
+      x: this.scale.width / 2, y: startY, text: '▶  Quick Game', typ: 'primary',
       callback: () => void appStore.erstelleQuickGame()
     });
     quickGameBtn.setName('btn-quick-game');
@@ -121,7 +121,7 @@ export class SpielverwaltungsSzene extends Phaser.Scene {
     startY += 60;
 
     const erstelleTischBtn = new PhaserButton(this, {
-      x: 640, y: startY, text: '+ Neuen Tisch', typ: 'secondary',
+      x: this.scale.width / 2, y: startY, text: '+ Neuen Tisch', typ: 'secondary',
       callback: () => this.zeigeErstelleTischModal(zustand)
     });
     erstelleTischBtn.setName('btn-neuer-tisch');
@@ -129,7 +129,7 @@ export class SpielverwaltungsSzene extends Phaser.Scene {
     startY += 60;
 
     const profilBtn = new PhaserButton(this, {
-      x: 640, y: startY, text: 'Mein Profil', typ: 'secondary',
+      x: this.scale.width / 2, y: startY, text: 'Mein Profil', typ: 'secondary',
       callback: () => {
         const spielerId = zustand.spieler?.spielerId;
         if (spielerId) {
@@ -144,7 +144,7 @@ export class SpielverwaltungsSzene extends Phaser.Scene {
     startY += 60;
 
     const logoutBtn = new PhaserButton(this, {
-      x: 640, y: startY, text: 'Abmelden', typ: 'secondary',
+      x: this.scale.width / 2, y: startY, text: 'Abmelden', typ: 'secondary',
       callback: () => {
         void appStore.ausloggen().then(() => this.scene.start('LoginSzene'));
       }
@@ -154,7 +154,7 @@ export class SpielverwaltungsSzene extends Phaser.Scene {
     startY += 60;
 
     const feedbackBtn = new PhaserButton(this, {
-      x: 640, y: startY, text: '💬 Feedback', typ: 'secondary',
+      x: this.scale.width / 2, y: startY, text: '💬 Feedback', typ: 'secondary',
       callback: () => this.zeigeFeedbackDialog()
     });
     feedbackBtn.setName('btn-feedback');
@@ -162,7 +162,7 @@ export class SpielverwaltungsSzene extends Phaser.Scene {
     startY += 60;
 
     const bugreportBtn = new PhaserButton(this, {
-      x: 640, y: startY, text: 'Bug melden (Shift+F1)', typ: 'secondary',
+      x: this.scale.width / 2, y: startY, text: 'Bug melden (Shift+F1)', typ: 'secondary',
       callback: () => zeigeBugreportDialog(appStore.snapshot())
     });
     bugreportBtn.setName('btn-bugreport');
@@ -210,21 +210,21 @@ export class SpielverwaltungsSzene extends Phaser.Scene {
     const wartendeTische = tische.filter(t => t.status === 'WARTEND');
     const eigeneLaufendeTische = tische.filter(t => t.status === 'IM_SPIEL' && aktiverTischId === t.id);
 
-    this.add.text(640, 570, 'Offene Tische', {
+    this.add.text(this.scale.width / 2, 570, 'Offene Tische', {
       fontFamily: FONT_FAMILY,
       fontSize: '24px',
       color: FARBE_GOLD_WARM_CSS
     }).setOrigin(0.5);
 
     if (wartendeTische.length === 0 && eigeneLaufendeTische.length === 0) {
-      const msg = this.add.text(640, 630, 'Keine offenen Tische. Starte ein Quick Game!', {
+      const msg = this.add.text(this.scale.width / 2, 630, 'Keine offenen Tische. Starte ein Quick Game!', {
         fontFamily: FONT_FAMILY, fontSize: '16px', color: TEXT_HELL_CSS
       }).setOrigin(0.5);
       this.uiContainer?.add(msg);
       return;
     }
 
-    this.offeneTischeListe = new PhaserList(this, 640, 645, {
+    this.offeneTischeListe = new PhaserList(this, this.scale.width / 2, 645, {
       breite: 600,
       hoehe: 150,
       elementHoehe: 60,
@@ -358,7 +358,7 @@ export class SpielverwaltungsSzene extends Phaser.Scene {
       }
     };
 
-    const modal = new PhaserModal(this, 640, 360, {
+    const modal = new PhaserModal(this, this.scale.width / 2, this.scale.height / 2, {
       titel: 'Neuen Tisch erstellen',
       breite: 500,
       hoehe: 380,

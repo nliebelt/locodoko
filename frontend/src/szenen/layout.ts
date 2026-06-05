@@ -31,18 +31,29 @@ export function stichSlotPositionen(
 
 
 export function berechneKartenGroesse(breite: number): { w: number; h: number } {
-  const w = Math.round(Math.min(110, breite * 0.086));
+  const fraction = breite < 800 ? 0.14 : 0.086;
+  const w = Math.round(Math.min(110, breite * fraction));
   return { w, h: Math.round(w * (165 / 110)) };
 }
 
 export function berechneKartenAbstand(breite: number, hoehe: number): { horizontal: number; vertikal: number } {
+  const isPortrait = hoehe > breite;
   return {
-    horizontal: Math.max(22, Math.round(breite * 0.022)),
-    vertikal: Math.max(12, Math.round(hoehe * 0.022))
+    horizontal: Math.max(isPortrait ? 44 : 22, Math.round(breite * (isPortrait ? 0.06 : 0.022))),
+    vertikal: Math.max(isPortrait ? 22 : 12, Math.round(hoehe * (isPortrait ? 0.02 : 0.022)))
   };
 }
 
 export function berechneLayout(breite: number, hoehe: number): TischLayout {
+  const isPortrait = hoehe > breite;
+  if (isPortrait) {
+    return {
+      SUED: { x: breite * 0.5, y: hoehe * 0.82, kartenX: breite * 0.15, kartenY: hoehe * 0.85, kartenWinkel: 0 },
+      WEST: { x: breite * 0.15, y: hoehe * 0.5, kartenX: breite * 0.12, kartenY: hoehe * 0.40, kartenWinkel: 90 },
+      NORD: { x: breite * 0.5, y: hoehe * 0.18, kartenX: breite * 0.15, kartenY: hoehe * 0.18, kartenWinkel: 0 },
+      OST: { x: breite * 0.85, y: hoehe * 0.5, kartenX: breite * 0.88, kartenY: hoehe * 0.40, kartenWinkel: 90 }
+    };
+  }
   return {
     SUED: { x: breite * 0.5, y: hoehe * 0.82, kartenX: breite * 0.28, kartenY: hoehe * 0.85, kartenWinkel: 0 },
     WEST: { x: breite * 0.12, y: hoehe * 0.5, kartenX: breite * 0.10, kartenY: hoehe * 0.40, kartenWinkel: 90 },
@@ -56,11 +67,12 @@ export function nameplatePositionFuer(
   breite: number,
   hoehe: number
 ): { x: number; y: number } {
+  const isPortrait = hoehe > breite;
   switch (spielerPosition) {
-    case SPIELER_POSITION.NORD: return { x: breite * 0.76, y: hoehe * 0.18 };
-    case SPIELER_POSITION.SUED: return { x: breite * 0.76, y: hoehe * 0.85 };
-    case SPIELER_POSITION.WEST: return { x: breite * 0.10, y: hoehe * 0.85 };
-    case SPIELER_POSITION.OST:  return { x: breite * 0.90, y: hoehe * 0.15 };
+    case SPIELER_POSITION.NORD: return { x: isPortrait ? breite * 0.85 : breite * 0.76, y: isPortrait ? hoehe * 0.18 : hoehe * 0.18 };
+    case SPIELER_POSITION.SUED: return { x: isPortrait ? breite * 0.85 : breite * 0.76, y: isPortrait ? hoehe * 0.85 : hoehe * 0.85 };
+    case SPIELER_POSITION.WEST: return { x: isPortrait ? breite * 0.20 : breite * 0.10, y: isPortrait ? hoehe * 0.75 : hoehe * 0.85 };
+    case SPIELER_POSITION.OST:  return { x: isPortrait ? breite * 0.80 : breite * 0.90, y: isPortrait ? hoehe * 0.25 : hoehe * 0.15 };
   }
 }
 

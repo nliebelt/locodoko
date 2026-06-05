@@ -11,7 +11,7 @@ vi.mock('../assets/AssetLoader', () => ({
 
 vi.mock('phaser', () => ({
   default: {
-    Scene: class {
+    Scene: class { scale = { width: 1280, height: 720 };
       constructor(public name: string) {}
       add = {
         text: vi.fn(() => ({

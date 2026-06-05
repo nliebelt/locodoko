@@ -46,9 +46,9 @@ export class HilfeSzene extends Phaser.Scene {
 
   create(): void {
     registriereBasisTexturen(this);
-    this.add.tileSprite(640, 360, 1280, 720, TEXTUR_FILZ).setAlpha(0.97);
+    this.add.tileSprite(this.scale.width / 2, this.scale.height / 2, this.scale.width, this.scale.height, TEXTUR_FILZ).setAlpha(0.97);
 
-    this.add.text(640, 45, 'SPIELREGELN', {
+    this.add.text(this.scale.width / 2, 45, 'SPIELREGELN', {
       fontFamily: FONT_FAMILY,
       fontSize: '48px',
       color: HELL,
