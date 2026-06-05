@@ -1,0 +1,19 @@
+# Reverse-Proxy Konfiguration für Locodoko Produktion (zock.locodoko.de)
+# Erstellt für OPS-DOMAIN Task.
+
+# Apex-Domain Weiterleitung auf die Zock-Subdomain (bis Landing-Page existiert)
+locodoko.de {
+    redir https://zock.locodoko.de{uri} 301
+}
+
+# Haupt-Applikation
+zock.locodoko.de {
+    # M1 Closed-Beta: Verhindere Indizierung durch Suchmaschinen.
+    # Bei Public Go-Live (M2) entfernen.
+    header X-Robots-Tag "noindex, nofollow"
+
+    # Reverse-Proxy auf den internen App-Container (Port 8081)
+    reverse_proxy app:8081 {
+        # Caddy v2 reicht WebSocket-Upgrades und X-Forwarded-* Header automatisch durch.
+    }
+}

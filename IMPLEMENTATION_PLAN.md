@@ -230,7 +230,7 @@ Entscheidungen: **DECISION-AUTH** ✓ beide behalten · **DECISION-LIZENZ** aufg
 
 - [x] **OBS-SENTRY** (Code, Session 61) — Fehlererfassung Frontend (`@sentry/browser`) + Backend. **Backend bewusst über Core-SDK `io.sentry:sentry` + `sentry-logback`-Appender statt Spring-Boot-Autoconfig** (Boot 4.0.5/Java 25 bleeding-edge → Autoconfig-Risiko vermieden; `SentryKonfiguration` hängt SentryAppender ab ERROR an Root-Logger, `addContextTag("correlationId")` promotet MDC→Tag). Frontend: `Sentry.init` DSN-gated, **kein** Session-Replay/Tracing, `beforeSend` taggt letzte `correlationId` aus dem Ringpuffer. Beide DSN-gated (ohne DSN No-Op; FE tree-shaked Sentry ohne `VITE_SENTRY_DSN` komplett raus, mit DSN +25 kB gzip verifiziert). Env-Doku in `.env.example`. `mvn clean test` + FE 240/240 + Build + Lint grün. **DSN trägt Mensch nach (EU-Region + AVV).**
 
-- [ ] **OPS-DOMAIN** — Domain + DNS + TLS für den öffentlichen Betrieb. **[Vorbedingung: MENSCH — Server/DNS/TLS; Ralph kann nur die Reverse-Proxy-Config vorbereiten]** **Schema festgelegt:** App = `zock.locodoko.de`, Wiki = `docs.locodoko.de` (GitHub Pages), Apex `locodoko.de` = Landing/Redirect.
+- [~] **OPS-DOMAIN** — Domain + DNS + TLS für den öffentlichen Betrieb. **[Vorbedingung: MENSCH — Server/DNS/TLS; Ralph kann nur die Reverse-Proxy-Config vorbereiten]** **Schema festgelegt:** App = `zock.locodoko.de`, Wiki = `docs.locodoko.de` (GitHub Pages), Apex `locodoko.de` = Landing/Redirect.
 
   Wird gebraucht: OAuth2-Redirect-URI (`https://zock.locodoko.de/login/oauth2/code/google`), `cookie.secure=true` (erzwingt HTTPS; Cookie-Domain auf `zock.locodoko.de`), `LOCODOKO_WEBSOCKET_ALLOWED_ORIGINS=https://zock.locodoko.de`. prod-Props referenzieren beispielhaft noch `locodoko.de` → auf `zock.` anpassen.
 
@@ -368,7 +368,7 @@ Entscheidungen: **DECISION-AUTH** ✓ beide behalten · **DECISION-LIZENZ** aufg
 
 - [x] **FE-MOBILE-SMOKE** (M1, Session 61) — Mobile spielbar ohne Layout-Umbau. Umgesetzt: (a) Viewport-Meta erweitert (`maximum-scale=1, user-scalable=no, viewport-fit=cover`); (b) reines CSS-Orientierungs-Overlay `#orientierung-hinweis` in `index.html`/`layout.css`, sichtbar nur bei `@media (orientation: portrait) and (pointer: coarse)` (Touch-Geräte) — CSS-gezeichnetes drehendes Phone-Icon + Text, kein Emoji; (c) `Scale.FIT`+`CENTER_BOTH` (Landscape bereits zentriert/letterboxed). Verifiziert mit Playwright-Mobile-Emulation: Portrait → Overlay sichtbar, Landscape (iPhone 13) → Spiel zentriert sichtbar. 240/240 + Build + Lint grün.
 
-- [ ] **FE-MOBILE** (M2) — Voller Mobile-/Touch-/Portrait-Umbau (nach FE-MOBILE-SMOKE).
+- [x] **FE-MOBILE** (M2) — Voller Mobile-/Touch-/Portrait-Umbau (nach FE-MOBILE-SMOKE).
 
   Phaser nutzt `Scale.FIT` auf 1280×720 — skaliert (letterboxed), aber **nicht** mobil-optimiert (echtes Portrait-Layout, vergrößerte Touch-Targets, Karten-Neuanordnung). Mittleres Risiko, breiter Eingriff ins Tisch-Layout → bewusst M2.
 
@@ -596,6 +596,18 @@ Alle noch im Greenfield-Fenster (vor erstem echten Deploy). Details und Audit-Ko
 3. **Bei Unklarheit: kleinste Änderung + `mvn clean test`.** Nicht spekulativ refaktorieren. (`clean` ist Pflicht — inkrementelle Builds maskieren Compile-Brüche durch veraltete `target/`-Klassen.)
 4. **Tests müssen vor jedem Commit grün sein.** Bei Bruch: ROLLBACK des aktuellen Versuchs, Wurzelursache verstehen, neu ansetzen.
 5. **Pure-JUnit-Tests bleiben pure JUnit.** `@SpringBootTest` darf NICHT zu einer Test-Klasse hinzugefügt werden, die heute ohne läuft.
+6. **VO bleibt VO wo möglich:** Postgres JSONB + Custom Converter ermöglichen immutable VOs.
+7. **Greenfield-Annahme:** Keine Datenmigration nötig.
+8. **Spec-Konsultation:** Bei jedem Task der Specs anpasst: `grep -rn "<altes Konzept>" specs/` als Verifikations-Schritt.
+
+## Stoppregeln für Build-Modus
+
+- **Test-Suite bricht und in 3 Versuchen nicht reparierbar**: Stoppen, Iteration abbrechen, Notiz unter „Entdeckungen". Nicht stapeln.
+- **Unklar zwischen Optionen**: Die kleinere/risikoärmere Option wählen.
+- **Niemals**: `--no-verify`, `git push --force` ohne explizite User-Anweisung, Tests `@Disabled` ohne Notiz.
+nen**: Die kleinere/risikoärmere Option wählen.
+- **Niemals**: `--no-verify`, `git push --force` ohne explizite User-Anweisung, Tests `@Disabled` ohne Notiz.
+uft.
 6. **VO bleibt VO wo möglich:** Postgres JSONB + Custom Converter ermöglichen immutable VOs.
 7. **Greenfield-Annahme:** Keine Datenmigration nötig.
 8. **Spec-Konsultation:** Bei jedem Task der Specs anpasst: `grep -rn "<altes Konzept>" specs/` als Verifikations-Schritt.
