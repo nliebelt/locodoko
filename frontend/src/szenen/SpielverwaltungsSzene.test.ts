@@ -37,7 +37,7 @@ vi.mock('phaser', () => ({
 }));
 
 vi.mock('./PhaserButton', () => ({
-  PhaserButton: vi.fn(() => ({ setName: vi.fn(), add: vi.fn() }))
+  PhaserButton: vi.fn(() => ({ setName: vi.fn(), add: vi.fn(), setX: vi.fn(), breite: 200 }))
 }));
 
 vi.mock('../ui/PhaserModal', () => ({

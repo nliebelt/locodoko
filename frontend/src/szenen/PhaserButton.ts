@@ -26,6 +26,8 @@ export interface FocusableElement {
 export class PhaserButton extends Phaser.GameObjects.Container implements FocusableElement {
   private hintergrund: Phaser.GameObjects.Rectangle;
   private callback: () => void;
+  /** Tatsaechliche Renderbreite (inkl. Text-Autosize) — fuer praezises Layout durch die Szene. */
+  public readonly breite: number;
 
   constructor(scene: Phaser.Scene, optionen: ButtonOptionen) {
     const { x, y, text, typ = 'primary', hoehe = 50, callback, testId, deaktiviert = false } = optionen;
@@ -48,6 +50,7 @@ export class PhaserButton extends Phaser.GameObjects.Container implements Focusa
     // textObj.width ist in Phaser nach Erstellung verfügbar; in jsdom-Tests liefert
     // canvas.measureText 0 → Fallback auf explizite oder Default-Breite 300px.
     const breite = Math.max(optionen.breite ?? 300, textObj.width > 0 ? textObj.width + 40 : 0);
+    this.breite = breite;
 
     const schatten = new Phaser.GameObjects.Rectangle(scene, 4, 4, breite, hoehe, 0x000000, 0.5);
 

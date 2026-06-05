@@ -46,15 +46,22 @@ export class SpielverwaltungsSzene extends Phaser.Scene {
       color: '#a3c4a8'
     }).setOrigin(0.5);
 
-    new PhaserButton(this, {
-      x: 880, y: 45, text: '? Spielregeln', typ: 'secondary', breite: 190, hoehe: 40,
+    // Oben-rechts: Spielregeln + Rangliste. Beide Buttons skalieren ihre Breite
+    // automatisch an den Text (PhaserButton.breite), daher rechtsbuendig anhand der
+    // tatsaechlichen Renderbreite layouten — sonst ueberlappen sie (BUG-LOBBY-TOPRIGHT-CLIPPING-2).
+    const randAbstand = 22;
+    const buttonLuecke = 16;
+    const spielregelnBtn = new PhaserButton(this, {
+      x: 0, y: 45, text: '? Spielregeln', typ: 'secondary', breite: 190, hoehe: 40,
       callback: () => this.scene.start('HilfeSzene', { herkunft: 'SpielverwaltungsSzene' }),
     });
-
-    new PhaserButton(this, {
-      x: 1120, y: 45, text: '🏆 Rangliste', typ: 'secondary', breite: 200, hoehe: 40,
+    const ranglisteBtn = new PhaserButton(this, {
+      x: 0, y: 45, text: '🏆 Rangliste', typ: 'secondary', breite: 200, hoehe: 40,
       callback: () => this.scene.start('BestenlisterSzene')
     });
+    const ranglisteX = this.scale.width - randAbstand - ranglisteBtn.breite / 2;
+    ranglisteBtn.setX(ranglisteX);
+    spielregelnBtn.setX(ranglisteX - ranglisteBtn.breite / 2 - buttonLuecke - spielregelnBtn.breite / 2);
 
     this.uiContainer = this.add.container(0, 0);
 
