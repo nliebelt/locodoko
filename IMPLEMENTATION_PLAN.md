@@ -4,6 +4,8 @@
 
 ## Notiz
 
+**Session 64 (2026-06-05) — DOC-DOCS-SITE abgeschlossen:** MkDocs-Material-Dokumentationsseite für `docs.locodoko.de` (GitHub Pages). `mkdocs.yml` mit `docs_dir: docs`, `site_dir: site`, Material-Theme (de, Dark/Light-Toggle, Tabs, Search). `docs/specs` → Symlink auf `../specs` (alle 52 Specs erreichbar ohne Kopie). `docs/index.md` — Karpathy-style Landing-Page (Schnell-Orientierung, Modulstruktur, Ubiquitous Language). `.github/workflows/ci-docs.yml` — Build + Deploy auf GitHub Pages (nur bei Push auf main wenn specs/docs/mkdocs.yml geändert; pinned `mkdocs-material==9.5.49`). `site/` in `.gitignore`. MkDocs-Build lokal verifiziert (grün, strict). **Nächster Task: BUG-LOGIN-BUTTON-TEXTCLIPPING.**
+
 **Session 63 (2026-06-05) — FEAT-BUGREPORT abgeschlossen:** `BugReportController` im Paket `de.locodoko.spieler`: Auth via `SpielerSessionService.ladeAktivenSpieler`, Rate-Limiting (`RateLimitingFilter` um Bugreport-Pfad erweitert: 5 pro 10 Min), Log-Ausschnitt per correlationId aus `logs/locodoko.log`, GitHub-Issue-Anlage + Loki-Deep-Link env-gated (ohne Secrets No-Op). Frontend: `bugreportDialog.ts` als DOM-Overlay (Muster wie FeedbackDialog), `Shift+F1` global in `main.ts` + Button in `SpielverwaltungsSzene`. `AppStore.meldeBugReport` → `SpielverwaltungApi`. 3 Tests (401-ohne-Session, 400-leere-Beschreibung, 200-Happy-Path). Build+Lint+240 Tests grün. **Nächster Task: DOC-DOCS-SITE oder BUG-LOGIN-BUTTON-TEXTCLIPPING.**
 
 **Session 61 (2026-06-04) — REFACTOR-FE-PARTIESTORE abgeschlossen + Stash-Aufräumung:** `PartieStore.ts` — `_verarbeiteEventQueue` (~127 Z., CC 60) zu schlankem Dispatcher (**CC < 20**, DoD erfüllt) umgebaut; alle Phasen in private Methoden ausgelagert (`_mussAufQuiescenceWarten`/`_warteAufQuiescence`, `_pruefeStorePatchErlaubnis`, `_merkeVerpasstesSpielBeendet`, `_brauchtKiVerzoegerung`, `_patcheVorListenern`, `_benachrichtigeListener`, `_verarbeiteNachListenern`, `_protokolliereSpielBeendet`). **Timing-Falle (kostete eine Iteration):** ein naiver Auslager-Ansatz brach 3 AppStore-Tests, weil jedes `await someAsync()` einen zusätzlichen Microtask-Tick erzeugt (auch bei No-Op-Body) und die Tests die Queue nur mit einem einzigen `await Promise.resolve()` treiben → Listener wurden zu spät aufgerufen. **Lösung:** Quiescence-Warten und KI-Verzögerung hinter **synchrone Guard-Prädikate** legen, sodass nur bei echtem Warten ge-`await`et wird; Doc-Kommentar hält das Invariant fest. 240/240 Tests grün, Build+Lint sauber. Außerdem 2 uralte Stashes (375 Commits alt, auf `e61be97`, überholt) entfernt. **→ Nächster Task: FEAT-BUGREPORT.**
@@ -54,7 +56,7 @@ Nächste offene Tasks — Fertigstellung (Session 30). **Zwei Meilensteine:** **
 **D) Verbleibende autonome Tasks (Reihenfolge Session 62):**
 1. ~~FE-NAMEPLATE-TEXTABSCHNEIDUNG~~ ✓ (S57) · ~~REFACTOR-FE-EREIGNISHANDLER~~ ✓ (S59) · ~~REFACTOR-FE-PARTIESTORE~~ ✓ (S61) · ~~REFACTOR-FE-KARTENRENDERER~~ ✓ (S61) · ~~FE-MOBILE-SMOKE~~ ✓ (S61) · ~~OBS-SENTRY~~ ✓ (S61, Code) · ~~OPS-GRAFANA-MONITORING~~ ✓ · ~~OPS-LOGS-LOKI~~ ✓ (S61, Code/Config)
 2. **FEAT-BUGREPORT** ← **nächster** — Overlay (`Shift+F1`) + `BugReportController` + Redaktion **laut `specs/bugreport.md`** autonom baubar; GitHub-Issue-Versand **env-gated** (Repo + Token = MENSCH, analog Sentry). Loki-Deep-Link nutzbar (OPS-LOGS-LOKI ✓).
-3. **DOC-DOCS-SITE** — MkDocs-Material-Seite für `docs.locodoko.de` (baut autonom, Custom-Domain-DNS MENSCH).
+3. ~~DOC-DOCS-SITE~~ ✓ (S64) — MkDocs-Material-Seite für `docs.locodoko.de`.
 4. **BUG-LOGIN-BUTTON-TEXTCLIPPING** (klein, P-hoch) — Login-Buttons schneiden Text ab (`LoginSzene.ts`), viewport-unabhängig. Siehe UI-Mängel-Sektion.
 
 **Hinweis Build-Loop:** Diese Queue ist Ralph-autonom (Verifikation `mvn clean test` / `npm test && npm run build && npm run lint`, UI-Tasks zusätzlich Vision-Loop). **Pro Task ein Commit.** Env-gated externe Dienste (Sentry/Grafana/Loki/Bugreport-GitHub) sind ohne Secrets No-Ops → Build bleibt grün.
@@ -215,7 +217,7 @@ Entscheidungen: **DECISION-AUTH** ✓ beide behalten · **DECISION-LIZENZ** aufg
 
   **DoD:** `https://zock.locodoko.de` zeigt auf die App, WS funktioniert durch den Proxy, OAuth-Redirect + WS-Origins gesetzt. **Risiko:** niedrig. **[abhängig von Plattformwahl/Server]**
 
-- [ ] **DOC-DOCS-SITE** — Öffentliche Docs-/Wiki-Seite (zugleich LLM-tauglich, Karpathy-Stil).
+- [x] **DOC-DOCS-SITE** — Öffentliche Docs-/Wiki-Seite (zugleich LLM-tauglich, Karpathy-Stil).
 
   Zweck: Menschen außerhalb des GitHub-Kontexts sollen das Projekt verstehen/„lernen" können; gleichzeitig LLM-freundlich (eindeutige Begriffe, flache Hierarchie, explizite Querverweise, optional `llms.txt`/generiertes Bundle). Die ~47 Markdown-Specs liegen bereits passend vor.
 

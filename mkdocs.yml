@@ -1,0 +1,107 @@
+site_name: Locodoko Dokumentation
+site_url: https://docs.locodoko.de
+repo_url: https://github.com/nliebelt/locodoko
+repo_name: nliebelt/locodoko
+docs_dir: docs
+site_dir: site
+edit_uri: edit/main/docs/
+
+theme:
+  name: material
+  language: de
+  palette:
+    - scheme: slate
+      primary: deep purple
+      accent: amber
+      toggle:
+        icon: material/brightness-7
+        name: Hellmodus wechseln
+    - scheme: default
+      primary: deep purple
+      accent: amber
+      toggle:
+        icon: material/brightness-4
+        name: Dunkelmodus wechseln
+  features:
+    - navigation.tabs
+    - navigation.tabs.sticky
+    - navigation.sections
+    - navigation.expand
+    - navigation.top
+    - search.suggest
+    - search.highlight
+    - content.code.copy
+
+plugins:
+  - search:
+      lang: de
+
+extra:
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/nliebelt/locodoko
+
+nav:
+  - Start: index.md
+  - Projektstatus: specs/fertigstellung.md
+  - Architektur:
+    - Überblick: specs/architektur.md
+    - DDD & Persistenz: specs/architektur-ddd.md
+    - Snapshot+Hint-Modell: specs/architektur-unified.md
+    - Spielkern-Architektur: specs/architektur-spielkern.md
+    - Domain Events: specs/architektur-domain-events.md
+    - Datenbankmodell: specs/datenbankmodell.md
+  - Spielkern:
+    - Spielablauf: specs/spielablauf.md
+    - Kartendeck: specs/kartendeck.md
+    - Stichlogik: specs/stichlogik.md
+    - Trumpfhierarchie: specs/trumpfhierarchie.md
+    - Punkteberechnung: specs/punkteberechnung.md
+    - Ansagen: specs/ansagen.md
+    - Sonderregeln:
+      - Schweinchen: specs/schweinchen.md
+      - Dreißig-Augen-Pflicht: specs/dreissig-augen-pflicht.md
+      - Bockrunden: specs/bockrunden.md
+      - Sonderpunkte: specs/sonderpunkte.md
+    - Sonderspiele:
+      - Hochzeit: specs/hochzeit.md
+      - Armut: specs/armut.md
+      - Solo-Bube: specs/solo-bube.md
+      - Solo-Dame: specs/solo-dame.md
+      - Farbsolo: specs/solo-farbsolo.md
+      - Fleischlos: specs/solo-fleischlos.md
+      - Trumpfsolo: specs/solo-trumpf.md
+    - Regelkatalog: specs/regelkatalog.md
+  - Lobby & Infrastruktur:
+    - Lobby: specs/lobby.md
+    - Tischkonfiguration: specs/tischkonfiguration.md
+    - Spieler-Profil: specs/spieler-profil.md
+    - Authentifizierung: specs/authentifizierung.md
+    - Spieler-Session: specs/spieler-session.md
+    - Verbindungsabbruch: specs/verbindungsabbruch.md
+    - Statistik & Ranking: specs/statistik-ranking.md
+    - REST-API: specs/rest-api.md
+    - WebSocket-Kommunikation: specs/websocket-kommunikation.md
+    - Bugreport: specs/bugreport.md
+  - KI:
+    - Strategie: specs/ki-strategie.md
+    - E2E-Tests: specs/e2e-tests.md
+  - Frontend:
+    - Architektur: specs/frontend-architektur.md
+    - UI-Logik: specs/frontend-ui-logik.md
+    - Logging: specs/frontend-logging.md
+    - Startscreen: specs/frontend-startscreen.md
+    - Tischansicht: specs/frontend-tischansicht.md
+    - Rundenauswertung: specs/frontend-rundenauswertung.md
+    - Visuelles Design: specs/frontend-visuelles-design.md
+    - Animationen: specs/frontend-animationen.md
+    - Tastatursteuerung: specs/frontend-tastatursteuerung.md
+    - Vorbehalt-Kartenauswahl: specs/frontend-vorbehalt-kartenauswahl.md
+    - Flash-Texte: specs/frontend-flash-text.md
+    - Nameplates: specs/frontend-nameplates.md
+    - Spielerprofil-UI: specs/frontend-spielerprofil.md
+  - Recht & Betrieb:
+    - Recht & Impressum: specs/recht-impressum-datenschutz.md
+    - Monitoring: specs/betrieb-monitoring.md
+  - Codequalität: metrics.md
+  - Internes Review: specs/review-2026-05-28.md

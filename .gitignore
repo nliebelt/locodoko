@@ -33,3 +33,6 @@ logs/
 
 # Datenbank-Backups (lokal, nicht ins Repo)
 backups/
+
+# MkDocs Build-Output
+site/
