@@ -2,7 +2,7 @@ import { defineConfig, devices } from '@playwright/test';
 
 export default defineConfig({
   testDir: './tests',
-  testMatch: ['**/vision-loop.spec.ts'],
+  testMatch: ['**/vision-loop.spec.ts', '**/vision-loop-szenen.spec.ts'],
   timeout: 360_000,
   retries: 0,
   use: {
