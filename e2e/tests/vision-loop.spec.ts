@@ -146,11 +146,22 @@ test.describe('Vision Loop — UI Screenshots', () => {
     let rundeAbgeschlossen = false;
     let ansageScreenshotGemacht = false;
     let armutScreenshotGemacht = false;
+    let flashScreenshotGemacht = { f04: false, f05: false, f06: false, f07: false, f08: false, f09: false, a03: false, a04: false, a05: false };
 
     while (!rundeAbgeschlossen) {
-      await page.waitForFunction(() => {
+      await page.waitForFunction((flashGemacht) => {
         const loco = (window as any).__locodoko;
         if (loco?._rundenEndeModalGezeigt > 0) return true;
+        
+        const flash = loco?._letzterFlashTyp;
+        if (flash === 'StichAbgeschlossen' && !flashGemacht.f04) return true;
+        if (flash === 'SchweinchenGemeldet' && !flashGemacht.f05) return true;
+        if (flash === 'FuchsGefangen' && !flashGemacht.f06) return true;
+        if (flash === 'KarlchenGespielt' && !flashGemacht.f07) return true;
+        if (flash === 'DoppelkopfGestochen' && !flashGemacht.f08) return true;
+        if (flash === 'HochzeitPartnerGefunden' && !flashGemacht.f09) return true;
+        if (flash === 'SpielGestartet' && (!flashGemacht.a03 || !flashGemacht.a04)) return true;
+
         const spiel = loco?.appStore?.snapshot()?.partieStand?.laufendesSpiel;
         if (!spiel) return false;
         if (spiel.phase === 'VORBEHALT_ANSAGE') return true;
@@ -159,7 +170,72 @@ test.describe('Vision Loop — UI Screenshots', () => {
         if ((spiel.moeglicheAnsagen?.length ?? 0) > 0) return true;
         if (spiel.phase === 'ARMUT_TAUSCH') return true;
         return false;
-      }, null, { timeout: 60_000 });
+      }, flashScreenshotGemacht, { timeout: 60_000 });
+
+      const flashTyp = await page.evaluate(() => (window as any).__locodoko?._letzterFlashTyp);
+      if (flashTyp) {
+        let matched = false;
+        if (flashTyp === 'StichAbgeschlossen' && !flashScreenshotGemacht.f04) {
+          flashScreenshotGemacht.f04 = true; matched = true;
+          await setzeAnimationsGeschwindigkeit(page, 0.2);
+          await page.waitForTimeout(100);
+          await screenshot(page, 'f04-flash-stich-abgeschlossen', prefix);
+          
+          if (!flashScreenshotGemacht.a05) {
+            flashScreenshotGemacht.a05 = true;
+            await page.waitForTimeout(300);
+            await screenshot(page, 'a05-stich-einziehen', prefix);
+          }
+        } else if (flashTyp === 'SchweinchenGemeldet' && !flashScreenshotGemacht.f05) {
+          flashScreenshotGemacht.f05 = true; matched = true;
+          await setzeAnimationsGeschwindigkeit(page, 0.2);
+          await page.waitForTimeout(100);
+          await screenshot(page, 'f05-flash-schweinchen', prefix);
+        } else if (flashTyp === 'FuchsGefangen' && !flashScreenshotGemacht.f06) {
+          flashScreenshotGemacht.f06 = true; matched = true;
+          await setzeAnimationsGeschwindigkeit(page, 0.2);
+          await page.waitForTimeout(100);
+          await screenshot(page, 'f06-flash-fuchs', prefix);
+        } else if (flashTyp === 'KarlchenGespielt' && !flashScreenshotGemacht.f07) {
+          flashScreenshotGemacht.f07 = true; matched = true;
+          await setzeAnimationsGeschwindigkeit(page, 0.2);
+          await page.waitForTimeout(100);
+          await screenshot(page, 'f07-flash-karlchen', prefix);
+        } else if (flashTyp === 'DoppelkopfGestochen' && !flashScreenshotGemacht.f08) {
+          flashScreenshotGemacht.f08 = true; matched = true;
+          await setzeAnimationsGeschwindigkeit(page, 0.2);
+          await page.waitForTimeout(100);
+          await screenshot(page, 'f08-flash-doppelkopf', prefix);
+        } else if (flashTyp === 'HochzeitPartnerGefunden' && !flashScreenshotGemacht.f09) {
+          flashScreenshotGemacht.f09 = true; matched = true;
+          await setzeAnimationsGeschwindigkeit(page, 0.2);
+          await page.waitForTimeout(100);
+          await screenshot(page, 'f09-flash-hochzeit', prefix);
+        } else if (flashTyp === 'SpielGestartet') {
+          const partieStand = await page.evaluate(() => (window as any).__locodoko?.appStore?.snapshot()?.partieStand);
+          const spieltyp = partieStand?.laufendesSpiel?.spieltyp;
+          const bockrundenZaehler = partieStand?.bockrundenZaehler ?? 0;
+          
+          if (spieltyp && spieltyp !== 'NORMAL' && !flashScreenshotGemacht.a03) {
+            flashScreenshotGemacht.a03 = true; matched = true;
+            await setzeAnimationsGeschwindigkeit(page, 0.2);
+            await page.waitForTimeout(100);
+            await screenshot(page, 'a03-solo-ankuendigung', prefix);
+          }
+          if (bockrundenZaehler > 0 && !flashScreenshotGemacht.a04) {
+            flashScreenshotGemacht.a04 = true; matched = true;
+            await setzeAnimationsGeschwindigkeit(page, 0.2);
+            await page.waitForTimeout(100);
+            await screenshot(page, 'a04-bockrunde', prefix);
+          }
+        }
+        
+        await page.evaluate(() => { (window as any).__locodoko._letzterFlashTyp = undefined; });
+        if (matched) {
+          await aktiviereTurbo(page);
+          continue;
+        }
+      }
 
       const modalCount = await leseRundenEndeModalCount(page);
       if (modalCount > 0) {
