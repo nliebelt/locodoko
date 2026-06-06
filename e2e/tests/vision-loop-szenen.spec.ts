@@ -15,7 +15,7 @@ import {
  * und bleiben 🔲 bis zu einem separaten Folge-Task.
  */
 test.describe('Vision Loop — Szenen S-00 bis S-14', () => {
-  test('Nicht-Spiel-Szenen screenshotten', async ({ page }, testInfo) => {
+  test('Nicht-Spiel-Szenen screenshotten', async ({ page, browser }, testInfo) => {
     aktiviereConsoleCapture(page, testInfo.title);
     page.on('console', msg => console.log('BROWSER:', msg.text()));
     const prefix = testInfo.project.name;
@@ -44,9 +44,6 @@ test.describe('Vision Loop — Szenen S-00 bis S-14', () => {
     await screenshot(page, '12-neuer-tisch-modal', prefix);
     await page.evaluate(() => (window as any).__locodoko.drueckeSzenenButton('btn-abbrechen'));
     await page.waitForTimeout(300);
-
-    // S-04: Lobby mit gefüllter Tischliste — 🔲 (erfordert 2 Browser-Kontexte → Folge-Task)
-    // S-05: Session-Recovery-Button — 🔲 (erfordert komplexen Zustand → Folge-Task)
 
     // S-06: HilfeSzene — Tab Trumpfhierarchie (Standard-Tab beim Öffnen)
     await page.evaluate(() => (window as any).__locodoko.drueckeSzenenButton('btn-spielregeln'));
@@ -121,5 +118,26 @@ test.describe('Vision Loop — Szenen S-00 bis S-14', () => {
     );
     await page.waitForTimeout(1500);
     await screenshot(page, '13-tisch-wartezimmer', prefix);
+
+    // S-04: Lobby mit gefüllter Tischliste (2. Browser-Kontext)
+    const context2 = await browser.newContext();
+    const page2 = await context2.newPage();
+    await page2.goto('/');
+    await getBridge(page2);
+    await warteAufSzene(page2, 'LoginSzene');
+    await alsGastStarten(page2);
+    await warteAufSzene(page2, 'SpielverwaltungsSzene');
+    await page2.waitForTimeout(1500);
+    await screenshot(page2, '11b-offene-tische-gefuellt', prefix);
+    await context2.close();
+
+    // S-05: Session-Recovery-Button
+    // Force transition to lobby while keeping aktiverTischId intact
+    await page.evaluate(() => {
+      (window as any).__locodoko.appStore.patch({ bereich: 'SPIELVERWALTUNG' });
+    });
+    await warteAufSzene(page, 'SpielverwaltungsSzene');
+    await page.waitForTimeout(1000);
+    await screenshot(page, '01b-lobby-recovery', prefix);
   });
 });

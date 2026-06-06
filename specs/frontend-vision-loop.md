@@ -89,7 +89,7 @@ Legende: ✅ = abgedeckt | 🔲 = fehlt | 🎯 = Ziel
 - **Screenshot-ID:** `11b-offene-tische-gefuellt`
 - **Trigger:** Eigenen Tisch erstellen (privat=false), dann in neuem Browser-Kontext Lobby öffnen → Tisch erscheint in der Liste des zweiten Kontexts. ODER: nach `erstelleKonfiguriertenTisch()` ohne Start → aus demselben Kontext die Tischliste per zweitem Konto abrufen.
 - **Elemente:** Mindestens 1 Tischeintrag mit Name, Spieler, "Beitreten"-Button
-- **Status:** 🔲
+- **Status:** ✅ (S86)
 - **Hinweis:** Erfordert 2 Browser-Kontexte oder einen Workaround (Tisch erstellen, zur Lobby zurück, Tisch erscheint in eigener Liste nicht — aber `SpielverwaltungsSzene` zeigt fremde Tische). Alternativ: **tisch erstellen + Session 2 öffnet Lobby** als Mini-Flow.
 
 #### S-05 Lobby — Session-Recovery-Button
@@ -97,7 +97,7 @@ Legende: ✅ = abgedeckt | 🔲 = fehlt | 🎯 = Ziel
 - **Screenshot-ID:** `01b-lobby-recovery`
 - **Trigger:** Spieler hat aktiven Tisch (`zustand.spieler.aktiverTischId` gesetzt). Tisch erstellen, dann direkt auf Lobby-URL navigieren ohne Tisch zu verlassen.
 - **Elemente:** Zusätzlicher Button "Zurück zum Spiel" (btn-session-recovery) ganz oben
-- **Status:** 🔲
+- **Status:** ✅ (S86)
 
 #### S-06 Spielregeln — Tab Trumpfhierarchie
 
@@ -394,8 +394,8 @@ Test-Fehler.
 | S-01 | Lobby Basis | Szenen | ✅ |
 | S-02 | Lobby Tischliste leer | Szenen | ✅ |
 | S-03 | Lobby Tisch-Erstellen-Modal | Szenen | ✅ |
-| S-04 | Lobby Tischliste gefüllt | Szenen | 🔲 |
-| S-05 | Lobby Session-Recovery | Szenen | 🔲 |
+| S-04 | Lobby Tischliste gefüllt | Szenen | ✅ |
+| S-05 | Lobby Session-Recovery | Szenen | ✅ |
 | S-06 | Hilfe — Trumpfhierarchie | Szenen | 🔲 |
 | S-07 | Hilfe — Ansagen | Szenen | 🔲 |
 | S-08 | Hilfe — Sonderspiele | Szenen | 🔲 |

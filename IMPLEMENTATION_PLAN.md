@@ -4,6 +4,9 @@
 
 ## Notiz
 
+**Session 86 (2026-06-06) — FEAT-VISION-LOOP-LOBBY-SCENARIOS abgeschlossen:** Die Szenarien S-04 (Lobby Tischliste gefüllt) und S-05 (Session-Recovery) wurden im `vision-loop-szenen.spec.ts` implementiert. S-04 nutzt einen zweiten Browser-Kontext, um die offene Tischliste zu zeigen, während S-05 den Status via AppStore manipuliert, um den "Zurück zum Spiel"-Button in der Lobby zu screenshotten, da ein Seiten-Reload sonst direkt in die Tisch-Szene weiterleitet. Die Tests sind grün und die neuen Screenshots wurden mit `desktop-` und `mobile-portrait-` Präfix in `e2e/screenshots` erstellt. Die Spec `specs/frontend-vision-loop.md` wurde aktualisiert.
+**Nächster autonomer Task:** FEAT-VISION-LOOP-GAMEPLAY-MODALS (Ergänzung von T-11 und T-13).
+
 **Session 85 (2026-06-06) — QUEUE BLOCKED (MENSCH-Vorbedingungen):** Code-Scan durchgeführt. Alle autonomen UI-, Refactoring- und Ops-Tasks sind vollständig abgeschlossen (zuletzt `BUG-LOBBY-QUICKGAME-DEUTSCH` in Session 84). Alle 8 verbleibenden Aufgaben (`[ ]`) im Plan sind blockiert durch eine MENSCH-Vorbedingung (Docker, Server, OAuth, Deploy-Plattform), explizit aufgeschoben (`BETA-ACCESS`, `STAT-SAISON-LIGA`, `ADMIN-TOOLING`) oder erfordern eine User-Entscheidung (`DECISION-LIZENZ`, `DISCO-MOBILE-PORTRAIT-LOCK`). **Da keine Aufgaben mehr autonom abarbeitbar sind, geht der Build-Loop in den BLOCKED-Status.**
 
 **Session 84 (2026-06-06) — BUG-LOBBY-QUICKGAME-DEUTSCH abgeschlossen:** Die Texte für den Schnellstart-Button und die Leermeldung in der Lobby wurden auf Deutsch („▶  Schnellstart" und „Keine offenen Tische. Starte ein Schnellspiel!") korrigiert, um der Ubiquitous Language zu entsprechen. Tests, Build und Linter liefen sauber durch. Ein anschließender Vision-Loop-Run (headless via `mvn spring-boot:run` mit frisch kopiertem `target/classes/static`) bestätigte die visuelle Korrektheit ohne Überlappungen auf Desktop und Mobile. **Nächster autonomer Task:** Keine weiteren autonomen Aufgaben offen (alle Block-A und UI-Tasks erledigt). Wartet auf Block-B-Vorbedingungen (MENSCH).
@@ -137,7 +140,7 @@ Nächste offene Tasks — Fertigstellung (Session 30). **Zwei Meilensteine:** **
 
 > Hintergrund: Der Code-Scan in Session 86 hat ergeben, dass die Vision-Loop-Abdeckung entgegen der Annahme Lücken aufweist. Diese Queue schließt die verbleibenden `🔲`-Einträge aus `specs/frontend-vision-loop.md`. **Alle Tasks sind autonom.**
 
-1. [ ] **FEAT-VISION-LOOP-LOBBY-SCENARIOS** (autonom) — `e2e/tests/vision-loop-szenen.spec.ts` erweitern, um die Lobby-Szenarien `S-04` (gefüllte Tischliste) und `S-05` (Session-Recovery-Button) abzudecken.
+1. [x] **FEAT-VISION-LOOP-LOBBY-SCENARIOS** (autonom) — `e2e/tests/vision-loop-szenen.spec.ts` erweitern, um die Lobby-Szenarien `S-04` (gefüllte Tischliste) und `S-05` (Session-Recovery-Button) abzudecken.
     **DoD:** Test `vision-loop-szenen` deckt S-04 und S-05 ab; Screenshots `11b-offene-tische-gefuellt.png` und `01b-lobby-recovery.png` werden erzeugt; Spec-Status auf ✅ aktualisieren.
 
 2. [ ] **FEAT-VISION-LOOP-GAMEPLAY-MODALS** (autonom) — `e2e/tests/vision-loop.spec.ts` erweitern, um `T-11` (Letzter-Stich-Overlay) und `T-13` (Partie-Ende-Modal) abzudecken.
