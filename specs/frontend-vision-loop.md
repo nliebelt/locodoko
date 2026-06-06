@@ -234,7 +234,7 @@ Legende: ✅ = abgedeckt | 🔲 = fehlt | 🎯 = Ziel
 #### T-13 Partie-Ende-Modal (partieBeendet = true)
 
 - **Screenshot-ID:** `05b-partie-ende-modal`
-- **Status:** 🔲 (Bridge-Methoden `isPartieEndeModalSichtbar`/`schliessePartieEndeModal` existieren, aber noch KEIN Test-Schritt in `vision-loop.spec.ts`)
+- **Status:** ✅ (S88 — separater Test `Partie-Ende-Modal (T-13)` in `vision-loop.spec.ts`)
 - **Trigger:** Tisch mit `anzahlSpiele: 1` erstellen → nach erstem Spiel erscheint das Partie-Ende-Modal statt des Rundenende-Modals
 - **Elemente:** Titel "Partie beendet", Sieger farbig hervorgehoben, Gesamtstand-Tabelle, Countdown-Text, "Neue Partie" + "Tisch verlassen"
 - **Benötigt API-Ergänzung:** `bridge.isPartieEndeModalSichtbar`, `bridge.schliessePartieEndeModal()`
@@ -254,70 +254,70 @@ Test-Fehler.
 - **Screenshot-ID:** `f01-flash-spiel-gestartet`
 - **Trigger:** SPIEL_GESTARTET-Event, Animation läuft `~2.5s`; bei `0.2×` → ~12s. Warten auf Event via `warteAufNaechstesEreignis()`, dann Screenshot bei `0.2×` *vor* Austeilen.
 - **Elemente:** Cyan-Karte mittig: "SPIEL STARTET / TISCH BEREIT"
-- **Status:** 🔲
+- **Status:** ✅
 
 #### F-02 VorbehaltErwartet-Flash (persistent)
 
 - **Screenshot-ID:** `f02-flash-vorbehalt-erwartet`
 - **Trigger:** Dieser Flash ist persistent (bleibt bis Vorbehalt abgegeben). Bei `0.2×` gut photographierbar.
 - **Elemente:** Blau-Karte oben: "VORBEHALT? / SPIELER AM ZUG", blinkend
-- **Status:** 🔲
+- **Status:** ✅
 
 #### F-03 NaechsterSpielerErwartet-Flash
 
 - **Screenshot-ID:** `f03-flash-am-zug`
 - **Trigger:** Erscheint kurz wenn SUED am Zug ist und auf eine Karte wartet. Bei `0.2×` ~10s sichtbar.
 - **Elemente:** Blau-Karte oben: "AM ZUG / Spielername"
-- **Status:** 🔲
+- **Status:** ✅
 
 #### F-04 StichAbgeschlossen-Flash
 
 - **Screenshot-ID:** `f04-flash-stich-abgeschlossen`
 - **Trigger:** Nach STICH_ABGESCHLOSSEN-Event erscheint "+X"-Punkte-Text beim Gewinner-Nameplate
 - **Elemente:** Grüner "+X"-Text schwebt hoch
-- **Status:** 🔲
+- **Status:** ✅
 
 #### F-05 SchweinchenGemeldet-Flash
 
 - **Screenshot-ID:** `f05-flash-schweinchen` (best-effort, nur wenn Spiel Schweinchen produziert)
 - **Trigger:** SCHWEINCHEN_GEMELDET-Event; tritt auf wenn jemand das erste Karo-As spielt und Schweinchen-Regel aktiv ist
 - **Elemente:** Pink-Karte: "🐷 SCHWEINCHEN!" + Spielername, Shockwave + Screen Shake
-- **Status:** 🔲
+- **Status:** ✅
 
 #### F-06 FuchsGefangen-Flash
 
 - **Screenshot-ID:** `f06-flash-fuchs` (best-effort, nur wenn Fuchs im Spiel gefangen wird)
 - **Trigger:** SONDERPUNKT FUCHS_GEFANGEN
 - **Elemente:** Orange-Karte: Buchstaben fallen ein, "FUCHS GEFANGEN · +1", Konfetti
-- **Status:** 🔲
+- **Status:** ✅
 
 #### F-07 KarlchenGespielt-Flash
 
 - **Screenshot-ID:** `f07-flash-karlchen` (best-effort)
 - **Trigger:** SONDERPUNKT KARLCHEN
 - **Elemente:** Gold-Karte: "KARLCHEN" + Spielername, Shockwave
-- **Status:** 🔲
+- **Status:** ✅
 
 #### F-08 DoppelkopfGestochen-Flash
 
 - **Screenshot-ID:** `f08-flash-doppelkopf` (best-effort)
 - **Trigger:** SONDERPUNKT DOPPELKOPF
 - **Elemente:** Gold-Karte: "DOPPEL-KOPF / GESTOCHEN · +2", Foil-Shimmer, 3× Shockwave, Konfetti, Camera-Flash
-- **Status:** 🔲
+- **Status:** ✅
 
 #### F-09 HochzeitPartnerGefunden-Flash
 
 - **Screenshot-ID:** `f09-flash-hochzeit` (best-effort)
 - **Trigger:** HOCHZEIT_PARTNER_GEFUNDEN-Event
 - **Elemente:** Gold-Karte: "💍 HOCHZEIT! / PARTNER: NAME", Foil-Shimmer, Konfetti
-- **Status:** 🔲
+- **Status:** ✅
 
 #### F-10 SpielBeendet-Flash
 
 - **Screenshot-ID:** `f10-flash-spiel-beendet`
 - **Trigger:** SPIEL_BEENDET-Event; bei `0.2×` ~20s sichtbar → gut photographierbar. Kurz vor Rundenende-Modal.
 - **Elemente:** Grün-Karte: "GEWONNEN / SPIEL BEENDET", Foil-Shimmer, Konfetti, Camera-Flash
-- **Status:** 🔲
+- **Status:** ✅
 
 ---
 
@@ -390,44 +390,44 @@ Test-Fehler.
 
 | ID | Screen | Test | Status |
 |----|--------|------|--------|
-| S-00 | Login-Screen | Szenen | 🔲 |
+| S-00 | Login-Screen | Szenen | ✅ |
 | S-01 | Lobby Basis | Szenen | ✅ |
 | S-02 | Lobby Tischliste leer | Szenen | ✅ |
 | S-03 | Lobby Tisch-Erstellen-Modal | Szenen | ✅ |
 | S-04 | Lobby Tischliste gefüllt | Szenen | ✅ |
 | S-05 | Lobby Session-Recovery | Szenen | ✅ |
-| S-06 | Hilfe — Trumpfhierarchie | Szenen | 🔲 |
-| S-07 | Hilfe — Ansagen | Szenen | 🔲 |
-| S-08 | Hilfe — Sonderspiele | Szenen | 🔲 |
-| S-09 | Hilfe — Punktesystem | Szenen | 🔲 |
-| S-10 | Rangliste — Turnier | Szenen | 🔲 |
-| S-11 | Rangliste — Sonder | Szenen | 🔲 |
-| S-12 | Rangliste — Frei | Szenen | 🔲 |
-| S-13 | Spielerprofil-Modal | Szenen | 🔲 |
-| S-14 | Tisch-Wartezimmer | Szenen | 🔲 |
+| S-06 | Hilfe — Trumpfhierarchie | Szenen | ✅ |
+| S-07 | Hilfe — Ansagen | Szenen | ✅ |
+| S-08 | Hilfe — Sonderspiele | Szenen | ✅ |
+| S-09 | Hilfe — Punktesystem | Szenen | ✅ |
+| S-10 | Rangliste — Turnier | Szenen | ✅ |
+| S-11 | Rangliste — Sonder | Szenen | ✅ |
+| S-12 | Rangliste — Frei | Szenen | ✅ |
+| S-13 | Spielerprofil-Modal | Szenen | ✅ |
+| S-14 | Tisch-Wartezimmer | Szenen | ✅ |
 | T-01 | Vorbehalt-Auswahl | Gameplay | ✅ |
 | T-02 | Vorbehalt-Wechsel Keyframes | Gameplay | ✅ |
 | T-03 | Stichphase eigener Zug | Gameplay | ✅ |
 | T-04 | Karte-Ausspielen Animation | Gameplay | ✅ |
-| T-05 | Stichphase Gegner am Zug | Gameplay | 🔲 |
+| T-05 | Stichphase Gegner am Zug | Gameplay | ✅ |
 | T-06 | Ansage-Buttons | Gameplay | ✅ |
 | T-07 | Armut-Tausch-UI | Gameplay | ✅ |
-| T-08 | Spielprotokoll-Overlay | Gameplay | 🔲 |
+| T-08 | Spielprotokoll-Overlay | Gameplay | ✅ |
 | T-09 | Einstellungs-Modal | Gameplay | ✅ |
 | T-10 | Seitenlade offen | Gameplay | ✅ |
 | T-11 | Letzter-Stich-Overlay | Gameplay | ✅ |
 | T-12 | Rundenauswertungs-Modal | Gameplay | ✅ |
 | T-13 | Partie-Ende-Modal | Gameplay | ✅ |
-| F-01 | Flash SpielGestartet | Gameplay | 🔲 |
-| F-02 | Flash VorbehaltErwartet | Gameplay | 🔲 |
-| F-03 | Flash NaechsterSpieler | Gameplay | 🔲 |
-| F-04 | Flash StichAbgeschlossen | Gameplay | 🔲 |
-| F-05 | Flash Schweinchen (best-effort) | Gameplay | 🔲 |
-| F-06 | Flash Fuchs (best-effort) | Gameplay | 🔲 |
-| F-07 | Flash Karlchen (best-effort) | Gameplay | 🔲 |
-| F-08 | Flash Doppelkopf (best-effort) | Gameplay | 🔲 |
-| F-09 | Flash Hochzeit (best-effort) | Gameplay | 🔲 |
-| F-10 | Flash SpielBeendet | Gameplay | 🔲 |
+| F-01 | Flash SpielGestartet | Gameplay | ✅ |
+| F-02 | Flash VorbehaltErwartet | Gameplay | ✅ |
+| F-03 | Flash NaechsterSpieler | Gameplay | ✅ |
+| F-04 | Flash StichAbgeschlossen | Gameplay | ✅ |
+| F-05 | Flash Schweinchen (best-effort) | Gameplay | ✅ |
+| F-06 | Flash Fuchs (best-effort) | Gameplay | ✅ |
+| F-07 | Flash Karlchen (best-effort) | Gameplay | ✅ |
+| F-08 | Flash Doppelkopf (best-effort) | Gameplay | ✅ |
+| F-09 | Flash Hochzeit (best-effort) | Gameplay | ✅ |
+| F-10 | Flash SpielBeendet | Gameplay | ✅ |
 | A-01 | Austeilen Keyframe | Gameplay | 🔲 |
 | A-02 | Ansage-Banner | Gameplay | 🔲 |
 | A-03 | Solo-Ankündigung (best-effort) | Gameplay | 🔲 |
@@ -437,7 +437,7 @@ Test-Fehler.
 | X-02 | Info-Toast | Gameplay | 🔲 |
 | X-03 | Debug-Modus | Gameplay | 🔲 |
 
-**Stand:** 16/48 abgedeckt → 32 offen. (S-01..S-05 + T-01..T-04 + T-06..T-07 + T-09..T-13 = 16; T-05, T-08, F-01..F-10, A-01..A-05, X-01..X-03, S-00, S-06..S-14 offen)
+**Stand:** 38/46 abgedeckt → 8 offen. (S-00..S-14 ✅, T-01..T-13 ✅, F-01..F-10 ✅; offen: A-01, A-02, A-03, A-04, A-05, X-01, X-02, X-03)
 
 ## Abgeleitete Build-Tasks
 
