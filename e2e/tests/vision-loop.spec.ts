@@ -116,8 +116,10 @@ test.describe('Vision Loop — UI Screenshots', () => {
     // ── 7. Rest der Partie (Turbo) ──────────────────────────────────────────
     console.log('Playing rest of game (Turbo)...');
     await aktiviereTurbo(page);
-    
+
     let rundeAbgeschlossen = false;
+    let ansageScreenshotGemacht = false;
+    let armutScreenshotGemacht = false;
 
     while (!rundeAbgeschlossen) {
       // Wartet bis entweder eigene Aktion noetig ist oder Runde abgeschlossen (Modal gezeigt) oder neue Phase (Vorbehalt naechstes Spiel)
@@ -129,6 +131,7 @@ test.describe('Vision Loop — UI Screenshots', () => {
         if (spiel.phase === 'VORBEHALT_ANSAGE') return true;
         if ((spiel.spielbareKarten?.length ?? 0) > 0) return true;
         if ((spiel.moeglicheVorbehalte?.length ?? 0) > 0) return true;
+        if ((spiel.moeglicheAnsagen?.length ?? 0) > 0) return true;
         if (spiel.phase === 'ARMUT_TAUSCH') return true;
         return false;
       }, { timeout: 60_000 });
@@ -153,6 +156,26 @@ test.describe('Vision Loop — UI Screenshots', () => {
       if (zustand.moeglicheVorbehalte.length > 0) {
         await meldeVorbehalt(page, zustand.moeglicheVorbehalte[0]);
         continue;
+      }
+
+      // ── Ansage-Buttons screenshotten (einmalig beim ersten Auftreten) ────────
+      if (!ansageScreenshotGemacht && zustand.moeglicheAnsagen.length > 0) {
+        ansageScreenshotGemacht = true;
+        await setzeAnimationsGeschwindigkeit(page, 1.0);
+        await page.waitForTimeout(300);
+        await screenshot(page, '06-ansage-buttons', testInfo.project.name);
+        console.log('Screenshot: 06-ansage-buttons');
+        await aktiviereTurbo(page);
+      }
+
+      // ── Armut-Tausch-UI screenshotten (einmalig beim ersten Auftreten) ───────
+      if (!armutScreenshotGemacht && zustand.armutPhase) {
+        armutScreenshotGemacht = true;
+        await setzeAnimationsGeschwindigkeit(page, 1.0);
+        await page.waitForTimeout(300);
+        await screenshot(page, '04-armut-tausch-ui', testInfo.project.name);
+        console.log('Screenshot: 04-armut-tausch-ui');
+        await aktiviereTurbo(page);
       }
 
       if (zustand.armutPhase) {
