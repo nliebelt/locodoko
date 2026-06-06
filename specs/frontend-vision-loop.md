@@ -63,7 +63,7 @@ Legende: ✅ = abgedeckt | 🔲 = fehlt | 🎯 = Ziel
 - **Trigger:** `page.goto('/')` vor `alsGastStarten()` — App startet ohne Session immer im Login
 - **Elemente:** Titel "LOCO DOKO", Untertitel, Button "Als Gast spielen", optional "Mit Google anmelden" (nur wenn OAuth2 aktiv), "⚡ SCHNELLSTART (KI)"
 - **Varianten:** ohne Google-Button (Standard im Test, weil kein OAuth-Secret gesetzt)
-- **Status:** 🔲
+- **Status:** ✅ (S82 — vision-loop-szenen.spec.ts)
 - **Test-Schritt:** `await warteAufSzene(page, 'LoginSzene'); await screenshot(page, '00-login-screen', ...);` — vor `alsGastStarten()`
 
 #### S-01 Lobby — Basis
@@ -104,51 +104,51 @@ Legende: ✅ = abgedeckt | 🔲 = fehlt | 🎯 = Ziel
 - **Screenshot-ID:** `20-hilfe-trumpf`
 - **Trigger:** `drueckeSzenenButton('btn-spielregeln')` → `warteAufSzene('HilfeSzene')` → Tab 'Trumpfhierarchie' ist Standard
 - **Benötigt API-Ergänzung:** `spielregelnBtn.setName('btn-spielregeln')`
-- **Status:** 🔲
+- **Status:** ✅ (S82)
 
 #### S-07 Spielregeln — Tab Ansagen
 
 - **Screenshot-ID:** `20b-hilfe-ansagen`
 - **Trigger:** `drueckeSzenenButton('btn-tab-ansagen')` in HilfeSzene
-- **Status:** 🔲
+- **Status:** ✅ (S82)
 
 #### S-08 Spielregeln — Tab Sonderspiele
 
 - **Screenshot-ID:** `20c-hilfe-sonderspiele`
 - **Trigger:** `drueckeSzenenButton('btn-tab-sonderspiele')` in HilfeSzene
-- **Status:** 🔲
+- **Status:** ✅ (S82)
 
 #### S-09 Spielregeln — Tab Punktesystem
 
 - **Screenshot-ID:** `20d-hilfe-punkte`
 - **Trigger:** `drueckeSzenenButton('btn-tab-punkte')` in HilfeSzene
-- **Status:** 🔲
+- **Status:** ✅ (S82)
 
 #### S-10 Rangliste — Tab Turnier
 
 - **Screenshot-ID:** `21-rangliste-turnier`
 - **Trigger:** `drueckeSzenenButton('btn-rangliste')` → `warteAufSzene('BestenlisterSzene')` → Standard-Tab Turnier
 - **Benötigt API-Ergänzung:** `ranglisteBtn.setName('btn-rangliste')`
-- **Status:** 🔲
+- **Status:** ✅ (S82)
 
 #### S-11 Rangliste — Tab Sonder
 
 - **Screenshot-ID:** `21b-rangliste-sonder`
 - **Trigger:** `drueckeSzenenButton('btn-tab-sonder')` in BestenlisterSzene
-- **Status:** 🔲
+- **Status:** ✅ (S82)
 
 #### S-12 Rangliste — Tab Frei
 
 - **Screenshot-ID:** `21c-rangliste-frei`
 - **Trigger:** `drueckeSzenenButton('btn-tab-frei')` in BestenlisterSzene
-- **Status:** 🔲
+- **Status:** ✅ (S82)
 
 #### S-13 Spielerprofil-Modal
 
 - **Screenshot-ID:** `22-spielerprofil`
 - **Trigger:** `drueckeSzenenButton('btn-mein-profil')` → HTML-Overlay erscheint
 - **Elemente:** Avatar, Name, Statistik-Tabs (TURNIER/SONDER/FREI), Kacheln
-- **Status:** 🔲
+- **Status:** ✅ (S82)
 - **Hinweis:** SpielerProfilModal ist ein HTML-DOM-Element, kein Phaser-Canvas-Objekt. Screenshot mit `page.screenshot()` erfasst es korrekt, da es über dem Canvas liegt.
 
 #### S-14 Tisch-Wartezimmer (Ersteller, WARTEND)
@@ -156,7 +156,7 @@ Legende: ✅ = abgedeckt | 🔲 = fehlt | 🎯 = Ziel
 - **Screenshot-ID:** `13-tisch-wartezimmer`
 - **Trigger:** `erstelleKonfiguriertenTisch(page, 'VL-Wartezimmer', {...}, false)` → `warteAufSzene('TischSzene')` → NICHT `starteAktuellenTisch()`
 - **Elemente:** TopBar mit "START"-Button + "🔗 LINK"-Button, Spielerplätze, 3 leere KI-Plätze
-- **Status:** 🔲
+- **Status:** ✅ (S82)
 
 ---
 
