@@ -122,7 +122,7 @@ export class SpielverwaltungsSzene extends Phaser.Scene {
     }
 
     const quickGameBtn = new PhaserButton(this, {
-      x: this.scale.width / 2, y: startY, text: '▶  Quick Game', typ: 'primary',
+      x: this.scale.width / 2, y: startY, text: '▶  Schnellstart', typ: 'primary',
       callback: () => void appStore.erstelleQuickGame()
     });
     quickGameBtn.setName('btn-quick-game');
@@ -177,7 +177,7 @@ export class SpielverwaltungsSzene extends Phaser.Scene {
     bugreportBtn.setName('btn-bugreport');
     this.uiContainer.add(bugreportBtn);
 
-    // Tab-Reihenfolge: Quick Game → Neuen Tisch → Mein Profil → (Session-Recovery falls sichtbar)
+    // Tab-Reihenfolge: Schnellstart → Neuen Tisch → Mein Profil → (Session-Recovery falls sichtbar)
     this.fokussierbareButtons = [quickGameBtn, erstelleTischBtn, profilBtn];
     if (sessionRecoveryBtn) {
       this.fokussierbareButtons.push(sessionRecoveryBtn);
@@ -226,7 +226,7 @@ export class SpielverwaltungsSzene extends Phaser.Scene {
     }).setOrigin(0.5);
 
     if (wartendeTische.length === 0 && eigeneLaufendeTische.length === 0) {
-      const msg = this.add.text(this.scale.width / 2, 630, 'Keine offenen Tische. Starte ein Quick Game!', {
+      const msg = this.add.text(this.scale.width / 2, 630, 'Keine offenen Tische. Starte ein Schnellspiel!', {
         fontFamily: FONT_FAMILY, fontSize: '16px', color: TEXT_HELL_CSS
       }).setOrigin(0.5);
       this.uiContainer?.add(msg);
