@@ -133,6 +133,26 @@ Nächste offene Tasks — Fertigstellung (Session 30). **Zwei Meilensteine:** **
 
    **DoD:** Test grün in beiden Projekten, Laufzeit < 5 min; neue Screenshots vorhanden, **wenn** die jeweiligen Ereignisse auftreten; **kein** Test-Fehler bei ausbleibenden best-effort-Events. Spec-Statustabelle entsprechend nachziehen. **Risiko:** mittel (Timing/Flake bei Animations-Keyframes — best-effort hält den Test grün).
 
+### H) Vision-Loop Vervollständigung (Session 86)
+
+> Hintergrund: Der Code-Scan in Session 86 hat ergeben, dass die Vision-Loop-Abdeckung entgegen der Annahme Lücken aufweist. Diese Queue schließt die verbleibenden `🔲`-Einträge aus `specs/frontend-vision-loop.md`. **Alle Tasks sind autonom.**
+
+1. [ ] **FEAT-VISION-LOOP-LOBBY-SCENARIOS** (autonom) — `e2e/tests/vision-loop-szenen.spec.ts` erweitern, um die Lobby-Szenarien `S-04` (gefüllte Tischliste) und `S-05` (Session-Recovery-Button) abzudecken.
+    **DoD:** Test `vision-loop-szenen` deckt S-04 und S-05 ab; Screenshots `11b-offene-tische-gefuellt.png` und `01b-lobby-recovery.png` werden erzeugt; Spec-Status auf ✅ aktualisieren.
+
+2. [ ] **FEAT-VISION-LOOP-GAMEPLAY-MODALS** (autonom) — `e2e/tests/vision-loop.spec.ts` erweitern, um `T-11` (Letzter-Stich-Overlay) und `T-13` (Partie-Ende-Modal) abzudecken.
+    **Hinweis:** Für T-11 muss ggf. eine Bridge-Methode `zeigeLetztesStichOverlay()` ergänzt werden, um einen zu fragilen Klick auf Koordinaten zu vermeiden. Für T-13 muss ein Tisch mit `anzahlSpiele: 1` konfiguriert werden.
+    **DoD:** Test `vision-loop` deckt T-11 und T-13 ab; Screenshots `10-letzter-stich-overlay.png` und `05b-partie-ende-modal.png` werden erzeugt; Spec-Status auf ✅.
+
+3. [ ] **FEAT-VISION-LOOP-FLASH-TEXTS-2** (autonom, best-effort) — `e2e/tests/vision-loop.spec.ts` erweitern, um die verbleibenden Flash-Text-Animationen `F-01` (SpielGestartet), `F-02` (VorbehaltErwartet), `F-03` (NaechsterSpieler), `F-10` (SpielBeendet) abzudecken. Die best-effort-Strategie (0.2x Speed, kein Fehler bei ausbleibendem Event) wird wiederverwendet.
+    **DoD:** Test `vision-loop` versucht, die Flash-Texte zu erfassen; Spec-Status auf ✅.
+
+4. [ ] **FEAT-VISION-LOOP-ANIMATIONS-2** (autonom, best-effort) — `e2e/tests/vision-loop.spec.ts` erweitern, um die verbleibenden Animations-Keyframes `A-01` (Karten-Austeilen) und `A-02` (Ansage-Banner) abzudecken.
+    **DoD:** Test `vision-loop` versucht, die Animationen zu erfassen; Spec-Status auf ✅.
+
+5. [ ] **FEAT-VISION-LOOP-TOASTS** (autonom) — `e2e/tests/vision-loop.spec.ts` erweitern, um den Fehler-Toast `X-01` via `spieleKarteViaTestApi(page, 'ungueltige-karte-id')` auszulösen und zu screenshotten.
+    **DoD:** Test `vision-loop` deckt X-01 ab; Screenshot `x01-fehler-toast.png` wird erzeugt; Spec-Status auf ✅.
+
 **Hinweis Build-Loop:** Diese Queue ist Ralph-autonom (Verifikation `mvn clean test` / `npm test && npm run build && npm run lint`, UI-Tasks zusätzlich Vision-Loop). **Pro Task ein Commit.** Env-gated externe Dienste (Sentry/Grafana/Loki/Bugreport-GitHub) sind ohne Secrets No-Ops → Build bleibt grün.
 
 **Externe Voraussetzung MENSCH (kein Ralph):** OPS-DOMAIN (Reverse-Proxy-Config autonom vorbereitbar, aber Server/DNS/TLS = MENSCH) · DEPLOY-COMPOSE-SMOKE (Docker + echtes Postgres) · CD-DEPLOY/CI-DOCKER-BUILD (Plattformwahl offen, **bewusst vertagt**).
