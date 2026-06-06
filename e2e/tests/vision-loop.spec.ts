@@ -292,7 +292,9 @@ test.describe('Vision Loop — UI Screenshots', () => {
       }
 
       // ── T-11 Letzter-Stich-Overlay ───────────────────────────────────────
-      if (!letzterStichScreenshotGemacht && flashScreenshotGemacht.f04 && zustand.spielbareKarten.length > 0) {
+      // Bedingung unabhängig von f04: sobald der Spieler Karten hat (= Stich 1 aus der
+      // animierten Phase ist abgeschlossen), ist letzteAbgeschlosseneStiche befüllt.
+      if (!letzterStichScreenshotGemacht && zustand.spielbareKarten.length > 0) {
         letzterStichScreenshotGemacht = true;
         await page.evaluate(() => (window as any).__locodoko?.zeigeLetztesStichOverlay?.());
         await page.waitForTimeout(500);

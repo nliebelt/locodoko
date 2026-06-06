@@ -417,7 +417,7 @@ Test-Fehler.
 | T-10 | Seitenlade offen | Gameplay | ✅ |
 | T-11 | Letzter-Stich-Overlay | Gameplay | ✅ |
 | T-12 | Rundenauswertungs-Modal | Gameplay | ✅ |
-| T-13 | Partie-Ende-Modal | Gameplay | 🔲 |
+| T-13 | Partie-Ende-Modal | Gameplay | ✅ |
 | F-01 | Flash SpielGestartet | Gameplay | 🔲 |
 | F-02 | Flash VorbehaltErwartet | Gameplay | 🔲 |
 | F-03 | Flash NaechsterSpieler | Gameplay | 🔲 |
@@ -437,7 +437,7 @@ Test-Fehler.
 | X-02 | Info-Toast | Gameplay | 🔲 |
 | X-03 | Debug-Modus | Gameplay | 🔲 |
 
-**Stand:** 10/48 abgedeckt → 38 offen.
+**Stand:** 16/48 abgedeckt → 32 offen. (S-01..S-05 + T-01..T-04 + T-06..T-07 + T-09..T-13 = 16; T-05, T-08, F-01..F-10, A-01..A-05, X-01..X-03, S-00, S-06..S-14 offen)
 
 ## Abgeleitete Build-Tasks
 
