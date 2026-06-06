@@ -30,6 +30,7 @@ export interface LocodokoBridge {
   _rundenauswertungSpieltypLabel?: string;
   _rundenauswertungMultiplikator?: number;
   _letzterFehlerToast?: string;
+  _letzterFlashTyp?: string;
   _idleDebug?: {
     storeIdle: boolean;
     animationenLaeuft: boolean;

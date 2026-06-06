@@ -36,6 +36,14 @@ export function richteE2EBrückeEin(szene: TischSzene): void {
     };
   };
   bridge._rundenEndeModalGezeigt = 0;
+  bridge._letzterFlashTyp = undefined;
+  if (szene.flashTextManager) {
+    const originalZeige = szene.flashTextManager.zeigeSpielevent.bind(szene.flashTextManager);
+    szene.flashTextManager.zeigeSpielevent = async (event, payload) => {
+      bridge._letzterFlashTyp = event;
+      return originalZeige(event, payload);
+    };
+  }
   bridge.schliesseRundenEndeModal = () => szene.rundenEndeController?.schliesseRundenEndeModal();
   bridge.toggleSpielprotokoll = () => {
     if (szene.letztesModell && szene.letzterZustand) {

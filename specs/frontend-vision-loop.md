@@ -187,7 +187,7 @@ Legende: ✅ = abgedeckt | 🔲 = fehlt | 🎯 = Ziel
 - **Screenshot-ID:** `03b-stich-gegner-am-zug`
 - **Trigger:** Karte gespielt haben, dann Screenshot bevor eigener nächster Zug kommt; keine spielbaren Karten für SUED
 - **Elemente:** Gegner-Nameplate hervorgehoben, Karte auf Stichmitte
-- **Status:** 🔲
+- **Status:** ✅ (S83)
 
 #### T-06 Ansage-Buttons (Re/Kontra sichtbar)
 
@@ -205,7 +205,7 @@ Legende: ✅ = abgedeckt | 🔲 = fehlt | 🎯 = Ziel
 - **Trigger:** `window.__locodoko.toggleSpielprotokoll()` während Spiel läuft
 - **Benötigt API-Ergänzung:** Bridge-Methode `toggleSpielprotokoll()` (Tisch-Brücke erweitern)
 - **Elemente:** Backdrop + Panel, Spaltenheader, Zeilen (oder "Noch keine Spiele"-Text vor erstem Spiel; nach einer Runde mit gefüllter Liste)
-- **Status:** 🔲
+- **Status:** ✅ (S83)
 
 #### T-09 Einstellungs-Modal
 

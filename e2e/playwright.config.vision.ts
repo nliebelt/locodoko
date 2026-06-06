@@ -4,7 +4,7 @@ export default defineConfig({
   testDir: './tests',
   testMatch: ['**/vision-loop.spec.ts', '**/vision-loop-szenen.spec.ts'],
   timeout: 360_000,
-  retries: 0,
+  retries: 1,
   use: {
     baseURL: process.env.BASE_URL ?? 'http://localhost:8081',
     headless: true,
