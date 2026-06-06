@@ -24,6 +24,7 @@ export interface LocodokoBridge {
   };
   schliesseRundenEndeModal?: () => void;
   toggleSpielprotokoll?: () => void;
+  zeigeLetztesStichOverlay?: () => void;
   isPartieEndeModalSichtbar?: () => boolean;
   schliessePartieEndeModal?: () => void;
   _rundenEndeModalGezeigt?: number;

@@ -220,10 +220,10 @@ Legende: ✅ = abgedeckt | 🔲 = fehlt | 🎯 = Ziel
 #### T-11 Letzter-Stich-Overlay
 
 - **Screenshot-ID:** `10-letzter-stich-overlay`
+- **Status:** ✅ (via Bridge-Methode `zeigeLetztesStichOverlay`)
 - **Trigger:** Nach mindestens einem abgeschlossenen Stich auf den Stichstapel von SUED klicken
 - **Elemente:** Backdrop, "Letzter Stich — X Augen", 4 Karten aufgedeckt
 - **Hinweis:** Stichstapel liegt bei ca. `(B/2 - fHalbe - kGroesse.w/2 - 12, H*0.90)` gemäß `stichStapelPositionFuer`. Playwright-Klick mit `page.locator('canvas').click({ position: ... })` möglich, aber brittle. Alternative: Bridge-Methode `zeigeLetztesStichOverlay()` ergänzen.
-- **Status:** 🔲
 - **Priorität:** Niedrig (aufwendiger Bridge-Aufwand für einen Screenshot)
 
 #### T-12 Rundenauswertungs-Modal
@@ -234,10 +234,10 @@ Legende: ✅ = abgedeckt | 🔲 = fehlt | 🎯 = Ziel
 #### T-13 Partie-Ende-Modal (partieBeendet = true)
 
 - **Screenshot-ID:** `05b-partie-ende-modal`
+- **Status:** 🔲 (Bridge-Methoden `isPartieEndeModalSichtbar`/`schliessePartieEndeModal` existieren, aber noch KEIN Test-Schritt in `vision-loop.spec.ts`)
 - **Trigger:** Tisch mit `anzahlSpiele: 1` erstellen → nach erstem Spiel erscheint das Partie-Ende-Modal statt des Rundenende-Modals
 - **Elemente:** Titel "Partie beendet", Sieger farbig hervorgehoben, Gesamtstand-Tabelle, Countdown-Text, "Neue Partie" + "Tisch verlassen"
 - **Benötigt API-Ergänzung:** `bridge.isPartieEndeModalSichtbar`, `bridge.schliessePartieEndeModal()`
-- **Status:** 🔲
 
 ---
 
@@ -415,7 +415,7 @@ Test-Fehler.
 | T-08 | Spielprotokoll-Overlay | Gameplay | 🔲 |
 | T-09 | Einstellungs-Modal | Gameplay | ✅ |
 | T-10 | Seitenlade offen | Gameplay | ✅ |
-| T-11 | Letzter-Stich-Overlay | Gameplay | 🔲 |
+| T-11 | Letzter-Stich-Overlay | Gameplay | ✅ |
 | T-12 | Rundenauswertungs-Modal | Gameplay | ✅ |
 | T-13 | Partie-Ende-Modal | Gameplay | 🔲 |
 | F-01 | Flash SpielGestartet | Gameplay | 🔲 |

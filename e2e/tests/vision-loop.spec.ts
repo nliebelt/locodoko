@@ -146,6 +146,7 @@ test.describe('Vision Loop — UI Screenshots', () => {
     let rundeAbgeschlossen = false;
     let ansageScreenshotGemacht = false;
     let armutScreenshotGemacht = false;
+    let letzterStichScreenshotGemacht = false;
     let flashScreenshotGemacht = { f04: false, f05: false, f06: false, f07: false, f08: false, f09: false, a03: false, a04: false, a05: false };
 
     while (!rundeAbgeschlossen) {
@@ -288,6 +289,17 @@ test.describe('Vision Loop — UI Screenshots', () => {
       if (zustand.armutPhase) {
         await beantworteArmut(page, false, []);
         continue;
+      }
+
+      // ── T-11 Letzter-Stich-Overlay ───────────────────────────────────────
+      if (!letzterStichScreenshotGemacht && flashScreenshotGemacht.f04 && zustand.spielbareKarten.length > 0) {
+        letzterStichScreenshotGemacht = true;
+        await page.evaluate(() => (window as any).__locodoko?.zeigeLetztesStichOverlay?.());
+        await page.waitForTimeout(500);
+        await screenshot(page, '10-letzter-stich-overlay', prefix);
+        console.log('Screenshot: 10-letzter-stich-overlay');
+        await page.mouse.click(10, 10);
+        await page.waitForTimeout(200);
       }
 
       if (zustand.spielbareKarten.length > 0) {

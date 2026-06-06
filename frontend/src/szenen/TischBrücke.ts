@@ -50,6 +50,15 @@ export function richteE2EBrückeEin(szene: TischSzene): void {
       szene.toggleSpielprotokoll(szene.letztesModell, szene.letzterZustand);
     }
   };
+  bridge.zeigeLetztesStichOverlay = () => {
+    if (szene.letztesModell && szene.letzterZustand && szene.kartenRenderer) {
+      const letzterStich = szene.letztesModell.letzteAbgeschlosseneStiche.find(s => s.gewinnerPosition === 'SUED')
+        || szene.letztesModell.letzteAbgeschlosseneStiche[0];
+      if (letzterStich) {
+        szene.kartenRenderer.zeigeLetztesStichOverlay(letzterStich, szene.scale.width, szene.scale.height);
+      }
+    }
+  };
   bridge.isPartieEndeModalSichtbar = () => !!szene.rundenEndeController?.phaserPartieEndeModal;
   bridge.schliessePartieEndeModal = () => szene.rundenEndeController?.schliessePartieEndeModal();
 }
