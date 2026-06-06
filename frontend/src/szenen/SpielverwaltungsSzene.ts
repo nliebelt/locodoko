@@ -4,7 +4,7 @@ import { appStore } from '../anwendung';
 import type { AppZustand } from '../store/AppStore';
 import type { TischListenEintragAntwort, TischPresetAntwort } from '../modelle/SpielverwaltungDto';
 import { PhaserButton } from './PhaserButton';
-import { PhaserModal } from '../ui/PhaserModal';
+import { zeigeTischErstellenDialog } from './tischErstellenDialog';
 import { PhaserList } from '../ui/PhaserList';
 import { SpielerProfilModal } from '../ui/SpielerProfilModal';
 import { FONT_FAMILY, TEXT_HELL_CSS, FARBE_GOLD_WARM_CSS } from '../ui/designTokens';
@@ -16,8 +16,6 @@ export class SpielverwaltungsSzene extends Phaser.Scene {
   private uiContainer?: Phaser.GameObjects.Container;
   private offeneTischeListe?: PhaserList;
   private presets: TischPresetAntwort[] = [];
-  private currentPresetIndex = 0;
-  private isPrivat = false;
   private fokussierbareButtons: PhaserButton[] = [];
   private fokusIndex = -1;
 
@@ -131,7 +129,7 @@ export class SpielverwaltungsSzene extends Phaser.Scene {
 
     const erstelleTischBtn = new PhaserButton(this, {
       x: this.scale.width / 2, y: startY, text: '+ Neuen Tisch', typ: 'secondary',
-      callback: () => this.zeigeErstelleTischModal(zustand)
+      callback: () => zeigeTischErstellenDialog(zustand, this.presets)
     });
     erstelleTischBtn.setName('btn-neuer-tisch');
     this.uiContainer.add(erstelleTischBtn);
@@ -349,84 +347,6 @@ export class SpielverwaltungsSzene extends Phaser.Scene {
       s = s.slice(0, -1);
       txt.setText(s + '…');
     }
-  }
-
-  private zeigeErstelleTischModal(zustand: AppZustand): void {
-    const closeCallback = () => {
-      modal.destroy();
-    };
-
-    let currentPreset = this.presets[this.currentPresetIndex] || null;
-
-    const doCreate = () => {
-      const name = 'Tisch ' + (zustand.spieler?.name || 'Gast');
-      if (currentPreset?.name) {
-        void appStore.erstelleTischMitPreset(name, currentPreset.name, this.isPrivat).then(() => closeCallback());
-      } else {
-        void appStore.erstelleTisch(name).then(() => closeCallback());
-      }
-    };
-
-    const modal = new PhaserModal(this, this.scale.width / 2, this.scale.height / 2, {
-      titel: 'Neuen Tisch erstellen',
-      breite: 500,
-      hoehe: 380,
-      zeigeSchliessenButton: true,
-      onClose: closeCallback,
-      aktionen: [
-        { text: 'Abbrechen', callback: closeCallback, typ: 'secondary', testId: 'btn-abbrechen' },
-        { text: 'Erstellen', callback: doCreate, typ: 'primary', testId: 'btn-erstellen' }
-      ]
-    });
-
-    const cc = modal.getContentContainer();
-
-    // Preset cycler
-    const presetLabel = this.add.text(0, -60, 'Regel-Preset:', { fontFamily: FONT_FAMILY, fontSize: '16px', color: TEXT_HELL_CSS }).setOrigin(0.5);
-    cc.add(presetLabel);
-
-    // WordWrap als Sicherheitsnetz: lange Labels (z.B. "Loco-Blatt (Hausregeln)")
-    // bleiben innerhalb des Bereichs zwischen den ‹ ›-Pfeilen statt unter deren
-    // (auto-skalierte) Buttons zu laufen und beidseitig abgeschnitten zu wirken.
-    const presetValue = this.add.text(0, -30, currentPreset?.label || 'Lädt...', {
-      fontFamily: FONT_FAMILY, fontSize: '13px', color: '#fff', align: 'center',
-      wordWrap: { width: 330 }
-    }).setOrigin(0.5);
-    cc.add(presetValue);
-
-    const prevBtn = new PhaserButton(this, {
-      x: -205, y: -30, text: '<', breite: 40, callback: () => {
-        if (this.presets.length === 0) return;
-        this.currentPresetIndex = (this.currentPresetIndex - 1 + this.presets.length) % this.presets.length;
-        currentPreset = this.presets[this.currentPresetIndex];
-        presetValue.setText(currentPreset?.label || '');
-      }
-    });
-    cc.add(prevBtn);
-
-    const nextBtn = new PhaserButton(this, {
-      x: 205, y: -30, text: '>', breite: 40, callback: () => {
-        if (this.presets.length === 0) return;
-        this.currentPresetIndex = (this.currentPresetIndex + 1) % this.presets.length;
-        currentPreset = this.presets[this.currentPresetIndex];
-        presetValue.setText(currentPreset?.label || '');
-      }
-    });
-    cc.add(nextBtn);
-
-    // Private toggle
-    const privatValue = this.add.text(0, 40, `Privat: ${this.isPrivat ? 'JA' : 'NEIN'}`, { fontFamily: FONT_FAMILY, fontSize: '18px', color: '#fff' }).setOrigin(0.5);
-    cc.add(privatValue);
-
-    const togglePrivatBtn = new PhaserButton(this, {
-      x: 0, y: 80, text: 'Privat Umschalten', typ: 'secondary', breite: 250, callback: () => {
-        this.isPrivat = !this.isPrivat;
-        privatValue.setText(`Privat: ${this.isPrivat ? 'JA' : 'NEIN'}`);
-      }
-    });
-    cc.add(togglePrivatBtn);
-
-    this.uiContainer?.add(modal);
   }
 
   shutdown(): void {

@@ -40,22 +40,12 @@ vi.mock('./PhaserButton', () => ({
   PhaserButton: vi.fn(() => ({ setName: vi.fn(), add: vi.fn(), setX: vi.fn(), breite: 200 }))
 }));
 
-vi.mock('../ui/PhaserModal', () => ({
-  PhaserModal: vi.fn(function(this: any, _scene: any, _x: number, _y: number, optionen: any) {
-    this.optionen = optionen;
-    this.getContentContainer = () => ({ add: vi.fn() });
-    this.destroy = vi.fn();
-    return this;
-  })
-}));
-
 vi.mock('../ui/PhaserList', () => ({
   PhaserList: vi.fn(() => ({ destroy: vi.fn() }))
 }));
 
 const { SpielverwaltungsSzene } = await import('./SpielverwaltungsSzene');
 const { PhaserButton } = await import('./PhaserButton');
-const { PhaserModal } = await import('../ui/PhaserModal');
 
 describe('SpielverwaltungsSzene', () => {
   let szene: any;
@@ -93,24 +83,26 @@ describe('SpielverwaltungsSzene', () => {
   });
 
   it('öffnet ErstelleTischModal bei Button-Klick', () => {
+    document.body.innerHTML = '<div id="ui-root"></div>';
     szene.create();
     const createTischCall = (PhaserButton as any).mock.calls.find((call: any) => call[1].text === '+ Neuen Tisch');
     createTischCall[1].callback();
-    expect(PhaserModal).toHaveBeenCalled();
+    expect(document.getElementById('tisch-erstellen-backdrop')).toBeTruthy();
   });
 
   it('erstellt Tisch über das Modal', async () => {
-    await szene.create();
+    document.body.innerHTML = '<div id="ui-root"></div>';
+    szene.create();
+    // ladePresets()-Promise auflösen damit this.presets befüllt ist
+    await Promise.resolve();
     const createTischCall = (PhaserButton as any).mock.calls.find((call: any) => call[1].text === '+ Neuen Tisch');
     createTischCall[1].callback();
-    
-    // Modal-Instanz finden
-    const modalInstance = (PhaserModal as any).mock.results[0].value;
-    const erstellenAktion = modalInstance.optionen.aktionen.find((a: any) => a.text === 'Erstellen');
-    expect(erstellenAktion, 'Erstellen Aktion nicht gefunden').toBeDefined();
-    
+
+    const erstellenBtn = document.getElementById('tisch-erstellen-btn') as HTMLButtonElement;
+    expect(erstellenBtn, 'Erstellen-Button nicht gefunden').toBeDefined();
+
     const apiSpy = vi.spyOn(mockStore, 'erstelleTischMitPreset');
-    await erstellenAktion.callback();
+    erstellenBtn.click();
     expect(apiSpy).toHaveBeenCalled();
   });
 
