@@ -42,6 +42,7 @@ export class BestenlisterSzene extends Phaser.Scene {
 
     new PhaserButton(this, {
       x: 100, y: 45, text: '← Zurück', typ: 'secondary', breite: 160,
+      testId: 'btn-bestenliste-zurueck',
       callback: () => this.scene.start('SpielverwaltungsSzene')
     });
 
@@ -61,6 +62,7 @@ export class BestenlisterSzene extends Phaser.Scene {
         text: variante,
         breite: 160,
         typ: variante === this.aktiveRegelvariante ? 'primary' : 'secondary',
+        testId: `btn-tab-${variante.toLowerCase()}`,
         callback: () => {
           if (this.aktiveRegelvariante !== variante) {
             this.aktiveRegelvariante = variante;

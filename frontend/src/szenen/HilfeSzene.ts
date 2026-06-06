@@ -56,6 +56,7 @@ export class HilfeSzene extends Phaser.Scene {
 
     new PhaserButton(this, {
       x: 100, y: 45, text: '← Zurück', typ: 'secondary', breite: 160,
+      testId: 'btn-hilfe-zurueck',
       callback: () => this.zurueck(),
     });
 
@@ -83,6 +84,7 @@ export class HilfeSzene extends Phaser.Scene {
         text: tab.label,
         breite: 170,
         typ: tab.key === this.aktiveTab ? 'primary' : 'secondary',
+        testId: `btn-tab-${tab.key}`,
         callback: () => {
           if (this.aktiveTab !== tab.key) {
             this.aktiveTab = tab.key;

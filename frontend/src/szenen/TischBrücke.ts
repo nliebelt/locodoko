@@ -37,4 +37,11 @@ export function richteE2EBrückeEin(szene: TischSzene): void {
   };
   bridge._rundenEndeModalGezeigt = 0;
   bridge.schliesseRundenEndeModal = () => szene.rundenEndeController?.schliesseRundenEndeModal();
+  bridge.toggleSpielprotokoll = () => {
+    if (szene.letztesModell && szene.letzterZustand) {
+      szene.toggleSpielprotokoll(szene.letztesModell, szene.letzterZustand);
+    }
+  };
+  bridge.isPartieEndeModalSichtbar = () => !!szene.rundenEndeController?.phaserPartieEndeModal;
+  bridge.schliessePartieEndeModal = () => szene.rundenEndeController?.schliessePartieEndeModal();
 }

@@ -23,6 +23,9 @@ export interface LocodokoBridge {
     rundenEndeSichtbar: boolean;
   };
   schliesseRundenEndeModal?: () => void;
+  toggleSpielprotokoll?: () => void;
+  isPartieEndeModalSichtbar?: () => boolean;
+  schliessePartieEndeModal?: () => void;
   _rundenEndeModalGezeigt?: number;
   _rundenauswertungSpieltypLabel?: string;
   _rundenauswertungMultiplikator?: number;
