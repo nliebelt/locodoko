@@ -1,0 +1,125 @@
+import { test } from '@playwright/test';
+import {
+  alsGastStarten,
+  getBridge,
+  warteAufSzene,
+  aktiviereConsoleCapture,
+  screenshot,
+  erstelleKonfiguriertenTisch,
+} from './helpers';
+
+/**
+ * Vision Loop — Szenen S-00 bis S-14 (Nicht-Spiel-Szenen).
+ * Laufzeit-Ziel: < 30 s pro Projekt.
+ * S-04 (Tischliste gefüllt) und S-05 (Session-Recovery) erfordern 2 Browser-Kontexte
+ * und bleiben 🔲 bis zu einem separaten Folge-Task.
+ */
+test.describe('Vision Loop — Szenen S-00 bis S-14', () => {
+  test('Nicht-Spiel-Szenen screenshotten', async ({ page }, testInfo) => {
+    aktiviereConsoleCapture(page, testInfo.title);
+    page.on('console', msg => console.log('BROWSER:', msg.text()));
+    const prefix = testInfo.project.name;
+
+    // S-00: Login-Screen (vor alsGastStarten — App startet immer im Login)
+    await page.goto('/');
+    await getBridge(page);
+    await warteAufSzene(page, 'LoginSzene');
+    await page.waitForTimeout(500);
+    await screenshot(page, '00-login-screen', prefix);
+
+    // Als Gast einloggen → Lobby
+    await alsGastStarten(page);
+    await warteAufSzene(page, 'SpielverwaltungsSzene');
+    await page.waitForTimeout(1000);
+
+    // S-01: Lobby Basis
+    await screenshot(page, '01-lobby', prefix);
+
+    // S-02: Lobby — leere Tischliste
+    await screenshot(page, '11-offene-tische', prefix);
+
+    // S-03: Tisch-Erstellen-Modal
+    await page.evaluate(() => (window as any).__locodoko.drueckeSzenenButton('btn-neuer-tisch'));
+    await page.waitForTimeout(800);
+    await screenshot(page, '12-neuer-tisch-modal', prefix);
+    await page.evaluate(() => (window as any).__locodoko.drueckeSzenenButton('btn-abbrechen'));
+    await page.waitForTimeout(300);
+
+    // S-04: Lobby mit gefüllter Tischliste — 🔲 (erfordert 2 Browser-Kontexte → Folge-Task)
+    // S-05: Session-Recovery-Button — 🔲 (erfordert komplexen Zustand → Folge-Task)
+
+    // S-06: HilfeSzene — Tab Trumpfhierarchie (Standard-Tab beim Öffnen)
+    await page.evaluate(() => (window as any).__locodoko.drueckeSzenenButton('btn-spielregeln'));
+    await warteAufSzene(page, 'HilfeSzene');
+    await page.waitForTimeout(500);
+    await screenshot(page, '20-hilfe-trumpf', prefix);
+
+    // S-07: HilfeSzene — Tab Ansagen
+    await page.evaluate(() => (window as any).__locodoko.drueckeSzenenButton('btn-tab-ansagen'));
+    await page.waitForTimeout(400);
+    await screenshot(page, '20b-hilfe-ansagen', prefix);
+
+    // S-08: HilfeSzene — Tab Sonderspiele
+    await page.evaluate(() => (window as any).__locodoko.drueckeSzenenButton('btn-tab-sonderspiele'));
+    await page.waitForTimeout(400);
+    await screenshot(page, '20c-hilfe-sonderspiele', prefix);
+
+    // S-09: HilfeSzene — Tab Punktesystem
+    await page.evaluate(() => (window as any).__locodoko.drueckeSzenenButton('btn-tab-punkte'));
+    await page.waitForTimeout(400);
+    await screenshot(page, '20d-hilfe-punkte', prefix);
+
+    // Zurück zur Lobby
+    await page.evaluate(() => (window as any).__locodoko.drueckeSzenenButton('btn-hilfe-zurueck'));
+    await warteAufSzene(page, 'SpielverwaltungsSzene');
+    await page.waitForTimeout(500);
+
+    // S-10: BestenlisterSzene — Tab Turnier (Standard-Tab beim Öffnen)
+    await page.evaluate(() => (window as any).__locodoko.drueckeSzenenButton('btn-rangliste'));
+    await warteAufSzene(page, 'BestenlisterSzene');
+    await page.waitForTimeout(800);
+    await screenshot(page, '21-rangliste-turnier', prefix);
+
+    // S-11: BestenlisterSzene — Tab Sonder
+    await page.evaluate(() => (window as any).__locodoko.drueckeSzenenButton('btn-tab-sonder'));
+    await page.waitForTimeout(400);
+    await screenshot(page, '21b-rangliste-sonder', prefix);
+
+    // S-12: BestenlisterSzene — Tab Frei
+    await page.evaluate(() => (window as any).__locodoko.drueckeSzenenButton('btn-tab-frei'));
+    await page.waitForTimeout(400);
+    await screenshot(page, '21c-rangliste-frei', prefix);
+
+    // Zurück zur Lobby
+    await page.evaluate(() => (window as any).__locodoko.drueckeSzenenButton('btn-bestenliste-zurueck'));
+    await warteAufSzene(page, 'SpielverwaltungsSzene');
+    await page.waitForTimeout(500);
+
+    // S-13: Spielerprofil-Modal (HTML-Overlay über Canvas)
+    await page.evaluate(() => (window as any).__locodoko.drueckeSzenenButton('btn-mein-profil'));
+    await page.waitForSelector('.ui-profil-schliessen', { timeout: 10_000 });
+    await page.waitForTimeout(500);
+    await screenshot(page, '22-spielerprofil', prefix);
+    // JS-click statt Locator-click: umgeht Playwright-Sichtbarkeitsprüfung
+    // (in mobile-portrait überdeckt das CSS-Portraitoverlay den Button)
+    await page.evaluate(() => (document.querySelector('.ui-profil-schliessen') as HTMLElement)?.click());
+    await page.waitForTimeout(300);
+
+    // S-14: Tisch-Wartezimmer (WARTEND — KEIN starteAktuellenTisch)
+    await erstelleKonfiguriertenTisch(page, 'VL-Wartezimmer', {
+      ohneNeunen: false,
+      anzahlSpiele: 8,
+      tischhintergrund: 'FILZ_GRUEN',
+      kiSchwierigkeit: 'STANDARD',
+    }, false);
+    // Warte auf Store-Update (bereich=TISCH), nicht auf Phaser-Szene:
+    // In mobile-portrait startet TischSzene unter dem Portrait-Overlay, getAktuelleSzene()
+    // kann vorübergehend hinter SpielverwaltungsSzene-Cleanup liegen.
+    await page.waitForFunction(
+      () => (window as any).__locodoko?.appStore?.snapshot()?.bereich === 'TISCH',
+      { timeout: 10_000 }
+    );
+    await page.waitForTimeout(1500);
+    await screenshot(page, '13-tisch-wartezimmer', prefix);
+  });
+});
