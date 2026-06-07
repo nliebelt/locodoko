@@ -6,6 +6,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -33,15 +34,18 @@ public class SpielerProfilController {
     private final SpielerProfilService spielerProfilService;
     private final SpielerSessionService spielerSessionService;
     private final SpielerStatistikRepository statistikRepository;
+    private final KontoLoeschungsService kontoLoeschungsService;
 
     public SpielerProfilController(SpielerRepository spielerRepository,
                                     SpielerProfilService spielerProfilService,
                                     SpielerSessionService spielerSessionService,
-                                    SpielerStatistikRepository statistikRepository) {
+                                    SpielerStatistikRepository statistikRepository,
+                                    KontoLoeschungsService kontoLoeschungsService) {
         this.spielerRepository = spielerRepository;
         this.spielerProfilService = spielerProfilService;
         this.spielerSessionService = spielerSessionService;
         this.statistikRepository = statistikRepository;
+        this.kontoLoeschungsService = kontoLoeschungsService;
     }
 
     @Operation(summary = "Spieler-Profil abrufen", description = "Gibt das oeffentliche Profil eines Spielers mit Statistiken und letzten Partie-Ergebnissen zurueck.")
@@ -109,6 +113,24 @@ public class SpielerProfilController {
             .stream(spielerRepository.findAllById(spielerIds).spliterator(), false)
             .collect(Collectors.toMap(SpielerEntity::id, e -> e));
         return ResponseEntity.ok(BestenlisteAntwort.aus(regelvariante, topStats, spielerMap));
+    }
+
+    @Operation(summary = "Eigenes Konto loeschen", description = "Loescht das eigene Spieler-Konto unwiderruflich (DSGVO Art. 17). Nur der Spieler selbst darf sein eigenes Konto loeschen.")
+    @ApiResponses({
+        @ApiResponse(responseCode = "204", description = "Konto erfolgreich geloescht"),
+        @ApiResponse(responseCode = "401", description = "Keine gueltige Spieler-Session"),
+        @ApiResponse(responseCode = "403", description = "Zugriff verweigert — fremdes Konto")
+    })
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> loescheKonto(@PathVariable UUID id, HttpServletRequest request) {
+        SpielerEntity aktiverSpieler = spielerSessionService.ladeAktivenSpieler(request);
+        if (!aktiverSpieler.id().equals(id)) {
+            throw new SpielerZugriffVerweigertException(
+                "Spieler %s darf das Konto von Spieler %s nicht loeschen.".formatted(aktiverSpieler.id(), id)
+            );
+        }
+        kontoLoeschungsService.loescheKonto(id, request);
+        return ResponseEntity.noContent().build();
     }
 
     record ProfilAktualisierungAnfrage(String anzeigeName, String avatarFarbe) {}

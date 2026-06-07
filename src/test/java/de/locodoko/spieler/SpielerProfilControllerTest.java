@@ -15,6 +15,7 @@ import org.springframework.web.context.WebApplicationContext;
 import java.util.UUID;
 
 import static org.springframework.http.MediaType.APPLICATION_JSON;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -108,6 +109,48 @@ class SpielerProfilControllerTest {
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.regelvariante").value("TURNIER"))
             .andExpect(jsonPath("$.eintraege").isArray());
+    }
+
+    /**
+     * Spieler darf sein eigenes Konto loeschen (204 No Content).
+     * Stellt sicher dass der DSGVO-Art.-17-Loeschpfad erreichbar ist.
+     */
+    @Test
+    void eigeneKontoLoeschenGibt204() throws Exception {
+        MvcResult registrierung = registriereSpieler("loeschtestSpieler", "sicheresPasswort123");
+        UUID spielerId = extrahiereSpielerId(registrierung);
+        MockHttpSession session = (MockHttpSession) registrierung.getRequest().getSession();
+
+        mockMvc.perform(delete("/api/spieler/{id}", spielerId)
+                .session(session))
+            .andExpect(status().isNoContent());
+    }
+
+    /**
+     * Spieler darf kein fremdes Konto loeschen (403 Forbidden).
+     * Verhindert dass ein authentifizierter Spieler Daten anderer Spieler entfernt.
+     */
+    @Test
+    void fremdesKontoLoeschenGibt403() throws Exception {
+        MvcResult spielerA = registriereSpieler("loeschAngreifer", "sicheresPasswort123");
+        MvcResult spielerB = registriereSpieler("loeschOpfer", "sicheresPasswort123");
+
+        UUID spielerBId = extrahiereSpielerId(spielerB);
+        MockHttpSession sessionA = (MockHttpSession) spielerA.getRequest().getSession();
+
+        mockMvc.perform(delete("/api/spieler/{id}", spielerBId)
+                .session(sessionA))
+            .andExpect(status().isForbidden());
+    }
+
+    /**
+     * Unauthentifizierte Konto-Loeschung ohne Session wird mit 401 abgewiesen.
+     * Stellt sicher dass der Delete-Endpunkt eine aktive Session voraussetzt.
+     */
+    @Test
+    void kontoLoeschenOhneSessionGibt401() throws Exception {
+        mockMvc.perform(delete("/api/spieler/{id}", UUID.randomUUID()))
+            .andExpect(status().isUnauthorized());
     }
 
     private MvcResult registriereSpieler(String benutzername, String passwort) throws Exception {
