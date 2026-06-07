@@ -167,7 +167,9 @@ export class TischRundenEndeController {
     });
 
     const container = this.phaserPartieEndeModal.getContentContainer();
-    let y = -280;
+    // Start unter dem Modaltitel: PhaserModal zeichnet den Titel bei modal-y = -hoehe/2 + 20 = -280.
+    // Ein Content-Start bei -280 überlappte den Titel ("Partie beendet" doppelt). 50px Abstand.
+    let y = -230;
 
     const infoTxt = this.szene.add.text(0, y, `${spieltypLabel} · ${anzahlS ? `Spiel ${e.spielNummer} von ${anzahlS}` : `Spiel ${e.spielNummer}`}`, {
       fontSize: '12px', color: '#d8f3dc', fontFamily: 'Press Start 2P'
