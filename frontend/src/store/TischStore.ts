@@ -65,14 +65,14 @@ export class TischStore {
     return this.api.gibPresets();
   }
 
-  async erstelleTischMitPreset(name: string, presetName: string, privat?: boolean): Promise<void> {
+  async erstelleTischMitPreset(name: string, presetName: string, privat?: boolean, anzahlSpiele?: number): Promise<void> {
     const tischName = name.trim();
     if (!tischName) {
       this.patchFn({ meldung: { typ: 'fehler', text: 'Tischname leer.', fehlerCode: 'ANFRAGE_UNGUELTIG' } });
       return;
     }
     await this.fuehreMitStatus(async () => {
-      const tisch = await this.api.erstelleTisch(tischName, undefined, privat, presetName);
+      const tisch = await this.api.erstelleTisch(tischName, undefined, privat, presetName, anzahlSpiele);
       this.oeffneTisch(tisch);
     });
   }

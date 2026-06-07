@@ -173,10 +173,10 @@ export class SpielverwaltungApi {
     return this.hol<TischPresetAntwort[]>('/api/tische/presets');
   }
 
-  async erstelleTisch(name: string, konfiguration?: Partial<TischKonfigurationDto>, privat?: boolean, presetName?: string): Promise<TischAntwort> {
+  async erstelleTisch(name: string, konfiguration?: Partial<TischKonfigurationDto>, privat?: boolean, presetName?: string, anzahlSpiele?: number): Promise<TischAntwort> {
     return this.hol<TischAntwort>('/api/tische', {
       method: 'POST',
-      body: JSON.stringify({ name, konfiguration, privat: privat ?? false, presetName })
+      body: JSON.stringify({ name, konfiguration, privat: privat ?? false, presetName, anzahlSpiele })
     });
   }
 

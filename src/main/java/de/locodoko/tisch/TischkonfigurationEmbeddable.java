@@ -220,6 +220,10 @@ public class TischkonfigurationEmbeddable {
         return anzahlSpiele;
     }
 
+    public void setzteAnzahlSpiele(int anzahlSpiele) {
+        this.anzahlSpiele = anzahlSpiele;
+    }
+
     public Tischhintergrund tischhintergrund() {
         return tischhintergrund;
     }

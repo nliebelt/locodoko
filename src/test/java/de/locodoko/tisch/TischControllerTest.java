@@ -90,7 +90,7 @@ class TischControllerTest {
         MvcResult ergebnis = mockMvc.perform(post("/api/tische")
                 .session(session)
                 .contentType(APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(new TischErstellenAnfrage("Abendtisch", null, null, null))))
+                .content(objectMapper.writeValueAsString(new TischErstellenAnfrage("Abendtisch", null, null, null, null))))
             .andExpect(status().isCreated())
             .andExpect(jsonPath("$.name").value("Abendtisch"))
             .andExpect(jsonPath("$.einladungsCode").isNotEmpty())
@@ -516,7 +516,7 @@ class TischControllerTest {
         mockMvc.perform(post("/api/tische")
                 .session(adaSession)
                 .contentType(APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(new TischErstellenAnfrage("Antwort-Tisch", null, null, null))))
+                .content(objectMapper.writeValueAsString(new TischErstellenAnfrage("Antwort-Tisch", null, null, null, null))))
             .andExpect(status().isCreated())
             .andExpect(jsonPath("$.einladungsCode").isNotEmpty())
             .andExpect(jsonPath("$.einladungsCode").isString());
@@ -590,7 +590,7 @@ class TischControllerTest {
         MvcResult ergebnis = mockMvc.perform(post("/api/tische")
                 .session(adaSession)
                 .contentType(APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(new TischErstellenAnfrage("Privater Tisch", null, true, null))))
+                .content(objectMapper.writeValueAsString(new TischErstellenAnfrage("Privater Tisch", null, true, null, null))))
             .andExpect(status().isCreated())
             .andReturn();
         TischAntwort tischAntwort = objectMapper.readValue(ergebnis.getResponse().getContentAsByteArray(), TischAntwort.class);
@@ -621,7 +621,7 @@ class TischControllerTest {
         MvcResult ergebnis = mockMvc.perform(post("/api/tische")
                 .session(session)
                 .contentType(APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(new TischErstellenAnfrage(name, null, null, null))))
+                .content(objectMapper.writeValueAsString(new TischErstellenAnfrage(name, null, null, null, null))))
             .andExpect(status().isCreated())
             .andReturn();
         TischAntwort antwort = objectMapper.readValue(ergebnis.getResponse().getContentAsByteArray(), TischAntwort.class);

@@ -75,6 +75,10 @@ public class TischVerwaltungsService {
                 : anfrage.konfiguration().alsEmbeddable();
         }
 
+        if (anfrage.anzahlSpiele() != null) {
+            konfiguration.setzteAnzahlSpiele(anfrage.anzahlSpiele());
+        }
+
         Zugangsmodus zugangsmodus = Boolean.TRUE.equals(anfrage.privat())
             ? Zugangsmodus.PRIVAT
             : Zugangsmodus.OFFEN;

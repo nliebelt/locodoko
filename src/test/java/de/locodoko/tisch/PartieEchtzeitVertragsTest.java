@@ -337,7 +337,7 @@ class PartieEchtzeitVertragsTest {
         ResponseEntity<TischAntwort> antwort = restTemplate.exchange(
             url("/api/tische"),
             HttpMethod.POST,
-            new HttpEntity<>(new TischErstellenAnfrage(name, null, null, null), headers),
+            new HttpEntity<>(new TischErstellenAnfrage(name, null, null, null, null), headers),
             TischAntwort.class
         );
         return Objects.requireNonNull(antwort.getBody());

@@ -966,7 +966,7 @@ describe('AppStore', () => {
     const store = new AppStore(api, echtzeit);
 
     await store.erstelleTischMitPreset('Mein Tisch', 'STANDARD', true);
-    expect(apiSpy).toHaveBeenCalledWith('Mein Tisch', undefined, true, 'STANDARD');
+    expect(apiSpy).toHaveBeenCalledWith('Mein Tisch', undefined, true, 'STANDARD', undefined);
   });
 
   it('betritt Tisch via Code', async () => {

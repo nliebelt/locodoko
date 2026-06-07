@@ -13,6 +13,11 @@ export function zeigeTischErstellenDialog(
     ? Math.min(startPresetIndex, presets.length - 1)
     : 0;
 
+  const standardAnzahlSpiele = (idx: number) =>
+    presets[idx]?.konfiguration?.anzahlSpiele ?? 24;
+
+  let anzahlSpiele = standardAnzahlSpiele(presetIndex);
+
   const backdrop = document.createElement('div');
   backdrop.id = 'tisch-erstellen-backdrop';
   backdrop.className = 'ui-modal-backdrop';
@@ -49,6 +54,21 @@ export function zeigeTischErstellenDialog(
     '             border-radius:4px;cursor:pointer;font-size:16px;">&gt;</button>',
     '  </div>',
     '</div>',
+    '<div>',
+    '  <label style="display:block;margin-bottom:6px;font-size:13px;color:#a0c0a0;">Anzahl Spiele</label>',
+    '  <div style="display:flex;align-items:center;gap:8px;">',
+    '    <button id="tisch-anzahl-minus"',
+    '      style="padding:6px 12px;background:#1a2a1a;color:#f0f0f0;border:1px solid #4ade80;',
+    '             border-radius:4px;cursor:pointer;font-size:16px;">−</button>',
+    `    <span id="tisch-anzahl-label"`,
+    '      style="flex:1;text-align:center;color:#f0f0f0;font-size:14px;">',
+    `      ${anzahlSpiele} Spiele`,
+    '    </span>',
+    '    <button id="tisch-anzahl-plus"',
+    '      style="padding:6px 12px;background:#1a2a1a;color:#f0f0f0;border:1px solid #4ade80;',
+    '             border-radius:4px;cursor:pointer;font-size:16px;">+</button>',
+    '  </div>',
+    '</div>',
     '<label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:14px;color:#f0f0f0;">',
     '  <input id="tisch-privat" type="checkbox" style="width:16px;height:16px;cursor:pointer;" />',
     '  Privater Tisch',
@@ -71,12 +91,19 @@ export function zeigeTischErstellenDialog(
 
   const nameInput = modal.querySelector<HTMLInputElement>('#tisch-name')!;
   const presetLabelEl = modal.querySelector<HTMLSpanElement>('#tisch-preset-label')!;
+  const anzahlLabelEl = modal.querySelector<HTMLSpanElement>('#tisch-anzahl-label')!;
   const privatCheckbox = modal.querySelector<HTMLInputElement>('#tisch-privat')!;
   const statusEl = modal.querySelector<HTMLParagraphElement>('#tisch-erstellen-status')!;
   const erstellenBtn = modal.querySelector<HTMLButtonElement>('#tisch-erstellen-btn')!;
   const abbrechenBtn = modal.querySelector<HTMLButtonElement>('#tisch-abbrechen')!;
   const prevBtn = modal.querySelector<HTMLButtonElement>('#tisch-preset-prev')!;
   const nextBtn = modal.querySelector<HTMLButtonElement>('#tisch-preset-next')!;
+  const minusBtn = modal.querySelector<HTMLButtonElement>('#tisch-anzahl-minus')!;
+  const plusBtn = modal.querySelector<HTMLButtonElement>('#tisch-anzahl-plus')!;
+
+  const aktualisiereAnzahlLabel = () => {
+    anzahlLabelEl.textContent = `${anzahlSpiele} Spiele`;
+  };
 
   const schliessen = () => {
     backdrop.remove();
@@ -93,11 +120,28 @@ export function zeigeTischErstellenDialog(
     if (presets.length === 0) return;
     presetIndex = (presetIndex - 1 + presets.length) % presets.length;
     presetLabelEl.textContent = presets[presetIndex]?.label ?? '';
+    anzahlSpiele = standardAnzahlSpiele(presetIndex);
+    aktualisiereAnzahlLabel();
   });
   nextBtn.addEventListener('click', () => {
     if (presets.length === 0) return;
     presetIndex = (presetIndex + 1) % presets.length;
     presetLabelEl.textContent = presets[presetIndex]?.label ?? '';
+    anzahlSpiele = standardAnzahlSpiele(presetIndex);
+    aktualisiereAnzahlLabel();
+  });
+
+  minusBtn.addEventListener('click', () => {
+    if (anzahlSpiele > 1) {
+      anzahlSpiele--;
+      aktualisiereAnzahlLabel();
+    }
+  });
+  plusBtn.addEventListener('click', () => {
+    if (anzahlSpiele < 240) {
+      anzahlSpiele++;
+      aktualisiereAnzahlLabel();
+    }
   });
 
   erstellenBtn.addEventListener('click', () => {
@@ -113,7 +157,7 @@ export function zeigeTischErstellenDialog(
     const privat = privatCheckbox.checked;
 
     const versprechen = preset?.name
-      ? appStore.erstelleTischMitPreset(name, preset.name, privat)
+      ? appStore.erstelleTischMitPreset(name, preset.name, privat, anzahlSpiele)
       : appStore.erstelleTisch(name);
 
     versprechen

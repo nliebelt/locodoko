@@ -52,29 +52,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/spieler/leaderboard": {
-        parameters: {
-            query?: {
-                /** @description Regelvariante (TURNIER, SONDER, FREI) */
-                regelvariante?: string;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Bestenliste abrufen
-         * @description Gibt die Top-50 Spieler fuer eine Regelvariante zurueck, sortiert nach konservativem TrueSkill-Rating.
-         */
-        get: operations["ladeBestenliste"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/api/spieler/session": {
         parameters: {
             query?: never;
@@ -284,6 +261,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/bugreport": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Bug-Report einreichen
+         * @description Auth erforderlich. GitHub-Issue-Anlage env-gated (LOCODOKO_BUGREPORT_GITHUB_TOKEN + _GITHUB_REPO).
+         */
+        post: operations["einreichen_1"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/auth/register": {
         parameters: {
             query?: never;
@@ -298,6 +295,46 @@ export interface paths {
          * @description Erstellt einen neuen Spieler mit Benutzername und Passwort. Loggt den Spieler automatisch ein.
          */
         post: operations["registrieren"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/auth/passwort-reset": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Passwort zurücksetzen
+         * @description Setzt das Passwort anhand eines gültigen Reset-Tokens.
+         */
+        post: operations["passwortReset"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/auth/passwort-reset-anfragen": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Passwort-Reset anfordern
+         * @description Sendet eine Reset-Email an die angegebene Adresse (falls bekannt). Antwortet immer 200 (kein User-Enumeration-Leak).
+         */
+        post: operations["passwortResetAnfragen"];
         delete?: never;
         options?: never;
         head?: never;
@@ -424,6 +461,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/spieler/leaderboard": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Bestenliste abrufen
+         * @description Gibt die Top-50 Spieler fuer eine Regelvariante zurueck, sortiert nach konservativem TrueSkill-Rating (mu - 3*sigma).
+         */
+        get: operations["ladeBestenliste"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/partien/{id}/stand": {
         parameters: {
             query?: never;
@@ -456,6 +513,26 @@ export interface paths {
          * @description Liefert, welche Login-Methoden aktiviert sind.
          */
         get: operations["gibKonfiguration_1"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/auth/email-verifizieren": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Email-Adresse verifizieren
+         * @description Bestätigt die Email-Adresse anhand des per Email versendeten Tokens.
+         */
+        get: operations["emailVerifizieren"];
         put?: never;
         post?: never;
         delete?: never;
@@ -572,55 +649,6 @@ export interface components {
         ProfilAktualisierungAnfrage: {
             anzeigeName?: string;
             avatarFarbe?: string;
-        };
-        /** @description Ewige Bestenliste fuer eine Regelvariante, sortiert nach konservativem TrueSkill-Rating. */
-        BestenlisteAntwort: {
-            /** @description Regelvariante dieser Bestenliste. */
-            regelvariante?: string;
-            /** @description Eintraege der Bestenliste, aufsteigend nach Rang sortiert. */
-            eintraege?: components["schemas"]["BestenlisteEintragAntwort"][];
-        };
-        /** @description Einzelner Eintrag in der Bestenliste. */
-        BestenlisteEintragAntwort: {
-            /**
-             * Format: int32
-             * @description Rangplatz (1 = bester).
-             */
-            rang?: number;
-            /**
-             * Format: uuid
-             * @description Spieler-ID.
-             */
-            spielerId?: string;
-            /** @description Anzeigename des Spielers. */
-            spielerName?: string;
-            /** @description Avatar-Farbe als Hex-String. */
-            avatarFarbe?: string;
-            /**
-             * Format: double
-             * @description Konservatives TrueSkill-Rating fuer Bestenliste: mu - 3*sigma.
-             */
-            konservativesRating?: number;
-            /**
-             * Format: double
-             * @description TrueSkill-Skill-Mean (mu).
-             */
-            ratingMu?: number;
-            /**
-             * Format: double
-             * @description TrueSkill-Skill-Sigma (Unsicherheit).
-             */
-            ratingSigma?: number;
-            /**
-             * Format: int32
-             * @description Anzahl gespielter Spiele.
-             */
-            anzahlSpiele?: number;
-            /**
-             * Format: double
-             * @description Siegquote in Prozent (0-100).
-             */
-            siegquote?: number;
         };
         /** @description Zusammenfassung einer abgeschlossenen Partie. */
         PartieErgebnisAntwort: {
@@ -959,6 +987,20 @@ export interface components {
             nachricht?: string;
             daten?: Record<string, never>;
         };
+        BugReportAnfrage: {
+            beschreibung?: string;
+            schweregrad?: string;
+            correlationIds?: string[];
+            tischId?: string;
+            partieId?: string;
+            userAgent?: string;
+            viewport?: string;
+            buildSha?: string;
+            zustandZusammenfassung?: string;
+        };
+        BugReportAntwort: {
+            issueUrl?: string;
+        };
         RegistrierungsAnfrage: {
             benutzername?: string;
             passwort?: string;
@@ -982,6 +1024,13 @@ export interface components {
              * @example GAST
              */
             authentifizierungsMethode?: string;
+        };
+        PasswortResetAnfrage: {
+            token?: string;
+            neuesPasswort?: string;
+        };
+        PasswortResetAnfrageAnfrage: {
+            email?: string;
         };
         LoginAnfrage: {
             benutzername?: string;
@@ -1062,6 +1111,71 @@ export interface components {
              * @example prod
              */
             aktivesProfil?: string;
+        };
+        /** @description Ewige Bestenliste fuer eine Regelvariante, sortiert nach konservativem TrueSkill-Rating. */
+        BestenlisteAntwort: {
+            /**
+             * @description Regelvariante dieser Bestenliste.
+             * @example TURNIER
+             */
+            regelvariante?: string;
+            /** @description Eintraege der Bestenliste, aufsteigend nach Rang sortiert. */
+            eintraege?: components["schemas"]["BestenlisteEintragAntwort"][];
+        };
+        /** @description Einzelner Eintrag in der Bestenliste. */
+        BestenlisteEintragAntwort: {
+            /**
+             * Format: int32
+             * @description Rangplatz (1 = bester).
+             * @example 1
+             */
+            rang?: number;
+            /**
+             * Format: uuid
+             * @description Spieler-ID.
+             * @example a1b2c3d4-e5f6-7890-abcd-ef1234567890
+             */
+            spielerId?: string;
+            /**
+             * @description Anzeigename des Spielers.
+             * @example Karlchen
+             */
+            spielerName?: string;
+            /**
+             * @description Avatar-Farbe als Hex-String.
+             * @example #FF5733
+             */
+            avatarFarbe?: string;
+            /**
+             * Format: double
+             * @description Konservatives TrueSkill-Rating fuer Bestenliste: mu - 3*sigma.
+             * @example 12.34
+             */
+            konservativesRating?: number;
+            /**
+             * Format: double
+             * @description TrueSkill-Skill-Mean (mu).
+             * @example 27.43
+             */
+            ratingMu?: number;
+            /**
+             * Format: double
+             * @description TrueSkill-Skill-Sigma (Unsicherheit).
+             * @example 5.03
+             */
+            ratingSigma?: number;
+            /**
+             * Format: int32
+             * @description Anzahl gespielter Spiele.
+             * @example 42
+             */
+            anzahlSpiele?: number;
+            /**
+             * Format: double
+             * @description Siegquote in Prozent (0-100).
+             * @example 59.52
+             */
+            siegquote?: number;
         };
         /** @description Ein abgeschlossener Stich mit allen gespielten Karten und Ergebnis. */
         AbgeschlossenerStichAntwort: {
@@ -2438,6 +2552,30 @@ export interface operations {
             };
         };
     };
+    einreichen_1: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BugReportAnfrage"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["BugReportAntwort"];
+                };
+            };
+        };
+    };
     registrieren: {
         parameters: {
             query?: never;
@@ -2477,6 +2615,64 @@ export interface operations {
                 content: {
                     "*/*": components["schemas"]["AuthentifizierungsAntwort"];
                 };
+            };
+        };
+    };
+    passwortReset: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PasswortResetAnfrage"];
+            };
+        };
+        responses: {
+            /** @description Passwort geändert */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Token abgelaufen */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Token ungültig oder unbekannt */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    passwortResetAnfragen: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PasswortResetAnfrageAnfrage"];
+            };
+        };
+        responses: {
+            /** @description Anfrage entgegengenommen */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
         };
     };
@@ -2654,6 +2850,28 @@ export interface operations {
             };
         };
     };
+    ladeBestenliste: {
+        parameters: {
+            query?: {
+                regelvariante?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Bestenliste erfolgreich abgerufen */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["BestenlisteAntwort"];
+                };
+            };
+        };
+    };
     gibPartieStand: {
         parameters: {
             query?: never;
@@ -2715,6 +2933,33 @@ export interface operations {
             };
         };
     };
+    emailVerifizieren: {
+        parameters: {
+            query: {
+                token: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Email verifiziert */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Token ungültig oder unbekannt */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     kickeSpieler: {
         parameters: {
             query?: never;
@@ -2763,29 +3008,6 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["BestaetigungAntwort"];
-                };
-            };
-        };
-    };
-    ladeBestenliste: {
-        parameters: {
-            query?: {
-                /** @description Regelvariante (TURNIER, SONDER, FREI) */
-                regelvariante?: string;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Bestenliste erfolgreich abgerufen */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "*/*": components["schemas"]["BestenlisteAntwort"];
                 };
             };
         };

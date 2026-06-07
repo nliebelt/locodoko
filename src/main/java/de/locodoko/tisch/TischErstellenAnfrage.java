@@ -1,6 +1,8 @@
 package de.locodoko.tisch;
 
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 
@@ -19,6 +21,10 @@ public record TischErstellenAnfrage(
     /** Wenn true, wird der Tisch als PRIVAT erstellt (nur via Einladungslink betretbar). */
     Boolean privat,
     /** Optionaler Name eines Presets. Wenn angegeben, wird die manuelle 'konfiguration' ignoriert. */
-    String presetName
+    String presetName,
+    /** Optionale Anzahl der Spiele. Überschreibt den Preset-Wert, wenn angegeben. */
+    @Min(value = 1, message = "Die Anzahl der Spiele muss mindestens 1 betragen.")
+    @Max(value = 240, message = "Die Anzahl der Spiele darf maximal 240 betragen.")
+    Integer anzahlSpiele
 ) {
 }

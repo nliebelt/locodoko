@@ -77,7 +77,7 @@ export class AppStore {
   async erstelleQuickGame(): Promise<void> { return this.tisch.erstelleQuickGame(); }
   async erstelleKonfiguriertenTisch(name: string, konfiguration: Partial<TischKonfigurationDto>, privat?: boolean): Promise<void> { return this.tisch.erstelleKonfiguriertenTisch(name, konfiguration, privat); }
   async ladePresets(): Promise<TischPresetAntwort[]> { return this.tisch.ladePresets(); }
-  async erstelleTischMitPreset(name: string, presetName: string, privat?: boolean): Promise<void> { return this.tisch.erstelleTischMitPreset(name, presetName, privat); }
+  async erstelleTischMitPreset(name: string, presetName: string, privat?: boolean, anzahlSpiele?: number): Promise<void> { return this.tisch.erstelleTischMitPreset(name, presetName, privat, anzahlSpiele); }
   async erstelleTisch(name: string): Promise<void> { return this.tisch.erstelleTisch(name); }
   async betreteTisch(tischId: Uuid): Promise<void> { return this.tisch.betreteTisch(tischId); }
   async betreteTischViaCode(einladungsCode: string): Promise<void> { return this.tisch.betreteTischViaCode(einladungsCode); }
