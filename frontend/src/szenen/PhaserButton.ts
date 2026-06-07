@@ -12,6 +12,8 @@ export interface ButtonOptionen {
   deaktiviert?: boolean;
   hervorheben?: boolean;
   testId?: string;
+  /** Optionale Schriftgröße in px (Default 20). Für kompaktere Elemente wie Tab-Leisten. */
+  schriftgroesse?: number;
 }
 
 export interface FocusableElement {
@@ -30,7 +32,7 @@ export class PhaserButton extends Phaser.GameObjects.Container implements Focusa
   public readonly breite: number;
 
   constructor(scene: Phaser.Scene, optionen: ButtonOptionen) {
-    const { x, y, text, typ = 'primary', hoehe = 50, callback, testId, deaktiviert = false } = optionen;
+    const { x, y, text, typ = 'primary', hoehe = 50, callback, testId, deaktiviert = false, schriftgroesse = 20 } = optionen;
     super(scene, x, y);
     if (testId) this.setName(testId);
 
@@ -42,7 +44,7 @@ export class PhaserButton extends Phaser.GameObjects.Container implements Focusa
     // damit sie nicht doppelt in der Scene DisplayList landen → verhindert Double-Destroy-Crash
     const textObj = new Phaser.GameObjects.Text(scene, 0, 0, text, {
       fontFamily: FONT_FAMILY,
-      fontSize: '20px',
+      fontSize: `${schriftgroesse}px`,
       color: textFarbe
     }).setOrigin(0.5);
 

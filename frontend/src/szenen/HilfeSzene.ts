@@ -78,21 +78,30 @@ export class HilfeSzene extends Phaser.Scene {
   private baueTabs(): void {
     this.tabButtons.forEach(b => b.destroy());
     this.tabButtons = [];
-    TABS.forEach((tab, i) => {
-      const btn = new PhaserButton(this, {
-        x: 285 + i * 185, y: 105,
-        text: tab.label,
-        breite: 170,
-        typ: tab.key === this.aktiveTab ? 'primary' : 'secondary',
-        testId: `btn-tab-${tab.key}`,
-        callback: () => {
-          if (this.aktiveTab !== tab.key) {
-            this.aktiveTab = tab.key;
-            this.baueTabs();
-            this.zeigeTab();
-          }
-        },
-      });
+    // Buttons skalieren ihre Breite selbst an den Text (PhaserButton: max(breite, textBreite+40)).
+    // Ein festes X-Raster würde bei langen Labels ("Trumpfhierarchie") überlappen — daher zuerst
+    // erzeugen, dann anhand der realen `breite` als zentrierte Gruppe mit fester Lücke anordnen.
+    const luecke = 14;
+    const buttons = TABS.map((tab) => new PhaserButton(this, {
+      x: 0, y: 105,
+      text: tab.label,
+      breite: 140,
+      schriftgroesse: 16,
+      typ: tab.key === this.aktiveTab ? 'primary' : 'secondary',
+      testId: `btn-tab-${tab.key}`,
+      callback: () => {
+        if (this.aktiveTab !== tab.key) {
+          this.aktiveTab = tab.key;
+          this.baueTabs();
+          this.zeigeTab();
+        }
+      },
+    }));
+    const gesamtBreite = buttons.reduce((summe, b) => summe + b.breite, 0) + luecke * (buttons.length - 1);
+    let cursor = this.scale.width / 2 - gesamtBreite / 2;
+    buttons.forEach((btn) => {
+      btn.x = cursor + btn.breite / 2;
+      cursor += btn.breite + luecke;
       this.tabButtons.push(btn);
     });
   }

@@ -33,6 +33,9 @@ vi.mock('phaser', () => ({
 vi.mock('./PhaserButton', () => ({
   PhaserButton: vi.fn(function(this: any, _scene: any, optionen: any) {
     this.optionen = optionen;
+    // Reale PhaserButton setzt `breite` (Text-Autosize); HilfeSzene ordnet Tabs danach an.
+    this.breite = optionen.breite ?? 140;
+    this.x = optionen.x;
     this.destroy = vi.fn();
   }),
 }));
