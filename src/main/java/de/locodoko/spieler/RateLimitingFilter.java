@@ -14,9 +14,9 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * Rate-Limiting fuer Login- und Bugreport-Endpunkte.
- * Login: max. 10 Versuche pro Minute pro IP.
- * Bugreport: max. 5 Berichte pro 10 Minuten pro IP.
+ * Rate-Limiting fuer oeffentlich erreichbare POST-Endpunkte.
+ * Login: max. 10/min. Registrierung: max. 10/10min. Passwort-Reset: max. 5/10min.
+ * Debug-Log: max. 30/min (verhindert Log-Flooding). Bugreport: max. 5/10min.
  */
 @Component
 public class RateLimitingFilter extends OncePerRequestFilter {
@@ -29,30 +29,70 @@ public class RateLimitingFilter extends OncePerRequestFilter {
     private static final long BUGREPORT_FENSTER_SEKUNDEN = 600;
     private static final String BUGREPORT_PFAD = "/api/bugreport";
 
+    private static final int MAX_REGISTER_VERSUCHE = 10;
+    private static final long REGISTER_FENSTER_SEKUNDEN = 600;
+    private static final String REGISTER_PFAD = "/api/auth/register";
+
+    private static final int MAX_RESET_VERSUCHE = 5;
+    private static final long RESET_FENSTER_SEKUNDEN = 600;
+    private static final String RESET_PFAD = "/api/auth/passwort-reset-anfragen";
+
+    private static final int MAX_DEBUG_VERSUCHE = 30;
+    private static final long DEBUG_FENSTER_SEKUNDEN = 60;
+    private static final String DEBUG_LOG_PFAD = "/api/debug/log";
+
     private final Map<String, Zugangsprotokoll> loginZugriffe = new ConcurrentHashMap<>();
     private final Map<String, Zugangsprotokoll> bugreportZugriffe = new ConcurrentHashMap<>();
+    private final Map<String, Zugangsprotokoll> registerZugriffe = new ConcurrentHashMap<>();
+    private final Map<String, Zugangsprotokoll> resetZugriffe = new ConcurrentHashMap<>();
+    private final Map<String, Zugangsprotokoll> debugZugriffe = new ConcurrentHashMap<>();
 
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response,
                                     FilterChain filterChain) throws ServletException, IOException {
-        String uri = request.getRequestURI();
-        String methode = request.getMethod();
+        if (!"POST".equalsIgnoreCase(request.getMethod())) {
+            filterChain.doFilter(request, response);
+            return;
+        }
 
-        if (LOGIN_PFAD.equals(uri) && "POST".equalsIgnoreCase(methode)) {
-            if (istRateLimitUeberschritten(request.getRemoteAddr(), loginZugriffe,
-                    MAX_LOGIN_VERSUCHE, LOGIN_FENSTER_SEKUNDEN)) {
-                schreibeRateLimitAntwort(response, "Zu viele Login-Versuche. Bitte in einer Minute erneut versuchen.");
-                return;
-            }
-        } else if (BUGREPORT_PFAD.equals(uri) && "POST".equalsIgnoreCase(methode)) {
-            if (istRateLimitUeberschritten(request.getRemoteAddr(), bugreportZugriffe,
-                    MAX_BUGREPORT_VERSUCHE, BUGREPORT_FENSTER_SEKUNDEN)) {
-                schreibeRateLimitAntwort(response, "Zu viele Bug-Reports. Bitte in 10 Minuten erneut versuchen.");
-                return;
-            }
+        String meldung = pruefRateLimit(request.getRequestURI(), request.getRemoteAddr());
+        if (meldung != null) {
+            schreibeRateLimitAntwort(response, meldung);
+            return;
         }
 
         filterChain.doFilter(request, response);
+    }
+
+    private String pruefRateLimit(String uri, String ip) {
+        return switch (uri) {
+            case LOGIN_PFAD -> {
+                if (istRateLimitUeberschritten(ip, loginZugriffe, MAX_LOGIN_VERSUCHE, LOGIN_FENSTER_SEKUNDEN))
+                    yield "Zu viele Login-Versuche. Bitte in einer Minute erneut versuchen.";
+                yield null;
+            }
+            case BUGREPORT_PFAD -> {
+                if (istRateLimitUeberschritten(ip, bugreportZugriffe, MAX_BUGREPORT_VERSUCHE, BUGREPORT_FENSTER_SEKUNDEN))
+                    yield "Zu viele Bug-Reports. Bitte in 10 Minuten erneut versuchen.";
+                yield null;
+            }
+            case REGISTER_PFAD -> {
+                if (istRateLimitUeberschritten(ip, registerZugriffe, MAX_REGISTER_VERSUCHE, REGISTER_FENSTER_SEKUNDEN))
+                    yield "Zu viele Registrierungsversuche. Bitte in 10 Minuten erneut versuchen.";
+                yield null;
+            }
+            case RESET_PFAD -> {
+                if (istRateLimitUeberschritten(ip, resetZugriffe, MAX_RESET_VERSUCHE, RESET_FENSTER_SEKUNDEN))
+                    yield "Zu viele Passwort-Reset-Anfragen. Bitte in 10 Minuten erneut versuchen.";
+                yield null;
+            }
+            case DEBUG_LOG_PFAD -> {
+                if (istRateLimitUeberschritten(ip, debugZugriffe, MAX_DEBUG_VERSUCHE, DEBUG_FENSTER_SEKUNDEN))
+                    yield "Zu viele Log-Anfragen.";
+                yield null;
+            }
+            default -> null;
+        };
     }
 
     private boolean istRateLimitUeberschritten(String ip, Map<String, Zugangsprotokoll> zugriffe,

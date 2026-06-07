@@ -49,14 +49,13 @@ services:
     restart: unless-stopped
     environment:
       POSTGRES_DB: locodoko
-      POSTGRES_USER: ${LOCODOKO_DB_USERNAME:-locodoko}
-      POSTGRES_PASSWORD: ${LOCODOKO_DB_PASSWORD:-locodoko}
+      POSTGRES_USER: ${LOCODOKO_DB_USERNAME:?LOCODOKO_DB_USERNAME muss in .env gesetzt sein}
+      POSTGRES_PASSWORD: ${LOCODOKO_DB_PASSWORD:?LOCODOKO_DB_PASSWORD muss in .env gesetzt sein}
     volumes:
       - pgdata:/var/lib/postgresql/data
-    ports:
-      - "5432:5432"
+    # Kein Host-Port-Binding: DB ist nur intern (app-Container) erreichbar
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U locodoko"]
+      test: ["CMD-SHELL", "pg_isready -U ${LOCODOKO_DB_USERNAME:-locodoko}"]
       interval: 5s
       timeout: 3s
       retries: 5
@@ -75,8 +74,8 @@ services:
     environment:
       SPRING_PROFILES_ACTIVE: prod
       LOCODOKO_DB_URL: jdbc:postgresql://postgres:5432/locodoko
-      LOCODOKO_DB_USERNAME: ${LOCODOKO_DB_USERNAME:-locodoko}
-      LOCODOKO_DB_PASSWORD: ${LOCODOKO_DB_PASSWORD:-locodoko}
+      LOCODOKO_DB_USERNAME: ${LOCODOKO_DB_USERNAME:?LOCODOKO_DB_USERNAME muss in .env gesetzt sein}
+      LOCODOKO_DB_PASSWORD: ${LOCODOKO_DB_PASSWORD:?LOCODOKO_DB_PASSWORD muss in .env gesetzt sein}
       GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-disabled}
       GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-disabled}
       SENTRY_DSN: ${SENTRY_DSN:-}
