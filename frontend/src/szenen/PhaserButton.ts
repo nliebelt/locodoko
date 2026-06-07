@@ -14,6 +14,11 @@ export interface ButtonOptionen {
   testId?: string;
   /** Optionale Schriftgröße in px (Default 20). Für kompaktere Elemente wie Tab-Leisten. */
   schriftgroesse?: number;
+  /**
+   * Farbpalette: 'tisch' (Default, grün — Menü-/Tisch-Szenen) oder 'overlay' (Balatro-purpur —
+   * Buttons in Modals/Overlays, gold-primär). Siehe specs/frontend-visuelles-design.md.
+   */
+  palette?: 'tisch' | 'overlay';
 }
 
 export interface FocusableElement {
@@ -32,13 +37,18 @@ export class PhaserButton extends Phaser.GameObjects.Container implements Focusa
   public readonly breite: number;
 
   constructor(scene: Phaser.Scene, optionen: ButtonOptionen) {
-    const { x, y, text, typ = 'primary', hoehe = 50, callback, testId, deaktiviert = false, schriftgroesse = 20 } = optionen;
+    const { x, y, text, typ = 'primary', hoehe = 50, callback, testId, deaktiviert = false, schriftgroesse = 20, palette = 'tisch' } = optionen;
     super(scene, x, y);
     if (testId) this.setName(testId);
 
     this.callback = callback;
-    const bgFarbe = typ === 'primary' ? 0xd8f3dc : 0x2d5a3d;
-    const textFarbe = typ === 'primary' ? '#14361f' : '#f8f9fa';
+    const istOverlay = palette === 'overlay';
+    const bgFarbe = typ === 'primary'
+      ? (istOverlay ? 0xffd700 : 0xd8f3dc)
+      : (istOverlay ? 0x2d1d40 : 0x2d5a3d);
+    const textFarbe = typ === 'primary'
+      ? (istOverlay ? '#1a1020' : '#14361f')
+      : (istOverlay ? '#f0e6ff' : '#f8f9fa');
 
     // Kinder direkt ueber Konstruktoren erstellen (nicht scene.add.*),
     // damit sie nicht doppelt in der Scene DisplayList landen → verhindert Double-Destroy-Crash

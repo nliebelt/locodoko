@@ -3,7 +3,7 @@ import { appStore } from '../anwendung';
 import type { TischAnsichtModell } from '../modelle/TischAnsichtModell';
 import type { AppZustand } from '../store/AppStore';
 import type { Tischhintergrund } from '../modelle/SpielverwaltungDto';
-import { FONT_FAMILY } from '../ui/designTokens';
+import { FONT_FAMILY, PANEL_BG, BORDER_PANEL } from '../ui/designTokens';
 import { formatiereAnsage } from './tischFormatierer';
 /** Moegliche Animations-Geschwindigkeitsstufen: normal (1x), doppelt (2x), sofort (Infinity). */
 export type AnimationsGeschwindigkeit = 1 | 2 | typeof Infinity;
@@ -28,11 +28,13 @@ export function erstellePhaserButton(
   ebene: Phaser.GameObjects.Container,
   x: number, y: number, w: number, h: number,
   txt: string, hdl: () => void,
-  d = false, s = false, hv = false, testId?: string
+  d = false, s = false, hv = false, testId?: string, overlay = false
 ): void {
-  const hgF = d ? 0x2a2a2a : hv ? 0xffd166 : s ? 0x1a2a1a : 0x1a5a2a;
-  const rF = d ? 0x555555 : hv ? 0xf8f9fa : s ? 0x4a7a5a : 0x4adf7a;
-  const tF = d ? '#888888' : hv ? '#0d1f12' : '#f8f9fa';
+  // overlay=true: Balatro-Purpur-Palette für Buttons in Modals (gold-primär/purpur-sekundär).
+  // Default (grün) gilt für In-Game-HUD, Ansage- und Armut-Buttons auf dem Spieltisch.
+  const hgF = d ? 0x2a2a2a : hv ? 0xffd166 : overlay ? (s ? 0x2d1d40 : 0xffd700) : (s ? 0x1a2a1a : 0x1a5a2a);
+  const rF = d ? 0x555555 : hv ? 0xf8f9fa : overlay ? 0x4a2d6a : (s ? 0x4a7a5a : 0x4adf7a);
+  const tF = d ? '#888888' : hv ? '#0d1f12' : overlay ? (s ? '#f0e6ff' : '#1a1020') : '#f8f9fa';
   const bg = szene.add.rectangle(x, y, w, h, hgF, d ? 0.5 : 0.92).setStrokeStyle(hv ? 2 : 1, rF, 0.9);
   if (testId) bg.setName(testId);
   ebene.add(bg);
@@ -191,29 +193,31 @@ export function renderEinstellungsModal(
   const dialogH = Math.round(Math.min(480, hoehe * 0.7));
   const dialogX = breite / 2;
   const dialogY = hoehe / 2;
-  const backdrop = szene.add.rectangle(dialogX, dialogY, breite, hoehe, 0x000000, 0.45).setInteractive();
+  const backdrop = szene.add.rectangle(dialogX, dialogY, breite, hoehe, 0x000000, 0.6).setInteractive();
   backdrop.on('pointerdown', kontext.onEinstellungenSchliessen);
   ebene.add(backdrop);
-  const panel = szene.add.rectangle(dialogX, dialogY, dialogW, dialogH, 0x0b3d24, 0.97).setStrokeStyle(2, 0xd8f3dc, 0.35);
+  // Balatro-Purpur-Modal (Neo-Brutalism): harter Offset-Schatten, scharfe Ecken, gold-Titel.
+  ebene.add(szene.add.rectangle(dialogX + 4, dialogY + 4, dialogW, dialogH, 0x000000, 1));
+  const panel = szene.add.rectangle(dialogX, dialogY, dialogW, dialogH, PANEL_BG).setStrokeStyle(2, BORDER_PANEL);
   ebene.add(panel);
   const schriftH2 = Math.round(Math.max(18, breite * 0.016));
   const schriftHint = Math.round(Math.max(11, breite * 0.009));
   const zeilenAbstand = 70;
   let currentY = dialogY - dialogH / 2 + 40;
-  ebene.add(szene.add.text(dialogX, currentY, 'Einstellungen', { fontFamily: FONT_FAMILY, color: '#f8f9fa', fontSize: `${schriftH2}px` }).setOrigin(0.5));
+  ebene.add(szene.add.text(dialogX, currentY, 'Einstellungen', { fontFamily: FONT_FAMILY, color: '#ffd700', fontSize: `${schriftH2}px` }).setOrigin(0.5));
   currentY += 50;
   const tisch = zustand.aktuellerTisch;
   const darfKonf = zustand.spieler?.spielerId === tisch?.erstelltVonSpielerId && tisch?.status === 'WARTEND';
-  ebene.add(szene.add.text(dialogX, currentY, 'Tischhintergrund', { fontFamily: FONT_FAMILY, color: '#d8f3dc', fontSize: `${schriftHint}px` }).setOrigin(0.5));
+  ebene.add(szene.add.text(dialogX, currentY, 'Tischhintergrund', { fontFamily: FONT_FAMILY, color: '#f0e6ff', fontSize: `${schriftHint}px` }).setOrigin(0.5));
   currentY += 25;
   const bgOptionen: Tischhintergrund[] = ['FILZ_GRUEN', 'HOLZ_DUNKEL', 'BLAU_GRAFIK', 'RECHTECK_1', 'RECHTECK_2', 'OVAL_1', 'OVAL_2', 'RUND_1'];
   const aktuellerBgIdx = bgOptionen.indexOf(modell.tischhintergrund);
   erstellePhaserButton(szene, ebene, dialogX, currentY, dialogW - 60, 34, modell.tischhintergrund.replace(/_/g, ' '), () => {
     const naechsterIdx = (aktuellerBgIdx + 1) % bgOptionen.length;
     void appStore.aktualisiereAktuellenTischhintergrund(bgOptionen[naechsterIdx]);
-  }, zustand.wirdGeladen || !darfKonf, true);
+  }, zustand.wirdGeladen || !darfKonf, true, false, undefined, true);
   currentY += zeilenAbstand - 20;
-  ebene.add(szene.add.text(dialogX, currentY, 'KI-Schwierigkeit', { fontFamily: FONT_FAMILY, color: '#d8f3dc', fontSize: `${schriftHint}px` }).setOrigin(0.5));
+  ebene.add(szene.add.text(dialogX, currentY, 'KI-Schwierigkeit', { fontFamily: FONT_FAMILY, color: '#f0e6ff', fontSize: `${schriftHint}px` }).setOrigin(0.5));
   currentY += 25;
   const kiOptionen: Array<'LEICHT' | 'STANDARD' | 'SCHWER'> = ['LEICHT', 'STANDARD', 'SCHWER'];
   const aktuelleKi = tisch?.konfiguration.kiSchwierigkeit ?? 'STANDARD';
@@ -221,18 +225,18 @@ export function renderEinstellungsModal(
   erstellePhaserButton(szene, ebene, dialogX, currentY, dialogW - 60, 34, aktuelleKi, () => {
     const naechsterIdx = (kiIdx + 1) % kiOptionen.length;
     void appStore.aktualisiereAktuelleKiSchwierigkeit(kiOptionen[naechsterIdx]);
-  }, zustand.wirdGeladen || !darfKonf, true);
+  }, zustand.wirdGeladen || !darfKonf, true, false, undefined, true);
   currentY += zeilenAbstand - 20;
-  ebene.add(szene.add.text(dialogX, currentY, 'Animationen', { fontFamily: FONT_FAMILY, color: '#d8f3dc', fontSize: `${schriftHint}px` }).setOrigin(0.5));
+  ebene.add(szene.add.text(dialogX, currentY, 'Animationen', { fontFamily: FONT_FAMILY, color: '#f0e6ff', fontSize: `${schriftHint}px` }).setOrigin(0.5));
   currentY += 25;
   const geschw = kontext.animationsGeschwindigkeit;
   const label = geschw === Infinity ? 'Geschw.: sofort' : `Geschw.: ${geschw}x`;
   erstellePhaserButton(szene, ebene, dialogX, currentY, dialogW - 60, 34, label, () => {
     const naechste: AnimationsGeschwindigkeit = geschw === 1 ? 2 : geschw === 2 ? Infinity : 1;
     kontext.onAnimationsGeschwindigkeitAendern(naechste);
-  }, false, true);
+  }, false, true, false, undefined, true);
   currentY += 60;
   const btnW = Math.round(dialogW * 0.4);
-  erstellePhaserButton(szene, ebene, dialogX - btnW / 2 - 10, dialogY + dialogH / 2 - 40, btnW, 40, 'Zur Lobby', () => { void szene.scene.start('SpielverwaltungsSzene'); }, false, true);
-  erstellePhaserButton(szene, ebene, dialogX + btnW / 2 + 10, dialogY + dialogH / 2 - 40, btnW, 40, 'Schließen', kontext.onEinstellungenSchliessen, false, false);
+  erstellePhaserButton(szene, ebene, dialogX - btnW / 2 - 10, dialogY + dialogH / 2 - 40, btnW, 40, 'Zur Lobby', () => { void szene.scene.start('SpielverwaltungsSzene'); }, false, true, false, undefined, true);
+  erstellePhaserButton(szene, ebene, dialogX + btnW / 2 + 10, dialogY + dialogH / 2 - 40, btnW, 40, 'Schließen', kontext.onEinstellungenSchliessen, false, false, false, undefined, true);
 }

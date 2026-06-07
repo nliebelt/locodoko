@@ -86,7 +86,9 @@ export class PhaserModal extends Phaser.GameObjects.Container {
     if (aktionen.length > 0) {
       const luecke = 24;
       const buttons = aktionen.map((akt) => {
-        const btnOpt = { ...akt, x: 0, y: hoehe / 2 - 40, breite: akt.breite ?? 140, hoehe: akt.hoehe ?? 40 };
+        // PhaserModal nutzt die Balatro-Purpur-Palette → Buttons gold-primär/purpur-sekundär,
+        // passend zu den DOM-Modals. Einzelne Aktionen können `palette` überschreiben.
+        const btnOpt = { palette: 'overlay' as const, ...akt, x: 0, y: hoehe / 2 - 40, breite: akt.breite ?? 140, hoehe: akt.hoehe ?? 40 };
         const btn = new PhaserButton(scene, btnOpt);
         if (akt.testId) btn.setName(akt.testId);
         return btn;
