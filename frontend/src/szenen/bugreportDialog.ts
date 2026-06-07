@@ -22,27 +22,27 @@ export function zeigeBugreportDialog(zustand: AppZustand): void {
   modal.innerHTML = [
     '<h2 id="bugreport-titel" style="margin:0 0 16px;color:#ffd700;font-size:18px;">',
     '&#x1F41E; Bug melden</h2>',
-    '<label style="display:block;margin-bottom:4px;font-size:13px;color:#a0c0a0;">Schweregrad</label>',
+    '<label style="display:block;margin-bottom:4px;font-size:13px;color:#7a5a9a;">Schweregrad</label>',
     '<select id="bugreport-schweregrad"',
-    ' style="width:100%;margin-bottom:12px;padding:6px 8px;background:#1a2a1a;',
-    'color:#f0f0f0;border:1px solid #4ade80;border-radius:4px;font-size:14px;">',
+    ' style="width:100%;margin-bottom:12px;padding:6px 8px;background:#221530;',
+    'color:#f0e6ff;border:1px solid #4a2d6a;border-radius:4px;font-size:14px;">',
     '<option value="NIEDRIG">Niedrig — kleine Unannehmlichkeit</option>',
     '<option value="MITTEL" selected>Mittel — beeinträchtigt das Spiel</option>',
     '<option value="HOCH">Hoch — Spiel nicht nutzbar</option>',
     '<option value="KRITISCH">Kritisch — Datenverlust / Sicherheit</option>',
     '</select>',
-    '<label style="display:block;margin-bottom:4px;font-size:13px;color:#a0c0a0;">Beschreibung</label>',
+    '<label style="display:block;margin-bottom:4px;font-size:13px;color:#7a5a9a;">Beschreibung</label>',
     '<textarea id="bugreport-beschreibung" rows="5"',
-    ' style="width:100%;box-sizing:border-box;padding:8px;background:#1a2a1a;color:#f0f0f0;',
-    'border:1px solid #4ade80;border-radius:4px;font-size:14px;resize:vertical;"',
+    ' style="width:100%;box-sizing:border-box;padding:8px;background:#221530;color:#f0e6ff;',
+    'border:1px solid #4a2d6a;border-radius:4px;font-size:14px;resize:vertical;"',
     ' placeholder="Was ist passiert? Wie kann man es reproduzieren?"></textarea>',
-    '<p style="margin:6px 0 0;font-size:11px;color:#688068;">',
+    '<p style="margin:6px 0 0;font-size:11px;color:#7a5a9a;">',
     'Technischer Kontext (Correlation-IDs, Tisch, Session) wird automatisch erfasst.',
     ' Keine Screenshots oder fremde Spielerdaten.</p>',
-    '<p id="bugreport-status" style="margin:8px 0;min-height:20px;font-size:13px;color:#4ade80;"></p>',
+    '<p id="bugreport-status" style="margin:8px 0;min-height:20px;font-size:13px;color:#44ff88;"></p>',
     '<div style="display:flex;gap:12px;justify-content:flex-end;margin-top:8px;">',
     '<button id="bugreport-abbrechen"',
-    ' style="padding:8px 16px;background:transparent;color:#a0a0a0;border:1px solid #a0a0a0;',
+    ' style="padding:8px 16px;background:transparent;color:#b8a8d0;border:1px solid #7a5a9a;',
     'border-radius:4px;cursor:pointer;">Abbrechen</button>',
     '<button id="bugreport-senden"',
     ' style="padding:8px 16px;background:#ef4444;color:#fff;border:none;',
@@ -80,7 +80,7 @@ export function zeigeBugreportDialog(zustand: AppZustand): void {
       return;
     }
     sendenBtn.disabled = true;
-    statusEl.style.color = '#4ade80';
+    statusEl.style.color = '#44ff88';
     statusEl.textContent = 'Wird gesendet…';
 
     const zustandZusammenfassung = JSON.stringify({

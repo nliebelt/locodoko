@@ -16,7 +16,7 @@ Das Design ist **dunkel und technisch**, nicht weich oder verspielt. Karten sind
 
 ```text
 Hintergrund (Tisch):    #0d1f12   sehr dunkles Grün — fast schwarz, lebt durch Textur
-Surface (Panels):       #1a3a24   dunkles Grün für Karten-Rücken, Modals, Nameplates
+Surface (Panels):       #1a3a24   dunkles Grün für Karten-Rücken und In-Game-Tisch-HUD (Seitenlade, Punktestand). Modals, Nameplates und Overlays nutzen die Balatro-UI-Palette (purpur, siehe unten).
 Border (Standard):      #2d5a3d   gedämpftes Grün für Trennlinien
 Border (Akzent):        #f8f9fa   Weiß für Neo-Brutalist-Rahmen wo gewünscht
 Text (Primär):          #f8f9fa   fast Weiß

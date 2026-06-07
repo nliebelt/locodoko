@@ -287,16 +287,16 @@ export class SpielverwaltungsSzene extends Phaser.Scene {
       '<h2 id="feedback-dialog-titel" style="margin:0 0 16px;color:#ffd700;font-size:18px;">',
       '&#x1F4AC; Feedback senden</h2>',
       '<textarea id="feedback-text" rows="6"',
-      ' style="width:100%;box-sizing:border-box;padding:8px;background:#1a2a1a;color:#f0f0f0;',
-      'border:1px solid #4ade80;border-radius:4px;font-size:14px;resize:vertical;"',
+      ' style="width:100%;box-sizing:border-box;padding:8px;background:#221530;color:#f0e6ff;',
+      'border:1px solid #4a2d6a;border-radius:4px;font-size:14px;resize:vertical;"',
       ' placeholder="Dein Feedback f&#xFC;r die Beta..."></textarea>',
-      '<p id="feedback-status" style="margin:8px 0;min-height:20px;font-size:13px;color:#4ade80;"></p>',
+      '<p id="feedback-status" style="margin:8px 0;min-height:20px;font-size:13px;color:#44ff88;"></p>',
       '<div style="display:flex;gap:12px;justify-content:flex-end;margin-top:8px;">',
       '<button id="feedback-abbrechen"',
-      ' style="padding:8px 16px;background:transparent;color:#a0a0a0;border:1px solid #a0a0a0;',
+      ' style="padding:8px 16px;background:transparent;color:#b8a8d0;border:1px solid #7a5a9a;',
       'border-radius:4px;cursor:pointer;">Abbrechen</button>',
       '<button id="feedback-senden"',
-      ' style="padding:8px 16px;background:#4ade80;color:#0a1a0a;border:none;',
+      ' style="padding:8px 16px;background:#ffd700;color:#1a1020;border:none;',
       'border-radius:4px;cursor:pointer;font-weight:bold;">Senden</button>',
       '</div>'
     ].join('');
@@ -323,7 +323,7 @@ export class SpielverwaltungsSzene extends Phaser.Scene {
         return;
       }
       sendenBtn.disabled = true;
-      statusEl.style.color = '#4ade80';
+      statusEl.style.color = '#44ff88';
       statusEl.textContent = 'Wird gesendet…';
       appStore.gibFeedback(text)
         .then(() => {

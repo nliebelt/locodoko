@@ -249,10 +249,12 @@
   flex-direction: column;
   gap: 14px;
   pointer-events: auto;
-  background: rgba(11, 61, 36, 0.97);
-  border: 1px solid rgba(216, 243, 220, 0.35);
-  border-radius: 20px;
-  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.48);
+  /* Balatro-UI-Palette (purpur) + Neo-Brutalism: harte Ecken, harter Offset-Schatten.
+     Einheitliche Modal-Optik mit PhaserModal (specs/frontend-visuelles-design.md). */
+  background: #1a1020;
+  border: 2px solid #4a2d6a;
+  border-radius: 4px;
+  box-shadow: 4px 4px 0 #000;
   backdrop-filter: blur(8px);
 }
 
@@ -293,7 +295,7 @@
 
 .ui-profil-meta {
   font-size: 9px;
-  color: #a3c4a8;
+  color: #7a5a9a;
   font-family: 'Press Start 2P', monospace;
 }
 
@@ -323,7 +325,7 @@
 .ui-profil-abschnitt-titel {
   font-family: 'Press Start 2P', monospace;
   font-size: 9px;
-  color: #a3c4a8;
+  color: #7a5a9a;
   margin: 0;
   text-transform: uppercase;
   letter-spacing: 1px;
@@ -337,7 +339,7 @@
 
 .ui-profil-karte {
   background: rgba(255, 255, 255, 0.04);
-  border: 2px solid #2d5a3d;
+  border: 2px solid #4a2d6a;
   box-shadow: 2px 2px 0 #000;
   padding: 10px 8px;
   text-align: center;
@@ -352,7 +354,7 @@
 
 .ui-profil-karte span {
   font-size: 7px;
-  color: #a3c4a8;
+  color: #7a5a9a;
 }
 
 .ui-profil-karte--akzent {
@@ -361,8 +363,8 @@
 }
 
 .ui-profil-karte--positiv {
-  border-color: #4ade80;
-  color: #4ade80;
+  border-color: #44ff88;
+  color: #44ff88;
 }
 
 .ui-profil-karte--negativ {
@@ -386,12 +388,12 @@
 .ui-profil-tabelle td {
   padding: 8px 6px;
   text-align: left;
-  border-bottom: 1px solid #2d5a3d;
+  border-bottom: 1px solid #4a2d6a;
   white-space: nowrap;
 }
 
 .ui-profil-tabelle th {
-  color: #a3c4a8;
+  color: #7a5a9a;
   text-transform: uppercase;
   letter-spacing: 1px;
 }
@@ -407,7 +409,7 @@
 .ui-profil-leer {
   font-family: 'Press Start 2P', monospace;
   font-size: 9px;
-  color: #a3c4a8;
+  color: #7a5a9a;
   text-align: center;
   margin: 0;
   padding: 8px 0;
@@ -421,8 +423,8 @@
 
 .ui-profil-tab {
   background: none;
-  border: 2px solid #2d5a3d;
-  color: #a3c4a8;
+  border: 2px solid #4a2d6a;
+  color: #7a5a9a;
   font-family: 'Press Start 2P', monospace;
   font-size: 8px;
   cursor: pointer;
@@ -432,7 +434,7 @@
 }
 
 .ui-profil-tab:hover {
-  border-color: #4ade80;
+  border-color: #44ff88;
   color: #f8f9fa;
 }
 
@@ -471,7 +473,7 @@
 
 .ui-profil-re-kontra-label {
   min-width: 52px;
-  color: #a3c4a8;
+  color: #7a5a9a;
   text-transform: uppercase;
   letter-spacing: 1px;
 }
@@ -498,12 +500,12 @@
   font-size: 8px;
   color: #f8f9fa;
   background: rgba(255, 255, 255, 0.04);
-  border: 1px solid #2d5a3d;
+  border: 1px solid #4a2d6a;
   padding: 4px 8px;
 }
 
 .ui-profil-solo-typ {
-  color: #a3c4a8;
+  color: #7a5a9a;
 }
 
 @media (max-width: 980px) {
