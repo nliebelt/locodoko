@@ -48,7 +48,11 @@ test.describe('Vision Loop — UI Screenshots', () => {
     await page.evaluate(() => (window as any).__locodoko.drueckeSzenenButton('btn-neuer-tisch'));
     await page.waitForTimeout(1000);
     await screenshot(page, '12-neuer-tisch-modal', prefix);
-    await page.evaluate(() => (window as any).__locodoko.drueckeSzenenButton('btn-abbrechen'));
+    // Tisch-Modal ist seit dem Redesign ein DOM-Overlay → über den DOM-Button schliessen,
+    // nicht via Phaser-Helper (drueckeSzenenButton findet DOM-Buttons nicht → Dialog bliebe offen).
+    // Programmatischer .click() statt locator-Klick, damit der Close-Handler auch dann feuert,
+    // wenn ein anderes Overlay (z. B. Querformat-Hinweis auf Mobile) Pointer-Events abfängt.
+    await page.evaluate(() => document.querySelector<HTMLButtonElement>('#tisch-abbrechen')?.click());
 
     // ── 3. Quick Game starten ────────────────────────────────────────────────
     console.log('Starting Quick Game...');
