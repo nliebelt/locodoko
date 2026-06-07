@@ -433,11 +433,11 @@ Test-Fehler.
 | A-03 | Solo-Ankündigung (best-effort) | Gameplay | 🔲 |
 | A-04 | Bockrunde (best-effort) | Gameplay | 🔲 |
 | A-05 | Stich-Einziehen Keyframe | Gameplay | 🔲 |
-| X-01 | Fehler-Toast | Gameplay | 🔲 |
+| X-01 | Fehler-Toast | Gameplay | ✅ |
 | X-02 | Info-Toast | Gameplay | 🔲 |
 | X-03 | Debug-Modus | Gameplay | 🔲 |
 
-**Stand:** 40/46 abgedeckt → 6 offen. (S-00..S-14 ✅, T-01..T-13 ✅, F-01..F-10 ✅, A-01..A-02 ✅; offen: A-03, A-04, A-05, X-01, X-02, X-03)
+**Stand:** 41/46 abgedeckt → 5 offen. (S-00..S-14 ✅, T-01..T-13 ✅, F-01..F-10 ✅, A-01..A-02 ✅, X-01 ✅; offen: A-03, A-04, A-05, X-02, X-03)
 
 ## Abgeleitete Build-Tasks
 
