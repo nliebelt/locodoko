@@ -22,6 +22,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
@@ -175,6 +176,12 @@ public class KiTischOrchestrator {
                             veroeffentlicheKiEreignisse(tisch, ergebnis.ereignisse());
                         }
                     }
+                } catch (OptimisticLockingFailureException e) {
+                    // Erwarteter Konflikt: gleichzeitiger Mensch-Zug hat gewonnen.
+                    // Das naechste AFTER_COMMIT-Event startet automatisch einen neuen Versuch.
+                    LOGGER.warn("Optimistischer Sperr-Konflikt bei KI-Zug [position={}, tischId={}] — erneuter Versuch folgt mit naechstem Event",
+                            position, tisch.id());
+                    return;
                 } catch (Exception e) {
                     LOGGER.error("KI-Strategie-Fehler [position={}, tischId={}]: {}",
                             position, tisch.id(), e.getMessage(), e);

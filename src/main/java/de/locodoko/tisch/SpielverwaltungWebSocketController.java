@@ -10,6 +10,7 @@ import de.locodoko.tisch.TischAntwort;
 import de.locodoko.tisch.TischVerwaltungsService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.messaging.handler.annotation.DestinationVariable;
 import org.springframework.messaging.handler.annotation.MessageExceptionHandler;
 import org.springframework.messaging.handler.annotation.MessageMapping;
@@ -164,6 +165,16 @@ public class SpielverwaltungWebSocketController {
             return SpielverwaltungWebSocketFehlerAntwort.fachlicherFehler("SPIELZUG_UNGUELTIG", ue.getMessage());
         }
         return SpielverwaltungWebSocketFehlerAntwort.fachlicherFehler("ANFRAGE_UNGUELTIG", exception.getMessage());
+    }
+
+    @MessageExceptionHandler(OptimisticLockingFailureException.class)
+    @SendToUser(value = "/queue/fehler", broadcast = false)
+    public SpielverwaltungWebSocketFehlerAntwort behandleOptimistischesLock(OptimisticLockingFailureException exception) {
+        LOGGER.warn("Optimistischer Sperr-Konflikt bei WebSocket-Aktion — Client laedt Snapshot neu [{}]", exception.getMessage());
+        return SpielverwaltungWebSocketFehlerAntwort.fachlicherFehler(
+            "GLEICHZEITIGER_ZUGRIFF",
+            "Gleichzeitiger Zugriff erkannt. Bitte Spielstand neu laden."
+        );
     }
 
     @MessageExceptionHandler(Exception.class)

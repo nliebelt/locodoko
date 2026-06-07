@@ -3,6 +3,7 @@ package de.locodoko.tisch;
 import de.locodoko.karten.UngueltigerSpielzugException;
 import de.locodoko.partie.SpielzugKonfliktException;
 import org.junit.jupiter.api.Test;
+import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.http.ResponseEntity;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -46,5 +47,33 @@ class DomainExceptionHttpStatusTest {
         assertThat(response.getStatusCode().value()).isEqualTo(409);
         assertThat(response.getBody()).isNotNull();
         assertThat(response.getBody().fehlerCode()).isEqualTo("PARTIE_BEENDET");
+    }
+
+    @Test
+    void optimistischerSperrKonfliktLiefertHttp409MitGleichzeitigerZugriffCode() {
+        // WARUM: OptimisticLockingFailureException bei gleichzeitigen Zugversuchen darf NICHT als
+        // generischer 500 landen (das wäre ein irreführendes Signal für Client und Monitoring).
+        // 409 mit GLEICHZEITIGER_ZUGRIFF erlaubt dem Client, den Snapshot neu zu laden.
+        OptimisticLockingFailureException exception = new OptimisticLockingFailureException("Version conflict detected");
+
+        ResponseEntity<ApiFehlerAntwort> response = handler.behandleOptimistischesLock(exception);
+
+        assertThat(response.getStatusCode().value()).isEqualTo(409);
+        assertThat(response.getBody()).isNotNull();
+        assertThat(response.getBody().fehlerCode()).isEqualTo("GLEICHZEITIGER_ZUGRIFF");
+    }
+
+    @Test
+    void optimistischerSperrKonfliktPerWebSocketLiefertGleichzeitigerZugriffCode() {
+        // WARUM: Der WebSocket-Handler muss OptimisticLockingFailureException dediziert abfangen,
+        // damit der Client GLEICHZEITIGER_ZUGRIFF statt SERVERFEHLER empfängt — nur so kann
+        // das Frontend gezielt einen Snapshot-Reload auslösen statt einen generischen Fehler anzuzeigen.
+        SpielverwaltungWebSocketController wsController = new SpielverwaltungWebSocketController(null, null, null, null);
+        OptimisticLockingFailureException exception = new OptimisticLockingFailureException("Version conflict");
+
+        SpielverwaltungWebSocketFehlerAntwort antwort = wsController.behandleOptimistischesLock(exception);
+
+        assertThat(antwort.fehlerCode()).isEqualTo("GLEICHZEITIGER_ZUGRIFF");
+        assertThat(antwort.nachricht()).contains("neu laden");
     }
 }
