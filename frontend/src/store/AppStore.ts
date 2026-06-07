@@ -48,6 +48,13 @@ export class AppStore {
     );
     this.partie.setzeReconnectCallback((tischId) => this.tisch.reconnecteTisch(tischId));
     this.session = new SessionStore(api, echtzeit, patchFn, gibZustand, resetZustand);
+
+    // Nach STOMP-Reconnect: Snapshots neu anfordern, damit kein verpasster Zustand verloren geht.
+    echtzeit.registriereReconnectCallback?.(() => {
+      try { echtzeit.senden('/app/tische/snapshot'); } catch { /* Verbindung noch nicht bereit */ }
+      const tischId = this.zustand.aktuellerTisch?.id;
+      if (tischId) this.tisch.reconnecteTisch(tischId);
+    });
   }
 
   // --- Zustand ---

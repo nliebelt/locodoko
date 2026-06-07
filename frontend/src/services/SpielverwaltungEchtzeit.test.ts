@@ -109,5 +109,68 @@ describe('SpielverwaltungEchtzeit', () => {
     service.trennen();
     expect(clientInstance.deactivate).toHaveBeenCalled();
   });
+
+  it('reabonniert aktive Topics automatisch bei Reconnect', async () => {
+    // Erstverbindung aufbauen
+    const verbindung = service.verbinde();
+    const clientInstance = vi.mocked(Client).mock.results[0].value as MockClient;
+    clientInstance.connected = true;
+    if (clientInstance.onConnect) clientInstance.onConnect();
+    await verbindung;
+
+    // Topic abonnieren
+    const handler = vi.fn();
+    clientInstance.subscribe.mockReturnValue({ unsubscribe: vi.fn() });
+    service.abonnieren('/topic/spiel', handler);
+    expect(clientInstance.subscribe).toHaveBeenCalledTimes(1);
+
+    // Reconnect simulieren: subscribe-Mock leeren, onConnect erneut aufrufen
+    clientInstance.subscribe.mockClear();
+    clientInstance.subscribe.mockReturnValue({ unsubscribe: vi.fn() });
+    if (clientInstance.onConnect) clientInstance.onConnect();
+
+    // Topic muss nach Reconnect erneut abonniert sein — Nachrichten fliessen wieder
+    expect(clientInstance.subscribe).toHaveBeenCalledTimes(1);
+    expect(clientInstance.subscribe).toHaveBeenCalledWith('/topic/spiel', expect.any(Function));
+  });
+
+  it('ruft reconnectCallback nach Reconnect auf, aber nicht beim Erstverbinden', async () => {
+    const verbindung = service.verbinde();
+    const clientInstance = vi.mocked(Client).mock.results[0].value as MockClient;
+    clientInstance.connected = true;
+
+    const callback = vi.fn();
+    service.registriereReconnectCallback(callback);
+
+    // Erstverbindung: kein Callback
+    if (clientInstance.onConnect) clientInstance.onConnect();
+    await verbindung;
+    expect(callback).not.toHaveBeenCalled();
+
+    // Reconnect: Callback wird aufgerufen
+    if (clientInstance.onConnect) clientInstance.onConnect();
+    expect(callback).toHaveBeenCalledTimes(1);
+  });
+
+  it('entfernt Abonnement aus Reconnect-Tracking beim Abmelden', async () => {
+    const verbindung = service.verbinde();
+    const clientInstance = vi.mocked(Client).mock.results[0].value as MockClient;
+    clientInstance.connected = true;
+    if (clientInstance.onConnect) clientInstance.onConnect();
+    await verbindung;
+
+    const unsubscribeFn = vi.fn();
+    clientInstance.subscribe.mockReturnValue({ unsubscribe: unsubscribeFn });
+    const abmelden = service.abonnieren('/topic/test', vi.fn());
+
+    // Abonnement beenden
+    abmelden();
+    expect(unsubscribeFn).toHaveBeenCalled();
+
+    // Nach Reconnect darf das entfernte Abonnement nicht wiederhergestellt werden
+    clientInstance.subscribe.mockClear();
+    if (clientInstance.onConnect) clientInstance.onConnect();
+    expect(clientInstance.subscribe).not.toHaveBeenCalled();
+  });
 });
 

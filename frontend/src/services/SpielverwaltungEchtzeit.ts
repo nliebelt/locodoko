@@ -36,6 +36,12 @@ export interface EchtzeitPort {
 
   /** Trennt die WebSocket-Verbindung und gibt alle Ressourcen frei. */
   trennen(): void;
+
+  /**
+   * Registriert einen Callback, der nach jedem automatischen STOMP-Reconnect aufgerufen wird.
+   * Wird genutzt, um nach Verbindungswiederherstellung Snapshots neu anzufordern.
+   */
+  registriereReconnectCallback?(callback: () => void): void;
 }
 
 function berechneBrokerUrl(): string {
@@ -46,6 +52,12 @@ function berechneBrokerUrl(): string {
 function parseNachricht<T>(nachricht: IMessage): T {
   return JSON.parse(nachricht.body) as T;
 }
+
+type AbonnementEintrag = {
+  readonly ziel: string;
+  readonly handler: NachrichtenHandler<unknown>;
+  aktuellesAbo: StompSubscription | null;
+};
 
 /**
  * Konkrete STOMP-Implementierung des EchtzeitPort.
@@ -58,6 +70,15 @@ export class SpielverwaltungEchtzeit implements EchtzeitPort {
   private client: Client | null = null;
 
   private verbindungsPromise: Promise<void> | null = null;
+
+  /** Alle aktuell aktiven Abonnements — werden bei Reconnect automatisch wiederhergestellt. */
+  private readonly aktiveAbonnements: Array<AbonnementEintrag> = [];
+
+  /** Wird nach jedem automatischen Reconnect aufgerufen (nach Resubscription). */
+  private reconnectCallback: (() => void) | null = null;
+
+  /** Merkt ob die Verbindung bereits mindestens einmal aufgebaut wurde. */
+  private warVerbunden = false;
 
   /**
    * Baut die STOMP-Verbindung auf und wartet auf erfolgreiche Verbindung.
@@ -105,8 +126,24 @@ export class SpielverwaltungEchtzeit implements EchtzeitPort {
 
       client.onConnect = () => {
         Logger.websocket('STOMP verbunden');
+
+        // Bei Reconnect: alle aktiven Abonnements auf der neuen STOMP-Session wiederherstellen.
+        // STOMP stellt Subscriptions nach Verbindungsverlust NICHT selbst wieder her.
+        for (const eintrag of this.aktiveAbonnements) {
+          eintrag.aktuellesAbo = client.subscribe(eintrag.ziel, (nachricht) => {
+            Logger.websocket('Nachricht empfangen', { topic: eintrag.ziel, body: nachricht.body });
+            eintrag.handler(parseNachricht(nachricht));
+          });
+        }
+
+        const istReconnect = this.warVerbunden;
+        this.warVerbunden = true;
         this.verbindungsPromise = null;
         resolve();
+
+        if (istReconnect && this.reconnectCallback) {
+          this.reconnectCallback();
+        }
       };
       client.onStompError = behebeVerbindungsfehler;
       client.onWebSocketError = behebeVerbindungsfehler;
@@ -137,12 +174,18 @@ export class SpielverwaltungEchtzeit implements EchtzeitPort {
     }
 
     Logger.websocket('Subscribed', { topic: ziel });
-    const subscription: StompSubscription = client.subscribe(ziel, (nachricht) => {
+    const eintrag: AbonnementEintrag = { ziel, handler: handler as NachrichtenHandler<unknown>, aktuellesAbo: null };
+    eintrag.aktuellesAbo = client.subscribe(ziel, (nachricht) => {
       Logger.websocket('Nachricht empfangen', { topic: ziel, body: nachricht.body });
       handler(parseNachricht<T>(nachricht));
     });
+    this.aktiveAbonnements.push(eintrag);
 
-    return () => subscription.unsubscribe();
+    return () => {
+      eintrag.aktuellesAbo?.unsubscribe();
+      const index = this.aktiveAbonnements.indexOf(eintrag);
+      if (index >= 0) this.aktiveAbonnements.splice(index, 1);
+    };
   }
 
   /**
@@ -164,10 +207,16 @@ export class SpielverwaltungEchtzeit implements EchtzeitPort {
     });
   }
 
+  registriereReconnectCallback(callback: () => void): void {
+    this.reconnectCallback = callback;
+  }
+
   /** Deaktiviert den STOMP-Client und setzt alle Verbindungsreferenzen zurück. */
   trennen(): void {
     this.client?.deactivate();
     this.client = null;
     this.verbindungsPromise = null;
+    this.aktiveAbonnements.length = 0;
+    this.warVerbunden = false;
   }
 }
