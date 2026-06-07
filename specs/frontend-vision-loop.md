@@ -328,14 +328,14 @@ Test-Fehler.
 - **Screenshot-ID:** `a01-austeilen`
 - **Trigger:** Nach SPIEL_GESTARTET bei `0.2×`; Austeilen dauert ~2s → bei `0.2×` ~10s. Screenshot nach ca. 3 von 10s.
 - **Elemente:** Karten fliegen vom Geber zu allen Spielern, noch nicht alle angekommen
-- **Status:** 🔲
+- **Status:** ✅
 
 #### A-02 Ansage-Banner (Re / Kontra)
 
 - **Screenshot-ID:** `a02-ansage-banner`
 - **Trigger:** ANSAGE_ERFOLGT-Event bei `0.2×`; Banner erscheint ~1.2s → bei `0.2×` ~6s sichtbar
 - **Elemente:** Großes "RE" (gold) oder "KONTRA" (blau) Banner mittig
-- **Status:** 🔲
+- **Status:** ✅
 
 #### A-03 Solo/Spieltyp-Ankündigung
 
@@ -428,8 +428,8 @@ Test-Fehler.
 | F-08 | Flash Doppelkopf (best-effort) | Gameplay | ✅ |
 | F-09 | Flash Hochzeit (best-effort) | Gameplay | ✅ |
 | F-10 | Flash SpielBeendet | Gameplay | ✅ |
-| A-01 | Austeilen Keyframe | Gameplay | 🔲 |
-| A-02 | Ansage-Banner | Gameplay | 🔲 |
+| A-01 | Austeilen Keyframe | Gameplay | ✅ |
+| A-02 | Ansage-Banner | Gameplay | ✅ |
 | A-03 | Solo-Ankündigung (best-effort) | Gameplay | 🔲 |
 | A-04 | Bockrunde (best-effort) | Gameplay | 🔲 |
 | A-05 | Stich-Einziehen Keyframe | Gameplay | 🔲 |
@@ -437,7 +437,7 @@ Test-Fehler.
 | X-02 | Info-Toast | Gameplay | 🔲 |
 | X-03 | Debug-Modus | Gameplay | 🔲 |
 
-**Stand:** 38/46 abgedeckt → 8 offen. (S-00..S-14 ✅, T-01..T-13 ✅, F-01..F-10 ✅; offen: A-01, A-02, A-03, A-04, A-05, X-01, X-02, X-03)
+**Stand:** 40/46 abgedeckt → 6 offen. (S-00..S-14 ✅, T-01..T-13 ✅, F-01..F-10 ✅, A-01..A-02 ✅; offen: A-03, A-04, A-05, X-01, X-02, X-03)
 
 ## Abgeleitete Build-Tasks
 

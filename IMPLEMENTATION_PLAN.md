@@ -4,7 +4,7 @@
 
 ## Notiz
 
-**Session 90 (2026-06-06) — FEAT-VISION-LOOP-FLASH-TEXTS-2 abgeschlossen:** F-01..F-10 waren bereits vollständig im Testcode vorhanden (Zeilen 60, 92, 125, 150-246 von `vision-loop.spec.ts`), aber die Spec war veraltet. Umfassende Spec-Aktualisierung: F-01..F-10 → ✅, T-05/T-08 → ✅ (Session 83), S-00/S-06..S-14 → ✅ (Sessions 81-86). Stand jetzt 38/46 abgedeckt. **Nächster autonomer Task: FEAT-VISION-LOOP-ANIMATIONS-2 (H.4) — A-01 (Austeilen) und A-02 (Ansage-Banner) sind bereits im Test (Zeilen 61, 274); es ist erneut ein reines Spec-Update + Planabschluss.**
+**Session 91 (2026-06-07) — FEAT-VISION-LOOP-ANIMATIONS-2 abgeschlossen:** A-01 (Austeilen, Zeile 61) und A-02 (Ansage-Banner, Zeile 274) waren bereits vollständig im Testcode vorhanden, aber die Spec war veraltet. Reines Spec-Update: A-01..A-02 → ✅, Stand jetzt 40/46 abgedeckt. **Nächster autonomer Task: FEAT-VISION-LOOP-TOASTS (H.5) — X-01 (Fehler-Toast via ungültige Karte) ist noch offen und muss implementiert werden.**
 
 **Session 89 (2026-06-06) — FE-NEUER-TISCH-MODAL-REDESIGN abgeschlossen:** Phaser-basiertes Modal durch HTML-DOM-Dialog (`tischErstellenDialog.ts`) ersetzt — gemäß Spec (Tisch-Konfig-Modal = HTML-DOM). Neue Controls: editierbarer Tischname (HTML-Input, vorbelegt mit `'Tisch '+Gastname`), Preset-Cycler als `< Preset-Label >` mit styled Buttons, Checkbox „Privater Tisch" statt klobigem Toggle. Modal kompakt, kein totes Band. PhaserModal-Import + `isPrivat`/`currentPresetIndex`-Felder aus `SpielverwaltungsSzene` entfernt. Tests (2 betroffene) auf DOM-Assertions umgestellt. 294/294 FE-Tests grün, Build+Lint sauber. Vision-Loop (4+2 Tests grün, 1.7 min + 26s): `desktop-12-neuer-tisch-modal.png` zeigt editierten Name, Preset, Checkbox, klare Buttons — kein Clipping, kein totes Band. **`anzahlSpiele`-Support fehlt in der API (`TischStore.erstelleTischMitPreset` hat keinen entsprechenden Parameter) → wird als eigener Folge-Task unter Entdeckungen eingetragen.** Nächster autonomer Task: FEAT-VISION-LOOP-FLASH-TEXTS-2 (H.3).
 
@@ -165,7 +165,7 @@ Nächste offene Tasks — Fertigstellung (Session 30). **Zwei Meilensteine:** **
 3. [x] **FEAT-VISION-LOOP-FLASH-TEXTS-2** (autonom, best-effort) — `e2e/tests/vision-loop.spec.ts` erweitern, um die verbleibenden Flash-Text-Animationen `F-01` (SpielGestartet), `F-02` (VorbehaltErwartet), `F-03` (NaechsterSpieler), `F-10` (SpielBeendet) abzudecken. Die best-effort-Strategie (0.2x Speed, kein Fehler bei ausbleibendem Event) wird wiederverwendet.
     **DoD:** Test `vision-loop` versucht, die Flash-Texte zu erfassen; Spec-Status auf ✅.
 
-4. [ ] **FEAT-VISION-LOOP-ANIMATIONS-2** (autonom, best-effort) — `e2e/tests/vision-loop.spec.ts` erweitern, um die verbleibenden Animations-Keyframes `A-01` (Karten-Austeilen) und `A-02` (Ansage-Banner) abzudecken.
+4. [x] **FEAT-VISION-LOOP-ANIMATIONS-2** (autonom, best-effort) — `e2e/tests/vision-loop.spec.ts` erweitern, um die verbleibenden Animations-Keyframes `A-01` (Karten-Austeilen) und `A-02` (Ansage-Banner) abzudecken.
     **DoD:** Test `vision-loop` versucht, die Animationen zu erfassen; Spec-Status auf ✅.
 
 5. [ ] **FEAT-VISION-LOOP-TOASTS** (autonom) — `e2e/tests/vision-loop.spec.ts` erweitern, um den Fehler-Toast `X-01` via `spieleKarteViaTestApi(page, 'ungueltige-karte-id')` auszulösen und zu screenshotten.
