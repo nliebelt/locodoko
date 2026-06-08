@@ -45,32 +45,32 @@ type SpielerAnsicht = TischAnsichtModell['spieler'][number];
 interface FaecherKontext {
   offen: boolean;
   sichtbare: KarteAntwort[] | undefined;
-  kAnzahl: number;
-  armutK: Set<string> | null;
-  hatInt: boolean;
-  kG: { w: number; h: number };
-  kAb: { horizontal: number; vertikal: number };
-  auswV: number;
-  elevV: number;
-  istH: boolean;
-  stX: number;
-  pos: { kartenX: number; kartenY: number };
-  fB: number;
-  fS: number;
-  istGesp: boolean;
-  animA: boolean;
+  kartenAnzahl: number;
+  armutKartenIds: Set<string> | null;
+  hatInteraktiveKarten: boolean;
+  kartenGroesse: { w: number; h: number };
+  kartenAbstand: { horizontal: number; vertikal: number };
+  auswahlVersatz: number;
+  elevationVersatz: number;
+  istHorizontal: boolean;
+  startX: number;
+  position: { kartenX: number; kartenY: number };
+  faecherBasisbreite: number;
+  faecherSchrittweite: number;
+  istGespiegelt: boolean;
+  animationAktiv: boolean;
   aktuellerVorbehalt: VorbehaltAnsage | null;
   angezeigteKarten: KarteAntwort[] | undefined;
 }
 
 /** Pro Karte berechnete Zustands-Flags und der vertikale Versatz. */
 interface KartenFlags {
-  istSp: boolean;
-  istArm: boolean;
-  istInt: boolean;
-  istAus: boolean;
-  istTast: boolean;
-  bV: number;
+  istSpielbar: boolean;
+  istArmutAuswahl: boolean;
+  istInteraktiv: boolean;
+  istAusgewaehlt: boolean;
+  istTastaturFokus: boolean;
+  vertikalerVersatz: number;
 }
 
 /**
@@ -170,25 +170,25 @@ export class TischKartenRenderer {
   renderKartenFaecher(ebene: Phaser.GameObjects.Container, layout: TischLayout, spieler: SpielerAnsicht, modell: TischAnsichtModell): void {
     const f = this.berechneFaecherKontext(layout, spieler, modell);
     this.bereinigePersistenteEigeneKarten(spieler, f.sichtbare);
-    for (let i = 0; i < f.kAnzahl; i++) {
+    for (let i = 0; i < f.kartenAnzahl; i++) {
       this.rendereHandkarte(ebene, spieler, modell, f, i);
     }
   }
 
   /** Berechnet die für alle Karten eines Spielers gemeinsamen Fächer-Konstanten. */
   private berechneFaecherKontext(layout: TischLayout, spieler: SpielerAnsicht, modell: TischAnsichtModell): FaecherKontext {
-    const pos = layout[spieler.position];
+    const position = layout[spieler.position];
     const offen = spieler.istSelbst || (modell.debugModus && spieler.sichtbareHandkarten.length > 0);
     const sichtbare = spieler.sichtbareHandkarten.length > 0 ? spieler.sichtbareHandkarten : undefined;
-    const kAnzahl = sichtbare?.length ?? Math.max(spieler.verbleibendeKarten, 0);
-    const armutK = spieler.istSelbst ? this.ermittleArmutAuswahl(modell, sichtbare ?? []) : null;
-    const hatInt = spieler.istSelbst && (modell.spielbareKarten.length > 0 || armutK !== null);
-    const { width: szB, height: szH } = this.szene.scale.gameSize;
-    const kG = berechneKartenGroesse(szB);
-    const kAb = berechneKartenAbstand(szB, szH);
-    const istH = spieler.position === SPIELER_POSITION.SUED || spieler.position === SPIELER_POSITION.NORD;
-    const stX = istH ? szB / 2 - ((kAnzahl - 1) * kAb.horizontal) / 2 : pos.kartenX;
-    const [fB, fS]: [number, number] = { SUED: [-12, 5], NORD: [12, -5], WEST: [78, 5], OST: [102, -5] }[spieler.position] as [number, number];
+    const kartenAnzahl = sichtbare?.length ?? Math.max(spieler.verbleibendeKarten, 0);
+    const armutKartenIds = spieler.istSelbst ? this.ermittleArmutAuswahl(modell, sichtbare ?? []) : null;
+    const hatInteraktiveKarten = spieler.istSelbst && (modell.spielbareKarten.length > 0 || armutKartenIds !== null);
+    const { width: szenenBreite, height: szenenHoehe } = this.szene.scale.gameSize;
+    const kartenGroesse = berechneKartenGroesse(szenenBreite);
+    const kartenAbstand = berechneKartenAbstand(szenenBreite, szenenHoehe);
+    const istHorizontal = spieler.position === SPIELER_POSITION.SUED || spieler.position === SPIELER_POSITION.NORD;
+    const startX = istHorizontal ? szenenBreite / 2 - ((kartenAnzahl - 1) * kartenAbstand.horizontal) / 2 : position.kartenX;
+    const [faecherBasisbreite, faecherSchrittweite]: [number, number] = { SUED: [-12, 5], NORD: [12, -5], WEST: [78, 5], OST: [102, -5] }[spieler.position] as [number, number];
     const vorbehaltIdx = Math.min(this.kontext.getTastaturVorbehaltIndex(), modell.moeglicheVorbehalte.length - 1);
     const aktuellerVorbehalt = spieler.istSelbst && modell.moeglicheVorbehalte.length > 0
       ? modell.moeglicheVorbehalte[vorbehaltIdx]
@@ -197,67 +197,67 @@ export class TischKartenRenderer {
       ? sortiereKartenFuerVorbehalt(sichtbare, aktuellerVorbehalt)
       : sichtbare;
     return {
-      offen, sichtbare, kAnzahl, armutK, hatInt, kG, kAb,
-      auswV: Math.round(kG.h * 0.19),
-      elevV: Math.round(kG.h * 0.22),
-      istH, stX, pos, fB, fS,
-      istGesp: spieler.position === SPIELER_POSITION.NORD || spieler.position === SPIELER_POSITION.OST,
-      animA: !!this.kontext.getWartendeKartenId(),
+      offen, sichtbare, kartenAnzahl, armutKartenIds, hatInteraktiveKarten, kartenGroesse, kartenAbstand,
+      auswahlVersatz: Math.round(kartenGroesse.h * 0.19),
+      elevationVersatz: Math.round(kartenGroesse.h * 0.22),
+      istHorizontal, startX, position, faecherBasisbreite, faecherSchrittweite,
+      istGespiegelt: spieler.position === SPIELER_POSITION.NORD || spieler.position === SPIELER_POSITION.OST,
+      animationAktiv: !!this.kontext.getWartendeKartenId(),
       aktuellerVorbehalt, angezeigteKarten,
     };
   }
 
   /** Rendert eine einzelne Handkarte des Fächers (Geometrie, Sprite, Darstellung, Interaktion). */
   private rendereHandkarte(ebene: Phaser.GameObjects.Container, spieler: SpielerAnsicht, modell: TischAnsichtModell, f: FaecherKontext, i: number): void {
-    const fI = f.istGesp ? f.kAnzahl - 1 - i : i;
-    const ab = f.istH ? fI * f.kAb.horizontal : fI * f.kAb.vertikal;
-    const x = f.istH ? f.stX + ab : f.pos.kartenX;
-    const y = f.istH ? f.pos.kartenY : f.pos.kartenY + ab;
-    const w = f.fB + fI * f.fS;
-    const k = f.angezeigteKarten?.[i];
-    if (k && this.kontext.getWartendeKartenId() === k.id) return;
+    const faecherIndex = f.istGespiegelt ? f.kartenAnzahl - 1 - i : i;
+    const abstand = f.istHorizontal ? faecherIndex * f.kartenAbstand.horizontal : faecherIndex * f.kartenAbstand.vertikal;
+    const x = f.istHorizontal ? f.startX + abstand : f.position.kartenX;
+    const y = f.istHorizontal ? f.position.kartenY : f.position.kartenY + abstand;
+    const winkel = f.faecherBasisbreite + faecherIndex * f.faecherSchrittweite;
+    const karte = f.angezeigteKarten?.[i];
+    if (karte && this.kontext.getWartendeKartenId() === karte.id) return;
 
-    const flags = this.berechneKartenFlags(spieler, modell, f, k);
-    const { sprite: kA, wiederverwendet } = this.erstelleOderAktualisiereKartenSprite(ebene, spieler, f.offen, k, x, y + flags.bV, f.kG);
+    const flags = this.berechneKartenFlags(spieler, modell, f, karte);
+    const { sprite: kartenAnsicht, wiederverwendet } = this.erstelleOderAktualisiereKartenSprite(ebene, spieler, f.offen, karte, x, y + flags.vertikalerVersatz, f.kartenGroesse);
 
-    if (spieler.istSelbst && k) kA.setDepth(2 + i * 0.01);
+    if (spieler.istSelbst && karte) kartenAnsicht.setDepth(2 + i * 0.01);
 
-    const istWartend = !!k && this.kontext.getWartendeKartenId() === k.id;
-    kA.setVisible(!istWartend);
+    const istWartend = !!karte && this.kontext.getWartendeKartenId() === karte.id;
+    kartenAnsicht.setVisible(!istWartend);
 
-    kA.setAngle(w).setAlpha(this.kartenAlpha(f, flags.istInt, k));
-    if (flags.istAus) kA.markiereAuswahl(); else if (flags.istTast) kA.markiereTastaturfokus(); else kA.loescheMarkierung();
+    kartenAnsicht.setAngle(winkel).setAlpha(this.kartenAlpha(f, flags.istInteraktiv, karte));
+    if (flags.istAusgewaehlt) kartenAnsicht.markiereAuswahl(); else if (flags.istTastaturFokus) kartenAnsicht.markiereTastaturfokus(); else kartenAnsicht.loescheMarkierung();
 
-    if (k) this.handKartenobjekte.set(k.id, { wurzel: kA, bild: kA.bildObjekt });
+    if (karte) this.handKartenobjekte.set(karte.id, { wurzel: kartenAnsicht, bild: kartenAnsicht.bildObjekt });
 
-    this.setzeKartenInteraktion(kA, k, wiederverwendet, f.offen, flags.istInt, flags.istSp, f.aktuellerVorbehalt, y, flags.bV, f.kG.h, modell);
+    this.setzeKartenInteraktion(kartenAnsicht, karte, wiederverwendet, f.offen, flags.istInteraktiv, flags.istSpielbar, f.aktuellerVorbehalt, y, flags.vertikalerVersatz, f.kartenGroesse.h, modell);
   }
 
   /** Ermittelt die Zustands-Flags und den vertikalen Versatz für eine einzelne Karte. */
-  private berechneKartenFlags(spieler: SpielerAnsicht, modell: TischAnsichtModell, f: FaecherKontext, k: KarteAntwort | undefined): KartenFlags {
-    const istSp = k ? modell.spielbareKarten.includes(k.id) : false;
-    const istArm = k ? (f.armutK?.has(k.id) ?? false) : false;
-    const istInt = !f.animA && (istSp || istArm);
-    const istAus = k ? this.kontext.getAusgewaehlteArmutKarten().has(k.id) : false;
-    const istTast = spieler.istSelbst && k !== undefined && this.kontext.getTastaturKarteIndex() >= 0
-      && modell.spielbareKarten[this.kontext.getTastaturKarteIndex()] === k.id;
-    const istVorbEleviert = f.aktuellerVorbehalt && k ? istHervorgehobeneKarteImVorbehalt(k, f.aktuellerVorbehalt) : false;
-    const bV = (istAus || istTast) ? -f.auswV : (f.aktuellerVorbehalt && !istVorbEleviert ? f.elevV : 0);
-    return { istSp, istArm, istInt, istAus, istTast, bV };
+  private berechneKartenFlags(spieler: SpielerAnsicht, modell: TischAnsichtModell, f: FaecherKontext, karte: KarteAntwort | undefined): KartenFlags {
+    const istSpielbar = karte ? modell.spielbareKarten.includes(karte.id) : false;
+    const istArmutAuswahl = karte ? (f.armutKartenIds?.has(karte.id) ?? false) : false;
+    const istInteraktiv = !f.animationAktiv && (istSpielbar || istArmutAuswahl);
+    const istAusgewaehlt = karte ? this.kontext.getAusgewaehlteArmutKarten().has(karte.id) : false;
+    const istTastaturFokus = spieler.istSelbst && karte !== undefined && this.kontext.getTastaturKarteIndex() >= 0
+      && modell.spielbareKarten[this.kontext.getTastaturKarteIndex()] === karte.id;
+    const istVorbehaltEleviert = f.aktuellerVorbehalt && karte ? istHervorgehobeneKarteImVorbehalt(karte, f.aktuellerVorbehalt) : false;
+    const vertikalerVersatz = (istAusgewaehlt || istTastaturFokus) ? -f.auswahlVersatz : (f.aktuellerVorbehalt && !istVorbehaltEleviert ? f.elevationVersatz : 0);
+    return { istSpielbar, istArmutAuswahl, istInteraktiv, istAusgewaehlt, istTastaturFokus, vertikalerVersatz };
   }
 
   /** Deckkraft einer Handkarte: 0 beim Austeilen, gedimmt für nicht-spielbare Karten bei aktiver Interaktion. */
-  private kartenAlpha(f: FaecherKontext, istInt: boolean, k: KarteAntwort | undefined): number {
+  private kartenAlpha(f: FaecherKontext, istInteraktiv: boolean, karte: KarteAntwort | undefined): number {
     if (this.kontext.getAusteilenAktiv()) return 0;
     if (!f.offen) return 0.92;
-    return (f.hatInt && k && !istInt) ? 0.45 : 1;
+    return (f.hatInteraktiveKarten && karte && !istInteraktiv) ? 0.45 : 1;
   }
 
   bereinigePersistenteEigeneKarten(spieler: TischAnsichtModell['spieler'][number], sichtbare: KarteAntwort[] | undefined): void {
     if (!spieler.istSelbst || !sichtbare) return;
-    const aktuelleIds = new Set(sichtbare.map((k) => k.id));
-    for (const [id, kA] of this.persistenteEigeneKarten) {
-      if (!aktuelleIds.has(id)) { kA.destroy(); this.persistenteEigeneKarten.delete(id); }
+    const aktuelleIds = new Set(sichtbare.map((karte) => karte.id));
+    for (const [id, kartenAnsicht] of this.persistenteEigeneKarten) {
+      if (!aktuelleIds.has(id)) { kartenAnsicht.destroy(); this.persistenteEigeneKarten.delete(id); }
     }
   }
 
@@ -265,97 +265,97 @@ export class TischKartenRenderer {
     ebene: Phaser.GameObjects.Container,
     spieler: TischAnsichtModell['spieler'][number],
     offen: boolean,
-    k: KarteAntwort | undefined,
+    karte: KarteAntwort | undefined,
     x: number,
     y: number,
-    kG: { w: number; h: number }
+    kartenGroesse: { w: number; h: number }
   ): { sprite: Kartenansicht; wiederverwendet: boolean } {
-    if (spieler.istSelbst && k && this.persistenteEigeneKarten.has(k.id)) {
-      const kA = this.persistenteEigeneKarten.get(k.id)!;
-      kA.gleiteZu(x, y, 150);
-      return { sprite: kA, wiederverwendet: true };
+    if (spieler.istSelbst && karte && this.persistenteEigeneKarten.has(karte.id)) {
+      const kartenAnsicht = this.persistenteEigeneKarten.get(karte.id)!;
+      kartenAnsicht.gleiteZu(x, y, 150);
+      return { sprite: kartenAnsicht, wiederverwendet: true };
     }
-    const kA = offen
-      ? this.erstelleKartenansicht(x, y, kG.w, kG.h, k ? { karte: k } : {})
-      : this.erstelleKartenansicht(x, y, kG.w, kG.h, { verdeckt: true });
-    if (spieler.istSelbst && k) {
-      kA.setDepth(2);
-      this.persistenteEigeneKarten.set(k.id, kA);
+    const kartenAnsicht = offen
+      ? this.erstelleKartenansicht(x, y, kartenGroesse.w, kartenGroesse.h, karte ? { karte } : {})
+      : this.erstelleKartenansicht(x, y, kartenGroesse.w, kartenGroesse.h, { verdeckt: true });
+    if (spieler.istSelbst && karte) {
+      kartenAnsicht.setDepth(2);
+      this.persistenteEigeneKarten.set(karte.id, kartenAnsicht);
     } else {
-      ebene.add(kA);
+      ebene.add(kartenAnsicht);
     }
-    return { sprite: kA, wiederverwendet: false };
+    return { sprite: kartenAnsicht, wiederverwendet: false };
   }
 
   setzeKartenInteraktion(
-    kA: Kartenansicht,
-    k: KarteAntwort | undefined,
+    kartenAnsicht: Kartenansicht,
+    karte: KarteAntwort | undefined,
     istWiederverwendet: boolean,
     offen: boolean,
-    istInt: boolean,
-    istSp: boolean,
+    istInteraktiv: boolean,
+    istSpielbar: boolean,
     aktuellerVorbehalt: VorbehaltAnsage | null,
     y: number,
-    bV: number,
+    vertikalerVersatz: number,
     kartenHoehe: number,
     modell: TischAnsichtModell
   ): void {
-    const inputVerfuegbar = kA.active && kA.scene?.input?.enabled;
+    const inputVerfuegbar = kartenAnsicht.active && kartenAnsicht.scene?.input?.enabled;
 
-    if (aktuellerVorbehalt && offen && k && inputVerfuegbar) {
-      if (istWiederverwendet) this.entferneKartenListener(kA);
-      kA.setInteractive({ useHandCursor: true });
-      kA.on('pointerdown', () => { void appStore.meldeVorbehalt(aktuellerVorbehalt); });
+    if (aktuellerVorbehalt && offen && karte && inputVerfuegbar) {
+      if (istWiederverwendet) this.entferneKartenListener(kartenAnsicht);
+      kartenAnsicht.setInteractive({ useHandCursor: true });
+      kartenAnsicht.on('pointerdown', () => { void appStore.meldeVorbehalt(aktuellerVorbehalt); });
       return;
     }
 
-    if (offen && k && istInt && inputVerfuegbar) {
-      if (istWiederverwendet) this.entferneKartenListener(kA);
-      this.setzeSpielInteraktion(kA, k, istSp, y, bV, kartenHoehe, modell);
+    if (offen && karte && istInteraktiv && inputVerfuegbar) {
+      if (istWiederverwendet) this.entferneKartenListener(kartenAnsicht);
+      this.setzeSpielInteraktion(kartenAnsicht, karte, istSpielbar, y, vertikalerVersatz, kartenHoehe, modell);
       return;
     }
 
-    if (offen && k && !istInt && istWiederverwendet) {
-      this.deaktiviereKartenInteraktion(kA);
+    if (offen && karte && !istInteraktiv && istWiederverwendet) {
+      this.deaktiviereKartenInteraktion(kartenAnsicht);
     }
   }
 
   /** Entfernt die Pointer-Listener einer wiederverwendeten Karte, bevor neue gesetzt werden. */
-  private entferneKartenListener(kA: Kartenansicht): void {
-    kA.removeAllListeners?.('pointerover');
-    kA.removeAllListeners?.('pointerout');
-    kA.removeAllListeners?.('pointerdown');
+  private entferneKartenListener(kartenAnsicht: Kartenansicht): void {
+    kartenAnsicht.removeAllListeners?.('pointerover');
+    kartenAnsicht.removeAllListeners?.('pointerout');
+    kartenAnsicht.removeAllListeners?.('pointerdown');
   }
 
   /** Macht eine spielbare/auswählbare Karte interaktiv (Hover-Anhebung + Klick spielt/wählt sie). */
-  private setzeSpielInteraktion(kA: Kartenansicht, k: KarteAntwort, istSp: boolean, y: number, bV: number, kartenHoehe: number, modell: TischAnsichtModell): void {
-    kA.setInteractive({ useHandCursor: true });
-    const hV = Math.round(kartenHoehe * 0.08);
-    kA.on('pointerover', () => kA.setY(y + bV - hV));
-    kA.on('pointerout', () => kA.setY(y + bV));
-    kA.on('pointerdown', () => {
-      if (istSp) {
-        this.kontext.onSpielKarteMitAnimation(k.id);
+  private setzeSpielInteraktion(kartenAnsicht: Kartenansicht, karte: KarteAntwort, istSpielbar: boolean, y: number, vertikalerVersatz: number, kartenHoehe: number, modell: TischAnsichtModell): void {
+    kartenAnsicht.setInteractive({ useHandCursor: true });
+    const hoverVersatz = Math.round(kartenHoehe * 0.08);
+    kartenAnsicht.on('pointerover', () => kartenAnsicht.setY(y + vertikalerVersatz - hoverVersatz));
+    kartenAnsicht.on('pointerout', () => kartenAnsicht.setY(y + vertikalerVersatz));
+    kartenAnsicht.on('pointerdown', () => {
+      if (istSpielbar) {
+        this.kontext.onSpielKarteMitAnimation(karte.id);
       } else {
-        this.kontext.onToggleArmutKarte(k.id, modell.armutAktion?.kartenAnzahl ?? 0);
+        this.kontext.onToggleArmutKarte(karte.id, modell.armutAktion?.kartenAnzahl ?? 0);
         this.kontext.onRenderTisch();
       }
     });
   }
 
   /** Deaktiviert die Interaktion einer nicht mehr spielbaren, wiederverwendeten Karte. */
-  private deaktiviereKartenInteraktion(kA: Kartenansicht): void {
-    if (!(kA.active && kA.scene && kA.input?.enabled)) return;
+  private deaktiviereKartenInteraktion(kartenAnsicht: Kartenansicht): void {
+    if (!(kartenAnsicht.active && kartenAnsicht.scene && kartenAnsicht.input?.enabled)) return;
     try {
-      kA.disableInteractive();
-      this.entferneKartenListener(kA);
+      kartenAnsicht.disableInteractive();
+      this.entferneKartenListener(kartenAnsicht);
     } catch (e) {
       Logger.error('Fehler beim Deaktivieren der Interaktion', e);
     }
   }
 
   loeseEigeneKartenAuf(): void {
-    for (const kA of this.persistenteEigeneKarten.values()) kA.destroy();
+    for (const kartenAnsicht of this.persistenteEigeneKarten.values()) kartenAnsicht.destroy();
     this.persistenteEigeneKarten.clear();
   }
 
