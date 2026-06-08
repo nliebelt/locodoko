@@ -229,9 +229,8 @@ public class Partie extends AbstraktePersistenzEntity {
         List<Spiel> neueAbgeschlosseneSpiele = new ArrayList<>(abgeschlosseneSpieleIntern);
         neueAbgeschlosseneSpiele.add(spiel);
 
-        boolean warSolo = spiel.parteien() != null && spiel.parteien().spielerVon(Partei.RE).size() == 1;
-        SpielerPosition neuerGeber = warSolo ? spiel.geber() : spiel.geber().naechsteImUhrzeigersinn();
-        SpielerPosition neuerSolist = warSolo ? spiel.parteien().spielerVon(Partei.RE).get(0) : null;
+        SpielerPosition neuerGeber = bestimmeNaechstenGeber(spiel);
+        SpielerPosition neuerSolist = warSolo(spiel) ? spiel.parteien().spielerVon(Partei.RE).get(0) : null;
         return new Partie(
             anzahlSpiele,
             spielregeln,
@@ -454,13 +453,19 @@ public class Partie extends AbstraktePersistenzEntity {
 
         if (!abgeschlosseneSpieleIntern.isEmpty()) {
             Spiel letztesAbgeschlossenes = abgeschlosseneSpieleIntern.getLast();
-            boolean warSolo = letztesAbgeschlossenes.hatParteien()
-                && letztesAbgeschlossenes.parteien().spielerVon(Partei.RE).size() == 1;
-            this.naechsterGeber = warSolo ? letztesAbgeschlossenes.geber() : letztesAbgeschlossenes.geber().naechsteImUhrzeigersinn();
+            this.naechsterGeber = bestimmeNaechstenGeber(letztesAbgeschlossenes);
         } else if (aktuellesSpiel != null) {
             this.naechsterGeber = aktuellesSpiel.geber();
         } else {
             this.naechsterGeber = SpielerPosition.SUED;
         }
+    }
+
+    private SpielerPosition bestimmeNaechstenGeber(Spiel spiel) {
+        return warSolo(spiel) ? spiel.geber() : spiel.geber().naechsteImUhrzeigersinn();
+    }
+
+    private boolean warSolo(Spiel spiel) {
+        return spiel.hatParteien() && spiel.parteien().spielerVon(Partei.RE).size() == 1;
     }
 }
