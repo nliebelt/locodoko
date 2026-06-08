@@ -6,6 +6,28 @@ import { nameplatePositionFuer } from './layout';
 import { Logger } from '../logger';
 import { ansageBadgeTyp } from '../ui/Nameplate';
 
+const FEHLERCODE_KLARTEXT: Record<string, string> = {
+  KARTE_UNGUELTIG: 'Diese Karte kann jetzt nicht gespielt werden.',
+  SPIELZUG_UNGUELTIG: 'Ungültiger Spielzug.',
+  VORBEHALT_UNGUELTIG: 'Ungültiger Vorbehalt.',
+  ARMUT_ANTWORT_UNGUELTIG: 'Ungültige Armut-Antwort.',
+  ANSAGE_UNGUELTIG: 'Ungültige Ansage.',
+  SPIELER_NICHT_AM_TISCH: 'Du sitzt nicht an diesem Tisch.',
+  PARTIE_NICHT_AKTIV: 'Aktuell läuft keine Partie.',
+  SPIEL_NICHT_AKTIV: 'Aktuell ist kein Spiel aktiv.',
+  GLEICHZEITIGER_ZUGRIFF: 'Gleichzeitiger Zugriff – bitte versuche es erneut.',
+  SPIELZUG_KEIN_AUFSPIELER: 'Du bist nicht der Aufspieler.',
+  ANFRAGE_UNGUELTIG: 'Ungültige Anfrage.',
+  SPIELER_SESSION_UNGUELTIG: 'Sitzung ungültig – bitte erneut anmelden.',
+  RATE_LIMIT_UEBERSCHRITTEN: 'Zu viele Anfragen – bitte warte einen Moment.',
+  UNGUELTIGES_PRESET: 'Unbekannte Regelvoreinstellung.',
+  EINLADUNGSCODE_UNGUELTIG: 'Ungültiger Einladungscode.',
+};
+
+function fehlerCodeKlartext(code: string): string {
+  return FEHLERCODE_KLARTEXT[code] ?? `Aktion abgelehnt (${code}).`;
+}
+
 export class TischEreignisHandler {
   constructor(private szene: TischSzene) {}
 
@@ -177,7 +199,7 @@ export class TischEreignisHandler {
 
       case 'AKTION_ABGELEHNT': {
         const e = ereignis as AktionAbgelehntEreignis;
-        this.szene.toastManager?.zeige({ text: e.fehlerCode, typ: 'fehler' });
+        this.szene.toastManager?.zeige({ text: fehlerCodeKlartext(e.fehlerCode), typ: 'fehler' });
         const loco = window.__locodoko;
         if (loco) loco._letzterFehlerToast = e.fehlerCode;
         break;
