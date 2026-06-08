@@ -31,4 +31,4 @@ Der Spielkern ist **feature-complete** (alle fachlichen Specs *Implementiert/Sta
 - **Roadmap (fachlich):** `specs/fertigstellung.md` — Backlog, Live-Gang-Blocker, offene Entscheidungen.
 - **Task-Liste (operativ):** `IMPLEMENTATION_PLAN.md`, Sektion „Fertigstellung — Öffentlicher Betrieb" — kleingranular mit „Erste Datei zuerst"-Hinweisen.
 
-Erster, blockierender Task: **BUG-PROD-CHANGELOG** (prod-Profil lädt fehlende Liquibase-Changelog-Datei → App bootet nicht gegen Postgres). Hosting-Anforderung: EU/DE.
+Erster, blockierender Task: **BUG-PROD-CHANGELOG** (behoben, prod-Boot gegen echtes PG via DEPLOY-COMPOSE-SMOKE noch offen). Hosting-Anforderung: EU/DE.

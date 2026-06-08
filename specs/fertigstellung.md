@@ -55,9 +55,7 @@ automatisiertes CI/CD, `VERIFY-MULTIPLAYER`, `FE-SPIELREGELN-HILFE`, `FEAT-BUGRE
 
 ### Deploy-Strang (technisch, blockierend)
 
-1. **BUG-PROD-CHANGELOG** (P0, verifizierter Bug) — prod-Profil lädt eine nicht existierende
-   Liquibase-Changelog-Datei (`db.changelog-baseline.yaml` liegt nur unter `archiv/`); App bootet
-   nicht gegen Postgres. Blockiert den gesamten Deploy-Strang.
+1. **BUG-PROD-CHANGELOG** (behoben) — prod-Boot gegen echtes PG via DEPLOY-COMPOSE-SMOKE noch offen.
 2. **DEPLOY-COMPOSE-SMOKE** — prod-Stack (`docker compose --profile prod`) real hochfahren,
    Liquibase gegen echtes Postgres 17 migrieren, eine Partie durchspielen.
 3. **DOC-ENV-DEPLOY** — `.env.example` + README für den Betrieb vervollständigen.

@@ -97,7 +97,7 @@ tisch, spieler           existierend, unverändert
 ```
 
 **JSONB-Felder in `laufendes_spiel`:**
-`haende`, `aktueller_stich`, `abgeschlossene_stiche`, `vorbehalt_meldungen`, `ansage_ereignisse`, `partei_zuordnungen`, `bereits_geschmissen`, `pflicht_ansage_ausstehend`, `armut_status`, `hochzeit_status`
+`haende`, `abgeschlossene_stiche`, `vorbehalt_meldungen`, `ansage_ereignisse`, `partei_zuordnungen`, `bereits_geschmissen`, `pflicht_ansage_ausstehend`, `armut_status`, `hochzeit_status`
 
 **VO bleibt VO (verbindlich):** Hand, Stich, GespielteKarte, VorbehaltMeldung, AnsageEreignis, Ansagen, Parteien, ArmutStatus, HochzeitStatus, Spielregeln — persistiert via JSONB ohne UUID-Identity.
 

@@ -100,7 +100,6 @@ laufendes_spiel (
   einwurf_zaehler       INT NOT NULL DEFAULT 0,
   -- JSONB-Felder (Custom Converter in JsonbConverters.java):
   haende                JSONB NOT NULL,              -- Map<SpielerPosition, Hand>
-  aktueller_stich       JSONB,                       -- Stich nullable
   abgeschlossene_stiche JSONB NOT NULL DEFAULT '[]', -- List<Stich>
   vorbehalt_meldungen   JSONB NOT NULL DEFAULT '[]', -- List<VorbehaltMeldung>
   ansage_ereignisse     JSONB NOT NULL DEFAULT '[]', -- Ansagen (Wrapper)
@@ -118,10 +117,6 @@ laufendes_spiel (
 // haende
 {"NORD": [{"farbe": "KREUZ", "wert": "DAME"}, ...],
  "OST":  [...], "SUED": [...], "WEST": [...]}
-
-// aktueller_stich
-{"aufspieler": "NORD",
- "karten": [{"spielerPosition": "NORD", "karte": {"farbe": "KREUZ", "wert": "DAME"}}]}
 
 // vorbehalt_meldungen
 [{"spielerPosition": "NORD", "ansage": "GESUND"},
@@ -315,7 +310,6 @@ Die `regelvariante`-Spalte in `partie` und `spieler_statistik` wird aus den `Spi
 | `laufendes_spiel.trumpf_ordnung_typ` | `VARCHAR(30) NOT NULL` | `JSONB NOT NULL DEFAULT '{"typ":"NORMAL"}'` |
 | `laufendes_spiel.schweinchen_aktiv` | als Spalte beschrieben | nicht vorhanden (ist in `spielregeln` JSONB) |
 | `laufendes_spiel.pflicht_ansage_ausstehend` | als Spalte beschrieben | nicht vorhanden |
-| `laufendes_spiel.aktueller_stich` | als nullable JSONB Spalte | nicht vorhanden (Stich liegt in `abgeschlossene_stiche`) |
 | Master-Changelog | `db.changelog-master.sql` | `db.changelog-master.yaml` |
 
 ### Offene Punkte — als REFACTOR-DB-Tasks erfasst
