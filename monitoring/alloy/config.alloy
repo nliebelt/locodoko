@@ -6,7 +6,7 @@
 // --- Metriken: /actuator/prometheus scrapen und per remote_write an Grafana Cloud ---
 prometheus.scrape "locodoko" {
   targets = [{
-    __address__ = "app:8081",
+    __address__ = "app:8082",
     job         = "locodoko",
   }]
   metrics_path    = "/actuator/prometheus"
