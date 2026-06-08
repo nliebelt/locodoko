@@ -49,6 +49,10 @@ public class Spiel extends AbstraktePersistenzEntity {
     @Column("ergebnis") Spielergebnis ergebnis;
     /** Position des Solisten aus dem vorherigen Spiel; bestimmt den ersten Aufspieler. */
     @Column("solist_aufspieler") SpielerPosition solistAufspieler;
+    /** Spieler, der Armut angesagt hat; null wenn kein Armut-Spiel. */
+    @Column("armut_spieler_position") SpielerPosition armutSpielerPosition;
+    /** Spieler, der die Armut angenommen hat; null wenn kein Armut-Spiel. */
+    @Column("armut_partner_position") SpielerPosition armutPartnerPosition;
     @Column("bereits_geschmissen") GeschmisseneSpieler bereitsGeschmissen = GeschmisseneSpieler.leer();
     /** Anzahl der Einwürfe (Schmeißen oder abgelehnte Armut) in diesem Spiel — für Einwurf-Bockrunden-Trigger. */
     @Column("einwurf_zaehler") int einwurfZaehler = 0;
@@ -274,6 +278,8 @@ public class Spiel extends AbstraktePersistenzEntity {
         if (!(aktuellePhase instanceof Spielphase.ArmutTausch armutTauschPhase)) {
             throw new SpielzugKonfliktException("Armut annehmen ist nur in Phase ARMUT_TAUSCH erlaubt, war aber " + aktuellePhase.name());
         }
+        this.armutSpielerPosition = armutTauschPhase.armutStatus().armutSpieler();
+        this.armutPartnerPosition = spielerPosition;
         SpielArmutTausch.nimmArmutAn(this, spielerPosition, rueckgabekarten,
             armutTauschPhase.armutStatus(), solistAufspieler, geber, haende.alsMap(), spielregeln, trumpfOrdnung, parteien);
         return List.of();
@@ -474,6 +480,8 @@ public class Spiel extends AbstraktePersistenzEntity {
     public Optional<Spielergebnis> ergebnis() { return Optional.ofNullable(ergebnis); }
     public Optional<HochzeitStatus> hochzeitStatus() { return phase() instanceof Spielphase.Stichphase s ? Optional.ofNullable(s.hochzeitStatus()) : Optional.empty(); }
     public Optional<ArmutStatus> armutStatus() { return phase() instanceof Spielphase.ArmutTausch a ? Optional.of(a.armutStatus()) : Optional.empty(); }
+    public Optional<SpielerPosition> armutSpielerPosition() { return Optional.ofNullable(armutSpielerPosition); }
+    public Optional<SpielerPosition> armutPartnerPosition() { return Optional.ofNullable(armutPartnerPosition); }
     public Set<Partei> pflichtansageAusstehend() { return phase() instanceof Spielphase.Stichphase s ? s.pflichtansageAusstehend() : Set.of(); }
     public TrumpfOrdnung trumpfOrdnung() { return trumpfOrdnung; }
     public boolean schweinchenAktiv() { return trumpfOrdnung instanceof SchweinchenTrumpfOrdnung; }

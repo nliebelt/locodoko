@@ -172,6 +172,29 @@ class ArmutTest {
             "Der Armut-Spieler WEST bleibt RE.");
     }
 
+    @Test
+    void nimmArmutAn_SpeichertArmutPositionenPersistentNachPhaseWechsel() {
+        // Warum wichtig: armutSpielerPosition()/armutPartnerPosition() muessen auch nach dem
+        // Phasenwechsel (ArmutTausch → Stichphase → GesamtstandAktualisieren) korrekte Werte
+        // liefern — als persistente Felder in laufendes_spiel. Ohne diesen Test bleibt der
+        // Bug unentdeckt: PartieLifecycleService.veroeffentlicheSpielBeendet() las vorher aus
+        // armutStatus() (phasenabhaengig, leer nach Phasenwechsel), so dass armuten_angesagt
+        // und armuten_uebernommen in SpielerStatistik nie inkrementiert wurden.
+        Spiel nachAngebot = armutSpiel_VorAngebot();
+        nachAngebot.legeArmutTrumpfkarten(SpielerPosition.WEST, List.of(karoBube1, karoBube2));
+        List<Karte> rueckgabekarten = List.of(
+            new Karte(Farbe.PIK, Kartenwert.ZEHN, 1),
+            new Karte(Farbe.PIK, Kartenwert.ZEHN, 2));
+        nachAngebot.nimmArmutAn(SpielerPosition.NORD, rueckgabekarten);
+
+        assertEquals(SpielerPosition.WEST, nachAngebot.armutSpielerPosition().orElse(null),
+            "armutSpielerPosition muss auch nach Phasenwechsel WEST (Armut-Ansager) enthalten.");
+        assertEquals(SpielerPosition.NORD, nachAngebot.armutPartnerPosition().orElse(null),
+            "armutPartnerPosition muss auch nach Phasenwechsel NORD (Annehmer) enthalten.");
+        assertTrue(nachAngebot.armutStatus().isEmpty(),
+            "armutStatus() muss nach Phasenwechsel leer sein (phasenabhaengig).");
+    }
+
     // --- T2.4: Ablehnung → Einwurf ---
 
     @Test

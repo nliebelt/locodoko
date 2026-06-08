@@ -105,6 +105,8 @@ CREATE TABLE laufendes_spiel (
     trumpf_ordnung_typ JSONB NOT NULL DEFAULT '{"typ":"NORMAL"}',
     einwurf_zaehler INT NOT NULL DEFAULT 0,
     solist_aufspieler VARCHAR(10) CHECK (solist_aufspieler IS NULL OR solist_aufspieler IN ('SUED', 'WEST', 'NORD', 'OST')),
+    armut_spieler_position VARCHAR(10) CHECK (armut_spieler_position IS NULL OR armut_spieler_position IN ('SUED', 'WEST', 'NORD', 'OST')),
+    armut_partner_position VARCHAR(10) CHECK (armut_partner_position IS NULL OR armut_partner_position IN ('SUED', 'WEST', 'NORD', 'OST')),
     spielregeln JSONB NOT NULL,
     haende JSONB NOT NULL DEFAULT '{}',
     vorbehalt_meldungen JSONB NOT NULL DEFAULT '[]',
