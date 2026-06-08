@@ -22,6 +22,7 @@ export class TischRundenEndeController {
   phaserPartieEndeModal?: PhaserModal;
   partieCountdownInterval?: number;
   private tweenCountUp?: Phaser.Tweens.Tween;
+  private yoyoTweens: Phaser.Tweens.Tween[] = [];
 
   constructor(
     private readonly szene: Phaser.Scene,
@@ -97,11 +98,13 @@ export class TischRundenEndeController {
         countUpTexte.forEach((ct, idx) => {
           const val = Math.round(ct.wert * targets[idx].t);
           ct.textObj.setText(`${ct.label}: ${val > 0 ? '+' : ''}${val}`);
-          if (targets[idx].t >= 0.95) {
+          if (targets[idx].t >= 0.95 && !ct.textObj.getData('yoyo-started')) {
+            ct.textObj.setData('yoyo-started', true);
             ct.textObj.setColor('#ffff66');
-            this.szene.tweens.add({ targets: ct.textObj, alpha: 0.6, duration: 150, yoyo: true, repeat: 1,
+            const tween = this.szene.tweens.add({ targets: ct.textObj, alpha: 0.6, duration: 150, yoyo: true, repeat: 1,
               onComplete: () => { ct.textObj.setColor('#f0e6ff'); ct.textObj.setAlpha(1); }
             });
+            this.yoyoTweens.push(tween);
           }
         });
       }
@@ -131,6 +134,8 @@ export class TischRundenEndeController {
   schliesseRundenEndeModal(): void {
     this.tweenCountUp?.remove();
     this.tweenCountUp = undefined;
+    this.yoyoTweens.forEach((t) => t.remove());
+    this.yoyoTweens = [];
     this.phaserRundenEndeModal?.destroy();
     this.phaserRundenEndeModal = undefined;
     this.rundenauswertungObjekte.forEach((o) => o.destroy());
@@ -292,6 +297,8 @@ export class TischRundenEndeController {
   aufraeumen(): void {
     this.tweenCountUp?.remove();
     this.tweenCountUp = undefined;
+    this.yoyoTweens.forEach((t) => t.remove());
+    this.yoyoTweens = [];
     if (this.partieCountdownInterval !== undefined) {
       clearInterval(this.partieCountdownInterval);
       this.partieCountdownInterval = undefined;

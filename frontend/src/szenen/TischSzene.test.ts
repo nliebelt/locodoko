@@ -59,7 +59,7 @@ function erstelleTweenApi() {
     const z = Array.isArray(k.targets) ? k.targets : [k.targets];
     ['x', 'y', 'alpha', 'val'].forEach(p => { if (typeof k[p] === 'number') z.forEach((o: any) => { if (o) o[p] = k[p]; }); });
     if (k.onUpdate) k.onUpdate(); if (k.onComplete) k.onComplete();
-    return { stop: vi.fn() };
+    return { stop: vi.fn(), remove: vi.fn() };
   }), killTweensOf: vi.fn() };
 }
 

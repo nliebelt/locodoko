@@ -96,8 +96,8 @@ describe('Animation Integration & Guards', () => {
         ellipse: () => new FakeGameObject(),
         existing: (o: any) => o
       },
-      tweens: { 
-        add: vi.fn((c) => { if (c.onComplete) c.onComplete(); return { stop: vi.fn() }; }),
+      tweens: {
+        add: vi.fn((c) => { if (c.onComplete) c.onComplete(); return { stop: vi.fn(), remove: vi.fn() }; }),
         killTweensOf: vi.fn(),
         killAll: vi.fn()
       },
