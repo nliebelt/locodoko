@@ -21,6 +21,7 @@ export class TischRundenEndeController {
   rundenauswertungObjekte: Phaser.GameObjects.GameObject[] = [];
   phaserPartieEndeModal?: PhaserModal;
   partieCountdownInterval?: number;
+  private tweenCountUp?: Phaser.Tweens.Tween;
 
   constructor(
     private readonly szene: Phaser.Scene,
@@ -87,7 +88,7 @@ export class TischRundenEndeController {
     });
 
     const targets = countUpTexte.map(() => ({ t: 0 }));
-    this.szene.tweens.add({
+    this.tweenCountUp = this.szene.tweens.add({
       targets,
       t: 1,
       duration: 800,
@@ -128,6 +129,8 @@ export class TischRundenEndeController {
   }
 
   schliesseRundenEndeModal(): void {
+    this.tweenCountUp?.remove();
+    this.tweenCountUp = undefined;
     this.phaserRundenEndeModal?.destroy();
     this.phaserRundenEndeModal = undefined;
     this.rundenauswertungObjekte.forEach((o) => o.destroy());
@@ -287,6 +290,8 @@ export class TischRundenEndeController {
   }
 
   aufraeumen(): void {
+    this.tweenCountUp?.remove();
+    this.tweenCountUp = undefined;
     if (this.partieCountdownInterval !== undefined) {
       clearInterval(this.partieCountdownInterval);
       this.partieCountdownInterval = undefined;
