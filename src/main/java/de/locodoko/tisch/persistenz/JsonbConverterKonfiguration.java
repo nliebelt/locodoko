@@ -54,11 +54,6 @@ class JsonbConverterKonfiguration {
                 new JsonbConverter.HaendeVOLeseConverter(mapper),
                 new JsonbConverter.HaendeVOStringLeseConverter(mapper),
                 new JsonbConverter.HaendeVOBytesLeseConverter(mapper),
-                // aktueller_stich
-                new JsonbConverter.StichSchreibConverter(mapper),
-                new JsonbConverter.StichLeseConverter(mapper),
-                new JsonbConverter.StichStringLeseConverter(mapper),
-                new JsonbConverter.StichBytesLeseConverter(mapper),
                 // abgeschlossene_stiche (Wrapper-VO)
                 new JsonbConverter.StichverlaufVOSchreibConverter(mapper),
                 new JsonbConverter.StichverlaufVOLeseConverter(mapper),

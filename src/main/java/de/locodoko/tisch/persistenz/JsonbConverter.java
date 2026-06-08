@@ -383,31 +383,6 @@ public final class JsonbConverter {
 
     // ---- JSONB-Converter pro Domain-Typ (Schreib + PGobject-Lese + String-Lese fuer H2) ----
 
-    /** aktueller_stich: Stich ↔ JSONB (nullable) */
-    @WritingConverter
-    public static class StichSchreibConverter implements Converter<Stich, String> {
-        private final ObjectMapper mapper;
-        public StichSchreibConverter(ObjectMapper mapper) { this.mapper = mapper; }
-        @Override
-        public String convert(Stich source) { return toJsonString(mapper, source); }
-    }
-
-    @ReadingConverter
-    public static class StichLeseConverter implements Converter<PGobject, Stich> {
-        private final ObjectMapper mapper;
-        public StichLeseConverter(ObjectMapper mapper) { this.mapper = mapper; }
-        @Override
-        public Stich convert(PGobject source) { return fromPGobject(mapper, source, Stich.class); }
-    }
-
-    @ReadingConverter
-    public static class StichStringLeseConverter implements Converter<String, Stich> {
-        private final ObjectMapper mapper;
-        public StichStringLeseConverter(ObjectMapper mapper) { this.mapper = mapper; }
-        @Override
-        public Stich convert(String source) { return fromString(mapper, source, Stich.class); }
-    }
-
     /** ansage_ereignisse: Ansagen ↔ JSONB */
     @WritingConverter
     public static class AnsagenSchreibConverter implements Converter<Ansagen, String> {
@@ -596,14 +571,6 @@ public final class JsonbConverter {
 
     private static <T> T fromBytes(ObjectMapper mapper, byte[] quelle, TypeReference<T> typReferenz) {
         return fromString(mapper, entpackeH2Json(mapper, quelle), typReferenz);
-    }
-
-    @ReadingConverter
-    public static class StichBytesLeseConverter implements Converter<byte[], Stich> {
-        private final ObjectMapper mapper;
-        public StichBytesLeseConverter(ObjectMapper mapper) { this.mapper = mapper; }
-        @Override
-        public Stich convert(byte[] source) { return fromBytes(mapper, source, Stich.class); }
     }
 
     @ReadingConverter

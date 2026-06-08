@@ -49,27 +49,6 @@ class JsonbConverterTest {
 
     // ---- Test 2: Stich (einzeln) ----
 
-    /**
-     * Warum wichtig: Stich hat einen privaten Konstruktor — nur via ausPersistiertemStand()
-     * rekonstruierbar. Der Mixin muss diese Factory als JsonCreator markieren und die Getter
-     * als Properties. Ein falscher Aufspieler oder falsche gespielteKarten wuerden auf
-     * fehlerhafte Serialisierung hinweisen.
-     */
-    @Test
-    void stich_wirdAlsJsonbRoundtrip_korrektRekonstruiert() {
-        GespielteKarte gespielteKarte = new GespielteKarte(SpielerPosition.NORD, kreuzDame1(), 0);
-        Stich stich = Stich.ausPersistiertemStand(SpielerPosition.NORD, List.of(gespielteKarte));
-        var schreibConverter = new JsonbConverter.StichSchreibConverter(mapper);
-
-        String jsonString = schreibConverter.convert(stich);
-        Stich rekonstruiert = new JsonbConverter.StichStringLeseConverter(mapper).convert(jsonString);
-
-        assertThat(rekonstruiert.aufspieler()).isEqualTo(SpielerPosition.NORD);
-        assertThat(rekonstruiert.gespielteKarten()).hasSize(1);
-        assertThat(rekonstruiert.gespielteKarten().get(0).karte()).isEqualTo(kreuzDame1());
-        assertThat(rekonstruiert.gespielteKarten().get(0).spieler()).isEqualTo(SpielerPosition.NORD);
-    }
-
     // ---- Test 5: Ansagen ----
 
     /**
@@ -193,9 +172,6 @@ class JsonbConverterTest {
     @Test
     void alleSchreibConverter_gebenGueltigenJsonString_zurueck() {
         ObjectMapper m = mapper;
-        String stichJson = new JsonbConverter.StichSchreibConverter(m)
-                .convert(Stich.neu(SpielerPosition.NORD));
-        assertThat(stichJson).startsWith("{").endsWith("}");
 
         String ansagenJson = new JsonbConverter.AnsagenSchreibConverter(m)
                 .convert(Ansagen.leer());
