@@ -58,8 +58,8 @@ describe('LoginSzene', () => {
         storeCallback = cb;
         return vi.fn();
       }),
-      erstelleQuickGame: vi.fn(),
-      alsGastStarten: vi.fn()
+      erstelleQuickGame: vi.fn().mockResolvedValue(undefined),
+      alsGastStarten: vi.fn().mockResolvedValue(undefined)
     };
     mockFetchKonfiguration(true);
   });

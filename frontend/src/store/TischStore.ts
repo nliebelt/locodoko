@@ -231,9 +231,15 @@ export class TischStore {
     }
   }
 
-  private async fuehreMitStatus<T>(aktion: () => Promise<T>): Promise<T> {
+  private async fuehreMitStatus(aktion: () => Promise<unknown>): Promise<void> {
     this.patchFn({ wirdGeladen: true });
-    try { return await aktion(); } finally { this.patchFn({ wirdGeladen: false }); }
+    try {
+      await aktion();
+    } catch (fehler) {
+      this.patchFn({ meldung: this.formatiereMeldung(fehler) });
+    } finally {
+      this.patchFn({ wirdGeladen: false });
+    }
   }
 
   private formatiereMeldung(fehler: unknown): UiMeldung {

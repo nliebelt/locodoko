@@ -13,6 +13,7 @@ import type {
   Uuid
 } from '../modelle/SpielverwaltungDto';
 import type { SpielverwaltungApi } from '../services/SpielverwaltungApi';
+import { SpielverwaltungFehler } from '../services/SpielverwaltungApi';
 import type { EchtzeitPort, NachrichtenHandler } from '../services/SpielverwaltungEchtzeit';
 import { AppStore } from './AppStore';
 
@@ -1055,6 +1056,25 @@ it('toggles debug mode', () => {
     const store = new AppStore(api, new FakeEchtzeit());
     const m = store['formatiereMeldung'](new Error('Normaler Fehler'));
     expect(m.text).toBe('Unbekannter Fehler.');
+  });
+
+  it('setzt Meldung bei TischStore-API-Fehler ohne Exception zu werfen', async () => {
+    // Warum: Netzwerkfehler/500 dürfen nicht als stille Unhandled Rejections verschwinden
+    const api = new FakeApi({ spielerId: 's1', name: 'S1', istKi: false }, [], baueTisch()) as unknown as SpielverwaltungApi;
+    vi.spyOn(api, 'betreteTisch').mockRejectedValue(new SpielverwaltungFehler('NETZWERKFEHLER', 'Server nicht erreichbar'));
+    const store = new AppStore(api, new FakeEchtzeit());
+    await store.initialisieren();
+    await store.betreteTisch('t1'); // darf nicht werfen
+    expect(store.snapshot().meldung).toEqual({ typ: 'fehler', text: 'Server nicht erreichbar', fehlerCode: 'NETZWERKFEHLER' });
+  });
+
+  it('setzt Meldung bei SessionStore-Fehler und propagiert die Exception weiter', async () => {
+    // Warum: BootSzene-catch muss feuern; Toast zeigt Fehlerdetail statt stiller Rejection
+    const api = new FakeApi({ spielerId: 's1', name: 'S1', istKi: false }, [], baueTisch()) as unknown as SpielverwaltungApi;
+    vi.spyOn(api, 'initialisiereSpielerSession').mockRejectedValue(new SpielverwaltungFehler('AUTH_FEHLER', 'Nicht autorisiert'));
+    const store = new AppStore(api, new FakeEchtzeit());
+    await expect(store.initialisieren()).rejects.toThrow('Initialisierung fehlgeschlagen.');
+    expect(store.snapshot().meldung).toMatchObject({ typ: 'fehler' });
   });
 });
 

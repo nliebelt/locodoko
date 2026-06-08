@@ -60,7 +60,7 @@ export class LoginSzene extends Phaser.Scene {
       x: this.scale.width / 2, y: 350,
       text: '👤 Als Gast spielen',
       typ: 'primary',
-      callback: () => void appStore.alsGastStarten()
+      callback: () => { appStore.alsGastStarten().catch(() => {}); }
     });
 
     if (googleOAuth2Aktiv) {
