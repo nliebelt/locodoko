@@ -4,7 +4,9 @@
 
 ## Notiz
 
-**Session 101c (2026-06-11) — Planungslauf + Polishing-Scan:** 3-Agenten-Scan (Backend/Frontend/FE-Baseline) durchgeführt. **Backend: produktionsreif** — keine TODOs, keine Debug-Ausgaben, Dependencies aktuell (Spring Boot 4.0.5, Java 25). **Frontend: fast sauber** — strict mode aktiv, ESLint korrekt, ein nacktes `console.log` in `AppStore.test.ts:832` (→ FE-KLEINKRAM-SAMMEL). **FE-Baseline Root Cause gefunden:** `vite.config.ts:29` setzt `environment: 'node'` global → jsdom-Pragmas in 3 Testdateien werden nicht überschrieben → `localStorage` undefined + Canvas nicht implementiert. Zusätzlich fehlt das `canvas`-npm-Package. → Neuer Task **BUG-FE-BASELINE-JSDOM** (P1, Blocker). **Nächster autonomer Task: BUG-FE-BASELINE-JSDOM** → dann FE-KLEINKRAM-SAMMEL → dann nur noch MENSCH-Tasks.
+**Session 101d (2026-06-11) — Plan-Update: QA-Test-Abdeckung aufgenommen.** Neue autonome Queue I) mit 3 Tasks vor Review-Halt + Queue J) mit geschätzt 5–8 Test-Tasks nach User-Review. Ziel: Coverage-Lücken systematisch schließen (Backend Branch 71%→80%, Frontend 79%→80%+). **Nächster autonomer Task: BUG-FE-BASELINE-JSDOM** → FE-KLEINKRAM-SAMMEL → QA-TEST-ABDECKUNG-REPORT → STOP für Review.
+
+**Session 101c (2026-06-11) — Planungslauf + Polishing-Scan:** 3-Agenten-Scan (Backend/Frontend/FE-Baseline) durchgeführt. **Backend: produktionsreif** — keine TODOs, keine Debug-Ausgaben, Dependencies aktuell (Spring Boot 4.0.5, Java 25). **Frontend: fast sauber** — strict mode aktiv, ESLint korrekt, ein nacktes `console.log` in `AppStore.test.ts:832` (→ FE-KLEINKRAM-SAMMEL). **FE-Baseline Root Cause gefunden:** `vite.config.ts:29` setzt `environment: 'node'` global → jsdom-Pragmas in 3 Testdateien werden nicht überschrieben → `localStorage` undefined + Canvas nicht implementiert. Zusätzlich fehlt das `canvas`-npm-Package. → Neuer Task **BUG-FE-BASELINE-JSDOM** (P1, Blocker).
 
 **Session 101b (2026-06-11) — BACKEND-KLEINKRAM-SAMMEL abgeschlossen:** (a) `KiTischOrchestrator.java` Z.131+165: `partie = partieRepository.saveAndFlush(partie)` — Rückgabe wird nun zugewiesen, @Version-Feld nach Persist aktuell. (b) `TischRepositoryImpl.saveAndFlush`: Kommentar präzisiert (Alias auf save(), JDBC persistiert sofort, Rückgabe muss zugewiesen werden). (c) `VerbindungsabbruchService`: Klassen-Javadoc um Single-Instance-Deployment-Annahme ergänzt (In-Memory-State nicht cluster-fähig, bewusst akzeptiert für docker-compose-Betrieb). 371 BE-Tests grün.
 
@@ -785,6 +787,28 @@ Alle noch im Greenfield-Fenster (vor erstem echten Deploy). Details und Audit-Ko
 - [ ] **FE-KLEINKRAM-SAMMEL** (P3, Frontend) — [hängt an BUG-FE-BASELINE-JSDOM] (a) `spielProtokollEintraege` wächst über Partiengrenzen (nur bei vollem Trennen geleert, nicht in `resetPartieZustand`) → beim Partie-Reset zurücksetzen; (b) `JSON.parse(nachricht.body)` im STOMP-Handler ohne try/catch (`SpielverwaltungEchtzeit.ts:46,140`) → Guard + Logger; (c) doppelte `formatiereMeldung` in AppStore+TischStore konsolidieren; (d) nacktes `console.log` in `AppStore.test.ts:832` entfernen. **Risiko:** niedrig.
 - [x] **SEC-VALIDIERUNG-AUTH-FELDER** (P3, Security) — `RegistrierungsAnfrage`: `email` ohne `@Email`, Passwort `@Size(min=8)` ohne `max=72` (bcrypt-Grenze). **Fix:** `@Email` + `@Size(min=8,max=72)`. **Risiko:** keins.
 - [x] **BACKEND-KLEINKRAM-SAMMEL** (P3, Backend) — (a) `KiTischOrchestrator.java:130,164`: Rückgabe von `saveAndFlush` zuweisen (`partie = …`) statt implizit auf reflektives Version-Rückschreiben zu vertrauen; (b) `saveAndFlush` ist No-Op-Alias auf `save` (`TischRepositoryImpl.java:71`) → umbenennen/kommentieren; (c) `VerbindungsabbruchService` In-Memory-State als bewusste Single-Instance-Annahme dokumentieren. **Risiko:** niedrig.
+
+### I) Polishing + Test-Abdeckung — Phase 1 (autonom, dann Review-Halt)
+
+> Ziel: FE-Baseline reparieren, Kleinkram abschließen, dann Coverage-Report aktualisieren und Lücken identifizieren. **Nach Task 3 STOP — User reviewt den Report und gibt Phase 2 frei.**
+
+1. [ ] **BUG-FE-BASELINE-JSDOM** (P1, Frontend, Blocker) — siehe oben.
+2. [ ] **FE-KLEINKRAM-SAMMEL** (P3, Frontend) — siehe oben. [hängt an 1.]
+3. [ ] **QA-TEST-ABDECKUNG-REPORT** (P2, QA) — Coverage-Report aktualisieren (Backend: `mvn clean verify` → JaCoCo in `target/site/jacoco/`; Frontend: `cd frontend && npx vitest --coverage` → `frontend/coverage/`). Seit Session 47 kamen ~30 Tests hinzu → Zahlen veraltet. `docs/metrics.md` Abschnitt „Test-Coverage" + Schwachstellen-Tabelle aktualisieren. Konkrete Test-Tasks für Phase 2 unter „Entdeckungen" vorschlagen (pro Schwachstelle < 70% mit > 20 Lines ein Task). **AppStore.ts aus der Coverage-Exclude-Liste in `vite.config.ts` entfernen** (hat Tests, ist fälschlich excluded). **DoD:** `docs/metrics.md` aktualisiert, vorgeschlagene Test-Tasks eingetragen, committed. **DANACH: STOP FÜR USER-REVIEW.** **Risiko:** niedrig (read-only Diagnose + Doku).
+
+### J) Test-Abdeckung — Phase 2 (autonom nach User-Review)
+
+> Ziel: Coverage-Lücken systematisch schließen. Backend Branch-Coverage 71%→80%, Frontend 79%→80%+. **Konkrete Tasks werden aus dem QA-TEST-ABDECKUNG-REPORT abgeleitet.** Geschätzt 5–8 Iterationen. Pro Task ein Commit. Verifikation: `mvn clean test` / `npm test`.
+
+*Tasks werden nach Review von QA-TEST-ABDECKUNG-REPORT hier eingetragen. Erwartete Kandidaten (aus Session-47-Report, final nach aktuellem Report):*
+
+- [ ] **TEST-DOMÄNE-ARMUT** — `ArmutStatus` (38 Lines, 65%) + verwandte Armut-Pfade testen. Reine Domänenlogik, hoher ROI.
+- [ ] **TEST-DOMÄNE-STICHVERLAUF** — `Stichverlauf` (21 Lines, 57%) Branch-Pfade abdecken.
+- [ ] **TEST-TISCHSICHERHEIT** — `TischSicherheit` (36 Lines, 69%) Guard-Logik testen. Wichtig für Prod-Sicherheit.
+- [ ] **TEST-JSONB-ROUNDTRIP** — `JsonbConverter` (45 Lines, 55%) verbleibende Converter-Roundtrips.
+- [ ] **TEST-KI-ORCHESTRIERUNG** — `KiOrchestrierungService` (38 Lines, 60%) Fehler-/Randpfade.
+- [ ] **TEST-WEBSOCKET-CONTROLLER** — `SpielverwaltungWebSocketController` (71 Lines, 64%) Nachrichten-Handler.
+- *Weitere je nach aktuellem Report.*
 
 > **Verweise:** `DEPLOY-COMPOSE-SMOKE` (bereits als MENSCH-Task vorhanden) ist das Gate für die Verifikation von DB-CONSTRAINTS-HAERTUNG + JSONB/Views gegen echtes Postgres 17. `.env` enthält lokal einen echten GitHub-PAT — **nicht committet** (History sauber), aber rotieren falls das Verzeichnis je geteilt wurde.
 
