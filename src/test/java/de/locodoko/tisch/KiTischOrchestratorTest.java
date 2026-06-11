@@ -13,6 +13,12 @@ import de.locodoko.partie.SpielerPosition;
 import de.locodoko.spieler.SpielerEntity;
 import de.locodoko.spieler.SpielerId;
 import de.locodoko.tisch.persistenz.PartieRepository;
+import de.locodoko.partie.SpielEreignis;
+import de.locodoko.partie.SonderpunktEreignis;
+import de.locodoko.partie.Sonderpunkt;
+import de.locodoko.partie.ereignisse.VorbehaltErwartet;
+import de.locodoko.partie.ereignisse.NaechsterSpielerErwartet;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.context.ApplicationEventPublisher;
@@ -22,6 +28,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.ArrayList;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -34,16 +41,19 @@ class KiTischOrchestratorTest {
     private KiTischOrchestrator orchestrator;
     private FakePartieRepository partieRepository;
     private FakeKiOrchestrierungService kiOrchestrierungService;
+    private FakeTischRepository tischRepository;
+    private FakePartieLifecycleService partieLifecycleService;
+    private FakeEventPublisher eventPublisher;
 
     @BeforeEach
     void setUp() {
         kiOrchestrierungService = new FakeKiOrchestrierungService();
         partieRepository = new FakePartieRepository();
+        tischRepository = new FakeTischRepository();
+        partieLifecycleService = new FakePartieLifecycleService();
+        eventPublisher = new FakeEventPublisher();
         
-        FakeTischRepository tischRepository = new FakeTischRepository();
         TischEchtzeitService tischEchtzeitService = new TischEchtzeitService(null, null, List.of());
-        PartieLifecycleService partieLifecycleService = new PartieLifecycleService(null, null, null, null);
-        ApplicationEventPublisher eventPublisher = event -> {};
         
         orchestrator = new KiTischOrchestrator(
                 kiOrchestrierungService,
@@ -56,14 +66,44 @@ class KiTischOrchestratorTest {
     }
 
     @Test
+    void automatisiereTisch_beendetWennPartieNull() {
+        TischEntity tisch = TischEntity.neu("TestTisch", SpielerEntity.ki("KI 1"), TischkonfigurationEmbeddable.ausSpielregeln(Spielregeln.standardRegeln(), 1));
+        orchestrator.automatisiereTisch(tisch);
+        assertEquals(0, partieRepository.saveAndFlushCalls.get());
+    }
+
+    @Test
+    void automatisiereTisch_beendetWennPartieBeendet() {
+        TischEntity tisch = erstelleKiTisch();
+        tisch.partie().markiereAlsBeendet();
+        orchestrator.automatisiereTisch(tisch);
+        assertEquals(0, partieRepository.saveAndFlushCalls.get());
+    }
+
+    @Test
+    void automatisiereTisch_beendetWennMenschAmZug() {
+        TischEntity tisch = TischEntity.neu("TestTisch", SpielerEntity.menschlich("Mensch 1", "sess-1"), TischkonfigurationEmbeddable.ausSpielregeln(Spielregeln.standardRegeln(), 1));
+        tisch.fuegeSpielerHinzu(SpielerEntity.menschlich("Mensch 2", "sess-2"));
+        tisch.fuegeSpielerHinzu(SpielerEntity.menschlich("Mensch 3", "sess-3"));
+        tisch.fuegeSpielerHinzu(SpielerEntity.menschlich("Mensch 4", "sess-4"));
+        Spielregeln regeln = Spielregeln.standardRegeln();
+        Spiel spiel = Spiel.neu(SpielerPosition.SUED, regeln, Kartendeck.neu(regeln).gemischt());
+        spiel.teileKartenAus();
+        Partie partie = Partie.neuePersistenz(1, regeln, null);
+        partie.fuegeSpielHinzu(spiel);
+        partie.initialisiereDomainFelderNachLaden();
+        tisch.setzePartie(partie);
+        
+        orchestrator.automatisiereTisch(tisch);
+        assertEquals(0, partieRepository.saveAndFlushCalls.get());
+    }
+
+    @Test
     void automatisiereTisch_faengtOptimisticLockingException_undBrichtAb() {
         TischEntity tisch = erstelleKiTisch();
         partieRepository.throwOptimisticLockingException = true;
         
-        // Muss ohne Exception durchlaufen, da die Exception intern gefangen wird
         assertDoesNotThrow(() -> orchestrator.automatisiereTisch(tisch));
-        
-        // Es wurde versucht zu speichern, dann abgebrochen (keine Endlosschleife)
         assertEquals(1, partieRepository.saveAndFlushCalls.get());
     }
 
@@ -73,21 +113,43 @@ class KiTischOrchestratorTest {
         kiOrchestrierungService.throwGeneralException = true;
         
         assertDoesNotThrow(() -> orchestrator.automatisiereTisch(tisch));
-        
-        // Fehler in der KI fuehrt sofort zum Abbruch, kein saveAndFlush() erreicht
         assertEquals(0, partieRepository.saveAndFlushCalls.get());
     }
 
     @Test
     void automatisiereTisch_beendetSichNachSicherheitslimit() {
         TischEntity tisch = erstelleKiTisch();
-        // Kein Fehler, aber Endlosschleife in der KI (gibt immer einen gueltigen naechsten Zug aus)
         kiOrchestrierungService.immerEndlosschleife = true;
 
         assertDoesNotThrow(() -> orchestrator.automatisiereTisch(tisch));
-        
-        // Nach MAXIMALE_KI_AKTIONEN (500) sollte die Schleife abbrechen
         assertEquals(500, partieRepository.saveAndFlushCalls.get());
+    }
+
+    @Test
+    void beiNaechsterSpielerErwartet_ruftAutomatisiereTischAuf() {
+        TischEntity tisch = erstelleKiTisch();
+        tischRepository.tischToReturn = tisch;
+        
+        orchestrator.beiNaechsterSpielerErwartet(new NaechsterSpielerErwartet(tisch.id()));
+        assertEquals(1, partieRepository.saveAndFlushCalls.get());
+    }
+
+    @Test
+    void beiVorbehaltErwartet_ruftAutomatisiereTischAuf() {
+        TischEntity tisch = erstelleKiTisch();
+        tischRepository.tischToReturn = tisch;
+        
+        orchestrator.beiVorbehaltErwartet(new VorbehaltErwartet(tisch.id()));
+        assertEquals(1, partieRepository.saveAndFlushCalls.get());
+    }
+
+    @Test
+    void beiKiUebernahme_ruftAutomatisiereTischAuf() {
+        TischEntity tisch = erstelleKiTisch();
+        tischRepository.tischToReturn = tisch;
+        
+        orchestrator.beiKiUebernahme(new KiUebernahmeEreignis(TischId.von(tisch.id())));
+        assertEquals(1, partieRepository.saveAndFlushCalls.get());
     }
     
     private TischEntity erstelleKiTisch() {
@@ -115,9 +177,10 @@ class KiTischOrchestratorTest {
     private static class FakeKiOrchestrierungService extends KiOrchestrierungService {
         boolean throwGeneralException = false;
         boolean immerEndlosschleife = false;
+        int actionCount = 0;
         
         FakeKiOrchestrierungService() {
-            super(null); // factory wird im Fake ueberschrieben
+            super(null); 
         }
         
         @Override
@@ -126,10 +189,36 @@ class KiTischOrchestratorTest {
                 throw new RuntimeException("Simulierter Test-Fehler in der KI");
             }
             if (immerEndlosschleife) {
-                // Keine Ereignisse, keine State-Aenderung, erzeugt eine Endlosschleife im Orchestrator
                 return new KiAktionErgebnis(laufendesSpiel, null, List.of());
             }
+            
+            actionCount++;
+            if (actionCount > 1) { // Throw after 1 successful action
+                 throw new RuntimeException("Stop loop safely after 1 action");
+            }
             return new KiAktionErgebnis(laufendesSpiel, null, List.of());
+        }
+    }
+
+    private static class FakePartieLifecycleService extends PartieLifecycleService {
+        FakePartieLifecycleService() {
+            super(null, null, null, null);
+        }
+        @Override
+        public void uebernehmeDomainPartieAbschluss(TischEntity tisch, Spiel abgeschlossenesSpiel, Partie neuePartie) {
+            // no-op
+        }
+        @Override
+        public void veroeffentlicheSpielGestartet(TischEntity tisch) {
+            // no-op
+        }
+    }
+
+    private static class FakeEventPublisher implements ApplicationEventPublisher {
+        List<Object> events = new ArrayList<>();
+        @Override
+        public void publishEvent(Object event) {
+            events.add(event);
         }
     }
 
@@ -165,12 +254,14 @@ class KiTischOrchestratorTest {
     }
 
     private static class FakeTischRepository implements TischRepository {
+        TischEntity tischToReturn;
+        
         @Override public TischEntity save(TischEntity tisch) { return null; }
         @Override public TischEntity saveAndFlush(TischEntity tisch) { return null; }
         @Override public void delete(TischEntity tisch) {}
         @Override public void deleteById(TischId id) {}
         @Override public void flush() {}
-        @Override public Optional<TischEntity> findById(TischId id) { return Optional.empty(); }
+        @Override public Optional<TischEntity> findById(TischId id) { return Optional.ofNullable(tischToReturn); }
         @Override public Optional<TischEntity> findByIdWithLock(TischId id) { return Optional.empty(); }
         @Override public List<TischEntity> findAllByStatusOrderByErstelltAmAsc(TischStatus status) { return null; }
         @Override public Optional<TischEntity> findBySpieler_Id(SpielerId spielerId) { return Optional.empty(); }
