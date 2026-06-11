@@ -22,6 +22,12 @@ import java.util.concurrent.ConcurrentHashMap;
 /**
  * Verwaltet Verbindungsabbrüche und Reconnects menschlicher Spieler während eines laufenden Spiels.
  *
+ * <p><strong>Deployment-Annahme (Single-Instance):</strong> Der In-Memory-State
+ * ({@code getrennteSessionen}, {@code aktiveWsSessionen}) lebt im Heap einer einzelnen
+ * App-Instanz. Bei horizontaler Skalierung würde dieser State nicht zwischen Instanzen
+ * synchronisiert — Reconnect-Tracking wäre dann pro-Instanz und unvollständig.
+ * Für den aktuellen Single-Instance-Betrieb via docker-compose ist dies bewusst akzeptiert.
+ *
  * <p>Ablauf bei Verbindungsverlust:
  * <ol>
  *   <li>Spieler wird als getrennt markiert (in-memory), alle Tisch-Spieler werden informiert.</li>

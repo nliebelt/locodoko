@@ -128,7 +128,7 @@ public class KiTischOrchestrator {
                     try {
                         Partie neuePartie = partie.schliesseAktuellesSpielAbUndStarteNaechstes();
                         partieLifecycleService.uebernehmeDomainPartieAbschluss(tisch, laufendesSpiel, neuePartie);
-                        partieRepository.saveAndFlush(partie);
+                        partie = partieRepository.saveAndFlush(partie);
                         if (neuePartie.istBeendet()) {
                             return;
                         }
@@ -162,7 +162,7 @@ public class KiTischOrchestrator {
                 try {
                     KiAktionErgebnis ergebnis = kiOrchestrierungService.fuehreAktionAus(
                             laufendesSpiel, position, schwierigkeit);
-                    partieRepository.saveAndFlush(partie);
+                    partie = partieRepository.saveAndFlush(partie);
 
                     if (hatMenschlichenSpieler) {
                         if (ergebnis.ereignisse().isEmpty()) {

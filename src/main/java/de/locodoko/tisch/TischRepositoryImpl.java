@@ -73,7 +73,10 @@ class TischRepositoryImpl implements TischRepository {
 
     @Override
     public TischEntity saveAndFlush(TischEntity tisch) {
-        // Spring Data JDBC persistiert sofort — kein expliziter Flush-Mechanismus noetig
+        // Spring Data JDBC persistiert sofort nach jedem save() — es gibt keinen separaten Flush.
+        // Diese Methode ist ein reiner Alias fuer save() und existiert nur zur Kompatibilitaet
+        // mit JPA-Aufrufsmustern (saveAndFlush). Die Rückgabe muss zugewiesen werden,
+        // damit @Version-Felder nach dem Speichern aktuell sind.
         return save(tisch);
     }
 
