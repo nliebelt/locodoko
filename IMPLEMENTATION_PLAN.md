@@ -813,7 +813,7 @@ Alle noch im Greenfield-Fenster (vor erstem echten Deploy). Details und Audit-Ko
 - [x] **TEST-DOMÄNE-ARMUT** — `ArmutStatus` (38 Lines, **66%** instr, 0% branches) + verwandte Armut-Pfade (`nimmArmutAn`, `tauscheKarten`, Grenzfälle). Reine Domänenlogik, hoher ROI. **Erste Datei:** `ArmutStatusTest.java` (neu) im Paket `de.locodoko.partie`.
 - [x] **TEST-DOMÄNE-STICHVERLAUF** — `Stichverlauf` (21 Lines, **50%** instr, 0% branches) Branch-Pfade: Stich-Ende, Augen-Berechnung, Grenzfall leerer Stich. **Erste Datei:** `StichverlaufTest.java` (neu). 20 Unit-Tests: Factory-Methoden (leer/aus/null-Guards), mitStich-Immutabilität, letzter-Happy/Error-Path, equals/hashCode/toString. 423 BE-Tests grün (+20).
 - [x] **TEST-KI-ORCHESTRIERUNG** — `KiOrchestrierungService` (38 Lines, **55%** instr, 32% branches) Fehler-/Randpfade: unbekannte Spielphase, Exception-Handling, Retry-Verhalten. **Erste Datei:** `KiOrchestrierungServiceTest.java` (neu).
-- [ ] **TEST-KI-ORCHESTRATOR** — `KiTischOrchestrator` (145 Lines, **64%** instr, 51% branches) Concurrent-Paths, OptimisticLock-Retry, Exception-Pfade. **Erste Datei:** bestehenden `KiTischOrchestratorTest.java` prüfen + erweitern.
+- [x] **TEST-KI-ORCHESTRATOR** — `KiTischOrchestrator` (145 Lines, **64%** instr, 51% branches) Concurrent-Paths, OptimisticLock-Retry, Exception-Pfade. **Erste Datei:** bestehenden `KiTischOrchestratorTest.java` prüfen + erweitern.
 - [ ] **TEST-TISCHSICHERHEIT** — `TischSicherheit` (36 Lines, **70%** instr, 38% branches) Guard-Logik: nicht Mitglied, falscher Status, kein aktives Spiel. Wichtig für Prod-Sicherheit. **Erste Datei:** `TischSicherheitTest.java` (neu).
 - [ ] **TEST-JSONB-ROUNDTRIP** — `JsonbConverter` (45 Lines in JaCoCo = Outer-Klasse, **53%**) verbleibende Converter-Roundtrips: `ArmutStatus`, `GeschmisseneSpielerVO`, `Haende`. **Erste Datei:** bestehenden `JsonbConverterTest.java` erweitern.
 - [ ] **TEST-RATE-LIMITING** — `RateLimitingFilter` (42 Lines, **36%** instr, 15% branches) Request-Simulation: Rate-Limit-Schwelle, pro-IP-Trennung, Whitelist-Pfade. `MockHttpServletRequest` verwenden (kein `@SpringBootTest`). **Erste Datei:** `RateLimitingFilterTest.java` (neu).
@@ -838,6 +838,16 @@ Alle noch im Greenfield-Fenster (vor erstem echten Deploy). Details und Audit-Ko
 3. **Bei Unklarheit: kleinste Änderung + `mvn clean test`.** Nicht spekulativ refaktorieren. (`clean` ist Pflicht — inkrementelle Builds maskieren Compile-Brüche durch veraltete `target/`-Klassen.)
 4. **Tests müssen vor jedem Commit grün sein.** Bei Bruch: ROLLBACK des aktuellen Versuchs, Wurzelursache verstehen, neu ansetzen.
 5. **Pure-JUnit-Tests bleiben pure JUnit.** `@SpringBootTest` darf NICHT zu einer Test-Klasse hinzugefügt werden, die heute ohne läuft.
+6. **VO bleibt VO wo möglich:** Postgres JSONB + Custom Converter ermöglichen immutable VOs.
+7. **Greenfield-Annahme:** Keine Datenmigration nötig.
+8. **Spec-Konsultation:** Bei jedem Task der Specs anpasst: `grep -rn "<altes Konzept>" specs/` als Verifikations-Schritt.
+
+## Stoppregeln für Build-Modus
+
+- **Test-Suite bricht und in 3 Versuchen nicht reparierbar**: Stoppen, Iteration abbrechen, Notiz unter „Entdeckungen". Nicht stapeln.
+- **Unklar zwischen Optionen**: Die kleinere/risikoärmere Option wählen.
+- **Niemals**: `--no-verify`, `git push --force` ohne explizite User-Anweisung, Tests `@Disabled` ohne Notiz.
+arf NICHT zu einer Test-Klasse hinzugefügt werden, die heute ohne läuft.
 6. **VO bleibt VO wo möglich:** Postgres JSONB + Custom Converter ermöglichen immutable VOs.
 7. **Greenfield-Annahme:** Keine Datenmigration nötig.
 8. **Spec-Konsultation:** Bei jedem Task der Specs anpasst: `grep -rn "<altes Konzept>" specs/` als Verifikations-Schritt.
