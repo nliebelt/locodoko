@@ -1,6 +1,6 @@
 # Locodoko — Metrik-Report
 
-> Stand: 2026-06-04 — reproduzierbar via `scripts/metrics.sh`
+> Stand: 2026-06-11 (Session 103) — reproduzierbar via `mvn clean verify` (JaCoCo) + `cd frontend && npx vitest run --coverage` (Vitest/V8)
 
 ## Codebase-Größe
 
@@ -16,13 +16,13 @@
 | `system` | 8 | 291 |
 | **Gesamt** | **198** | **15436** |
 
-Test-Klassen: 60
+Test-Klassen: 62 · Tests: 371
 
 ### Frontend (TypeScript)
 
-| Produktiv-Dateien | 53 |
-| LOC | 9092 |
-| Test-Dateien | 25 |
+| Produktiv-Dateien | ~55 |
+| LOC | ~9900 |
+| Test-Dateien | 28 · Tests: 299 |
 
 ## Test-Coverage
 
@@ -30,44 +30,70 @@ Test-Klassen: 60
 
 | Metrik | Abgedeckt | Gesamt | Quote |
 |--------|-----------|--------|-------|
-| Instructions | 21477 | 25462 | **84%** |
-| Lines | 4030 | 4803 | **83%** |
-| Branches | 1337 | 1882 | **71%** |
+| Instructions | 22203 | 26801 | **82.8%** |
+| Lines | 4192 | 5100 | **82.2%** |
+| Branches | 1373 | 1994 | **68.9%** |
+
+> Leichter Rückgang gegenüber Session 47 (84%/83%/71%) — mehr Code durch Features (DSGVO, BugReport, Statistik, SEC-Hardening) ohne proportionales Test-Wachstum. Ziel Phase 2: Branches →75%+.
 
 **Coverage nach Modul:**
 
 | Modul | Lines | Coverage |
 |-------|-------|----------|
+| `de.locodoko.betrieb` | 39 | 97% █████████░ |
+| `de.locodoko.karten` | 264 | 93% █████████░ |
+| `de.locodoko.ki` | 300 | 92% █████████░ |
+| `de.locodoko.partie` | 1444 | 88% ████████░░ |
+| `de.locodoko.tisch` | 1853 | 84% ████████░░ |
 | `(root)` | 10 | 80% ████████░░ |
-| `de.locodoko.karten` | 264 | 92% █████████░ |
-| `de.locodoko.ki` | 300 | 91% █████████░ |
-| `de.locodoko.ki.orchestrierung` | 39 | 61% ██████░░░░ |
-| `de.locodoko.partie` | 1441 | 87% ████████░░ |
+| `de.locodoko.spieler` | 854 | 69% ██████░░░░ |
+| `de.locodoko.tisch.persistenz` | 206 | 67% ██████░░░░ |
+| `de.locodoko.system` | 81 | 63% ██████░░░░ |
+| `de.locodoko.ki.orchestrierung` | 39 | 62% ██████░░░░ |
 | `de.locodoko.partie.ereignisse` | 10 | 50% █████░░░░░ |
-| `de.locodoko.spieler` | 627 | 75% ███████░░░ |
-| `de.locodoko.system` | 58 | 79% ███████░░░ |
-| `de.locodoko.tisch` | 1840 | 84% ████████░░ |
-| `de.locodoko.tisch.persistenz` | 214 | 67% ██████░░░░ |
 
 **Coverage-Schwachstellen (< 70% Line-Coverage, > 20 Zeilen):**
 
-| Klasse | Modul | Lines | Coverage |
-|--------|-------|-------|----------|
-| `Tisch` | `de.locodoko.partie` | 25 | 0% |
-| `VerbindungsSessionEreignisListener` | `de.locodoko.tisch` | 29 | 13% |
-| `OAuth2ErfolgsHandler` | `de.locodoko.spieler` | 23 | 21% |
-| `JsonbConverter` | `de.locodoko.tisch.persistenz` | 45 | 55% |
-| `Stichverlauf` | `de.locodoko.partie` | 21 | 57% |
-| `KiOrchestrierungService` | `de.locodoko.ki.orchestrierung` | 38 | 60% |
-| `SpielverwaltungWebSocketController` | `de.locodoko.tisch` | 71 | 64% |
-| `ArmutStatus` | `de.locodoko.partie` | 38 | 65% |
-| `KiTischOrchestrator` | `de.locodoko.tisch` | 141 | 68% |
-| `TischSicherheit` | `de.locodoko.tisch` | 36 | 69% |
+| Klasse | Modul | Lines | Line-Cov | Branch-Cov | Testbar? |
+|--------|-------|-------|----------|------------|----------|
+| `VerbindungsSessionEreignisListener` | `tisch` | 29 | 9% | 0% | WS-Session, Integration |
+| `OAuth2ErfolgsHandler` | `spieler` | 23 | 12% | 0% | Google-OAuth-Flow, schwer |
+| `BugReportController` | `spieler` | 90 | 28% | 17% | env-gated (GH-Token) |
+| `MailService` | `spieler` | 40 | 28% | 40% | env-gated (SMTP) |
+| `RateLimitingFilter` | `spieler` | 42 | 36% | 15% | Request-Simulation, mittel |
+| `Stichverlauf` | `partie` | 21 | 50% | 0% | ✅ Domain, hoher ROI |
+| `KiOrchestrierungService` | `ki.orchestrierung` | 38 | 55% | 32% | ✅ Unit-testbar |
+| `ArmutStatus` | `partie` | 38 | 66% | — | ✅ Domain, hoher ROI |
+| `KiTischOrchestrator` | `tisch` | 145 | 64% | 51% | ✅ Unit-testbar |
+| `TischSicherheit` | `tisch` | 36 | 70% | 38% | ✅ Guard-Logik |
+| `SpielverwaltungWebSocketController` | `tisch` | 73 | 74% | 25% | SpringBootTest nötig |
 
 ### Frontend (Vitest/V8)
 
-Gesamt-Coverage: **79%** (Statements, Branches, Lines, Functions)
-Detailbericht: `frontend/coverage/index.html`
+| Metrik | Quote |
+|--------|-------|
+| Statements | **78.46%** |
+| Branches | **80.40%** |
+| Functions | **76.67%** |
+| Lines | **78.46%** |
+
+> Leicht unter Session-47-Wert (79%) — mehr Produktivcode durch Redesigns, Bridge-Erweiterungen. `AppStore.ts` ist korrekt im Report enthalten (wurde fälschlich als excluded vermutet — war nie in der Exclude-Liste).
+
+**Frontend-Schwachstellen (< 70% Statements, signifikante Dateien):**
+
+| Datei | Stmts | Branches | Hinweis |
+|-------|-------|----------|---------|
+| `szenen/BugreportDialog.ts` | 1.85% | 100% | env-gated, kein sinnvoller Unit-Test |
+| `szenen/TischAbonnements.ts` | 37.87% | 42.85% | ✅ WebSocket-Abos, mittel |
+| `szenen/TischAnimationOrchestrator.ts` | 38.51% | 50% | ✅ Orchestrierung |
+| `szenen/TischBrücke.ts` | 42.37% | 100% | e2e-Bridge, eher E2E-Test |
+| `szenen/TischHudRenderer.ts` | 40.86% | 66.66% | Phaser-Mock nötig |
+| `szenen/TischRundenEndeController.ts` | 42.42% | 62.85% | ✅ Controller, testbar |
+| `szenen/TischEreignisHandler.ts` | 66.48% | 65% | ✅ nach Refactoring testbar |
+| `store/TischStore.ts` | 70.14% | 100% | ✅ Store-Logic |
+| `store/SessionStore.ts` | 69.73% | 100% | ✅ wichtige Auth-Pfade |
+
+Detailbericht: `frontend/coverage/index.html` (nach `npx vitest run --coverage`)
 
 ## Komplexitäts-Hotspots
 
@@ -126,13 +152,13 @@ Erlaubte Abhängigkeitsrichtung: `tisch → partie, spieler, ki` · `ki → part
 
 Abgeleitet aus den obigen Metriken (Details: IMPLEMENTATION_PLAN.md, Sektion Entdeckungen).
 
-| Priorität | Kandidat | Metrik | Empfehlung |
-|-----------|----------|--------|------------|
-| 🔴 Hoch | `TischEreignisHandler.verarbeitePartieEreignis` | Komplexität 68 | In Teilhandler je Ereignistyp aufteilen |
-| 🔴 Hoch | `PartieStore._verarbeiteEventQueue` | Komplexität 60 | Dispatcher-Methoden extrahieren |
-| 🔴 Hoch | `TischKartenRenderer.renderKartenFaecher` | Komplexität 53 | Render-Schritte extrahieren |
-| 🟡 Mittel | `TischAnsichtModell.erstelleTischAnsichtAusStatus` | Komplexität 36 | Builder-Pattern oder Teilmethoden |
-| 🟡 Mittel | `JsonbConverter.java` | 948 LOC | Generische Basisklassen (optionale Weiterführung) |
-| 🟡 Mittel | `KiTischOrchestrator` | 68% Coverage, 141 LOC | Mehr Unit-Tests |
-| 🟢 Niedrig | `VerbindungsSessionEreignisListener` | 13% Coverage, 29 LOC | Integration-Test ergänzen |
+| Priorität | Kandidat | Metrik | Status |
+|-----------|----------|--------|--------|
+| ~~🔴 Hoch~~ | ~~`TischEreignisHandler.verarbeitePartieEreignis`~~ | ~~Komplexität 68~~ | ✅ Erledigt (S59) |
+| ~~🔴 Hoch~~ | ~~`PartieStore._verarbeiteEventQueue`~~ | ~~Komplexität 60~~ | ✅ Erledigt (S61) |
+| ~~🔴 Hoch~~ | ~~`TischKartenRenderer.renderKartenFaecher/setzeKartenInteraktion`~~ | ~~Komplexität 53/32~~ | ✅ Erledigt (S100i) |
+| 🟡 Mittel | `TischAnsichtModell.erstelleTischAnsichtAusStatus` | Komplexität 36 | Offen — Builder-Pattern oder Teilmethoden |
+| 🟡 Mittel | `KiTischOrchestrator` | 64% Coverage, 145 LOC | Offen — Unit-Tests (Phase 2) |
+| 🟢 Niedrig | `VerbindungsSessionEreignisListener` | 9% Coverage, 29 LOC | Offen — Integration-Test ergänzen |
+| 🟢 Niedrig | `RateLimitingFilter` | 36% Coverage, 42 LOC | Offen — Request-Simulation (Security) |
 

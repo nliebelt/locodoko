@@ -4,7 +4,7 @@
 
 ## Notiz
 
-**Session 102 (2026-06-11) — BUG-FE-BASELINE-JSDOM + FE-KLEINKRAM-SAMMEL abgeschlossen.** (1) Node 26 localStorage-Polyfill (`src/test/setup.ts`), Canvas-2D-Mock in AssetLoader.test.ts, `global→globalThis` in LoginSzene.test.ts → alle 299 FE-Tests grün + Build + Lint sauber. (2) `spielProtokollEintraege` bei Partie-Reset geleert, `parseNachricht()` mit try/catch, 3× `formatiereMeldung` in `StoreTypen.ts` konsolidiert, `console.log` entfernt. **Nächster autonomer Task: QA-TEST-ABDECKUNG-REPORT** → danach STOP für User-Review.
+**Session 103 (2026-06-11) — QA-TEST-ABDECKUNG-REPORT abgeschlossen.** `docs/metrics.md` mit aktuellen Zahlen aus `mvn clean verify` (JaCoCo) + `vitest run --coverage` aktualisiert. Backend: 82.8% instr / 82.2% lines / 68.9% branches (371 Tests). Frontend: 78.46% stmts / 80.4% branches / 76.67% functions (299 Tests). AppStore.ts war nie fälschlich excluded — Annahme aus S47 bereits korrigiert. 8 Backend- und 4 Frontend-Test-Tasks in Sektion J) eingetragen. Alle 3 Top-Komplexitäts-Refactorings als erledigt markiert. **STOP FÜR USER-REVIEW — Phase 2 wartet auf Freigabe.**
 
 **Session 101c (2026-06-11) — Planungslauf + Polishing-Scan:** 3-Agenten-Scan (Backend/Frontend/FE-Baseline) durchgeführt. **Backend: produktionsreif** — keine TODOs, keine Debug-Ausgaben, Dependencies aktuell (Spring Boot 4.0.5, Java 25). **Frontend: fast sauber** — strict mode aktiv, ESLint korrekt, ein nacktes `console.log` in `AppStore.test.ts:832` (→ FE-KLEINKRAM-SAMMEL). **FE-Baseline Root Cause gefunden:** `vite.config.ts:29` setzt `environment: 'node'` global → jsdom-Pragmas in 3 Testdateien werden nicht überschrieben → `localStorage` undefined + Canvas nicht implementiert. Zusätzlich fehlt das `canvas`-npm-Package. → Neuer Task **BUG-FE-BASELINE-JSDOM** (P1, Blocker).
 
@@ -794,21 +794,30 @@ Alle noch im Greenfield-Fenster (vor erstem echten Deploy). Details und Audit-Ko
 
 1. [x] **BUG-FE-BASELINE-JSDOM** (P1, Frontend, Blocker) — siehe oben.
 2. [x] **FE-KLEINKRAM-SAMMEL** (P3, Frontend) — siehe oben. [hängt an 1.]
-3. [ ] **QA-TEST-ABDECKUNG-REPORT** (P2, QA) — Coverage-Report aktualisieren (Backend: `mvn clean verify` → JaCoCo in `target/site/jacoco/`; Frontend: `cd frontend && npx vitest --coverage` → `frontend/coverage/`). Seit Session 47 kamen ~30 Tests hinzu → Zahlen veraltet. `docs/metrics.md` Abschnitt „Test-Coverage" + Schwachstellen-Tabelle aktualisieren. Konkrete Test-Tasks für Phase 2 unter „Entdeckungen" vorschlagen (pro Schwachstelle < 70% mit > 20 Lines ein Task). **AppStore.ts aus der Coverage-Exclude-Liste in `vite.config.ts` entfernen** (hat Tests, ist fälschlich excluded). **DoD:** `docs/metrics.md` aktualisiert, vorgeschlagene Test-Tasks eingetragen, committed. **DANACH: STOP FÜR USER-REVIEW.** **Risiko:** niedrig (read-only Diagnose + Doku).
+3. [x] **QA-TEST-ABDECKUNG-REPORT** (P2, QA) — Coverage-Report aktualisiert (Session 103). Backend: Instructions 82.8%, Lines 82.2%, Branches 68.9% (von 84%/83%/71% — Rückgang durch neue Features ohne proportionale Tests). Frontend: Statements 78.46%, Branches 80.4%, Functions 76.67%. AppStore.ts war nie in der Exclude-Liste (Annahme aus S47 falsch). Test-Tasks für Phase 2 unter J) präzisiert + Entdeckungen eingetragen. `docs/metrics.md` aktualisiert. **STOP FÜR USER-REVIEW.**
 
 ### J) Test-Abdeckung — Phase 2 (autonom nach User-Review)
 
-> Ziel: Coverage-Lücken systematisch schließen. Backend Branch-Coverage 71%→80%, Frontend 79%→80%+. **Konkrete Tasks werden aus dem QA-TEST-ABDECKUNG-REPORT abgeleitet.** Geschätzt 5–8 Iterationen. Pro Task ein Commit. Verifikation: `mvn clean test` / `npm test`.
+> Ziel: Coverage-Lücken systematisch schließen. Backend Branch-Coverage 68.9%→75%+, Frontend 78.46%→80%+. **Wartet auf User-Freigabe nach QA-TEST-ABDECKUNG-REPORT (Session 103).** Geschätzt 5–8 Iterationen. Pro Task ein Commit. Verifikation: `mvn clean test` / `npm test`.
 
-*Tasks werden nach Review von QA-TEST-ABDECKUNG-REPORT hier eingetragen. Erwartete Kandidaten (aus Session-47-Report, final nach aktuellem Report):*
+**Backend — nach aktuellem Session-103-Report (Reihenfolge: ROI × Testbarkeit):**
 
-- [ ] **TEST-DOMÄNE-ARMUT** — `ArmutStatus` (38 Lines, 65%) + verwandte Armut-Pfade testen. Reine Domänenlogik, hoher ROI.
-- [ ] **TEST-DOMÄNE-STICHVERLAUF** — `Stichverlauf` (21 Lines, 57%) Branch-Pfade abdecken.
-- [ ] **TEST-TISCHSICHERHEIT** — `TischSicherheit` (36 Lines, 69%) Guard-Logik testen. Wichtig für Prod-Sicherheit.
-- [ ] **TEST-JSONB-ROUNDTRIP** — `JsonbConverter` (45 Lines, 55%) verbleibende Converter-Roundtrips.
-- [ ] **TEST-KI-ORCHESTRIERUNG** — `KiOrchestrierungService` (38 Lines, 60%) Fehler-/Randpfade.
-- [ ] **TEST-WEBSOCKET-CONTROLLER** — `SpielverwaltungWebSocketController` (71 Lines, 64%) Nachrichten-Handler.
-- *Weitere je nach aktuellem Report.*
+- [ ] **TEST-DOMÄNE-ARMUT** — `ArmutStatus` (38 Lines, **66%** instr, 0% branches) + verwandte Armut-Pfade (`nimmArmutAn`, `tauscheKarten`, Grenzfälle). Reine Domänenlogik, hoher ROI. **Erste Datei:** `ArmutStatusTest.java` (neu) im Paket `de.locodoko.partie`.
+- [ ] **TEST-DOMÄNE-STICHVERLAUF** — `Stichverlauf` (21 Lines, **50%** instr, 0% branches) Branch-Pfade: Stich-Ende, Augen-Berechnung, Grenzfall leerer Stich. **Erste Datei:** `StichverlaufTest.java` (neu).
+- [ ] **TEST-KI-ORCHESTRIERUNG** — `KiOrchestrierungService` (38 Lines, **55%** instr, 32% branches) Fehler-/Randpfade: unbekannte Spielphase, Exception-Handling, Retry-Verhalten. **Erste Datei:** `KiOrchestrierungServiceTest.java` (neu).
+- [ ] **TEST-KI-ORCHESTRATOR** — `KiTischOrchestrator` (145 Lines, **64%** instr, 51% branches) Concurrent-Paths, OptimisticLock-Retry, Exception-Pfade. **Erste Datei:** bestehenden `KiTischOrchestratorTest.java` prüfen + erweitern.
+- [ ] **TEST-TISCHSICHERHEIT** — `TischSicherheit` (36 Lines, **70%** instr, 38% branches) Guard-Logik: nicht Mitglied, falscher Status, kein aktives Spiel. Wichtig für Prod-Sicherheit. **Erste Datei:** `TischSicherheitTest.java` (neu).
+- [ ] **TEST-JSONB-ROUNDTRIP** — `JsonbConverter` (45 Lines in JaCoCo = Outer-Klasse, **53%**) verbleibende Converter-Roundtrips: `ArmutStatus`, `GeschmisseneSpielerVO`, `Haende`. **Erste Datei:** bestehenden `JsonbConverterTest.java` erweitern.
+- [ ] **TEST-RATE-LIMITING** — `RateLimitingFilter` (42 Lines, **36%** instr, 15% branches) Request-Simulation: Rate-Limit-Schwelle, pro-IP-Trennung, Whitelist-Pfade. `MockHttpServletRequest` verwenden (kein `@SpringBootTest`). **Erste Datei:** `RateLimitingFilterTest.java` (neu).
+- [ ] **TEST-WEBSOCKET-CONTROLLER** — `SpielverwaltungWebSocketController` (73 Lines, **74%** instr, 25% branches) unabgedeckte Nachrichten-Handler. `@SpringBootTest` + STOMP-Client. **Erste Datei:** bestehenden Test erweitern.
+
+**Frontend — nach aktuellem Session-103-Report:**
+
+- [ ] **TEST-FE-STORE-SESSION** — `SessionStore.ts` (69.73% stmts, 100% branches) nicht abgedeckte Auth-Pfade: Logout-Fehler, GastStart-Fehler, Token-Expired. **Erste Datei:** `SessionStore.test.ts` erweitern.
+- [ ] **TEST-FE-STORE-TISCH** — `TischStore.ts` (70.14% stmts) nicht abgedeckte Ereignis-Handler und Fehler-Branches. **Erste Datei:** `TischStore.test.ts` erweitern.
+- [ ] **TEST-FE-ABONNEMENTS** — `TischAbonnements.ts` (37.87% stmts, 42.85% branches) WebSocket-Abos + Reconnect-Pfade. **Erste Datei:** `TischAbonnements.test.ts` (neu).
+- [ ] **TEST-FE-RUNDEN-CONTROLLER** — `TischRundenEndeController.ts` (42.42% stmts) Rundenende- + Partie-Ende-Modal, Tween-Cleanup. **Erste Datei:** `TischRundenEndeController.test.ts` (neu).
+- *Weitere je nach User-Review.*
 
 > **Verweise:** `DEPLOY-COMPOSE-SMOKE` (bereits als MENSCH-Task vorhanden) ist das Gate für die Verifikation von DB-CONSTRAINTS-HAERTUNG + JSONB/Views gegen echtes Postgres 17. `.env` enthält lokal einen echten GitHub-PAT — **nicht committet** (History sauber), aber rotieren falls das Verzeichnis je geteilt wurde.
 
