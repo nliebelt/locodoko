@@ -38,7 +38,7 @@ const { LoginSzene } = await import('./LoginSzene');
 const { PhaserButton } = await import('./PhaserButton');
 
 function mockFetchKonfiguration(googleOAuth2Aktiv: boolean): void {
-  global.fetch = vi.fn().mockResolvedValue({
+  globalThis.fetch = vi.fn().mockResolvedValue({
     json: () => Promise.resolve({ googleOAuth2Aktiv })
   } as any);
 }

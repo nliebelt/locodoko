@@ -16,6 +16,27 @@ describe('AssetLoader', () => {
   let mockScene: any;
 
   beforeEach(() => {
+    // Canvas-Mock: jsdom implementiert getContext() nicht → gibt null zurueck.
+    // Wir mocken createElement('canvas'), damit erzeugeKartenTextur() funktioniert.
+    const origCreateElement = document.createElement.bind(document);
+    vi.spyOn(document, 'createElement').mockImplementation((tag: string, options?: ElementCreationOptions) => {
+      if (tag === 'canvas') {
+        const mockCtx = {
+          fillStyle: '', strokeStyle: '', lineWidth: 0, font: '', textAlign: '', textBaseline: '',
+          fillRect: vi.fn(), strokeRect: vi.fn(), clearRect: vi.fn(),
+          fillText: vi.fn(), strokeText: vi.fn(),
+          beginPath: vi.fn(), closePath: vi.fn(), moveTo: vi.fn(), lineTo: vi.fn(),
+          arc: vi.fn(), arcTo: vi.fn(), quadraticCurveTo: vi.fn(),
+          fill: vi.fn(), stroke: vi.fn(),
+          save: vi.fn(), restore: vi.fn(),
+          translate: vi.fn(), rotate: vi.fn(), scale: vi.fn(),
+          drawImage: vi.fn(), measureText: vi.fn(() => ({ width: 10 })),
+        };
+        return { width: 0, height: 0, getContext: vi.fn(() => mockCtx) } as any;
+      }
+      return origCreateElement(tag, options);
+    });
+
     mockScene = {
       textures: {
         exists: vi.fn(() => false),
