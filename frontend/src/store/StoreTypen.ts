@@ -47,6 +47,18 @@ export interface AppZustand {
   correlationIds: string[];
 }
 
+/** Zentrale Fehler→UiMeldung-Konvertierung (wird von TischStore, SessionStore und AppStore genutzt). */
+export function formatiereMeldung(fehler: unknown): UiMeldung {
+  if (fehler instanceof Error) {
+    const meldung: UiMeldung = { typ: 'fehler', text: fehler.message };
+    if ('fehlerCode' in fehler && typeof (fehler as Record<string, unknown>).fehlerCode === 'string') {
+      meldung.fehlerCode = (fehler as Record<string, unknown>).fehlerCode as string;
+    }
+    return meldung;
+  }
+  return { typ: 'fehler', text: 'Unbekannter Fehler.' };
+}
+
 export type PartieEreignisListener = (ereignis: PartieEreignisAntwort) => void | Promise<void>;
 export type SonderpunkteListener = (ereignis: SonderpunktEreignisAntwortDto[]) => void;
 export type StoreAbo = (zustand: AppZustand) => void;

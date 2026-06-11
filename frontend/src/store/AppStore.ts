@@ -9,13 +9,12 @@ import type {
   VorbehaltAnsage
 } from '../modelle/SpielverwaltungDto';
 import type { SpielverwaltungApi, BugReportAnfrage, BugReportAntwort } from '../services/SpielverwaltungApi';
-import { SpielverwaltungFehler } from '../services/SpielverwaltungApi';
 import type { EchtzeitPort } from '../services/SpielverwaltungEchtzeit';
 import { Logger } from '../logger';
 import { SessionStore } from './SessionStore';
 import { TischStore } from './TischStore';
 import { PartieStore } from './PartieStore';
-import { erzeugeAnfangszustand } from './StoreTypen';
+import { erzeugeAnfangszustand, formatiereMeldung } from './StoreTypen';
 import type { AppZustand, PartieEreignisListener, SonderpunkteListener, StoreAbo, UiMeldung } from './StoreTypen';
 import type { BestenlisteAntwortGenerated, SpielerProfilAntwortGenerated } from '../generated/schema-types';
 
@@ -147,9 +146,6 @@ export class AppStore {
     this.veroeffentliche();
   }
   private veroeffentliche(): void { const zustand = this.snapshot(); this.listener.forEach((l) => l(zustand)); }
-  /** @internal Nur für Tests — interne Hilfsmethode. */
-  formatiereMeldung(fehler: unknown): UiMeldung {
-    if (fehler instanceof SpielverwaltungFehler) return { typ: 'fehler', text: fehler.message, fehlerCode: fehler.fehlerCode };
-    return { typ: 'fehler', text: 'Unbekannter Fehler.' };
-  }
+  /** @internal Nur für Tests — delegiert an gemeinsame formatiereMeldung(). */
+  formatiereMeldung(fehler: unknown): UiMeldung { return formatiereMeldung(fehler); }
 }

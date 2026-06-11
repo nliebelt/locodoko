@@ -829,7 +829,6 @@ describe('AppStore', () => {
 
     await Promise.resolve();
     // Nach KARTE_GESPIELT MUSS die Mitte kuenstlich auf 4 stehen (Synthesizer aktiv)
-    console.log("STATE", JSON.stringify(store.snapshot().partieStand));
     expect(store.snapshot().partieStand?.laufendesSpiel?.aktuelleStichmitte).toHaveLength(4);
 
     // 2. STICH_ABGESCHLOSSEN
@@ -1055,7 +1054,7 @@ it('toggles debug mode', () => {
     const api = new FakeApi({ spielerId: 's1', name: 'S1', istKi: false }, [], baueTisch()) as unknown as SpielverwaltungApi;
     const store = new AppStore(api, new FakeEchtzeit());
     const m = store['formatiereMeldung'](new Error('Normaler Fehler'));
-    expect(m.text).toBe('Unbekannter Fehler.');
+    expect(m.text).toBe('Normaler Fehler');
   });
 
   it('setzt Meldung bei TischStore-API-Fehler ohne Exception zu werfen', async () => {

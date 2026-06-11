@@ -50,7 +50,12 @@ function berechneBrokerUrl(): string {
 }
 
 function parseNachricht<T>(nachricht: IMessage): T {
-  return JSON.parse(nachricht.body) as T;
+  try {
+    return JSON.parse(nachricht.body) as T;
+  } catch {
+    console.error('[STOMP] Ungueltige JSON-Nachricht:', nachricht.body);
+    throw new Error('Ungueltige JSON-Nachricht vom Server');
+  }
 }
 
 type AbonnementEintrag = {

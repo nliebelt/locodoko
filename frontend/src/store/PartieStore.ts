@@ -123,6 +123,7 @@ export class PartieStore {
     this._verarbeiteEventLaeuft = false;
     this._queuePausiert = false;
     this._verpassterSpielBeendet = null;
+    this.patchFn({ spielProtokollEintraege: [] });
   }
 
   /**

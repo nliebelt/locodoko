@@ -1,8 +1,8 @@
 import type { SpielverwaltungApi } from '../services/SpielverwaltungApi';
-import { SpielverwaltungFehler } from '../services/SpielverwaltungApi';
 import type { EchtzeitPort } from '../services/SpielverwaltungEchtzeit';
 import type { SpielverwaltungWebSocketFehlerAntwort, TischlisteEreignisAntwort, Uuid } from '../modelle/SpielverwaltungDto';
-import type { AppZustand, UiMeldung } from './StoreTypen';
+import { formatiereMeldung } from './StoreTypen';
+import type { AppZustand } from './StoreTypen';
 import type { SpielerProfilAntwortGenerated } from '../generated/schema-types';
 
 /**
@@ -86,16 +86,10 @@ export class SessionStore {
     try {
       return await aktion();
     } catch (fehler) {
-      this.patchFn({ meldung: this.formatiereMeldung(fehler) });
+      this.patchFn({ meldung: formatiereMeldung(fehler) });
       throw fehler;
     } finally {
       this.patchFn({ wirdGeladen: false });
     }
-  }
-
-  private formatiereMeldung(fehler: unknown): UiMeldung {
-    if (fehler instanceof SpielverwaltungFehler) return { typ: 'fehler', text: fehler.message, fehlerCode: fehler.fehlerCode };
-    if (fehler instanceof Error) return { typ: 'fehler', text: fehler.message };
-    return { typ: 'fehler', text: 'Unbekannter Fehler.' };
   }
 }

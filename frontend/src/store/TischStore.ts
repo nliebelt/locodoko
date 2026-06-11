@@ -9,10 +9,10 @@ import type {
   Uuid
 } from '../modelle/SpielverwaltungDto';
 import type { SpielverwaltungApi } from '../services/SpielverwaltungApi';
-import { SpielverwaltungFehler } from '../services/SpielverwaltungApi';
 import type { EchtzeitPort } from '../services/SpielverwaltungEchtzeit';
 import { Logger } from '../logger';
-import type { AppZustand, UiMeldung } from './StoreTypen';
+import { formatiereMeldung } from './StoreTypen';
+import type { AppZustand } from './StoreTypen';
 
 /**
  * Verwaltet Tisch-CRUD, Tisch-WebSocket-Abonnements und Tisch-Ereignisverarbeitung.
@@ -236,18 +236,13 @@ export class TischStore {
     try {
       await aktion();
     } catch (fehler) {
-      this.patchFn({ meldung: this.formatiereMeldung(fehler) });
+      this.patchFn({ meldung: formatiereMeldung(fehler) });
     } finally {
       this.patchFn({ wirdGeladen: false });
     }
   }
 
-  private formatiereMeldung(fehler: unknown): UiMeldung {
-    if (fehler instanceof SpielverwaltungFehler) return { typ: 'fehler', text: fehler.message, fehlerCode: fehler.fehlerCode };
-    return { typ: 'fehler', text: 'Unbekannter Fehler.' };
-  }
-
   sendeSpielaktion(ziel: string, payload: unknown): void {
-    try { this.patchFn({ meldung: null }); this.echtzeit.senden(ziel, payload); } catch (f) { this.patchFn({ meldung: this.formatiereMeldung(f) }); }
+    try { this.patchFn({ meldung: null }); this.echtzeit.senden(ziel, payload); } catch (f) { this.patchFn({ meldung: formatiereMeldung(f) }); }
   }
 }
