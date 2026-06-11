@@ -4,6 +4,10 @@
 
 ## Notiz
 
+**Session 106 (2026-06-11) — TEST-DOMÄNE-STICHVERLAUF abgeschlossen:** `StichverlaufTest.java` (neu) im Paket `de.locodoko.partie` — 20 Unit-Tests: Factory-Methoden `leer()`/`aus()` (inkl. null-Guard + defensive-copy-Prüfung), `mitStich()` (Unveränderlichkeit, Reihenfolge, null-Guard), `letzter()` (Happy-Path + IllegalStateException-Pfad), `istLeer()`/`anzahl()`, `equals()`/`hashCode()` (Identität, Wertgleichheit, Ungleichheit, null, falscher Typ), `toString()`. 423 BE-Tests grün (+20). **Nächster autonomer Task: TEST-KI-ORCHESTRIERUNG** (`KiOrchestrierungService`, 38 Lines, 55% instr, 32% branches — Fehler-/Randpfade: unbekannte Spielphase, Exception-Handling, Retry).
+
+**Session 105 (2026-06-11) — PHASE 2 FREIGEGEBEN:** User hat nach Review des Coverage-Reports (`docs/metrics.md`, Session 103) die **Test-Abdeckung Phase 2 (Sektion J) freigegeben**. Der Halt-Vermerk „Wartet auf User-Freigabe" ist entfernt — Sektion J ist autonom abarbeitbar. Nächster autonomer Task: **TEST-DOMÄNE-STICHVERLAUF** (`StichverlaufTest.java` neu), danach der Rest von J) in Reihenfolge (ROI × Testbarkeit). Pro Task ein Commit, `mvn clean test` / `npm test` grün. **Offen für spätere Grill-Session (kein Build-Blocker):** SEC-CSRF-ENTSCHEIDUNG (P1, Z.772) + DECISION-LIZENZ (Z.420).
+
 **Session 104 (2026-06-11) — TEST-DOMÄNE-ARMUT abgeschlossen:** `ArmutStatusTest.java` (neu) im Paket `de.locodoko.partie` — 32 Unit-Tests für den ArmutStatus-Record: Compact-Constructor-Validierung (7 Tests: null-Guards, Größencheck, Index-Bounds, Partner-ohne-Angebot-Konsistenz), Factory-Methode `gestartet()` (4 Tests inkl. Uhrzeigersinn-Reihenfolge für WEST und SUED), Initialzustand-Abfragen (4 Tests), mitAngebot/mitAblehnung/mitPartner-Zustandsübergänge (17 Tests inkl. Fehler-Paths und Sequenz-Tests). 403 BE-Tests grün (+32). **Nächster autonomer Task: TEST-DOMÄNE-STICHVERLAUF** (`Stichverlauf`, 50% instr, 0% branches — `StichverlaufTest.java` neu).
 
 **Session 103 (2026-06-11) — QA-TEST-ABDECKUNG-REPORT abgeschlossen.** `docs/metrics.md` mit aktuellen Zahlen aus `mvn clean verify` (JaCoCo) + `vitest run --coverage` aktualisiert. Backend: 82.8% instr / 82.2% lines / 68.9% branches (371 Tests). Frontend: 78.46% stmts / 80.4% branches / 76.67% functions (299 Tests). AppStore.ts war nie fälschlich excluded — Annahme aus S47 bereits korrigiert. 8 Backend- und 4 Frontend-Test-Tasks in Sektion J) eingetragen. Alle 3 Top-Komplexitäts-Refactorings als erledigt markiert. **STOP FÜR USER-REVIEW — Phase 2 wartet auf Freigabe.**
@@ -792,7 +796,7 @@ Alle noch im Greenfield-Fenster (vor erstem echten Deploy). Details und Audit-Ko
 
 ### I) Polishing + Test-Abdeckung — Phase 1 (autonom, dann Review-Halt)
 
-> Ziel: FE-Baseline reparieren, Kleinkram abschließen, dann Coverage-Report aktualisieren und Lücken identifizieren. **Nach Task 3 STOP — User reviewt den Report und gibt Phase 2 frei.**
+> Ziel: FE-Baseline reparieren, Kleinkram abschließen, dann Coverage-Report aktualisieren und Lücken identifizieren. **✅ Phase 1 abgeschlossen, Report reviewt, Phase 2 vom User freigegeben (Session 105, 2026-06-11).**
 
 1. [x] **BUG-FE-BASELINE-JSDOM** (P1, Frontend, Blocker) — siehe oben.
 2. [x] **FE-KLEINKRAM-SAMMEL** (P3, Frontend) — siehe oben. [hängt an 1.]
@@ -800,12 +804,12 @@ Alle noch im Greenfield-Fenster (vor erstem echten Deploy). Details und Audit-Ko
 
 ### J) Test-Abdeckung — Phase 2 (autonom nach User-Review)
 
-> Ziel: Coverage-Lücken systematisch schließen. Backend Branch-Coverage 68.9%→75%+, Frontend 78.46%→80%+. **Wartet auf User-Freigabe nach QA-TEST-ABDECKUNG-REPORT (Session 103).** Geschätzt 5–8 Iterationen. Pro Task ein Commit. Verifikation: `mvn clean test` / `npm test`.
+> Ziel: Coverage-Lücken systematisch schließen. Backend Branch-Coverage 68.9%→75%+, Frontend 78.46%→80%+. **✅ FREIGEGEBEN durch User am 2026-06-11 (Session 105) — Phase 2 ist entsperrt, autonom abarbeitbar.** Geschätzt 5–8 Iterationen. Pro Task ein Commit. Verifikation: `mvn clean test` / `npm test`.
 
 **Backend — nach aktuellem Session-103-Report (Reihenfolge: ROI × Testbarkeit):**
 
 - [x] **TEST-DOMÄNE-ARMUT** — `ArmutStatus` (38 Lines, **66%** instr, 0% branches) + verwandte Armut-Pfade (`nimmArmutAn`, `tauscheKarten`, Grenzfälle). Reine Domänenlogik, hoher ROI. **Erste Datei:** `ArmutStatusTest.java` (neu) im Paket `de.locodoko.partie`.
-- [ ] **TEST-DOMÄNE-STICHVERLAUF** — `Stichverlauf` (21 Lines, **50%** instr, 0% branches) Branch-Pfade: Stich-Ende, Augen-Berechnung, Grenzfall leerer Stich. **Erste Datei:** `StichverlaufTest.java` (neu).
+- [x] **TEST-DOMÄNE-STICHVERLAUF** — `Stichverlauf` (21 Lines, **50%** instr, 0% branches) Branch-Pfade: Stich-Ende, Augen-Berechnung, Grenzfall leerer Stich. **Erste Datei:** `StichverlaufTest.java` (neu). 20 Unit-Tests: Factory-Methoden (leer/aus/null-Guards), mitStich-Immutabilität, letzter-Happy/Error-Path, equals/hashCode/toString. 423 BE-Tests grün (+20).
 - [ ] **TEST-KI-ORCHESTRIERUNG** — `KiOrchestrierungService` (38 Lines, **55%** instr, 32% branches) Fehler-/Randpfade: unbekannte Spielphase, Exception-Handling, Retry-Verhalten. **Erste Datei:** `KiOrchestrierungServiceTest.java` (neu).
 - [ ] **TEST-KI-ORCHESTRATOR** — `KiTischOrchestrator` (145 Lines, **64%** instr, 51% branches) Concurrent-Paths, OptimisticLock-Retry, Exception-Pfade. **Erste Datei:** bestehenden `KiTischOrchestratorTest.java` prüfen + erweitern.
 - [ ] **TEST-TISCHSICHERHEIT** — `TischSicherheit` (36 Lines, **70%** instr, 38% branches) Guard-Logik: nicht Mitglied, falscher Status, kein aktives Spiel. Wichtig für Prod-Sicherheit. **Erste Datei:** `TischSicherheitTest.java` (neu).
