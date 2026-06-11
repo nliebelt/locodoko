@@ -4,7 +4,7 @@
 
 ## Notiz
 
-**Session 101d (2026-06-11) — Plan-Update: QA-Test-Abdeckung aufgenommen.** Neue autonome Queue I) mit 3 Tasks vor Review-Halt + Queue J) mit geschätzt 5–8 Test-Tasks nach User-Review. Ziel: Coverage-Lücken systematisch schließen (Backend Branch 71%→80%, Frontend 79%→80%+). **Nächster autonomer Task: BUG-FE-BASELINE-JSDOM** → FE-KLEINKRAM-SAMMEL → QA-TEST-ABDECKUNG-REPORT → STOP für Review.
+**Session 102 (2026-06-11) — BUG-FE-BASELINE-JSDOM + FE-KLEINKRAM-SAMMEL abgeschlossen.** (1) Node 26 localStorage-Polyfill (`src/test/setup.ts`), Canvas-2D-Mock in AssetLoader.test.ts, `global→globalThis` in LoginSzene.test.ts → alle 299 FE-Tests grün + Build + Lint sauber. (2) `spielProtokollEintraege` bei Partie-Reset geleert, `parseNachricht()` mit try/catch, 3× `formatiereMeldung` in `StoreTypen.ts` konsolidiert, `console.log` entfernt. **Nächster autonomer Task: QA-TEST-ABDECKUNG-REPORT** → danach STOP für User-Review.
 
 **Session 101c (2026-06-11) — Planungslauf + Polishing-Scan:** 3-Agenten-Scan (Backend/Frontend/FE-Baseline) durchgeführt. **Backend: produktionsreif** — keine TODOs, keine Debug-Ausgaben, Dependencies aktuell (Spring Boot 4.0.5, Java 25). **Frontend: fast sauber** — strict mode aktiv, ESLint korrekt, ein nacktes `console.log` in `AppStore.test.ts:832` (→ FE-KLEINKRAM-SAMMEL). **FE-Baseline Root Cause gefunden:** `vite.config.ts:29` setzt `environment: 'node'` global → jsdom-Pragmas in 3 Testdateien werden nicht überschrieben → `localStorage` undefined + Canvas nicht implementiert. Zusätzlich fehlt das `canvas`-npm-Package. → Neuer Task **BUG-FE-BASELINE-JSDOM** (P1, Blocker).
 
