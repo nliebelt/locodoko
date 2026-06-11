@@ -4,6 +4,8 @@
 
 ## Notiz
 
+**Session 104 (2026-06-11) — TEST-DOMÄNE-ARMUT abgeschlossen:** `ArmutStatusTest.java` (neu) im Paket `de.locodoko.partie` — 32 Unit-Tests für den ArmutStatus-Record: Compact-Constructor-Validierung (7 Tests: null-Guards, Größencheck, Index-Bounds, Partner-ohne-Angebot-Konsistenz), Factory-Methode `gestartet()` (4 Tests inkl. Uhrzeigersinn-Reihenfolge für WEST und SUED), Initialzustand-Abfragen (4 Tests), mitAngebot/mitAblehnung/mitPartner-Zustandsübergänge (17 Tests inkl. Fehler-Paths und Sequenz-Tests). 403 BE-Tests grün (+32). **Nächster autonomer Task: TEST-DOMÄNE-STICHVERLAUF** (`Stichverlauf`, 50% instr, 0% branches — `StichverlaufTest.java` neu).
+
 **Session 103 (2026-06-11) — QA-TEST-ABDECKUNG-REPORT abgeschlossen.** `docs/metrics.md` mit aktuellen Zahlen aus `mvn clean verify` (JaCoCo) + `vitest run --coverage` aktualisiert. Backend: 82.8% instr / 82.2% lines / 68.9% branches (371 Tests). Frontend: 78.46% stmts / 80.4% branches / 76.67% functions (299 Tests). AppStore.ts war nie fälschlich excluded — Annahme aus S47 bereits korrigiert. 8 Backend- und 4 Frontend-Test-Tasks in Sektion J) eingetragen. Alle 3 Top-Komplexitäts-Refactorings als erledigt markiert. **STOP FÜR USER-REVIEW — Phase 2 wartet auf Freigabe.**
 
 **Session 101c (2026-06-11) — Planungslauf + Polishing-Scan:** 3-Agenten-Scan (Backend/Frontend/FE-Baseline) durchgeführt. **Backend: produktionsreif** — keine TODOs, keine Debug-Ausgaben, Dependencies aktuell (Spring Boot 4.0.5, Java 25). **Frontend: fast sauber** — strict mode aktiv, ESLint korrekt, ein nacktes `console.log` in `AppStore.test.ts:832` (→ FE-KLEINKRAM-SAMMEL). **FE-Baseline Root Cause gefunden:** `vite.config.ts:29` setzt `environment: 'node'` global → jsdom-Pragmas in 3 Testdateien werden nicht überschrieben → `localStorage` undefined + Canvas nicht implementiert. Zusätzlich fehlt das `canvas`-npm-Package. → Neuer Task **BUG-FE-BASELINE-JSDOM** (P1, Blocker).
@@ -802,7 +804,7 @@ Alle noch im Greenfield-Fenster (vor erstem echten Deploy). Details und Audit-Ko
 
 **Backend — nach aktuellem Session-103-Report (Reihenfolge: ROI × Testbarkeit):**
 
-- [ ] **TEST-DOMÄNE-ARMUT** — `ArmutStatus` (38 Lines, **66%** instr, 0% branches) + verwandte Armut-Pfade (`nimmArmutAn`, `tauscheKarten`, Grenzfälle). Reine Domänenlogik, hoher ROI. **Erste Datei:** `ArmutStatusTest.java` (neu) im Paket `de.locodoko.partie`.
+- [x] **TEST-DOMÄNE-ARMUT** — `ArmutStatus` (38 Lines, **66%** instr, 0% branches) + verwandte Armut-Pfade (`nimmArmutAn`, `tauscheKarten`, Grenzfälle). Reine Domänenlogik, hoher ROI. **Erste Datei:** `ArmutStatusTest.java` (neu) im Paket `de.locodoko.partie`.
 - [ ] **TEST-DOMÄNE-STICHVERLAUF** — `Stichverlauf` (21 Lines, **50%** instr, 0% branches) Branch-Pfade: Stich-Ende, Augen-Berechnung, Grenzfall leerer Stich. **Erste Datei:** `StichverlaufTest.java` (neu).
 - [ ] **TEST-KI-ORCHESTRIERUNG** — `KiOrchestrierungService` (38 Lines, **55%** instr, 32% branches) Fehler-/Randpfade: unbekannte Spielphase, Exception-Handling, Retry-Verhalten. **Erste Datei:** `KiOrchestrierungServiceTest.java` (neu).
 - [ ] **TEST-KI-ORCHESTRATOR** — `KiTischOrchestrator` (145 Lines, **64%** instr, 51% branches) Concurrent-Paths, OptimisticLock-Retry, Exception-Pfade. **Erste Datei:** bestehenden `KiTischOrchestratorTest.java` prüfen + erweitern.
