@@ -2,6 +2,7 @@ package de.locodoko.tisch.persistenz;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import de.locodoko.karten.Farbe;
+import de.locodoko.karten.Hand;
 import de.locodoko.karten.Karte;
 import de.locodoko.karten.Kartenwert;
 import de.locodoko.karten.Spielregeln;
@@ -9,7 +10,9 @@ import de.locodoko.partie.AnsageEreignis;
 import de.locodoko.partie.Ansage;
 import de.locodoko.partie.Ansagen;
 import de.locodoko.partie.ArmutStatus;
+import de.locodoko.partie.GeschmisseneSpieler;
 import de.locodoko.partie.GespielteKarte;
+import de.locodoko.partie.Haende;
 import de.locodoko.partie.HochzeitStatus;
 import de.locodoko.partie.Partei;
 import de.locodoko.partie.Parteien;
@@ -118,6 +121,90 @@ class JsonbConverterTest {
         assertThat(rekonstruiert.partnerSpieler()).isNull();
         assertThat(rekonstruiert.aktuellerIndex()).isEqualTo(0);
         assertThat(rekonstruiert.abfrageReihenfolge()).hasSize(3);
+    }
+
+    // ---- Test 9b: ArmutStatus mit Partner ----
+
+    /**
+     * Warum wichtig: ArmutStatus-Compact-Konstruktor erlaubt partnerSpieler nur bei angebotAbgegeben=true.
+     * Dieser Branch (partnerSpieler != null) ist im bestehenden Test nicht abgedeckt. Jackson muss
+     * den nicht-null-Partner korrekt serialisieren und deserialisieren, sonst bricht der Zustand
+     * beim Laden aus der DB und der Armut-Ablauf faellt in einen ungueltigen Stand.
+     */
+    @Test
+    void armutStatus_mitPartner_wirdAlsJsonbRoundtrip_korrektRekonstruiert() {
+        ArmutStatus ohnePartner = ArmutStatus.gestartet(SpielerPosition.SUED);
+        ArmutStatus mitAngebot = ohnePartner.mitAngebot(List.of(kreuzDame1()));
+        // Der erste Antwortspieler (im Uhrzeigersinn ab SUED.naechste = WEST) nimmt an
+        SpielerPosition ersterAntwortspieler = ohnePartner.abfrageReihenfolge().get(0);
+        ArmutStatus mitPartner = mitAngebot.mitPartner(ersterAntwortspieler);
+        var schreibConverter = new JsonbConverter.ArmutStatusSchreibConverter(mapper);
+
+        String jsonString = schreibConverter.convert(mitPartner);
+        ArmutStatus rekonstruiert = new JsonbConverter.ArmutStatusStringLeseConverter(mapper).convert(jsonString);
+
+        assertThat(rekonstruiert.armutSpieler()).isEqualTo(SpielerPosition.SUED);
+        assertThat(rekonstruiert.partnerSpieler()).isEqualTo(ersterAntwortspieler);
+        assertThat(rekonstruiert.angebotAbgegeben()).isTrue();
+        assertThat(rekonstruiert.angeboteneTrumpfkarten()).containsExactly(kreuzDame1());
+    }
+
+    // ---- Test 9c: GeschmisseneSpieler ----
+
+    /**
+     * Warum wichtig: GeschmisseneSpieler ist ein Non-Record mit privatem Konstruktor. Der Mixin
+     * muss aus() als JsonCreator und alsSet() als JsonValue korrekt verdrahten. Ohne diesen Test
+     * koennte ein kaputter Converter dazu fuehren, dass beim Laden aus der DB ein leeres Set
+     * zurueckkommt — alle Schmiss-Informationen gehen verloren.
+     */
+    @Test
+    void geschmisseneSpieler_wirdAlsJsonbRoundtrip_korrektRekonstruiert() {
+        GeschmisseneSpieler geschmissen = GeschmisseneSpieler.leer()
+                .mitPosition(SpielerPosition.NORD)
+                .mitPosition(SpielerPosition.OST);
+        var schreibConverter = new JsonbConverter.GeschmisseneSpielerVOSchreibConverter(mapper);
+
+        String jsonString = schreibConverter.convert(geschmissen);
+        GeschmisseneSpieler rekonstruiert = new JsonbConverter.GeschmisseneSpielerVOStringLeseConverter(mapper).convert(jsonString);
+
+        assertThat(rekonstruiert.alsSet()).containsExactlyInAnyOrder(SpielerPosition.NORD, SpielerPosition.OST);
+        assertThat(rekonstruiert.enthaelt(SpielerPosition.NORD)).isTrue();
+        assertThat(rekonstruiert.enthaelt(SpielerPosition.SUED)).isFalse();
+    }
+
+    // ---- Test 9d: Haende ----
+
+    /**
+     * Warum wichtig: Haende ist das komplexeste JSONB-Feld — eine Map von SpielerPosition
+     * auf Hand, jede Hand mit einer Kartenliste. Der HaendeMixin muss aus() als JsonCreator
+     * und alsMap() als JsonValue korrekt verdrahten. Falsche Deserialisierung fuehrt dazu,
+     * dass Spieler nach einem App-Neustart nicht mehr ihre Karten sehen — kritisch fuer Prod.
+     */
+    @Test
+    void haende_wirdAlsJsonbRoundtrip_korrektRekonstruiert() {
+        Hand nordHand = new Hand(List.of(
+                new Karte(Farbe.KREUZ, Kartenwert.DAME, 1),
+                new Karte(Farbe.PIK, Kartenwert.ZEHN, 2)
+        ));
+        Hand suedHand = new Hand(List.of(
+                new Karte(Farbe.HERZ, Kartenwert.AS, 3)
+        ));
+        Map<SpielerPosition, Hand> haendeMap = new EnumMap<>(SpielerPosition.class);
+        haendeMap.put(SpielerPosition.NORD, nordHand);
+        haendeMap.put(SpielerPosition.SUED, suedHand);
+        Haende haende = Haende.aus(haendeMap);
+        var schreibConverter = new JsonbConverter.HaendeVOSchreibConverter(mapper);
+
+        String jsonString = schreibConverter.convert(haende);
+        Haende rekonstruiert = new JsonbConverter.HaendeVOStringLeseConverter(mapper).convert(jsonString);
+
+        assertThat(rekonstruiert.positionen()).containsExactlyInAnyOrder(SpielerPosition.NORD, SpielerPosition.SUED);
+        assertThat(rekonstruiert.handVon(SpielerPosition.NORD).karten()).hasSize(2);
+        assertThat(rekonstruiert.handVon(SpielerPosition.NORD).karten().get(0))
+                .isEqualTo(new Karte(Farbe.KREUZ, Kartenwert.DAME, 1));
+        assertThat(rekonstruiert.handVon(SpielerPosition.SUED).karten()).hasSize(1);
+        assertThat(rekonstruiert.handVon(SpielerPosition.SUED).karten().get(0))
+                .isEqualTo(new Karte(Farbe.HERZ, Kartenwert.AS, 3));
     }
 
     // ---- Test 10: HochzeitStatus ----
