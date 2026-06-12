@@ -19,6 +19,7 @@ import de.locodoko.tisch.persistenz.SpielRepository;
 import de.locodoko.tisch.TischEntity;
 import de.locodoko.tisch.TischRepository;
 import de.locodoko.spieler.SpielerNameAnfrage;
+import de.locodoko.spieler.SpielerSessionUngueltigException;
 import de.locodoko.tisch.PartieStandAntwort;
 import de.locodoko.tisch.TischAntwort;
 import de.locodoko.tisch.TischErstellenAnfrage;
@@ -48,6 +49,7 @@ import java.util.UUID;
 import static org.awaitility.Awaitility.await;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -383,6 +385,84 @@ class WebSocketSpielaktionIntegrationTest {
 
         assertEquals("VORBEHALT_ANSAGE", ereignis.partieStand().laufendesSpiel().phase(),
             "Wiederholte Armut-Einwuerfe muessen unbegrenzt moeglich sein; auch nach dem zweiten Einwurf muss das Spiel wieder in der Vorbehaltsphase sein.");
+    }
+
+    @Test
+    void verwirftNachrichtWennPrincipalNull() {
+        // ladeAktivenSpieler muss eine Session-Exception werfen wenn Principal null ist,
+        // damit unauthentifizierte WebSocket-Verbindungen keinen Serverzugriff erhalten.
+        assertThrows(
+            SpielerSessionUngueltigException.class,
+            () -> webSocketController.sendeTischlisteSnapshot(null)
+        );
+    }
+
+    @Test
+    void verwirftNachrichtWennPrincipalNameNull() {
+        // ladeAktivenSpieler muss auch dann eine Session-Exception werfen, wenn getName() null liefert.
+        assertThrows(
+            SpielerSessionUngueltigException.class,
+            () -> webSocketController.sendeTischlisteSnapshot(() -> null)
+        );
+    }
+
+    @Test
+    void verwirftNachrichtWennPrincipalNameLeer() {
+        // ladeAktivenSpieler muss einen leeren oder nur-Leerzeichen-Namen als ungueltige Session ablehnen.
+        assertThrows(
+            SpielerSessionUngueltigException.class,
+            () -> webSocketController.sendeTischlisteSnapshot(() -> "  ")
+        );
+    }
+
+    @Test
+    void behandleFachlichenFehlerGibtKorrekteFehlerAntwortFuerNichtGefunden() {
+        // Die NichtGefunden-Branch liefert den Domain-Fehlercode direkt, damit Clients
+        // zwischen fehlenden Ressourcen und anderen Fehlertypen unterscheiden koennen.
+        var exception = new SpielverwaltungNichtGefundenException("TISCH_NICHT_GEFUNDEN", "Kein Tisch.");
+        SpielverwaltungWebSocketFehlerAntwort antwort = webSocketController.behandleFachlichenFehler(exception);
+        assertEquals("TISCH_NICHT_GEFUNDEN", antwort.fehlerCode());
+    }
+
+    @Test
+    void behandleFachlichenFehlerGibtKorrekteFehlerAntwortFuerSessionFehler() {
+        // Die SpielerSessionUngueltig-Branch liefert den stabilen Fehlercode, damit das Frontend
+        // einen Login-Redirect ausloesen kann anstatt einen generischen Fehler zu zeigen.
+        var exception = new SpielerSessionUngueltigException("Keine aktive Session.");
+        SpielverwaltungWebSocketFehlerAntwort antwort = webSocketController.behandleFachlichenFehler(exception);
+        assertEquals("SPIELER_SESSION_UNGUELTIG", antwort.fehlerCode());
+    }
+
+    @Test
+    void behandleFachlichenFehlerGibtAnfrageUngueltigBeiIllegalArgumentException() {
+        // Der IllegalArgumentException-Fallthrough liefert ANFRAGE_UNGUELTIG, damit das Frontend
+        // weiss, dass die gesendeten Nutzdaten das Problem sind (nicht der Serverstatus).
+        var exception = new IllegalArgumentException("Ungueltiger Eingabewert.");
+        SpielverwaltungWebSocketFehlerAntwort antwort = webSocketController.behandleFachlichenFehler(exception);
+        assertEquals("ANFRAGE_UNGUELTIG", antwort.fehlerCode());
+    }
+
+    @Test
+    void sendetTischSnapshotMitNullPartieStandFuerTischOhneSpiel() {
+        // sendeTischSnapshot muss Tische ohne laufendes Spiel korrekt serialisieren
+        // (partieId == null), damit Clients nach Reconnect den leeren Wartezustand sehen.
+        String sessionCookie = registriereSpieler("Eva");
+        String sessionId = extrahiereSessionId(sessionCookie);
+        TischAntwort tisch = erstelleTisch(sessionCookie, "Leerer Snapshot-Tisch");
+        nachrichtenSpeicher.leeren();
+
+        webSocketController.sendeTischSnapshot(tisch.id(), () -> sessionId);
+
+        WebSocketNachrichtGesendet snapshotNachricht = findeBenutzerNachricht(
+            sessionId,
+            "/queue/tisch/" + tisch.id(),
+            TischEreignisAntwort.class
+        );
+        TischEreignisAntwort snapshot = (TischEreignisAntwort) snapshotNachricht.payload();
+        assertEquals(TischEreignisTyp.TISCH_SNAPSHOT, snapshot.ereignisTyp(),
+            "Ein Snapshot-Request muss immer TISCH_SNAPSHOT liefern, damit das Frontend ihn von Live-Events unterscheiden kann.");
+        assertNull(snapshot.partieStand(),
+            "Ein Tisch ohne laufendes Spiel muss im Snapshot einen null-PartieStand liefern, damit das Frontend den Wartezustand korrekt rendert.");
     }
 
     private SpielSetup starteVierSpielerTisch(String tischName) {
