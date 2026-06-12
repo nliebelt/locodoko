@@ -26,6 +26,18 @@ cd e2e && npx playwright test vision-loop.spec.ts --headed
 
 Screenshots landen in `e2e/screenshots/`. Mit dem Read-Tool einlesen und visuell prüfen — kein manueller Screenshot nötig. Nur bei UI-relevanten Änderungen, nicht bei reinen Backend- oder Logik-Fixes.
 
+### Video-basierter Vision-Loop (Animationen/Tweens/Flash-Texte)
+
+Der Screenshot-Loop friert nur diskrete Zustände ein und verpasst Bewegung dazwischen. Für flüchtige Übergänge (Tween-Glitches, Flash-Texte, Modal-Animationen) den Video-Loop nutzen (Backend muss laufen):
+
+```sh
+cd e2e
+npm run test:video                                          # nimmt eine Runde in Echtzeit als .webm auf
+npm run frames -- --video test-results/video/<...>/video.webm --fps 4   # zerlegt in PNG-Frames
+```
+
+Die Frames (`test-results/frames/<name>/frame_*.png`) mit dem Read-Tool sichten — erst grob jeden 4., dann dichter um auffällige Stellen. ffmpeg kommt aus dem Playwright-Bundle (kein System-ffmpeg nötig). Details → `specs/frontend-vision-loop-video.md`.
+
 ## Debugging-Workflow
 
 1. **Backend-Fehler**: zuerst `logs/locodoko.log` lesen (strukturiertes JSON)
