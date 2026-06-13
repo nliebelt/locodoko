@@ -6,6 +6,8 @@ import org.junit.jupiter.api.Test;
 import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.mock.web.MockHttpServletResponse;
 
+import java.time.Instant;
+
 import static org.assertj.core.api.Assertions.assertThat;
 
 class RateLimitingFilterTest {
@@ -121,5 +123,31 @@ class RateLimitingFilterTest {
         assertThat(response.getStatus()).isEqualTo(429);
         assertThat(response.getContentType()).contains("application/json");
         assertThat(response.getContentAsString()).contains("RATE_LIMIT_UEBERSCHRITTEN");
+    }
+
+    /** Ohne periodisches Aufraeumen wuechsen die IP-Maps im oeffentlichen Betrieb unbeschraenkt
+     *  (eine Reihe pro jemals gesehener Client-IP) — ein langsames Speicherleck. */
+    @Test
+    void cleanupEntferntEintraegeMitAbgelaufenemFenster() throws Exception {
+        sendePost("/api/auth/login", "1.2.3.12");
+        sendePost("/api/bugreport", "1.2.3.13");
+        assertThat(filter.anzahlVerfolgterIps()).isEqualTo(2);
+
+        // Login-Fenster (60s) abgelaufen, Bugreport-Fenster (600s) noch nicht.
+        filter.entferneAbgelaufeneEintraege(Instant.now().plusSeconds(120));
+        assertThat(filter.anzahlVerfolgterIps()).isEqualTo(1);
+
+        // Auch das laengere Bugreport-Fenster ist nun abgelaufen.
+        filter.entferneAbgelaufeneEintraege(Instant.now().plusSeconds(700));
+        assertThat(filter.anzahlVerfolgterIps()).isZero();
+    }
+
+    /** Cleanup darf eine IP mit noch laufendem Fenster nicht entfernen — sonst koennte ein
+     *  Angreifer durch Timing das Limit umgehen. */
+    @Test
+    void cleanupBehaeltEintraegeMitLaufendemFenster() throws Exception {
+        sendePost("/api/auth/login", "1.2.3.14");
+        filter.entferneAbgelaufeneEintraege(Instant.now().plusSeconds(30));
+        assertThat(filter.anzahlVerfolgterIps()).isEqualTo(1);
     }
 }

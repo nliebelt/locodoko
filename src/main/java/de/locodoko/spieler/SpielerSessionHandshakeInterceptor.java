@@ -24,6 +24,8 @@ import java.util.Map;
 public class SpielerSessionHandshakeInterceptor implements HandshakeInterceptor {
 
     public static final String SPIELER_SESSION_ID_ATTRIBUT = "spielerSessionId";
+    public static final String SPIELER_ID_ATTRIBUT = "spielerId";
+    public static final String SPIELER_NAME_ATTRIBUT = "spielerName";
 
     private final SpielerSessionService spielerSessionService;
 
@@ -52,8 +54,8 @@ public class SpielerSessionHandshakeInterceptor implements HandshakeInterceptor 
         spielerSessionService.uebernehmeTimeout(session);
         SpielerEntity spieler = spielerSessionService.ladeAktivenSpieler(session.getId());
         attributes.put(SPIELER_SESSION_ID_ATTRIBUT, session.getId());
-        attributes.put("spielerId", spieler.id());
-        attributes.put("spielerName", spieler.name());
+        attributes.put(SPIELER_ID_ATTRIBUT, spieler.id());
+        attributes.put(SPIELER_NAME_ATTRIBUT, spieler.name());
         return true;
     }
 

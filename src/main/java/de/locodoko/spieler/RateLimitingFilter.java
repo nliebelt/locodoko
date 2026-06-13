@@ -5,6 +5,7 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.http.HttpStatus;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
@@ -93,6 +94,35 @@ public class RateLimitingFilter extends OncePerRequestFilter {
             }
             default -> null;
         };
+    }
+
+    /**
+     * Entfernt periodisch IP-Eintraege mit abgelaufenem Zeitfenster, damit die Maps im
+     * oeffentlichen Betrieb (eine Reihe pro jemals gesehener Client-IP) nicht unbeschraenkt
+     * wachsen. Aktive IPs werden beim naechsten Request ohnehin neu angelegt.
+     */
+    @Scheduled(fixedDelayString = "${locodoko.ratelimit.cleanup-ms:600000}")
+    void entferneAbgelaufeneEintraege() {
+        entferneAbgelaufeneEintraege(Instant.now());
+    }
+
+    void entferneAbgelaufeneEintraege(Instant jetzt) {
+        entferneAbgelaufene(loginZugriffe, jetzt, LOGIN_FENSTER_SEKUNDEN);
+        entferneAbgelaufene(bugreportZugriffe, jetzt, BUGREPORT_FENSTER_SEKUNDEN);
+        entferneAbgelaufene(registerZugriffe, jetzt, REGISTER_FENSTER_SEKUNDEN);
+        entferneAbgelaufene(resetZugriffe, jetzt, RESET_FENSTER_SEKUNDEN);
+        entferneAbgelaufene(debugZugriffe, jetzt, DEBUG_FENSTER_SEKUNDEN);
+    }
+
+    private static void entferneAbgelaufene(Map<String, Zugangsprotokoll> zugriffe, Instant jetzt,
+                                            long fensterSekunden) {
+        zugriffe.values().removeIf(protokoll -> protokoll.fensterAbgelaufen(jetzt, fensterSekunden));
+    }
+
+    /** Anzahl aktuell verfolgter IP-Eintraege ueber alle Pfade (fuer Tests/Observability). */
+    int anzahlVerfolgterIps() {
+        return loginZugriffe.size() + bugreportZugriffe.size() + registerZugriffe.size()
+            + resetZugriffe.size() + debugZugriffe.size();
     }
 
     private boolean istRateLimitUeberschritten(String ip, Map<String, Zugangsprotokoll> zugriffe,

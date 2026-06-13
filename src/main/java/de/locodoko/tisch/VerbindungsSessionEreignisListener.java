@@ -44,8 +44,8 @@ public class VerbindungsSessionEreignisListener {
             return;
         }
         String httpSessionId = (String) attribute.get(SpielerSessionHandshakeInterceptor.SPIELER_SESSION_ID_ATTRIBUT);
-        UUID spielerId = (UUID) attribute.get("spielerId");
-        String spielerName = (String) attribute.get("spielerName");
+        UUID spielerId = (UUID) attribute.get(SpielerSessionHandshakeInterceptor.SPIELER_ID_ATTRIBUT);
+        String spielerName = (String) attribute.get(SpielerSessionHandshakeInterceptor.SPIELER_NAME_ATTRIBUT);
         String wsSessionId = accessor.getSessionId();
 
         if (httpSessionId != null && spielerId != null && spielerName != null && wsSessionId != null) {
@@ -65,8 +65,8 @@ public class VerbindungsSessionEreignisListener {
             return;
         }
         String httpSessionId = (String) attribute.get(SpielerSessionHandshakeInterceptor.SPIELER_SESSION_ID_ATTRIBUT);
-        UUID spielerId = (UUID) attribute.get("spielerId");
-        String spielerName = (String) attribute.get("spielerName");
+        UUID spielerId = (UUID) attribute.get(SpielerSessionHandshakeInterceptor.SPIELER_ID_ATTRIBUT);
+        String spielerName = (String) attribute.get(SpielerSessionHandshakeInterceptor.SPIELER_NAME_ATTRIBUT);
         String wsSessionId = accessor.getSessionId();
 
         if (httpSessionId != null && spielerId != null && spielerName != null && wsSessionId != null) {
@@ -74,11 +74,5 @@ public class VerbindungsSessionEreignisListener {
         } else {
             LOGGER.debug("WebSocket-Disconnect ohne gültige Spieler-Attribute — vermutlich fehlgeschlagener Handshake.");
         }
-    }
-
-    /** Liest die WebSocket-Session-Attribute aus einer STOMP-Nachricht. */
-    private Map<String, Object> leseAttribute(org.springframework.messaging.Message<?> nachricht) {
-        StompHeaderAccessor accessor = StompHeaderAccessor.wrap(nachricht);
-        return accessor.getSessionAttributes();
     }
 }
