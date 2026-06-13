@@ -23,7 +23,15 @@ export default defineConfig(() => {
       outDir: 'dist',
       sourcemap: true,
       emptyOutDir: true,
-      chunkSizeWarningLimit: 1800
+      chunkSizeWarningLimit: 600,
+      rollupOptions: {
+        output: {
+          manualChunks: {
+            'phaser-vendor': ['phaser'],
+            'vendor': ['@sentry/browser', '@stomp/stompjs']
+          }
+        }
+      }
     },
     test: {
       environment: 'node',
