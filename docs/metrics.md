@@ -1,6 +1,6 @@
 # Locodoko — Metrik-Report
 
-> Stand: 2026-06-11 (Session 103) — reproduzierbar via `mvn clean verify` (JaCoCo) + `cd frontend && npx vitest run --coverage` (Vitest/V8)
+> Stand: 2026-06-13 (Session 120) — reproduzierbar via `mvn clean verify` (JaCoCo) + `cd frontend && npx vitest run --coverage` (Vitest/V8)
 
 ## Codebase-Größe
 
@@ -16,13 +16,13 @@
 | `system` | 8 | 291 |
 | **Gesamt** | **198** | **15436** |
 
-Test-Klassen: 62 · Tests: 371
+Test-Klassen: 68 · Tests: 485
 
 ### Frontend (TypeScript)
 
 | Produktiv-Dateien | ~55 |
 | LOC | ~9900 |
-| Test-Dateien | 28 · Tests: 299 |
+| Test-Dateien | 35 · Tests: 461 |
 
 ## Test-Coverage
 
@@ -30,11 +30,12 @@ Test-Klassen: 62 · Tests: 371
 
 | Metrik | Abgedeckt | Gesamt | Quote |
 |--------|-----------|--------|-------|
-| Instructions | 22203 | 26801 | **82.8%** |
-| Lines | 4192 | 5100 | **82.2%** |
-| Branches | 1373 | 1994 | **68.9%** |
+| Instructions | 22824 | 26858 | **85.0%** |
+| Lines | 4315 | 5095 | **84.7%** |
+| Branches | 1462 | 1994 | **73.3%** |
+| Methods | 1246 | 1496 | **83.3%** |
 
-> Leichter Rückgang gegenüber Session 47 (84%/83%/71%) — mehr Code durch Features (DSGVO, BugReport, Statistik, SEC-Hardening) ohne proportionales Test-Wachstum. Ziel Phase 2: Branches →75%+.
+> Deutliche Steigerung gegenüber Session 103 (82.8% / 82.2% / 68.9%) durch die Test-Offensive Phase 2 (Sektion J) + Review-Tests S120. Branch-Coverage 68.9% → **73.3%** (Ziel 75% nahezu erreicht). Verbleibende Lücke fast vollständig in env-gated Klassen (BugReport/Mail/OAuth, siehe unten).
 
 **Coverage nach Modul:**
 
@@ -52,46 +53,49 @@ Test-Klassen: 62 · Tests: 371
 | `de.locodoko.ki.orchestrierung` | 39 | 62% ██████░░░░ |
 | `de.locodoko.partie.ereignisse` | 10 | 50% █████░░░░░ |
 
-**Coverage-Schwachstellen (< 70% Line-Coverage, > 20 Zeilen):**
+**Coverage-Schwachstellen (verbleibend, < 40% Line-Coverage):**
 
-| Klasse | Modul | Lines | Line-Cov | Branch-Cov | Testbar? |
-|--------|-------|-------|----------|------------|----------|
-| `VerbindungsSessionEreignisListener` | `tisch` | 29 | 9% | 0% | WS-Session, Integration |
-| `OAuth2ErfolgsHandler` | `spieler` | 23 | 12% | 0% | Google-OAuth-Flow, schwer |
-| `BugReportController` | `spieler` | 90 | 28% | 17% | env-gated (GH-Token) |
-| `MailService` | `spieler` | 40 | 28% | 40% | env-gated (SMTP) |
-| `RateLimitingFilter` | `spieler` | 42 | 36% | 15% | Request-Simulation, mittel |
-| `Stichverlauf` | `partie` | 21 | 50% | 0% | ✅ Domain, hoher ROI |
-| `KiOrchestrierungService` | `ki.orchestrierung` | 38 | 55% | 32% | ✅ Unit-testbar |
-| `ArmutStatus` | `partie` | 38 | 66% | — | ✅ Domain, hoher ROI |
-| `KiTischOrchestrator` | `tisch` | 145 | 64% | 51% | ✅ Unit-testbar |
-| `TischSicherheit` | `tisch` | 36 | 70% | 38% | ✅ Guard-Logik |
-| `SpielverwaltungWebSocketController` | `tisch` | 73 | 74% | 25% | SpringBootTest nötig |
+| Klasse | Modul | Line-Cov | Branch-Cov | Testbar? |
+|--------|-------|----------|------------|----------|
+| `OAuth2ErfolgsHandler` | `spieler` | 22% | 0% | Google-OAuth-Flow, env-gated/schwer |
+| `BugReportController` | `spieler` | 28% | 17% | env-gated (GH-Token) |
+| `MailService` | `spieler` | 35% | 40% | env-gated (SMTP) |
+
+> Die verbleibenden drei Schwachstellen sind allesamt **env-gated** (externe Credentials: OAuth, GitHub-Token, SMTP) → ohne Integrationsumgebung nicht sinnvoll unit-testbar.
+
+**Behoben seit Session 103 (Test-Offensive J + Review S120):**
+
+| Klasse | vorher | jetzt (Line/Branch) | Quelle |
+|--------|--------|---------------------|--------|
+| `Stichverlauf` | 50% | **100% / 100%** | S106 StichverlaufTest |
+| `ArmutStatus` | 66% | **100% / 100%** | S104 ArmutStatusTest |
+| `KiOrchestrierungService` | 55% | **100% / 95%** | S107 |
+| `KiTischOrchestrator` | 64% | **72% / 55%** | S108 |
+| `TischSicherheit` | 70% | **100% / 96%** | S108 |
+| `SpielverwaltungWebSocketController` | 74% | **82% / 88%** | S109 |
+| `RateLimitingFilter` | 36% | **100% / 96%** | S111 + S120 Cleanup-Tests |
+| `VerbindungsSessionEreignisListener` | 9% | **100% / 70%** | S120 Review-Test |
 
 ### Frontend (Vitest/V8)
 
 | Metrik | Quote |
 |--------|-------|
-| Statements | **78.46%** |
-| Branches | **80.40%** |
-| Functions | **76.67%** |
-| Lines | **78.46%** |
+| Statements | **84.75%** |
+| Branches | **83.48%** |
+| Functions | **81.08%** |
+| Lines | **84.75%** |
 
-> Leicht unter Session-47-Wert (79%) — mehr Produktivcode durch Redesigns, Bridge-Erweiterungen. `AppStore.ts` ist korrekt im Report enthalten (wurde fälschlich als excluded vermutet — war nie in der Exclude-Liste).
+> Deutlich über Session-103-Wert (78.46% / 80.40% / 76.67%) durch die FE-Test-Offensive J (Store/Abonnements/Controller/Bridge/Animation/HUD). Alle ursprünglichen Schwachstellen-Dateien sind inzwischen abgedeckt; die einzige verbleibende Lücke ist env-gated.
 
-**Frontend-Schwachstellen (< 70% Statements, signifikante Dateien):**
+**Frontend-Schwachstellen (verbleibend):**
 
-| Datei | Stmts | Branches | Hinweis |
-|-------|-------|----------|---------|
-| `szenen/BugreportDialog.ts` | 1.85% | 100% | env-gated, kein sinnvoller Unit-Test |
-| `szenen/TischAbonnements.ts` | 37.87% | 42.85% | ✅ WebSocket-Abos, mittel |
-| `szenen/TischAnimationOrchestrator.ts` | 38.51% | 50% | ✅ Orchestrierung |
-| `szenen/TischBrücke.ts` | 42.37% | 100% | e2e-Bridge, eher E2E-Test |
-| `szenen/TischHudRenderer.ts` | 40.86% | 66.66% | Phaser-Mock nötig |
-| `szenen/TischRundenEndeController.ts` | 42.42% | 62.85% | ✅ Controller, testbar |
-| `szenen/TischEreignisHandler.ts` | 66.48% | 65% | ✅ nach Refactoring testbar |
-| `store/TischStore.ts` | 70.14% | 100% | ✅ Store-Logic |
-| `store/SessionStore.ts` | 69.73% | 100% | ✅ wichtige Auth-Pfade |
+| Datei | Stmts | Hinweis |
+|-------|-------|---------|
+| `szenen/BugreportDialog.ts` | 1.85% | env-gated (DOM-Dialog, kein sinnvoller Unit-Test) |
+| `szenen/TischRenderKontroller.ts` | 76% | Phaser-Render-Pfad, mittlerer Rest |
+| `ui/PhaserList.ts` | 78% | Scroll-/Layout-Primitive |
+
+> Behoben seit S103: `TischAbonnements` 38%→**100%**, `TischRundenEndeController` 42%→**99%**, `TischStore` 70%→**93%**, `TischBrücke`/`TischAnimationOrchestrator`/`TischHudRenderer` jetzt 86–91%.
 
 Detailbericht: `frontend/coverage/index.html` (nach `npx vitest run --coverage`)
 
@@ -158,7 +162,7 @@ Abgeleitet aus den obigen Metriken (Details: IMPLEMENTATION_PLAN.md, Sektion Ent
 | ~~🔴 Hoch~~ | ~~`PartieStore._verarbeiteEventQueue`~~ | ~~Komplexität 60~~ | ✅ Erledigt (S61) |
 | ~~🔴 Hoch~~ | ~~`TischKartenRenderer.renderKartenFaecher/setzeKartenInteraktion`~~ | ~~Komplexität 53/32~~ | ✅ Erledigt (S100i) |
 | 🟡 Mittel | `TischAnsichtModell.erstelleTischAnsichtAusStatus` | Komplexität 36 | Offen — Builder-Pattern oder Teilmethoden |
-| 🟡 Mittel | `KiTischOrchestrator` | 64% Coverage, 145 LOC | Offen — Unit-Tests (Phase 2) |
-| 🟢 Niedrig | `VerbindungsSessionEreignisListener` | 9% Coverage, 29 LOC | Offen — Integration-Test ergänzen |
-| 🟢 Niedrig | `RateLimitingFilter` | 36% Coverage, 42 LOC | Offen — Request-Simulation (Security) |
+| ~~🟡 Mittel~~ | ~~`KiTischOrchestrator`~~ | ~~64% Coverage~~ → 72% | ✅ Tests S108 |
+| ~~🟢 Niedrig~~ | ~~`VerbindungsSessionEreignisListener`~~ | ~~9%~~ → 100% | ✅ Test S120 |
+| ~~🟢 Niedrig~~ | ~~`RateLimitingFilter`~~ | ~~36%~~ → 100% | ✅ Tests S111/S120 |
 

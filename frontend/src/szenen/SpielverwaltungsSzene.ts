@@ -32,13 +32,15 @@ export class SpielverwaltungsSzene extends Phaser.Scene {
 
     this.add.tileSprite(this.scale.width / 2, this.scale.height / 2, this.scale.width, this.scale.height, TEXTUR_FILZ).setAlpha(0.95);
 
-    this.add.text(this.scale.width / 2, 80, 'LOCO DOKO', {
+    // Titel bewusst unterhalb der Top-rechts-Buttonzeile (Unterkante ~y65) platzieren:
+    // der zentrierte 60px-Schriftzug reicht rechts sonst in den Spielregeln-Button hinein.
+    this.add.text(this.scale.width / 2, 104, 'LOCO DOKO', {
       fontFamily: FONT_FAMILY,
       fontSize: '60px',
       color: '#f8f9fa'
     }).setOrigin(0.5).setShadow(3, 3, '#000', 0);
 
-    this.add.text(this.scale.width / 2, 140, 'Dullen. Füchse. Wahnsinn.', {
+    this.add.text(this.scale.width / 2, 164, 'Dullen. Füchse. Wahnsinn.', {
       fontFamily: FONT_FAMILY,
       fontSize: '20px',
       color: '#a3c4a8'
