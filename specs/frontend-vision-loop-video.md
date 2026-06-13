@@ -1,6 +1,6 @@
 # Video-basierter Vision-Loop
 
-> Status: **Implementiert (Infrastruktur)** — Session 118 (2026-06-12). Erster echter End-to-End-Lauf gegen das laufende Backend steht noch aus.
+> Status: **Verifiziert** — Session 118 (Infrastruktur) + Session 119 (2026-06-13, erster Echtlauf). Vollständige Runde aufgenommen (1.2 Minuten, 288 Frames @ 4fps), Flash-Texte sichtbar (Gesund, RE-Ansage, FUCHS, RE gewinnt!), Rundenende-Modal sauber.
 
 ## Motivation
 
@@ -12,7 +12,7 @@ Der video-basierte Loop nimmt den Ablauf **durchgehend** auf und sampelt ihn hin
 
 Der Agent kann Videos nicht direkt lesen, nur Standbilder. Deshalb:
 
-1. **Aufnahme:** Playwright zeichnet den Playthrough als `.webm` (VP8) auf (`playwright.config.video.ts` → `video: 'on'`). Der Test (`vision-video.spec.ts`) spielt **in Echtzeit, ohne Turbo** — gerade damit die Animationen im Bewegtbild landen.
+1. **Aufnahme:** Playwright zeichnet den Playthrough als `.webm` (VP8) auf (`playwright.config.video.ts` → `video: 'on'`). Der Test (`vision-video.spec.ts`) spielt mit 3× Animationsgeschwindigkeit + reduziertem KI-Delay (400ms statt 800ms). Animationen sind bei 4fps noch sichtbar; eine Runde dauert typ. ~70–90s (288 Frames @ 4fps = 72s im ersten Echtlauf).
 2. **Extraktion:** `extrahiere-video-frames.mjs` zerlegt das `.webm` mit fester Bildrate in nummerierte PNGs.
 3. **Sichtung:** Der Agent liest ausgewählte Frames mit dem Read-Tool.
 
@@ -58,7 +58,24 @@ Video und Frames landen unter `e2e/test-results/` (bereits in `.gitignore`). Ver
 
 Beide Loops bestehen nebeneinander — der Screenshot-Loop bleibt der schnelle Default für Layout-/Clipping-Checks, der Video-Loop ergänzt ihn für dynamische Befunde.
 
+## Befunde aus dem Echtlauf (Session 119, 2026-06-13)
+
+**Lauf:** 1.2 Minuten, 13 Zustands-Iterationen, 288 Frames @ 4fps. Spiel: Hochzeit (NORD), RE gewinnt mit +4 Punkten; Fuchs gefangen (Sonderpunkt).
+
+**Flash-Texte sichtbar:**
+- Frame ~0020: „Gesund"-Banner (Vorbehalt-Phase) — ✅ erfasst
+- Frame ~0032: RE-Ansage-Text oben rechts — ✅ erfasst
+- Frame ~0260: „FUCHS"-Flash in Magenta (Fuchs-gefangen-Sonderpunkt) — ✅ erfasst
+- Frame ~0272: „RE gewinnt! +4 Punkte" (SpielBeendet) — ✅ erfasst
+
+**Karten-Animationen:** Flüssig, keine sichtbaren Tween-Ruckler oder Glitches.
+
+**Rundenende-Modal:** Erscheint sauber ab Frame ~0276 mit korrektem Titel „Hochzeit 1 Spiel 1/24" und Weiter-Button. CountUp-Animation bei 3× Geschwindigkeit + 4fps zu schnell für Frame-genaue Sichtung (aber kein Bug).
+
+**Praxis-Hinweis Backend:** Das Backend muss **frisch gestartet** werden (bestehende Spring-Boot-Prozesse beenden: `kill $(lsof -ti :8081)`). Ein alter Backend-Prozess mit veralteten Klassen aus `target/` kann Schnellstart-Aufrufe mit `DataIntegrityViolationException` (CHECK-Constraint) fehlschlagen lassen — kein echter Bug im Code, sondern inkrementeller Build-Artefakt.
+
+**Mehrwert vs. Screenshot-Loop:** Der Video-Loop liefert echten Zusatzwert: FUCHS-Flash und RE-gewinnt!-Text sind flüchtig genug (< 0.5s), dass der Screenshot-Loop sie regelmäßig verpasst. Empfehlung: Video-Loop bei verdächtigen Animations-Bugs einsetzen, Screenshot-Loop für reguläre Layout-Checks.
+
 ## Offen / nächste Schritte
 
-- **Erster echter Lauf** gegen das laufende Backend (Infrastruktur ist verifiziert: Playwright-Video-Aufnahme → ffmpeg-Extraktion → lesbare PNGs nachgewiesen; nur der vollständige Spiel-Playthrough als Video fehlt noch).
 - Optional: gezielte Kurz-Videos pro Szenario (Vorbehalt, Stich-Einzug, Rundenende-Modal) statt einer langen Gesamtaufnahme, falls das Kontext-Budget pro Befund zu groß wird.

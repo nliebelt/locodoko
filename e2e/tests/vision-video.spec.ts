@@ -27,15 +27,20 @@ test.describe('Vision Video Loop — durchgehende Aufnahme', () => {
     await getBridge(page);
     await alsGastStarten(page);
     await warteAufSzene(page, 'SpielverwaltungsSzene');
+    // Kurz warten, damit WebSocket-Verbindung und Tischliste vollständig initialisiert sind
+    // (analog vision-loop.spec.ts Z. 40 — ohne diese Pause schlägt erstelleQuickGame silent fehl)
+    await page.waitForTimeout(2000);
 
     // Quick Game starten
     await page.evaluate(() => (window as any).__locodoko.appStore.erstelleQuickGame());
-    await warteAufSzene(page, 'TischSzene');
+    await warteAufSzene(page, 'TischSzene', 30_000);
     await page.locator('canvas').focus();
 
-    // Echtzeit-Geschwindigkeit: Animationen laufen normal ab und landen im Video.
-    // (Kein aktiviereTurbo — Turbo überspringt genau die Übergänge, die wir prüfen wollen.)
-    await setzeAnimationsGeschwindigkeit(page, 1.0);
+    // 3× Geschwindigkeit: Animationen laufen 3× schneller, bleiben aber bei 4fps noch sichtbar.
+    // (Kein aktiviereTurbo — Turbo überspringt Übergänge; 1.0× war zu langsam für 200 Iterationen.)
+    await setzeAnimationsGeschwindigkeit(page, 3.0);
+    // KI-Delay auf 400ms statt 800ms reduzieren, damit eine Runde in ~20-30s statt ~80s abläuft.
+    await page.evaluate(() => (window as any).__locodoko?.appStore?.setzeKiKartenVerzögerung(400));
 
     let rundeAbgeschlossen = false;
     let zugZaehler = 0;
