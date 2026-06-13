@@ -253,6 +253,91 @@ export function erstelleStandardTischAnsicht(spielerName: string): TischAnsichtM
   };
 }
 
+function erstelleAnsichtMitLaufendemSpiel(
+  tisch: TischAntwort,
+  laufendesSpiel: LaufendesSpielAntwort,
+  partieStand: PartieStandAntwort | null,
+  spielerAnsichten: SpielerAnsicht[],
+  bezugPosition: BackendSpielerPosition,
+  debugModus: boolean
+): TischAnsichtModell {
+  return {
+    titel: tisch.name,
+    untertitel: `Spieltyp ${laufendesSpiel.spieltyp}`,
+    debugModus,
+    tischhintergrund: tisch.konfiguration.tischhintergrund,
+    spieltyp: laufendesSpiel.spieltyp,
+    phase: laufendesSpiel.phase,
+    aktuellerSpieler: mappeRelativePosition(laufendesSpiel.aktuellerSpieler ?? null, bezugPosition),
+    spielbareKarten: laufendesSpiel.spielbareKarten.map((karte) => karte.id),
+    moeglicheAnsagen: laufendesSpiel.moeglicheAnsagen,
+    moeglicheVorbehalte: laufendesSpiel.moeglicheVorbehalte,
+    deklarierteVorbehalte: laufendesSpiel.deklarierteVorbehalte,
+    spieler: spielerAnsichten,
+    aktuelleStichmitte: mappeAktuelleStichmitte(laufendesSpiel.aktuelleStichmitte, laufendesSpiel.spieler, bezugPosition),
+    ansageHistorie: mappeAnsageHistorie(laufendesSpiel.ansageHistorie, laufendesSpiel.spieler, bezugPosition),
+    gesamtpunktestand: mappeGesamtpunktestand(spielerAnsichten, partieStand?.gesamtpunktestand ?? {}),
+    letzteAbgeschlosseneStiche: mappeLetzteAbgeschlosseneStiche(
+      partieStand?.letzteAbgeschlosseneStiche ?? [],
+      spielerAnsichten,
+      bezugPosition
+    ),
+    letztesSpielergebnis: mappeLetztesSpielergebnis(partieStand?.letztesSpielergebnis ?? null, spielerAnsichten),
+    partieBeendet: partieStand?.status === 'BEENDET',
+    armutAktion: bestimmeArmutAktion(laufendesSpiel, spielerAnsichten, bezugPosition),
+    schweinchenGemeldetVon: laufendesSpiel.schweinchenGemeldetVon
+      ? mappeRelativePosition(laufendesSpiel.schweinchenGemeldetVon, bezugPosition)
+      : null,
+    spielankuendigungstext: berechneSpielerankuendigungstext(laufendesSpiel)
+  };
+}
+
+function berechneUntertitelOhneSpiel(
+  tisch: TischAntwort,
+  partieStand: PartieStandAntwort | null
+): string {
+  if (partieStand?.letztesSpielergebnis) {
+    return `Letzte Auswertung · ${partieStand.letztesSpielergebnis.spieltyp}`;
+  }
+  return tisch.status === 'IM_SPIEL' ? 'Top-Down-Tischansicht' : 'Tisch in der Lobby';
+}
+
+function erstelleAnsichtOhneLaufendesSpiel(
+  tisch: TischAntwort,
+  partieStand: PartieStandAntwort | null,
+  spielerAnsichten: SpielerAnsicht[],
+  bezugPosition: BackendSpielerPosition,
+  debugModus: boolean
+): TischAnsichtModell {
+  return {
+    titel: tisch.name,
+    untertitel: berechneUntertitelOhneSpiel(tisch, partieStand),
+    debugModus,
+    tischhintergrund: tisch.konfiguration.tischhintergrund,
+    spieltyp: null,
+    phase: null,
+    aktuellerSpieler: null,
+    spielbareKarten: [],
+    moeglicheAnsagen: [],
+    moeglicheVorbehalte: [],
+    deklarierteVorbehalte: [],
+    spieler: spielerAnsichten,
+    aktuelleStichmitte: [],
+    ansageHistorie: [],
+    gesamtpunktestand: mappeGesamtpunktestand(spielerAnsichten, partieStand?.gesamtpunktestand ?? {}),
+    letzteAbgeschlosseneStiche: mappeLetzteAbgeschlosseneStiche(
+      partieStand?.letzteAbgeschlosseneStiche ?? [],
+      spielerAnsichten,
+      bezugPosition
+    ),
+    letztesSpielergebnis: mappeLetztesSpielergebnis(partieStand?.letztesSpielergebnis ?? null, spielerAnsichten),
+    partieBeendet: partieStand?.status === 'BEENDET',
+    armutAktion: null,
+    schweinchenGemeldetVon: null,
+    spielankuendigungstext: null
+  };
+}
+
 /**
  * Transformiert den AppZustand in ein TischAnsichtModell fuer die TischSzene.
  *
@@ -276,9 +361,9 @@ export function erstelleTischAnsichtAusStatus(
     return {
       titel: 'Loco Doko',
       untertitel: 'Noch kein Tisch geoeffnet',
-       debugModus,
-       tischhintergrund: 'OVAL_2',
-       spieltyp: null,
+      debugModus,
+      tischhintergrund: 'OVAL_2',
+      spieltyp: null,
       phase: null,
       aktuellerSpieler: null,
       spielbareKarten: [],
@@ -306,42 +391,8 @@ export function erstelleTischAnsichtAusStatus(
     ? mappeSpielerAusPartie(laufendesSpiel.spieler, tisch, laufendesSpiel.spieltyp, laufendesSpiel.schweinchenAktiv, bezugPosition)
     : mappeSpielerAusTisch(spielerId, tisch, bezugPosition);
 
-  return {
-    titel: tisch.name,
-    untertitel: laufendesSpiel
-      ? `Spieltyp ${laufendesSpiel.spieltyp}`
-      : partieStand?.letztesSpielergebnis
-        ? `Letzte Auswertung · ${partieStand.letztesSpielergebnis.spieltyp}`
-        : tisch.status === 'IM_SPIEL'
-          ? 'Top-Down-Tischansicht'
-          : 'Tisch in der Lobby',
-    debugModus,
-    tischhintergrund: tisch.konfiguration.tischhintergrund,
-    spieltyp: laufendesSpiel?.spieltyp ?? null,
-    phase: laufendesSpiel?.phase ?? null,
-    aktuellerSpieler: mappeRelativePosition(laufendesSpiel?.aktuellerSpieler ?? null, bezugPosition),
-    spielbareKarten: laufendesSpiel?.spielbareKarten.map((karte) => karte.id) ?? [],
-    moeglicheAnsagen: laufendesSpiel?.moeglicheAnsagen ?? [],
-    moeglicheVorbehalte: laufendesSpiel?.moeglicheVorbehalte ?? [],
-    deklarierteVorbehalte: laufendesSpiel?.deklarierteVorbehalte ?? [],
-    spieler: spielerAnsichten,
-    aktuelleStichmitte: laufendesSpiel ? mappeAktuelleStichmitte(laufendesSpiel.aktuelleStichmitte, laufendesSpiel.spieler, bezugPosition) : [],
-    ansageHistorie: laufendesSpiel ? mappeAnsageHistorie(laufendesSpiel.ansageHistorie, laufendesSpiel.spieler, bezugPosition) : [],
-    gesamtpunktestand: mappeGesamtpunktestand(spielerAnsichten, partieStand?.gesamtpunktestand ?? {}),
-    letzteAbgeschlosseneStiche: mappeLetzteAbgeschlosseneStiche(
-      partieStand?.letzteAbgeschlosseneStiche ?? [],
-      spielerAnsichten,
-      bezugPosition
-    ),
-    letztesSpielergebnis: mappeLetztesSpielergebnis(
-      partieStand?.letztesSpielergebnis ?? null,
-      spielerAnsichten
-    ),
-    partieBeendet: partieStand?.status === 'BEENDET',
-    armutAktion: laufendesSpiel ? bestimmeArmutAktion(laufendesSpiel, spielerAnsichten, bezugPosition) : null,
-    schweinchenGemeldetVon: laufendesSpiel?.schweinchenGemeldetVon
-      ? mappeRelativePosition(laufendesSpiel.schweinchenGemeldetVon, bezugPosition)
-      : null,
-    spielankuendigungstext: berechneSpielerankuendigungstext(laufendesSpiel)
-  };
+  if (laufendesSpiel) {
+    return erstelleAnsichtMitLaufendemSpiel(tisch, laufendesSpiel, partieStand, spielerAnsichten, bezugPosition, debugModus);
+  }
+  return erstelleAnsichtOhneLaufendesSpiel(tisch, partieStand, spielerAnsichten, bezugPosition, debugModus);
 }
