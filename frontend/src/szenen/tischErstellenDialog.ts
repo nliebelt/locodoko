@@ -1,6 +1,7 @@
 import type { AppZustand } from '../store/AppStore';
 import type { TischPresetAntwort } from '../modelle/SpielverwaltungDto';
 import { appStore } from '../anwendung';
+import { installiereDialogA11y } from '../ui/dialogHelper';
 
 export function zeigeTischErstellenDialog(
   zustand: AppZustand,
@@ -105,14 +106,11 @@ export function zeigeTischErstellenDialog(
     anzahlLabelEl.textContent = `${anzahlSpiele} Spiele`;
   };
 
+  let aufraeuemen: () => void = () => {};
   const schliessen = () => {
+    aufraeuemen();
     backdrop.remove();
-    document.removeEventListener('keydown', escHandler);
   };
-  const escHandler = (e: KeyboardEvent) => {
-    if (e.key === 'Escape') schliessen();
-  };
-  document.addEventListener('keydown', escHandler);
   backdrop.addEventListener('click', (e) => { if (e.target === backdrop) schliessen(); });
   abbrechenBtn.addEventListener('click', schliessen);
 
@@ -169,6 +167,7 @@ export function zeigeTischErstellenDialog(
       });
   });
 
+  aufraeuemen = installiereDialogA11y(backdrop, schliessen);
   nameInput.focus();
   nameInput.select();
 }

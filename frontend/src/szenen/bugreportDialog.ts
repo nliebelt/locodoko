@@ -1,5 +1,6 @@
 import type { AppZustand } from '../store/AppStore';
 import { appStore } from '../anwendung';
+import { installiereDialogA11y } from '../ui/dialogHelper';
 
 /**
  * Zeigt das In-App-Bugreport-Dialog-Overlay an.
@@ -61,14 +62,11 @@ export function zeigeBugreportDialog(zustand: AppZustand): void {
   const sendenBtn = modal.querySelector('#bugreport-senden') as HTMLButtonElement;
   const abbrechenBtn = modal.querySelector('#bugreport-abbrechen') as HTMLButtonElement;
 
+  let aufraeuemen: () => void = () => {};
   const schliessen = () => {
+    aufraeuemen();
     backdrop.remove();
-    document.removeEventListener('keydown', escHandler);
   };
-  const escHandler = (e: KeyboardEvent) => {
-    if (e.key === 'Escape') schliessen();
-  };
-  document.addEventListener('keydown', escHandler);
   backdrop.addEventListener('click', (e) => { if (e.target === backdrop) schliessen(); });
   abbrechenBtn.addEventListener('click', schliessen);
 
@@ -120,5 +118,6 @@ export function zeigeBugreportDialog(zustand: AppZustand): void {
       });
   });
 
+  aufraeuemen = installiereDialogA11y(backdrop, schliessen);
   textarea.focus();
 }

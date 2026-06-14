@@ -146,7 +146,7 @@ export class HilfeSzene extends Phaser.Scene {
   private zeigeTrumpf(): void {
     let y = 150;
     const LX = 80;
-    const RX = 700;
+    const RX = 730;
     const ZA = 30;
 
     this.txt(LX, y, 'TRUMPFKARTEN (höchster zuerst)', GOLD, 14, true);

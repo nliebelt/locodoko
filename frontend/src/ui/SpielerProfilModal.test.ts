@@ -184,6 +184,26 @@ describe('SpielerProfilModal', () => {
     modal.schliessen();
   });
 
+  it('Escape-Taste schließt das Modal', () => {
+    // Tastatur-Zugänglichkeit: Escape muss den Dialog schließen können
+    SpielerProfilModal.oeffnenMitDaten(erstelleTestProfil());
+    expect(uiRoot.querySelector('.ui-modal-backdrop')).not.toBeNull();
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+    expect(uiRoot.querySelector('.ui-modal-backdrop')).toBeNull();
+  });
+
+  it('setzt Fokus beim Öffnen auf erstes interaktives Element', () => {
+    // Fokus-Management: Tastaturnutzer müssen sofort mit dem Dialog interagieren können
+    const ausloeser = document.createElement('button');
+    document.body.appendChild(ausloeser);
+    ausloeser.focus();
+    const modal = SpielerProfilModal.oeffnenMitDaten(erstelleTestProfil());
+    const erstesTastaturElement = uiRoot.querySelector<HTMLElement>('button:not([disabled])');
+    expect(document.activeElement).toBe(erstesTastaturElement);
+    modal.schliessen();
+    ausloeser.remove();
+  });
+
   it('zeigt drei Tabs für TURNIER, SONDER und FREI', () => {
     // Spieler müssen zwischen Regelvarianten wechseln können
     SpielerProfilModal.oeffnenMitDaten(erstelleTestProfil());

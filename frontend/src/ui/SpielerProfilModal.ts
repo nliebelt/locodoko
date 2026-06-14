@@ -1,4 +1,5 @@
 import type { SpielerProfilAntwortGenerated, StatistikAntwortGenerated, PartieErgebnisAntwortGenerated } from '../generated/schema-types';
+import { installiereDialogA11y } from './dialogHelper';
 
 const REGELVARIANTEN: ReadonlyArray<string> = ['TURNIER', 'SONDER', 'FREI'];
 const VARIANTEN_BEZEICHNUNG: Record<string, string> = {
@@ -13,6 +14,7 @@ const VARIANTEN_BEZEICHNUNG: Record<string, string> = {
  */
 export class SpielerProfilModal {
   private readonly element: HTMLElement;
+  private aufraeuemen: () => void = () => {};
 
   private constructor(element: HTMLElement) {
     this.element = element;
@@ -27,11 +29,23 @@ export class SpielerProfilModal {
     const uiRoot = document.getElementById('ui-root');
     if (!uiRoot) throw new Error('#ui-root nicht gefunden');
     uiRoot.appendChild(backdrop);
-    return new SpielerProfilModal(backdrop);
+
+    const instanz = new SpielerProfilModal(backdrop);
+    instanz.aufraeuemen = installiereDialogA11y(backdrop, () => instanz.schliessen());
+
+    backdrop.addEventListener('click', (e) => {
+      if (e.target === backdrop) instanz.schliessen();
+    });
+    backdrop.querySelector('.ui-profil-schliessen')?.addEventListener('click', () => instanz.schliessen());
+
+    (backdrop.querySelector<HTMLElement>('button:not([disabled])'))?.focus();
+
+    return instanz;
   }
 
   /** Schließt das Modal und entfernt es aus dem DOM. */
   schliessen(): void {
+    this.aufraeuemen();
     this.element.remove();
   }
 
@@ -51,11 +65,6 @@ export class SpielerProfilModal {
     modal.className = 'ui-modal ui-modal--profil';
     modal.innerHTML = SpielerProfilModal.erstelleInhalt(profil);
     backdrop.appendChild(modal);
-
-    backdrop.addEventListener('click', (e) => {
-      if (e.target === backdrop) backdrop.remove();
-    });
-    modal.querySelector('.ui-profil-schliessen')?.addEventListener('click', () => backdrop.remove());
 
     // Tab-Click-Handler
     const tabLeiste = modal.querySelector('.ui-profil-tabs') as HTMLElement | null;
