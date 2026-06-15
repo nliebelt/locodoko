@@ -4,9 +4,9 @@
 
 ## Notiz
 
-**Session 128 (2026-06-15) — DOC-SPEC-AUTH-OAUTH-HANDLING abgeschlossen:** Die Spezifikation `specs/authentifizierung.md` wurde um Details zur Behandlung von OAuth-Account-Linking-Konflikten und der Bereinigung des Security-Kontexts bei Abweisung aktualisiert.
+**Session 128 (2026-06-15) — DOC-SPEC-KEYBOARD-GUARDS abgeschlossen:** Die Spezifikation `specs/frontend-tastatursteuerung.md` wurde um die Guard-Bedingungen für globale Tastaturkürzel (Fokus auf Eingabefeldern und geöffnete Modals) erweitert.
 
-Nächster Task: **DOC-SPEC-KEYBOARD-GUARDS** (Doc, autonom, klein) — `specs/frontend-tastatursteuerung.md` um die Guard-Bedingungen für globale Tastaturkürzel erweitern.
+Nächster Task: **REFACTOR-FE-WHEEL-FLASH-CLEANUP** (Frontend) — Wheel-Off + untracked Timer.
 
 ## Legende
 
@@ -790,7 +790,7 @@ Alle noch im Greenfield-Fenster (vor erstem echten Deploy). Details und Audit-Ko
 5. ~~**DOC-SPEC-DRIFT-S126**~~ ✓ (Doc) — gedriftete Specs gegen Code/Schema angleichen.
 6. ~~**DOC-FE-TISCHANSICHT-SPEC-DRIFT**~~ ✓ (Doc, autonom, klein) — `specs/frontend-tischansicht.md` an die Implementierung in `layout.ts` anpassen (Spielerpositionen, NORD-Nameplate).
 7. ~~**DOC-SPEC-AUTH-OAUTH-HANDLING**~~ ✓ (Doc, autonom, klein) — `specs/authentifizierung.md` um die Details zur Behandlung von OAuth-Account-Linking-Konflikten und die Bereinigung des Security-Kontexts bei Abweisung erweitern. Die aktuelle Spec ist zu allgemein und erfasst nicht die in S126/S128 implementierte Sicherheitslogik (`email_konflikt`-Fehler, `SecurityContextHolder.clearContext()`).
-8. **DOC-SPEC-KEYBOARD-GUARDS** (Doc, autonom, klein) — `specs/frontend-tastatursteuerung.md` um die Guard-Bedingungen für globale Tastaturkürzel erweitern. Die Spec muss festhalten, dass Shortcuts ignoriert werden, wenn der Fokus auf einem Eingabefeld liegt (`INPUT`/`TEXTAREA`) oder wenn ein Spiel-Modal (Runden-/Partie-Ende) geöffnet ist, wie in S127 implementiert.
+8. ~~**DOC-SPEC-KEYBOARD-GUARDS**~~ ✓ (Doc, autonom, klein) — `specs/frontend-tastatursteuerung.md` um die Guard-Bedingungen für globale Tastaturkürzel erweitern. Die Spec muss festhalten, dass Shortcuts ignoriert werden, wenn der Fokus auf einem Eingabefeld liegt (`INPUT`/`TEXTAREA`) oder wenn ein Spiel-Modal (Runden-/Partie-Ende) geöffnet ist, wie in S127 implementiert.
 9. **REFACTOR-FE-WHEEL-FLASH-CLEANUP** (Frontend) — Wheel-Off + untracked Timer.
 10. **QA-VISION-MOBILE-LANDSCAPE** (E2E/Vision, Backend nötig) — neue Landscape-Screens sichten.
 11. **SEC-DEPS-FE-DEV-AUDIT** (Frontend) — 7 Dev-Dep-CVEs.

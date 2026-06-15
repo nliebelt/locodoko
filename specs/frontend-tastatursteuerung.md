@@ -93,6 +93,13 @@ Es gibt kein separates Vorbehalt-Overlay mehr. Die Auswahl findet direkt in der 
 2. `Tab` zirkuliert innerhalb des geöffneten Modals — kein Verlassen des Modals per Tab.
 3. Wenn ein Modal geschlossen wird, kehrt der Fokus zum auslösenden Element zurück.
 
+### Guard-Bedingungen für globale Shortcuts
+
+Um Konflikte zwischen globalen Tastaturkürzeln (wie `I`, `S`, `R`, `K`) und der restlichen Benutzeroberfläche zu vermeiden, werden diese in bestimmten Situationen blockiert (implementiert in S127):
+
+1. **Fokus in Eingabefeldern:** Alle globalen Tastaturkürzel werden ignoriert, wenn der Fokus (`document.activeElement`) auf einem Eingabefeld liegt (`INPUT`, `TEXTAREA`, `select` oder Elementen mit `isContentEditable`). Dies ermöglicht konfliktfreies Tippen (z. B. im Bugreport-Dialog).
+2. **Offene Modals:** Globale Kürzel und In-Game-Aktionen werden ebenfalls blockiert, wenn ein Spiel-Modal (Rundenende- oder Partie-Ende-Modal) oder ein DOM-basiertes Dialog-Fenster geöffnet ist. Dadurch wird verhindert, dass Aktionen im Hintergrund ausgeführt werden.
+
 ## E2E-Testbarkeit
 
 Die Tastatursteuerung ist bewusst so gestaltet, dass Playwright-Tests ohne Canvas-Interaktion auskommen:
