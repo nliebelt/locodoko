@@ -4,14 +4,9 @@
 
 ## Notiz
 
-**Session 128 (2026-06-15) — DOC-SPEC-DRIFT-S126 abgeschlossen:** Die Spezifikations-Dokumente wurden gegen die aktuellen Änderungen am Code und Schema abgeglichen:
-- `datenbankmodell.md`: Tabellen-Übersicht an `000-initial-schema.sql` angepasst und REFACTOR-DB-1 bis REFACTOR-DB-10 als erledigt markiert.
-- `websocket-kommunikation.md`: Präzisiert, dass `/topic/` nicht für Partie-Spielstände, aber für Tisch-Metadaten verwendet wird. `/armut-antwort` ergänzt.
-- `verbindungsabbruch.md`: Abonnement auf `/user/queue/partie/{partieId}` aktualisiert.
-- `architektur.md` / `architektur-ddd.md`: `betrieb/` Modul hinzugefügt; Produzent von `SpielBeendet`/`SpielGestartet` auf `PartieLifecycleService` geändert und `SpielMetriken`-Konsumenten ergänzt.
-- `statistik-ranking.md`: DoD für `STAT-RATING`, `FE-LEADERBOARD` und `Loco-Domain-Metriken` auf `[x]` gesetzt.
+**Session 128 (2026-06-15) — DOC-FE-TISCHANSICHT-SPEC-DRIFT abgeschlossen:** Die Spezifikation `specs/frontend-tischansicht.md` wurde an die tatsächlichen Layout-Werte in `frontend/src/szenen/layout.ts` angepasst (insbesondere die x/y-Koordinaten von Nameplates und Spielerpositionen im Landscape-Modus sowie die dedizierte "oben-Mitte" Positionierung von NORD).
 
-Nächster Task: **DOC-FE-TISCHANSICHT-SPEC-DRIFT** (Doc, autonom, klein) — `specs/frontend-tischansicht.md` an die Implementierung in `layout.ts` anpassen.
+Nächster Task: **DOC-SPEC-AUTH-OAUTH-HANDLING** (Doc, autonom, klein) — `specs/authentifizierung.md` um die Details zur Behandlung von OAuth-Account-Linking-Konflikten und die Bereinigung des Security-Kontexts bei Abweisung erweitern.
 
 ## Legende
 
@@ -793,7 +788,7 @@ Alle noch im Greenfield-Fenster (vor erstem echten Deploy). Details und Audit-Ko
 3. ~~**SEC-OAUTH-REJECT-CLEANUP**~~ ✓ (S128) — Ghost-Auth-Session auf OAuth-Reject.
 4. ~~**SEC-HARDENING-2**~~ ✓ (Backend) — Rate-Limit-Pfad + Register/Login-Enumeration.
 5. ~~**DOC-SPEC-DRIFT-S126**~~ ✓ (Doc) — gedriftete Specs gegen Code/Schema angleichen.
-6. **DOC-FE-TISCHANSICHT-SPEC-DRIFT** (Doc, autonom, klein) — `specs/frontend-tischansicht.md` an die Implementierung in `layout.ts` anpassen (Spielerpositionen, NORD-Nameplate).
+6. ~~**DOC-FE-TISCHANSICHT-SPEC-DRIFT**~~ ✓ (Doc, autonom, klein) — `specs/frontend-tischansicht.md` an die Implementierung in `layout.ts` anpassen (Spielerpositionen, NORD-Nameplate).
 7. **DOC-SPEC-AUTH-OAUTH-HANDLING** (Doc, autonom, klein) — `specs/authentifizierung.md` um die Details zur Behandlung von OAuth-Account-Linking-Konflikten und die Bereinigung des Security-Kontexts bei Abweisung erweitern. Die aktuelle Spec ist zu allgemein und erfasst nicht die in S126/S128 implementierte Sicherheitslogik (`email_konflikt`-Fehler, `SecurityContextHolder.clearContext()`).
 8. **DOC-SPEC-KEYBOARD-GUARDS** (Doc, autonom, klein) — `specs/frontend-tastatursteuerung.md` um die Guard-Bedingungen für globale Tastaturkürzel erweitern. Die Spec muss festhalten, dass Shortcuts ignoriert werden, wenn der Fokus auf einem Eingabefeld liegt (`INPUT`/`TEXTAREA`) oder wenn ein Spiel-Modal (Runden-/Partie-Ende) geöffnet ist, wie in S127 implementiert.
 9. **REFACTOR-FE-WHEEL-FLASH-CLEANUP** (Frontend) — Wheel-Off + untracked Timer.

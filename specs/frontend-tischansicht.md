@@ -53,15 +53,15 @@ Die Tischansicht ist das zentrale Spielfeld. Sie nutzt die **volle Canvas-Fläch
    - Stichzähler ist **für alle vier Spieler gleich** sichtbar, einschließlich Süd.
 3. Der **aktive Spieler** (aktuell am Zug) wird visuell hervorgehoben — Nameplate leuchtet auf (Akzentfarbe, siehe `frontend-visuelles-design.md`). **Kein separater "Am Zug: X"-Text im Canvas** — das Nameplate-Highlight ist die einzige Anzeige.
 4. **Nameplate-Position relativ zu den Karten** (nicht darunter/darüber):
-   - **SUED**: Nameplate **rechts** neben dem Kartenfächer
-   - **NORD**: Nameplate **rechts** neben dem Kartenfächer
-   - **WEST**: Nameplate **unterhalb** des Kartenstapels
-   - **OST**: Nameplate **oberhalb** des Kartenstapels
+   - **SUED**: Nameplate **rechts** neben dem Kartenfächer (`x: 76%`, `y: 85%`)
+   - **NORD**: Nameplate **oben-Mitte** (`x: 50%`, `y: 12%`) — frei vom eigenen NORD-Kartenfächer
+   - **WEST**: Nameplate **unterhalb** des Kartenstapels (`x: 10%`, `y: 85%`)
+   - **OST**: Nameplate **oberhalb** des Kartenstapels (`x: 90%`, `y: 15%`)
 5. Spielerpositionen als feste Koordinaten relativ zur Canvas-Größe:
-   - **SUED**: unten, `y: 85%`, Karten bei `y: 89%`
-   - **NORD**: oben, `y: 15%`, Karten bei `y: 11%`
-   - **WEST**: links, `x: 14%`, Karten bei `x: 10%`
-   - **OST**: rechts, `x: 86%`, Karten bei `x: 90%`
+   - **SUED**: unten, `y: 82%`, Karten bei `y: 85%`
+   - **NORD**: oben, `y: 18%`, Karten bei `y: 18%`
+   - **WEST**: links, `x: 12%`, Karten bei `x: 10%`
+   - **OST**: rechts, `x: 88%`, Karten bei `x: 90%`
 6. Die seitlichen Spieler (OST/WEST) müssen vollständig **innerhalb des Canvas** bleiben — Kartenabstände und Nameplates dürfen nicht überlappen oder abgeschnitten werden.
 
 ### Kartendarstellung
