@@ -8,7 +8,7 @@
     "build": "tsc --noEmit && vite build",
     "test": "vitest run",
     "test:coverage": "vitest run --coverage",
-    "complexity": "npx code-complexity src --sort=complexity --limit=20",
+    "complexity": "biome lint src",
     "lint": "eslint . --max-warnings=0",
     "preview": "vite preview",
     "generate-types": "openapi-typescript http://localhost:8081/v3/api-docs -o src/generated/api-types.ts"
@@ -19,6 +19,7 @@
     "phaser": "^3.90.0"
   },
   "devDependencies": {
+    "@biomejs/biome": "^2.5.0",
     "@eslint/js": "^9.23.0",
     "@vitest/coverage-v8": "^3.0.8",
     "eslint": "^9.23.0",

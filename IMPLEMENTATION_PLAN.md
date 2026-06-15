@@ -4,14 +4,14 @@
 
 ## Notiz
 
-**QA-METRICS-REFRESH + QA-METRICS-TOOLING** abgeschlossen (Session 129).
+**QA-FE-BIOME-COMPLEXITY** abgeschlossen (Session 129).
 
-- `scripts/metrics.sh` auf echte Tooling-Basis umgestellt: lizard CCN (BE-Hotspots), coverage-final.json-Parser (FE-Coverage), Surefire-XML-Parser (BE-Testzahl), scc-Fallback (kein Gate).
-- `docs/metrics.md` neu generiert (Stand 2026-06-15): BE **503 Tests** / FE **467 Tests**, BE Coverage 86%/75% Branches, FE Coverage 84%/83%.
-- lizard wird bei fehlendem PATH via `python3 -m pip install --user lizard` automatisch installiert.
-- **Entdeckung:** `Tisch`-Klasse in `de.locodoko.partie` hat **0% Line-Coverage** (25 LOC) — als Lücken-Task vermerkt.
+- `@biomejs/biome` 2.5.0 als devDep installiert; `frontend/biome.json` angelegt (nur `noExcessiveCognitiveComplexity`, Baseline-Schwelle 40, alle anderen Regeln via `preset: none` deaktiviert).
+- `npm run complexity` ersetzt `npx code-complexity` — läuft grün (102 Dateien, 0 Verstöße); bricht bei Überschreitung mit Exit-Code 1.
+- `npm test && npm run build && npm run lint` weiterhin grün; ESLint-Konfiguration unberührt.
+- Folgeschritte (schrittweise Absenkung): 40 → 30 → 25 → 20 → 15 — Hotspots aus Plan-Eintrag bekannt.
 
-**Nächster Schritt:** QA-FE-BIOME-COMPLEXITY (Biome additiv als kognitives Komplexitäts-Gate einführen).
+**Nächster Schritt:** PERF-FE-BUNDLE-SPLIT-2 (optional — Phaser-Chunk-Warnung dokumentieren oder lazy-loading).
 
 ## Legende
 
@@ -35,7 +35,7 @@
 
 - [ ] **PERF-FE-BUNDLE-SPLIT-2** (Frontend, autonom, klein, optional) — trotz `PERF-FE-BUNDLE-SPLITTING` (Phaser-Vendor-Chunk) bleibt der `phaser-vendor`-Chunk **1,48 MB** und löst weiter die „chunks > 600 kB"-Build-Warnung aus. **Optionen:** (a) Szenen via `import()` lazy laden (echtes Code-Splitting des App-Teils), oder (b) die Warnung bewusst belassen und `chunkSizeWarningLimit` mit dokumentierter Begründung setzen (Phaser ist als Engine unteilbar). **Erste Datei zuerst:** `frontend/vite.config.ts`. **DoD:** entweder kleinere Initial-Chunks oder dokumentierte, bewusste Limit-Entscheidung; Build + Lint + Vision-Smoke grün. **Risiko:** niedrig.
 
-- [ ] **QA-FE-BIOME-COMPLEXITY** (Frontend, autonom, klein — moderne Komplexitäts-Analyse, Session 128 prototypisiert) — **Biome additiv** als kognitives Komplexitäts-Gate einführen (ESLint bleibt Haupt-Linter, User-Entscheidung S128). **Schritte:** (1) `@biomejs/biome` als devDep; (2) `frontend/biome.json` mit **nur** der Regel `complexity.noExcessiveCognitiveComplexity` (`recommended:false`, alle anderen Regeln aus — Formatierung/Stil bleibt bei ESLint/Prettier); (3) npm-Script `"complexity": "biome lint --config-path=. src"`; (4) **Baseline-Schwelle** zunächst auf den Ist-Höchstwert setzen, sodass der Lauf **grün** ist (S128-Messung: Schwelle 40 → 0 Verstöße; der schlimmste Treffer liegt kognitiv im Bereich 31–39), dann in einem Kommentar dokumentieren + als Folge-Tasks schrittweise senken (40 → 30 → 25 → 20 → 15) und je Stufe die Ausreißer refactoren. **Bekannte kognitive Hotspots (Biome S128, Schwelle 15 → 14 Treffer):** `PartieStore.ts:140`, `TischInputHandler.ts:53/219`, `TischRundenEndeController.ts:32/146`, `layout.ts:71`, `SpielprotokollOverlay.ts:127`, `TischKartenRenderer.ts:362`, `BestenlisterSzene.ts:113`, `TischAnimationOrchestrator.ts:105`, `TischHudRenderer.ts:26`, `SpielerProfilModal.ts:132`, `SpielverwaltungApi.ts:76`, `AnimationenPrimitiven.ts:37`. **Erste Datei zuerst:** `frontend/package.json` + neue `frontend/biome.json`. **DoD:** `npm run complexity` läuft grün (Baseline-Schwelle), bricht bei Überschreitung; `npm test && npm run build && npm run lint` weiterhin grün; ggf. in CI als eigener Step. **Risiko:** niedrig (additiv, ESLint-Config unberührt).
+- [x] **QA-FE-BIOME-COMPLEXITY** (Frontend, autonom, klein — moderne Komplexitäts-Analyse, Session 128 prototypisiert) — **Biome additiv** als kognitives Komplexitäts-Gate einführen (ESLint bleibt Haupt-Linter, User-Entscheidung S128). **Schritte:** (1) `@biomejs/biome` als devDep; (2) `frontend/biome.json` mit **nur** der Regel `complexity.noExcessiveCognitiveComplexity` (`recommended:false`, alle anderen Regeln aus — Formatierung/Stil bleibt bei ESLint/Prettier); (3) npm-Script `"complexity": "biome lint --config-path=. src"`; (4) **Baseline-Schwelle** zunächst auf den Ist-Höchstwert setzen, sodass der Lauf **grün** ist (S128-Messung: Schwelle 40 → 0 Verstöße; der schlimmste Treffer liegt kognitiv im Bereich 31–39), dann in einem Kommentar dokumentieren + als Folge-Tasks schrittweise senken (40 → 30 → 25 → 20 → 15) und je Stufe die Ausreißer refactoren. **Bekannte kognitive Hotspots (Biome S128, Schwelle 15 → 14 Treffer):** `PartieStore.ts:140`, `TischInputHandler.ts:53/219`, `TischRundenEndeController.ts:32/146`, `layout.ts:71`, `SpielprotokollOverlay.ts:127`, `TischKartenRenderer.ts:362`, `BestenlisterSzene.ts:113`, `TischAnimationOrchestrator.ts:105`, `TischHudRenderer.ts:26`, `SpielerProfilModal.ts:132`, `SpielverwaltungApi.ts:76`, `AnimationenPrimitiven.ts:37`. **Erste Datei zuerst:** `frontend/package.json` + neue `frontend/biome.json`. **DoD:** `npm run complexity` läuft grün (Baseline-Schwelle), bricht bei Überschreitung; `npm test && npm run build && npm run lint` weiterhin grün; ggf. in CI als eigener Step. **Risiko:** niedrig (additiv, ESLint-Config unberührt).
 
 - [x] **QA-METRICS-TOOLING** (QA/Doc, autonom, klein — am besten mit QA-METRICS-REFRESH bündeln) — `scripts/metrics.sh` von handgezählten LOC/grep-Heuristiken auf echte Werkzeuge umstellen: **`lizard`** (zyklomatische Komplexität + Token-Count, **Java *und* TS** in einem Lauf — ersetzt „größte Klasse als Komplexitäts-Proxy") als nicht-brechenden Report-Step; optional **`scc`** für LOC + **COCOMO-Kostenschätzer**. Beides nur Report, **kein** Build-Gate (das Gate ist FE=Biome, siehe QA-FE-BIOME-COMPLEXITY). **S128-Messung als Erwartungswert:** BE Avg CCN 1.9, nur 2 Funktionen > 15 (max `KiTischOrchestrator::automatisiereTisch` CCN 20); FE Avg CCN 2.4, 8 Funktionen > 15 (max `TischInputHandler::verarbeiteTastatureingabe` CCN 34). **Installation/Reproduzierbarkeit (wichtig):** `lizard` ist **kein** Repo-Dependency und liegt **nicht** im PATH — das Skript muss die Verfügbarkeit selbst sicherstellen (z.B. `python3 -m pip install --user lizard` bzw. venv/pipx und Aufruf via `python3 -m lizard`; `scc` ist ein Go-Binary, nur nutzen wenn vorhanden, sonst überspringen). Nicht auf einen lokal vorinstallierten Stand verlassen; bei fehlendem Tool den Step sauber überspringen statt das Skript abbrechen zu lassen. **Erste Datei zuerst:** `scripts/metrics.sh` + `docs/metrics.md`. **DoD:** Report nutzt `lizard` (+ggf. `scc`) statt `find|wc`-Heuristik; CC-Top-20 + COCOMO im Report; Skript reproduzierbar **auf einer frischen Umgebung** (Tool-Installation/-Fallback im Skript geregelt). **Risiko:** niedrig.
 
@@ -46,7 +46,7 @@
 1. ~~**QA-VISION-MOBILE-LANDSCAPE** (+ **CLEANUP-VISION-SCREENSHOT-DUBLETTE** im selben Lauf bündeln)~~ ✓ S129
 2. ~~**SEC-DEPS-FE-DEV-AUDIT**~~ ✓ S129
 3. ~~**QA-METRICS-REFRESH** (+ **QA-METRICS-TOOLING** im selben Lauf bündeln)~~ ✓ S129
-4. **QA-FE-BIOME-COMPLEXITY**
+4. ~~**QA-FE-BIOME-COMPLEXITY**~~ ✓ S129
 5. **PERF-FE-BUNDLE-SPLIT-2** (optional)
 
 ### Review-Notizen S126 (offen, niedrigste Prio / Deploy-nah — keine eigenen Tasks)
