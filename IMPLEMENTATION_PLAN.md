@@ -1,804 +1,105 @@
 # IMPLEMENTATION_PLAN — Locodoko Doppelkopf
 
-> Stand: 2026-06-12 (Session 118 — Planungslauf). Erledigte Aufgaben → `IMPLEMENTATION_PLAN_ARCHIVE.md`
+> Stand: 2026-06-15 (Session 128 — Slim-Down). Erledigte Aufgaben → `IMPLEMENTATION_PLAN_ARCHIVE.md` (Sessions 1–128 archiviert).
 
 ## Notiz
 
-**Session 128 (2026-06-15) — REFACTOR-FE-WHEEL-FLASH-CLEANUP abgeschlossen:** Die Ressourcen-Hygiene im Frontend wurde verbessert. In `SpielprotokollOverlay` wird nun eine spezifische Handler-Referenz beim Abmelden des `wheel`-Events genutzt, um das globale Entfernen aller Wheel-Listener zu verhindern. In `FlashTextManager` wird der Timer des Fallback-`setTimeout` (nun über `delayedCall` realisiert) im Array `verwalteteTimers` registriert und somit bei einem `destroy()` sauber aufgeräumt.
+**Spielkern feature-complete** (alle 47 fachlichen Specs *Implementiert/Stabil/Abgeschlossen*). Offen ist nur noch die **Fertigstellung für den öffentlichen Betrieb**: ein paar autonome Polish-/QA-Tasks (Block M) + die MENSCH-/User-gebundenen Deploy- und Entscheidungs-Tasks.
 
-Nächster Task: **QA-VISION-MOBILE-LANDSCAPE** (E2E/Vision) — neue Landscape-Screens sichten. Backend starten (`mvn spring-boot:run`) und Vision-Loop via Playwright ausführen.
+Dieser Plan wurde in Session 128 schlankgezogen: der gesamte erledigte Verlauf (Deploy-Blocker, CI, Schema-Review, Monitoring, Bugreport, Vision-Loop, Test-Abdeckung, Reviews) liegt im Archiv. Hier stehen nur noch **offene** Tasks.
 
 ## Legende
 
-- [x] Erledigt (Code + Tests vorhanden und grün)
+- [x] Erledigt (Code + Tests vorhanden und grün) — wird nach Abschluss ins Archiv verschoben
 - [~] Teilweise implementiert
 - [ ] Offen
 
-## Empfohlene Build-Reihenfolge (verbindlich)
+---
 
-Erledigt (Session 26–28): DOC-PUNKTE-HINWEISE ✓ · SPEC-ARCH-HIERARCHIE ✓ · DOC-AGENTS-DEDUP ✓ · REFACTOR-SAGEAN ✓ · REFACTOR-JSONB-CONVERTER ✓ · BUG-JACKSON-ACCESSORNAMING ✓ · REFACTOR-TISCH-ZUGRIFF ✓ · REFACTOR-TISCHVERWALTUNG ✓ · VISION-SMOKE-1 ✓
+## A) Offene autonome Tasks (Ralph — kein MENSCH nötig)
 
-Spec-getriebene Tasks: **alle erledigt** (Code feature-complete gegenüber allen 47 Specs).
+> Geerdet am Repo-Scan S126: Code sehr sauber (keine TODO/FIXME, keine verschluckten Exceptions, kein `any` im FE-Quellcode, jede FE-Datei getestet, Prod-Deps 0 CVEs). Das sind die realen offenen Hebel. **Pro Task ein Commit**, `mvn clean test` / `npm test && npm run build && npm run lint` grün.
 
-Nächste offene Tasks — Fertigstellung (Session 30). **Zwei Meilensteine:** **M1 = Closed Beta auf `zock.locodoko.de`** (eingeladene Kollegen, Feedback sammeln) · **M2 = Public Go-Live**.
+- [ ] **QA-VISION-MOBILE-LANDSCAPE** (E2E/Vision, autonom — **Backend muss laufen**, klein-mittel) — Verifikation der DISCO-S126-Umstellung: der Vision-Loop läuft jetzt unter dem Projekt **`mobile-landscape`** (851×393), erzeugt aber noch **keine** frischen Screenshots (alter `mobile-portrait`-Satz wurde S126 entfernt). **Fix/Schritte:** Backend starten (`mvn spring-boot:run`), `cd e2e && npx playwright test --config playwright.config.vision.ts` (beide Specs, beide Projekte) fahren; die neuen `mobile-landscape-*.png` **und** die `desktop-*.png` mit dem Read-Tool gegen `specs/frontend-visuelles-design.md` sichten; Layout-Mängel im Querformat (Kartenreihe, Nameplates, HUD, Modals bei 851×393) als gezielte Fixes beheben (real gerenderte Maße statt Hardcode), Retro-Look behalten. **DoD:** beide Projekte grün < 30 s je Szenen-Lauf; `mobile-landscape-*` Screenshots committet und visuell defektfrei; gefundene Defekte gefixt oder als „kein Defekt" vermerkt. **Risiko:** niedrig-mittel.
 
-**Domain-Schema (Session 30, Teil 4 — sticky, da OAuth/Cookies/WS daran gebunden):** App = **`zock.locodoko.de`** · Wiki = **`docs.locodoko.de`** (MkDocs auf GitHub Pages, gratis) · Apex **`locodoko.de`** = Landing/Redirect. Permanente Wahl (kein „beta."-Umzug), da Beta-Daten erhalten bleiben.
+- [ ] **CLEANUP-VISION-SCREENSHOT-DUBLETTE** (E2E/Cleanup, autonom, winzig) — `desktop-01-lobby.png` und `desktop-11-offene-tische.png` sind **byte-identisch** (md5 `0dd0b563…`, Befund schon S120) — der „gefüllte Tischliste"-Screen wird nicht eigenständig erzeugt. **Fix:** im Szenen-Spec sicherstellen, dass `desktop-11` tatsächlich die gefüllte Lobby (2. Kontext) fotografiert, oder den redundanten Shot streichen. Am besten im selben Lauf wie **QA-VISION-MOBILE-LANDSCAPE** miterledigen. **DoD:** kein byte-identisches Screenshot-Paar mehr, das verschiedene Zustände darstellen soll. **Risiko:** niedrig.
 
-**Beta-Entscheidungen (Session 30, Teil 3+4):** Daten **erhalten** → Schema final + Backups **vor** M1; Zugang via **`zock.locodoko.de`** (Domain+TLS); **Google OAuth aktiv**. Damit ist M1 faktisch ein **erster echter Deploy**. Weiter (Teil 4): **EU-Ops pragmatisch** (Grafana/Sentry mit EU-Region + AVV ok, kein Self-Hosting nötig); **Beta-Zugang** (Session 36 aktualisiert): kein hartes Site-Gate, aber **noindex aktiv** (meta + `robots.txt`) → aus Suchmaschinen raus; `BETA-ACCESS` (invite-only) optional, aber **Hebel für den Impressum-Risk-Accept** (ohne öffentliche Registrierung greift „privat, nicht geschäftsmäßig"); **Sessions persistieren** (`spring-session-jdbc`) + **Build-Info** (`/actuator/info`); Admin-Tooling + Rollback-Doku **erwogen, zurückgestellt**. **Auth bleibt Google + Username/Passwort** — „Sign in with Apple" verworfen (99 €/Jahr + JWT-Rotation für reine UX; Apple-Nutzer können Google im Safari nutzen). Passwort-Reset/`OPS-EMAIL` **zurückgestellt** → Fallback in der Beta: manueller Reset durch Betreiber. Mobile: nominell M2 — **aber Freunde auf iPhone → Beta wird vermutlich mobil/Safari getestet** (Re-Evaluierung empfohlen).
+- [ ] **SEC-DEPS-FE-DEV-AUDIT** (Frontend/Sicherheit, autonom, klein) — `npm audit` meldet **7 Schwachstellen in Dev-Deps** (1 moderate `brace-expansion`, 4 high/2 critical über die `esbuild`→`vite`→`vitest`/`@vitest/*`-Kette). **Prod-Deps: 0 CVEs** (nicht ausgeliefert → kein Live-Blocker, aber Toolchain-Hygiene + Supply-Chain). **Fix:** `npm audit fix` für `brace-expansion` (non-breaking); für die esbuild/vite-Kette `npm audit fix --force` evaluieren = **Major-Bumps** (Vite/Vitest) — nur mit anschließend grünem `npm test && npm run build && npm run lint` übernehmen, sonst gezielt einzelne Transitives anheben. **Erste Datei zuerst:** `frontend/package.json` / `package-lock.json`. **DoD:** `npm audit` ohne high/critical (oder dokumentierte, unvermeidbare Rest-Advisories); FE-Suite + Build + Lint grün. **Risiko:** mittel (Major-Tooling-Bump kann Tests/Build brechen).
 
-**Meilenstein 1 — Closed Beta (`zock.locodoko.de`, eingeladene Kollegen, Daten erhalten).**
-**Loop-Hinweis:** Ralph arbeitet **Block A** strikt der Reihe nach ab (alles autonom verifizierbar via `mvn`/`npm`). **Block B** trägt `Vorbedingung: MENSCH` — diese Tasks **überspringen**, bis die externe Voraussetzung (Server/Domain/Google-Account) erfüllt ist.
+- [ ] **QA-METRICS-REFRESH** (QA/Doc, autonom, klein) — `docs/metrics.md` ist auf Stand **S120** (BE 485 / FE 461 Tests); seither **BE 500 / FE 465**. **Fix:** `mvn clean verify` (JaCoCo) + `cd frontend && npx vitest run --coverage` neu vermessen, Zahlen + Datum aktualisieren, verbleibende Branch-Lücken benennen. Dabei die per-Namensheuristik testdatei-losen, aber ggf. nur indirekt abgedeckten Service-Klassen (z.B. `PartieLifecycleService`, `TischEchtzeitService`, `SpielverwaltungWebSocketController`) gegen den realen JaCoCo-Report prüfen und echte Lücken als Folge-Test-Tasks notieren. **Erste Datei zuerst:** `docs/metrics.md`. **DoD:** Report mit S128-Zahlen, reproduzierbar; etwaige echte Lücken als Tasks erfasst. **Risiko:** niedrig.
 
-### Nächste autonome Queue (Stand Session 67) — Ralph der Reihe nach, **kein MENSCH nötig**
+- [ ] **PERF-FE-BUNDLE-SPLIT-2** (Frontend, autonom, klein, optional) — trotz `PERF-FE-BUNDLE-SPLITTING` (Phaser-Vendor-Chunk) bleibt der `phaser-vendor`-Chunk **1,48 MB** und löst weiter die „chunks > 600 kB"-Build-Warnung aus. **Optionen:** (a) Szenen via `import()` lazy laden (echtes Code-Splitting des App-Teils), oder (b) die Warnung bewusst belassen und `chunkSizeWarningLimit` mit dokumentierter Begründung setzen (Phaser ist als Engine unteilbar). **Erste Datei zuerst:** `frontend/vite.config.ts`. **DoD:** entweder kleinere Initial-Chunks oder dokumentierte, bewusste Limit-Entscheidung; Build + Lint + Vision-Smoke grün. **Risiko:** niedrig.
 
-> Blöcke A (Schema 1–7), B (Statistik 8–11), C (Qualität 12–16) + alle Block-A-Ops (1–9): **komplett ✓**.
-> Alle UI-Mängel aus FE-UI-FINAL-REVIEW: **6/6 ✓** (RANGLISTE-BUTTON-CLIPPING, NEUER-TISCH-MODAL-LAYOUT, RUNDENAUSWERTUNG-LESBARKEIT, VORBEHALT-AUSWAHL-FEEDBACK, LOBBY-BUTTON-ICONS, BUG-EINSTELLUNGEN-MODAL).
-> Diese Queue ist komplett **Ralph-autonom** (verifizierbar via `mvn clean test` / `npm`). **Pro Task ein Commit.**
+- [ ] **QA-FE-BIOME-COMPLEXITY** (Frontend, autonom, klein — moderne Komplexitäts-Analyse, Session 128 prototypisiert) — **Biome additiv** als kognitives Komplexitäts-Gate einführen (ESLint bleibt Haupt-Linter, User-Entscheidung S128). **Schritte:** (1) `@biomejs/biome` als devDep; (2) `frontend/biome.json` mit **nur** der Regel `complexity.noExcessiveCognitiveComplexity` (`recommended:false`, alle anderen Regeln aus — Formatierung/Stil bleibt bei ESLint/Prettier); (3) npm-Script `"complexity": "biome lint --config-path=. src"`; (4) **Baseline-Schwelle** zunächst auf den Ist-Höchstwert setzen, sodass der Lauf **grün** ist (S128-Messung: Schwelle 40 → 0 Verstöße; der schlimmste Treffer liegt kognitiv im Bereich 31–39), dann in einem Kommentar dokumentieren + als Folge-Tasks schrittweise senken (40 → 30 → 25 → 20 → 15) und je Stufe die Ausreißer refactoren. **Bekannte kognitive Hotspots (Biome S128, Schwelle 15 → 14 Treffer):** `PartieStore.ts:140`, `TischInputHandler.ts:53/219`, `TischRundenEndeController.ts:32/146`, `layout.ts:71`, `SpielprotokollOverlay.ts:127`, `TischKartenRenderer.ts:362`, `BestenlisterSzene.ts:113`, `TischAnimationOrchestrator.ts:105`, `TischHudRenderer.ts:26`, `SpielerProfilModal.ts:132`, `SpielverwaltungApi.ts:76`, `AnimationenPrimitiven.ts:37`. **Erste Datei zuerst:** `frontend/package.json` + neue `frontend/biome.json`. **DoD:** `npm run complexity` läuft grün (Baseline-Schwelle), bricht bei Überschreitung; `npm test && npm run build && npm run lint` weiterhin grün; ggf. in CI als eigener Step. **Risiko:** niedrig (additiv, ESLint-Config unberührt).
 
-**D) Verbleibende autonome Tasks (Reihenfolge Session 62):**
-1. ~~FE-NAMEPLATE-TEXTABSCHNEIDUNG~~ ✓ (S57) · ~~REFACTOR-FE-EREIGNISHANDLER~~ ✓ (S59) · ~~REFACTOR-FE-PARTIESTORE~~ ✓ (S61) · ~~REFACTOR-FE-KARTENRENDERER~~ ✓ (S61) · ~~FE-MOBILE-SMOKE~~ ✓ (S61) · ~~OBS-SENTRY~~ ✓ (S61, Code) · ~~OPS-GRAFANA-MONITORING~~ ✓ · ~~OPS-LOGS-LOKI~~ ✓ (S61, Code/Config)
-2. ~~FEAT-BUGREPORT~~ ✓ (S63) — Overlay (`Shift+F1`) + `BugReportController` + Redaktion laut `specs/bugreport.md`. GitHub-Issue-Versand env-gated.
-3. ~~DOC-DOCS-SITE~~ ✓ (S64) — MkDocs-Material-Seite für `docs.locodoko.de`.
-4. ~~BUG-LOGIN-BUTTON-TEXTCLIPPING~~ ✓ (S66) — Login-Buttons: PhaserButton passt Breite automatisch an Textlänge an.
+- [ ] **QA-METRICS-TOOLING** (QA/Doc, autonom, klein — am besten mit QA-METRICS-REFRESH bündeln) — `scripts/metrics.sh` von handgezählten LOC/grep-Heuristiken auf echte Werkzeuge umstellen: **`lizard`** (zyklomatische Komplexität + Token-Count, **Java *und* TS** in einem Lauf — ersetzt „größte Klasse als Komplexitäts-Proxy") als nicht-brechenden Report-Step; optional **`scc`** für LOC + **COCOMO-Kostenschätzer**. Beides nur Report, **kein** Build-Gate (das Gate ist FE=Biome, siehe QA-FE-BIOME-COMPLEXITY). **S128-Messung als Erwartungswert:** BE Avg CCN 1.9, nur 2 Funktionen > 15 (max `KiTischOrchestrator::automatisiereTisch` CCN 20); FE Avg CCN 2.4, 8 Funktionen > 15 (max `TischInputHandler::verarbeiteTastatureingabe` CCN 34). **Installation/Reproduzierbarkeit (wichtig):** `lizard` ist **kein** Repo-Dependency und liegt **nicht** im PATH — das Skript muss die Verfügbarkeit selbst sicherstellen (z.B. `python3 -m pip install --user lizard` bzw. venv/pipx und Aufruf via `python3 -m lizard`; `scc` ist ein Go-Binary, nur nutzen wenn vorhanden, sonst überspringen). Nicht auf einen lokal vorinstallierten Stand verlassen; bei fehlendem Tool den Step sauber überspringen statt das Skript abbrechen zu lassen. **Erste Datei zuerst:** `scripts/metrics.sh` + `docs/metrics.md`. **DoD:** Report nutzt `lizard` (+ggf. `scc`) statt `find|wc`-Heuristik; CC-Top-20 + COCOMO im Report; Skript reproduzierbar **auf einer frischen Umgebung** (Tool-Installation/-Fallback im Skript geregelt). **Risiko:** niedrig.
 
-*Nachgetragen (Session-67-Scan — im Plan bisher fehlend):*
-- ~~FE-FLASH-TEXT~~ ✓ — `FlashTextManager` in `frontend/src/ui/FlashTextManager.ts`; alle 9 Events animiert (SpielGestartet bis SpielBeendet), Foil-Shimmer, Konfetti-Emitter, Shockwave-Ringe, Screen Shake, Camera Flash. Instanziiert in `TischSzene.ts:108`. Spec `frontend-flash-text.md` Status „Abgeschlossen".
-- ~~FE-NAMEPLATES~~ ✓ — `Nameplate` in `frontend/src/ui/Nameplate.ts`; alle States (default/amZug/geber/vorbehalt), RE/KONTRA-Badge mit Bounce, Geber-Krone floating, Vorbehalt-Pulse, Shake-Effekt, Teamfarbe dynamisch. Vier Instanzen in `TischSzene.ts:47`. Spec `frontend-nameplates.md` Status „Abgeschlossen".
+### Empfohlene Build-Reihenfolge (Block A)
 
-**E) Neue autonome Queue (ab Session 67):**
-1. ~~FE-VISUAL-REVIEW-BALATRO~~ ✓ (S68) — Vision-Loop grün (1/1, 41.5s). Nameplates korrekt positioniert, FlashText-Animationen sichtbar. Zwei Lobby-Layout-Bugs erfasst (→ Entdeckungen).
-2. ~~BUG-LOBBY-OFFENE-TISCHE-OVERLAP~~ ✓ (S70) — Header Y=570, Liste Y=645/hoehe=150; kein Overlap mehr.
-3. ~~BUG-LOBBY-TOPRIGHT-CLIPPING~~ ✓ (S70) — Spielregeln X=880, Rangliste X=1120; min. 46px Abstand zum rechten Rand.
-4. ~~OPS-EMAIL~~ ✓ (Prio 4, DOC + Code) — `authentifizierung.md` Abschnitt „Email-Verifizierung & Passwort-Reset (V2)" konkretisieren (EU-Anbieter Brevo 🇫🇷/Mailjet 🇫🇷 oder SMTP, Double-Opt-In, Reset-Token-Ablauf, Token-TTL) + Spring-Mail-Integration (`spring-boot-starter-mail`, Template-Engine, ENV `SMTP_HOST`/`SMTP_USER`/`SMTP_PASSWORD`). Env-gated: ohne `SMTP_HOST` No-Op (kein Test-Bruch). Kein M1-Blocker, aber nützlich gegen Fake-Accounts (M2). **DoD:** Spec definiert Email-Flows + EU-Anbieter; Verifikations-/Reset-Mail wird bei gesetztem SMTP-Host versendet; Tests grün. **Risiko:** niedrig-mittel.
-5. ~~FE-MOBILE~~ ✓ (M2, mittleres Risiko) — Voller Mobile-/Touch-/Portrait-Umbau nach `FE-MOBILE-SMOKE`. Erst nach FE-VISUAL-REVIEW-BALATRO ansetzen. Spec `specs/frontend-tischansicht.md` + `frontend-visuelles-design.md` konsultieren. **Risiko:** mittel (breiter Layout-Eingriff). ⚠️ *Visuell unverifiziert — Vision-Loop wurde bei Umsetzung ausgelassen (Backend offline). → FE-VISION-VERIFY.*
+> Nimm den **obersten noch offenen** Task. Alle autonom; bei Vision-Tasks fährt Ralph das Backend selbst headless hoch.
 
-**F) Nachgereichte Verifikation (Session 74) — autonom, kein MENSCH:**
-1. [x] **FE-VISION-VERIFY** (P-Hoch, autonom) — ✓ S75: Vision-Loop beide Projekte grün (2 passed, 48.8s), präfixierte Screenshots erzeugt. **3 neue visuelle Befunde** → siehe „Entdeckungen" (DISCO-MOBILE-PORTRAIT-LOCK, BUG-LOBBY-TOPRIGHT-CLIPPING-2, BUG-NEUER-TISCH-MODAL-CLIPPING-2). — Den seit Session 70 dreimal ausgelassenen Vision-Loop **tatsächlich ausführen** und die ungeprüften UI-Änderungen visuell verifizieren: FE-MOBILE Portrait-/Touch-Umbau (S72), BUG-LOBBY-OFFENE-TISCHE-OVERLAP + BUG-LOBBY-TOPRIGHT-CLIPPING (S70). Deckt **beide** Viewports der `playwright.config.vision.ts` ab (`desktop` 1280×720 + `mobile-portrait` Pixel 5 393×851).
+1. **QA-VISION-MOBILE-LANDSCAPE** (+ **CLEANUP-VISION-SCREENSHOT-DUBLETTE** im selben Lauf bündeln)
+2. **SEC-DEPS-FE-DEV-AUDIT**
+3. **QA-METRICS-REFRESH** (+ **QA-METRICS-TOOLING** im selben Lauf bündeln)
+4. **QA-FE-BIOME-COMPLEXITY**
+5. **PERF-FE-BUNDLE-SPLIT-2** (optional)
 
-   **Schritte (analog `VISION-SMOKE-1`):** 1. Frontend bauen falls nötig (`cd frontend && npm run build`), dann Backend headless starten: im Projektroot `mvn spring-boot:run` im Hintergrund; warten bis `curl -s http://localhost:8081/actuator/health` „UP" liefert. 2. `cd e2e && npx playwright test --config=playwright.config.vision.ts` (beide Projekte). 3. **Erwartung:** Screenshots tragen jetzt Plattform-Präfix (`desktop-…` / `mobile-portrait-…`) — die alten präfixlosen aus `e2e/screenshots/` sind veraltet (ältere Spec-Version) und werden ersetzt. 4. Alle neuen Screenshots mit dem Read-Tool einlesen und gegen `specs/frontend-visuelles-design.md` + `frontend-tischansicht.md` prüfen — **besonders die `mobile-portrait-*`-Aufnahmen**, da der Portrait-Layout-Eingriff (Spieler-Koordinaten, Karten-Überlappung, Nameplates) noch **nie** visuell kontrolliert wurde. 5. Backend-Prozess stoppen.
+### Review-Notizen S126 (offen, niedrigste Prio / Deploy-nah — keine eigenen Tasks)
 
-   **DoD:** Vision-Loop läuft grün durch (beide Projekte); Desktop- **und** Mobile-Portrait-Screenshots ohne Layout-Bruch befunden (keine Überlappung, kein Clipping, lesbare Texte, korrekte Spieler-/Karten-Positionierung im Portrait). Etwaige visuelle Mängel als neue `BUG-…`/`FE-…`-Tasks unter „Entdeckungen" eintragen (im selben Lauf **nicht** fixen — eigene Tasks für Build-Modus). **Risiko:** niedrig (read-only Diagnose); mittlere Wahrscheinlichkeit neuer Mobile-Layout-Befunde, da Erstkontrolle.
-
-**G) Vision-Loop-Vervollständigung (Session 79 abgeleitet aus `specs/frontend-vision-loop.md`, autonom, kein MENSCH):**
-
-> Hintergrund: Die Session-79-Spec `specs/frontend-vision-loop.md` katalogisiert **48 UI-/Spielzustände**, von denen der Vision-Loop bislang nur **10** abdeckt (38 offen). Sie definiert die Ziel-Aufteilung in zwei Specs (`vision-loop-szenen.spec.ts` neu für Nicht-Spiel-Screens < 30 s + `vision-loop.spec.ts` erweitert für Gameplay < 5 min) und leitet drei Build-Tasks ab. Reihenfolge strikt: 1 → 2 → 3 (2 und 3 hängen an den Test-IDs/Bridge-Methoden aus 1). **Pro Task ein Commit.** Verifikation: `cd frontend && npm test && npm run build && npm run lint`, dann Vision-Loop (Backend headless wie in `VISION-SMOKE-1`/Block F: `mvn spring-boot:run` + frisches `dist` nach `target/classes/static` kopieren + auf `/actuator/health` „UP" warten).
-
-1. [x] **VISION-LOOP-API** (Vorbedingung, niedrig-risiko) — Reine Test-Hooks ergänzt, **keine fachliche Logik geändert**.
-
-   **Zu ergänzen (laut Spec-Abschnitt „Voraussetzungen" + „Abgeleitete Build-Tasks"):**
-   - `frontend/src/szenen/SpielverwaltungsSzene.ts`: `spielregelnBtn.setName('btn-spielregeln')`, `ranglisteBtn.setName('btn-rangliste')`.
-   - `frontend/src/szenen/HilfeSzene.ts`: Tab-Buttons `setName('btn-tab-trumpf'|'btn-tab-ansagen'|'btn-tab-sonderspiele'|'btn-tab-punkte')`, Zurück-Button `btn-hilfe-zurueck`.
-   - `frontend/src/szenen/BestenlisterSzene.ts`: Tab-Buttons `btn-tab-turnier`/`btn-tab-sonder`/`btn-tab-frei`, Zurück-Button `btn-bestenliste-zurueck`.
-   - TischSzene/Bridge (`window.__locodoko`): E2E-Zugriff `toggleSpielprotokoll()` (intern existiert `TischSzene.toggleSpielprotokoll(modell, zustand)` — über die Bridge zugänglich machen), `bridge.isPartieEndeModalSichtbar`, `bridge.schliessePartieEndeModal()` (intern in `TischRundenEndeController`). Typen in `e2e/`-Bridge-Definition (`e2eBruecke.ts`/`TischBrücke.ts`) ergänzen.
-
-   **DoD:** Alle neuen Test-IDs/Bridge-Methoden existieren; **bestehende Tests grün (294 FE + 365 BE)**; `build` + `lint` sauber. **Risiko:** niedrig (additiv, keine Spiellogik).
-
-2. [x] **VISION-LOOP-SZENEN** (neuer Test, autonom) — **[hängt an VISION-LOOP-API]** Neuer Test `e2e/tests/vision-loop-szenen.spec.ts` für die Nicht-Spiel-Screens **S-00 … S-14** (Login, Lobby-Basis/leer/Modal/gefüllt/Recovery, Spielregeln-Hilfe alle 4 Tabs, Rangliste alle 3 Tabs, Spielerprofil-Modal, Tisch-Wartezimmer). Steuerung via `drueckeSzenenButton('btn-…')` + `warteAufSzene(...)`. S-04 (gefüllte Tischliste) nutzt 2 Browser-Kontexte oder den in der Spec genannten Workaround; falls zu brittle: als 🔲 in der Spec-Tabelle lassen und eigenen Folge-Task notieren statt erzwingen.
-
-   **DoD:** Test grün in **beiden** Projekten (`desktop` + `mobile-portrait`), Laufzeit < 30 s; alle erzeugten Screenshots (`*-szenen`-Set) in `e2e/screenshots/` mit Plattform-Präfix; jeden mit Read-Tool gegen `specs/frontend-visuelles-design.md` sichten, neue Layout-Mängel als `BUG-…`/`FE-…` unter „Entdeckungen" (nicht im selben Lauf fixen). Spec-Statustabelle S-00…S-14 auf ✅ aktualisieren. **Hinweis Portrait (S87 KORRIGIERT — vorherige Annahme war falsch):** Die Mobile-Portrait-Screenshots der Menüs sind **NICHT** aussagekräftig. md5-Beweis (S87): Lobby, Hilfe, Rangliste, Einstellungen, Flash-Screens tragen **denselben Hash** = überall das globale „ins Querformat drehen"-Overlay. `DISCO-MOBILE-PORTRAIT-LOCK` (`#orientierung-hinweis`) verdeckt **alle** Screens, nicht nur die TischSzene. → Der `mobile-portrait`-Vision-Lauf liefert reine Dubletten; nur **Desktop**-Screenshots sind verwertbar (User-Entscheidung S87: DISCO vorerst lassen). **Risiko:** niedrig-mittel (E2E-Steuerung mehrerer Szenen).
-
-3. [x] **VISION-LOOP-GAMEPLAY-ERWEITERN** (erweitern, autonom) — **[hängt an VISION-LOOP-API]** `e2e/tests/vision-loop.spec.ts` erweitern um: **T-05** (Gegner am Zug), **T-08** (Spielprotokoll-Overlay via Bridge), **T-13** (Partie-Ende-Modal — Tisch mit `anzahlSpiele:1`); **F-01…F-10** Flash-Texts (bei `0.2×`-Animationsgeschwindigkeit, **best-effort** — kein Test-Fehler, wenn der Kartenausfall das Event nicht produziert); **A-01…A-05** Animations-Keyframes; **X-01** Fehler-Toast (via ungültige Karte über Test-API). Best-effort-Strategie + Bridge-Feld `_letzterFlashTyp` wie im Spec-Abschnitt „Hinweise zur Umsetzung".
-
-   **DoD:** Test grün in beiden Projekten, Laufzeit < 5 min; neue Screenshots vorhanden, **wenn** die jeweiligen Ereignisse auftreten; **kein** Test-Fehler bei ausbleibenden best-effort-Events. Spec-Statustabelle entsprechend nachziehen. **Risiko:** mittel (Timing/Flake bei Animations-Keyframes — best-effort hält den Test grün).
-
-### H) Vision-Loop Vervollständigung (Session 86)
-
-> Hintergrund: Der Code-Scan in Session 86 hat ergeben, dass die Vision-Loop-Abdeckung entgegen der Annahme Lücken aufweist. Diese Queue schließt die verbleibenden `🔲`-Einträge aus `specs/frontend-vision-loop.md`. **Alle Tasks sind autonom.**
-
-1. [x] **FEAT-VISION-LOOP-LOBBY-SCENARIOS** (autonom) — `e2e/tests/vision-loop-szenen.spec.ts` erweitern, um die Lobby-Szenarien `S-04` (gefüllte Tischliste) und `S-05` (Session-Recovery-Button) abzudecken.
-    **DoD:** Test `vision-loop-szenen` deckt S-04 und S-05 ab; Screenshots `11b-offene-tische-gefuellt.png` und `01b-lobby-recovery.png` werden erzeugt; Spec-Status auf ✅ aktualisieren.
-
-2. [x] **FEAT-VISION-LOOP-GAMEPLAY-MODALS** (autonom) — `e2e/tests/vision-loop.spec.ts` erweitern, um `T-11` (Letzter-Stich-Overlay) und `T-13` (Partie-Ende-Modal) abzudecken.
-    **Stand S87:** **T-11 im Arbeitsbaum implementiert** (Bridge-Methode `zeigeLetztesStichOverlay` in `e2eBruecke.ts`+`TischBrücke.ts`, Screenshot-Schritt in `vision-loop.spec.ts`), aber **NICHT committet und NICHT verifiziert** (Build/Vision-Loop noch nicht gelaufen). **T-13 fehlt komplett im Code**, obwohl die Spec-Statustabelle bereits T-11 *und* T-13 auf ✅ gesetzt hat → **Spec lügt aktuell gegenüber dem Code.**
-    **Hinweis:** Für T-11 ist die Bridge-Methode `zeigeLetztesStichOverlay()` da (statt fragiler Koordinaten-Klick) — verifizieren, dass `kartenRenderer.zeigeLetztesStichOverlay(stich, w, h)` und `letztesModell.letzteAbgeschlosseneStiche` real existieren/kompilieren. Für T-13 einen Tisch mit `anzahlSpiele: 1` konfigurieren + `bridge.isPartieEndeModalSichtbar`/`schliessePartieEndeModal` nutzen (bereits vorhanden).
-    **Nächste Schritte (autonom):** (a) `cd frontend && npm test && npm run build && npm run lint`; (b) Vision-Loop fahren, `desktop-10-letzter-stich-overlay.png` prüfen; (c) T-11 committen; (d) T-13 ergänzen, screenshotten, committen; (e) Spec-Status erst dann ✅ wenn Code+Screenshot real existieren.
-    **DoD:** Test `vision-loop` deckt T-11 und T-13 ab; Screenshots `10-letzter-stich-overlay.png` und `05b-partie-ende-modal.png` werden (Desktop) erzeugt; Spec-Status auf ✅ — **konsistent mit dem committeten Code.**
-
-2b. [x] **FE-NEUER-TISCH-MODAL-REDESIGN** (autonom, User-gemeldet S87, **nach H.2**) — Voll-Redesign des „Neuen Tisch erstellen"-Modals (`SpielverwaltungsSzene.zeigeErstelleTischModal`, Z.354–430). Siehe Detail-Task unter „Entdeckungen → UI-Befund Session 87".
-
-3. [x] **FEAT-VISION-LOOP-FLASH-TEXTS-2** (autonom, best-effort) — `e2e/tests/vision-loop.spec.ts` erweitern, um die verbleibenden Flash-Text-Animationen `F-01` (SpielGestartet), `F-02` (VorbehaltErwartet), `F-03` (NaechsterSpieler), `F-10` (SpielBeendet) abzudecken. Die best-effort-Strategie (0.2x Speed, kein Fehler bei ausbleibendem Event) wird wiederverwendet.
-    **DoD:** Test `vision-loop` versucht, die Flash-Texte zu erfassen; Spec-Status auf ✅.
-
-4. [x] **FEAT-VISION-LOOP-ANIMATIONS-2** (autonom, best-effort) — `e2e/tests/vision-loop.spec.ts` erweitern, um die verbleibenden Animations-Keyframes `A-01` (Karten-Austeilen) und `A-02` (Ansage-Banner) abzudecken.
-    **DoD:** Test `vision-loop` versucht, die Animationen zu erfassen; Spec-Status auf ✅.
-
-5. [x] **FEAT-VISION-LOOP-TOASTS** (autonom) — `e2e/tests/vision-loop.spec.ts` erweitern, um den Fehler-Toast `X-01` via `spieleKarteViaTestApi(page, 'ungueltige-karte-id')` auszulösen und zu screenshotten.
-    **DoD:** Test `vision-loop` deckt X-01 ab; Screenshot `x01-fehler-toast.png` wird erzeugt; Spec-Status auf ✅.
-
-**Hinweis Build-Loop:** Diese Queue ist Ralph-autonom (Verifikation `mvn clean test` / `npm test && npm run build && npm run lint`, UI-Tasks zusätzlich Vision-Loop). **Pro Task ein Commit.** Env-gated externe Dienste (Sentry/Grafana/Loki/Bugreport-GitHub) sind ohne Secrets No-Ops → Build bleibt grün.
-
-**Externe Voraussetzung MENSCH (kein Ralph):** OPS-DOMAIN (Reverse-Proxy-Config autonom vorbereitbar, aber Server/DNS/TLS = MENSCH) · DEPLOY-COMPOSE-SMOKE (Docker + echtes Postgres) · CD-DEPLOY/CI-DOCKER-BUILD (Plattformwahl offen, **bewusst vertagt**).
-
-**Erst danach MENSCH nötig (Deploy-Phase):** OAuth-Credentials · DEPLOY-COMPOSE-SMOKE · CD-DEPLOY.
-
-**Block A — Ralph-autonom (sofort, ohne externe Voraussetzung):**
-1. **BUG-PROD-CHANGELOG** (P0) — App bootet gegen Postgres
-2. **SPEC-SQL-REVIEW** — Schema final + Changelog-Konsolidierung. **Gate (Daten bleiben erhalten!).** (Schema-Entscheidungen: Mensch sollte gegenlesen — kein Loop-Blocker.)
-3. **SESSION-PERSISTENZ** — `spring-session-jdbc`, damit Redeploys Kollegen nicht ausloggen
-4. **OPS-COMPOSE-HARDENING** — `app`-Service restart-Policy + Healthcheck
-5. **OPS-BUILD-INFO** — `/actuator/info` mit Git-SHA/Version (klein)
-6. **BACKUP-DB** — Backup-/Restore-**Skript** + Doku (echter Restore-Drill auf Server = Mensch, kein Loop-Blocker)
-7. **DEPLOY-OAUTH-SENTINEL** — Code: Google-Login nur bei gesetzten Credentials (Code autonom; echte Credentials = Block B)
-8. **DOC-ENV-DEPLOY** — `.env.example` + README-Roll-out (echte Secret-Werte = Mensch)
-9. **FEAT-FEEDBACK** — leichter „Feedback geben"-Link/Form (Log/Datei; Webhook-URL = Mensch falls Discord)
-
-**Block B — Vorbedingung: MENSCH (Ralph überspringt, bis erfüllt):**
-10. **OAuth-Credentials** — *Vorbedingung: MENSCH* (Google Cloud Console: Client-ID/Secret + Redirect-URI `zock.locodoko.de`)
-11. **OPS-DOMAIN** — *Vorbedingung: MENSCH* (Server/DNS/TLS) — Ralph kann nur die Reverse-Proxy-Config vorbereiten
-12. **DEPLOY-COMPOSE-SMOKE** — *Vorbedingung: MENSCH* (Docker + echtes Postgres laufen lassen)
-13. **CD-DEPLOY (manuell)** — *Vorbedingung: MENSCH* (Server, SSH, Plattformwahl hosting.de)
-- *Empfohlen für M1:* OPS-GRAFANA-MONITORING + OPS-LOGS-LOKI (Instrumentierung autonom; Grafana-Cloud-Token = Mensch); minimaler Datenschutzhinweis; SECURITY-REVIEW vor Exposition.
-- *Optional/zurückgestellt:* BETA-ACCESS (Beta muss nicht gated sein), Admin-Tooling, Rollback-Doku.
-
-**Meilenstein 2 — Public Go-Live:**
-- **SPEC-RECHT** (Impressum + Datenschutz Pflicht + AGB) · **SECURITY-REVIEW** · **CI/CD automatisiert** (CI-BUILD-TEST → CI-DOCKER-BUILD → CD-DEPLOY) · **VERIFY-MULTIPLAYER** · **FE-SPIELREGELN-HILFE** (Onboarding, da DoKo komplex) · **FEAT-BUGREPORT** (voll) · **DOC-DOCS-SITE** · **QA-CODE-METRICS** · **FE-UI-FINAL-REVIEW** · **FE-MOBILE** (Touch/Portrait) · **OPS-EMAIL** · **DECISION-LIZENZ**
-
-Entscheidungen: **DECISION-AUTH** ✓ beide behalten · **DECISION-LIZENZ** aufgeschoben (Steam-Frage offen, Tendenz Apache vs. proprietär/AGPL)
+- **B2/B3 (low, Nebenläufigkeit):** `VerbindungsabbruchService` — TOCTOU zwischen `computeIfPresent`/`containsKey` in `verarbeiteDisconnect` (meist selbstheilend) und fehlender expliziter `aktiveWsSessionen`-Evict bei Session-Expiry (defensiv). Single-Instance-Betrieb → praktisch irrelevant; bei Bedarf in eine atomare `compute`-Operation ziehen.
+- **F2 (Deploy):** `sourcemap:'hidden'` schreibt die ~10,9-MB-`.map` weiterhin nach `dist/` → bei statischer Auslieferung per URL-Raten abrufbar (Quellcode-Exposure). An **OBS-SENTRY/Deploy** koppeln: `.map` nicht ins öffentlich servierte Verzeichnis legen (nur zu Sentry hochladen) oder in Prod `sourcemap:false`.
+- **F3 (kosmetisch):** Ein per OAuth gemergtes Passwort-Konto behält `authentifizierungsMethode=PASSWORT`, obwohl es auch OAuth-fähig ist. Gatet nichts Sensibles — nur das Anzeigefeld in `AuthentifizierungsAntwort` ist leicht ungenau. Eher dokumentieren als ändern.
+- **F4 (a11y):** `installiereDialogA11y`-Fokus-Trap lenkt Tab nur um, wenn der Fokus exakt auf erstem/letztem Element liegt; liegt er außerhalb des Containers, läuft Tab durch. In der Praxis ok (Dialoge fokussieren initial nach innen). Optional härten.
 
 ---
 
-## Fertigstellung — Öffentlicher Betrieb (Session 30, 2026-06-01)
+## B) Vorbedingung: MENSCH (Ralph überspringt, bis erfüllt)
 
-> Ziel: Locodoko öffentlich betreiben (günstiges Hosting, Tendenz VPS via docker-compose; Plattform final offen). Fokus Deployment & Ops + CI/CD. Reihenfolge verbindlich: erst Deploy-Blocker, dann verifizierter Stack, dann CI/CD.
+> Externe Voraussetzung (Server/DNS/TLS/Docker/Google-Account/Plattformwahl). Ralph kann hier nur vorbereitende Config schreiben, nicht abschließen.
 
-### Priorität 0 — Deploy-Blocker (verifizierter Bug)
+- [ ] **DEPLOY-COMPOSE-SMOKE** — Vollen prod-Stack lokal hochfahren und eine Partie durchspielen. **[Vorbedingung: MENSCH — Docker + echtes Postgres; hängt an BUG-PROD-CHANGELOG ✓]**
 
-- [x] **BUG-PROD-CHANGELOG** — prod-Profil referenziert eine nicht existierende Liquibase-Changelog-Datei.
-- [x] **BUG-GEMINI-CLI-QUOTA-DISPLAY** (P-Mittel) — Gemini CLI zeigt falsche Quota-Werte an.
-  - **Problem:** CLI-Übersicht zeigt z.B. 2% Nutzung für Modelle, während die API mit `QUOTA_EXHAUSTED` (429) ablehnt. Der Fehler wird im Script als `[API Error: An unknown error occurred.]` maskiert.
-  - **Hintergrund:** Wahrscheinlich Cache-Verzögerung in der CLI-Anzeige oder Diskrepanz zwischen globaler Pro-Quota und modell-spezifischen Limits.
-  - **Aktion:** Dokumentation im Bugreport-System; Script-Anpassung in `ralph-gemini.sh` erwägen, um 429er Fehler expliziter auszugeben statt "unknown error".
+  Vorhandene Bausteine: `docker-compose.yml` (Services `postgres` + `app`, Profil `prod`, ENV-Wiring), `Dockerfile.app` (Multi-Stage). Bislang nie real verifiziert. **Schritte:** 1. `docker compose --profile prod up --build -d`. 2. Warten bis `postgres` healthy + `curl -s http://localhost:8081/actuator/health` „UP". 3. Liquibase-Migration im App-Log prüfen. 4. Eine Partie gegen KI bis zur Auswertung durchspielen. 5. Stack runterfahren. **DoD:** prod-Stack startet reproduzierbar, Health UP, eine Partie läuft durch; Fehler als eigene `BUG-…`-Tasks. **Gate für** REFACTOR-DB-Härtung-Verifikation gegen echtes Postgres 17. **Risiko:** mittel.
 
-  `application-prod.properties` Z. 5: `spring.liquibase.change-log=classpath:db/changelog/db.changelog-baseline.yaml`. Diese Datei existiert nur unter `db/changelog/archiv/db.changelog-baseline.yaml` (archiviert), **nicht** am referenzierten Pfad. Das dev-Profil nutzt korrekt `classpath:db/changelog/db.changelog-master.yaml` (existiert, inkludiert `000-initial-schema.sql`). Folge: Im prod-Profil scheitert die Liquibase-Initialisierung beim Start → App bootet nicht gegen Postgres. Dieser Pfad wurde mangels CI/verifiziertem Deploy nie real ausgeführt.
+- [ ] **CI-DOCKER-BUILD** — Produktions-Image bauen und nach GHCR pushen. **[hängt an CI-BUILD-TEST ✓, DEPLOY-COMPOSE-SMOKE]**
 
-  **Erste Datei zuerst:** `src/main/resources/application-prod.properties` Z. 5 — auf `classpath:db/changelog/db.changelog-master.yaml` umstellen (identisch zu dev). **Achtung H2 vs. Postgres:** dev läuft H2 im PostgreSQL-Modus, prod echtes Postgres 17. Verifizieren, dass `000-initial-schema.sql` ohne H2-spezifische Syntax gegen echtes Postgres durchläuft (siehe `DEPLOY-COMPOSE-SMOKE`). Falls Postgres-Inkompatibilität auftritt: dialektspezifisches Changeset statt blindem Umbiegen.
+  `.github/workflows/ci.yml` erweitern (oder `release.yml`): `Dockerfile.app` bauen, mit Commit-SHA + `latest` taggen, nach `ghcr.io/<owner>/locodoko` pushen (nur `main`/Tag, `packages: write`). **DoD:** Nach Push auf `main` liegt ein lauffähiges Image in GHCR. **Risiko:** niedrig.
 
-  **DoD:** prod-Profil zeigt auf eine existierende Changelog-Datei; `grep -rn "baseline" src/main/resources/application-prod.properties` leer; App startet im prod-Profil gegen Postgres und migriert sauber (Nachweis via `DEPLOY-COMPOSE-SMOKE`). **Risiko:** mittel (SQL-Dialekt).
+- [ ] **CD-DEPLOY** — Auto-Deploy auf die Zielplattform. **[BLOCKED: Plattformwahl offen — kein echter Deploy ohne fertige Domain]**
 
-### Priorität 1 — Deployment & Ops
+  **Harte Anforderung:** EU/DE-Hosting (Datenresidenz). US-Anbieter (Fly.io, Railway) ausgeschlossen. Engere Wahl: Hetzner 🇩🇪, Scaleway 🇫🇷, Netcup 🇩🇪, OVHcloud 🇫🇷. Tendenz: günstiger VPS via `docker compose`. Bis zur Entscheidung: dokumentierter manueller Roll-out (`docker compose pull && docker compose --profile prod up -d`). **DoD (bei Entsperrung):** Push auf `main` → automatischer Deploy + Health-Check. **Risiko:** plattformabhängig.
 
-- [ ] **DEPLOY-COMPOSE-SMOKE** — Vollen prod-Stack lokal hochfahren und eine Partie durchspielen. **[Vorbedingung: MENSCH — Docker + echtes Postgres; hängt an BUG-PROD-CHANGELOG. Ralph: überspringen, nicht autonom abschließbar]**
+- [~] **OPS-DOMAIN** — Domain + DNS + TLS. **[Vorbedingung: MENSCH — Server/DNS/TLS; Ralph kann nur die Reverse-Proxy-Config vorbereiten]**
 
-  Vorhandene Bausteine: `docker-compose.yml` (Services `postgres` + `app`, Profil `prod`, ENV-Wiring inkl. `LOCODOKO_DB_*`/`GOOGLE_CLIENT_*`), `Dockerfile.app` (Multi-Stage: `mvn package` baut Frontend ein → schlankes JRE-Image). Bislang nie real verifiziert.
+  **Schema festgelegt:** App = `zock.locodoko.de`, Wiki = `docs.locodoko.de` (GitHub Pages), Apex `locodoko.de` = Landing/Redirect. Gebraucht: OAuth2-Redirect-URI (`https://zock.locodoko.de/login/oauth2/code/google`), `cookie.secure=true` + Cookie-Domain `zock.locodoko.de`, `LOCODOKO_WEBSOCKET_ALLOWED_ORIGINS=https://zock.locodoko.de`. **Schritte:** DNS-Records (`zock` + `docs`), TLS via Reverse-Proxy (Caddy/Traefik + Let's Encrypt), **WebSocket-Upgrade-Header durchreichen** (Snapshot+Hint bricht sonst), HTTP→HTTPS-Redirect, Apex → 301 auf `zock.`. **Closed-Beta-noindex:** `index.html` (`<meta robots noindex>`) + `robots.txt` (`Disallow: /`) bereits gesetzt; im Reverse-Proxy zusätzlich `X-Robots-Tag: noindex, nofollow`. **Bei Public Go-Live (M2) alle drei zurücknehmen.** **DoD:** `https://zock.locodoko.de` zeigt auf die App, WS funktioniert durch den Proxy. **Risiko:** niedrig.
 
-  **Schritte:** 1. `docker compose --profile prod up --build -d`. 2. Warten bis `postgres` healthy + `curl -s http://localhost:8081/actuator/health` „UP". 3. Liquibase-Migration im App-Log prüfen (keine Fehler). 4. Im Browser/E2E eine Partie gegen KI bis zur Auswertung durchspielen. 5. Stack wieder runterfahren.
+---
 
-  **DoD:** prod-Stack startet reproduzierbar, Health UP, eine Partie läuft bis Auswertung durch. Etwaige Fehler als eigene `BUG-…`-Tasks. **Risiko:** mittel.
-
-- [x] **DOC-ENV-DEPLOY** — `.env.example` + README für öffentlichen Betrieb vervollständigen.
-
-  `.env.example` enthält aktuell nur `GH_TOKEN` (Agent-Container), nicht die von `docker-compose.yml`/prod erwarteten Variablen. README ist auf Devmode-Stichworte beschränkt.
-
-  **Erste Datei zuerst:** `.env.example` — ergänzen: `LOCODOKO_DB_USERNAME`, `LOCODOKO_DB_PASSWORD`, `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `LOCODOKO_WEBSOCKET_ALLOWED_ORIGINS` (mit Kommentaren/Beispielwerten). Dann `README.md` — Abschnitt „Öffentlicher Betrieb": JAR-Build (`mvn clean package`), Start via `docker compose --profile prod up -d`, Google-OAuth2 einrichten (Redirect-URI `https://<domain>/login/oauth2/code/google`), HTTPS/Reverse-Proxy-Hinweis wegen `server.servlet.session.cookie.secure=true`, `LOCODOKO_WEBSOCKET_ALLOWED_ORIGINS` auf die Domain setzen.
-
-  **DoD:** `.env.example` deckt alle prod-ENV ab; README erklärt einen Deploy von Null. Kein Code-Change, kein Test.
-
-- [x] **DEPLOY-OAUTH-SENTINEL** — „Mit Google anmelden" nur anzeigen/aktiv, wenn OAuth2 konfiguriert ist (klein, optional).
-
-  `application.properties` Z. 19–20 setzt `client-id/secret` auf Default-Sentinel `disabled`. Ohne echte Credentials registriert Spring trotzdem einen Google-Client mit ID „disabled" → ein „Login mit Google"-Button liefe ins Leere. Passwort-Login funktioniert unabhängig.
-
-  **Erste Datei zuerst:** `src/main/java/de/locodoko/spieler/SecurityConfig.java` — OAuth2-Login nur registrieren, wenn `GOOGLE_CLIENT_ID` ≠ `disabled`/leer (z.B. `@ConditionalOnProperty` oder bedingte `ClientRegistrationRepository`-Bean). Frontend-Login-Button entsprechend ausblenden, wenn Provider fehlt.
-
-  **DoD:** Ohne gesetzte Google-Credentials startet die App, zeigt keinen Google-Button und Passwort-Login funktioniert; mit Credentials erscheint der Button. Bestehende Auth-Tests grün. **Risiko:** niedrig.
-
-### Priorität 2 — CI/CD (volle Pipeline)
-
-- [x] **CI-BUILD-TEST** — GitHub Actions Workflow für Build + Tests bei jedem Push/PR auf `main`.
-
-  Aktuell kein `.github/workflows/`. Bei agentengetriebenem Workflow fängt nichts rote Builds ab.
-
-  **Erste Datei zuerst:** `.github/workflows/ci.yml` — Job `backend`: Temurin 25 (siehe `Dockerfile.app`), `mvn clean verify`. Job `frontend`: Node 22, `cd frontend && npm ci && npm test && npm run build && npm run lint`. Trigger: `push`/`pull_request` auf `main`. Caching für Maven + npm.
-
-  **DoD:** Workflow läuft auf GitHub grün durch (beide Jobs). Badge optional in README. **Risiko:** niedrig.
-
-- [ ] **CI-DOCKER-BUILD** — Produktions-Image bauen und in GHCR pushen. **[hängt an CI-BUILD-TEST, DEPLOY-COMPOSE-SMOKE]**
-
-  **Erste Datei zuerst:** `.github/workflows/ci.yml` erweitern (oder `release.yml`) — Job baut `Dockerfile.app`, taggt mit Commit-SHA + `latest`, pusht nach `ghcr.io/<owner>/locodoko` (nur auf `main`/Tag, via `GITHUB_TOKEN`/`packages: write`).
-
-  **DoD:** Nach Push auf `main` liegt ein lauffähiges Image in GHCR; lokal `docker run` startet die App (gegen externe Postgres-ENV). **Risiko:** niedrig.
-
-- [ ] **CD-DEPLOY** — Auto-Deploy auf die Zielplattform. **[BLOCKED: Plattformwahl offen + Voraussetzungen SPEC-SQL-REVIEW ✓, SPEC-RECHT ✓, OPS-DOMAIN ✓ — kein echter Deploy mit unfertigem Schema/ohne Rechtstexte/Domain]**
-
-  **Harte Anforderung:** Europäisches Hosting, Server in der EU/Deutschland (Datenresidenz). Daher US-Anbieter (Fly.io, Railway) ausgeschlossen, auch wenn sie EU-Regionen anbieten. Engere Wahl: Hetzner (🇩🇪), Scaleway (🇫🇷), Netcup (🇩🇪), OVHcloud (🇫🇷). Tendenz: günstiger VPS via `docker compose`.
-
-  Bis zur Plattformentscheidung: kein automatischer Deploy-Step. Stattdessen dokumentierter manueller Roll-out (`docker compose pull && docker compose --profile prod up -d` auf dem Zielserver) als Teil von `DOC-ENV-DEPLOY`. Sobald Plattform feststeht: entsperren und konkretisieren (bei VPS: GitHub Action → SSH → `docker compose pull && up -d`).
-
-  **DoD (bei Entsperrung):** Push auf `main` → automatischer Deploy der neuen Version auf die EU-Zielplattform; Health-Check nach Deploy. **Risiko:** abhängig von Plattform.
-
-### Priorität 3 — Vor Live-Gang (niedrig, aber laut Spec Multiplayer-Blocker)
-
-- [x] **VERIFY-MULTIPLAYER** — E2E-Verifikation Mensch-gegen-Mensch über mehrere unabhängige Sessions.
-
-  `authentifizierung.md` nennt dies selbst den „Blocker für echten Multiplayer". Bestehende E2E testen v.a. Spiel gegen KI (`partie-gegen-ki.spec.ts`, `solo-spielfluss.spec.ts`, `reconnect.spec.ts`). Echtes Mensch-gegen-Mensch (mehrere reale Sessions/Logins an einem Tisch) ist bisher nicht als E2E abgedeckt.
-
-  **Erste Datei zuerst:** `e2e/tests/` — neues Spec mit 2–4 unabhängigen Browser-Contexts (getrennte Sessions/Logins), die denselben Tisch betreten und eine Partie bis zur Auswertung durchspielen. Prüfen: Snapshot+Hint-Sync zwischen allen Clients, korrekte Sicht pro Spieler (keine fremden Hände sichtbar), Stichannahme reihum.
-
-  **DoD:** grünes E2E mit ≥2 menschlichen Sessions an einem Tisch, eine Partie durchgespielt. Vor dem öffentlichen Live-Gang erledigen. **Risiko:** mittel (Test-Orchestrierung mehrerer Sessions).
-
-### Priorität 4 — Produktreife & offene Entscheidungen (Session 30, Teil 2)
-
-> User-Wunsch: diese Themen sollen **zuerst als Specs erfasst** werden, bevor implementiert wird. Jede Task produziert (auch) eine Spec.
-
-- [x] **SPEC-SQL-REVIEW** — Extrem kritisches Schema-/SQL-Review **vor** dem Aufbau der ersten echten DB. **[GATE für CD-DEPLOY — gehört in Phase A]**
-
-  Greenfield (keine Migration nötig) → das Schema kann jetzt sauber gezogen werden, bevor produktiv Daten liegen. **Nach dem ersten echten Deploy kostet jede Schema-Änderung eine Liquibase-Migration gegen Live-Daten** — deshalb zwingend im greenfield-Fenster, direkt nach `BUG-PROD-CHANGELOG` und vor `CD-DEPLOY`. Hängt fachlich mit `BUG-PROD-CHANGELOG` zusammen (Changelog-Hygiene). Prüfen: Normalformen (3NF), Audit-Spalten (`erstellt_am`, `geaendert_am`, ggf. `erstellt_von` als `timestamptz`), Primär-/Fremdschlüssel + ON DELETE, Indizes (insb. Fremdschlüssel + Abfragepfade `tischId`/`partieId`/`spielerId`), Datentypen (UUID, `timestamptz` statt `timestamp`, `numeric` statt float für Punkte), NOT-NULL/CHECK-Constraints, Namenskonventionen, JSONB-Spalten (Validierung/GIN-Index sinnvoll?), Liquibase-Changelog-Konsolidierung (`archiv/` vs. aktiv).
-
-  **Erste Datei zuerst:** `specs/datenbankmodell.md` — Review-Befunde + Soll-Schema dokumentieren. Daraus dann (eigene Build-Tasks) konsolidiertes Liquibase-Changelog. Gegen echtes Postgres 17 validieren (siehe `DEPLOY-COMPOSE-SMOKE`).
-
-  **DoD:** `datenbankmodell.md` enthält reviewtes Soll-Schema mit Audit-Konzept + Index-/Constraint-Liste; offene Schema-Änderungen als nachgelagerte `REFACTOR-DB-…`-Tasks. **Risiko:** mittel-hoch (Schema ist Fundament).
-
-- [x] **OPS-GRAFANA-MONITORING** (Code/Config, Session 61) — `specs/betrieb-monitoring.md` + `micrometer-registry-prometheus`, `/actuator/prometheus` exponiert (`management`-Props), Domain-Metriken `de.locodoko.betrieb.SpielMetriken` (eigenes Blatt-Modul — `system` wäre Modul-Zyklus). Niedrig-kardinale Counter/Summary an `SpielBeendet` (Regelvariante, Spieltyp, Sieger-Partei, Sonderpunkte, Armut, Re-Augen), **kein `spieler_id`-Label**. Alloy-Sidecar (`monitoring/alloy/config.alloy` + `docker-compose.yml` prod) für remote_write, Tokens via ENV. **Verifiziert:** App läuft, `/actuator/prometheus` liefert JVM/HTTP + `locodoko_spiel_re_augen` (mit `application`-Label). `mvn clean test` grün (357 Tests, Modulgrenzen ok). **Mensch:** Grafana-Account/Tokens/Dashboards + Actuator-Härtung (prod).
-
-  Spring Boot Actuator + Micrometer → Prometheus-Endpoint → Grafana Cloud (Free: Metriken/Logs/Traces). Free-Account vorhanden.
-
-  **Erste Datei zuerst:** neue `specs/betrieb-monitoring.md` (Was wird überwacht: JVM, HTTP-Latenzen, aktive Tische/Partien, WS-Verbindungen, Fehlerrate; welche Dashboards/Alerts). Dann Build-Tasks: `micrometer-registry-prometheus` ins `pom.xml`, `/actuator/prometheus` exponieren (gesichert), Grafana Alloy/Agent als Sidecar im `docker-compose.yml` zum remote_write an Grafana Cloud (Token via ENV, kein Secret im Repo).
-
-  **Loco-Domain-Metriken (aus `statistik-ranking.md`):** zusätzlich zu Infra-Metriken ein „Locodoko in Zahlen"-Dashboard aus **aggregierten** Micrometer-Metern an den bestehenden Domain-Events: Spieltyp-Verteilung (Counter `spieltyp`), Re-/Kontra-Siege (`partei`), Sonderpunkte (`typ`), Hochzeiten/Armuten, Augen/Spiel (Histogram), aktive Tische/Partien (Gauge), Spiele/Stunde (`regelvariante`), Bockrunden. **Hart einhalten:** niedrige Kardinalität, **kein `spieler_id`-Label** (Per-Spieler-Stats bleiben in Postgres). Dasselbe „Spiel abgeschlossen"-Event speist DB-Statistik *und* Counter.
-
-  **DoD:** Spec beschreibt Monitoring-Konzept (Infra + Loco-Domain-Metriken); (Build) Metriken erscheinen im Grafana-Cloud-Dashboard. **Risiko:** niedrig-mittel.
-
-- [x] **OPS-LOGS-LOKI** (Code/Config, Session 61) — Alloy-Sidecar versendet die ECS-JSON-Logs (`/app/logs/locodoko.log` via geteiltes `applogs`-Volume) an Grafana Cloud Loki. `tischId`/`partieId`/`correlationId` bleiben Loginhalt (LogQL `| json`, **nicht** Label = Kardinalität), `job`/Level als Label. Config in `monitoring/alloy/config.alloy`, Compose-Service + Volume ergänzt, Doku in `specs/betrieb-monitoring.md`. **Mensch:** Loki-Tokens/URL + Retention-Hinweis (Bug-Ticket-Snapshot statt nur Link → `FEAT-BUGREPORT`).
-
-  Grafana Cloud Free enthält Loki (~50 GB Ingest, ~14 Tage Retention — für Hobby/Live-Debugging ausreichend). Das Backend loggt bereits JSON mit MDC-Feldern `tischId`/`partieId` → ideal für Loki-Labels/LogQL. Versand via Grafana Alloy/Promtail-Sidecar, Token via ENV. **Retention begrenzt → für Bug-Tickets relevante Log-Ausschnitte beim Erstellen ins Ticket snapshotten (siehe `FEAT-BUGREPORT`), nicht nur verlinken.**
-
-  **Erste Datei zuerst:** `specs/betrieb-monitoring.md` (Abschnitt Log-Pipeline) + Alloy-Service im `docker-compose.yml`. Sicherstellen, dass eine `correlationId` pro Request im MDC liegt (für die Bugreport-Verknüpfung).
-
-  **DoD:** Logs erscheinen in Grafana Cloud, per `tischId`/`partieId`/Level/`correlationId` filterbar. **Risiko:** niedrig-mittel.
-
-- [x] **SPEC-BUGREPORT** — Design entschieden, `specs/bugreport.md` angelegt (Session 36, 2026-06-03). Entscheidungen: Issue-Ziel **Option A** (öffentliches Code-Repo + separates **privates** Bugreport-Repo); **kein Screenshot** in M1 (→ M2); **Sentry ja** (Free, EU-Region, ohne Session-Replay); Trigger **`Shift+F1`** (nicht F12). Daraus die drei Build-Tasks:
-
-- [x] **OBS-CORRELATION-ID** (Vortask, schon M1-nützlich für Loki) — `CorrelationIdFilter` (`OncePerRequestFilter`): liest/erzeugt `X-Correlation-Id`, ins MDC (neben `tischId`/`partieId`) + als Response-Header zurück. Frontend: Header je Response lesen, letzte N als Ringpuffer im AppStore. **Erste Datei zuerst:** neuer Filter in `de.locodoko.spieler` (oder Infra-Paket). **DoD:** correlationId erscheint im JSON-Log + Response-Header; Frontend puffert; Tests grün. **Risiko:** niedrig.
-
-- [x] **FEAT-BUGREPORT** — In-App-Bugreport laut `specs/bugreport.md`. **[hängt an OBS-CORRELATION-ID + OPS-LOGS-LOKI für den Deep-Link]** Frontend: Overlay (`Shift+F1` + Floating-Button, Beschreibung + Schweregrad, **kein** Screenshot), erfasst correlationIds, `tischId`/`partieId`, `sessionId`, Client/Build-SHA, **redigierten** AppStore-Zustand. **Redaktions-Policy (User-Entscheidung Session 61): exakt laut `specs/bugreport.md`.** Backend `BugReportController` (Muster `FeedbackController`, Auth + `RateLimitingFilter`): Log-Ausschnitt zur correlationId in den Issue-Body **snapshotten** + Grafana-LogQL-Deep-Link, Issue via serverseitigem Token im **privaten** Repo. **DoD:** Report erzeugt Issue mit redigiertem Kontext; nachweislich keine sensiblen Daten geleakt. **Risiko:** mittel (Datenschutz/Redaktion).
-
-- [x] **OBS-SENTRY** (Code, Session 61) — Fehlererfassung Frontend (`@sentry/browser`) + Backend. **Backend bewusst über Core-SDK `io.sentry:sentry` + `sentry-logback`-Appender statt Spring-Boot-Autoconfig** (Boot 4.0.5/Java 25 bleeding-edge → Autoconfig-Risiko vermieden; `SentryKonfiguration` hängt SentryAppender ab ERROR an Root-Logger, `addContextTag("correlationId")` promotet MDC→Tag). Frontend: `Sentry.init` DSN-gated, **kein** Session-Replay/Tracing, `beforeSend` taggt letzte `correlationId` aus dem Ringpuffer. Beide DSN-gated (ohne DSN No-Op; FE tree-shaked Sentry ohne `VITE_SENTRY_DSN` komplett raus, mit DSN +25 kB gzip verifiziert). Env-Doku in `.env.example`. `mvn clean test` + FE 240/240 + Build + Lint grün. **DSN trägt Mensch nach (EU-Region + AVV).**
-
-- [~] **OPS-DOMAIN** — Domain + DNS + TLS für den öffentlichen Betrieb. **[Vorbedingung: MENSCH — Server/DNS/TLS; Ralph kann nur die Reverse-Proxy-Config vorbereiten]** **Schema festgelegt:** App = `zock.locodoko.de`, Wiki = `docs.locodoko.de` (GitHub Pages), Apex `locodoko.de` = Landing/Redirect.
-
-  Wird gebraucht: OAuth2-Redirect-URI (`https://zock.locodoko.de/login/oauth2/code/google`), `cookie.secure=true` (erzwingt HTTPS; Cookie-Domain auf `zock.locodoko.de`), `LOCODOKO_WEBSOCKET_ALLOWED_ORIGINS=https://zock.locodoko.de`. prod-Props referenzieren beispielhaft noch `locodoko.de` → auf `zock.` anpassen.
-
-  **Erste Datei zuerst:** DNS-Records (`zock` + `docs` CNAME/A) beim Registrar; TLS via Reverse-Proxy (Caddy/Traefik + Let's Encrypt) vor der App, **WebSocket-Upgrade-Header durchreichen** (Snapshot+Hint bricht sonst), HTTP→HTTPS-Redirect; Apex → 301 auf `zock.` (bis Landing existiert). `application-prod.properties` + `.env`: Redirect-URI, Cookie-Domain, WS-Origins auf `zock.locodoko.de`.
-
-  **Closed-Beta-noindex (Forts.):** `index.html` trägt bereits `<meta robots noindex,nofollow>`, `frontend/public/robots.txt` setzt `Disallow: /`. Im Reverse-Proxy zusätzlich **`X-Robots-Tag: noindex, nofollow`** als Response-Header setzen (wirkt auch für Nicht-HTML-Antworten, schwerer zu übersehen). **Bei Public Go-Live (M2) alle drei zurücknehmen.**
-
-  **DoD:** `https://zock.locodoko.de` zeigt auf die App, WS funktioniert durch den Proxy, OAuth-Redirect + WS-Origins gesetzt. **Risiko:** niedrig. **[abhängig von Plattformwahl/Server]**
-
-- [x] **DOC-DOCS-SITE** — Öffentliche Docs-/Wiki-Seite (zugleich LLM-tauglich, Karpathy-Stil).
-
-  Zweck: Menschen außerhalb des GitHub-Kontexts sollen das Projekt verstehen/„lernen" können; gleichzeitig LLM-freundlich (eindeutige Begriffe, flache Hierarchie, explizite Querverweise, optional `llms.txt`/generiertes Bundle). Die ~47 Markdown-Specs liegen bereits passend vor.
-
-  **Empfehlung:** **MkDocs Material** (geringste Reibung — rendert die vorhandenen `specs/*.md` direkt, Volltextsuche, GitHub-Pages-Deploy). Alternativen: Docusaurus, Astro Starlight. Framework final offen.
-
-  **Erste Datei zuerst:** `mkdocs.yml` im Root (Navigation aus `specs/README.md` ableiten) — oder zuerst Konzept in neuer `specs/docs-site.md`. Karpathy-Prinzipien anwenden; den Code-Metrik-Report aus `QA-CODE-METRICS` als eigene Seite einbinden.
-
-  **DoD:** Docs-Seite baut lokal + als GitHub-Pages-Deploy unter **`docs.locodoko.de`** (Pages-Custom-Domain via CNAME); alle Specs navigierbar/durchsuchbar; kann die Spielregeln hosten (entlastet `FE-SPIELREGELN-HILFE` → App verlinkt nur dorthin). **Risiko:** niedrig.
-
-- [x] **QA-CODE-METRICS** — Codebase mit Mess-/Analyse-Tooling vermessen: Refactoring-Kandidaten + Report für die Docs-Seite.
-
-  Ziel: Größe, Komplexität, Duplikate, Coverage, Architektur sichtbar machen → konkrete `REFACTOR-…`/`FE-…`-Tasks ableiten **und** einen schönen Report fürs Wiki erzeugen.
-
-  **Werkzeuge (Vorschlag):**
-  - Größe/Sprachen: `scc` (oder `cloc`) — LOC, Komplexitätsindex, COCOMO.
-  - Java: JaCoCo (Coverage), SpotBugs, PMD (zykl. Komplexität), Checkstyle. Architektur: Spring-Modulith-Modularity-Tests / `jdeps` / ArchUnit.
-  - TS/Frontend: ESLint (vorhanden) + Komplexitätsregeln, `knip`/`ts-prune` (toter Code), `madge` (zyklische Abhängigkeiten + Graph), `depcheck` (ungenutzte Deps).
-  - Cross-Language: `lizard` (Komplexität). Gesamtbild: **SonarQube Community** (lokal via Docker) oder **SonarCloud** (frei für öffentliche Repos) — Maintainability, Duplikate, Tech-Debt, Hotspots in einem Dashboard.
-
-  **Erste Datei zuerst:** Tooling als Skript-Target (z.B. `scripts/metrics.sh`) + pom-Plugins; Ergebnis als Markdown/HTML-Report unter `docs/` für die Docs-Seite. Refactoring-Befunde als neue Tasks unter „Entdeckungen".
-
-  **DoD:** reproduzierbarer Metrik-Report erzeugt + in Docs-Seite eingebunden; mind. die Top-Refactoring-Kandidaten als Tasks erfasst. **Risiko:** niedrig (additiv, kein Produktivcode-Change).
-
-- [x] **FE-UI-FINAL-REVIEW** — Finales UI/UX-Review; „nicht schöne" Stellen katalogisieren.
-
-  User empfindet viele UI-Details als unschön. Systematisch erfassen statt punktuell fixen.
-
-  **Erste Datei zuerst:** Vision-Loop über alle Spielzustände laufen lassen (`cd e2e && npx playwright test --config=playwright.config.vision.ts`), Screenshots in `e2e/screenshots/` einlesen und gegen `specs/frontend-visuelles-design.md` prüfen. Befunde als priorisierte `FE-…`-Einzeltasks unter „Entdeckungen" eintragen (Spacing, Farben, Typografie, Alignment, Animationen).
-
-  **DoD:** Katalog konkreter UI-Mängel als Tasks; `frontend-visuelles-design.md` bei Bedarf präzisiert. **Risiko:** niedrig.
-
-- [x] **DECISION-AUTH** — **Entschieden (Session 30): beide Methoden behalten** (Google OAuth2 + Username/Passwort/bcrypt). `authentifizierung.md` ist damit konsistent, kein Code-Change nötig.
-
-- [x] **SPEC-RECHT** — Rechtstexte für öffentlichen Betrieb in DE (Pflicht-Voraussetzung für Live-Gang).
-
-  Für einen öffentlich betriebenen Dienst in Deutschland gesetzlich erforderlich: **Impressum** (§5 DDG), **Datenschutzerklärung** (DSGVO — Accounts, Google-OAuth-Datenfluss, Statistiken). **AGB/Nutzungsbedingungen** empfohlen (Haftung, Verhaltensregeln, Account-Sperrung).
-
-  **Erste Datei zuerst:** neue `specs/recht-impressum-datenschutz.md` — Inhalte/Pflichtangaben skizzieren (Impressum-Felder, verarbeitete Datenarten, Rechtsgrundlagen, Drittland-Hinweis Google-OAuth, Lösch-/Auskunftsrechte). Dann Build-Task: Frontend-Seiten/Footer-Links (`/impressum`, `/datenschutz`, `/agb`). **Hinweis:** konkrete Rechtstexte ggf. anwaltlich/Generator prüfen — die Spec definiert nur Struktur & Pflichtangaben.
-
-  **DoD:** Spec mit Pflichtangaben vorhanden; (Build) Seiten verlinkt und erreichbar. **Risiko:** niedrig (Inhalt), rechtlich relevant.
-
-- [x] **OPS-EMAIL** — Email-Versand für Registrierungs-Verifizierung + Passwort-Reset (V2).
-
-  Aktuell keine Email-Infra. Auth-Spec stellt Email optional, Passwort-Reset V2. Bei Bedarf: EU-Transaktionsmail-Anbieter mit Free-Tier (Brevo 🇫🇷, Mailjet 🇫🇷) oder SMTP. Kein Launch-Blocker, aber sinnvoll gegen Fake-Accounts.
-
-  **Erste Datei zuerst:** `authentifizierung.md` — Abschnitt „Email-Verifizierung & Passwort-Reset (V2)" konkretisieren (Anbieterwahl EU, Double-Opt-In, Reset-Token-Ablauf). Dann Build-Tasks (Spring Mail / Anbieter-API, ENV-Secrets).
-
-  **DoD:** Spec definiert Email-Flows + EU-Anbieter; (Build) Verifizierungs-/Reset-Mail wird versendet. **Risiko:** niedrig-mittel. **[Priorität niedrig — kein Launch-Blocker]**
+## C) Wartet auf User-Entscheidung
 
 - [ ] **DECISION-LIZENZ** — Projektlizenz festlegen + `LICENSE`-Datei anlegen. **[WARTET AUF USER-ENTSCHEIDUNG — bewusst aufgeschoben]**
 
-  Tendenz Apache-2.0. **Aber:** User erwägt evtl. spätere Steam-/kommerzielle Veröffentlichung. **Zielkonflikt:** Eine permissive Lizenz (Apache/MIT) erlaubt jedem — auch Dritten — das Spiel nachzubauen und kommerziell (auch auf Steam) zu vertreiben, was einer eigenen bezahlten Veröffentlichung den Boden entziehen kann. Wer kommerzielle Verwertung offenhalten will, wählt eher **proprietär** oder **AGPL-3.0** (Copyleft hält Klone offen, erlaubt aber Dual-Licensing). Entscheidung an anderer Stelle, wenn Steam-Frage geklärt ist.
-
-### Priorität 5 — Beta/Go-Live-Tasks (Session 30, Teil 3)
-
-> Aus der Meilenstein-Planung (M1 Closed Beta / M2 Public). M1-Blocker zuerst.
-
-- [x] **BACKUP-DB** (M1) — Automatische Postgres-Backups + verifizierter Restore.
-
-  Aktuell **kein** Backup-Mechanismus. Beta-Daten sollen erhalten bleiben → Backups ab Tag 1 Pflicht.
-
-  **Erste Datei zuerst:** `docker-compose.yml` — Backup-Sidecar oder Cron (`pg_dump` der `locodoko`-DB, täglich, rotierend, off-volume; idealerweise off-site/verschlüsselt). Restore-Prozedur dokumentieren in `DOC-ENV-DEPLOY`/README und **einmal real testen** (Backup → frische DB → Restore → App startet).
-
-  **DoD:** Tägliches Backup läuft, Restore nachweislich getestet, Ablage außerhalb des DB-Volumes. **Risiko:** niedrig-mittel (Datensicherheit).
-
-- [ ] **BETA-ACCESS** (optional — Session 30 Teil 4: Beta muss **nicht** gated sein) — Registrierung invite-only/Whitelist.
-
-  `/register` ist heute **offen** (jeder mit der URL kann Accounts anlegen). User-Entscheidung: für die Beta kein Gating nötig, SEO/noindex bewusst kein Thema. **Restrisiko:** Fremde mit URL-Kenntnis können Accounts anlegen — akzeptiert. Bei Bedarf später reaktivieren.
-
-  **Erste Datei zuerst (falls reaktiviert):** `src/main/java/de/locodoko/spieler/AuthentifizierungsController.java` (`/register`) — Gating via Einladungscode/Whitelist (ENV-Liste oder Invite-Token).
-
-  **DoD:** (falls umgesetzt) Ohne gültigen Invite schlägt `/register` fehl. **Risiko:** niedrig.
-
-- [x] **SESSION-PERSISTENZ** (M1) — HTTP-Sessions in Postgres statt in-memory.
-
-  Aktuell kein `spring-session` → Sessions liegen im RAM. Folge: **jeder Redeploy/Neustart loggt alle Spieler aus** und setzt das In-memory-Disconnect-Tracking zurück. Spiele überleben (DB = Wahrheit), aber die Beta wird bei häufigen Deploys unangenehm.
-
-  **Erste Datei zuerst:** `pom.xml` — `spring-session-jdbc`; `application.properties` `spring.session.store-type=jdbc`; Liquibase-Changeset für die Session-Tabellen (in `SPEC-SQL-REVIEW` mitdenken). Prüfen, ob das In-memory-Disconnect-Tracking in `VerbindungsabbruchService` ebenfalls neustart-robust sein muss.
-
-  **DoD:** Nach App-Neustart bleiben angemeldete Spieler eingeloggt; Session-Tabelle in Postgres. **Risiko:** niedrig-mittel.
-
-- [x] **OPS-BUILD-INFO** (M1, klein) — Version/Build-Info über Actuator.
-
-  Fürs Beta-Debugging: „welcher Build läuft?".
-
-  **Erste Datei zuerst:** `pom.xml` — `spring-boot-maven-plugin` `build-info`-Goal (erzeugt `META-INF/build-info.properties`); Git-SHA via `git-commit-id-maven-plugin`. `/actuator/info` exponieren (gesichert).
-
-  **DoD:** `/actuator/info` liefert Version + Git-SHA. **Risiko:** niedrig.
-
-- [ ] **~~ADMIN-TOOLING~~ / ~~ROLLBACK-DOKU~~** — erwogen, **zurückgestellt** (Session 30 Teil 4).
-
-  Real fehlend, aber bewusst nicht im aktiven Backlog: (a) Admin-/Betreiber-Tooling (hängenden Tisch beenden, User sperren, aktive Tische sehen) — kein `admin`/`moderation`-Code vorhanden; (b) Rollback-Strategie (Image-Tags + dokumentierter Rückfall). Bei Betriebsproblemen in der Beta reaktivieren.
-
-- [x] **OPS-COMPOSE-HARDENING** (M1) — `app`-Service betriebsfest machen.
-
-  Der `app`-Service in `docker-compose.yml` hat (anders als `postgres`) **keine `restart`-Policy und keinen Healthcheck**.
-
-  **Erste Datei zuerst:** `docker-compose.yml` (`app`-Service) — `restart: unless-stopped` + `healthcheck` auf `/actuator/health`; ggf. `depends_on: postgres condition: service_healthy` (bereits vorhanden prüfen).
-
-  **DoD:** App startet nach Crash/Reboot automatisch neu; Healthcheck grün. **Risiko:** niedrig.
-
-- [x] **FEAT-FEEDBACK** (M1, leicht) — „Feedback geben"-Kanal für die Beta.
-
-  Für schnelles Kollegen-Feedback; bewusst **leichter** als `FEAT-BUGREPORT` (kein GitHub/Log-Pipeline nötig).
-
-  **Erste Datei zuerst:** Frontend — Button/Link „Feedback" mit kurzem Formular (Freitext) → simpler Backend-Endpoint, der in `logs/locodoko.log` schreibt oder an einen Webhook (z.B. Discord/Matrix) sendet. Alternativ erstmal nur ein externer Link (Discord/Formular).
-
-  **DoD:** Beta-Tester können aus der App Feedback abgeben; landet auffindbar (Log/Webhook). **Risiko:** niedrig.
-
-- [x] **SECURITY-REVIEW** (M1 empfohlen / M2 Pflicht) — Sicherheits-Review vor öffentlicher Exposition.
-
-  Vor dem Stellen auf eine öffentliche Domain. Es existiert das `/security-review`-Tooling.
-
-  **Prüfumfang:** Auth-Endpunkte + Rate-Limiting, CORS + WebSocket-`allowed-origins` (in prod auskommentiert!), Secret-Handling (keine Secrets im Image/Repo), Session-Cookie-Flags, Input-Validierung, OAuth-Redirect-Whitelist, Abhängigkeits-CVEs.
-
-  **DoD:** Review durchgeführt, Findings als `BUG-…`-Tasks erfasst, kritische vor Exposition behoben. **Risiko:** mittel.
-
-- [x] **FE-SPIELREGELN-HILFE** (M2) — In-App-Spielregeln/Onboarding.
-
-  Keine spielerklärende Hilfe erkennbar (nur Regel-*Presets* der Tischkonfig). Doppelkopf ist komplex → für ein öffentliches Publikum nötig; für DoKo-kundige Kollegen in M1 entbehrlich.
-
-  **Erste Datei zuerst:** Frontend — Regel-/Hilfe-Overlay (Trumpfhierarchie, Ansagen, Sonderspiele) verlinkt aus Lobby + Tisch. Inhalte aus `specs/` ableitbar.
-
-  **DoD:** Erreichbare Regelhilfe in der App. **Risiko:** niedrig.
-
-- [x] **FE-MOBILE-SMOKE** (M1, Session 61) — Mobile spielbar ohne Layout-Umbau. Umgesetzt: (a) Viewport-Meta erweitert (`maximum-scale=1, user-scalable=no, viewport-fit=cover`); (b) reines CSS-Orientierungs-Overlay `#orientierung-hinweis` in `index.html`/`layout.css`, sichtbar nur bei `@media (orientation: portrait) and (pointer: coarse)` (Touch-Geräte) — CSS-gezeichnetes drehendes Phone-Icon + Text, kein Emoji; (c) `Scale.FIT`+`CENTER_BOTH` (Landscape bereits zentriert/letterboxed). Verifiziert mit Playwright-Mobile-Emulation: Portrait → Overlay sichtbar, Landscape (iPhone 13) → Spiel zentriert sichtbar. 240/240 + Build + Lint grün.
-
-- [x] **FE-MOBILE** (M2) — Voller Mobile-/Touch-/Portrait-Umbau (nach FE-MOBILE-SMOKE).
-
-  Phaser nutzt `Scale.FIT` auf 1280×720 — skaliert (letterboxed), aber **nicht** mobil-optimiert (echtes Portrait-Layout, vergrößerte Touch-Targets, Karten-Neuanordnung). Mittleres Risiko, breiter Eingriff ins Tisch-Layout → bewusst M2.
-
-  **Erste Datei zuerst:** `frontend/src/main.ts` (Scale-Config) + Tisch-Layout — Portrait-Layout, Karten-Trefferflächen, HUD-Nameplates für schmale Viewports. Vision-Loop mit mobilen Portrait-Viewports erweitern.
-
-  **DoD:** Im Portrait nativ spielbar (kein Letterboxing nötig); Vision-Screenshots ohne Layout-Brüche. **Risiko:** mittel.
+  Tendenz Apache-2.0. **Aber:** spätere Steam-/kommerzielle Veröffentlichung erwogen. **Zielkonflikt:** Eine permissive Lizenz (Apache/MIT) erlaubt jedem, das Spiel nachzubauen und kommerziell zu vertreiben, was einer eigenen bezahlten Veröffentlichung den Boden entziehen kann. Wer kommerzielle Verwertung offenhalten will, wählt eher **proprietär** oder **AGPL-3.0** (Copyleft hält Klone offen, erlaubt Dual-Licensing). Entscheidung, wenn Steam-Frage geklärt ist.
 
 ---
 
-## Offene Aufgaben (Spec-getriebene Tasks — alle erledigt)
+## D) Zurückgestellt (bewusst nicht im aktiven Backlog)
 
-### Priorität 1 — Doku-Hygiene (klein, risikoarm)
-
-- [x] **DOC-PUNKTE-HINWEISE** — `specs/punkteberechnung.md` „Technische Hinweise" an den Code angleichen.
-
-  Die Spec nennt unverbindlich `PunkteRechner.berechneErgebnis(Spiel) → SpielErgebnis`. Real: `PunkteRechner.berechneNormalspielErgebnis(stiche, parteien, trumpfOrdnung, ansagen, spielregeln) → Spielergebnis` (reine Funktion, kein `Spiel`-Parameter). Die normativen Anforderungen 1–20 sind korrekt umgesetzt — nur die Hinweise driften.
-
-  **Erste Datei zuerst:** `specs/punkteberechnung.md`, Abschnitt „Technische Hinweise" (Z. ~89–96): Methodensignatur + Rückgabetyp korrigieren, Klassennamen `SpielErgebnis` → `Spielergebnis`.
-
-  **DoD:** `grep -rn "berechneErgebnis\|SpielErgebnis\b" specs/punkteberechnung.md` liefert nichts Veraltetes mehr; Hinweise stimmen mit `PunkteRechner.java` überein. Kein Code-Change → keine Tests, nur `grep`-Konsistenzcheck.
-
-- [x] **SPEC-ARCH-HIERARCHIE** — Eindeutige Hierarchie der Architektur-Specs herstellen.
-
-  Es existieren sechs `architektur*.md`; vier tragen Status „Aktive Vorgabe / Kritisch". `architektur-unified.md` („Unified Architecture") überlappt inhaltlich stark mit `architektur.md` (Snapshot+Hint, DB-as-Source-of-Truth, `@Version`) — der Name suggeriert fälschlich, *es* sei kanonisch, während `architektur.md` der „Kompass" ist.
-
-  **Erste Datei zuerst:** `specs/architektur.md` — Status-Feld auf „Aktive Vorgabe — Single Source of Truth" präzisieren; im Detail-Specs-Block klar benennen, welche Dokumente reine Detail-Specs sind. Dann in `architektur-unified.md`, `architektur-domain-events.md`, `architektur-spielkern.md` die Status-Zeile auf „Detail-Spec (konsolidiert in architektur.md)" setzen (analog zu `architektur-ddd.md`); in `architektur-unified.md` die mit `architektur.md` redundanten Passagen auf Verweise kürzen.
-
-  **DoD:** Genau ein Architektur-Dokument trägt Status „Single Source"; alle übrigen „Detail-Spec". `specs/README.md` bleibt konsistent (`grep -n "architektur" specs/README.md` prüfen). Kein Code-Change.
-
-- [x] **DOC-AGENTS-DEDUP** — Doppelpflege von `CLAUDE.md`/`AGENTS.md` beenden.
-
-  `CLAUDE.md` und `AGENTS.md` sind byte-identisch (`diff` leer) und werden bei jedem Build-Commit beide getrackt → Drift-Quelle. `GEMINI.md` weicht inhaltlich ab und bleibt eigenständig.
-
-  **Erste Datei zuerst:** `AGENTS.md` durch einen Git-Symlink auf `CLAUDE.md` ersetzen (`ln -sf CLAUDE.md AGENTS.md`), sodass nur noch eine Quelle gepflegt wird. Prüfen, dass alle Verweise (`PROMPT_build.md` referenziert `AGENTS.md`) weiterhin auflösen.
-
-  **DoD:** `readlink AGENTS.md` → `CLAUDE.md`; `diff CLAUDE.md AGENTS.md` leer; `git status` zeigt AGENTS.md als geänderten Symlink. Kein Test, nur Konsistenzcheck.
-
-### Priorität 2 — Code-Qualität
-
-- [x] **REFACTOR-SAGEAN** — Einrückung + Extraktion in `Spiel.sageAn`.
-
-  Im `try`-Block von `Spiel.sageAn` (≈ Z. 414–433) ist `Ansagen neueAnsagen = …` eingerückt, die folgenden Anweisungen springen auf Methoden-Ebene zurück — funktional korrekt, aber irreführend. Der Pflichtansage-Abzug (Z. ~418–425) gehört in eine eigene private Methode.
-
-  **Erste Datei zuerst:** `src/main/java/de/locodoko/partie/Spiel.java`, Methode `sageAn` — Block konsistent einrücken, Pflichtansage-Logik in private Methode (z.B. `entferneErfuellteGrundansagePflicht(Set<Partei>, SpielerPosition)`) auslagern.
-
-  **DoD:** Einrückung korrekt, neue private Hilfsmethode, Verhalten unverändert; `cd /home/agent/workspace && mvn test` grün.
-
-### Priorität 3 — Refactorings (mittel, je eigene Iteration)
-
-- [x] **REFACTOR-JSONB-CONVERTER** — Boilerplate in `JsonbConverter.java` (1131 Z.) reduzieren. **Realisiert:** Dead-Code-Entfernung — 14 ungenutzte Converter (rohe `Map`/`List`/`Set` aus der Prä-VO-Zeit, durch die VO-Wrapper ersetzt, nirgends registriert) + 5 tote Tests gelöscht → 1131 → 917 Z. Eine zusätzliche generische Basisklasse für die verbleibenden 60 (registrierten) Converter ist optional und niedrig priorisiert (Spring-Typauflösung via konkrete Subklassen nötig).
-
-  Pro Domänentyp existieren ~3 nahezu identische Converter-Klassen (`…SchreibConverter` / `…LeseConverter`(PGobject) / `…StringLeseConverter`(String)) über ~12 Typen ⇒ ~36 Klassen mit gleichem Rumpf (`toJsonString` / `fromPGobject` / `fromString`).
-
-  **Erste Datei zuerst:** `src/main/java/de/locodoko/tisch/persistenz/JsonbConverter.java` — generische Basisklassen einführen (`JsonbSchreibConverter<T>`, `JsonbPGobjectLeseConverter<T>`, `JsonbStringLeseConverter<T>` mit `ObjectMapper` + `JavaType`/`TypeReference<T>`). Zuerst EINEN Typ (z.B. `Stich`) umstellen, Roundtrip-Test grün, dann sukzessive die übrigen; Registrierung über eine Typliste statt Einzelklassen.
-
-  **DoD:** Datei deutlich < 1131 Z., keine Verhaltensänderung. `PartieStandAntwortWireFormatTest` + alle JSONB-Roundtrip-Tests + `mvn test` grün. **Risiko:** mittel — pro Typ ein Schritt, Tests zwischen jedem Schritt.
-
-- [x] **BUG-JACKSON-ACCESSORNAMING** — Clean-Build repariert (vorbestehend, beim TischZugriff-Refactor entdeckt).
-
-  `JsonbConverter.NurEchteIsGetterStrategie(Provider)` (aus REFACTOR-DOMAIN-6) kompilierte nicht gegen Jackson 2.21.2: `DefaultAccessorNamingStrategy` hat keinen no-arg-Konstruktor mehr, und `Provider.forDeserialization/forSerialization` existieren nicht. `mvn clean compile` war gebrochen — maskiert dadurch, dass `mvn test` inkrementell eine veraltete `.class` aus `target/` wiederverwendete. **Fix:** Provider auf `AccessorNamingStrategy.Provider` (forPOJO/forBuilder/forRecord) umgestellt, Strategie delegiert an die Standardstrategie und überschreibt nur `findNameForIsGetter`. `mvn clean test` grün.
-
-- [x] **REFACTOR-TISCH-ZUGRIFF** — Geteilte Lade-/Guard-Helfer in `@Component TischZugriff` extrahiert (VORTASK für die Konfig-Extraktion).
-
-  `ladeTischEntity`, `ladeTischEntityMitSperre`, `ladeSpieler`, `pruefeWartendenTisch` aus `TischVerwaltungsService` (542 → 508 Z.) in `TischZugriff` (63 Z.) gezogen. **Bonus:** `SpielAktionsService` hatte eigene Duplikate von `ladeTischEntity`/`ladeSpieler` — ebenfalls auf `TischZugriff` umgestellt, die verwaiste `spielerRepository`-Dependency entfernt. Test-Spy `SpionTischVerwaltungsService` an neuen Konstruktor angepasst. `mvn clean test` grün.
-
-- [x] **REFACTOR-TISCHVERWALTUNG** — `TischVerwaltungsService` (jetzt 508 Z.) weiter aufteilen (Konfiguration extrahieren).
-
-  **Vorbedingung erfüllt:** `REFACTOR-TISCH-ZUGRIFF` ist erledigt — die geteilten Helfer liegen jetzt in `TischZugriff`, eine Konfig-Extraktion dupliziert daher nichts mehr.
-
-  **Erste Datei zuerst:** `src/main/java/de/locodoko/tisch/TischVerwaltungsService.java` — `ladeKonfiguration`, `aktualisiereKonfiguration`, `gibPresets` → neuer `TischKonfigurationsService` (Deps: `TischZugriff`, `TischRepository`, `TischEchtzeitService`; für die Liste-Aktualisierung `listeOffeneTische()` wiederverwenden). Aufrufer in `TischController` (Z. 66, 219, 244) umstellen. Pro Extraktion ein Commit + `mvn clean test`.
-
-  **DoD:** Jede resultierende Klasse ≤ ~300 Z.; alle Aufrufer angepasst; `cd /home/agent/workspace && mvn clean test` grün. **Risiko:** mittel.
-
-### Abschluss-Verifikation — visueller Smoke-Test (autonom)
-
-- [x] **VISION-SMOKE-1** — Visueller End-to-End-Smoke-Test über die Vision-Loop (ersetzt den früheren manuellen `SMOKE-UI-1`).
-
-  Screenshottet die wichtigsten Spielzustände automatisiert und headless — kein User/Browser nötig.
-
-  **Schritte:**
-  1. Backend starten (serviert das eingebaute Frontend auf :8081): im Projektroot `mvn spring-boot:run` im Hintergrund; warten bis `curl -s http://localhost:8081/actuator/health` „UP" liefert. (Falls das Frontend nicht mitgebaut ist: vorher `cd frontend && npm run build`.)
-  2. Vision-Loop headless ausführen: `cd e2e && npx playwright test --config=playwright.config.vision.ts`.
-  3. Alle erzeugten Screenshots in `e2e/screenshots/` mit dem Read-Tool einlesen und visuell prüfen (Positionen, Überlappungen, Alpha-Werte, fehlende Elemente, Texte).
-  4. Backend-Prozess wieder stoppen.
-
-  **DoD:** Vision-Loop läuft grün durch; alle Screenshots visuell ohne Defekt befunden. Etwaige visuelle Mängel als neue `BUG-…`-Tasks unter „Entdeckungen" eintragen (im selben Lauf nicht fixen — der Plan-/Build-Modus arbeitet sie als eigene Tasks ab).
+- [ ] **BETA-ACCESS** (optional) — Registrierung invite-only/Whitelist. User-Entscheidung: für die Beta **kein** Gating nötig (`/register` bleibt offen, Restrisiko akzeptiert; noindex aktiv). Bei Bedarf via Einladungscode/Whitelist in `AuthentifizierungsController` reaktivieren.
+- [ ] **ADMIN-TOOLING / ROLLBACK-DOKU** — erwogen, **zurückgestellt**. (a) Betreiber-Tooling (hängenden Tisch beenden, User sperren, aktive Tische sehen); (b) Rollback-Strategie (Image-Tags + dokumentierter Rückfall). Bei Betriebsproblemen in der Beta reaktivieren.
+- [ ] **STAT-SAISON-LIGA** — Saisons (Reset/Listen/Rollover-Job) + Ligen (Auf-/Abstieg). Additive Erweiterung (neue Tabellen). Nur bauen, falls öffentlich/wachsend — rückwirkend aus dem Archiv berechenbar, keine Greenfield-Dringlichkeit.
+- [ ] **BE-ERRORPRONE-NULLAWAY** (Backend, zurückgestellt — **Java-25-Gate**) — moderne Compile-Zeit-Analyse via **Google Error Prone + NullAway** (500+ Bug-Checks + NPE-Eliminierung während `mvn compile`). **Blocker (S128 recherchiert):** Error Prone ist auf **JDK 25 noch nicht stabil** (`NoSuchFieldError: TypeTag`; Kompatibilität wird erst Richtung JDK 26 EA nachgezogen) — bräuchte allerneueste Version + `--add-exports`-JVM-Flags, also genau die Bleeding-Edge-Bastelei, die bei Sentry (Boot 4/Java 25) bewusst vermieden wurde. **Reaktivieren**, sobald eine Error-Prone-Version JDK 25 sauber unterstützt. Ergänzend dann **OpenRewrite** (Auto-Remediation-Rezepte) erwägen. **Risiko:** mittel-hoch (Toolchain/Bleeding-Edge).
 
 ---
 
-## Entdeckungen (Gesamt-Review Session 26, 2026-05-29)
+## Meilensteine
 
-Siehe vollständigen Bericht `specs/review-2026-05-28.md`. Bestätigte, **nicht** als akute Tasks geführte Befunde:
-
-### Visuelle Mängel aus VISION-SMOKE-1 (Session 28, 2026-06-01)
-
-- [x] **BUG-EINSTELLUNGEN-MODAL** — `08-einstellungen-modal.png` ist visuell identisch mit `07-seitenlade-offen.png`; das Einstellungen-Modal öffnet sich nach `s`-Tastendruck nicht sichtbar.
-
-  Gefunden im Vision-Loop. Der Test drückt `s` nach dem Schließen der Seitenlade (`i`-Toggle), wartet 1000ms und screenshottet — aber das Modal erscheint nicht. Mögliche Ursachen: (a) Fokus liegt nach Seitenlade-Schließen nicht mehr auf dem Canvas, sodass der Tastendruck nicht ankommt; (b) das Einstellungen-Modal hat kein eigenes Render-Element oder rendert hinter anderen Ebenen.
-
-  **Erste Datei zuerst:** `e2e/tests/vision-loop.spec.ts` — vor `page.keyboard.press('s')` ein `await page.locator('canvas').focus()` einfügen. Falls das Modal danach erscheint: nur Timing-Bug im Test. Falls nicht: `frontend/src/szenen/TischSzene.ts` nach dem Einstellungen-Key-Handler durchsuchen.
-
-  **DoD:** `08-einstellungen-modal.png` zeigt ein sichtbares Settings-Overlay; Test bleibt grün.
-
-- [x] **BUG-LOBBY-TISCHEINTRAG** — In `01-lobby.png` / `11-offene-tische.png`: Tischeintrag-Text „Schnellstart von Spieler…" wird abgeschnitten und überlappt mit dem „Beitreten"-Button; Spieler-ID-Zahl rendert nicht vollständig.
-
-  Der Tischlisten-Eintrag zeigt den Namen linksbündig und den „Beitreten"-Button rechtsbündig, aber die Breite des Textfeldes überschreitet die Spaltenbreite. Könnte ein fehlendes `clip`/`overflow: hidden` oder eine falsch berechnete Zeilenbreite in `SpielverwaltungsSzene.ts` sein.
-
-  **Erste Datei zuerst:** `frontend/src/szenen/SpielverwaltungsSzene.ts` — Tischlisten-Render-Methode (`renderTischListe`) auf Text-Breite und Clipping prüfen.
-
-  **DoD:** Tischeintrag zeigt vollständige, nicht überlappende Texte; `01-lobby.png` + `11-offene-tische.png` ohne Overflow.
-
-### Klassengrößen über Richtwert (~300 Z.) — beobachten, kein akuter Rückstand
-
-| Klasse | Zeilen | Hinweis |
-|---|---|---|
-| `JsonbConverter.java` | 917 | REFACTOR-JSONB-CONVERTER erledigt (Dead-Code entfernt); optionale Generik offen |
-| `TischVerwaltungsService.java` | 508 | → REFACTOR-TISCHVERWALTUNG (Konfig-Extraktion) |
-| `PartieStandAntwort.java` | 529 | durch >10 nested Wire-Format-DTOs begründet — kein Rückstand |
-| `Spiel.java` | 526 | Domain-Komplexität, REFACTOR-DOMAIN erledigt |
-| `StandardKiStrategie.java` | 504 | bei Bedarf |
-| `Partie.java` | 452 | bei Bedarf |
-
-### Keine Befunde (geprüft, konsistent)
-- Modulgrenzen: keine verbotenen Imports zwischen `karten`/`partie`/`ki`/`spieler`/`tisch`.
-- Spielkern: `PunkteRechner` (Re≥121/Kontra≥120, Ansagen ×2/×4, Absagen, Gegen-die-Alten, Solo ×3, Nullsumme), `Stich` (Trumpf-/Fehl-/Dullen-Logik) regelkonform.
-- Point Provenance: korrekt im Wire-DTO `PartieStandAntwort` (`PunkteKomponenteAntwort[]`).
-- Keine TODO/FIXME/`System.out`/`printStackTrace` im Produktivcode.
-
-### Schema-Befunde aus SPEC-SQL-REVIEW (Session 31, 2026-06-02)
-
-Alle noch im Greenfield-Fenster (vor erstem echten Deploy). Details und Audit-Konzept in `specs/datenbankmodell.md#schema-review`.
-
-- [x] **REFACTOR-DB-1** — FK-Spalten ohne Index: `tisch.partie_id`, `partie_teilnehmer.spieler_id`, `spieler_statistik.spieler_id`, `spielergebnis_archiv.partie_id`, `sonderpunkt_eintrag.spielergebnis_archiv_id`. Changeset `002-fk-indexes.sql` hinzugefügt (`001` war durch Spring-Session belegt). **Risiko:** niedrig (Abfrageperformance, nicht Korrektheit).
-
-- [x] **REFACTOR-DB-2** — `spielergebnis_archiv`: Spalten `re_augen`, `kontra_augen`, `sieger_partei`, `spielwert`, `grundwert` sind nullable, werden aber immer gesetzt. NOT NULL-Constraints als Changeset `003-archiv-not-null.sql`. **Risiko:** niedrig.
-
-- [x] **REFACTOR-DB-3** — `spieler_statistik.solos_pro_typ JSONB` nullable → `JSONB NOT NULL DEFAULT '{}'` per Changeset `004-statistik-solos-not-null.sql`. Fix in `SpielerStatistik.fuer()`: `solosProTypJson = "{}"` initialisiert. **Risiko:** niedrig.
-
-### Schema-Gegencheck Opus (Session 36, 2026-06-02)
-
-> Zweiter, unabhängiger Review gegen `000-initial-schema.sql` + Code. Befunde in `specs/datenbankmodell.md#gegencheck-opus-2026-06-02`. Alle noch im Greenfield-Fenster. **Vor `CD-DEPLOY` abarbeiten** (GATE), Reihenfolge nach Priorität.
-
-- [x] **REFACTOR-DB-5** (P-hoch) — `spieler.benutzername` ohne UNIQUE → Race Condition bei Registrierung (`AuthentifizierungsController:72` prüft nur per Query). UNIQUE-Indizes auf `benutzername` und `email` direkt in `000-initial-schema.sql` (H2-kompatibel: SQL-Standard-UNIQUE erlaubt mehrere NULLs). Controller fängt `DataIntegrityViolationException` ab → 409. Regressions-Test hinzugefügt. **DoD erfüllt.** **Risiko:** niedrig im Greenfield.
-
-- [x] **REFACTOR-DB-6** — Audit `erstellt_am`/`aktualisiert_am` nullable auf `spieler`, `partie`, `tisch`, `laufendes_spiel`, `spieler_statistik` → `NOT NULL DEFAULT NOW()` (DB erzwingt + befüllt). **DoD:** Spalten NOT NULL; `mvn clean test` grün. **Risiko:** niedrig.
-
-- [x] **REFACTOR-DB-7** — Audit-of-who: `erstellt_von_spieler_id UUID` auf `partie` ergänzen (nullable, NULL = System/KI). ON DELETE aller Creator-FKs auf `SET NULL`. Entity + Schreibpfad mitziehen. **DoD:** neue Partien tragen den Ersteller; `mvn clean test` grün. **Risiko:** mittel (Schreibpfad).
-
-- [x] **REFACTOR-DB-8** — NOT-NULL-Abdeckung vervollständigen (Ergänzung zu DB-2): `spielergebnis_archiv` (`geber_position`, `spieltyp`, `absage_punkte`, `gegen_die_alten_punkte`, `solo_multiplikator`, `spielpunkte_*`, `abgeschlossen_am`), `sonderpunkt_eintrag` (`partei`, `sonderpunkt_typ`), `partie` (`regelvariante`, `spielregeln`), `tisch.zugangsmodus` (`DEFAULT 'OFFEN'`). **DoD:** Constraints gesetzt, App setzt alle Werte; `mvn clean test` grün. **Risiko:** niedrig-mittel.
-
-- [x] **REFACTOR-DB-9** — `event_publication` ohne PRIMARY KEY → `PRIMARY KEY (id)` ergänzen (Spring-Modulith-Default). **DoD:** PK vorhanden; Outbox-Tests grün. **Risiko:** niedrig.
-
-- [x] **REFACTOR-DB-10** — DSGVO-ON-DELETE-Politik für alle `spieler`-referenzierenden FKs festlegen (`partie_teilnehmer`, `spieler_statistik`, `tisch_spieler`, `tisch.erstellt_von_spieler_id`, `spieler_rating`). Empfehlung: Statistik/Rating CASCADE, Archiv/Teilnahme SET NULL. **Vorbedingung-Entscheidung:** koppelt an späteres Lösch-Feature — Politik **jetzt** im Schema, Feature später. **DoD:** ON-DELETE auf allen FKs explizit; dokumentiert. **Risiko:** niedrig (Schema), mittel (Semantik).
-
-### Statistik & Ranking (Session 36 — entschieden: Stufe 0+1, TrueSkill; Saison/Liga aufgeschoben)
-
-> Vollständig in `specs/statistik-ranking.md`. **Umfang entschieden:** Stufe 0 (abgeleitete Kennzahlen) + Stufe 1 (TrueSkill-Rating + ewige Bestenliste, 1 neue UI-Szene). Saison/Liga **aufgeschoben** — additive Erweiterung später (risikoarm; `spielergebnis_archiv` erlaubt rückwirkende Berechnung). **Wichtige Trennung:** Per-Spieler-Statistik → Postgres/API; aggregierte Domain-Metriken → Prometheus/Grafana (nie `spieler_id` als Label).
-
-- [x] **STAT-DERIVED** (Stufe 0) — Abgeleitete Kennzahlen (Ø Punkte/Spiel, Siegquote, Ø Augen) im Profil-Endpoint/View, analog `partie_ergebnis_view`. **DoD:** Kennzahlen im Profil sichtbar; `mvn clean test` + `npm test` grün. **Risiko:** niedrig.
-
-- [x] **STAT-RATING** (Stufe 1) — TrueSkill-Rating. `rating_mu`/`rating_sigma NUMERIC(8,4)` an die bestehende `spieler_statistik` (in `000` konsolidiert; Defaults μ=25, σ=8.3333). TrueSkill-Update im **selben Pro-Spiel-Statistikpfad** beim Event „Spiel abgeschlossen". **Erste Datei zuerst:** `000-initial-schema.sql` (Spalten) + der Statistik-Fortschreibungs-Service. **DoD:** Rating wird pro Spiel fortgeschrieben; Roundtrip-Test; `mvn clean test` grün. **Risiko:** mittel (Korrektheit der TrueSkill-Formel — Bibliothek prüfen).
-
-- [x] **FE-LEADERBOARD** (Stufe 1) — Neue Bestenlisten-Szene + Endpoint, sortiert nach `rating_mu − 3·rating_sigma` (pro Regelvariante, ewige Liste). **Erste Datei zuerst:** Backend-Endpoint, dann neue Phaser-Szene + Lobby-Verlinkung. **DoD:** Bestenliste in der App erreichbar; Vision-Loop ohne Layout-Bruch; Tests grün. **Risiko:** niedrig-mittel (UI).
-
-- [x] **DECISION-RATING-ALGO** — ✓ **TrueSkill** (Session 36). 4-Spieler mit wechselnden Parteien; ELO ist 1-gegen-1. Schema (μ/σ) bleibt algorithmus-agnostisch.
-
-- [ ] **STAT-SAISON-LIGA** (aufgeschoben) — Saisons (Reset/Listen/Rollover-Job) + Ligen (Auf-/Abstieg). Additive Erweiterung (neue Tabellen `saison` + saison-Rating + nullable `spielergebnis_archiv.saison_id`). Nur bauen, falls öffentlich/wachsend. **[WARTET — keine Greenfield-Dringlichkeit, rückwirkend aus Archiv berechenbar]**
-
-- [x] **CHANGELOG-KONSOLIDIERUNG** (✓ entschieden: echtes Greenfield → konsolidieren) — `002`–`004` + alle Gegencheck-Fixes (DB-5…10) **direkt in `000-initial-schema.sql`** einpflegen statt additiver `005…`-Changesets. Ergebnis: ein einziges, sauberes Initial-Schema beim ersten Deploy. **Methode:** jeder DB-Task editiert `000` direkt (kein neues Changeset). `001-spring-session-schema.sql` bleibt eigenständig (Fremd-Schema). H2-Tests unkritisch (Neuaufbau je Lauf); persistente Dev-DB ggf. `clearCheckSums`. **DoD:** nur `000` + `001` aktiv, `002`–`004` entfernt, `mvn clean test` grün. **Risiko:** niedrig im Greenfield.
-
-### Security-Review-Befunde (Session 48, 2026-06-04)
-
-- [x] **BUG-FEEDBACK-JSON-INJECTION** (behoben) — `FeedbackController.java:43–44`: manuelles JSON-Escaping fehlte Backslash-Behandlung. Angreifer konnte via `\\"` die JSON-Struktur brechen und beliebige Felder in den Discord-Webhook-Payload injizieren (z.B. `"tts":true`, `@here`-Mentions). **Fix:** String-Konkatenation durch `ObjectMapper.writeValueAsString(Map.of(...))` ersetzt. Confidence 8/10. Kein Secrets-Leak, kein Datenverlust — nur Discord-Channel-Missbrauch möglich. **Risiko:** niedrig (nur relevant, wenn Webhook-URL gesetzt).
-
-### Komplexitäts-Hotspots aus QA-CODE-METRICS (Session 47, 2026-06-04)
-
-> Vollständig in `docs/metrics.md`. ESLint-Komplexitätsmessung + JaCoCo-Coverage (Backend 83% Lines / 71% Branches, Frontend 79%). Alle Modul-Grenzen OK.
-
-- [x] **REFACTOR-FE-EREIGNISHANDLER** — `TischEreignisHandler.verarbeitePartieEreignis` hat zyklomatische Komplexität **68** (ESLint-Befund). Die Methode ist ein monolithischer Switch über alle Ereignistypen. Aufteilen in separate private Methoden je Ereignisgruppe (Spielzug, Ansage, Rundenende, Verbindung). **Erste Datei zuerst:** `frontend/src/szenen/TischEreignisHandler.ts` — `verarbeitePartieEreignis` in Dispatcher + je eine Methode pro Gruppe. **DoD:** Komplexität < 20; `npm test && npm run build` grün. **Risiko:** mittel (viel Logik).
-
-- [x] **REFACTOR-FE-PARTIESTORE** — `PartieStore._verarbeiteEventQueue` (CC 60) → Dispatcher CC < 20 (Session 61). Phasen ausgelagert; Quiescence/KI-Verzögerung hinter synchrone Guard-Prädikate (Microtask-Timing-Invariant, Doc-Kommentar). 240/240 grün.
-
-- [x] **REFACTOR-FE-KARTENRENDERER** (Session 61) — `renderKartenFaecher` (CC 53) + `setzeKartenInteraktion` (CC 32) → alle Methoden CC < 20. `renderKartenFaecher` ist jetzt Dispatcher (`berechneFaecherKontext` → Schleife über `rendereHandkarte`, das `berechneKartenFlags`/`kartenAlpha` nutzt); `setzeKartenInteraktion` delegiert an `entferneKartenListener`/`setzeSpielInteraktion`/`deaktiviereKartenInteraktion`. Öffentliche Signaturen unverändert. 240/240 + Build + Lint grün.
-
-### UI-Mängel aus FE-UI-FINAL-REVIEW (Session 50, 2026-06-04)
-
-> Vision-Loop grün (39.8s). Befunde aus Screenshots 01–12 gegen `specs/frontend-visuelles-design.md` geprüft. Details in `e2e/screenshots/`.
-
-**P-Hoch:**
-
-- [x] **BUG-LOGIN-BUTTON-TEXTCLIPPING** (entdeckt Session 61, FE-MOBILE-SMOKE-Verifikation) — In der `LoginSzene` ragt der Button-Text über die helle Button-Fläche hinaus: „Als Gast spielen" → letztes „n" liegt außerhalb der Box, „SCHNELLSTART (K)" wird rechts beschnitten. Vom Canvas (Phaser) gezeichnet, also viewport-unabhängig (auch Desktop betroffen, nicht durch Mobile-Viewport verursacht). **Erste Datei zuerst:** `frontend/src/szenen/LoginSzene.ts` — Button-Hintergrundbreite an Textbreite koppeln (analog zu den behobenen FE-UI-Clippings) oder Schriftgröße/Padding anpassen. **DoD:** Button-Text vollständig innerhalb der Fläche; Vision-/Mobile-Screenshot ohne Clipping. **Risiko:** niedrig.
-
-- [x] **FE-RANGLISTE-BUTTON-CLIPPING** — Der „Rangliste"-Button (Trophy-Icon + Text) oben rechts wird in der Lobby an der rechten Viewport-Kante abgeschnitten (sichtbar in `01-lobby.png`, `11-offene-tische.png`). Trophy-Icon und Text teilweise außerhalb des sichtbaren Bereichs. **Erste Datei zuerst:** `frontend/src/szenen/SpielverwaltungsSzene.ts` — Button-X-Position so anpassen, dass min. 8–16px Abstand zum rechten Rand bleibt. **DoD:** Button vollständig sichtbar, kein Clipping. **Risiko:** niedrig.
-
-- [x] **FE-NEUER-TISCH-MODAL-LAYOUT** — Im „Neuen Tisch erstellen"-Modal (`12-neuer-tisch-modal.png`): (a) Linker `<`-Pfeil-Button des Preset-Selektors wird am linken Modal-Rand abgeschnitten; (b) „Abbrechen"- und „Erstellen"-Buttons liegen zu nah beieinander und überlappen die darunter liegende „Offene Tische"-Sektion. **Erste Datei zuerst:** `frontend/src/szenen/SpielverwaltungsSzene.ts` — Modal-Höhe erhöhen, Preset-Selektor mit innerem Padding, Button-Abstände/Positionen korrigieren. **DoD:** Kein Clipping des Pfeil-Buttons; Buttons überlappen nicht; Vision-Loop grün. **Risiko:** niedrig-mittel.
-
-**P-Mittel:**
-
-- [x] **FE-RUNDENAUSWERTUNG-LESBARKEIT** — Das Rundenauswertungs-Overlay (`05-rundenauswertung-overlay.png`): Spielstatistiken in sehr kleiner Schrift mit niedrigem Kontrast auf dunklem Hintergrund — kaum lesbar. Außerdem: Status-Header zeigt rohes Enum `IM_SPIEL` statt deutschem Label „Im Spiel". **Erste Datei zuerst:** Render-Code des Rundenauswertungs-Overlays (in `TischSzene.ts` oder `TischEreignisHandler.ts`) — Font-Größe auf min. SM (10px) erhöhen, Kontrast anpassen, Enum-Mapping `IM_SPIEL → Im Spiel` ergänzen. **DoD:** Overlay-Text lesbar; kein rohes Enum sichtbar; Vision-Loop grün. **Risiko:** niedrig.
-
-- [x] **FE-VORBEHALT-AUSWAHL-FEEDBACK** — Die drei Vorbehalt-Wechsel-Frames (`02-vorbehalt-wechsel-0/50/100`) zeigen alle denselben Text „Dasensolo" ohne erkennbares „aktuell ausgewählt"-Feedback (kein Cursor-Hervorhebung, kein farbiger Rahmen, kein Pfeil). Spec fordert klaren Selektions-Indikator für den Neo-Brutalism-Stil. **Erste Datei zuerst:** `frontend/src/szenen/TischSzene.ts` — aktuelle Auswahl mit Goldrahmen (`#ffd166`, 2px) oder `▶`-Prefix hervorheben. **DoD:** Aktuell gewählter Vorbehalt klar visuell markiert; Vision-Loop grün. **Risiko:** niedrig.
-
-**P-Niedrig:**
-
-- [x] **FE-LOBBY-BUTTON-ICONS** — „Mein Profil"-Button zeigt blauen Kreis, „Abmelden"-Button zeigt oranges Rechteck — sehen wie Debug-Platzhalter aus, keine semantische Icon-Bedeutung erkennbar (`01-lobby.png`). **Erste Datei zuerst:** `frontend/src/szenen/SpielverwaltungsSzene.ts` — Phaser-Sprite oder Emoji-Alternative (z.B. 👤 / 🚪) verwenden, oder Button-Icons entfernen falls kein passendes Asset vorhanden. **DoD:** Icons klar lesbar oder entfernt; kein Platzhalter-Grafik sichtbar. **Risiko:** niedrig.
-
-- [x] **FE-NAMEPLATE-TEXTABSCHNEIDUNG** — In `03-stich-ausspielen-100.png` erscheint „Gu" als abgeschnittener Text im Spieler-Nameplate (vermutlich Stich-Zähler „Gu" statt vollständiger Abkürzung). Nameplate-Breite oder Font-Größe für den Stich-Zähler anpassen. **Erste Datei zuerst:** `frontend/src/szenen/TischSzene.ts` / Nameplate-Render-Methode — Textfeld-Breite prüfen und bei Bedarf anpassen. **DoD:** Stich-Zähler vollständig lesbar; Vision-Loop grün. **Risiko:** niedrig.
-
-### UI-Mängel aus FE-VISUAL-REVIEW-BALATRO (Session 68, 2026-06-05)
-
-> Vision-Loop grün (41.5s). Screenshots `01-lobby.png` / `11-offene-tische.png` zeigen zwei Layout-Fehler in der Lobby.
-
-**P-Mittel:**
-
-- [x] **BUG-LOBBY-OFFENE-TISCHE-OVERLAP** (entdeckt Session 68, behoben Session 70) — Header Y=570, Message Y=630, Liste Y=645/hoehe=150. Kein Overlap mehr. Vision-Loop ausgelassen (Backend offline), manueller Check empfohlen.
-
-- [x] **BUG-LOBBY-TOPRIGHT-CLIPPING** (entdeckt Session 68, behoben Session 70) — Spielregeln X=880, Rangliste X=1120; Shadow-Overlap eliminiert, beide Buttons vollständig im Viewport.
-
-### UI-Befunde aus FE-VISION-VERIFY (Session 75, 2026-06-05)
-
-> Vision-Loop endlich tatsächlich ausgeführt (beide Projekte grün, 2 passed, 48.8s). Backend headless via `mvn spring-boot:run` + frisches Frontend nach `target/classes/static` kopiert. Screenshots tragen jetzt Plattform-Präfix (`desktop-*` / `mobile-portrait-*`). **Desktop-Spielfluss (Vorbehalt, Stichphase, Rundenauswertung, Einstellungen) rendert sauber.** Drei Layout-Befunde — **nicht im selben Lauf gefixt** (eigene Build-Tasks):
-
-**P-Hoch:**
-
-- [x] **DISCO-MOBILE-PORTRAIT-LOCK** — **ENTSCHIEDEN S126 (User): Option (b) — Mobile bewusst nur Querformat.** Die Orientierungssperre (`#orientierung-hinweis`, layout.css) bleibt als gewolltes Feature: ein 4-Spieler-Stichspiel mit Kartenreihe braucht Breite. Umgesetzt: (1) Vision-Projekt `mobile-portrait` → **`mobile-landscape`** (`Pixel 5 landscape`, 851×393) in `playwright.config.vision.ts` — fotografiert jetzt echte Mobil-Landscape-Screens statt des Dreh-Overlays (vorher byte-identische Dubletten, S87). (2) Tote `isPortrait`-Zweige in `main.ts` + `layout.ts` als **bewusster Fallback für Nicht-Touch-Hochformat-Fenster** markiert (Overlay greift nur bei `pointer: coarse`), Tests bleiben grün. (3) Irreführende „Portrait-Overlay"-Kommentare in `vision-loop-szenen.spec.ts` korrigiert. **Damit ist die S72-„Vollständiger Portrait-Umbau"-Behauptung als faktisch ungenutzt eingeordnet — kein echtes Portrait-Gameplay, bewusst nicht angestrebt.** (Vision-Echtlauf der neuen Landscape-Screens steht noch aus — Backend muss laufen.)
-  > **Update S87 — harter Beweis + User-Entscheidung „vorerst lassen":** md5-Check aller `mobile-portrait-*`-Screenshots: **ein identischer Hash** (`16870591…`) über Lobby, Vorbehalt, Ansage, Einstellungen, Hilfe, Rangliste und mehrere Flash-Screens = byte-identisches Dreh-Overlay. Bestätigt: Die Sperre ist **global** (auch über den Menüs), nicht nur TischSzene → das gesamte `mobile-portrait`-Vision-Projekt produziert wertlose Dubletten. **User-Entscheidung S87: vorerst lassen** (DISCO bleibt offen, Desktop-Fokus). Wenn der User Mobile später angeht: Option (b) „Vision auf Landscape + S72-Portrait-Code als tot markieren" ist der risikoärmste Slice.
-
-**P-Mittel:**
-
-- [x] **BUG-LOBBY-TOPRIGHT-CLIPPING-2** (Regression/Rest aus S70) — ✓ S76: `PhaserButton` exponiert seine tatsächliche Renderbreite (`public readonly breite`, inkl. Text-Autosize). `SpielverwaltungsSzene` layoutet die beiden oben-rechts-Buttons jetzt **rechtsbündig anhand der realen Breite**: Rangliste an `width - 22 - breite/2`, Spielregeln links daneben mit 16px Lücke. Kein hartkodiertes X mehr → unabhängig von Textlänge/Font keine Überlappung. Vision-Loop (Desktop) grün, `desktop-01-lobby.png` zeigt „? Spielregeln" vollständig + klare Lücke zur Rangliste. 240/240 FE-Tests grün (PhaserButton-Mock um `setX`/`breite` ergänzt).
-
-- [x] **BUG-NEUER-TISCH-MODAL-CLIPPING-2** (Regression aus FE-MOBILE S72) — ✓ S77: Zwei Ursachen behoben. (a) Preset-Text: Die ‹ ›-Pfeil-Buttons sind **selbst auto-skaliert** (PhaserButton `Math.max(breite, textObj.width+40)` → `<`/`>` real ~60px statt 40px, innere Kante bei ±135 statt ±145) und verdeckten als undurchsichtige Buttons die Enden des 14px-Textes „Loco-Blatt (Hausregeln)". Fix: Pfeile auf x=±205 nach außen, presetValue auf 13px + `wordWrap{width:330}`+`align:center` als Sicherheitsnetz → Text bleibt garantiert zwischen den Pfeilen. (b) Button-Überlappung war **dieselbe Auto-Width-Wurzel wie S76**: `PhaserModal` ordnete Aktions-Buttons in fixem 160px-Raster an (Annahme 140px), aber „Abbrechen"/„Erstellen" (20px-Font) wachsen auf ~220px → Überlappung. Fix: `PhaserModal` erzeugt die Buttons jetzt zuerst und ordnet sie **anhand ihrer realen `breite`** zentriert mit 24px-Lücke an (Ein-Button-Modals wie das Rundenende-„Weiter" bleiben bei x=0, keine Regression). Vision-Loop Desktop grün, `desktop-12-neuer-tisch-modal.png` zeigt vollständigen Preset-Text + klar getrennte Buttons; `desktop-05`-Rundenende-„Weiter" weiterhin zentriert. 240/240 FE-Tests grün (PhaserModal-Mock um `breite` ergänzt), Build+Lint sauber. (Erste Desktop-Vision-Failure war ein KI-Playthrough-Flake — Re-Run grün; Mobile-Portrait erwartungsgemäß im DISCO-MOBILE-PORTRAIT-LOCK-Timeout.)
-
-### Befunde aus VISION-LOOP-SZENEN (Session 82, 2026-06-06)
-
-> Vision-Loop-Szenen-Test erstmalig grün (2 passed, 15.4s). S-00…S-14 (außer S-04/S-05) abgedeckt. Desktop-Screenshots visuell geprüft.
-
-**P-Niedrig:**
-
-- [x] **BUG-LOBBY-QUICKGAME-DEUTSCH** (P-Niedrig) — In der Lobby-Szene (`desktop-01-lobby.png`) erscheint der Schnellstart-Button als „**► Quick Game**" und die Leer-Tischliste-Meldung lautet „**Keine offenen Tische. Starte ein Quick Game!**" — beides englisch statt deutsch. Die App verwendet durchgehend Deutsch; diese Texte sind inkonsistent. **Erste Datei zuerst:** `frontend/src/szenen/SpielverwaltungsSzene.ts` — Button-Label + Leer-Meldung auf „Schnellstart" / „Keine offenen Tische. Starte ein Schnellspiel!" korrigieren (Ubiquitous Language: „Schnellstart"). **DoD:** Beide Texte auf Deutsch; `npm test && npm run build` grün; Vision-Loop bestätigt. **Risiko:** niedrig.
-
-### UI-Befund Session 87 (2026-06-06) — User-gemeldet, Vision-Loop kann es nicht fangen
-
-> Wichtiger Merksatz: Der Vision-Loop prüft **Clipping/Overlap**, nicht **Ästhetik/Informationsdichte**. Ein Screen kann „abgedeckt" und clipping-frei sein und trotzdem mau aussehen. Solche Befunde kommen aus menschlicher Sichtung, nicht aus dem Loop.
-
-**P-Mittel:**
-
-- [x] **FE-NEUER-TISCH-MODAL-REDESIGN** (S89, abgeschlossen) — HTML-DOM-Dialog (`tischErstellenDialog.ts`) ersetzt das alte PhaserModal vollständig. Editierbarer Tischname (Input, vorbelegt), Preset-Cycler, Checkbox „Privater Tisch", kompaktes Layout ohne totes Band. Vision-Loop Desktop bestätigt: `desktop-12-neuer-tisch-modal.png` sauber. Backend-API unterstützt kein `anzahlSpiele` — als Folge-Task eingetragen (→ Entdeckungen S89).
-
-### Entdeckungen Session 89 (2026-06-06)
-
-- [x] **FE-TISCH-MODAL-ANZAHL-SPIELE** (P-Niedrig, Backend-Erweiterung nötig) — `TischStore.erstelleTischMitPreset`/`api.erstelleTisch` nehmen kein `anzahlSpiele`-Feld entgegen; die Backend-API (`TischController`/`TischVerwaltungsService`) und das DTO müssen zuerst erweitert werden, bevor der Dialog einen Stepper/Cycler für die Rundenzahl anzeigen kann. **Erste Datei zuerst:** Backend — `TischErstellenAnfrage`-DTO + `TischVerwaltungsService.erstelleTisch` um optionales `anzahlSpiele`-Feld erweitern (Default: aus Preset). Dann Frontend — Cycler in `tischErstellenDialog.ts` ergänzen. **Risiko:** niedrig-mittel (Backend-Feld + Preset-Override-Logik).
-
-### Entdeckungen Session 93 (2026-06-07) — Vision-Review + Modal-Vereinheitlichung
-
-- [x] **BUG-VISION-MODAL-CLOSE** (P-Hoch, e2e) — Vision-Loop ließ das DOM-Tisch-Modal offen über ~15 Folge-Screenshots, weil beide Specs es via `__locodoko.drueckeSzenenButton('btn-abbrechen')` (nur Phaser-Baum) schlossen, das Modal seit dem Redesign aber ein DOM-Dialog ist. **Fix:** programmatischer `document.querySelector('#tisch-abbrechen')?.click()` in `vision-loop.spec.ts` + `vision-loop-szenen.spec.ts` (feuert auch unter dem Mobile-Querformat-Overlay).
-- [x] **FE-MODAL-STIL-VEREINHEITLICHUNG-DOM** (P-Mittel, UI) — DOM-Modals waren grün+rund+weich (Abweichung vom Designsystem). Auf Balatro-purpur-Neo-Brutalism gezogen (`.ui-modal`: bg `#1a1020`, border 2px `#4a2d6a`, radius 4px, Schatten `4px 4px 0 #000`; Profil-`.ui-profil-*` + Inline-Styles in tischErstellenDialog/bugreportDialog/Feedback recolored grün→purpur, Primärbuttons gold). Spec-Selbstwiderspruch (Zeile 20 „Modals" unter grün) korrigiert.
-- [x] **FE-MODAL-STIL-VEREINHEITLICHUNG-PHASER** (P-Mittel, UI) — In-Game-Phaser-Modals auf Balatro-purpur gezogen. **Fix:** (1) `PhaserButton` um opt-in `palette: 'tisch' | 'overlay'` erweitert (overlay = gold-primär/purpur-sekundär); `PhaserModal` nutzt overlay → Partie-Ende & Rundenauswertung-Buttons jetzt gold/purpur. (2) `erstellePhaserButton` um optionalen `overlay`-Param ergänzt (Default grün → HUD/Ansage/Armut unverändert); Einstellungen-Modal-Panel auf PANEL_BG/BORDER_PANEL + harter Offset-Schatten + goldener Titel + helle Labels, seine 5 Buttons auf overlay. Vision bestätigt: Einstellungen/Partie-Ende/Rundenauswertung = gleiche Familie wie DOM-Modals.
-- [x] **BUG-HILFE-TABS-CLIPPING** (P-Mittel, UI) — Spielregeln-Tab-Beschriftungen abgeschnitten („Trumpfhierarc", „Sondersp"), aktiver Tab überlappte den Nachbarn. Ursache: feste X-Rasterung (285+i·185, breite 170) ignorierte die Auto-Breite von `PhaserButton` (Text 20px → „Trumpfhierarchie" ~360px). **Fix:** `PhaserButton` um optionale `schriftgroesse` erweitert; `HilfeSzene.baueTabs` erzeugt Tabs bei x=0 (16px) und ordnet sie zentriert anhand realer `breite` mit fester Lücke an. Vision bestätigt: alle 4 Tabs vollständig, kein Clipping/Overlap.
-- [x] **BUG-WARTEZIMMER-SITZ-LAYOUT** (P-Mittel, UI) — Im Tisch-Wartezimmer überlappten zwei Sitz-Kacheln oben rechts. Ursache: `nameplatePositionFuer` (layout.ts, Landscape) setzte NORD (0.76/0.18) und OST (0.90/0.15) beide nach oben rechts. **Fix:** NORD landscape nach oben-Mitte (0.50/0.12) — frei von OST und vom eigenen NORD-Kartenfächer (oben-links). Vision bestätigt: vier distinkte Sitze. (Portrait unverändert — Mobile zurückgestellt.)
-- [x] **BUG-PARTIE-ENDE-TITEL-DOPPELUNG** (P-Niedrig, UI) — Kein Flash-Überlapp, sondern Eigenkollision: `PhaserModal` zeichnet den Titel bei modal-y −280 (−hoehe/2+20), der Content-Start in `zeigePartieEndeModal` war ebenfalls −280 → Titel „Partie beendet" überlappte die Info-Zeile. **Fix:** Content-Start auf −230 (50px Abstand, analog Rundenende-Modal). Vision bestätigt: Titel sauber getrennt.
-
-### Gesamt-Review Session 93 (2026-06-07) — Backend/Frontend/Security/DB
-
-> Intensives 4-Agenten-Review (Backend-Domäne, Frontend, Security/Ops, Specs/DB/Tests). Top-Findings am Code gegengeprüft (✓). Noch NICHT umgesetzt — Reihenfolge-Empfehlung: SEC-HARDENING-1 → BUG-OPTIMISTIC-LOCK-KONFLIKT → FEAT-DSGVO-LOESCHUNG → FE-Reconnect/Toasts → DB-CONSTRAINTS-HAERTUNG → Rest.
-
-**P0/P1 — vor öffentlichem Betrieb**
-
-- [x] **SEC-HARDENING-1** (P0/P1, Security, autonom) — Bündel aus 5 verifizierten Lücken: **(S1✓)** `server.forward-headers-strategy=framework` setzen → hinter Caddy ist `getRemoteAddr()` sonst immer Caddys IP, Login-Rate-Limit greift global statt pro-IP (`RateLimitingFilter.java:42`); Caddy muss `X-Forwarded-For` selbst setzen (nicht client-XFF durchreichen). **(S2✓)** `/api/debug/log` absichern: in prod hinter Auth ODER Rate-Limit + Body-/Feldlängen-Cap (offen, ungedrosselt → Log-Flooding/Injection, `DebugController.java`, `SecurityConfig.java:57`). **(S3✓)** `/api/auth/register` + `/api/auth/passwort-reset-anfragen` ins Rate-Limit aufnehmen (`RateLimitingFilter.java:26-30`). **(S4✓)** `server.error.include-message=never` (+`include-binding-errors=never`) in `application-prod.properties` (Basis steht auf `always` → Message-Leak). **(S5✓)** `docker-compose.yml`: Port `5432:5432` im prod-Profil entfernen (nur internes Netz) + Default-PW `:-locodoko` entfernen/erzwingen. **Erste Datei zuerst:** `src/main/resources/application-prod.properties`. **Risiko:** niedrig-mittel.
-- [x] **BUG-OPTIMISTIC-LOCK-KONFLIKT** (P1, Backend, autonom) — Gleichzeitige Züge (Mensch + KI-AFTER_COMMIT-Listener, Doppelklick) werfen `OptimisticLockingFailureException`, die kein `@MessageExceptionHandler`/`@ExceptionHandler` abfängt → generischer 500, Zug verloren, kein Retry/Reload. **Fix:** dedizierter Handler (sauberer Konflikt-Code → Client lädt Snapshot neu) + optional 1× Retry für KI-Züge. **Plus Nebenläufigkeits-Test** (zwei parallele `spieleKarte` via CountDownLatch: genau einer gewinnt, der andere sauber abgewiesen). **Erste Datei zuerst:** `tisch/.../SpielverwaltungExceptionHandler.java` (Z.81) + `SpielAktionsService.java:192`. **Risiko:** mittel.
-- [x] **FEAT-DSGVO-LOESCHUNG** (P1, Live-Blocker DE, autonom) — Kein Account-Löschpfad (Art. 17), obwohl `recht-impressum-datenschutz.md:122` ihn zusagt. Schema via CASCADE/SET NULL vorbereitet, aber Service+Endpunkt fehlen. **Fix:** Lösch-/Anonymisierungs-Service + authentifizierter Endpunkt (`aktiverSpieler.id()==id`), Löschkette gegen echtes Postgres testen. **Erste Datei zuerst (S96 KORRIGIERT — `SpielerController.java` existiert NICHT):** `DELETE /api/spieler/{id}` in den bestehenden **`spieler/SpielerProfilController.java`** einhängen (mappt bereits `/api/spieler`, nutzt in `aktualisiereProfil` Z.76–81 exakt das `spielerSessionService.ladeAktivenSpieler(request)` + `aktiverSpieler.id().equals(id)`-Auth-Muster — wiederverwenden) + neuer `KontoLoeschungsService` (Löschkette über `partie_teilnehmer`/`spieler_statistik`/`spieler_rating`/`tisch_spieler` gemäß ON-DELETE-Politik aus REFACTOR-DB-10). **Risiko:** mittel.
-- [x] **BUG-FE-RECONNECT-RESUBSCRIBE** (P1, Frontend, autonom) — STOMP-Auto-Reconnect (reconnectDelay 5000) feuert `onConnect` erneut, stellt aber bestehende `subscribe`-Aufrufe NICHT wieder her; ohne Versions-Gap bleibt der Client „verbunden, aber taub". **Fix:** in `onConnect` einen Resubscribe-Hook auslösen, der aktive Topics neu abonniert. **Erste Datei zuerst:** `frontend/src/services/SpielverwaltungEchtzeit.ts:106`. **Risiko:** mittel (Reconnect-Pfad, E2E-Netzabriss-Test empfohlen).
-- [x] **FE-FEHLER-TOASTS-VOLLSTAENDIG** (P1, Frontend, autonom) — Nur 422/409 zeigen eine Meldung; Netzwerkfehler/500/401 werden zu silent Unhandled Rejections (`void appStore.…()` ohne `.catch`, `fuehreMitStatus` try/finally ohne catch). User sieht nichts. **Fix:** in `fuehreMitStatus` catch→`meldung` patchen+rethrow oder Callsites mit `.catch`. **Erste Datei zuerst:** `frontend/src/store/TischStore.ts:234` + `SessionStore.ts:83`. **Risiko:** niedrig.
-- [x] **SEC-CSRF-ENTSCHEIDUNG** (P1, Security) — **ENTSCHIEDEN S126 (User): Option (a) — CSRF bewusst deaktiviert, dokumentiert.** Schutz via Session-Cookie `SameSite=strict` + `HttpOnly` (prod zusätzlich `Secure`). Trade-off (kein Defense-in-Depth) + Re-Evaluierungs-Trigger (laxeres SameSite / Cross-Origin-Frontend) im Klassen-Javadoc von `SecurityConfig.java` festgehalten, Inline-Kommentar an `.csrf(disable())`.
-- [x] **DECISION-OAUTH-ACCOUNT-LINKING** (P2, Security/UX — Befund Code-Review S120) — **ENTSCHIEDEN + UMGESETZT S126 (User): Option (b) sicher — Merge nur wenn beidseitig verifiziert, sonst sauber abweisen.** `OAuth2ErfolgsHandler` liest jetzt den `email_verified`-Claim und verknüpft ein bestehendes Passwort-Konto **nur**, wenn Google `email_verified=true` **und** das Konto `email_verifiziert=true` ist (`SpielerEntity.verknuepfeMitOauth2`). Andernfalls (oder bei Race auf dem email-Unique-Index) wird der Login abgelehnt → Redirect `/?fehler=email_konflikt`, kein zweites Konto, kein Takeover. Frontend zeigt den Hinweis in `LoginSzene`. Greift praktisch erst mit live OPS-EMAIL. 3 neue BE-Integrationstests (Merge / unverif. Konto / Google unverif.) + 2 FE-Tests. **BE 500, FE 465 grün.**
-
-**P2 — Härtung / Qualität (greenfield-Fenster)**
-
-- [x] **DB-CONSTRAINTS-HAERTUNG** (P2, DB, autonom) — `000-initial-schema.sql`: (a) `CHECK`-Constraints auf Enum-VARCHARs (`status`, `*_position`, `zugangsmodus`, `regelvariante`, `spieltyp`, `sieger_partei`); (b) `tisch.partie_id` auf `ON DELETE SET NULL` (zirkuläre FK heute nur in `TischRepositoryImpl.delete()` abgefangen → jeder andere Löschpfad bricht gegen echtes PG). **Risiko:** niedrig (greenfield, kein Migrationspfad). Verifikation an `DEPLOY-COMPOSE-SMOKE` koppeln.
-- [x] **BUG-STATISTIK-ARMUT-STATUS** (P2, Backend, autonom) — `armutSpieler`/`armutPartner` werden nie gesetzt: `abgeschlossenesSpiel.armutStatus()` liefert nur in Phase `ArmutTausch` Werte, beim Spielende ist die Phase `GesamtstandAktualisieren` → `hatArmutAngesagt/Uebernommen` immer false. **Fix:** ArmutStatus ins `Spielergebnis`/`SpielergebnisArchiv` persistieren statt aus flüchtiger Phase ableiten. **Erste Datei zuerst:** `partie/PartieLifecycleService.java:200`. **Risiko:** niedrig-mittel.
-- [x] **SEC-ACTUATOR-SWAGGER-PRIVAT** (P2, Security, autonom) — `/actuator/**`, `/swagger-ui/**`, `/v3/api-docs` sind `permitAll` und via Caddy öffentlich erreichbar (Prometheus-Metriken/API-Surface-Leak). **Fix:** in Caddy `/actuator` (+ Swagger in prod) blocken ODER in Spring auf authenticated; Scrape übers interne Netz/Alloy. **Erste Datei zuerst:** `Caddyfile` / `SecurityConfig.java:64-65`. **Risiko:** niedrig.
-- [x] **FE-FEHLERCODE-KLARTEXT** (P2, Frontend, autonom) — `AKTION_ABGELEHNT` zeigt rohen `fehlerCode` (z.B. `KARTE_NICHT_SPIELBAR`) als Toast. **Fix:** Mapper fehlerCode→deutscher Klartext (analog vorhandener `formatiere*`-Helfer). **Erste Datei zuerst:** `frontend/src/szenen/TischEreignisHandler.ts:180`. **Risiko:** niedrig.
-- [x] **BUG-FE-MODAL-TWEEN-CLEANUP** (P2, Frontend, autonom) — CountUp-Tween + verschachtelte Yoyo-Tweens im Rundenende-Modal laufen nach vorzeitigem Schließen weiter und referenzieren ggf. zerstörte Text-Objekte. **Fix:** Tween-Referenzen halten und in `schliesseRundenEndeModal`/`aufraeumen` `remove()`/`killTweensOf`. **Erste Datei zuerst:** `frontend/src/szenen/TischRundenEndeController.ts:90-107`. **Risiko:** niedrig.
-- [x] **REFACTOR-GEBERROTATION-DEDUP** (P3, Backend, klein) — Review-Agent meldete duplizierte Geberrotations-/„warSolo"-Logik in `Partie.schliesseAktuellesSpielAb` vs. `initialisiereDomainFelderNachLaden`. **Zuerst verifizieren**, ob die Logik wirklich doppelt ist; falls ja, in eine private Methode ziehen (reines DRY). **Risiko:** niedrig. **WICHTIG / NICHT TUN:** Der Agent flaggte zusätzlich „Spiel/Partie sind Domain UND Persistenz-Entity" als God-Object — das ist eine **bewusste Architekturentscheidung** (`architektur.md` Prinzip #6 „Domain Model = Persistence Model, keine separaten Entity-Klassen" + #8 YAGNI). Persistenzmodell NICHT von der Domäne trennen.
-
-**P3 — Doc-Drift / Kleinkram**
-
-- [x] **DOC-DRIFT-BEREINIGUNG** (P3, DOC) — (a) `CLAUDE.md` „Projektstatus" + `specs/fertigstellung.md:54ff` nennen **BUG-PROD-CHANGELOG noch als ersten Blocker — ist behoben** (prod nutzt `db.changelog-master.yaml`✓); auf „behoben, prod-Boot gegen echtes PG via DEPLOY-COMPOSE-SMOKE noch offen" umschreiben. (b) `specs/datenbankmodell.md:103,122` dokumentiert nicht-existente Spalte `aktueller_stich` (liegt in `phase`-JSONB; Z.318 widerspricht sich selbst) → streichen. **Risiko:** keins (nur Doku).
-- [x] **REFACTOR-TOTER-STICH-CONVERTER** (P3, Backend) — `JsonbConverter.java:387-409` (+ Bytes-Variante :602) registriert `Stich↔JSONB`-Converter für die nicht existente Spalte `aktueller_stich`; `Stich` tritt nur verschachtelt (Jackson) auf → toter Code. **Fix:** drei Converter entfernen. **Risiko:** niedrig.
-- [x] **FE-LESBARKEIT-KARTENRENDERER** (P3, Frontend) — `TischKartenRenderer.ts:44-74,178-247` nutzt ~25 ein-/zweibuchstabige Felder (`kAnzahl`,`fB`,`auswV`,`stX`…) im Render-Hot-Path → schwer wartbar, widerspricht Deutsch-/Lesbarkeitsvorgabe. **Fix:** sprechende Namen (Performance unverändert). **Risiko:** niedrig.
-- [x] **BUG-FE-BASELINE-JSDOM** (P1, Frontend, Blocker für FE-KLEINKRAM-SAMMEL) — 15/299 FE-Tests rot. **Root Cause:** `vite.config.ts:29` setzt `environment: 'node'` global; die `// @vitest-environment jsdom` Pragmas in `SpielverwaltungApi.test.ts`, `AnimationIntegration.test.ts`, `AssetLoader.test.ts` werden nicht korrekt überschrieben → `localStorage` ist `undefined`, `HTMLCanvasElement.getContext()` nicht implementiert. Zusätzlich fehlt das `canvas`-npm-Package (für jsdom Canvas-Support). **Fix:** (1) `vite.config.ts:29` `environment: 'node'` → `'jsdom'` (oder Pragma-Verarbeitung debuggen, falls die meisten Tests absichtlich ohne jsdom laufen); (2) `npm install --save-dev canvas`; (3) verifizieren dass alle 299 Tests grün sind. **Erste Datei zuerst:** `frontend/vite.config.ts`. **DoD:** 299/299 FE-Tests grün + Build + Lint sauber. **Risiko:** niedrig.
-- [x] **FE-KLEINKRAM-SAMMEL** (P3, Frontend) — [hängt an BUG-FE-BASELINE-JSDOM] (a) `spielProtokollEintraege` wächst über Partiengrenzen (nur bei vollem Trennen geleert, nicht in `resetPartieZustand`) → beim Partie-Reset zurücksetzen; (b) `JSON.parse(nachricht.body)` im STOMP-Handler ohne try/catch (`SpielverwaltungEchtzeit.ts:46,140`) → Guard + Logger; (c) doppelte `formatiereMeldung` in AppStore+TischStore konsolidieren; (d) nacktes `console.log` in `AppStore.test.ts:832` entfernen. **Risiko:** niedrig.
-- [x] **SEC-VALIDIERUNG-AUTH-FELDER** (P3, Security) — `RegistrierungsAnfrage`: `email` ohne `@Email`, Passwort `@Size(min=8)` ohne `max=72` (bcrypt-Grenze). **Fix:** `@Email` + `@Size(min=8,max=72)`. **Risiko:** keins.
-- [x] **BACKEND-KLEINKRAM-SAMMEL** (P3, Backend) — (a) `KiTischOrchestrator.java:130,164`: Rückgabe von `saveAndFlush` zuweisen (`partie = …`) statt implizit auf reflektives Version-Rückschreiben zu vertrauen; (b) `saveAndFlush` ist No-Op-Alias auf `save` (`TischRepositoryImpl.java:71`) → umbenennen/kommentieren; (c) `VerbindungsabbruchService` In-Memory-State als bewusste Single-Instance-Annahme dokumentieren. **Risiko:** niedrig.
-
-### I) Polishing + Test-Abdeckung — Phase 1 (autonom, dann Review-Halt)
-
-> Ziel: FE-Baseline reparieren, Kleinkram abschließen, dann Coverage-Report aktualisieren und Lücken identifizieren. **✅ Phase 1 abgeschlossen, Report reviewt, Phase 2 vom User freigegeben (Session 105, 2026-06-11).**
-
-1. [x] **BUG-FE-BASELINE-JSDOM** (P1, Frontend, Blocker) — siehe oben.
-2. [x] **FE-KLEINKRAM-SAMMEL** (P3, Frontend) — siehe oben. [hängt an 1.]
-3. [x] **QA-TEST-ABDECKUNG-REPORT** (P2, QA) — Coverage-Report aktualisiert (Session 103). Backend: Instructions 82.8%, Lines 82.2%, Branches 68.9% (von 84%/83%/71% — Rückgang durch neue Features ohne proportionale Tests). Frontend: Statements 78.46%, Branches 80.4%, Functions 76.67%. AppStore.ts war nie in der Exclude-Liste (Annahme aus S47 falsch). Test-Tasks für Phase 2 unter J) präzisiert + Entdeckungen eingetragen. `docs/metrics.md` aktualisiert. **STOP FÜR USER-REVIEW.**
-
-### J) Test-Abdeckung — Phase 2 (autonom nach User-Review)
-
-> Ziel: Coverage-Lücken systematisch schließen. Backend Branch-Coverage 68.9%→75%+, Frontend 78.46%→80%+. **✅ FREIGEGEBEN durch User am 2026-06-11 (Session 105) — Phase 2 ist entsperrt, autonom abarbeitbar.** Geschätzt 5–8 Iterationen. Pro Task ein Commit. Verifikation: `mvn clean test` / `npm test`.
-
-**Backend — nach aktuellem Session-103-Report (Reihenfolge: ROI × Testbarkeit):**
-
-- [x] **TEST-DOMÄNE-ARMUT** — `ArmutStatus` (38 Lines, **66%** instr, 0% branches) + verwandte Armut-Pfade (`nimmArmutAn`, `tauscheKarten`, Grenzfälle). Reine Domänenlogik, hoher ROI. **Erste Datei:** `ArmutStatusTest.java` (neu) im Paket `de.locodoko.partie`.
-- [x] **TEST-DOMÄNE-STICHVERLAUF** — `Stichverlauf` (21 Lines, **50%** instr, 0% branches) Branch-Pfade: Stich-Ende, Augen-Berechnung, Grenzfall leerer Stich. **Erste Datei:** `StichverlaufTest.java` (neu). 20 Unit-Tests: Factory-Methoden (leer/aus/null-Guards), mitStich-Immutabilität, letzter-Happy/Error-Path, equals/hashCode/toString. 423 BE-Tests grün (+20).
-- [x] **TEST-KI-ORCHESTRIERUNG** — `KiOrchestrierungService` (38 Lines, **55%** instr, 32% branches) Fehler-/Randpfade: unbekannte Spielphase, Exception-Handling, Retry-Verhalten. **Erste Datei:** `KiOrchestrierungServiceTest.java` (neu).
-- [x] **TEST-KI-ORCHESTRATOR** — `KiTischOrchestrator` (145 Lines, **64%** instr, 51% branches) Concurrent-Paths, OptimisticLock-Retry, Exception-Pfade. **Erste Datei:** bestehenden `KiTischOrchestratorTest.java` prüfen + erweitern.
-- [x] **TEST-TISCHSICHERHEIT** — `TischSicherheit` (36 Lines, **70%** instr, 38% branches) Guard-Logik: nicht Mitglied, falscher Status, kein aktives Spiel. Wichtig für Prod-Sicherheit. **Erste Datei:** `TischSicherheitTest.java` (neu).
-- [x] **TEST-JSONB-ROUNDTRIP** — `JsonbConverter` (45 Lines in JaCoCo = Outer-Klasse, **53%**) verbleibende Converter-Roundtrips: `ArmutStatus`, `GeschmisseneSpielerVO`, `Haende`. **Erste Datei:** bestehenden `JsonbConverterTest.java` erweitern.
-- [x] **TEST-RATE-LIMITING** — `RateLimitingFilter` (42 Lines, **36%** instr, 15% branches) Request-Simulation: Rate-Limit-Schwelle, pro-IP-Trennung, Whitelist-Pfade. `MockHttpServletRequest` verwenden (kein `@SpringBootTest`). **Erste Datei:** `RateLimitingFilterTest.java` (neu).
-- [x] **TEST-WEBSOCKET-CONTROLLER** — `SpielverwaltungWebSocketController` (73 Lines, **74%** instr, 25% branches) unabgedeckte Nachrichten-Handler. `@SpringBootTest` + STOMP-Client. **Erste Datei:** bestehenden Test erweitern.
-
-**Frontend — nach aktuellem Session-103-Report:**
-
-- [x] **TEST-FE-STORE-SESSION** — `SessionStore.ts` (69.73% stmts, 100% branches) nicht abgedeckte Auth-Pfade: Logout-Fehler, GastStart-Fehler, Token-Expired. **Erste Datei:** `SessionStore.test.ts` erweitern.
-- [x] **TEST-FE-STORE-TISCH** — `src/store/TischStore.ts` (**70.14% stmts, 68% functions**, Stand S114) nicht abgedeckte Ereignis-Handler und Fehler-Branches (Zeilen ~203–219). **Erste Datei:** `src/store/TischStore.test.ts` (**neu** — existiert noch nicht).
-- [x] **TEST-FE-ABONNEMENTS** — `src/szenen/TischStoreAbonnements.ts` (**37.87% stmts, 42.85% branches**, Stand S114) WebSocket-Abos + Reconnect-Pfade (Zeilen ~28,36–75). **Erste Datei:** `src/szenen/TischStoreAbonnements.test.ts` (neu). *(Im S103-Report fälschlich „TischAbonnements.ts" genannt — realer Name ist `TischStoreAbonnements.ts`.)*
-- [x] **TEST-FE-RUNDEN-CONTROLLER** — `src/szenen/TischRundenEndeController.ts` (**42.42% stmts, 62.85% branches**, Stand S114) Rundenende- + Partie-Ende-Modal, Tween-Cleanup (Zeilen ~88–305). **Erste Datei:** `src/szenen/TischRundenEndeController.test.ts` (neu).
-**Optionale Restabdeckung (S118 als echte Tasks formuliert — autonom, ROI mittel, da FE-Coverage-Ziel mit 82.03% bereits erreicht; Reihenfolge: kleinste zuerst):**
-
-- [x] **TEST-FE-BRUECKE** — `src/szenen/TischBrücke.ts` (**42.37% stmts, 16.66% functions**, S118; 64 Zeilen, keine Test-Datei). Dünne Delegations-Brücke zwischen E2E-Bridge und Szene — die meisten Methoden delegieren an `szene.*`/`controller.*`. **Test-Ansatz:** Fake-Szene/Controller injizieren, prüfen dass jede Bridge-Methode korrekt delegiert (`toggleSpielprotokoll`, `isPartieEndeModalSichtbar`, `schliessePartieEndeModal`, `zeigeLetztesStichOverlay` etc.). **Erste Datei:** `src/szenen/TischBrücke.test.ts` (neu). **Risiko:** niedrig.
-- [x] **TEST-FE-ANIMATION-ORCHESTRATOR** — `src/szenen/TischAnimationOrchestrator.ts` (**38.51% stmts, 62.5% functions**, S118; 176 Zeilen, keine Test-Datei). Animations-Sequenzierung (Karten-/Stich-Tweens). **Test-Ansatz:** Phaser-Tween-Mock (wie in `TischRundenEndeController.test.ts`), prüfen dass Animationen in korrekter Reihenfolge gestartet/aufgeräumt werden, inkl. vorzeitigem Abbruch/`aufraeumen`. Unabgedeckte Zeilen ~106–154, 174–175. **Erste Datei:** `src/szenen/TischAnimationOrchestrator.test.ts` (neu). **Risiko:** niedrig-mittel (Tween-Timing).
-- [x] **TEST-FE-HUD-RENDERER** — `src/szenen/TischHudRenderer.ts` (**40.86% stmts, 50% functions**, S118; 242 Zeilen, keine Test-Datei). HUD/Einstellungen-Rendering. **Test-Ansatz:** Phaser-Szenen-Mock, prüfen Aufbau der HUD-Elemente + Einstellungen-Modal-Pfade. Unabgedeckte Zeilen ~171–172, 184–242. **Erste Datei:** `src/szenen/TischHudRenderer.test.ts` (neu). **Risiko:** mittel (viel Phaser-Mocking).
-- *Auslassen (niedriger ROI): `bugreportDialog.ts` (1.85%) = reines DOM-Overlay; `HilfeSzene.ts` (70%) + `TischInputKontroller.ts` (75%) sind bereits über dem 80%-Gesamtziel-Beitrag.*
-
-### K) Video-basierter Vision-Loop (Session 118, autonom, kein MENSCH)
-
-> Hintergrund: Der Screenshot-Loop friert nur diskrete Zustände ein und verpasst Bewegung dazwischen (Tweens, Flash-Texte, Modal-Animationen — genau dort lagen Bugs wie `BUG-FE-MODAL-TWEEN-CLEANUP`). Session 118 hat die **Infrastruktur** für einen video-basierten Loop gebaut und committet (Spec `specs/frontend-vision-loop-video.md`): `playwright.config.video.ts` (`video:'on'`, Echtzeit), `tests/vision-video.spec.ts` (spielt eine Runde durch), `extrahiere-video-frames.mjs` (zerlegt `.webm` → PNG via Playwright-gebündeltem ffmpeg, kein System-ffmpeg nötig), npm-Scripts `test:video`/`frames`. Die Technik-Kette ist verifiziert (Playwright-Video → ffmpeg → lesbare Frames nachgewiesen). **Offen: der erste echte Lauf gegen das laufende Backend.**
-
-1. [x] **VIDEO-LOOP-ECHTLAUF** (autonom, read-only Diagnose) — Den video-basierten Vision-Loop **erstmals real gegen das Backend** fahren und die extrahierten Frames sichten. **Schritte (analog FE-VISION-VERIFY / VISION-SMOKE-1):** (1) `cd frontend && npm run build`; (2) Backend headless: im Projektroot `mvn spring-boot:run` im Hintergrund, **frisches `dist` nach `target/classes/static` kopieren** (spring-boot:run triggert die Copy-Resources NICHT), auf `curl -s localhost:8081/actuator/health` „UP" warten; (3) `cd e2e && npm run test:video`; (4) Video-Pfad aus der Test-Ausgabe nehmen, `npm run frames -- --video <pfad.webm> --fps 4`; (5) Frames mit dem Read-Tool sichten — **erst grob jeden ~8., dann dichter um Modalwechsel/Flash/Tween** (Kontext-Budget, siehe Spec-Abschnitt „Sichtungsstrategie"); (6) Backend stoppen. **DoD:** Lauf grün, Frames erzeugt + visuell gesichtet; etwaige dynamische Befunde (Tween-Ruckler, falsch getimte Flashes, Modal-Artefakte) als neue `BUG-…`/`FE-…`-Tasks unter „Entdeckungen" (im selben Lauf **nicht** fixen). Spec-Status „Implementiert (Infrastruktur)" → „Verifiziert" + Notiz, ob der Video-Loop echten Mehrwert über den Screenshot-Loop liefert. **Risiko:** niedrig-mittel (E2E-Timing; bei 1.0×-Geschwindigkeit kann eine Runde mehrere Minuten dauern — falls die Spec zu lange läuft/flaket: Geschwindigkeit moderat erhöhen oder nur bis zum ersten Stich aufnehmen, als Folge-Entdeckung notieren).
-
-> **Verweise:** `DEPLOY-COMPOSE-SMOKE` (bereits als MENSCH-Task vorhanden) ist das Gate für die Verifikation von DB-CONSTRAINTS-HAERTUNG + JSONB/Views gegen echtes Postgres 17. `.env` enthält lokal einen echten GitHub-PAT — **nicht committet** (History sauber), aber rotieren falls das Verzeichnis je geteilt wurde.
-
-### Entdeckungen Session 119 (2026-06-13) — VIDEO-LOOP-ECHTLAUF
-
-- **Stale-Backend-Problem beim Video-Loop:** Wenn der Dev-Server (Port 8081) noch von einer vorherigen Session läuft und `mvn clean test` seitdem die Klassen neu kompiliert hat, kann Schnellstart mit `DataIntegrityViolationException: Check constraint invalid: "CONSTRAINT_69: "` fehlschlagen. Root Cause: der alte JVM-Prozess verwendet veraltete `.class`-Dateien aus `target/` (dasselbe Problem wie bei `mvn test` vs. `mvn clean test`, nur für den laufenden Server). **Workaround:** Vor dem Video-Loop altes Backend beenden (`kill $(lsof -ti :8081)`) und frisch starten. Kein Code-Bug — kein eigener Fix-Task nötig; bestehender AGENTS.md-Hinweis „Backend mit `mvn clean test` validieren" gilt sinngemäß auch für den laufenden Server.
-
-### L) Verbesserungs-Backlog (Session 120c, 2026-06-13 — autonom, alle ohne MENSCH-Vorbedingung)
-
-> Geerdet an Code-Befunden der Qualitäts-Offensive S120b. Reihenfolge nach Hebelwirkung. Jeweils ein Commit, `mvn clean test` / `npm test && npm run build && npm run lint` grün.
-
-- [x] **PERF-FE-BUNDLE-SPLITTING** (Frontend, autonom, klein) — `dist` ist **ein einzelnes ~1,7-MB-JS-File**; in `frontend/vite.config.ts:26` wurde die Größenwarnung nur hochgesetzt (`chunkSizeWarningLimit: 1800`), nicht gelöst. Phaser (Großteil des Bundles) ändert sich praktisch nie, der App-Code oft → schlechtes Browser-Caching bei jedem Deploy. **Fix:** `build.rollupOptions.output.manualChunks` ergänzen, das `phaser` (und ggf. weitere node_modules) in einen eigenen Vendor-Chunk zieht; `chunkSizeWarningLimit` wieder auf einen sinnvollen Wert senken. **Erste Datei zuerst:** `frontend/vite.config.ts`. **DoD:** `npm run build` erzeugt ≥2 Chunks (App + Phaser-Vendor), Vendor-Chunk-Hash bleibt zwischen reinen App-Änderungen stabil; FE-Tests + Lint grün; Vision-Smoke (Lobby lädt) ok. **Risiko:** niedrig.
-- [x] **PERF-FE-SOURCEMAP-PROD** (Frontend, autonom, winzig) — der Build erzeugt eine **~10,9-MB `.map`**. Prüfen, ob sie ins ausgelieferte `dist` gelangt (würde Quellcode öffentlich machen). **Fix:** falls ja, `build.sourcemap` in Prod auf `false` setzen ODER `'hidden'` (Map erzeugen, aber nicht referenzieren — nur für Sentry-Upload). Mit `OBS-SENTRY` abstimmen (dort wird die Map ggf. zum Symbolisieren gebraucht). **Erste Datei zuerst:** `frontend/vite.config.ts`. **DoD:** Prod-`dist` enthält keine referenzierte Source-Map (oder bewusst `hidden`); dokumentiert. **Risiko:** niedrig.
-- [x] **TEST-INTEGRATION-ENV-GATED** (Backend, autonom, mittel-groß) — die letzten echten Coverage-Lücken sind genau die live-relevanten Klassen: `OAuth2ErfolgsHandler` (22% Line, 0% Branch), `BugReportController` (28%), `MailService` (35%) — bisher als „env-gated, nicht unit-testbar" abgehakt. **Fix:** `@SpringBootTest`-Integrationstests mit Testcontainers-Postgres (statt H2), GreenMail für SMTP (`MailService`) und einem Mock-OAuth2-Login (Spring Security Test `oauth2Login()` / `SecurityMockServerConfigurers`) für den Erfolgs-Handler; BugReport-Pfad mit gemocktem/abgeschaltetem GitHub-Client. **Erste Datei zuerst:** neues `OAuth2ErfolgsHandlerIntegrationTest.java` (kleinster, höchster Sicherheitswert — deckt zugleich `DECISION-OAUTH-ACCOUNT-LINKING` ab). **DoD:** die drei Klassen je >70% Line-Coverage; `mvn clean verify` grün. **Risiko:** mittel (Testcontainers-Setup + Docker im CI nötig — lokal Docker erforderlich, ggf. an `DEPLOY-COMPOSE-SMOKE`-Umgebung koppeln).
-- [x] **REFACTOR-FE-TISCHANSICHT-MODELL** (Frontend, autonom, mittel) — `TischAnsichtModell.erstelleTischAnsichtAusStatus` ist der **letzte offene Komplexitäts-Hotspot** (CC **36**, Datei 347 Z.; die Top-3 aus dem Metrik-Report sind bereits entschärft). **Fix:** in benannte Teilbildner zerlegen (z.B. pro Sitzposition / pro Spielphase), Verhalten unverändert. **Erste Datei zuerst:** `frontend/src/modelle/TischAnsichtModell.ts`. **DoD:** keine Funktion > CC 20; FE-Tests + Build + Lint grün (bestehende Modell-Tests decken das Verhalten ab). **Risiko:** niedrig-mittel.
-- [x] **FE-A11Y-DIALOGE** (Frontend, autonom, klein) — nur 5 FE-Dateien nutzen `aria`/`role`. Der Canvas-/Phaser-Teil ist naturgemäß limitiert, aber die **HTML-DOM-Dialoge** (`tischErstellenDialog.ts`, `bugreportDialog.ts`, `SpielerProfilModal.ts`, Feedback) sollten konsistent `role="dialog"` + `aria-modal="true"` + `aria-labelledby`, einen **Fokus-Trap** und **Escape-to-close** haben. `bugreportDialog`/Feedback haben Teile davon, die anderen nicht. **Fix:** gemeinsamer kleiner Helfer (Fokus-Trap + Escape) und konsistente ARIA-Attribute. **Erste Datei zuerst:** `frontend/src/szenen/tischErstellenDialog.ts`. **DoD:** alle DOM-Dialoge schließen per Escape, fangen den Fokus, tragen `role="dialog"`+`aria-modal`; FE-Tests + Lint grün. **Risiko:** niedrig.
-- [x] **FE-VISION-POLITUR-REST** (Frontend, autonom, klein) — gezielter Vision-Loop-Durchgang über die in früheren Notizen genannten, unbestätigten UI-Nits: Hilfe-Trumpf rechte Spalte „Bedienung" steht knapp an der linken Spalte (S93); Wartezimmer oben-links wirkt leer / Sitzverteilung (S88/S93); Partie-Ende-Titel evtl. Flash-Überlappung (S88, niedrige Konfidenz). **Fix:** je bestätigtem Defekt ein gezielter Layout-Fix (Muster wie S120b-Titel: real gerenderte Breiten/Höhen statt hartkodierter Koordinaten). **Erste Schritte:** Vision-Loop fahren (`playwright.config.vision.ts`), betroffene Screens mit Read-Tool sichten, nur bestätigte Defekte fixen. **DoD:** Vision-Loop grün, gesichtete Screens defektfrei; nicht reproduzierbare Nits als erledigt/„kein Defekt" vermerken. **Risiko:** niedrig. **Retro-Look beibehalten** (User-Entscheidung S120b).
-
-### M) Review- & Polish-Backlog (Session 126, 2026-06-15 — autonom, geerdet an Repo-Scan S126)
-
-> Komplett-Scan S126: Code sehr sauber (keine TODO/FIXME, keine verschluckten Exceptions, kein `any` im FE-Quellcode, jede FE-Datei getestet, Prod-Deps 0 CVEs). Die folgenden Punkte sind die realen offenen Hebel. Jeweils ein Commit, `mvn clean test` / `npm test && npm run build && npm run lint` grün.
-
-- [ ] **QA-VISION-MOBILE-LANDSCAPE** (E2E/Vision, autonom — **Backend muss laufen**, klein-mittel) — Verifikation der DISCO-S126-Umstellung: der Vision-Loop läuft jetzt unter dem Projekt **`mobile-landscape`** (851×393), erzeugt aber noch **keine** frischen Screenshots (alter `mobile-portrait`-Satz wurde S126 entfernt). **Fix/Schritte:** Backend starten (`mvn spring-boot:run`), `cd e2e && npx playwright test --config playwright.config.vision.ts` (beide Specs, beide Projekte) fahren; die neuen `mobile-landscape-*.png` **und** die `desktop-*.png` mit dem Read-Tool gegen `specs/frontend-visuelles-design.md` sichten; Layout-Mängel im Querformat (Kartenreihe, Nameplates, HUD, Modals bei 851×393) als gezielte Fixes beheben (real gerenderte Maße statt Hardcode), Retro-Look behalten. **DoD:** beide Projekte grün < 30 s je Szenen-Lauf; `mobile-landscape-*` Screenshots committet und visuell defektfrei; gefundene Defekte gefixt oder als „kein Defekt" vermerkt. **Risiko:** niedrig-mittel.
-- [ ] **SEC-DEPS-FE-DEV-AUDIT** (Frontend/Sicherheit, autonom, klein) — `npm audit` meldet **7 Schwachstellen in Dev-Deps** (1 moderate `brace-expansion`, 4 high/2 critical über die `esbuild`→`vite`→`vitest`/`@vitest/*`-Kette). **Prod-Deps: 0 CVEs** (nicht ausgeliefert → kein Live-Blocker, aber Toolchain-Hygiene + Supply-Chain). **Fix:** `npm audit fix` für `brace-expansion` (non-breaking); für die esbuild/vite-Kette `npm audit fix --force` evaluieren = **Major-Bumps** (Vite/Vitest) — nur mit anschließend grünem `npm test && npm run build && npm run lint` übernehmen, sonst gezielt einzelne Transitives anheben. **Erste Datei zuerst:** `frontend/package.json` / `package-lock.json`. **DoD:** `npm audit` ohne high/critical (oder dokumentierte, unvermeidbare Rest-Advisories); FE-Suite + Build + Lint grün. **Risiko:** mittel (Major-Tooling-Bump kann Tests/Build brechen).
-- [ ] **QA-METRICS-REFRESH** (QA/Doc, autonom, klein) — `docs/metrics.md` ist auf Stand **S120** (BE 485 / FE 461 Tests); seither **BE 500 / FE 465**. **Fix:** `mvn clean verify` (JaCoCo) + `cd frontend && npx vitest run --coverage` neu vermessen, Zahlen + Datum aktualisieren, verbleibende Branch-Lücken benennen. Dabei die per-Namensheuristik testdatei-losen, aber ggf. nur indirekt abgedeckten Service-Klassen (z.B. `PartieLifecycleService`, `TischEchtzeitService`, `SpielverwaltungWebSocketController`) gegen den realen JaCoCo-Report prüfen und echte Lücken als Folge-Test-Tasks notieren. **Erste Datei zuerst:** `docs/metrics.md`. **DoD:** Report mit S126-Zahlen, reproduzierbar; etwaige echte Lücken als Tasks erfasst. **Risiko:** niedrig.
-- [ ] **PERF-FE-BUNDLE-SPLIT-2** (Frontend, autonom, klein, optional) — trotz `PERF-FE-BUNDLE-SPLITTING` (Phaser-Vendor-Chunk) bleibt der `phaser-vendor`-Chunk **1,48 MB** und löst weiter die „chunks > 600 kB"-Build-Warnung aus. **Optionen:** (a) Szenen via `import()` lazy laden (echtes Code-Splitting des App-Teils), oder (b) die Warnung bewusst belassen und `chunkSizeWarningLimit` mit dokumentierter Begründung setzen (Phaser ist als Engine unteilbar). **Erste Datei zuerst:** `frontend/vite.config.ts`. **DoD:** entweder kleinere Initial-Chunks oder dokumentierte, bewusste Limit-Entscheidung; Build + Lint + Vision-Smoke grün. **Risiko:** niedrig.
-- [ ] **CLEANUP-VISION-SCREENSHOT-DUBLETTE** (E2E/Cleanup, autonom, winzig) — `desktop-01-lobby.png` und `desktop-11-offene-tische.png` sind **byte-identisch** (md5 `0dd0b563…`, Befund schon S120) — der „gefüllte Tischliste"-Screen wird nicht eigenständig erzeugt. **Fix:** im Szenen-Spec sicherstellen, dass `desktop-11` tatsächlich die gefüllte Lobby (2. Kontext) fotografiert, oder den redundanten Shot streichen. Am besten im selben Lauf wie **QA-VISION-MOBILE-LANDSCAPE** miterledigen. **DoD:** kein byte-identisches Screenshot-Paar mehr, das verschiedene Zustände darstellen soll. **Risiko:** niedrig.
-- [x] **REVIEW-DEEP-S126** (Review) — **interaktiv mit User durchgeführt S126** (Opus-Session), Scope auf User-Wunsch = **gesamte Codebase**, nicht nur Diff. Geprüft: SecurityConfig, OAuth2ErfolgsHandler-Merge, RateLimitingFilter, AuthentifizierungsController (Register/Login/Reset/Verify), SpielerSessionService, TischSicherheit (ABAC), SpielverwaltungEchtzeit (Reconnect/Resubscribe), dialogHelper, TischAnsichtModell-Refactor, vite.config. **Ergebnis: keine High-/Critical-Befunde** — Code durchgängig solide (bcrypt, kein Reset-Enumeration, TTL-Token, Session-Fixation-Schutz, IDOR-feste ABAC, KI-Impersonation-Filter, fail-closed OAuth-Merge). 6 low/medium-low-Befunde → als Tasks/Notizen unten erfasst.
-- [x] **SEC-OAUTH-REJECT-CLEANUP** (Backend/Security, autonom, klein — Review-Befund F1 S126) — auf dem E-Mail-Konflikt-Reject in `OAuth2ErfolgsHandler` bleibt die von Spring **vor** dem Success-Handler gesetzte OAuth2-Authentication in SecurityContext + Session bestehen (halb-authentifizierter „Ghost"-Zustand). Kein konkreter Exploit (alle `/api/**` `permitAll` + app-eigener Session→Spieler-Guard ohne gebundenen Spieler; nur unbekannte Pfade sind `.authenticated()` ohne Controller), aber Hygiene/Defense-in-Depth. **Fix:** im Reject-Zweig vor dem Redirect `SecurityContextHolder.clearContext()` + `request.getSession(false)`-Invalidierung; Test, der nach Reject keinen authentifizierten Kontext/Spieler nachweist. **Erste Datei zuerst:** `spieler/OAuth2ErfolgsHandler.java`. **DoD:** Reject hinterlässt keine authentifizierte Session; `mvn clean test` grün. **Risiko:** niedrig.
-- [x] **SEC-HARDENING-2** (Backend/Security, autonom, klein — Review-Befunde F5+F6 S126) — zwei niedrigschwellige Härtungen: **(F5)** `RateLimitingFilter` matcht rohe `request.getRequestURI()` per exaktem `switch` → Pfad-Varianten (Trailing-Slash, Matrix-Params, Doppel-Slash), die Spring-MVC ggf. noch auf den Controller mappt, umgehen das Limit. Fix: Pfad normalisieren oder über Spring-`PathPattern`/`AntPathMatcher` matchen. **(F6)** `/register` antwortet 409 sowohl bei Username- als auch E-Mail-Kollision (E-Mail-Enumeration + irreführende Semantik); `/login` überspringt `passwordEncoder.matches` bei unbekanntem User → Timing-Enumeration. Fix: Register-Kollisionsfälle bewusst trennen/neutralisieren; Login mit Dummy-bcrypt-Vergleich angleichen. **Erste Datei zuerst:** `spieler/RateLimitingFilter.java`. **DoD:** Pfad-Varianten werden mitgezählt; Register/Login leaken keine Existenz mehr (oder bewusst dokumentiert); `mvn clean test` grün. **Risiko:** niedrig.
-
-- [x] **BUG-COUNTDOWN-TIMER-LEAK** (Backend, autonom, klein — Review-Befund B1 S126) — `PartieCountdownService` startet bei Partie-Ende (`PartieLifecycleService`) einen 1-s-`ScheduledFuture`; `brecheCountdownAb(tischId)` wird in **keinem** Tisch-Lösch-/WARTEND-Reset-Pfad aufgerufen. Verlässt ein Spieler den Tisch im Post-Partie-Countdown (`brichAktivePartieAb`), oder greift `SpielerSessionCleanupService` / `VerbindungsabbruchService.verarbeiteTimeouts` (letzter Mensch), läuft der Timer weiter: broadcastet `COUNTDOWN_TICK` an den gelöschten Tisch und feuert `starteNeuePartieAutomat` gegen einen nicht-existenten Tisch (Exception gefangen, aber unnötige Last). **Fix:** in allen genannten Lösch-/Reset-Pfaden `partieCountdownService.brecheCountdownAb(tischId)` aufrufen. **Erste Datei zuerst:** `tisch/TischVerwaltungsService.java` (`brichAktivePartieAb`). **DoD:** kein Countdown-Tick nach Tisch-Löschung; Test, der den Abbruch nachweist; `mvn clean test` grün. **Risiko:** niedrig.
-- [x] **BUG-FE-SHORTCUTS-IN-INPUT** (Frontend, autonom, klein — Review-Befund C1+C2 S126) — `TischInputHandler` hängt keydown an `document` und reagiert auf Buchstaben (`i/s/h/a/n/r/k`) ohne zu prüfen, ob das Event-Ziel ein Formularfeld ist. Der Bugreport-Dialog (`<textarea>`, via Shift+F1 aus der TischSzene erreichbar) ist betroffen → Tippen löst Spielaktionen/Navigation hinter dem Dialog aus; der Fokus-Trap filtert nur `Tab`. **Fix:** in `verarbeiteTastatureingabe` früh aussteigen, wenn `e.target` ein `INPUT`/`TEXTAREA`/`select`/`isContentEditable` ist oder ein DOM-Modal offen ist (C1); zusätzlich Guard auf offenes `phaserRundenEndeModal`/`phaserPartieEndeModal` vor den Navigationskürzeln (C2). **Erste Datei zuerst:** `frontend/src/szenen/TischInputHandler.ts`. **DoD:** Tippen im Bugreport-Textfeld löst keine Spielaktionen aus; FE-Tests + Lint grün. **Risiko:** niedrig.
-- [x] **REFACTOR-FE-WHEEL-FLASH-CLEANUP** (Frontend, autonom, winzig — Review-Befunde C3+C4 S126) — zwei kleine Ressourcen-Hygiene-Fixes: **(C3)** `SpielprotokollOverlay` ruft `scene.input.off('wheel')` ohne Handler-Referenz → entfernt **alle** Wheel-Listener der Szene; in eine Instanz-Property auslagern und gezielt `off('wheel', this.onWheel)` abmelden (Muster wie `PhaserList.ts`). **(C4)** `FlashTextManager` Fallback-`window.setTimeout` (Z. ~224) wird nicht in `verwalteteTimers` aufgenommen und bei `destroy()` nicht gecleart → Handle leakt bis zum Feuern; Handle merken + in `destroy()` clearen. **Erste Datei zuerst:** `frontend/src/ui/SpielprotokollOverlay.ts`. **DoD:** kein globales Wheel-Off, kein untracked Timer; FE-Tests + Lint grün. **Risiko:** niedrig.
-- [x] **DOC-SPEC-DRIFT-S126** (Doc, autonom, mittel — Review-Befund Agent D S126) — mehrere Specs sind ggü. dem realen Code/Schema gedriftet: **(1)** `datenbankmodell.md` Tabellen-Übersicht (Z. 24–247) gegen `000-initial-schema.sql` neu schreiben (falsche/fehlende Spalten in `spieler`/`tisch`/`partie`/`laufendes_spiel`/`partie_teilnehmer`/`event_publication`/`spieler_statistik`; erledigte REFACTOR-DB-1…10 als erledigt markieren). **(2)** `websocket-kommunikation.md`: „kein `/topic/`-Broadcast" auf „kein `/topic/` für **Partie-Spielstände**" präzisieren (TischEchtzeitService broadcastet `/topic/tische`+`/topic/tisch/{id}`); `/armut-antwort` + Snapshot-Mappings ergänzen. **(3)** `verbindungsabbruch.md`: `/topic/partie/{id}` → `/user/queue/partie/{partieId}`. **(4)** `architektur.md`: `SpielBeendet`/`SpielGestartet`-Produzent = `PartieLifecycleService`, `SpielMetriken`-Konsument + `betrieb/`-Modul ergänzen. **(5)** `architektur-ddd.md`: `betrieb/`-Modul ergänzen. **(6)** `statistik-ranking.md`: DoD `STAT-RATING`+`FE-LEADERBOARD` auf `[x]`. **DoD:** genannte Specs deckungsgleich mit Code/Schema; `grep`-Stichproben bestätigen. Keine Code-Änderung → keine Tests nötig. **Risiko:** niedrig.
-
-> **Review-Notizen S126 (nicht als eigene Tasks — niedrigste Prio / Deploy-nah):**
-> - **B2/B3 (low, Nebenläufigkeit):** `VerbindungsabbruchService` — TOCTOU zwischen `computeIfPresent`/`containsKey` in `verarbeiteDisconnect` (meist selbstheilend) und fehlender expliziter `aktiveWsSessionen`-Evict bei Session-Expiry (defensiv). Single-Instance-Betrieb → praktisch irrelevant; bei Bedarf in eine atomare `compute`-Operation ziehen.
-> - **F2 (Deploy):** `sourcemap:'hidden'` schreibt die ~10,9-MB-`.map` weiterhin nach `dist/` → bei statischer Auslieferung per URL-Raten abrufbar (Quellcode-Exposure). An **OBS-SENTRY/Deploy** koppeln: `.map` nicht ins öffentlich servierte Verzeichnis legen (nur zu Sentry hochladen) oder in Prod `sourcemap:false`.
-> - **F3 (kosmetisch):** Ein per OAuth gemergtes Passwort-Konto behält `authentifizierungsMethode=PASSWORT`, obwohl es auch OAuth-fähig ist. Gatet nichts Sensibles (`istGast()`=null-Check bleibt korrekt) — nur das Anzeigefeld in `AuthentifizierungsAntwort` ist leicht ungenau. Eher dokumentieren als ändern.
-> - **F4 (a11y):** `installiereDialogA11y`-Fokus-Trap lenkt Tab nur um, wenn der Fokus exakt auf erstem/letztem Element liegt; liegt er außerhalb des Containers, läuft Tab durch. In der Praxis ok (Dialoge fokussieren initial nach innen). Optional härten.
-
-### Entdeckungen Session 128 (2026-06-15) — Planungslauf
-
-- **DOC-FE-TISCHANSICHT-SPEC-DRIFT** (P-Niedrig, Doc, autonom) — Die Spezifikation `specs/frontend-tischansicht.md` ist gegenüber der Implementierung in `frontend/src/szenen/layout.ts` veraltet.
-  - **(1) Spielerpositionen (Anf. 5):** Die prozentualen Koordinaten weichen ab (z.B. SUED y: 82% in code vs. 85% in spec).
-  - **(2) NORD Nameplate (Anf. 4):** Die Position ist im Code "oben-Mitte" (`x: 50%`), um eine Kollision zu beheben (`BUG-WARTEZIMMER-SITZ-LAYOUT`), während die Spec "rechts neben dem Kartenfächer" angibt.
-  - **Aktion:** Die Spec an den Code anpassen, da der Code die korrekte und verbesserte Implementierung darstellt.
+- **M1 — Closed Beta** auf `zock.locodoko.de` (eingeladene Kollegen, Daten erhalten). Faktisch der erste echte Deploy. Verbleibend: Block B (MENSCH: Domain/TLS/OAuth-Credentials/Compose-Smoke).
+- **M2 — Public Go-Live:** Rechtstexte live schalten (Specs vorhanden: `recht-impressum-datenschutz.md`), CI/CD automatisiert (CI-DOCKER-BUILD → CD-DEPLOY), DECISION-LIZENZ, ggf. BETA-ACCESS/Admin-Tooling.
 
 ---
 
-## Empfohlene Build-Reihenfolge
-
-> Verbindliche Reihenfolge für den Build-Modus (Stand S126). Nimm den **obersten noch offenen** Task ohne offene Vorbedingung. Alle sind autonom; bei Vision-Tasks fährt Ralph das Backend selbst headless hoch.
-
-1. ~~**BUG-COUNTDOWN-TIMER-LEAK**~~ ✓ (S127)
-2. ~~**BUG-FE-SHORTCUTS-IN-INPUT**~~ ✓ (S127)
-3. ~~**SEC-OAUTH-REJECT-CLEANUP**~~ ✓ (S128) — Ghost-Auth-Session auf OAuth-Reject.
-4. ~~**SEC-HARDENING-2**~~ ✓ (Backend) — Rate-Limit-Pfad + Register/Login-Enumeration.
-5. ~~**DOC-SPEC-DRIFT-S126**~~ ✓ (Doc) — gedriftete Specs gegen Code/Schema angleichen.
-6. ~~**DOC-FE-TISCHANSICHT-SPEC-DRIFT**~~ ✓ (Doc, autonom, klein) — `specs/frontend-tischansicht.md` an die Implementierung in `layout.ts` anpassen (Spielerpositionen, NORD-Nameplate).
-7. ~~**DOC-SPEC-AUTH-OAUTH-HANDLING**~~ ✓ (Doc, autonom, klein) — `specs/authentifizierung.md` um die Details zur Behandlung von OAuth-Account-Linking-Konflikten und die Bereinigung des Security-Kontexts bei Abweisung erweitern. Die aktuelle Spec ist zu allgemein und erfasst nicht die in S126/S128 implementierte Sicherheitslogik (`email_konflikt`-Fehler, `SecurityContextHolder.clearContext()`).
-8. ~~**DOC-SPEC-KEYBOARD-GUARDS**~~ ✓ (Doc, autonom, klein) — `specs/frontend-tastatursteuerung.md` um die Guard-Bedingungen für globale Tastaturkürzel erweitern. Die Spec muss festhalten, dass Shortcuts ignoriert werden, wenn der Fokus auf einem Eingabefeld liegt (`INPUT`/`TEXTAREA`) oder wenn ein Spiel-Modal (Runden-/Partie-Ende) geöffnet ist, wie in S127 implementiert.
-9. **REFACTOR-FE-WHEEL-FLASH-CLEANUP** (Frontend) — Wheel-Off + untracked Timer.
-10. **QA-VISION-MOBILE-LANDSCAPE** (E2E/Vision, Backend nötig) — neue Landscape-Screens sichten.
-11. **SEC-DEPS-FE-DEV-AUDIT** (Frontend) — 7 Dev-Dep-CVEs.
-12. **QA-METRICS-REFRESH** (Doc/QA) — `docs/metrics.md` neu vermessen.
-13. **CLEANUP-VISION-SCREENSHOT-DUBLETTE** (E2E) — `desktop-01`≡`desktop-11` (mit Task 7 bündeln).
-14. **PERF-FE-BUNDLE-SPLIT-2** (Frontend, optional) — phaser-vendor-Chunk.
-
-## Build-Modus-Leitfaden (gilt für alle Tasks)
+## Build-Modus-Leitfaden (gilt für alle autonomen Tasks)
 
 1. **Erste Datei zuerst:** Jeder Task enthält einen „Erste Datei zuerst"-Hinweis.
 2. **Pro Task ein Commit.** Keine Bündelung mehrerer Tasks in einem PR.
@@ -811,16 +112,6 @@ Alle noch im Greenfield-Fenster (vor erstem echten Deploy). Details und Audit-Ko
 
 ## Stoppregeln für Build-Modus
 
-- **Test-Suite bricht und in 3 Versuchen nicht reparierbar**: Stoppen, Iteration abbrechen, Notiz unter „Entdeckungen". Nicht stapeln.
-- **Unklar zwischen Optionen**: Die kleinere/risikoärmere Option wählen.
-- **Niemals**: `--no-verify`, `git push --force` ohne explizite User-Anweisung, Tests `@Disabled` ohne Notiz.
-arf NICHT zu einer Test-Klasse hinzugefügt werden, die heute ohne läuft.
-6. **VO bleibt VO wo möglich:** Postgres JSONB + Custom Converter ermöglichen immutable VOs.
-7. **Greenfield-Annahme:** Keine Datenmigration nötig.
-8. **Spec-Konsultation:** Bei jedem Task der Specs anpasst: `grep -rn "<altes Konzept>" specs/` als Verifikations-Schritt.
-
-## Stoppregeln für Build-Modus
-
-- **Test-Suite bricht und in 3 Versuchen nicht reparierbar**: Stoppen, Iteration abbrechen, Notiz unter „Entdeckungen". Nicht stapeln.
-- **Unklar zwischen Optionen**: Die kleinere/risikoärmere Option wählen.
-- **Niemals**: `--no-verify`, `git push --force` ohne explizite User-Anweisung, Tests `@Disabled` ohne Notiz.
+- **Test-Suite bricht und in 3 Versuchen nicht reparierbar:** Stoppen, Iteration abbrechen, Notiz unter „Entdeckungen". Nicht stapeln.
+- **Unklar zwischen Optionen:** Die kleinere/risikoärmere Option wählen.
+- **Niemals:** `--no-verify`, `git push --force` ohne explizite User-Anweisung, Tests `@Disabled` ohne Notiz.

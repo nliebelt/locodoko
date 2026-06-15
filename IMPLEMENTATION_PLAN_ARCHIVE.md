@@ -2,6 +2,55 @@
 
 ---
 
+## Archiviert am 2026-06-15 (Sessions 26–128 — Fertigstellung Öffentlicher Betrieb, Vision-Loop, Reviews)
+
+> Slim-Down des aktiven Plans (Session 128). Alle unten gelisteten Tasks sind **erledigt** (`[x]`, Code + Tests grün, committet). Volldetail zu jedem Task in der Git-History des `IMPLEMENTATION_PLAN.md`. Im aktiven Plan verblieben nur noch die offenen autonomen M)-Tasks + die MENSCH-/User-gebundenen Deploy-/Entscheidungs-Tasks.
+
+**Deploy-Blocker & Ops (Prio 0/1):**
+- **BUG-PROD-CHANGELOG** (P0) — prod-Profil zeigte auf nicht existierende Liquibase-Changelog-Datei → auf `db.changelog-master.yaml` umgestellt. (Real-Boot gegen Postgres = `DEPLOY-COMPOSE-SMOKE`, MENSCH, weiter offen.)
+- **BUG-GEMINI-CLI-QUOTA-DISPLAY** — Quota-Anzeige-Diskrepanz dokumentiert.
+- **DOC-ENV-DEPLOY** — `.env.example` + README für öffentlichen Betrieb vervollständigt.
+- **DEPLOY-OAUTH-SENTINEL** — Google-Login nur bei gesetzten Credentials (sonst kein Button, Passwort-Login unabhängig).
+- **OPS-COMPOSE-HARDENING** — `app`-Service `restart: unless-stopped` + Healthcheck.
+- **OPS-BUILD-INFO** — `/actuator/info` mit Version + Git-SHA.
+- **BACKUP-DB** — `pg_dump`-Backup-Sidecar + Restore-Doku (echter Restore-Drill auf Server = MENSCH).
+- **SESSION-PERSISTENZ** — `spring-session-jdbc`, Sessions überleben Redeploys.
+
+**CI/CD:**
+- **CI-BUILD-TEST** — GitHub-Actions-Workflow (Backend `mvn verify` + Frontend `npm test/build/lint`).
+- (Offen geblieben: CI-DOCKER-BUILD, CD-DEPLOY — hängen an DEPLOY-COMPOSE-SMOKE / Plattformwahl, MENSCH.)
+
+**Schema, Recht, Monitoring, Bugreport:**
+- **SPEC-SQL-REVIEW** + **REFACTOR-DB-1…10** — Schema-Review, Audit-Spalten, Constraints, Indizes, Changelog-Konsolidierung gegen Postgres 17.
+- **SPEC-RECHT** — `specs/recht-impressum-datenschutz.md` (Impressum/Datenschutz/AGB-Struktur).
+- **OPS-GRAFANA-MONITORING** + **OPS-LOGS-LOKI** — Micrometer/Prometheus + Alloy-Sidecar (Metriken + ECS-JSON-Logs an Grafana Cloud), niedrige Kardinalität, kein `spieler_id`-Label. (Tokens = MENSCH.)
+- **SPEC-BUGREPORT** + **OBS-CORRELATION-ID** + **FEAT-BUGREPORT** — In-App-Bugreport (`Shift+F1`), redigierter Kontext, Issue ins private Repo, correlationId im Log + Response-Header.
+- **OBS-SENTRY** — Frontend (`@sentry/browser`) + Backend (Core-SDK + logback-Appender), DSN-gated. (DSN = MENSCH.)
+
+**Doku & Qualität:**
+- **DOC-DOCS-SITE** — MkDocs-Material für `docs.locodoko.de`.
+- **QA-CODE-METRICS** — Metrik-Tooling + Report (`docs/metrics.md`).
+- **FE-UI-FINAL-REVIEW** — UI/UX-Katalog (Befunde als Einzeltasks abgearbeitet).
+- **DECISION-AUTH** — beide Methoden behalten (Google OAuth2 + Username/Passwort/bcrypt).
+- **OPS-EMAIL** — Spring-Mail-Integration env-gated (Verifizierung/Reset, EU-Anbieter).
+- **SECURITY-REVIEW** — vor Exposition durchgeführt, Findings behoben.
+- **FE-SPIELREGELN-HILFE** — In-App-Regelhilfe.
+- **VERIFY-MULTIPLAYER** — E2E mit ≥2 unabhängigen Sessions an einem Tisch.
+
+**Spec-getriebene Tasks (Prio 1–3):** DOC-PUNKTE-HINWEISE, SPEC-ARCH-HIERARCHIE, DOC-AGENTS-DEDUP, REFACTOR-SAGEAN, REFACTOR-JSONB-CONVERTER, BUG-JACKSON-ACCESSORNAMING, REFACTOR-TISCH-ZUGRIFF, REFACTOR-TISCHVERWALTUNG — alle erledigt (Code feature-complete ggü. allen 47 Specs).
+
+**Frontend-Polish & Mobile (D/E):** FE-NAMEPLATE-TEXTABSCHNEIDUNG, REFACTOR-FE-EREIGNISHANDLER, REFACTOR-FE-PARTIESTORE, REFACTOR-FE-KARTENRENDERER, FE-FLASH-TEXT, FE-NAMEPLATES, BUG-LOGIN-BUTTON-TEXTCLIPPING, FE-VISUAL-REVIEW-BALATRO, BUG-LOBBY-OFFENE-TISCHE-OVERLAP, BUG-LOBBY-TOPRIGHT-CLIPPING (+ -2), FE-MOBILE-SMOKE, FE-MOBILE, FEAT-FEEDBACK.
+
+**Vision-Loop (F/G/H/K):** FE-VISION-VERIFY, VISION-LOOP-API, VISION-LOOP-SZENEN, VISION-LOOP-GAMEPLAY-ERWEITERN, FEAT-VISION-LOOP-LOBBY-SCENARIOS, FEAT-VISION-LOOP-GAMEPLAY-MODALS, FEAT-VISION-LOOP-FLASH-TEXTS-2, FEAT-VISION-LOOP-ANIMATIONS-2, FEAT-VISION-LOOP-TOASTS, FE-NEUER-TISCH-MODAL-REDESIGN, VIDEO-LOOP-ECHTLAUF (video-basierter Loop verifiziert).
+
+**Test-Abdeckung (I/J):** BUG-FE-BASELINE-JSDOM, FE-KLEINKRAM-SAMMEL, QA-TEST-ABDECKUNG-REPORT; Backend: TEST-DOMÄNE-ARMUT, TEST-DOMÄNE-STICHVERLAUF, TEST-KI-ORCHESTRIERUNG, TEST-KI-ORCHESTRATOR, TEST-TISCHSICHERHEIT, TEST-JSONB-ROUNDTRIP, TEST-RATE-LIMITING, TEST-WEBSOCKET-CONTROLLER; Frontend: TEST-FE-STORE-SESSION, TEST-FE-STORE-TISCH, TEST-FE-ABONNEMENTS, TEST-FE-RUNDEN-CONTROLLER, TEST-FE-BRUECKE, TEST-FE-ANIMATION-ORCHESTRATOR, TEST-FE-HUD-RENDERER.
+
+**Verbesserungs-Backlog (L):** PERF-FE-BUNDLE-SPLITTING, PERF-FE-SOURCEMAP-PROD, TEST-INTEGRATION-ENV-GATED (Testcontainers/GreenMail/Mock-OAuth2), REFACTOR-FE-TISCHANSICHT-MODELL, FE-A11Y-DIALOGE, FE-VISION-POLITUR-REST.
+
+**Review- & Polish-Backlog (M, Session 126–128):** REVIEW-DEEP-S126 (Gesamt-Codebase-Review, keine High/Critical), SEC-OAUTH-REJECT-CLEANUP, SEC-HARDENING-2 (Rate-Limit-Pfad + Register/Login-Enumeration), BUG-COUNTDOWN-TIMER-LEAK, BUG-FE-SHORTCUTS-IN-INPUT, REFACTOR-FE-WHEEL-FLASH-CLEANUP, DOC-SPEC-DRIFT-S126, DOC-FE-TISCHANSICHT-SPEC-DRIFT, DOC-SPEC-AUTH-OAUTH-HANDLING, DOC-SPEC-KEYBOARD-GUARDS.
+
+---
+
 ## Archiviert am 2026-05-27 (REFACTOR-SPIEL-HYBRID — 13. Session)
 
 > Fokus: Vollständiger Umbau der Persistenz- und Domain-Schicht + Frontend-Verbesserungen. Alle 21 Tasks erledigt (Sessions 1–13, 2026-05-22 bis 2026-05-26).
