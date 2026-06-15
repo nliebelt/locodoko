@@ -127,6 +127,10 @@ das `@PreAuthorize`-Interface bleibt gleich, nur das dahinterliegende `@Componen
 - `SecurityConfig`: `http.oauth2Login()` + `http.formLogin()` parallel konfiguriert.
 - OAuth2 Callback-URL: `/login/oauth2/code/google` (Spring Security Standard).
 - `Spieler.findOrCreateByOauth2(sub, email, name)` — idempotent, safe für parallele Aufrufe.
+- **OAuth Account-Linking & Sicherheit:**
+  - `OAuth2ErfolgsHandler` verknüpft ein bestehendes Passwort-Konto nur dann mit OAuth, wenn sowohl der Google-Claim `email_verified=true` gesetzt ist als auch das lokale Konto bereits den Status `emailVerifiziert = true` aufweist.
+  - Schlägt diese Verknüpfung fehl (z.B. wegen fehlender Verifizierung beider Seiten oder bei Race-Conditions auf dem Unique-Index für E-Mails), wird der Login explizit abgewiesen (Redirect zu `/?fehler=email_konflikt`).
+  - Um bei einer solchen Abweisung einen halb-authentifizierten Zustand („Ghost-Session“) zu verhindern, führt der Handler zwingend `SecurityContextHolder.clearContext()` aus und invalidiert die HTTP-Session.
 
 ## Implementierungsnotizen (Stand 2026-04-30)
 
