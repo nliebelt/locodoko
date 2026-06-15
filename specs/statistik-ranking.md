@@ -150,10 +150,10 @@ Kein PII, keine Per-Spieler-Kardinalität → unbedenklich und billig (Meter an 
 - [x] Benchmark der relevanten Plattformen dokumentiert
 - [x] Gap-Analyse gegen `spieler_statistik` erstellt
 - [x] Umfang + Algorithmus entschieden (Stufe 0+1, TrueSkill)
-- [ ] **STAT-DERIVED** (Stufe 0): abgeleitete Kennzahlen im Profil
-- [ ] **STAT-RATING** (Stufe 1): `rating_mu`/`rating_sigma` in `000`; TrueSkill-Update im Pro-Spiel-Statistikpfad
-- [ ] **FE-LEADERBOARD** (Stufe 1): Bestenlisten-Szene + Endpoint (`μ−3σ`)
-- [ ] Loco-Domain-Metriken in `betrieb-monitoring.md` (Teil von `OPS-GRAFANA-MONITORING`)
+- [x] **STAT-DERIVED** (Stufe 0): abgeleitete Kennzahlen im Profil
+- [x] **STAT-RATING** (Stufe 1): `rating_mu`/`rating_sigma` in `000`; TrueSkill-Update im Pro-Spiel-Statistikpfad
+- [x] **FE-LEADERBOARD** (Stufe 1): Bestenlisten-Szene + Endpoint (`μ−3σ`)
+- [x] Loco-Domain-Metriken in `betrieb-monitoring.md` (Teil von `OPS-GRAFANA-MONITORING`)
 
 ## Quellen
 

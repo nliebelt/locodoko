@@ -38,8 +38,8 @@ Die Echtzeit-Kommunikation zwischen Frontend und Backend erfolgt über WebSocket
 ### Server → Client Events
 
 Alle spielrelevanten Events werden als `PartieEreignisAntwort` über die persönliche Destination
-`/user/queue/partie/{partieId}` gesendet. **Kein anonymer `/topic/`-Broadcast** für Spielstände
-(Datenschutz: jeder Spieler sieht nur seine eigene Hand).
+`/user/queue/partie/{partieId}` gesendet. **Kein anonymer `/topic/`-Broadcast für Partie-Spielstände**
+(Datenschutz: jeder Spieler sieht nur seine eigene Hand). `TischEchtzeitService` broadcastet jedoch nicht-geheime Tisch-Metadaten über `/topic/tische` (Lobby) und `/topic/tisch/{id}` (Wartezimmer).
 
 #### `PartieEreignisAntwort` — Basis-Payload
 
@@ -134,9 +134,12 @@ interface SonderpunktEreignisAntwort {
   - `/app/tisch/{id}/karte` — Karte spielen
   - `/app/tisch/{id}/ansage` — Ansage machen
   - `/app/tisch/{id}/vorbehalt` — Sonderspiel anmelden
+  - `/app/tisch/{id}/armut-antwort` — Armut annehmen/ablehnen
   - `/app/tisch/{id}/snapshot` — Sofortigen Snapshot anfordern (BF-7)
   - `/user/queue/partie/{partieId}` — Spielerspezifische Partie-Events (typisiert)
   - `/user/queue/fehler` — Fehler-Events nur an betroffenen Spieler
+  - `/topic/tisch/{id}` — Broadcast von Tisch-Metadaten
+  - `/topic/tische` — Broadcast der offenen Tische (Lobby)
   - ~~`/topic/partie/{id}`~~ — Anonymer Broadcast (ab ARCH-1 gelöscht)
 - `TischEchtzeitService.planeAnBenutzer()` für serverseitiges Event-Senden (nach DB-Commit)
 - `PartieEreignisAntwort` als Basis-DTO für alle Spielstand-Events

@@ -41,6 +41,8 @@ de.locodoko.tisch/     Tischverwaltung & Multiplayer-Infrastruktur — Controlle
 
 de.locodoko.spieler/   Spieler-Identität & Session.
 
+de.locodoko.betrieb/   Infrastruktur & Monitoring — Domain-Metriken (Prometheus), Bugreporting.
+
 de.locodoko.system/    Querschnittlich.
 ```
 
@@ -48,6 +50,7 @@ de.locodoko.system/    Querschnittlich.
 ```
 tisch → partie, karten, spieler
 ki    → partie, karten          (nur Typen und Events, NICHT tisch)
+betrieb → partie.ereignisse     (als Metrik-Konsument)
 partie → karten
 spieler → partie.ereignisse     (Darf auf Domain-Events lauschen, aber keine interne Logik aufrufen)
 ```

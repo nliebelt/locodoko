@@ -40,6 +40,7 @@ Sonderspiele (Hochzeit, Armut, Solos) sind integraler Teil des Spielkerns — ke
 | `partie/` | Domain-Kern | Spiellogik inkl. Sonderspiele, Punkte, Stichlogik, Domain-Events |
 | `spieler/` | Domain | Identität, Auth, Session, Profil, Statistik |
 | `ki/` | Autonomer Agent | Konsumiert Events → trifft Entscheidung → sendet Kommando zurück |
+| `betrieb/` | Infrastruktur | Domain-Metriken (Prometheus/Grafana), Bugreporting, Health |
 | `tisch/` | Application Layer | Orchestriert partie + spieler + ki; Delivery (REST, WebSocket, DTOs, Persistenz-Adapter) |
 | `system/` | Querschnittlich | Basis-Klassen, globale Konfiguration |
 
@@ -47,6 +48,7 @@ Sonderspiele (Hochzeit, Armut, Solos) sind integraler Teil des Spielkerns — ke
 ```
 tisch → partie, karten, spieler, ki.orchestrierung
 ki    → partie (Typen + Events), karten
+betrieb → partie.ereignisse (als Metrik-Konsument)
 partie → karten
 spieler → partie.ereignisse (nur Event-Listener)
 ```
@@ -64,8 +66,8 @@ der Domain-Module orchestriert und die Delivery-Infrastruktur (Controller, WebSo
 |---|---|---|---|
 | `NaechsterSpielerErwartet` | SpielAktionsService | KiTischOrchestrator | Nach jedem Kartenzug |
 | `VorbehaltErwartet` | SpielAktionsService | KiTischOrchestrator | In VORBEHALT_ANSAGE-Phase |
-| `SpielBeendet` | KiTischOrchestrator | SpielerProfilService | Nach Auswertung |
-| `SpielGestartet` | Partie | — | Bei Spielbeginn |
+| `SpielBeendet` | PartieLifecycleService | SpielerProfilService, SpielMetriken | Nach Auswertung |
+| `SpielGestartet` | PartieLifecycleService | — | Bei Spielbeginn |
 | `StichAbgeschlossen` | SpielAktionsService | — | Stich vollständig |
 
 Alle Listener mit Seiteneffekten: `@TransactionalEventListener(phase = AFTER_COMMIT)`.

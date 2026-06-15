@@ -21,30 +21,68 @@ JSONB für inner-Aggregate-State (Hände, Stiche, Vorbehalte, Ansagen, Parteien-
 
 ## Tabellen-Übersicht
 
-### `tisch` (existierend, unverändert)
+### `tisch` (existierend, aktualisiert)
 
 ```sql
 tisch (
   id               UUID PRIMARY KEY,
   name             VARCHAR(100) NOT NULL,
-  status           VARCHAR(20) NOT NULL,           -- WARTEND | IM_SPIEL | BEENDET
-  zugangsmodus     VARCHAR(10) NOT NULL DEFAULT 'OFFEN',  -- OFFEN | PRIVAT
-  einladungs_code  VARCHAR(8) UNIQUE,
-  erstellt_von_spieler_id UUID NOT NULL,
-  erstellt_am      TIMESTAMP NOT NULL DEFAULT NOW()
+  status           VARCHAR(30) NOT NULL DEFAULT 'WARTEND',
+  partie_id        UUID REFERENCES partie(id) ON DELETE SET NULL,
+  ohne_neunen      BOOLEAN NOT NULL DEFAULT FALSE,
+  anzahl_spiele    INT NOT NULL DEFAULT 24,
+  tischhintergrund VARCHAR(50),
+  hochzeit_erlaubt BOOLEAN NOT NULL DEFAULT TRUE,
+  armut_erlaubt    BOOLEAN NOT NULL DEFAULT TRUE,
+  damensolo_erlaubt BOOLEAN NOT NULL DEFAULT TRUE,
+  bubensolo_erlaubt BOOLEAN NOT NULL DEFAULT TRUE,
+  fleischlos_erlaubt BOOLEAN NOT NULL DEFAULT TRUE,
+  trumpfsolo_erlaubt BOOLEAN NOT NULL DEFAULT TRUE,
+  zweite_dulle_sticht BOOLEAN NOT NULL DEFAULT TRUE,
+  fuchs_gefangen_aktiv BOOLEAN NOT NULL DEFAULT TRUE,
+  karlchen_aktiv   BOOLEAN NOT NULL DEFAULT TRUE,
+  doppelkopf_aktiv BOOLEAN NOT NULL DEFAULT TRUE,
+  mindestkarten_re_kontra INT NOT NULL DEFAULT 11,
+  mindestkarten_keine90 INT NOT NULL DEFAULT 10,
+  mindestkarten_keine60 INT NOT NULL DEFAULT 9,
+  mindestkarten_keine30 INT NOT NULL DEFAULT 8,
+  mindestkarten_schwarz INT NOT NULL DEFAULT 7,
+  ki_schwierigkeit VARCHAR(30),
+  bockrunden_aktiv BOOLEAN NOT NULL DEFAULT FALSE,
+  schweinchen_aktiv BOOLEAN NOT NULL DEFAULT FALSE,
+  dreissig_augen_pflicht_aktiv BOOLEAN NOT NULL DEFAULT FALSE,
+  schmeissen_aktiv BOOLEAN NOT NULL DEFAULT FALSE,
+  herz_durchgegangen_nur_hoch BOOLEAN NOT NULL DEFAULT FALSE,
+  einladungs_code  VARCHAR(20),
+  zugangsmodus     VARCHAR(30) NOT NULL DEFAULT 'OFFEN',
+  erstellt_am      TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+  aktualisiert_am  TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+  erstellt_von_spieler_id UUID REFERENCES spieler(id) ON DELETE SET NULL
 )
 ```
 
-### `spieler` (existierend, unverändert)
+### `spieler` (existierend, aktualisiert)
 
 ```sql
 spieler (
   id              UUID PRIMARY KEY,
-  benutzername    VARCHAR(50) UNIQUE NOT NULL,
-  anzeige_name    VARCHAR(20) NOT NULL,
-  avatar_farbe    VARCHAR(7) NOT NULL,             -- Hex-Farbe z.B. #e63946
-  ist_ki          BOOLEAN NOT NULL DEFAULT FALSE,
-  erstellt_am     TIMESTAMP NOT NULL DEFAULT NOW()
+  name            VARCHAR(100) NOT NULL,
+  session_id      VARCHAR(255) UNIQUE,
+  ki              BOOLEAN NOT NULL DEFAULT FALSE,
+  external_id     VARCHAR(255),
+  ki_uebernommen  BOOLEAN NOT NULL DEFAULT FALSE,
+  passwort_hash   VARCHAR(255),
+  authentifizierungs_methode VARCHAR(50),
+  benutzername    VARCHAR(100),
+  email           VARCHAR(255),
+  anzeige_name    VARCHAR(100),
+  avatar_farbe    VARCHAR(50),
+  email_verifiziert BOOLEAN NOT NULL DEFAULT FALSE,
+  email_verification_token VARCHAR(255),
+  password_reset_token VARCHAR(255),
+  password_reset_token_ablauf TIMESTAMP WITH TIME ZONE,
+  erstellt_am     TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+  aktualisiert_am TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
 )
 ```
 
@@ -53,21 +91,23 @@ spieler (
 ```sql
 partie (
   id                        UUID PRIMARY KEY,
-  version                   BIGINT NOT NULL DEFAULT 0,   -- @Version Optimistic Locking
-  tisch_id                  UUID NOT NULL REFERENCES tisch(id),
+  version                   BIGINT NOT NULL DEFAULT 0,
   anzahl_spiele             INT NOT NULL,
   aktuelles_spiel_nummer    INT NOT NULL DEFAULT 0,
-  status                    VARCHAR(20) NOT NULL,         -- LAUFEND | BEENDET
+  status                    VARCHAR(30) NOT NULL,
   punkte_sued               INT NOT NULL DEFAULT 0,
   punkte_west               INT NOT NULL DEFAULT 0,
   punkte_nord               INT NOT NULL DEFAULT 0,
   punkte_ost                INT NOT NULL DEFAULT 0,
   bockrunden_zaehler        INT NOT NULL DEFAULT 0,
-  solist_des_letzten_spiels VARCHAR(10),                  -- SpielerPosition nullable
-  regelvariante             VARCHAR(20) NOT NULL,         -- TURNIER | SONDER | FREI
-  spielregeln               JSONB NOT NULL,               -- Hausregeln-Konfiguration
-  erstellt_am               TIMESTAMP NOT NULL DEFAULT NOW(),
-  beendet_am                TIMESTAMP
+  solist_des_letzten_spiels VARCHAR(10),
+  naechster_geber           VARCHAR(10),
+  regelvariante             VARCHAR(20) NOT NULL,
+  spielregeln               JSONB NOT NULL,
+  erstellt_am               TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+  aktualisiert_am           TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+  beendet_am                TIMESTAMP WITH TIME ZONE,
+  erstellt_von_spieler_id   UUID REFERENCES spieler(id) ON DELETE SET NULL
 )
 ```
 
@@ -77,11 +117,11 @@ partie (
 partie_teilnehmer (
   id                UUID PRIMARY KEY,
   partie_id         UUID NOT NULL REFERENCES partie(id) ON DELETE CASCADE,
-  spieler_id        UUID NOT NULL REFERENCES spieler(id),
-  spieler_position  VARCHAR(10) NOT NULL,           -- NORD | OST | SUED | WEST
-  beigetreten_am    TIMESTAMP NOT NULL DEFAULT NOW(),
-  ausgeschieden_am  TIMESTAMP,                      -- nullable (Reconnect-Tracking)
-  UNIQUE (partie_id, spieler_position)
+  spieler_id        UUID REFERENCES spieler(id) ON DELETE SET NULL,
+  spieler_position  VARCHAR(10) NOT NULL,
+  beigetreten_am    TIMESTAMP WITH TIME ZONE,
+  ausgeschieden_am  TIMESTAMP WITH TIME ZONE,
+  UNIQUE(partie_id, spieler_position)
 )
 ```
 
@@ -90,24 +130,28 @@ partie_teilnehmer (
 ```sql
 laufendes_spiel (
   id                    UUID PRIMARY KEY,
-  partie_id             UUID NOT NULL REFERENCES partie(id) ON DELETE CASCADE UNIQUE,
+  partie_id             UUID NOT NULL REFERENCES partie(id) ON DELETE CASCADE,
   spiel_nummer          INT NOT NULL,
   geber_position        VARCHAR(10) NOT NULL,
   spieltyp              VARCHAR(30) NOT NULL,
-  phase                 VARCHAR(30) NOT NULL,
-  trumpf_ordnung_typ    VARCHAR(30) NOT NULL,
-  schweinchen_aktiv     BOOLEAN NOT NULL DEFAULT FALSE,
+  phase                 JSONB NOT NULL DEFAULT '{"typ":"VORBEHALT_ANSAGE"}',
+  trumpf_ordnung_typ    JSONB NOT NULL DEFAULT '{"typ":"NORMAL"}',
   einwurf_zaehler       INT NOT NULL DEFAULT 0,
-  -- JSONB-Felder (Custom Converter in JsonbConverters.java):
-  haende                JSONB NOT NULL,              -- Map<SpielerPosition, Hand>
-  abgeschlossene_stiche JSONB NOT NULL DEFAULT '[]', -- List<Stich>
-  vorbehalt_meldungen   JSONB NOT NULL DEFAULT '[]', -- List<VorbehaltMeldung>
-  ansage_ereignisse     JSONB NOT NULL DEFAULT '[]', -- Ansagen (Wrapper)
-  partei_zuordnungen    JSONB NOT NULL DEFAULT '{}', -- Parteien (Wrapper)
-  bereits_geschmissen   JSONB NOT NULL DEFAULT '[]', -- Set<SpielerPosition>
-  pflicht_ansage_ausstehend JSONB NOT NULL DEFAULT '[]', -- Set<Partei>
-  armut_status          JSONB,                       -- ArmutStatus nullable
-  hochzeit_status       JSONB                        -- HochzeitStatus nullable
+  solist_aufspieler     VARCHAR(10),
+  armut_spieler_position VARCHAR(10),
+  armut_partner_position VARCHAR(10),
+  spielregeln           JSONB NOT NULL,
+  haende                JSONB NOT NULL DEFAULT '{}',
+  vorbehalt_meldungen   JSONB NOT NULL DEFAULT '[]',
+  partei_zuordnungen    JSONB,
+  ansage_ereignisse     JSONB NOT NULL DEFAULT '{"ereignisse":[]}',
+  abgeschlossene_stiche JSONB NOT NULL DEFAULT '[]',
+  bereits_geschmissen   JSONB NOT NULL DEFAULT '[]',
+  kartendeck            JSONB,
+  ergebnis              JSONB,
+  erstellt_am           TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+  aktualisiert_am       TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+  UNIQUE(partie_id, spiel_nummer)
 )
 ```
 
@@ -135,24 +179,23 @@ spielergebnis_archiv (
   partie_id               UUID NOT NULL REFERENCES partie(id) ON DELETE CASCADE,
   spiel_nummer            INT NOT NULL,
   geber_position          VARCHAR(10) NOT NULL,
-  aufspieler_position     VARCHAR(10) NOT NULL,    -- Vorhand (für Statistik)
   spieltyp                VARCHAR(30) NOT NULL,
-  ist_solo                BOOLEAN NOT NULL,
-  solo_typ                VARCHAR(30),             -- nullable, nur wenn ist_solo=true
+  ist_solo                BOOLEAN NOT NULL DEFAULT FALSE,
+  solo_typ                VARCHAR(30),
   re_augen                INT NOT NULL,
   kontra_augen            INT NOT NULL,
-  sieger_partei           VARCHAR(10) NOT NULL,    -- RE | KONTRA
-  spielwert               INT NOT NULL,            -- berechneter Gesamtwert
+  sieger_partei           VARCHAR(10) NOT NULL,
+  spielwert               INT NOT NULL,
   grundwert               INT NOT NULL,
   absage_punkte           INT NOT NULL DEFAULT 0,
   gegen_die_alten_punkte  INT NOT NULL DEFAULT 0,
-  solo_multiplikator      INT NOT NULL DEFAULT 1,
+  solo_multiplikator      INT NOT NULL DEFAULT 0,
   spielpunkte_sued        INT NOT NULL DEFAULT 0,
   spielpunkte_west        INT NOT NULL DEFAULT 0,
   spielpunkte_nord        INT NOT NULL DEFAULT 0,
   spielpunkte_ost         INT NOT NULL DEFAULT 0,
-  abgeschlossen_am        TIMESTAMP NOT NULL DEFAULT NOW(),
-  UNIQUE (partie_id, spiel_nummer)
+  abgeschlossen_am        TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+  UNIQUE(partie_id, spiel_nummer)
 )
 ```
 
@@ -162,10 +205,10 @@ spielergebnis_archiv (
 sonderpunkt_eintrag (
   id                       UUID PRIMARY KEY,
   spielergebnis_archiv_id  UUID NOT NULL REFERENCES spielergebnis_archiv(id) ON DELETE CASCADE,
-  partei                   VARCHAR(10) NOT NULL,   -- RE | KONTRA
-  sonderpunkt_typ          VARCHAR(30) NOT NULL,   -- FUCHS_GEFANGEN | KARLCHEN | DOPPELKOPF | ...
-  taeter_position          VARCHAR(10),            -- nullable
-  opfer_position           VARCHAR(10)             -- nullable
+  partei                   VARCHAR(10) NOT NULL,
+  sonderpunkt_typ          VARCHAR(50) NOT NULL,
+  taeter_position          VARCHAR(10),
+  opfer_position           VARCHAR(10)
 )
 ```
 
@@ -174,8 +217,8 @@ sonderpunkt_eintrag (
 ```sql
 spieler_statistik (
   id                    UUID PRIMARY KEY,
-  spieler_id            UUID NOT NULL REFERENCES spieler(id),
-  regelvariante         VARCHAR(20) NOT NULL,           -- TURNIER | SONDER | FREI
+  spieler_id            UUID NOT NULL REFERENCES spieler(id) ON DELETE CASCADE,
+  regelvariante         VARCHAR(20) NOT NULL DEFAULT 'FREI',
   anzahl_spiele         INT NOT NULL DEFAULT 0,
   anzahl_siege          INT NOT NULL DEFAULT 0,
   gesamt_punkte         INT NOT NULL DEFAULT 0,
@@ -193,9 +236,14 @@ spieler_statistik (
   armuten_uebernommen   INT NOT NULL DEFAULT 0,
   solos_siege           INT NOT NULL DEFAULT 0,
   solos_niederlagen     INT NOT NULL DEFAULT 0,
-  solos_pro_typ         JSONB NOT NULL DEFAULT '{}',  -- {DAMEN_SOLO:{siege:3,niederl:1},...}
-  zuletzt_aktualisiert  TIMESTAMP NOT NULL DEFAULT NOW(),
-  UNIQUE (spieler_id, regelvariante)
+  solos_pro_typ         JSONB NOT NULL DEFAULT '{}',
+  gesamt_augen          INT NOT NULL DEFAULT 0,
+  rating_mu             NUMERIC(8,4) NOT NULL DEFAULT 25.0,
+  rating_sigma          NUMERIC(8,4) NOT NULL DEFAULT 8.3333,
+  zuletzt_aktualisiert  TIMESTAMP WITH TIME ZONE,
+  erstellt_am           TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+  aktualisiert_am       TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+  UNIQUE(spieler_id, regelvariante)
 )
 ```
 
@@ -228,21 +276,23 @@ SELECT
   p.aktuelles_spiel_nummer AS spielanzahl
 FROM partie p
 JOIN partie_teilnehmer pt ON pt.partie_id = p.id
-JOIN tisch t ON t.id = p.tisch_id
-WHERE p.status = 'BEENDET'
-ORDER BY p.beendet_am DESC;
+LEFT JOIN tisch t ON t.partie_id = p.id
+WHERE p.status = 'BEENDET';
 ```
 
-### `event_publication` (Spring Modulith Outbox — unverändert)
+### `event_publication` (Spring Modulith Outbox — aktualisiert)
 
 ```sql
 event_publication (
   id               UUID PRIMARY KEY,
-  listener_id      VARCHAR(255) NOT NULL,
-  event_type       VARCHAR(255) NOT NULL,
+  listener_id      VARCHAR(512) NOT NULL,
+  event_type       VARCHAR(512) NOT NULL,
   serialized_event TEXT NOT NULL,
-  publication_date TIMESTAMP NOT NULL,
-  completion_date  TIMESTAMP
+  publication_date TIMESTAMP WITH TIME ZONE NOT NULL,
+  completion_date  TIMESTAMP WITH TIME ZONE,
+  status           VARCHAR(20),
+  completion_attempts INT,
+  last_resubmission_date TIMESTAMP WITH TIME ZONE
 )
 ```
 
@@ -312,9 +362,9 @@ Die `regelvariante`-Spalte in `partie` und `spieler_statistik` wird aus den `Spi
 | `laufendes_spiel.pflicht_ansage_ausstehend` | als Spalte beschrieben | nicht vorhanden |
 | Master-Changelog | `db.changelog-master.sql` | `db.changelog-master.yaml` |
 
-### Offene Punkte — als REFACTOR-DB-Tasks erfasst
+### Erledigte Punkte — REFACTOR-DB-Tasks (erledigt)
 
-#### REFACTOR-DB-1: FK-Spalten ohne Index (Abfrageperformance)
+#### [x] REFACTOR-DB-1: FK-Spalten ohne Index (Abfrageperformance)
 
 Folgende Fremdschlüssel-Spalten haben keinen Index. Bei wachsender Datenmenge entstehen Sequential-Scans:
 
@@ -368,9 +418,9 @@ Audit-Spalten sind vorhanden aber inkonsistent:
 > den Code (nicht nur gegen diese Spec, die nachweislich gedriftet war). Ralphs erste Befundliste
 > war korrekt umgesetzt, aber unvollständig. Alle Punkte noch im Greenfield-Fenster.
 
-### Neu gefunden — als `REFACTOR-DB-5…10` erfasst
+### Erledigte Punkte — REFACTOR-DB-5…10 (erledigt)
 
-#### REFACTOR-DB-5: `benutzername` ohne UNIQUE — Korrektheit/Sicherheit (P-hoch)
+#### [x] REFACTOR-DB-5: `benutzername` ohne UNIQUE — Korrektheit/Sicherheit (P-hoch)
 
 `spieler.benutzername` hat **keinen** UNIQUE-Constraint. Die Registrierung
 (`AuthentifizierungsController:72`) prüft Duplikate nur per `findByBenutzername(...).isPresent()`
@@ -380,7 +430,7 @@ den Check und legen beide an. Danach ist `findByBenutzername` (erwartet `Optiona
 haben NULL). `email` analog prüfen (für späteren Passwort-Reset). **Risiko:** niedrig im
 Greenfield, hoch wenn übersehen.
 
-#### REFACTOR-DB-6: Audit-Spalten NOT NULL + DB-DEFAULT
+#### [x] REFACTOR-DB-6: Audit-Spalten NOT NULL + DB-DEFAULT
 
 `erstellt_am`/`aktualisiert_am` sind auf `spieler`, `partie`, `tisch`, `laufendes_spiel`,
 `spieler_statistik` durchweg **nullable** (Audit-Tabelle oben sagt selbst „sollten NOT NULL sein").

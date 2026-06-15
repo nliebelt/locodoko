@@ -64,7 +64,7 @@ Wenn ein Spieler den Tab neu lädt oder das Browserfenster schließt und erneut 
 
 1. **Backend**: `GET /api/spieler/session` liefert neben Session-Daten auch `aktiverTischId` (falls der Spieler aktuell einem Tisch zugeordnet ist).
 2. **Frontend (BootSzene)**: Beim App-Start wird die Session abgefragt. Falls `aktiverTischId` vorhanden, leitet das Frontend direkt zur `TischSzene` weiter — ohne Umweg über die `LobbySzene`.
-3. **WebSocket-Reconnect**: Die `TischSzene` baut nach Redirect die WebSocket-Verbindung neu auf und abonniert `/topic/tisch/{id}` und `/topic/partie/{id}` neu.
+3. **WebSocket-Reconnect**: Die `TischSzene` baut nach Redirect die WebSocket-Verbindung neu auf und abonniert `/topic/tisch/{id}` und `/user/queue/partie/{partieId}` neu.
 4. **Spielstand wiederherstellen**: Das Frontend fordert nach Reconnect einen Snapshot an (`/app/tisch/{id}/snapshot`), um den aktuellen Spielzustand zu laden.
    **Hand-Privacy:** Der Snapshot enthält ausschließlich die **eigene Hand** des reconnectenden Spielers — niemals Handkarten anderer Spieler. `PartieStandAntwort.aus(tisch, spielerId)` generiert den Snapshot spieler-spezifisch. Das Frontend übernimmt die Hand vollständig aus dem Snapshot und darf keinen lokalen Hand-State eigenständig mergen.
 5. **Vollständiger State-Reset vor Snapshot-Load:** Vor dem Verarbeiten des Snapshots müssen `AppStore`, `AnimationenService` und alle laufenden Tweens vollständig zurückgesetzt werden. Kein Animations-State (laufende Tweens, Overlay-Sichtbarkeit, Rundenauswertungs-Screen) darf über den Reconnect hinaus bestehen bleiben.
