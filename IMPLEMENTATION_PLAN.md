@@ -923,6 +923,13 @@ Alle noch im Greenfield-Fenster (vor erstem echten Deploy). Details und Audit-Ko
 > - **F3 (kosmetisch):** Ein per OAuth gemergtes Passwort-Konto behält `authentifizierungsMethode=PASSWORT`, obwohl es auch OAuth-fähig ist. Gatet nichts Sensibles (`istGast()`=null-Check bleibt korrekt) — nur das Anzeigefeld in `AuthentifizierungsAntwort` ist leicht ungenau. Eher dokumentieren als ändern.
 > - **F4 (a11y):** `installiereDialogA11y`-Fokus-Trap lenkt Tab nur um, wenn der Fokus exakt auf erstem/letztem Element liegt; liegt er außerhalb des Containers, läuft Tab durch. In der Praxis ok (Dialoge fokussieren initial nach innen). Optional härten.
 
+### Entdeckungen Session 128 (2026-06-15) — Planungslauf
+
+- **DOC-FE-TISCHANSICHT-SPEC-DRIFT** (P-Niedrig, Doc, autonom) — Die Spezifikation `specs/frontend-tischansicht.md` ist gegenüber der Implementierung in `frontend/src/szenen/layout.ts` veraltet.
+  - **(1) Spielerpositionen (Anf. 5):** Die prozentualen Koordinaten weichen ab (z.B. SUED y: 82% in code vs. 85% in spec).
+  - **(2) NORD Nameplate (Anf. 4):** Die Position ist im Code "oben-Mitte" (`x: 50%`), um eine Kollision zu beheben (`BUG-WARTEZIMMER-SITZ-LAYOUT`), während die Spec "rechts neben dem Kartenfächer" angibt.
+  - **Aktion:** Die Spec an den Code anpassen, da der Code die korrekte und verbesserte Implementierung darstellt.
+
 ---
 
 ## Empfohlene Build-Reihenfolge
@@ -934,12 +941,15 @@ Alle noch im Greenfield-Fenster (vor erstem echten Deploy). Details und Audit-Ko
 3. ~~**SEC-OAUTH-REJECT-CLEANUP**~~ ✓ (S128) — Ghost-Auth-Session auf OAuth-Reject.
 4. **SEC-HARDENING-2** (Backend) — Rate-Limit-Pfad + Register/Login-Enumeration.
 5. **DOC-SPEC-DRIFT-S126** (Doc) — gedriftete Specs gegen Code/Schema angleichen.
-6. **REFACTOR-FE-WHEEL-FLASH-CLEANUP** (Frontend) — Wheel-Off + untracked Timer.
-7. **QA-VISION-MOBILE-LANDSCAPE** (E2E/Vision, Backend nötig) — neue Landscape-Screens sichten.
-8. **SEC-DEPS-FE-DEV-AUDIT** (Frontend) — 7 Dev-Dep-CVEs.
-9. **QA-METRICS-REFRESH** (Doc/QA) — `docs/metrics.md` neu vermessen.
-10. **CLEANUP-VISION-SCREENSHOT-DUBLETTE** (E2E) — `desktop-01`≡`desktop-11` (mit Task 7 bündeln).
-11. **PERF-FE-BUNDLE-SPLIT-2** (Frontend, optional) — phaser-vendor-Chunk.
+6. **DOC-FE-TISCHANSICHT-SPEC-DRIFT** (Doc, autonom, klein) — `specs/frontend-tischansicht.md` an die Implementierung in `layout.ts` anpassen (Spielerpositionen, NORD-Nameplate).
+7. **DOC-SPEC-AUTH-OAUTH-HANDLING** (Doc, autonom, klein) — `specs/authentifizierung.md` um die Details zur Behandlung von OAuth-Account-Linking-Konflikten und die Bereinigung des Security-Kontexts bei Abweisung erweitern. Die aktuelle Spec ist zu allgemein und erfasst nicht die in S126/S128 implementierte Sicherheitslogik (`email_konflikt`-Fehler, `SecurityContextHolder.clearContext()`).
+8. **DOC-SPEC-KEYBOARD-GUARDS** (Doc, autonom, klein) — `specs/frontend-tastatursteuerung.md` um die Guard-Bedingungen für globale Tastaturkürzel erweitern. Die Spec muss festhalten, dass Shortcuts ignoriert werden, wenn der Fokus auf einem Eingabefeld liegt (`INPUT`/`TEXTAREA`) oder wenn ein Spiel-Modal (Runden-/Partie-Ende) geöffnet ist, wie in S127 implementiert.
+9. **REFACTOR-FE-WHEEL-FLASH-CLEANUP** (Frontend) — Wheel-Off + untracked Timer.
+10. **QA-VISION-MOBILE-LANDSCAPE** (E2E/Vision, Backend nötig) — neue Landscape-Screens sichten.
+11. **SEC-DEPS-FE-DEV-AUDIT** (Frontend) — 7 Dev-Dep-CVEs.
+12. **QA-METRICS-REFRESH** (Doc/QA) — `docs/metrics.md` neu vermessen.
+13. **CLEANUP-VISION-SCREENSHOT-DUBLETTE** (E2E) — `desktop-01`≡`desktop-11` (mit Task 7 bündeln).
+14. **PERF-FE-BUNDLE-SPLIT-2** (Frontend, optional) — phaser-vendor-Chunk.
 
 ## Build-Modus-Leitfaden (gilt für alle Tasks)
 
