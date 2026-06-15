@@ -12,6 +12,7 @@ export interface TischInputKontext {
   getAusgewaehlteArmutKarten(): Set<string>;
   isSeitenladeOffen(): boolean;
   isEinstellungenOffen(): boolean;
+  isPhaserModalOffen(): boolean;
   isSpielzugAnimationAktiv(): boolean;
   isArmutAnnahmeAktiv(): boolean;
   setArmutAnnahmeAktiv(v: boolean): void;
@@ -53,6 +54,17 @@ export class TischInputHandler {
     const modell = this.kontext.getLetztesModell();
     const zustand = this.kontext.getLetzterZustand();
     if (!modell || !zustand) {
+      return;
+    }
+
+    // C1: Kein Shortcut wenn der Fokus in einem Formularfeld liegt (z.B. Bugreport-Textarea)
+    const ziel = e.target as HTMLElement | null;
+    if (ziel && (ziel.tagName === 'INPUT' || ziel.tagName === 'TEXTAREA' || ziel.tagName === 'SELECT' || ziel.isContentEditable)) {
+      return;
+    }
+
+    // C2: Kein Shortcut wenn ein Phaser-Modal (RundenEnde/PartieEnde) offen ist
+    if (this.kontext.isPhaserModalOffen()) {
       return;
     }
 
@@ -188,6 +200,7 @@ export class TischInputHandler {
       getAusgewaehlteArmutKarten: () => szene.ausgewaehlteArmutKarten,
       isSeitenladeOffen: () => szene.seitenladeOffen,
       isEinstellungenOffen: () => szene.einstellungenOffen,
+      isPhaserModalOffen: () => !!szene.rundenEndeController?.phaserRundenEndeModal || !!szene.rundenEndeController?.phaserPartieEndeModal,
       isSpielzugAnimationAktiv: () => !!szene.wartendeKartenId || (szene.animationen?.animationLaeuft ?? false),
       isArmutAnnahmeAktiv: () => szene.armutAnnahmeAktiv,
       setArmutAnnahmeAktiv: (v) => { szene.armutAnnahmeAktiv = v; },

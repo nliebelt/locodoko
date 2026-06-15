@@ -30,6 +30,7 @@ describe('TischInputHandler', () => {
       getAusgewaehlteArmutKarten: vi.fn(() => ({ clear: vi.fn() })),
       isSeitenladeOffen: vi.fn(() => false),
       isEinstellungenOffen: vi.fn(() => false),
+      isPhaserModalOffen: vi.fn(() => false),
       isSpielzugAnimationAktiv: vi.fn(() => false),
       isArmutAnnahmeAktiv: vi.fn(() => false),
       setArmutAnnahmeAktiv: vi.fn(),
@@ -122,11 +123,36 @@ describe('TischInputHandler', () => {
 
   it('behandelt Armut-Antwort (A, N)', () => {
     mockModell.armutAktion = { modus: 'ANTWORTEN', kartenAnzahl: 0 };
-    
+
     (handler as any).verarbeiteTastatureingabe(new KeyboardEvent('keydown', { key: 'a' }));
     expect(mockStore.beantworteArmut).toHaveBeenCalledWith(true, []);
 
     (handler as any).verarbeiteTastatureingabe(new KeyboardEvent('keydown', { key: 'n' }));
     expect(mockStore.beantworteArmut).toHaveBeenCalledWith(false, []);
+  });
+
+  it('ignoriert Tastatureingabe wenn Focus in Formularfeld liegt (C1)', () => {
+    // Tippen in einer TEXTAREA (z.B. Bugreport-Dialog) darf keine Spielaktion auslösen
+    const textarea = document.createElement('textarea');
+    document.body.appendChild(textarea);
+    textarea.focus();
+
+    const event = new KeyboardEvent('keydown', { key: 'i', bubbles: true });
+    Object.defineProperty(event, 'target', { value: textarea });
+    (handler as any).verarbeiteTastatureingabe(event);
+
+    expect(mockKontext.togglSeitenlade).not.toHaveBeenCalled();
+    document.body.removeChild(textarea);
+  });
+
+  it('ignoriert Tastatureingabe wenn Phaser-Modal (RundenEnde/PartieEnde) offen ist (C2)', () => {
+    // Wenn ein Phaser-Modal offen ist, dürfen keine Navigationskürzel feuern
+    mockKontext.isPhaserModalOffen.mockReturnValue(true);
+
+    (handler as any).verarbeiteTastatureingabe(new KeyboardEvent('keydown', { key: 'i' }));
+    expect(mockKontext.togglSeitenlade).not.toHaveBeenCalled();
+
+    (handler as any).verarbeiteTastatureingabe(new KeyboardEvent('keydown', { key: 's' }));
+    expect(mockKontext.togglEinstellungen).not.toHaveBeenCalled();
   });
 });
