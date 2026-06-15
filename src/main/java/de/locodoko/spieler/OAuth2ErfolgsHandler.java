@@ -7,6 +7,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.oauth2.client.authentication.OAuth2AuthenticationToken;
 import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
@@ -77,6 +78,7 @@ public class OAuth2ErfolgsHandler implements AuthenticationSuccessHandler {
 
         if (konto.isEmpty()) {
             LOGGER.warn("OAuth2-Login abgelehnt: E-Mail gehoert bereits einem nicht verknuepfbaren Konto (sub={})", sub);
+            leereGhostAuthentifizierung(request);
             response.sendRedirect("/?fehler=email_konflikt");
             return;
         }
@@ -88,6 +90,7 @@ public class OAuth2ErfolgsHandler implements AuthenticationSuccessHandler {
         } catch (DataIntegrityViolationException e) {
             // Sicherheitsnetz gegen Race-Conditions auf dem email-Unique-Index (TOCTOU).
             LOGGER.warn("OAuth2-Login abgelehnt: Eindeutigkeits-Konflikt beim Speichern (sub={})", sub, e);
+            leereGhostAuthentifizierung(request);
             response.sendRedirect("/?fehler=email_konflikt");
             return;
         }
@@ -96,6 +99,19 @@ public class OAuth2ErfolgsHandler implements AuthenticationSuccessHandler {
 
         LOGGER.info("OAuth2-Login erfolgreich fuer Spieler {} (sub={})", spieler.id(), sub);
         response.sendRedirect("/");
+    }
+
+    /**
+     * Loescht die von Spring Security vor dem Success-Handler gesetzte Ghost-Authentifizierung
+     * aus SecurityContext und Session, damit ein abgelehnter Login keinen halb-authentifizierten
+     * Zustand hinterlaesst (Defense-in-Depth).
+     */
+    private void leereGhostAuthentifizierung(HttpServletRequest request) {
+        SecurityContextHolder.clearContext();
+        var session = request.getSession(false);
+        if (session != null) {
+            session.invalidate();
+        }
     }
 
     /**

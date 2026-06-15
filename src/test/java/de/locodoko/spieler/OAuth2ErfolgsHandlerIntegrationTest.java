@@ -1,5 +1,6 @@
 package de.locodoko.spieler;
 
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -7,14 +8,13 @@ import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.mock.web.MockHttpServletResponse;
 import org.springframework.mock.web.MockHttpSession;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.oauth2.client.authentication.OAuth2AuthenticationToken;
 import org.springframework.security.oauth2.core.user.DefaultOAuth2User;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Map;
-
-
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -31,6 +31,11 @@ class OAuth2ErfolgsHandlerIntegrationTest {
 
     @Autowired
     private SpielerRepository spielerRepository;
+
+    @AfterEach
+    void sicherheitskontextBereinigen() {
+        SecurityContextHolder.clearContext();
+    }
 
     @Test
     void neuerSpieler_wirdBeiErstemOAuth2LoginAngelegt() throws Exception {
@@ -122,6 +127,27 @@ class OAuth2ErfolgsHandlerIntegrationTest {
 
         assertThat(response.getRedirectedUrl()).isEqualTo("/?fehler=email_konflikt");
         assertThat(spielerRepository.findByExternalId("sub-unverif-222")).isEmpty();
+    }
+
+    @Test
+    void emailKonfliktReject_loeschtGhostAuthentifizierungAusContextUndSession() throws Exception {
+        // Spring Security setzt die OAuth2-Authentication VOR dem Success-Handler in den SecurityContext.
+        // Nach einem Reject darf dieser Ghost-Zustand nicht bestehen bleiben.
+        spielerRepository.saveAndFlush(SpielerEntity.mitPasswort("squatter-ghost", "hash", "ghost@example.com"));
+
+        var auth = erstelleOauth2Auth("sub-ghost-444", "ghost@example.com", "Ghost Nutzer", true);
+        SecurityContextHolder.getContext().setAuthentication(auth);
+
+        var session = new MockHttpSession();
+        var request = new MockHttpServletRequest();
+        request.setSession(session);
+        var response = new MockHttpServletResponse();
+
+        handler.onAuthenticationSuccess(request, response, auth);
+
+        assertThat(response.getRedirectedUrl()).isEqualTo("/?fehler=email_konflikt");
+        assertThat(SecurityContextHolder.getContext().getAuthentication()).isNull();
+        assertThat(session.isInvalid()).isTrue();
     }
 
     private MockHttpServletRequest erstelleRequest() {
