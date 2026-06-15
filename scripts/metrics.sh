@@ -12,14 +12,35 @@ cd "$PROJEKT_ROOT"
 
 echo "=== Locodoko Metrik-Report wird erzeugt ==="
 
+# lizard Verfügbarkeit sicherstellen (kein System-Install voraussetzen)
+if ! python3 -m lizard --version > /dev/null 2>&1; then
+    echo "Installiere lizard via pip..."
+    python3 -m pip install --user lizard --quiet || true
+fi
+
 # --- Backend: Tests + JaCoCo-Coverage ---
 echo "Backend: mvn clean test (JaCoCo)..."
 mvn clean test -q
 
-# --- Frontend: Coverage ---
+BE_TESTS=$(python3 -c "
+import os, xml.etree.ElementTree as ET
+total = 0
+d = 'target/surefire-reports'
+if os.path.isdir(d):
+    for f in os.listdir(d):
+        if f.endswith('.xml'):
+            try:
+                total += int(ET.parse(os.path.join(d, f)).getroot().get('tests', 0))
+            except: pass
+print(total)
+" 2>/dev/null || echo "?")
+
+# --- Frontend: Coverage + Testzahl ---
 echo "Frontend: npm test:coverage..."
 cd frontend
-npm run test:coverage --silent 2>/dev/null || true
+FE_TEST_OUTPUT=$(npm run test:coverage 2>&1 || true)
+FE_TESTS_COUNT=$(echo "$FE_TEST_OUTPUT" | grep -E '^\s+Tests\s+[0-9]+ passed' | awk '{print $2}' | head -1)
+[ -z "$FE_TESTS_COUNT" ] && FE_TESTS_COUNT="?"
 cd "$PROJEKT_ROOT"
 
 # --- Bericht schreiben ---
@@ -49,7 +70,7 @@ TEST_KLASSEN=$(find "$PROJEKT_ROOT/src/test" -name "*.java" | wc -l | tr -d ' ')
 cat >> "$BERICHT" << BERICHT_EOF
 | **Gesamt** | **$TOTAL_JAVA** | **$TOTAL_LOC** |
 
-Test-Klassen: $TEST_KLASSEN
+Test-Klassen: $TEST_KLASSEN | Tests: **$BE_TESTS**
 
 ### Frontend (TypeScript)
 
@@ -62,6 +83,7 @@ FE_TESTS=$(find "$PROJEKT_ROOT/frontend/src" -name "*.test.ts" | wc -l | tr -d '
 echo "| Produktiv-Dateien | $FE_DATEIEN |" >> "$BERICHT"
 echo "| LOC | $FE_LOC |" >> "$BERICHT"
 echo "| Test-Dateien | $FE_TESTS |" >> "$BERICHT"
+echo "| Tests | **$FE_TESTS_COUNT** |" >> "$BERICHT"
 
 cat >> "$BERICHT" << 'BERICHT_EOF'
 
@@ -142,8 +164,46 @@ cat >> "$BERICHT" << 'BERICHT_EOF'
 
 ### Frontend (Vitest/V8)
 
-Gesamt-Coverage: **79%** (Statements, Branches, Lines, Functions)
-Detailbericht: `frontend/coverage/index.html`
+BERICHT_EOF
+
+COV_FILE="$PROJEKT_ROOT/frontend/coverage/coverage-final.json"
+if [ -f "$COV_FILE" ]; then
+  python3 - "$COV_FILE" >> "$BERICHT" << 'PYEOF'
+import json, sys
+
+with open(sys.argv[1]) as f:
+    data = json.load(f)
+
+s_total=s_cov=b_total=b_cov=fn_total=fn_cov=0
+for fd in data.values():
+    for v in fd['s'].values():
+        s_total += 1
+        if v: s_cov += 1
+    for v in fd['b'].values():
+        for bv in v:
+            b_total += 1
+            if bv: b_cov += 1
+    for v in fd['f'].values():
+        fn_total += 1
+        if v: fn_cov += 1
+
+s_pct = 100*s_cov//s_total if s_total else 0
+b_pct = 100*b_cov//b_total if b_total else 0
+fn_pct = 100*fn_cov//fn_total if fn_total else 0
+
+print(f"| Metrik | Abgedeckt | Gesamt | Quote |")
+print(f"|--------|-----------|--------|-------|")
+print(f"| Statements | {s_cov} | {s_total} | **{s_pct}%** |")
+print(f"| Branches | {b_cov} | {b_total} | **{b_pct}%** |")
+print(f"| Functions | {fn_cov} | {fn_total} | **{fn_pct}%** |")
+print()
+print("Detailbericht: `frontend/coverage/index.html`")
+PYEOF
+else
+  echo "Kein Coverage-Report vorhanden — \`npm run test:coverage\` ausführen." >> "$BERICHT"
+fi
+
+cat >> "$BERICHT" << 'BERICHT_EOF'
 
 ## Komplexitäts-Hotspots
 
@@ -176,20 +236,58 @@ for complexity, fname, method, line in findings[:20]:
     print(f"| `{fname}:{line}` | `{method}` | **{complexity}** |")
 PYEOF
 rm -f "$ESLINT_TMP"
+cd "$PROJEKT_ROOT"
 
 cat >> "$BERICHT" << 'BERICHT_EOF'
 
-### Backend (Java) — Größte Klassen (Proxy für Komplexität)
+### Backend (Java) — Komplexitäts-Hotspots (lizard CCN, Top 20)
 
-| Klasse | LOC | Modul |
-|--------|-----|-------|
+| Funktion | Modul | CCN | NLOC |
+|----------|-------|-----|------|
 BERICHT_EOF
 
-find "$PROJEKT_ROOT/src/main/java" -name "*.java" | xargs wc -l 2>/dev/null | sort -rn | head -12 | grep -v "total" | while read loc path; do
-  cls=$(basename "$path" .java)
-  mod=$(echo "$path" | sed 's|.*de/locodoko/||' | cut -d'/' -f1)
-  echo "| \`$cls\` | $loc | \`$mod\` |" >> "$BERICHT"
-done
+if python3 -m lizard --version > /dev/null 2>&1; then
+  LIZARD_TMP=$(mktemp /tmp/lizard-XXXX.csv)
+  python3 -m lizard "$PROJEKT_ROOT/src/main/java" -l java --csv > "$LIZARD_TMP" 2>/dev/null || true
+  python3 - "$LIZARD_TMP" "$PROJEKT_ROOT/src/main/java" >> "$BERICHT" << 'PYEOF'
+import csv, sys
+
+with open(sys.argv[1]) as f:
+    rows = list(csv.reader(f))
+
+src_root = sys.argv[2]
+entries = []
+for r in rows:
+    if len(r) < 8: continue
+    try:
+        ccn = int(r[1])
+        nloc = int(r[0])
+        func = r[7]
+        filepath = r[6]
+        parts = filepath.split('/de/locodoko/')
+        mod = parts[1].split('/')[0] if len(parts) > 1 else '?'
+    except (ValueError, IndexError):
+        continue
+    entries.append((ccn, nloc, func, mod))
+
+entries.sort(reverse=True)
+for ccn, nloc, func, mod in entries[:20]:
+    print(f"| `{func}` | `{mod}` | **{ccn}** | {nloc} |")
+PYEOF
+  rm -f "$LIZARD_TMP"
+else
+  echo "*(lizard nicht verfügbar — `python3 -m pip install lizard` ausführen)*" >> "$BERICHT"
+fi
+
+# scc COCOMO (optional — nur wenn vorhanden)
+if command -v scc > /dev/null 2>&1; then
+  cat >> "$BERICHT" << 'BERICHT_EOF'
+
+## COCOMO-Kostenschätzung (scc)
+
+BERICHT_EOF
+  scc "$PROJEKT_ROOT/src/main/java" "$PROJEKT_ROOT/frontend/src" --format markdown >> "$BERICHT" 2>/dev/null || true
+fi
 
 cat >> "$BERICHT" << 'BERICHT_EOF'
 
@@ -227,9 +325,10 @@ Abgeleitet aus den obigen Metriken (Details: IMPLEMENTATION_PLAN.md, Sektion Ent
 | 🔴 Hoch | `PartieStore._verarbeiteEventQueue` | Komplexität 60 | Dispatcher-Methoden extrahieren |
 | 🔴 Hoch | `TischKartenRenderer.renderKartenFaecher` | Komplexität 53 | Render-Schritte extrahieren |
 | 🟡 Mittel | `TischAnsichtModell.erstelleTischAnsichtAusStatus` | Komplexität 36 | Builder-Pattern oder Teilmethoden |
+| 🟡 Mittel | `KiTischOrchestrator::automatisiereTisch` | CCN 20, 81 NLOC | Teilmethoden je Spielphase |
+| 🟡 Mittel | `PartieLifecycleService::veroeffentlicheSpielBeendet` | CCN 15, 68 NLOC | Ereignis-Handler extrahieren |
 | 🟡 Mittel | `JsonbConverter.java` | 948 LOC | Generische Basisklassen (optionale Weiterführung) |
-| 🟡 Mittel | `KiTischOrchestrator` | 68% Coverage, 141 LOC | Mehr Unit-Tests |
-| 🟢 Niedrig | `VerbindungsSessionEreignisListener` | 13% Coverage, 29 LOC | Integration-Test ergänzen |
+| 🟢 Niedrig | `KiTischOrchestrator` | Coverage prüfen | Mehr Unit-Tests |
 
 BERICHT_EOF
 

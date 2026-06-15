@@ -4,17 +4,14 @@
 
 ## Notiz
 
-**SEC-DEPS-FE-DEV-AUDIT** abgeschlossen (Session 129).
+**QA-METRICS-REFRESH + QA-METRICS-TOOLING** abgeschlossen (Session 129).
 
-- 2 kritische CVEs behoben: vitest + @vitest/coverage-v8 von 3.0.8 → 3.2.6 (Arbitrary File Read/Execute via UI-Server, CVSS 9.8).
-- vite von 6.4.2 → 6.4.3 (path traversal, server.fs.deny bypass, CVSS high).
-- brace-expansion (moderate DoS) via `npm audit fix` behoben.
-- **Unvermeidbare Rest-Advisories (dokumentiert, kein Blocker):**
-  - **esbuild HIGH** (GHSA-gv7w-rqvm-qjhr): Binary-Integrity-Prüfung im Deno-Modul-Pfad — Fix erfordert vite@8 (Major-Bump, breaking). Nur Dev-Toolchain, nicht in Prod-Bundle. Akzeptiert.
-  - **js-yaml MODERATE** (GHSA-h67p-54hq-rp68): DoS via repeated aliases in @redocly/openapi-core (Type-Generator). Fix erfordert openapi-typescript@8 (Major-Bump). Nur `npm run generate-types`, nie in Prod. Akzeptiert.
-- FE-Suite 467 Tests grün, Build grün, Lint grün.
+- `scripts/metrics.sh` auf echte Tooling-Basis umgestellt: lizard CCN (BE-Hotspots), coverage-final.json-Parser (FE-Coverage), Surefire-XML-Parser (BE-Testzahl), scc-Fallback (kein Gate).
+- `docs/metrics.md` neu generiert (Stand 2026-06-15): BE **503 Tests** / FE **467 Tests**, BE Coverage 86%/75% Branches, FE Coverage 84%/83%.
+- lizard wird bei fehlendem PATH via `python3 -m pip install --user lizard` automatisch installiert.
+- **Entdeckung:** `Tisch`-Klasse in `de.locodoko.partie` hat **0% Line-Coverage** (25 LOC) — als Lücken-Task vermerkt.
 
-**Nächster Schritt:** QA-METRICS-REFRESH + QA-METRICS-TOOLING im selben Lauf bündeln.
+**Nächster Schritt:** QA-FE-BIOME-COMPLEXITY (Biome additiv als kognitives Komplexitäts-Gate einführen).
 
 ## Legende
 
@@ -34,13 +31,13 @@
 
 - [x] **SEC-DEPS-FE-DEV-AUDIT** (Frontend/Sicherheit, autonom, klein) — `npm audit` meldet **7 Schwachstellen in Dev-Deps** (1 moderate `brace-expansion`, 4 high/2 critical über die `esbuild`→`vite`→`vitest`/`@vitest/*`-Kette). **Prod-Deps: 0 CVEs** (nicht ausgeliefert → kein Live-Blocker, aber Toolchain-Hygiene + Supply-Chain). **Fix:** `npm audit fix` für `brace-expansion` (non-breaking); für die esbuild/vite-Kette `npm audit fix --force` evaluieren = **Major-Bumps** (Vite/Vitest) — nur mit anschließend grünem `npm test && npm run build && npm run lint` übernehmen, sonst gezielt einzelne Transitives anheben. **Erste Datei zuerst:** `frontend/package.json` / `package-lock.json`. **DoD:** `npm audit` ohne high/critical (oder dokumentierte, unvermeidbare Rest-Advisories); FE-Suite + Build + Lint grün. **Risiko:** mittel (Major-Tooling-Bump kann Tests/Build brechen).
 
-- [ ] **QA-METRICS-REFRESH** (QA/Doc, autonom, klein) — `docs/metrics.md` ist auf Stand **S120** (BE 485 / FE 461 Tests); seither **BE 500 / FE 465**. **Fix:** `mvn clean verify` (JaCoCo) + `cd frontend && npx vitest run --coverage` neu vermessen, Zahlen + Datum aktualisieren, verbleibende Branch-Lücken benennen. Dabei die per-Namensheuristik testdatei-losen, aber ggf. nur indirekt abgedeckten Service-Klassen (z.B. `PartieLifecycleService`, `TischEchtzeitService`, `SpielverwaltungWebSocketController`) gegen den realen JaCoCo-Report prüfen und echte Lücken als Folge-Test-Tasks notieren. **Erste Datei zuerst:** `docs/metrics.md`. **DoD:** Report mit S128-Zahlen, reproduzierbar; etwaige echte Lücken als Tasks erfasst. **Risiko:** niedrig.
+- [x] **QA-METRICS-REFRESH** (QA/Doc, autonom, klein) — `docs/metrics.md` ist auf Stand **S120** (BE 485 / FE 461 Tests); seither **BE 500 / FE 465**. **Fix:** `mvn clean verify` (JaCoCo) + `cd frontend && npx vitest run --coverage` neu vermessen, Zahlen + Datum aktualisieren, verbleibende Branch-Lücken benennen. Dabei die per-Namensheuristik testdatei-losen, aber ggf. nur indirekt abgedeckten Service-Klassen (z.B. `PartieLifecycleService`, `TischEchtzeitService`, `SpielverwaltungWebSocketController`) gegen den realen JaCoCo-Report prüfen und echte Lücken als Folge-Test-Tasks notieren. **Erste Datei zuerst:** `docs/metrics.md`. **DoD:** Report mit S128-Zahlen, reproduzierbar; etwaige echte Lücken als Tasks erfasst. **Risiko:** niedrig.
 
 - [ ] **PERF-FE-BUNDLE-SPLIT-2** (Frontend, autonom, klein, optional) — trotz `PERF-FE-BUNDLE-SPLITTING` (Phaser-Vendor-Chunk) bleibt der `phaser-vendor`-Chunk **1,48 MB** und löst weiter die „chunks > 600 kB"-Build-Warnung aus. **Optionen:** (a) Szenen via `import()` lazy laden (echtes Code-Splitting des App-Teils), oder (b) die Warnung bewusst belassen und `chunkSizeWarningLimit` mit dokumentierter Begründung setzen (Phaser ist als Engine unteilbar). **Erste Datei zuerst:** `frontend/vite.config.ts`. **DoD:** entweder kleinere Initial-Chunks oder dokumentierte, bewusste Limit-Entscheidung; Build + Lint + Vision-Smoke grün. **Risiko:** niedrig.
 
 - [ ] **QA-FE-BIOME-COMPLEXITY** (Frontend, autonom, klein — moderne Komplexitäts-Analyse, Session 128 prototypisiert) — **Biome additiv** als kognitives Komplexitäts-Gate einführen (ESLint bleibt Haupt-Linter, User-Entscheidung S128). **Schritte:** (1) `@biomejs/biome` als devDep; (2) `frontend/biome.json` mit **nur** der Regel `complexity.noExcessiveCognitiveComplexity` (`recommended:false`, alle anderen Regeln aus — Formatierung/Stil bleibt bei ESLint/Prettier); (3) npm-Script `"complexity": "biome lint --config-path=. src"`; (4) **Baseline-Schwelle** zunächst auf den Ist-Höchstwert setzen, sodass der Lauf **grün** ist (S128-Messung: Schwelle 40 → 0 Verstöße; der schlimmste Treffer liegt kognitiv im Bereich 31–39), dann in einem Kommentar dokumentieren + als Folge-Tasks schrittweise senken (40 → 30 → 25 → 20 → 15) und je Stufe die Ausreißer refactoren. **Bekannte kognitive Hotspots (Biome S128, Schwelle 15 → 14 Treffer):** `PartieStore.ts:140`, `TischInputHandler.ts:53/219`, `TischRundenEndeController.ts:32/146`, `layout.ts:71`, `SpielprotokollOverlay.ts:127`, `TischKartenRenderer.ts:362`, `BestenlisterSzene.ts:113`, `TischAnimationOrchestrator.ts:105`, `TischHudRenderer.ts:26`, `SpielerProfilModal.ts:132`, `SpielverwaltungApi.ts:76`, `AnimationenPrimitiven.ts:37`. **Erste Datei zuerst:** `frontend/package.json` + neue `frontend/biome.json`. **DoD:** `npm run complexity` läuft grün (Baseline-Schwelle), bricht bei Überschreitung; `npm test && npm run build && npm run lint` weiterhin grün; ggf. in CI als eigener Step. **Risiko:** niedrig (additiv, ESLint-Config unberührt).
 
-- [ ] **QA-METRICS-TOOLING** (QA/Doc, autonom, klein — am besten mit QA-METRICS-REFRESH bündeln) — `scripts/metrics.sh` von handgezählten LOC/grep-Heuristiken auf echte Werkzeuge umstellen: **`lizard`** (zyklomatische Komplexität + Token-Count, **Java *und* TS** in einem Lauf — ersetzt „größte Klasse als Komplexitäts-Proxy") als nicht-brechenden Report-Step; optional **`scc`** für LOC + **COCOMO-Kostenschätzer**. Beides nur Report, **kein** Build-Gate (das Gate ist FE=Biome, siehe QA-FE-BIOME-COMPLEXITY). **S128-Messung als Erwartungswert:** BE Avg CCN 1.9, nur 2 Funktionen > 15 (max `KiTischOrchestrator::automatisiereTisch` CCN 20); FE Avg CCN 2.4, 8 Funktionen > 15 (max `TischInputHandler::verarbeiteTastatureingabe` CCN 34). **Installation/Reproduzierbarkeit (wichtig):** `lizard` ist **kein** Repo-Dependency und liegt **nicht** im PATH — das Skript muss die Verfügbarkeit selbst sicherstellen (z.B. `python3 -m pip install --user lizard` bzw. venv/pipx und Aufruf via `python3 -m lizard`; `scc` ist ein Go-Binary, nur nutzen wenn vorhanden, sonst überspringen). Nicht auf einen lokal vorinstallierten Stand verlassen; bei fehlendem Tool den Step sauber überspringen statt das Skript abbrechen zu lassen. **Erste Datei zuerst:** `scripts/metrics.sh` + `docs/metrics.md`. **DoD:** Report nutzt `lizard` (+ggf. `scc`) statt `find|wc`-Heuristik; CC-Top-20 + COCOMO im Report; Skript reproduzierbar **auf einer frischen Umgebung** (Tool-Installation/-Fallback im Skript geregelt). **Risiko:** niedrig.
+- [x] **QA-METRICS-TOOLING** (QA/Doc, autonom, klein — am besten mit QA-METRICS-REFRESH bündeln) — `scripts/metrics.sh` von handgezählten LOC/grep-Heuristiken auf echte Werkzeuge umstellen: **`lizard`** (zyklomatische Komplexität + Token-Count, **Java *und* TS** in einem Lauf — ersetzt „größte Klasse als Komplexitäts-Proxy") als nicht-brechenden Report-Step; optional **`scc`** für LOC + **COCOMO-Kostenschätzer**. Beides nur Report, **kein** Build-Gate (das Gate ist FE=Biome, siehe QA-FE-BIOME-COMPLEXITY). **S128-Messung als Erwartungswert:** BE Avg CCN 1.9, nur 2 Funktionen > 15 (max `KiTischOrchestrator::automatisiereTisch` CCN 20); FE Avg CCN 2.4, 8 Funktionen > 15 (max `TischInputHandler::verarbeiteTastatureingabe` CCN 34). **Installation/Reproduzierbarkeit (wichtig):** `lizard` ist **kein** Repo-Dependency und liegt **nicht** im PATH — das Skript muss die Verfügbarkeit selbst sicherstellen (z.B. `python3 -m pip install --user lizard` bzw. venv/pipx und Aufruf via `python3 -m lizard`; `scc` ist ein Go-Binary, nur nutzen wenn vorhanden, sonst überspringen). Nicht auf einen lokal vorinstallierten Stand verlassen; bei fehlendem Tool den Step sauber überspringen statt das Skript abbrechen zu lassen. **Erste Datei zuerst:** `scripts/metrics.sh` + `docs/metrics.md`. **DoD:** Report nutzt `lizard` (+ggf. `scc`) statt `find|wc`-Heuristik; CC-Top-20 + COCOMO im Report; Skript reproduzierbar **auf einer frischen Umgebung** (Tool-Installation/-Fallback im Skript geregelt). **Risiko:** niedrig.
 
 ### Empfohlene Build-Reihenfolge (Block A)
 
@@ -48,7 +45,7 @@
 
 1. ~~**QA-VISION-MOBILE-LANDSCAPE** (+ **CLEANUP-VISION-SCREENSHOT-DUBLETTE** im selben Lauf bündeln)~~ ✓ S129
 2. ~~**SEC-DEPS-FE-DEV-AUDIT**~~ ✓ S129
-3. **QA-METRICS-REFRESH** (+ **QA-METRICS-TOOLING** im selben Lauf bündeln)
+3. ~~**QA-METRICS-REFRESH** (+ **QA-METRICS-TOOLING** im selben Lauf bündeln)~~ ✓ S129
 4. **QA-FE-BIOME-COMPLEXITY**
 5. **PERF-FE-BUNDLE-SPLIT-2** (optional)
 
@@ -99,6 +96,13 @@
 - [ ] **BE-ERRORPRONE-NULLAWAY** (Backend, zurückgestellt — **Java-25-Gate**) — moderne Compile-Zeit-Analyse via **Google Error Prone + NullAway** (500+ Bug-Checks + NPE-Eliminierung während `mvn compile`). **Blocker (S128 recherchiert):** Error Prone ist auf **JDK 25 noch nicht stabil** (`NoSuchFieldError: TypeTag`; Kompatibilität wird erst Richtung JDK 26 EA nachgezogen) — bräuchte allerneueste Version + `--add-exports`-JVM-Flags, also genau die Bleeding-Edge-Bastelei, die bei Sentry (Boot 4/Java 25) bewusst vermieden wurde. **Reaktivieren**, sobald eine Error-Prone-Version JDK 25 sauber unterstützt. Ergänzend dann **OpenRewrite** (Auto-Remediation-Rezepte) erwägen. **Risiko:** mittel-hoch (Toolchain/Bleeding-Edge).
 
 ---
+
+## Entdeckungen
+
+- **S129 — `Tisch`-Klasse (de.locodoko.partie) hat 0% Line-Coverage** (25 LOC laut JaCoCo): Domänen-Klasse im Partie-Kern ohne eigene Tests. Wenn nicht durch Integrationstests abgedeckt → Unit-Test-Task ergänzen.
+- **S129 — `partie.ereignisse`-Paket: 50% Coverage** (10 Lines): Ereignis-Klassen im Partie-Kern nur halb abgedeckt. Prüfen ob wichtige Pfade fehlen.
+- **S129 — `tisch.persistenz`-Paket: 68% Coverage** (206 Lines): knapp unter 70%-Schwelle. `JsonbConverter` (55%, 45 LOC) ist Haupttreiber.
+- **S129 — FE-Komplexitäts-Hotspot neu: `TischInputHandler::verarbeiteTastatureingabe` CCN 35** (vorher als 27 geschätzt — ESLint cyclomatic, nicht kognitiv). Realer Messwert aus aktuellem ESLint-Lauf.
 
 ## Meilensteine
 
