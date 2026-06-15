@@ -40,11 +40,7 @@ test.describe('Vision Loop — UI Screenshots', () => {
     await page.waitForTimeout(2000);
     await screenshot(page, '01-lobby', prefix);
 
-    // ── 1. Offene Tische ─────────────────────────────────────────────────────
-    await page.waitForTimeout(1000);
-    await screenshot(page, '11-offene-tische', prefix);
-
-    // ── 2. Neuen Tisch Modal ─────────────────────────────────────────────────
+    // ── 1. Neuen Tisch Modal ─────────────────────────────────────────────────
     await page.evaluate(() => (window as any).__locodoko.drueckeSzenenButton('btn-neuer-tisch'));
     await page.waitForTimeout(1000);
     await screenshot(page, '12-neuer-tisch-modal', prefix);

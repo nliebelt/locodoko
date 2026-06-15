@@ -1,12 +1,17 @@
 # IMPLEMENTATION_PLAN — Locodoko Doppelkopf
 
-> Stand: 2026-06-15 (Session 128 — Slim-Down). Erledigte Aufgaben → `IMPLEMENTATION_PLAN_ARCHIVE.md` (Sessions 1–128 archiviert).
+> Stand: 2026-06-15 (Session 129). Erledigte Aufgaben → `IMPLEMENTATION_PLAN_ARCHIVE.md` (Sessions 1–128 archiviert).
 
 ## Notiz
 
-**Spielkern feature-complete** (alle 47 fachlichen Specs *Implementiert/Stabil/Abgeschlossen*). Offen ist nur noch die **Fertigstellung für den öffentlichen Betrieb**: ein paar autonome Polish-/QA-Tasks (Block M) + die MENSCH-/User-gebundenen Deploy- und Entscheidungs-Tasks.
+**QA-VISION-MOBILE-LANDSCAPE + CLEANUP-VISION-SCREENSHOT-DUBLETTE** abgeschlossen (Session 129).
 
-Dieser Plan wurde in Session 128 schlankgezogen: der gesamte erledigte Verlauf (Deploy-Blocker, CI, Schema-Review, Monitoring, Bugreport, Vision-Loop, Test-Abdeckung, Reviews) liegt im Archiv. Hier stehen nur noch **offene** Tasks.
+- Alle 39 `mobile-landscape-*` Screenshots generiert und visuell geprüft: **kein Defekt** im Querformat (851×393). Kartenreihe, Nameplates, HUD, Modals — alles korrekt dargestellt.
+- Duplikat behoben: `screenshot('11-offene-tische', prefix)` aus beiden Specs entfernt (war immer byte-identisch mit `01-lobby`). Stale PNGs gelöscht.
+- Backend war nach 18h Laufzeit in bad state (CONSTRAINT_69-Fehler) — Neustart nötig. Ursache: H2 in-memory DB-Korruption nach langem Lauf + mvn-clean-Seiteneffekt. **Merke für nächste Iteration: Backend neu starten bevor E2E-Tests.**
+- Szenen-Tests laufen < 30s je Projekt (22s). Main vision-loop ~1min.
+
+**Nächster Schritt:** SEC-DEPS-FE-DEV-AUDIT (npm audit, Dev-Dep-Vulnerabilities beheben).
 
 ## Legende
 
@@ -20,9 +25,9 @@ Dieser Plan wurde in Session 128 schlankgezogen: der gesamte erledigte Verlauf (
 
 > Geerdet am Repo-Scan S126: Code sehr sauber (keine TODO/FIXME, keine verschluckten Exceptions, kein `any` im FE-Quellcode, jede FE-Datei getestet, Prod-Deps 0 CVEs). Das sind die realen offenen Hebel. **Pro Task ein Commit**, `mvn clean test` / `npm test && npm run build && npm run lint` grün.
 
-- [ ] **QA-VISION-MOBILE-LANDSCAPE** (E2E/Vision, autonom — **Backend muss laufen**, klein-mittel) — Verifikation der DISCO-S126-Umstellung: der Vision-Loop läuft jetzt unter dem Projekt **`mobile-landscape`** (851×393), erzeugt aber noch **keine** frischen Screenshots (alter `mobile-portrait`-Satz wurde S126 entfernt). **Fix/Schritte:** Backend starten (`mvn spring-boot:run`), `cd e2e && npx playwright test --config playwright.config.vision.ts` (beide Specs, beide Projekte) fahren; die neuen `mobile-landscape-*.png` **und** die `desktop-*.png` mit dem Read-Tool gegen `specs/frontend-visuelles-design.md` sichten; Layout-Mängel im Querformat (Kartenreihe, Nameplates, HUD, Modals bei 851×393) als gezielte Fixes beheben (real gerenderte Maße statt Hardcode), Retro-Look behalten. **DoD:** beide Projekte grün < 30 s je Szenen-Lauf; `mobile-landscape-*` Screenshots committet und visuell defektfrei; gefundene Defekte gefixt oder als „kein Defekt" vermerkt. **Risiko:** niedrig-mittel.
+- [x] **QA-VISION-MOBILE-LANDSCAPE** (E2E/Vision, autonom — **Backend muss laufen**, klein-mittel) — Verifikation der DISCO-S126-Umstellung: der Vision-Loop läuft jetzt unter dem Projekt **`mobile-landscape`** (851×393), erzeugt aber noch **keine** frischen Screenshots (alter `mobile-portrait`-Satz wurde S126 entfernt). **Fix/Schritte:** Backend starten (`mvn spring-boot:run`), `cd e2e && npx playwright test --config playwright.config.vision.ts` (beide Specs, beide Projekte) fahren; die neuen `mobile-landscape-*.png` **und** die `desktop-*.png` mit dem Read-Tool gegen `specs/frontend-visuelles-design.md` sichten; Layout-Mängel im Querformat (Kartenreihe, Nameplates, HUD, Modals bei 851×393) als gezielte Fixes beheben (real gerenderte Maße statt Hardcode), Retro-Look behalten. **DoD:** beide Projekte grün < 30 s je Szenen-Lauf; `mobile-landscape-*` Screenshots committet und visuell defektfrei; gefundene Defekte gefixt oder als „kein Defekt" vermerkt. **Risiko:** niedrig-mittel.
 
-- [ ] **CLEANUP-VISION-SCREENSHOT-DUBLETTE** (E2E/Cleanup, autonom, winzig) — `desktop-01-lobby.png` und `desktop-11-offene-tische.png` sind **byte-identisch** (md5 `0dd0b563…`, Befund schon S120) — der „gefüllte Tischliste"-Screen wird nicht eigenständig erzeugt. **Fix:** im Szenen-Spec sicherstellen, dass `desktop-11` tatsächlich die gefüllte Lobby (2. Kontext) fotografiert, oder den redundanten Shot streichen. Am besten im selben Lauf wie **QA-VISION-MOBILE-LANDSCAPE** miterledigen. **DoD:** kein byte-identisches Screenshot-Paar mehr, das verschiedene Zustände darstellen soll. **Risiko:** niedrig.
+- [x] **CLEANUP-VISION-SCREENSHOT-DUBLETTE** (E2E/Cleanup, autonom, winzig) — `desktop-01-lobby.png` und `desktop-11-offene-tische.png` sind **byte-identisch** (md5 `0dd0b563…`, Befund schon S120) — der „gefüllte Tischliste"-Screen wird nicht eigenständig erzeugt. **Fix:** im Szenen-Spec sicherstellen, dass `desktop-11` tatsächlich die gefüllte Lobby (2. Kontext) fotografiert, oder den redundanten Shot streichen. Am besten im selben Lauf wie **QA-VISION-MOBILE-LANDSCAPE** miterledigen. **DoD:** kein byte-identisches Screenshot-Paar mehr, das verschiedene Zustände darstellen soll. **Risiko:** niedrig.
 
 - [ ] **SEC-DEPS-FE-DEV-AUDIT** (Frontend/Sicherheit, autonom, klein) — `npm audit` meldet **7 Schwachstellen in Dev-Deps** (1 moderate `brace-expansion`, 4 high/2 critical über die `esbuild`→`vite`→`vitest`/`@vitest/*`-Kette). **Prod-Deps: 0 CVEs** (nicht ausgeliefert → kein Live-Blocker, aber Toolchain-Hygiene + Supply-Chain). **Fix:** `npm audit fix` für `brace-expansion` (non-breaking); für die esbuild/vite-Kette `npm audit fix --force` evaluieren = **Major-Bumps** (Vite/Vitest) — nur mit anschließend grünem `npm test && npm run build && npm run lint` übernehmen, sonst gezielt einzelne Transitives anheben. **Erste Datei zuerst:** `frontend/package.json` / `package-lock.json`. **DoD:** `npm audit` ohne high/critical (oder dokumentierte, unvermeidbare Rest-Advisories); FE-Suite + Build + Lint grün. **Risiko:** mittel (Major-Tooling-Bump kann Tests/Build brechen).
 
@@ -38,7 +43,7 @@ Dieser Plan wurde in Session 128 schlankgezogen: der gesamte erledigte Verlauf (
 
 > Nimm den **obersten noch offenen** Task. Alle autonom; bei Vision-Tasks fährt Ralph das Backend selbst headless hoch.
 
-1. **QA-VISION-MOBILE-LANDSCAPE** (+ **CLEANUP-VISION-SCREENSHOT-DUBLETTE** im selben Lauf bündeln)
+1. ~~**QA-VISION-MOBILE-LANDSCAPE** (+ **CLEANUP-VISION-SCREENSHOT-DUBLETTE** im selben Lauf bündeln)~~ ✓ S129
 2. **SEC-DEPS-FE-DEV-AUDIT**
 3. **QA-METRICS-REFRESH** (+ **QA-METRICS-TOOLING** im selben Lauf bündeln)
 4. **QA-FE-BIOME-COMPLEXITY**
