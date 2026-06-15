@@ -52,6 +52,7 @@ public class VerbindungsabbruchService {
     private final SpielerRepository spielerRepository;
     private final TischEchtzeitService tischEchtzeitService;
     private final ApplicationEventPublisher eventPublisher;
+    private final PartieCountdownService partieCountdownService;
 
     /** Konfigurierbare Wartezeit bis zur KI-Übernahme in Sekunden. */
     private final int reconnectTimeoutSekunden;
@@ -64,12 +65,14 @@ public class VerbindungsabbruchService {
             SpielerRepository spielerRepository,
             TischEchtzeitService tischEchtzeitService,
             ApplicationEventPublisher eventPublisher,
+            PartieCountdownService partieCountdownService,
             @Value("${locodoko.verbindung.reconnect-timeout-sekunden:120}") int reconnectTimeoutSekunden
     ) {
         this.tischRepository = tischRepository;
         this.spielerRepository = spielerRepository;
         this.tischEchtzeitService = tischEchtzeitService;
         this.eventPublisher = eventPublisher;
+        this.partieCountdownService = partieCountdownService;
         this.reconnectTimeoutSekunden = reconnectTimeoutSekunden;
     }
 
@@ -217,6 +220,7 @@ public class VerbindungsabbruchService {
             if (humanPlayerCount == 1) {
                 // Letzter menschlicher Spieler getrennt — Tisch auf WARTEND setzen, KI-Übernahme entfällt.
                 LOGGER.info("Letzter menschlicher Spieler '{}' hat Timeout. Tisch {} wird auf WARTEND gesetzt.", info.spielerName(), tisch.id());
+                partieCountdownService.brecheCountdownAb(tisch.id());
                 tisch.setzeStatusWartend();
                 tischRepository.save(tisch);
                 tischEchtzeitService.planeTischVerbindungsStatus(

@@ -17,6 +17,7 @@ import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.transaction.annotation.Transactional;
 
 import de.locodoko.tisch.KiSpielerFabrik;
+import org.springframework.context.annotation.Lazy;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -33,6 +34,7 @@ public class TischVerwaltungsService {
     private final ApplicationEventPublisher eventPublisher;
     private final TischEchtzeitService tischEchtzeitService;
     private final TischZugriff tischZugriff;
+    private final PartieCountdownService partieCountdownService;
 
     public TischVerwaltungsService(
         TischRepository tischRepository,
@@ -41,7 +43,8 @@ public class TischVerwaltungsService {
         KiSpielerFabrik kiSpielerFabrik,
         ApplicationEventPublisher eventPublisher,
         TischEchtzeitService tischEchtzeitService,
-        TischZugriff tischZugriff
+        TischZugriff tischZugriff,
+        @Lazy PartieCountdownService partieCountdownService
     ) {
         this.tischRepository = tischRepository;
         this.partieRepository = partieRepository;
@@ -50,6 +53,7 @@ public class TischVerwaltungsService {
         this.eventPublisher = eventPublisher;
         this.tischEchtzeitService = tischEchtzeitService;
         this.tischZugriff = tischZugriff;
+        this.partieCountdownService = partieCountdownService;
     }
 
     @Transactional(readOnly = true)
@@ -147,6 +151,7 @@ public class TischVerwaltungsService {
         tisch.entferneSpieler(verwalteterSpieler);
         if (tisch.spieler().isEmpty()) {
             UUID geloeschterTischId = tisch.id();
+            partieCountdownService.brecheCountdownAb(geloeschterTischId);
             tischRepository.delete(tisch);
             tischRepository.flush();
             tischEchtzeitService.planeTischliste(TischlisteEreignisAntwort.aktualisiert(listeOffeneTische()));
@@ -216,6 +221,7 @@ public class TischVerwaltungsService {
             tisch.partie().markiereAlsAbgebrochen();
             partieRepository.saveAndFlush(tisch.partie());
         }
+        partieCountdownService.brecheCountdownAb(tischId);
         tischRepository.delete(tisch);
         tischRepository.flush();
         tischEchtzeitService.planeTischliste(TischlisteEreignisAntwort.aktualisiert(listeOffeneTische()));

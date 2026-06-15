@@ -116,7 +116,7 @@ class VerbindungsSessionEreignisListenerTest {
         SpielerId disconnectSpielerId;
 
         FakeAbbruchService() {
-            super(null, null, null, null, 0);
+            super(null, null, null, null, null, 0);
         }
 
         @Override

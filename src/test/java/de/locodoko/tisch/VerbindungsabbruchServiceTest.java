@@ -56,6 +56,9 @@ class VerbindungsabbruchServiceTest {
     @Autowired
     private KiSpielerFabrik kiSpielerFabrik;
 
+    @Autowired
+    private PartieCountdownService partieCountdownService;
+
     private SpielerEntity menschlicherSpieler;
     private TischEntity tisch;
 
@@ -179,6 +182,39 @@ class VerbindungsabbruchServiceTest {
                 aufgehoben.istKiUebernommen(),
                 "Nach dem Spielstart muss die KI-Übernahme aufgehoben sein, damit " +
                 "reconnectete Spieler ihr nächstes Spiel wieder selbst steuern können."
+        );
+    }
+
+    /**
+     * Countdown-Abbruch: Wenn der letzte menschliche Spieler den Timeout überschreitet und der Tisch
+     * auf WARTEND gesetzt wird, muss ein laufender Partie-Countdown abgebrochen werden.
+     * Ohne diesen Fix feuert der Timer weiter und sendet COUNTDOWN_TICK an den nicht mehr aktiven Tisch.
+     */
+    @Test
+    void countdownWirdAbgebrochenWennLetzterSpielerTimeout() throws Exception {
+        // Tisch per Reflection auf IM_SPIEL setzen (simuliert laufende Partie mit Countdown)
+        tisch = tischRepository.findById(TischId.von(tisch.id())).orElseThrow();
+        var statusFeld = tisch.getClass().getDeclaredField("status");
+        statusFeld.setAccessible(true);
+        statusFeld.set(tisch, TischStatus.IM_SPIEL.name());
+        tischRepository.save(tisch);
+
+        // Countdown für diesen Tisch starten
+        partieCountdownService.starteCountdown(tisch.id());
+        assertTrue(
+            partieCountdownService.hatAktivenCountdown(tisch.id()),
+            "Countdown muss nach starteCountdown aktiv sein"
+        );
+
+        // Letzter Spieler trennt sich und erreicht den Timeout
+        String sessionId = menschlicherSpieler.sessionId();
+        verbindungsabbruchService.verarbeiteDisconnect(sessionId, SpielerId.von(menschlicherSpieler.id()), menschlicherSpieler.name());
+        verbindungsabbruchService.verarbeiteTimeouts(Instant.now().plusSeconds(9999));
+
+        assertFalse(
+            partieCountdownService.hatAktivenCountdown(tisch.id()),
+            "Countdown muss nach Timeout des letzten Spielers abgebrochen sein — " +
+            "sonst sendet er weiter COUNTDOWN_TICK an den nicht mehr aktiven Tisch."
         );
     }
 

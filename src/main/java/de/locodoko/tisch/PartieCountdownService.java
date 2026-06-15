@@ -83,6 +83,11 @@ public class PartieCountdownService {
         }
     }
 
+    /** Sichtbar für Tests: gibt zurück, ob für diesen Tisch gerade ein Countdown läuft. */
+    boolean hatAktivenCountdown(UUID tischId) {
+        return aktiveCountdowns.containsKey(tischId);
+    }
+
     private void verarbeiteCountdownTick(UUID tischId, AtomicInteger zaehler) {
         int verbleibend = zaehler.decrementAndGet();
         if (verbleibend > 0) {
