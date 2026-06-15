@@ -56,7 +56,7 @@ public class RateLimitingFilter extends OncePerRequestFilter {
             return;
         }
 
-        String meldung = pruefRateLimit(request.getRequestURI(), request.getRemoteAddr());
+        String meldung = pruefRateLimit(normalisiereUri(request.getRequestURI()), request.getRemoteAddr());
         if (meldung != null) {
             schreibeRateLimitAntwort(response, meldung);
             return;
