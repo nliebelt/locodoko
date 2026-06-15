@@ -221,7 +221,8 @@ export class FlashTextManager {
         },
       });
       this.verwalteteObjekte.push(text);
-      window.setTimeout(complete, skalierteDauerMain + delay + fadeDauer + 1000);
+      const timer = this.szene.time.delayedCall(skalierteDauerMain + delay + fadeDauer + 1000, complete);
+      this.verwalteteTimers.push(timer);
     });
   }
 

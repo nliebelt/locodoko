@@ -9,6 +9,7 @@ export class SpielprotokollOverlay extends Phaser.GameObjects.Container {
   private scrollYOffset = 0;
   private listContainer: Phaser.GameObjects.Container;
   private maskGraphics: Phaser.GameObjects.Graphics;
+  private onWheelHandler?: (_p: unknown, _g: unknown, _dX: number, deltaY: number) => void;
 
   constructor(
     scene: Phaser.Scene,
@@ -139,14 +140,17 @@ export class SpielprotokollOverlay extends Phaser.GameObjects.Container {
 
     // Scrolling logic
     if (totalListHeight > listH) {
-      scene.input.on('wheel', (_p: unknown, _g: unknown, _dX: number, deltaY: number) => {
+      this.onWheelHandler = (_p: unknown, _g: unknown, _dX: number, deltaY: number) => {
         this.scrollYOffset -= deltaY * 0.5;
         if (this.scrollYOffset > 0) this.scrollYOffset = 0;
         const maxScroll = -(totalListHeight - listH);
         if (this.scrollYOffset < maxScroll) this.scrollYOffset = maxScroll;
         this.listContainer.y = listY + this.scrollYOffset;
+      };
+      scene.input.on('wheel', this.onWheelHandler);
+      this.on('destroy', () => {
+        if (this.onWheelHandler) scene.input.off('wheel', this.onWheelHandler);
       });
-      this.on('destroy', () => scene.input.off('wheel'));
     }
 
     scene.add.existing(this);
