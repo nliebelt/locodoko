@@ -19,6 +19,18 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
  * Spring-Security-Ebene offen — ihre Absicherung erfolgt auf Controller-/Interceptor-Ebene
  * via {@link de.locodoko.spieler.SpielerSessionService}. Nur unbekannte Endpunkte ausserhalb
  * dieser Liste erfordern Spring-Security-Authentifizierung.</p>
+ *
+ * <p><b>CSRF-Entscheidung (bewusst, dokumentiert):</b> CSRF-Schutz ist global deaktiviert.
+ * Der Schutz mutierender Endpunkte stützt sich stattdessen auf das Session-Cookie mit
+ * {@code SameSite=strict} ({@code server.servlet.session.cookie.same-site=strict} in
+ * application.properties), {@code HttpOnly=true} sowie {@code Secure=true} in Produktion
+ * (application-prod.properties). Ein {@code SameSite=strict}-Cookie wird vom Browser bei
+ * Cross-Site-Requests nicht mitgesendet, wodurch klassische CSRF-POSTs von fremden Origins
+ * keine authentifizierte Session erhalten. Bewusst akzeptierter Trade-off: <b>kein
+ * Defense-in-Depth</b> durch zusätzliche CSRF-Token. Sollte künftig ein weniger striktes
+ * SameSite (z.&nbsp;B. {@code Lax} für OAuth-Redirect-Komfort) nötig werden oder ein
+ * Cross-Origin-Frontend hinzukommen, muss diese Entscheidung neu bewertet und ein
+ * {@code CookieCsrfTokenRepository} aktiviert werden (Frontend müsste das Token mitsenden).</p>
  */
 @Configuration
 @EnableMethodSecurity
@@ -69,6 +81,8 @@ public class SecurityConfig {
                 .anyRequest().authenticated()
             )
             .formLogin(form -> form.disable())
+            // CSRF bewusst deaktiviert — Schutz via SameSite=strict-Session-Cookie statt Token.
+            // Begründung und Trade-off siehe Klassen-Javadoc (CSRF-Entscheidung).
             .csrf(csrf -> csrf.disable())
             .sessionManagement(session -> session
                 .sessionFixation(fix -> fix.changeSessionId())

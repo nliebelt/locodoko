@@ -108,4 +108,27 @@ describe('LoginSzene', () => {
     guestCall[1].callback();
     expect(mockStore.alsGastStarten).toHaveBeenCalled();
   });
+
+  it('zeigt einen Hinweis bei OAuth-Konflikt und entfernt den Query-Parameter', async () => {
+    window.history.replaceState({}, '', '/?fehler=email_konflikt');
+    szene.create();
+    await flushPromises();
+
+    const hinweis = (szene.add.text as any).mock.calls.find(
+      (c: any) => typeof c[2] === 'string' && c[2].includes('bereits mit einem Konto')
+    );
+    expect(hinweis).toBeDefined();
+    expect(window.location.search).toBe('');
+  });
+
+  it('zeigt keinen Hinweis ohne Konflikt-Parameter', async () => {
+    window.history.replaceState({}, '', '/');
+    szene.create();
+    await flushPromises();
+
+    const hinweis = (szene.add.text as any).mock.calls.find(
+      (c: any) => typeof c[2] === 'string' && c[2].includes('bereits mit einem Konto')
+    );
+    expect(hinweis).toBeUndefined();
+  });
 });

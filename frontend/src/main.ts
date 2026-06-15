@@ -42,6 +42,11 @@ window.addEventListener('unhandledrejection', (event) => {
   console.error('[UNHANDLED PROMISE]', event.reason);
 });
 
+// Hinweis (DISCO-Entscheidung S126): Mobile/Touch-Geräte im Hochformat sehen das
+// CSS-Dreh-Overlay (#orientierung-hinweis, layout.css) und erreichen das Spiel nie im
+// Portrait — auf Touch zählt praktisch nur der Landscape-Zweig. Der Portrait-Zweig bleibt
+// bewusst erhalten als Fallback für NICHT-Touch-Fenster im Hochformat (z.B. ein schmal
+// gezogenes Desktop-Browserfenster), für die das Overlay (pointer: coarse) nicht greift.
 const isPortrait = window.innerHeight > window.innerWidth;
 const startWidth = isPortrait ? 720 : 1280;
 const startHeight = isPortrait ? Math.round(720 * (window.innerHeight / window.innerWidth)) : 720;

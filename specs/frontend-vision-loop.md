@@ -28,7 +28,10 @@ Zwei Playwright-Specs:
 | `e2e/tests/vision-loop.spec.ts` *(erweitern)* | Vollständiger Gameplay-Fluss: Vorbehalt, Stich, Ansagen, Armut, Spielprotokoll, alle Flash-Text-Events (best-effort), Auswertungs-Modals | < 5 min |
 
 Beide Specs laufen in `playwright.config.vision.ts` unter den Projekten
-`desktop` (1280×720) und `mobile-portrait` (393×851, Pixel 5).
+`desktop` (1280×720) und `mobile-landscape` (851×393, Pixel 5 landscape).
+Mobile wird bewusst nur im Querformat geprüft (Orientierungssperre, DISCO-Entscheidung S126):
+im Hochformat verdeckt das Dreh-Overlay die gesamte App, ein Portrait-Lauf lieferte nur
+byte-identische Overlay-Dubletten.
 
 ## Voraussetzungen für die Umsetzung
 

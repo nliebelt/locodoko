@@ -245,6 +245,17 @@ public class SpielerEntity extends AbstraktePersistenzEntity {
     }
 
     /**
+     * Verknuepft ein bestehendes (Passwort-)Konto mit einer OAuth2-Identitaet.
+     * Wird nur aufgerufen, wenn beide Seiten den Mailbox-Besitz bewiesen haben
+     * (Google email_verified=true UND dieses Konto bereits email_verifiziert=true) —
+     * siehe {@link OAuth2ErfolgsHandler}. Das Passwort bleibt erhalten; der Spieler kann
+     * sich danach sowohl per Passwort als auch per Google anmelden.
+     */
+    public void verknuepfeMitOauth2(String externalId) {
+        this.externalId = externalId;
+    }
+
+    /**
      * Setzt die Session-ID auf null, nachdem die HTTP-Session abgelaufen ist.
      * Der Spieler kann sich danach mit einer neuen Session neu registrieren.
      */

@@ -21,10 +21,13 @@ export default defineConfig({
       },
     },
     {
-      name: 'mobile-portrait',
+      // Mobile wird bewusst nur im Querformat unterstützt (Orientierungssperre, siehe
+      // DISCO-Entscheidung S126): ein 4-Spieler-Stichspiel mit Kartenreihe braucht Breite.
+      // Daher Landscape-Viewport — im Hochformat würde nur das Dreh-Overlay fotografiert.
+      name: 'mobile-landscape',
       use: {
-        ...devices['Pixel 5'],
-        viewport: { width: 393, height: 851 }, // Force a portrait aspect ratio for mobile
+        ...devices['Pixel 5 landscape'],
+        viewport: { width: 851, height: 393 },
       },
     },
   ],

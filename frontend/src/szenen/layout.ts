@@ -1,6 +1,12 @@
 /**
  * Zustandslose Layout- und Positionsberechnungen fuer die Tischdarstellung.
  * Alle Funktionen sind reine Utility-Funktionen ohne Seiteneffekte.
+ *
+ * <p>Hinweis (DISCO-Entscheidung S126): Mobile wird nur im Querformat unterstuetzt
+ * (Orientierungssperre, siehe layout.css/#orientierung-hinweis). Die {@code isPortrait}-Zweige
+ * bleiben bewusst als Fallback fuer Nicht-Touch-Hochformat-Fenster erhalten (z.B. schmal
+ * gezogenes Desktop-Browserfenster) und sind durch layout.test.ts abgedeckt; auf echten
+ * Touch-Geraeten greift praktisch nur der Landscape-Zweig.</p>
  */
 import type { SpielerPosition } from '../modelle/TischAnsichtModell';
 import { SPIELER_POSITION } from '../modelle/TischAnsichtModell';

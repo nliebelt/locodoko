@@ -30,6 +30,8 @@ export class LoginSzene extends Phaser.Scene {
       color: '#a3c4a8'
     }).setOrigin(0.5);
 
+    this.zeigeLoginFehlerHinweis();
+
     // Phaser-basierter Schnellstart (funktioniert immer)
     new PhaserButton(this, {
       x: this.scale.width / 2, y: 620,
@@ -77,6 +79,28 @@ export class LoginSzene extends Phaser.Scene {
       fontSize: '16px',
       color: '#f8f9fa'
     }).setOrigin(0.5);
+  }
+
+  /**
+   * Zeigt einen Hinweis, falls der OAuth2-Login abgelehnt wurde (z.B. E-Mail-Konflikt
+   * mit einem bestehenden, nicht verknuepfbaren Passwort-Konto). Der Query-Parameter wird
+   * danach aus der URL entfernt, damit der Hinweis bei einem Reload nicht erneut erscheint.
+   */
+  private zeigeLoginFehlerHinweis(): void {
+    const fehler = new URLSearchParams(window.location.search).get('fehler');
+    if (fehler !== 'email_konflikt') {
+      return;
+    }
+
+    this.add.text(this.scale.width / 2, 220,
+      'Diese E-Mail ist bereits mit einem Konto registriert.\nBitte per Passwort anmelden oder die E-Mail-Adresse verifizieren.', {
+        fontFamily: FONT_FAMILY,
+        fontSize: '16px',
+        color: '#ff6b6b',
+        align: 'center'
+      }).setOrigin(0.5);
+
+    window.history.replaceState({}, '', window.location.pathname);
   }
 
   shutdown(): void {

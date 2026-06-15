@@ -101,8 +101,8 @@ test.describe('Vision Loop — Szenen S-00 bis S-14', () => {
     await page.waitForSelector('.ui-profil-schliessen', { timeout: 10_000 });
     await page.waitForTimeout(500);
     await screenshot(page, '22-spielerprofil', prefix);
-    // JS-click statt Locator-click: umgeht Playwright-Sichtbarkeitsprüfung
-    // (in mobile-portrait überdeckt das CSS-Portraitoverlay den Button)
+    // JS-click statt Locator-click: umgeht Playwright-Sichtbarkeitsprüfung robust
+    // (z.B. wenn ein Overlay/Canvas den Button kurzzeitig überlagert).
     await page.evaluate(() => (document.querySelector('.ui-profil-schliessen') as HTMLElement)?.click());
     await page.waitForTimeout(300);
 
@@ -114,8 +114,8 @@ test.describe('Vision Loop — Szenen S-00 bis S-14', () => {
       kiSchwierigkeit: 'STANDARD',
     }, false);
     // Warte auf Store-Update (bereich=TISCH), nicht auf Phaser-Szene:
-    // In mobile-portrait startet TischSzene unter dem Portrait-Overlay, getAktuelleSzene()
-    // kann vorübergehend hinter SpielverwaltungsSzene-Cleanup liegen.
+    // getAktuelleSzene() kann während des SpielverwaltungsSzene-Cleanups vorübergehend
+    // noch die alte Szene melden — der Store-Bereich ist die verlässlichere Quelle.
     await page.waitForFunction(
       () => (window as any).__locodoko?.appStore?.snapshot()?.bereich === 'TISCH',
       { timeout: 10_000 }

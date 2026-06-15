@@ -72,6 +72,58 @@ class OAuth2ErfolgsHandlerIntegrationTest {
         assertThat(spielerRepository.count()).isEqualTo(spielerVorher);
     }
 
+    @Test
+    void bestehendesVerifiziertesPasswortKonto_wirdBeiVerifiziertemGoogleLoginVerknuepft() throws Exception {
+        var passwortKonto = SpielerEntity.mitPasswort("merge-nutzer", "hash", "merge@example.com");
+        passwortKonto.verifiziereMail();
+        spielerRepository.saveAndFlush(passwortKonto);
+
+        var request = erstelleRequest();
+        var response = new MockHttpServletResponse();
+        var auth = erstelleOauth2Auth("sub-merge-789", "merge@example.com", "Merge Nutzer", true);
+
+        handler.onAuthenticationSuccess(request, response, auth);
+
+        assertThat(response.getRedirectedUrl()).isEqualTo("/");
+        var verknuepft = spielerRepository.findByExternalId("sub-merge-789");
+        assertThat(verknuepft).isPresent();
+        // Es ist dasselbe Konto (gleiche ID, gleicher Benutzername) — kein zweites angelegt
+        assertThat(verknuepft.get().id()).isEqualTo(passwortKonto.id());
+        assertThat(verknuepft.get().benutzername()).isEqualTo("merge-nutzer");
+    }
+
+    @Test
+    void bestehendesUnverifiziertesPasswortKonto_wirdNichtVerknuepft_loginAbgelehnt() throws Exception {
+        // email_verifiziert bleibt false (Standard von mitPasswort)
+        spielerRepository.saveAndFlush(SpielerEntity.mitPasswort("squatter", "hash", "konflikt@example.com"));
+
+        var request = erstelleRequest();
+        var response = new MockHttpServletResponse();
+        var auth = erstelleOauth2Auth("sub-konflikt-111", "konflikt@example.com", "Konflikt Nutzer", true);
+
+        handler.onAuthenticationSuccess(request, response, auth);
+
+        assertThat(response.getRedirectedUrl()).isEqualTo("/?fehler=email_konflikt");
+        // Keine Verknuepfung, kein zweites Konto
+        assertThat(spielerRepository.findByExternalId("sub-konflikt-111")).isEmpty();
+    }
+
+    @Test
+    void googleMailUnverifiziert_wirdNichtVerknuepft_loginAbgelehnt() throws Exception {
+        var passwortKonto = SpielerEntity.mitPasswort("verifiziert-nutzer", "hash", "google-unverif@example.com");
+        passwortKonto.verifiziereMail();
+        spielerRepository.saveAndFlush(passwortKonto);
+
+        var request = erstelleRequest();
+        var response = new MockHttpServletResponse();
+        var auth = erstelleOauth2Auth("sub-unverif-222", "google-unverif@example.com", "Unverif Nutzer", false);
+
+        handler.onAuthenticationSuccess(request, response, auth);
+
+        assertThat(response.getRedirectedUrl()).isEqualTo("/?fehler=email_konflikt");
+        assertThat(spielerRepository.findByExternalId("sub-unverif-222")).isEmpty();
+    }
+
     private MockHttpServletRequest erstelleRequest() {
         var request = new MockHttpServletRequest();
         request.setSession(new MockHttpSession());
@@ -79,7 +131,13 @@ class OAuth2ErfolgsHandlerIntegrationTest {
     }
 
     private OAuth2AuthenticationToken erstelleOauth2Auth(String sub, String email, String name) {
-        Map<String, Object> attrs = Map.of("sub", sub, "email", email, "name", name);
+        // Standard: verifizierte Google-Mail (Gmail liefert email_verified=true)
+        return erstelleOauth2Auth(sub, email, name, true);
+    }
+
+    private OAuth2AuthenticationToken erstelleOauth2Auth(String sub, String email, String name, boolean emailVerifiziert) {
+        Map<String, Object> attrs = Map.of(
+            "sub", sub, "email", email, "name", name, "email_verified", emailVerifiziert);
         var principal = new DefaultOAuth2User(List.of(), attrs, "sub");
         return new OAuth2AuthenticationToken(principal, List.of(), "google");
     }
