@@ -4,14 +4,17 @@
 
 ## Notiz
 
-**QA-VISION-MOBILE-LANDSCAPE + CLEANUP-VISION-SCREENSHOT-DUBLETTE** abgeschlossen (Session 129).
+**SEC-DEPS-FE-DEV-AUDIT** abgeschlossen (Session 129).
 
-- Alle 39 `mobile-landscape-*` Screenshots generiert und visuell geprüft: **kein Defekt** im Querformat (851×393). Kartenreihe, Nameplates, HUD, Modals — alles korrekt dargestellt.
-- Duplikat behoben: `screenshot('11-offene-tische', prefix)` aus beiden Specs entfernt (war immer byte-identisch mit `01-lobby`). Stale PNGs gelöscht.
-- Backend war nach 18h Laufzeit in bad state (CONSTRAINT_69-Fehler) — Neustart nötig. Ursache: H2 in-memory DB-Korruption nach langem Lauf + mvn-clean-Seiteneffekt. **Merke für nächste Iteration: Backend neu starten bevor E2E-Tests.**
-- Szenen-Tests laufen < 30s je Projekt (22s). Main vision-loop ~1min.
+- 2 kritische CVEs behoben: vitest + @vitest/coverage-v8 von 3.0.8 → 3.2.6 (Arbitrary File Read/Execute via UI-Server, CVSS 9.8).
+- vite von 6.4.2 → 6.4.3 (path traversal, server.fs.deny bypass, CVSS high).
+- brace-expansion (moderate DoS) via `npm audit fix` behoben.
+- **Unvermeidbare Rest-Advisories (dokumentiert, kein Blocker):**
+  - **esbuild HIGH** (GHSA-gv7w-rqvm-qjhr): Binary-Integrity-Prüfung im Deno-Modul-Pfad — Fix erfordert vite@8 (Major-Bump, breaking). Nur Dev-Toolchain, nicht in Prod-Bundle. Akzeptiert.
+  - **js-yaml MODERATE** (GHSA-h67p-54hq-rp68): DoS via repeated aliases in @redocly/openapi-core (Type-Generator). Fix erfordert openapi-typescript@8 (Major-Bump). Nur `npm run generate-types`, nie in Prod. Akzeptiert.
+- FE-Suite 467 Tests grün, Build grün, Lint grün.
 
-**Nächster Schritt:** SEC-DEPS-FE-DEV-AUDIT (npm audit, Dev-Dep-Vulnerabilities beheben).
+**Nächster Schritt:** QA-METRICS-REFRESH + QA-METRICS-TOOLING im selben Lauf bündeln.
 
 ## Legende
 
@@ -29,7 +32,7 @@
 
 - [x] **CLEANUP-VISION-SCREENSHOT-DUBLETTE** (E2E/Cleanup, autonom, winzig) — `desktop-01-lobby.png` und `desktop-11-offene-tische.png` sind **byte-identisch** (md5 `0dd0b563…`, Befund schon S120) — der „gefüllte Tischliste"-Screen wird nicht eigenständig erzeugt. **Fix:** im Szenen-Spec sicherstellen, dass `desktop-11` tatsächlich die gefüllte Lobby (2. Kontext) fotografiert, oder den redundanten Shot streichen. Am besten im selben Lauf wie **QA-VISION-MOBILE-LANDSCAPE** miterledigen. **DoD:** kein byte-identisches Screenshot-Paar mehr, das verschiedene Zustände darstellen soll. **Risiko:** niedrig.
 
-- [ ] **SEC-DEPS-FE-DEV-AUDIT** (Frontend/Sicherheit, autonom, klein) — `npm audit` meldet **7 Schwachstellen in Dev-Deps** (1 moderate `brace-expansion`, 4 high/2 critical über die `esbuild`→`vite`→`vitest`/`@vitest/*`-Kette). **Prod-Deps: 0 CVEs** (nicht ausgeliefert → kein Live-Blocker, aber Toolchain-Hygiene + Supply-Chain). **Fix:** `npm audit fix` für `brace-expansion` (non-breaking); für die esbuild/vite-Kette `npm audit fix --force` evaluieren = **Major-Bumps** (Vite/Vitest) — nur mit anschließend grünem `npm test && npm run build && npm run lint` übernehmen, sonst gezielt einzelne Transitives anheben. **Erste Datei zuerst:** `frontend/package.json` / `package-lock.json`. **DoD:** `npm audit` ohne high/critical (oder dokumentierte, unvermeidbare Rest-Advisories); FE-Suite + Build + Lint grün. **Risiko:** mittel (Major-Tooling-Bump kann Tests/Build brechen).
+- [x] **SEC-DEPS-FE-DEV-AUDIT** (Frontend/Sicherheit, autonom, klein) — `npm audit` meldet **7 Schwachstellen in Dev-Deps** (1 moderate `brace-expansion`, 4 high/2 critical über die `esbuild`→`vite`→`vitest`/`@vitest/*`-Kette). **Prod-Deps: 0 CVEs** (nicht ausgeliefert → kein Live-Blocker, aber Toolchain-Hygiene + Supply-Chain). **Fix:** `npm audit fix` für `brace-expansion` (non-breaking); für die esbuild/vite-Kette `npm audit fix --force` evaluieren = **Major-Bumps** (Vite/Vitest) — nur mit anschließend grünem `npm test && npm run build && npm run lint` übernehmen, sonst gezielt einzelne Transitives anheben. **Erste Datei zuerst:** `frontend/package.json` / `package-lock.json`. **DoD:** `npm audit` ohne high/critical (oder dokumentierte, unvermeidbare Rest-Advisories); FE-Suite + Build + Lint grün. **Risiko:** mittel (Major-Tooling-Bump kann Tests/Build brechen).
 
 - [ ] **QA-METRICS-REFRESH** (QA/Doc, autonom, klein) — `docs/metrics.md` ist auf Stand **S120** (BE 485 / FE 461 Tests); seither **BE 500 / FE 465**. **Fix:** `mvn clean verify` (JaCoCo) + `cd frontend && npx vitest run --coverage` neu vermessen, Zahlen + Datum aktualisieren, verbleibende Branch-Lücken benennen. Dabei die per-Namensheuristik testdatei-losen, aber ggf. nur indirekt abgedeckten Service-Klassen (z.B. `PartieLifecycleService`, `TischEchtzeitService`, `SpielverwaltungWebSocketController`) gegen den realen JaCoCo-Report prüfen und echte Lücken als Folge-Test-Tasks notieren. **Erste Datei zuerst:** `docs/metrics.md`. **DoD:** Report mit S128-Zahlen, reproduzierbar; etwaige echte Lücken als Tasks erfasst. **Risiko:** niedrig.
 
@@ -44,7 +47,7 @@
 > Nimm den **obersten noch offenen** Task. Alle autonom; bei Vision-Tasks fährt Ralph das Backend selbst headless hoch.
 
 1. ~~**QA-VISION-MOBILE-LANDSCAPE** (+ **CLEANUP-VISION-SCREENSHOT-DUBLETTE** im selben Lauf bündeln)~~ ✓ S129
-2. **SEC-DEPS-FE-DEV-AUDIT**
+2. ~~**SEC-DEPS-FE-DEV-AUDIT**~~ ✓ S129
 3. **QA-METRICS-REFRESH** (+ **QA-METRICS-TOOLING** im selben Lauf bündeln)
 4. **QA-FE-BIOME-COMPLEXITY**
 5. **PERF-FE-BUNDLE-SPLIT-2** (optional)
