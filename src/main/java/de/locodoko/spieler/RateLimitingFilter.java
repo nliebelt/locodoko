@@ -7,6 +7,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.http.HttpStatus;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
+import org.springframework.util.AntPathMatcher;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
@@ -21,6 +22,8 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 @Component
 public class RateLimitingFilter extends OncePerRequestFilter {
+
+    private final AntPathMatcher pathMatcher = new AntPathMatcher();
 
     private static final int MAX_LOGIN_VERSUCHE = 10;
     private static final long LOGIN_FENSTER_SEKUNDEN = 60;
@@ -56,7 +59,7 @@ public class RateLimitingFilter extends OncePerRequestFilter {
             return;
         }
 
-        String meldung = pruefRateLimit(normalisiereUri(request.getRequestURI()), request.getRemoteAddr());
+        String meldung = pruefRateLimit(request.getRequestURI(), request.getRemoteAddr());
         if (meldung != null) {
             schreibeRateLimitAntwort(response, meldung);
             return;
@@ -66,34 +69,36 @@ public class RateLimitingFilter extends OncePerRequestFilter {
     }
 
     private String pruefRateLimit(String uri, String ip) {
-        return switch (uri) {
-            case LOGIN_PFAD -> {
-                if (istRateLimitUeberschritten(ip, loginZugriffe, MAX_LOGIN_VERSUCHE, LOGIN_FENSTER_SEKUNDEN))
-                    yield "Zu viele Login-Versuche. Bitte in einer Minute erneut versuchen.";
-                yield null;
-            }
-            case BUGREPORT_PFAD -> {
-                if (istRateLimitUeberschritten(ip, bugreportZugriffe, MAX_BUGREPORT_VERSUCHE, BUGREPORT_FENSTER_SEKUNDEN))
-                    yield "Zu viele Bug-Reports. Bitte in 10 Minuten erneut versuchen.";
-                yield null;
-            }
-            case REGISTER_PFAD -> {
-                if (istRateLimitUeberschritten(ip, registerZugriffe, MAX_REGISTER_VERSUCHE, REGISTER_FENSTER_SEKUNDEN))
-                    yield "Zu viele Registrierungsversuche. Bitte in 10 Minuten erneut versuchen.";
-                yield null;
-            }
-            case RESET_PFAD -> {
-                if (istRateLimitUeberschritten(ip, resetZugriffe, MAX_RESET_VERSUCHE, RESET_FENSTER_SEKUNDEN))
-                    yield "Zu viele Passwort-Reset-Anfragen. Bitte in 10 Minuten erneut versuchen.";
-                yield null;
-            }
-            case DEBUG_LOG_PFAD -> {
-                if (istRateLimitUeberschritten(ip, debugZugriffe, MAX_DEBUG_VERSUCHE, DEBUG_FENSTER_SEKUNDEN))
-                    yield "Zu viele Log-Anfragen.";
-                yield null;
-            }
-            default -> null;
-        };
+        if (match(LOGIN_PFAD, uri)) {
+            if (istRateLimitUeberschritten(ip, loginZugriffe, MAX_LOGIN_VERSUCHE, LOGIN_FENSTER_SEKUNDEN))
+                return "Zu viele Login-Versuche. Bitte in einer Minute erneut versuchen.";
+            return null;
+        }
+        if (match(BUGREPORT_PFAD, uri)) {
+            if (istRateLimitUeberschritten(ip, bugreportZugriffe, MAX_BUGREPORT_VERSUCHE, BUGREPORT_FENSTER_SEKUNDEN))
+                return "Zu viele Bug-Reports. Bitte in 10 Minuten erneut versuchen.";
+            return null;
+        }
+        if (match(REGISTER_PFAD, uri)) {
+            if (istRateLimitUeberschritten(ip, registerZugriffe, MAX_REGISTER_VERSUCHE, REGISTER_FENSTER_SEKUNDEN))
+                return "Zu viele Registrierungsversuche. Bitte in 10 Minuten erneut versuchen.";
+            return null;
+        }
+        if (match(RESET_PFAD, uri)) {
+            if (istRateLimitUeberschritten(ip, resetZugriffe, MAX_RESET_VERSUCHE, RESET_FENSTER_SEKUNDEN))
+                return "Zu viele Passwort-Reset-Anfragen. Bitte in 10 Minuten erneut versuchen.";
+            return null;
+        }
+        if (match(DEBUG_LOG_PFAD, uri)) {
+            if (istRateLimitUeberschritten(ip, debugZugriffe, MAX_DEBUG_VERSUCHE, DEBUG_FENSTER_SEKUNDEN))
+                return "Zu viele Log-Anfragen.";
+            return null;
+        }
+        return null;
+    }
+
+    private boolean match(String pattern, String uri) {
+        return pathMatcher.match(pattern, uri) || pathMatcher.match(pattern + "/**", uri);
     }
 
     /**

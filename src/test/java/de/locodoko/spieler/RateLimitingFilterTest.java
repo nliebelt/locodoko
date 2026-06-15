@@ -52,6 +52,16 @@ class RateLimitingFilterTest {
         }
     }
 
+    /** Trailing Slashes oder mehrfache Slashes umgehen das Limit nicht. */
+    @Test
+    void pfadVariantenWerdenKorrektGematched() throws Exception {
+        for (int i = 0; i < 10; i++) {
+            assertThat(sendePost("/api/auth/login/", "1.2.3.99").getStatus()).isEqualTo(200);
+        }
+        assertThat(sendePost("/api/auth/login//", "1.2.3.99").getStatus()).isEqualTo(429);
+        assertThat(sendePost("/api/auth/login", "1.2.3.99").getStatus()).isEqualTo(429);
+    }
+
     /** Ohne pro-IP-Trennung würde der Zähler global laufen — ein einzelner Client
      *  könnte alle anderen Nutzer aussperren. */
     @Test

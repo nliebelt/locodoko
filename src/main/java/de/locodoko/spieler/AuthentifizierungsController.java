@@ -80,28 +80,34 @@ public class AuthentifizierungsController {
             return ResponseEntity.status(HttpStatus.CONFLICT).build();
         }
 
+        boolean emailKollision = false;
+        if (anfrage.email() != null && !anfrage.email().isBlank()) {
+            emailKollision = spielerRepository.findByEmail(anfrage.email()).isPresent();
+        }
+
         String passwortHash = passwordEncoder.encode(anfrage.passwort());
-        SpielerEntity spieler = SpielerEntity.mitPasswort(anfrage.benutzername(), passwortHash, anfrage.email());
+        String gesicherteEmail = emailKollision ? null : anfrage.email();
+        SpielerEntity spieler = SpielerEntity.mitPasswort(anfrage.benutzername(), passwortHash, gesicherteEmail);
 
         HttpSession session = request.getSession(true);
         spieler.setzeSessionId(session.getId());
         session.setMaxInactiveInterval((int) eigenschaften.getTimeout().toSeconds());
 
         String verifikationsToken = null;
-        if (anfrage.email() != null && !anfrage.email().isBlank()) {
+        if (gesicherteEmail != null) {
             verifikationsToken = spieler.erzeugeEmailVerifizierungsToken();
         }
 
         try {
             spieler = spielerRepository.saveAndFlush(spieler);
         } catch (DataIntegrityViolationException e) {
-            // DB-Constraint greift bei Race Condition (zwei parallele Registrierungen mit gleichem Benutzernamen/E-Mail).
+            // DB-Constraint greift bei Race Condition (zwei parallele Registrierungen mit gleichem Benutzernamen).
             return ResponseEntity.status(HttpStatus.CONFLICT).build();
         }
         LOGGER.info("Neuer Spieler registriert: {} (benutzername={})", spieler.id(), anfrage.benutzername());
 
         if (verifikationsToken != null) {
-            mailService.sendeVerifizierungsEmail(anfrage.email(), verifikationsToken);
+            mailService.sendeVerifizierungsEmail(gesicherteEmail, verifikationsToken);
         }
 
         return ResponseEntity.status(HttpStatus.CREATED).body(AuthentifizierungsAntwort.aus(spieler));
@@ -119,7 +125,16 @@ public class AuthentifizierungsController {
         HttpServletRequest request
     ) {
         SpielerEntity spieler = spielerRepository.findByBenutzername(anfrage.benutzername()).orElse(null);
-        if (spieler == null || !passwordEncoder.matches(anfrage.passwort(), spieler.passwortHash())) {
+        boolean passwortKorrekt = false;
+        
+        if (spieler != null) {
+            passwortKorrekt = passwordEncoder.matches(anfrage.passwort(), spieler.passwortHash());
+        } else {
+            // Dummy-Vergleich zur Verhinderung von Timing-Enumeration-Angriffen
+            passwordEncoder.matches(anfrage.passwort(), "$2a$10$dXJ3SW6G7P50lGmMkkmwe.20cQQubK3.HZWzG3YB1tlRy.fqvM/BG");
+        }
+
+        if (spieler == null || !passwortKorrekt) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
 
