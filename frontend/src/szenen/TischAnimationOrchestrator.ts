@@ -3,10 +3,12 @@ import { SPIELER_POSITION, PARTEI, type TischAnsichtModell, type SpielerPosition
 import type { Ansage, KarteAntwort, AbgeschlossenerStichAntwort, PartieStandAntwort } from '../modelle/SpielverwaltungDto';
 import type { AppZustand } from '../store/AppStore';
 import { appStore } from '../anwendung';
-import { berechneLayout, stichSlotPositionen, berechneKartenGroesse, berechneKartenAbstand, stichStapelPositionFuer, nameplatePositionFuer } from './layout';
+import { berechneLayout, stichSlotPositionen, berechneKartenGroesse, berechneKartenAbstand, stichStapelPositionFuer, nameplatePositionFuer, type TischLayout } from './layout';
 import { formatiereAnsage } from './tischFormatierer';
 import { Logger } from '../logger';
 import type { AnimierbareKartenobjekte } from '../services/AnimationenService';
+
+type AusteilPaket = { kartenobjekte: AnimierbareKartenobjekte; ziel: { x: number; y: number } };
 
 export class TischAnimationOrchestrator {
   constructor(private szene: TischSzene) {}
@@ -104,41 +106,72 @@ export class TischAnimationOrchestrator {
 
   public async starteAusteilen(modell: TischAnsichtModell, zustand: AppZustand): Promise<void> {
     const { width: b, height: h } = this.szene.scale.gameSize;
-    const layout = berechneLayout(b, h) ;
+    const layout = berechneLayout(b, h);
     const kg = berechneKartenGroesse(b);
     const kAb = berechneKartenAbstand(b, h);
 
     const uhrzeigersinn: SpielerPosition[] = [SPIELER_POSITION.SUED, SPIELER_POSITION.WEST, SPIELER_POSITION.NORD, SPIELER_POSITION.OST];
+    const dealReihenfolge = this.berechneAusteilReihenfolge(modell, uhrzeigersinn);
+
+    const kartenProSpieler = new Map<SpielerPosition, AusteilPaket[]>();
+    for (const s of dealReihenfolge) {
+      kartenProSpieler.set(s.position, this.erstelleSpielerKartenPakete(s, b, h, layout, kAb, kg));
+    }
+
+    const pakete = this.erstelleAusteilSequenz(dealReihenfolge, kartenProSpieler);
+    try {
+      await this.szene.animationen?.animiereKartenAusteilen(pakete);
+    } finally {
+      pakete.forEach((p) => p.kartenobjekte.wurzel.destroy());
+      this.szene.austeilenAktiv = false;
+      this.szene.renderTisch(this.szene.letzterZustand ?? zustand);
+    }
+  }
+
+  private berechneAusteilReihenfolge(
+    modell: TischAnsichtModell,
+    uhrzeigersinn: SpielerPosition[]
+  ): TischAnsichtModell['spieler'] {
     const geber = modell.spieler.find((s) => s.istGeber);
     const geberIdx = geber ? uhrzeigersinn.indexOf(geber.position) : 0;
-    const dealReihenfolge = [1, 2, 3, 0].map((offset) => {
+    return [1, 2, 3, 0].map((offset) => {
       const pos = uhrzeigersinn[(geberIdx + offset) % 4];
       return modell.spieler.find((s) => s.position === pos);
     }).filter((s): s is TischAnsichtModell['spieler'][number] => s !== undefined);
+  }
 
-    type Paket = { kartenobjekte: AnimierbareKartenobjekte; ziel: { x: number; y: number } };
-    const kartenProSpieler = new Map<SpielerPosition, Paket[]>();
-    for (const s of dealReihenfolge) {
-      const kAnz = s.sichtbareHandkarten.length > 0 ? s.sichtbareHandkarten.length : Math.max(s.verbleibendeKarten, 0);
-      const istH = s.position === SPIELER_POSITION.SUED || s.position === SPIELER_POSITION.NORD;
-      const stX = istH ? b / 2 - ((kAnz - 1) * kAb.horizontal) / 2 : layout[s.position].kartenX;
-      const fMap: Record<SpielerPosition, [number, number]> = { SUED: [-12, 5], NORD: [12, -5], WEST: [78, 5], OST: [102, -5] };
-      const [fB, fS] = fMap[s.position];
-      const istG = s.position === SPIELER_POSITION.NORD || s.position === SPIELER_POSITION.OST;
-      const spielerPakete: Paket[] = [];
-      for (let i = 0; i < kAnz; i++) {
-        const fI = istG ? kAnz - 1 - i : i;
-        const w = fB + fI * fS;
-        const k = s.sichtbareHandkarten?.[i];
-        const wuz = (s.istSelbst && k) ? this.szene.kartenRenderer.erstelleKartenansicht(b / 2, h / 2, kg.w, kg.h, { karte: k }) : this.szene.kartenRenderer.erstelleKartenansicht(b / 2, h / 2, kg.w, kg.h, { verdeckt: true });
-        wuz.setAngle(w);
-        wuz.setDepth(10);
-        spielerPakete.push({ kartenobjekte: { wurzel: wuz, bild: wuz.bildObjekt  }, ziel: { x: istH ? stX + fI * kAb.horizontal : layout[s.position].kartenX, y: istH ? layout[s.position].kartenY : layout[s.position].kartenY + fI * kAb.vertikal } });
-      }
-      kartenProSpieler.set(s.position, spielerPakete);
+  private erstelleSpielerKartenPakete(
+    s: TischAnsichtModell['spieler'][number],
+    b: number, h: number,
+    layout: TischLayout,
+    kAb: { horizontal: number; vertikal: number },
+    kg: { w: number; h: number }
+  ): AusteilPaket[] {
+    const kAnz = s.sichtbareHandkarten.length > 0 ? s.sichtbareHandkarten.length : Math.max(s.verbleibendeKarten, 0);
+    const istH = s.position === SPIELER_POSITION.SUED || s.position === SPIELER_POSITION.NORD;
+    const stX = istH ? b / 2 - ((kAnz - 1) * kAb.horizontal) / 2 : layout[s.position].kartenX;
+    const fMap: Record<SpielerPosition, [number, number]> = { SUED: [-12, 5], NORD: [12, -5], WEST: [78, 5], OST: [102, -5] };
+    const [fB, fS] = fMap[s.position];
+    const istG = s.position === SPIELER_POSITION.NORD || s.position === SPIELER_POSITION.OST;
+    const pakete: AusteilPaket[] = [];
+    for (let i = 0; i < kAnz; i++) {
+      const fI = istG ? kAnz - 1 - i : i;
+      const k = s.sichtbareHandkarten?.[i];
+      const wuz = (s.istSelbst && k)
+        ? this.szene.kartenRenderer.erstelleKartenansicht(b / 2, h / 2, kg.w, kg.h, { karte: k })
+        : this.szene.kartenRenderer.erstelleKartenansicht(b / 2, h / 2, kg.w, kg.h, { verdeckt: true });
+      wuz.setAngle(fB + fI * fS);
+      wuz.setDepth(10);
+      pakete.push({ kartenobjekte: { wurzel: wuz, bild: wuz.bildObjekt }, ziel: { x: istH ? stX + fI * kAb.horizontal : layout[s.position].kartenX, y: istH ? layout[s.position].kartenY : layout[s.position].kartenY + fI * kAb.vertikal } });
     }
+    return pakete;
+  }
 
-    const pakete: Paket[] = [];
+  private erstelleAusteilSequenz(
+    dealReihenfolge: TischAnsichtModell['spieler'],
+    kartenProSpieler: Map<SpielerPosition, AusteilPaket[]>
+  ): AusteilPaket[] {
+    const pakete: AusteilPaket[] = [];
     const perPlayerIndex = new Map<SpielerPosition, number>(dealReihenfolge.map((s) => [s.position, 0]));
     for (const rundeKarten of [3, 4, 3]) {
       for (let k = 0; k < rundeKarten; k++) {
@@ -149,8 +182,7 @@ export class TischAnimationOrchestrator {
         }
       }
     }
-
-    try { await this.szene.animationen?.animiereKartenAusteilen(pakete); } finally { pakete.forEach((p) => p.kartenobjekte.wurzel.destroy()); this.szene.austeilenAktiv = false; this.szene.renderTisch(this.szene.letzterZustand ?? zustand); }
+    return pakete;
   }
 
   public async starteAnsageBannerAnimationen(neue: Ansage[]): Promise<void> {

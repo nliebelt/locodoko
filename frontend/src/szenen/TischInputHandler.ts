@@ -46,6 +46,60 @@ export class TischInputHandler {
     }
   }
 
+  /** Prueft ob der Fokus in einem Formularfeld liegt (kein Shortcut in diesem Fall). */
+  private istFormularFeld(e: KeyboardEvent): boolean {
+    const ziel = e.target as HTMLElement | null;
+    return !!(ziel && (ziel.tagName === 'INPUT' || ziel.tagName === 'TEXTAREA' || ziel.tagName === 'SELECT' || ziel.isContentEditable));
+  }
+
+  /** Globale Navigationskuerzel (I=Seitenlade, S=Einstellungen, H=Hilfe) — immer verfuegbar. */
+  private verarbeiteGlobaleTasten(e: KeyboardEvent): boolean {
+    if (e.key === 'i' || e.key === 'I') { this.kontext.togglSeitenlade(); e.preventDefault(); return true; }
+    if (e.key === 's' || e.key === 'S') { this.kontext.togglEinstellungen(); e.preventDefault(); return true; }
+    if (e.key === 'h' || e.key === 'H') { this.kontext.togglHilfe(); e.preventDefault(); return true; }
+    return false;
+  }
+
+  /** Armut-Antwort-Shortcuts (Annehmen/Ablehnen) — direkt ohne DOM-Button-Suche. */
+  private verarbeiteArmutAntwortTasten(e: KeyboardEvent, modell: TischAnsichtModell, zustand: AppZustand): boolean {
+    if (modell.aktuellerSpieler !== SPIELER_POSITION.SUED) return false;
+    if (modell.armutAktion?.modus !== 'ANTWORTEN') return false;
+    if (this.kontext.isArmutAnnahmeAktiv()) return false;
+    if (e.key === 'a' || e.key === 'A') {
+      if (modell.armutAktion.kartenAnzahl === 0) {
+        appStore.beantworteArmut(true, []);
+      } else {
+        this.kontext.setArmutAnnahmeAktiv(true);
+        this.kontext.getAusgewaehlteArmutKarten().clear();
+        this.kontext.renderTisch(zustand, modell);
+      }
+      e.preventDefault();
+      return true;
+    }
+    if (e.key === 'n' || e.key === 'N') {
+      this.kontext.setArmutAnnahmeAktiv(false);
+      this.kontext.getAusgewaehlteArmutKarten().clear();
+      appStore.beantworteArmut(false, []);
+      e.preventDefault();
+      return true;
+    }
+    return false;
+  }
+
+  private verarbeiteSeitenladeUndEinstellungen(e: KeyboardEvent): boolean {
+    if (this.kontext.isSeitenladeOffen() && e.key === 'Escape') {
+      this.kontext.togglSeitenlade();
+      e.preventDefault();
+      return true;
+    }
+    if (this.kontext.isEinstellungenOffen()) {
+      // Keine Focus-Trap fuer Phaser-Modal moeglich — Escape schliesst
+      if (e.key === 'Escape') { this.kontext.togglEinstellungen(); e.preventDefault(); }
+      return true;
+    }
+    return false;
+  }
+
   /**
    * Zentraler Tastatur dispatcher: prueft den aktuellen Kontext (Vorbehalt-Modal offen?
    * Rundenende-Modal offen? etc.) und delegiert an den passenden Handler.
@@ -53,94 +107,21 @@ export class TischInputHandler {
   private verarbeiteTastatureingabe(e: KeyboardEvent): void {
     const modell = this.kontext.getLetztesModell();
     const zustand = this.kontext.getLetzterZustand();
-    if (!modell || !zustand) {
-      return;
-    }
+    if (!modell || !zustand) return;
+    if (this.istFormularFeld(e)) return;
+    if (this.kontext.isPhaserModalOffen()) return;
+    if (this.verarbeiteGlobaleTasten(e)) return;
+    if (this.verarbeiteSeitenladeUndEinstellungen(e)) return;
 
-    // C1: Kein Shortcut wenn der Fokus in einem Formularfeld liegt (z.B. Bugreport-Textarea)
-    const ziel = e.target as HTMLElement | null;
-    if (ziel && (ziel.tagName === 'INPUT' || ziel.tagName === 'TEXTAREA' || ziel.tagName === 'SELECT' || ziel.isContentEditable)) {
-      return;
-    }
-
-    // C2: Kein Shortcut wenn ein Phaser-Modal (RundenEnde/PartieEnde) offen ist
-    if (this.kontext.isPhaserModalOffen()) {
-      return;
-    }
-
-    // 1. Navigationskuerzel (immer verfuegbar, auch waehrend Vorbehalt/Armut): I=Seitenlade, S=Einstellungen
-    if (e.key === 'i' || e.key === 'I') {
-      this.kontext.togglSeitenlade();
-      e.preventDefault();
-      return;
-    }
-    if (e.key === 's' || e.key === 'S') {
-      this.kontext.togglEinstellungen();
-      e.preventDefault();
-      return;
-    }
-    if (e.key === 'h' || e.key === 'H') {
-      this.kontext.togglHilfe();
-      e.preventDefault();
-      return;
-    }
-
-    // 2. Seitenlade (Phaser): Escape schliesst
-    if (this.kontext.isSeitenladeOffen() && e.key === 'Escape') {
-      this.kontext.togglSeitenlade();
-      e.preventDefault();
-      return;
-    }
-
-    // 3. Einstellungs-Modal (Phaser): Escape schliesst
-    if (this.kontext.isEinstellungenOffen()) {
-      if (e.key === 'Escape') {
-        this.kontext.togglEinstellungen();
-        e.preventDefault();
-      }
-      // Keine Focus-Trap fuer Phaser-Modal noetig/moeglich via DOM
-      return;
-    }
-
-    // 4. Vorbehalt-Dialog hat absoluten Vorrang — keine anderen Shortcuts moeglich
+    // Vorbehalt-Dialog hat absoluten Vorrang
     const vorbehaltAktiv = modell.aktuellerSpieler === SPIELER_POSITION.SUED && modell.moeglicheVorbehalte.length > 0;
-    if (vorbehaltAktiv) {
-      this.verarbeiteVorbehaltTaste(e, modell);
-      return;
-    }
+    if (vorbehaltAktiv) { this.verarbeiteVorbehaltTaste(e, modell); return; }
 
-    // 5. Armut-Antwort-Shortcuts (Annehmen / Ablehnen) — direkt ohne DOM-Button-Suche
-    if (modell.aktuellerSpieler === SPIELER_POSITION.SUED
-        && modell.armutAktion?.modus === 'ANTWORTEN'
-        && !this.kontext.isArmutAnnahmeAktiv()) {
-      if (e.key === 'a' || e.key === 'A') {
-        if (modell.armutAktion.kartenAnzahl === 0) {
-          appStore.beantworteArmut(true, []);
-        } else {
-          this.kontext.setArmutAnnahmeAktiv(true);
-          this.kontext.getAusgewaehlteArmutKarten().clear();
-          this.kontext.renderTisch(zustand, modell);
-        }
-        e.preventDefault();
-        return;
-      }
-      if (e.key === 'n' || e.key === 'N') {
-        this.kontext.setArmutAnnahmeAktiv(false);
-        this.kontext.getAusgewaehlteArmutKarten().clear();
-        appStore.beantworteArmut(false, []);
-        e.preventDefault();
-        return;
-      }
-    }
+    if (this.verarbeiteArmutAntwortTasten(e, modell, zustand)) return;
 
-    // 7. Ansage-Kuerzel (nur moeglich wenn am Zug und Karten vorhanden)
     if (modell.aktuellerSpieler === SPIELER_POSITION.SUED && modell.moeglicheAnsagen.length > 0) {
-      if (this.verarbeiteAnsageTaste(e, modell)) {
-        return;
-      }
+      if (this.verarbeiteAnsageTaste(e, modell)) return;
     }
-
-    // 8. Kartennavigation (nur moeglich wenn am Zug)
     if (modell.aktuellerSpieler === SPIELER_POSITION.SUED && modell.spielbareKarten.length > 0) {
       this.verarbeiteKartenTaste(e, modell);
     }
@@ -216,34 +197,32 @@ export class TischInputHandler {
     };
   }
 
+  private berechneNeuenKartenIndex(key: string, aktIdx: number, anzahl: number): number | 'spielen' | 'ignorieren' {
+    if (key === 'ArrowLeft') return aktIdx < 0 ? anzahl - 1 : (aktIdx - 1 + anzahl) % anzahl;
+    if (key === 'ArrowRight' || key === 'Tab') return aktIdx < 0 ? 0 : (aktIdx + 1) % anzahl;
+    if (key === 'Home') return 0;
+    if (key === 'End') return anzahl - 1;
+    if (key === 'Enter' || key === ' ') return 'spielen';
+    if (key === 'Escape') return -1;
+    return 'ignorieren';
+  }
+
   private verarbeiteKartenTaste(e: KeyboardEvent, modell: TischAnsichtModell): void {
-    if (this.kontext.isSpielzugAnimationAktiv()) {
-      return;
-    }
+    if (this.kontext.isSpielzugAnimationAktiv()) return;
 
     const anzahl = modell.spielbareKarten.length;
-    let aktIdx = this.kontext.getTastaturKarteIndex();
+    const ergebnis = this.berechneNeuenKartenIndex(e.key, this.kontext.getTastaturKarteIndex(), anzahl);
+    if (ergebnis === 'ignorieren') return;
 
-    if (e.key === 'ArrowLeft') {
-      aktIdx = aktIdx < 0 ? anzahl - 1 : (aktIdx - 1 + anzahl) % anzahl;
-    } else if (e.key === 'ArrowRight' || e.key === 'Tab') {
-      aktIdx = aktIdx < 0 ? 0 : (aktIdx + 1) % anzahl;
-    } else if (e.key === 'Home') {
-      aktIdx = 0;
-    } else if (e.key === 'End') {
-      aktIdx = anzahl - 1;
-    } else if (e.key === 'Enter' || e.key === ' ') {
+    if (ergebnis === 'spielen') {
+      const aktIdx = this.kontext.getTastaturKarteIndex();
       if (aktIdx >= 0 && aktIdx < anzahl) {
         void this.kontext.spieleKarteMitAnimation(modell.spielbareKarten[aktIdx]);
       }
       return;
-    } else if (e.key === 'Escape') {
-      aktIdx = -1;
-    } else {
-      return;
     }
 
-    this.kontext.setTastaturKarteIndex(aktIdx);
+    this.kontext.setTastaturKarteIndex(ergebnis);
     this.kontext.renderTisch(this.kontext.getLetzterZustand()!, modell);
     e.preventDefault();
   }

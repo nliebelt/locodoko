@@ -109,31 +109,7 @@ export class SpielprotokollOverlay extends Phaser.GameObjects.Container {
     }
 
     eintraege.forEach((e, idx) => {
-      const yPos = idx * rowH;
-      const isLast = idx === eintraege.length - 1;
-      const rowColor = isLast ? '#44aaff' : '#f0e6ff';
-      const style = { ...rowStyle, color: rowColor };
-
-      this.listContainer.add(scene.add.text(colX.nr, yPos, e.nr.toString(), style));
-      this.listContainer.add(scene.add.text(colX.geber, yPos, e.geber.substring(0,1), style));
-      
-      let typShort = e.spieltyp;
-      if (typShort === 'NORMALSPIEL') typShort = 'NORMAL';
-      else if (typShort.startsWith('SOLO_')) typShort = typShort.replace('SOLO_', '');
-      this.listContainer.add(scene.add.text(colX.typ, yPos, typShort, style));
-      
-      this.listContainer.add(scene.add.text(colX.bock, yPos, e.istBockrunde ? 'JA' : '-', e.istBockrunde ? rowBockStyle : style));
-
-      posOrder.forEach((pos, pIdx) => {
-        const px = colX.spieler + pIdx * pColWidth;
-        const pData = e.punkteProSpieler[pos];
-        const pkt = pData ? (pData.pkt > 0 ? `+${pData.pkt}` : pData.pkt.toString()) : '-';
-        const std = pData ? pData.stand.toString() : '-';
-        
-        const pktColor = pData && pData.pkt > 0 ? '#44ff88' : (pData && pData.pkt < 0 ? '#ff4455' : rowColor);
-        this.listContainer.add(scene.add.text(px, yPos, pkt, { ...style, color: pktColor }));
-        this.listContainer.add(scene.add.text(px + 35, yPos, std, style));
-      });
+      this.renderEintragZeile(scene, e, idx, eintraege.length, colX, posOrder, pColWidth, rowH, rowStyle, rowBockStyle);
     });
 
     const totalListHeight = eintraege.length * rowH;
@@ -154,6 +130,42 @@ export class SpielprotokollOverlay extends Phaser.GameObjects.Container {
     }
 
     scene.add.existing(this);
+  }
+
+  private renderEintragZeile(
+    scene: Phaser.Scene,
+    e: SpielprotokollEintrag,
+    idx: number,
+    gesamtAnzahl: number,
+    colX: { nr: number; geber: number; typ: number; bock: number; spieler: number },
+    posOrder: SpielerPosition[],
+    pColWidth: number,
+    rowH: number,
+    rowStyle: object,
+    rowBockStyle: object
+  ): void {
+    const yPos = idx * rowH;
+    const rowColor = idx === gesamtAnzahl - 1 ? '#44aaff' : '#f0e6ff';
+    const style = { ...rowStyle, color: rowColor };
+
+    this.listContainer.add(scene.add.text(colX.nr, yPos, e.nr.toString(), style));
+    this.listContainer.add(scene.add.text(colX.geber, yPos, e.geber.substring(0, 1), style));
+
+    let typShort = e.spieltyp;
+    if (typShort === 'NORMALSPIEL') typShort = 'NORMAL';
+    else if (typShort.startsWith('SOLO_')) typShort = typShort.replace('SOLO_', '');
+    this.listContainer.add(scene.add.text(colX.typ, yPos, typShort, style));
+    this.listContainer.add(scene.add.text(colX.bock, yPos, e.istBockrunde ? 'JA' : '-', e.istBockrunde ? rowBockStyle : style));
+
+    posOrder.forEach((pos, pIdx) => {
+      const px = colX.spieler + pIdx * pColWidth;
+      const pData = e.punkteProSpieler[pos];
+      const pkt = pData ? (pData.pkt > 0 ? `+${pData.pkt}` : pData.pkt.toString()) : '-';
+      const std = pData ? pData.stand.toString() : '-';
+      const pktColor = pData && pData.pkt > 0 ? '#44ff88' : (pData && pData.pkt < 0 ? '#ff4455' : rowColor);
+      this.listContainer.add(scene.add.text(px, yPos, pkt, { ...style, color: pktColor }));
+      this.listContainer.add(scene.add.text(px + 35, yPos, std, style));
+    });
   }
 
   destroy(fromScene?: boolean) {

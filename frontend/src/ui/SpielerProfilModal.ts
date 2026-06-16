@@ -129,29 +129,29 @@ export class SpielerProfilModal {
     `;
   }
 
-  private static erstelleStatistikInhalt(statistik: StatistikAntwortGenerated | undefined): string {
-    if (!statistik) {
-      return '<p class="ui-profil-leer">Noch keine Statistiken vorhanden.</p>';
-    }
-
+  private static berechneStatistikWerte(statistik: StatistikAntwortGenerated): {
+    anzahl: number; siege: number; siegquote: number;
+    punkteProSpiel: string; augenProSpiel: string; rating: string;
+    reRate: number; kontraRate: number;
+  } {
     const anzahl = statistik.anzahlSpiele ?? 0;
     const siege = statistik.anzahlSiege ?? 0;
     const siegquote = statistik.siegquote ?? (anzahl > 0 ? Math.round((siege / anzahl) * 100) : 0);
     const punkteProSpiel = statistik.durchschnittlichePunkteProSpiel?.toFixed(2) ?? '—';
     const augenProSpiel = statistik.durchschnittlicheAugenProSpiel?.toFixed(1) ?? '—';
-    const rating = statistik.konservativesRating !== undefined
-      ? statistik.konservativesRating.toFixed(1)
-      : '—';
-
+    const rating = statistik.konservativesRating !== undefined ? statistik.konservativesRating.toFixed(1) : '—';
     const reSpieleGesamt = (statistik.reSiege ?? 0) + (statistik.reNiederlagen ?? 0);
-    const reRate = reSpieleGesamt > 0
-      ? Math.round(((statistik.reSiege ?? 0) / reSpieleGesamt) * 100)
-      : 0;
+    const reRate = reSpieleGesamt > 0 ? Math.round(((statistik.reSiege ?? 0) / reSpieleGesamt) * 100) : 0;
     const kontraSpieleGesamt = (statistik.kontraSiege ?? 0) + (statistik.kontraNiederlagen ?? 0);
-    const kontraRate = kontraSpieleGesamt > 0
-      ? Math.round(((statistik.kontraSiege ?? 0) / kontraSpieleGesamt) * 100)
-      : 0;
+    const kontraRate = kontraSpieleGesamt > 0 ? Math.round(((statistik.kontraSiege ?? 0) / kontraSpieleGesamt) * 100) : 0;
+    return { anzahl, siege, siegquote, punkteProSpiel, augenProSpiel, rating, reRate, kontraRate };
+  }
 
+  private static erstelleStatistikInhalt(statistik: StatistikAntwortGenerated | undefined): string {
+    if (!statistik) {
+      return '<p class="ui-profil-leer">Noch keine Statistiken vorhanden.</p>';
+    }
+    const { anzahl, siege, siegquote, punkteProSpiel, augenProSpiel, rating, reRate, kontraRate } = SpielerProfilModal.berechneStatistikWerte(statistik);
     return `
       <section class="ui-profil-abschnitt">
         <h3 class="ui-profil-abschnitt-titel">Statistiken</h3>

@@ -359,6 +359,30 @@ export class TischKartenRenderer {
     this.persistenteEigeneKarten.clear();
   }
 
+  private setzeNameplateZustand(np: Nameplate, spieler: TischAnsichtModell['spieler'][number], modell: TischAnsichtModell): void {
+    if (modell.phase === 'VORBEHALT_ANSAGE' && modell.aktuellerSpieler === spieler.position) {
+      np.setZustand('amZug');
+      np.showVorbehalt();
+      return;
+    }
+    np.clearVorbehalt();
+    if (modell.aktuellerSpieler === spieler.position) {
+      np.setZustand('amZug');
+    } else if (spieler.istGeber) {
+      np.setZustand('geber');
+    } else {
+      np.setZustand('default');
+    }
+  }
+
+  private setzeNameplateAnsage(np: Nameplate, spieler: TischAnsichtModell['spieler'][number], modell: TischAnsichtModell): void {
+    const eigeneAnsagen = modell.ansageHistorie.filter(a => a.position === spieler.position);
+    const reAnsage = eigeneAnsagen.find(a => ansageBadgeTyp(a.ansage) === 're');
+    const kontraAnsage = eigeneAnsagen.find(a => ansageBadgeTyp(a.ansage) === 'kontra');
+    if (reAnsage && !np.hatAnsageBadge()) np.showAnsage('re');
+    if (kontraAnsage && !np.hatAnsageBadge()) np.showAnsage('kontra');
+  }
+
   aktualisiereNameplate(spieler: TischAnsichtModell['spieler'][number], modell: TischAnsichtModell, nameplates: Map<SpielerPosition, Nameplate>, breite: number, hoehe: number): void {
     const pos = nameplatePositionFuer(spieler.position, breite, hoehe);
     let np = nameplates.get(spieler.position);
@@ -379,28 +403,9 @@ export class TischKartenRenderer {
       np.setTeamfarbe(spieler.partei === PARTEI.RE ? 're' : 'kontra');
     }
 
-    if (modell.phase === 'VORBEHALT_ANSAGE' && modell.aktuellerSpieler === spieler.position) {
-      np.setZustand('amZug');
-      np.showVorbehalt();
-    } else {
-      np.clearVorbehalt();
-      if (modell.aktuellerSpieler === spieler.position) {
-        np.setZustand('amZug');
-      } else if (spieler.istGeber) {
-        np.setZustand('geber');
-      } else {
-        np.setZustand('default');
-      }
-    }
-
-    const eigeneAnsagen = modell.ansageHistorie.filter(a => a.position === spieler.position);
-    const reAnsage = eigeneAnsagen.find(a => ansageBadgeTyp(a.ansage) === 're');
-    const kontraAnsage = eigeneAnsagen.find(a => ansageBadgeTyp(a.ansage) === 'kontra');
-    if (reAnsage && !np.hatAnsageBadge()) np.showAnsage('re');
-    if (kontraAnsage && !np.hatAnsageBadge()) np.showAnsage('kontra');
-
-    const istHochzeitPartner = modell.spieltyp === SPIELTYP.HOCHZEIT && spieler.partei === PARTEI.RE;
-    np.setHochzeitPartner(istHochzeitPartner);
+    this.setzeNameplateZustand(np, spieler, modell);
+    this.setzeNameplateAnsage(np, spieler, modell);
+    np.setHochzeitPartner(modell.spieltyp === SPIELTYP.HOCHZEIT && spieler.partei === PARTEI.RE);
   }
 
   private ermittleArmutAuswahl(modell: TischAnsichtModell, handkarten: KarteAntwort[]): Set<string> | null {

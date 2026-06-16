@@ -22,6 +22,17 @@ export function speichereGeschwindigkeit(faktor: AnimationsGeschwindigkeit): voi
   localStorage.setItem(LS_GESCHWINDIGKEIT, wert);
 }
 
+interface ButtonFarben { hgF: number; rF: number; tF: string; }
+
+// overlay=true: Balatro-Purpur-Palette für Buttons in Modals (gold-primär/purpur-sekundär).
+// Default (grün) gilt für In-Game-HUD, Ansage- und Armut-Buttons auf dem Spieltisch.
+function berechneButtonFarben(d: boolean, hv: boolean, s: boolean, overlay: boolean): ButtonFarben {
+  if (d) return { hgF: 0x2a2a2a, rF: 0x555555, tF: '#888888' };
+  if (hv) return { hgF: 0xffd166, rF: 0xf8f9fa, tF: '#0d1f12' };
+  if (overlay) return { hgF: s ? 0x2d1d40 : 0xffd700, rF: 0x4a2d6a, tF: s ? '#f0e6ff' : '#1a1020' };
+  return { hgF: s ? 0x1a2a1a : 0x1a5a2a, rF: s ? 0x4a7a5a : 0x4adf7a, tF: '#f8f9fa' };
+}
+
 /** Erzeugt einen einfachen Aktionsbutton auf der Tischebene. */
 export function erstellePhaserButton(
   szene: Phaser.Scene,
@@ -30,11 +41,7 @@ export function erstellePhaserButton(
   txt: string, hdl: () => void,
   d = false, s = false, hv = false, testId?: string, overlay = false
 ): void {
-  // overlay=true: Balatro-Purpur-Palette für Buttons in Modals (gold-primär/purpur-sekundär).
-  // Default (grün) gilt für In-Game-HUD, Ansage- und Armut-Buttons auf dem Spieltisch.
-  const hgF = d ? 0x2a2a2a : hv ? 0xffd166 : overlay ? (s ? 0x2d1d40 : 0xffd700) : (s ? 0x1a2a1a : 0x1a5a2a);
-  const rF = d ? 0x555555 : hv ? 0xf8f9fa : overlay ? 0x4a2d6a : (s ? 0x4a7a5a : 0x4adf7a);
-  const tF = d ? '#888888' : hv ? '#0d1f12' : overlay ? (s ? '#f0e6ff' : '#1a1020') : '#f8f9fa';
+  const { hgF, rF, tF } = berechneButtonFarben(d, hv, s, overlay);
   const bg = szene.add.rectangle(x, y, w, h, hgF, d ? 0.5 : 0.92).setStrokeStyle(hv ? 2 : 1, rF, 0.9);
   if (testId) bg.setName(testId);
   ebene.add(bg);

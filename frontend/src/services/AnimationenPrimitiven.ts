@@ -34,14 +34,7 @@ export class AnimationenPrimitiven {
     const skalierteDauer = this.skalierteDauer(konfiguration.duration);
     if (skalierteDauer <= 0) {
       const ziele = Array.isArray(konfiguration.targets) ? konfiguration.targets : [konfiguration.targets];
-      ziele.forEach((ziel) => {
-        if (!ziel) return;
-        if (typeof konfiguration.x === 'number') (ziel as Punkt).x = konfiguration.x;
-        if (typeof konfiguration.y === 'number') (ziel as Punkt).y = konfiguration.y;
-        if (typeof konfiguration.alpha === 'number') (ziel as { alpha: number }).alpha = konfiguration.alpha;
-        if (typeof konfiguration.scaleX === 'number') (ziel as { scaleX: number }).scaleX = konfiguration.scaleX;
-        if (typeof konfiguration.scaleY === 'number') (ziel as { scaleY: number }).scaleY = konfiguration.scaleY;
-      });
+      this.wendeZielzustandSofortAn(konfiguration, ziele as unknown[]);
       return Promise.resolve();
     }
     return new Promise((resolve) => {
@@ -115,6 +108,20 @@ export class AnimationenPrimitiven {
 
   skalierteDauer(dauer: number): number {
     return Math.max(0, Math.round(dauer / Math.max(this.geschwindigkeitsfaktor, 0.01)));
+  }
+
+  private wendeZielzustandSofortAn(
+    konfiguration: Omit<Phaser.Types.Tweens.TweenBuilderConfig, 'duration' | 'onComplete'> & { duration: number },
+    ziele: unknown[]
+  ): void {
+    ziele.forEach((ziel) => {
+      if (!ziel) return;
+      if (typeof konfiguration.x === 'number') (ziel as Punkt).x = konfiguration.x;
+      if (typeof konfiguration.y === 'number') (ziel as Punkt).y = konfiguration.y;
+      if (typeof konfiguration.alpha === 'number') (ziel as { alpha: number }).alpha = konfiguration.alpha;
+      if (typeof konfiguration.scaleX === 'number') (ziel as { scaleX: number }).scaleX = konfiguration.scaleX;
+      if (typeof konfiguration.scaleY === 'number') (ziel as { scaleY: number }).scaleY = konfiguration.scaleY;
+    });
   }
 
   /** Flipper-Zähler: animiert Text-Objekt von 0 auf Zielwert (Flipper/Pinball-Stil). */

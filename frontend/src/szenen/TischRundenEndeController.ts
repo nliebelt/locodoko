@@ -2,7 +2,7 @@ import Phaser from 'phaser';
 import { appStore } from '../anwendung';
 import { Logger } from '../logger';
 import { PARTEI, SPIELER_POSITION } from '../modelle/TischAnsichtModell';
-import type { TischAnsichtModell } from '../modelle/TischAnsichtModell';
+import type { TischAnsichtModell, LetztesSpielergebnisAnsicht } from '../modelle/TischAnsichtModell';
 import type { AppZustand } from '../store/AppStore';
 import type { VorbehaltAnsage } from '../modelle/SpielverwaltungDto';
 import { PhaserModal } from '../ui/PhaserModal';
@@ -29,65 +29,17 @@ export class TischRundenEndeController {
     private readonly getLetzterZustand: () => AppZustand | undefined
   ) {}
 
-  async zeigeRundenEndeModal(m: TischAnsichtModell): Promise<void> {
-    const e = m.letztesSpielergebnis;
-    if (!e) {
-      Logger.szene('zeigeRundenEndeModal: kein Spielergebnis — Queue wird fortgesetzt');
-      appStore.setzeQueueFort();
-      return;
-    }
+  private erstelleAufschluesselung(e: LetztesSpielergebnisAnsicht): { label: string; punkte: number }[] {
+    if (e.punkteAufschluesselung.length > 0) return e.punkteAufschluesselung;
+    const zeilen: { label: string; punkte: number }[] = [{ label: 'Grundwert', punkte: e.grundwert }];
+    if (e.absagePunkte !== 0) zeilen.push({ label: 'Ansagen', punkte: e.absagePunkte });
+    if (e.gegenDieAltenPunkte > 0) zeilen.push({ label: 'Gegen die Alten', punkte: e.gegenDieAltenPunkte });
+    const sonderpunkte = e.sonderpunkteRe.length + e.sonderpunkteKontra.length;
+    if (sonderpunkte > 0) zeilen.push({ label: 'Sonderpunkte', punkte: sonderpunkte });
+    return zeilen;
+  }
 
-    const br = (window as { __locodoko?: { _rundenEndeModalGezeigt?: number; _rundenauswertungSpieltypLabel?: string; _rundenauswertungMultiplikator?: number } }).__locodoko;
-    if (br) {
-      br._rundenEndeModalGezeigt = (br._rundenEndeModalGezeigt ?? 0) + 1;
-      br._rundenauswertungSpieltypLabel = formatiereVorbehalt(e.spieltyp as VorbehaltAnsage) ?? e.spieltyp;
-      br._rundenauswertungMultiplikator = e.soloMultiplikator;
-    }
-
-    const anzahlS = this.getLetzterZustand()?.aktuellerTisch?.konfiguration?.anzahlSpiele;
-    const { width: bw, height: bh } = this.szene.scale.gameSize;
-    const cx = bw / 2, cy = bh / 2;
-    const spieltypLabel = formatiereVorbehalt(e.spieltyp as VorbehaltAnsage) ?? e.spieltyp;
-
-    this.phaserRundenEndeModal = new PhaserModal(this.szene, cx, cy, {
-      breite: 620,
-      hoehe: 520,
-      titel: anzahlS ? `${spieltypLabel} | Spiel ${e.spielNummer}/${anzahlS}` : `${spieltypLabel} | Spiel ${e.spielNummer}`,
-      aktionen: [{ text: 'Weiter', callback: () => this.schliesseRundenEndeModal() }]
-    });
-    this.rundenauswertungObjekte.push(this.phaserRundenEndeModal);
-
-    const gewinner = e.siegerPartei === PARTEI.RE ? 'RE gewinnt!' : 'KONTRA gewinnt!';
-    const siegerFarbe = e.siegerPartei === PARTEI.RE ? '#ffd700' : '#ff4455';
-    let ry = -520 / 2 + 70;
-
-    const siegerText = this.szene.add.text(0, ry, gewinner, {
-      fontSize: '18px', color: siegerFarbe, fontFamily: 'Press Start 2P', stroke: '#000', strokeThickness: 3
-    }).setOrigin(0.5, 0).setDepth(100);
-    this.phaserRundenEndeModal.getContentContainer().add(siegerText);
-    ry += 36;
-
-    const aufschluesselung = e.punkteAufschluesselung.length > 0
-      ? e.punkteAufschluesselung
-      : [
-          { label: 'Grundwert', punkte: e.grundwert },
-          ...(e.absagePunkte !== 0 ? [{ label: 'Ansagen', punkte: e.absagePunkte }] : []),
-          ...(e.gegenDieAltenPunkte > 0 ? [{ label: 'Gegen die Alten', punkte: e.gegenDieAltenPunkte }] : []),
-          ...(e.sonderpunkteRe.length + e.sonderpunkteKontra.length > 0
-            ? [{ label: 'Sonderpunkte', punkte: e.sonderpunkteRe.length + e.sonderpunkteKontra.length }]
-            : [])
-        ];
-
-    const countUpTexte: { wert: number; label: string; textObj: Phaser.GameObjects.Text }[] = [];
-    aufschluesselung.forEach((pc) => {
-      const txt = this.szene.add.text(-290, ry, `${pc.label}: 0`, {
-        fontSize: '12px', color: '#f0e6ff', fontFamily: 'Press Start 2P'
-      }).setOrigin(0, 0).setDepth(100);
-      this.phaserRundenEndeModal!.getContentContainer().add(txt);
-      countUpTexte.push({ wert: pc.punkte, label: pc.label, textObj: txt });
-      ry += 24;
-    });
-
+  private starteCountUpTween(countUpTexte: { wert: number; label: string; textObj: Phaser.GameObjects.Text }[]): void {
     const targets = countUpTexte.map(() => ({ t: 0 }));
     this.tweenCountUp = this.szene.tweens.add({
       targets,
@@ -109,6 +61,57 @@ export class TischRundenEndeController {
         });
       }
     });
+  }
+
+  async zeigeRundenEndeModal(m: TischAnsichtModell): Promise<void> {
+    const e = m.letztesSpielergebnis;
+    if (!e) {
+      Logger.szene('zeigeRundenEndeModal: kein Spielergebnis — Queue wird fortgesetzt');
+      appStore.setzeQueueFort();
+      return;
+    }
+
+    const br = (window as { __locodoko?: { _rundenEndeModalGezeigt?: number; _rundenauswertungSpieltypLabel?: string; _rundenauswertungMultiplikator?: number } }).__locodoko;
+    if (br) {
+      br._rundenEndeModalGezeigt = (br._rundenEndeModalGezeigt ?? 0) + 1;
+      br._rundenauswertungSpieltypLabel = formatiereVorbehalt(e.spieltyp as VorbehaltAnsage) ?? e.spieltyp;
+      br._rundenauswertungMultiplikator = e.soloMultiplikator;
+    }
+
+    const anzahlS = this.getLetzterZustand()?.aktuellerTisch?.konfiguration?.anzahlSpiele;
+    const { width: bw, height: bh } = this.szene.scale.gameSize;
+    const spieltypLabel = formatiereVorbehalt(e.spieltyp as VorbehaltAnsage) ?? e.spieltyp;
+
+    this.phaserRundenEndeModal = new PhaserModal(this.szene, bw / 2, bh / 2, {
+      breite: 620,
+      hoehe: 520,
+      titel: anzahlS ? `${spieltypLabel} | Spiel ${e.spielNummer}/${anzahlS}` : `${spieltypLabel} | Spiel ${e.spielNummer}`,
+      aktionen: [{ text: 'Weiter', callback: () => this.schliesseRundenEndeModal() }]
+    });
+    this.rundenauswertungObjekte.push(this.phaserRundenEndeModal);
+
+    const siegerFarbe = e.siegerPartei === PARTEI.RE ? '#ffd700' : '#ff4455';
+    const gewinner = e.siegerPartei === PARTEI.RE ? 'RE gewinnt!' : 'KONTRA gewinnt!';
+    let ry = -520 / 2 + 70;
+
+    const siegerText = this.szene.add.text(0, ry, gewinner, {
+      fontSize: '18px', color: siegerFarbe, fontFamily: 'Press Start 2P', stroke: '#000', strokeThickness: 3
+    }).setOrigin(0.5, 0).setDepth(100);
+    this.phaserRundenEndeModal.getContentContainer().add(siegerText);
+    ry += 36;
+
+    const aufschluesselung = this.erstelleAufschluesselung(e);
+    const countUpTexte: { wert: number; label: string; textObj: Phaser.GameObjects.Text }[] = [];
+    aufschluesselung.forEach((pc) => {
+      const txt = this.szene.add.text(-290, ry, `${pc.label}: 0`, {
+        fontSize: '12px', color: '#f0e6ff', fontFamily: 'Press Start 2P'
+      }).setOrigin(0, 0).setDepth(100);
+      this.phaserRundenEndeModal!.getContentContainer().add(txt);
+      countUpTexte.push({ wert: pc.punkte, label: pc.label, textObj: txt });
+      ry += 24;
+    });
+
+    this.starteCountUpTween(countUpTexte);
 
     ry += 12;
     const swText = this.szene.add.text(0, ry, `Spielwert: ${e.spielwert > 0 ? '+' : ''}${e.spielwert}`, {
@@ -119,8 +122,7 @@ export class TischRundenEndeController {
 
     e.spielpunkte.forEach((sp) => {
       const istSelbst = sp.position === SPIELER_POSITION.SUED;
-      const marker = istSelbst ? ' <<' : '';
-      const spTxt = this.szene.add.text(-290, ry, `${sp.name}: ${sp.punkte > 0 ? '+' : ''}${sp.punkte}${marker}`, {
+      const spTxt = this.szene.add.text(-290, ry, `${sp.name}: ${sp.punkte > 0 ? '+' : ''}${sp.punkte}${istSelbst ? ' <<' : ''}`, {
         fontSize: '10px', color: istSelbst ? '#ffd700' : '#c0b0d0', fontFamily: 'Press Start 2P'
       }).setOrigin(0, 0).setDepth(100);
       this.phaserRundenEndeModal!.getContentContainer().add(spTxt);
@@ -141,6 +143,16 @@ export class TischRundenEndeController {
     this.rundenauswertungObjekte.forEach((o) => o.destroy());
     this.rundenauswertungObjekte = [];
     appStore.setzeQueueFort();
+  }
+
+  private erstelleBerechungsZeilen(e: LetztesSpielergebnisAnsicht, sNMap: Map<string, string>): string[] {
+    const zeilen: string[] = [`Grundwert: +${e.grundwert}`];
+    if (e.absagePunkte !== 0) zeilen.push(`Ansagen: ${e.absagePunkte > 0 ? '+' : ''}${e.absagePunkte}`);
+    if (e.gegenDieAltenPunkte > 0) zeilen.push(`Gegen die Alten: +${e.gegenDieAltenPunkte}`);
+    if (e.soloMultiplikator > 1) zeilen.push(`Solo-Multiplikator: ×${e.soloMultiplikator}`);
+    const sp = [...e.sonderpunkteRe.map((s) => `Re: ${formatiereSonderpunkt(s, sNMap)}`), ...e.sonderpunkteKontra.map((s) => `Kontra: ${formatiereSonderpunkt(s, sNMap)}`)];
+    if (sp.length > 0) zeilen.push(`Sonderpunkte: ${sp.join(', ')}`);
+    return zeilen;
   }
 
   zeigePartieEndeModal(m: TischAnsichtModell): void {
@@ -179,81 +191,62 @@ export class TischRundenEndeController {
     // Ein Content-Start bei -280 überlappte den Titel ("Partie beendet" doppelt). 50px Abstand.
     let y = -230;
 
-    const infoTxt = this.szene.add.text(0, y, `${spieltypLabel} · ${anzahlS ? `Spiel ${e.spielNummer} von ${anzahlS}` : `Spiel ${e.spielNummer}`}`, {
+    container.add(this.szene.add.text(0, y, `${spieltypLabel} · ${anzahlS ? `Spiel ${e.spielNummer} von ${anzahlS}` : `Spiel ${e.spielNummer}`}`, {
       fontSize: '12px', color: '#d8f3dc', fontFamily: 'Press Start 2P'
-    }).setOrigin(0.5, 0);
-    container.add(infoTxt);
+    }).setOrigin(0.5, 0));
     y += 20;
 
-    const siegerTxt = this.szene.add.text(0, y, `${e.siegerPartei} gewinnt`, {
+    container.add(this.szene.add.text(0, y, `${e.siegerPartei} gewinnt`, {
       fontSize: '16px', color: siegerFarbe, fontFamily: 'Press Start 2P', stroke: '#000', strokeThickness: 2
-    }).setOrigin(0.5, 0);
-    container.add(siegerTxt);
+    }).setOrigin(0.5, 0));
     y += 28;
 
-    const augenTxt = this.szene.add.text(0, y, `Re ${e.augenRe}:${e.augenKontra} Kontra Augen`, {
+    container.add(this.szene.add.text(0, y, `Re ${e.augenRe}:${e.augenKontra} Kontra Augen`, {
       fontSize: '11px', color: '#90caf9', fontFamily: 'Press Start 2P'
-    }).setOrigin(0.5, 0);
-    container.add(augenTxt);
+    }).setOrigin(0.5, 0));
     y += 20;
 
     const reNamen = m.spieler.filter((s) => s.partei === PARTEI.RE).map((s) => s.name).join(', ') || '–';
     const kontraNamen = m.spieler.filter((s) => s.partei === PARTEI.KONTRA).map((s) => s.name).join(', ') || '–';
-    const parteienTxt = this.szene.add.text(0, y, `Re: ${reNamen}\nKontra: ${kontraNamen}`, {
+    container.add(this.szene.add.text(0, y, `Re: ${reNamen}\nKontra: ${kontraNamen}`, {
       fontSize: '9px', color: '#c0b0d0', fontFamily: 'Press Start 2P', align: 'center'
-    }).setOrigin(0.5, 0);
-    container.add(parteienTxt);
+    }).setOrigin(0.5, 0));
     y += 36;
 
-    const bZ: string[] = [`Grundwert: +${e.grundwert}`];
-    if (e.absagePunkte !== 0) bZ.push(`Ansagen: ${e.absagePunkte > 0 ? '+' : ''}${e.absagePunkte}`);
-    if (e.gegenDieAltenPunkte > 0) bZ.push(`Gegen die Alten: +${e.gegenDieAltenPunkte}`);
-    if (e.soloMultiplikator > 1) bZ.push(`Solo-Multiplikator: ×${e.soloMultiplikator}`);
-    const sp = [...e.sonderpunkteRe.map((s) => `Re: ${formatiereSonderpunkt(s, sNMap)}`), ...e.sonderpunkteKontra.map((s) => `Kontra: ${formatiereSonderpunkt(s, sNMap)}`)];
-    if (sp.length > 0) bZ.push(`Sonderpunkte: ${sp.join(', ')}`);
-
-    bZ.forEach((zeile) => {
-      const berechnungTxt = this.szene.add.text(-220, y, zeile, {
+    this.erstelleBerechungsZeilen(e, sNMap).forEach((zeile) => {
+      container.add(this.szene.add.text(-220, y, zeile, {
         fontSize: '10px', color: '#f0e6ff', fontFamily: 'Press Start 2P'
-      }).setOrigin(0, 0);
-      container.add(berechnungTxt);
+      }).setOrigin(0, 0));
       y += 18;
     });
 
     y += 6;
-    const spielwertTxt = this.szene.add.text(0, y, `Spielwert: ${e.spielwert > 0 ? '+' : ''}${e.spielwert}`, {
+    container.add(this.szene.add.text(0, y, `Spielwert: ${e.spielwert > 0 ? '+' : ''}${e.spielwert}`, {
       fontSize: '12px', color: siegerFarbe, fontFamily: 'Press Start 2P'
-    }).setOrigin(0.5, 0);
-    container.add(spielwertTxt);
+    }).setOrigin(0.5, 0));
     y += 22;
 
     e.spielpunkte.forEach((sp) => {
       const istSelbst = sp.position === SPIELER_POSITION.SUED;
-      const marker = istSelbst ? ' <<' : '';
-      const puntFarbe = sp.punkte >= 0 ? '#4adf7a' : '#ff6b6b';
-      const punktTxt = this.szene.add.text(-220, y, `${sp.name}: ${sp.punkte > 0 ? '+' : ''}${sp.punkte}${marker}`, {
-        fontSize: '10px', color: puntFarbe, fontFamily: 'Press Start 2P'
-      }).setOrigin(0, 0);
-      container.add(punktTxt);
+      container.add(this.szene.add.text(-220, y, `${sp.name}: ${sp.punkte > 0 ? '+' : ''}${sp.punkte}${istSelbst ? ' <<' : ''}`, {
+        fontSize: '10px', color: sp.punkte >= 0 ? '#4adf7a' : '#ff6b6b', fontFamily: 'Press Start 2P'
+      }).setOrigin(0, 0));
       y += 18;
     });
 
     y += 12;
-    const gesamtstandTitel = this.szene.add.text(0, y, 'Gesamtstand', {
+    container.add(this.szene.add.text(0, y, 'Gesamtstand', {
       fontSize: '12px', color: '#ffd700', fontFamily: 'Press Start 2P'
-    }).setOrigin(0.5, 0);
-    container.add(gesamtstandTitel);
+    }).setOrigin(0.5, 0));
     y += 20;
 
     const sortedGs = [...m.gesamtpunktestand].sort((a, b) => b.punkte - a.punkte).slice(0, 4);
     const maxPkt = sortedGs.length > 0 ? sortedGs[0].punkte : 0;
     sortedGs.forEach((ei) => {
       const istVorne = ei.punkte === maxPkt && maxPkt > 0;
-      const sternchenText = istVorne ? ' ★' : '';
-      const gsTxt = this.szene.add.text(-220, y, `${ei.name}${sternchenText}: ${ei.punkte}`, {
+      container.add(this.szene.add.text(-220, y, `${ei.name}${istVorne ? ' ★' : ''}: ${ei.punkte}`, {
         fontSize: '10px', color: istVorne ? '#ffd166' : '#c0b0d0', fontFamily: 'Press Start 2P'
-      }).setOrigin(0, 0);
-      container.add(gsTxt);
+      }).setOrigin(0, 0));
       y += 18;
     });
 

@@ -68,21 +68,23 @@ export function berechneLayout(breite: number, hoehe: number): TischLayout {
   };
 }
 
+// Landscape NORD oben-MITTE (nicht oben-rechts): verhindert Kollision mit OST-Nameplate (0.90/0.15)
+// und Überlappung mit NORD-Kartenfächer (oben-links, kartenX≈0.28).
+const NAMEPLATE_REL_POS: Record<SpielerPosition, { portrait: { x: number; y: number }; landscape: { x: number; y: number } }> = {
+  NORD: { portrait: { x: 0.85, y: 0.18 }, landscape: { x: 0.50, y: 0.12 } },
+  SUED: { portrait: { x: 0.85, y: 0.85 }, landscape: { x: 0.76, y: 0.85 } },
+  WEST: { portrait: { x: 0.20, y: 0.75 }, landscape: { x: 0.10, y: 0.85 } },
+  OST:  { portrait: { x: 0.80, y: 0.25 }, landscape: { x: 0.90, y: 0.15 } },
+};
+
 export function nameplatePositionFuer(
   spielerPosition: SpielerPosition,
   breite: number,
   hoehe: number
 ): { x: number; y: number } {
-  const isPortrait = hoehe > breite;
-  switch (spielerPosition) {
-    // Landscape: NORD oben-MITTE (nicht oben-rechts) — sonst kollidiert das Nameplate mit dem
-    // OST-Nameplate (0.90/0.15) und im Wartezimmer überlappen zwei Sitz-Kacheln oben rechts.
-    // Oben-Mitte ist zugleich frei vom eigenen NORD-Kartenfächer (oben-links, kartenX≈0.28).
-    case SPIELER_POSITION.NORD: return { x: isPortrait ? breite * 0.85 : breite * 0.50, y: isPortrait ? hoehe * 0.18 : hoehe * 0.12 };
-    case SPIELER_POSITION.SUED: return { x: isPortrait ? breite * 0.85 : breite * 0.76, y: isPortrait ? hoehe * 0.85 : hoehe * 0.85 };
-    case SPIELER_POSITION.WEST: return { x: isPortrait ? breite * 0.20 : breite * 0.10, y: isPortrait ? hoehe * 0.75 : hoehe * 0.85 };
-    case SPIELER_POSITION.OST:  return { x: isPortrait ? breite * 0.80 : breite * 0.90, y: isPortrait ? hoehe * 0.25 : hoehe * 0.15 };
-  }
+  const modus = hoehe > breite ? 'portrait' : 'landscape';
+  const rel = NAMEPLATE_REL_POS[spielerPosition][modus];
+  return { x: breite * rel.x, y: hoehe * rel.y };
 }
 
 

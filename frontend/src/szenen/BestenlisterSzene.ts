@@ -110,6 +110,44 @@ export class BestenlisterSzene extends Phaser.Scene {
       });
   }
 
+  private farbeVonRang(rang: number): string {
+    const RANG_FARBEN = ['#f8c94e', '#c0c0c0', '#cd7f32'];
+    return RANG_FARBEN[rang] ?? '#d4e6d4';
+  }
+
+  private zeigeHeaderZeile(headerY: number): void {
+    HEADER_LABELS.forEach((label, k) => {
+      const t = this.add.text(SPALTEN[k], headerY, label, {
+        fontFamily: FONT_FAMILY,
+        fontSize: '14px',
+        color: '#f8c94e',
+        fontStyle: 'bold'
+      });
+      this.inhaltElemente.push(t);
+    });
+    const sep = this.add.rectangle(this.scale.width / 2, headerY + 22, 1200, 1, 0x4a7c59).setOrigin(0.5, 0.5);
+    this.inhaltElemente.push(sep);
+  }
+
+  private zeigeRangzeile(e: NonNullable<BestenlisteAntwortGenerated['eintraege']>[number], rang: number, y: number): void {
+    const zeile = [
+      String(e.rang ?? rang + 1),
+      e.spielerName ?? '–',
+      e.konservativesRating?.toFixed(2) ?? '–',
+      e.ratingMu?.toFixed(2) ?? '–',
+      String(e.anzahlSpiele ?? 0),
+      (e.siegquote?.toFixed(1) ?? '–') + ' %'
+    ];
+    zeile.forEach((inhalt, k) => {
+      const t = this.add.text(SPALTEN[k], y, inhalt, {
+        fontFamily: FONT_FAMILY,
+        fontSize: '14px',
+        color: this.farbeVonRang(rang)
+      });
+      this.inhaltElemente.push(t);
+    });
+  }
+
   private zeigeEintraege(antwort: BestenlisteAntwortGenerated): void {
     this.raeumInhaltAb();
 
@@ -126,49 +164,11 @@ export class BestenlisterSzene extends Phaser.Scene {
     }
 
     const headerY = 165;
+    this.zeigeHeaderZeile(headerY);
 
-    // Kopfzeile
-    HEADER_LABELS.forEach((label, k) => {
-      const t = this.add.text(SPALTEN[k], headerY, label, {
-        fontFamily: FONT_FAMILY,
-        fontSize: '14px',
-        color: '#f8c94e',
-        fontStyle: 'bold'
-      });
-      this.inhaltElemente.push(t);
-    });
-
-    // Trennlinie
-    const sep = this.add.rectangle(this.scale.width / 2, headerY + 22, 1200, 1, 0x4a7c59).setOrigin(0.5, 0.5);
-    this.inhaltElemente.push(sep);
-
-    // Datenzeilen (max. 15)
     const maxReihen = Math.min(eintraege.length, 15);
     for (let i = 0; i < maxReihen; i++) {
-      const e = eintraege[i];
-      const y = headerY + 42 + i * 34;
-      const farbe = i === 0 ? '#f8c94e'
-        : i === 1 ? '#c0c0c0'
-        : i === 2 ? '#cd7f32'
-        : '#d4e6d4';
-
-      const zeile = [
-        String(e.rang ?? i + 1),
-        e.spielerName ?? '–',
-        e.konservativesRating?.toFixed(2) ?? '–',
-        e.ratingMu?.toFixed(2) ?? '–',
-        String(e.anzahlSpiele ?? 0),
-        (e.siegquote?.toFixed(1) ?? '–') + ' %'
-      ];
-
-      zeile.forEach((inhalt, k) => {
-        const t = this.add.text(SPALTEN[k], y, inhalt, {
-          fontFamily: FONT_FAMILY,
-          fontSize: '14px',
-          color: farbe
-        });
-        this.inhaltElemente.push(t);
-      });
+      this.zeigeRangzeile(eintraege[i], i, headerY + 42 + i * 34);
     }
   }
 }

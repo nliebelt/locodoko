@@ -73,6 +73,42 @@ async function leseAntwort<T>(antwort: Response): Promise<T | null> {
   return JSON.parse(text) as T;
 }
 
+function erstelleFetchInit(init?: RequestInit): RequestInit {
+  return Object.assign({}, {
+    method: init?.method ?? 'GET',
+    body: init?.body,
+    credentials: init?.credentials ?? 'include',
+    headers: {
+      Accept: 'application/json',
+      ...(init?.body ? { 'Content-Type': 'application/json' } : {}),
+      ...(init?.headers || {}),
+    },
+    mode: init?.mode,
+    redirect: init?.redirect,
+    referrer: init?.referrer,
+    cache: init?.cache,
+    signal: init?.signal,
+  }, init);
+}
+
+function verarbeiteFehlerstatus(
+  antwort: Response,
+  daten: unknown,
+  meldungCallback?: (text: string, typ: 'info' | 'fehler') => void
+): never {
+  if (istApiFehlerAntwort(daten)) {
+    if (antwort.status === 422) {
+      // Fachliche Ablehnung: Regelverstoß — Server-Nachricht direkt anzeigen
+      meldungCallback?.(daten.nachricht, 'fehler');
+    } else if (antwort.status === 409) {
+      // Konflikt: Spielstand veraltet oder gleichzeitige Aktion
+      meldungCallback?.('Spielstand veraltet – bitte Seite neu laden', 'fehler');
+    }
+    throw new SpielverwaltungFehler(daten.fehlerCode, daten.nachricht);
+  }
+  throw new SpielverwaltungFehler('SERVERFEHLER', `Unerwartete Antwort ${antwort.status}`);
+}
+
 async function holeJson<T>(
   pfad: string,
   init?: RequestInit,
@@ -82,41 +118,14 @@ async function holeJson<T>(
   const methode = init?.method ?? 'GET';
   Logger.api(`[HOLE_JSON] Requesting: ${methode} ${pfad}`);
   try {
-    const antwort = await fetch(pfad, Object.assign({}, {
-      method: init?.method ?? 'GET',
-      body: init?.body,
-      credentials: init?.credentials ?? 'include',
-      headers: {
-        Accept: 'application/json',
-        ...(init?.body ? { 'Content-Type': 'application/json' } : {}),
-        ...(init?.headers || {}),
-      },
-      mode: init?.mode,
-      redirect: init?.redirect,
-      referrer: init?.referrer,
-      cache: init?.cache,
-      signal: init?.signal,
-    }, init));
+    const antwort = await fetch(pfad, erstelleFetchInit(init));
     Logger.api(`${methode} ${pfad}`, { status: antwort.status });
     const corrId = antwort.headers?.get('X-Correlation-Id');
-    if (corrId) {
-      correlationIdCallback?.(corrId);
-    }
+    if (corrId) correlationIdCallback?.(corrId);
     const daten = await leseAntwort<unknown>(antwort);
     if (!antwort.ok) {
       Logger.api('API Error Response', { url: pfad, status: antwort.status, body: daten });
-      if (istApiFehlerAntwort(daten)) {
-        if (antwort.status === 422) {
-          // Fachliche Ablehnung: Regelverstoß — Server-Nachricht direkt anzeigen
-          meldungCallback?.(daten.nachricht, 'fehler');
-        } else if (antwort.status === 409) {
-          // Konflikt: Spielstand veraltet oder gleichzeitige Aktion
-          meldungCallback?.('Spielstand veraltet – bitte Seite neu laden', 'fehler');
-        }
-        throw new SpielverwaltungFehler(daten.fehlerCode, daten.nachricht);
-      }
-
-      throw new SpielverwaltungFehler('SERVERFEHLER', `Unerwartete Antwort ${antwort.status}`);
+      verarbeiteFehlerstatus(antwort, daten, meldungCallback);
     }
     Logger.api(`[HOLE_JSON] Successful response for ${pfad}`);
     return daten as T;
