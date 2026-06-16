@@ -242,7 +242,6 @@ export function renderEinstellungsModal(
     const naechste: AnimationsGeschwindigkeit = geschw === 1 ? 2 : geschw === 2 ? Infinity : 1;
     kontext.onAnimationsGeschwindigkeitAendern(naechste);
   }, false, true, false, undefined, true);
-  currentY += 60;
   const btnW = Math.round(dialogW * 0.4);
   erstellePhaserButton(szene, ebene, dialogX - btnW / 2 - 10, dialogY + dialogH / 2 - 40, btnW, 40, 'Zur Lobby', () => { void szene.scene.start('SpielverwaltungsSzene'); }, false, true, false, undefined, true);
   erstellePhaserButton(szene, ebene, dialogX + btnW / 2 + 10, dialogY + dialogH / 2 - 40, btnW, 40, 'Schließen', kontext.onEinstellungenSchliessen, false, false, false, undefined, true);
