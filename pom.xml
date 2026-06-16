@@ -22,7 +22,7 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <skip.frontend>false</skip.frontend>
         <spring-modulith.version>2.0.0</spring-modulith.version>
-        <sentry.version>8.9.0</sentry.version>
+        <sentry.version>8.43.2</sentry.version>
     </properties>
 
     <dependencyManagement>
