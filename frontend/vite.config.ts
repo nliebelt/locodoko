@@ -23,7 +23,10 @@ export default defineConfig(() => {
       outDir: 'dist',
       sourcemap: 'hidden' as const,
       emptyOutDir: true,
-      chunkSizeWarningLimit: 600,
+      // Phaser 3 ist als Engine monolithisch (~1,48 MB / ~340 kB gzip) und nicht weiter aufteilbar.
+      // Szenen werden von Phaser synchron beim Start registriert — Lazy-Loading-Splitting ohne
+      // erheblichen Umbau nicht möglich. 1600 kB unterdrückt die Warnung korrekt.
+      chunkSizeWarningLimit: 1600,
       rollupOptions: {
         output: {
           manualChunks: {

@@ -4,14 +4,14 @@
 
 ## Notiz
 
-**QA-FE-BIOME-COMPLEXITY** abgeschlossen (Session 129).
+**PERF-FE-BUNDLE-SPLIT-2** abgeschlossen (Session 130).
 
-- `@biomejs/biome` 2.5.0 als devDep installiert; `frontend/biome.json` angelegt (nur `noExcessiveCognitiveComplexity`, Baseline-Schwelle 40, alle anderen Regeln via `preset: none` deaktiviert).
-- `npm run complexity` ersetzt `npx code-complexity` — läuft grün (102 Dateien, 0 Verstöße); bricht bei Überschreitung mit Exit-Code 1.
-- `npm test && npm run build && npm run lint` weiterhin grün; ESLint-Konfiguration unberührt.
-- Folgeschritte (schrittweise Absenkung): 40 → 30 → 25 → 20 → 15 — Hotspots aus Plan-Eintrag bekannt.
+- Option (b) gewählt: `chunkSizeWarningLimit: 1600` in `frontend/vite.config.ts` gesetzt.
+- Begründung dokumentiert im Kommentar: Phaser 3 ist als Engine monolithisch (~1,48 MB / ~340 kB gzip); Szenen werden synchron beim Start registriert — Lazy-Loading-Splitting erfordert erheblichen Umbau ohne echten Ladezeit-Vorteil.
+- Build-Warnung verschwunden; `phaser-vendor`-Chunk bleibt 1,48 MB (unvermeidbar).
+- `npm test && npm run build && npm run lint` grün.
 
-**Nächster Schritt:** PERF-FE-BUNDLE-SPLIT-2 (optional — Phaser-Chunk-Warnung dokumentieren oder lazy-loading).
+**Nächster Schritt:** Alle autonomen Tasks in Block A erledigt. Verbleibend: Block B (MENSCH: Domain/TLS/Docker/OAuth) und Block C/D (User-Entscheidungen / zurückgestellt).
 
 ## Legende
 
@@ -33,7 +33,7 @@
 
 - [x] **QA-METRICS-REFRESH** (QA/Doc, autonom, klein) — `docs/metrics.md` ist auf Stand **S120** (BE 485 / FE 461 Tests); seither **BE 500 / FE 465**. **Fix:** `mvn clean verify` (JaCoCo) + `cd frontend && npx vitest run --coverage` neu vermessen, Zahlen + Datum aktualisieren, verbleibende Branch-Lücken benennen. Dabei die per-Namensheuristik testdatei-losen, aber ggf. nur indirekt abgedeckten Service-Klassen (z.B. `PartieLifecycleService`, `TischEchtzeitService`, `SpielverwaltungWebSocketController`) gegen den realen JaCoCo-Report prüfen und echte Lücken als Folge-Test-Tasks notieren. **Erste Datei zuerst:** `docs/metrics.md`. **DoD:** Report mit S128-Zahlen, reproduzierbar; etwaige echte Lücken als Tasks erfasst. **Risiko:** niedrig.
 
-- [ ] **PERF-FE-BUNDLE-SPLIT-2** (Frontend, autonom, klein, optional) — trotz `PERF-FE-BUNDLE-SPLITTING` (Phaser-Vendor-Chunk) bleibt der `phaser-vendor`-Chunk **1,48 MB** und löst weiter die „chunks > 600 kB"-Build-Warnung aus. **Optionen:** (a) Szenen via `import()` lazy laden (echtes Code-Splitting des App-Teils), oder (b) die Warnung bewusst belassen und `chunkSizeWarningLimit` mit dokumentierter Begründung setzen (Phaser ist als Engine unteilbar). **Erste Datei zuerst:** `frontend/vite.config.ts`. **DoD:** entweder kleinere Initial-Chunks oder dokumentierte, bewusste Limit-Entscheidung; Build + Lint + Vision-Smoke grün. **Risiko:** niedrig.
+- [x] **PERF-FE-BUNDLE-SPLIT-2** (Frontend, autonom, klein, optional) — trotz `PERF-FE-BUNDLE-SPLITTING` (Phaser-Vendor-Chunk) bleibt der `phaser-vendor`-Chunk **1,48 MB** und löst weiter die „chunks > 600 kB"-Build-Warnung aus. **Optionen:** (a) Szenen via `import()` lazy laden (echtes Code-Splitting des App-Teils), oder (b) die Warnung bewusst belassen und `chunkSizeWarningLimit` mit dokumentierter Begründung setzen (Phaser ist als Engine unteilbar). **Erste Datei zuerst:** `frontend/vite.config.ts`. **DoD:** entweder kleinere Initial-Chunks oder dokumentierte, bewusste Limit-Entscheidung; Build + Lint + Vision-Smoke grün. **Risiko:** niedrig.
 
 - [x] **QA-FE-BIOME-COMPLEXITY** (Frontend, autonom, klein — moderne Komplexitäts-Analyse, Session 128 prototypisiert) — **Biome additiv** als kognitives Komplexitäts-Gate einführen (ESLint bleibt Haupt-Linter, User-Entscheidung S128). **Schritte:** (1) `@biomejs/biome` als devDep; (2) `frontend/biome.json` mit **nur** der Regel `complexity.noExcessiveCognitiveComplexity` (`recommended:false`, alle anderen Regeln aus — Formatierung/Stil bleibt bei ESLint/Prettier); (3) npm-Script `"complexity": "biome lint --config-path=. src"`; (4) **Baseline-Schwelle** zunächst auf den Ist-Höchstwert setzen, sodass der Lauf **grün** ist (S128-Messung: Schwelle 40 → 0 Verstöße; der schlimmste Treffer liegt kognitiv im Bereich 31–39), dann in einem Kommentar dokumentieren + als Folge-Tasks schrittweise senken (40 → 30 → 25 → 20 → 15) und je Stufe die Ausreißer refactoren. **Bekannte kognitive Hotspots (Biome S128, Schwelle 15 → 14 Treffer):** `PartieStore.ts:140`, `TischInputHandler.ts:53/219`, `TischRundenEndeController.ts:32/146`, `layout.ts:71`, `SpielprotokollOverlay.ts:127`, `TischKartenRenderer.ts:362`, `BestenlisterSzene.ts:113`, `TischAnimationOrchestrator.ts:105`, `TischHudRenderer.ts:26`, `SpielerProfilModal.ts:132`, `SpielverwaltungApi.ts:76`, `AnimationenPrimitiven.ts:37`. **Erste Datei zuerst:** `frontend/package.json` + neue `frontend/biome.json`. **DoD:** `npm run complexity` läuft grün (Baseline-Schwelle), bricht bei Überschreitung; `npm test && npm run build && npm run lint` weiterhin grün; ggf. in CI als eigener Step. **Risiko:** niedrig (additiv, ESLint-Config unberührt).
 
@@ -47,7 +47,7 @@
 2. ~~**SEC-DEPS-FE-DEV-AUDIT**~~ ✓ S129
 3. ~~**QA-METRICS-REFRESH** (+ **QA-METRICS-TOOLING** im selben Lauf bündeln)~~ ✓ S129
 4. ~~**QA-FE-BIOME-COMPLEXITY**~~ ✓ S129
-5. **PERF-FE-BUNDLE-SPLIT-2** (optional)
+5. ~~**PERF-FE-BUNDLE-SPLIT-2**~~ ✓ S130
 
 ### Review-Notizen S126 (offen, niedrigste Prio / Deploy-nah — keine eigenen Tasks)
 
