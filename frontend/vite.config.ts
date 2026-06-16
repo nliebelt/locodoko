@@ -29,9 +29,10 @@ export default defineConfig(() => {
       chunkSizeWarningLimit: 1600,
       rollupOptions: {
         output: {
-          manualChunks: {
-            'phaser-vendor': ['phaser'],
-            'vendor': ['@sentry/browser', '@stomp/stompjs']
+          // Vite 8 / Rollup: manualChunks nur noch als Funktion, nicht als Objekt
+          manualChunks: (id: string) => {
+            if (id.includes('/phaser/')) return 'phaser-vendor';
+            if (id.includes('@sentry/') || id.includes('@stomp/')) return 'vendor';
           }
         }
       }
