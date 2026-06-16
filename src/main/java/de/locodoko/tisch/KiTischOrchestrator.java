@@ -122,25 +122,9 @@ public class KiTischOrchestrator {
                 if (laufendesSpiel == null) {
                     return;
                 }
-                // Spielende: Auswertung abschliessen und naechstes Spiel starten
                 if (laufendesSpiel.phase() instanceof Spielphase.Auswertung
                         || laufendesSpiel.phase() instanceof Spielphase.GesamtstandAktualisieren) {
-                    try {
-                        Partie neuePartie = partie.schliesseAktuellesSpielAbUndStarteNaechstes();
-                        partieLifecycleService.uebernehmeDomainPartieAbschluss(tisch, laufendesSpiel, neuePartie);
-                        partie = partieRepository.saveAndFlush(partie);
-                        if (neuePartie.istBeendet()) {
-                            return;
-                        }
-                        // Menschliche Spieler erhalten Zeit fuer die Rundenauswertung.
-                        if (hatMenschlichenSpieler) {
-                            partieLifecycleService.veroeffentlicheSpielGestartet(tisch);
-                            eventPublisher.publishEvent(new VorbehaltErwartet(tisch.id()));
-                            return;
-                        }
-                    } catch (Exception e) {
-                        LOGGER.error("Fehler beim Spielabschluss [tischId={}]: {}",
-                                tisch.id(), e.getMessage(), e);
+                    if (!verarbeiteSpielabschluss(tisch, partie, laufendesSpiel, hatMenschlichenSpieler)) {
                         return;
                     }
                     continue;
@@ -156,35 +140,7 @@ public class KiTischOrchestrator {
                 if (!spielerAmZug.istKi() && !spielerAmZug.istKiUebernommen()) {
                     return;
                 }
-
-                KiSchwierigkeit schwierigkeit = tisch.konfiguration().kiSchwierigkeit();
-                int einwurfZaehlerVorher = laufendesSpiel.einwurfZaehler();
-                try {
-                    KiAktionErgebnis ergebnis = kiOrchestrierungService.fuehreAktionAus(
-                            laufendesSpiel, position, schwierigkeit);
-                    partie = partieRepository.saveAndFlush(partie);
-
-                    if (hatMenschlichenSpieler) {
-                        if (ergebnis.ereignisse().isEmpty()) {
-                            // Vorbehalt-, Armut- oder Ansage-Aktion: Snapshot senden
-                            if (ergebnis.naechsterStand().einwurfZaehler() > einwurfZaehlerVorher) {
-                                veroeffentlicheEinwurfEreignisse(tisch);
-                            } else {
-                                veroeffentlicheAnsageEreignisse(tisch);
-                            }
-                        } else {
-                            veroeffentlicheKiEreignisse(tisch, ergebnis.ereignisse());
-                        }
-                    }
-                } catch (OptimisticLockingFailureException e) {
-                    // Erwarteter Konflikt: gleichzeitiger Mensch-Zug hat gewonnen.
-                    // Das naechste AFTER_COMMIT-Event startet automatisch einen neuen Versuch.
-                    LOGGER.warn("Optimistischer Sperr-Konflikt bei KI-Zug [position={}, tischId={}] — erneuter Versuch folgt mit naechstem Event",
-                            position, tisch.id());
-                    return;
-                } catch (Exception e) {
-                    LOGGER.error("KI-Strategie-Fehler [position={}, tischId={}]: {}",
-                            position, tisch.id(), e.getMessage(), e);
+                if (!fuehreKiZugAus(tisch, partie, laufendesSpiel, position, hatMenschlichenSpieler)) {
                     return;
                 }
             }
@@ -193,6 +149,74 @@ public class KiTischOrchestrator {
         } finally {
             MDC.clear();
         }
+    }
+
+    /**
+     * Schliesst das laufende Spiel ab und startet das naechste.
+     *
+     * @return true = Schleife fortsetzen, false = Orchestrierung abbrechen
+     */
+    private boolean verarbeiteSpielabschluss(TischEntity tisch, Partie partie, Spiel laufendesSpiel,
+            boolean hatMenschlichenSpieler) {
+        try {
+            Partie neuePartie = partie.schliesseAktuellesSpielAbUndStarteNaechstes();
+            partieLifecycleService.uebernehmeDomainPartieAbschluss(tisch, laufendesSpiel, neuePartie);
+            partieRepository.saveAndFlush(partie);
+            if (neuePartie.istBeendet()) {
+                return false;
+            }
+            // Menschliche Spieler erhalten Zeit fuer die Rundenauswertung.
+            if (hatMenschlichenSpieler) {
+                partieLifecycleService.veroeffentlicheSpielGestartet(tisch);
+                eventPublisher.publishEvent(new VorbehaltErwartet(tisch.id()));
+                return false;
+            }
+        } catch (Exception e) {
+            LOGGER.error("Fehler beim Spielabschluss [tischId={}]: {}",
+                    tisch.id(), e.getMessage(), e);
+            return false;
+        }
+        return true;
+    }
+
+    /**
+     * Fuehrt den naechsten KI-Zug aus und veroeffentlicht Echtzeit-Ereignisse.
+     *
+     * @return true = Schleife fortsetzen, false = Orchestrierung abbrechen (Fehler oder Sperr-Konflikt)
+     */
+    private boolean fuehreKiZugAus(TischEntity tisch, Partie partie, Spiel laufendesSpiel,
+            SpielerPosition position, boolean hatMenschlichenSpieler) {
+        KiSchwierigkeit schwierigkeit = tisch.konfiguration().kiSchwierigkeit();
+        int einwurfZaehlerVorher = laufendesSpiel.einwurfZaehler();
+        try {
+            KiAktionErgebnis ergebnis = kiOrchestrierungService.fuehreAktionAus(
+                    laufendesSpiel, position, schwierigkeit);
+            partieRepository.saveAndFlush(partie);
+
+            if (hatMenschlichenSpieler) {
+                if (ergebnis.ereignisse().isEmpty()) {
+                    // Vorbehalt-, Armut- oder Ansage-Aktion: Snapshot senden
+                    if (ergebnis.naechsterStand().einwurfZaehler() > einwurfZaehlerVorher) {
+                        veroeffentlicheEinwurfEreignisse(tisch);
+                    } else {
+                        veroeffentlicheAnsageEreignisse(tisch);
+                    }
+                } else {
+                    veroeffentlicheKiEreignisse(tisch, ergebnis.ereignisse());
+                }
+            }
+        } catch (OptimisticLockingFailureException e) {
+            // Erwarteter Konflikt: gleichzeitiger Mensch-Zug hat gewonnen.
+            // Das naechste AFTER_COMMIT-Event startet automatisch einen neuen Versuch.
+            LOGGER.warn("Optimistischer Sperr-Konflikt bei KI-Zug [position={}, tischId={}] — erneuter Versuch folgt mit naechstem Event",
+                    position, tisch.id());
+            return false;
+        } catch (Exception e) {
+            LOGGER.error("KI-Strategie-Fehler [position={}, tischId={}]: {}",
+                    position, tisch.id(), e.getMessage(), e);
+            return false;
+        }
+        return true;
     }
 
     private Spiel findeLaufendesSpiel(Partie partie) {
