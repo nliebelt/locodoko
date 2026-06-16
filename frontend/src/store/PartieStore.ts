@@ -152,11 +152,8 @@ export class PartieStore {
         this._aktuelleSequenzId++;
         this._merkeVerpasstesSpielBeendet(ereignis);
 
-        if (this._brauchtKiVerzoegerung(ereignis)) {
-          const generationVorDelay = this._queueGeneration;
-          await new Promise<void>((r) => setTimeout(r, this.gibZustand().uiKonfiguration.kiVerzoegerungMs));
-          if (this._queuePausiert || this._queueGeneration !== generationVorDelay) break;
-        }
+        const kiDelay = this._kiVerzoegerungFallsNoetig(ereignis);
+        if (kiDelay !== null && !await kiDelay) break;
 
         this._patcheVorListenern(ereignis, darfStorePatchen);
         await this._benachrichtigeListener(ereignis);
@@ -211,6 +208,18 @@ export class PartieStore {
     const istKiZug = spielerImSpiel.find(s => s.position === (ereignis as KarteGespieltEreignis).spielerPosition)?.istKi ?? false;
     const hatMenschlicheSpieler = this.gibZustand().aktuellerTisch?.spieler.some(s => !s.istKi) ?? false;
     return istKiZug && hatMenschlicheSpieler;
+  }
+
+  /**
+   * Gibt `null` zurück wenn kein KI-Delay benötigt wird (→ kein `await` im Aufrufer, Timing-Invariant).
+   * Gibt eine `Promise<boolean>` zurück wenn Delay nötig: `true` = weiter, `false` = Queue abbrechen.
+   * Der Generation-Guard verhindert, dass ein veralteter Continue nach einem Reset weiterläuft.
+   */
+  private _kiVerzoegerungFallsNoetig(ereignis: PartieEreignisAntwort): Promise<boolean> | null {
+    if (!this._brauchtKiVerzoegerung(ereignis)) return null;
+    const generationVorDelay = this._queueGeneration;
+    return new Promise<void>((r) => setTimeout(r, this.gibZustand().uiKonfiguration.kiVerzoegerungMs))
+      .then(() => !this._queuePausiert && this._queueGeneration === generationVorDelay);
   }
 
   /** Ruft alle abonnierten Event-Listener sequentiell auf (ein Listener-Fehler bricht die Verarbeitung nicht ab). */
