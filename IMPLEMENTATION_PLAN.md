@@ -8,6 +8,7 @@
 
 - **REFACTOR-BE-KI-ORCHESTRATOR** — echter BE-Hotspot (CCN 20).
 - **REFACTOR-FE-COMPLEXITY-HOTSPOTS** + **QA-FE-BIOME-LOWER** — Top-FE-Kandidaten refactoren, *dann* Biome-Schwelle senken (Reihenfolge zwingend).
+- **DEPS-BE-SPRING-UPDATE** — Boot 4.0.5→4.1.0, Modulith 2.0.0→2.1.0, Sentry 8.9.0→8.43.2 (Minor innerhalb aktueller Major, risikoarm).
 - **DEPS-FE-TOOLING-MAJORS** (TS/Vite/Vitest/ESLint) und **DEPS-FE-PHASER4-SPIKE** (riskant, separat).
 - **CLEANUP-VISION-MOBILE-DEFER** — mobile-landscape aus dem Vision-Lauf nehmen (Mobile = nice-to-have, nicht release-relevant).
 
@@ -37,16 +38,19 @@
 
 - [ ] **CLEANUP-VISION-MOBILE-DEFER** (E2E/Cleanup, autonom, winzig) — Mobile ist fürs erste Release **nicht** relevant (User-Entscheidung S131). Das `mobile-landscape`-Projekt aus dem regulären Vision-Lauf nehmen, damit es keine Laufzeit/Screenshots-Pflege erzeugt. **Fix:** in `e2e/playwright.config.vision.ts` das `mobile-landscape`-Projekt auskommentieren oder per Env-Flag (`VISION_MOBILE=1`) optional schalten; den erläuternden Kommentar (Orientierungssperre, DISCO S126) als Begründung für die Zurückstellung erhalten. Veraltete `mobile-landscape-*.png` aus `e2e/screenshots/` entfernen oder belassen — Entscheidung im Commit notieren. **Erste Datei zuerst:** `e2e/playwright.config.vision.ts`. **DoD:** regulärer Vision-Lauf fährt nur noch `desktop`; Mobile reaktivierbar dokumentiert. **Risiko:** niedrig.
 
+- [ ] **DEPS-BE-SPRING-UPDATE** (Backend/Deps, autonom, klein) — BE hängt innerhalb der aktuellen Major-Generation (Boot 4 / Modulith 2 / Java 25) ein Minor zurück. Live gegen Maven Central (S131): `spring-boot-starter-parent` **4.0.5 → 4.1.0** (Minor — zieht via BOM transitiv den Großteil der Spring/Jackson/Tomcat/etc-Deps mit), `spring-modulith.version` **2.0.0 → 2.1.0**, `sentry.version` **8.9.0 → 8.43.2** (großer Sprung *innerhalb* Major 8). Java 25 ist bereits neueste. **Schritte:** Parent-Bump und die zwei Properties **einzeln** anheben, nach jedem Bump `mvn clean test` (Pflicht-`clean`); Reihenfolge: erst Sentry (isoliert, selbstverwaltet), dann Modulith, dann Boot-Parent (größter transitiver Effekt). Bricht ein Bump und ist nicht zumutbar fixbar, diesen auslassen + Notiz unter „Entdeckungen", Rest trotzdem heben. Auf deprecation-/Konfig-Warnungen im Boot-4.1-Log achten. **Pro erfolgreichem Bump ein Commit.** **Erste Datei zuerst:** `pom.xml`. **DoD:** Boot/Modulith/Sentry auf neuestem Stand (oder begründet ausgelassen), `mvn clean test` grün, Logs ohne neue Warnungen. **Risiko:** niedrig-mittel (Minor innerhalb aktueller Major, kein Rewrite — Boot-Parent betrifft aber viele transitive Deps).
+
 ### Empfohlene Build-Reihenfolge (Block A)
 
 > Nimm den **obersten noch offenen** Task. Alle autonom; bei Vision-Tasks fährt Ralph das Backend selbst headless hoch.
 
 1. **REFACTOR-BE-KI-ORCHESTRATOR** (isoliert, niedrigstes Risiko — guter Einstieg)
 2. **CLEANUP-VISION-MOBILE-DEFER** (winzig, schnell vom Tisch)
-3. **REFACTOR-FE-COMPLEXITY-HOTSPOTS** (drei Commits)
-4. **QA-FE-BIOME-LOWER** (direkt danach — hängt an #3)
-5. **DEPS-FE-TOOLING-MAJORS** (gestaffelt, pro Major ein Commit)
-6. **DEPS-FE-PHASER4-SPIKE** (zuletzt — riskant, isoliert im Spike-Branch)
+3. **DEPS-BE-SPRING-UPDATE** (Minor-Bumps, risikoarm — vor die FE-Deps)
+4. **REFACTOR-FE-COMPLEXITY-HOTSPOTS** (drei Commits)
+5. **QA-FE-BIOME-LOWER** (direkt danach — hängt an #4)
+6. **DEPS-FE-TOOLING-MAJORS** (gestaffelt, pro Major ein Commit)
+7. **DEPS-FE-PHASER4-SPIKE** (zuletzt — riskant, isoliert im Spike-Branch)
 
 _Vorrunde S129/130 erledigt (→ Archiv beim nächsten Slim-Down): QA-VISION-MOBILE-LANDSCAPE, CLEANUP-VISION-SCREENSHOT-DUBLETTE, SEC-DEPS-FE-DEV-AUDIT, QA-METRICS-REFRESH, QA-METRICS-TOOLING, QA-FE-BIOME-COMPLEXITY, PERF-FE-BUNDLE-SPLIT-2._
 
