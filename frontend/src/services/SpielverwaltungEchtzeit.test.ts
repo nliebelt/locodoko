@@ -31,7 +31,8 @@ vi.mock('@stomp/stompjs', () => {
     connected: false
   };
   return {
-    Client: vi.fn(() => mockClient)
+    // Vitest 4: Reflect.construct erfordert reguläre Funktion, keine Arrow-Function
+    Client: vi.fn(function () { return mockClient; })
   };
 });
 

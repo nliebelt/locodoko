@@ -36,12 +36,13 @@ vi.mock('phaser', () => ({
   }
 }));
 
+// Vitest 4: Reflect.construct erfordert reguläre Funktion, keine Arrow-Function
 vi.mock('./PhaserButton', () => ({
-  PhaserButton: vi.fn(() => ({ setName: vi.fn(), add: vi.fn(), setX: vi.fn(), breite: 200 }))
+  PhaserButton: vi.fn(function () { return { setName: vi.fn(), add: vi.fn(), setX: vi.fn(), breite: 200 }; })
 }));
 
 vi.mock('../ui/PhaserList', () => ({
-  PhaserList: vi.fn(() => ({ destroy: vi.fn() }))
+  PhaserList: vi.fn(function () { return { destroy: vi.fn() }; })
 }));
 
 const { SpielverwaltungsSzene } = await import('./SpielverwaltungsSzene');

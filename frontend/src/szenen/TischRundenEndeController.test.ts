@@ -30,11 +30,14 @@ const phaserModalHarness = vi.hoisted(() => {
   const containerAddFn = vi.fn();
   const getContentContainerFn = vi.fn(() => ({ add: containerAddFn }));
   const setDepthFn = vi.fn().mockReturnThis();
-  const KlasseMock = vi.fn().mockImplementation(() => ({
-    destroy: destroyFn,
-    getContentContainer: getContentContainerFn,
-    setDepth: setDepthFn,
-  }));
+  // Vitest 4: Reflect.construct erfordert reguläre Funktion, keine Arrow-Function
+  const KlasseMock = vi.fn().mockImplementation(function () {
+    return {
+      destroy: destroyFn,
+      getContentContainer: getContentContainerFn,
+      setDepth: setDepthFn,
+    };
+  });
   return { destroyFn, containerAddFn, getContentContainerFn, setDepthFn, KlasseMock };
 });
 
