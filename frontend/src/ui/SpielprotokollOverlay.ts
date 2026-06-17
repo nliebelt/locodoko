@@ -2,13 +2,14 @@ import Phaser from 'phaser';
 import {
   PANEL_BG, BORDER_PANEL, FONT_FAMILY
 } from './designTokens';
+import { setzeRechteckMaske } from './rechteckMaske';
 import type { SpielprotokollEintrag } from '../store/AppStore';
 import type { TischAnsichtModell, SpielerPosition } from '../modelle/TischAnsichtModell';
 
 export class SpielprotokollOverlay extends Phaser.GameObjects.Container {
   private scrollYOffset = 0;
   private listContainer: Phaser.GameObjects.Container;
-  private maskGraphics: Phaser.GameObjects.Graphics;
+  private maskShape: Phaser.GameObjects.Rectangle | null;
   private onWheelHandler?: (_p: unknown, _g: unknown, _dX: number, deltaY: number) => void;
 
   constructor(
@@ -92,12 +93,10 @@ export class SpielprotokollOverlay extends Phaser.GameObjects.Container {
     this.listContainer = scene.add.container(0, listY);
     this.add(this.listContainer);
 
-    this.maskGraphics = scene.make.graphics();
-    this.maskGraphics.fillStyle(0xffffff);
-    // Absolute position for mask relative to scene (x, y are the center of the screen)
-    this.maskGraphics.fillRect(x - dialogW / 2, y + listY, dialogW, listH);
-    const mask = this.maskGraphics.createGeometryMask();
-    this.listContainer.setMask(mask);
+    // Maske in Weltkoordinaten (x, y sind der Bildschirm-Mittelpunkt). Das Rechteck spannt
+    // horizontal um x und vertikal von (y + listY) bis (y + listY + listH) — Mittelpunkt also
+    // bei (x, y + listY + listH / 2).
+    this.maskShape = setzeRechteckMaske(scene, this.listContainer, x, y + listY + listH / 2, dialogW, listH);
 
     // Populate List
     const rowH = 25;
@@ -169,7 +168,7 @@ export class SpielprotokollOverlay extends Phaser.GameObjects.Container {
   }
 
   destroy(fromScene?: boolean) {
-    this.maskGraphics.destroy();
+    this.maskShape?.destroy();
     super.destroy(fromScene);
   }
 }

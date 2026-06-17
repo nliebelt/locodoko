@@ -12,6 +12,10 @@ class FakeGameObject {
   setOrigin() { return this; }
   setTint() { return this; }
   setMask() { return this; }
+  // Phaser 4: enableFilters ist WebGL-only; in jsdom bleibt `filters` ungesetzt,
+  // sodass setzeRechteckMaske headless ohne Maske zurueckkehrt.
+  enableFilters() { return this; }
+  filters: unknown = undefined;
   destroy() { this.active = false; }
   add() { return this; }
   on(event: string, fn: any) { (this as any)['on' + event] = fn; return this; }
@@ -45,14 +49,6 @@ describe('PhaserList', () => {
   beforeEach(() => {
     mockScene = {
       add: { existing: vi.fn() },
-      make: {
-        graphics: vi.fn(() => ({
-          fillStyle: vi.fn().mockReturnThis(),
-          fillRect: vi.fn().mockReturnThis(),
-          createGeometryMask: vi.fn(() => ({})),
-          destroy: vi.fn()
-        }))
-      },
       input: {
         on: vi.fn(),
         off: vi.fn()

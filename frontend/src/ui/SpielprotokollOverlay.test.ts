@@ -14,6 +14,10 @@ class FakeGameObject {
   setMask() { return this; }
   setInteractive() { return this; }
   setStrokeStyle() { return this; }
+  // Phaser 4: enableFilters ist WebGL-only; in jsdom bleibt `filters` ungesetzt,
+  // sodass setzeRechteckMaske headless ohne Maske zurueckkehrt.
+  enableFilters() { return this; }
+  filters: unknown = undefined;
   destroy() { this.active = false; }
   add() { return this; }
   on(event: string, fn: any) { (this as any)['on' + event] = fn; return this; }
@@ -59,14 +63,6 @@ describe('SpielprotokollOverlay', () => {
         }),
         line: vi.fn(() => new FakeGameObject(mockScene)),
         container: vi.fn(() => new FakeContainer(mockScene))
-      },
-      make: {
-        graphics: vi.fn(() => ({
-          fillStyle: vi.fn().mockReturnThis(),
-          fillRect: vi.fn().mockReturnThis(),
-          createGeometryMask: vi.fn(() => ({})),
-          destroy: vi.fn()
-        }))
       },
       input: {
         on: vi.fn(),

@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import { setzeRechteckMaske } from './rechteckMaske';
 
 export interface PhaserListOptionen {
   breite: number;
@@ -13,7 +14,7 @@ export interface PhaserListOptionen {
 export class PhaserList extends Phaser.GameObjects.Container {
   private scrollYOffset = 0;
   private listContainer: Phaser.GameObjects.Container;
-  private maskGraphics: Phaser.GameObjects.Graphics;
+  private maskShape: Phaser.GameObjects.Rectangle | null;
   private listH: number;
   private totalListHeight: number = 0;
   private onWheel: (p: Phaser.Input.Pointer, g: unknown[], dx: number, dy: number) => void;
@@ -27,15 +28,10 @@ export class PhaserList extends Phaser.GameObjects.Container {
     this.listContainer = new Phaser.GameObjects.Container(scene, 0, 0);
     this.add(this.listContainer);
 
-    this.maskGraphics = scene.make.graphics();
-    this.maskGraphics.fillStyle(0xffffff);
-
     const mX = optionen.worldX !== undefined ? optionen.worldX : x;
     const mY = optionen.worldY !== undefined ? optionen.worldY : y;
 
-    this.maskGraphics.fillRect(mX - optionen.breite / 2, mY - optionen.hoehe / 2, optionen.breite, optionen.hoehe);
-    const mask = this.maskGraphics.createGeometryMask();
-    this.listContainer.setMask(mask);
+    this.maskShape = setzeRechteckMaske(scene, this.listContainer, mX, mY, optionen.breite, optionen.hoehe);
 
     if (optionen.items && optionen.renderElement && optionen.elementHoehe !== undefined) {
       const eH = optionen.elementHoehe;
@@ -62,7 +58,7 @@ export class PhaserList extends Phaser.GameObjects.Container {
     
     this.on('destroy', () => {
       scene.input.off('wheel', this.onWheel);
-      this.maskGraphics.destroy();
+      this.maskShape?.destroy();
     });
   }
 
