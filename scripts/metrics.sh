@@ -321,14 +321,13 @@ Abgeleitet aus den obigen Metriken (Details: IMPLEMENTATION_PLAN.md, Sektion Ent
 
 | Priorität | Kandidat | Metrik | Empfehlung |
 |-----------|----------|--------|------------|
-| 🔴 Hoch | `TischEreignisHandler.verarbeitePartieEreignis` | Komplexität 68 | In Teilhandler je Ereignistyp aufteilen |
-| 🔴 Hoch | `PartieStore._verarbeiteEventQueue` | Komplexität 60 | Dispatcher-Methoden extrahieren |
-| 🔴 Hoch | `TischKartenRenderer.renderKartenFaecher` | Komplexität 53 | Render-Schritte extrahieren |
-| 🟡 Mittel | `TischAnsichtModell.erstelleTischAnsichtAusStatus` | Komplexität 36 | Builder-Pattern oder Teilmethoden |
-| 🟡 Mittel | `KiTischOrchestrator::automatisiereTisch` | CCN 20, 81 NLOC | Teilmethoden je Spielphase |
-| 🟡 Mittel | `PartieLifecycleService::veroeffentlicheSpielBeendet` | CCN 15, 68 NLOC | Ereignis-Handler extrahieren |
-| 🟡 Mittel | `JsonbConverter.java` | 948 LOC | Generische Basisklassen (optionale Weiterführung) |
-| 🟢 Niedrig | `KiTischOrchestrator` | Coverage prüfen | Mehr Unit-Tests |
+| 🟡 Mittel | `TischEreignisHandler.verarbeiteAnsagen` | FE CCN 25 | Dispatcher je Ansage-Typ |
+| 🟡 Mittel | `TischEreignisHandler.verarbeiteSpielfluss` | FE CCN 21 | Teilmethoden je Phase |
+| 🟡 Mittel | `TischKartenSortierung.istTrumpfFuerSpieltyp` | FE CCN 21 | Lookup-Tabelle statt if-Kette |
+| 🟡 Mittel | `TischHudRenderer.renderTopBar` | FE CCN 20 | Render-Blöcke extrahieren |
+| 🟡 Mittel | `StandardKiStrategie::waehleFolgeKarte` | BE CCN 16 | Strategie je Spielsituation |
+| 🟡 Mittel | `PartieLifecycleService::veroeffentlicheSpielBeendet` | BE CCN 15, 68 NLOC | Ereignis-Handler extrahieren |
+| 🟢 Niedrig | `JsonbConverter.java` | 948 LOC | Generische Basisklassen (optionale Weiterführung) |
 
 BERICHT_EOF
 

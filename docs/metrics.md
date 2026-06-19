@@ -1,6 +1,6 @@
 # Locodoko — Metrik-Report
 
-> Stand: 2026-06-15 — reproduzierbar via `scripts/metrics.sh`
+> Stand: 2026-06-19 — reproduzierbar via `scripts/metrics.sh`
 
 ## Codebase-Größe
 
@@ -10,20 +10,20 @@
 |-------|---------|-----|
 | `karten` | 19 | 1201 |
 | `partie` | 48 | 3788 |
-| `spieler` | 42 | 3080 |
+| `spieler` | 43 | 3190 |
 | `ki` | 12 | 921 |
-| `tisch` | 71 | 6915 |
+| `tisch` | 71 | 6939 |
 | `system` | 9 | 363 |
-| **Gesamt** | **203** | **16391** |
+| **Gesamt** | **204** | **16525** |
 
 Test-Klassen: 72 | Tests: **503**
 
 ### Frontend (TypeScript)
 
-| Produktiv-Dateien | 59 |
-| LOC | 10305 |
-| Test-Dateien | 35 |
-| Tests | **467** |
+| Produktiv-Dateien | 60 |
+| LOC | 10577 |
+| Test-Dateien | 36 |
+| Tests | **478** |
 
 ## Test-Coverage
 
@@ -31,9 +31,9 @@ Test-Klassen: 72 | Tests: **503**
 
 | Metrik | Abgedeckt | Gesamt | Quote |
 |--------|-----------|--------|-------|
-| Instructions | 23583 | 27035 | **87%** |
-| Lines | 4488 | 5160 | **86%** |
-| Branches | 1528 | 2022 | **75%** |
+| Instructions | 23611 | 27448 | **86%** |
+| Lines | 4497 | 5237 | **85%** |
+| Branches | 1526 | 2044 | **74%** |
 
 **Coverage nach Modul:**
 
@@ -41,14 +41,14 @@ Test-Klassen: 72 | Tests: **503**
 |-------|-------|----------|
 | `(root)` | 10 | 80% ████████░░ |
 | `de.locodoko.betrieb` | 39 | 97% █████████░ |
-| `de.locodoko.karten` | 264 | 92% █████████░ |
+| `de.locodoko.karten` | 264 | 90% █████████░ |
 | `de.locodoko.ki` | 300 | 91% █████████░ |
 | `de.locodoko.ki.orchestrierung` | 39 | 100% ██████████ |
 | `de.locodoko.partie` | 1444 | 89% ████████░░ |
 | `de.locodoko.partie.ereignisse` | 10 | 50% █████░░░░░ |
-| `de.locodoko.spieler` | 910 | 86% ████████░░ |
+| `de.locodoko.spieler` | 981 | 80% ████████░░ |
 | `de.locodoko.system` | 81 | 62% ██████░░░░ |
-| `de.locodoko.tisch` | 1857 | 86% ████████░░ |
+| `de.locodoko.tisch` | 1863 | 86% ████████░░ |
 | `de.locodoko.tisch.persistenz` | 206 | 68% ██████░░░░ |
 
 **Coverage-Schwachstellen (< 70% Line-Coverage, > 20 Zeilen):**
@@ -56,6 +56,7 @@ Test-Klassen: 72 | Tests: **503**
 | Klasse | Modul | Lines | Coverage |
 |--------|-------|-------|----------|
 | `Tisch` | `de.locodoko.partie` | 25 | 0% |
+| `SpielerProfilAntwort` | `de.locodoko.spieler` | 70 | 12% |
 | `SentryKonfiguration` | `de.locodoko.system` | 23 | 21% |
 | `JsonbConverter` | `de.locodoko.tisch.persistenz` | 45 | 55% |
 
@@ -63,9 +64,9 @@ Test-Klassen: 72 | Tests: **503**
 
 | Metrik | Abgedeckt | Gesamt | Quote |
 |--------|-----------|--------|-------|
-| Statements | 5908 | 6966 | **84%** |
-| Branches | 1599 | 1918 | **83%** |
-| Functions | 444 | 548 | **81%** |
+| Statements | 3266 | 4100 | **79%** |
+| Branches | 1516 | 2131 | **71%** |
+| Functions | 634 | 844 | **75%** |
 
 Detailbericht: `frontend/coverage/index.html`
 
@@ -75,35 +76,35 @@ Detailbericht: `frontend/coverage/index.html`
 
 | Datei | Methode | Komplexität |
 |-------|---------|-------------|
-| `szenen/TischInputHandler.ts:53` | `verarbeiteTastatureingabe` | **35** |
-| `ui/SpielerProfilModal.ts:132` | `erstelleStatistikInhalt` | **33** |
-| `services/SpielverwaltungApi.ts:76` | `holeJson` | **27** |
 | `szenen/TischEreignisHandler.ts:148` | `verarbeiteAnsagen` | **25** |
-| `szenen/TischHudRenderer.ts:26` | `erstellePhaserButton` | **22** |
 | `szenen/TischEreignisHandler.ts:61` | `verarbeiteSpielfluss` | **21** |
 | `modelle/TischKartenSortierung.ts:4` | `istTrumpfFuerSpieltyp` | **21** |
-| `szenen/TischHudRenderer.ts:111` | `renderTopBar` | **20** |
-| `szenen/TischAnimationOrchestrator.ts:105` | `starteAusteilen` | **20** |
-| `szenen/TischRundenEndeController.ts:146` | `zeigePartieEndeModal` | **19** |
+| `szenen/TischHudRenderer.ts:118` | `renderTopBar` | **20** |
+| `ui/SpielerProfilModal.ts:88` | `berechneStatistikWerte` | **18** |
 | `szenen/TischKartenRenderer.ts:290` | `setzeKartenInteraktion` | **18** |
 | `szenen/TischBrücke.ts:26` | `?` | **18** |
 | `szenen/bugreportDialog.ts:73` | `?` | **17** |
-| `szenen/TischRundenEndeController.ts:32` | `zeigeRundenEndeModal` | **17** |
 | `szenen/TischKartenRenderer.ts:237` | `berechneKartenFlags` | **17** |
 | `szenen/TischKartenRenderer.ts:179` | `berechneFaecherKontext` | **17** |
+| `ui/SpielerProfilModal.ts:106` | `erstelleStatistikInhalt` | **16** |
 | `szenen/TischRenderKontroller.ts:47` | `triggerRender` | **16** |
 | `szenen/TischEreignisHandler.ts:112` | `verarbeiteSpielzug` | **16** |
 | `szenen/PhaserButton.ts:39` | `?` | **16** |
-| `szenen/BestenlisterSzene.ts:113` | `zeigeEintraege` | **16** |
+| `store/PartieStore.ts:91` | `verarbeitePartieBatch` | **16** |
+| `szenen/TischRenderKontroller.ts:84` | `renderTisch` | **15** |
+| `szenen/TischInputHandler.ts:107` | `verarbeiteTastatureingabe` | **15** |
+| `store/TischStore.ts:191` | `verarbeiteTischEreignis` | **15** |
+| `services/SpielverwaltungApi.ts:76` | `erstelleFetchInit` | **15** |
+| `ui/FlashTextManager.ts:60` | `zeigeSpielevent` | **14** |
 
 ### Backend (Java) — Komplexitäts-Hotspots (lizard CCN, Top 20)
 
 | Funktion | Modul | CCN | NLOC |
 |----------|-------|-----|------|
-| `KiTischOrchestrator::automatisiereTisch` | `tisch` | **20** | 81 |
 | `StandardKiStrategie::waehleFolgeKarte` | `ki` | **16** | 41 |
 | `PartieLifecycleService::veroeffentlicheSpielBeendet` | `tisch` | **15** | 68 |
 | `KiTischOrchestrator::veroeffentlicheKiEreignisse` | `tisch` | **14** | 45 |
+| `KiTischOrchestrator::automatisiereTisch` | `tisch` | **14** | 44 |
 | `SpielAktionsService::veroeffentlicheSpielKarteEreignisse` | `tisch` | **14** | 41 |
 | `BugReportController::erstelleGithubIssue` | `spieler` | **13** | 63 |
 | `Spiel::spieleKarte` | `partie` | **13** | 46 |
@@ -137,12 +138,11 @@ Abgeleitet aus den obigen Metriken (Details: IMPLEMENTATION_PLAN.md, Sektion Ent
 
 | Priorität | Kandidat | Metrik | Empfehlung |
 |-----------|----------|--------|------------|
-| 🔴 Hoch | `TischEreignisHandler.verarbeitePartieEreignis` | Komplexität 68 | In Teilhandler je Ereignistyp aufteilen |
-| 🔴 Hoch | `PartieStore._verarbeiteEventQueue` | Komplexität 60 | Dispatcher-Methoden extrahieren |
-| 🔴 Hoch | `TischKartenRenderer.renderKartenFaecher` | Komplexität 53 | Render-Schritte extrahieren |
-| 🟡 Mittel | `TischAnsichtModell.erstelleTischAnsichtAusStatus` | Komplexität 36 | Builder-Pattern oder Teilmethoden |
-| 🟡 Mittel | `KiTischOrchestrator::automatisiereTisch` | CCN 20, 81 NLOC | Teilmethoden je Spielphase |
-| 🟡 Mittel | `PartieLifecycleService::veroeffentlicheSpielBeendet` | CCN 15, 68 NLOC | Ereignis-Handler extrahieren |
-| 🟡 Mittel | `JsonbConverter.java` | 948 LOC | Generische Basisklassen (optionale Weiterführung) |
-| 🟢 Niedrig | `KiTischOrchestrator` | Coverage prüfen | Mehr Unit-Tests |
+| 🟡 Mittel | `TischEreignisHandler.verarbeiteAnsagen` | FE CCN 25 | Dispatcher je Ansage-Typ |
+| 🟡 Mittel | `TischEreignisHandler.verarbeiteSpielfluss` | FE CCN 21 | Teilmethoden je Phase |
+| 🟡 Mittel | `TischKartenSortierung.istTrumpfFuerSpieltyp` | FE CCN 21 | Lookup-Tabelle statt if-Kette |
+| 🟡 Mittel | `TischHudRenderer.renderTopBar` | FE CCN 20 | Render-Blöcke extrahieren |
+| 🟡 Mittel | `StandardKiStrategie::waehleFolgeKarte` | BE CCN 16 | Strategie je Spielsituation |
+| 🟡 Mittel | `PartieLifecycleService::veroeffentlicheSpielBeendet` | BE CCN 15, 68 NLOC | Ereignis-Handler extrahieren |
+| 🟢 Niedrig | `JsonbConverter.java` | 948 LOC | Generische Basisklassen (optionale Weiterführung) |
 
