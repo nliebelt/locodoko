@@ -1,10 +1,14 @@
 # IMPLEMENTATION_PLAN — Locodoko Doppelkopf
 
-> Stand: 2026-06-15 (Session 129). Erledigte Aufgaben → `IMPLEMENTATION_PLAN_ARCHIVE.md` (Sessions 1–128 archiviert).
+> Stand: 2026-06-19 (Session 143). Erledigte Aufgaben → `IMPLEMENTATION_PLAN_ARCHIVE.md` (Sessions 1–128 archiviert).
 
 ## Notiz
 
-**FEAT-RANGLISTE-EINHEITLICH abgeschlossen (Session 141).** Bestenliste und Spielerprofil-Statistik vereinheitlicht: BE aggregiert alle Regelvarianten (`AVG(rating_mu/sigma)`, `SUM(anzahl_spiele/siege/...)`) in `SpielerProfilService.ladeBestenlisteAggregiert()` via `JdbcClient`. Neues Projektions-Record `BestenlisteStatistikAggregat`. `BestenlisteAntwort.regelvariante` entfernt, `SpielerProfilAntwort.statistiken` (Map) → `statistik` (einzelner aggregierter Eintrag). FE: `BestenlisterSzene` ohne Tabs, `SpielerProfilModal` ohne Varianten-Tabs, `AppStore.ladeBestenliste()` ohne Parameter. 477/477 FE-Tests, 503/503 BE-Tests, Build + Lint + Complexity grün. Manueller Vision-Smoke der Bestenliste und des Profil-Modals empfohlen. Alle autonomen Tasks Block A erledigt.
+**BUG-FE-STANDARD-KONFIG abgeschlossen (Session 143).** `STANDARD_KONFIG` in `tischErstellenDialog.ts` korrigiert: `bockrundenAktiv`, `schweinchenAktiv`, `dreissigAugenPflichtAktiv` von `true` auf `false` — jetzt konsistent mit Backend-Standard (`TischkonfigurationEmbeddable.java`) und Spec (`tischkonfiguration.md`). Neuer Test prüft Fallback-Verhalten ohne Presets. 478/478 FE-Tests, Build + Lint grün.
+
+**Nächster Schritt:** `DOC-METRICS-REFRESH` — `scripts/metrics.sh` ausführen und `docs/metrics.md` aktualisieren.
+
+**FEAT-RANGLISTE-EINHEITLICH abgeschlossen (Session 141).** Bestenliste und Spielerprofil-Statistik vereinheitlicht: BE aggregiert alle Regelvarianten (`AVG(rating_mu/sigma)`, `SUM(anzahl_spiele/siege/...)`) in `SpielerProfilService.ladeBestenlisteAggregiert()` via `JdbcClient`. Neues Projektions-Record `BestenlisteStatistikAggregat`. `BestenlisteAntwort.regelvariante` entfernt, `SpielerProfilAntwort.statistiken` (Map) → `statistik` (einzelner aggregierter Eintrag). FE: `BestenlisterSzene` ohne Tabs, `SpielerProfilModal` ohne Varianten-Tabs, `AppStore.ladeBestenliste()` ohne Parameter. 477/477 FE-Tests, 503/503 BE-Tests, Build + Lint + Complexity grün. Alle autonomen Tasks Block A (S131–S141) erledigt.
 
 **Neue autonome Runde (Session 131, mit User abgestimmt).** Block-A-Vorgängerrunde (S129/130) komplett erledigt → wird beim nächsten Slim-Down ins Archiv verschoben. Aus dem Metrik-Review (lizard/Biome/JaCoCo) und einem Dependency-Check abgeleitet, vom User priorisiert:
 
@@ -52,17 +56,29 @@
 
 - [x] **FEAT-RANGLISTE-EINHEITLICH** (Full-Stack/Feature, autonom, mittel) — Die Bestenliste trennt aktuell in **TURNIER/SONDER/FREI** (`frontend/src/szenen/BestenlisterSzene.ts:9` `REGELVARIANTEN`; Backend `SpielerProfilController` Param `regelvariante`, `BestenlisteAntwort`). Das verwirrt: „TURNIER" liest sich wie ein Turnier-Event, ist aber nur eine **Regelkategorie**. **User-Entscheidung S139:** **nur EINE Rangliste** über alle Regelvarianten, Kategorisierung entfernen. **Umsetzung:** (FE) Tabs/`REGELVARIANTEN` aus `BestenlisterSzene` entfernen, eine kombinierte Liste rendern. (BE) Bestenliste über alle Varianten **aggregieren** — Endpoint/Query in `SpielerProfilController`/zugehörigem Service so anpassen, dass eine variantenübergreifende Wertung berechnet wird (ein Spieler = Summe/Aggregat über alle Varianten). **Mitentscheiden:** Die Profil-Statistik (`SpielerProfilAntwort`, ebenfalls nach Variante gruppiert) konsequent **ebenfalls** auf eine Gesamtansicht zusammenführen (sonst inkonsistent). **Erste Datei zuerst:** `frontend/src/szenen/BestenlisterSzene.ts` (FE-Schnitt), dann Backend-Aggregation. **DoD:** Bestenliste zeigt eine einheitliche Liste ohne Tabs; Backend liefert variantenübergreifende Wertung; `mvn clean test` + FE-Suite/Build/Lint grün; Vision-Smoke der Bestenliste. **Risiko:** mittel (Backend-Aggregation + evtl. Migrations-/Query-Anpassung).
 
-### Empfohlene Build-Reihenfolge (Block A)
+### Neue Tasks (Session 142, Codebase-Scan)
+
+> Aus dem Spec-/Code-Scan S142. Zwei Bugs, zwei Doku-Tasks, ein M2-Feature.
+
+- [x] **BUG-FE-STANDARD-KONFIG** (Frontend/Bugfix, autonom, winzig) — `STANDARD_KONFIG` in `frontend/src/szenen/tischErstellenDialog.ts:52–54` setzt `bockrundenAktiv`, `schweinchenAktiv` und `dreissigAugenPflichtAktiv` auf `true`. Spec (`tischkonfiguration.md`) und Backend (`TischkonfigurationEmbeddable.java:52–54`) definieren den Standard für alle drei als `false`. Damit sendet das FE beim „Neuer Tisch ohne Preset-Änderung" abweichende Defaults ans Backend. **Fix:** alle drei Felder in `STANDARD_KONFIG` auf `false` setzen. Die Preset-Werte (`konfiguration`-Prop) bleiben unberührt — die Regel greift nur für den initialen Fallback. **Erste Datei zuerst:** `tischErstellenDialog.ts`. **DoD:** alle drei Felder auf `false`, `npm test && npm run build && npm run lint` grün, Tests für STANDARD_KONFIG ergänzen oder prüfen. **Risiko:** minimal (ein-Zeilen-Fix pro Feld).
+
+- [ ] **BUG-BE-FE-SCHWEINCHEN-STATISTIK** (Full-Stack/Bugfix, autonom, klein) — `SpielerStatistik.schweinchenGespielt()` wird vom Domain-Listener bereits getrackt (`SpielerStatistik.java:60/118`), fehlt aber in `SpielerProfilAntwort.StatistikAntwort` (weder im Record-Konstruktor noch in `aus()` noch in `aggregiereStatistiken()` — `SpielerProfilAntwort.java:31–100/141–200`). FE `SpielerProfilModal` und `BestenlisterSzene` zeigen es daher nicht. Spec `statistik-ranking.md` listet Schweinchen unter den zu trackenden Ereignissen. **Fix:** (1) `schweinchenGespielt: int` zu `StatistikAntwort`-Record-Feldern ergänzen, (2) `aus()` und `aggregiereStatistiken()` erweitern, (3) im FE `SpielerProfilModal.ts` die Anzeige ergänzen (analog `karlchenGespielt`), (4) OpenAPI-Types regenerieren (`npm run generate-types`). **Erste Datei zuerst:** `SpielerProfilAntwort.java`. **DoD:** Feld in API + FE sichtbar, `mvn clean test` + FE-Suite/Build/Lint grün. **Risiko:** niedrig (additives Feld).
+
+- [ ] **DOC-METRICS-REFRESH** (Doku/Tooling, autonom, winzig) — `docs/metrics.md` ist auf Stand ~Session 131 (Pre-REFACTOR, 2026-06-15) und zeigt veraltete CCN-Werte (z.B. `KiTischOrchestrator::automatisiereTisch` CCN 20, `TischInputHandler` CCN 35) — nach den abgeschlossenen REFACTOR-Tasks sind die realen Werte deutlich niedriger. **Fix:** `bash scripts/metrics.sh > docs/metrics.md` (oder äquivalent — Skript prüfen ob es direkt in die Datei schreibt) ausführen, Output committen. **Erste Datei zuerst:** `scripts/metrics.sh` lesen, dann ausführen. **DoD:** `docs/metrics.md` enthält Post-Refactoring-Zahlen (Datum aktuell), `KiTischOrchestrator` und die drei FE-Hotspots (TischEreignisHandler/PartieStore/TischKartenRenderer) zeigen deutlich reduzierte Werte. **Risiko:** minimal (rein dokumentarisch).
+
+- [ ] **DOC-SPEC-SPIELERPROFIL-UPDATE** (Doku/Spec-Pflege, autonom, winzig) — `specs/frontend-spielerprofil.md` beschreibt noch das alte Varianten-Tab-Konzept (`TURNIER/SONDER/FREI`-Tabs im Profil-Modal), das per `FEAT-RANGLISTE-EINHEITLICH` (S141) entfernt wurde. Außerdem fehlt die Erwähnung von `schweinchenGespielt` als anzuzeigendes Statistik-Feld. **Fix:** Spec auf einheitliche Ein-Ansicht-Darstellung (kein Varianten-Tab) aktualisieren + `schweinchenGespielt` in die Statistik-Felder-Liste aufnehmen. **Erste Datei zuerst:** `specs/frontend-spielerprofil.md`. **DoD:** Spec beschreibt den aktuellen Stand ohne Widerspruch zum Code. **Risiko:** null (reine Doku).
+
+- [ ] **FEAT-RECHT-SEITEN-GERUEST** (Full-Stack/Feature, autonom, mittel — **M2-Gate**) — `/impressum`, `/datenschutz` und `/agb` fehlen im Code vollständig (weder Spring-Route noch statische Seite noch FE-Link). Spec `specs/recht-impressum-datenschutz.md` enthält die vollständige Struktur mit Platzhaltern (`[Vollständiger Name]`, `[E-Mail]` etc.) für den Hobby-Betrieb. **Umsetzung:** (1) Drei statische HTML-Seiten mit den Pflichtabschnitten aus der Spec erstellen (canvas-freie HTML außerhalb von Phaser), Platzhalter `[BETREIBER-NAME]` / `[BETREIBER-EMAIL]` etc. als `<!-- TODO: vor Go-Live ausfüllen -->`-Kommentare markieren; (2) Spring-Controller oder `WebMvcConfigurer`-Ressource für `/impressum`, `/datenschutz`, `/agb`; (3) Footer-Links in `frontend/index.html` (unter dem Canvas) eintragen. **Erste Datei zuerst:** `src/main/resources/static/impressum.html`. **DoD:** alle drei URLs liefern 200, Footer-Links erreichbar, Platzhalter klar markiert, `mvn clean test` + FE-Suite/Build grün. **Hinweis für Mensch:** vor Go-Live `[BETREIBER-…]`-Platzhalter mit echten Daten füllen und Texte juristisch prüfen. **Risiko:** niedrig (additiv, kein bestehender Code betroffen).
+
+### Empfohlene Build-Reihenfolge (Block A — neue Runde ab S142)
 
 > Nimm den **obersten noch offenen** Task. Alle autonom; bei Vision-Tasks fährt Ralph das Backend selbst headless hoch.
 
-1. **REFACTOR-BE-KI-ORCHESTRATOR** (isoliert, niedrigstes Risiko — guter Einstieg)
-2. **CLEANUP-VISION-MOBILE-DEFER** (winzig, schnell vom Tisch)
-3. **DEPS-BE-SPRING-UPDATE** (Minor-Bumps, risikoarm — vor die FE-Deps)
-4. **REFACTOR-FE-COMPLEXITY-HOTSPOTS** (drei Commits)
-5. **QA-FE-BIOME-LOWER** (direkt danach — hängt an #4)
-6. **DEPS-FE-TOOLING-MAJORS** (gestaffelt, pro Major ein Commit)
-7. **DEPS-FE-PHASER4-SPIKE** (zuletzt — riskant, isoliert im Spike-Branch)
+1. **BUG-FE-STANDARD-KONFIG** (winzig, sofortiger Bugfix — guter Einstieg)
+2. **DOC-METRICS-REFRESH** (winzig — direkt danach, damit frische Zahlen vorliegen)
+3. **BUG-BE-FE-SCHWEINCHEN-STATISTIK** (klein — additives Feld, BE + FE)
+4. **DOC-SPEC-SPIELERPROFIL-UPDATE** (winzig — Spec-Hygiene, kein Code-Risiko)
+5. **FEAT-RECHT-SEITEN-GERUEST** (mittel — M2-Gate, isolierter neuer Code)
 
 _Vorrunde S129/130 erledigt (→ Archiv beim nächsten Slim-Down): QA-VISION-MOBILE-LANDSCAPE, CLEANUP-VISION-SCREENSHOT-DUBLETTE, SEC-DEPS-FE-DEV-AUDIT, QA-METRICS-REFRESH, QA-METRICS-TOOLING, QA-FE-BIOME-COMPLEXITY, PERF-FE-BUNDLE-SPLIT-2._
 
@@ -116,9 +132,10 @@ _Vorrunde S129/130 erledigt (→ Archiv beim nächsten Slim-Down): QA-VISION-MOB
 
 ## Entdeckungen
 
-- **S129 — `Tisch`-Klasse (de.locodoko.partie) hat 0% Line-Coverage** (25 LOC laut JaCoCo): Domänen-Klasse im Partie-Kern ohne eigene Tests. Wenn nicht durch Integrationstests abgedeckt → Unit-Test-Task ergänzen.
-- **S129 — `partie.ereignisse`-Paket: 50% Coverage** (10 Lines): Ereignis-Klassen im Partie-Kern nur halb abgedeckt. Prüfen ob wichtige Pfade fehlen.
-- **S129 — `tisch.persistenz`-Paket: 68% Coverage** (206 Lines): knapp unter 70%-Schwelle. `JsonbConverter` (55%, 45 LOC) ist Haupttreiber.
+- **S129 — `Tisch`-Klasse (de.locodoko.partie) hat 0% Line-Coverage** (25 LOC laut JaCoCo): Domänen-Klasse im Partie-Kern ohne eigene Tests. Wenn nicht durch Integrationstests abgedeckt → Unit-Test-Task ergänzen. **S142-Update:** Kein direkter `TischTest.java` gefunden; Gesamtcoverage `de.locodoko.partie` bei 89% → wird durch Integrationstests mitabgedeckt. Akzeptiertes Restrisiko — kein eigener Task.
+- **S129 — `partie.ereignisse`-Paket: 50% Coverage** (10 Lines): Ereignis-Klassen im Partie-Kern nur halb abgedeckt. **S142-Update:** Die 9 Ereignis-Records (+ package-info) sind reine Datenträger ohne Business-Logik; 50% bedeutet einige Records wurden nie instanziiert in Tests. Akzeptiertes Restrisiko (Null-Logik-Records) — kein eigener Task.
+- **S129 — `tisch.persistenz`-Paket: 68% Coverage** (206 Lines): knapp unter 70%-Schwelle. `JsonbConverter` (55%, 45 LOC) ist Haupttreiber. **S142-Update:** Bleibt offen. Kein kritischer Pfad unabgedeckt — Infrastruktur-Code, nicht Business-Logik. Akzeptiertes Restrisiko.
+- **S142 — `docs/metrics.md` ist Pre-REFACTOR-Stand (2026-06-15, vor Session 131-Refactoring):** Zeigt veraltete CCN-Zahlen (u.a. `KiTischOrchestrator` CCN 20, `TischInputHandler` CCN 35, `SpielerProfilModal` CCN 33). Nach REFACTOR-BE-KI-ORCHESTRATOR, REFACTOR-FE-COMPLEXITY-HOTSPOTS und QA-FE-BIOME-LOWER sind die realen Werte deutlich niedriger. → **DOC-METRICS-REFRESH** (neu in Block A).
 - **S129 — FE-Komplexitäts-Hotspot neu: `TischInputHandler::verarbeiteTastatureingabe` CCN 35** (vorher als 27 geschätzt — ESLint cyclomatic, nicht kognitiv). Realer Messwert aus aktuellem ESLint-Lauf.
 
 - **S137 — DEPS-FE-TOOLING-MAJORS Breaking Changes:** (a) Vitest 4: `Reflect.construct(arrowFn)` schlägt fehl — `vi.fn(() => ...)` in Test-Mocks, die mit `new` aufgerufen werden, muss `vi.fn(function() { return ...; })` sein. (b) Vite 8 (Rolldown-Backend): `manualChunks` als Objekt entfernt, nur noch Funktion. Build-Zeit ~6× schneller. Kein Vite 7.x. (c) ESLint 10: `no-useless-assignment` in `js.configs.recommended` aufgenommen. (d) `openapi-typescript@7.x` requiert `typescript@^5.x` — mit TS6 braucht `npm install` `--legacy-peer-deps`, aber keine funktionale Einschränkung (Dev-only-Tool).

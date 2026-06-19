@@ -250,4 +250,17 @@ describe('zeigeTischErstellenDialog', () => {
     await vi.waitFor(() => expect(mockAppStore.erstelleTischMitPreset).toHaveBeenCalledOnce());
     expect(mockAppStore.erstelleKonfiguriertenTisch).not.toHaveBeenCalled();
   });
+
+  it('STANDARD_KONFIG-Fallback setzt bockrundenAktiv/schweinchenAktiv/dreissigAugenPflichtAktiv auf false', () => {
+    zeigeTischErstellenDialog(SPIELER_ZUSTAND, []);
+
+    const bockrundenCb = document.querySelector<HTMLInputElement>('[data-feld="bockrundenAktiv"]');
+    expect(bockrundenCb?.checked).toBe(false);
+
+    const schweinchenCb = document.querySelector<HTMLInputElement>('[data-feld="schweinchenAktiv"]');
+    expect(schweinchenCb?.checked).toBe(false);
+
+    const dreissigCb = document.querySelector<HTMLInputElement>('[data-feld="dreissigAugenPflichtAktiv"]');
+    expect(dreissigCb?.checked).toBe(false);
+  });
 });
