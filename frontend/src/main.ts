@@ -113,4 +113,37 @@ window.__locodoko = {
     }
     return false;
   },
+  gibObjektBounds: (name: string) => {
+    type WithList = { list?: Phaser.GameObjects.GameObject[] };
+    function sucheRekursiv(items: Phaser.GameObjects.GameObject[]): Phaser.GameObjects.GameObject | null {
+      for (const item of items) {
+        if (item.name === name) return item;
+        const kinder = (item as unknown as WithList).list;
+        if (kinder && kinder.length > 0) {
+          const gefunden = sucheRekursiv(kinder);
+          if (gefunden) return gefunden;
+        }
+      }
+      return null;
+    }
+    const aktiveSzenen = spiel.scene.getScenes(true);
+    for (const szene of aktiveSzenen) {
+      const items = (szene.children as unknown as WithList).list ?? [];
+      const obj = sucheRekursiv(items);
+      if (obj) {
+        const bounds = (obj as unknown as { getBounds?: () => { x: number; y: number; width: number; height: number; centerX: number; centerY: number } }).getBounds?.();
+        if (bounds) {
+          return {
+            x: Math.round(bounds.centerX),
+            y: Math.round(bounds.centerY),
+            breite: Math.round(bounds.width),
+            hoehe: Math.round(bounds.height),
+          };
+        }
+        const go = obj as unknown as { x: number; y: number };
+        return { x: Math.round(go.x), y: Math.round(go.y), breite: 0, hoehe: 0 };
+      }
+    }
+    return null;
+  },
 };

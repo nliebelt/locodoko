@@ -264,6 +264,7 @@ export class SpielverwaltungsSzene extends Phaser.Scene {
 
     const btn = new PhaserButton(this, {
       x: 175, y: 0, text: buttonText, typ: hervorgehoben ? 'secondary' : 'primary', breite: 215, hoehe: 36,
+      testId: hervorgehoben ? undefined : `btn-beitreten-${tisch.id}`,
       callback: () => {
         if (hervorgehoben) {
           void appStore.reconnecteTisch(tisch.id);

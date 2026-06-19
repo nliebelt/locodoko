@@ -61,4 +61,16 @@ export function richteE2EBrückeEin(szene: TischSzene): void {
   };
   bridge.isPartieEndeModalSichtbar = () => !!szene.rundenEndeController?.phaserPartieEndeModal;
   bridge.schliessePartieEndeModal = () => szene.rundenEndeController?.schliessePartieEndeModal();
+  bridge.gibKartenPosition = (karteId: string) => {
+    const obj = szene.kartenRenderer?.handKartenobjekte.get(karteId);
+    if (!obj) return null;
+    const bounds = (obj.wurzel as unknown as { getBounds?: () => { x: number; y: number; width: number; height: number; centerX: number; centerY: number } }).getBounds?.();
+    if (!bounds) return null;
+    return {
+      x: Math.round(bounds.centerX),
+      y: Math.round(bounds.centerY),
+      breite: Math.round(bounds.width),
+      hoehe: Math.round(bounds.height),
+    };
+  };
 }

@@ -12,6 +12,10 @@ export interface LocodokoBridge {
   getAktuelleSzene: () => string | null;
   /** Löst den Callback eines benannten PhaserButtons in der aktiven Szene aus (für E2E-Tests). */
   drueckeSzenenButton?: (name: string) => boolean;
+  /** Liefert Weltkoordinaten (Mittelpunkt) eines benannten Phaser-Objekts (für echte Mausklick-Tests). */
+  gibObjektBounds?: (name: string) => { x: number; y: number; breite: number; hoehe: number } | null;
+  /** Liefert Weltkoordinaten (Mittelpunkt) einer Handkarte anhand ihrer ID (für echte Kartenklick-Tests). */
+  gibKartenPosition?: (karteId: string) => { x: number; y: number; breite: number; hoehe: number } | null;
   isIdle?: (ignoreStore?: boolean) => boolean;
   isOverlaySichtbar?: () => boolean;
   setzeAnimationsGeschwindigkeit?: (f: number) => void;
