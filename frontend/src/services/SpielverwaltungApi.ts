@@ -246,8 +246,8 @@ export class SpielverwaltungApi {
     return this.hol<SpielerProfilAntwortGenerated>(`/api/spieler/${spielerId}/profil`);
   }
 
-  async ladeBestenliste(regelvariante: string): Promise<BestenlisteAntwortGenerated> {
-    return this.hol<BestenlisteAntwortGenerated>(`/api/spieler/leaderboard?regelvariante=${encodeURIComponent(regelvariante)}`);
+  async ladeBestenliste(): Promise<BestenlisteAntwortGenerated> {
+    return this.hol<BestenlisteAntwortGenerated>('/api/spieler/leaderboard');
   }
 
   async gibFeedback(text: string): Promise<void> {

@@ -74,7 +74,7 @@ export class AppStore {
   async ausloggen(): Promise<void> { return this.session.ausloggen(); }
   async alsGastStarten(): Promise<void> { return this.session.alsGastStarten(); }
   async ladeSpielerProfil(spielerId: Uuid): Promise<SpielerProfilAntwortGenerated> { return this.session.ladeSpielerProfil(spielerId); }
-  async ladeBestenliste(regelvariante = 'TURNIER'): Promise<BestenlisteAntwortGenerated> { return this.api.ladeBestenliste(regelvariante); }
+  async ladeBestenliste(): Promise<BestenlisteAntwortGenerated> { return this.api.ladeBestenliste(); }
   async gibFeedback(text: string): Promise<void> { return this.api.gibFeedback(text); }
   async meldeBugReport(anfrage: BugReportAnfrage): Promise<BugReportAntwort> { return this.api.meldeBugReport(anfrage); }
 

@@ -3,6 +3,7 @@ package de.locodoko.spieler;
 import de.locodoko.partie.ereignisse.SpielBeendet;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.modulith.events.ApplicationModuleListener;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -28,13 +29,16 @@ public class SpielerProfilService {
     private final SpielerRepository spielerRepository;
     private final SpielerStatistikRepository statistikRepository;
     private final PartieErgebnisRepository partieErgebnisRepository;
+    private final JdbcClient jdbcClient;
 
     public SpielerProfilService(SpielerRepository spielerRepository,
                                 SpielerStatistikRepository statistikRepository,
-                                PartieErgebnisRepository partieErgebnisRepository) {
+                                PartieErgebnisRepository partieErgebnisRepository,
+                                JdbcClient jdbcClient) {
         this.spielerRepository = spielerRepository;
         this.statistikRepository = statistikRepository;
         this.partieErgebnisRepository = partieErgebnisRepository;
+        this.jdbcClient = jdbcClient;
     }
 
     /** Aktualisiert Statistiken und TrueSkill-Rating aller beteiligten menschlichen Spieler nach einem Spiel. */
@@ -113,6 +117,23 @@ public class SpielerProfilService {
     @Transactional(readOnly = true)
     public List<PartieErgebnisEintrag> ladePartieErgebnisse(UUID spielerId) {
         return partieErgebnisRepository.findBySpielerId(spielerId);
+    }
+
+    /** Laedt die Top-50 Spieler aggregiert ueber alle Regelvarianten, sortiert nach konservativem Rating. */
+    @Transactional(readOnly = true)
+    public List<BestenlisteStatistikAggregat> ladeBestenlisteAggregiert() {
+        return jdbcClient.sql(
+            "SELECT spieler_id, SUM(anzahl_spiele) AS anzahl_spiele, SUM(anzahl_siege) AS anzahl_siege, " +
+            "AVG(rating_mu) AS rating_mu, AVG(rating_sigma) AS rating_sigma " +
+            "FROM spieler_statistik GROUP BY spieler_id HAVING SUM(anzahl_spiele) > 0 " +
+            "ORDER BY (AVG(rating_mu) - 3 * AVG(rating_sigma)) DESC LIMIT 50"
+        ).query((rs, rowNum) -> new BestenlisteStatistikAggregat(
+            UUID.fromString(rs.getString("spieler_id")),
+            rs.getInt("anzahl_spiele"),
+            rs.getInt("anzahl_siege"),
+            rs.getDouble("rating_mu"),
+            rs.getDouble("rating_sigma")
+        )).list();
     }
 
 

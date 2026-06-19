@@ -8,12 +8,10 @@ import java.util.UUID;
 
 /**
  * REST-Antwort fuer {@code GET /api/spieler/leaderboard}.
- * Ewige Bestenliste sortiert nach konservativem TrueSkill-Rating (mu - 3*sigma).
+ * Ewige Bestenliste aggregiert ueber alle Regelvarianten, sortiert nach konservativem TrueSkill-Rating (mu - 3*sigma).
  */
-@Schema(description = "Ewige Bestenliste fuer eine Regelvariante, sortiert nach konservativem TrueSkill-Rating.")
+@Schema(description = "Ewige Bestenliste aggregiert ueber alle Regelvarianten, sortiert nach konservativem TrueSkill-Rating.")
 public record BestenlisteAntwort(
-    @Schema(description = "Regelvariante dieser Bestenliste.", example = "TURNIER")
-    String regelvariante,
     @Schema(description = "Eintraege der Bestenliste, aufsteigend nach Rang sortiert.")
     List<BestenlisteEintragAntwort> eintraege
 ) {
@@ -40,12 +38,11 @@ public record BestenlisteAntwort(
         double siegquote
     ) {}
 
-    public static BestenlisteAntwort aus(String regelvariante,
-                                          List<SpielerStatistik> statistiken,
+    public static BestenlisteAntwort aus(List<BestenlisteStatistikAggregat> statistiken,
                                           Map<UUID, SpielerEntity> spielerMap) {
         List<BestenlisteEintragAntwort> eintraege = new java.util.ArrayList<>();
         for (int i = 0; i < statistiken.size(); i++) {
-            SpielerStatistik stat = statistiken.get(i);
+            BestenlisteStatistikAggregat stat = statistiken.get(i);
             SpielerEntity spieler = spielerMap.get(stat.spielerId());
             if (spieler == null) continue;
             double siegquote = stat.anzahlSpiele() > 0
@@ -63,6 +60,6 @@ public record BestenlisteAntwort(
                 siegquote
             ));
         }
-        return new BestenlisteAntwort(regelvariante, eintraege);
+        return new BestenlisteAntwort(eintraege);
     }
 }

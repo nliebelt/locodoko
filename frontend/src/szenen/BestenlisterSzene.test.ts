@@ -56,11 +56,12 @@ describe('BestenlisterSzene', () => {
     vi.clearAllMocks();
     szene = new BestenlisterSzene();
     mockStore = {
-      ladeBestenliste: vi.fn(() => Promise.resolve({ regelvariante: 'TURNIER', eintraege: [] }))
+      ladeBestenliste: vi.fn(() => Promise.resolve({ eintraege: [] }))
     };
   });
 
   it('create baut Hintergrund, Titel und Zurück-Button', () => {
+    // Grundstruktur muss vorhanden sein, damit Nutzer die Szene erkennt und verlassen kann
     szene.create();
     expect(szene.add.tileSprite).toHaveBeenCalled();
     expect(szene.add.text).toHaveBeenCalledWith(640, 45, 'BESTENLISTE', expect.any(Object));
@@ -68,48 +69,32 @@ describe('BestenlisterSzene', () => {
     expect(zurückCall).toBeDefined();
   });
 
-  it('create erstellt drei Varianten-Tabs', () => {
+  it('create enthält keine Varianten-Tabs mehr', () => {
+    // Einheitliche Liste ohne Tabs ist die User-Anforderung
     szene.create();
     const tabTexte = (PhaserButton as any).mock.calls
       .map((c: any) => c[1].text)
       .filter((t: string) => ['TURNIER', 'SONDER', 'FREI'].includes(t));
-    expect(tabTexte).toEqual(['TURNIER', 'SONDER', 'FREI']);
+    expect(tabTexte).toHaveLength(0);
   });
 
-  it('TURNIER-Tab ist initial als primary markiert', () => {
+  it('create ruft ladeBestenliste ohne Parameter auf', () => {
+    // Keine Regelvariante mehr — Aggregat über alle Varianten
     szene.create();
-    const turnierCall = (PhaserButton as any).mock.calls.find((c: any) => c[1].text === 'TURNIER');
-    expect(turnierCall[1].typ).toBe('primary');
-    const sonderCall = (PhaserButton as any).mock.calls.find((c: any) => c[1].text === 'SONDER');
-    expect(sonderCall[1].typ).toBe('secondary');
-  });
-
-  it('create ruft ladeBestenliste mit TURNIER auf', () => {
-    szene.create();
-    expect(mockStore.ladeBestenliste).toHaveBeenCalledWith('TURNIER');
+    expect(mockStore.ladeBestenliste).toHaveBeenCalledWith();
   });
 
   it('Zurück-Button navigiert zur SpielverwaltungsSzene', () => {
+    // Navigation muss funktionieren
     szene.create();
     const zurückCall = (PhaserButton as any).mock.calls.find((c: any) => c[1].text === '← Zurück');
     zurückCall[1].callback();
     expect(szene.scene.start).toHaveBeenCalledWith('SpielverwaltungsSzene');
   });
 
-  it('Tab-Klick auf SONDER lädt Bestenliste für SONDER', () => {
-    szene.create();
-    // Callback vor clearAllMocks sichern
-    const sonderCall = (PhaserButton as any).mock.calls.find((c: any) => c[1].text === 'SONDER');
-    expect(sonderCall).toBeDefined();
-    const sonderCallback = sonderCall[1].callback;
-    mockStore.ladeBestenliste = vi.fn(() => Promise.resolve({ regelvariante: 'SONDER', eintraege: [] }));
-
-    sonderCallback();
-    expect(mockStore.ladeBestenliste).toHaveBeenCalledWith('SONDER');
-  });
-
   it('zeigt leere Meldung wenn Einträge fehlen', async () => {
-    mockStore.ladeBestenliste = vi.fn(() => Promise.resolve({ regelvariante: 'TURNIER', eintraege: [] }));
+    // Leere Liste darf nicht abstürzen
+    mockStore.ladeBestenliste = vi.fn(() => Promise.resolve({ eintraege: [] }));
     szene.create();
     await Promise.resolve();
     const leertextCall = szene.add.text.mock.calls.find(
@@ -119,6 +104,7 @@ describe('BestenlisterSzene', () => {
   });
 
   it('zeigt Fehlermeldung bei API-Fehler', async () => {
+    // Netzwerkfehler müssen sichtbar kommuniziert werden
     mockStore.ladeBestenliste = vi.fn(() => Promise.reject(new Error('Netzwerkfehler')));
     szene.create();
     await Promise.resolve();
@@ -130,8 +116,8 @@ describe('BestenlisterSzene', () => {
   });
 
   it('zeigt Kopfzeile und Einträge bei gefüllter Bestenliste', async () => {
+    // Ranglisten-Daten müssen korrekt gerendert werden
     mockStore.ladeBestenliste = vi.fn(() => Promise.resolve({
-      regelvariante: 'TURNIER',
       eintraege: [
         { rang: 1, spielerName: 'Karlchen', konservativesRating: 18.5, ratingMu: 27.0, ratingSigma: 2.83, anzahlSpiele: 42, siegquote: 59.5 }
       ]

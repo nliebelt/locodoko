@@ -1,13 +1,6 @@
 import type { SpielerProfilAntwortGenerated, StatistikAntwortGenerated, PartieErgebnisAntwortGenerated } from '../generated/schema-types';
 import { installiereDialogA11y } from './dialogHelper';
 
-const REGELVARIANTEN: ReadonlyArray<string> = ['TURNIER', 'SONDER', 'FREI'];
-const VARIANTEN_BEZEICHNUNG: Record<string, string> = {
-  TURNIER: 'Turnier',
-  SONDER: 'Sonder',
-  FREI: 'Frei',
-};
-
 /**
  * HTML-basiertes Modal für die Anzeige des Spieler-Profils mit Statistiken und Partie-Verlauf.
  * Wird in das #ui-root-Element eingehängt und nutzt die .ui-modal-backdrop / .ui-modal CSS-Klassen.
@@ -66,27 +59,6 @@ export class SpielerProfilModal {
     modal.innerHTML = SpielerProfilModal.erstelleInhalt(profil);
     backdrop.appendChild(modal);
 
-    // Tab-Click-Handler
-    const tabLeiste = modal.querySelector('.ui-profil-tabs') as HTMLElement | null;
-    const statistikContainer = modal.querySelector('.ui-profil-statistik-container') as HTMLElement | null;
-    modal.querySelectorAll('[role="tab"]').forEach(tab => {
-      tab.addEventListener('click', () => {
-        const variante = tab.getAttribute('data-variante') ?? 'TURNIER';
-        modal.querySelectorAll('[role="tab"]').forEach(t => {
-          t.setAttribute('aria-selected', 'false');
-          t.classList.remove('ui-profil-tab--aktiv');
-        });
-        tab.setAttribute('aria-selected', 'true');
-        tab.classList.add('ui-profil-tab--aktiv');
-        tabLeiste?.setAttribute('data-aktive-variante', variante);
-        if (statistikContainer) {
-          statistikContainer.innerHTML = SpielerProfilModal.erstelleStatistikInhalt(
-            profil.statistiken?.[variante]
-          );
-        }
-      });
-    });
-
     return backdrop;
   }
 
@@ -96,7 +68,6 @@ export class SpielerProfilModal {
     const datum = profil.erstelltAm
       ? new Date(profil.erstelltAm).toLocaleDateString('de-DE')
       : '—';
-    const aktiveVariante = 'TURNIER';
 
     return `
       <div class="ui-profil-header">
@@ -107,23 +78,8 @@ export class SpielerProfilModal {
         </div>
         <button class="ui-profil-schliessen" aria-label="Profil schließen">✕</button>
       </div>
-      <div role="tablist" class="ui-profil-tabs" aria-label="Regelvariante wählen" data-aktive-variante="${aktiveVariante}">
-        ${REGELVARIANTEN.map(v => `
-          <button
-            role="tab"
-            class="ui-profil-tab${v === aktiveVariante ? ' ui-profil-tab--aktiv' : ''}"
-            data-variante="${v}"
-            aria-selected="${v === aktiveVariante ? 'true' : 'false'}"
-            id="profil-tab-${v.toLowerCase()}"
-          >${VARIANTEN_BEZEICHNUNG[v]}</button>
-        `).join('')}
-      </div>
-      <div
-        role="tabpanel"
-        class="ui-profil-statistik-container"
-        aria-labelledby="profil-tab-${aktiveVariante.toLowerCase()}"
-      >
-        ${SpielerProfilModal.erstelleStatistikInhalt(profil.statistiken?.[aktiveVariante])}
+      <div class="ui-profil-statistik-container">
+        ${SpielerProfilModal.erstelleStatistikInhalt(profil.statistik)}
       </div>
       ${SpielerProfilModal.erstellePartieVerlauf(profil.letztePartien ?? [])}
     `;

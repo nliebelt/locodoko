@@ -693,7 +693,7 @@ export interface components {
              */
             spielanzahl?: number;
         };
-        /** @description Oeffentlich sichtbares Spieler-Profil mit Statistiken pro Regelvariante und letzten Partien. */
+        /** @description Oeffentlich sichtbares Spieler-Profil mit aggregierten Statistiken und letzten Partien. */
         SpielerProfilAntwort: {
             /**
              * Format: uuid
@@ -717,10 +717,8 @@ export interface components {
              * @example 2026-01-15T10:00:00Z
              */
             erstelltAm?: string;
-            /** @description Spielstatistiken des Spielers, gruppiert nach Regelvariante (TURNIER, SONDER, FREI). */
-            statistiken?: {
-                [key: string]: components["schemas"]["StatistikAntwort"];
-            };
+            /** @description Aggregierte Spielstatistiken ueber alle Regelvarianten. Null wenn noch keine Spiele gespielt. */
+            statistik?: components["schemas"]["StatistikAntwort"];
             /** @description Liste der letzten Partien des Spielers. */
             letztePartien?: components["schemas"]["PartieErgebnisAntwort"][];
         };
@@ -1112,13 +1110,8 @@ export interface components {
              */
             aktivesProfil?: string;
         };
-        /** @description Ewige Bestenliste fuer eine Regelvariante, sortiert nach konservativem TrueSkill-Rating. */
+        /** @description Ewige Bestenliste aggregiert ueber alle Regelvarianten, sortiert nach konservativem TrueSkill-Rating. */
         BestenlisteAntwort: {
-            /**
-             * @description Regelvariante dieser Bestenliste.
-             * @example TURNIER
-             */
-            regelvariante?: string;
             /** @description Eintraege der Bestenliste, aufsteigend nach Rang sortiert. */
             eintraege?: components["schemas"]["BestenlisteEintragAntwort"][];
         };
@@ -2852,9 +2845,7 @@ export interface operations {
     };
     ladeBestenliste: {
         parameters: {
-            query?: {
-                regelvariante?: string;
-            };
+            query?: never;
             header?: never;
             path?: never;
             cookie?: never;

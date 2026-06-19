@@ -6,13 +6,12 @@ import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-import java.util.stream.Collectors;
 
 /**
  * REST-Antwort fuer {@code GET /api/spieler/{id}/profil}.
- * Oeffentlich sichtbares Spieler-Profil mit Statistiken pro Regelvariante und letzten Partien.
+ * Oeffentlich sichtbares Spieler-Profil mit aggregierten Statistiken ueber alle Regelvarianten und letzten Partien.
  */
-@Schema(description = "Oeffentlich sichtbares Spieler-Profil mit Statistiken pro Regelvariante und letzten Partien.")
+@Schema(description = "Oeffentlich sichtbares Spieler-Profil mit aggregierten Statistiken und letzten Partien.")
 public record SpielerProfilAntwort(
     @Schema(description = "Eindeutige Spieler-ID.", example = "a1b2c3d4-e5f6-7890-abcd-ef1234567890")
     UUID spielerId,
@@ -22,8 +21,8 @@ public record SpielerProfilAntwort(
     String avatarFarbe,
     @Schema(description = "Zeitpunkt der Profilerstellung.", example = "2026-01-15T10:00:00Z")
     Instant erstelltAm,
-    @Schema(description = "Spielstatistiken des Spielers, gruppiert nach Regelvariante (TURNIER, SONDER, FREI).")
-    Map<String, StatistikAntwort> statistiken,
+    @Schema(description = "Aggregierte Spielstatistiken ueber alle Regelvarianten. Null wenn noch keine Spiele gespielt.")
+    StatistikAntwort statistik,
     @Schema(description = "Liste der letzten Partien des Spielers.")
     List<PartieErgebnisAntwort> letztePartien
 ) {
@@ -129,15 +128,101 @@ public record SpielerProfilAntwort(
 
     public static SpielerProfilAntwort aus(SpielerEntity spieler, List<SpielerStatistik> statistiken,
                                             List<PartieErgebnisEintrag> partieErgebnisse) {
-        Map<String, StatistikAntwort> statistikMap = statistiken.stream()
-            .collect(Collectors.toMap(SpielerStatistik::regelvariante, StatistikAntwort::aus));
         return new SpielerProfilAntwort(
             spieler.id(),
             spieler.anzeigeName(),
             spieler.avatarFarbe(),
             spieler.erstelltAm(),
-            statistikMap,
+            aggregiereStatistiken(statistiken),
             partieErgebnisse.stream().map(PartieErgebnisAntwort::aus).toList()
         );
+    }
+
+    private static StatistikAntwort aggregiereStatistiken(List<SpielerStatistik> statistiken) {
+        if (statistiken.isEmpty()) return null;
+        int anzahlSpiele = 0, anzahlSiege = 0, gesamtPunkte = 0, fuchsGefangen = 0, fuchsVerloren = 0,
+            karlchenGespielt = 0, doppelkoepfe = 0, reSiege = 0, reNiederlagen = 0,
+            kontraSiege = 0, kontraNiederlagen = 0, hochzeitenGespielt = 0,
+            armutenAngesagt = 0, armutenUebernommen = 0, solosSiege = 0, solosNiederlagen = 0,
+            gesamtAugen = 0;
+        double sumMu = 0, sumSigma = 0;
+        Map<String, Map<String, Integer>> solosGesamt = new java.util.HashMap<>();
+
+        for (SpielerStatistik s : statistiken) {
+            anzahlSpiele += s.anzahlSpiele();
+            anzahlSiege += s.anzahlSiege();
+            gesamtPunkte += s.gesamtPunkte();
+            fuchsGefangen += s.fuchsGefangen();
+            fuchsVerloren += s.fuchsVerloren();
+            karlchenGespielt += s.karlchenGespielt();
+            doppelkoepfe += s.doppelkoepfe();
+            reSiege += s.reSiege();
+            reNiederlagen += s.reNiederlagen();
+            kontraSiege += s.kontraSiege();
+            kontraNiederlagen += s.kontraNiederlagen();
+            hochzeitenGespielt += s.hochzeitenGespielt();
+            armutenAngesagt += s.armutenAngesagt();
+            armutenUebernommen += s.armutenUebernommen();
+            solosSiege += s.solosSiege();
+            solosNiederlagen += s.solosNiederlagen();
+            gesamtAugen += s.gesamtAugen();
+            sumMu += s.ratingMu();
+            sumSigma += s.ratingSigma();
+            fuegesolosZusammen(solosGesamt, s.solosProTypJson());
+        }
+
+        int n = statistiken.size();
+        double avgMu = sumMu / n;
+        double avgSigma = sumSigma / n;
+        String solosJson = schreibeSolosJson(solosGesamt);
+
+        // Berechne abgeleitete Werte wie in StatistikAntwort.aus()
+        double durchschnittlichePunkte = anzahlSpiele > 0
+            ? Math.round((double) gesamtPunkte / anzahlSpiele * 100.0) / 100.0 : 0.0;
+        double siegquote = anzahlSpiele > 0
+            ? Math.round((double) anzahlSiege / anzahlSpiele * 10000.0) / 100.0 : 0.0;
+        double durchschnittlicheAugen = anzahlSpiele > 0
+            ? Math.round((double) gesamtAugen / anzahlSpiele * 100.0) / 100.0 : 0.0;
+
+        return new StatistikAntwort(
+            anzahlSpiele, anzahlSiege, gesamtPunkte,
+            fuchsGefangen, fuchsVerloren, karlchenGespielt,
+            doppelkoepfe, reSiege, reNiederlagen,
+            kontraSiege, kontraNiederlagen, hochzeitenGespielt,
+            armutenAngesagt, armutenUebernommen,
+            solosSiege, solosNiederlagen, solosJson,
+            durchschnittlichePunkte, siegquote, durchschnittlicheAugen,
+            Math.round(avgMu * 100.0) / 100.0,
+            Math.round(avgSigma * 100.0) / 100.0,
+            Math.round((avgMu - 3 * avgSigma) * 100.0) / 100.0
+        );
+    }
+
+    @SuppressWarnings("unchecked")
+    private static void fuegesolosZusammen(Map<String, Map<String, Integer>> gesamt, String solosJson) {
+        if (solosJson == null || solosJson.isBlank() || "{}".equals(solosJson)) return;
+        try {
+            com.fasterxml.jackson.databind.ObjectMapper mapper = new com.fasterxml.jackson.databind.ObjectMapper();
+            Map<String, Map<String, Integer>> einzel = mapper.readValue(solosJson,
+                mapper.getTypeFactory().constructMapType(Map.class,
+                    mapper.getTypeFactory().constructType(String.class),
+                    mapper.getTypeFactory().constructMapType(Map.class, String.class, Integer.class)));
+            einzel.forEach((soloTyp, werte) -> {
+                Map<String, Integer> ziel = gesamt.computeIfAbsent(soloTyp, k -> new java.util.HashMap<>());
+                werte.forEach((schluessel, wert) ->
+                    ziel.merge(schluessel, wert, Integer::sum));
+            });
+        } catch (Exception ignored) {
+            // fehlerhafte JSONB-Eintraege ueberspringen
+        }
+    }
+
+    private static String schreibeSolosJson(Map<String, Map<String, Integer>> solosGesamt) {
+        if (solosGesamt.isEmpty()) return "{}";
+        try {
+            return new com.fasterxml.jackson.databind.ObjectMapper().writeValueAsString(solosGesamt);
+        } catch (Exception ignored) {
+            return "{}";
+        }
     }
 }

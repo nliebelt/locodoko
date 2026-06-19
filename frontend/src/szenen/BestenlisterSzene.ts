@@ -6,20 +6,16 @@ import { FONT_FAMILY } from '../ui/designTokens';
 import { Logger } from '../logger';
 import type { BestenlisteAntwortGenerated } from '../generated/schema-types';
 
-const REGELVARIANTEN = ['TURNIER', 'SONDER', 'FREI'] as const;
-
 // Spalten-Positionen (linksbündig)
 const SPALTEN = [50, 110, 570, 760, 900, 1055] as const;
 const HEADER_LABELS = ['#', 'Spieler', 'Rating (μ−3σ)', 'μ', 'Spiele', 'Siege %'];
 
 /**
  * Phaser-Szene für die ewige TrueSkill-Bestenliste.
- * Sortiert nach konservativem Rating (μ − 3σ), pro Regelvariante.
+ * Sortiert nach konservativem Rating (μ − 3σ), aggregiert über alle Regelvarianten.
  */
 export class BestenlisterSzene extends Phaser.Scene {
-  private aktiveRegelvariante: string = 'TURNIER';
   private inhaltElemente: Phaser.GameObjects.GameObject[] = [];
-  private tabButtons: PhaserButton[] = [];
 
   constructor() {
     super('BestenlisterSzene');
@@ -46,48 +42,19 @@ export class BestenlisterSzene extends Phaser.Scene {
       callback: () => this.scene.start('SpielverwaltungsSzene')
     });
 
-    this.baueTabs();
     this.ladeBestenliste();
 
     this.events.once('shutdown', () => this.raeumAb());
   }
 
-  private baueTabs(): void {
-    this.tabButtons.forEach(b => b.destroy());
-    this.tabButtons = [];
-
-    REGELVARIANTEN.forEach((variante, i) => {
-      const btn = new PhaserButton(this, {
-        x: 450 + i * 190, y: 105,
-        text: variante,
-        breite: 160,
-        typ: variante === this.aktiveRegelvariante ? 'primary' : 'secondary',
-        testId: `btn-tab-${variante.toLowerCase()}`,
-        callback: () => {
-          if (this.aktiveRegelvariante !== variante) {
-            this.aktiveRegelvariante = variante;
-            this.baueTabs();
-            this.ladeBestenliste();
-          }
-        }
-      });
-      this.tabButtons.push(btn);
-    });
-  }
-
-  private raeumInhaltAb(): void {
+  private raeumAb(): void {
     this.inhaltElemente.forEach(e => e.destroy());
     this.inhaltElemente = [];
   }
 
-  private raeumAb(): void {
-    this.raeumInhaltAb();
-    this.tabButtons.forEach(b => b.destroy());
-    this.tabButtons = [];
-  }
-
   private ladeBestenliste(): void {
-    this.raeumInhaltAb();
+    this.inhaltElemente.forEach(e => e.destroy());
+    this.inhaltElemente = [];
 
     const ladeText = this.add.text(this.scale.width / 2, 400, 'Lade Bestenliste…', {
       fontFamily: FONT_FAMILY,
@@ -96,11 +63,12 @@ export class BestenlisterSzene extends Phaser.Scene {
     }).setOrigin(0.5);
     this.inhaltElemente.push(ladeText);
 
-    appStore.ladeBestenliste(this.aktiveRegelvariante)
+    appStore.ladeBestenliste()
       .then(antwort => this.zeigeEintraege(antwort))
       .catch(fehler => {
         Logger.error('Bestenliste laden fehlgeschlagen', fehler);
-        this.raeumInhaltAb();
+        this.inhaltElemente.forEach(e => e.destroy());
+        this.inhaltElemente = [];
         const txt = this.add.text(this.scale.width / 2, 400, 'Fehler beim Laden der Bestenliste', {
           fontFamily: FONT_FAMILY,
           fontSize: '18px',
@@ -149,7 +117,8 @@ export class BestenlisterSzene extends Phaser.Scene {
   }
 
   private zeigeEintraege(antwort: BestenlisteAntwortGenerated): void {
-    this.raeumInhaltAb();
+    this.inhaltElemente.forEach(e => e.destroy());
+    this.inhaltElemente = [];
 
     const eintraege = antwort.eintraege ?? [];
 
@@ -163,7 +132,7 @@ export class BestenlisterSzene extends Phaser.Scene {
       return;
     }
 
-    const headerY = 165;
+    const headerY = 120;
     this.zeigeHeaderZeile(headerY);
 
     const maxReihen = Math.min(eintraege.length, 15);

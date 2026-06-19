@@ -99,15 +99,13 @@ class SpielerProfilControllerTest {
     }
 
     /**
-     * Bestenliste liefert leere Liste fuer Regelvariante ohne Spieler.
+     * Bestenliste liefert leere Liste wenn noch keine Spiele gespielt wurden.
      * Stellt sicher dass der Endpoint immer eine gueltige Antwort liefert.
      */
     @Test
-    void bestenlisteGibtLeereListeFuerUnbekannteRegelvariante() throws Exception {
-        mockMvc.perform(get("/api/spieler/leaderboard")
-                .param("regelvariante", "TURNIER"))
+    void bestenlisteGibtLeereListeWennKeineSpieleVorhanden() throws Exception {
+        mockMvc.perform(get("/api/spieler/leaderboard"))
             .andExpect(status().isOk())
-            .andExpect(jsonPath("$.regelvariante").value("TURNIER"))
             .andExpect(jsonPath("$.eintraege").isArray());
     }
 

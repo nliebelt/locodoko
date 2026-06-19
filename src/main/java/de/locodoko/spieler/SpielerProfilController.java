@@ -12,7 +12,6 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
@@ -33,18 +32,15 @@ public class SpielerProfilController {
     private final SpielerRepository spielerRepository;
     private final SpielerProfilService spielerProfilService;
     private final SpielerSessionService spielerSessionService;
-    private final SpielerStatistikRepository statistikRepository;
     private final KontoLoeschungsService kontoLoeschungsService;
 
     public SpielerProfilController(SpielerRepository spielerRepository,
                                     SpielerProfilService spielerProfilService,
                                     SpielerSessionService spielerSessionService,
-                                    SpielerStatistikRepository statistikRepository,
                                     KontoLoeschungsService kontoLoeschungsService) {
         this.spielerRepository = spielerRepository;
         this.spielerProfilService = spielerProfilService;
         this.spielerSessionService = spielerSessionService;
-        this.statistikRepository = statistikRepository;
         this.kontoLoeschungsService = kontoLoeschungsService;
     }
 
@@ -99,20 +95,18 @@ public class SpielerProfilController {
             .orElse(ResponseEntity.notFound().build());
     }
 
-    @Operation(summary = "Bestenliste abrufen", description = "Gibt die Top-50 Spieler fuer eine Regelvariante zurueck, sortiert nach konservativem TrueSkill-Rating (mu - 3*sigma).")
+    @Operation(summary = "Bestenliste abrufen", description = "Gibt die Top-50 Spieler aggregiert ueber alle Regelvarianten zurueck, sortiert nach konservativem TrueSkill-Rating (mu - 3*sigma).")
     @ApiResponses({
         @ApiResponse(responseCode = "200", description = "Bestenliste erfolgreich abgerufen")
     })
     @GetMapping("/leaderboard")
-    public ResponseEntity<BestenlisteAntwort> ladeBestenliste(
-        @RequestParam(defaultValue = "TURNIER") String regelvariante
-    ) {
-        List<SpielerStatistik> topStats = statistikRepository.findTopByRegelvarianteGeordertNachRating(regelvariante);
-        Set<UUID> spielerIds = topStats.stream().map(SpielerStatistik::spielerId).collect(Collectors.toSet());
+    public ResponseEntity<BestenlisteAntwort> ladeBestenliste() {
+        List<BestenlisteStatistikAggregat> topStats = spielerProfilService.ladeBestenlisteAggregiert();
+        Set<UUID> spielerIds = topStats.stream().map(BestenlisteStatistikAggregat::spielerId).collect(Collectors.toSet());
         Map<UUID, SpielerEntity> spielerMap = StreamSupport
             .stream(spielerRepository.findAllById(spielerIds).spliterator(), false)
             .collect(Collectors.toMap(SpielerEntity::id, e -> e));
-        return ResponseEntity.ok(BestenlisteAntwort.aus(regelvariante, topStats, spielerMap));
+        return ResponseEntity.ok(BestenlisteAntwort.aus(topStats, spielerMap));
     }
 
     @Operation(summary = "Eigenes Konto loeschen", description = "Loescht das eigene Spieler-Konto unwiderruflich (DSGVO Art. 17). Nur der Spieler selbst darf sein eigenes Konto loeschen.")
