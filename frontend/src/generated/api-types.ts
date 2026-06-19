@@ -762,6 +762,12 @@ export interface components {
             karlchenGespielt?: number;
             /**
              * Format: int32
+             * @description Anzahl gespielter Schweinchen.
+             * @example 1
+             */
+            schweinchenGespielt?: number;
+            /**
+             * Format: int32
              * @description Anzahl erzielter Doppelkoepfe.
              * @example 1
              */

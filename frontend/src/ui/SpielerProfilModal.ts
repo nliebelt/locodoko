@@ -144,6 +144,7 @@ export class SpielerProfilModal {
           <div class="ui-profil-karte ui-profil-karte--positiv">+${statistik.fuchsGefangen ?? 0}<span>Fuchs gefangen</span></div>
           <div class="ui-profil-karte ui-profil-karte--negativ">-${statistik.fuchsVerloren ?? 0}<span>Fuchs verloren</span></div>
           <div class="ui-profil-karte">${statistik.karlchenGespielt ?? 0}<span>Karlchen</span></div>
+          <div class="ui-profil-karte">${statistik.schweinchenGespielt ?? 0}<span>Schweinchen</span></div>
           <div class="ui-profil-karte">${statistik.doppelkoepfe ?? 0}<span>Doppelköpfe</span></div>
         </div>
       </section>

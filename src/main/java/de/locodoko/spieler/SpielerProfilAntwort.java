@@ -41,6 +41,8 @@ public record SpielerProfilAntwort(
         int fuchsVerloren,
         @Schema(description = "Anzahl gespielter Karlchen.", example = "2")
         int karlchenGespielt,
+        @Schema(description = "Anzahl gespielter Schweinchen.", example = "1")
+        int schweinchenGespielt,
         @Schema(description = "Anzahl erzielter Doppelkoepfe.", example = "1")
         int doppelkoepfe,
         @Schema(description = "Anzahl Siege als Re-Partei.", example = "14")
@@ -89,7 +91,7 @@ public record SpielerProfilAntwort(
             return new StatistikAntwort(
                 s.anzahlSpiele(), s.anzahlSiege(), s.gesamtPunkte(),
                 s.fuchsGefangen(), s.fuchsVerloren(), s.karlchenGespielt(),
-                s.doppelkoepfe(), s.reSiege(), s.reNiederlagen(),
+                s.schweinchenGespielt(), s.doppelkoepfe(), s.reSiege(), s.reNiederlagen(),
                 s.kontraSiege(), s.kontraNiederlagen(), s.hochzeitenGespielt(),
                 s.armutenAngesagt(), s.armutenUebernommen(),
                 s.solosSiege(), s.solosNiederlagen(), s.solosProTypJson(),
@@ -141,7 +143,7 @@ public record SpielerProfilAntwort(
     private static StatistikAntwort aggregiereStatistiken(List<SpielerStatistik> statistiken) {
         if (statistiken.isEmpty()) return null;
         int anzahlSpiele = 0, anzahlSiege = 0, gesamtPunkte = 0, fuchsGefangen = 0, fuchsVerloren = 0,
-            karlchenGespielt = 0, doppelkoepfe = 0, reSiege = 0, reNiederlagen = 0,
+            karlchenGespielt = 0, schweinchenGespielt = 0, doppelkoepfe = 0, reSiege = 0, reNiederlagen = 0,
             kontraSiege = 0, kontraNiederlagen = 0, hochzeitenGespielt = 0,
             armutenAngesagt = 0, armutenUebernommen = 0, solosSiege = 0, solosNiederlagen = 0,
             gesamtAugen = 0;
@@ -155,6 +157,7 @@ public record SpielerProfilAntwort(
             fuchsGefangen += s.fuchsGefangen();
             fuchsVerloren += s.fuchsVerloren();
             karlchenGespielt += s.karlchenGespielt();
+            schweinchenGespielt += s.schweinchenGespielt();
             doppelkoepfe += s.doppelkoepfe();
             reSiege += s.reSiege();
             reNiederlagen += s.reNiederlagen();
@@ -187,7 +190,7 @@ public record SpielerProfilAntwort(
         return new StatistikAntwort(
             anzahlSpiele, anzahlSiege, gesamtPunkte,
             fuchsGefangen, fuchsVerloren, karlchenGespielt,
-            doppelkoepfe, reSiege, reNiederlagen,
+            schweinchenGespielt, doppelkoepfe, reSiege, reNiederlagen,
             kontraSiege, kontraNiederlagen, hochzeitenGespielt,
             armutenAngesagt, armutenUebernommen,
             solosSiege, solosNiederlagen, solosJson,
