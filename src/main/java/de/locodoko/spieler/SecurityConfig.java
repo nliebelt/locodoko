@@ -4,6 +4,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnWebApplication;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
@@ -90,6 +91,20 @@ public class SecurityConfig {
             .csrf(csrf -> csrf.disable())
             .sessionManagement(session -> session
                 .sessionFixation(fix -> fix.changeSessionId())
+            )
+            // Security-Headers: explizit konfiguriert (SECURITY-REVIEW-PRE-M1).
+            // X-Frame-Options DENY: Clickjacking-Schutz.
+            // X-Content-Type-Options nosniff: verhindert MIME-Sniffing durch Browser.
+            // HSTS 1 Jahr + includeSubDomains: erzwingt HTTPS nach erstem Besuch.
+            // CSP fehlt bewusst: Phaser 4 WebGL-Renderer benötigt 'unsafe-eval' und Worker-Direktiven;
+            //   vollständige CSP-Policy iterativ nach Launch einschränken (M2-Task).
+            .headers(headers -> headers
+                .frameOptions(frame -> frame.deny())
+                .contentTypeOptions(Customizer.withDefaults())
+                .httpStrictTransportSecurity(hsts -> hsts
+                    .maxAgeInSeconds(31536000)
+                    .includeSubDomains(true)
+                )
             );
 
         // OAuth2-Login nur aktivieren wenn echte Google-Credentials konfiguriert sind
