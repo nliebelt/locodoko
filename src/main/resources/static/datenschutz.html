@@ -1,0 +1,138 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="robots" content="noindex, nofollow" />
+  <title>Datenschutzerklärung – Loco Doko</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: system-ui, -apple-system, sans-serif;
+      font-size: 1rem;
+      line-height: 1.6;
+      color: #111;
+      background: #fff;
+      padding: 2rem 1rem;
+    }
+    .seite {
+      max-width: 680px;
+      margin: 0 auto;
+    }
+    nav { margin-bottom: 2rem; }
+    nav a { color: #444; text-decoration: none; font-size: 0.9rem; }
+    nav a:hover { text-decoration: underline; }
+    h1 { font-size: 1.75rem; font-weight: 700; margin-bottom: 0.5rem; }
+    .rechtsgrundlage { color: #666; font-size: 0.875rem; margin-bottom: 2rem; }
+    h2 { font-size: 1.1rem; font-weight: 600; margin: 1.5rem 0 0.5rem; }
+    h3 { font-size: 0.95rem; font-weight: 600; margin: 1rem 0 0.4rem; color: #333; }
+    p { margin-bottom: 0.75rem; }
+    ul { margin: 0.5rem 0 0.75rem 1.5rem; }
+    li { margin-bottom: 0.25rem; }
+    .platzhalter { background: #fffbe6; border: 1px solid #f0d060; padding: 0.25rem 0.5rem; border-radius: 4px; font-style: italic; color: #7a5900; }
+    footer { margin-top: 3rem; padding-top: 1.5rem; border-top: 1px solid #eee; font-size: 0.85rem; color: #888; }
+    footer a { color: #666; }
+  </style>
+</head>
+<body>
+  <div class="seite">
+    <nav><a href="/">← Zurück zum Spiel</a></nav>
+
+    <h1>Datenschutzerklärung</h1>
+    <p class="rechtsgrundlage">Gemäß DSGVO Art. 13 und 14</p>
+
+    <h2>1. Verantwortlicher</h2>
+    <!-- TODO: vor Go-Live ausfüllen -->
+    <p>
+      <span class="platzhalter">[Vollständiger Name]</span><br />
+      <span class="platzhalter">[Straße und Hausnummer]</span><br />
+      <span class="platzhalter">[PLZ] [Ort]</span><br />
+      E-Mail: <span class="platzhalter">[Kontakt-E-Mail]</span>
+    </p>
+
+    <h2>2. Welche Daten werden verarbeitet?</h2>
+
+    <h3>Registrierung mit Benutzername und Passwort</h3>
+    <p>
+      Bei der Registrierung werden Benutzername, E-Mail-Adresse und ein verschlüsseltes
+      Passwort (BCrypt) gespeichert. Rechtsgrundlage: Art. 6 Abs. 1 lit. b DSGVO
+      (Vertragserfüllung).
+    </p>
+
+    <h3>Anmeldung über Google (OAuth2)</h3>
+    <p>
+      Alternativ kann man sich über das Google-Konto anmelden. Dabei werden
+      Google-Nutzer-ID, E-Mail-Adresse und Anzeigename übertragen. Rechtsgrundlage:
+      Art. 6 Abs. 1 lit. b DSGVO. Google Inc. fungiert dabei als
+      eigenverantwortlicher Verarbeiter; deren Datenschutzhinweise gelten zusätzlich.
+    </p>
+
+    <h3>Spielstatistiken</h3>
+    <p>
+      Spielergebnis­se, Punkte und Spieler­statistiken (z. B. Anzahl Siege, Sonderpunkte)
+      werden dem Account dauerhaft zugeordnet und dienen dem Ranglisten-Betrieb.
+      Rechtsgrundlage: Art. 6 Abs. 1 lit. b DSGVO.
+    </p>
+
+    <h3>Spielarchiv</h3>
+    <p>
+      Die letzten 20 absolvierten Spiele pro Spieler werden im Profil gespeichert und
+      angezeigt. Ältere Einträge werden automatisch überschrieben.
+    </p>
+
+    <h3>Sessions</h3>
+    <p>
+      Zur Authentifizierung wird eine serverseitige Session (Spring Session + PostgreSQL)
+      verwendet. Das Session-Cookie ist httpOnly, SameSite=Strict und in Produktion Secure.
+      Sessions verfallen nach Inaktivität automatisch.
+    </p>
+
+    <h2>3. Datenweitergabe</h2>
+    <ul>
+      <li>
+        <strong>Google LLC</strong> — bei OAuth2-Login (Google Sign-In).
+        Datenverarbeitungen unterliegen den Google-Datenschutzhinweisen.
+      </li>
+      <li>
+        <!-- TODO: vor Go-Live ausfüllen -->
+        <strong>Hosting-Provider: <span class="platzhalter">[Name, Land]</span></strong> —
+        der Server-Anbieter hat technisch Zugriff auf die Betriebsumgebung.
+        Ein Auftragsverarbeitungsvertrag (AVV) ist vor Go-Live abzuschließen.
+      </li>
+    </ul>
+    <p>Eine darüber hinausgehende Weitergabe an Dritte erfolgt nicht.</p>
+
+    <h2>4. Speicherdauer</h2>
+    <p>
+      Kontodaten werden für die Dauer des Accounts gespeichert. Nach Account-Löschung werden
+      alle personenbezogenen Daten innerhalb von 30 Tagen entfernt, soweit keine gesetzliche
+      Aufbewahrungspflicht entgegensteht.
+    </p>
+
+    <h2>5. Betroffenenrechte</h2>
+    <p>Du hast gemäß DSGVO folgende Rechte:</p>
+    <ul>
+      <li>Auskunft über gespeicherte Daten (Art. 15)</li>
+      <li>Berichtigung unrichtiger Daten (Art. 16)</li>
+      <li>Löschung deines Accounts und aller Daten (Art. 17)</li>
+      <li>Einschränkung der Verarbeitung (Art. 18)</li>
+      <li>Datenübertragbarkeit (Art. 20)</li>
+      <li>Widerspruch gegen die Verarbeitung (Art. 21)</li>
+    </ul>
+    <p>
+      Zur Ausübung deiner Rechte wende dich an:
+      <!-- TODO: vor Go-Live ausfüllen -->
+      <span class="platzhalter">[Kontakt-E-Mail]</span>
+    </p>
+    <p>
+      Du hast außerdem das Recht, dich bei einer Datenschutzaufsichtsbehörde zu beschweren.
+    </p>
+
+    <footer>
+      <a href="/impressum">Impressum</a> ·
+      <a href="/agb">AGB</a> ·
+      <a href="/">Loco Doko</a>
+    </footer>
+  </div>
+</body>
+</html>

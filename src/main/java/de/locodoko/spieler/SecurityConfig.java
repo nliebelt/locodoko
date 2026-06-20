@@ -77,6 +77,10 @@ public class SecurityConfig {
                 .requestMatchers("/swagger-ui/**", "/v3/api-docs/**", "/swagger-ui.html").permitAll()
                 .requestMatchers("/", "/index.html", "/assets/**", "/**/*.js", "/**/*.css",
                     "/**/*.png", "/**/*.ico", "/**/*.svg", "/**/*.woff2").permitAll()
+                // Rechtliche Pflichtseiten (Clean-URL-Weiterleitungen + statische HTML)
+                .requestMatchers("/impressum", "/impressum.html",
+                    "/datenschutz", "/datenschutz.html",
+                    "/agb", "/agb.html").permitAll()
                 // Alle anderen Anfragen erfordern Spring-Security-Authentifizierung
                 .anyRequest().authenticated()
             )

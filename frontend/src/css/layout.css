@@ -82,6 +82,32 @@
   65%, 100% { transform: rotate(-90deg); }
 }
 
+#recht-footer {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 200;
+  display: flex;
+  gap: 16px;
+  justify-content: center;
+  padding: 5px 16px;
+  background: rgba(13, 31, 18, 0.80);
+  backdrop-filter: blur(4px);
+  font-size: 10px;
+  font-family: var(--schrift-familie);
+}
+
+#recht-footer a {
+  color: var(--farbe-text-sekundaer);
+  text-decoration: none;
+}
+
+#recht-footer a:hover {
+  color: var(--farbe-text-primaer);
+  text-decoration: underline;
+}
+
 .hud-topbar {
   position: absolute;
   top: 0;
