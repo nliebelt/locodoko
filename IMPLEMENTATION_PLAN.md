@@ -1,12 +1,16 @@
 # IMPLEMENTATION_PLAN — Locodoko Doppelkopf
 
-> Stand: 2026-06-19 (Session 143). Erledigte Aufgaben → `IMPLEMENTATION_PLAN_ARCHIVE.md` (Sessions 1–128 archiviert).
+> Stand: 2026-06-20 (Session 145). Erledigte Aufgaben → `IMPLEMENTATION_PLAN_ARCHIVE.md` (Sessions 1–128 archiviert).
 
 ## Notiz
 
+**SCHEMA-FK-INDIZES abgeschlossen (Session 145).** Neue Liquibase-Migration `002-schema-fixes.sql`: 4 fehlende FK-Indizes (`idx_partie_erstellt_von_spieler_id`, `idx_tisch_erstellt_von_spieler_id`, `idx_laufendes_spiel_partie_id`, `idx_partie_teilnehmer_partie_id`) + CHECK-Constraint `chk_spieler_auth_methode` auf `spieler.authentifizierungs_methode IN ('PASSWORT', 'OAUTH2_GOOGLE')`. In `db.changelog-master.yaml` eingetragen. `mvn clean test` grün (503 Tests). Nächster Task: SECURITY-REVIEW-PRE-M1.
+
+**M1-Readiness-Scan Session 145 — zwei neue autonome Pre-Deploy-Tasks.** Vollständiger Code-Scan gegen `fertigstellung.md`-M1-Checkliste. **Positiv-Befund (alle bereits implementiert, waren nicht im Plan):** SESSION-PERSISTENZ (`spring-session-jdbc`, `spring.session.store-type=jdbc`), OPS-COMPOSE-HARDENING (`restart: unless-stopped` + `healthcheck` im `app`-Service), OPS-BUILD-INFO (`git-commit-id-maven-plugin` + `/actuator/info` aktiviert), FEAT-BUGREPORT (`BugReportController` + `bugreportDialog.ts`, Shift+F1), DEPLOY-OAUTH-SENTINEL (SecurityConfig prüft `googleClientId != "disabled"`, FE-LoginSzene passt sich an), DOC-ENV-DEPLOY (`.env.example` 71 Zeilen + README-Prod-Abschnitt), VERIFY-MULTIPLAYER (`e2e/tests/multiplayer.spec.ts`, zwei Browser-Kontexte), BACKUP-DB-Skript (`scripts/backup-db.sh` mit pg_dump + 7-Tage-Rotation). **Offen (neu):** (1) Zwei neue autonome Tasks: **SCHEMA-FK-INDIZES** (4 fehlende FK-Indizes + CHECK-Constraint → Liquibase-Migration) und **SECURITY-REVIEW-PRE-M1** (Code-Level-Sicherheitsaudit). (2) **BACKUP-DB-CRON** als Block-B-Task (Skript fertig, Cron-Aktivierung auf Server = MENSCH). Nächster autonomer Schritt: SCHEMA-FK-INDIZES.
+
 **FEAT-RECHT-SEITEN-GERUEST abgeschlossen (Session 144).** Drei statische HTML-Seiten (`impressum.html`, `datenschutz.html`, `agb.html`) in `src/main/resources/static/` angelegt — vollständige Pflichtabschnitte nach § 5 DDG / DSGVO Art. 13 / AGB mit `<!-- TODO: vor Go-Live ausfüllen -->`-Platzhaltern. `RechtWebMvcKonfiguration.java` registriert Redirect-View-Controller für Clean-URLs `/impressum`, `/datenschutz`, `/agb`. `SecurityConfig.java` freigeschaltet. Footer (`#recht-footer`) in `frontend/index.html` + Styles in `layout.css` (position: fixed, bottom, semi-transparent). 503 BE-Tests + 478 FE-Tests + Build + Lint grün.
 
-**Alle autonomen Tasks erledigt.** Block A (Sessions 131–144) vollständig. Verbleibende offene Punkte sind Block B (MENSCH: Docker/Domain/TLS/OAuth) und C (User-Entscheidung Lizenz). Nächster menschlicher Schritt: `DEPLOY-COMPOSE-SMOKE`.
+**Zwei neue autonome Pre-Deploy-Tasks (S145).** Block A (Sessions 131–144) abgeschlossen; zwei neue Tasks aus dem M1-Readiness-Scan ergänzt: SCHEMA-FK-INDIZES + SECURITY-REVIEW-PRE-M1. Nach deren Erledigung: Block B (MENSCH: Docker/Domain/TLS/OAuth) und C (Lizenz).
 
 **FEAT-RANGLISTE-EINHEITLICH abgeschlossen (Session 141).** Bestenliste und Spielerprofil-Statistik vereinheitlicht: BE aggregiert alle Regelvarianten (`AVG(rating_mu/sigma)`, `SUM(anzahl_spiele/siege/...)`) in `SpielerProfilService.ladeBestenlisteAggregiert()` via `JdbcClient`. Neues Projektions-Record `BestenlisteStatistikAggregat`. `BestenlisteAntwort.regelvariante` entfernt, `SpielerProfilAntwort.statistiken` (Map) → `statistik` (einzelner aggregierter Eintrag). FE: `BestenlisterSzene` ohne Tabs, `SpielerProfilModal` ohne Varianten-Tabs, `AppStore.ladeBestenliste()` ohne Parameter. 477/477 FE-Tests, 503/503 BE-Tests, Build + Lint + Complexity grün. Alle autonomen Tasks Block A (S131–S141) erledigt.
 
@@ -70,6 +74,21 @@
 
 - [x] **FEAT-RECHT-SEITEN-GERUEST** (Full-Stack/Feature, autonom, mittel — **M2-Gate**) — `/impressum`, `/datenschutz` und `/agb` fehlen im Code vollständig (weder Spring-Route noch statische Seite noch FE-Link). Spec `specs/recht-impressum-datenschutz.md` enthält die vollständige Struktur mit Platzhaltern (`[Vollständiger Name]`, `[E-Mail]` etc.) für den Hobby-Betrieb. **Umsetzung:** (1) Drei statische HTML-Seiten mit den Pflichtabschnitten aus der Spec erstellen (canvas-freie HTML außerhalb von Phaser), Platzhalter `[BETREIBER-NAME]` / `[BETREIBER-EMAIL]` etc. als `<!-- TODO: vor Go-Live ausfüllen -->`-Kommentare markieren; (2) Spring-Controller oder `WebMvcConfigurer`-Ressource für `/impressum`, `/datenschutz`, `/agb`; (3) Footer-Links in `frontend/index.html` (unter dem Canvas) eintragen. **Erste Datei zuerst:** `src/main/resources/static/impressum.html`. **DoD:** alle drei URLs liefern 200, Footer-Links erreichbar, Platzhalter klar markiert, `mvn clean test` + FE-Suite/Build grün. **Hinweis für Mensch:** vor Go-Live `[BETREIBER-…]`-Platzhalter mit echten Daten füllen und Texte juristisch prüfen. **Risiko:** niedrig (additiv, kein bestehender Code betroffen).
 
+### Neue Tasks (Session 145, Codebase-Scan)
+
+> Aus dem M1-Readiness-Scan S145. Beide Tasks müssen vor dem ersten echten Deploy erledigt sein.
+
+- [x] **SCHEMA-FK-INDIZES** (Backend/DB, autonom, winzig — **vor M1**) — Scan S145 hat 4 fehlende FK-Indizes und ein fehlendes CHECK-Constraint aufgedeckt. **Fehlende Indizes:** `idx_partie_erstellt_von_spieler_id` auf `partie(erstellt_von_spieler_id)`, `idx_tisch_erstellt_von_spieler_id` auf `tisch(erstellt_von_spieler_id)`, `idx_laufendes_spiel_partie_id` auf `laufendes_spiel(partie_id)`, `idx_partie_teilnehmer_partie_id` auf `partie_teilnehmer(partie_id)`. **Fehlendes Constraint:** `spieler.authentifizierungs_methode VARCHAR(50)` hat kein CHECK-Constraint — erlaubte Werte (`'PASSWORT'`, `'GOOGLE'`, `'PASSWORT_UND_GOOGLE'`) aus dem Enum prüfen und eintragen. **Fix:** neue Liquibase-Datei `src/main/resources/db/changelog/002-schema-fixes.sql` mit 4× `CREATE INDEX` + 1× `ALTER TABLE spieler ADD CONSTRAINT chk_spieler_auth_methode CHECK (...)`. Datei in `db.changelog-master.yaml` eintragen. **Erste Datei zuerst:** `src/main/resources/db/changelog/002-schema-fixes.sql` (neu). **DoD:** alle 4 Indizes + CHECK-Constraint in Liquibase, `mvn clean test` grün. **Risiko:** minimal (additiv, kein bestehender Code berührt).
+
+- [ ] **SECURITY-REVIEW-PRE-M1** (Backend+Frontend/QA, autonom, klein — **vor M1**) — Code-Level-Sicherheitsaudit vor der ersten öffentlichen Exposition. **Prüfpunkte:** (1) **Rate-Limiting**: gibt es `@RateLimiter`/Bucket4j/ähnliches auf `/register`, `/login`, `/api/feedback`? Falls nicht, dokumentieren. (2) **Cookie-Flags**: sind Session-Cookies mit `Secure`/`HttpOnly`/`SameSite=Lax` konfiguriert (`application-prod.properties`, `SecurityConfig`)? (3) **CSRF-Status**: in `SecurityConfig` dokumentieren (REST-APIs mit Session-Auth — CSRF-Zustand prüfen und Entscheidung kommentieren). (4) **WS-`allowed-origins`**: Default in `application-prod.properties` nicht `*`? (laut Scan bereits korrekt — verifizieren). (5) **Keine Hardcoded Secrets**: keine Credentials in `.properties` oder Config? (6) **Security-Headers** (CSP, `X-Frame-Options`, `X-Content-Type-Options`, HSTS): sind sie in `SecurityConfig` oder Caddy-Config gesetzt? **Fix:** gefundene Lücken beheben oder als begründetes Restrisiko in `## Entdeckungen` dokumentieren. **Erste Datei zuerst:** `SecurityConfig.java` lesen, dann schrittweise die Punkte abarbeiten. **DoD:** alle 6 Punkte geprüft, Lücken behoben oder akzeptiert + dokumentiert; `mvn clean test` grün. **Risiko:** niedrig-mittel (Audit + additive Konfiguration).
+
+### Empfohlene Build-Reihenfolge (Block A — neue Runde ab S145)
+
+> Nimm den **obersten noch offenen** Task. Beide autonom, beide vor M1.
+
+1. **SCHEMA-FK-INDIZES** (winzig — pre-deploy DB-Fixes, kein Code-Risiko)
+2. **SECURITY-REVIEW-PRE-M1** (klein — Audit + Fixes, dann ist Block A code-seitig M1-bereit)
+
 ### Empfohlene Build-Reihenfolge (Block A — neue Runde ab S142)
 
 > Nimm den **obersten noch offenen** Task. Alle autonom; bei Vision-Tasks fährt Ralph das Backend selbst headless hoch.
@@ -94,6 +113,10 @@ _Vorrunde S129/130 erledigt (→ Archiv beim nächsten Slim-Down): QA-VISION-MOB
 ## B) Vorbedingung: MENSCH (Ralph überspringt, bis erfüllt)
 
 > Externe Voraussetzung (Server/DNS/TLS/Docker/Google-Account/Plattformwahl). Ralph kann hier nur vorbereitende Config schreiben, nicht abschließen.
+
+- [ ] **BACKUP-DB-CRON** — Cron-Job für automatische `pg_dump`-Backups auf dem Host aktivieren + Restore-Test. **[Vorbedingung: MENSCH — Server-Zugriff; Skript bereits fertig: `scripts/backup-db.sh`]**
+
+  `scripts/backup-db.sh` ist implementiert (pg_dump, gzip-9, 7-Tage-Rotation). Verbleibend: (1) Cron-Eintrag auf dem Host-Server anlegen (Empfehlung im Skript-Header: `0 3 * * * /opt/locodoko/scripts/backup-db.sh /opt/locodoko/backups >> .../backup.log 2>&1`). (2) Restore einmal testen: `psql locodoko_prod < backup.sql`. (3) Backup-Verzeichnis auf separatem Volume oder Off-Server-Storage (nicht auf gleichem Disk wie Postgres). **DoD:** automatischer nächtlicher Backup läuft, Restore verifiziert. **M1-Gate** (Beta-Daten erhalten). **Risiko:** niedrig.
 
 - [ ] **DEPLOY-COMPOSE-SMOKE** — Vollen prod-Stack lokal hochfahren und eine Partie durchspielen. **[Vorbedingung: MENSCH — Docker + echtes Postgres; hängt an BUG-PROD-CHANGELOG ✓]**
 
@@ -132,6 +155,10 @@ _Vorrunde S129/130 erledigt (→ Archiv beim nächsten Slim-Down): QA-VISION-MOB
 
 ## Entdeckungen
 
+- **S145 — M1-Ready-Items (implementiert, waren nicht im Plan):** SESSION-PERSISTENZ (`spring-session-jdbc`, `spring.session.store-type=jdbc`), OPS-COMPOSE-HARDENING (`restart: unless-stopped` + `healthcheck` im `app`-Service), OPS-BUILD-INFO (`git-commit-id-maven-plugin` + `/actuator/info`), FEAT-BUGREPORT (`BugReportController` + `bugreportDialog.ts`, Shift+F1-Hotkey), DEPLOY-OAUTH-SENTINEL (`SecurityConfig` prüft `googleClientId != "disabled"`, `LoginSzene.ts` passt sich an), DOC-ENV-DEPLOY (`.env.example` 71 Z. + README-Prod-Abschnitt), VERIFY-MULTIPLAYER (`e2e/tests/multiplayer.spec.ts`), BACKUP-DB-Skript (`scripts/backup-db.sh`). Alle M1-Checklisten-Items aus `fertigstellung.md` bis auf SCHEMA-FK-INDIZES und BACKUP-DB-CRON (Cron auf Host) abgedeckt. → Tasks SCHEMA-FK-INDIZES + SECURITY-REVIEW-PRE-M1; BACKUP-DB-CRON als Block-B-Task.
+
+- **S145 — Fehlende FK-Indizes im Datenbankschema (4):** `partie(erstellt_von_spieler_id)`, `tisch(erstellt_von_spieler_id)`, `laufendes_spiel(partie_id)`, `partie_teilnehmer(partie_id)` haben keinen Index. Außerdem fehlt CHECK-Constraint auf `spieler.authentifizierungs_methode`. → **SCHEMA-FK-INDIZES**.
+
 - **S129 — `Tisch`-Klasse (de.locodoko.partie) hat 0% Line-Coverage** (25 LOC laut JaCoCo): Domänen-Klasse im Partie-Kern ohne eigene Tests. Wenn nicht durch Integrationstests abgedeckt → Unit-Test-Task ergänzen. **S142-Update:** Kein direkter `TischTest.java` gefunden; Gesamtcoverage `de.locodoko.partie` bei 89% → wird durch Integrationstests mitabgedeckt. Akzeptiertes Restrisiko — kein eigener Task.
 - **S129 — `partie.ereignisse`-Paket: 50% Coverage** (10 Lines): Ereignis-Klassen im Partie-Kern nur halb abgedeckt. **S142-Update:** Die 9 Ereignis-Records (+ package-info) sind reine Datenträger ohne Business-Logik; 50% bedeutet einige Records wurden nie instanziiert in Tests. Akzeptiertes Restrisiko (Null-Logik-Records) — kein eigener Task.
 - **S129 — `tisch.persistenz`-Paket: 68% Coverage** (206 Lines): knapp unter 70%-Schwelle. `JsonbConverter` (55%, 45 LOC) ist Haupttreiber. **S142-Update:** Bleibt offen. Kein kritischer Pfad unabgedeckt — Infrastruktur-Code, nicht Business-Logik. Akzeptiertes Restrisiko.
@@ -148,7 +175,7 @@ _Vorrunde S129/130 erledigt (→ Archiv beim nächsten Slim-Down): QA-VISION-MOB
 
 ## Meilensteine
 
-- **M1 — Closed Beta** auf `zock.locodoko.de` (eingeladene Kollegen, Daten erhalten). Faktisch der erste echte Deploy. Verbleibend: Block B (MENSCH: Domain/TLS/OAuth-Credentials/Compose-Smoke).
+- **M1 — Closed Beta** auf `zock.locodoko.de` (eingeladene Kollegen, Daten erhalten). Faktisch der erste echte Deploy. Autonom verbleibend: SCHEMA-FK-INDIZES + SECURITY-REVIEW-PRE-M1. Dann Block B (MENSCH: BACKUP-DB-CRON/Domain/TLS/OAuth-Credentials/Compose-Smoke).
 - **M2 — Public Go-Live:** Rechtstexte live schalten (Specs vorhanden: `recht-impressum-datenschutz.md`), CI/CD automatisiert (CI-DOCKER-BUILD → CD-DEPLOY), DECISION-LIZENZ, ggf. BETA-ACCESS/Admin-Tooling.
 
 ---
