@@ -2,17 +2,16 @@
 
 | Feld           | Wert                                                              |
 |----------------|-------------------------------------------------------------------|
-| Status         | Implementiert — BUG-PROFIL-TYPES + FEAT-PROFIL-TABS, Session 14 2026-05-28 |
+| Status         | Implementiert — FEAT-RANGLISTE-EINHEITLICH (Session 141) + BUG-BE-FE-SCHWEINCHEN-STATISTIK (Session 143) |
 | Priorität      | Mittel                                                            |
 | Abhängigkeiten | spieler-profil.md, frontend-architektur.md, frontend-visuelles-design.md |
-| Vorbedingung   | DB-9 (Task 75) — `SpielerProfilAntwort` mit Multi-Variante-Statistiken |
 
 ## Beschreibung
 
-Neues Feature: Spieler können ihr eigenes Profil aus der Lobby öffnen und sehen
-Statistiken (pro Regelvariante), Sonderpunkt-Bilanz und Partie-Historie.
+Spieler können ihr eigenes Profil aus der Lobby öffnen und sehen eine einheitliche aggregierte
+Gesamtstatistik (über alle Regelvarianten), Sonderpunkt-Bilanz und Partie-Historie.
 
-Backend liefert bereits `/api/spieler/{id}/profil` — nur das Frontend fehlt.
+Backend liefert `/api/spieler/{id}/profil` — Frontend unter `frontend/src/ui/SpielerProfilModal.ts`.
 
 ---
 
@@ -26,8 +25,6 @@ Neo-Brutalism-Style gemäß `frontend-visuelles-design.md`.
 │  ● [Avatar]  Max Mustermann                    [✕]  │
 │              Mitglied seit 2026-01-15               │
 ├─────────────────────────────────────────────────────┤
-│  [TURNIER]  [SONDER]  [FREI]                        │  ← Tab-Leiste
-├─────────────────────────────────────────────────────┤
 │  STATISTIKEN                                        │
 │  ┌──────────┐ ┌──────────┐ ┌──────────┐            │
 │  │  42 Sp.  │ │ 28 Siege │ │  67%     │            │
@@ -40,7 +37,7 @@ Neo-Brutalism-Style gemäß `frontend-visuelles-design.md`.
 │                                                     │
 │  SONDERPUNKTE                                       │
 │  🦊 Fuchs gefangen: 12  |  Fuchs verloren: 4        │
-│  👑 Karlchen: 3  |  Doppelköpfe: 7  |  Schweinchen: 1│
+│  👑 Karlchen: 3  |  Schweinchen: 1  |  Doppelköpfe: 7│
 │                                                     │
 │  SOLOS                                              │
 │  Damensolo: 3/1 | Bubensolo: 1/0 | ...             │
@@ -53,6 +50,9 @@ Neo-Brutalism-Style gemäß `frontend-visuelles-design.md`.
 └─────────────────────────────────────────────────────┘
 ```
 
+Eine Tab-Leiste nach Regelvariante (TURNIER/SONDER/FREI) gibt es nicht — das Modal zeigt
+eine einzige aggregierte Ansicht über alle Regelvarianten.
+
 ---
 
 ## Datenfluss
@@ -64,10 +64,17 @@ SpielerProfilSzene / SpielerProfilModal
         GET /api/spieler/{id}/profil
         → SpielerProfilAntwort {
             anzeigeName, avatarFarbe, erstelltAm,
-            statistiken: Map<Regelvariante, SpielerStatistikDto>,
-            partieVerlauf: PartieErgebnisEintrag[]
+            statistik: SpielerStatistikDto,   ← aggregiert über alle Regelvarianten
+            letztePartien: PartieErgebnisEintrag[]
           }
 ```
+
+`SpielerStatistikDto` enthält u.a.: `anzahlSpiele`, `anzahlSiege`, `siegquote`,
+`gesamtPunkte`, `durchschnittlichePunkteProSpiel`, `durchschnittlicheAugenProSpiel`,
+`konservativesRating`, `reSiege`, `reNiederlagen`, `kontraSiege`, `kontraNiederlagen`,
+`fuchsGefangen`, `fuchsVerloren`, `karlchenGespielt`, `schweinchenGespielt`,
+`doppelkoepfe`, `hochzeitenGespielt`, `armutenAngesagt`, `armutenUebernommen`,
+`solosSiege`, `solosNiederlagen`, `solosProTypJson`.
 
 ---
 
@@ -77,8 +84,7 @@ SpielerProfilSzene / SpielerProfilModal
 2. **Komponente:** `frontend/src/ui/SpielerProfilModal.ts` (HTML-Modal-Pattern).
 3. **API-Methode:** `SpielverwaltungApi.ladeSpielerProfil(spielerId: Uuid): Promise<SpielerProfilAntwort>`.
 4. **Typen:** `SpielerProfilAntwort` aus `generated/api-types.ts` (nach `npm run generate-types`).
-5. **Tab-Wechsel:** Je Tab eine `SpielerStatistikDto`-Instanz anzeigen.
-6. **Leer-Zustand:** Falls keine Statistik für eine Variante vorhanden, Hinweis „Noch keine Partien".
+5. **Leer-Zustand:** Falls noch keine Partien gespielt wurden, Hinweis „Noch keine Partien".
 
 ---
 
@@ -94,9 +100,9 @@ SpielerProfilSzene / SpielerProfilModal
 ## Definition of Done
 
 - [ ] Modal öffnet sich aus Lobby-Screen
-- [ ] Statistiken pro Regelvariante werden korrekt angezeigt (Tab-Wechsel)
+- [ ] Einheitliche aggregierte Statistik korrekt angezeigt (keine Varianten-Tabs)
 - [ ] Re/Kontra-Bilanz mit Win-Rate sichtbar
-- [ ] Sonderpunkt-Bilanz sichtbar (Fuchs, Karlchen, Doppelköpfe, Schweinchen)
+- [ ] Sonderpunkt-Bilanz sichtbar (Fuchs, Karlchen, Schweinchen, Doppelköpfe)
 - [ ] Solo-Bilanz pro Solo-Typ aus `solos_pro_typ`-JSONB
 - [ ] Partie-Historie scrollbar, korrekte Daten aus VIEW
 - [ ] Leer-Zustand (keine Partien) korrekt dargestellt
