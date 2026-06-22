@@ -45,7 +45,7 @@ Buttons noch Test-IDs. Diese sind als **kleine API-Ergänzungen** aufgeführt
 | `SpielverwaltungsSzene.ts` | `ranglisteBtn.setName('btn-rangliste')` |
 | `HilfeSzene.ts` | Tab-Buttons setName: `btn-tab-trumpf`, `btn-tab-ansagen`, `btn-tab-sonderspiele`, `btn-tab-punkte` |
 | `HilfeSzene.ts` | Zurück-Button: `btn-hilfe-zurueck` |
-| `BestenlisterSzene.ts` | Tab-Buttons: `btn-tab-turnier`, `btn-tab-sonder`, `btn-tab-frei` |
+| `BestenlisterSzene.ts` | Keine Tab-Buttons mehr (einheitliche Rangliste seit FEAT-RANGLISTE-EINHEITLICH) |
 | `BestenlisterSzene.ts` | Zurück-Button: `btn-bestenliste-zurueck` |
 | `TischSzene.ts` / Bridge | `window.__locodoko.toggleSpielprotokoll()` für E2E-Zugriff |
 | `TischBrücke.ts` | `bridge.isPartieEndeModalSichtbar` |
@@ -127,30 +127,18 @@ Legende: ✅ = abgedeckt | 🔲 = fehlt | 🎯 = Ziel
 - **Trigger:** `drueckeSzenenButton('btn-tab-punkte')` in HilfeSzene
 - **Status:** ✅ (S82)
 
-#### S-10 Rangliste — Tab Turnier
+#### S-10 Rangliste (einheitlich)
 
-- **Screenshot-ID:** `21-rangliste-turnier`
-- **Trigger:** `drueckeSzenenButton('btn-rangliste')` → `warteAufSzene('BestenlisterSzene')` → Standard-Tab Turnier
+- **Screenshot-ID:** `21-rangliste`
+- **Trigger:** `drueckeSzenenButton('btn-rangliste')` → `warteAufSzene('BestenlisterSzene')`
 - **Benötigt API-Ergänzung:** `ranglisteBtn.setName('btn-rangliste')`
-- **Status:** ✅ (S82)
-
-#### S-11 Rangliste — Tab Sonder
-
-- **Screenshot-ID:** `21b-rangliste-sonder`
-- **Trigger:** `drueckeSzenenButton('btn-tab-sonder')` in BestenlisterSzene
-- **Status:** ✅ (S82)
-
-#### S-12 Rangliste — Tab Frei
-
-- **Screenshot-ID:** `21c-rangliste-frei`
-- **Trigger:** `drueckeSzenenButton('btn-tab-frei')` in BestenlisterSzene
-- **Status:** ✅ (S82)
+- **Status:** ✅ (S82; S141: Tab-Navigation entfernt — FEAT-RANGLISTE-EINHEITLICH)
 
 #### S-13 Spielerprofil-Modal
 
 - **Screenshot-ID:** `22-spielerprofil`
 - **Trigger:** `drueckeSzenenButton('btn-mein-profil')` → HTML-Overlay erscheint
-- **Elemente:** Avatar, Name, Statistik-Tabs (TURNIER/SONDER/FREI), Kacheln
+- **Elemente:** Avatar, Name, aggregierte Statistik (einheitlich, keine Varianten-Tabs mehr seit FEAT-RANGLISTE-EINHEITLICH), Kacheln
 - **Status:** ✅ (S82)
 - **Hinweis:** SpielerProfilModal ist ein HTML-DOM-Element, kein Phaser-Canvas-Objekt. Screenshot mit `page.screenshot()` erfasst es korrekt, da es über dem Canvas liegt.
 
@@ -370,7 +358,7 @@ Test-Fehler.
 - **Screenshot-ID:** `x01-fehler-toast`
 - **Trigger:** `spieleKarteViaTestApi(page, 'ungueltige-karte-id')` → AKTION_ABGELEHNT → roter Toast oben rechts
 - **Elemente:** Rotes Toast-Panel mit Fehlermeldung
-- **Status:** 🔲
+- **Status:** ✅
 
 #### X-02 Info-Toast
 
@@ -403,9 +391,7 @@ Test-Fehler.
 | S-07 | Hilfe — Ansagen | Szenen | ✅ |
 | S-08 | Hilfe — Sonderspiele | Szenen | ✅ |
 | S-09 | Hilfe — Punktesystem | Szenen | ✅ |
-| S-10 | Rangliste — Turnier | Szenen | ✅ |
-| S-11 | Rangliste — Sonder | Szenen | ✅ |
-| S-12 | Rangliste — Frei | Szenen | ✅ |
+| S-10 | Rangliste (einheitlich) | Szenen | ✅ |
 | S-13 | Spielerprofil-Modal | Szenen | ✅ |
 | S-14 | Tisch-Wartezimmer | Szenen | ✅ |
 | T-01 | Vorbehalt-Auswahl | Gameplay | ✅ |
@@ -440,7 +426,7 @@ Test-Fehler.
 | X-02 | Info-Toast | Gameplay | 🔲 |
 | X-03 | Debug-Modus | Gameplay | 🔲 |
 
-**Stand:** 41/46 abgedeckt → 5 offen. (S-00..S-14 ✅, T-01..T-13 ✅, F-01..F-10 ✅, A-01..A-02 ✅, X-01 ✅; offen: A-03, A-04, A-05, X-02, X-03)
+**Stand:** 39/44 abgedeckt → 5 offen. (S-00..S-14 ohne S-11/S-12 ✅, T-01..T-13 ✅, F-01..F-10 ✅, A-01..A-02 ✅, X-01 ✅; offen: A-03, A-04, A-05, X-02, X-03)
 
 ## Abgeleitete Build-Tasks
 
@@ -450,7 +436,7 @@ Button-TestIDs und Bridge-Methoden ergänzen ohne fachliche Logik zu ändern:
 
 - `SpielverwaltungsSzene`: `btn-spielregeln`, `btn-rangliste`
 - `HilfeSzene`: Tab-Buttons `btn-tab-*`, Zurück-Button `btn-hilfe-zurueck`
-- `BestenlisterSzene`: Tab-Buttons `btn-tab-*`, Zurück-Button `btn-bestenliste-zurueck`
+- `BestenlisterSzene`: Zurück-Button `btn-bestenliste-zurueck` (keine Tab-Buttons — einheitliche Rangliste)
 - `TischBrücke`: `toggleSpielprotokoll()`, `isPartieEndeModalSichtbar`, `schliessePartieEndeModal()`
 - `e2eBruecke.ts`: Typen ergänzen
 
