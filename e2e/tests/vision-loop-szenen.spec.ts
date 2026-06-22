@@ -72,21 +72,11 @@ test.describe('Vision Loop — Szenen S-00 bis S-14', () => {
     await warteAufSzene(page, 'SpielverwaltungsSzene');
     await page.waitForTimeout(500);
 
-    // S-10: BestenlisterSzene — Tab Turnier (Standard-Tab beim Öffnen)
+    // S-10: BestenlisterSzene — einheitliche Rangliste (keine Tabs mehr seit FEAT-RANGLISTE-EINHEITLICH)
     await page.evaluate(() => (window as any).__locodoko.drueckeSzenenButton('btn-rangliste'));
     await warteAufSzene(page, 'BestenlisterSzene');
     await page.waitForTimeout(800);
-    await screenshot(page, '21-rangliste-turnier', prefix);
-
-    // S-11: BestenlisterSzene — Tab Sonder
-    await page.evaluate(() => (window as any).__locodoko.drueckeSzenenButton('btn-tab-sonder'));
-    await page.waitForTimeout(400);
-    await screenshot(page, '21b-rangliste-sonder', prefix);
-
-    // S-12: BestenlisterSzene — Tab Frei
-    await page.evaluate(() => (window as any).__locodoko.drueckeSzenenButton('btn-tab-frei'));
-    await page.waitForTimeout(400);
-    await screenshot(page, '21c-rangliste-frei', prefix);
+    await screenshot(page, '21-rangliste', prefix);
 
     // Zurück zur Lobby
     await page.evaluate(() => (window as any).__locodoko.drueckeSzenenButton('btn-bestenliste-zurueck'));
