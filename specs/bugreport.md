@@ -2,7 +2,7 @@
 
 | Feld           | Wert                                                          |
 |----------------|---------------------------------------------------------------|
-| Status         | Entwurf — Design entschieden (2026-06-03)                     |
+| Status         | Implementiert (V1 — Sentry/GitHub env-gated, 2026-06-22)      |
 | Priorität      | Mittel (M2; Vortask `OBS-CORRELATION-ID` schon M1-nützlich)   |
 | Abhängigkeiten | betrieb-monitoring.md (Loki), spieler-session.md, rest-api.md |
 
@@ -108,8 +108,12 @@ Muster: bestehender `FeedbackController`.
 ## Definition of Done
 
 - [x] Design + Datenschutz-/Redaktionsregeln + Issue-Ziel entschieden
-- [ ] **OBS-CORRELATION-ID** (Vortask): Filter + MDC + Response-Header + Frontend-Ringpuffer
-- [ ] **FEAT-BUGREPORT**: Overlay (`Shift+F1`, kein Screenshot) + `BugReportController` +
+- [x] **OBS-CORRELATION-ID** (Vortask): Filter + MDC + Response-Header + Frontend-Ringpuffer
+      (`CorrelationIdFilter.java` vorhanden; FE-Ringpuffer in `AppStore` via `correlationIds`-Feld)
+- [x] **FEAT-BUGREPORT**: Overlay (`Shift+F1`, kein Screenshot) + `BugReportController` +
       Issue-Anlage im privaten Repo + Loki-Deep-Link
-- [ ] **OBS-SENTRY**: Sentry FE+BE, EU-Region, correlationId-Tag, kein Replay
+      (`BugReportController.java` + `bugreportDialog.ts` vollständig implementiert)
+- [x] **OBS-SENTRY**: Sentry FE+BE, EU-Region, correlationId-Tag, kein Replay
+      (`main.ts` initialisiert `@sentry/browser` wenn `VITE_SENTRY_DSN` gesetzt; `SentryKonfiguration.java` + `sentry-spring-boot` in `pom.xml`)
 - [ ] Nachweis: ein Report erzeugt ein Issue mit redigiertem Kontext; keine sensiblen Daten geleakt
+      *(Screenshot in M2 — WebGL-Canvas-Capture + Redaktion zurückgestellt)*
