@@ -354,7 +354,7 @@ Die `regelvariante`-Spalte in `partie` und `spieler_statistik` wird aus den `Spi
 
 | Thema | Spec (alt, falsch) | SQL (Wahrheit) |
 |---|---|---|
-| `spieler.benutzername` | `UNIQUE NOT NULL` | nullable (kein UNIQUE-Constraint) |
+| `spieler.benutzername` | `UNIQUE NOT NULL` | nullable + `CREATE UNIQUE INDEX spieler_benutzername_unique` (SQL-Standard: NULL≠NULL → mehrere OAuth2-Spieler erlaubt) — erledigt seit REFACTOR-DB-5 |
 | `spieler.ist_ki` | Spaltenname | tatsächlich `ki` |
 | `laufendes_spiel.phase` | `VARCHAR(30) NOT NULL` | `JSONB NOT NULL DEFAULT '{"typ":"VORBEHALT_ANSAGE"}'` |
 | `laufendes_spiel.trumpf_ordnung_typ` | `VARCHAR(30) NOT NULL` | `JSONB NOT NULL DEFAULT '{"typ":"NORMAL"}'` |
