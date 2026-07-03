@@ -65,10 +65,12 @@ der Domain-Module orchestriert und die Delivery-Infrastruktur (Controller, WebSo
 | Event | Produzent | Konsument(en) | Trigger |
 |---|---|---|---|
 | `NaechsterSpielerErwartet` | SpielAktionsService | KiTischOrchestrator | Nach jedem Kartenzug |
-| `VorbehaltErwartet` | SpielAktionsService | KiTischOrchestrator | In VORBEHALT_ANSAGE-Phase |
+| `VorbehaltErwartet` | SpielAktionsService, KiTischOrchestrator | KiTischOrchestrator | In VORBEHALT_ANSAGE-Phase |
 | `SpielBeendet` | PartieLifecycleService | SpielerProfilService, SpielMetriken | Nach Auswertung |
-| `SpielGestartet` | PartieLifecycleService | — | Bei Spielbeginn |
-| `StichAbgeschlossen` | SpielAktionsService | — | Stich vollständig |
+| `FuchsGefangen` | SpielAktionsService, KiTischOrchestrator | — | Stich mit gegnerischem Fuchs |
+| `KarlchenGespielt` | SpielAktionsService, KiTischOrchestrator | — | Letzter Stich mit Kreuz-Buben gewonnen |
+| `DoppelkopfGestochen` | SpielAktionsService, KiTischOrchestrator | — | Stich ≥ 40 Augen |
+| `SchweinchenGemeldet` | KiTischOrchestrator | — | Erstes Karo-As einer Schweinchen-Hand |
 
 Alle Listener mit Seiteneffekten: `@TransactionalEventListener(phase = AFTER_COMMIT)`.
 

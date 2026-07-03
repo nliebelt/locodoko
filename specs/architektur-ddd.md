@@ -56,9 +56,11 @@ spieler → partie.ereignisse     (Darf auf Domain-Events lauschen, aber keine i
 ```
 
 **Cross-Modul-Kommunikation:**
-- Domain Events über `@ApplicationModuleListener` (Spring Modulith) statt `@EventListener`.
+- Domain Events über `@ApplicationModuleListener` (Spring Modulith) bzw. `@TransactionalEventListener(AFTER_COMMIT)` statt nacktem `@EventListener`.
 - **Pragmatismus-Regel:** Module dürfen Klassen aus dem Package `de.locodoko.partie.ereignisse` importieren, um auf fachliche Vorkommnisse (z.B. `SpielBeendet`) zu reagieren, ohne dass ein aufwendiger Mapping-Layer gebaut werden muss.
-- Kein direkter Aufruf von `ki.*` aus `tisch.*` — KI reagiert auf Events.
+- `tisch → ki.orchestrierung` ist erlaubt (siehe `architektur.md`): `KiTischOrchestrator` (tisch/) ruft
+  `KiOrchestrierungService` (ki.orchestrierung, Named Interface) direkt auf. Die **Engine** (`partie/`)
+  kennt die KI weiterhin nicht — sie publiziert nur Events.
 
 ### 2. Persistenz-Regeln (Spring Data JDBC)
 
@@ -122,7 +124,7 @@ tisch, spieler           existierend, unverändert
 
 **Modulgrenzen-Durchsetzung**
 - `spring-modulith-starter-core` in `pom.xml` — kein Modul darf direkt auf interne Klassen eines anderen zugreifen.
-- `ApplicationModulesTest.verify()` läuft bei `mvn test` — schlägt fehl bei verbotenen Imports.
+- `ModulstrukturTest` (`ApplicationModules.verify()`) läuft bei `mvn test` — schlägt fehl bei verbotenen Imports.
 
 **Transactional Outbox** (`spring-modulith-starter-jdbc`)
 - Domain Events werden in der `event_publication`-Tabelle persistiert (Liquibase Changeset).
@@ -146,7 +148,7 @@ Das Domain Model (`Tisch`, `Spiel`) ändert sich nicht — nur die Application-S
 - Domain: `Tisch` erhält Feld `einladungsCode` (z.B. 8-stelliger alphanumerischer Code).
 - Feature: `TischVerwaltungsService.beitretenViaCode(code, spielerId)` → lookup TischId → `beitreten()`.
 - URL `/join/{code}` ist Application-Layer, nicht Domain.
-- DB: Spalte `einladungs_code VARCHAR(8) UNIQUE NOT NULL` in `tisch`-Tabelle.
+- DB: Spalte `einladungs_code VARCHAR(20)` (nullable) in der `tisch`-Tabelle (siehe `000-initial-schema.sql`).
 
 ### 6. Ubiquitous Language & Dokumentation
 
@@ -188,7 +190,7 @@ Frontend-Typen und `AppStore` spiegeln die Fachmodelle des Backends (Details: `f
 - [x] Logik liegt im Aggregat (Business-Methoden statt Setter).
 - [x] Invarianten durch Exceptions geschützt.
 - [x] Kommunikation zwischen Modulen via Domain Events + `@ApplicationModuleListener`.
-- [x] Kein verbotener Cross-Modul-Import (`ApplicationModulesTest` grün).
+- [x] Kein verbotener Cross-Modul-Import (`ModulstrukturTest` grün).
 - [x] `SpielerPosition` liegt in `de.locodoko.partie` (nicht in `karten`).
 - [x] Packages: `tisch/` (nicht `lobby/`), `spieler/` (nicht `session/`), `ki/` top-level.
 - [x] `event_publication`-Tabelle via Liquibase angelegt.

@@ -3,10 +3,9 @@ package de.locodoko.tisch;
 /**
  * Typ eines WebSocket-Partie-Ereignisses.
  *
- * <p>Nur Typen, die tatsaechlich per WebSocket gesendet werden. Interne Domain-Events
- * (z.B. {@code SchweinchenGemeldet}, {@code SpielGestartet}) sind hier nicht aufgefuehrt —
- * sie leben im Paket {@code partie.ereignisse} und werden ggf. kuenftig in WebSocket-Events
- * umgewandelt.
+ * <p>Enthaelt ausschliesslich Typen, die tatsaechlich per WebSocket gesendet werden
+ * (als {@code PartieEreignisAntwort}-Records). Interne Domain-Events leben getrennt davon
+ * im Paket {@code partie.ereignisse} und ueberqueren nie die WebSocket-Grenze.</p>
  */
 public enum PartieEreignisTyp {
     /** Vollstaendiger Partiestand-Snapshot (nach Beitritt, Reconnect oder explizitem Request). */

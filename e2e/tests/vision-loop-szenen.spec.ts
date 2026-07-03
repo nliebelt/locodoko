@@ -35,6 +35,9 @@ test.describe('Vision Loop — Szenen S-00 bis S-14', () => {
     // S-01: Lobby Basis
     await screenshot(page, '01-lobby', prefix);
 
+    // S-02: Offene Tische — Liste ist immer sichtbar (hier: Leerzustand unterhalb der Buttons)
+    await screenshot(page, '11-offene-tische', prefix);
+
     // S-03: Tisch-Erstellen-Modal
     await page.evaluate(() => (window as any).__locodoko.drueckeSzenenButton('btn-neuer-tisch'));
     await page.waitForTimeout(800);

@@ -60,9 +60,9 @@ des Spielers, auch wenn die Animations-Queue sie noch fliegen lässt. Damit ist
 ausgeschlossen, dass ein User auf eine Karte klickt, die aus Sicht des Servers bereits
 verbraucht ist.
 
-Technisch sichergestellt: `tischRepository.save()` in `SpielAktionsService` und
-`KiOrchestrierungService` wird **immer vor** `tischEchtzeitService.planeAnBenutzer()`
-abgeschlossen.
+Technisch sichergestellt: Die Persistenz (`save()` auf dem Partie-/Tisch-Aggregat) ist
+**immer abgeschlossen, bevor** `TischEchtzeitService.planeAnBenutzer()` den Versand plant —
+und der Versand selbst ist an `AFTER_COMMIT` gebunden.
 
 ---
 
@@ -72,35 +72,45 @@ abgeschlossen.
 
 Werden von Spring Modulith innerhalb des Backends verarbeitet. Nie direkt an das Frontend gesendet.
 
-**Naming-Konvention:** Jedes Event heißt `XyzGeschehen` oder `XyzErwartet` (Passiv-Partizip / Adjektiv). Der optionale Listener heißt `onXyzGeschehen()` bzw. `onXyzErwartet()`. WS-Mapper sind Methoden in `TischEreignisMapper`.
+**Naming-Konvention:** Jedes Event heißt `XyzGeschehen` oder `XyzErwartet` (Passiv-Partizip / Adjektiv). Der optionale Listener heißt `beiXyzGeschehen()` bzw. `beiXyzErwartet()`.
 
-| Name | Producer-Methode | Consumer-Klasse | Trigger | Phase | WS-Mapping |
-|------|-----------------|-----------------|---------|-------|-----------|
-| `NaechsterSpielerErwartet` | `SpielAktionsService.verarbeiteKarte()` | `KiTischOrchestrator.onNaechsterSpielerErwartet()` | Nach Kartenzug, nächster Spieler ist KI | STICH | — (kein direktes WS-Event) |
-| `VorbehaltErwartet` | `SpielAktionsService.starteVorbehalt()` | `KiTischOrchestrator.onVorbehaltErwartet()` | Vorbehalt-Phase startet, nächster Spieler ist KI | VORBEHALT | — |
-| `AnsageErwartet` | `SpielAktionsService.verarbeiteKarte()` | `KiTischOrchestrator.onAnsageErwartet()` | Pflichtansage ausstehend, Spieler ist KI | STICH | — |
-| `SchweinchenGemeldet` | `SpielAktionsService` bei erster Dullen-Karte | — | Erste Dullen-Trumpf-Karte gespielt | STICH | — (V1: kein WS) |
-| `FuchsGefangen` | `SpielAktionsService.berechneStichSonderpunkte()` | — | Stich enthält gegnerischen Fuchs | STICH | `neueSonderpunkte` in `STICH_ABGESCHLOSSEN` |
-| `KarlchenGespielt` | `SpielAktionsService.berechneStichSonderpunkte()` | — | Letzter Stich, Kreuz-Bube gespielt | STICH | `neueSonderpunkte` in `STICH_ABGESCHLOSSEN` |
-| `DoppelkopfGestochen` | `SpielAktionsService.berechneStichSonderpunkte()` | — | Stich ≥ 40 Augen, beide Parteien beteiligt | STICH | `neueSonderpunkte` in `STICH_ABGESCHLOSSEN` |
-| `HochzeitPartnerGefunden` | `Spiel.schliesseStichAb()` nach Stich 1–3 | `KiTischOrchestrator` (WS-Broadcast) | Hochzeits-Klärung abgeschlossen | STICH | `HOCHZEIT_PARTNER_GEFUNDEN` WS-Event |
-| `SpielBeendet` | `PartieLifecycleService.beendeSpiel()` | `SpielerProfilService.onSpielBeendet()`, `TischEreignisMapper` | Alle Stiche gespielt, Auswertung fertig | — | `SPIEL_BEENDET` WS-Event |
+| Name | Produzent(en) | Konsument(en) | Trigger |
+|------|---------------|---------------|---------|
+| `NaechsterSpielerErwartet` | `SpielAktionsService` | `KiTischOrchestrator.beiNaechsterSpielerErwartet()` | Nach Kartenzug, Spiel läuft weiter |
+| `VorbehaltErwartet` | `SpielAktionsService`, `KiTischOrchestrator` | `KiTischOrchestrator.beiVorbehaltErwartet()` | Vorbehalt-Phase: nächster Spieler gefragt |
+| `SpielBeendet` | `PartieLifecycleService` | `SpielerProfilService.beiSpielBeendet()`, `SpielMetriken.beiSpielBeendet()` | Spiel ausgewertet |
+| `FuchsGefangen` | `SpielAktionsService`, `KiTischOrchestrator` | — (aktuell kein Listener; WS via `neueSonderpunkte` in `STICH_ABGESCHLOSSEN`) | Stich enthält gegnerischen Fuchs |
+| `KarlchenGespielt` | `SpielAktionsService`, `KiTischOrchestrator` | — (dito) | Letzter Stich mit Kreuz-Buben gewonnen |
+| `DoppelkopfGestochen` | `SpielAktionsService`, `KiTischOrchestrator` | — (dito) | Stich ≥ 40 Augen |
+| `SchweinchenGemeldet` | `KiTischOrchestrator` | — (WS-Event `SCHWEINCHEN_GEMELDET` läuft separat über `PartieEreignisAntwort`) | Erstes Karo-As einer Schweinchen-Hand gespielt |
+
+Daneben existiert das **tisch-interne** `KiUebernahmeEreignis` (kein `partie.ereignisse`-Event) mit
+Listener `KiTischOrchestrator.beiKiUebernahme()` — ausgelöst, wenn ein getrennter Spieler von der
+KI übernommen wird.
+
+**Abgrenzung — Aggregat-Ereignisse (`SpielEreignis`):** `Spiel`-Business-Methoden geben
+`List<SpielEreignis>` zurück (`KarteGespielt`, `StichAbgeschlossenEreignis`, `SchweinchenGemeldet`,
+`HochzeitPartnerGefunden`). Das sind **Rückgabewerte, keine Spring-Events** — der aufrufende Service
+entscheidet, was daraus wird (WS-DTO, Domain-Event, Log).
 
 ### 2. WebSocket-Ereignisse (`PartieEreignisTyp`)
 
-Werden über `/user/queue/partie/{partieId}` an verbundene Clients gesendet.
-Der TypeScript-Typ `PartieEreignisTyp` in `SpielverwaltungDto.ts` ist **kanonisch** —
-er muss jederzeit mit dem Java-Enum `PartieEreignisTyp` übereinstimmen.
+Werden über `/user/queue/partie/{partieId}` an verbundene Clients gesendet (Versand:
+`TischEchtzeitService.planeAnBenutzer()`, DTOs: statische Factory-Methoden in
+`PartieEreignisAntwort`). Der TypeScript-Typ `PartieEreignisTyp` in `SpielverwaltungDto.ts`
+ist **kanonisch** — er muss jederzeit mit dem Java-Enum `PartieEreignisTyp` übereinstimmen.
 
-| Typ | Gesendet von | Wann | Frontend-Aktion |
-|-----|-------------|------|----------------|
-| `SNAPSHOT` | `VerbindungsabbruchService` | Nach Reconnect | State sofort ersetzen |
-| `SPIEL_GESTARTET` | `Partie`, `SpielAktionsService` | Runde beginnt / Einwurf | Karten-Austeilen Animation |
-| `KARTE_GESPIELT` | `SpielAktionsService`, `KiOrchestrierungService` | Kartenzug | Karte animieren + State patchen |
-| `STICH_ABGESCHLOSSEN` | `SpielAktionsService` | Stich vollständig | Stich-Animation + State patchen |
-| `HOCHZEIT_PARTNER_GEFUNDEN` | `KiOrchestrierungService` (via `HochzeitPartnerGefunden`-Domain-Event) | Hochzeits-Partner ermittelt | Banner „Partner gefunden!" + Partei anzeigen |
-| `AKTION_ABGELEHNT` | `SpielAktionsService` | Ungültige Aktion (z.B. falsche Karte) | Fehlermeldung anzeigen |
+| Typ | Ausgelöst von | Wann | Frontend-Aktion |
+|-----|---------------|------|----------------|
+| `SNAPSHOT` | `VerbindungsabbruchService`, Snapshot-Requests | Nach Reconnect / explizitem Request | State sofort ersetzen |
+| `SPIEL_GESTARTET` | `SpielAktionsService`, `KiTischOrchestrator`, `PartieLifecycleService` | Runde beginnt / Einwurf | Karten-Austeilen-Animation |
+| `KARTE_GESPIELT` | `SpielAktionsService`, `KiTischOrchestrator` | Kartenzug (Mensch oder KI) | Karte animieren + State patchen |
+| `STICH_ABGESCHLOSSEN` | `SpielAktionsService`, `KiTischOrchestrator` | Stich vollständig (+ `neueSonderpunkte`) | Stich-Animation + Sonderpunkt-Banner + State patchen |
 | `SPIEL_BEENDET` | `PartieLifecycleService` | Spiel ausgewertet | Auswertungs-Overlay anzeigen |
+| `ANSAGE_ERFOLGT` | `SpielAktionsService`, `KiTischOrchestrator` | Re/Kontra/Absage getätigt | Ansage-Banner |
+| `SCHWEINCHEN_GEMELDET` | `SpielAktionsService`, `KiTischOrchestrator` | Erstes Karo-As einer Schweinchen-Hand | Schweinchen-Banner |
+| `HOCHZEIT_PARTNER_GEFUNDEN` | `SpielAktionsService`, `KiTischOrchestrator` (aus `SpielEreignis.HochzeitPartnerGefunden`) | Hochzeits-Partner ermittelt | Banner „Partner gefunden!" + Partei anzeigen |
+| `AKTION_ABGELEHNT` | `SpielAktionsService` | Ungültige Aktion (z.B. falsche Karte) | Fehlermeldung anzeigen |
 
 ---
 
@@ -156,8 +166,7 @@ Implementiert. Um Race-Conditions bei verlorenen WebSocket-Frames zu erkennen, n
 ```typescript
 export interface PartieEreignisBatch {
   version: number;                       // @Version des Partie-Aggregats — einzige Sequenznummer
-  ereignisse: PartieEreignisAntwort[];   // Atomare Liste
-  snapshot?: PartieStandAntwort;         // Korrektur-Snapshot bei Lücken
+  ereignisse: PartieEreignisAntwort[];   // Atomare Liste (jedes Ereignis trägt seinen partieStand)
 }
 ```
 
@@ -185,10 +194,11 @@ SpielAktionsService.spieleKarte(tischId, spielerId, karteId)
   │  partieRepository.save(partie)         ← Commit
   │  publisher.publishEvent(KarteGespielt) ← nach save()
   │
-  ├──▶ KiTischOrchestrator.onNaechsterSpielerErwartet()  [AFTER_COMMIT]
-  │      └─▶ SpielAktionsService.spieleKarte(...)         ← KI-Zug
+  ├──▶ KiTischOrchestrator.beiNaechsterSpielerErwartet()  [AFTER_COMMIT, REQUIRES_NEW]
+  │      └─▶ automatisiereTisch(): synchrone Schleife — spielt alle fälligen KI-Züge,
+  │          bis ein Mensch am Zug oder das Spiel beendet ist (max. MAXIMALE_KI_AKTIONEN)
   │
-  └──▶ TischEreignisMapper → WS-Broadcast KARTE_GESPIELT  [AFTER_COMMIT]
+  └──▶ TischEchtzeitService → WS-Broadcast KARTE_GESPIELT  [AFTER_COMMIT]
          payload: { hint: {pos, karteId}, partieStand: {...} }
            ▼
          AppStore._eventQueue → Animation → State-Patch
@@ -198,13 +208,13 @@ SpielAktionsService.spieleKarte(tischId, spielerId, karteId)
 
 ```
 SpielAktionsService (nach 4. Karte im Stich)
-  │  spiel.schliesseStichAb() → List<SpielEreignis>
-  │    enthält ggf.: FuchsGefangen, KarlchenGespielt, DoppelkopfGestochen
-  │  partieRepository.save(partie)                 ← Commit
-  │  publisher.publishEvent(StichAbgeschlossen)    ← nach save()
-  │  publisher.publishEvent(FuchsGefangen)         ← nach save(), falls vorhanden
+  │  spiel.spieleKarte(...) → List<SpielEreignis>
+  │    enthält SpielEreignis.StichAbgeschlossenEreignis(stich, sonderpunkte)
+  │  partieRepository.save(partie)                    ← Commit
+  │  publisher.publishEvent(FuchsGefangen/            ← nach save(), je Sonderpunkt
+  │                         KarlchenGespielt/DoppelkopfGestochen)
   │
-  └──▶ TischEreignisMapper → WS-Broadcast STICH_ABGESCHLOSSEN  [AFTER_COMMIT]
+  └──▶ TischEchtzeitService → WS-Broadcast STICH_ABGESCHLOSSEN  [AFTER_COMMIT]
          payload: { stichGewinner, neueSonderpunkte: [...], partieStand: {...} }
            ▼
          AppStore: Stich-Animation → sonderpunkteListener → State-Patch
@@ -219,10 +229,11 @@ PartieLifecycleService.beendeSpiel(tischId)
   │  partieRepository.save(partie)                ← Commit
   │  publisher.publishEvent(SpielBeendet)         ← nach save()
   │
-  ├──▶ SpielerProfilService.onSpielBeendet()       [AFTER_COMMIT, async]
+  ├──▶ SpielerProfilService.beiSpielBeendet()      [@ApplicationModuleListener]
   │      └─▶ spielerStatistikRepository.save(...)  ← Statistik-Update
+  ├──▶ SpielMetriken.beiSpielBeendet()             [@ApplicationModuleListener]
   │
-  └──▶ TischEreignisMapper → WS-Broadcast SPIEL_BEENDET  [AFTER_COMMIT]
+  └──▶ TischEchtzeitService → WS-Broadcast SPIEL_BEENDET  [AFTER_COMMIT]
          payload: { ergebnis: {...}, partieStand: {...} }
            ▼
          AppStore → RundenEnde-Modal anzeigen

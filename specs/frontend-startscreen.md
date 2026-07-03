@@ -8,7 +8,7 @@
 
 ## Beschreibung
 
-Die Spielverwaltungs-Szene ist die **dritte Phaser-Szene** (nach BootSzene, vor TischSzene) und ersetzt die bisherige LobbySzene. Sie ist die erste Seite die ein Spieler aktiv sieht. Die Seite vermittelt sofort die Energie des Spiels: fett, klar, einladend. Von hier aus gelangt man entweder schnell in ein Einzelspieler-Spiel (Quick Game), erstellt einen konfigurierten Tisch, oder tritt einem offenen Tisch bei.
+Die Spielverwaltungs-Szene ist die **dritte Phaser-Szene** (nach BootSzene, vor TischSzene) und ersetzt die bisherige LobbySzene. Sie ist die erste Seite die ein Spieler aktiv sieht. Die Seite vermittelt sofort die Energie des Spiels: fett, klar, einladend. Von hier aus gelangt man entweder schnell in ein Einzelspieler-Spiel (Schnellstart), erstellt einen konfigurierten Tisch, oder tritt einem offenen Tisch bei.
 
 ## Layout-Übersicht
 
@@ -23,16 +23,18 @@ Die Spielverwaltungs-Szene ist die **dritte Phaser-Szene** (nach BootSzene, vor 
 │              └─────────────────────────────┘                    │
 │                                                                  │
 │              ┌─────────────────────────────┐                    │
-│              │   ▶  Quick Game             │                    │  ← Primary Button
+│              │   ▶  Schnellstart           │                    │  ← Primary Button
 │              └─────────────────────────────┘                    │
 │                                                                  │
 │              ┌─────────────────────────────┐                    │
 │              │   + Neuen Tisch erstellen   │                    │  ← Secondary Button
 │              └─────────────────────────────┘                    │
 │                                                                  │
-│              ┌─────────────────────────────┐                    │
-│              │   ⊞  Offene Tische          │                    │  ← Secondary Button
-│              └─────────────────────────────┘                    │
+│              Offene Tische                                       │  ← Liste, immer sichtbar
+│              ────────────────────────────────                    │
+│              Herberts Runde   2/4   [Beitreten]                  │
+│              (leer: „Keine offenen Tische. Starte ein            │
+│               Schnellspiel!")                                    │
 │                                                                  │
 └──────────────────────────────────────────────────────────────────┘
 ```
@@ -55,9 +57,9 @@ Die Spielverwaltungs-Szene ist die **dritte Phaser-Szene** (nach BootSzene, vor 
 
 ### Haupt-Buttons
 
-1. **„▶ Quick Game"** (Primary Button): Startet sofort einen Einzelspieler-Tisch gegen 3 KI-Spieler (Standardkonfiguration, kein Modal). Nach erfolgreichem Erstellen wechselt die Szene direkt zur TischSzene.
+1. **„▶ Schnellstart"** (Primary Button): Startet sofort einen Einzelspieler-Tisch gegen 3 KI-Spieler (Standardkonfiguration, kein Modal). Nach erfolgreichem Erstellen wechselt die Szene direkt zur TischSzene.
 2. **„+ Neuen Tisch erstellen"** (Secondary Button): öffnet das Tisch-Konfigurations-Modal für vollständige Konfiguration.
-3. **„⊞ Offene Tische"** (Secondary Button): zeigt die Liste offener und laufender Tische.
+3. Die **Liste der offenen und laufenden Tische** ist stets direkt unterhalb der Buttons sichtbar (kein Toggle-Button, siehe „Offene-Tische-Liste").
 4. Buttons sind breit, klar beschriftet, Neo-Brutalism-Stil (`border: 2px solid #f8f9fa`, `box-shadow: 4px 4px 0 #000`).
 5. Hover-Effekt: Offset-Schatten verschwindet, Button verschiebt sich um `4px 4px` (pressed-Feeling).
 6. Alle Buttons sind **per Tastatur fokussierbar** (Tab-Reihenfolge, Enter zum Auslösen).
@@ -82,15 +84,14 @@ Die Spielverwaltungs-Szene ist die **dritte Phaser-Szene** (nach BootSzene, vor 
 
 ### Offene-Tische-Liste
 
-1. Klappt als **Bereich unterhalb der Buttons** aus (kein Modal — bleibt auf dem Start-Screen).
+1. Wird stets als **Bereich unterhalb der Buttons** angezeigt (kein Modal, kein Ein-/Ausklappen — bleibt auf dem Start-Screen).
 2. Zeigt alle Tische in zwei Gruppen:
    - **Offene Tische** (Status WARTEND): Button „Beitreten" pro Eintrag.
    - **Laufende Tische** (Status IM_SPIEL): Button „Zurückkehren" pro Eintrag — nur für Spieler die diesem Tisch bereits zugeordnet sind. Für fremde Spieler nicht sichtbar.
 3. Jeder Listeneintrag zeigt: Tischname, Anzahl Spieler (z.B. `2/4`), KI-Schwierigkeit.
 4. „Beitreten" / „Zurückkehren" wechselt direkt zur TischSzene.
-5. Wenn keine Tische vorhanden: Hinweistext „Keine offenen Tische. Starte ein Quick Game!".
+5. Wenn keine Tische vorhanden: Hinweistext „Keine offenen Tische. Starte ein Schnellspiel!".
 6. Die Liste **aktualisiert sich automatisch in Echtzeit** via WebSocket (Topic `/topic/tische`).
-7. Erneuter Klick auf „⊞ Offene Tische" klappt die Liste wieder ein.
 
 ### Session-Recovery
 
@@ -102,7 +103,7 @@ Die Spielverwaltungs-Szene ist die **dritte Phaser-Szene** (nach BootSzene, vor 
 - Logo und Slogan sind auf Anhieb lesbar und füllen die Seite angemessen.
 - „Neuen Tisch erstellen" öffnet das Konfigurations-Modal.
 - Konfiguration kann abgeschlossen werden, danach Wechsel zur TischSzene.
-- „Offene Tische" klappt die Liste aus, Beitreten führt zur TischSzene.
+- Die Tischliste ist direkt sichtbar, Beitreten führt zur TischSzene.
 - Session-Recovery-Button erscheint wenn eine aktive Tisch-Session vorliegt.
 - Alle Aktionen sind per Tastatur erreichbar.
 
@@ -110,20 +111,20 @@ Die Spielverwaltungs-Szene ist die **dritte Phaser-Szene** (nach BootSzene, vor 
 
 - [x] Spielverwaltungs-Szene als neue Phaser-Szene implementiert (ersetzt LobbySzene)
 - [x] Logo und Slogan korrekt dargestellt
-- [x] „▶ Quick Game"-Button: startet sofort Einzelspieler-Tisch gegen 3 KI, wechselt zur TischSzene
+- [x] „▶ Schnellstart"-Button: startet sofort Einzelspieler-Tisch gegen 3 KI, wechselt zur TischSzene
 - [x] „Neuen Tisch erstellen" Modal implementiert (Pflichtfelder: Name, Rundenanzahl, KI-Schwierigkeit)
 - [x] Tisch-Erstellung schließt Modal und wechselt zur TischSzene
 - [x] „Offene Tische" Liste implementiert mit WebSocket-Echtzeit-Updates (WARTEND + eigene IM_SPIEL-Tische)
 - [x] „Zurückkehren"-Button für laufende eigene Tische
 - [x] Session-Recovery-Button implementiert (erscheint wenn aktiverTischId vorhanden)
-- [ ] Keyboard-Navigation (Tab, Enter)
-- [ ] Visuelles Review
+- [x] Keyboard-Navigation (Tab, Enter)
+- [x] Visuelles Review (via Vision-Loop, mehrere Sessions)
 
 ## Technische Hinweise
 
 - Die bisherige `LobbySzene` wird durch eine neue `SpielVerwaltungsSzene` ersetzt.
 - Tisch-Konfigurations-Modal als HTML-Overlay über der Phaser-Canvas (`#ui-root`).
-- WebSocket `/topic/tische` für Echtzeit-Tischlisten-Updates (kein REST-Polling nötig), nur wenn Liste offen ist.
-- Quick Game erstellt einen Tisch mit Standardkonfiguration ohne Modal und startet sofort.
+- WebSocket `/topic/tische` für Echtzeit-Tischlisten-Updates (kein REST-Polling nötig).
+- Schnellstart erstellt einen Tisch mit Standardkonfiguration ohne Modal und startet sofort.
 - Die Tischliste zeigt laufende Tische nur dem Spieler der ihnen bereits zugeordnet ist.
 - Sonderregeln-Konfiguration folgt in einer eigenen Spec-Iteration.

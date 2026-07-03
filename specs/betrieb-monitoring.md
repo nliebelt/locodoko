@@ -1,6 +1,8 @@
 # Betrieb: Monitoring & Logs
 
-**Status:** Implementiert (Code/Config) — Grafana-Cloud-Wiring (Tokens) trägt der Mensch nach.
+| Feld   | Wert                                                                           |
+|--------|--------------------------------------------------------------------------------|
+| Status | Implementiert (Code/Config) — Grafana-Cloud-Wiring (Tokens) trägt der Mensch nach |
 
 Zugehörige Tasks: `OPS-GRAFANA-MONITORING`, `OPS-LOGS-LOKI`, `OBS-CORRELATION-ID` (✓), `OBS-SENTRY` (✓).
 

@@ -1,102 +1,81 @@
 # REST-API
 
 | Feld           | Wert                                                                      |
-|----------------|---------------------------------------------------------------------------|
-| Status         | Implementiert |
+|----------------|----------------------------------------------------------------------------|
+| Status         | Implementiert — Endpunkt-Referenz: generierte OpenAPI-Spec (Entscheidung S148) |
 | Priorität      | Hoch                                                                      |
 | Abhängigkeiten | lobby.md, tischkonfiguration.md, spieler-session.md, punkteberechnung.md |
 
 ## Beschreibung
 
-Die REST-API stellt Endpunkte für nicht-echtzeit-kritische Operationen bereit: Lobby-Verwaltung (Tische anzeigen, erstellen, beitreten), Tischkonfiguration und Spielhistorie/Punktestand. Die API ergänzt die WebSocket-Kommunikation.
+Die REST-API stellt Endpunkte für nicht-echtzeit-kritische Operationen bereit: Lobby-Verwaltung,
+Tischkonfiguration, Authentifizierung, Spielerprofil/Bestenliste, Bugreport/Feedback und
+Punktestand. Die API ergänzt die WebSocket-Kommunikation (`websocket-kommunikation.md`).
 
-## Anforderungen
+## Kanonische Endpunkt-Referenz: OpenAPI
 
-### Tisch-Endpunkte
+> **Diese Spec pflegt bewusst KEINE handgepflegte Endpunkt-Liste mehr** (Entscheidung S148 —
+> die Liste war auf ~50 % des Ist-Stands gedriftet). Die einzige Wahrheit über Pfade,
+> Parameter und DTOs ist die **generierte OpenAPI-Spec**:
+>
+> - Laufend: `http://localhost:8081/v3/api-docs` (springdoc), Swagger-UI unter `/swagger-ui.html`
+> - Build-Artefakt: `target/openapi.json` (Basis für `npm run generate-types` → `api-types.ts`)
+> - Controller-Übersicht im Code: `@RequestMapping` in `tisch/`, `spieler/`, `system/`
+>   (`/api/tische`, `/api/partien`, `/api/auth`, `/api/spieler`, `/api/spieler/session`,
+>   `/api/feedback`, `/api/bugreport`, `/api/system`, `/api/debug` + `/join/{code}`)
 
-1. **`GET /api/tische`** — Alle offenen Tische abrufen.
-   - Response: Liste von Tisch-Objekten mit: id, name, spielerAnzahl, status, kurzKonfiguration.
-   - Keine Authentifizierung erforderlich.
+Hier stehen nur die **Design-Regeln**, die für alle Endpunkte gelten.
 
-2. **`POST /api/tische`** — Neuen Tisch erstellen.
-   - Request-Body: `{ name, konfiguration (optional) }`
-   - Der Ersteller wird automatisch dem Tisch hinzugefügt.
-   - Response: Erstellter Tisch mit ID.
+## Design-Regeln
 
-3. **`POST /api/tische/{id}/beitreten`** — Einem bestehenden Tisch beitreten.
-   - Validierung: Tisch existiert, hat freie Plätze, Spieler ist nicht schon an einem Tisch.
-   - Response: Aktualisierter Tisch oder Fehler.
+### Format & Fehler-Contract
 
-4. **`POST /api/tische/{id}/verlassen`** — Tisch verlassen (vor Spielbeginn).
-   - Validierung: Spiel hat noch nicht begonnen.
-   - Response: Bestätigung.
+1. Alle Endpunkte verwenden **JSON**; Fehler liefern `application/problem+json` (RFC 9457,
+   siehe `architektur-ddd.md` Abschnitt 8).
+2. Statuscode-Mapping (via `@ControllerAdvice` / `SpielverwaltungExceptionHandler`):
+   - 400: Ungültige Anfrage (Bean-Validation)
+   - 403: Spieler gehört nicht zum Tisch (`SpielerZugriffVerweigertException`)
+   - 404: Ressource/Session nicht gefunden (`SpielverwaltungNichtGefundenException`)
+   - 409: Zustandskonflikt, z.B. Tisch voll, Optimistic-Lock (`SpielverwaltungKonfliktException`)
+   - 422: Regelverstoß im Spielzug (`UngueltigerSpielzugException`)
+   - 500: Serverfehler
+3. Fehler-Responses enthalten eine strukturierte Meldung (`ApiFehlerAntwort`: `fehlerCode`, `nachricht`).
 
-5. **`POST /api/tische/{id}/starten`** — Spiel starten (nur Tischersteller).
-   - Validierung: Mindestens 1 menschlicher Spieler, Tisch noch nicht gestartet.
-   - Freie Plätze werden mit KI-Spielern aufgefüllt.
-   - Response: Bestätigung, WebSocket-Events werden ausgelöst.
+### Sicherheit & Validierung
 
-### Konfiguration-Endpunkte
-
-1. **`GET /api/tische/{id}/konfiguration`** — Tischregeln abrufen.
-   - Response: Vollständige Tischkonfiguration.
-
-2. **`PUT /api/tische/{id}/konfiguration`** — Tischregeln anpassen.
-   - Validierung: Nur durch Tischersteller, nur vor Spielbeginn.
-   - Request-Body: Konfigurationsobjekt.
-   - Response: Aktualisierte Konfiguration.
-
-### Punktestand-Endpunkte
-
-1. **`GET /api/partien/{id}/stand`** — Aktuellen Punktestand einer Partie abrufen.
-   - Response: Gesamtpunktestand pro Spieler, Anzahl gespielte Spiele.
+4. Identität kommt **immer aus der HTTP-Session** (`SpielerSessionService`) — Client-Angaben zu
+   Spieler/Position wird nicht vertraut.
+5. Schreibende Spiel-Endpunkte re-validieren jede Aktion server-seitig (Bedienpflicht, am Zug,
+   Karte in Hand) — das Frontend liefert nur UI-Hints.
+6. Rate-Limiting auf Auth-/Feedback-Endpunkten (`RateLimitingFilter`).
+7. DTOs statt Domain-Objekte an der API-Grenze; `@Valid` für Bean-Validation.
 
 ### Betrieb / Monitoring
 
-1. **`GET /actuator/health`** — Anwendungsstatus für Health-Checks (z.B. Load Balancer, Deployment-Pipelines).
-   - Response: `{ "status": "UP" }` — keine Details exponiert.
+8. **`GET /actuator/health`** — Anwendungsstatus für Health-Checks; keine Details exponiert.
+9. **`GET /actuator/info`** — Build-Metadaten (Git-SHA/Version) der laufenden Instanz.
 
-2. **`GET /actuator/info`** — Build-Metadaten der laufenden Instanz.
-   - Response: `{ "build": { "artifact": "locodoko", "group": "de.locodoko", "version": "...", "name": "...", "time": "..." } }`
-   - Erzeugt durch `spring-boot-maven-plugin` Goal `build-info` (`META-INF/build-info.properties`).
+### Logging
 
-### Allgemein
-
-1. Alle Endpunkte verwenden **JSON** als Datenformat.
-1. Fehler werden mit geeigneten **HTTP-Statuscodes** beantwortet:
-    - 400: Ungültige Anfrage (Validierungsfehler)
-    - 404: Ressource nicht gefunden
-    - 409: Konflikt (z.B. Tisch voll)
-    - 500: Serverfehler
-1. Fehler-Responses enthalten eine **strukturierte Fehlermeldung**: `{ fehlerCode, nachricht }`.
-1. Alle Endpunkte loggen **Zugriff und Fehler** für die Fehleranalyse.
+10. Alle Endpunkte loggen Zugriff und Fehler (strukturiertes JSON, MDC `correlationId` via
+    `CorrelationIdFilter` — siehe `bugreport.md`).
 
 ## Akzeptanzkriterien
 
-- Alle Endpunkte sind erreichbar und liefern korrekte Responses.
-- Tische können erstellt, abgerufen und beigetreten werden.
-- Validierungsfehler werden mit 400 und verständlicher Fehlermeldung beantwortet.
-- Nicht existierende Ressourcen ergeben 404.
-- Konflikte (Tisch voll, Spiel läuft) ergeben 409.
-- Die Konfiguration kann vor Spielbeginn geändert werden.
-- Der Punktestand ist während und nach einer Partie abrufbar.
+- Jeder Endpunkt erscheint in der generierten OpenAPI-Spec (springdoc erfasst alle Controller).
+- Fehlerfälle folgen dem Statuscode-Mapping oben (Tests im `SpielverwaltungExceptionHandler`-Umfeld).
+- `npm run generate-types` erzeugt aus `target/openapi.json` konsistente Frontend-Typen.
 
 ## Definition of Done
 
-- [x] Alle Anforderungen implementiert
-- [x] Controller mit allen Endpunkten implementiert
-- [x] Request-/Response-DTOs definiert
-- [x] Validierung implementiert
-- [x] Unit-Tests für Controller geschrieben und bestanden
-- [x] Integrationstests (MockMvc) geschrieben und bestanden
-- [x] API-Dokumentation erstellt (z.B. via Swagger/OpenAPI)
+- [x] Controller + DTOs implementiert, Validierung aktiv
+- [x] Exception-Handler mit RFC-9457-Mapping
+- [x] OpenAPI via springdoc generiert; Type-Brücke zum Frontend (`generate-types`)
+- [x] Unit-/MockMvc-Tests für Controller
 - [x] Code-Review / Plausibilitätsprüfung
 
 ## Technische Hinweise
 
-- **Bounded Context**: Kommunikation
-- Spring MVC `@RestController` mit getrennten Controller-Klassen pro Ressource
-- DTOs für Request/Response (nicht die Domain-Objekte direkt exponieren)
-- `@Valid`-Annotation für Bean-Validation
-- Exception-Handler mit `@ControllerAdvice` für einheitliche Fehler-Responses
-- Optional: Swagger/OpenAPI-Dokumentation mit `springdoc-openapi`
+- Spring MVC `@RestController`, getrennte Controller pro Ressource
+- OpenAPI-Konfiguration: `system/OpenApiKonfiguration.java`, Schema-Erweiterungen:
+  `tisch/OpenApiSchemaErweiterung.java`

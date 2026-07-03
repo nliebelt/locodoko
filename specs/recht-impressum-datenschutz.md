@@ -1,7 +1,9 @@
 # Recht — Impressum, Datenschutz, AGB
 
-**Status:** Spezifikation — Pflichtangaben und Struktur (konkrete Texte vor Live-Gang anwaltlich oder via Generator prüfen)  
-**Gate:** Muss vor M2 (Public Go-Live) vollständig umgesetzt sein; minimaler Datenschutzhinweis bereits für M1 (Closed Beta) empfohlen.
+| Feld   | Wert                                                                                             |
+|--------|----------------------------------------------------------------------------------------------------|
+| Status | Spezifikation — Gerüst implementiert (FEAT-RECHT-SEITEN-GERUEST S144); konkrete Texte vor Live-Gang anwaltlich oder via Generator prüfen |
+| Gate   | Muss vor M2 (Public Go-Live) vollständig umgesetzt sein; minimaler Datenschutzhinweis bereits für M1 (Closed Beta) empfohlen |
 
 ---
 

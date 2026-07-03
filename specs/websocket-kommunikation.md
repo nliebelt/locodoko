@@ -41,15 +41,25 @@ Alle spielrelevanten Events werden als `PartieEreignisAntwort` über die persön
 `/user/queue/partie/{partieId}` gesendet. **Kein anonymer `/topic/`-Broadcast für Partie-Spielstände**
 (Datenschutz: jeder Spieler sieht nur seine eigene Hand). `TischEchtzeitService` broadcastet jedoch nicht-geheime Tisch-Metadaten über `/topic/tische` (Lobby) und `/topic/tisch/{id}` (Wartezimmer).
 
-#### `PartieEreignisAntwort` — Basis-Payload
+#### `PartieEreignisAntwort` — Discriminated Union
+
+`PartieEreignisAntwort` ist im Backend ein **sealed interface** mit einem Record pro Ereignistyp
+(OpenAPI `oneOf` → typsichere Union im Frontend). Gemeinsame Felder aller Records:
 
 ```typescript
-interface PartieEreignisAntwort {
-  ereignisTyp: PartieEreignisTyp;
-  partieStand: PartieStandAntwort;           // vollständiger spielerspezifischer Stand
-  kiKartenSequenz?: GespielteKarteAntwort[]; // nur bei KI_ZUG_SEQUENZ
-  neueSonderpunkte?: SonderpunktEreignisAntwort[]; // nur bei STICH_ABGESCHLOSSEN
+// Basis (in jedem Record enthalten)
+{
+  timestamp: string;               // Zeitpunkt des Ereignisses
+  version: number;                 // @Version der Partie NACH dem Ereignis
+  ereignisTyp: PartieEreignisTyp;  // Diskriminator
+  partieStand: PartieStandAntwort; // vollständiger spielerspezifischer Stand NACH dem Ereignis
 }
+// Zusatzfelder je Typ:
+//   KARTE_GESPIELT        + spielerPosition, karteId
+//   STICH_ABGESCHLOSSEN   + neueSonderpunkte: SonderpunktEreignisAntwort[]
+//   SCHWEINCHEN_GEMELDET  + spielerPosition
+//   HOCHZEIT_PARTNER_GEFUNDEN + partnerPosition
+//   AKTION_ABGELEHNT      + fehlerCode
 ```
 
 #### `PartieEreignisTyp` — Event-Typen
@@ -73,18 +83,30 @@ interface PartieEreignisAntwort {
     - `neueSonderpunkte`: Fuchs-gefangen, Doppelkopf, Karlchen (leer wenn keiner)
     - Frontend: Stich-einziehen-Animation, danach Sonderpunkt-Banner
 
-13. **`AKTION_ABGELEHNT`**: Ein vom Spieler gesendeter Spielzug (Karte, Ansage) war ungültig.
-    - `fehlerCode`: Technischer Bezeichner des Fehlers (z.B. "BEDIENPFLICHT_VERLETZT").
-    - `nachricht`: Lesbare Fehlermeldung.
-    - `originalAktion`: Informationen zur abgelehnten Aktion (z.B. `karteId`), damit das Frontend visuelles Feedback (z.B. Schütteln) geben kann.
+13. **`SPIEL_BEENDET`**: Spiel ausgewertet.
+    - `partieStand`: Stand inkl. Spielergebnis.
+    - Frontend: Rundenauswertungs-Overlay anzeigen.
 
-14. **`PARTIE_AKTUALISIERT`**: Generischer State-Push (Legacy, ab ARCH-1 nicht mehr gesendet).
+14. **`ANSAGE_ERFOLGT`**: Ein Spieler hat Re/Kontra/Absage angesagt.
+    - Frontend: Ansage-Banner, Ansage-Status aktualisieren.
+
+15. **`SCHWEINCHEN_GEMELDET`**: Erstes Karo-As einer Schweinchen-Hand gespielt.
+    - `spielerPosition`: Wer gemeldet hat.
+    - Frontend: Schweinchen-Banner.
+
+16. **`HOCHZEIT_PARTNER_GEFUNDEN`**: Der Hochzeits-Partner steht fest.
+    - `partnerPosition`: Position des Partners.
+    - Frontend: Banner „Partner gefunden!", Parteien anzeigen.
+
+17. **`AKTION_ABGELEHNT`**: Ein vom Spieler gesendeter Spielzug (Karte, Ansage) war ungültig.
+    - `fehlerCode`: Technischer Bezeichner des Fehlers (z.B. "KARTE_UNGUELTIG").
+    - Frontend: Fehlermeldung anzeigen; der mitgelieferte `partieStand` korrigiert die Anzeige.
 
 #### Zusatz-DTOs
 
 ```typescript
 interface GespielteKarteAntwort {
-  spielerPosition: SpielerPosition;  // NORD | SUD | OST | WEST
+  spielerPosition: SpielerPosition;  // NORD | SUED | OST | WEST
   karteId: string;
 }
 
@@ -97,15 +119,15 @@ interface SonderpunktEreignisAntwort {
 
 #### Nicht-Spiel-Events (Tisch-Ebene)
 
-14. **`FehlerAufgetreten`**: Ungültiger Zug oder Serverfehler.
+18. **`FehlerAufgetreten`**: Ungültiger Zug oder Serverfehler.
     - Payload: `{ fehlerCode, nachricht }`
     - Destination: `/user/queue/fehler` — nur an betroffenen Spieler.
 
 ### Allgemein
 
-18. Alle Events haben einen **Timestamp**.
-19. Ungültige Aktionen werden mit `FehlerAufgetreten` beantwortet; der Spielzustand bleibt unverändert.
-20. Events müssen **idempotent** verarbeitet werden können (für den Fall von Reconnects).
+19. Alle Events haben einen **Timestamp**.
+20. Ungültige Aktionen werden mit `FehlerAufgetreten` beantwortet; der Spielzustand bleibt unverändert.
+21. Events müssen **idempotent** verarbeitet werden können (für den Fall von Reconnects).
 
 ## Akzeptanzkriterien
 

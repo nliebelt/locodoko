@@ -25,34 +25,42 @@ Backend (Spring Boot)
     └── WebSocket (STOMP) ──────► SpielverwaltungEchtzeit.ts
                                          │
                                          ▼
-                                    AppStore.ts  ◄──── TischAnsichtModell.ts
+                              AppStore.ts (Fassade)
+                              ├── SessionStore.ts   (Login, Gast, Profil)
+                              ├── TischStore.ts     (Tischliste, Beitritt, Konfiguration)
+                              └── PartieStore.ts    (Event-Queue, Snapshots, isIdle)
+                                         │              ◄──── TischAnsichtModell.ts
+                                         ▼
+                              Szenen: BootSzene → LoginSzene → SpielverwaltungsSzene
+                                      → TischSzene (komponiert, s.u.) · HilfeSzene · BestenlisterSzene
                                          │
                                          ▼
-                                    TischSzene.ts ────► AnimationenService.ts
-                                    SpielverwaltungsSzene.ts
-                                    BootSzene.ts
+                              AnimationenService.ts (+ Karten-/Spieleffekt-Animationen)
 ```
 
 ### Bounded Context im Frontend
 
 | Schicht          | Datei(en)                                    | Verantwortung                                             |
 |------------------|----------------------------------------------|-----------------------------------------------------------|
-| Zustand          | `AppStore.ts`                                | Zentraler Zustand: Session, Tisch, Partie, Aktionen       |
-| Modell           | `TischAnsichtModell.ts`                      | Sitzordnung relativ zum eigenen Spieler, abgeleitete Sichten |
-| Modell           | `SpielverwaltungDto.ts`                      | TypeScript-Typen für Backend-DTOs                         |
-| Darstellung      | `TischSzene.ts`                              | Phaser-Scene: Tisch rendern, Karten, HUD, Dialoge         |
-| Darstellung      | `TischInputHandler.ts`                       | Tastatur- und Klick-Event-Handling für die TischSzene     |
-| Darstellung      | `SpielverwaltungsSzene.ts`                   | Phaser-Scene: Tischliste, Schnellstart, Erstellen, Beitreten |
-| Darstellung      | `BootSzene.ts`                               | Initialisierung: Session laden, URL-Hash-Routing, Asset-Preload |
-| Darstellung      | `Kartenansicht.ts`                           | Phaser-Sprite-Verwaltung für einzelne Spielkarten         |
-| Service          | `AnimationenService.ts`                      | Phaser-Tweens für Karten, Stiche, Banner                  |
-| Service          | `SpielverwaltungApi.ts`                      | HTTP-Aufrufe (Session, Tisch, Partie)                     |
-| Service          | `SpielverwaltungEchtzeit.ts`                 | WebSocket STOMP: Subscribe, Publish, Reconnect            |
-| Infrastruktur    | `anwendung.ts`                               | Phaser-Game-Konfiguration und -Initialisierung            |
+| Zustand          | `store/AppStore.ts`                          | **Fassade** über die Sub-Stores; Abo-Verwaltung, Snapshot-API |
+| Zustand          | `store/SessionStore.ts`                      | Login/Logout, Gast, Registrierung, Spielerprofil          |
+| Zustand          | `store/TischStore.ts`                        | Tischliste, Erstellen/Beitreten/Verlassen, Reconnect      |
+| Zustand          | `store/PartieStore.ts`                       | Serielle Event-Queue, Snapshot-Anwendung, KI-Delay, `isIdle` |
+| Zustand          | `store/StoreTypen.ts`                        | `AppZustand`, Listener-Typen, Anfangszustand              |
+| Modell           | `modelle/TischAnsichtModell.ts` (+ `TischAnsichtMapper`, `SitzordnungModell`, `TischKartenSortierung`, `TischVorbehaltModell`) | Sitzordnung relativ zum eigenen Spieler, abgeleitete Sichten |
+| Modell           | `modelle/SpielverwaltungDto.ts`              | TypeScript-Typen für Backend-DTOs (kanonisch: `PartieEreignisTyp`) |
+| Modell           | `modelle/regelPresets.ts`                    | Vordefinierte Regelkonfigurationen (Presets)              |
+| Szenen           | `BootSzene`, `LoginSzene`, `SpielverwaltungsSzene`, `TischSzene`, `HilfeSzene`, `BestenlisterSzene` | Phaser-Scenes (Routing via BootSzene)                     |
+| TischSzene-Komposition | `TischEreignisHandler`, `TischHudRenderer`, `TischKartenRenderer`, `TischSpieleventRenderer`, `TischAnimationOrchestrator`, `TischRenderKontroller`, `TischZustandsKontroller`, `TischStoreAbonnements`, `TischInputHandler`, `TischRundenEndeController`, `TischBrücke` | Die TischSzene delegiert Rendering, Events, Input und Rundenende an fokussierte Komponenten (Prinzip 9, Komposition statt God Object) |
+| UI-Bausteine     | `ui/`: `PhaserButton`, `PhaserModal`, `PhaserList`, `Nameplate`, `FlashTextManager` (+ Container/Primitiven), `SpielerProfilModal`, `SpielprotokollOverlay`, `ToastManager`, `designTokens`, `dialogHelper`, `rechteckMaske`; `szenen/`: `tischErstellenDialog`, `bugreportDialog`, `tischFormatierer`, `layout` | Wiederverwendbare UI-Komponenten und Dialoge              |
+| Darstellung      | `assets/Kartenansicht.ts`                    | Phaser-Sprite-Verwaltung für einzelne Spielkarten         |
+| Service          | `services/AnimationenService.ts` (+ `AnimationenPrimitiven`, `KartenAnimationen`, `SpieleffektAnimationen`) | Phaser-Tweens für Karten, Stiche, Banner                  |
+| Service          | `services/SpielverwaltungApi.ts`             | HTTP-Aufrufe (Session, Tisch, Partie)                     |
+| Service          | `services/SpielverwaltungEchtzeit.ts`        | WebSocket STOMP: Subscribe, Publish, Reconnect            |
+| Infrastruktur    | `anwendung.ts` / `main.ts`                   | Phaser-Game-Konfiguration, Bootstrap, Sentry-Init         |
 | Infrastruktur    | `logger.ts`                                  | Dev-Mode-Logger (siehe frontend-logging.md)               |
-| Infrastruktur    | `AssetLoader.ts`                             | Asset-Registrierung für Phaser                            |
-| Infrastruktur    | `tischFormatierer.ts`                        | Hilfsformatierungen für Tischanzeige (Text, Zahlen)       |
-| Infrastruktur    | `regelPresets.ts`                            | Vordefinierte Regelkonfigurationen (Presets)              |
+| Infrastruktur    | `assets/AssetLoader.ts`                      | Asset-Registrierung für Phaser                            |
+| Infrastruktur    | `e2eBruecke.ts`                              | `window.__locodoko`-Bridge für E2E/Diagnose               |
 
 ---
 
@@ -182,7 +190,7 @@ Kapselt alle Phaser-Tweens und stellt sicher, dass Animationen sequenziell und n
 - [x] JSDoc für `SpielverwaltungEchtzeit.ts` (Klasse + alle öffentlichen Methoden)
 - [x] JSDoc für `TischAnsichtModell.ts` (Klasse + alle öffentlichen Methoden)
 - [x] JSDoc für `AnimationenService.ts` (Klasse + alle öffentlichen Methoden)
-- [x] `TischUIManager.ts` und `TischInputHandler.ts` JSDoc (Klasse + kritische Methoden)
+- [x] `TischInputHandler.ts` JSDoc (Klasse + kritische Methoden)
 - [x] `specs/frontend-architektur.md` auf aktuellem Stand (Dateistruktur, Datenfluss)
 - [x] Code-Review / Plausibilitätsprüfung
 - [ ] **Refactoring-Prüfung:** Bei Änderungen an Klassen mit > 300 Zeilen (z. B. `TischSzene.ts`, `AppStore.ts`) wurde geprüft, ob Teile der Logik durch Komposition in kleinere Hilfsklassen oder Manager ausgelagert werden können (Vermeidung von God Objects).

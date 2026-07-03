@@ -1,6 +1,8 @@
 # Video-basierter Vision-Loop
 
-> Status: **Verifiziert** — Session 118 (Infrastruktur) + Session 119 (2026-06-13, erster Echtlauf). Vollständige Runde aufgenommen (1.2 Minuten, 288 Frames @ 4fps), Flash-Texte sichtbar (Gesund, RE-Ansage, FUCHS, RE gewinnt!), Rundenende-Modal sauber.
+| Feld   | Wert                                                                                              |
+|--------|-----------------------------------------------------------------------------------------------------|
+| Status | Verifiziert — Session 118 (Infrastruktur) + Session 119 (2026-06-13, erster Echtlauf): vollständige Runde aufgenommen (1,2 min, 288 Frames @ 4 fps), Flash-Texte sichtbar, Rundenende-Modal sauber |
 
 ## Motivation
 
