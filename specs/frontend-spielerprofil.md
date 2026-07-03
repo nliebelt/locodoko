@@ -69,7 +69,7 @@ SpielerProfilSzene / SpielerProfilModal
           }
 ```
 
-`SpielerStatistikDto` enthält u.a.: `anzahlSpiele`, `anzahlSiege`, `siegquote`,
+`StatistikAntwort` enthält u.a.: `anzahlSpiele`, `anzahlSiege`, `siegquote`,
 `gesamtPunkte`, `durchschnittlichePunkteProSpiel`, `durchschnittlicheAugenProSpiel`,
 `konservativesRating`, `reSiege`, `reNiederlagen`, `kontraSiege`, `kontraNiederlagen`,
 `fuchsGefangen`, `fuchsVerloren`, `karlchenGespielt`, `schweinchenGespielt`,

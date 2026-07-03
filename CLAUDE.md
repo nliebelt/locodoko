@@ -15,6 +15,7 @@ Vollständiges Paket: `mvn clean package` (baut Frontend ein, erzeugt JAR)
 2. Frontend-Änderungen: `cd frontend && npm test && npm run build && npm run lint`
 3. Beide betroffen: beide Schritte ausführen
 4. Logs auf Warnungen und Fehler prüfen
+5. `DOC-`/`SPEC-`-Änderungen: `python3 check_specs.py` — prüft tote Klassen-/Enum-/Pfad-Referenzen in `specs/*.md`
 
 ## Visuelles Feedback (UI-Änderungen)
 

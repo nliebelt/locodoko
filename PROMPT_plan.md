@@ -12,7 +12,9 @@ auslieferbar als einzelnes JAR.
     Hintergrundkontext für alle Subagenten: `specs/architektur.md`
 
 0b. Scanne die Codebase gegen die Specs.
-    Lies `specs/README.md` als Landkarte. Lies `specs/architektur.md` als Kompass.
+    Führe zuerst `python3 check_specs.py` aus — gibt tote Klassenreferenzen, Enum-Konstanten
+    und Dateipfade in den Specs aus (Exit-Code ≠ 0 = Befunde). Befunde als DOC-Tasks einplanen.
+    Lies dann `specs/README.md` als Landkarte. Lies `specs/architektur.md` als Kompass.
     Prüfe den Code (`src/`, `frontend/src/`) gegen die zugehörigen Specs.
 
     Ziel-Frage: **Wo weicht der Code von den Specs ab, und wo fehlt Implementierung?**

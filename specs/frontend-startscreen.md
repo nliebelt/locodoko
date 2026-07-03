@@ -122,7 +122,7 @@ Die Spielverwaltungs-Szene ist die **dritte Phaser-Szene** (nach BootSzene, vor 
 
 ## Technische Hinweise
 
-- Die bisherige `LobbySzene` wird durch eine neue `SpielVerwaltungsSzene` ersetzt.
+- Die Startseite wird durch `SpielverwaltungsSzene` umgesetzt (kein separates Lobby-Modul).
 - Tisch-Konfigurations-Modal als HTML-Overlay über der Phaser-Canvas (`#ui-root`).
 - WebSocket `/topic/tische` für Echtzeit-Tischlisten-Updates (kein REST-Polling nötig).
 - Schnellstart erstellt einen Tisch mit Standardkonfiguration ohne Modal und startet sofort.

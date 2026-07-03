@@ -173,8 +173,8 @@ Alle Fehler liefern `application/problem+json`. Gemappte Exception-Hierarchie vi
 |-----------|------|------|
 | `UngueltigerSpielzugException` | 422 | Kartenzug verletzt Spielregeln |
 | `SpielverwaltungKonfliktException` | 409 | Zustandskonflikt (z.B. Tisch voll, falscher Spielzustand) |
-| `SpielerNichtGefundenException` | 404 | Session nicht vorhanden |
-| `ZugriffVerweigertException` | 403 | Spieler gehört nicht zu diesem Tisch |
+| `SpielerSessionUngueltigException` | 404 | Session nicht vorhanden |
+| `SpielerZugriffVerweigertException` | 403 | Spieler gehört nicht zu diesem Tisch |
 
 **WebSocket-Fehler**
 
@@ -198,4 +198,4 @@ Frontend-Typen und `AppStore` spiegeln die Fachmodelle des Backends (Details: `f
 - [x] Frontend-Modelle folgen der fachlichen Struktur des Backends.
 - [x] Aggregate Roots mit `@Table` annotiert, Spring Data JDBC Repositories vorhanden.
 - [x] Liquibase Changesets für alle Schemaänderungen.
-- [x] Tests angepasst und grün, `ApplicationModulesTest.verify()` grün.
+- [x] Tests angepasst und grün, `ModulstrukturTest.verify()` grün.

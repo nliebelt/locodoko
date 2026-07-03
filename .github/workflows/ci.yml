@@ -55,3 +55,12 @@ jobs:
       - name: Lint ausführen
         working-directory: frontend
         run: npm run lint
+
+  spec-lint:
+    name: Spec-Lint (Python)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Spec-Lint ausführen
+        run: python3 check_specs.py

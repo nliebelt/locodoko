@@ -143,3 +143,5 @@ Detail-Specs: `frontend-architektur.md`, `frontend-animationen.md`, `frontend-ti
 - Frontend-Architektur & Dateien: `frontend-architektur.md`
 - Animationen & Tweens: `frontend-animationen.md`
 - Tisch-UI-Layout: `frontend-tischansicht.md`
+
+

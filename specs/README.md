@@ -4,6 +4,19 @@ Dieses Verzeichnis enthält alle funktionalen und nicht funktionalen Anforderung
 
 WICHTIG: Die Spezifikationen beschreiben das *Was* und *Warum* (Fachlichkeit und Regeln), aber nicht zwingend das exakte *Wie* (konkrete Variablennamen oder Code-Strukturen, sofern nicht architektonisch relevant).
 
+## Spec-Lint
+
+Tote Referenzen (Klassenamen, Enum-Konstanten, Dateipfade) in den Specs erkennen:
+
+```sh
+python3 check_specs.py          # 0 = sauber, 1 = Befunde
+python3 check_specs.py --verbose # zeigt Index-Größen und übersprungene Dateien
+```
+
+CI prüft dies automatisch als eigener `spec-lint`-Job in `.github/workflows/ci.yml`.
+
+---
+
 ## 0. Projektstatus & Fertigstellung
 Der Spielkern ist feature-complete (alle fachlichen Specs *Implementiert/Stabil/Abgeschlossen*).
 Was noch zum **öffentlichen Betrieb** fehlt (Deployment, Ops, Recht, Reife, offene Entscheidungen):
