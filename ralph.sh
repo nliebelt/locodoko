@@ -18,25 +18,30 @@ set -euo pipefail
 #   ./ralph.sh 15            # Build mode, 15 iterations
 #
 # Environment:
-#   MODEL=claude-opus-4-6 ./ralph.sh build 10     # Override model
+#   MODEL=claude-opus-4-8 ./ralph.sh build 10     # Override model
+#   RALPH_TIMEOUT=3600 ./ralph.sh build           # Timeout pro Iteration in Sekunden (Default 7200)
 #
 # Model defaults:
 #   plan  → claude-sonnet-4-6   (default)
 #   build → claude-sonnet-4-6   (default)
+#
+# max_iterations=0 bedeutet: keine Obergrenze (läuft bis COMPLETE/BLOCKED).
 #
 # With Pro account: authenticate via `claude login` (no API key needed).
 # With API key: set ANTHROPIC_API_KEY and use claude-haiku-4-5-20251001
 #               for cheap testing of the loop approach.
 # ============================================================
 
-# --- Check for uncommitted changes in Git worktree ---
-# if git rev-parse --is-inside-work-tree &>/dev/null; then
-#     if [[ -n "$(git status --porcelain)" ]]; then
-#         echo "FEHLER: Der Git-Worktree ist nicht sauber. Bitte committe oder stash deine Änderungen, bevor du Ralph startest."
-#         echo "Abbruch. Keine Iteration ausgeführt."
-#         exit 1
-#     fi
-# fi
+# --- Dirty-Worktree-Hinweis (kein Abbruch) ---
+# Ein unsauberer Tree ist meist der Rest einer abgebrochenen Iteration (z.B. Rate-Limit
+# mitten im Task). PROMPT_build.md Schritt 0b2 weist Ralph an, diese Reste dem
+# unterbrochenen Task zuzuordnen und regulär fertigzustellen (oder zu stashen) —
+# manuelles Committen von Halbfertigem ist nicht mehr nötig.
+if git rev-parse --is-inside-work-tree &>/dev/null && [[ -n "$(git status --porcelain)" ]]; then
+    echo "HINWEIS: Worktree ist nicht sauber — Ralph übernimmt Recovery (PROMPT_build 0b2):"
+    git status --short
+    echo ""
+fi
 
 MODE="build"
 PROMPT_FILE="PROMPT_build.md"
@@ -55,13 +60,19 @@ elif [[ "${1:-}" =~ ^[0-9]+$ ]]; then
 fi
 
 ITERATION=0
+RETRY_COUNT=0
 ITER_OUTPUT=".ralph-iter.tmp"
-mkdir -p logs
-LOG_FILE="logs/ralph-$(date +%Y%m%d-%H%M%S).log"
+# Eigenes Unterverzeichnis: logs/ liegt auch das App-Log (logs/locodoko.log),
+# auf das der Debugging-Workflow grept — Ralph-Logs sollen dort nicht reingeraten.
+mkdir -p logs/ralph
+LOG_FILE="logs/ralph/ralph-$(date +%Y%m%d-%H%M%S).log"
+
+# Timeout pro claude-Aufruf — ein hängender CLI-Prozess soll die Loop nicht ewig blockieren.
+RALPH_TIMEOUT="${RALPH_TIMEOUT:-7200}"
 
 # --- Model selection ---
 # Default: sonnet für beide Modi (Pro account via `claude login`)
-# Override: MODEL=claude-opus-4-6 für maximale Qualität bei komplexen Planungsaufgaben
+# Override: MODEL=claude-opus-4-8 für maximale Qualität bei komplexen Planungsaufgaben
 if [ -n "${MODEL:-}" ]; then
     EFFECTIVE_MODEL="$MODEL"
 else
@@ -129,7 +140,7 @@ while true; do
     # tee schreibt parallel das rohe JSON nach ITER_OUTPUT (für COMPLETE/BLOCKED-Erkennung).
     # --dangerously-skip-permissions: für sandboxed Docker-Umgebungen geeignet —
     # der Container ist die Security-Grenze; alle Tools inkl. Agent laufen ohne Rückfragen.
-    claude -p "$(cat "$PROMPT_FILE")" \
+    timeout "$RALPH_TIMEOUT" claude -p "$(cat "$PROMPT_FILE")" \
         --model "$EFFECTIVE_MODEL" \
         --output-format stream-json \
         --verbose \
@@ -170,6 +181,27 @@ while true; do
         echo ""
         continue
     fi
+
+    # Robustheits-Netz: Jede erfolgreiche Iteration endet mit einem result-Event im
+    # stream-json. Fehlt es (Rate-Limit ohne sauberes Event, Timeout-Kill, Netzwerkabriss,
+    # CLI-Crash), war die Iteration abgebrochen → Backoff + dieselbe Iteration wiederholen.
+    # (Beobachtung: Rate-Limits führen in der Praxis oft zu stillem Abbruch statt zum
+    #  rate_limit_event oben — dieser Check fängt alle Abbruchsarten.)
+    if ! grep -q '"type":"result"' "$ITER_OUTPUT" 2>/dev/null; then
+        RETRY_COUNT=$((RETRY_COUNT + 1))
+        if [ "$RETRY_COUNT" -ge 6 ]; then
+            echo ""
+            echo "━━━ 6 Abbrüche in Folge ohne result-Event — Ralph gibt auf (siehe $LOG_FILE) ━━━"
+            break
+        fi
+        backoff=$((300 * RETRY_COUNT))
+        echo ""
+        echo "━━━ Iteration abgebrochen (kein result-Event) — Retry $RETRY_COUNT/5 in ${backoff}s ━━━"
+        ITERATION=$((ITERATION - 1))
+        sleep "$backoff"
+        continue
+    fi
+    RETRY_COUNT=0
 
     # Check for completion signal
     if grep -q '<promise>COMPLETE</promise>' "$ITER_OUTPUT" 2>/dev/null; then

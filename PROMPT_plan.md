@@ -31,13 +31,20 @@ auslieferbar als einzelnes JAR.
 
 1. Erstelle oder aktualisiere @IMPLEMENTATION_PLAN.md als priorisierte Aufgabenliste:
    - Blockierende Abhängigkeiten zuerst
-   - Erledigte Einträge als Referenz behalten
+   - Erledigte `[x]`-Einträge abgeschlossener Runden nach `IMPLEMENTATION_PLAN_ARCHIVE.md`
+     verschieben (Slim-Down) — der Plan enthält nur die aktive Runde plus Blöcke B/C/D
+   - Es existiert genau EINE `### Empfohlene Build-Reihenfolge`-Sektion: Reihenfolge-Sektionen
+     abgeschlossener Runden entfernen bzw. in die aktuelle zusammenführen
    - Jeden `[BLOCKED: ...]`-Eintrag neu bewerten: ist der Blocker noch gültig?
      Falls nicht, entsperren und neu einordnen. Falls ja, dokumentiere warum.
    - `## Entdeckungen`-Einträge in konkrete Tasks umwandeln oder als erledigt markieren.
+   - Status-Zeile jeder gelesenen Spec gegen den Code-Stand prüfen (z.B. „Entwurf", obwohl
+     implementiert) — Abweichungen als `DOC-`-Task einplanen.
 
 2. Jede Aufgabe bekommt:
-   - Einen Prefix: `FEAT-`, `FE-`, `REFACTOR-`, `DOC-`, `BUG-`
+   - Einen Prefix: `FEAT-`, `FE-`/`UI-`, `BUG-`, `REFACTOR-`, `DOC-`/`SPEC-`, `SCHEMA-`/`DB-`,
+     `SECURITY-`/`SEC-`, `QA-`, `DEPS-`, `CLEANUP-`, `TEST-`, `OPS-`, `DECISION-`
+     (dieselbe Liste kennt der Build-Modus für seine Validierungswahl)
    - Genug Kontext dass der Build-Modus sie ohne Rückfragen umsetzen kann
    - Keine vagen Einträge wie "Frontend verbessern"
 

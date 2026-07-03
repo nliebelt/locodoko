@@ -10,7 +10,7 @@
 - **Architekturprinzipien einhalten.** Siehe `specs/architektur.md` — die kompakte Referenz
   für Domain Model, Module, Event-Vertrag und Coding-Prinzipien.
 - **Deutsch.** Code, Klassennamen, Methoden, Kommentare, Tests, Commit-Messages auf Deutsch
-  (Ubiquitous Language — siehe AGENTS.md).
+  (Ubiquitous Language — siehe CLAUDE.md).
 - **Niemals destruktiv ohne Anweisung.** Kein `--no-verify`, kein `--force-push`, kein `git reset --hard`,
   kein `@Disabled`/`@Ignore` auf Tests. Bei Hook-Fehler: Wurzelursache fixen, nicht umgehen.
 - **Bleibe auf `main`.** Keine Feature-Branches anlegen, kein `git checkout -b`. Falls eine Task
@@ -23,7 +23,9 @@
 0a. Studiere @IMPLEMENTATION_PLAN.md. Lies in dieser Reihenfolge:
     - `## Notiz`-Sektion (Stand der letzten Iteration)
     - `## Build-Modus-Leitfaden`-Sektion (falls vorhanden) — generelle Regeln
-    - `## Empfohlene Build-Reihenfolge`-Sektion (falls vorhanden) — verbindliche Task-Ordnung
+    - `### Empfohlene Build-Reihenfolge`-Sektion (falls vorhanden) — verbindliche Task-Ordnung.
+      Es gibt genau EINE solche Sektion (die aktuelle Runde); findest du mehrere, gilt die oberste/neueste
+      und du meldest die Dublette unter `## Entdeckungen`.
     - `## Stoppregeln`-Sektion (falls vorhanden) — wann abbrechen
     - `## Entdeckungen`-Sektion — was bisher gefunden wurde
     - Verbindliche Tabellen im Master-Plan (z.B. „VO bleibt VO", Daten-Modell)
@@ -31,7 +33,22 @@
 0b. Prüfe was sich seit der letzten Iteration geändert hat:
     `git diff --stat HEAD~1` — damit weißt du sofort welche Dateien der letzte Ralph berührt hat.
 
-0c. **Vor-Validierung**: Stelle sicher dass der Baseline grün ist, bevor du anfängst:
+0b2. **Dirty-Worktree-Recovery**: Prüfe `git status -s`. Ist der Worktree NICHT sauber, sind das
+    vermutlich Reste einer abgebrochenen Iteration (z.B. Rate-Limit mitten im Task):
+    - Ordne die Änderungen einem Task zu (`## Notiz`, Build-Reihenfolge, `git diff`).
+    - Falls zuordenbar: Übernimm GENAU diesen Task als deine heutige Aufgabe — Änderungen
+      vervollständigen, regulär validieren und committen (weiter ab Schritt 0e/1).
+    - Falls es wie bewusste interaktive Session-Arbeit aussieht (konsistente Änderungen an
+      Plan/Prompts/Specs, z.B. eine neue Task-Runde): in einem EIGENEN Commit sichern
+      (`git commit -m "SESSION-UEBERNAHME: <kurze Beschreibung>"`), dann regulär weiter.
+    - Falls nicht zuordenbar oder unbrauchbar: `git stash push -m "ralph-recovery"` (niemals
+      per `checkout --`/`reset` verwerfen) und den Fund unter `## Entdeckungen` notieren.
+    Niemals fremde Reste stillschweigend in einen anderen Task-Commit mischen.
+
+0c. **Vor-Validierung**: Stelle sicher dass der Baseline grün ist, bevor du anfängst.
+    **Ausnahme:** Ist der nächste offene Task laut Build-Reihenfolge ein reiner `DOC-`/`SPEC-`-Task
+    (nur Markdown, keine Code-Änderung), überspringe die Vor-Validierung — sie läuft dann wieder
+    vor dem nächsten Code-Task. Sonst:
     - `cd /home/agent/workspace && mvn clean test -q` (Backend — **`clean` ist Pflicht**: inkrementelle Builds maskieren Compile-Brüche durch veraltete `.class` in `target/`)
     - `cd /home/agent/workspace/frontend && npm test --silent` (Frontend)
     Falls einer ROT ist: das ist nicht dein Bug — markiere als `[BLOCKED: Baseline rot — <kurzer Fehler>]`
@@ -50,7 +67,7 @@
     - Subagent B: Betroffener Code in `src/`, `frontend/`, `e2e/`, `pom.xml`, `package.json`,
       `src/main/resources/db/changelog/`. Kompakte Zusammenfassung — max. 25 Zeilen je nach Komplexität.
       Was existiert bereits? Wichtig: zuerst suchen, nicht annehmen dass etwas fehlt.
-      Maximal 10 Tool-Calls (je komplexer die Task, eher mehr nutzen).
+      Richtwert ~10 Tool-Calls; bei komplexen Tasks entsprechend mehr.
 
     Warte auf beide Ergebnisse.
 
@@ -75,11 +92,15 @@
    - `REFACTOR-` (potenziell beides): prüfe per `git status -s` was geändert wurde,
      dann Backend-Validation (falls `src/` geändert) UND/ODER Frontend-Validation (falls `frontend/src/` geändert).
    - `DOC-` / `SPEC-` (nur Specs/Markdown, keine Code-Änderung): Keine Tests nötig, nur Konsistenz prüfen mit `grep`.
+   - Alle übrigen Prefixe (`SCHEMA-`, `SECURITY-`/`SEC-`, `QA-`, `DEPS-`, `CLEANUP-`, `TEST-`, `OPS-`, …):
+     wie bei `REFACTOR-` — per `git status -s` prüfen, was tatsächlich geändert wurde, dann
+     Backend-Validation (falls `src/` oder `pom.xml` geändert) UND/ODER Frontend-Validation
+     (falls `frontend/` geändert) UND/ODER E2E-relevante Prüfung (falls `e2e/` geändert).
 
    **CWD-Reset zwischen Validierungen**: nach jedem `cd frontend && ...` explizit
    `cd /home/agent/workspace` ausführen, bevor du Backend-Commands fährst.
 
-   Orientiere dich zusätzlich an @AGENTS.md > „Validation nach Implementierung".
+   Orientiere dich zusätzlich an @CLAUDE.md > „Validation nach Implementierung".
    - Grün → weiter zu Schritt 2b.
    - Rot → max. 2 Debug-Versuche.
    - Nach dem dritten fehlgeschlagenen Versuch (1 Implementation + 2 Debug): **stop.** Nicht weiter versuchen.
@@ -116,22 +137,24 @@
            IMPLEMENTATION_PLAN.md AGENTS.md CLAUDE.md
    git commit -m "<präzise Beschreibung mit Task-ID, z.B. 'DB-3: JSONB-Converter eingeführt'>"
    ```
-   Falls eine der Dateien nicht geändert wurde, ist das OK — `git add` ignoriert nicht-existente
-   Pfade nicht, daher prüfe vorher mit `git status -s` welche Pfade wirklich geändert sind.
+   Prüfe vorher mit `git status -s`, welche Pfade wirklich geändert sind, und adde nur diese —
+   `git add` schlägt bei nicht existierenden Pfaden fehl.
 
 ---
 
 ## Abschluss der Iteration
 
-Nach dem Commit: Prüfe wie viele offene Tasks noch übrig sind:
+Nach dem Commit: Prüfe wie viele offene **autonome** Tasks (Sektion A) noch übrig sind.
+Block B (MENSCH), C (User-Entscheidung) und D (Zurückgestellt) enthalten dauerhaft offene
+`- [ ]`-Einträge, die du NICHT bearbeiten kannst — sie zählen nicht:
 
 ```bash
-grep -c '^\- \[ \]' IMPLEMENTATION_PLAN.md
+sed -n '/^## A)/,/^## B)/p' IMPLEMENTATION_PLAN.md | grep -c '^\- \[ \]'
 ```
 
-- **Ergebnis > 0** (noch offene Tasks): Gib **kein** Signal aus. Schreibe nichts mehr.
+- **Ergebnis > 0** (noch offene autonome Tasks): Gib **kein** Signal aus. Schreibe nichts mehr.
   ralph.sh startet automatisch die nächste Iteration mit einem frischen Claude-Aufruf.
-- **Ergebnis = 0** (wirklich alle `[ ]` sind weg): Gib `<promise>COMPLETE</promise>` aus.
+- **Ergebnis = 0** (alle autonomen `[ ]` in Sektion A sind weg): Gib `<promise>COMPLETE</promise>` aus.
 
-**WICHTIG:** `<promise>COMPLETE</promise>` bedeutet „alle Tasks im Plan sind erledigt" —
+**WICHTIG:** `<promise>COMPLETE</promise>` bedeutet „alle autonomen Tasks in Sektion A sind erledigt" —
 NICHT „ich habe meinen heutigen Task erledigt". Niemals nach einem einzelnen Task ausgeben.
