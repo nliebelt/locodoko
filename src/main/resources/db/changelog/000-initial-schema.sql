@@ -198,6 +198,21 @@ CREATE TABLE spieler_statistik (
     UNIQUE(spieler_id, regelvariante)
 );
 
+-- Globales TrueSkill-Rating eines Spielers ueber alle Regelvarianten hinweg (ein Eintrag pro Spieler).
+-- Wird neben spieler_statistik (pro Regelvariante) bei jedem Spiel aktualisiert.
+-- Sortierkriterium der Bestenliste: rating_mu - 3 * rating_sigma (konservative Schaetzung).
+CREATE TABLE spieler_rating (
+    id UUID PRIMARY KEY,
+    spieler_id UUID NOT NULL UNIQUE REFERENCES spieler(id) ON DELETE CASCADE,
+    rating_mu NUMERIC(8,4) NOT NULL DEFAULT 25.0,
+    rating_sigma NUMERIC(8,4) NOT NULL DEFAULT 8.3333,
+    anzahl_spiele INT NOT NULL DEFAULT 0,
+    anzahl_siege INT NOT NULL DEFAULT 0,
+    zuletzt_aktualisiert TIMESTAMP WITH TIME ZONE,
+    erstellt_am TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+    aktualisiert_am TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
+);
+
 CREATE TABLE event_publication (
     id UUID PRIMARY KEY,
     listener_id VARCHAR(512) NOT NULL,

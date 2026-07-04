@@ -3,15 +3,20 @@ package de.locodoko.spieler;
 import de.locodoko.partie.ereignisse.SpielBeendet;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.modulith.events.ApplicationModuleListener;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.TransactionDefinition;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionTemplate;
+
+import org.springframework.dao.DuplicateKeyException;
 
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 
 /**
@@ -28,17 +33,22 @@ public class SpielerProfilService {
 
     private final SpielerRepository spielerRepository;
     private final SpielerStatistikRepository statistikRepository;
+    private final SpielerRatingRepository ratingRepository;
     private final PartieErgebnisRepository partieErgebnisRepository;
-    private final JdbcClient jdbcClient;
+    private final TransactionTemplate requiresNewTx;
 
     public SpielerProfilService(SpielerRepository spielerRepository,
                                 SpielerStatistikRepository statistikRepository,
+                                SpielerRatingRepository ratingRepository,
                                 PartieErgebnisRepository partieErgebnisRepository,
-                                JdbcClient jdbcClient) {
+                                PlatformTransactionManager txManager) {
         this.spielerRepository = spielerRepository;
         this.statistikRepository = statistikRepository;
+        this.ratingRepository = ratingRepository;
         this.partieErgebnisRepository = partieErgebnisRepository;
-        this.jdbcClient = jdbcClient;
+        TransactionTemplate tmpl = new TransactionTemplate(txManager);
+        tmpl.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
+        this.requiresNewTx = tmpl;
     }
 
     /** Aktualisiert Statistiken und TrueSkill-Rating aller beteiligten menschlichen Spieler nach einem Spiel. */
@@ -49,8 +59,9 @@ public class SpielerProfilService {
 
         String regelvarianteName = ereignis.regelvariante() != null ? ereignis.regelvariante().name() : "FREI";
 
-        // Alle menschlichen Spieler-Statistiken vorab laden (Grundlage fuer TrueSkill-Update)
+        // Alle menschlichen Spieler-Statistiken und globale Ratings vorab laden
         Map<UUID, SpielerStatistik> statsMap = new LinkedHashMap<>();
+        Map<UUID, SpielerRating> ratingsMap = new LinkedHashMap<>();
         for (UUID spielerId : ereignis.spielerDaten().keySet()) {
             spielerRepository.findById(spielerId).ifPresent(spieler -> {
                 if (!spieler.istKi()) {
@@ -58,14 +69,17 @@ public class SpielerProfilService {
                         .findBySpielerIdAndRegelvariante(spielerId, regelvarianteName)
                         .orElseGet(() -> SpielerStatistik.fuer(spielerId, regelvarianteName));
                     statsMap.put(spielerId, stat);
+                    SpielerRating rating = ladeOderErstelleRating(spielerId);
+                    ratingsMap.put(spielerId, rating);
                 }
             });
         }
 
-        // TrueSkill-Rating aktualisieren (benoetigt alle Spieler gleichzeitig)
-        aktualisiereRatings(statsMap, ereignis.spielerDaten());
+        // TrueSkill-Rating aktualisieren: per-Variante (Profil-Statistik) + globaler Pool (Bestenliste)
+        aktualisiereTeamRatings(statsMap, ereignis.spielerDaten());
+        aktualisiereTeamRatings(ratingsMap, ereignis.spielerDaten());
 
-        // Individuelle Spielstatistik aktualisieren und speichern
+        // Individuelle Spielstatistik und globales Rating speichern
         for (Map.Entry<UUID, SpielerStatistik> eintrag : statsMap.entrySet()) {
             UUID spielerId = eintrag.getKey();
             SpielBeendet.SpielerSpielDaten daten = ereignis.spielerDaten().get(spielerId);
@@ -78,15 +92,48 @@ public class SpielerProfilService {
             );
             statistikRepository.save(statistik);
         }
+        for (Map.Entry<UUID, SpielerRating> eintrag : ratingsMap.entrySet()) {
+            SpielBeendet.SpielerSpielDaten daten = ereignis.spielerDaten().get(eintrag.getKey());
+            SpielerRating r = eintrag.getValue();
+            r.verarbeiteSpiel(daten.sieger());
+            ratingRepository.save(r);
+        }
     }
 
-    private void aktualisiereRatings(Map<UUID, SpielerStatistik> statsMap,
-                                      Map<UUID, SpielBeendet.SpielerSpielDaten> spielerDaten) {
-        List<SpielerStatistik> reTeam = new ArrayList<>();
-        List<SpielerStatistik> kontraTeam = new ArrayList<>();
+    /**
+     * Laedt das globale Rating eines Spielers oder legt eine neue Zeile an.
+     *
+     * <p>Der INSERT laeuft in einer eigenen REQUIRES_NEW-Subtransaktion, damit eine
+     * DuplicateKeyException bei gleichzeitiger Anlage durch einen anderen Thread ausschliesslich
+     * diese Subtransaktion zurueckrollt — nicht die aufrufende beiSpielBeendet-Transaktion.
+     * Nach dem INSERT (oder dem Conflict-Ignore) wird die Zeile aus der DB geladen.</p>
+     */
+    private SpielerRating ladeOderErstelleRating(UUID spielerId) {
+        Optional<SpielerRating> vorhandenes = ratingRepository.findBySpielerId(spielerId);
+        if (vorhandenes.isPresent()) {
+            return vorhandenes.get();
+        }
+        requiresNewTx.execute(status -> {
+            try {
+                ratingRepository.save(SpielerRating.fuer(spielerId));
+            } catch (DuplicateKeyException e) {
+                // Gleichzeitiger INSERT eines anderen Threads — ignorieren
+            }
+            return null;
+        });
+        return ratingRepository.findBySpielerId(spielerId)
+            .orElseThrow(() -> new IllegalStateException(
+                "SpielerRating fuer " + spielerId + " fehlt"));
+    }
+
+    private <T extends TrueSkillTeilnehmer> void aktualisiereTeamRatings(
+            Map<UUID, T> teilnehmerMap,
+            Map<UUID, SpielBeendet.SpielerSpielDaten> spielerDaten) {
+        List<T> reTeam = new ArrayList<>();
+        List<T> kontraTeam = new ArrayList<>();
         boolean reSieger = false;
 
-        for (Map.Entry<UUID, SpielerStatistik> eintrag : statsMap.entrySet()) {
+        for (Map.Entry<UUID, T> eintrag : teilnehmerMap.entrySet()) {
             UUID spielerId = eintrag.getKey();
             SpielBeendet.SpielerSpielDaten daten = spielerDaten.get(spielerId);
             if (daten.istReSpieler()) {
@@ -97,7 +144,6 @@ public class SpielerProfilService {
             }
         }
 
-        // TrueSkill benoetigt mindestens einen Spieler pro Team
         if (reTeam.isEmpty() || kontraTeam.isEmpty()) return;
 
         if (reSieger) {
@@ -119,21 +165,13 @@ public class SpielerProfilService {
         return partieErgebnisRepository.findBySpielerId(spielerId);
     }
 
-    /** Laedt die Top-50 Spieler aggregiert ueber alle Regelvarianten, sortiert nach konservativem Rating. */
+    /** Laedt die Top-50 Spieler aus dem globalen Rating-Pool, sortiert nach konservativem Rating (μ−3σ). */
     @Transactional(readOnly = true)
     public List<BestenlisteStatistikAggregat> ladeBestenlisteAggregiert() {
-        return jdbcClient.sql(
-            "SELECT spieler_id, SUM(anzahl_spiele) AS anzahl_spiele, SUM(anzahl_siege) AS anzahl_siege, " +
-            "AVG(rating_mu) AS rating_mu, AVG(rating_sigma) AS rating_sigma " +
-            "FROM spieler_statistik GROUP BY spieler_id HAVING SUM(anzahl_spiele) > 0 " +
-            "ORDER BY (AVG(rating_mu) - 3 * AVG(rating_sigma)) DESC LIMIT 50"
-        ).query((rs, rowNum) -> new BestenlisteStatistikAggregat(
-            UUID.fromString(rs.getString("spieler_id")),
-            rs.getInt("anzahl_spiele"),
-            rs.getInt("anzahl_siege"),
-            rs.getDouble("rating_mu"),
-            rs.getDouble("rating_sigma")
-        )).list();
+        return ratingRepository.findTopGeordertNachRating().stream()
+            .map(r -> new BestenlisteStatistikAggregat(
+                r.spielerId(), r.anzahlSpiele(), r.anzahlSiege(), r.ratingMu(), r.ratingSigma()))
+            .toList();
     }
 
 

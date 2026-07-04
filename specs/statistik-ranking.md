@@ -2,7 +2,7 @@
 
 | Feld           | Wert                                                              |
 |----------------|-------------------------------------------------------------------|
-| Status         | Entschieden — Stufe 0+1 (TrueSkill), Saison/Liga aufgeschoben (2026-06-02) |
+| Status         | Implementiert — Stufe 0+1 (TrueSkill, Ein-Pool, FEAT-RATING-EIN-POOL 2026-07-04), Saison/Liga aufgeschoben |
 | Priorität      | Mittel (Stufe 0+1; Build M1/M2)                                   |
 | Abhängigkeiten | datenbankmodell.md, spieler-profil.md, punkteberechnung.md        |
 
@@ -33,16 +33,20 @@ wenn der Build der Wertungslogik erst später (M2) erfolgt.
 
 ---
 
-## Ist-Stand (was wir schon haben)
+## Ist-Stand (implementiert, Stand 2026-07-04)
 
-`spieler_statistik` ist pro `(spieler_id, regelvariante)` und bereits ungewöhnlich reich:
+**`spieler_statistik`** ist pro `(spieler_id, regelvariante)` und ungewöhnlich reich:
 Spiele/Siege, Gesamtpunkte, Re-/Kontra-Quoten, Solos pro Typ, Füchse, Karlchen,
-Doppelköpfe, Hochzeiten, Armuten, Schweinchen. Punkt-Provenance liegt detailliert im
-Wire-DTO `PartieStandAntwort`.
+Doppelköpfe, Hochzeiten, Armuten, Schweinchen, TrueSkill (`rating_mu`, `rating_sigma`)
+pro Regelvariante. Punkt-Provenance liegt detailliert im Wire-DTO `PartieStandAntwort`.
 
-**Stärke:** fachliche Tiefe (Sonderpunkte/Solo-Typen) ist besser als bei vielen Plattformen.
-**Schwäche:** alles **Lebenszeit-Summe**, **kein Skill-Rating**, **keine Zeit-Dimension**,
-keine abgeleiteten Kennzahlen (Ø, Streaks), keine Partner-/Gegner-Sicht.
+**`spieler_rating`** (neu, FEAT-RATING-EIN-POOL) — ein Eintrag pro Spieler **über alle Regelvarianten**:
+`rating_mu`, `rating_sigma`, `anzahl_spiele`, `anzahl_siege`. Sortierkriterium der Bestenliste:
+`rating_mu − 3 × rating_sigma` (konservative Schätzung). Wird neben `spieler_statistik`
+beim `SpielBeendet`-Event durch `SpielerProfilService` aktualisiert.
+
+**Stärke:** fachliche Tiefe (Sonderpunkte/Solo-Typen) + TrueSkill-Ranking in einem globalen Pool.
+**Offen:** keine Zeit-Dimension, keine abgeleiteten Streaks, keine Partner-/Gegner-Sicht (M2+).
 
 ---
 
@@ -78,28 +82,28 @@ Retention-Haken kommerzieller Plattformen für *Fremde*. Aufschieben ist hier **
 | 2 | Saisons (Reset, Saison-Listen, Rollover-Job) | aufgeschoben (additiv) |
 | 3 | Ligen + Auf-/Abstieg | aufgeschoben (additiv) |
 
-## Soll-Modell (Stufe 0 + 1)
+## Implementiertes Modell (Stufe 0 + 1)
 
-### Rating — TrueSkill, an die bestehende Tabelle gehängt
+### Rating — TrueSkill, ein globaler Pool
 
-Algorithmus **entschieden: TrueSkill** (4-Spieler mit wechselnden Parteien; ELO ist 1-gegen-1).
+Algorithmus **TrueSkill** (4-Spieler mit wechselnden Parteien; ELO ist 1-gegen-1).
 TrueSkill hält pro Spieler `μ` (Stärke) und `σ` (Unsicherheit); öffentliche Wertung konservativ
 `μ − 3σ`. TrueSkill-Defaults: `μ=25`, `σ=25/3≈8.333`.
 
-**Kein neues Tabellen-Konstrukt nötig:** `spieler_statistik` ist bereits pro
-`(spieler_id, regelvariante)` und wird pro Spiel fortgeschrieben — genau die richtige Granularität.
-Wir hängen nur zwei Spalten an (im Greenfield in `000-initial-schema.sql`):
+**Zwei Rating-Ebenen (Greenfield, in `000-initial-schema.sql`):**
 
-```sql
-ALTER TABLE spieler_statistik ADD COLUMN rating_mu    NUMERIC(8,4) NOT NULL DEFAULT 25.0;
-ALTER TABLE spieler_statistik ADD COLUMN rating_sigma NUMERIC(8,4) NOT NULL DEFAULT 8.3333;
-```
+1. **Per-Regelvariante** (`spieler_statistik`): `rating_mu`, `rating_sigma` — wird beim `SpielBeendet`-Event
+   durch `SpielerProfilService.aktualisiereTeamRatings()` aktualisiert. Wird im Spieler-Profil-Modal angezeigt.
 
-Das Rating-Update läuft im **selben Pfad**, der die Statistik pro Spiel aktualisiert. Falls je
-auf ELO gewechselt würde: `rating_mu` bleibt die Zahl, `rating_sigma` ungenutzt — kein Schema-Bruch.
+2. **Globaler Pool** (`spieler_rating`): eine Zeile pro Spieler, aggregiert über alle Regelvarianten —
+   ebenfalls bei jedem `SpielBeendet` aktualisiert. Dies ist das **Sortierkriterium der ewigen Bestenliste**.
+   `SpielerRatingRepository.findTopGeordertNachRating()` liefert Top-50 nach `rating_mu − 3 × rating_sigma`.
 
-**Bestenliste:** Endpoint sortiert nach `rating_mu − 3·rating_sigma` (pro Regelvariante),
-eine neue Frontend-Szene (`FE-LEADERBOARD`). Keine Saison-Dimension in Stufe 1 → „ewige" Liste.
+**Frontend:** `BestenlisterSzene` zeigt ganzzahlige Wertungspunkte (`Math.round(μ−3σ)`) + Erklärtext.
+`SpielerProfilModal` zeigt TrueSkill-Wertung aus `spieler_statistik` (per-Variante Aggregat) + Tooltip.
+
+**Bestenliste:** Endpoint `GET /api/spieler/leaderboard` liest aus `spieler_rating`, sortiert nach
+`rating_mu − 3·rating_sigma`. Keine Saison-Dimension in Stufe 1 → „ewige" Liste.
 
 ### Abgeleitete Kennzahlen (Stufe 0, kein neues Schema)
 
@@ -153,6 +157,7 @@ Kein PII, keine Per-Spieler-Kardinalität → unbedenklich und billig (Meter an 
 - [x] **STAT-DERIVED** (Stufe 0): abgeleitete Kennzahlen im Profil
 - [x] **STAT-RATING** (Stufe 1): `rating_mu`/`rating_sigma` in `000`; TrueSkill-Update im Pro-Spiel-Statistikpfad
 - [x] **FE-LEADERBOARD** (Stufe 1): Bestenlisten-Szene + Endpoint (`μ−3σ`)
+- [x] **FEAT-RATING-EIN-POOL** (Stufe 1+): `spieler_rating`-Tabelle (ein globaler Pool); `BestenlisterSzene` zeigt ganzzahlige Wertungspunkte + Erklärtext; `SpielerProfilModal` mit Tooltip
 - [x] Loco-Domain-Metriken in `betrieb-monitoring.md` (Teil von `OPS-GRAFANA-MONITORING`)
 
 ## Quellen

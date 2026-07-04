@@ -15,7 +15,7 @@ import java.util.UUID;
  * Wird bei jedem abgeschlossenen Spiel via {@link SpielerProfilService} aktualisiert.
  */
 @Table("spieler_statistik")
-public class SpielerStatistik extends AbstraktePersistenzEntity {
+public class SpielerStatistik extends AbstraktePersistenzEntity implements TrueSkillTeilnehmer {
 
     @Column("spieler_id")
     private UUID spielerId;
@@ -130,7 +130,8 @@ public class SpielerStatistik extends AbstraktePersistenzEntity {
     public Instant zuletztAktualisiert() { return zuletztAktualisiert; }
 
     /** Aktualisiert das TrueSkill-Rating nach einem Spiel (aufgerufen vom {@link TrueSkillRechner}). */
-    void aktualisiereRating(double neueMu, double neueSigma) {
+    @Override
+    public void aktualisiereRating(double neueMu, double neueSigma) {
         this.ratingMu = neueMu;
         this.ratingSigma = neueSigma;
     }

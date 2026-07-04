@@ -32,10 +32,10 @@ class TrueSkillRechner {
      * @param siegerTeam    Statistiken der Gewinner-Partei
      * @param verliererTeam Statistiken der Verlierer-Partei
      */
-    static void aktualisiereZweiTeams(List<SpielerStatistik> siegerTeam,
-                                       List<SpielerStatistik> verliererTeam) {
-        double muSieger = siegerTeam.stream().mapToDouble(SpielerStatistik::ratingMu).sum();
-        double muVerlierer = verliererTeam.stream().mapToDouble(SpielerStatistik::ratingMu).sum();
+    static void aktualisiereZweiTeams(List<? extends TrueSkillTeilnehmer> siegerTeam,
+                                       List<? extends TrueSkillTeilnehmer> verliererTeam) {
+        double muSieger = siegerTeam.stream().mapToDouble(TrueSkillTeilnehmer::ratingMu).sum();
+        double muVerlierer = verliererTeam.stream().mapToDouble(TrueSkillTeilnehmer::ratingMu).sum();
 
         double c2 = siegerTeam.stream()
                 .mapToDouble(s -> s.ratingSigma() * s.ratingSigma() + BETA * BETA)
@@ -49,7 +49,7 @@ class TrueSkillRechner {
         double v = vGewinn(t);
         double w = wGewinn(t, v);
 
-        for (SpielerStatistik spieler : siegerTeam) {
+        for (TrueSkillTeilnehmer spieler : siegerTeam) {
             double sigma2 = spieler.ratingSigma() * spieler.ratingSigma();
             double neueMu = spieler.ratingMu() + (sigma2 / c) * v;
             double neueSigma = Math.max(SIGMA_MIN,
@@ -57,7 +57,7 @@ class TrueSkillRechner {
             spieler.aktualisiereRating(neueMu, neueSigma);
         }
 
-        for (SpielerStatistik spieler : verliererTeam) {
+        for (TrueSkillTeilnehmer spieler : verliererTeam) {
             double sigma2 = spieler.ratingSigma() * spieler.ratingSigma();
             double neueMu = spieler.ratingMu() - (sigma2 / c) * v;
             double neueSigma = Math.max(SIGMA_MIN,

@@ -8,7 +8,8 @@ import type { BestenlisteAntwortGenerated } from '../generated/schema-types';
 
 // Spalten-Positionen (linksbündig)
 const SPALTEN = [50, 110, 570, 760, 900, 1055] as const;
-const HEADER_LABELS = ['#', 'Spieler', 'Rating (μ−3σ)', 'μ', 'Spiele', 'Siege %'];
+const HEADER_LABELS = ['#', 'Spieler', 'Wertung', 'μ', 'Spiele', 'Siege %'];
+const ERKLÄRTEXT = 'Wertung = geschätzte Spielstärke minus Unsicherheit (μ − 3σ). Steigt durch Siege, besonders gegen starke Gegner. Neue Spieler starten niedrig — die Schätzung wird mit mehr Spielen sicherer.';
 
 /**
  * Phaser-Szene für die ewige TrueSkill-Bestenliste.
@@ -35,6 +36,14 @@ export class BestenlisterSzene extends Phaser.Scene {
       fontSize: '48px',
       color: '#f8f9fa'
     }).setOrigin(0.5).setShadow(3, 3, '#000', 0);
+
+    this.add.text(this.scale.width / 2, 90, ERKLÄRTEXT, {
+      fontFamily: FONT_FAMILY,
+      fontSize: '12px',
+      color: '#a3c4a8',
+      wordWrap: { width: 900 },
+      align: 'center'
+    }).setOrigin(0.5);
 
     new PhaserButton(this, {
       x: 100, y: 45, text: '← Zurück', typ: 'secondary', breite: 160,
@@ -101,7 +110,7 @@ export class BestenlisterSzene extends Phaser.Scene {
     const zeile = [
       String(e.rang ?? rang + 1),
       e.spielerName ?? '–',
-      e.konservativesRating?.toFixed(2) ?? '–',
+      e.konservativesRating !== undefined ? String(Math.round(e.konservativesRating)) : '–',
       e.ratingMu?.toFixed(2) ?? '–',
       String(e.anzahlSpiele ?? 0),
       (e.siegquote?.toFixed(1) ?? '–') + ' %'

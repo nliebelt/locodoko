@@ -95,7 +95,7 @@ export class SpielerProfilModal {
     const siegquote = statistik.siegquote ?? (anzahl > 0 ? Math.round((siege / anzahl) * 100) : 0);
     const punkteProSpiel = statistik.durchschnittlichePunkteProSpiel?.toFixed(2) ?? '—';
     const augenProSpiel = statistik.durchschnittlicheAugenProSpiel?.toFixed(1) ?? '—';
-    const rating = statistik.konservativesRating !== undefined ? statistik.konservativesRating.toFixed(1) : '—';
+    const rating = statistik.konservativesRating !== undefined ? String(Math.round(statistik.konservativesRating)) : '—';
     const reSpieleGesamt = (statistik.reSiege ?? 0) + (statistik.reNiederlagen ?? 0);
     const reRate = reSpieleGesamt > 0 ? Math.round(((statistik.reSiege ?? 0) / reSpieleGesamt) * 100) : 0;
     const kontraSpieleGesamt = (statistik.kontraSiege ?? 0) + (statistik.kontraNiederlagen ?? 0);
@@ -120,7 +120,7 @@ export class SpielerProfilModal {
         <div class="ui-profil-karten">
           <div class="ui-profil-karte">${punkteProSpiel}<span>Ø Pkt/Spiel</span></div>
           <div class="ui-profil-karte">${augenProSpiel}<span>Ø Augen/Spiel</span></div>
-          <div class="ui-profil-karte ui-profil-karte--akzent">${rating}<span>TrueSkill</span></div>
+          <div class="ui-profil-karte ui-profil-karte--akzent" title="Wertung = geschätzte Spielstärke minus Unsicherheit (μ − 3σ). Steigt durch Siege gegen starke Gegner. Neue Spieler starten niedrig.">${rating}<span>TrueSkill</span></div>
         </div>
       </section>
       <section class="ui-profil-abschnitt">
