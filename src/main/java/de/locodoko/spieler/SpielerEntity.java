@@ -206,10 +206,11 @@ public class SpielerEntity extends AbstraktePersistenzEntity {
         return passwordResetTokenAblauf;
     }
 
-    /** Setzt einen neuen Email-Verifizierungstoken (UUID). */
+    /** Erzeugt einen Email-Verifizierungstoken: gibt den Klartext-UUID zurück (für den Link), speichert nur den SHA-256-Hash. */
     public String erzeugeEmailVerifizierungsToken() {
-        this.emailVerifizierungsToken = UUID.randomUUID().toString();
-        return this.emailVerifizierungsToken;
+        String token = UUID.randomUUID().toString();
+        this.emailVerifizierungsToken = TokenHasher.sha256(token);
+        return token;
     }
 
     /** Bestätigt die Email-Adresse und loescht den Token. */
@@ -218,11 +219,12 @@ public class SpielerEntity extends AbstraktePersistenzEntity {
         this.emailVerifizierungsToken = null;
     }
 
-    /** Erzeugt einen Passwort-Reset-Token mit 30-Minuten-TTL. */
+    /** Erzeugt einen Passwort-Reset-Token mit 30-Minuten-TTL: gibt den Klartext-UUID zurück (für den Link), speichert nur den SHA-256-Hash. */
     public String erzeugePasswordResetToken() {
-        this.passwordResetToken = UUID.randomUUID().toString();
+        String token = UUID.randomUUID().toString();
+        this.passwordResetToken = TokenHasher.sha256(token);
         this.passwordResetTokenAblauf = OffsetDateTime.now().plusMinutes(30);
-        return this.passwordResetToken;
+        return token;
     }
 
     /** Setzt das Passwort und loescht den Reset-Token. */

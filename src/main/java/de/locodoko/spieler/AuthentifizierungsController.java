@@ -165,7 +165,7 @@ public class AuthentifizierungsController {
     })
     @GetMapping("/email-verifizieren")
     public ResponseEntity<Void> emailVerifizieren(@RequestParam String token) {
-        SpielerEntity spieler = spielerRepository.findByEmailVerificationToken(token).orElse(null);
+        SpielerEntity spieler = spielerRepository.findByEmailVerificationToken(TokenHasher.sha256(token)).orElse(null);
         if (spieler == null) {
             return ResponseEntity.notFound().build();
         }
@@ -196,7 +196,7 @@ public class AuthentifizierungsController {
     })
     @PostMapping("/passwort-reset")
     public ResponseEntity<Void> passwortReset(@Valid @RequestBody PasswortResetAnfrage anfrage) {
-        SpielerEntity spieler = spielerRepository.findByPasswordResetToken(anfrage.token()).orElse(null);
+        SpielerEntity spieler = spielerRepository.findByPasswordResetToken(TokenHasher.sha256(anfrage.token())).orElse(null);
         if (spieler == null) {
             return ResponseEntity.notFound().build();
         }
