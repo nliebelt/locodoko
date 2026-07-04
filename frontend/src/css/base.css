@@ -22,4 +22,5 @@ body {
 
 canvas {
   display: block;
+  touch-action: none; /* Phaser verarbeitet Touch-Events selbst; Browser-Gesten deaktivieren */
 }

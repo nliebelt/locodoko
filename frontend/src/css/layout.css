@@ -101,6 +101,7 @@
 #recht-footer a {
   color: var(--farbe-text-sekundaer);
   text-decoration: none;
+  touch-action: manipulation;
 }
 
 #recht-footer a:hover {

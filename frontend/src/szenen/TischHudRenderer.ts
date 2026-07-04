@@ -127,7 +127,7 @@ export function renderTopBar(
   const barColor = 0x0d1f12;
   ebene.add(szene.add.rectangle(breite / 2, barH / 2, breite, barH, barColor, 1).setStrokeStyle(1, 0xd8f3dc, 0.15));
   const schriftM = Math.round(Math.max(12, breite * 0.011));
-  const iconSize = Math.round(Math.max(16, breite * 0.014));
+  const iconSize = Math.round(Math.max(20, breite * 0.019)); // min. 20px für Touch-Sichtbarkeit
   const stichAnzahl = modell.spieler.reduce((sum, s) => sum + s.stiche, 0);
   const maxStiche = zustand.aktuellerTisch?.konfiguration.ohneNeunen ? 10 : 12;
   const stichInfo = modell.spieltyp ? `Stich ${stichAnzahl}/${maxStiche}` : '';
@@ -143,29 +143,41 @@ export function renderTopBar(
     zentrumsText += ` · ${statusMap[tisch.status] ?? tisch.status}`;
   }
   ebene.add(szene.add.text(breite / 2, barH / 2, zentrumsText, { fontFamily: FONT_FAMILY, color: '#f8f9fa', fontSize: `${schriftM}px` }).setOrigin(0.5));
-  let rightX = breite - 15;
-  const debugIcon = szene.add.text(rightX, barH / 2, '🐛', { fontFamily: FONT_FAMILY, fontSize: `${iconSize}px` }).setOrigin(1, 0.5).setInteractive({ useHandCursor: true });
+  const iconAbstand = 40;
+  // 44×44px Touch-Hitbox für Topbar-Icons (iOS HIG / Material Design Mindestgröße).
+  // setOrigin(1, 0.5): Ursprung ist rechts-mitte → Hitbox -44px links, ±22px vertikal.
+  // setSize(44, 44) setzt die Hitbox explizit auf 44×44px (iOS HIG Touch-Target-Mindestgröße),
+  // sodass Phaser setInteractive() ohne Geom-Objekt die korrekte Touch-Fläche verwendet.
+  const hudIcon = (x: number, text: string, farbe?: string): Phaser.GameObjects.Text =>
+    szene.add.text(x, barH / 2, text, { fontFamily: FONT_FAMILY, fontSize: `${iconSize}px`, ...(farbe ? { color: farbe } : {}) })
+      .setOrigin(1, 0.5)
+      .setSize(44, 44)
+      .setInteractive({ useHandCursor: true });
+
+  let rightX = breite - 10;
+  const debugIcon = hudIcon(rightX, '🐛');
   debugIcon.on('pointerdown', () => appStore.toggleDebugModus());
-  rightX -= 35;
-  const settingsIcon = szene.add.text(rightX, barH / 2, '⚙', { fontFamily: FONT_FAMILY, fontSize: `${iconSize}px` }).setOrigin(1, 0.5).setInteractive({ useHandCursor: true });
+  rightX -= iconAbstand;
+  const settingsIcon = hudIcon(rightX, '⚙');
   settingsIcon.on('pointerdown', kontext.onToggleEinstellungen);
-  rightX -= 35;
-  const sidebarIcon = szene.add.text(rightX, barH / 2, '≡', { fontFamily: FONT_FAMILY, fontSize: `${iconSize}px` }).setOrigin(1, 0.5).setInteractive({ useHandCursor: true });
+  rightX -= iconAbstand;
+  const sidebarIcon = hudIcon(rightX, '≡');
   sidebarIcon.on('pointerdown', kontext.onToggleSeitenlade);
-  rightX -= 35;
-  const protokollIcon = szene.add.text(rightX, barH / 2, '📋', { fontFamily: FONT_FAMILY, fontSize: `${iconSize}px` }).setOrigin(1, 0.5).setAlpha(kontext.spielprotokollOffen ? 1 : 0.6).setInteractive({ useHandCursor: true });
+  rightX -= iconAbstand;
+  const protokollIcon = hudIcon(rightX, '📋');
+  protokollIcon.setAlpha(kontext.spielprotokollOffen ? 1 : 0.6);
   protokollIcon.on('pointerdown', kontext.onToggleSpielprotokoll);
-  rightX -= 35;
-  const hilfeIcon = szene.add.text(rightX, barH / 2, '?', { fontFamily: FONT_FAMILY, fontSize: `${iconSize}px`, color: '#f8c94e' }).setOrigin(1, 0.5).setInteractive({ useHandCursor: true });
+  rightX -= iconAbstand;
+  const hilfeIcon = hudIcon(rightX, '?', '#f8c94e');
   hilfeIcon.on('pointerdown', kontext.onToggleHilfe);
-  rightX -= 35;
-  const leaveIcon = szene.add.text(rightX, barH / 2, '←', { fontFamily: FONT_FAMILY, fontSize: `${iconSize}px`, color: '#ef4444' }).setOrigin(1, 0.5).setInteractive({ useHandCursor: true });
+  rightX -= iconAbstand;
+  const leaveIcon = hudIcon(rightX, '←', '#ef4444');
   leaveIcon.on('pointerdown', () => {
     const istImSpiel = appStore.snapshot().aktuellerTisch?.status === 'IM_SPIEL';
     if (istImSpiel && !window.confirm('Partie abbrechen und Tisch verlassen?')) return;
     void appStore.verlasseAktuellenTisch();
   });
-  rightX -= 35;
+  rightX -= iconAbstand;
   const startBtnSichtbar = tisch?.status === 'WARTEND' && zustand.spieler?.spielerId === tisch.erstelltVonSpielerId;
   if (startBtnSichtbar) {
     const startBtnW = 100;

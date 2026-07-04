@@ -18,6 +18,7 @@ class FakeGameObject {
   setTint() { return this; }
   setStrokeStyle() { return this; }
   setInteractive() { return this; }
+  setSize() { return this; }
   setVisible() { return this; }
   setPosition(x: number, y: number) { this.x = x; this.y = y; return this; }
   clear() { return this; }

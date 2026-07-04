@@ -38,6 +38,7 @@ function chainable(overrides: Record<string, any> = {}) {
   const obj: Record<string, any> = {
     setStrokeStyle: vi.fn().mockReturnThis(),
     setInteractive: vi.fn().mockReturnThis(),
+    setSize: vi.fn().mockReturnThis(),
     on: vi.fn().mockReturnThis(),
     setOrigin: vi.fn().mockReturnThis(),
     setAlpha: vi.fn().mockReturnThis(),
