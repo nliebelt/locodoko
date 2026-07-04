@@ -3,7 +3,6 @@ package de.locodoko.tisch.persistenz;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonValue;
-import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.BeanDescription;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -353,15 +352,6 @@ public final class JsonbConverter {
         }
     }
 
-    private static <T> T fromPGobject(ObjectMapper mapper, PGobject quelle, TypeReference<T> typReferenz) {
-        try {
-            return mapper.readValue(quelle.getValue(), typReferenz);
-        } catch (Exception e) {
-            throw new IllegalStateException(
-                    "JSONB-Deserialisierung fehlgeschlagen: " + quelle.getValue(), e);
-        }
-    }
-
     /** Deserialisiert ein Domain-VO aus einem JSON-String (H2-Lesen). */
     private static <T> T fromString(ObjectMapper mapper, String quelle, Class<T> typ) {
         try {
@@ -371,187 +361,6 @@ public final class JsonbConverter {
                     "JSONB-Deserialisierung fehlgeschlagen: " + quelle, e);
         }
     }
-
-    private static <T> T fromString(ObjectMapper mapper, String quelle, TypeReference<T> typReferenz) {
-        try {
-            return mapper.readValue(quelle, typReferenz);
-        } catch (Exception e) {
-            throw new IllegalStateException(
-                    "JSONB-Deserialisierung fehlgeschlagen: " + quelle, e);
-        }
-    }
-
-    // ---- JSONB-Converter pro Domain-Typ (Schreib + PGobject-Lese + String-Lese fuer H2) ----
-
-    /** ansage_ereignisse: Ansagen ↔ JSONB */
-    @WritingConverter
-    public static class AnsagenSchreibConverter implements Converter<Ansagen, String> {
-        private final ObjectMapper mapper;
-        public AnsagenSchreibConverter(ObjectMapper mapper) { this.mapper = mapper; }
-        @Override
-        public String convert(Ansagen source) { return toJsonString(mapper, source); }
-    }
-
-    @ReadingConverter
-    public static class AnsagenLeseConverter implements Converter<PGobject, Ansagen> {
-        private final ObjectMapper mapper;
-        public AnsagenLeseConverter(ObjectMapper mapper) { this.mapper = mapper; }
-        @Override
-        public Ansagen convert(PGobject source) { return fromPGobject(mapper, source, Ansagen.class); }
-    }
-
-    @ReadingConverter
-    public static class AnsagenStringLeseConverter implements Converter<String, Ansagen> {
-        private final ObjectMapper mapper;
-        public AnsagenStringLeseConverter(ObjectMapper mapper) { this.mapper = mapper; }
-        @Override
-        public Ansagen convert(String source) { return fromString(mapper, source, Ansagen.class); }
-    }
-
-    /** partei_zuordnungen: Parteien ↔ JSONB */
-    @WritingConverter
-    public static class ParteienSchreibConverter implements Converter<Parteien, String> {
-        private final ObjectMapper mapper;
-        public ParteienSchreibConverter(ObjectMapper mapper) { this.mapper = mapper; }
-        @Override
-        public String convert(Parteien source) { return toJsonString(mapper, source); }
-    }
-
-    @ReadingConverter
-    public static class ParteienLeseConverter implements Converter<PGobject, Parteien> {
-        private final ObjectMapper mapper;
-        public ParteienLeseConverter(ObjectMapper mapper) { this.mapper = mapper; }
-        @Override
-        public Parteien convert(PGobject source) { return fromPGobject(mapper, source, Parteien.class); }
-    }
-
-    @ReadingConverter
-    public static class ParteienStringLeseConverter implements Converter<String, Parteien> {
-        private final ObjectMapper mapper;
-        public ParteienStringLeseConverter(ObjectMapper mapper) { this.mapper = mapper; }
-        @Override
-        public Parteien convert(String source) { return fromString(mapper, source, Parteien.class); }
-    }
-
-    /** armut_status: ArmutStatus ↔ JSONB */
-    @WritingConverter
-    public static class ArmutStatusSchreibConverter implements Converter<ArmutStatus, String> {
-        private final ObjectMapper mapper;
-        public ArmutStatusSchreibConverter(ObjectMapper mapper) { this.mapper = mapper; }
-        @Override
-        public String convert(ArmutStatus source) { return toJsonString(mapper, source); }
-    }
-
-    @ReadingConverter
-    public static class ArmutStatusLeseConverter implements Converter<PGobject, ArmutStatus> {
-        private final ObjectMapper mapper;
-        public ArmutStatusLeseConverter(ObjectMapper mapper) { this.mapper = mapper; }
-        @Override
-        public ArmutStatus convert(PGobject source) {
-            return fromPGobject(mapper, source, ArmutStatus.class);
-        }
-    }
-
-    @ReadingConverter
-    public static class ArmutStatusStringLeseConverter implements Converter<String, ArmutStatus> {
-        private final ObjectMapper mapper;
-        public ArmutStatusStringLeseConverter(ObjectMapper mapper) { this.mapper = mapper; }
-        @Override
-        public ArmutStatus convert(String source) {
-            return fromString(mapper, source, ArmutStatus.class);
-        }
-    }
-
-    /** hochzeit_status: HochzeitStatus ↔ JSONB */
-    @WritingConverter
-    public static class HochzeitStatusSchreibConverter implements Converter<HochzeitStatus, String> {
-        private final ObjectMapper mapper;
-        public HochzeitStatusSchreibConverter(ObjectMapper mapper) { this.mapper = mapper; }
-        @Override
-        public String convert(HochzeitStatus source) { return toJsonString(mapper, source); }
-    }
-
-    @ReadingConverter
-    public static class HochzeitStatusLeseConverter implements Converter<PGobject, HochzeitStatus> {
-        private final ObjectMapper mapper;
-        public HochzeitStatusLeseConverter(ObjectMapper mapper) { this.mapper = mapper; }
-        @Override
-        public HochzeitStatus convert(PGobject source) {
-            return fromPGobject(mapper, source, HochzeitStatus.class);
-        }
-    }
-
-    @ReadingConverter
-    public static class HochzeitStatusStringLeseConverter implements Converter<String, HochzeitStatus> {
-        private final ObjectMapper mapper;
-        public HochzeitStatusStringLeseConverter(ObjectMapper mapper) { this.mapper = mapper; }
-        @Override
-        public HochzeitStatus convert(String source) {
-            return fromString(mapper, source, HochzeitStatus.class);
-        }
-    }
-
-    /** spielregeln (in partie und laufendes_spiel): Spielregeln ↔ JSONB */
-    @WritingConverter
-    public static class SpielregelnSchreibConverter implements Converter<Spielregeln, String> {
-        private final ObjectMapper mapper;
-        public SpielregelnSchreibConverter(ObjectMapper mapper) { this.mapper = mapper; }
-        @Override
-        public String convert(Spielregeln source) { return toJsonString(mapper, source); }
-    }
-
-    @ReadingConverter
-    public static class SpielregelnLeseConverter implements Converter<PGobject, Spielregeln> {
-        private final ObjectMapper mapper;
-        public SpielregelnLeseConverter(ObjectMapper mapper) { this.mapper = mapper; }
-        @Override
-        public Spielregeln convert(PGobject source) {
-            return fromPGobject(mapper, source, Spielregeln.class);
-        }
-    }
-
-    @ReadingConverter
-    public static class SpielregelnStringLeseConverter implements Converter<String, Spielregeln> {
-        private final ObjectMapper mapper;
-        public SpielregelnStringLeseConverter(ObjectMapper mapper) { this.mapper = mapper; }
-        @Override
-        public Spielregeln convert(String source) {
-            return fromString(mapper, source, Spielregeln.class);
-        }
-    }
-
-    /** ergebnis: Spielergebnis ↔ JSONB */
-    @WritingConverter
-    public static class SpielergebnisSchreibConverter implements Converter<Spielergebnis, String> {
-        private final ObjectMapper mapper;
-        public SpielergebnisSchreibConverter(ObjectMapper mapper) { this.mapper = mapper; }
-        @Override
-        public String convert(Spielergebnis source) { return toJsonString(mapper, source); }
-    }
-
-    @ReadingConverter
-    public static class SpielergebnisLeseConverter implements Converter<PGobject, Spielergebnis> {
-        private final ObjectMapper mapper;
-        public SpielergebnisLeseConverter(ObjectMapper mapper) { this.mapper = mapper; }
-        @Override
-        public Spielergebnis convert(PGobject source) {
-            return fromPGobject(mapper, source, Spielergebnis.class);
-        }
-    }
-
-    @ReadingConverter
-    public static class SpielergebnisStringLeseConverter implements Converter<String, Spielergebnis> {
-        private final ObjectMapper mapper;
-        public SpielergebnisStringLeseConverter(ObjectMapper mapper) { this.mapper = mapper; }
-        @Override
-        public Spielergebnis convert(String source) {
-            return fromString(mapper, source, Spielergebnis.class);
-        }
-    }
-
-    // ---- Bytes-Lese-Converter fuer H2 (H2 gibt byte[] fuer JSONB-Spalten zurueck) ----
-    // H2 umschließt beim Schreiben per setString() den JSON-Text in JSON-String-Quotes ("...").
-    // entpackeH2Json entfernt diese Umhuellung, bevor Jackson parst.
 
     private static String entpackeH2Json(ObjectMapper mapper, byte[] quelle) {
         String text = new String(quelle, StandardCharsets.UTF_8);
@@ -569,347 +378,123 @@ public final class JsonbConverter {
         return fromString(mapper, entpackeH2Json(mapper, quelle), typ);
     }
 
-    private static <T> T fromBytes(ObjectMapper mapper, byte[] quelle, TypeReference<T> typReferenz) {
-        return fromString(mapper, entpackeH2Json(mapper, quelle), typReferenz);
-    }
+    // ---- Generische Basisklassen (neues Domain-VO: 4 Zeilen statt 28) ----
 
-    @ReadingConverter
-    public static class AnsagenBytesLeseConverter implements Converter<byte[], Ansagen> {
+    abstract static class Schreib<T> implements Converter<T, String> {
         private final ObjectMapper mapper;
-        public AnsagenBytesLeseConverter(ObjectMapper mapper) { this.mapper = mapper; }
-        @Override
-        public Ansagen convert(byte[] source) { return fromBytes(mapper, source, Ansagen.class); }
+        protected Schreib(ObjectMapper mapper) { this.mapper = mapper; }
+        @Override public final String convert(T source) { return toJsonString(mapper, source); }
     }
 
-    @ReadingConverter
-    public static class ParteienBytesLeseConverter implements Converter<byte[], Parteien> {
+    abstract static class Lese<T> implements Converter<PGobject, T> {
         private final ObjectMapper mapper;
-        public ParteienBytesLeseConverter(ObjectMapper mapper) { this.mapper = mapper; }
-        @Override
-        public Parteien convert(byte[] source) { return fromBytes(mapper, source, Parteien.class); }
+        private final Class<T> typ;
+        protected Lese(ObjectMapper mapper, Class<T> typ) { this.mapper = mapper; this.typ = typ; }
+        @Override public final T convert(PGobject source) { return fromPGobject(mapper, source, typ); }
     }
 
-    @ReadingConverter
-    public static class ArmutStatusBytesLeseConverter implements Converter<byte[], ArmutStatus> {
+    abstract static class StringLese<T> implements Converter<String, T> {
         private final ObjectMapper mapper;
-        public ArmutStatusBytesLeseConverter(ObjectMapper mapper) { this.mapper = mapper; }
-        @Override
-        public ArmutStatus convert(byte[] source) { return fromBytes(mapper, source, ArmutStatus.class); }
+        private final Class<T> typ;
+        protected StringLese(ObjectMapper mapper, Class<T> typ) { this.mapper = mapper; this.typ = typ; }
+        @Override public final T convert(String source) { return fromString(mapper, source, typ); }
     }
 
-    @ReadingConverter
-    public static class HochzeitStatusBytesLeseConverter implements Converter<byte[], HochzeitStatus> {
+    abstract static class BytesLese<T> implements Converter<byte[], T> {
         private final ObjectMapper mapper;
-        public HochzeitStatusBytesLeseConverter(ObjectMapper mapper) { this.mapper = mapper; }
-        @Override
-        public HochzeitStatus convert(byte[] source) { return fromBytes(mapper, source, HochzeitStatus.class); }
+        private final Class<T> typ;
+        protected BytesLese(ObjectMapper mapper, Class<T> typ) { this.mapper = mapper; this.typ = typ; }
+        @Override public final T convert(byte[] source) { return fromBytes(mapper, source, typ); }
     }
 
-    @ReadingConverter
-    public static class SpielregelnBytesLeseConverter implements Converter<byte[], Spielregeln> {
-        private final ObjectMapper mapper;
-        public SpielregelnBytesLeseConverter(ObjectMapper mapper) { this.mapper = mapper; }
-        @Override
-        public Spielregeln convert(byte[] source) { return fromBytes(mapper, source, Spielregeln.class); }
-    }
 
-    @ReadingConverter
-    public static class SpielergebnisBytesLeseConverter implements Converter<byte[], Spielergebnis> {
-        private final ObjectMapper mapper;
-        public SpielergebnisBytesLeseConverter(ObjectMapper mapper) { this.mapper = mapper; }
-        @Override
-        public Spielergebnis convert(byte[] source) { return fromBytes(mapper, source, Spielergebnis.class); }
-    }
+    // ---- JSONB-Converter pro Domain-Typ ----
 
-    // ---- Wrapper-VO-Converter (DOMAIN-1) ----
+    /** ansage_ereignisse */
+    @WritingConverter public static class AnsagenSchreibConverter extends Schreib<Ansagen> { public AnsagenSchreibConverter(ObjectMapper m) { super(m); } }
+    @ReadingConverter public static class AnsagenLeseConverter extends Lese<Ansagen> { public AnsagenLeseConverter(ObjectMapper m) { super(m, Ansagen.class); } }
+    @ReadingConverter public static class AnsagenStringLeseConverter extends StringLese<Ansagen> { public AnsagenStringLeseConverter(ObjectMapper m) { super(m, Ansagen.class); } }
+    @ReadingConverter public static class AnsagenBytesLeseConverter extends BytesLese<Ansagen> { public AnsagenBytesLeseConverter(ObjectMapper m) { super(m, Ansagen.class); } }
 
-    /** haende: Haende ↔ JSONB (serialisiert als Map<SpielerPosition, Hand>) */
-    @WritingConverter
-    public static class HaendeVOSchreibConverter implements Converter<Haende, String> {
-        private final ObjectMapper mapper;
-        public HaendeVOSchreibConverter(ObjectMapper mapper) { this.mapper = mapper; }
-        @Override
-        public String convert(Haende source) { return toJsonString(mapper, source); }
-    }
+    /** partei_zuordnungen */
+    @WritingConverter public static class ParteienSchreibConverter extends Schreib<Parteien> { public ParteienSchreibConverter(ObjectMapper m) { super(m); } }
+    @ReadingConverter public static class ParteienLeseConverter extends Lese<Parteien> { public ParteienLeseConverter(ObjectMapper m) { super(m, Parteien.class); } }
+    @ReadingConverter public static class ParteienStringLeseConverter extends StringLese<Parteien> { public ParteienStringLeseConverter(ObjectMapper m) { super(m, Parteien.class); } }
+    @ReadingConverter public static class ParteienBytesLeseConverter extends BytesLese<Parteien> { public ParteienBytesLeseConverter(ObjectMapper m) { super(m, Parteien.class); } }
 
-    @ReadingConverter
-    public static class HaendeVOLeseConverter implements Converter<PGobject, Haende> {
-        private final ObjectMapper mapper;
-        public HaendeVOLeseConverter(ObjectMapper mapper) { this.mapper = mapper; }
-        @Override
-        public Haende convert(PGobject source) { return fromPGobject(mapper, source, Haende.class); }
-    }
+    /** armut_status */
+    @WritingConverter public static class ArmutStatusSchreibConverter extends Schreib<ArmutStatus> { public ArmutStatusSchreibConverter(ObjectMapper m) { super(m); } }
+    @ReadingConverter public static class ArmutStatusLeseConverter extends Lese<ArmutStatus> { public ArmutStatusLeseConverter(ObjectMapper m) { super(m, ArmutStatus.class); } }
+    @ReadingConverter public static class ArmutStatusStringLeseConverter extends StringLese<ArmutStatus> { public ArmutStatusStringLeseConverter(ObjectMapper m) { super(m, ArmutStatus.class); } }
+    @ReadingConverter public static class ArmutStatusBytesLeseConverter extends BytesLese<ArmutStatus> { public ArmutStatusBytesLeseConverter(ObjectMapper m) { super(m, ArmutStatus.class); } }
 
-    @ReadingConverter
-    public static class HaendeVOStringLeseConverter implements Converter<String, Haende> {
-        private final ObjectMapper mapper;
-        public HaendeVOStringLeseConverter(ObjectMapper mapper) { this.mapper = mapper; }
-        @Override
-        public Haende convert(String source) { return fromString(mapper, source, Haende.class); }
-    }
+    /** hochzeit_status */
+    @WritingConverter public static class HochzeitStatusSchreibConverter extends Schreib<HochzeitStatus> { public HochzeitStatusSchreibConverter(ObjectMapper m) { super(m); } }
+    @ReadingConverter public static class HochzeitStatusLeseConverter extends Lese<HochzeitStatus> { public HochzeitStatusLeseConverter(ObjectMapper m) { super(m, HochzeitStatus.class); } }
+    @ReadingConverter public static class HochzeitStatusStringLeseConverter extends StringLese<HochzeitStatus> { public HochzeitStatusStringLeseConverter(ObjectMapper m) { super(m, HochzeitStatus.class); } }
+    @ReadingConverter public static class HochzeitStatusBytesLeseConverter extends BytesLese<HochzeitStatus> { public HochzeitStatusBytesLeseConverter(ObjectMapper m) { super(m, HochzeitStatus.class); } }
 
-    @ReadingConverter
-    public static class HaendeVOBytesLeseConverter implements Converter<byte[], Haende> {
-        private final ObjectMapper mapper;
-        public HaendeVOBytesLeseConverter(ObjectMapper mapper) { this.mapper = mapper; }
-        @Override
-        public Haende convert(byte[] source) { return fromBytes(mapper, source, Haende.class); }
-    }
+    /** spielregeln */
+    @WritingConverter public static class SpielregelnSchreibConverter extends Schreib<Spielregeln> { public SpielregelnSchreibConverter(ObjectMapper m) { super(m); } }
+    @ReadingConverter public static class SpielregelnLeseConverter extends Lese<Spielregeln> { public SpielregelnLeseConverter(ObjectMapper m) { super(m, Spielregeln.class); } }
+    @ReadingConverter public static class SpielregelnStringLeseConverter extends StringLese<Spielregeln> { public SpielregelnStringLeseConverter(ObjectMapper m) { super(m, Spielregeln.class); } }
+    @ReadingConverter public static class SpielregelnBytesLeseConverter extends BytesLese<Spielregeln> { public SpielregelnBytesLeseConverter(ObjectMapper m) { super(m, Spielregeln.class); } }
 
-    /** vorbehalt_meldungen: VorbehaltMeldungen ↔ JSONB */
-    @WritingConverter
-    public static class VorbehaltMeldungenVOSchreibConverter implements Converter<VorbehaltMeldungen, String> {
-        private final ObjectMapper mapper;
-        public VorbehaltMeldungenVOSchreibConverter(ObjectMapper mapper) { this.mapper = mapper; }
-        @Override
-        public String convert(VorbehaltMeldungen source) { return toJsonString(mapper, source); }
-    }
+    /** spielergebnis */
+    @WritingConverter public static class SpielergebnisSchreibConverter extends Schreib<Spielergebnis> { public SpielergebnisSchreibConverter(ObjectMapper m) { super(m); } }
+    @ReadingConverter public static class SpielergebnisLeseConverter extends Lese<Spielergebnis> { public SpielergebnisLeseConverter(ObjectMapper m) { super(m, Spielergebnis.class); } }
+    @ReadingConverter public static class SpielergebnisStringLeseConverter extends StringLese<Spielergebnis> { public SpielergebnisStringLeseConverter(ObjectMapper m) { super(m, Spielergebnis.class); } }
+    @ReadingConverter public static class SpielergebnisBytesLeseConverter extends BytesLese<Spielergebnis> { public SpielergebnisBytesLeseConverter(ObjectMapper m) { super(m, Spielergebnis.class); } }
 
-    @ReadingConverter
-    public static class VorbehaltMeldungenVOLeseConverter implements Converter<PGobject, VorbehaltMeldungen> {
-        private final ObjectMapper mapper;
-        public VorbehaltMeldungenVOLeseConverter(ObjectMapper mapper) { this.mapper = mapper; }
-        @Override
-        public VorbehaltMeldungen convert(PGobject source) {
-            return fromPGobject(mapper, source, VorbehaltMeldungen.class);
-        }
-    }
+    // ---- Wrapper-VO-Converter ----
 
-    @ReadingConverter
-    public static class VorbehaltMeldungenVOStringLeseConverter implements Converter<String, VorbehaltMeldungen> {
-        private final ObjectMapper mapper;
-        public VorbehaltMeldungenVOStringLeseConverter(ObjectMapper mapper) { this.mapper = mapper; }
-        @Override
-        public VorbehaltMeldungen convert(String source) {
-            return fromString(mapper, source, VorbehaltMeldungen.class);
-        }
-    }
+    /** haende */
+    @WritingConverter public static class HaendeVOSchreibConverter extends Schreib<Haende> { public HaendeVOSchreibConverter(ObjectMapper m) { super(m); } }
+    @ReadingConverter public static class HaendeVOLeseConverter extends Lese<Haende> { public HaendeVOLeseConverter(ObjectMapper m) { super(m, Haende.class); } }
+    @ReadingConverter public static class HaendeVOStringLeseConverter extends StringLese<Haende> { public HaendeVOStringLeseConverter(ObjectMapper m) { super(m, Haende.class); } }
+    @ReadingConverter public static class HaendeVOBytesLeseConverter extends BytesLese<Haende> { public HaendeVOBytesLeseConverter(ObjectMapper m) { super(m, Haende.class); } }
 
-    @ReadingConverter
-    public static class VorbehaltMeldungenVOBytesLeseConverter implements Converter<byte[], VorbehaltMeldungen> {
-        private final ObjectMapper mapper;
-        public VorbehaltMeldungenVOBytesLeseConverter(ObjectMapper mapper) { this.mapper = mapper; }
-        @Override
-        public VorbehaltMeldungen convert(byte[] source) {
-            return fromBytes(mapper, source, VorbehaltMeldungen.class);
-        }
-    }
+    /** vorbehalt_meldungen */
+    @WritingConverter public static class VorbehaltMeldungenVOSchreibConverter extends Schreib<VorbehaltMeldungen> { public VorbehaltMeldungenVOSchreibConverter(ObjectMapper m) { super(m); } }
+    @ReadingConverter public static class VorbehaltMeldungenVOLeseConverter extends Lese<VorbehaltMeldungen> { public VorbehaltMeldungenVOLeseConverter(ObjectMapper m) { super(m, VorbehaltMeldungen.class); } }
+    @ReadingConverter public static class VorbehaltMeldungenVOStringLeseConverter extends StringLese<VorbehaltMeldungen> { public VorbehaltMeldungenVOStringLeseConverter(ObjectMapper m) { super(m, VorbehaltMeldungen.class); } }
+    @ReadingConverter public static class VorbehaltMeldungenVOBytesLeseConverter extends BytesLese<VorbehaltMeldungen> { public VorbehaltMeldungenVOBytesLeseConverter(ObjectMapper m) { super(m, VorbehaltMeldungen.class); } }
 
-    /** abgeschlossene_stiche: Stichverlauf ↔ JSONB */
-    @WritingConverter
-    public static class StichverlaufVOSchreibConverter implements Converter<Stichverlauf, String> {
-        private final ObjectMapper mapper;
-        public StichverlaufVOSchreibConverter(ObjectMapper mapper) { this.mapper = mapper; }
-        @Override
-        public String convert(Stichverlauf source) { return toJsonString(mapper, source); }
-    }
+    /** abgeschlossene_stiche */
+    @WritingConverter public static class StichverlaufVOSchreibConverter extends Schreib<Stichverlauf> { public StichverlaufVOSchreibConverter(ObjectMapper m) { super(m); } }
+    @ReadingConverter public static class StichverlaufVOLeseConverter extends Lese<Stichverlauf> { public StichverlaufVOLeseConverter(ObjectMapper m) { super(m, Stichverlauf.class); } }
+    @ReadingConverter public static class StichverlaufVOStringLeseConverter extends StringLese<Stichverlauf> { public StichverlaufVOStringLeseConverter(ObjectMapper m) { super(m, Stichverlauf.class); } }
+    @ReadingConverter public static class StichverlaufVOBytesLeseConverter extends BytesLese<Stichverlauf> { public StichverlaufVOBytesLeseConverter(ObjectMapper m) { super(m, Stichverlauf.class); } }
 
-    @ReadingConverter
-    public static class StichverlaufVOLeseConverter implements Converter<PGobject, Stichverlauf> {
-        private final ObjectMapper mapper;
-        public StichverlaufVOLeseConverter(ObjectMapper mapper) { this.mapper = mapper; }
-        @Override
-        public Stichverlauf convert(PGobject source) {
-            return fromPGobject(mapper, source, Stichverlauf.class);
-        }
-    }
+    /** bereits_geschmissen */
+    @WritingConverter public static class GeschmisseneSpielerVOSchreibConverter extends Schreib<GeschmisseneSpieler> { public GeschmisseneSpielerVOSchreibConverter(ObjectMapper m) { super(m); } }
+    @ReadingConverter public static class GeschmisseneSpielerVOLeseConverter extends Lese<GeschmisseneSpieler> { public GeschmisseneSpielerVOLeseConverter(ObjectMapper m) { super(m, GeschmisseneSpieler.class); } }
+    @ReadingConverter public static class GeschmisseneSpielerVOStringLeseConverter extends StringLese<GeschmisseneSpieler> { public GeschmisseneSpielerVOStringLeseConverter(ObjectMapper m) { super(m, GeschmisseneSpieler.class); } }
+    @ReadingConverter public static class GeschmisseneSpielerVOBytesLeseConverter extends BytesLese<GeschmisseneSpieler> { public GeschmisseneSpielerVOBytesLeseConverter(ObjectMapper m) { super(m, GeschmisseneSpieler.class); } }
 
-    @ReadingConverter
-    public static class StichverlaufVOStringLeseConverter implements Converter<String, Stichverlauf> {
-        private final ObjectMapper mapper;
-        public StichverlaufVOStringLeseConverter(ObjectMapper mapper) { this.mapper = mapper; }
-        @Override
-        public Stichverlauf convert(String source) {
-            return fromString(mapper, source, Stichverlauf.class);
-        }
-    }
+    /** pflicht_ansage_ausstehend */
+    @WritingConverter public static class PflichtAnsagenVOSchreibConverter extends Schreib<PflichtAnsagen> { public PflichtAnsagenVOSchreibConverter(ObjectMapper m) { super(m); } }
+    @ReadingConverter public static class PflichtAnsagenVOLeseConverter extends Lese<PflichtAnsagen> { public PflichtAnsagenVOLeseConverter(ObjectMapper m) { super(m, PflichtAnsagen.class); } }
+    @ReadingConverter public static class PflichtAnsagenVOStringLeseConverter extends StringLese<PflichtAnsagen> { public PflichtAnsagenVOStringLeseConverter(ObjectMapper m) { super(m, PflichtAnsagen.class); } }
+    @ReadingConverter public static class PflichtAnsagenVOBytesLeseConverter extends BytesLese<PflichtAnsagen> { public PflichtAnsagenVOBytesLeseConverter(ObjectMapper m) { super(m, PflichtAnsagen.class); } }
 
-    @ReadingConverter
-    public static class StichverlaufVOBytesLeseConverter implements Converter<byte[], Stichverlauf> {
-        private final ObjectMapper mapper;
-        public StichverlaufVOBytesLeseConverter(ObjectMapper mapper) { this.mapper = mapper; }
-        @Override
-        public Stichverlauf convert(byte[] source) {
-            return fromBytes(mapper, source, Stichverlauf.class);
-        }
-    }
+    // ---- DOMAIN-2: polymorphe Typen ----
 
-    /** bereits_geschmissen: GeschmisseneSpieler ↔ JSONB */
-    @WritingConverter
-    public static class GeschmisseneSpielerVOSchreibConverter implements Converter<GeschmisseneSpieler, String> {
-        private final ObjectMapper mapper;
-        public GeschmisseneSpielerVOSchreibConverter(ObjectMapper mapper) { this.mapper = mapper; }
-        @Override
-        public String convert(GeschmisseneSpieler source) { return toJsonString(mapper, source); }
-    }
+    /** phase */
+    @WritingConverter public static class SpielphaseSchreibConverter extends Schreib<Spielphase> { public SpielphaseSchreibConverter(ObjectMapper m) { super(m); } }
+    @ReadingConverter public static class SpielphaseLeseConverter extends Lese<Spielphase> { public SpielphaseLeseConverter(ObjectMapper m) { super(m, Spielphase.class); } }
+    @ReadingConverter public static class SpielphaseStringLeseConverter extends StringLese<Spielphase> { public SpielphaseStringLeseConverter(ObjectMapper m) { super(m, Spielphase.class); } }
+    @ReadingConverter public static class SpielphaseBytesLeseConverter extends BytesLese<Spielphase> { public SpielphaseBytesLeseConverter(ObjectMapper m) { super(m, Spielphase.class); } }
 
-    @ReadingConverter
-    public static class GeschmisseneSpielerVOLeseConverter implements Converter<PGobject, GeschmisseneSpieler> {
-        private final ObjectMapper mapper;
-        public GeschmisseneSpielerVOLeseConverter(ObjectMapper mapper) { this.mapper = mapper; }
-        @Override
-        public GeschmisseneSpieler convert(PGobject source) {
-            return fromPGobject(mapper, source, GeschmisseneSpieler.class);
-        }
-    }
+    /** trumpf_ordnung_typ */
+    @WritingConverter public static class TrumpfOrdnungSchreibConverter extends Schreib<TrumpfOrdnung> { public TrumpfOrdnungSchreibConverter(ObjectMapper m) { super(m); } }
+    @ReadingConverter public static class TrumpfOrdnungLeseConverter extends Lese<TrumpfOrdnung> { public TrumpfOrdnungLeseConverter(ObjectMapper m) { super(m, TrumpfOrdnung.class); } }
+    @ReadingConverter public static class TrumpfOrdnungStringLeseConverter extends StringLese<TrumpfOrdnung> { public TrumpfOrdnungStringLeseConverter(ObjectMapper m) { super(m, TrumpfOrdnung.class); } }
+    @ReadingConverter public static class TrumpfOrdnungBytesLeseConverter extends BytesLese<TrumpfOrdnung> { public TrumpfOrdnungBytesLeseConverter(ObjectMapper m) { super(m, TrumpfOrdnung.class); } }
 
-    @ReadingConverter
-    public static class GeschmisseneSpielerVOStringLeseConverter implements Converter<String, GeschmisseneSpieler> {
-        private final ObjectMapper mapper;
-        public GeschmisseneSpielerVOStringLeseConverter(ObjectMapper mapper) { this.mapper = mapper; }
-        @Override
-        public GeschmisseneSpieler convert(String source) {
-            return fromString(mapper, source, GeschmisseneSpieler.class);
-        }
-    }
-
-    @ReadingConverter
-    public static class GeschmisseneSpielerVOBytesLeseConverter implements Converter<byte[], GeschmisseneSpieler> {
-        private final ObjectMapper mapper;
-        public GeschmisseneSpielerVOBytesLeseConverter(ObjectMapper mapper) { this.mapper = mapper; }
-        @Override
-        public GeschmisseneSpieler convert(byte[] source) {
-            return fromBytes(mapper, source, GeschmisseneSpieler.class);
-        }
-    }
-
-    /** pflicht_ansage_ausstehend: PflichtAnsagen ↔ JSONB */
-    @WritingConverter
-    public static class PflichtAnsagenVOSchreibConverter implements Converter<PflichtAnsagen, String> {
-        private final ObjectMapper mapper;
-        public PflichtAnsagenVOSchreibConverter(ObjectMapper mapper) { this.mapper = mapper; }
-        @Override
-        public String convert(PflichtAnsagen source) { return toJsonString(mapper, source); }
-    }
-
-    @ReadingConverter
-    public static class PflichtAnsagenVOLeseConverter implements Converter<PGobject, PflichtAnsagen> {
-        private final ObjectMapper mapper;
-        public PflichtAnsagenVOLeseConverter(ObjectMapper mapper) { this.mapper = mapper; }
-        @Override
-        public PflichtAnsagen convert(PGobject source) {
-            return fromPGobject(mapper, source, PflichtAnsagen.class);
-        }
-    }
-
-    @ReadingConverter
-    public static class PflichtAnsagenVOStringLeseConverter implements Converter<String, PflichtAnsagen> {
-        private final ObjectMapper mapper;
-        public PflichtAnsagenVOStringLeseConverter(ObjectMapper mapper) { this.mapper = mapper; }
-        @Override
-        public PflichtAnsagen convert(String source) {
-            return fromString(mapper, source, PflichtAnsagen.class);
-        }
-    }
-
-    @ReadingConverter
-    public static class PflichtAnsagenVOBytesLeseConverter implements Converter<byte[], PflichtAnsagen> {
-        private final ObjectMapper mapper;
-        public PflichtAnsagenVOBytesLeseConverter(ObjectMapper mapper) { this.mapper = mapper; }
-        @Override
-        public PflichtAnsagen convert(byte[] source) {
-            return fromBytes(mapper, source, PflichtAnsagen.class);
-        }
-    }
-
-    // ---- DOMAIN-2: Spielphase, TrumpfOrdnung, Kartendeck ----
-
-    /** phase: Spielphase ↔ JSONB (polymorphisch via @JsonTypeInfo) */
-    @WritingConverter
-    public static class SpielphaseSchreibConverter implements Converter<Spielphase, String> {
-        private final ObjectMapper mapper;
-        public SpielphaseSchreibConverter(ObjectMapper mapper) { this.mapper = mapper; }
-        @Override
-        public String convert(Spielphase source) { return toJsonString(mapper, source); }
-    }
-
-    @ReadingConverter
-    public static class SpielphaseLeseConverter implements Converter<PGobject, Spielphase> {
-        private final ObjectMapper mapper;
-        public SpielphaseLeseConverter(ObjectMapper mapper) { this.mapper = mapper; }
-        @Override
-        public Spielphase convert(PGobject source) { return fromPGobject(mapper, source, Spielphase.class); }
-    }
-
-    @ReadingConverter
-    public static class SpielphaseStringLeseConverter implements Converter<String, Spielphase> {
-        private final ObjectMapper mapper;
-        public SpielphaseStringLeseConverter(ObjectMapper mapper) { this.mapper = mapper; }
-        @Override
-        public Spielphase convert(String source) { return fromString(mapper, source, Spielphase.class); }
-    }
-
-    @ReadingConverter
-    public static class SpielphaseBytesLeseConverter implements Converter<byte[], Spielphase> {
-        private final ObjectMapper mapper;
-        public SpielphaseBytesLeseConverter(ObjectMapper mapper) { this.mapper = mapper; }
-        @Override
-        public Spielphase convert(byte[] source) { return fromBytes(mapper, source, Spielphase.class); }
-    }
-
-    /** trumpf_ordnung_typ: TrumpfOrdnung ↔ JSONB (polymorphisch via @JsonTypeInfo) */
-    @WritingConverter
-    public static class TrumpfOrdnungSchreibConverter implements Converter<TrumpfOrdnung, String> {
-        private final ObjectMapper mapper;
-        public TrumpfOrdnungSchreibConverter(ObjectMapper mapper) { this.mapper = mapper; }
-        @Override
-        public String convert(TrumpfOrdnung source) { return toJsonString(mapper, source); }
-    }
-
-    @ReadingConverter
-    public static class TrumpfOrdnungLeseConverter implements Converter<PGobject, TrumpfOrdnung> {
-        private final ObjectMapper mapper;
-        public TrumpfOrdnungLeseConverter(ObjectMapper mapper) { this.mapper = mapper; }
-        @Override
-        public TrumpfOrdnung convert(PGobject source) { return fromPGobject(mapper, source, TrumpfOrdnung.class); }
-    }
-
-    @ReadingConverter
-    public static class TrumpfOrdnungStringLeseConverter implements Converter<String, TrumpfOrdnung> {
-        private final ObjectMapper mapper;
-        public TrumpfOrdnungStringLeseConverter(ObjectMapper mapper) { this.mapper = mapper; }
-        @Override
-        public TrumpfOrdnung convert(String source) { return fromString(mapper, source, TrumpfOrdnung.class); }
-    }
-
-    @ReadingConverter
-    public static class TrumpfOrdnungBytesLeseConverter implements Converter<byte[], TrumpfOrdnung> {
-        private final ObjectMapper mapper;
-        public TrumpfOrdnungBytesLeseConverter(ObjectMapper mapper) { this.mapper = mapper; }
-        @Override
-        public TrumpfOrdnung convert(byte[] source) { return fromBytes(mapper, source, TrumpfOrdnung.class); }
-    }
-
-    /** kartendeck: Kartendeck ↔ JSONB (serialisiert als JSON-Array der Karten) */
-    @WritingConverter
-    public static class KartendeckSchreibConverter implements Converter<Kartendeck, String> {
-        private final ObjectMapper mapper;
-        public KartendeckSchreibConverter(ObjectMapper mapper) { this.mapper = mapper; }
-        @Override
-        public String convert(Kartendeck source) { return toJsonString(mapper, source); }
-    }
-
-    @ReadingConverter
-    public static class KartendeckLeseConverter implements Converter<PGobject, Kartendeck> {
-        private final ObjectMapper mapper;
-        public KartendeckLeseConverter(ObjectMapper mapper) { this.mapper = mapper; }
-        @Override
-        public Kartendeck convert(PGobject source) { return fromPGobject(mapper, source, Kartendeck.class); }
-    }
-
-    @ReadingConverter
-    public static class KartendeckStringLeseConverter implements Converter<String, Kartendeck> {
-        private final ObjectMapper mapper;
-        public KartendeckStringLeseConverter(ObjectMapper mapper) { this.mapper = mapper; }
-        @Override
-        public Kartendeck convert(String source) { return fromString(mapper, source, Kartendeck.class); }
-    }
-
-    @ReadingConverter
-    public static class KartendeckBytesLeseConverter implements Converter<byte[], Kartendeck> {
-        private final ObjectMapper mapper;
-        public KartendeckBytesLeseConverter(ObjectMapper mapper) { this.mapper = mapper; }
-        @Override
-        public Kartendeck convert(byte[] source) { return fromBytes(mapper, source, Kartendeck.class); }
-    }
+    /** kartendeck */
+    @WritingConverter public static class KartendeckSchreibConverter extends Schreib<Kartendeck> { public KartendeckSchreibConverter(ObjectMapper m) { super(m); } }
+    @ReadingConverter public static class KartendeckLeseConverter extends Lese<Kartendeck> { public KartendeckLeseConverter(ObjectMapper m) { super(m, Kartendeck.class); } }
+    @ReadingConverter public static class KartendeckStringLeseConverter extends StringLese<Kartendeck> { public KartendeckStringLeseConverter(ObjectMapper m) { super(m, Kartendeck.class); } }
+    @ReadingConverter public static class KartendeckBytesLeseConverter extends BytesLese<Kartendeck> { public KartendeckBytesLeseConverter(ObjectMapper m) { super(m, Kartendeck.class); } }
 }
