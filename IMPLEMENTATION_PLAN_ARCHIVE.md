@@ -2,6 +2,49 @@
 
 ---
 
+## Archiviert am 2026-07-05 (Sessions 131–148b — Reife, Deploy-Vorbereitung, Security, Spec-Sync)
+
+> Slim-Down des aktiven Plans (Session 149). Alle unten gelisteten Tasks sind **erledigt** (`[x]`, Code + Tests grün, committet).
+
+**Refactoring:**
+- **REFACTOR-BE-KI-ORCHESTRATOR** — `KiTischOrchestrator::automatisiereTisch` (CCN 20, 81 NLOC) in private Teilmethoden aufgeteilt; CCN deutlich unter 15.
+- **REFACTOR-FE-COMPLEXITY-HOTSPOTS** — Drei kognitive FE-Hotspots entschärft: `TischEreignisHandler.verarbeitePartieEreignis` (68→15), `PartieStore._verarbeiteEventQueue` (60→15), `TischKartenRenderer.renderKartenFaecher` (53→15); drei separate Commits.
+- **QA-FE-BIOME-LOWER** — Biome-Schwelle `maxAllowedComplexity` stufenweise von 40 → 15 gesenkt.
+- **REFACTOR-BE-JSONB-CONVERTER** — `JsonbConverter.java` 915 → 500 Zeilen (−45%); 4 generische Basisklassen (`Schreib<T>`, `Lese<T>`, `StringLese<T>`, `BytesLese<T>`) eingeführt.
+
+**Dependencies:**
+- **DEPS-FE-TOOLING-MAJORS** — TypeScript 5→6, Vite 6→8, Vitest 3→4, ESLint 9→10, globals 16→17, typescript-eslint 8.61.
+- **DEPS-FE-PHASER4-SPIKE** — Phaser 3.90→4.1 erfolgreich migriert; FIX-FE-PHASER4-MASK-WEBGL: `rechteckMaske.ts` ersetzt Geometry-Masken (WebGL-konform).
+- **CLEANUP-VISION-MOBILE-DEFER** — `mobile-landscape` aus regulärem Vision-Lauf genommen (VISION_MOBILE=1 optional).
+- **DEPS-BE-SPRING-UPDATE** — Spring Boot 4.0.5→4.1.0, Modulith 2.0.0→2.1.0, Sentry 8.9.0→8.43.2.
+
+**Features:**
+- **TEST-E2E-ECHTE-KLICKS** — Drei echte Maus-Klick-Pfade (Schnellstart, Beitreten, Karte spielen) in `echte-klicks.spec.ts`.
+- **FEAT-FE-TISCH-REGELN-ERWEITERT** — Aufklappbarer „Erweitert"-Bereich im Neuer-Tisch-Dialog mit allen `TischKonfigurationDto`-Feldern.
+- **FEAT-RANGLISTE-EINHEITLICH** — Bestenliste + Spielerprofil variantenübergreifend aggregiert (kein Tab-Wechsel mehr); BE `ladeBestenlisteAggregiert()` via `JdbcClient`.
+- **FEAT-RECHT-SEITEN-GERUEST** — `/impressum`, `/datenschutz`, `/agb` (statische HTML + Spring-Redirect-Controller + Footer-Links in `index.html`).
+- **FEAT-RATING-EIN-POOL** — Neue Tabelle `spieler_rating`; ein TrueSkill-Pool pro Spieler; `μ−3σ` als ganzzahlige Wertungspunkte; Erklärtext in Bestenliste + SpielerProfilModal. Race-Condition (DuplicateKey) via REQUIRES_NEW-Subtransaktion gelöst.
+- **FE-MOBILE** — Touch-Tauglichkeit: `touch-action: manipulation`, Min-44px-Targets, iOS Adressleisten-Overlap (Modal-Backdrop), HUD-Hitboxen 44×44px, Portrait-Dreh-Overlay. Vision-Loop mobile-landscape 4/4 grün.
+
+**Security:**
+- **SEC-TOKEN-HASHING** — Passwort-Reset- und Email-Tokens als SHA-256-Hash in DB (`TokenHasher.java`); Klartext nur im Link-Parameter.
+- **SCHEMA-FK-INDIZES** — 4 fehlende FK-Indizes + `chk_spieler_auth_methode` CHECK-Constraint via Liquibase-Migration `002-schema-fixes.sql`.
+- **SECURITY-REVIEW-PRE-M1** — 6 Prüfpunkte geprüft (Rate-Limiting ✓, Cookie-Flags ✓, CSRF ✓, WS-Origins ✓, Secrets ✓, Security-Headers). `X-Frame-Options: DENY`, `X-Content-Type-Options: nosniff`, HSTS 1 Jahr in `SecurityConfig` ergänzt.
+
+**Bugfixes:**
+- **BUG-FE-STANDARD-KONFIG** — `STANDARD_KONFIG`: `bockrundenAktiv`, `schweinchenAktiv`, `dreissigAugenPflichtAktiv` auf `false` korrigiert.
+- **BUG-BE-FE-SCHWEINCHEN-STATISTIK** — `schweinchenGespielt` in `SpielerProfilAntwort.StatistikAntwort` + FE-Modal ergänzt.
+- **BUG-E2E-VISION-LOOP-RANGLISTE** — Veraltete Tab-Navigation (`btn-tab-sonder`/`btn-tab-frei`) aus Vision-Loop-Test entfernt.
+
+**Spec-Sync & Doku (alle interaktiv/autonom erledigt):**
+- DOC-METRICS-REFRESH, DOC-SPEC-SPIELERPROFIL-UPDATE, DOC-BUGREPORT-SPEC-UPDATE, DOC-DB-ABWEICHUNGEN-FIX, DOC-VISION-LOOP-UPDATE, DOC-SPEC-STARTSCREEN-UPDATE, DOC-SPEC-VISION-LOOP-S02, CLEANUP-AGENTS-DEDUPLIZIEREN, DOC-SPEC-EVENTS-SYNC, DOC-SPEC-WEBSOCKET-SYNC, DOC-SPEC-DDD-KI-SYNC, DOC-SPEC-FRONTEND-ARCH-SYNC, DOC-REST-API-OPENAPI-VERWEIS, DOC-SPEC-STATUS-ZEILEN, CLEANUP-JAVADOC-PARTIEEREIGNISTYP — alle Specs auf Ist-Stand gebracht; 2 tote Event-Klassen gelöscht; 5 tote TischEreignisMapper-Referenzen ersetzt.
+
+**QA & Tooling:**
+- **QA-SPEC-LINT** — `check_specs.py` vollständig neu implementiert; CI-Gate als `spec-lint`-Job in `.github/workflows/ci.yml`; 0 Befunde auf 55 Specs.
+- **DEPLOY-PLAIN-SMOKE** — prod-Boot gegen PG 15 (Sandbox) verifiziert: Liquibase alle 3 Changesets grün, `curl /actuator/health` UP, E2E `partie-gegen-ki.spec.ts` grün. Root-Cause: `JsonbConverter`-WritingConverters gaben `String` → Fix: `stringtype=unspecified` in `application-prod.properties`.
+
+---
+
 ## Archiviert am 2026-06-15 (Sessions 26–128 — Fertigstellung Öffentlicher Betrieb, Vision-Loop, Reviews)
 
 > Slim-Down des aktiven Plans (Session 128). Alle unten gelisteten Tasks sind **erledigt** (`[x]`, Code + Tests grün, committet). Volldetail zu jedem Task in der Git-History des `IMPLEMENTATION_PLAN.md`. Im aktiven Plan verblieben nur noch die offenen autonomen M)-Tasks + die MENSCH-/User-gebundenen Deploy-/Entscheidungs-Tasks.
