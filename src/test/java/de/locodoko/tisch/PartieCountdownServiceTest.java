@@ -33,15 +33,15 @@ class PartieCountdownServiceTest {
 
     private StubTaskScheduler taskScheduler;
     private SpionTischEchtzeitService tischEchtzeitService;
-    private SpionTischVerwaltungsService tischVerwaltungsService;
+    private SpionTischPartieService tischPartieService;
     private PartieCountdownService service;
 
     @BeforeEach
     void setUp() {
         taskScheduler = new StubTaskScheduler();
         tischEchtzeitService = new SpionTischEchtzeitService();
-        tischVerwaltungsService = new SpionTischVerwaltungsService();
-        service = new PartieCountdownService(taskScheduler, tischEchtzeitService, tischVerwaltungsService, 3);
+        tischPartieService = new SpionTischPartieService();
+        service = new PartieCountdownService(taskScheduler, tischEchtzeitService, tischPartieService, 3);
     }
 
     @Test
@@ -74,8 +74,8 @@ class PartieCountdownServiceTest {
         assertEquals(1, tischEchtzeitService.gesendeteEreignisse.get(1).verbleibendeSekunden());
 
         assertTrue(taskScheduler.getLetzteFuture().wurdeAbgebrochen());
-        assertEquals(1, tischVerwaltungsService.autoStartAufrufe.size());
-        assertEquals(tischId, tischVerwaltungsService.autoStartAufrufe.get(0).wert());
+        assertEquals(1, tischPartieService.autoStartAufrufe.size());
+        assertEquals(tischId, tischPartieService.autoStartAufrufe.get(0).wert());
     }
 
     @Test
@@ -154,11 +154,11 @@ class PartieCountdownServiceTest {
         }
     }
 
-    static class SpionTischVerwaltungsService extends TischVerwaltungsService {
+    static class SpionTischPartieService extends TischPartieService {
         final List<TischId> autoStartAufrufe = new ArrayList<>();
 
-        SpionTischVerwaltungsService() {
-            super(null, null, null, null, null, null, null, null);
+        SpionTischPartieService() {
+            super(null, null, null, null, null, null, null);
         }
 
         @Override

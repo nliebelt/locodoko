@@ -29,7 +29,7 @@ public class PartieCountdownService {
 
     private final TaskScheduler taskScheduler;
     private final TischEchtzeitService tischEchtzeitService;
-    private final TischVerwaltungsService tischVerwaltungsService;
+    private final TischPartieService tischPartieService;
     private final int countdownDauerSekunden;
 
     private final ConcurrentHashMap<UUID, ScheduledFuture<?>> aktiveCountdowns = new ConcurrentHashMap<>();
@@ -37,12 +37,12 @@ public class PartieCountdownService {
     public PartieCountdownService(
             TaskScheduler taskScheduler,
             TischEchtzeitService tischEchtzeitService,
-            TischVerwaltungsService tischVerwaltungsService,
+            TischPartieService tischPartieService,
             @Value("${locodoko.countdown.dauer-sekunden:10}") int countdownDauerSekunden
     ) {
         this.taskScheduler = taskScheduler;
         this.tischEchtzeitService = tischEchtzeitService;
-        this.tischVerwaltungsService = tischVerwaltungsService;
+        this.tischPartieService = tischPartieService;
         this.countdownDauerSekunden = countdownDauerSekunden;
     }
 
@@ -95,7 +95,7 @@ public class PartieCountdownService {
         } else {
             brecheCountdownAb(tischId);
             try {
-                tischVerwaltungsService.starteNeuePartieAutomat(TischId.von(tischId));
+                tischPartieService.starteNeuePartieAutomat(TischId.von(tischId));
                 LOGGER.info("Neue Partie automatisch gestartet nach Countdown [tischId={}]", tischId);
             } catch (Exception e) {
                 LOGGER.warn("Auto-Start nach Countdown fehlgeschlagen [tischId={}]: {}", tischId, e.getMessage());

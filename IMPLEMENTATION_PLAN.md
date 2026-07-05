@@ -4,9 +4,9 @@
 
 ## Notiz
 
-**REFACTOR-BE-STANDARDKISTRATEGIE abgeschlossen (2026-07-05, Ralph).** `StandardKiStrategie.java` von 504 auf 195 Zeilen reduziert (−61 %). Reine Extraktion in 4 package-private Hilfsklassen: `KiKartenBewertung` (gemeinsame Karten-Utilities, 81 Z.), `KiAnspielBewerter` (Anspiel-Logik, 54 Z.), `KiFolgeBewerter` (Folge-Logik, 97 Z.), `KiVorbehaltBewerter` (Solo-Bewertung, 119 Z.). `SchwerKiStrategie` (erbt nur `ansageSchwelle`) unverändert. Alle 503 Tests grün.
+**REFACTOR-BE-TISCHVERWALTUNGSSERVICE abgeschlossen (2026-07-05, Ralph).** `TischVerwaltungsService.java` von 465 auf 222 Zeilen reduziert (−52 %). Partie-Lifecycle-Methoden (`starteTisch`, `starteNeuePartie`, `starteNeuePartieAutomat`, `schnellEinsteigen`) in neuen `TischPartieService.java` (275 Z.) extrahiert. `TischController` delegiert Partie-Aktionen an `TischPartieService`. `PartieCountdownService` injiziert nun `TischPartieService` statt `TischVerwaltungsService` — zirkuläre Abhängigkeit aufgelöst, `@Lazy` entfernt. Alle 503 Tests grün.
 
-**Nächster Task: REFACTOR-BE-TISCHVERWALTUNGSSERVICE** — `TischVerwaltungsService.java` (465 Z.) lesen und sinnvoll aufteilen. Erste Datei zuerst lesen.
+**Alle autonomen Tasks in Sektion A erledigt.**
 
 ## Legende
 
@@ -28,7 +28,7 @@
 
 - [x] **REFACTOR-BE-STANDARDKISTRATEGIE** (Backend/Refactoring, autonom, mittel) — `src/main/java/de/locodoko/ki/StandardKiStrategie.java` hat **504 Zeilen** (über dem 300-Zeilen-Richtwert, S148 Radar). Die Klasse enthält zwei große Kartenwahlmethoden (`waehleAnspielKarte` ab Z. 141 und `waehleFolgeKarte` ab Z. 178) mit komplexen Bewertungslogiken sowie mehrere private Solo-Bewertungs-Hilfsmethoden. **Fix:** Bewertungslogik in package-private Hilfsklassen auslagern: `KiAnspielBewerter.java` (Anspiel-Strategie: `waehleAnspielKarte` + zugehörige Methoden) und `KiFolgeBewerter.java` (Folge-Strategie: `waehleFolgeKarte` + `gewinnendeKarten`, `vergleicheGewinnKosten`, `vergleicheAbwurfKosten`); `StandardKiStrategie` reduziert sich auf Delegations-Klasse + `handstaerke`/`ansageSchwelle`/`soloWert`. Keine Logikänderung — reine Extraktion. **Erste Datei zuerst:** `StandardKiStrategie.java` vollständig lesen, dann Extraktion. **DoD:** `StandardKiStrategie.java` deutlich unter 200 Zeilen; Gesamt-Logik aller neuen Klassen zusammen unter 600 Zeilen; `mvn clean test` grün; KI-Modul-Coverage unverändert. **Risiko:** niedrig-mittel (KI-Logik ist gut getestet, 91 % Coverage im ki-Modul).
 
-- [ ] **REFACTOR-BE-TISCHVERWALTUNGSSERVICE** (Backend/Refactoring, autonom, mittel) — `src/main/java/de/locodoko/tisch/TischVerwaltungsService.java` hat **465 Zeilen** (über dem Richtwert, S148 Radar). **Fix:** Datei vollständig lesen, Verantwortlichkeiten identifizieren und sinnvoll trennen (z.B. Tisch-Erstellung/Konfiguration vs. Tisch-Lifecycle-Management/Teilnehmer-Verwaltung). Keine Logikänderung. **Erste Datei zuerst:** `TischVerwaltungsService.java` vollständig lesen, bevor irgend etwas extrahiert wird. **DoD:** Service deutlich unter 300 Zeilen; `mvn clean test` grün; Integrationstests der tisch-Module unverändert grün. **Risiko:** mittel (Application Layer, Integrationstests vorhanden).
+- [x] **REFACTOR-BE-TISCHVERWALTUNGSSERVICE** (Backend/Refactoring, autonom, mittel) — `src/main/java/de/locodoko/tisch/TischVerwaltungsService.java` hat **465 Zeilen** (über dem Richtwert, S148 Radar). **Fix:** Datei vollständig lesen, Verantwortlichkeiten identifizieren und sinnvoll trennen (z.B. Tisch-Erstellung/Konfiguration vs. Tisch-Lifecycle-Management/Teilnehmer-Verwaltung). Keine Logikänderung. **Erste Datei zuerst:** `TischVerwaltungsService.java` vollständig lesen, bevor irgend etwas extrahiert wird. **DoD:** Service deutlich unter 300 Zeilen; `mvn clean test` grün; Integrationstests der tisch-Module unverändert grün. **Risiko:** mittel (Application Layer, Integrationstests vorhanden).
 
 ### Empfohlene Build-Reihenfolge (Block A — aktuelle Runde, Stand S149)
 

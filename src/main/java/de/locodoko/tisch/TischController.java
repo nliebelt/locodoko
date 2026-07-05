@@ -45,15 +45,18 @@ public class TischController {
     private static final Logger LOGGER = LoggerFactory.getLogger(TischController.class);
 
     private final TischVerwaltungsService tischVerwaltungsService;
+    private final TischPartieService tischPartieService;
     private final TischKonfigurationsService tischKonfigurationsService;
     private final SpielerSessionService spielerSessionService;
 
     public TischController(
         TischVerwaltungsService tischVerwaltungsService,
+        TischPartieService tischPartieService,
         TischKonfigurationsService tischKonfigurationsService,
         SpielerSessionService spielerSessionService
     ) {
         this.tischVerwaltungsService = tischVerwaltungsService;
+        this.tischPartieService = tischPartieService;
         this.tischKonfigurationsService = tischKonfigurationsService;
         this.spielerSessionService = spielerSessionService;
     }
@@ -101,7 +104,7 @@ public class TischController {
     public TischAntwort schnellstart(HttpServletRequest request) {
         SpielerEntity spieler = ladeAktivenSpieler(request);
         LOGGER.info("Spieler {} startet Schnellstart", spieler.id());
-        return tischVerwaltungsService.schnellEinsteigen(spieler);
+        return tischPartieService.schnellEinsteigen(spieler);
     }
 
     @Operation(summary = "Einzelnen Tisch abrufen", description = "Gibt den Tisch mit der angegebenen ID zurueck.")
@@ -185,7 +188,7 @@ public class TischController {
         try {
             SpielerEntity spieler = ladeAktivenSpieler(request);
             LOGGER.info("Spieler {} startet Tisch {}", spieler.id(), id);
-            TischAntwort antwort = tischVerwaltungsService.starteTisch(TischId.von(id), spieler);
+            TischAntwort antwort = tischPartieService.starteTisch(TischId.von(id), spieler);
             return new BestaetigungAntwort("Tisch " + antwort.id() + " wurde gestartet.");
         } finally {
             MDC.clear();
@@ -206,7 +209,7 @@ public class TischController {
         try {
             SpielerEntity spieler = ladeAktivenSpieler(request);
             LOGGER.info("Spieler {} startet neue Partie an Tisch {}", spieler.id(), id);
-            return tischVerwaltungsService.starteNeuePartie(TischId.von(id), spieler);
+            return tischPartieService.starteNeuePartie(TischId.von(id), spieler);
         } finally {
             MDC.clear();
         }
