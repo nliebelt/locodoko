@@ -86,6 +86,13 @@ class SpielerStatistikIntegrationTest {
             ));
         });
 
+        // Warten bis TURNIER-Listener abgeschlossen, bevor SONDER gefeuert wird.
+        // @ApplicationModuleListener ist asynchron — unter Gesamtlast können beide Listener
+        // sonst gleichzeitig laufen und durch Thread-Pool-Sättigung verzögert werden.
+        await().atMost(15, TimeUnit.SECONDS).untilAsserted(() ->
+            assertThat(statistikRepository.findBySpielerId(spielerId)).hasSize(1)
+        );
+
         // Sonder-Spiel
         transactionTemplate.executeWithoutResult(status -> {
             SpielBeendet.SpielerSpielDaten daten = new SpielBeendet.SpielerSpielDaten(
@@ -96,7 +103,7 @@ class SpielerStatistikIntegrationTest {
             ));
         });
 
-        await().atMost(5, TimeUnit.SECONDS).untilAsserted(() -> {
+        await().atMost(15, TimeUnit.SECONDS).untilAsserted(() -> {
             List<SpielerStatistik> statistiken = statistikRepository.findBySpielerId(spielerId);
             assertThat(statistiken).hasSize(2);
             assertThat(statistiken.stream().map(SpielerStatistik::regelvariante))
