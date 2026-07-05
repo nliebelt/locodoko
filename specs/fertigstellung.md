@@ -4,7 +4,7 @@
 |----------------|-------------------------------------------------------------|
 | Status         | Aktive Vorgabe — Roadmap (lebendes Dokument)                |
 | Priorität      | Hoch                                                        |
-| Letztes Update | 2026-06-01 (Session 30)                                     |
+| Letztes Update | 2026-07-05 (Session 149)                                    |
 | Abhängigkeiten | architektur.md, authentifizierung.md, datenbankmodell.md    |
 
 ## Zweck
@@ -55,16 +55,16 @@ automatisiertes CI/CD, `VERIFY-MULTIPLAYER`, `FE-SPIELREGELN-HILFE`, `FEAT-BUGRE
 
 ### Deploy-Strang (technisch, blockierend)
 
-1. **BUG-PROD-CHANGELOG** (behoben) — prod-Boot gegen echtes PG via DEPLOY-COMPOSE-SMOKE noch offen.
+1. **BUG-PROD-CHANGELOG** (behoben) — prod-Boot via DEPLOY-PLAIN-SMOKE verifiziert (PG 15 Sandbox; PG 17 Prod-Ziel).
 2. **DEPLOY-COMPOSE-SMOKE** — prod-Stack (`docker compose --profile prod`) real hochfahren,
    Liquibase gegen echtes Postgres 17 migrieren, eine Partie durchspielen.
-3. **DOC-ENV-DEPLOY** — `.env.example` + README für den Betrieb vervollständigen.
-4. **DEPLOY-OAUTH-SENTINEL** — „Mit Google anmelden" nur bei konfigurierten Credentials.
+3. **DOC-ENV-DEPLOY** (erledigt) — `.env.example` + README für den Betrieb vervollständigt.
+4. **DEPLOY-OAUTH-SENTINEL** (erledigt) — „Mit Google anmelden" nur bei konfigurierten Credentials.
 5. **CI/CD** — `CI-BUILD-TEST` → `CI-DOCKER-BUILD` → `CD-DEPLOY` (CD blockiert bis Plattformwahl).
 
 ### Produktreife & Specs
 
-6. **SPEC-SQL-REVIEW** — kritisches Schema-/SQL-Review **vor** der ersten echten DB: Normalformen,
+6. **SPEC-SQL-REVIEW** (erledigt — Sessions 26–128, REFACTOR-DB-1…10) — kritisches Schema-/SQL-Review **vor** der ersten echten DB: Normalformen,
    Audit-Spalten (`erstellt_am`/`geaendert_am` als `timestamptz`), Indizes, Constraints, Datentypen,
    JSONB-Strategie, Liquibase-Konsolidierung. Greenfield → jetzt sauber ziehbar. → `datenbankmodell.md`.
 7. **OPS-GRAFANA-MONITORING** — Grafana Cloud Free-Tier (Actuator + Micrometer + Prometheus).
@@ -72,7 +72,7 @@ automatisiertes CI/CD, `VERIFY-MULTIPLAYER`, `FE-SPIELREGELN-HILFE`, `FEAT-BUGRE
 7a. **OPS-LOGS-LOKI** — strukturierte JSON-Logs (MDC `tischId`/`partieId`/`correlationId`) nach
    Grafana Cloud Loki (Free, ~14 Tage Retention), per LogQL abfragbar. Versand via Alloy/Promtail-
    Sidecar. Retention begrenzt → relevante Ausschnitte für Tickets snapshotten.
-7b. **FEAT-BUGREPORT** — In-App-„Bug melden" mit redigiertem Session-Kontext → GitHub-Issue via
+7b. **FEAT-BUGREPORT** (erledigt — Shift+F1, GitHub-Issue via Server-Token, correlationId) — In-App-„Bug melden" mit redigiertem Session-Kontext → GitHub-Issue via
    server-seitigem Token, angereichert mit Log-Ausschnitt (correlationId) + Grafana-Deep-Link.
    Datenschutz/Redaktion kritisch (öffentliches vs. privates Issue-Repo). Sentry (Free, EU) als
    automatische Fehlererfassung empfohlen. GitHub-Issue-Templates mitnehmen. → eigene Spec `bugreport.md`.
@@ -92,17 +92,17 @@ automatisiertes CI/CD, `VERIFY-MULTIPLAYER`, `FE-SPIELREGELN-HILFE`, `FEAT-BUGRE
     (DSGVO) sind Pflicht**, AGB empfohlen. **Live-Blocker.** → eigene Spec `recht-impressum-datenschutz.md`.
 12. **OPS-EMAIL** — Email-Versand für Registrierungs-Verifizierung + Passwort-Reset (V2); EU-Anbieter
     (Brevo/Mailjet) oder SMTP. Kein Launch-Blocker. → Abschnitt in `authentifizierung.md`.
-13. **VERIFY-MULTIPLAYER** — E2E-Verifikation Mensch-gegen-Mensch über mehrere echte Sessions.
+13. **VERIFY-MULTIPLAYER** (erledigt — E2E grün, ≥2 unabhängige Sessions) — E2E-Verifikation Mensch-gegen-Mensch über mehrere echte Sessions.
     Laut `authentifizierung.md` der „Blocker für echten Multiplayer". Vor Live-Gang.
 
 ### Beta/Go-Live (Session 30, Teil 3)
 
-14. **BACKUP-DB** (M1) — automatische Postgres-Backups (`pg_dump`, rotierend, off-volume) +
-    verifizierter Restore. Aktuell **kein** Backup-Mechanismus; Beta-Daten erhalten → Pflicht ab Tag 1.
-15. **SESSION-PERSISTENZ** (M1) — `spring-session-jdbc`; Sessions liegen heute in-memory → Redeploys
-    loggen alle aus + Disconnect-Tracking wird zurückgesetzt.
-16. **OPS-COMPOSE-HARDENING** (M1) — `app`-Service `restart`-Policy + Healthcheck (fehlt; Postgres hat beides).
-17. **OPS-BUILD-INFO** (M1, klein) — `/actuator/info` mit Git-SHA/Version fürs Beta-Debugging.
+14. **BACKUP-DB** (Skript erledigt: `scripts/backup-db.sh`; Cron + Restore-Test: Vorbedingung MENSCH) — automatische Postgres-Backups (`pg_dump`, rotierend, off-volume) +
+    verifizierter Restore.
+15. **SESSION-PERSISTENZ** (erledigt — spring-session-jdbc) — Sessions überleben Redeploys;
+    Disconnect-Tracking bleibt erhalten.
+16. **OPS-COMPOSE-HARDENING** (erledigt) — `app`-Service `restart: unless-stopped` + Healthcheck.
+17. **OPS-BUILD-INFO** (erledigt) — `/actuator/info` mit Git-SHA/Version fürs Beta-Debugging.
 18. **FEAT-FEEDBACK** (M1, leicht) — „Feedback geben"-Link/Form für die Beta (leichter als FEAT-BUGREPORT).
 19. **SECURITY-REVIEW** (M1 empfohlen / M2 Pflicht) — vor öffentlicher Exposition: Auth/Rate-Limit, CORS,
     WS-`allowed-origins` (in prod auskommentiert!), Secrets, Cookie-Flags, OAuth-Redirect, CVEs.
@@ -137,18 +137,18 @@ automatisiertes CI/CD, `VERIFY-MULTIPLAYER`, `FE-SPIELREGELN-HILFE`, `FEAT-BUGRE
 ## Checklisten
 
 ### M1 — Closed Beta (locodoko.de, Daten erhalten)
-- [ ] BUG-PROD-CHANGELOG behoben, prod-Stack verifiziert
-- [ ] **Schema final (SPEC-SQL-REVIEW)** — vor M1, da Daten erhalten bleiben
-- [ ] Backups laufen + Restore getestet (14)
-- [ ] Session-Persistenz aktiv (15) — Redeploys loggen nicht aus
-- [ ] zock.locodoko.de + HTTPS aktiv, Google-OAuth-Redirect/WS-Origins gesetzt (WS-Upgrade im Proxy!)
-- [ ] app-Service restart/Healthcheck (16) + Build-Info (17); erster Deploy auf hosting.de
-- [ ] Feedback-Kanal (18); minimaler Datenschutzhinweis; SECURITY-REVIEW (19)
+- [x] BUG-PROD-CHANGELOG behoben, prod-Boot via DEPLOY-PLAIN-SMOKE verifiziert (PG 15 Sandbox; PG 17 Prod-Ziel)
+- [x] **Schema final (SPEC-SQL-REVIEW)** — erledigt (Sessions 26–128, REFACTOR-DB-1…10)
+- [~] Backup-Skript implementiert (`scripts/backup-db.sh`) ✓; Cron + Restore-Test ausstehend (MENSCH) (14)
+- [x] Session-Persistenz aktiv (15) — spring-session-jdbc, Redeploys loggen nicht aus
+- [ ] zock.locodoko.de + HTTPS aktiv, Google-OAuth-Redirect/WS-Origins gesetzt (WS-Upgrade im Proxy!) — DEPLOY-OAUTH-SENTINEL ✓, DOC-ENV-DEPLOY ✓; Domain/TLS ausstehend
+- [~] app-Service restart/Healthcheck (16) ✓ + Build-Info (17) ✓; erster Deploy auf hosting.de ausstehend
+- [~] Feedback-Kanal (FEAT-BUGREPORT ✓, Shift+F1) ✓; minimaler Datenschutzhinweis + SECURITY-REVIEW ausstehend (18/19)
 
 ### M2 — Public Go-Live (zusätzlich)
 - [ ] Impressum + Datenschutzerklärung + AGB veröffentlicht (11)
 - [ ] SECURITY-REVIEW vollständig, kritische Findings behoben (18)
 - [ ] Automatisiertes CI/CD (5)
-- [ ] Mensch-gegen-Mensch verifiziert (13)
+- [x] Mensch-gegen-Mensch verifiziert (13) — E2E grün
 - [ ] In-App-Spielregeln/Onboarding (19)
 - [ ] Lizenz entschieden
