@@ -4,9 +4,12 @@
 
 ## Notiz
 
-**DOC-FERTIGSTELLUNG-SYNC-2 abgeschlossen (2026-07-05, Ralph).** `specs/fertigstellung.md` M1- und M2-Checkliste korrigiert: SECURITY-REVIEW-PRE-M1 (S148b) als `[x]` eingetragen; Datum auf Session 150 aktualisiert. check_specs.py 0 Befunde.
+**S150 — Alle autonomen Tasks erledigt (2026-07-05, Ralph).**
 
-**Nächster Schritt: REFACTOR-BE-EREIGNISPUBLIKATION** — `veroeffentlicheAnsageEreignisse(TischEntity)` und `veroeffentlicheEinwurfEreignisse(TischEntity)` aus `SpielAktionsService.java` und `KiTischOrchestrator.java` in neue Klasse `TischEreignisPublikation.java` extrahieren. Ziel: beide Klassen unter 300 Zeilen, kein duplizierter Code.
+- **DOC-FERTIGSTELLUNG-SYNC-2:** `specs/fertigstellung.md` M1- und M2-Checkliste korrigiert (SECURITY-REVIEW-PRE-M1 → `[x]`). check_specs.py 0 Befunde.
+- **REFACTOR-BE-EREIGNISPUBLIKATION:** `veroeffentlicheAnsageEreignisse` + `veroeffentlicheEinwurfEreignisse` in neue Klasse `TischEreignisPublikation.java` (47 Z.) extrahiert. `SpielAktionsService.java` 379 → 349 Z., `KiTischOrchestrator.java` 315 → 285 Z. 503 Tests grün.
+
+**Sektion A leer.** Nächste Runde beginnt mit einem frischen Repo-Scan.
 
 ## Legende
 
@@ -22,7 +25,7 @@
 
 - [x] **DOC-FERTIGSTELLUNG-SYNC-2** (Doku/Spec, autonom, winzig) — `specs/fertigstellung.md` M1-Checkliste zeigt noch `[~] Feedback-Kanal ... SECURITY-REVIEW ausstehend`, obwohl SECURITY-REVIEW-PRE-M1 in S148b erledigt und archiviert ist. M2-Checkliste hat `[ ] SECURITY-REVIEW vollständig, kritische Findings behoben (18)` — ebenfalls falsch. **Fix:** M1-Zeile auf `[x]` (SECURITY-REVIEW erledigt, nur minimaler Datenschutzhinweis-Text noch MENSCH-seitig) korrigieren; M2-Checkliste `[ ] SECURITY-REVIEW` → `[x]`; Letztes-Update-Datum auf 2026-07-05 setzen. **Erste Datei zuerst:** `specs/fertigstellung.md`. **DoD:** Checklisten spiegeln Code-Stand; kein Widerspruch zu Archiv; `check_specs.py` 0 Befunde. **Risiko:** null (reine Doku).
 
-- [ ] **REFACTOR-BE-EREIGNISPUBLIKATION** (Backend/Refactoring, autonom, mittel) — `veroeffentlicheAnsageEreignisse(TischEntity)` und `veroeffentlicheEinwurfEreignisse(TischEntity)` sind wortidentisch in `SpielAktionsService.java` (378 Z.) und `KiTischOrchestrator.java` (314 Z.) — klassische DRY-Verletzung. Beide Dienste injizieren `TischEchtzeitService`, von dem diese Methoden abhängen. **Fix:** Neue package-private Klasse `de.locodoko.tisch.TischEreignisPublikation.java` einführen, die `TischEchtzeitService` injiziert und die beiden Methoden bereitstellt; `SpielAktionsService` und `KiTischOrchestrator` injizieren `TischEreignisPublikation` und rufen dorthin durch. Keine Logikänderung — reine Extraktion. **Erste Datei zuerst:** `SpielAktionsService.java` vollständig lesen, dann `KiTischOrchestrator.java` lesen, dann `TischEreignisPublikation` schreiben. **DoD:** `SpielAktionsService.java` < 300 Zeilen; `KiTischOrchestrator.java` < 300 Zeilen; keine Duplikation mehr; `mvn clean test` grün; Integrationstests des tisch-Moduls unverändert grün. **Risiko:** niedrig (gut getesteter Application Layer, keine Logikänderung).
+- [x] **REFACTOR-BE-EREIGNISPUBLIKATION** (Backend/Refactoring, autonom, mittel) — `veroeffentlicheAnsageEreignisse(TischEntity)` und `veroeffentlicheEinwurfEreignisse(TischEntity)` sind wortidentisch in `SpielAktionsService.java` (378 Z.) und `KiTischOrchestrator.java` (314 Z.) — klassische DRY-Verletzung. Beide Dienste injizieren `TischEchtzeitService`, von dem diese Methoden abhängen. **Fix:** Neue package-private Klasse `de.locodoko.tisch.TischEreignisPublikation.java` einführen, die `TischEchtzeitService` injiziert und die beiden Methoden bereitstellt; `SpielAktionsService` und `KiTischOrchestrator` injizieren `TischEreignisPublikation` und rufen dorthin durch. Keine Logikänderung — reine Extraktion. **Erste Datei zuerst:** `SpielAktionsService.java` vollständig lesen, dann `KiTischOrchestrator.java` lesen, dann `TischEreignisPublikation` schreiben. **DoD:** `SpielAktionsService.java` < 300 Zeilen; `KiTischOrchestrator.java` < 300 Zeilen; keine Duplikation mehr; `mvn clean test` grün; Integrationstests des tisch-Moduls unverändert grün. **Risiko:** niedrig (gut getesteter Application Layer, keine Logikänderung).
 
 ### Empfohlene Build-Reihenfolge (Block A — aktuelle Runde, Stand S150)
 

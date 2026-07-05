@@ -57,6 +57,7 @@ public class KiTischOrchestrator {
     private final TischEchtzeitService tischEchtzeitService;
     private final PartieLifecycleService partieLifecycleService;
     private final ApplicationEventPublisher eventPublisher;
+    private final TischEreignisPublikation tischEreignisPublikation;
 
     KiTischOrchestrator(
             KiOrchestrierungService kiOrchestrierungService,
@@ -64,13 +65,15 @@ public class KiTischOrchestrator {
             PartieRepository partieRepository,
             TischEchtzeitService tischEchtzeitService,
             PartieLifecycleService partieLifecycleService,
-            ApplicationEventPublisher eventPublisher) {
+            ApplicationEventPublisher eventPublisher,
+            TischEreignisPublikation tischEreignisPublikation) {
         this.kiOrchestrierungService = kiOrchestrierungService;
         this.tischRepository = tischRepository;
         this.partieRepository = partieRepository;
         this.tischEchtzeitService = tischEchtzeitService;
         this.partieLifecycleService = partieLifecycleService;
         this.eventPublisher = eventPublisher;
+        this.tischEreignisPublikation = tischEreignisPublikation;
     }
 
     @Transactional(propagation = Propagation.REQUIRES_NEW)
@@ -197,9 +200,9 @@ public class KiTischOrchestrator {
                 if (ergebnis.ereignisse().isEmpty()) {
                     // Vorbehalt-, Armut- oder Ansage-Aktion: Snapshot senden
                     if (ergebnis.naechsterStand().einwurfZaehler() > einwurfZaehlerVorher) {
-                        veroeffentlicheEinwurfEreignisse(tisch);
+                        tischEreignisPublikation.veroeffentlicheEinwurfEreignisse(tisch);
                     } else {
-                        veroeffentlicheAnsageEreignisse(tisch);
+                        tischEreignisPublikation.veroeffentlicheAnsageEreignisse(tisch);
                     }
                 } else {
                     veroeffentlicheKiEreignisse(tisch, ergebnis.ereignisse());
@@ -270,38 +273,6 @@ public class KiTischOrchestrator {
                             s.sessionId(),
                             "/queue/partie/" + tisch.partie().id(),
                             new PartieEreignisBatch(stand.version(), partieEreignisse)
-                    );
-                });
-    }
-
-    private void veroeffentlicheAnsageEreignisse(TischEntity tisch) {
-        if (tisch.partie() == null) {
-            return;
-        }
-        tisch.spieler().stream()
-                .filter(s -> !s.istKi() && !s.istKiUebernommen() && s.sessionId() != null)
-                .forEach(s -> {
-                    PartieStandAntwort stand = PartieStandAntwort.aus(tisch, s.id());
-                    tischEchtzeitService.planeAnBenutzer(
-                            s.sessionId(),
-                            "/queue/partie/" + tisch.partie().id(),
-                            new PartieEreignisBatch(stand.version(), List.of(PartieEreignisAntwort.ansageErfolgt(stand)))
-                    );
-                });
-    }
-
-    private void veroeffentlicheEinwurfEreignisse(TischEntity tisch) {
-        if (tisch.partie() == null) {
-            return;
-        }
-        tisch.spieler().stream()
-                .filter(s -> !s.istKi() && !s.istKiUebernommen() && s.sessionId() != null)
-                .forEach(s -> {
-                    PartieStandAntwort stand = PartieStandAntwort.aus(tisch, s.id());
-                    tischEchtzeitService.planeAnBenutzer(
-                            s.sessionId(),
-                            "/queue/partie/" + tisch.partie().id(),
-                            new PartieEreignisBatch(stand.version(), List.of(PartieEreignisAntwort.spielGestartet(stand)))
                     );
                 });
     }

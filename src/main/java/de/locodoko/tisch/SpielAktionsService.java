@@ -38,19 +38,22 @@ public class SpielAktionsService {
     private final ApplicationEventPublisher eventPublisher;
     private final TischEchtzeitService tischEchtzeitService;
     private final TischZugriff tischZugriff;
+    private final TischEreignisPublikation tischEreignisPublikation;
 
     public SpielAktionsService(
         TischRepository tischRepository,
         PartieRepository partieRepository,
         ApplicationEventPublisher eventPublisher,
         TischEchtzeitService tischEchtzeitService,
-        TischZugriff tischZugriff
+        TischZugriff tischZugriff,
+        TischEreignisPublikation tischEreignisPublikation
     ) {
         this.tischRepository = tischRepository;
         this.partieRepository = partieRepository;
         this.eventPublisher = eventPublisher;
         this.tischEchtzeitService = tischEchtzeitService;
         this.tischZugriff = tischZugriff;
+        this.tischEreignisPublikation = tischEreignisPublikation;
     }
 
     @Transactional(readOnly = true)
@@ -105,9 +108,9 @@ public class SpielAktionsService {
             }
             partieRepository.saveAndFlush(tisch.partie());
             if (laufendesSpiel.einwurfZaehler() > einwurfZaehlerVorher) {
-                veroeffentlicheEinwurfEreignisse(tisch);
+                tischEreignisPublikation.veroeffentlicheEinwurfEreignisse(tisch);
             } else {
-                veroeffentlicheAnsageEreignisse(tisch);
+                tischEreignisPublikation.veroeffentlicheAnsageEreignisse(tisch);
             }
             triggereKi(tisch);
             return PartieStandAntwort.aus(tisch, verwalteterSpieler.id());
@@ -141,9 +144,9 @@ public class SpielAktionsService {
             }
             partieRepository.saveAndFlush(tisch.partie());
             if (laufendesSpiel.einwurfZaehler() > einwurfZaehlerVorher) {
-                veroeffentlicheEinwurfEreignisse(tisch);
+                tischEreignisPublikation.veroeffentlicheEinwurfEreignisse(tisch);
             } else {
-                veroeffentlicheAnsageEreignisse(tisch);
+                tischEreignisPublikation.veroeffentlicheAnsageEreignisse(tisch);
             }
             triggereKi(tisch);
             return PartieStandAntwort.aus(tisch, verwalteterSpieler.id());
@@ -215,44 +218,12 @@ public class SpielAktionsService {
                 throw new SpielverwaltungKonfliktException("ANSAGE_UNGUELTIG", exception.getMessage());
             }
             partieRepository.saveAndFlush(tisch.partie());
-            veroeffentlicheAnsageEreignisse(tisch);
+            tischEreignisPublikation.veroeffentlicheAnsageEreignisse(tisch);
             triggereKi(tisch);
             return PartieStandAntwort.aus(tisch, verwalteterSpieler.id());
         } finally {
             MDC.clear();
         }
-    }
-
-    private void veroeffentlicheAnsageEreignisse(TischEntity tisch) {
-        if (tisch.partie() == null) {
-            return;
-        }
-        tisch.spieler().stream()
-            .filter(s -> !s.istKi() && !s.istKiUebernommen() && s.sessionId() != null)
-            .forEach(s -> {
-                PartieStandAntwort stand = PartieStandAntwort.aus(tisch, s.id());
-                tischEchtzeitService.planeAnBenutzer(
-                    s.sessionId(),
-                    "/queue/partie/" + tisch.partie().id(),
-                    new PartieEreignisBatch(stand.version(), List.of(PartieEreignisAntwort.ansageErfolgt(stand)))
-                );
-            });
-    }
-
-    private void veroeffentlicheEinwurfEreignisse(TischEntity tisch) {
-        if (tisch.partie() == null) {
-            return;
-        }
-        tisch.spieler().stream()
-            .filter(s -> !s.istKi() && !s.istKiUebernommen() && s.sessionId() != null)
-            .forEach(s -> {
-                PartieStandAntwort stand = PartieStandAntwort.aus(tisch, s.id());
-                tischEchtzeitService.planeAnBenutzer(
-                    s.sessionId(),
-                    "/queue/partie/" + tisch.partie().id(),
-                    new PartieEreignisBatch(stand.version(), List.of(PartieEreignisAntwort.spielGestartet(stand)))
-                );
-            });
     }
 
     private void veroeffentlicheSpielKarteEreignisse(TischEntity tisch, List<SpielEreignis> spielEreignisse) {

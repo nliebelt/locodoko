@@ -54,14 +54,16 @@ class KiTischOrchestratorTest {
         eventPublisher = new FakeEventPublisher();
         
         TischEchtzeitService tischEchtzeitService = new TischEchtzeitService(null, null, List.of());
-        
+        TischEreignisPublikation tischEreignisPublikation = new TischEreignisPublikation(tischEchtzeitService);
+
         orchestrator = new KiTischOrchestrator(
                 kiOrchestrierungService,
                 tischRepository,
                 partieRepository,
                 tischEchtzeitService,
                 partieLifecycleService,
-                eventPublisher
+                eventPublisher,
+                tischEreignisPublikation
         );
     }
 
