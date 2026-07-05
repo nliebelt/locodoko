@@ -1,12 +1,15 @@
 # IMPLEMENTATION_PLAN — Locodoko Doppelkopf
 
-> Stand: 2026-07-05 (Session 149). Erledigte Aufgaben → `IMPLEMENTATION_PLAN_ARCHIVE.md` (Sessions 1–148b archiviert).
+> Stand: 2026-07-05 (Session 150). Erledigte Aufgaben → `IMPLEMENTATION_PLAN_ARCHIVE.md` (Sessions 1–149 archiviert).
 
 ## Notiz
 
-**REFACTOR-BE-TISCHVERWALTUNGSSERVICE abgeschlossen (2026-07-05, Ralph).** `TischVerwaltungsService.java` von 465 auf 222 Zeilen reduziert (−52 %). Partie-Lifecycle-Methoden (`starteTisch`, `starteNeuePartie`, `starteNeuePartieAutomat`, `schnellEinsteigen`) in neuen `TischPartieService.java` (275 Z.) extrahiert. `TischController` delegiert Partie-Aktionen an `TischPartieService`. `PartieCountdownService` injiziert nun `TischPartieService` statt `TischVerwaltungsService` — zirkuläre Abhängigkeit aufgelöst, `@Lazy` entfernt. Alle 503 Tests grün.
+**S150 — Repo-Scan-Ergebnisse.** check_specs.py: 0 Befunde. BE 503 Tests, FE 478 Tests — beide grün. Zwei neue autonome Tasks identifiziert:
 
-**Alle autonomen Tasks in Sektion A erledigt.**
+1. `veroeffentlicheAnsageEreignisse(TischEntity)` und `veroeffentlicheEinwurfEreignisse(TischEntity)` sind wortidentisch in `SpielAktionsService.java` (378 Z.) und `KiTischOrchestrator.java` (314 Z.) → DRY-Verletzung → **REFACTOR-BE-EREIGNISPUBLIKATION**.
+2. `specs/fertigstellung.md` M1/M2-Checkliste: SECURITY-REVIEW als „ausstehend" gelistet, obwohl in S148b archiviert (SECURITY-REVIEW-PRE-M1) → **DOC-FERTIGSTELLUNG-SYNC-2**.
+
+Verteidigte Kandidaten über 300 Zeilen (kein Handlungsbedarf): `Spielregeln.java` (438 — Value Object Builder, idiomatisch), `JsonbConverter.java` (500 — bereits 915→500, Restzeilen notwendiger Boilerplate), `PartieStandAntwort.java` (529 — Snapshot-DTO, laut S148-Review „Preis des Snapshot-in-Event-Modells"), `Partie.java` (471) + `Spiel.java` (542 — Aggregate, verteidigt).
 
 ## Legende
 
@@ -18,28 +21,19 @@
 
 ## A) Offene autonome Tasks (Ralph — kein MENSCH nötig)
 
-> Geerdet am Repo-Scan S149: Code sauber (check_specs.py 0 Befunde, Lint grün, 503 BE-Tests, 478 FE-Tests). Das sind die realen offenen Hebel. **Pro Task ein Commit**, `mvn clean test` / `npm test && npm run build && npm run lint` grün.
+> Geerdet am Repo-Scan S150: Code sauber (check_specs.py 0 Befunde, Lint grün, 503 BE-Tests, 478 FE-Tests). **Pro Task ein Commit**, `mvn clean test` / `npm test && npm run build && npm run lint` grün.
 
-- [x] **OPS-SOURCEMAP-PROD** (Frontend/Ops, autonom, winzig — deploy-nah) — `vite.config.ts` baut aktuell mit `sourcemap: 'hidden'`; die ~10,9-MB-`.map`-Dateien landen in `dist/` und sind im öffentlich servierten Verzeichnis per URL-Raten abrufbar (Quellcode-Exposure, Review-Notiz S126/S148 F2). **Fix:** In `frontend/vite.config.ts` die Prod-Build-Konfiguration auf `sourcemap: false` setzen, damit keine `.map`-Dateien nach `dist/` geschrieben werden. Sentry-Upload (braucht DSN = MENSCH) ist erst mit OBS-SENTRY-Aktivierung relevant — bis dahin `false`. **Erste Datei zuerst:** `frontend/vite.config.ts`. **DoD:** `npm run build` erzeugt keine `.map`-Dateien in `dist/`; `npm test && npm run build && npm run lint` grün. **Risiko:** minimal (reine Build-Konfiguration).
+- [ ] **DOC-FERTIGSTELLUNG-SYNC-2** (Doku/Spec, autonom, winzig) — `specs/fertigstellung.md` M1-Checkliste zeigt noch `[~] Feedback-Kanal ... SECURITY-REVIEW ausstehend`, obwohl SECURITY-REVIEW-PRE-M1 in S148b erledigt und archiviert ist. M2-Checkliste hat `[ ] SECURITY-REVIEW vollständig, kritische Findings behoben (18)` — ebenfalls falsch. **Fix:** M1-Zeile auf `[x]` (SECURITY-REVIEW erledigt, nur minimaler Datenschutzhinweis-Text noch MENSCH-seitig) korrigieren; M2-Checkliste `[ ] SECURITY-REVIEW` → `[x]`; Letztes-Update-Datum auf 2026-07-05 setzen. **Erste Datei zuerst:** `specs/fertigstellung.md`. **DoD:** Checklisten spiegeln Code-Stand; kein Widerspruch zu Archiv; `check_specs.py` 0 Befunde. **Risiko:** null (reine Doku).
 
-- [x] **TEST-BE-STATISTIK-FLAKINESS** (Backend/Test, autonom, klein) — `SpielerStatistikIntegrationTest.zweiRegelvarianten_erstellenJeweiligeStatistikZeilen` schlägt im parallelen Gesamtlauf gelegentlich fehl (`Expected size: 2 but was: 1`), im isolierten Lauf stets grün (Entdeckung S149). Ursache: asynchrone `SpielBeendet`-Events treffen unter Last aufeinander; 5-Sekunden-Await reicht manchmal nicht. **Fix-Optionen (in dieser Reihenfolge probieren):** (a) Await-Timeout auf 10–15 s erhöhen; (b) `@DirtiesContext` oder `@Sql`-Isolation ergänzen; (c) `@Execution(SAME_THREAD)` für den Test. **Erste Datei zuerst:** `SpielerStatistikIntegrationTest.java` lesen, Await-Stelle identifizieren. **DoD:** `mvn clean test` fünf aufeinanderfolgende Läufe ohne Flakiness; Kommentar erklärt gewählte Lösung. **Risiko:** niedrig (isoliert, kein Produktionspfad berührt).
+- [ ] **REFACTOR-BE-EREIGNISPUBLIKATION** (Backend/Refactoring, autonom, mittel) — `veroeffentlicheAnsageEreignisse(TischEntity)` und `veroeffentlicheEinwurfEreignisse(TischEntity)` sind wortidentisch in `SpielAktionsService.java` (378 Z.) und `KiTischOrchestrator.java` (314 Z.) — klassische DRY-Verletzung. Beide Dienste injizieren `TischEchtzeitService`, von dem diese Methoden abhängen. **Fix:** Neue package-private Klasse `de.locodoko.tisch.TischEreignisPublikation.java` einführen, die `TischEchtzeitService` injiziert und die beiden Methoden bereitstellt; `SpielAktionsService` und `KiTischOrchestrator` injizieren `TischEreignisPublikation` und rufen dorthin durch. Keine Logikänderung — reine Extraktion. **Erste Datei zuerst:** `SpielAktionsService.java` vollständig lesen, dann `KiTischOrchestrator.java` lesen, dann `TischEreignisPublikation` schreiben. **DoD:** `SpielAktionsService.java` < 300 Zeilen; `KiTischOrchestrator.java` < 300 Zeilen; keine Duplikation mehr; `mvn clean test` grün; Integrationstests des tisch-Moduls unverändert grün. **Risiko:** niedrig (gut getesteter Application Layer, keine Logikänderung).
 
-- [x] **DOC-FERTIGSTELLUNG-SYNC** (Doku/Spec, autonom, winzig) — `specs/fertigstellung.md` M1-Checkliste stimmt nicht mehr mit dem Code-Stand überein: SESSION-PERSISTENZ, OPS-COMPOSE-HARDENING, OPS-BUILD-INFO, FEAT-BUGREPORT, DEPLOY-OAUTH-SENTINEL, DOC-ENV-DEPLOY, VERIFY-MULTIPLAYER und das BACKUP-DB-Skript (`scripts/backup-db.sh`) wurden in früheren Sessions implementiert und gelten als erledigt — stehen aber noch als offene `[ ]`-Items. Außerdem: BUG-PROD-CHANGELOG-Zeile auf „prod-Boot via DEPLOY-PLAIN-SMOKE verifiziert (PG 15 Sandbox; PG 17 Prod-Ziel)" aktualisieren; SPEC-SQL-REVIEW-Eintrag abgleichen (war in Sessions 26–128 bereits erledigt, laut Archiv: REFACTOR-DB-1…10); Letztes-Update-Datum anpassen. **Erste Datei zuerst:** `specs/fertigstellung.md`. **DoD:** M1-Checkliste spiegelt den aktuellen Code-Stand; kein Widerspruch zu Plan oder Archiv; `check_specs.py` 0 Befunde. **Risiko:** null (reine Doku).
-
-- [x] **REFACTOR-BE-STANDARDKISTRATEGIE** (Backend/Refactoring, autonom, mittel) — `src/main/java/de/locodoko/ki/StandardKiStrategie.java` hat **504 Zeilen** (über dem 300-Zeilen-Richtwert, S148 Radar). Die Klasse enthält zwei große Kartenwahlmethoden (`waehleAnspielKarte` ab Z. 141 und `waehleFolgeKarte` ab Z. 178) mit komplexen Bewertungslogiken sowie mehrere private Solo-Bewertungs-Hilfsmethoden. **Fix:** Bewertungslogik in package-private Hilfsklassen auslagern: `KiAnspielBewerter.java` (Anspiel-Strategie: `waehleAnspielKarte` + zugehörige Methoden) und `KiFolgeBewerter.java` (Folge-Strategie: `waehleFolgeKarte` + `gewinnendeKarten`, `vergleicheGewinnKosten`, `vergleicheAbwurfKosten`); `StandardKiStrategie` reduziert sich auf Delegations-Klasse + `handstaerke`/`ansageSchwelle`/`soloWert`. Keine Logikänderung — reine Extraktion. **Erste Datei zuerst:** `StandardKiStrategie.java` vollständig lesen, dann Extraktion. **DoD:** `StandardKiStrategie.java` deutlich unter 200 Zeilen; Gesamt-Logik aller neuen Klassen zusammen unter 600 Zeilen; `mvn clean test` grün; KI-Modul-Coverage unverändert. **Risiko:** niedrig-mittel (KI-Logik ist gut getestet, 91 % Coverage im ki-Modul).
-
-- [x] **REFACTOR-BE-TISCHVERWALTUNGSSERVICE** (Backend/Refactoring, autonom, mittel) — `src/main/java/de/locodoko/tisch/TischVerwaltungsService.java` hat **465 Zeilen** (über dem Richtwert, S148 Radar). **Fix:** Datei vollständig lesen, Verantwortlichkeiten identifizieren und sinnvoll trennen (z.B. Tisch-Erstellung/Konfiguration vs. Tisch-Lifecycle-Management/Teilnehmer-Verwaltung). Keine Logikänderung. **Erste Datei zuerst:** `TischVerwaltungsService.java` vollständig lesen, bevor irgend etwas extrahiert wird. **DoD:** Service deutlich unter 300 Zeilen; `mvn clean test` grün; Integrationstests der tisch-Module unverändert grün. **Risiko:** mittel (Application Layer, Integrationstests vorhanden).
-
-### Empfohlene Build-Reihenfolge (Block A — aktuelle Runde, Stand S149)
+### Empfohlene Build-Reihenfolge (Block A — aktuelle Runde, Stand S150)
 
 > Nimm den **obersten noch offenen** Task. Alle autonom. Diese Sektion ist die EINZIGE
 > Build-Reihenfolge — alte Runden-Sektionen werden beim Plan-Scan entfernt.
 
-1. **OPS-SOURCEMAP-PROD** (winzig, deploy-nah — sofort sinnvoll)
-2. **TEST-BE-STATISTIK-FLAKINESS** (klein, CI-Stabilität)
-3. **DOC-FERTIGSTELLUNG-SYNC** (winzig, Doku)
-4. **REFACTOR-BE-STANDARDKISTRATEGIE** (mittel)
-5. **REFACTOR-BE-TISCHVERWALTUNGSSERVICE** (mittel)
+1. **DOC-FERTIGSTELLUNG-SYNC-2** (winzig, Doku)
+2. **REFACTOR-BE-EREIGNISPUBLIKATION** (mittel, Backend)
 
 ---
 
@@ -91,13 +85,15 @@
 
 ## Entdeckungen
 
-- **S149 — Flakiger Integrationstest:** `SpielerStatistikIntegrationTest.zweiRegelvarianten_erstellenJeweiligeStatistikZeilen` schlägt im parallelen Gesamtlauf (503 Tests) gelegentlich fehl (`Expected size: 2 but was: 1`). Ursache: Timing bei asynchronen SpielBeendet-Events. Pre-existent (tritt auch ohne Änderungen auf). → **TEST-BE-STATISTIK-FLAKINESS**.
+- **S150 — DRY-Verletzung Ereignispublikation:** `veroeffentlicheAnsageEreignisse(TischEntity)` und `veroeffentlicheEinwurfEreignisse(TischEntity)` sind wortidentisch in `SpielAktionsService.java` (378 Z.) und `KiTischOrchestrator.java` (314 Z.). Extraktion in `TischEreignisPublikation.java` bringt beide Dateien unter 300 Zeilen. → **REFACTOR-BE-EREIGNISPUBLIKATION**.
 
-- **S148 — Radar, keine eigenen Tasks:** (a) `AppStore.snapshot()` macht `structuredClone` des Gesamtzustands pro Listener-Benachrichtigung — bei aktueller Spielgröße unkritisch; wird erster FE-Hotspot, falls Protokoll/Historie im Zustand wächst. (b) Nach REFACTOR-BE-JSONB-CONVERTER sind `StandardKiStrategie.java` (504 Z.) und `TischVerwaltungsService.java` (465 Z.) die nächsten Kandidaten über dem 300-Zeilen-Richtwert. → **REFACTOR-BE-STANDARDKISTRATEGIE** + **REFACTOR-BE-TISCHVERWALTUNGSSERVICE**. (c) Sourcemaps in `dist/` öffentlich abrufbar (F2 S126). → **OPS-SOURCEMAP-PROD**.
+- **S150 — Checklisten-Drift fertigstellung.md:** M1- und M2-Checkliste listen SECURITY-REVIEW noch als offen, obwohl in S148b erledigt (SECURITY-REVIEW-PRE-M1 archiviert). → **DOC-FERTIGSTELLUNG-SYNC-2**.
 
-- **S148 — DEPLOY-PLAIN-SMOKE Delta-Notiz:** Sandbox-Postgres war PG 15, Prod-Ziel PG 17. Kein Breaking Change bekannt — Vorbehalt bis DEPLOY-COMPOSE-SMOKE (echtes PG 17) verifiziert ist.
+- **S150 — Verteidigte Übergrößen (Radar, kein Handlungsbedarf):** `Spielregeln.java` (438) ist Value-Object-Builder mit idiomatischem Pattern; `JsonbConverter.java` (500) wurde von 915 auf 500 gebracht und enthält notwendigen Boilerplate; `PartieStandAntwort.java` (529) ist Snapshot-DTO; `Partie.java` (471) + `Spiel.java` (542) sind Aggregate — alle verteidigt.
 
-- **Review-Notizen S126 (akzeptierte Restrisiken, keine eigenen Tasks):**
+- **S149 — Flakiger Integrationstest (behoben):** `SpielerStatistikIntegrationTest.zweiRegelvarianten_erstellenJeweiligeStatistikZeilen` — 15s-Timeout + Zwischenawait. → TEST-BE-STATISTIK-FLAKINESS (erledigt).
+
+- **S148 — Review-Notizen S126 (akzeptierte Restrisiken, keine eigenen Tasks):**
   - **B2/B3 (low):** `VerbindungsabbruchService` — TOCTOU zwischen `computeIfPresent`/`containsKey`. Single-Instance-Betrieb → praktisch irrelevant; bei Bedarf atomare `compute`-Operation.
   - **F3 (kosmetisch):** Gemergtes Passwort-Konto behält `authentifizierungsMethode=PASSWORT` statt korrekt. Gatet nichts Sensibles — nur Anzeige leicht ungenau.
   - **F4 (a11y):** `installiereDialogA11y`-Fokus-Trap lenkt Tab nur bei exaktem Fokus auf erstem/letztem Element um. In der Praxis ok. Optional härten.
@@ -106,7 +102,7 @@
 
 ## Meilensteine
 
-- **M1 — Closed Beta** auf `zock.locodoko.de` (eingeladene Kollegen, Daten erhalten). Autonom offen: OPS-SOURCEMAP-PROD + TEST-BE-STATISTIK-FLAKINESS. Block B: BACKUP-DB-CRON / OPS-DOMAIN / OAuth-Credentials (MENSCH). Block C: DECISION-DEPLOY-VARIANTE.
+- **M1 — Closed Beta** auf `zock.locodoko.de` (eingeladene Kollegen, Daten erhalten). Autonom offen: DOC-FERTIGSTELLUNG-SYNC-2 + REFACTOR-BE-EREIGNISPUBLIKATION. Block B: BACKUP-DB-CRON / OPS-DOMAIN / OAuth-Credentials (MENSCH). Block C: DECISION-DEPLOY-VARIANTE.
 - **M2 — Public Go-Live:** Rechtstexte live schalten (`specs/recht-impressum-datenschutz.md` fertig, Platzhalter füllen), CI/CD automatisiert (CI-DOCKER-BUILD → CD-DEPLOY), DECISION-LIZENZ, SEC-CSP.
 
 ---

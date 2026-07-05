@@ -45,6 +45,18 @@
 
 ---
 
+## Archiviert am 2026-07-05 (Session 149 — OPS, Test-Stabilität, Doku, Refactoring)
+
+> Slim-Down des aktiven Plans (Session 150). Alle unten gelisteten Tasks sind **erledigt** (`[x]`, Code + Tests grün, committet).
+
+- **OPS-SOURCEMAP-PROD** — `frontend/vite.config.ts` `sourcemap: false`; keine `.map`-Dateien in `dist/`.
+- **TEST-BE-STATISTIK-FLAKINESS** — `SpielerStatistikIntegrationTest`: Zwischenawait + 15s-Timeout; Flakiness beseitigt.
+- **DOC-FERTIGSTELLUNG-SYNC** — `specs/fertigstellung.md` M1-Checkliste auf Code-Stand (SESSION-PERSISTENZ, OPS-COMPOSE-HARDENING, OPS-BUILD-INFO, FEAT-BUGREPORT, DEPLOY-OAUTH-SENTINEL, DOC-ENV-DEPLOY, VERIFY-MULTIPLAYER, BACKUP-DB-Skript, SPEC-SQL-REVIEW, BUG-PROD-CHANGELOG) aktualisiert.
+- **REFACTOR-BE-STANDARDKISTRATEGIE** — `StandardKiStrategie.java` 504 → 195 Zeilen (−61 %); `KiAnspielBewerter.java` + `KiFolgeBewerter.java` extrahiert.
+- **REFACTOR-BE-TISCHVERWALTUNGSSERVICE** — `TischVerwaltungsService.java` 465 → 222 Zeilen (−52 %); `TischPartieService.java` (275 Z.) extrahiert; `@Lazy`-zirkuläre Abhängigkeit aufgelöst.
+
+---
+
 ## Archiviert am 2026-06-15 (Sessions 26–128 — Fertigstellung Öffentlicher Betrieb, Vision-Loop, Reviews)
 
 > Slim-Down des aktiven Plans (Session 128). Alle unten gelisteten Tasks sind **erledigt** (`[x]`, Code + Tests grün, committet). Volldetail zu jedem Task in der Git-History des `IMPLEMENTATION_PLAN.md`. Im aktiven Plan verblieben nur noch die offenen autonomen M)-Tasks + die MENSCH-/User-gebundenen Deploy-/Entscheidungs-Tasks.
