@@ -4,12 +4,9 @@
 
 ## Notiz
 
-**S150 — Repo-Scan-Ergebnisse.** check_specs.py: 0 Befunde. BE 503 Tests, FE 478 Tests — beide grün. Zwei neue autonome Tasks identifiziert:
+**DOC-FERTIGSTELLUNG-SYNC-2 abgeschlossen (2026-07-05, Ralph).** `specs/fertigstellung.md` M1- und M2-Checkliste korrigiert: SECURITY-REVIEW-PRE-M1 (S148b) als `[x]` eingetragen; Datum auf Session 150 aktualisiert. check_specs.py 0 Befunde.
 
-1. `veroeffentlicheAnsageEreignisse(TischEntity)` und `veroeffentlicheEinwurfEreignisse(TischEntity)` sind wortidentisch in `SpielAktionsService.java` (378 Z.) und `KiTischOrchestrator.java` (314 Z.) → DRY-Verletzung → **REFACTOR-BE-EREIGNISPUBLIKATION**.
-2. `specs/fertigstellung.md` M1/M2-Checkliste: SECURITY-REVIEW als „ausstehend" gelistet, obwohl in S148b archiviert (SECURITY-REVIEW-PRE-M1) → **DOC-FERTIGSTELLUNG-SYNC-2**.
-
-Verteidigte Kandidaten über 300 Zeilen (kein Handlungsbedarf): `Spielregeln.java` (438 — Value Object Builder, idiomatisch), `JsonbConverter.java` (500 — bereits 915→500, Restzeilen notwendiger Boilerplate), `PartieStandAntwort.java` (529 — Snapshot-DTO, laut S148-Review „Preis des Snapshot-in-Event-Modells"), `Partie.java` (471) + `Spiel.java` (542 — Aggregate, verteidigt).
+**Nächster Schritt: REFACTOR-BE-EREIGNISPUBLIKATION** — `veroeffentlicheAnsageEreignisse(TischEntity)` und `veroeffentlicheEinwurfEreignisse(TischEntity)` aus `SpielAktionsService.java` und `KiTischOrchestrator.java` in neue Klasse `TischEreignisPublikation.java` extrahieren. Ziel: beide Klassen unter 300 Zeilen, kein duplizierter Code.
 
 ## Legende
 
@@ -23,7 +20,7 @@ Verteidigte Kandidaten über 300 Zeilen (kein Handlungsbedarf): `Spielregeln.jav
 
 > Geerdet am Repo-Scan S150: Code sauber (check_specs.py 0 Befunde, Lint grün, 503 BE-Tests, 478 FE-Tests). **Pro Task ein Commit**, `mvn clean test` / `npm test && npm run build && npm run lint` grün.
 
-- [ ] **DOC-FERTIGSTELLUNG-SYNC-2** (Doku/Spec, autonom, winzig) — `specs/fertigstellung.md` M1-Checkliste zeigt noch `[~] Feedback-Kanal ... SECURITY-REVIEW ausstehend`, obwohl SECURITY-REVIEW-PRE-M1 in S148b erledigt und archiviert ist. M2-Checkliste hat `[ ] SECURITY-REVIEW vollständig, kritische Findings behoben (18)` — ebenfalls falsch. **Fix:** M1-Zeile auf `[x]` (SECURITY-REVIEW erledigt, nur minimaler Datenschutzhinweis-Text noch MENSCH-seitig) korrigieren; M2-Checkliste `[ ] SECURITY-REVIEW` → `[x]`; Letztes-Update-Datum auf 2026-07-05 setzen. **Erste Datei zuerst:** `specs/fertigstellung.md`. **DoD:** Checklisten spiegeln Code-Stand; kein Widerspruch zu Archiv; `check_specs.py` 0 Befunde. **Risiko:** null (reine Doku).
+- [x] **DOC-FERTIGSTELLUNG-SYNC-2** (Doku/Spec, autonom, winzig) — `specs/fertigstellung.md` M1-Checkliste zeigt noch `[~] Feedback-Kanal ... SECURITY-REVIEW ausstehend`, obwohl SECURITY-REVIEW-PRE-M1 in S148b erledigt und archiviert ist. M2-Checkliste hat `[ ] SECURITY-REVIEW vollständig, kritische Findings behoben (18)` — ebenfalls falsch. **Fix:** M1-Zeile auf `[x]` (SECURITY-REVIEW erledigt, nur minimaler Datenschutzhinweis-Text noch MENSCH-seitig) korrigieren; M2-Checkliste `[ ] SECURITY-REVIEW` → `[x]`; Letztes-Update-Datum auf 2026-07-05 setzen. **Erste Datei zuerst:** `specs/fertigstellung.md`. **DoD:** Checklisten spiegeln Code-Stand; kein Widerspruch zu Archiv; `check_specs.py` 0 Befunde. **Risiko:** null (reine Doku).
 
 - [ ] **REFACTOR-BE-EREIGNISPUBLIKATION** (Backend/Refactoring, autonom, mittel) — `veroeffentlicheAnsageEreignisse(TischEntity)` und `veroeffentlicheEinwurfEreignisse(TischEntity)` sind wortidentisch in `SpielAktionsService.java` (378 Z.) und `KiTischOrchestrator.java` (314 Z.) — klassische DRY-Verletzung. Beide Dienste injizieren `TischEchtzeitService`, von dem diese Methoden abhängen. **Fix:** Neue package-private Klasse `de.locodoko.tisch.TischEreignisPublikation.java` einführen, die `TischEchtzeitService` injiziert und die beiden Methoden bereitstellt; `SpielAktionsService` und `KiTischOrchestrator` injizieren `TischEreignisPublikation` und rufen dorthin durch. Keine Logikänderung — reine Extraktion. **Erste Datei zuerst:** `SpielAktionsService.java` vollständig lesen, dann `KiTischOrchestrator.java` lesen, dann `TischEreignisPublikation` schreiben. **DoD:** `SpielAktionsService.java` < 300 Zeilen; `KiTischOrchestrator.java` < 300 Zeilen; keine Duplikation mehr; `mvn clean test` grün; Integrationstests des tisch-Moduls unverändert grün. **Risiko:** niedrig (gut getesteter Application Layer, keine Logikänderung).
 

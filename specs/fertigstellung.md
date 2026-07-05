@@ -4,7 +4,7 @@
 |----------------|-------------------------------------------------------------|
 | Status         | Aktive Vorgabe — Roadmap (lebendes Dokument)                |
 | Priorität      | Hoch                                                        |
-| Letztes Update | 2026-07-05 (Session 149)                                    |
+| Letztes Update | 2026-07-05 (Session 150)                                    |
 | Abhängigkeiten | architektur.md, authentifizierung.md, datenbankmodell.md    |
 
 ## Zweck
@@ -143,11 +143,11 @@ automatisiertes CI/CD, `VERIFY-MULTIPLAYER`, `FE-SPIELREGELN-HILFE`, `FEAT-BUGRE
 - [x] Session-Persistenz aktiv (15) — spring-session-jdbc, Redeploys loggen nicht aus
 - [ ] zock.locodoko.de + HTTPS aktiv, Google-OAuth-Redirect/WS-Origins gesetzt (WS-Upgrade im Proxy!) — DEPLOY-OAUTH-SENTINEL ✓, DOC-ENV-DEPLOY ✓; Domain/TLS ausstehend
 - [~] app-Service restart/Healthcheck (16) ✓ + Build-Info (17) ✓; erster Deploy auf hosting.de ausstehend
-- [~] Feedback-Kanal (FEAT-BUGREPORT ✓, Shift+F1) ✓; minimaler Datenschutzhinweis + SECURITY-REVIEW ausstehend (18/19)
+- [x] Feedback-Kanal (FEAT-BUGREPORT ✓, Shift+F1) ✓; SECURITY-REVIEW ✓ (SECURITY-REVIEW-PRE-M1, S148b); minimaler Datenschutzhinweis ausstehend (MENSCH) (18/19)
 
 ### M2 — Public Go-Live (zusätzlich)
 - [ ] Impressum + Datenschutzerklärung + AGB veröffentlicht (11)
-- [ ] SECURITY-REVIEW vollständig, kritische Findings behoben (18)
+- [x] SECURITY-REVIEW vollständig, kritische Findings behoben (18) — SECURITY-REVIEW-PRE-M1 erledigt (S148b)
 - [ ] Automatisiertes CI/CD (5)
 - [x] Mensch-gegen-Mensch verifiziert (13) — E2E grün
 - [ ] In-App-Spielregeln/Onboarding (19)
