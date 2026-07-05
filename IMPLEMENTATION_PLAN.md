@@ -8,6 +8,8 @@
 
 **Neue Runde (Session 149).** Schwerpunkte: deploy-nahe Ops-Tasks (Sourcemaps), Test-Stabilität, Doku-Sync, Refactoring der verbleibenden Größen-Kandidaten.
 
+**OPS-SOURCEMAP-PROD abgeschlossen (2026-07-05, Ralph).** `vite.config.ts`: `sourcemap: 'hidden'` → `false`. `npm run build` erzeugt keine `.map`-Dateien mehr in `dist/` (0 Treffer via `find`). 478 FE-Tests + Build + Lint grün. Nächster Task: TEST-BE-STATISTIK-FLAKINESS.
+
 **check_specs.py (S149):** 0 tote Referenzen in 55 Spec-Dateien — sauber.
 
 ## Legende
@@ -22,7 +24,7 @@
 
 > Geerdet am Repo-Scan S149: Code sauber (check_specs.py 0 Befunde, Lint grün, 503 BE-Tests, 478 FE-Tests). Das sind die realen offenen Hebel. **Pro Task ein Commit**, `mvn clean test` / `npm test && npm run build && npm run lint` grün.
 
-- [ ] **OPS-SOURCEMAP-PROD** (Frontend/Ops, autonom, winzig — deploy-nah) — `vite.config.ts` baut aktuell mit `sourcemap: 'hidden'`; die ~10,9-MB-`.map`-Dateien landen in `dist/` und sind im öffentlich servierten Verzeichnis per URL-Raten abrufbar (Quellcode-Exposure, Review-Notiz S126/S148 F2). **Fix:** In `frontend/vite.config.ts` die Prod-Build-Konfiguration auf `sourcemap: false` setzen, damit keine `.map`-Dateien nach `dist/` geschrieben werden. Sentry-Upload (braucht DSN = MENSCH) ist erst mit OBS-SENTRY-Aktivierung relevant — bis dahin `false`. **Erste Datei zuerst:** `frontend/vite.config.ts`. **DoD:** `npm run build` erzeugt keine `.map`-Dateien in `dist/`; `npm test && npm run build && npm run lint` grün. **Risiko:** minimal (reine Build-Konfiguration).
+- [x] **OPS-SOURCEMAP-PROD** (Frontend/Ops, autonom, winzig — deploy-nah) — `vite.config.ts` baut aktuell mit `sourcemap: 'hidden'`; die ~10,9-MB-`.map`-Dateien landen in `dist/` und sind im öffentlich servierten Verzeichnis per URL-Raten abrufbar (Quellcode-Exposure, Review-Notiz S126/S148 F2). **Fix:** In `frontend/vite.config.ts` die Prod-Build-Konfiguration auf `sourcemap: false` setzen, damit keine `.map`-Dateien nach `dist/` geschrieben werden. Sentry-Upload (braucht DSN = MENSCH) ist erst mit OBS-SENTRY-Aktivierung relevant — bis dahin `false`. **Erste Datei zuerst:** `frontend/vite.config.ts`. **DoD:** `npm run build` erzeugt keine `.map`-Dateien in `dist/`; `npm test && npm run build && npm run lint` grün. **Risiko:** minimal (reine Build-Konfiguration).
 
 - [ ] **TEST-BE-STATISTIK-FLAKINESS** (Backend/Test, autonom, klein) — `SpielerStatistikIntegrationTest.zweiRegelvarianten_erstellenJeweiligeStatistikZeilen` schlägt im parallelen Gesamtlauf gelegentlich fehl (`Expected size: 2 but was: 1`), im isolierten Lauf stets grün (Entdeckung S149). Ursache: asynchrone `SpielBeendet`-Events treffen unter Last aufeinander; 5-Sekunden-Await reicht manchmal nicht. **Fix-Optionen (in dieser Reihenfolge probieren):** (a) Await-Timeout auf 10–15 s erhöhen; (b) `@DirtiesContext` oder `@Sql`-Isolation ergänzen; (c) `@Execution(SAME_THREAD)` für den Test. **Erste Datei zuerst:** `SpielerStatistikIntegrationTest.java` lesen, Await-Stelle identifizieren. **DoD:** `mvn clean test` fünf aufeinanderfolgende Läufe ohne Flakiness; Kommentar erklärt gewählte Lösung. **Risiko:** niedrig (isoliert, kein Produktionspfad berührt).
 

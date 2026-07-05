@@ -21,7 +21,7 @@ export default defineConfig(() => {
     },
     build: {
       outDir: 'dist',
-      sourcemap: 'hidden' as const,
+      sourcemap: false,
       emptyOutDir: true,
       // Phaser 3 ist als Engine monolithisch (~1,48 MB / ~340 kB gzip) und nicht weiter aufteilbar.
       // Szenen werden von Phaser synchron beim Start registriert — Lazy-Loading-Splitting ohne
