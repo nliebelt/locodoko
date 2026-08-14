@@ -45,6 +45,15 @@
 
 ---
 
+## Archiviert am 2026-07-05 (Session 150 — Ereignispublikation-Refactoring, Doku-Sync)
+
+> Slim-Down des aktiven Plans (Session 151). Alle unten gelisteten Tasks sind **erledigt** (`[x]`, Code + Tests grün, committet).
+
+- **DOC-FERTIGSTELLUNG-SYNC-2** — `specs/fertigstellung.md` M1- und M2-Checkliste: SECURITY-REVIEW-Drift korrigiert (SECURITY-REVIEW-PRE-M1 aus S148b → `[x]`); check_specs.py 0 Befunde.
+- **REFACTOR-BE-EREIGNISPUBLIKATION** — `veroeffentlicheAnsageEreignisse` + `veroeffentlicheEinwurfEreignisse` (wortidentisch in zwei Klassen) in neue Klasse `TischEreignisPublikation.java` (47 Z.) extrahiert; `SpielAktionsService.java` 379 → 349 Z., `KiTischOrchestrator.java` 315 → 285 Z.; 506 Tests grün.
+
+---
+
 ## Archiviert am 2026-07-05 (Session 149 — OPS, Test-Stabilität, Doku, Refactoring)
 
 > Slim-Down des aktiven Plans (Session 150). Alle unten gelisteten Tasks sind **erledigt** (`[x]`, Code + Tests grün, committet).
