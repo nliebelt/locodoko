@@ -4,14 +4,14 @@
 
 ## Notiz
 
-**S153 — Prod-Bug behoben (2026-08-18, interaktiv). `SPRING_PROFILES_ACTIVE=prod` fehlte.**
+**S154 — E2E-PROD-SMOKE implementiert (2026-08-18). Beide Prod-Smoke-Tests grün.**
 
-- Root-Cause: App lief mit Dev-Profil (H2 in-memory) statt Prod-Profil (PostgreSQL). Fehler: `org.h2.jdbc.JdbcSQLIntegrityConstraintViolationException: Check constraint invalid`.
-- Fix: `SPRING_PROFILES_ACTIVE=prod` in `/opt/locodoko/.env` gesetzt + Service neugestartet.
-- `scripts/setup-server.sh` + `specs/betrieb-deployment.md` aktualisiert — künftige Deployments sind abgesichert.
-- Schnellstart gibt jetzt 200 ✓. E2E-Test gegen Prod schlägt noch bei Stich-Phase fehl (Timeout-Problem, KI-Latenz auf Prod) → Entdeckung eingetragen.
+- `e2e/playwright.config.prod.ts` erstellt: `baseURL=https://zock.locodoko.de`, `timeout: 180_000`, `retries: 1`, nur `schnellstart.spec.ts` + `partie-gegen-ki.spec.ts`.
+- `package.json` um `"test:prod"` Skript ergänzt.
+- `aktiviereTurbo(page)` in `schnellstart.spec.ts` nach `erstelleQuickGame` eingefügt.
+- `npm run test:prod` gegen Prod: 2 passed (5,3s + 5,4s) — deutlich unter Timeout.
 
-**Nächster Schritt: E2E-PROD-SMOKE** — Smoke-Test-Profil für Prod anlegen (mit angepassten Timeouts).
+**Nächster Schritt: OPS-NOINDEX-PROXY** — `X-Robots-Tag: noindex, nofollow` in Caddy per Paramiko setzen.
 
 ## Legende
 
@@ -32,9 +32,7 @@
 
 - [x] **BUG-PROD-500-TISCH** — ✓ Behoben S153 (2026-08-18). `SPRING_PROFILES_ACTIVE=prod` fehlte in `/opt/locodoko/.env` — App lief mit H2 in-memory statt PostgreSQL. Fix: Env-Variable gesetzt, Service neugestartet. Auch `scripts/setup-server.sh` + `specs/betrieb-deployment.md` aktualisiert.
 
-- [ ] **E2E-PROD-SMOKE** — Smoke-Test-Profil für Prod: E2E-Tests konfigurierbar gegen `BASE_URL=https://zock.locodoko.de` laufen lassen. **[Erste Datei: `e2e/playwright.config.prod.ts`]**
-
-  Derzeit läuft `playwright.config.ts` nur gegen localhost. Gegen Prod schlägt `schnellstart.spec.ts` bei Schritt 6 (Stich-Zähler) mit Test-Timeout fehl — der Test aktiviert keinen Turbo-Modus und Animationen + KI-Latenz auf Prod brauchen länger als lokal. **Schritte:** 1. `e2e/playwright.config.prod.ts` erstellen mit `baseURL: process.env.BASE_URL ?? 'https://zock.locodoko.de'`, `timeout: 180_000`, `retries: 1`, nur chromium. 2. `package.json` Skript: `"test:prod": "playwright test --config=playwright.config.prod.ts"`. 3. In `schnellstart.spec.ts` + `partie-gegen-ki.spec.ts`: nach `erstelleQuickGame` ein `aktiviereTurbo(page)` einfügen (beschleunigt Animationen im Browser, nicht KI) — oder Stich-Timeout auf 60_000 erhöhen. 4. Verifizieren: `cd e2e && npm run test:prod`. **DoD:** `npm run test:prod` läuft grün gegen `https://zock.locodoko.de`.
+- [x] **E2E-PROD-SMOKE** — ✓ Implementiert S154 (2026-08-18). `playwright.config.prod.ts` + `test:prod` Skript + `aktiviereTurbo` in `schnellstart.spec.ts`. `npm run test:prod`: 2 passed (5,3s + 5,4s) gegen `https://zock.locodoko.de`.
 
 - [ ] **OPS-NOINDEX-PROXY** — `X-Robots-Tag: noindex, nofollow` Header in Caddy ergänzen. **[Erste Datei: `/etc/caddy/Caddyfile` auf prod1 via Paramiko]**
 

@@ -7,6 +7,7 @@
     "test:ui": "playwright test --ui",
     "test:vision": "playwright test --config=playwright.config.vision.ts",
     "test:video": "playwright test --config=playwright.config.video.ts",
+    "test:prod": "playwright test --config=playwright.config.prod.ts",
     "frames": "node extrahiere-video-frames.mjs",
     "install:browsers": "playwright install chromium"
   },

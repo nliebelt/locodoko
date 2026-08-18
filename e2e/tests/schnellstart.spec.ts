@@ -21,6 +21,7 @@ import {
   warteAufSzene,
   leseHudZustand,
   getBridge,
+  aktiviereTurbo,
 } from './helpers';
 
 test.describe('Schnellstart (Quick Game)', () => {
@@ -39,6 +40,7 @@ test.describe('Schnellstart (Quick Game)', () => {
     await alsGastStarten(page);
     await warteAufSzene(page, 'SpielverwaltungsSzene', 20_000);
     await erstelleQuickGame(page);
+    await aktiviereTurbo(page);
 
     // ── 3. TischSzene erscheint direkt ──────────────────────────────────────
     // Warum: Nach Schnellstart muss die TischSzene ohne manuellen Spielstart aktiv sein.
