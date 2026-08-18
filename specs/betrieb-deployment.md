@@ -25,6 +25,13 @@
 **OS:** Debian 13 (Trixie)
 **Deploy-Strategie:** Plain Linux + Java (kein Docker auf dem Server). JAR ist self-contained (Spring Boot Executable JAR). Docker-Artefakte (`Dockerfile.app`, `docker-compose.yml`) bleiben im Repo als Alternative.
 
+**SSH-Admin-Zugang (für ralph/Paramiko):**
+- `hostname`: `prod1.locodoko.de`
+- `username`: `root` (PermitRootLogin=prohibit-password — nur Key-Auth)
+- `key`: `/home/agent/.ssh/locodoko_prod` (Ed25519)
+- Paramiko: `paramiko.Ed25519Key.from_private_key_file('/home/agent/.ssh/locodoko_prod')`
+- Hinweis: `locodoko` ist der App-Service-User (kein SSH-Login möglich).
+
 ## Software-Stack
 
 | Komponente     | Version  | Quelle                                      |
