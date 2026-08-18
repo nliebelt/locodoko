@@ -28,7 +28,7 @@ export class SessionStore {
         await this.echtzeit.verbinde();
         this.registriereGemeinsameAbos();
         const tische = await this.api.listeTische();
-        this.patchFn({ spieler, tische, initialisiert: true, verbindung: 'verbunden', meldung: null });
+        this.patchFn({ spieler, tische, initialisiert: true, verbindung: 'verbunden', meldung: null, bereich: 'SPIELVERWALTUNG' });
         this.echtzeit.senden('/app/tische/snapshot');
       } catch {
         this.patchFn({ verbindung: 'offline' });
