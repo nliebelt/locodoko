@@ -15,6 +15,16 @@
 
 set -euo pipefail
 
+# .env sourcing: Im Cron-Kontext stehen die DB-Variablen nicht in der Umgebung.
+# Datei nur laden wenn LOCODOKO_DB_PASSWORD noch nicht gesetzt ist.
+ENV_FILE="${LOCODOKO_ENV_FILE:-/opt/locodoko/.env}"
+if [[ -f "$ENV_FILE" ]] && [[ -z "${LOCODOKO_DB_PASSWORD:-}" ]]; then
+  set -a
+  # shellcheck source=/dev/null
+  source "$ENV_FILE"
+  set +a
+fi
+
 BACKUP_DIR="${1:-./backups}"
 DB_USER="${LOCODOKO_DB_USERNAME:-locodoko}"
 DB_PASS="${LOCODOKO_DB_PASSWORD:-locodoko}"

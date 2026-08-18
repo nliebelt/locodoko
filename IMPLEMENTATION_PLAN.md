@@ -11,7 +11,7 @@
 - `caddy validate` + `caddy reload` — beide exit 0.
 - `curl -sI https://zock.locodoko.de | grep -i x-robots` → `x-robots-tag: noindex, nofollow` ✓
 
-**Nächster Schritt:** Alle autonomen Tasks in Sektion A erledigt. Offen in B: BACKUP-DB-CRON Restore-Test (MENSCH).
+**Nächster Schritt:** M1 (Closed Beta) vollständig — alle Gates abgehakt. Offen: Beta-Tester als Google Test-User eintragen (MENSCH) + DECISION-LIZENZ.
 
 ## Legende
 
@@ -42,14 +42,7 @@
 
 > Externe Voraussetzung (Server/DNS/TLS/Docker/Google-Account/Plattformwahl). Ralph kann hier nur vorbereitende Config schreiben, nicht abschließen.
 
-- [~] **BACKUP-DB-CRON** — Cron läuft (03:00, `scripts/backup-db.sh`), Skripte auf Server. **Offen: Restore einmal manuell testen.** [Vorbedingung: MENSCH]
-
-  ```bash
-  # Auf prod1: manuellen Backup auslösen + Restore testen
-  su - locodoko -s /bin/bash -c "/opt/locodoko/scripts/backup-db.sh /opt/locodoko/backups"
-  # Dann: psql -U locodoko locodoko < /opt/locodoko/backups/locodoko_<datum>.sql.gz
-  ```
-  **DoD:** Restore verifiziert. **M1-Gate.**
+- [x] **BACKUP-DB-CRON** — ✓ Abgeschlossen S156 (2026-08-18). Cron lief seit Deploy täglich, aber alle Backups waren leer (20 Bytes): `.env` wurde im Cron-Kontext nicht geladen → pg_dump scheiterte an Passwort-Auth. Fix: `scripts/backup-db.sh` sourct jetzt `/opt/locodoko/.env` automatisch wenn `LOCODOKO_DB_PASSWORD` nicht gesetzt. Leere Backups gelöscht, Fix deployed, Restore in `locodoko_restore_test` verifiziert: 15 Tabellen, 37 Spieler, 8 Tische, 12 Partien — OK.
 
 ---
 
@@ -98,7 +91,7 @@
 
 ## Meilensteine
 
-- **M1 — Closed Beta** auf `zock.locodoko.de` ✅ Stack live (S152). Offen: BACKUP-DB-CRON Restore-Test (MENSCH, kurz) + Beta-Tester als Google Test-User eintragen (MENSCH).
+- **M1 — Closed Beta** ✅ Vollständig abgehakt S156 (2026-08-18). Stack live, Backup-Cron gefixt + Restore verifiziert. Offen: Beta-Tester als Google Test-User eintragen (MENSCH).
 - **M2 — Public Go-Live:** Rechtstexte (`specs/recht-impressum-datenschutz.md`), CI/CD via GitHub Actions → `scripts/deploy.sh`, DECISION-LIZENZ, SEC-CSP.
 
 ---
