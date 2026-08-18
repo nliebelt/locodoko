@@ -4,14 +4,14 @@
 
 ## Notiz
 
-**S154 — E2E-PROD-SMOKE implementiert (2026-08-18). Beide Prod-Smoke-Tests grün.**
+**S155 — OPS-NOINDEX-PROXY umgesetzt (2026-08-18). `X-Robots-Tag: noindex, nofollow` in Caddy gesetzt.**
 
-- `e2e/playwright.config.prod.ts` erstellt: `baseURL=https://zock.locodoko.de`, `timeout: 180_000`, `retries: 1`, nur `schnellstart.spec.ts` + `partie-gegen-ki.spec.ts`.
-- `package.json` um `"test:prod"` Skript ergänzt.
-- `aktiviereTurbo(page)` in `schnellstart.spec.ts` nach `erstelleQuickGame` eingefügt.
-- `npm run test:prod` gegen Prod: 2 passed (5,3s + 5,4s) — deutlich unter Timeout.
+- `/etc/caddy/Caddyfile` auf prod1 via Paramiko gelesen: Header fehlte noch.
+- `header X-Robots-Tag "noindex, nofollow"` im `zock.locodoko.de`-Block ergänzt.
+- `caddy validate` + `caddy reload` — beide exit 0.
+- `curl -sI https://zock.locodoko.de | grep -i x-robots` → `x-robots-tag: noindex, nofollow` ✓
 
-**Nächster Schritt: OPS-NOINDEX-PROXY** — `X-Robots-Tag: noindex, nofollow` in Caddy per Paramiko setzen.
+**Nächster Schritt:** Alle autonomen Tasks in Sektion A erledigt. Offen in B: BACKUP-DB-CRON Restore-Test (MENSCH).
 
 ## Legende
 
@@ -34,9 +34,7 @@
 
 - [x] **E2E-PROD-SMOKE** — ✓ Implementiert S154 (2026-08-18). `playwright.config.prod.ts` + `test:prod` Skript + `aktiviereTurbo` in `schnellstart.spec.ts`. `npm run test:prod`: 2 passed (5,3s + 5,4s) gegen `https://zock.locodoko.de`.
 
-- [ ] **OPS-NOINDEX-PROXY** — `X-Robots-Tag: noindex, nofollow` Header in Caddy ergänzen. **[Erste Datei: `/etc/caddy/Caddyfile` auf prod1 via Paramiko]**
-
-  Laut `specs/betrieb-deployment.md` + `specs/fertigstellung.md` soll Caddy zusätzlich zum `<meta robots noindex>` im HTML den `X-Robots-Tag`-Header setzen. **SSH-Zugang prod1:** `hostname=prod1.locodoko.de`, `username=root`, `key=/home/agent/.ssh/locodoko_prod` (Ed25519, via `paramiko.Ed25519Key.from_private_key_file`). **Schritte:** 1. Via Paramiko `/etc/caddy/Caddyfile` lesen. 2. `header X-Robots-Tag "noindex, nofollow"` in `zock.locodoko.de`-Block ergänzen. 3. `caddy reload --config /etc/caddy/Caddyfile` ausführen. 4. `curl -sI https://zock.locodoko.de | grep -i x-robots` verifizieren. Kein Code-Commit nötig — nur Server-Config. **DoD:** Header in HTTP-Antwort sichtbar. **Risiko:** minimal.
+- [x] **OPS-NOINDEX-PROXY** — ✓ Umgesetzt S155 (2026-08-18). `header X-Robots-Tag "noindex, nofollow"` in `/etc/caddy/Caddyfile` auf prod1 ergänzt, `caddy reload` exit 0, curl-Verifikation erfolgreich.
 
 ---
 
@@ -78,6 +76,8 @@
 ---
 
 ## Entdeckungen
+
+- **S155 — OPS-NOINDEX-PROXY: `setup-server.sh` enthält X-Robots-Tag nicht** (2026-08-18): Der Header wurde direkt auf dem Server via Paramiko gesetzt. `scripts/setup-server.sh` schreibt das Caddyfile ohne diesen Header — bei Neuprovisioning würde er verloren gehen. Potenzielle OPS-Aufgabe: Header in `setup-server.sh`-Template nachpflegen.
 
 - **S153 — Prod-Bug behoben: SPRING_PROFILES_ACTIVE=prod fehlte** (2026-08-18): App lief mit H2 in-memory (Dev-Profil) statt PostgreSQL. Stacktrace: `JdbcSQLIntegrityConstraintViolationException: Check constraint invalid: CONSTRAINT_69`. Fix: Env-Variable in `.env` gesetzt + Neustart. Setup-Skript + Doku aktualisiert.
 
