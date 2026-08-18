@@ -4,17 +4,14 @@
 
 ## Notiz
 
-**S152 — Erster Prod-Deploy (2026-08-14, Mensch+Ralph). `https://zock.locodoko.de` ist live.**
+**S153 — Prod-Bug behoben (2026-08-18, interaktiv). `SPRING_PROFILES_ACTIVE=prod` fehlte.**
 
-- DECISION-DEPLOY-VARIANTE entschieden: **plain Linux + Java** (hosting.de, Debian 13, prod1.locodoko.de / 213.160.77.250)
-- `specs/betrieb-deployment.md` neu erstellt (Wahrheitsquelle für Server-Setup)
-- `scripts/setup-server.sh` (idempotent) + `scripts/deploy.sh` erstellt und ausgeführt
-- Stack: Java 25 (Temurin), Postgres 17, Caddy 2 (TLS auto), unattended-upgrades, cron
-- Google OAuth konfiguriert (Client ID/Secret in `.env` auf Server)
-- DNS propagiert, HTTPS via Caddy, HTTP/2 200, Health UP
-- Backup-Cron aktiv (03:00), Restore-Test noch offen (MENSCH)
+- Root-Cause: App lief mit Dev-Profil (H2 in-memory) statt Prod-Profil (PostgreSQL). Fehler: `org.h2.jdbc.JdbcSQLIntegrityConstraintViolationException: Check constraint invalid`.
+- Fix: `SPRING_PROFILES_ACTIVE=prod` in `/opt/locodoko/.env` gesetzt + Service neugestartet.
+- `scripts/setup-server.sh` + `specs/betrieb-deployment.md` aktualisiert — künftige Deployments sind abgesichert.
+- Schnellstart gibt jetzt 200 ✓. E2E-Test gegen Prod schlägt noch bei Stich-Phase fehl (Timeout-Problem, KI-Latenz auf Prod) → Entdeckung eingetragen.
 
-**Block A: ein neuer autonomer Task (OPS-NOINDEX-PROXY).** Block B fast leer — nur Restore-Test offen.
+**Nächster Schritt: E2E-PROD-SMOKE** — Smoke-Test-Profil für Prod anlegen (mit angepassten Timeouts).
 
 ## Legende
 
@@ -28,10 +25,16 @@
 
 > Geerdet am Repo-Scan S151 (2026-07-05): Code sauber (check_specs.py 0 Befunde, Lint grün, 506 BE-Tests). **Pro Task ein Commit**, `mvn clean test` / `npm test && npm run build && npm run lint` grün.
 
-### Empfohlene Build-Reihenfolge (Block A — aktuelle Runde, Stand S152)
+### Empfohlene Build-Reihenfolge (Block A — aktuelle Runde, Stand S153)
 
 > Nimm den **obersten noch offenen** Task. Alle autonom. Diese Sektion ist die EINZIGE
 > Build-Reihenfolge — alte Runden-Sektionen werden beim Plan-Scan entfernt.
+
+- [x] **BUG-PROD-500-TISCH** — ✓ Behoben S153 (2026-08-18). `SPRING_PROFILES_ACTIVE=prod` fehlte in `/opt/locodoko/.env` — App lief mit H2 in-memory statt PostgreSQL. Fix: Env-Variable gesetzt, Service neugestartet. Auch `scripts/setup-server.sh` + `specs/betrieb-deployment.md` aktualisiert.
+
+- [ ] **E2E-PROD-SMOKE** — Smoke-Test-Profil für Prod: E2E-Tests konfigurierbar gegen `BASE_URL=https://zock.locodoko.de` laufen lassen. **[Erste Datei: `e2e/playwright.config.prod.ts`]**
+
+  Derzeit läuft `playwright.config.ts` nur gegen localhost. Wir brauchen ein separates Prod-Smoke-Profil: nur `schnellstart.spec.ts` + `partie-gegen-ki.spec.ts` (Gast-Session-basiert, keine Google-OAuth). **Schritte:** 1. `e2e/playwright.config.prod.ts` erstellen mit `baseURL: process.env.BASE_URL ?? 'https://zock.locodoko.de'`, `retries: 0`, nur chromium. 2. `package.json` Skript: `"test:prod": "playwright test --config=playwright.config.prod.ts"`. 3. Test lokal verifizieren: `cd e2e && BASE_URL=https://zock.locodoko.de npm run test:prod`. **DoD:** `npm run test:prod` läuft grün gegen Prod. **Vorbedingung: BUG-PROD-500-TISCH muss erst behoben sein.**
 
 - [ ] **OPS-NOINDEX-PROXY** — `X-Robots-Tag: noindex, nofollow` Header in Caddy ergänzen. **[Erste Datei: `/etc/caddy/Caddyfile` auf prod1 via Paramiko]**
 
@@ -77,6 +80,10 @@
 ---
 
 ## Entdeckungen
+
+- **S153 — Prod-Bug behoben: SPRING_PROFILES_ACTIVE=prod fehlte** (2026-08-18): App lief mit H2 in-memory (Dev-Profil) statt PostgreSQL. Stacktrace: `JdbcSQLIntegrityConstraintViolationException: Check constraint invalid: CONSTRAINT_69`. Fix: Env-Variable in `.env` gesetzt + Neustart. Setup-Skript + Doku aktualisiert.
+
+- **S153 — E2E gegen Prod: Stich-Phase Timeout** (2026-08-18): `schnellstart.spec.ts` gegen Prod scheitert bei Schritt 6 (Stich-Zähler nach erstem Stich). Schnellstart selbst ✓. Ursache: KI-Reaktionszeit oder WebSocket-Latenz auf Prod zu hoch für lokale Test-Timeouts (20s). → E2E-PROD-SMOKE soll Timeouts für Prod anpassen.
 
 - **S151 — Repo-Scan sauber:** 506 BE-Tests, check_specs.py 0 Befunde (55 Specs), ESLint 0 Warnungen, 0 TODOs/FIXMEs. Größte Java-Produktionsdateien: `Spiel.java` (542, Aggregat), `PartieStandAntwort.java` (529, Snapshot-DTO), `JsonbConverter.java` (500, Persistenz-Boilerplate) — alle verteidigt. Größte TS-Produktionsdatei: `TischKartenRenderer.ts` (418, Phaser-Rendering) — kein Handlungsbedarf. Keine neuen Refactoring-Kandidaten.
 

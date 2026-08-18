@@ -125,6 +125,7 @@ run chown -R locodoko:locodoko /opt/locodoko
 if [[ ! -f /opt/locodoko/.env ]]; then
     run tee /opt/locodoko/.env > /dev/null <<'ENV'
 # Locodoko Produktionskonfiguration — Werte ausfüllen!
+SPRING_PROFILES_ACTIVE=prod
 LOCODOKO_DB_USERNAME=locodoko
 LOCODOKO_DB_PASSWORD=BITTE_ERSETZEN
 LOCODOKO_DB_URL=jdbc:postgresql://localhost:5432/locodoko

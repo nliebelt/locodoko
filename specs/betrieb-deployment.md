@@ -114,6 +114,7 @@ Die Datei `/opt/locodoko/.env` entspricht `.env.example` aus dem Repo. Pflichtfe
 
 | Variable                              | Pflicht M1 | Hinweis                                              |
 |---------------------------------------|-----------|------------------------------------------------------|
+| `SPRING_PROFILES_ACTIVE`              | ✓         | Muss `prod` sein — sonst startet die App mit H2 in-memory (Dev-Profil)! |
 | `LOCODOKO_DB_USERNAME`                | ✓         | DB-User (Postgres-Rolle)                             |
 | `LOCODOKO_DB_PASSWORD`                | ✓         | Starkes Passwort, mind. 20 Zeichen                   |
 | `LOCODOKO_DB_URL`                     | ✓         | `jdbc:postgresql://localhost:5432/locodoko`           |
