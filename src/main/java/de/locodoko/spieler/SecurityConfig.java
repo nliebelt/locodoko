@@ -23,15 +23,14 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
  *
  * <p><b>CSRF-Entscheidung (bewusst, dokumentiert):</b> CSRF-Schutz ist global deaktiviert.
  * Der Schutz mutierender Endpunkte stützt sich stattdessen auf das Session-Cookie mit
- * {@code SameSite=strict} ({@code server.servlet.session.cookie.same-site=strict} in
+ * {@code SameSite=lax} ({@code server.servlet.session.cookie.same-site=lax} in
  * application.properties), {@code HttpOnly=true} sowie {@code Secure=true} in Produktion
- * (application-prod.properties). Ein {@code SameSite=strict}-Cookie wird vom Browser bei
- * Cross-Site-Requests nicht mitgesendet, wodurch klassische CSRF-POSTs von fremden Origins
- * keine authentifizierte Session erhalten. Bewusst akzeptierter Trade-off: <b>kein
- * Defense-in-Depth</b> durch zusätzliche CSRF-Token. Sollte künftig ein weniger striktes
- * SameSite (z.&nbsp;B. {@code Lax} für OAuth-Redirect-Komfort) nötig werden oder ein
- * Cross-Origin-Frontend hinzukommen, muss diese Entscheidung neu bewertet und ein
- * {@code CookieCsrfTokenRepository} aktiviert werden (Frontend müsste das Token mitsenden).</p>
+ * (application-prod.properties). {@code SameSite=lax} schützt vor CSRF-POSTs von fremden
+ * Origins (Cookie wird bei Cross-Site-POST nicht mitgesendet) und erlaubt gleichzeitig
+ * OAuth2-Redirects von Google (Top-Level-GET-Navigation). {@code SameSite=strict} wurde
+ * verworfen, da es das OAuth2-Login bricht: beim Redirect von Google zurück zur App
+ * sendet der Browser das Session-Cookie nicht mit, Spring findet den gespeicherten
+ * OAuth-State nicht und wirft einen Auth-Fehler.</p>
  */
 @Configuration
 @EnableMethodSecurity
