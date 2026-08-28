@@ -1,5 +1,12 @@
 # Locodoko — Operativer Kontext
 
+## Git-Workflow
+
+Es wird **hauptsächlich direkt auf `main`** gearbeitet (Solo-Projekt) — kein Feature-Branch-Zwang.
+Nur für größere/riskante Umbauten einen kurzlebigen Branch nutzen und danach per Fast-Forward nach
+`main` mergen. Nach abgeschlossener, validierter Arbeit committen; Push nach `origin/main` erfolgt,
+sobald Zugang besteht. (Sandbox-Hinweis: kein `ssh`-Binary, Push braucht gültigen `GH_TOKEN`/HTTPS.)
+
 ## Build & Run
 
 Backend: `mvn test` | `mvn clean verify` | `mvn spring-boot:run`
