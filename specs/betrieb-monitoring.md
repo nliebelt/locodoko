@@ -2,7 +2,7 @@
 
 | Feld   | Wert                                                                           |
 |--------|--------------------------------------------------------------------------------|
-| Status | Implementiert (Code/Config) — Grafana-Cloud-Wiring (Tokens) trägt der Mensch nach |
+| Status | Alloy auf prod1 installiert + als systemd-Service aktiv (Stand 2026-08-27). Metriken + Logs werden lokal gesammelt; es fehlen nur noch die echten Grafana-Cloud-Tokens (Platzhalter in `/etc/default/alloy`). |
 
 Zugehörige Tasks: `OPS-GRAFANA-MONITORING`, `OPS-LOGS-LOKI`, `OBS-CORRELATION-ID` (✓), `OBS-SENTRY` (✓).
 
@@ -17,18 +17,25 @@ Logs (Loki) und Fehler (Sentry, siehe `OBS-SENTRY`).
 ## Pipeline (Überblick)
 
 ```
-Spring Boot App ──/actuator/prometheus──┐
-   │  (Micrometer)                       ├──> Grafana Alloy (Sidecar) ──> Grafana Cloud
-   └──/app/logs/locodoko.log (ECS-JSON)──┘        (remote_write / Loki)        (Free, EU)
+Spring Boot App ──/actuator/prometheus (:8082)──┐
+   │  (Micrometer)                               ├──> Grafana Alloy (systemd) ──> Grafana Cloud
+   └──/opt/locodoko/logs/locodoko.log (ECS-JSON)─┘       (remote_write / Loki)        (Free, EU)
 ```
 
-- **Metriken:** Spring Boot Actuator + Micrometer exponieren `/actuator/prometheus`
-  (`management.endpoints.web.exposure.include=health,info,prometheus`). Alloy scrapt alle 30 s
-  und schickt per `remote_write` an Grafana Cloud.
-- **Logs:** Die App schreibt strukturierte JSON-Logs (ECS) nach `/app/logs/locodoko.log`. Ein
-  geteiltes Volume (`applogs`) macht sie dem Alloy-Sidecar zugänglich, der sie an Loki sendet.
-- **Konfiguration:** `monitoring/alloy/config.alloy` + `alloy`-Service im `docker-compose.yml`
-  (Profil `prod`). Tokens/URLs ausschließlich via ENV (`GRAFANA_*`, siehe `.env.example`).
+Deployment ist **plain Linux + Java** (DECISION-DEPLOY-VARIANTE, S152) — Alloy läuft daher als
+**systemd-Service**, nicht als docker-compose-Sidecar. Die `docker-compose.yml` bleibt nur als
+Alternative im Repo, wird in prod aber nicht genutzt.
+
+- **Metriken:** Spring Boot Actuator + Micrometer exponieren `/actuator/prometheus` auf dem
+  internen Management-Port **8082** (`management.endpoints.web.exposure.include=health,info,prometheus`).
+  Alloy scrapt `localhost:8082` alle 30 s und schickt per `remote_write` an Grafana Cloud.
+  Zusätzlich liefert Alloys `prometheus.exporter.unix` (Node Exporter) Host-Metriken.
+- **Logs:** Die App schreibt strukturierte JSON-Logs (ECS) nach `/opt/locodoko/logs/locodoko.log`.
+  Alloys `loki.source.file` liest die Datei direkt (world-readable, kein shared Volume nötig) und
+  sendet sie an Loki.
+- **Konfiguration:** `monitoring/alloy/config.alloy` → deployed nach `/etc/alloy/config.alloy`.
+  Tokens/URLs ausschließlich via `/etc/default/alloy` (EnvironmentFile, chmod 600 —
+  `GRAFANA_*`, siehe `.env.example`), nie im Repo.
 
 ## Infrastruktur-Metriken (Micrometer-Standard)
 
@@ -75,11 +82,12 @@ begrenzt (~14 Tage) → für Bug-Tickets werden relevante Log-Ausschnitte beim E
 
 ## Sicherheit / offene Punkte (Mensch)
 
-- **`/actuator/prometheus` ist derzeit über `permitAll` (`/actuator/**`) öffentlich.** Für M2
-  härten: separater Management-Port (`management.server.port`) nur im Compose-Netz erreichbar,
-  oder Reverse-Proxy-Regel, die `/actuator/**` nach außen blockt. Alloy scrapt intern (`app:8081`).
-- **Grafana-Cloud-Account + Tokens** (`GRAFANA_PROM_URL/USER`, `GRAFANA_LOKI_URL/USER`,
-  `GRAFANA_CLOUD_TOKEN`) anlegen und in `.env` setzen.
+- **`/actuator/prometheus` läuft auf dem internen Management-Port 8082**, den Caddy nicht nach außen
+  proxyt (öffentlich ist nur 8081); zusätzlich blockt die Caddy-Regel `/actuator/*` mit 403. Alloy
+  scrapt intern via `localhost:8082`.
+- **Grafana-Cloud-Tokens** (`GRAFANA_PROM_URL/USER`, `GRAFANA_LOKI_URL/USER`, `GRAFANA_CLOUD_TOKEN`)
+  in `/etc/default/alloy` auf prod1 eintragen (Account vorhanden; aktuell noch Platzhalter), dann
+  `systemctl restart alloy` — **einziger offener Schritt**, damit Daten in Grafana Cloud ankommen.
 - **Dashboards/Alerts** in Grafana Cloud anlegen (Health: Fehlerrate, p95-Latenz, Heap; Domäne:
   Spieltyp-Verteilung, Re/Kontra, Spiele/h). Aktive-Tische-Gauge als spätere Erweiterung
   (benötigt einen Zähler aus dem `tisch`-Modul).

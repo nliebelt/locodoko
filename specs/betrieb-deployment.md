@@ -99,7 +99,7 @@ Pfad: `/etc/caddy/Caddyfile`
 
 ```
 zock.locodoko.de {
-    # Actuator nicht öffentlich exponieren — Alloy scrapt intern via localhost:8081
+    # Actuator nicht öffentlich exponieren — Alloy scrapt intern via localhost:8082 (Management-Port)
     @actuator path /actuator/*
     respond @actuator 403
 

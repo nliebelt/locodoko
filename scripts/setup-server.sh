@@ -79,6 +79,16 @@ https://packages.adoptium.net/artifactory/deb $(lsb_release -cs) main" \
         > /etc/apt/sources.list.d/adoptium.list
 fi
 
+# Grafana Alloy (Monitoring/Logs → Grafana Cloud)
+if [[ ! -f /etc/apt/sources.list.d/grafana.list ]]; then
+    mkdir -p /etc/apt/keyrings
+    curl -fsSL https://apt.grafana.com/gpg-full.key \
+        | gpg --dearmor -o /etc/apt/keyrings/grafana.gpg
+    echo "deb [signed-by=/etc/apt/keyrings/grafana.gpg] \
+https://apt.grafana.com stable main" \
+        > /etc/apt/sources.list.d/grafana.list
+fi
+
 run apt-get update -q
 
 # ─── 3. Pakete installieren ───────────────────────────────────────────────────
@@ -88,6 +98,7 @@ run apt-get install -y -q \
     temurin-25-jre \
     postgresql-17 \
     caddy \
+    alloy \
     unattended-upgrades \
     apt-listchanges \
     cron
@@ -216,6 +227,30 @@ else
     log "   Backup-Cron existiert bereits — übersprungen."
 fi
 
+# ─── 9b. Monitoring (Grafana Alloy) ───────────────────────────────────────────
+
+log "9b. Grafana Alloy einrichten"
+# Die Config (monitoring/alloy/config.alloy) wird separat via deploy.sh nach
+# /etc/alloy/config.alloy kopiert — analog backup-db.sh. Hier nur Env + Service.
+# GRAFANA_*-Platzhalter idempotent an /etc/default/alloy anhängen (echte Werte
+# aus Grafana Cloud > Connections tragen; niemals ins Repo committen).
+if ! grep -q GRAFANA_PROM_URL /etc/default/alloy 2>/dev/null; then
+    run tee -a /etc/default/alloy > /dev/null <<'ALLOYENV'
+
+# --- Grafana Cloud (Monitoring + Logs) — PLATZHALTER, aus Grafana Cloud > Connections ersetzen ---
+GRAFANA_PROM_URL="https://prometheus.invalid/api/prom/push"
+GRAFANA_PROM_USER="PLACEHOLDER"
+GRAFANA_LOKI_URL="https://loki.invalid/loki/api/v1/push"
+GRAFANA_LOKI_USER="PLACEHOLDER"
+GRAFANA_CLOUD_TOKEN="PLACEHOLDER"
+ALLOYENV
+    run chmod 600 /etc/default/alloy
+    log "   Alloy-Env-Platzhalter angelegt — echte Grafana-Cloud-Tokens ersetzen: /etc/default/alloy"
+else
+    log "   Alloy-Env existiert bereits — nicht überschrieben."
+fi
+run systemctl enable alloy
+
 # ─── 10. SSH härten ───────────────────────────────────────────────────────────
 
 log "10. SSH: Passwort-Login deaktivieren"
@@ -236,3 +271,5 @@ log "  3. JAR deployen: scripts/deploy.sh"
 log "  4. Backup-Skript kopieren: scp scripts/backup-db.sh root@prod1.locodoko.de:/opt/locodoko/scripts/"
 log "  5. Restore einmal testen (vor M1)"
 log "  6. Google OAuth Redirect-URI setzen: https://zock.locodoko.de/login/oauth2/code/google"
+log "  7. Alloy-Config kopieren: scp monitoring/alloy/config.alloy root@prod1.locodoko.de:/etc/alloy/config.alloy"
+log "  8. Grafana-Cloud-Tokens in /etc/default/alloy ersetzen, dann: systemctl restart alloy"

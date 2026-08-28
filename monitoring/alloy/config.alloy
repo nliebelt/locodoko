@@ -1,12 +1,32 @@
-// Grafana Alloy — Versand von Metriken und Logs an Grafana Cloud (Free-Tier, EU-Region).
+// Grafana Alloy — plain-Linux (systemd) auf prod1.
+// Versand von Metriken + Logs an Grafana Cloud (Free-Tier, EU-Region).
 //
-// Tokens/URLs kommen ausschliesslich aus Umgebungsvariablen (siehe .env.example), nie aus dem Repo.
-// Alloy laeuft als Sidecar im docker-compose-Netz und erreicht die App unter dem Service-Namen "app".
+// Deployment: DECISION-DEPLOY-VARIANTE (S152) = plain Linux + Java, kein Docker.
+// Alloy läuft als systemd-Service (nicht als docker-compose-Sidecar) und wird nach
+// /etc/alloy/config.alloy deployed. Tokens/URLs kommen ausschliesslich aus
+// /etc/default/alloy (EnvironmentFile, chmod 600), nie im Klartext hier.
 
-// --- Metriken: /actuator/prometheus scrapen und per remote_write an Grafana Cloud ---
+logging {
+  level  = "warn"
+  format = "logfmt"
+}
+
+// === Host-Metriken (Node Exporter) — u.a. node_reboot_required, node_boot_time_seconds ===
+prometheus.exporter.unix "host" {
+  include_exporter_metrics = true
+  disable_collectors       = ["mdadm"]
+}
+
+prometheus.scrape "host" {
+  targets         = prometheus.exporter.unix.host.targets
+  scrape_interval = "30s"
+  forward_to      = [prometheus.remote_write.grafana_cloud.receiver]
+}
+
+// === App-Metriken: Spring Boot Actuator (intern, Port 8082 — nicht 8081, das ist die App) ===
 prometheus.scrape "locodoko" {
   targets = [{
-    __address__ = "app:8082",
+    __address__ = "localhost:8082",
     job         = "locodoko",
   }]
   metrics_path    = "/actuator/prometheus"
@@ -24,17 +44,17 @@ prometheus.remote_write "grafana_cloud" {
   }
 }
 
-// --- Logs: strukturierte JSON-Datei (ECS) der App nach Loki ---
-// Die App schreibt nach /app/logs/locodoko.log; das geteilte Volume "applogs" wird hier als /logs gemountet.
-local.file_match "locodoko_logs" {
+// === Logs: strukturierte JSON-Datei (ECS) der App nach Loki ===
+local.file_match "locodoko" {
   path_targets = [{
-    __path__ = "/logs/locodoko.log",
+    __path__ = "/opt/locodoko/logs/locodoko.log",
     job      = "locodoko",
+    host     = constants.hostname,
   }]
 }
 
 loki.source.file "locodoko" {
-  targets    = local.file_match.locodoko_logs.targets
+  targets    = local.file_match.locodoko.targets
   forward_to = [loki.write.grafana_cloud.receiver]
 }
 
