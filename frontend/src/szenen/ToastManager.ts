@@ -18,7 +18,7 @@ export class ToastManager {
   zeige(optionen: ToastOptionen): void {
     const { text, typ, dauer = 4000 } = optionen;
     const breite = this.scene.scale.gameSize.width;
-    const toastBreite = 400;
+    const toastBreite = Math.min(400, breite - 32);
     const rechterRand = 16;
 
     // Oben rechts: rechte Kante mit 16px Abstand zum Rand
@@ -63,7 +63,7 @@ export class ToastManager {
     const abstand = 70;
     const startY = 50;
     const aktuelleBreite = breite ?? this.scene.scale.gameSize.width;
-    const toastBreite = 400;
+    const toastBreite = Math.min(400, aktuelleBreite - 32);
     const rechterRand = 16;
     const targetX = aktuelleBreite - rechterRand - toastBreite / 2;
 

@@ -49,6 +49,10 @@ export class TischRundenEndeController {
   ) => void;
   private spielverlaufSnapshot: LetztesSpielergebnisAnsicht[] = [];
   private aktuellesSpielNr = 0;
+  private tabZeilenHoehe = ZEILEN_HOEHE;
+  private tabMaxZeilen = MAX_SICHTBARE_ZEILEN;
+  private tabBreite = 880;
+  private tabSkala = 1;
 
   constructor(
     private readonly szene: Phaser.Scene,
@@ -104,8 +108,16 @@ export class TischRundenEndeController {
     this.tabellenZeilen = [];
     if (!this.tabellenContainer) return;
 
+    const zh = this.tabZeilenHoehe;
+    const sk = this.tabSkala;
     const daten = this.spielverlaufSnapshot;
-    const sichtbar = Math.min(MAX_SICHTBARE_ZEILEN, Math.max(0, daten.length - this.scrollOffset));
+    const sichtbar = Math.min(this.tabMaxZeilen, Math.max(0, daten.length - this.scrollOffset));
+    const xNr = 4;
+    const xTyp = Math.round(54 * sk);
+    const xSieger = Math.round(160 * sk);
+    const xSpStart = Math.round(240 * sk);
+    const xSpAbstand = Math.round(160 * sk);
+    const fsSz = `${Math.max(7, Math.round(8 * Math.min(1, zh / ZEILEN_HOEHE)))}px`;
 
     for (let i = 0; i < sichtbar; i++) {
       const eintrag = daten[this.scrollOffset + i];
@@ -116,7 +128,7 @@ export class TischRundenEndeController {
       if (istAktuell) {
         const zeilenBg = this.szene.add.graphics();
         zeilenBg.fillStyle(0x1a4a2a, 0.8);
-        zeilenBg.fillRect(0, i * ZEILEN_HOEHE, 880, ZEILEN_HOEHE);
+        zeilenBg.fillRect(0, i * zh, this.tabBreite, zh);
         if (this.tabellenMaske) zeilenBg.setMask(this.tabellenMaske);
         this.tabellenContainer.add(zeilenBg);
         this.tabellenZeilen.push(zeilenBg);
@@ -127,39 +139,57 @@ export class TischRundenEndeController {
       const siegerFarbe = eintrag.siegerPartei === PARTEI.RE ? C_GOLD : C_KONTRA_F;
       const typLabel = (formatiereVorbehalt(eintrag.spieltyp as VorbehaltAnsage) ?? eintrag.spieltyp).slice(0, 10);
 
-      const nrTxt = this.szene.add.text(4, i * ZEILEN_HOEHE + 3, `${pfeil}${String(eintrag.spielNummer).padStart(2)}`, {
-        fontSize: '8px', color: farbe, fontFamily: SCHRIFT
+      const nrTxt = this.szene.add.text(xNr, i * zh + 3, `${pfeil}${String(eintrag.spielNummer).padStart(2)}`, {
+        fontSize: fsSz, color: farbe, fontFamily: SCHRIFT
       }).setOrigin(0, 0);
       if (this.tabellenMaske) nrTxt.setMask(this.tabellenMaske);
       this.tabellenContainer.add(nrTxt);
       this.tabellenZeilen.push(nrTxt);
 
-      const typTxt = this.szene.add.text(54, i * ZEILEN_HOEHE + 3, typLabel, {
-        fontSize: '8px', color: farbe, fontFamily: SCHRIFT
+      const typTxt = this.szene.add.text(xTyp, i * zh + 3, typLabel, {
+        fontSize: fsSz, color: farbe, fontFamily: SCHRIFT
       }).setOrigin(0, 0);
       if (this.tabellenMaske) typTxt.setMask(this.tabellenMaske);
       this.tabellenContainer.add(typTxt);
       this.tabellenZeilen.push(typTxt);
 
-      const siegerTxt = this.szene.add.text(160, i * ZEILEN_HOEHE + 3, eintrag.siegerPartei, {
-        fontSize: '8px', color: siegerFarbe, fontFamily: SCHRIFT
+      const siegerTxt = this.szene.add.text(xSieger, i * zh + 3, eintrag.siegerPartei, {
+        fontSize: fsSz, color: siegerFarbe, fontFamily: SCHRIFT
       }).setOrigin(0, 0);
       if (this.tabellenMaske) siegerTxt.setMask(this.tabellenMaske);
       this.tabellenContainer.add(siegerTxt);
       this.tabellenZeilen.push(siegerTxt);
 
       eintrag.spielpunkte.forEach((sp, idx) => {
-        const xPos = 240 + idx * 160;
+        const xPos = xSpStart + idx * xSpAbstand;
         const pFarbe = sp.punkte >= 0 ? C_GRAUGRUEN : C_NEGATIV;
-        const pTxt = this.szene.add.text(xPos, i * ZEILEN_HOEHE + 3,
+        const pTxt = this.szene.add.text(xPos, i * zh + 3,
           `${sp.name.slice(0, 6)}: ${sp.punkte > 0 ? '+' : ''}${sp.punkte}`, {
-            fontSize: '8px', color: pFarbe, fontFamily: SCHRIFT
+            fontSize: fsSz, color: pFarbe, fontFamily: SCHRIFT
           }).setOrigin(0, 0);
         if (this.tabellenMaske) pTxt.setMask(this.tabellenMaske);
         this.tabellenContainer!.add(pTxt);
         this.tabellenZeilen.push(pTxt);
       });
     }
+  }
+
+  private lo(bw: number, bh: number) {
+    const skala = Math.min(1, bh / 680);
+    const p = (n: number) => Math.round(n * skala);
+    const fs = (n: number) => `${Math.max(7, p(n))}px`;
+    const tabelleBreite = Math.min(880, bw - 16);
+    return {
+      p, fs, skala,
+      trennerBreite: Math.min(900, bw - 40),
+      reSpalteX: bw / 2 - Math.min(350, Math.round(bw * 0.41)),
+      kontraSpalteX: bw / 2 + Math.round(bw * 0.06),
+      tabelleX: Math.max(8, bw / 2 - Math.min(440, Math.round(bw * 0.515))),
+      tabelleBreite,
+      zeilenHoehe: Math.max(12, p(ZEILEN_HOEHE)),
+      maxZeilen: Math.max(3, Math.floor(MAX_SICHTBARE_ZEILEN * skala)),
+      linksX: bw / 2 - Math.min(380, Math.round(bw * 0.44)),
+    };
   }
 
   private erstelleAufschluesselung(e: LetztesSpielergebnisAnsicht): { label: string; punkte: number }[] {
@@ -215,12 +245,18 @@ export class TischRundenEndeController {
     const anzahlS = this.getLetzterZustand()?.aktuellerTisch?.konfiguration?.anzahlSpiele;
     const { width: bw, height: bh } = this.szene.scale.gameSize;
     const cx = bw / 2;
+    const lo = this.lo(bw, bh);
+    const { p, fs, reSpalteX, kontraSpalteX } = lo;
     const spieltypLabel = formatiereVorbehalt(e.spieltyp as VorbehaltAnsage) ?? e.spieltyp;
     const sNMap = new Map(m.spieler.map((s) => [s.position, s.name] as const));
 
     this.spielverlaufSnapshot = m.spielverlauf ?? [];
     this.aktuellesSpielNr = e.spielNummer;
-    this.scrollOffset = Math.max(0, this.spielverlaufSnapshot.length - MAX_SICHTBARE_ZEILEN);
+    this.scrollOffset = Math.max(0, this.spielverlaufSnapshot.length - lo.maxZeilen);
+    this.tabZeilenHoehe = lo.zeilenHoehe;
+    this.tabMaxZeilen = lo.maxZeilen;
+    this.tabBreite = lo.tabelleBreite;
+    this.tabSkala = lo.tabelleBreite / 880;
 
     const bg = this.szene.add.graphics();
     bg.fillStyle(BG_COL, BG_ALPHA);
@@ -228,193 +264,190 @@ export class TischRundenEndeController {
     bg.setDepth(199);
     this.rundenEndeObjekte.push(bg);
 
-    let y = 22;
+    let y = p(22);
 
     // (a) Spieltyp + Spielnummer
     const spielinfoLabel = anzahlS
       ? `${spieltypLabel}  ·  Spiel ${e.spielNummer}/${anzahlS}`
       : `${spieltypLabel}  ·  Spiel ${e.spielNummer}`;
     const spielinfoTxt = this.szene.add.text(cx, y, spielinfoLabel, {
-      fontSize: '9px', color: C_GRAUGRUEN, fontFamily: SCHRIFT
+      fontSize: fs(9), color: C_GRAUGRUEN, fontFamily: SCHRIFT
     }).setOrigin(0.5, 0).setDepth(200);
     this.rundenEndeObjekte.push(spielinfoTxt);
-    y += 20;
+    y += p(20);
 
     // (b) Sieger-Text
     const siegerFarbe = e.siegerPartei === PARTEI.RE ? C_GOLD : C_KONTRA_F;
     const gewinner = e.siegerPartei === PARTEI.RE ? '★  RE GEWINNT  ★' : '★  KONTRA GEWINNT  ★';
     const siegerTxt = this.szene.add.text(cx, y, gewinner, {
-      fontSize: '20px', color: siegerFarbe, fontFamily: SCHRIFT, stroke: '#000', strokeThickness: 4
+      fontSize: fs(20), color: siegerFarbe, fontFamily: SCHRIFT, stroke: '#000', strokeThickness: 4
     }).setOrigin(0.5, 0).setDepth(200);
     this.rundenEndeObjekte.push(siegerTxt);
-    y += 38;
+    y += p(38);
 
     // Count-up Spielwert
     const swTxtObj = this.szene.add.text(cx, y, 'Spielwert: 0', {
-      fontSize: '14px', color: siegerFarbe, fontFamily: SCHRIFT
+      fontSize: fs(14), color: siegerFarbe, fontFamily: SCHRIFT
     }).setOrigin(0.5, 0).setDepth(200);
     this.rundenEndeObjekte.push(swTxtObj);
     this.starteCountUpTween([{ wert: e.spielwert, label: 'Spielwert', textObj: swTxtObj }]);
-    y += 28;
+    y += p(28);
 
-    const t1 = this.erstelleTrenner(y, 900, 200, cx);
+    const t1 = this.erstelleTrenner(y, lo.trennerBreite, 200, cx);
     this.rundenEndeObjekte.push(t1);
-    y += 12;
+    y += p(12);
 
     // (c) Zwei Spalten Re/Kontra
-    const reSpalteX = cx - 350;
-    const kontraSpalteX = cx + 50;
-
     const reLabel = this.szene.add.text(reSpalteX, y, 'RE', {
-      fontSize: '12px', color: C_GOLD, fontFamily: SCHRIFT
+      fontSize: fs(12), color: C_GOLD, fontFamily: SCHRIFT
     }).setOrigin(0, 0).setDepth(200);
     this.rundenEndeObjekte.push(reLabel);
 
     const kontraLabel = this.szene.add.text(kontraSpalteX, y, 'KONTRA', {
-      fontSize: '12px', color: C_KONTRA_F, fontFamily: SCHRIFT
+      fontSize: fs(12), color: C_KONTRA_F, fontFamily: SCHRIFT
     }).setOrigin(0, 0).setDepth(200);
     this.rundenEndeObjekte.push(kontraLabel);
-    y += 20;
+    y += p(20);
 
     const reAugenTxt = this.szene.add.text(reSpalteX, y, `${e.augenRe} Augen`, {
-      fontSize: '16px', color: C_WEISS, fontFamily: SCHRIFT
+      fontSize: fs(16), color: C_WEISS, fontFamily: SCHRIFT
     }).setOrigin(0, 0).setDepth(200);
     this.rundenEndeObjekte.push(reAugenTxt);
 
     const kontraAugenTxt = this.szene.add.text(kontraSpalteX, y, `${e.augenKontra} Augen`, {
-      fontSize: '16px', color: C_WEISS, fontFamily: SCHRIFT
+      fontSize: fs(16), color: C_WEISS, fontFamily: SCHRIFT
     }).setOrigin(0, 0).setDepth(200);
     this.rundenEndeObjekte.push(kontraAugenTxt);
-    y += 28;
+    y += p(28);
 
     let reSY = y;
     if (e.sonderpunkteRe.length === 0) {
       const txt = this.szene.add.text(reSpalteX, reSY, '(keine)', {
-        fontSize: '8px', color: C_GRAUGRUEN, fontFamily: SCHRIFT
+        fontSize: fs(8), color: C_GRAUGRUEN, fontFamily: SCHRIFT
       }).setOrigin(0, 0).setDepth(200);
       this.rundenEndeObjekte.push(txt);
-      reSY += 14;
+      reSY += p(14);
     } else {
       e.sonderpunkteRe.forEach((sp) => {
         const txt = this.szene.add.text(reSpalteX, reSY, formatiereSonderpunkt(sp, sNMap), {
-          fontSize: '8px', color: C_GOLD, fontFamily: SCHRIFT
+          fontSize: fs(8), color: C_GOLD, fontFamily: SCHRIFT
         }).setOrigin(0, 0).setDepth(200);
         this.rundenEndeObjekte.push(txt);
-        reSY += 14;
+        reSY += p(14);
       });
     }
 
     let kontraSY = y;
     if (e.sonderpunkteKontra.length === 0) {
       const txt = this.szene.add.text(kontraSpalteX, kontraSY, '(keine)', {
-        fontSize: '8px', color: C_GRAUGRUEN, fontFamily: SCHRIFT
+        fontSize: fs(8), color: C_GRAUGRUEN, fontFamily: SCHRIFT
       }).setOrigin(0, 0).setDepth(200);
       this.rundenEndeObjekte.push(txt);
-      kontraSY += 14;
+      kontraSY += p(14);
     } else {
       e.sonderpunkteKontra.forEach((sp) => {
         const txt = this.szene.add.text(kontraSpalteX, kontraSY, formatiereSonderpunkt(sp, sNMap), {
-          fontSize: '8px', color: C_KONTRA_F, fontFamily: SCHRIFT
+          fontSize: fs(8), color: C_KONTRA_F, fontFamily: SCHRIFT
         }).setOrigin(0, 0).setDepth(200);
         this.rundenEndeObjekte.push(txt);
-        kontraSY += 14;
+        kontraSY += p(14);
       });
     }
-    y = Math.max(reSY, kontraSY) + 8;
+    y = Math.max(reSY, kontraSY) + p(8);
 
     // (d) Berechnungszeile mittig
     const aufschl = this.erstelleAufschluesselung(e);
     const berechnTeile = aufschl.map((a) => `${a.label} ${a.punkte > 0 ? '+' : ''}${a.punkte}`);
     const berechnZeile = berechnTeile.join(' · ') + `  →  Spielwert: ${e.spielwert > 0 ? '+' : ''}${e.spielwert}`;
     const berechnTxt = this.szene.add.text(cx, y, berechnZeile, {
-      fontSize: '8px', color: C_GRAUGRUEN, fontFamily: SCHRIFT
+      fontSize: fs(8), color: C_GRAUGRUEN, fontFamily: SCHRIFT
     }).setOrigin(0.5, 0).setDepth(200);
     this.rundenEndeObjekte.push(berechnTxt);
-    y += 18;
+    y += p(18);
 
-    const t2 = this.erstelleTrenner(y, 900, 200, cx);
+    const t2 = this.erstelleTrenner(y, lo.trennerBreite, 200, cx);
     this.rundenEndeObjekte.push(t2);
-    y += 10;
+    y += p(10);
 
     // (e) Spielerpunkte nach Partei (Re links, Kontra rechts)
     const reSpieler = m.spieler.filter((s) => s.partei === PARTEI.RE);
     const kontraSpieler = m.spieler.filter((s) => s.partei === PARTEI.KONTRA);
     const maxSpielerZeilen = Math.max(reSpieler.length, kontraSpieler.length, 1);
+    const spielerZeileH = p(18);
 
     reSpieler.forEach((spieler, idx) => {
-      const sp = e.spielpunkte.find((p) => p.position === spieler.position);
+      const sp = e.spielpunkte.find((pp) => pp.position === spieler.position);
       if (!sp) return;
       const istSelbst = spieler.istSelbst;
       const farbe = istSelbst ? C_GOLD : (sp.punkte >= 0 ? C_GRAUGRUEN : C_NEGATIV);
-      const txt = this.szene.add.text(reSpalteX, y + idx * 18,
+      const txt = this.szene.add.text(reSpalteX, y + idx * spielerZeileH,
         `${sp.name}${istSelbst ? ' ◀' : ''}: ${sp.punkte > 0 ? '+' : ''}${sp.punkte}`, {
-          fontSize: '9px', color: farbe, fontFamily: SCHRIFT
+          fontSize: fs(9), color: farbe, fontFamily: SCHRIFT
         }).setOrigin(0, 0).setDepth(200);
       this.rundenEndeObjekte.push(txt);
     });
 
     kontraSpieler.forEach((spieler, idx) => {
-      const sp = e.spielpunkte.find((p) => p.position === spieler.position);
+      const sp = e.spielpunkte.find((pp) => pp.position === spieler.position);
       if (!sp) return;
       const istSelbst = spieler.istSelbst;
       const farbe = istSelbst ? C_GOLD : (sp.punkte >= 0 ? C_GRAUGRUEN : C_NEGATIV);
-      const txt = this.szene.add.text(kontraSpalteX, y + idx * 18,
+      const txt = this.szene.add.text(kontraSpalteX, y + idx * spielerZeileH,
         `${sp.name}${istSelbst ? ' ◀' : ''}: ${sp.punkte > 0 ? '+' : ''}${sp.punkte}`, {
-          fontSize: '9px', color: farbe, fontFamily: SCHRIFT
+          fontSize: fs(9), color: farbe, fontFamily: SCHRIFT
         }).setOrigin(0, 0).setDepth(200);
       this.rundenEndeObjekte.push(txt);
     });
-    y += maxSpielerZeilen * 18 + 10;
+    y += maxSpielerZeilen * spielerZeileH + p(10);
 
     // (f) Trennlinie + Überschrift
-    const t3 = this.erstelleTrenner(y, 900, 200, cx);
+    const t3 = this.erstelleTrenner(y, lo.trennerBreite, 200, cx);
     this.rundenEndeObjekte.push(t3);
-    y += 12;
+    y += p(12);
 
     const verlaufsTitel = this.szene.add.text(cx, y, 'Bisherige Spiele', {
-      fontSize: '10px', color: C_WEISS, fontFamily: SCHRIFT
+      fontSize: fs(10), color: C_WEISS, fontFamily: SCHRIFT
     }).setOrigin(0.5, 0).setDepth(200);
     this.rundenEndeObjekte.push(verlaufsTitel);
-    y += 18;
+    y += p(18);
 
     // Tabellen-Header
     const spielerNamen = m.spieler.map((s) => s.name.slice(0, 6).padEnd(8));
     const headerZeile = `Nr.  Typ         Sieger    ${spielerNamen.join('  ')}`;
-    const headerTxt = this.szene.add.text(cx - 440, y, headerZeile, {
-      fontSize: '8px', color: C_GRAUGRUEN, fontFamily: SCHRIFT
+    const headerTxt = this.szene.add.text(lo.tabelleX, y, headerZeile, {
+      fontSize: fs(8), color: C_GRAUGRUEN, fontFamily: SCHRIFT
     }).setOrigin(0, 0).setDepth(200);
     this.rundenEndeObjekte.push(headerTxt);
-    y += ZEILEN_HOEHE;
+    y += lo.zeilenHoehe;
 
     // (g) Scrollbare Verlaufstabelle
     const tabelleTop = y;
-    const tabelleBreite = 880;
 
     this.tabellenMaskeGfx = this.szene.add.graphics();
     this.tabellenMaskeGfx.fillStyle(0xffffff, 1);
-    this.tabellenMaskeGfx.fillRect(cx - 440, tabelleTop, tabelleBreite, MAX_SICHTBARE_ZEILEN * ZEILEN_HOEHE);
+    this.tabellenMaskeGfx.fillRect(lo.tabelleX, tabelleTop, lo.tabelleBreite, lo.maxZeilen * lo.zeilenHoehe);
     this.tabellenMaskeGfx.setDepth(200);
     this.tabellenMaske = new Phaser.Display.Masks.GeometryMask(this.szene, this.tabellenMaskeGfx);
 
-    this.tabellenContainer = this.szene.add.container(cx - 440, tabelleTop);
+    this.tabellenContainer = this.szene.add.container(lo.tabelleX, tabelleTop);
     this.tabellenContainer.setDepth(200);
     // Container.setMask() wird in Phaser 3 WebGL nicht unterstützt — Maske auf einzelne Objekte in zeichneTabelle()
     this.rundenEndeObjekte.push(this.tabellenContainer);
     this.rundenEndeObjekte.push(this.tabellenMaskeGfx);
 
     this.zeichneTabelle();
-    y += MAX_SICHTBARE_ZEILEN * ZEILEN_HOEHE + 8;
+    y += lo.maxZeilen * lo.zeilenHoehe + p(8);
 
     // (h) Σ-Zeile (Gesamtstand, scrollt nicht mit)
     const sigmaTeile = m.gesamtpunktestand.map((gs) => `${gs.name}: ${gs.punkte}`);
     const sigmaTxt = this.szene.add.text(cx, y, `Σ  ${sigmaTeile.join('  |  ')}`, {
-      fontSize: '9px', color: C_GRAUGRUEN, fontFamily: SCHRIFT
+      fontSize: fs(9), color: C_GRAUGRUEN, fontFamily: SCHRIFT
     }).setOrigin(0.5, 0).setDepth(200);
     this.rundenEndeObjekte.push(sigmaTxt);
-    y += 26;
+    y += p(26);
 
     // (i) Weiter-Button
-    const weiterBtn = this.erstelleButton(cx, y + 16, 'Weiter  →', () => this.schliesseRundenEndeModal());
+    const weiterBtn = this.erstelleButton(cx, y + p(16), 'Weiter  →', () => this.schliesseRundenEndeModal());
     this.rundenEndeObjekte.push(weiterBtn);
 
     // Sentinel-Feld (Kompatibilität mit TischSzene und Tests)
@@ -485,6 +518,8 @@ export class TischRundenEndeController {
 
     const { width: bw, height: bh } = this.szene.scale.gameSize;
     const cx = bw / 2;
+    const lo = this.lo(bw, bh);
+    const { p, fs } = lo;
 
     const bg = this.szene.add.graphics();
     bg.fillStyle(BG_COL, BG_ALPHA);
@@ -492,102 +527,102 @@ export class TischRundenEndeController {
     bg.setDepth(199);
     this.partieEndeObjekte.push(bg);
 
-    let y = 28;
+    let y = p(28);
 
     const titelTxt = this.szene.add.text(cx, y, 'Partie beendet', {
-      fontSize: '18px', color: C_WEISS, fontFamily: SCHRIFT, stroke: '#000', strokeThickness: 3
+      fontSize: fs(18), color: C_WEISS, fontFamily: SCHRIFT, stroke: '#000', strokeThickness: 3
     }).setOrigin(0.5, 0).setDepth(200);
     this.partieEndeObjekte.push(titelTxt);
-    y += 32;
+    y += p(32);
 
     // (a) Spieltyp + Spielnummer
     const infoTxt = this.szene.add.text(cx, y,
       anzahlS ? `${spieltypLabel}  ·  Spiel ${e.spielNummer}/${anzahlS}` : `${spieltypLabel}  ·  Spiel ${e.spielNummer}`, {
-        fontSize: '9px', color: C_GRAUGRUEN, fontFamily: SCHRIFT
+        fontSize: fs(9), color: C_GRAUGRUEN, fontFamily: SCHRIFT
       }).setOrigin(0.5, 0).setDepth(200);
     this.partieEndeObjekte.push(infoTxt);
-    y += 20;
+    y += p(20);
 
     // (b) Sieger
     const siegerTxt = this.szene.add.text(cx, y,
       e.siegerPartei === PARTEI.RE ? '★  RE GEWINNT  ★' : '★  KONTRA GEWINNT  ★', {
-        fontSize: '18px', color: siegerFarbe, fontFamily: SCHRIFT, stroke: '#000', strokeThickness: 3
+        fontSize: fs(18), color: siegerFarbe, fontFamily: SCHRIFT, stroke: '#000', strokeThickness: 3
       }).setOrigin(0.5, 0).setDepth(200);
     this.partieEndeObjekte.push(siegerTxt);
-    y += 34;
+    y += p(34);
 
     const swTxt = this.szene.add.text(cx, y, `Spielwert: ${e.spielwert > 0 ? '+' : ''}${e.spielwert}`, {
-      fontSize: '12px', color: siegerFarbe, fontFamily: SCHRIFT
+      fontSize: fs(12), color: siegerFarbe, fontFamily: SCHRIFT
     }).setOrigin(0.5, 0).setDepth(200);
     this.partieEndeObjekte.push(swTxt);
-    y += 22;
+    y += p(22);
 
-    const t1 = this.erstelleTrenner(y, 800, 200, cx);
+    const t1 = this.erstelleTrenner(y, lo.trennerBreite, 200, cx);
     this.partieEndeObjekte.push(t1);
-    y += 12;
+    y += p(12);
 
     this.erstelleBerechungsZeilen(e, sNMap).forEach((zeile) => {
-      const txt = this.szene.add.text(cx - 380, y, zeile, {
-        fontSize: '9px', color: C_GRAUGRUEN, fontFamily: SCHRIFT
+      const txt = this.szene.add.text(lo.linksX, y, zeile, {
+        fontSize: fs(9), color: C_GRAUGRUEN, fontFamily: SCHRIFT
       }).setOrigin(0, 0).setDepth(200);
       this.partieEndeObjekte.push(txt);
-      y += 16;
+      y += p(16);
     });
-    y += 8;
+    y += p(8);
 
     e.spielpunkte.forEach((sp) => {
       const istSelbst = sp.position === SPIELER_POSITION.SUED;
       const farbe = istSelbst ? C_GOLD : (sp.punkte >= 0 ? C_GRAUGRUEN : C_NEGATIV);
-      const txt = this.szene.add.text(cx - 380, y,
+      const txt = this.szene.add.text(lo.linksX, y,
         `${sp.name}${istSelbst ? ' ◀' : ''}: ${sp.punkte > 0 ? '+' : ''}${sp.punkte}`, {
-          fontSize: '9px', color: farbe, fontFamily: SCHRIFT
+          fontSize: fs(9), color: farbe, fontFamily: SCHRIFT
         }).setOrigin(0, 0).setDepth(200);
       this.partieEndeObjekte.push(txt);
-      y += 16;
+      y += p(16);
     });
-    y += 8;
+    y += p(8);
 
-    const t2 = this.erstelleTrenner(y, 800, 200, cx);
+    const t2 = this.erstelleTrenner(y, lo.trennerBreite, 200, cx);
     this.partieEndeObjekte.push(t2);
-    y += 12;
+    y += p(12);
 
     const gsTitel = this.szene.add.text(cx, y, 'Gesamtstand', {
-      fontSize: '12px', color: C_GOLD, fontFamily: SCHRIFT
+      fontSize: fs(12), color: C_GOLD, fontFamily: SCHRIFT
     }).setOrigin(0.5, 0).setDepth(200);
     this.partieEndeObjekte.push(gsTitel);
-    y += 22;
+    y += p(22);
 
     const sortedGs = [...m.gesamtpunktestand].sort((a, b) => b.punkte - a.punkte);
     const maxPkt = sortedGs.length > 0 ? sortedGs[0].punkte : 0;
     sortedGs.forEach((ei) => {
       const istVorne = ei.punkte === maxPkt && maxPkt > 0;
-      const txt = this.szene.add.text(cx - 380, y, `${istVorne ? '★ ' : '  '}${ei.name}: ${ei.punkte}`, {
-        fontSize: '10px', color: istVorne ? C_GOLD : C_GRAUGRUEN, fontFamily: SCHRIFT
+      const txt = this.szene.add.text(lo.linksX, y, `${istVorne ? '★ ' : '  '}${ei.name}: ${ei.punkte}`, {
+        fontSize: fs(10), color: istVorne ? C_GOLD : C_GRAUGRUEN, fontFamily: SCHRIFT
       }).setOrigin(0, 0).setDepth(200);
       this.partieEndeObjekte.push(txt);
-      y += 18;
+      y += p(18);
     });
-    y += 14;
+    y += p(14);
 
-    const t3 = this.erstelleTrenner(y, 800, 200, cx);
+    const t3 = this.erstelleTrenner(y, lo.trennerBreite, 200, cx);
     this.partieEndeObjekte.push(t3);
-    y += 16;
+    y += p(16);
 
     // Countdown-Text
     const countdownTxt = this.szene.add.text(cx, y, '', {
-      fontSize: '9px', color: C_GRAUGRUEN, fontFamily: SCHRIFT
+      fontSize: fs(9), color: C_GRAUGRUEN, fontFamily: SCHRIFT
     }).setOrigin(0.5, 0).setDepth(200);
     this.partieEndeObjekte.push(countdownTxt);
-    y += 20;
+    y += p(20);
 
     // Buttons: Neue Partie + Tisch verlassen
-    const btnNeue = this.erstelleButton(cx - 120, y + 16, 'Neue Partie', () => {
+    const btnNeue = this.erstelleButton(cx - p(120), y + p(16), 'Neue Partie', () => {
       this.schliessePartieEndeModal();
       void appStore.starteNeuePartie();
     });
     this.partieEndeObjekte.push(btnNeue);
 
-    const btnVerlassen = this.erstelleButton(cx + 120, y + 16, 'Tisch verlassen', () => {
+    const btnVerlassen = this.erstelleButton(cx + p(120), y + p(16), 'Tisch verlassen', () => {
       this.schliessePartieEndeModal();
       void appStore.verlasseAktuellenTisch();
     }, true);
