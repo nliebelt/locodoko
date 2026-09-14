@@ -52,8 +52,9 @@ export class TischInputHandler {
     return !!(ziel && (ziel.tagName === 'INPUT' || ziel.tagName === 'TEXTAREA' || ziel.tagName === 'SELECT' || ziel.isContentEditable));
   }
 
-  /** Globale Navigationskuerzel (I=Seitenlade, S=Einstellungen, H=Hilfe) — immer verfuegbar. */
+  /** Globale Navigationskuerzel (I=Seitenlade, S=Einstellungen, H/F1=Hilfe) — immer verfuegbar. */
   private verarbeiteGlobaleTasten(e: KeyboardEvent): boolean {
+    if (e.key === 'F1' && !e.shiftKey) { this.kontext.togglHilfe(); e.preventDefault(); return true; }
     if (e.key === 'i' || e.key === 'I') { this.kontext.togglSeitenlade(); e.preventDefault(); return true; }
     if (e.key === 's' || e.key === 'S') { this.kontext.togglEinstellungen(); e.preventDefault(); return true; }
     if (e.key === 'h' || e.key === 'H') { this.kontext.togglHilfe(); e.preventDefault(); return true; }

@@ -3,13 +3,15 @@ import { TEXTUR_FILZ, registriereBasisTexturen, ladeHintergrundbilder } from '..
 import { PhaserButton } from './PhaserButton';
 import { FONT_FAMILY } from '../ui/designTokens';
 
-type HilfeTab = 'trumpf' | 'ansagen' | 'sonderspiele' | 'punkte';
+type HilfeTab = 'trumpf' | 'parteien' | 'sonderpunkte' | 'ansagen' | 'sonderspiele' | 'punkte';
 
 const TABS: { key: HilfeTab; label: string }[] = [
-  { key: 'trumpf', label: 'Trumpfhierarchie' },
+  { key: 'trumpf', label: 'Trumpf' },
+  { key: 'parteien', label: 'Parteien' },
+  { key: 'sonderpunkte', label: 'Sonderp.' },
   { key: 'ansagen', label: 'Ansagen' },
   { key: 'sonderspiele', label: 'Sonderspiele' },
-  { key: 'punkte', label: 'Punktesystem' },
+  { key: 'punkte', label: 'Punkte' },
 ];
 
 const GOLD = '#f8c94e';
@@ -137,10 +139,68 @@ export class HilfeSzene extends Phaser.Scene {
     this.raeumInhaltAb();
     switch (this.aktiveTab) {
       case 'trumpf':       this.zeigeTrumpf(); break;
+      case 'parteien':     this.zeigeParteien(); break;
+      case 'sonderpunkte': this.zeigeSonderpunkte(); break;
       case 'ansagen':      this.zeigeAnsagen(); break;
       case 'sonderspiele': this.zeigeSonderspiele(); break;
       case 'punkte':       this.zeigePunkte(); break;
     }
+  }
+
+  private zeigeParteien(): void {
+    let y = 150;
+    const LX = 80;
+    const ZA = 28;
+
+    this.txt(LX, y, 'PARTEI-ERMITTLUNG', GOLD, 14, true); y += 24;
+    this.sep(y); y += 14;
+
+    this.txt(LX, y, 'RE-PARTEI', ORANGE, 14, true); y += ZA - 4;
+    this.txt(LX, y, 'Spieler mit einer ♣D gehören zur Re-Partei', HELL, 13); y += ZA - 6;
+    this.txt(LX, y, 'Im Normalspiel: je 2 Spieler in Re und Kontra', GRUEN, 13); y += ZA + 8;
+
+    this.txt(LX, y, 'KONTRA-PARTEI', ORANGE, 14, true); y += ZA - 4;
+    this.txt(LX, y, 'Alle Spieler ohne ♣D — Ziel: Re-Partei auf ≤ 120 Augen halten', HELL, 13); y += ZA + 12;
+
+    this.sep(y, LX, 1200); y += 18;
+    this.txt(LX, y, 'HOCHZEIT', GOLD, 14, true); y += ZA - 4;
+    this.txt(LX, y, 'Spieler hat beide ♣D → meldet „Hochzeit"', HELL, 13); y += ZA - 6;
+    this.txt(LX, y, 'Partner: erster Spieler, der einen der ersten 3 Stiche gewinnt', GRUEN, 13); y += ZA - 6;
+    this.txt(LX, y, 'Kein Partner nach 3 Klärungsstichen → stilles Solo (×3-Wertung)', GRUEN, 13); y += ZA + 12;
+
+    this.sep(y, LX, 1200); y += 18;
+    this.txt(LX, y, 'ANSAGEN OFFENBAREN DIE PARTEI', GOLD, 14, true); y += ZA - 4;
+    this.txt(LX, y, 'Re-Ansage → Spieler bekennt sich zur Re-Partei', GRUEN, 13); y += ZA - 6;
+    this.txt(LX, y, 'Kontra-Ansage → Spieler bekennt sich zur Kontra-Partei', GRUEN, 13); y += ZA - 6;
+    this.txt(LX, y, 'Ohne Ansagen: Parteizugehörigkeit bis Spielende verborgen', GRUEN, 13);
+  }
+
+  private zeigeSonderpunkte(): void {
+    let y = 150;
+    const LX = 80;
+    const ZA = 32;
+
+    this.txt(LX, y, 'SONDERPUNKTE (+1 je Ereignis)', GOLD, 14, true); y += 24;
+    this.sep(y); y += 18;
+
+    const punkte: [string, string, string][] = [
+      ['FUCHS GEFANGEN', '♦A (Fuchs) der Gegenpartei in einem gewonnenen Stich gefangen', ORANGE],
+      ['KARLCHEN', '♣B gewinnt den letzten Stich des Spiels', ORANGE],
+      ['DOPPELKOPF', 'Stich enthält ≥ 40 Augen', ORANGE],
+    ];
+    punkte.forEach(([name, beschreibung, farbe]) => {
+      this.txt(LX, y, name, farbe, 14, true); y += ZA - 6;
+      this.txt(LX + 20, y, beschreibung, HELL, 13); y += ZA + 6;
+    });
+
+    this.sep(y, LX, 1200); y += 18;
+    this.txt(LX, y, 'GEGEN DIE ALTEN (+1)', GOLD, 14, true); y += ZA - 4;
+    this.txt(LX, y, 'Kontra gewinnt, obwohl Re-Partei keine Ansage gemacht hat', GRUEN, 13); y += ZA + 12;
+
+    this.sep(y, LX, 1200); y += 18;
+    this.txt(LX, y, 'DULLE-REGEL (kein Sonderpunkt)', GOLD, 14, true); y += ZA - 4;
+    this.txt(LX, y, 'Die zweite gespielte ♥10 schlägt die erste ♥10', GRUEN, 13); y += ZA - 6;
+    this.txt(LX, y, 'Stich wird normal gewertet — kein Extra-Punkt', GRUEN, 13);
   }
 
   private zeigeTrumpf(): void {

@@ -59,18 +59,20 @@ describe('HilfeSzene', () => {
     expect(zurueck).toBeDefined();
   });
 
-  it('create erstellt alle vier Tabs', () => {
+  it('create erstellt alle sechs Tabs', () => {
     szene.create();
     const tabTexte = (PhaserButton as any).mock.calls.map((c: any) => c[1].text);
-    expect(tabTexte).toContain('Trumpfhierarchie');
+    expect(tabTexte).toContain('Trumpf');
+    expect(tabTexte).toContain('Parteien');
+    expect(tabTexte).toContain('Sonderp.');
     expect(tabTexte).toContain('Ansagen');
     expect(tabTexte).toContain('Sonderspiele');
-    expect(tabTexte).toContain('Punktesystem');
+    expect(tabTexte).toContain('Punkte');
   });
 
-  it('Trumpfhierarchie-Tab ist initial als primary markiert', () => {
+  it('Trumpf-Tab ist initial als primary markiert', () => {
     szene.create();
-    const trumpfCall = (PhaserButton as any).mock.calls.find((c: any) => c[1].text === 'Trumpfhierarchie');
+    const trumpfCall = (PhaserButton as any).mock.calls.find((c: any) => c[1].text === 'Trumpf');
     expect(trumpfCall[1].typ).toBe('primary');
     const ansagenCall = (PhaserButton as any).mock.calls.find((c: any) => c[1].text === 'Ansagen');
     expect(ansagenCall[1].typ).toBe('secondary');

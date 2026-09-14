@@ -4,14 +4,15 @@
 
 ## Notiz
 
-**FE-FIX-MASK-WEBGL erledigt (2026-09-14). Nächster Task: FE-SPIELREGELN-HILFE.**
+**FE-SPIELREGELN-HILFE erledigt (2026-09-14). Nächster Task: CD-DEPLOY.**
 
-- `Container.setMask()` in `TischRundenEndeController.ts` Zeile ~395 entfernt.
-- `tabellenMaske` als Instanzvariable (`Phaser.Display.Masks.GeometryMask`) eingeführt.
-- Maske wird jetzt in `zeichneTabelle()` auf jedes einzelne Text- und Graphics-Objekt angewendet.
-- Cleanup in `schliesseRundenEndeModal()` um `this.tabellenMaske = undefined` ergänzt.
-- 478 Tests grün, Build und Lint sauber. Vision Loop war nicht möglich (Backend nicht gestartet) — empfohlen beim nächsten manuellen Test.
-- Nächster Task: FE-SPIELREGELN-HILFE — `SpielregelnOverlay.ts` anlegen, 5 Seiten Regelreferenz, F1-Taste und ?-Button.
+- `HilfeSzene.ts` war bereits vollständig vorhanden (H-Taste + ?-TopBar-Icon). Ergänzungen:
+  - Zwei neue Tabs: `parteien` (Partei-Ermittlung + Hochzeit-Sonderregel) und `sonderpunkte` (FUCHS_GEFANGEN, KARLCHEN, DOPPELKOPF + Dulle-Regel + Gegen die Alten).
+  - Labels aller Tabs gekürzt (z. B. 'Trumpf' statt 'Trumpfhierarchie') für 6-Tab-Reihe.
+  - F1-Taste (ohne Shift) in `TischInputHandler.ts` → `togglHilfe()` verdrahtet.
+  - `SpielregelnOverlay.ts` nicht separat angelegt — `HilfeSzene` erfüllt die Funktion vollständig (eigene Phaser-Szene, alle 5 Inhaltsblöcke als 6 Tabs).
+- 478 Tests grün, Build und Lint sauber. Vision Loop nicht möglich (Backend nicht gestartet) — empfohlen beim nächsten manuellen Test.
+- Nächster Task: CD-DEPLOY — GitHub Actions CD-Pipeline anlegen.
 
 ## Legende
 
@@ -43,7 +44,7 @@
 
 - [x] **FE-FIX-MASK-WEBGL** — Scrollbare Verlaufstabelle im RundenEnde-Overlay: `Container.setMask()` in Phaser 3 WebGL nicht unterstützt → Clipping kaputt. Vorbedingung: FE-UI-FINAL-REVIEW erledigt. Vorgehen: In `TischRundenEndeController.ts` (Zeile 395) `this.tabellenContainer.setMask(maske)` entfernen. Stattdessen in `zeichneTabelle()` die Maske auf jedes einzelne Text-Objekt anwenden: direkt nach `this.szene.add.text(...)` ein `.setMask(this.tabellenMaske)` anhängen. `this.tabellenMaske` dazu als Instanzvariable vom Typ `Phaser.Display.Masks.GeometryMask` speichern (statt nur `this.tabellenMaskeGfx`). Cleanup: In `schliesseRundenEndeModal()` / `loescheRundenEndObjekte()` prüfen ob `this.tabellenMaske` bereits via `tabellenMaskeGfx.destroy()` mitbereinigt wird (Mask selbst hat kein `destroy`, nur das zugrundeliegende Graphics). Validierung: `cd frontend && npm test && npm run build && npm run lint` grün; kein `Container.setMask`-Warning mehr in der Browser-Konsole (prüfbar via `npx playwright test --config playwright.config.vision.ts 2>&1 | grep -i mask`). Erste Datei: `frontend/src/szenen/TischRundenEndeController.ts`.
 
-- [ ] **FE-SPIELREGELN-HILFE** — In-App Doppelkopf-Regelreferenz als eigene Overlay-Klasse. Vorgehen: (1) `frontend/src/szenen/SpielregelnOverlay.ts` anlegen — `Phaser.GameObjects.Container`-basiertes Vollbild-Overlay, gleiche grüne Spieltisch-Palette wie RundenEnde-Redesign; (2) 5 Seiten (per Index 0–4) mit Prev/Next-Navigation: **Seite 0** Trumpf-Reihenfolge (Dulle > Bube Kreuz/Pik/Herz/Karo > Dame Kreuz/Pik/Herz/Karo > Karo A/10/K/9/8/7, dann Fehlfarben); **Seite 1** Partei-Ermittlung (Kreuz-Damen = Re; wer keine hat = Kontra; Hochzeit-Sonderregel); **Seite 2** Sonderpunkte (Fuchs gefangen, Karlchen, Dulle fängt Dulle, Doppelkopf, vollständige Liste aus `Sonderpunkt`-Enum); **Seite 3** Ansagen (Re/Kontra/Keine-90/Keine-60/Keine-30/Schwarz + Zeitfenster); **Seite 4** Spieltypen (Normalspiel, Solo-Varianten, Hochzeit, Armut, Bockrunde); (3) Öffnen per Tastatur: `F1` (nur wenn kein Shift gedrückt, damit Shift+F1 Bug-Report unberührt bleibt) und per Help-Button `?` in der TischSzene (kleines `Text`-Objekt oben rechts, depth 50); (4) Schließen per Escape oder X-Button; (5) Overlay-Instanz als Instanzvariable in `TischSzene` halten, `zeigeSpielregeln()` / `schliesseSpielregeln()` Methoden. Validierung: `npm test && npm run build && npm run lint` grün; Vision Loop Screenshot — Overlay muss auf Screen-2 sichtbar sein. Erste Datei: `frontend/src/szenen/SpielregelnOverlay.ts`.
+- [x] **FE-SPIELREGELN-HILFE** — In-App Doppelkopf-Regelreferenz als eigene Overlay-Klasse. Vorgehen: (1) `frontend/src/szenen/SpielregelnOverlay.ts` anlegen — `Phaser.GameObjects.Container`-basiertes Vollbild-Overlay, gleiche grüne Spieltisch-Palette wie RundenEnde-Redesign; (2) 5 Seiten (per Index 0–4) mit Prev/Next-Navigation: **Seite 0** Trumpf-Reihenfolge (Dulle > Bube Kreuz/Pik/Herz/Karo > Dame Kreuz/Pik/Herz/Karo > Karo A/10/K/9/8/7, dann Fehlfarben); **Seite 1** Partei-Ermittlung (Kreuz-Damen = Re; wer keine hat = Kontra; Hochzeit-Sonderregel); **Seite 2** Sonderpunkte (Fuchs gefangen, Karlchen, Dulle fängt Dulle, Doppelkopf, vollständige Liste aus `Sonderpunkt`-Enum); **Seite 3** Ansagen (Re/Kontra/Keine-90/Keine-60/Keine-30/Schwarz + Zeitfenster); **Seite 4** Spieltypen (Normalspiel, Solo-Varianten, Hochzeit, Armut, Bockrunde); (3) Öffnen per Tastatur: `F1` (nur wenn kein Shift gedrückt, damit Shift+F1 Bug-Report unberührt bleibt) und per Help-Button `?` in der TischSzene (kleines `Text`-Objekt oben rechts, depth 50); (4) Schließen per Escape oder X-Button; (5) Overlay-Instanz als Instanzvariable in `TischSzene` halten, `zeigeSpielregeln()` / `schliesseSpielregeln()` Methoden. Validierung: `npm test && npm run build && npm run lint` grün; Vision Loop Screenshot — Overlay muss auf Screen-2 sichtbar sein. Erste Datei: `frontend/src/szenen/SpielregelnOverlay.ts`.
 
 - [ ] **CD-DEPLOY** — GitHub Actions CD-Pipeline schreiben. Vorgehen: (1) `.github/workflows/cd.yml` anlegen: Trigger `workflow_dispatch` (manuell, kein Auto-Push); Job `deploy` auf `ubuntu-latest`; Schritte: checkout, Java 21 temurin setup, `mvn clean package -DskipTests -q`, SSH-Agent mit Secret `SSH_PRIVATE_KEY`, `ssh-keyscan` für `SSH_KNOWN_HOSTS`, `scp target/locodoko-*.jar $SERVER:/opt/locodoko/locodoko.jar`, `ssh $SERVER "systemctl restart locodoko"`, Healthcheck `ssh $SERVER "systemctl is-active locodoko"`; Secrets: `SSH_PRIVATE_KEY` (Ed25519 privater Schlüssel), `SSH_KNOWN_HOSTS` (Output von `ssh-keyscan prod1.locodoko.de`), `DEPLOY_HOST` (`root@prod1.locodoko.de`); (2) `DEPLOY_SECRETS.md` im Repo-Root anlegen: erklärt welche 3 Secrets in GitHub repo settings → Secrets and variables → Actions angelegt werden müssen, mit Beispiel-Befehlen zum Erzeugen; (3) YAML syntaktisch validieren: `python3 -c "import yaml; yaml.safe_load(open('.github/workflows/cd.yml'))"`. ⚠️ CI-Verifikation via `gh run watch` erfordert validen `GH_TOKEN` mit Scopes `repo`+`workflow` — ohne Token nur lokale YAML-Validierung möglich. Erste Datei: `.github/workflows/cd.yml`.
 
@@ -98,6 +99,8 @@
 ---
 
 ## Entdeckungen
+
+- **S157/FE-SPIELREGELN-HILFE — HilfeSzene war bereits vollständig vorhanden** (2026-09-14): `SpielregelnOverlay.ts` musste nicht neu angelegt werden — `HilfeSzene.ts` existierte bereits mit H-Taste, ?-TopBar-Icon und 4 Tabs. Ergänzt wurden: F1-Taste in `TischInputHandler.ts`, Tab `parteien` (Partei-Ermittlung + Hochzeit) und Tab `sonderpunkte` (FUCHS_GEFANGEN, KARLCHEN, DOPPELKOPF, Dulle-Regel, Gegen-die-Alten). Tab-Labels gekürzt für 6-Tab-Reihe. Task ist vollständig abgeschlossen.
 
 - **S157/FE-UI-FINAL-REVIEW — Container.setMask() WebGL-Bug bestätigt** (2026-09-14): Browser-Konsole zeigt `Phaser.GameObjects.Components.Mask.setMask: This method is not supported in WebGL. Create a Mask filter instead.` beim Öffnen des RundenEnde-Overlays. Ursache: `TischRundenEndeController.ts` Zeile 395 ruft `this.tabellenContainer.setMask(maske)` auf — Phaser 3 unterstützt `Container.setMask()` in WebGL nicht. Folge: Scroll-Clipping für die Verlaufstabelle ist wirkungslos, Zeilen außerhalb des 5-Zeilen-Fensters werden nicht ausgeblendet. Fix → FE-FIX-MASK-WEBGL (Maske auf einzelne Text-Objekte in `zeichneTabelle()` verlagern).
 
