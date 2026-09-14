@@ -88,6 +88,10 @@ WHITELIST_ENUMS = frozenset({
     "NEUE_PARTIE_GESTARTET",
     # Zeichenkodierung
     "UTF_8", "ISO_8859_1",
+    # Betrieb-Deployment: Umgebungsvariablen-Namen in Tabellen (keine Java-Enum-Konstanten)
+    "SPRING_PROFILES_ACTIVE", "LOCODOKO_DB_USERNAME", "LOCODOKO_DB_PASSWORD",
+    "LOCODOKO_DB_URL", "LOCODOKO_WEBSOCKET_ALLOWED_ORIGINS", "SENTRY_DSN",
+    "LOCODOKO_BUGREPORT_GITHUB_TOKEN",
 })
 
 # Pfad-Präfixe die gegen das Dateisystem geprüft werden
