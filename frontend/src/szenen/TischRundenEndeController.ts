@@ -37,6 +37,7 @@ export class TischRundenEndeController {
   private tabellenZeilen: Phaser.GameObjects.GameObject[] = [];
   private tabellenContainer?: Phaser.GameObjects.Container;
   private tabellenMaskeGfx?: Phaser.GameObjects.Graphics;
+  private tabellenMaske?: Phaser.Display.Masks.GeometryMask;
   private rundenEndeObjekte: Phaser.GameObjects.GameObject[] = [];
   private partieEndeObjekte: Phaser.GameObjects.GameObject[] = [];
   private wheelHandler?: (
@@ -116,6 +117,7 @@ export class TischRundenEndeController {
         const zeilenBg = this.szene.add.graphics();
         zeilenBg.fillStyle(0x1a4a2a, 0.8);
         zeilenBg.fillRect(0, i * ZEILEN_HOEHE, 880, ZEILEN_HOEHE);
+        if (this.tabellenMaske) zeilenBg.setMask(this.tabellenMaske);
         this.tabellenContainer.add(zeilenBg);
         this.tabellenZeilen.push(zeilenBg);
       }
@@ -128,18 +130,21 @@ export class TischRundenEndeController {
       const nrTxt = this.szene.add.text(4, i * ZEILEN_HOEHE + 3, `${pfeil}${String(eintrag.spielNummer).padStart(2)}`, {
         fontSize: '8px', color: farbe, fontFamily: SCHRIFT
       }).setOrigin(0, 0);
+      if (this.tabellenMaske) nrTxt.setMask(this.tabellenMaske);
       this.tabellenContainer.add(nrTxt);
       this.tabellenZeilen.push(nrTxt);
 
       const typTxt = this.szene.add.text(54, i * ZEILEN_HOEHE + 3, typLabel, {
         fontSize: '8px', color: farbe, fontFamily: SCHRIFT
       }).setOrigin(0, 0);
+      if (this.tabellenMaske) typTxt.setMask(this.tabellenMaske);
       this.tabellenContainer.add(typTxt);
       this.tabellenZeilen.push(typTxt);
 
       const siegerTxt = this.szene.add.text(160, i * ZEILEN_HOEHE + 3, eintrag.siegerPartei, {
         fontSize: '8px', color: siegerFarbe, fontFamily: SCHRIFT
       }).setOrigin(0, 0);
+      if (this.tabellenMaske) siegerTxt.setMask(this.tabellenMaske);
       this.tabellenContainer.add(siegerTxt);
       this.tabellenZeilen.push(siegerTxt);
 
@@ -150,6 +155,7 @@ export class TischRundenEndeController {
           `${sp.name.slice(0, 6)}: ${sp.punkte > 0 ? '+' : ''}${sp.punkte}`, {
             fontSize: '8px', color: pFarbe, fontFamily: SCHRIFT
           }).setOrigin(0, 0);
+        if (this.tabellenMaske) pTxt.setMask(this.tabellenMaske);
         this.tabellenContainer!.add(pTxt);
         this.tabellenZeilen.push(pTxt);
       });
@@ -388,11 +394,11 @@ export class TischRundenEndeController {
     this.tabellenMaskeGfx.fillStyle(0xffffff, 1);
     this.tabellenMaskeGfx.fillRect(cx - 440, tabelleTop, tabelleBreite, MAX_SICHTBARE_ZEILEN * ZEILEN_HOEHE);
     this.tabellenMaskeGfx.setDepth(200);
-    const maske = new Phaser.Display.Masks.GeometryMask(this.szene, this.tabellenMaskeGfx);
+    this.tabellenMaske = new Phaser.Display.Masks.GeometryMask(this.szene, this.tabellenMaskeGfx);
 
     this.tabellenContainer = this.szene.add.container(cx - 440, tabelleTop);
     this.tabellenContainer.setDepth(200);
-    this.tabellenContainer.setMask(maske);
+    // Container.setMask() wird in Phaser 3 WebGL nicht unterstützt — Maske auf einzelne Objekte in zeichneTabelle()
     this.rundenEndeObjekte.push(this.tabellenContainer);
     this.rundenEndeObjekte.push(this.tabellenMaskeGfx);
 
@@ -440,6 +446,7 @@ export class TischRundenEndeController {
     this.tabellenZeilen.forEach((o) => o.destroy());
     this.tabellenZeilen = [];
     this.tabellenContainer = undefined;
+    this.tabellenMaske = undefined;
     this.tabellenMaskeGfx = undefined;
     this.rundenEndeObjekte.forEach((o) => o.destroy());
     this.rundenEndeObjekte = [];
