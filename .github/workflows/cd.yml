@@ -1,0 +1,42 @@
+name: CD
+
+on:
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    name: Deploy nach prod1.locodoko.de
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Java 25 einrichten
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '25'
+          cache: maven
+
+      - name: JAR bauen
+        run: mvn clean package -DskipTests -q
+
+      - name: SSH-Agent einrichten
+        uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+
+      - name: Known Hosts eintragen
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.SSH_KNOWN_HOSTS }}" >> ~/.ssh/known_hosts
+          chmod 600 ~/.ssh/known_hosts
+
+      - name: JAR auf Server kopieren
+        run: scp target/locodoko-*.jar ${{ secrets.DEPLOY_HOST }}:/opt/locodoko/locodoko.jar
+
+      - name: Service neu starten
+        run: ssh ${{ secrets.DEPLOY_HOST }} "systemctl restart locodoko"
+
+      - name: Healthcheck
+        run: ssh ${{ secrets.DEPLOY_HOST }} "systemctl is-active locodoko"
