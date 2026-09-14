@@ -134,6 +134,7 @@
    ```
    git add src/ frontend/ e2e/ specs/ pom.xml \
            frontend/package.json frontend/package-lock.json \
+           .github/ LICENSE \
            IMPLEMENTATION_PLAN.md AGENTS.md CLAUDE.md
    git commit -m "<präzise Beschreibung mit Task-ID, z.B. 'DB-3: JSONB-Converter eingeführt'>"
    ```

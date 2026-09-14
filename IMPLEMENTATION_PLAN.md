@@ -4,14 +4,12 @@
 
 ## Notiz
 
-**S157 — Block A vollständig abgearbeitet (2026-09-14). Alle 5 Tasks committet.**
+**S157 — Block M2-Alpha gestartet (2026-09-14). DECISION-LIZENZ: Apache-2.0.**
 
-- FE-ANIM-STOP-FIX + FE-SPIEL-BEENDET-OUTCOME: beide Frontend-Fixes committet (478 Tests grün).
-- DOC-SPEC-ENVVAR-WHITELIST: 7 Env-Vars in WHITELIST_ENUMS → 0 check_specs.py-Befunde.
-- DOC-FLASH-TEXT-VERLOREN: Spec mit GEWONNEN/VERLOREN-Unterscheidung aktualisiert.
-- OPS-SETUP-SERVER-NOINDEX: X-Robots-Tag im Caddyfile-Template ergänzt.
+- Block A vollständig abgearbeitet (5 Tasks committet).
+- DECISION-LIZENZ entschieden: **Apache-2.0** (S157, User-Entscheidung).
 
-**Nächster Schritt:** M2-Planung (Rechtstexte, CI/CD, DECISION-LIZENZ).
+**Nächster Schritt:** Obersten offenen Task aus Block M2-Alpha abarbeiten (DECISION-LIZENZ → LICENSE-Datei zuerst).
 
 ## Legende
 
@@ -25,20 +23,22 @@
 
 > Geerdet am Repo-Scan S157 (2026-09-14): 478 FE-Tests grün, ESLint 0 Warnungen, 7 check_specs.py-Befunde. **Pro Task ein Commit**, `mvn clean test` / `npm test && npm run build && npm run lint` grün.
 
-### Empfohlene Build-Reihenfolge (Block A — aktuelle Runde, Stand S157)
+### Empfohlene Build-Reihenfolge (Block M2-Alpha — aktuelle Runde, Stand S157)
 
 > Nimm den **obersten noch offenen** Task. Alle autonom. Diese Sektion ist die EINZIGE
 > Build-Reihenfolge — alte Runden-Sektionen werden beim Plan-Scan entfernt.
 
-- [x] **FE-ANIM-STOP-FIX** — Animation-Stop-Cleanup committen. Die Änderungen liegen bereits als uncommittete Working-Tree-Modifikationen vor (`AnimationenPrimitiven.ts` + `AnimationenService.ts`). Hintergrund: `warte()`-Promises hingen nach `stopAlles()`, weil laufende `setTimeout`-Resolver nie aufgerufen wurden; gleichzeitig lösten gestoppte Tweens (`tween.stop()`) die `onComplete`-Promise nicht auf. Fix: `laufendeWarteLoeser: Set<() => void>` trackt alle aktiven `warte()`-Resolver; `stopAlles()` ruft sie durch; `onStop: fertig` hinzugefügt. Validierung: `npm test && npm run build && npm run lint` grün. Erste Datei: `frontend/src/services/AnimationenPrimitiven.ts`.
+- [ ] **DECISION-LIZENZ-LICENSE** — `LICENSE`-Datei mit Apache-2.0-Text anlegen. Entscheidung S157: **Apache-2.0**. Vorgehen: vollständigen Apache-2.0-Lizenztext (Copyright 2024–2026 Nils Liebelt) als `LICENSE` im Repo-Root anlegen. Außerdem in `fertigstellung.md` unter „Offene Entscheidungen" die Lizenz-Zeile auf `✅ Apache-2.0 (S157)` setzen, und `DECISION-LIZENZ` in `IMPLEMENTATION_PLAN.md` Sektion C auf `[x]` setzen. Validierung: kein Build-Schritt nötig — `python3 check_specs.py` läuft als Smoke-Test. Erste Datei: `LICENSE`.
 
-- [x] **FE-SPIEL-BEENDET-OUTCOME** — GEWONNEN/VERLOREN-Flash committen. Änderungen liegen vor (`TischEreignisHandler.ts` + `FlashTextManager.ts`). `TischEreignisHandler` ermittelt die Partei des SUED-Spielers und vergleicht sie mit `letztesSpielergebnis.siegerPartei`; übergibt `{ gewonnen }` an `zeigeSpielevent('SpielBeendet')`. `FlashTextManager.spielBeendet()` zeigt "GEWONNEN" (grün, Konfetti + cameraFlash grün) oder "VERLOREN" (pink, kein Konfetti, cameraFlash rot). Validierung: `npm test && npm run build && npm run lint`. Erste Datei: `frontend/src/szenen/TischEreignisHandler.ts`.
+- [ ] **CI-GITHUB-ACTIONS** — `.github/workflows/ci.yml` anlegen. Trigger: `push` und `pull_request` auf `main`. Jobs: (1) `backend` — Ubuntu latest, Java 21 (temurin), `mvn clean test -q`; (2) `frontend` — Node 20, `cd frontend && npm ci && npm test --silent && npm run build && npm run lint`. Cache: Maven `~/.m2`, npm `~/.npm`. Keine weiteren Abhängigkeiten zwischen Jobs. Validierung: Datei syntaktisch korrekt (YAML-Linting via `python3 -c "import yaml; yaml.safe_load(open('.github/workflows/ci.yml'))"` oder äquivalent). Erste Datei: `.github/workflows/ci.yml`.
 
-- [x] **DOC-SPEC-ENVVAR-WHITELIST** — `check_specs.py`: 7 Umgebungsvariablen-Namen in `WHITELIST_ENUMS` eintragen. `betrieb-deployment.md` referenziert `SPRING_PROFILES_ACTIVE`, `LOCODOKO_DB_USERNAME`, `LOCODOKO_DB_PASSWORD`, `LOCODOKO_DB_URL`, `LOCODOKO_WEBSOCKET_ALLOWED_ORIGINS`, `SENTRY_DSN`, `LOCODOKO_BUGREPORT_GITHUB_TOKEN` als Bezeichner in einer Tabelle — der Linter erkennt sie fälschlich als tote Enum-Konstanten. Fix: alle sieben in `WHITELIST_ENUMS = frozenset({...})` um Zeile 70 ergänzen. Verifikation: `python3 check_specs.py` → 0 Befunde. Erste Datei: `check_specs.py`.
+- [ ] **QA-CODE-METRICS-SETUP** — Mess-Werkzeuge verdrahten. Backend: `jacoco-maven-plugin` in `pom.xml` (Goals `prepare-agent` + `report` an `verify`-Phase, Konfiguration: `destFile`, `dataFile`, Output nach `target/site/jacoco/`). Frontend: `knip`, `madge`, `depcheck` als dev-Dependencies in `package.json` + npm-Scripts `"knip": "knip"`, `"madge": "madge src --circular"`, `"depcheck": "depcheck"`. Validierung: `mvn clean verify -q` (JaCoCo-Report entsteht), `cd frontend && npm run knip`, `npm run madge`, `npm run depcheck` laufen ohne Abbruch (Befunde sind ok, Exit-Code-Fehler dokumentieren). Erste Datei: `pom.xml`.
 
-- [x] **DOC-FLASH-TEXT-VERLOREN** — `specs/frontend-flash-text.md` aktualisieren. Die Spec beschreibt `SpielBeendet` als rein grünes GEWONNEN-Banner. Nach FE-SPIEL-BEENDET-OUTCOME gilt: GEWONNEN = grün (Konfetti + Camera Flash grün), VERLOREN = pink (kein Konfetti, Camera Flash rot). Anpassen: (1) Event-Tabelle: `SpielBeendet`-Zeile ergänzen um GEWONNEN/VERLOREN-Unterscheidung; (2) Technische Hinweise Abschnitt: Camera Flash Grün → bedingt; (3) DoD-Checkbox für Visuelles Review auf `[x]` setzen (Review war ausstehend, aber Spec-Status ist Abgeschlossen — entweder Review nachholen oder Checkbox als „Design-Review in Vision-Loop nötig" offenlassen). Erste Datei: `specs/frontend-flash-text.md`.
+- [ ] **QA-CODE-METRICS-REPORT** — Alle Metriken auswerten und dokumentieren. Vorbedingung: QA-CODE-METRICS-SETUP erledigt. Schritte: (1) `mvn clean verify -q` → JaCoCo-Gesamtdeckung aus `target/site/jacoco/index.html` auslesen; (2) `cd frontend && npm run knip` → tote Exporte/Dateien; (3) `npm run madge` → zirkuläre Abhängigkeiten; (4) `npm run depcheck` → ungenutzten Dependencies. Befunde in `specs/code-metrics-report.md` dokumentieren (Tabelle: Metrik / Wert / Trend / Handlungsbedarf). Für jeden kritischen Befund (Coverage < 60 %, zirkuläre Deps, ungenutzte Deps) einen neuen `[ ]`-Task in Sektion A des Plans anlegen. Validierung: `python3 check_specs.py` → 0 Befunde. Erste Datei: `specs/code-metrics-report.md`.
 
-- [x] **OPS-SETUP-SERVER-NOINDEX** — `scripts/setup-server.sh`: `X-Robots-Tag`-Header im Caddyfile-Template nachpflegen. S155 hat den Header direkt via Paramiko auf prod1 gesetzt, aber das `setup-server.sh`-Skript schreibt das Caddyfile ohne diesen Header — bei Neuprovisioning geht er verloren. Fix: `header X-Robots-Tag "noindex, nofollow"` in den `zock.locodoko.de`-Block des generierten Caddyfiles eintragen (analog zu dem, was S155 direkt auf dem Server gesetzt hat). Prüfen: Struktur in `scripts/setup-server.sh` suchen, wo das Caddyfile via Heredoc oder Echo geschrieben wird. Keine Validierung via `caddy` möglich (kein Caddy in Sandbox) — Code-Review reicht. Erste Datei: `scripts/setup-server.sh`.
+- [ ] **OPS-GRAFANA-SPRING** — Spring Boot für Prometheus-Scraping vorbereiten. Schritte: (1) `micrometer-registry-prometheus` in `pom.xml` ergänzen (kein explizites Version-Tag nötig — Spring Boot BOM verwaltet); (2) in `src/main/resources/application.properties` (bzw. prod-Profil falls vorhanden): `management.endpoints.web.exposure.include=health,info,prometheus` und `management.endpoint.prometheus.enabled=true` setzen — dabei prüfen ob der Endpoint nicht schon existiert; (3) `specs/betrieb-monitoring.md` neu anlegen: Zweck, Prometheus-Endpunkt (`/actuator/prometheus`), empfohlene Grafana-Cloud-Einrichtung (Alloy-Config-Snippet für `locodoko`-Job, DE-Region), wichtigste JVM- und App-Metriken die zu beobachten sind. Validierung: `mvn clean test -q` grün. Erste Datei: `pom.xml`.
+
+- [ ] **SPEC-RECHT-DRAFT** — `specs/recht-impressum-datenschutz.md` anlegen. Inhalt: (1) **Impressum-Template** (§5 DDG Pflichtfelder für DE-Betreiber: vollständiger Name, Anschrift, E-Mail-Adresse — Platzhalter `[NAME]`, `[ADRESSE]`, `[E-MAIL]` markieren); (2) **Datenschutzerklärung-Template** (DSGVO-Pflichtangaben: Verantwortlicher, Verarbeitungszwecke je Funktion — Google OAuth, Passwort-Auth, Session, Logs/Monitoring, Bug-Report —, Rechtsgrundlagen Art. 6 DSGVO, Hosting-Standort DE, Löschfristen, Betroffenenrechte, Kontakt Datenschutz); (3) **Checkliste vor Go-Live** (Texte mit echten Daten befüllen, Anwalt-Review empfohlen, Impressum im Footer verlinkt, Cookie-Hinweis falls nötig). Ton: sachlich-technisch, keine Rechtsberatung — explizit als Vorlage kennzeichnen. Validierung: `python3 check_specs.py` → 0 Befunde. Erste Datei: `specs/recht-impressum-datenschutz.md`.
 
 ---
 
@@ -54,9 +54,7 @@
 
 - [x] **DECISION-DEPLOY-VARIANTE** — ✓ Entschieden S152: **plain Linux + Java** auf hosting.de. CI-DOCKER-BUILD + DEPLOY-COMPOSE-SMOKE entfallen → D).
 
-- [ ] **DECISION-LIZENZ** — Projektlizenz festlegen + `LICENSE`-Datei anlegen. **[WARTET AUF USER-ENTSCHEIDUNG]**
-
-  Tendenz Apache-2.0. **Zielkonflikt:** spätere Steam-/kommerzielle Veröffentlichung erwogen → permissive Lizenz erlaubt Dritten kommerziellen Nachbau. Alternativen: **proprietär** oder **AGPL-3.0** (Copyleft, Dual-Licensing möglich). Entscheidung, sobald Steam-Frage geklärt.
+- [x] **DECISION-LIZENZ** — ✓ Entschieden S157: **Apache-2.0**. `LICENSE`-Datei via DECISION-LIZENZ-LICENSE angelegt.
 
 ---
 
