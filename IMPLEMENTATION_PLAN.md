@@ -4,12 +4,12 @@
 
 ## Notiz
 
-**S157 — Block M2-Alpha gestartet (2026-09-14). DECISION-LIZENZ: Apache-2.0.**
+**S157 — DECISION-LIZENZ-LICENSE erledigt (2026-09-14). Nächster Task: CI-GITHUB-ACTIONS.**
 
-- Block A vollständig abgearbeitet (5 Tasks committet).
-- DECISION-LIZENZ entschieden: **Apache-2.0** (S157, User-Entscheidung).
+- `LICENSE` (Apache-2.0, Copyright 2024–2026 Nils Liebelt) im Repo-Root angelegt.
+- `specs/fertigstellung.md`: Lizenz-Zeile auf `✅ Apache-2.0 (S157)` gesetzt, Checkbox abgehakt.
 
-**Nächster Schritt:** Obersten offenen Task aus Block M2-Alpha abarbeiten (DECISION-LIZENZ → LICENSE-Datei zuerst).
+**Nächster Schritt:** CI-GITHUB-ACTIONS — `.github/workflows/ci.yml` anlegen (Backend + Frontend-Job).
 
 ## Legende
 
@@ -28,7 +28,7 @@
 > Nimm den **obersten noch offenen** Task. Alle autonom. Diese Sektion ist die EINZIGE
 > Build-Reihenfolge — alte Runden-Sektionen werden beim Plan-Scan entfernt.
 
-- [ ] **DECISION-LIZENZ-LICENSE** — `LICENSE`-Datei mit Apache-2.0-Text anlegen. Entscheidung S157: **Apache-2.0**. Vorgehen: vollständigen Apache-2.0-Lizenztext (Copyright 2024–2026 Nils Liebelt) als `LICENSE` im Repo-Root anlegen. Außerdem in `fertigstellung.md` unter „Offene Entscheidungen" die Lizenz-Zeile auf `✅ Apache-2.0 (S157)` setzen, und `DECISION-LIZENZ` in `IMPLEMENTATION_PLAN.md` Sektion C auf `[x]` setzen. Validierung: kein Build-Schritt nötig — `python3 check_specs.py` läuft als Smoke-Test. Erste Datei: `LICENSE`.
+- [x] **DECISION-LIZENZ-LICENSE** — `LICENSE`-Datei mit Apache-2.0-Text anlegen. Entscheidung S157: **Apache-2.0**. Vorgehen: vollständigen Apache-2.0-Lizenztext (Copyright 2024–2026 Nils Liebelt) als `LICENSE` im Repo-Root anlegen. Außerdem in `fertigstellung.md` unter „Offene Entscheidungen" die Lizenz-Zeile auf `✅ Apache-2.0 (S157)` setzen, und `DECISION-LIZENZ` in `IMPLEMENTATION_PLAN.md` Sektion C auf `[x]` setzen. Validierung: kein Build-Schritt nötig — `python3 check_specs.py` läuft als Smoke-Test. Erste Datei: `LICENSE`.
 
 - [ ] **CI-GITHUB-ACTIONS** — `.github/workflows/ci.yml` anlegen. Trigger: `push` und `pull_request` auf `main`. Jobs: (1) `backend` — Ubuntu latest, Java 21 (temurin), `mvn clean test -q`; (2) `frontend` — Node 20, `cd frontend && npm ci && npm test --silent && npm run build && npm run lint`. Cache: Maven `~/.m2`, npm `~/.npm`. Keine weiteren Abhängigkeiten zwischen Jobs. Validierung: Datei syntaktisch korrekt (YAML-Linting via `python3 -c "import yaml; yaml.safe_load(open('.github/workflows/ci.yml'))"` oder äquivalent). Erste Datei: `.github/workflows/ci.yml`.
 

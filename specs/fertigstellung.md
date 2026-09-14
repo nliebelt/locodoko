@@ -129,10 +129,7 @@ automatisiertes CI/CD, `VERIFY-MULTIPLAYER`, `FE-SPIELREGELN-HILFE`, `FEAT-BUGRE
   (99 €/Jahr Developer Program + JWT-Client-Secret-Rotation für reine UX; Apple-Nutzer nutzen Google im Safari).
 - **Passwort-Reset / Email:** ⏸️ zurückgestellt → Beta-Fallback: manueller Reset durch Betreiber.
 - **Mobile:** ⏸️ nominell M2 — **aber Apple/iPhone-Nutzer testen vermutlich mobil** → ggf. vorziehen.
-- **Lizenz:** ⏸️ **aufgeschoben.** Tendenz Apache-2.0. Zielkonflikt: mögliche spätere
-  **Steam-/kommerzielle Veröffentlichung** — eine permissive Lizenz (Apache/MIT) erlaubt Dritten den
-  kommerziellen Nachbau. Wer Verwertung offenhalten will: eher **proprietär** oder **AGPL-3.0**.
-  Entscheidung, sobald die Steam-Frage geklärt ist.
+- **Lizenz:** ✅ **Apache-2.0 (S157)** — `LICENSE`-Datei im Repo-Root angelegt.
 
 ## Checklisten
 
@@ -151,4 +148,4 @@ automatisiertes CI/CD, `VERIFY-MULTIPLAYER`, `FE-SPIELREGELN-HILFE`, `FEAT-BUGRE
 - [ ] Automatisiertes CI/CD (5)
 - [x] Mensch-gegen-Mensch verifiziert (13) — E2E grün
 - [ ] In-App-Spielregeln/Onboarding (19)
-- [ ] Lizenz entschieden
+- [x] Lizenz entschieden (Apache-2.0, S157)
