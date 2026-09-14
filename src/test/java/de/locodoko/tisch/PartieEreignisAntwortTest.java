@@ -20,7 +20,7 @@ class PartieEreignisAntwortTest {
         // Wichtig: Das Frontend ermittelt den Spielernamen fuer den Banner anhand
         // der spielerPosition im Event. Fehlt sie, zeigt der Banner immer "Spieler: Schweinchen!".
         PartieStandAntwort stand = new PartieStandAntwort(
-            null, 42L, PartieStatus.LAUFEND, 8, 0, Map.of(), null, List.of(), null
+            null, 42L, PartieStatus.LAUFEND, 8, 0, Map.of(), null, List.of(), List.of(), null
         );
 
         PartieEreignisAntwort ergebnis = PartieEreignisAntwort.schweinchenGemeldet(stand, SpielerPosition.WEST);

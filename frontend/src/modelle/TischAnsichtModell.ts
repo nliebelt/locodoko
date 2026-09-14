@@ -147,6 +147,7 @@ export interface TischAnsichtModell {
   gesamtpunktestand: PunktestandEintrag[];
   letzteAbgeschlosseneStiche: AbgeschlossenerStichAnsicht[];
   letztesSpielergebnis: LetztesSpielergebnisAnsicht | null;
+  spielverlauf: LetztesSpielergebnisAnsicht[];
   /** true, wenn die gesamte Partie (alle Spiele) beendet ist — loest Partie-Ende-Modal aus. */
   partieBeendet: boolean;
   armutAktion: ArmutAktionAnsicht | null;
@@ -246,6 +247,7 @@ export function erstelleStandardTischAnsicht(spielerName: string): TischAnsichtM
     gesamtpunktestand: [],
     letzteAbgeschlosseneStiche: [],
     letztesSpielergebnis: null,
+    spielverlauf: [],
     partieBeendet: false,
     armutAktion: null,
     schweinchenGemeldetVon: null,
@@ -283,6 +285,7 @@ function erstelleAnsichtMitLaufendemSpiel(
       bezugPosition
     ),
     letztesSpielergebnis: mappeLetztesSpielergebnis(partieStand?.letztesSpielergebnis ?? null, spielerAnsichten),
+    spielverlauf: (partieStand?.spielverlauf ?? []).map(e => mappeLetztesSpielergebnis(e, spielerAnsichten)).filter((e): e is LetztesSpielergebnisAnsicht => e !== null),
     partieBeendet: partieStand?.status === 'BEENDET',
     armutAktion: bestimmeArmutAktion(laufendesSpiel, spielerAnsichten, bezugPosition),
     schweinchenGemeldetVon: laufendesSpiel.schweinchenGemeldetVon
@@ -331,6 +334,7 @@ function erstelleAnsichtOhneLaufendesSpiel(
       bezugPosition
     ),
     letztesSpielergebnis: mappeLetztesSpielergebnis(partieStand?.letztesSpielergebnis ?? null, spielerAnsichten),
+    spielverlauf: (partieStand?.spielverlauf ?? []).map(e => mappeLetztesSpielergebnis(e, spielerAnsichten)).filter((e): e is LetztesSpielergebnisAnsicht => e !== null),
     partieBeendet: partieStand?.status === 'BEENDET',
     armutAktion: null,
     schweinchenGemeldetVon: null,
@@ -376,6 +380,7 @@ export function erstelleTischAnsichtAusStatus(
       gesamtpunktestand: [],
       letzteAbgeschlosseneStiche: [],
       letztesSpielergebnis: null,
+      spielverlauf: [],
       partieBeendet: false,
       armutAktion: null,
       schweinchenGemeldetVon: null,

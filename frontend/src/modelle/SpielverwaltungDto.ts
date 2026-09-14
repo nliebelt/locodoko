@@ -228,6 +228,7 @@ export interface PartieStandAntwort {
   gespielteSpiele: number;
   gesamtpunktestand: Partial<Record<SpielerPosition, number>>;
   letztesSpielergebnis?: LetztesSpielergebnisAntwort | null;
+  spielverlauf?: LetztesSpielergebnisAntwort[];
   letzteAbgeschlosseneStiche?: AbgeschlossenerStichAntwort[];
   laufendesSpiel: LaufendesSpielAntwort | null;
 }

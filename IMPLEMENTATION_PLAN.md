@@ -4,10 +4,12 @@
 
 ## Notiz
 
-**S157/Folge — Block M2-Beta geplant (2026-09-14). Neue Tasks: BE-SPIELVERLAUF, FE-RUNDENENDE-REDESIGN, FE-UI-FINAL-REVIEW, FE-SPIELREGELN-HILFE, CD-DEPLOY.**
+**BE-SPIELVERLAUF erledigt (2026-09-14). Nächster Task: FE-RUNDENENDE-REDESIGN.**
 
-- SPEC-RECHT-DRAFT abgeschlossen, alle S157-Tasks erledigt.
-- Nächste Runde: Rundenende-Redesign (Backend-Erweiterung + Frontend-Fullscreen-Overlay), Spielregeln-Onboarding, CD-Deploy-Pipeline.
+- `PartieStandAntwort` um `spielverlauf: List<LetztesSpielergebnisAntwort>` erweitert (alle abgeschlossenen Spiele).
+- Frontend: `TischAnsichtModell.spielverlauf: LetztesSpielergebnisAnsicht[]` + Mapping in beiden Hilfsfunktionen.
+- WireFormat-Baseline neu generiert (additives Feld, kein Breaking Change).
+- Nächste Aufgabe: FE-RUNDENENDE-REDESIGN — Vollbild-Overlay mit scrollbarer Verlaufstabelle (nutzt jetzt `spielverlauf`).
 
 ## Legende
 
@@ -26,7 +28,7 @@
 > Nimm den **obersten noch offenen** Task. Alle autonom. Diese Sektion ist die EINZIGE
 > Build-Reihenfolge — alte Runden-Sektionen werden beim Plan-Scan entfernt.
 
-- [ ] **BE-SPIELVERLAUF** — `PartieStandAntwort` um `spielverlauf: List<LetztesSpielergebnisAntwort>` erweitern (alle abgeschlossenen Spiele der aktuellen Partie). Vorgehen: (1) In `PartieStandAntwort.java` ein neues Record-Feld `List<LetztesSpielergebnisAntwort> spielverlauf` ergänzen (nach `letztesSpielergebnis`); (2) In der `aus()`-Fabrikmethode befüllen: `partie.spiele().stream().filter(s -> s.ergebnis().isPresent()).map(LetztesSpielergebnisAntwort::aus).toList()`; (3) Im Frontend `TischAnsichtModell.ts`: Interface `TischAnsichtModell` bekommt `spielverlauf: LetztesSpielergebnisAnsicht[]`, Defaultwert `[]`; Mapping in `erstelleTischAnsichtAusStatus()` analog zu `letztesSpielergebnis` (alle Einträge von `partieStand.spielverlauf` mappen). Der neue JSON-Key ist additiv — kein Breaking Change. Validierung: `mvn clean test` grün; `cd frontend && npm test && npm run build && npm run lint` grün. Erste Datei: `src/main/java/de/locodoko/tisch/PartieStandAntwort.java`.
+- [x] **BE-SPIELVERLAUF** — `PartieStandAntwort` um `spielverlauf: List<LetztesSpielergebnisAntwort>` erweitern (alle abgeschlossenen Spiele der aktuellen Partie). Vorgehen: (1) In `PartieStandAntwort.java` ein neues Record-Feld `List<LetztesSpielergebnisAntwort> spielverlauf` ergänzen (nach `letztesSpielergebnis`); (2) In der `aus()`-Fabrikmethode befüllen: `partie.spiele().stream().filter(s -> s.ergebnis().isPresent()).map(LetztesSpielergebnisAntwort::aus).toList()`; (3) Im Frontend `TischAnsichtModell.ts`: Interface `TischAnsichtModell` bekommt `spielverlauf: LetztesSpielergebnisAnsicht[]`, Defaultwert `[]`; Mapping in `erstelleTischAnsichtAusStatus()` analog zu `letztesSpielergebnis` (alle Einträge von `partieStand.spielverlauf` mappen). Der neue JSON-Key ist additiv — kein Breaking Change. Validierung: `mvn clean test` grün; `cd frontend && npm test && npm run build && npm run lint` grün. Erste Datei: `src/main/java/de/locodoko/tisch/PartieStandAntwort.java`.
 
 - [ ] **FE-RUNDENENDE-REDESIGN** — `TischRundenEndeController.ts` vollständig neu gestalten. Vorbedingung: BE-SPIELVERLAUF erledigt. **Design-Spec:**  
   *Palette:* Grüne Spieltisch-Palette durchgehend (kein Lila mehr): Hintergrund-Overlay `0x0d1f0d` (semi-transparent, alpha 0.92), Trenner `0x4a7c59`, Standardtext `#a3c4a8`, Überschrift weiß `#f8f9fa`, Gold `#f8c94e`, Re-Farbe `#f8c94e` (gold), Kontra-Farbe `#90caf9` (hellblau), Negativ `#ff6b6b`.  

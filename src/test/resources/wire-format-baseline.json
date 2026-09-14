@@ -11,6 +11,7 @@
     "OST" : 0
   },
   "letztesSpielergebnis" : null,
+  "spielverlauf" : [ ],
   "letzteAbgeschlosseneStiche" : [ {
     "spielNummer" : 1,
     "stichNummer" : 1,

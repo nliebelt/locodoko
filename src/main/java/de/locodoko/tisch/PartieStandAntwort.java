@@ -54,6 +54,8 @@ public record PartieStandAntwort(
     Map<SpielerPosition, Integer> gesamtpunktestand,
     @Schema(description = "Ergebnis des letzten abgeschlossenen Spiels; null falls keines.")
     LetztesSpielergebnisAntwort letztesSpielergebnis,
+    @Schema(description = "Ergebnisliste aller abgeschlossenen Spiele der aktuellen Partie.")
+    List<LetztesSpielergebnisAntwort> spielverlauf,
     @Schema(description = "Abgeschlossene Stiche des aktuellen oder letzten Spiels.")
     List<AbgeschlossenerStichAntwort> letzteAbgeschlosseneStiche,
     @Schema(description = "Daten des aktuell laufenden Spiels; null falls keines laeuft.")
@@ -87,6 +89,7 @@ public record PartieStandAntwort(
             partie.spiele().stream().filter(spiel -> spiel.ergebnis().isPresent()).toList().size(),
             partie.gesamtpunktestandAusDb(),
             LetztesSpielergebnisAntwort.aus(letztesAbgeschlossenesSpiel),
+            partie.spiele().stream().filter(s -> s.ergebnis().isPresent()).map(LetztesSpielergebnisAntwort::aus).toList(),
             AbgeschlossenerStichAntwort.aus(laufendesSpiel != null ? laufendesSpiel : letztesAbgeschlossenesSpiel),
             LaufendesSpielAntwort.aus(tisch, laufendesSpiel, sichtbarerSpielerId, debugModus)
         );
