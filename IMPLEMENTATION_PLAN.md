@@ -4,13 +4,12 @@
 
 ## Notiz
 
-**FE-RUNDENENDE-REDESIGN erledigt (2026-09-14). Nächster Task: FE-UI-FINAL-REVIEW.**
+**FE-UI-FINAL-REVIEW erledigt (2026-09-14). Nächster Task: FE-FIX-MASK-WEBGL.**
 
-- `TischRundenEndeController.ts` vollständig auf grüne Spieltisch-Palette umgestellt (kein PhaserModal mehr).
-- Rundenende: Vollbild-Overlay mit Sieger-Animation, Re/Kontra-Spalten, Sonderpunkte, Berechnungszeile, Spielerpunkte, scrollbare Verlaufstabelle (Wheel-Event, 5 sichtbare Zeilen, Maske), Σ-Zeile, Weiter-Button.
-- Partieende: Gleiche Palette, Gesamtstand mit ★, zwei Buttons (Neue Partie / Tisch verlassen), Countdown-Text.
-- Hilfsmethoden: `erstelleTrenner`, `erstelleButton`, `zeichneTabelle`.
-- Nächste Aufgabe: FE-UI-FINAL-REVIEW — Backend starten, Vision Loop ausführen, Screenshots prüfen.
+- Vision Loop ausgeführt, 10+ Desktop-Screenshots gelesen (Lobby, Spieltisch, RundenEnde, PartieEnde, Spielerprofil).
+- Lobby, Spieltisch, Letzter-Stich-Overlay, PartieEnde-Overlay: visuell unauffällig.
+- Bestätigter Bug: `Container.setMask()` in WebGL nicht unterstützt → Phaser 3 Console-Warning + Scroll-Clipping kaputt.
+- Nächster Task: FE-FIX-MASK-WEBGL — Maske auf einzelne Text-Objekte in `zeichneTabelle()` anwenden statt auf den Container.
 
 ## Legende
 
@@ -38,7 +37,9 @@
   *Scroll-Implementierung:* `maxSichtbareZeilen = 5`, `zeilenHoehe = 20`, `scrollOffset` als Instanzvariable; wheel-Event in `zeigeRundenEndeModal` registrieren, in `schliesseRundenEndeModal` entfernen; `zeichneTabelle()`-Methode, die bei jedem Scroll neu rendert (alte Zeilen zerstören + neu erzeugen oder per Y-Offset auf Container).  
   Validierung: `npm test && npm run build && npm run lint` grün; danach Vision Loop `cd e2e && npx playwright test vision-loop.spec.ts --headed` — Screenshots einlesen und visuell prüfen. Erste Datei: `frontend/src/szenen/TischRundenEndeController.ts`.
 
-- [ ] **FE-UI-FINAL-REVIEW** — Systematisches UI-Review per Vision Loop direkt nach FE-RUNDENENDE-REDESIGN. Vorbedingung: FE-RUNDENENDE-REDESIGN erledigt und Backend läuft. Schritte: (1) Backend starten (`mvn spring-boot:run &`, warten bis Port 8080 antwortet); (2) `cd e2e && npx playwright test vision-loop.spec.ts --headed`; (3) alle Screenshots in `e2e/screenshots/` mit dem Read-Tool einlesen und visuell bewerten: Lobby, Spieltisch, Rundenende-Overlay, PartieEnde-Overlay, Bestenliste; (4) Befunde mit konkreten Dateinamen + Zeilennummern als neue `[ ]`-Tasks in Sektion A eintragen (Format: `FE-FIX-<KURZNAME>`); (5) Backend stoppen. Keine Code-Änderungen in diesem Task — nur Diagnose + Plan. Validierung: mindestens 5 Screenshots gelesen, Befunde als Tasks eingetragen (oder explizit „keine Befunde" vermerkt). Erste Datei: `IMPLEMENTATION_PLAN.md` (neue FE-FIX-Tasks).
+- [x] **FE-UI-FINAL-REVIEW** — Systematisches UI-Review per Vision Loop direkt nach FE-RUNDENENDE-REDESIGN. Vorbedingung: FE-RUNDENENDE-REDESIGN erledigt und Backend läuft. Schritte: (1) Backend starten (`mvn spring-boot:run &`, warten bis Port 8080 antwortet); (2) `cd e2e && npx playwright test vision-loop.spec.ts --headed`; (3) alle Screenshots in `e2e/screenshots/` mit dem Read-Tool einlesen und visuell bewerten: Lobby, Spieltisch, Rundenende-Overlay, PartieEnde-Overlay, Bestenliste; (4) Befunde mit konkreten Dateinamen + Zeilennummern als neue `[ ]`-Tasks in Sektion A eintragen (Format: `FE-FIX-<KURZNAME>`); (5) Backend stoppen. Keine Code-Änderungen in diesem Task — nur Diagnose + Plan. Validierung: mindestens 5 Screenshots gelesen, Befunde als Tasks eingetragen (oder explizit „keine Befunde" vermerkt). Erste Datei: `IMPLEMENTATION_PLAN.md` (neue FE-FIX-Tasks).
+
+- [ ] **FE-FIX-MASK-WEBGL** — Scrollbare Verlaufstabelle im RundenEnde-Overlay: `Container.setMask()` in Phaser 3 WebGL nicht unterstützt → Clipping kaputt. Vorbedingung: FE-UI-FINAL-REVIEW erledigt. Vorgehen: In `TischRundenEndeController.ts` (Zeile 395) `this.tabellenContainer.setMask(maske)` entfernen. Stattdessen in `zeichneTabelle()` die Maske auf jedes einzelne Text-Objekt anwenden: direkt nach `this.szene.add.text(...)` ein `.setMask(this.tabellenMaske)` anhängen. `this.tabellenMaske` dazu als Instanzvariable vom Typ `Phaser.Display.Masks.GeometryMask` speichern (statt nur `this.tabellenMaskeGfx`). Cleanup: In `schliesseRundenEndeModal()` / `loescheRundenEndObjekte()` prüfen ob `this.tabellenMaske` bereits via `tabellenMaskeGfx.destroy()` mitbereinigt wird (Mask selbst hat kein `destroy`, nur das zugrundeliegende Graphics). Validierung: `cd frontend && npm test && npm run build && npm run lint` grün; kein `Container.setMask`-Warning mehr in der Browser-Konsole (prüfbar via `npx playwright test --config playwright.config.vision.ts 2>&1 | grep -i mask`). Erste Datei: `frontend/src/szenen/TischRundenEndeController.ts`.
 
 - [ ] **FE-SPIELREGELN-HILFE** — In-App Doppelkopf-Regelreferenz als eigene Overlay-Klasse. Vorgehen: (1) `frontend/src/szenen/SpielregelnOverlay.ts` anlegen — `Phaser.GameObjects.Container`-basiertes Vollbild-Overlay, gleiche grüne Spieltisch-Palette wie RundenEnde-Redesign; (2) 5 Seiten (per Index 0–4) mit Prev/Next-Navigation: **Seite 0** Trumpf-Reihenfolge (Dulle > Bube Kreuz/Pik/Herz/Karo > Dame Kreuz/Pik/Herz/Karo > Karo A/10/K/9/8/7, dann Fehlfarben); **Seite 1** Partei-Ermittlung (Kreuz-Damen = Re; wer keine hat = Kontra; Hochzeit-Sonderregel); **Seite 2** Sonderpunkte (Fuchs gefangen, Karlchen, Dulle fängt Dulle, Doppelkopf, vollständige Liste aus `Sonderpunkt`-Enum); **Seite 3** Ansagen (Re/Kontra/Keine-90/Keine-60/Keine-30/Schwarz + Zeitfenster); **Seite 4** Spieltypen (Normalspiel, Solo-Varianten, Hochzeit, Armut, Bockrunde); (3) Öffnen per Tastatur: `F1` (nur wenn kein Shift gedrückt, damit Shift+F1 Bug-Report unberührt bleibt) und per Help-Button `?` in der TischSzene (kleines `Text`-Objekt oben rechts, depth 50); (4) Schließen per Escape oder X-Button; (5) Overlay-Instanz als Instanzvariable in `TischSzene` halten, `zeigeSpielregeln()` / `schliesseSpielregeln()` Methoden. Validierung: `npm test && npm run build && npm run lint` grün; Vision Loop Screenshot — Overlay muss auf Screen-2 sichtbar sein. Erste Datei: `frontend/src/szenen/SpielregelnOverlay.ts`.
 
@@ -95,6 +96,12 @@
 ---
 
 ## Entdeckungen
+
+- **S157/FE-UI-FINAL-REVIEW — Container.setMask() WebGL-Bug bestätigt** (2026-09-14): Browser-Konsole zeigt `Phaser.GameObjects.Components.Mask.setMask: This method is not supported in WebGL. Create a Mask filter instead.` beim Öffnen des RundenEnde-Overlays. Ursache: `TischRundenEndeController.ts` Zeile 395 ruft `this.tabellenContainer.setMask(maske)` auf — Phaser 3 unterstützt `Container.setMask()` in WebGL nicht. Folge: Scroll-Clipping für die Verlaufstabelle ist wirkungslos, Zeilen außerhalb des 5-Zeilen-Fensters werden nicht ausgeblendet. Fix → FE-FIX-MASK-WEBGL (Maske auf einzelne Text-Objekte in `zeichneTabelle()` verlagern).
+
+- **S157/FE-UI-FINAL-REVIEW — Mobile-Screenshots veraltet** (2026-09-14): `mobile-landscape-05-*.png` stammt vom 2026-07-04 (vor FE-RUNDENENDE-REDESIGN). Der Vision Loop setzt `VISION_MOBILE=1` voraus (per `playwright.config.vision.ts`) — ohne diese Env-Variable werden nur Desktop-Shots neu aufgenommen. Nach FE-FIX-MASK-WEBGL sollte einmal `VISION_MOBILE=1 npx playwright test --config playwright.config.vision.ts` laufen, um Mobile-Baseline zu erneuern.
+
+- **S157/FE-UI-FINAL-REVIEW — vision-loop-szenen.spec.ts Timeout** (2026-09-14): `warteAufSzene(page, 'LoginSzene')` läuft in 20 s timeout, weil der Nutzer bereits eingeloggt ist und die `LoginSzene` übersprungen wird. Kein Regressionsproblem — pre-existing Annahme im Test (immer ausgeloggt starten). Kein Code-Handlungsbedarf im Rahmen der aktuellen Tasks.
 
 - **S157/Folge — OPS-GRAFANA-SPRING war bereits vollständig implementiert** (2026-09-14): `micrometer-registry-prometheus`, Actuator-Konfiguration und `specs/betrieb-monitoring.md` waren bereits im Repo vorhanden — Task war nur im Plan nicht abgehakt. `specs/betrieb-monitoring.md` dokumentiert außerdem eine `de.locodoko.betrieb.SpielMetriken`-Komponente (Domain-Metriken per `SpielBeendet`-Event), deren Java-Implementierung nicht gefunden wurde. Falls dieser Code fehlt, wäre ein eigener Task `OPS-SPIEL-METRIKEN` sinnvoll.
 
