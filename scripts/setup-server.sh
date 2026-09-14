@@ -188,6 +188,8 @@ zock.locodoko.de {
     @actuator path /actuator/*
     respond @actuator 403
 
+    header X-Robots-Tag "noindex, nofollow"
+
     reverse_proxy localhost:8081
 }
 

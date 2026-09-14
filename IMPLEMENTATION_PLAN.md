@@ -4,12 +4,14 @@
 
 ## Notiz
 
-**S157 — DOC-FLASH-TEXT-VERLOREN erledigt (2026-09-14). Nächster Task: OPS-SETUP-SERVER-NOINDEX.**
+**S157 — Block A vollständig abgearbeitet (2026-09-14). Alle 5 Tasks committet.**
 
-- frontend-flash-text.md: SpielBeendet-Tabelle aufgeteilt (GEWONNEN/VERLOREN), Camera-Flash bedingt, Konfetti-Hinweis + DoD-Checkbox mit VERLOREN-Hinweis ergänzt.
-- Noch offen: 1 Task (X-Robots-Tag in setup-server.sh).
+- FE-ANIM-STOP-FIX + FE-SPIEL-BEENDET-OUTCOME: beide Frontend-Fixes committet (478 Tests grün).
+- DOC-SPEC-ENVVAR-WHITELIST: 7 Env-Vars in WHITELIST_ENUMS → 0 check_specs.py-Befunde.
+- DOC-FLASH-TEXT-VERLOREN: Spec mit GEWONNEN/VERLOREN-Unterscheidung aktualisiert.
+- OPS-SETUP-SERVER-NOINDEX: X-Robots-Tag im Caddyfile-Template ergänzt.
 
-**Nächster Schritt:** OPS-SETUP-SERVER-NOINDEX — X-Robots-Tag-Header in scripts/setup-server.sh Caddyfile-Template ergänzen.
+**Nächster Schritt:** M2-Planung (Rechtstexte, CI/CD, DECISION-LIZENZ).
 
 ## Legende
 
@@ -36,7 +38,7 @@
 
 - [x] **DOC-FLASH-TEXT-VERLOREN** — `specs/frontend-flash-text.md` aktualisieren. Die Spec beschreibt `SpielBeendet` als rein grünes GEWONNEN-Banner. Nach FE-SPIEL-BEENDET-OUTCOME gilt: GEWONNEN = grün (Konfetti + Camera Flash grün), VERLOREN = pink (kein Konfetti, Camera Flash rot). Anpassen: (1) Event-Tabelle: `SpielBeendet`-Zeile ergänzen um GEWONNEN/VERLOREN-Unterscheidung; (2) Technische Hinweise Abschnitt: Camera Flash Grün → bedingt; (3) DoD-Checkbox für Visuelles Review auf `[x]` setzen (Review war ausstehend, aber Spec-Status ist Abgeschlossen — entweder Review nachholen oder Checkbox als „Design-Review in Vision-Loop nötig" offenlassen). Erste Datei: `specs/frontend-flash-text.md`.
 
-- [ ] **OPS-SETUP-SERVER-NOINDEX** — `scripts/setup-server.sh`: `X-Robots-Tag`-Header im Caddyfile-Template nachpflegen. S155 hat den Header direkt via Paramiko auf prod1 gesetzt, aber das `setup-server.sh`-Skript schreibt das Caddyfile ohne diesen Header — bei Neuprovisioning geht er verloren. Fix: `header X-Robots-Tag "noindex, nofollow"` in den `zock.locodoko.de`-Block des generierten Caddyfiles eintragen (analog zu dem, was S155 direkt auf dem Server gesetzt hat). Prüfen: Struktur in `scripts/setup-server.sh` suchen, wo das Caddyfile via Heredoc oder Echo geschrieben wird. Keine Validierung via `caddy` möglich (kein Caddy in Sandbox) — Code-Review reicht. Erste Datei: `scripts/setup-server.sh`.
+- [x] **OPS-SETUP-SERVER-NOINDEX** — `scripts/setup-server.sh`: `X-Robots-Tag`-Header im Caddyfile-Template nachpflegen. S155 hat den Header direkt via Paramiko auf prod1 gesetzt, aber das `setup-server.sh`-Skript schreibt das Caddyfile ohne diesen Header — bei Neuprovisioning geht er verloren. Fix: `header X-Robots-Tag "noindex, nofollow"` in den `zock.locodoko.de`-Block des generierten Caddyfiles eintragen (analog zu dem, was S155 direkt auf dem Server gesetzt hat). Prüfen: Struktur in `scripts/setup-server.sh` suchen, wo das Caddyfile via Heredoc oder Echo geschrieben wird. Keine Validierung via `caddy` möglich (kein Caddy in Sandbox) — Code-Review reicht. Erste Datei: `scripts/setup-server.sh`.
 
 ---
 
