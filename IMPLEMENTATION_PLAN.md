@@ -4,14 +4,13 @@
 
 ## Notiz
 
-**S157/Folge — QA-CODE-METRICS-SETUP erledigt (2026-09-14). Nächster Task: QA-CODE-METRICS-REPORT.**
+**S157/Folge — QA-CODE-METRICS-REPORT erledigt (2026-09-14). Nächster Task: OPS-GRAFANA-SPRING.**
 
-- `pom.xml`: JaCoCo `report`-Phase auf `verify` verschoben, `destFile` + `dataFile` + `outputDirectory` explizit konfiguriert. `mvn clean verify` erzeugt Report in `target/site/jacoco/`. JaCoCo war bereits vorhanden (0.8.14) — nur Phase und Konfiguration angepasst.
-- `frontend/package.json`: `knip` (6.35.1), `madge` (8.0.0), `depcheck` (1.4.7) als devDependencies ergänzt + npm-Scripts `knip`, `madge`, `depcheck` hinzugefügt.
-- knip-Befunde: Exit 1 — 1 ungenutzte Datei (`eslint-complexity.config.mjs`), 57 ungenutzte Exports, 50 ungenutzte Typen. Werden in QA-CODE-METRICS-REPORT dokumentiert.
-- madge: kein zirkulärer Abhängigkeit (Exit 0). depcheck: keine Issues (Exit 0).
+- `specs/code-metrics-report.md` angelegt: JaCoCo 86 % Instr / 75 % Branch (alle Pakete > 60 %), madge 0 Zyklen, depcheck 0 Issues, knip 1 Datei + 57 Exports + 50 Typen (kosmetisch).
+- `specs/README.md`: Sektion 6 „QA & Betrieb" ergänzt.
+- Keine kritischen Befunde → keine neuen Blocker-Tasks. Radar: `de.locodoko.system` Branch-Coverage 33 %, `eslint-complexity.config.mjs` ungenutzter Eintrag.
 
-**Nächster Schritt:** QA-CODE-METRICS-REPORT — Metriken auswerten, `specs/code-metrics-report.md` anlegen.
+**Nächster Schritt:** OPS-GRAFANA-SPRING — `micrometer-registry-prometheus` in `pom.xml`, `application.properties` für `/actuator/prometheus`, `specs/betrieb-monitoring.md` anlegen.
 
 ## Legende
 
@@ -36,7 +35,7 @@
 
 - [x] **QA-CODE-METRICS-SETUP** — Mess-Werkzeuge verdrahten. Backend: `jacoco-maven-plugin` in `pom.xml` (Goals `prepare-agent` + `report` an `verify`-Phase, Konfiguration: `destFile`, `dataFile`, Output nach `target/site/jacoco/`). Frontend: `knip`, `madge`, `depcheck` als dev-Dependencies in `package.json` + npm-Scripts `"knip": "knip"`, `"madge": "madge src --circular"`, `"depcheck": "depcheck"`. Validierung: `mvn clean verify -q` (JaCoCo-Report entsteht), `cd frontend && npm run knip`, `npm run madge`, `npm run depcheck` laufen ohne Abbruch (Befunde sind ok, Exit-Code-Fehler dokumentieren). Erste Datei: `pom.xml`.
 
-- [ ] **QA-CODE-METRICS-REPORT** — Alle Metriken auswerten und dokumentieren. Vorbedingung: QA-CODE-METRICS-SETUP erledigt. Schritte: (1) `mvn clean verify -q` → JaCoCo-Gesamtdeckung aus `target/site/jacoco/index.html` auslesen; (2) `cd frontend && npm run knip` → tote Exporte/Dateien; (3) `npm run madge` → zirkuläre Abhängigkeiten; (4) `npm run depcheck` → ungenutzten Dependencies. Befunde in `specs/code-metrics-report.md` dokumentieren (Tabelle: Metrik / Wert / Trend / Handlungsbedarf). Für jeden kritischen Befund (Coverage < 60 %, zirkuläre Deps, ungenutzte Deps) einen neuen `[ ]`-Task in Sektion A des Plans anlegen. Validierung: `python3 check_specs.py` → 0 Befunde. Erste Datei: `specs/code-metrics-report.md`.
+- [x] **QA-CODE-METRICS-REPORT** — Alle Metriken auswerten und dokumentieren. Vorbedingung: QA-CODE-METRICS-SETUP erledigt. Schritte: (1) `mvn clean verify -q` → JaCoCo-Gesamtdeckung aus `target/site/jacoco/index.html` auslesen; (2) `cd frontend && npm run knip` → tote Exporte/Dateien; (3) `npm run madge` → zirkuläre Abhängigkeiten; (4) `npm run depcheck` → ungenutzten Dependencies. Befunde in `specs/code-metrics-report.md` dokumentieren (Tabelle: Metrik / Wert / Trend / Handlungsbedarf). Für jeden kritischen Befund (Coverage < 60 %, zirkuläre Deps, ungenutzte Deps) einen neuen `[ ]`-Task in Sektion A des Plans anlegen. Validierung: `python3 check_specs.py` → 0 Befunde. Erste Datei: `specs/code-metrics-report.md`.
 
 - [ ] **OPS-GRAFANA-SPRING** — Spring Boot für Prometheus-Scraping vorbereiten. Schritte: (1) `micrometer-registry-prometheus` in `pom.xml` ergänzen (kein explizites Version-Tag nötig — Spring Boot BOM verwaltet); (2) in `src/main/resources/application.properties` (bzw. prod-Profil falls vorhanden): `management.endpoints.web.exposure.include=health,info,prometheus` und `management.endpoint.prometheus.enabled=true` setzen — dabei prüfen ob der Endpoint nicht schon existiert; (3) `specs/betrieb-monitoring.md` neu anlegen: Zweck, Prometheus-Endpunkt (`/actuator/prometheus`), empfohlene Grafana-Cloud-Einrichtung (Alloy-Config-Snippet für `locodoko`-Job, DE-Region), wichtigste JVM- und App-Metriken die zu beobachten sind. Validierung: `mvn clean test -q` grün. Erste Datei: `pom.xml`.
 

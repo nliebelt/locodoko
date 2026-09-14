@@ -61,3 +61,6 @@ Konsumiert den Event-Vertrag des Backends per Snapshot+Hint Modell.
 - **UX & Design:** `frontend-visuelles-design.md`, `frontend-animationen.md`, `frontend-tastatursteuerung.md`.
 - **Vorbehalt-UI:** `frontend-vorbehalt-kartenauswahl.md`.
 - **Balatro-Design-System (Plan #101):** `frontend-flash-text.md` (FlashTextManager, 9 Events), `frontend-nameplates.md` (HUD-Bar Spieler-Anzeige). Design-Referenzen: `design_handoff/`.
+
+## 6. QA & Betrieb
+- **`code-metrics-report.md`**: JaCoCo-Gesamtdeckung (86 % Instr / 75 % Branch), knip-Dead-Code-Analyse, madge-Zirkular-Check, depcheck-Dependencies. Stand: 2026-09-14.
