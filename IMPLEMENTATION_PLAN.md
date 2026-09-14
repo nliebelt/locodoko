@@ -4,12 +4,12 @@
 
 ## Notiz
 
-**S157 — FE-ANIM-STOP-FIX committet (2026-09-14). Nächster Task: FE-SPIEL-BEENDET-OUTCOME.**
+**S157 — FE-SPIEL-BEENDET-OUTCOME committet (2026-09-14). Nächster Task: DOC-SPEC-ENVVAR-WHITELIST.**
 
-- Animation-Stop-Fix committet: `AnimationenPrimitiven.ts` + `AnimationenService.ts` — `laufendeWarteLoeser`-Set + `onStop: fertig`. 478 Tests grün, Build + ESLint 0 Warnungen.
-- Noch offen: `TischEreignisHandler.ts` + `FlashTextManager.ts` (GEWONNEN/VERLOREN-Flash), dann 3 DOC/OPS-Tasks.
+- Beide Frontend-Fixes committet: Animation-Stop-Fix + GEWONNEN/VERLOREN-Flash. 478 Tests grün.
+- Noch offen: 3 DOC/OPS-Tasks (WHITELIST_ENUMS, Spec-Update, X-Robots-Tag).
 
-**Nächster Schritt:** FE-SPIEL-BEENDET-OUTCOME committen (TischEreignisHandler.ts + FlashTextManager.ts).
+**Nächster Schritt:** DOC-SPEC-ENVVAR-WHITELIST — 7 Env-Var-Namen in check_specs.py WHITELIST_ENUMS eintragen.
 
 ## Legende
 
@@ -30,7 +30,7 @@
 
 - [x] **FE-ANIM-STOP-FIX** — Animation-Stop-Cleanup committen. Die Änderungen liegen bereits als uncommittete Working-Tree-Modifikationen vor (`AnimationenPrimitiven.ts` + `AnimationenService.ts`). Hintergrund: `warte()`-Promises hingen nach `stopAlles()`, weil laufende `setTimeout`-Resolver nie aufgerufen wurden; gleichzeitig lösten gestoppte Tweens (`tween.stop()`) die `onComplete`-Promise nicht auf. Fix: `laufendeWarteLoeser: Set<() => void>` trackt alle aktiven `warte()`-Resolver; `stopAlles()` ruft sie durch; `onStop: fertig` hinzugefügt. Validierung: `npm test && npm run build && npm run lint` grün. Erste Datei: `frontend/src/services/AnimationenPrimitiven.ts`.
 
-- [ ] **FE-SPIEL-BEENDET-OUTCOME** — GEWONNEN/VERLOREN-Flash committen. Änderungen liegen vor (`TischEreignisHandler.ts` + `FlashTextManager.ts`). `TischEreignisHandler` ermittelt die Partei des SUED-Spielers und vergleicht sie mit `letztesSpielergebnis.siegerPartei`; übergibt `{ gewonnen }` an `zeigeSpielevent('SpielBeendet')`. `FlashTextManager.spielBeendet()` zeigt "GEWONNEN" (grün, Konfetti + cameraFlash grün) oder "VERLOREN" (pink, kein Konfetti, cameraFlash rot). Validierung: `npm test && npm run build && npm run lint`. Erste Datei: `frontend/src/szenen/TischEreignisHandler.ts`.
+- [x] **FE-SPIEL-BEENDET-OUTCOME** — GEWONNEN/VERLOREN-Flash committen. Änderungen liegen vor (`TischEreignisHandler.ts` + `FlashTextManager.ts`). `TischEreignisHandler` ermittelt die Partei des SUED-Spielers und vergleicht sie mit `letztesSpielergebnis.siegerPartei`; übergibt `{ gewonnen }` an `zeigeSpielevent('SpielBeendet')`. `FlashTextManager.spielBeendet()` zeigt "GEWONNEN" (grün, Konfetti + cameraFlash grün) oder "VERLOREN" (pink, kein Konfetti, cameraFlash rot). Validierung: `npm test && npm run build && npm run lint`. Erste Datei: `frontend/src/szenen/TischEreignisHandler.ts`.
 
 - [ ] **DOC-SPEC-ENVVAR-WHITELIST** — `check_specs.py`: 7 Umgebungsvariablen-Namen in `WHITELIST_ENUMS` eintragen. `betrieb-deployment.md` referenziert `SPRING_PROFILES_ACTIVE`, `LOCODOKO_DB_USERNAME`, `LOCODOKO_DB_PASSWORD`, `LOCODOKO_DB_URL`, `LOCODOKO_WEBSOCKET_ALLOWED_ORIGINS`, `SENTRY_DSN`, `LOCODOKO_BUGREPORT_GITHUB_TOKEN` als Bezeichner in einer Tabelle — der Linter erkennt sie fälschlich als tote Enum-Konstanten. Fix: alle sieben in `WHITELIST_ENUMS = frozenset({...})` um Zeile 70 ergänzen. Verifikation: `python3 check_specs.py` → 0 Befunde. Erste Datei: `check_specs.py`.
 

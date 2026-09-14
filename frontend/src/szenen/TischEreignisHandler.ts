@@ -93,7 +93,9 @@ export class TischEreignisHandler {
         this.szene._letzterGezeigterSpielBeendet = spielNr;
 
         await this.szene.animationen?.reiheEin(async () => {
-          await this.szene.flashTextManager?.zeigeSpielevent('SpielBeendet');
+          const eigeneSpielerPartei = m.spieler.find((s) => s.position === SPIELER_POSITION.SUED)?.partei;
+          const gewonnen = eigeneSpielerPartei ? eigeneSpielerPartei === m.letztesSpielergebnis?.siegerPartei : undefined;
+          await this.szene.flashTextManager?.zeigeSpielevent('SpielBeendet', { gewonnen });
           await this.szene.animationOrchestrator.zeigeGewinnerFlash(m);
         });
 

@@ -39,6 +39,7 @@ export interface SpieleventPayload {
   punkte?: number;
   x?: number;
   y?: number;
+  gewonnen?: boolean;
 }
 
 export class FlashTextManager {
@@ -68,7 +69,7 @@ export class FlashTextManager {
       case 'KarlchenGespielt':          await this.karlchenGespielt(payload.spielerName, payload.x, payload.y); break;
       case 'DoppelkopfGestochen':       await this.doppelkopfGestochen(payload.x, payload.y); break;
       case 'HochzeitPartnerGefunden':   await this.hochzeitPartnerGefunden(payload.spielerName, payload.x, payload.y); break;
-      case 'SpielBeendet':              await this.spielBeendet(); break;
+      case 'SpielBeendet':              await this.spielBeendet(payload.gewonnen); break;
     }
   }
 
@@ -361,24 +362,31 @@ export class FlashTextManager {
     await verwalteMitFoilTimeout(this.szene, this.geschwindigkeitsfaktor, container, foilTimer, 3000, 200, this.verwalteteObjekte, this.verwalteteTimers);
   }
 
-  private async spielBeendet(): Promise<void> {
+  private async spielBeendet(gewonnen?: boolean): Promise<void> {
     const cx = this.cx(), cy = this.cy();
-    const container = erstelleKartenContainer(this.szene, cx, cy, FARBE_GRUEN, 270, 116);
-    const hauptText = this.szene.add.text(0, -18, 'GEWONNEN', {
-      fontFamily: FONT_FAMILY_FALLBACK, fontSize: `${FONT_XL}px`, color: FARBE_GRUEN_CSS,
+    const hatGewonnen = gewonnen !== false;
+    const farbe = hatGewonnen ? FARBE_GRUEN : FARBE_PINK;
+    const farbeCSS = hatGewonnen ? FARBE_GRUEN_CSS : FARBE_PINK_CSS;
+    const container = erstelleKartenContainer(this.szene, cx, cy, farbe, 270, 116);
+    const hauptText = this.szene.add.text(0, -18, hatGewonnen ? 'GEWONNEN' : 'VERLOREN', {
+      fontFamily: FONT_FAMILY_FALLBACK, fontSize: `${FONT_XL}px`, color: farbeCSS,
     }).setOrigin(0.5);
     const subText = this.szene.add.text(0, 24, 'SPIEL BEENDET', {
-      fontFamily: FONT_FAMILY_FALLBACK, fontSize: `${FONT_XS}px`, color: FARBE_GRUEN_CSS,
+      fontFamily: FONT_FAMILY_FALLBACK, fontSize: `${FONT_XS}px`, color: farbeCSS,
     }).setOrigin(0.5);
     container.add([hauptText, subText]);
     const foilTimer = this.foilShimmer(hauptText);
     container.setScale(5, 5);
     container.setAlpha(0);
     this.szene.tweens.add({ targets: container, scaleX: 1, scaleY: 1, alpha: 1, ease: 'Expo.Out', duration: skalierteDauer(540, this.geschwindigkeitsfaktor) });
-    this.shockwaveRing(cx, cy, FARBE_GRUEN, 0);
-    this.shockwaveRing(cx, cy, FARBE_GRUEN, 100);
-    this.konfetti(cx, cy, 150, [0x44ff88, 0xffd700, 0xffffff, 0x44ffee, 0xff88ff]);
-    this.cameraFlash(100, 255, 150, 400);
+    this.shockwaveRing(cx, cy, farbe, 0);
+    this.shockwaveRing(cx, cy, farbe, 100);
+    if (hatGewonnen) {
+      this.konfetti(cx, cy, 150, [0x44ff88, 0xffd700, 0xffffff, 0x44ffee, 0xff88ff]);
+      this.cameraFlash(100, 255, 150, 400);
+    } else {
+      this.cameraFlash(255, 60, 80, 400);
+    }
     this.screenShake();
     await verwalteMitFoilTimeout(this.szene, this.geschwindigkeitsfaktor, container, foilTimer, 4000, 200, this.verwalteteObjekte, this.verwalteteTimers);
   }
