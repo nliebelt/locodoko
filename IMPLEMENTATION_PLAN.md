@@ -4,12 +4,12 @@
 
 ## Notiz
 
-**S157 — DECISION-LIZENZ-LICENSE erledigt (2026-09-14). Nächster Task: CI-GITHUB-ACTIONS.**
+**S157 — CI-GITHUB-ACTIONS abgehakt (2026-09-14). Nächster Task: QA-CODE-METRICS-SETUP.**
 
-- `LICENSE` (Apache-2.0, Copyright 2024–2026 Nils Liebelt) im Repo-Root angelegt.
-- `specs/fertigstellung.md`: Lizenz-Zeile auf `✅ Apache-2.0 (S157)` gesetzt, Checkbox abgehakt.
+- `.github/workflows/ci.yml` war bereits aus Commit `CI-BUILD-TEST` vorhanden (Java 25 Temurin, Node 22, Backend + Frontend + Spec-Lint-Job). YAML valide. Plan-Eintrag nachgezogen.
+- Entdeckung: `ci-docs.yml` (MkDocs Material → GitHub Pages) ebenfalls bereits committed (`DOC-DOCS-SITE`).
 
-**Nächster Schritt:** CI-GITHUB-ACTIONS — `.github/workflows/ci.yml` anlegen (Backend + Frontend-Job).
+**Nächster Schritt:** QA-CODE-METRICS-SETUP — `jacoco-maven-plugin` in `pom.xml` + Frontend-Metriken (`knip`, `madge`, `depcheck`).
 
 ## Legende
 
@@ -30,7 +30,7 @@
 
 - [x] **DECISION-LIZENZ-LICENSE** — `LICENSE`-Datei mit Apache-2.0-Text anlegen. Entscheidung S157: **Apache-2.0**. Vorgehen: vollständigen Apache-2.0-Lizenztext (Copyright 2024–2026 Nils Liebelt) als `LICENSE` im Repo-Root anlegen. Außerdem in `fertigstellung.md` unter „Offene Entscheidungen" die Lizenz-Zeile auf `✅ Apache-2.0 (S157)` setzen, und `DECISION-LIZENZ` in `IMPLEMENTATION_PLAN.md` Sektion C auf `[x]` setzen. Validierung: kein Build-Schritt nötig — `python3 check_specs.py` läuft als Smoke-Test. Erste Datei: `LICENSE`.
 
-- [ ] **CI-GITHUB-ACTIONS** — `.github/workflows/ci.yml` anlegen. Trigger: `push` und `pull_request` auf `main`. Jobs: (1) `backend` — Ubuntu latest, Java 21 (temurin), `mvn clean test -q`; (2) `frontend` — Node 20, `cd frontend && npm ci && npm test --silent && npm run build && npm run lint`. Cache: Maven `~/.m2`, npm `~/.npm`. Keine weiteren Abhängigkeiten zwischen Jobs. Validierung: Datei syntaktisch korrekt (YAML-Linting via `python3 -c "import yaml; yaml.safe_load(open('.github/workflows/ci.yml'))"` oder äquivalent). Erste Datei: `.github/workflows/ci.yml`.
+- [x] **CI-GITHUB-ACTIONS** — `.github/workflows/ci.yml` anlegen. Trigger: `push` und `pull_request` auf `main`. Jobs: (1) `backend` — Ubuntu latest, Java 21 (temurin), `mvn clean test -q`; (2) `frontend` — Node 20, `cd frontend && npm ci && npm test --silent && npm run build && npm run lint`. Cache: Maven `~/.m2`, npm `~/.npm`. Keine weiteren Abhängigkeiten zwischen Jobs. Validierung: Datei syntaktisch korrekt (YAML-Linting via `python3 -c "import yaml; yaml.safe_load(open('.github/workflows/ci.yml'))"` oder äquivalent). Erste Datei: `.github/workflows/ci.yml`.
 
 - [ ] **QA-CODE-METRICS-SETUP** — Mess-Werkzeuge verdrahten. Backend: `jacoco-maven-plugin` in `pom.xml` (Goals `prepare-agent` + `report` an `verify`-Phase, Konfiguration: `destFile`, `dataFile`, Output nach `target/site/jacoco/`). Frontend: `knip`, `madge`, `depcheck` als dev-Dependencies in `package.json` + npm-Scripts `"knip": "knip"`, `"madge": "madge src --circular"`, `"depcheck": "depcheck"`. Validierung: `mvn clean verify -q` (JaCoCo-Report entsteht), `cd frontend && npm run knip`, `npm run madge`, `npm run depcheck` laufen ohne Abbruch (Befunde sind ok, Exit-Code-Fehler dokumentieren). Erste Datei: `pom.xml`.
 
@@ -79,6 +79,8 @@
 ---
 
 ## Entdeckungen
+
+- **S157 — CI-GITHUB-ACTIONS war bereits committed** (2026-09-14): `.github/workflows/ci.yml` (Java 25 Temurin, Node 22, Backend + Frontend + Spec-Lint) wurde in Commit `CI-BUILD-TEST` (vor der M2-Alpha-Runde) angelegt. `ci-docs.yml` (MkDocs → GitHub Pages) in `DOC-DOCS-SITE`. Plan-Eintrag nachgezogen. Kein Code-Handlungsbedarf.
 
 - **S157 — `frontend-flash-text.md` DoD: Visuelles Review noch offen** (2026-09-14): Die Spec hat `[ ] Visuelles Review via Vision Loop (ausstehend — Backend muss laufen)` als offene DoD-Checkbox. Da FE-SPIEL-BEENDET-OUTCOME jetzt VERLOREN-Pfad ergänzt, wäre ein Vision-Loop-Durchlauf sinnvoll. → In DOC-FLASH-TEXT-VERLOREN klären, ob Review nachgeholt oder als Tech-Debt akzeptiert wird.
 
