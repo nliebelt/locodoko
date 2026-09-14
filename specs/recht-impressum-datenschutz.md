@@ -89,19 +89,36 @@ Speicherdauer: rollierende 20 Einträge; ältere werden automatisch überschrieb
 
 #### 5. Session-Daten
 
-Spring Session (JDBC): Session-ID, Zeitstempel, serialisierte Session-Attribute. Keine zusätzlichen personenbezogenen Daten außer den bereits genannten.  
-Speicherdauer: Spring-Session-Standardablauf (configurable, default: 30 min inaktiv).
+Spring Session (JDBC): Session-ID, Zeitstempel, serialisierte Session-Attribute. Keine zusätzlichen personenbezogenen Daten außer den bereits genannten. Session-Cookie: HttpOnly, SameSite=Lax, Secure=true (Produktion).  
+Speicherdauer: Konfigurierbar via `LOCODOKO_SESSION_TIMEOUT`, Standard: 60 Minuten Inaktivität.
 
 #### 6. Server-Logs
 
-Strukturierte JSON-Logs (`logs/locodoko.log`) mit MDC-Feldern `tischId`, `partieId`. Keine direkt personenbezogenen Daten (keine IP-Adressen, keine Benutzernamen in Logs).  
-Speicherdauer: je nach Log-Rotation konfigurierbar.
+Strukturierte JSON-Logs (`logs/locodoko.log`, ECS-Format) mit MDC-Feldern `tischId`, `partieId`. Keine direkt personenbezogenen Daten (keine IP-Adressen, keine Benutzernamen in Logs).  
+Speicherdauer: Log-Rotation konfigurierbar; empfohlen: max. 90 Tage.
+
+#### 7. Bug-Reports
+
+Endpoint `/api/bugreport` (nur für eingeloggte Nutzer): Empfängt vom Nutzer geschriebene Fehlerbeschreibung sowie optionale Metadaten (Tisch-ID, Zeitstempel). Bei Konfiguration `LOCODOKO_BUGREPORT_GITHUB_TOKEN` wird der Bericht als GitHub-Issue angelegt (öffentlich). Bei Konfiguration `LOCODOKO_BUGREPORT_LOKI_BASE_URL` wird ein Loki-Deep-Link angehängt.  
+Rechtsgrundlage: Art. 6 Abs. 1a DSGVO (Einwilligung durch aktive Übermittlung des Reports).
+
+#### 8. Fehler-Monitoring (Sentry)
+
+Bei Konfiguration `SENTRY_DSN` werden unkontrollierte Exceptions automatisch an Sentry (Sentry, Inc., USA) übermittelt. Konfiguriert mit `send-default-pii=false` — keine personen-bezogenen Felder werden übertragen. Grundlage für Drittland-Transfer: EU-Standardvertragsklauseln (SCC). Weitere Informationen: [Sentry Privacy Policy](https://sentry.io/privacy/).  
+Diese Funktion ist optional und kann durch Weglassen von `SENTRY_DSN` vollständig deaktiviert werden.
+
+#### 9. E-Mail-Versand
+
+Bei Konfiguration `SMTP_HOST`/`SMTP_USER`/`SMTP_PASSWORD`: Versand von E-Mails für Konto-Verifizierung und Passwort-Reset an die vom Nutzer angegebene E-Mail-Adresse. Ohne SMTP-Konfiguration läuft der Dienst als No-Op (keine E-Mails).  
+Rechtsgrundlage: Art. 6 Abs. 1b DSGVO (Vertragserfüllung).
 
 ### Weitergabe an Dritte
 
 Keine Weitergabe personenbezogener Daten an Dritte, außer:
-- Google LLC (OAuth2-Datenfluss — nur bei Nutzung von „Mit Google anmelden", s.o.)
-- Hosting-Provider [Name, Land, AVV vorhanden: ja/nein] — zur Auftragsverarbeitung gemäß Art. 28 DSGVO
+- **Google LLC** (OAuth2-Datenfluss — nur bei Nutzung von „Mit Google anmelden", s.o.) — Grundlage: SCC
+- **Hosting-Provider** [Name, Land, AVV vorhanden: ja/nein] — zur Auftragsverarbeitung gemäß Art. 28 DSGVO
+- **Sentry, Inc., USA** (Fehler-Monitoring — nur bei gesetztem `SENTRY_DSN`) — Grundlage: SCC, PII deaktiviert
+- **GitHub, Inc., USA** (Bug-Reports — nur bei gesetztem `LOCODOKO_BUGREPORT_GITHUB_TOKEN`) — Issues werden öffentlich erstellt; keine personenbezogenen Daten außer dem Berichtstext
 
 **Hinweis:** Wenn Grafana Cloud (OPS-GRAFANA-MONITORING) eingesetzt wird: Metriken und Log-Daten (keine personenbezogenen Felder außer aggregierten Zählern) → AVV mit Grafana Labs (EU-Region) abschließen.
 
@@ -113,7 +130,9 @@ Keine Weitergabe personenbezogener Daten an Dritte, außer:
 | Spielstatistiken | Mit Account-Löschung |
 | Spielarchiv | Mit Account-Löschung |
 | Session-Daten | Session-Ablauf (automatisch) |
-| Logs | Log-Rotation (zu konfigurieren: max. 90 Tage empfohlen) |
+| Logs | Log-Rotation (empfohlen: max. 90 Tage) |
+| Bug-Reports (GitHub Issues) | Kein automatischer Ablauf — auf Anfrage oder manuell löschen |
+| Sentry-Ereignisse | Gemäß Sentry-Einstellungen (Standard: 90 Tage) |
 
 ### Rechte der Betroffenen
 
@@ -183,3 +202,6 @@ Folgende konkrete Build-Tasks entstehen aus dieser Spec:
 - [ ] AVV Grafana (falls genutzt) abgeschlossen
 - [ ] Anwaltliche oder Generator-Prüfung der Texte (kein Bestandteil dieser Spec)
 - [ ] Mindestalter-Hinweis bei Registrierung (16 Jahre)
+- [ ] Cookie-Hinweis: Session-Cookie ist technisch notwendig (kein Consent-Banner nötig bei reinem Funktions-Cookie); bei Analytics-Cookies: Consent-Banner vor Einbindung
+- [ ] Sentry-DSN: falls aktiv, in Datenschutzerklärung namentlich aufführen und SCC-Nachweis bereithalten
+- [ ] Bug-Report-GitHub-Token: falls aktiv, Nutzer darauf hinweisen dass Berichte öffentlich erscheinen

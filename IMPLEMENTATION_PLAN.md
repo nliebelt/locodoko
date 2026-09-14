@@ -4,12 +4,12 @@
 
 ## Notiz
 
-**S157/Folge — OPS-GRAFANA-SPRING als bereits erledigt erkannt (2026-09-14). Nächster Task: SPEC-RECHT-DRAFT.**
+**S157/Folge — SPEC-RECHT-DRAFT abgeschlossen (2026-09-14). Alle autonomen Tasks in Sektion A erledigt.**
 
-- OPS-GRAFANA-SPRING: Alle drei Teile bereits vorhanden — `micrometer-registry-prometheus` in `pom.xml` (Zeile 125), Prometheus-Endpoint in `application.properties` (Zeile 17–24 + `management.prometheus.metrics.export.enabled=true`), Management-Port 8082 in `application-prod.properties`, `specs/betrieb-monitoring.md` 93 Zeilen vorhanden. Task war bereits implementiert aber nicht abgehakt.
-- `mvn clean test -q` Exit 0 ✅
+- SPEC-RECHT-DRAFT: `specs/recht-impressum-datenschutz.md` war bereits als Gerüst (S144) vorhanden. Ergänzt: Bug-Report-Verarbeitung (§7), Sentry-Fehlermonitoring (§8), E-Mail-Versand (§9), Drittland-Empfänger (Sentry + GitHub), Löschfristen für Sentry/GitHub-Issues, Cookie-Hinweis + Sentry/Bug-Report-Checks in Checkliste. Session-Timeout-Angabe von 30 min auf 60 min korrigiert. `check_specs.py` 0 Befunde ✅.
+- `check_specs.py` ergänzt: `LOCODOKO_SESSION_TIMEOUT` + `LOCODOKO_BUGREPORT_LOKI_BASE_URL` in WHITELIST_ENUMS (Umgebungsvariablen, keine Java-Konstanten).
 
-**Nächster Schritt:** SPEC-RECHT-DRAFT — `specs/recht-impressum-datenschutz.md` anlegen (Impressum-Template §5 DDG, Datenschutzerklärung-Template DSGVO, Checkliste vor Go-Live).
+**Nächster Schritt:** Alle autonomen Tasks in Sektion A abgehakt — M2-Backlog bereinigen oder neue Tasks vom Plan-Agenten definieren lassen.
 
 ## Legende
 
@@ -38,7 +38,7 @@
 
 - [x] **OPS-GRAFANA-SPRING** — Spring Boot für Prometheus-Scraping vorbereiten. Schritte: (1) `micrometer-registry-prometheus` in `pom.xml` ergänzen (kein explizites Version-Tag nötig — Spring Boot BOM verwaltet); (2) in `src/main/resources/application.properties` (bzw. prod-Profil falls vorhanden): `management.endpoints.web.exposure.include=health,info,prometheus` und `management.endpoint.prometheus.enabled=true` setzen — dabei prüfen ob der Endpoint nicht schon existiert; (3) `specs/betrieb-monitoring.md` neu anlegen: Zweck, Prometheus-Endpunkt (`/actuator/prometheus`), empfohlene Grafana-Cloud-Einrichtung (Alloy-Config-Snippet für `locodoko`-Job, DE-Region), wichtigste JVM- und App-Metriken die zu beobachten sind. Validierung: `mvn clean test -q` grün. Erste Datei: `pom.xml`.
 
-- [ ] **SPEC-RECHT-DRAFT** — `specs/recht-impressum-datenschutz.md` anlegen. Inhalt: (1) **Impressum-Template** (§5 DDG Pflichtfelder für DE-Betreiber: vollständiger Name, Anschrift, E-Mail-Adresse — Platzhalter `[NAME]`, `[ADRESSE]`, `[E-MAIL]` markieren); (2) **Datenschutzerklärung-Template** (DSGVO-Pflichtangaben: Verantwortlicher, Verarbeitungszwecke je Funktion — Google OAuth, Passwort-Auth, Session, Logs/Monitoring, Bug-Report —, Rechtsgrundlagen Art. 6 DSGVO, Hosting-Standort DE, Löschfristen, Betroffenenrechte, Kontakt Datenschutz); (3) **Checkliste vor Go-Live** (Texte mit echten Daten befüllen, Anwalt-Review empfohlen, Impressum im Footer verlinkt, Cookie-Hinweis falls nötig). Ton: sachlich-technisch, keine Rechtsberatung — explizit als Vorlage kennzeichnen. Validierung: `python3 check_specs.py` → 0 Befunde. Erste Datei: `specs/recht-impressum-datenschutz.md`.
+- [x] **SPEC-RECHT-DRAFT** — `specs/recht-impressum-datenschutz.md` anlegen. Inhalt: (1) **Impressum-Template** (§5 DDG Pflichtfelder für DE-Betreiber: vollständiger Name, Anschrift, E-Mail-Adresse — Platzhalter `[NAME]`, `[ADRESSE]`, `[E-MAIL]` markieren); (2) **Datenschutzerklärung-Template** (DSGVO-Pflichtangaben: Verantwortlicher, Verarbeitungszwecke je Funktion — Google OAuth, Passwort-Auth, Session, Logs/Monitoring, Bug-Report —, Rechtsgrundlagen Art. 6 DSGVO, Hosting-Standort DE, Löschfristen, Betroffenenrechte, Kontakt Datenschutz); (3) **Checkliste vor Go-Live** (Texte mit echten Daten befüllen, Anwalt-Review empfohlen, Impressum im Footer verlinkt, Cookie-Hinweis falls nötig). Ton: sachlich-technisch, keine Rechtsberatung — explizit als Vorlage kennzeichnen. Validierung: `python3 check_specs.py` → 0 Befunde. Erste Datei: `specs/recht-impressum-datenschutz.md`.
 
 ---
 
