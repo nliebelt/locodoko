@@ -1,17 +1,15 @@
 # IMPLEMENTATION_PLAN — Locodoko Doppelkopf
 
-> Stand: 2026-08-14 (Session 152). Erledigte Aufgaben → `IMPLEMENTATION_PLAN_ARCHIVE.md` (Sessions 1–150 archiviert).
+> Stand: 2026-09-14 (Session 157). Erledigte Aufgaben → `IMPLEMENTATION_PLAN_ARCHIVE.md` (Sessions 1–156 archiviert).
 
 ## Notiz
 
-**S155 — OPS-NOINDEX-PROXY umgesetzt (2026-08-18). `X-Robots-Tag: noindex, nofollow` in Caddy gesetzt.**
+**S157 — FE-ANIM-STOP-FIX committet (2026-09-14). Nächster Task: FE-SPIEL-BEENDET-OUTCOME.**
 
-- `/etc/caddy/Caddyfile` auf prod1 via Paramiko gelesen: Header fehlte noch.
-- `header X-Robots-Tag "noindex, nofollow"` im `zock.locodoko.de`-Block ergänzt.
-- `caddy validate` + `caddy reload` — beide exit 0.
-- `curl -sI https://zock.locodoko.de | grep -i x-robots` → `x-robots-tag: noindex, nofollow` ✓
+- Animation-Stop-Fix committet: `AnimationenPrimitiven.ts` + `AnimationenService.ts` — `laufendeWarteLoeser`-Set + `onStop: fertig`. 478 Tests grün, Build + ESLint 0 Warnungen.
+- Noch offen: `TischEreignisHandler.ts` + `FlashTextManager.ts` (GEWONNEN/VERLOREN-Flash), dann 3 DOC/OPS-Tasks.
 
-**Nächster Schritt:** M1 (Closed Beta) vollständig — alle Gates abgehakt. Offen: Beta-Tester als Google Test-User eintragen (MENSCH) + DECISION-LIZENZ.
+**Nächster Schritt:** FE-SPIEL-BEENDET-OUTCOME committen (TischEreignisHandler.ts + FlashTextManager.ts).
 
 ## Legende
 
@@ -23,18 +21,22 @@
 
 ## A) Offene autonome Tasks (Ralph — kein MENSCH nötig)
 
-> Geerdet am Repo-Scan S151 (2026-07-05): Code sauber (check_specs.py 0 Befunde, Lint grün, 506 BE-Tests). **Pro Task ein Commit**, `mvn clean test` / `npm test && npm run build && npm run lint` grün.
+> Geerdet am Repo-Scan S157 (2026-09-14): 478 FE-Tests grün, ESLint 0 Warnungen, 7 check_specs.py-Befunde. **Pro Task ein Commit**, `mvn clean test` / `npm test && npm run build && npm run lint` grün.
 
-### Empfohlene Build-Reihenfolge (Block A — aktuelle Runde, Stand S153)
+### Empfohlene Build-Reihenfolge (Block A — aktuelle Runde, Stand S157)
 
 > Nimm den **obersten noch offenen** Task. Alle autonom. Diese Sektion ist die EINZIGE
 > Build-Reihenfolge — alte Runden-Sektionen werden beim Plan-Scan entfernt.
 
-- [x] **BUG-PROD-500-TISCH** — ✓ Behoben S153 (2026-08-18). `SPRING_PROFILES_ACTIVE=prod` fehlte in `/opt/locodoko/.env` — App lief mit H2 in-memory statt PostgreSQL. Fix: Env-Variable gesetzt, Service neugestartet. Auch `scripts/setup-server.sh` + `specs/betrieb-deployment.md` aktualisiert.
+- [x] **FE-ANIM-STOP-FIX** — Animation-Stop-Cleanup committen. Die Änderungen liegen bereits als uncommittete Working-Tree-Modifikationen vor (`AnimationenPrimitiven.ts` + `AnimationenService.ts`). Hintergrund: `warte()`-Promises hingen nach `stopAlles()`, weil laufende `setTimeout`-Resolver nie aufgerufen wurden; gleichzeitig lösten gestoppte Tweens (`tween.stop()`) die `onComplete`-Promise nicht auf. Fix: `laufendeWarteLoeser: Set<() => void>` trackt alle aktiven `warte()`-Resolver; `stopAlles()` ruft sie durch; `onStop: fertig` hinzugefügt. Validierung: `npm test && npm run build && npm run lint` grün. Erste Datei: `frontend/src/services/AnimationenPrimitiven.ts`.
 
-- [x] **E2E-PROD-SMOKE** — ✓ Implementiert S154 (2026-08-18). `playwright.config.prod.ts` + `test:prod` Skript + `aktiviereTurbo` in `schnellstart.spec.ts`. `npm run test:prod`: 2 passed (5,3s + 5,4s) gegen `https://zock.locodoko.de`.
+- [ ] **FE-SPIEL-BEENDET-OUTCOME** — GEWONNEN/VERLOREN-Flash committen. Änderungen liegen vor (`TischEreignisHandler.ts` + `FlashTextManager.ts`). `TischEreignisHandler` ermittelt die Partei des SUED-Spielers und vergleicht sie mit `letztesSpielergebnis.siegerPartei`; übergibt `{ gewonnen }` an `zeigeSpielevent('SpielBeendet')`. `FlashTextManager.spielBeendet()` zeigt "GEWONNEN" (grün, Konfetti + cameraFlash grün) oder "VERLOREN" (pink, kein Konfetti, cameraFlash rot). Validierung: `npm test && npm run build && npm run lint`. Erste Datei: `frontend/src/szenen/TischEreignisHandler.ts`.
 
-- [x] **OPS-NOINDEX-PROXY** — ✓ Umgesetzt S155 (2026-08-18). `header X-Robots-Tag "noindex, nofollow"` in `/etc/caddy/Caddyfile` auf prod1 ergänzt, `caddy reload` exit 0, curl-Verifikation erfolgreich.
+- [ ] **DOC-SPEC-ENVVAR-WHITELIST** — `check_specs.py`: 7 Umgebungsvariablen-Namen in `WHITELIST_ENUMS` eintragen. `betrieb-deployment.md` referenziert `SPRING_PROFILES_ACTIVE`, `LOCODOKO_DB_USERNAME`, `LOCODOKO_DB_PASSWORD`, `LOCODOKO_DB_URL`, `LOCODOKO_WEBSOCKET_ALLOWED_ORIGINS`, `SENTRY_DSN`, `LOCODOKO_BUGREPORT_GITHUB_TOKEN` als Bezeichner in einer Tabelle — der Linter erkennt sie fälschlich als tote Enum-Konstanten. Fix: alle sieben in `WHITELIST_ENUMS = frozenset({...})` um Zeile 70 ergänzen. Verifikation: `python3 check_specs.py` → 0 Befunde. Erste Datei: `check_specs.py`.
+
+- [ ] **DOC-FLASH-TEXT-VERLOREN** — `specs/frontend-flash-text.md` aktualisieren. Die Spec beschreibt `SpielBeendet` als rein grünes GEWONNEN-Banner. Nach FE-SPIEL-BEENDET-OUTCOME gilt: GEWONNEN = grün (Konfetti + Camera Flash grün), VERLOREN = pink (kein Konfetti, Camera Flash rot). Anpassen: (1) Event-Tabelle: `SpielBeendet`-Zeile ergänzen um GEWONNEN/VERLOREN-Unterscheidung; (2) Technische Hinweise Abschnitt: Camera Flash Grün → bedingt; (3) DoD-Checkbox für Visuelles Review auf `[x]` setzen (Review war ausstehend, aber Spec-Status ist Abgeschlossen — entweder Review nachholen oder Checkbox als „Design-Review in Vision-Loop nötig" offenlassen). Erste Datei: `specs/frontend-flash-text.md`.
+
+- [ ] **OPS-SETUP-SERVER-NOINDEX** — `scripts/setup-server.sh`: `X-Robots-Tag`-Header im Caddyfile-Template nachpflegen. S155 hat den Header direkt via Paramiko auf prod1 gesetzt, aber das `setup-server.sh`-Skript schreibt das Caddyfile ohne diesen Header — bei Neuprovisioning geht er verloren. Fix: `header X-Robots-Tag "noindex, nofollow"` in den `zock.locodoko.de`-Block des generierten Caddyfiles eintragen (analog zu dem, was S155 direkt auf dem Server gesetzt hat). Prüfen: Struktur in `scripts/setup-server.sh` suchen, wo das Caddyfile via Heredoc oder Echo geschrieben wird. Keine Validierung via `caddy` möglich (kein Caddy in Sandbox) — Code-Review reicht. Erste Datei: `scripts/setup-server.sh`.
 
 ---
 
@@ -42,7 +44,7 @@
 
 > Externe Voraussetzung (Server/DNS/TLS/Docker/Google-Account/Plattformwahl). Ralph kann hier nur vorbereitende Config schreiben, nicht abschließen.
 
-- [x] **BACKUP-DB-CRON** — ✓ Abgeschlossen S156 (2026-08-18). Cron lief seit Deploy täglich, aber alle Backups waren leer (20 Bytes): `.env` wurde im Cron-Kontext nicht geladen → pg_dump scheiterte an Passwort-Auth. Fix: `scripts/backup-db.sh` sourct jetzt `/opt/locodoko/.env` automatisch wenn `LOCODOKO_DB_PASSWORD` nicht gesetzt. Leere Backups gelöscht, Fix deployed, Restore in `locodoko_restore_test` verifiziert: 15 Tabellen, 37 Spieler, 8 Tische, 12 Partien — OK.
+*(Alle MENSCH-Tasks dieser Runde erledigt — siehe Archiv Sessions 151–156)*
 
 ---
 
@@ -66,15 +68,23 @@
 - [ ] **BE-ERRORPRONE-NULLAWAY** (Backend — **Java-25-Gate**) — Error Prone + NullAway: auf JDK 25 noch nicht stabil (`NoSuchFieldError: TypeTag`, S128 recherchiert). Reaktivieren, sobald Error-Prone JDK 25 sauber unterstützt.
 - [ ] **SEC-CSP** (Frontend/Security — M2-Task) — Content Security Policy. Phaser 4 WebGL benötigt `'unsafe-eval'` → strikte CSP bricht das Spiel. Nach Live-Gang per `CSP-Report-Only`-Header Violations erfassen, dann iterativ einschränken. (S145: akzeptiertes Restrisiko M1.)
 
+- [ ] **FE-RUNDENENDE-REDESIGN** (M2 — Design-Task, braucht User-Input) — Rundenende- und Partieende-Screen komplett neu gestalten. Aktuell: kleines PhaserModal mit lila Balatro-Palette — fühlt sich an wie ein Web-Popup. Ziel: Vollbild-Overlay mit Filz-Hintergrund + grüner Spieltisch-Palette (wie BestenlisterSzene), vernünftige Informationshierarchie (Teams/Augen/Sonderpunkte einzeln, Gesamtstand). `TischRundenEndeController.ts` ist die zentrale Datei. Vor Umsetzung: kurze Design-Abstimmung mit User (welche Infos prominent? getrennte oder zusammengeführte Screens?). Daten vorhanden: `augenRe/augenKontra`, `sonderpunkteRe[]`, `sonderpunkteKontra[]`, `gesamtpunktestand[]`.
+
+- [ ] **FE-MOBILE** (M2 — Touch/Layout) — Mobile Touch funktioniert nicht. Ziel: separater Mobile-Screen mit größeren Karten, Touch-optimiertem Layout. Braucht visuelle Regressionstests für Mobile (Playwright Viewport 390×844 o.ä.), damit Fehler ohne echtes Gerät findbar sind. Kein Visual-Loop ohne Mobile-Viewport-Test möglich. Erst planen wenn FE-RUNDENENDE-REDESIGN und CI stehen (visuelle Tests benötigen stabilen Baseline).
+
+- [ ] **CI-GITHUB-ACTIONS** (M2 — DevOps) — GitHub Actions Pipeline: `mvn clean test` + `npm test && npm run build && npm run lint` bei jedem Push/PR. Ziel: grüner Badge im Repo. User möchte alles in GitHub — Issues als Tickets, ggf. automatisierten Workflow der GitHub-Issues via `ralph.sh` abarbeitet (Idee: Issue-Label → Ralph-Run). Vorher: DECISION-LIZENZ abschließen.
+
+- [ ] **UX-USER-FEEDBACK** (M2 — Nach Live-Gang) — In-Game Feedback-Kanal für Nutzer. Form noch offen: einfaches Kontaktformular, GitHub-Issue-Link, oder integrierter Feedback-Button im Spiel. Ziel: Nutzerfeedback nach öffentlichem Betrieb strukturiert sammeln.
+
 ---
 
 ## Entdeckungen
 
-- **S155 — OPS-NOINDEX-PROXY: `setup-server.sh` enthält X-Robots-Tag nicht** (2026-08-18): Der Header wurde direkt auf dem Server via Paramiko gesetzt. `scripts/setup-server.sh` schreibt das Caddyfile ohne diesen Header — bei Neuprovisioning würde er verloren gehen. Potenzielle OPS-Aufgabe: Header in `setup-server.sh`-Template nachpflegen.
+- **S157 — `frontend-flash-text.md` DoD: Visuelles Review noch offen** (2026-09-14): Die Spec hat `[ ] Visuelles Review via Vision Loop (ausstehend — Backend muss laufen)` als offene DoD-Checkbox. Da FE-SPIEL-BEENDET-OUTCOME jetzt VERLOREN-Pfad ergänzt, wäre ein Vision-Loop-Durchlauf sinnvoll. → In DOC-FLASH-TEXT-VERLOREN klären, ob Review nachgeholt oder als Tech-Debt akzeptiert wird.
 
 - **S153 — Prod-Bug behoben: SPRING_PROFILES_ACTIVE=prod fehlte** (2026-08-18): App lief mit H2 in-memory (Dev-Profil) statt PostgreSQL. Stacktrace: `JdbcSQLIntegrityConstraintViolationException: Check constraint invalid: CONSTRAINT_69`. Fix: Env-Variable in `.env` gesetzt + Neustart. Setup-Skript + Doku aktualisiert.
 
-- **S153 — E2E gegen Prod: Stich-Phase Timeout** (2026-08-18): `schnellstart.spec.ts` gegen Prod scheitert bei Schritt 6 (Stich-Zähler nach erstem Stich). Schnellstart selbst ✓. Ursache: KI-Reaktionszeit oder WebSocket-Latenz auf Prod zu hoch für lokale Test-Timeouts (20s). → E2E-PROD-SMOKE soll Timeouts für Prod anpassen.
+- **S153 — E2E gegen Prod: Stich-Phase Timeout** (2026-08-18): `schnellstart.spec.ts` gegen Prod scheitert bei Schritt 6 (Stich-Zähler nach erstem Stich). Schnellstart selbst ✓. Ursache: KI-Reaktionszeit oder WebSocket-Latenz auf Prod zu hoch für lokale Test-Timeouts (20s). → E2E-PROD-SMOKE hat Timeouts für Prod angepasst (erledigt).
 
 - **S151 — Repo-Scan sauber:** 506 BE-Tests, check_specs.py 0 Befunde (55 Specs), ESLint 0 Warnungen, 0 TODOs/FIXMEs. Größte Java-Produktionsdateien: `Spiel.java` (542, Aggregat), `PartieStandAntwort.java` (529, Snapshot-DTO), `JsonbConverter.java` (500, Persistenz-Boilerplate) — alle verteidigt. Größte TS-Produktionsdatei: `TischKartenRenderer.ts` (418, Phaser-Rendering) — kein Handlungsbedarf. Keine neuen Refactoring-Kandidaten.
 

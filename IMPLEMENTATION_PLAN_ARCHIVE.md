@@ -2,6 +2,20 @@
 
 ---
 
+## Archiviert am 2026-09-14 (Sessions 151–156 — Prod-Betrieb, E2E Smoke, Ops)
+
+> Slim-Down des aktiven Plans (Session 157). Alle unten gelisteten Tasks sind **erledigt** (`[x]`, Code + Tests grün, committet).
+
+**Block A — Autonome Tasks (S153–S155):**
+- **BUG-PROD-500-TISCH** ✓ S153 — `SPRING_PROFILES_ACTIVE=prod` fehlte in `/opt/locodoko/.env`; App lief mit H2 in-memory. Fix: Env-Variable gesetzt, Service neugestartet, `scripts/setup-server.sh` + `specs/betrieb-deployment.md` aktualisiert.
+- **E2E-PROD-SMOKE** ✓ S154 — `playwright.config.prod.ts` + `test:prod`-Skript + `aktiviereTurbo` in `schnellstart.spec.ts`. `npm run test:prod`: 2 passed gegen `https://zock.locodoko.de`.
+- **OPS-NOINDEX-PROXY** ✓ S155 — `header X-Robots-Tag "noindex, nofollow"` in `/etc/caddy/Caddyfile` auf prod1 ergänzt, `caddy reload` exit 0.
+
+**Block B — MENSCH-Vorbedingung:**
+- **BACKUP-DB-CRON** ✓ S156 — `.env` wurde im Cron-Kontext nicht geladen → pg_dump scheiterte. Fix: `scripts/backup-db.sh` sourct `/opt/locodoko/.env` automatisch. Restore in `locodoko_restore_test` verifiziert: 15 Tabellen, 37 Spieler, 8 Tische, 12 Partien.
+
+---
+
 ## Archiviert am 2026-07-05 (Sessions 131–148b — Reife, Deploy-Vorbereitung, Security, Spec-Sync)
 
 > Slim-Down des aktiven Plans (Session 149). Alle unten gelisteten Tasks sind **erledigt** (`[x]`, Code + Tests grün, committet).

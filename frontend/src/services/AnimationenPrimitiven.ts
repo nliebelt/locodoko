@@ -20,6 +20,7 @@ export class AnimationenPrimitiven {
     readonly szene: Phaser.Scene,
     private readonly laufendeTweens: Set<Phaser.Tweens.Tween>,
     private readonly laufendenTimer: Set<number>,
+    private readonly laufendeWarteLoeser: Set<() => void>,
     public geschwindigkeitsfaktor: number
   ) {}
 
@@ -57,7 +58,8 @@ export class AnimationenPrimitiven {
       const tweenKonfig: Phaser.Types.Tweens.TweenBuilderConfig = {
         ...(konfiguration as Phaser.Types.Tweens.TweenBuilderConfig),
         duration: skalierteDauer,
-        onComplete: fertig
+        onComplete: fertig,
+        onStop: fertig
       };
       const tween = this.szene.tweens.add(tweenKonfig);
       tweenReferenz.wert = tween;
@@ -98,11 +100,15 @@ export class AnimationenPrimitiven {
     const skalierteWartezeit = this.skalierteDauer(wartezeit);
     if (skalierteWartezeit <= 0) return Promise.resolve();
     return new Promise((resolve) => {
-      const timer = window.setTimeout(() => {
+      const loeser = () => {
+        window.clearTimeout(timer);
         this.laufendenTimer.delete(timer);
+        this.laufendeWarteLoeser.delete(loeser);
         resolve();
-      }, skalierteWartezeit);
+      };
+      const timer = window.setTimeout(loeser, skalierteWartezeit);
       this.laufendenTimer.add(timer);
+      this.laufendeWarteLoeser.add(loeser);
     });
   }
 

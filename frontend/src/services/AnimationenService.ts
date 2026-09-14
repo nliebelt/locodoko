@@ -22,6 +22,7 @@ export type { RundenauswertungDaten } from './SpieleffektAnimationen';
 export class AnimationenService {
   private readonly laufendeTweens = new Set<Phaser.Tweens.Tween>();
   private readonly laufendenTimer = new Set<number>();
+  private readonly laufendeWarteLoeser = new Set<() => void>();
   private readonly primitiven: AnimationenPrimitiven;
   private readonly karten: KartenAnimationen;
   private readonly effekte: SpieleffektAnimationen;
@@ -40,7 +41,7 @@ export class AnimationenService {
     geschwindigkeitsfaktor = 1
   ) {
     this.geschwindigkeitsfaktor = geschwindigkeitsfaktor;
-    this.primitiven = new AnimationenPrimitiven(szene, this.laufendeTweens, this.laufendenTimer, geschwindigkeitsfaktor);
+    this.primitiven = new AnimationenPrimitiven(szene, this.laufendeTweens, this.laufendenTimer, this.laufendeWarteLoeser, geschwindigkeitsfaktor);
     this.karten = new KartenAnimationen(this.primitiven);
     this.effekte = new SpieleffektAnimationen(this.primitiven);
   }
@@ -87,6 +88,8 @@ export class AnimationenService {
     this.laufendeTweens.clear();
     this.laufendenTimer.forEach((timer) => window.clearTimeout(timer));
     this.laufendenTimer.clear();
+    this.laufendeWarteLoeser.forEach((loeser) => loeser());
+    this.laufendeWarteLoeser.clear();
     this.warteschlange = Promise.resolve();
     this._animationLaeuft = false;
   }
