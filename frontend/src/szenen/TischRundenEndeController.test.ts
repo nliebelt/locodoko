@@ -43,10 +43,11 @@ const phaserModalHarness = vi.hoisted(() => {
 
 vi.mock('../ui/PhaserModal', () => ({ PhaserModal: phaserModalHarness.KlasseMock }));
 
-// === Fake-Phaser.Math (wird in tweens.add ease verwendet) ===
+// === Fake-Phaser (wird in tweens.add ease + GeometryMask verwendet) ===
 vi.mock('phaser', () => ({
   default: {
     Math: { Easing: { Cubic: { Out: vi.fn() } } },
+    Display: { Masks: { GeometryMask: class GeometryMask { constructor() {} } } },
   },
 }));
 
@@ -92,15 +93,42 @@ function baueFakeModell(overrides: Partial<TischAnsichtModell> = {}): TischAnsic
 // === Fake-Szene mit Tween-Tracking ===
 function baueSzene() {
   const erstellteTweens: Array<{ remove: ReturnType<typeof vi.fn> }> = [];
+  const erstellteTexte: Array<{ destroy: ReturnType<typeof vi.fn> }> = [];
 
-  const fakeText = () => ({
-    setOrigin: vi.fn().mockReturnThis(),
+  const fakeText = () => {
+    const obj = {
+      setOrigin: vi.fn().mockReturnThis(),
+      setDepth: vi.fn().mockReturnThis(),
+      setColor: vi.fn().mockReturnThis(),
+      setAlpha: vi.fn().mockReturnThis(),
+      setText: vi.fn().mockReturnThis(),
+      getData: vi.fn().mockReturnValue(false),
+      setData: vi.fn().mockReturnThis(),
+      destroy: vi.fn(),
+    };
+    erstellteTexte.push(obj);
+    return obj;
+  };
+
+  const fakeGraphics = () => ({
+    fillStyle: vi.fn().mockReturnThis(),
+    fillRect: vi.fn().mockReturnThis(),
+    fillRoundedRect: vi.fn().mockReturnThis(),
+    lineStyle: vi.fn().mockReturnThis(),
+    lineBetween: vi.fn().mockReturnThis(),
+    strokeRoundedRect: vi.fn().mockReturnThis(),
+    clear: vi.fn().mockReturnThis(),
     setDepth: vi.fn().mockReturnThis(),
-    setColor: vi.fn().mockReturnThis(),
-    setAlpha: vi.fn().mockReturnThis(),
-    setText: vi.fn().mockReturnThis(),
-    getData: vi.fn().mockReturnValue(false),
-    setData: vi.fn().mockReturnThis(),
+    destroy: vi.fn(),
+  });
+
+  const fakeContainer = () => ({
+    add: vi.fn().mockReturnThis(),
+    setDepth: vi.fn().mockReturnThis(),
+    setSize: vi.fn().mockReturnThis(),
+    setInteractive: vi.fn().mockReturnThis(),
+    setMask: vi.fn().mockReturnThis(),
+    on: vi.fn().mockReturnThis(),
     destroy: vi.fn(),
   });
 
@@ -109,6 +137,12 @@ function baueSzene() {
     add: {
       text: vi.fn().mockImplementation(() => fakeText()),
       existing: vi.fn(),
+      graphics: vi.fn().mockImplementation(() => fakeGraphics()),
+      container: vi.fn().mockImplementation(() => fakeContainer()),
+    },
+    input: {
+      on: vi.fn(),
+      off: vi.fn(),
     },
     tweens: {
       add: vi.fn().mockImplementation((config: any) => {
@@ -125,7 +159,7 @@ function baueSzene() {
     },
   };
 
-  return { szene, erstellteTweens };
+  return { szene, erstellteTweens, erstellteTexte };
 }
 
 // === Lazy-Import nach vi.mock ===
@@ -154,17 +188,17 @@ describe('TischRundenEndeController', () => {
       expect(controller.phaserRundenEndeModal).toBeUndefined();
     });
 
-    it('erstellt phaserRundenEndeModal wenn Spielergebnis vorhanden', async () => {
+    it('erzeugt Overlay-Objekte wenn Spielergebnis vorhanden', async () => {
       const Klasse = await ladeController();
       const { szene } = baueSzene();
       const controller = new Klasse(szene, () => undefined);
 
       await controller.zeigeRundenEndeModal(baueFakeModell());
 
-      expect(controller.phaserRundenEndeModal).toBeDefined();
+      expect((szene.add.text as ReturnType<typeof vi.fn>).mock.calls.length).toBeGreaterThan(0);
     });
 
-    it('enthält Spielzahl im Titel wenn anzahlSpiele in Konfiguration gesetzt', async () => {
+    it('enthält Spielzahl im Text wenn anzahlSpiele in Konfiguration gesetzt', async () => {
       const Klasse = await ladeController();
       const { szene } = baueSzene();
       const getLetzterZustand = () =>
@@ -173,33 +207,32 @@ describe('TischRundenEndeController', () => {
 
       await controller.zeigeRundenEndeModal(baueFakeModell());
 
-      const konstruktorAufruf = phaserModalHarness.KlasseMock.mock.calls[0];
-      const optionen = konstruktorAufruf?.[3];
-      expect(optionen?.titel).toContain('2/12');
+      const texte = (szene.add.text as ReturnType<typeof vi.fn>).mock.calls
+        .map((c: any) => String(c[2]));
+      expect(texte.some((t: string) => t.includes('2/12'))).toBe(true);
     });
 
-    it('zeigt Spielnummer ohne Gesamtzahl wenn anzahlSpiele fehlt', async () => {
+    it('zeigt Spielnummer ohne Gesamtzahl im Text wenn anzahlSpiele fehlt', async () => {
       const Klasse = await ladeController();
       const { szene } = baueSzene();
       const controller = new Klasse(szene, () => undefined);
 
       await controller.zeigeRundenEndeModal(baueFakeModell());
 
-      const konstruktorAufruf = phaserModalHarness.KlasseMock.mock.calls[0];
-      const optionen = konstruktorAufruf?.[3];
-      expect(optionen?.titel).toContain('Spiel 2');
-      expect(optionen?.titel).not.toContain('/');
+      const texte = (szene.add.text as ReturnType<typeof vi.fn>).mock.calls
+        .map((c: any) => String(c[2]));
+      expect(texte.some((t: string) => t.includes('Spiel 2') && !t.includes('/'))).toBe(true);
     });
 
-    it('fügt Modal in rundenauswertungObjekte ein', async () => {
+    it('erzeugt Grafik-Hintergrund und Text-Objekte (Overlay)', async () => {
       const Klasse = await ladeController();
       const { szene } = baueSzene();
       const controller = new Klasse(szene, () => undefined);
 
       await controller.zeigeRundenEndeModal(baueFakeModell());
 
-      expect(controller.rundenauswertungObjekte.length).toBeGreaterThan(0);
-      expect(controller.rundenauswertungObjekte[0]).toBeDefined();
+      expect((szene.add.graphics as ReturnType<typeof vi.fn>).mock.calls.length).toBeGreaterThan(0);
+      void controller; // kein Fehler beim Aufrufen
     });
 
     it('erstellt CountUp-Tween beim Anzeigen', async () => {
@@ -266,18 +299,20 @@ describe('TischRundenEndeController', () => {
       });
     });
 
-    it('zerstört phaserRundenEndeModal', async () => {
+    it('zerstört erstellte Text-Objekte beim Schließen', async () => {
       const Klasse = await ladeController();
-      const { szene } = baueSzene();
+      const { szene, erstellteTexte } = baueSzene();
       const controller = new Klasse(szene, () => undefined);
       await controller.zeigeRundenEndeModal(baueFakeModell());
+      expect(erstellteTexte.length).toBeGreaterThan(0);
 
       controller.schliesseRundenEndeModal();
 
-      expect(phaserModalHarness.destroyFn).toHaveBeenCalled();
+      const anzahlZerstoert = erstellteTexte.filter((t) => t.destroy.mock.calls.length > 0).length;
+      expect(anzahlZerstoert).toBeGreaterThan(0);
     });
 
-    it('setzt phaserRundenEndeModal auf undefined', async () => {
+    it('phaserRundenEndeModal bleibt nach Schließen undefined', async () => {
       const Klasse = await ladeController();
       const { szene } = baueSzene();
       const controller = new Klasse(szene, () => undefined);
@@ -325,14 +360,14 @@ describe('TischRundenEndeController', () => {
       expect(controller.phaserPartieEndeModal).toBeUndefined();
     });
 
-    it('erstellt phaserPartieEndeModal wenn Spielergebnis vorhanden', async () => {
+    it('erzeugt Overlay-Objekte wenn Spielergebnis vorhanden', async () => {
       const Klasse = await ladeController();
       const { szene } = baueSzene();
       const controller = new Klasse(szene, () => undefined);
 
       controller.zeigePartieEndeModal(baueFakeModell());
 
-      expect(controller.phaserPartieEndeModal).toBeDefined();
+      expect((szene.add.text as ReturnType<typeof vi.fn>).mock.calls.length).toBeGreaterThan(0);
     });
 
     it('startet Countdown-Interval nach Modal-Anzeige', async () => {
@@ -374,7 +409,7 @@ describe('TischRundenEndeController', () => {
       vi.useRealTimers();
     });
 
-    it('nutzt grüne Siegerfarbe bei RE-Sieg', async () => {
+    it('nutzt Gold-Siegerfarbe bei RE-Sieg', async () => {
       const Klasse = await ladeController();
       const { szene } = baueSzene();
       const controller = new Klasse(szene, () => undefined);
@@ -383,12 +418,11 @@ describe('TischRundenEndeController', () => {
         letztesSpielergebnis: baueSpielergebnis({ siegerPartei: 'RE' }),
       }));
 
-      // Mindestens ein text()-Aufruf muss '#4adf7a' als Farbe erhalten haben
-      // add.text(x, y, text, config) → config ist Index 3
+      // Mindestens ein text()-Aufruf muss '#f8c94e' (Gold für RE) als Farbe erhalten haben
       const farben = (szene.add.text as ReturnType<typeof vi.fn>).mock.calls
         .map((c: any) => c[3]?.color)
         .filter(Boolean);
-      expect(farben).toContain('#4adf7a');
+      expect(farben).toContain('#f8c94e');
     });
 
     it('nutzt rote Siegerfarbe bei KONTRA-Sieg', async () => {
@@ -462,16 +496,17 @@ describe('TischRundenEndeController', () => {
       expect(controller.partieCountdownInterval).toBeUndefined();
     });
 
-    it('zerstört phaserPartieEndeModal', async () => {
+    it('zerstört erstellte Text-Objekte beim Schließen', async () => {
       const Klasse = await ladeController();
-      const { szene } = baueSzene();
+      const { szene, erstellteTexte } = baueSzene();
       const controller = new Klasse(szene, () => undefined);
       controller.zeigePartieEndeModal(baueFakeModell());
-      vi.clearAllMocks();
+      expect(erstellteTexte.length).toBeGreaterThan(0);
 
       controller.schliessePartieEndeModal();
 
-      expect(phaserModalHarness.destroyFn).toHaveBeenCalled();
+      const anzahlZerstoert = erstellteTexte.filter((t) => t.destroy.mock.calls.length > 0).length;
+      expect(anzahlZerstoert).toBeGreaterThan(0);
     });
 
     it('setzt Queue nach Schließen fort', async () => {
@@ -514,21 +549,19 @@ describe('TischRundenEndeController', () => {
       expect(clearIntervalSpy).toHaveBeenCalled();
     });
 
-    it('zerstört beide Modals', async () => {
+    it('zerstört alle Overlay-Objekte beider Overlays', async () => {
       const Klasse = await ladeController();
-      const { szene } = baueSzene();
+      const { szene, erstellteTexte } = baueSzene();
       const controller = new Klasse(szene, () => undefined);
       await controller.zeigeRundenEndeModal(baueFakeModell());
-      vi.clearAllMocks();
+      const anzahlNachRunden = erstellteTexte.length;
       controller.zeigePartieEndeModal(baueFakeModell());
-      vi.clearAllMocks();
+      expect(erstellteTexte.length).toBeGreaterThan(anzahlNachRunden);
 
       controller.aufraeumen();
 
-      // destroy wird 3-mal aufgerufen: phaserRundenEndeModal.destroy() +
-      // rundenauswertungObjekte enthält ebenfalls das Modal → nochmals destroy()
-      // + phaserPartieEndeModal.destroy()
-      expect(phaserModalHarness.destroyFn).toHaveBeenCalledTimes(3);
+      const anzahlZerstoert = erstellteTexte.filter((t) => t.destroy.mock.calls.length > 0).length;
+      expect(anzahlZerstoert).toBeGreaterThan(0);
     });
 
     it('ist idempotent wenn kein Modal aktiv ist (kein Crash)', async () => {

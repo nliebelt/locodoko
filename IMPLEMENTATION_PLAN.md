@@ -4,12 +4,13 @@
 
 ## Notiz
 
-**BE-SPIELVERLAUF erledigt (2026-09-14). Nächster Task: FE-RUNDENENDE-REDESIGN.**
+**FE-RUNDENENDE-REDESIGN erledigt (2026-09-14). Nächster Task: FE-UI-FINAL-REVIEW.**
 
-- `PartieStandAntwort` um `spielverlauf: List<LetztesSpielergebnisAntwort>` erweitert (alle abgeschlossenen Spiele).
-- Frontend: `TischAnsichtModell.spielverlauf: LetztesSpielergebnisAnsicht[]` + Mapping in beiden Hilfsfunktionen.
-- WireFormat-Baseline neu generiert (additives Feld, kein Breaking Change).
-- Nächste Aufgabe: FE-RUNDENENDE-REDESIGN — Vollbild-Overlay mit scrollbarer Verlaufstabelle (nutzt jetzt `spielverlauf`).
+- `TischRundenEndeController.ts` vollständig auf grüne Spieltisch-Palette umgestellt (kein PhaserModal mehr).
+- Rundenende: Vollbild-Overlay mit Sieger-Animation, Re/Kontra-Spalten, Sonderpunkte, Berechnungszeile, Spielerpunkte, scrollbare Verlaufstabelle (Wheel-Event, 5 sichtbare Zeilen, Maske), Σ-Zeile, Weiter-Button.
+- Partieende: Gleiche Palette, Gesamtstand mit ★, zwei Buttons (Neue Partie / Tisch verlassen), Countdown-Text.
+- Hilfsmethoden: `erstelleTrenner`, `erstelleButton`, `zeichneTabelle`.
+- Nächste Aufgabe: FE-UI-FINAL-REVIEW — Backend starten, Vision Loop ausführen, Screenshots prüfen.
 
 ## Legende
 
@@ -30,7 +31,7 @@
 
 - [x] **BE-SPIELVERLAUF** — `PartieStandAntwort` um `spielverlauf: List<LetztesSpielergebnisAntwort>` erweitern (alle abgeschlossenen Spiele der aktuellen Partie). Vorgehen: (1) In `PartieStandAntwort.java` ein neues Record-Feld `List<LetztesSpielergebnisAntwort> spielverlauf` ergänzen (nach `letztesSpielergebnis`); (2) In der `aus()`-Fabrikmethode befüllen: `partie.spiele().stream().filter(s -> s.ergebnis().isPresent()).map(LetztesSpielergebnisAntwort::aus).toList()`; (3) Im Frontend `TischAnsichtModell.ts`: Interface `TischAnsichtModell` bekommt `spielverlauf: LetztesSpielergebnisAnsicht[]`, Defaultwert `[]`; Mapping in `erstelleTischAnsichtAusStatus()` analog zu `letztesSpielergebnis` (alle Einträge von `partieStand.spielverlauf` mappen). Der neue JSON-Key ist additiv — kein Breaking Change. Validierung: `mvn clean test` grün; `cd frontend && npm test && npm run build && npm run lint` grün. Erste Datei: `src/main/java/de/locodoko/tisch/PartieStandAntwort.java`.
 
-- [ ] **FE-RUNDENENDE-REDESIGN** — `TischRundenEndeController.ts` vollständig neu gestalten. Vorbedingung: BE-SPIELVERLAUF erledigt. **Design-Spec:**  
+- [x] **FE-RUNDENENDE-REDESIGN** — `TischRundenEndeController.ts` vollständig neu gestalten. Vorbedingung: BE-SPIELVERLAUF erledigt. **Design-Spec:**  
   *Palette:* Grüne Spieltisch-Palette durchgehend (kein Lila mehr): Hintergrund-Overlay `0x0d1f0d` (semi-transparent, alpha 0.92), Trenner `0x4a7c59`, Standardtext `#a3c4a8`, Überschrift weiß `#f8f9fa`, Gold `#f8c94e`, Re-Farbe `#f8c94e` (gold), Kontra-Farbe `#90caf9` (hellblau), Negativ `#ff6b6b`.  
   *Layout RundenEnde:* Vollbild-Overlay (kein PhaserModal) — `Graphics`-Rechteck über volle Canvas-Größe + `Container` für Inhalt. Zeilen von oben: (a) Spieltyp + Spielnummer, klein, grau-grün; (b) „★ RE GEWINNT ★" / „★ KONTRA GEWINNT ★", groß, Teamfarbe, bestehende Count-up-Animation für Spielwert beibehalten; (c) Zwei Spalten Re/Kontra: je Spalte Augen-Zahl prominent, darunter alle Sonderpunkte einzeln aufgelistet via `formatiereSonderpunkt()` — bei 0 Sonderpunkten „(keine)" anzeigen; (d) Berechnungszeile mittig: „Grundwert +X · Ansagen +Y → Spielwert: +Z"; (e) Spielerpunkte, nach Partei gruppiert (Re links, Kontra rechts), eigener Spieler gold markiert; (f) Trennlinie + „Bisherige Spiele"-Überschrift; (g) **Scrollbare Verlaufstabelle** (Spalten: Nr │ Typ │ Sieger │ Spielername₁ │ … │ Spielername₄) — das aktuelle Spiel mit „▶" und hellerer Hintergrundfarbe hervorgehoben; Scroll via `scene.input.on('wheel', …)` auf einem maskierten Container (`scene.add.graphics()` + `setMask()`); sichtbarer Bereich ~5 Zeilen, Rest scrollbar; (h) Σ-Zeile (Gesamtstand) immer sichtbar unterhalb der Tabelle (nicht scrollt mit); (i) „Weiter"-Button unten mittig.  
   *Layout PartieEnde:* Gleiche Palette und Struktur; statt „Weiter" zwei Buttons „Neue Partie" + „Tisch verlassen"; Countdown-Text klein unter Buttons; Gesamtstand-Tabelle mit ★ beim Führenden.  
@@ -83,7 +84,7 @@
 - [ ] **BE-ERRORPRONE-NULLAWAY** (Backend — **Java-25-Gate**) — Error Prone + NullAway: auf JDK 25 noch nicht stabil (`NoSuchFieldError: TypeTag`, S128 recherchiert). Reaktivieren, sobald Error-Prone JDK 25 sauber unterstützt.
 - [ ] **SEC-CSP** (Frontend/Security — M2-Task) — Content Security Policy. Phaser 4 WebGL benötigt `'unsafe-eval'` → strikte CSP bricht das Spiel. Nach Live-Gang per `CSP-Report-Only`-Header Violations erfassen, dann iterativ einschränken. (S145: akzeptiertes Restrisiko M1.)
 
-- [ ] **FE-RUNDENENDE-REDESIGN** — ✅ nach Sektion A verschoben (S157, Design-Abstimmung abgeschlossen). Vollständige Spec in Sektion A.
+- [x] **FE-RUNDENENDE-REDESIGN** — ✅ nach Sektion A verschoben (S157, Design-Abstimmung abgeschlossen). Vollständige Spec in Sektion A.
 
 - [ ] **FE-MOBILE** (M2 — Touch/Layout) — Mobile Touch funktioniert nicht. Ziel: separater Mobile-Screen mit größeren Karten, Touch-optimiertem Layout. Braucht visuelle Regressionstests für Mobile (Playwright Viewport 390×844 o.ä.), damit Fehler ohne echtes Gerät findbar sind. Kein Visual-Loop ohne Mobile-Viewport-Test möglich. Erst planen wenn FE-RUNDENENDE-REDESIGN und CI stehen (visuelle Tests benötigen stabilen Baseline).
 

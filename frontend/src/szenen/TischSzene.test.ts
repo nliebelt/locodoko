@@ -89,6 +89,8 @@ class FakeGameObject {
   fillRoundedRect() { return this; }
   strokeRoundedRect() { return this; }
   lineStyle() { return this; }
+  lineBetween() { return this; }
+  setMask() { return this; }
   setStrokeStyle() { return this; }
   onpointerdown() { (this as any)._pointerDownHandler?.(); }
 }
@@ -145,7 +147,8 @@ vi.mock('phaser', () => ({
       GameObject: FakeGameObject 
     },
     Scale: { Events: { RESIZE: 'resize' } },
-    Math: { Easing: { Cubic: { Out: 'Cubic.Out' } } }
+    Math: { Easing: { Cubic: { Out: 'Cubic.Out' } } },
+    Display: { Masks: { GeometryMask: class { constructor() {} } } }
   }
 }));
 
@@ -200,7 +203,7 @@ function baueSzene(z: any) {
       return { remove: () => {} };
     })
   };
-  Object.assign(s, { add: { existing: (o:any)=>o, tileSprite: (_x:any,_y:any,_w:any,_h:any,_t:any)=>new FakeGameObject(), container: (_x:any,_y:any)=>new FakeContainer(), graphics: ()=>new FakeGameObject(), ellipse: (_x:any,_y:any,_w:any,_h:any)=>new FakeGameObject(), text: (_x:any,_y:any,_t:any)=>new FakeGameObject(), circle: (_x:any,_y:any)=>new FakeGameObject(), rectangle: (_x:any,_y:any,_w:any,_h:any)=>new FakeGameObject(), image: (_x:any,_y:any,_t:any)=>new FakeGameObject(), particles: fakeParticles }, scale: { gameSize: { width: 1280, height: 720 }, on: vi.fn(), off: vi.fn() }, scene: { start: vi.fn() }, tweens: t, time: sTime, textures: { exists: ()=>true, addCanvas: ()=>{} }, game: { loop: { sleep: vi.fn(), wake: vi.fn() } }, cameras: { main: { shake: vi.fn(), flash: vi.fn() } } });
+  Object.assign(s, { add: { existing: (o:any)=>o, tileSprite: (_x:any,_y:any,_w:any,_h:any,_t:any)=>new FakeGameObject(), container: (_x:any,_y:any)=>new FakeContainer(), graphics: ()=>new FakeGameObject(), ellipse: (_x:any,_y:any,_w:any,_h:any)=>new FakeGameObject(), text: (_x:any,_y:any,_t:any)=>new FakeGameObject(), circle: (_x:any,_y:any)=>new FakeGameObject(), rectangle: (_x:any,_y:any,_w:any,_h:any)=>new FakeGameObject(), image: (_x:any,_y:any,_t:any)=>new FakeGameObject(), particles: fakeParticles }, input: { on: vi.fn(), off: vi.fn() }, scale: { gameSize: { width: 1280, height: 720 }, on: vi.fn(), off: vi.fn() }, scene: { start: vi.fn() }, tweens: t, time: sTime, textures: { exists: ()=>true, addCanvas: ()=>{} }, game: { loop: { sleep: vi.fn(), wake: vi.fn() } }, cameras: { main: { shake: vi.fn(), flash: vi.fn() } } });
   s.create();
   s['animationen'] = fakeAnimationen;
   return { s, t };
