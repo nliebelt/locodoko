@@ -4,12 +4,14 @@
 
 ## Notiz
 
-**S157 — CI-GITHUB-ACTIONS abgehakt (2026-09-14). Nächster Task: QA-CODE-METRICS-SETUP.**
+**S157/Folge — QA-CODE-METRICS-SETUP erledigt (2026-09-14). Nächster Task: QA-CODE-METRICS-REPORT.**
 
-- `.github/workflows/ci.yml` war bereits aus Commit `CI-BUILD-TEST` vorhanden (Java 25 Temurin, Node 22, Backend + Frontend + Spec-Lint-Job). YAML valide. Plan-Eintrag nachgezogen.
-- Entdeckung: `ci-docs.yml` (MkDocs Material → GitHub Pages) ebenfalls bereits committed (`DOC-DOCS-SITE`).
+- `pom.xml`: JaCoCo `report`-Phase auf `verify` verschoben, `destFile` + `dataFile` + `outputDirectory` explizit konfiguriert. `mvn clean verify` erzeugt Report in `target/site/jacoco/`. JaCoCo war bereits vorhanden (0.8.14) — nur Phase und Konfiguration angepasst.
+- `frontend/package.json`: `knip` (6.35.1), `madge` (8.0.0), `depcheck` (1.4.7) als devDependencies ergänzt + npm-Scripts `knip`, `madge`, `depcheck` hinzugefügt.
+- knip-Befunde: Exit 1 — 1 ungenutzte Datei (`eslint-complexity.config.mjs`), 57 ungenutzte Exports, 50 ungenutzte Typen. Werden in QA-CODE-METRICS-REPORT dokumentiert.
+- madge: kein zirkulärer Abhängigkeit (Exit 0). depcheck: keine Issues (Exit 0).
 
-**Nächster Schritt:** QA-CODE-METRICS-SETUP — `jacoco-maven-plugin` in `pom.xml` + Frontend-Metriken (`knip`, `madge`, `depcheck`).
+**Nächster Schritt:** QA-CODE-METRICS-REPORT — Metriken auswerten, `specs/code-metrics-report.md` anlegen.
 
 ## Legende
 
@@ -32,7 +34,7 @@
 
 - [x] **CI-GITHUB-ACTIONS** — `.github/workflows/ci.yml` anlegen. Trigger: `push` und `pull_request` auf `main`. Jobs: (1) `backend` — Ubuntu latest, Java 21 (temurin), `mvn clean test -q`; (2) `frontend` — Node 20, `cd frontend && npm ci && npm test --silent && npm run build && npm run lint`. Cache: Maven `~/.m2`, npm `~/.npm`. Keine weiteren Abhängigkeiten zwischen Jobs. Validierung: Datei syntaktisch korrekt (YAML-Linting via `python3 -c "import yaml; yaml.safe_load(open('.github/workflows/ci.yml'))"` oder äquivalent). Erste Datei: `.github/workflows/ci.yml`.
 
-- [ ] **QA-CODE-METRICS-SETUP** — Mess-Werkzeuge verdrahten. Backend: `jacoco-maven-plugin` in `pom.xml` (Goals `prepare-agent` + `report` an `verify`-Phase, Konfiguration: `destFile`, `dataFile`, Output nach `target/site/jacoco/`). Frontend: `knip`, `madge`, `depcheck` als dev-Dependencies in `package.json` + npm-Scripts `"knip": "knip"`, `"madge": "madge src --circular"`, `"depcheck": "depcheck"`. Validierung: `mvn clean verify -q` (JaCoCo-Report entsteht), `cd frontend && npm run knip`, `npm run madge`, `npm run depcheck` laufen ohne Abbruch (Befunde sind ok, Exit-Code-Fehler dokumentieren). Erste Datei: `pom.xml`.
+- [x] **QA-CODE-METRICS-SETUP** — Mess-Werkzeuge verdrahten. Backend: `jacoco-maven-plugin` in `pom.xml` (Goals `prepare-agent` + `report` an `verify`-Phase, Konfiguration: `destFile`, `dataFile`, Output nach `target/site/jacoco/`). Frontend: `knip`, `madge`, `depcheck` als dev-Dependencies in `package.json` + npm-Scripts `"knip": "knip"`, `"madge": "madge src --circular"`, `"depcheck": "depcheck"`. Validierung: `mvn clean verify -q` (JaCoCo-Report entsteht), `cd frontend && npm run knip`, `npm run madge`, `npm run depcheck` laufen ohne Abbruch (Befunde sind ok, Exit-Code-Fehler dokumentieren). Erste Datei: `pom.xml`.
 
 - [ ] **QA-CODE-METRICS-REPORT** — Alle Metriken auswerten und dokumentieren. Vorbedingung: QA-CODE-METRICS-SETUP erledigt. Schritte: (1) `mvn clean verify -q` → JaCoCo-Gesamtdeckung aus `target/site/jacoco/index.html` auslesen; (2) `cd frontend && npm run knip` → tote Exporte/Dateien; (3) `npm run madge` → zirkuläre Abhängigkeiten; (4) `npm run depcheck` → ungenutzten Dependencies. Befunde in `specs/code-metrics-report.md` dokumentieren (Tabelle: Metrik / Wert / Trend / Handlungsbedarf). Für jeden kritischen Befund (Coverage < 60 %, zirkuläre Deps, ungenutzte Deps) einen neuen `[ ]`-Task in Sektion A des Plans anlegen. Validierung: `python3 check_specs.py` → 0 Befunde. Erste Datei: `specs/code-metrics-report.md`.
 
