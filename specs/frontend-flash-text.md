@@ -37,7 +37,8 @@ Design-Referenz: `design_handoff/Doppelkopf Flash Text v3.html` (enthält direkt
    | `FuchsGefangen`          | Letter Drop (70ms Delay pro Buchstabe) + Konfetti + Shake | ~700ms |
    | `KarlchenGespielt`       | Card Flip + Bounce Spin + 2× Shockwave Ring            | 560ms     |
    | `DoppelkopfGestochen`    | **Foil Text** + Zoom Blur + 3× Ring + Konfetti + Camera Flash | 580ms |
-   | `SpielBeendet`           | **Foil Text** + Zoom Blur + 2× Ring + Mega-Konfetti + Camera Flash | 540ms |
+   | `SpielBeendet` (GEWONNEN) | **Foil Text** + Zoom Blur + 2× Ring + Mega-Konfetti + Camera Flash Grün | 540ms |
+   | `SpielBeendet` (VERLOREN) | **Foil Text** + Zoom Blur + 2× Ring + kein Konfetti + Camera Flash Rot | 540ms |
 
 ### Foil-Shimmer (DoppelkopfGestochen + SpielBeendet)
 
@@ -55,7 +56,7 @@ Design-Referenz: `design_handoff/Doppelkopf Flash Text v3.html` (enthält direkt
    - Asset: `'pixel'` (1×1-Pixel-Textur, muss in PreloadSzene geladen werden falls nicht vorhanden)
    - Farben: `[0xffd700, 0xff88ff, 0x44ffee, 0xff8833]`
    - Geschwindigkeit: min 80, max 200; Gravitation Y: 300; Lebensdauer: 1200ms
-   - Standard-Menge: 70 Partikel; `SpielBeendet` (`Mega-Konfetti`): 150 Partikel
+   - Standard-Menge: 70 Partikel; `SpielBeendet` GEWONNEN (`Mega-Konfetti`): 150 Partikel; `SpielBeendet` VERLOREN: kein Konfetti
    - Aufruf: `emitter.explode(menge)` (keine Loop-Emission)
 
 ### Shockwave Ring
@@ -71,7 +72,7 @@ Design-Referenz: `design_handoff/Doppelkopf Flash Text v3.html` (enthält direkt
 
 11. Screen Shake: `scene.cameras.main.shake(350, 0.007)`
 12. Camera Flash Gold (DoppelkopfGestochen): `scene.cameras.main.flash(300, 255, 215, 0)`
-13. Camera Flash Grün (SpielBeendet): `scene.cameras.main.flash(400, 100, 255, 150)`
+13. Camera Flash bedingt (SpielBeendet): GEWONNEN → grün `scene.cameras.main.flash(400, 100, 255, 150)`, VERLOREN → rot `scene.cameras.main.flash(400, 255, 80, 80)`
 
 ### Typografie
 
@@ -113,7 +114,7 @@ Design-Referenz: `design_handoff/Doppelkopf Flash Text v3.html` (enthält direkt
 - [x] Integration in `TischSzene.ts` (ersetzt Toast-Aufrufe)
 - [x] `destroy()`-Lifecycle korrekt implementiert
 - [x] Unit-Tests für Manager-Logik (Event-Routing)
-- [ ] Visuelles Review via Vision Loop (ausstehend — Backend muss laufen)
+- [ ] Visuelles Review via Vision Loop (ausstehend — Backend muss laufen; VERLOREN-Pfad einschließen)
 
 ## Technische Hinweise
 

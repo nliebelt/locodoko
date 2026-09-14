@@ -4,12 +4,12 @@
 
 ## Notiz
 
-**S157 — DOC-SPEC-ENVVAR-WHITELIST erledigt (2026-09-14). Nächster Task: DOC-FLASH-TEXT-VERLOREN.**
+**S157 — DOC-FLASH-TEXT-VERLOREN erledigt (2026-09-14). Nächster Task: OPS-SETUP-SERVER-NOINDEX.**
 
-- check_specs.py: 7 Env-Var-Namen in WHITELIST_ENUMS eingetragen → 0 Befunde in 56 Specs.
-- Noch offen: 2 Tasks (Spec-Update frontend-flash-text.md, X-Robots-Tag in setup-server.sh).
+- frontend-flash-text.md: SpielBeendet-Tabelle aufgeteilt (GEWONNEN/VERLOREN), Camera-Flash bedingt, Konfetti-Hinweis + DoD-Checkbox mit VERLOREN-Hinweis ergänzt.
+- Noch offen: 1 Task (X-Robots-Tag in setup-server.sh).
 
-**Nächster Schritt:** DOC-FLASH-TEXT-VERLOREN — specs/frontend-flash-text.md GEWONNEN/VERLOREN-Unterscheidung ergänzen.
+**Nächster Schritt:** OPS-SETUP-SERVER-NOINDEX — X-Robots-Tag-Header in scripts/setup-server.sh Caddyfile-Template ergänzen.
 
 ## Legende
 
@@ -34,7 +34,7 @@
 
 - [x] **DOC-SPEC-ENVVAR-WHITELIST** — `check_specs.py`: 7 Umgebungsvariablen-Namen in `WHITELIST_ENUMS` eintragen. `betrieb-deployment.md` referenziert `SPRING_PROFILES_ACTIVE`, `LOCODOKO_DB_USERNAME`, `LOCODOKO_DB_PASSWORD`, `LOCODOKO_DB_URL`, `LOCODOKO_WEBSOCKET_ALLOWED_ORIGINS`, `SENTRY_DSN`, `LOCODOKO_BUGREPORT_GITHUB_TOKEN` als Bezeichner in einer Tabelle — der Linter erkennt sie fälschlich als tote Enum-Konstanten. Fix: alle sieben in `WHITELIST_ENUMS = frozenset({...})` um Zeile 70 ergänzen. Verifikation: `python3 check_specs.py` → 0 Befunde. Erste Datei: `check_specs.py`.
 
-- [ ] **DOC-FLASH-TEXT-VERLOREN** — `specs/frontend-flash-text.md` aktualisieren. Die Spec beschreibt `SpielBeendet` als rein grünes GEWONNEN-Banner. Nach FE-SPIEL-BEENDET-OUTCOME gilt: GEWONNEN = grün (Konfetti + Camera Flash grün), VERLOREN = pink (kein Konfetti, Camera Flash rot). Anpassen: (1) Event-Tabelle: `SpielBeendet`-Zeile ergänzen um GEWONNEN/VERLOREN-Unterscheidung; (2) Technische Hinweise Abschnitt: Camera Flash Grün → bedingt; (3) DoD-Checkbox für Visuelles Review auf `[x]` setzen (Review war ausstehend, aber Spec-Status ist Abgeschlossen — entweder Review nachholen oder Checkbox als „Design-Review in Vision-Loop nötig" offenlassen). Erste Datei: `specs/frontend-flash-text.md`.
+- [x] **DOC-FLASH-TEXT-VERLOREN** — `specs/frontend-flash-text.md` aktualisieren. Die Spec beschreibt `SpielBeendet` als rein grünes GEWONNEN-Banner. Nach FE-SPIEL-BEENDET-OUTCOME gilt: GEWONNEN = grün (Konfetti + Camera Flash grün), VERLOREN = pink (kein Konfetti, Camera Flash rot). Anpassen: (1) Event-Tabelle: `SpielBeendet`-Zeile ergänzen um GEWONNEN/VERLOREN-Unterscheidung; (2) Technische Hinweise Abschnitt: Camera Flash Grün → bedingt; (3) DoD-Checkbox für Visuelles Review auf `[x]` setzen (Review war ausstehend, aber Spec-Status ist Abgeschlossen — entweder Review nachholen oder Checkbox als „Design-Review in Vision-Loop nötig" offenlassen). Erste Datei: `specs/frontend-flash-text.md`.
 
 - [ ] **OPS-SETUP-SERVER-NOINDEX** — `scripts/setup-server.sh`: `X-Robots-Tag`-Header im Caddyfile-Template nachpflegen. S155 hat den Header direkt via Paramiko auf prod1 gesetzt, aber das `setup-server.sh`-Skript schreibt das Caddyfile ohne diesen Header — bei Neuprovisioning geht er verloren. Fix: `header X-Robots-Tag "noindex, nofollow"` in den `zock.locodoko.de`-Block des generierten Caddyfiles eintragen (analog zu dem, was S155 direkt auf dem Server gesetzt hat). Prüfen: Struktur in `scripts/setup-server.sh` suchen, wo das Caddyfile via Heredoc oder Echo geschrieben wird. Keine Validierung via `caddy` möglich (kein Caddy in Sandbox) — Code-Review reicht. Erste Datei: `scripts/setup-server.sh`.
 
