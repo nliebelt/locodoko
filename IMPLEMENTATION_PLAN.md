@@ -4,13 +4,12 @@
 
 ## Notiz
 
-**S157/Folge — QA-CODE-METRICS-REPORT erledigt (2026-09-14). Nächster Task: OPS-GRAFANA-SPRING.**
+**S157/Folge — OPS-GRAFANA-SPRING als bereits erledigt erkannt (2026-09-14). Nächster Task: SPEC-RECHT-DRAFT.**
 
-- `specs/code-metrics-report.md` angelegt: JaCoCo 86 % Instr / 75 % Branch (alle Pakete > 60 %), madge 0 Zyklen, depcheck 0 Issues, knip 1 Datei + 57 Exports + 50 Typen (kosmetisch).
-- `specs/README.md`: Sektion 6 „QA & Betrieb" ergänzt.
-- Keine kritischen Befunde → keine neuen Blocker-Tasks. Radar: `de.locodoko.system` Branch-Coverage 33 %, `eslint-complexity.config.mjs` ungenutzter Eintrag.
+- OPS-GRAFANA-SPRING: Alle drei Teile bereits vorhanden — `micrometer-registry-prometheus` in `pom.xml` (Zeile 125), Prometheus-Endpoint in `application.properties` (Zeile 17–24 + `management.prometheus.metrics.export.enabled=true`), Management-Port 8082 in `application-prod.properties`, `specs/betrieb-monitoring.md` 93 Zeilen vorhanden. Task war bereits implementiert aber nicht abgehakt.
+- `mvn clean test -q` Exit 0 ✅
 
-**Nächster Schritt:** OPS-GRAFANA-SPRING — `micrometer-registry-prometheus` in `pom.xml`, `application.properties` für `/actuator/prometheus`, `specs/betrieb-monitoring.md` anlegen.
+**Nächster Schritt:** SPEC-RECHT-DRAFT — `specs/recht-impressum-datenschutz.md` anlegen (Impressum-Template §5 DDG, Datenschutzerklärung-Template DSGVO, Checkliste vor Go-Live).
 
 ## Legende
 
@@ -37,7 +36,7 @@
 
 - [x] **QA-CODE-METRICS-REPORT** — Alle Metriken auswerten und dokumentieren. Vorbedingung: QA-CODE-METRICS-SETUP erledigt. Schritte: (1) `mvn clean verify -q` → JaCoCo-Gesamtdeckung aus `target/site/jacoco/index.html` auslesen; (2) `cd frontend && npm run knip` → tote Exporte/Dateien; (3) `npm run madge` → zirkuläre Abhängigkeiten; (4) `npm run depcheck` → ungenutzten Dependencies. Befunde in `specs/code-metrics-report.md` dokumentieren (Tabelle: Metrik / Wert / Trend / Handlungsbedarf). Für jeden kritischen Befund (Coverage < 60 %, zirkuläre Deps, ungenutzte Deps) einen neuen `[ ]`-Task in Sektion A des Plans anlegen. Validierung: `python3 check_specs.py` → 0 Befunde. Erste Datei: `specs/code-metrics-report.md`.
 
-- [ ] **OPS-GRAFANA-SPRING** — Spring Boot für Prometheus-Scraping vorbereiten. Schritte: (1) `micrometer-registry-prometheus` in `pom.xml` ergänzen (kein explizites Version-Tag nötig — Spring Boot BOM verwaltet); (2) in `src/main/resources/application.properties` (bzw. prod-Profil falls vorhanden): `management.endpoints.web.exposure.include=health,info,prometheus` und `management.endpoint.prometheus.enabled=true` setzen — dabei prüfen ob der Endpoint nicht schon existiert; (3) `specs/betrieb-monitoring.md` neu anlegen: Zweck, Prometheus-Endpunkt (`/actuator/prometheus`), empfohlene Grafana-Cloud-Einrichtung (Alloy-Config-Snippet für `locodoko`-Job, DE-Region), wichtigste JVM- und App-Metriken die zu beobachten sind. Validierung: `mvn clean test -q` grün. Erste Datei: `pom.xml`.
+- [x] **OPS-GRAFANA-SPRING** — Spring Boot für Prometheus-Scraping vorbereiten. Schritte: (1) `micrometer-registry-prometheus` in `pom.xml` ergänzen (kein explizites Version-Tag nötig — Spring Boot BOM verwaltet); (2) in `src/main/resources/application.properties` (bzw. prod-Profil falls vorhanden): `management.endpoints.web.exposure.include=health,info,prometheus` und `management.endpoint.prometheus.enabled=true` setzen — dabei prüfen ob der Endpoint nicht schon existiert; (3) `specs/betrieb-monitoring.md` neu anlegen: Zweck, Prometheus-Endpunkt (`/actuator/prometheus`), empfohlene Grafana-Cloud-Einrichtung (Alloy-Config-Snippet für `locodoko`-Job, DE-Region), wichtigste JVM- und App-Metriken die zu beobachten sind. Validierung: `mvn clean test -q` grün. Erste Datei: `pom.xml`.
 
 - [ ] **SPEC-RECHT-DRAFT** — `specs/recht-impressum-datenschutz.md` anlegen. Inhalt: (1) **Impressum-Template** (§5 DDG Pflichtfelder für DE-Betreiber: vollständiger Name, Anschrift, E-Mail-Adresse — Platzhalter `[NAME]`, `[ADRESSE]`, `[E-MAIL]` markieren); (2) **Datenschutzerklärung-Template** (DSGVO-Pflichtangaben: Verantwortlicher, Verarbeitungszwecke je Funktion — Google OAuth, Passwort-Auth, Session, Logs/Monitoring, Bug-Report —, Rechtsgrundlagen Art. 6 DSGVO, Hosting-Standort DE, Löschfristen, Betroffenenrechte, Kontakt Datenschutz); (3) **Checkliste vor Go-Live** (Texte mit echten Daten befüllen, Anwalt-Review empfohlen, Impressum im Footer verlinkt, Cookie-Hinweis falls nötig). Ton: sachlich-technisch, keine Rechtsberatung — explizit als Vorlage kennzeichnen. Validierung: `python3 check_specs.py` → 0 Befunde. Erste Datei: `specs/recht-impressum-datenschutz.md`.
 
@@ -80,6 +79,8 @@
 ---
 
 ## Entdeckungen
+
+- **S157/Folge — OPS-GRAFANA-SPRING war bereits vollständig implementiert** (2026-09-14): `micrometer-registry-prometheus`, Actuator-Konfiguration und `specs/betrieb-monitoring.md` waren bereits im Repo vorhanden — Task war nur im Plan nicht abgehakt. `specs/betrieb-monitoring.md` dokumentiert außerdem eine `de.locodoko.betrieb.SpielMetriken`-Komponente (Domain-Metriken per `SpielBeendet`-Event), deren Java-Implementierung nicht gefunden wurde. Falls dieser Code fehlt, wäre ein eigener Task `OPS-SPIEL-METRIKEN` sinnvoll.
 
 - **S157 — CI-GITHUB-ACTIONS war bereits committed** (2026-09-14): `.github/workflows/ci.yml` (Java 25 Temurin, Node 22, Backend + Frontend + Spec-Lint) wurde in Commit `CI-BUILD-TEST` (vor der M2-Alpha-Runde) angelegt. `ci-docs.yml` (MkDocs → GitHub Pages) in `DOC-DOCS-SITE`. Plan-Eintrag nachgezogen. Kein Code-Handlungsbedarf.
 
