@@ -37,6 +37,8 @@ jobs:
 
       - name: GitHub Pages konfigurieren
         uses: actions/configure-pages@v4
+        with:
+          enablement: true
 
       - name: Docs bauen
         run: mkdocs build --strict

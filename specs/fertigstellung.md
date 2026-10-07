@@ -143,9 +143,9 @@ automatisiertes CI/CD, `VERIFY-MULTIPLAYER`, `FE-SPIELREGELN-HILFE`, `FEAT-BUGRE
 - [x] Feedback-Kanal (FEAT-BUGREPORT ✓, Shift+F1) ✓; SECURITY-REVIEW ✓ (SECURITY-REVIEW-PRE-M1, S148b); minimaler Datenschutzhinweis ausstehend (MENSCH) (18/19)
 
 ### M2 — Public Go-Live (zusätzlich)
-- [ ] Impressum + Datenschutzerklärung + AGB veröffentlicht (11)
+- [ ] Impressum + Datenschutzerklärung + AGB veröffentlicht (11) — Gerüst fertig, Platzhalter noch zu füllen (MENSCH-RECHT-TEXTE)
 - [x] SECURITY-REVIEW vollständig, kritische Findings behoben (18) — SECURITY-REVIEW-PRE-M1 erledigt (S148b)
-- [ ] Automatisiertes CI/CD (5)
+- [x] Automatisiertes CI/CD (5) — CI (`ci.yml`) + CD (`cd.yml`) via GitHub Actions; erster erfolgreicher Deploy S159 (1m9s, prod1 UP)
 - [x] Mensch-gegen-Mensch verifiziert (13) — E2E grün
-- [ ] In-App-Spielregeln/Onboarding (19)
+- [x] In-App-Spielregeln/Onboarding (19) — FE-SPIELREGELN-HILFE ✓ S157 (H-Taste, F1, ?-Button, 6 Tabs)
 - [x] Lizenz entschieden (Apache-2.0, S157)

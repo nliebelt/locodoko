@@ -2,6 +2,28 @@
 
 ---
 
+## Archiviert am 2026-10-07 (Sessions 157–158 — M2-Beta, Mobile, CI/CD, QA, Recht-Template)
+
+> Slim-Down des aktiven Plans (Session 159). Alle unten gelisteten Tasks sind **erledigt** (`[x]`, Code + Tests grün, committet).
+
+**Block A — Autonome Tasks (S157–S158):**
+- **BE-SPIELVERLAUF** ✓ S157 — `PartieStandAntwort` um `spielverlauf: List<LetztesSpielergebnisAntwort>` erweitert. Additiver JSON-Key, Breaking-Change-frei.
+- **FE-RUNDENENDE-REDESIGN** ✓ S157 — `TischRundenEndeController.ts` vollständig neu: grüne Spieltisch-Palette, scrollbare Verlaufstabelle, PartieEnde-Overlay, Count-up-Animation.
+- **FE-UI-FINAL-REVIEW** ✓ S157 — Vision Loop mit Desktop + Mobile Screenshots; Befunde als FE-FIX-Tasks erfasst.
+- **FE-FIX-MASK-WEBGL** ✓ S157 — `Container.setMask()` WebGL-Bug: Maske auf einzelne Text-Objekte verlagert. Kein Console-Warning mehr.
+- **FE-SPIELREGELN-HILFE** ✓ S157 — `HilfeSzene.ts` um Tabs `parteien` + `sonderpunkte` erweitert, F1-Taste in `TischInputHandler.ts` verdrahtet.
+- **FE-MOBILE-DIAGNOSE** ✓ S158 — Mobile Vision Loop: RundenEnde/PartieEnde auf 851×393px abgeschnitten. Befunde dokumentiert → FE-MOBILE-FIX.
+- **FE-MOBILE-FIX** ✓ S158 — `TischRundenEndeController.ts`: `lo(bw,bh)`-Helper mit `skala = min(1,bh/680)`. `ToastManager.ts`: `toastBreite = min(400,breite-32)`. 478 Tests grün.
+- **CD-DEPLOY** ✓ S157/S159 — `.github/workflows/cd.yml` + `DEPLOY_SECRETS.md`. GitHub Secrets (`SSH_PRIVATE_KEY`, `SSH_KNOWN_HOSTS`, `DEPLOY_HOST`) via gh CLI gesetzt S159; Workflow erfolgreich gegen prod1.locodoko.de in 1m9s.
+- **DECISION-LIZENZ-LICENSE** ✓ S157 — `LICENSE` Apache-2.0 im Repo-Root; `fertigstellung.md` aktualisiert.
+- **CI-GITHUB-ACTIONS** ✓ S157 — `.github/workflows/ci.yml` war bereits committed (`CI-BUILD-TEST`); Plan nachgezogen.
+- **QA-CODE-METRICS-SETUP** ✓ S157 — JaCoCo in `pom.xml`; `knip`/`madge`/`depcheck` in `package.json`.
+- **QA-CODE-METRICS-REPORT** ✓ S157 — `specs/code-metrics-report.md`: BE 86 % Instructions, 75 % Branches; FE 0 zirkuläre Deps, 0 ungenutzte Packages. Keine Blocker.
+- **OPS-GRAFANA-SPRING** ✓ S157 — `micrometer-registry-prometheus` + Actuator-Config war bereits im Repo; `specs/betrieb-monitoring.md` angelegt.
+- **SPEC-RECHT-DRAFT** ✓ S157 — `specs/recht-impressum-datenschutz.md` + HTML-Gerüst (`impressum.html`, `datenschutz.html`, `agb.html`) mit Platzhaltern.
+
+---
+
 ## Archiviert am 2026-09-14 (Sessions 151–156 — Prod-Betrieb, E2E Smoke, Ops)
 
 > Slim-Down des aktiven Plans (Session 157). Alle unten gelisteten Tasks sind **erledigt** (`[x]`, Code + Tests grün, committet).
