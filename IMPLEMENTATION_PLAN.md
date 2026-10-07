@@ -4,11 +4,11 @@
 
 ## Notiz
 
-**Session 159 (2026-10-07): M2-Beta vollständig abgeschlossen. CD-Deploy via GitHub Actions erstmals erfolgreich gegen prod1.locodoko.de gelaufen (1m9s, alle Steps grün). GitHub Secrets gesetzt via gh CLI. Locodoko `active`, Actuator `/actuator/health` UP. Alloy-Config auf Prod aktuell, Service `active` — nur Grafana-Cloud-Tokens noch Platzhalter.**
+**Session 159 (2026-10-07): CI-FIX-DOCS-PAGES deployed — Wiki live auf nliebelt.github.io/locodoko/. Dependabot-Scan: 43 Alerts, alle devDependencies (kein Prod-Risiko). Fixbar: vitest (moderate) + transitive deps via `npm audit fix`; depcheck-Transitive via Major-Update. M2-Status: einziger Blocker = Rechtstexte (MENSCH). M3 ab S159 geplant.**
 
-**M2-Status:** Einziger verbleibender Go-Live-Blocker: Rechtstexte mit echten Daten füllen (MENSCH). CI/CD ✓ · Spielregeln ✓ · Mobile ✓ · Security ✓ · Lizenz ✓ · Multiplayer ✓.
+**M2-Status:** Einziger verbleibender Go-Live-Blocker: Rechtstexte mit echten Daten füllen (MENSCH). CI/CD ✓ · Wiki ✓ · Spielregeln ✓ · Mobile ✓ · Security ✓ · Lizenz ✓ · Multiplayer ✓.
 
-**Entdeckung S157 korrigiert:** `de.locodoko.betrieb.SpielMetriken` existiert in `src/main/java/de/locodoko/betrieb/SpielMetriken.java:27` — kein Task nötig.
+**M3 — Post-Go-Live:** Nach erfolgtem M2-Launch. Fokus: Monitoring live schalten, Nutzerfeedback, Security-Härtung, Email.
 
 ## Legende
 
@@ -27,9 +27,11 @@
 > Nimm den **obersten noch offenen** Task. Alle autonom. Diese Sektion ist die EINZIGE
 > Build-Reihenfolge — alte Runden-Sektionen werden beim Plan-Scan entfernt.
 
-- [ ] **CI-FIX-DOCS-PAGES** — `ci-docs.yml` schlägt fehl mit „Get Pages site failed" (GitHub Pages im Repo noch nicht aktiviert). Fix: `actions/configure-pages@v4` bekommt `enablement: true` — das aktiviert Pages automatisch ohne manuellen Repo-Settings-Klick. Vorgehen: In `.github/workflows/ci-docs.yml` den Schritt „GitHub Pages konfigurieren" um `with: enablement: true` erweitern. Validierung: `python3 -c "import yaml; yaml.safe_load(open('.github/workflows/ci-docs.yml'))"` → kein Fehler. Erste Datei: `.github/workflows/ci-docs.yml`.
+- [x] **CI-FIX-DOCS-PAGES** — `enablement: true` in `ci-docs.yml` ergänzt, GitHub Pages manuell aktiviert (S159). Wiki-Deploy erfolgreich: nliebelt.github.io/locodoko/ live. Ab jetzt automatisch bei jedem Push auf `main`.
 
-- [ ] **CLEANUP-FE-ESLINT-COMPLEX** — `eslint-complexity.config.mjs` aus Code-Metrics-Befund S157: entweder via `extends` in einer ESLint-Config eingebunden (behalten + kommentieren warum) oder Dead Code (löschen). Vorgehen: (1) `grep -rn "eslint-complexity" frontend/` — prüfen ob die Datei importiert/referenziert wird; (2) wenn nirgends eingebunden → Datei löschen; wenn eingebunden → nichts ändern, Befund in `specs/code-metrics-report.md` als „aktiv genutzt" schließen. Validierung: `cd frontend && npm run build && npm run lint` grün. Erste Datei: `frontend/eslint-complexity.config.mjs` (oder `specs/code-metrics-report.md` falls nur Befund geschlossen).
+- [ ] **DEPS-NPM-AUDIT-FIX** — Dependabot meldet 43 Alerts, alle in `devDependencies` (kein Prod-Risiko). Zwei Gruppen: (1) `npm audit fix` im `frontend/`-Verzeichnis behebt vitest (moderate, CVE-2026-84373 Path Traversal), @vitest/mocker, brace-expansion, source-map-js, undici, smol-toml, @redocly/openapi-core — alles ohne Major-Bump; (2) depcheck-Transitive (js-yaml, braces, micromatch, findup-sync, argparse, sprintf-js — alle high) werden durch Update von depcheck auf `^1.4.7` → neueste behoben: `npm install depcheck@latest --save-dev`. Vorgehen: (a) `cd frontend && npm audit fix`; (b) `npm install depcheck@latest --save-dev`; (c) `npm audit` nochmals prüfen; (d) `npm test && npm run build && npm run lint` grün. Validierung: `npm audit` zeigt 0 high-Alerts. Erste Datei: `frontend/package-lock.json`.
+
+- [ ] **CLEANUP-FE-ESLINT-COMPLEX** — `eslint-complexity.config.mjs` aus Code-Metrics-Befund S157: entweder via `extends` in einer ESLint-Config eingebunden (behalten) oder Dead Code (löschen). Vorgehen: (1) `grep -rn "eslint-complexity" frontend/` — prüfen ob referenziert; (2) wenn nirgends eingebunden → Datei löschen; wenn eingebunden → Befund in `specs/code-metrics-report.md` als „aktiv genutzt" schließen. Validierung: `npm run build && npm run lint` grün. Erste Datei: `frontend/eslint-complexity.config.mjs`.
 
 ---
 
@@ -109,8 +111,9 @@
 
 ## Meilensteine
 
-- **M1 — Closed Beta** ✅ Vollständig abgehakt S156 (2026-08-18). Stack live, Backup-Cron gefixt + Restore verifiziert. Offen: Beta-Tester als Google Test-User eintragen (MENSCH).
-- **M2 — Public Go-Live:** Rechtstexte (`specs/recht-impressum-datenschutz.md`), CI/CD via GitHub Actions → `scripts/deploy.sh`, DECISION-LIZENZ, SEC-CSP.
+- **M1 — Closed Beta** ✅ Vollständig abgehakt S156 (2026-08-18). Stack live, Backup-Cron gefixt + Restore verifiziert.
+- **M2 — Public Go-Live** [~] Fast fertig (S159): CI/CD ✓ · Wiki ✓ · Spielregeln ✓ · Mobile ✓ · Security ✓ · Lizenz ✓. Letzter Blocker: **MENSCH-RECHT-TEXTE** (Platzhalter in impressum/datenschutz/agb füllen).
+- **M3 — Betrieb & Wachstum** (nach M2-Launch): Monitoring live (Grafana-Tokens), Nutzerfeedback-Kanal, SEC-CSP, Email (Passwort-Reset), Admin-Tooling bei Bedarf. Sektion E.
 
 ---
 
@@ -124,6 +127,24 @@
 6. **VO bleibt VO wo möglich:** Postgres JSONB + Custom Converter ermöglichen immutable VOs.
 7. **Greenfield-Annahme:** Keine Datenmigration nötig.
 8. **Spec-Konsultation:** Bei jedem Task der Specs anpasst: `grep -rn "<altes Konzept>" specs/` als Verifikations-Schritt.
+
+---
+
+## E) M3 — Betrieb & Wachstum (nach M2-Launch, Reihenfolge frei)
+
+> Erst relevant nach öffentlichem Go-Live. Kein Blocker für M2. Reihenfolge je nach Bedarf.
+
+- [ ] **OPS-GRAFANA-TOKENS** *(wartet auf MENSCH-GRAFANA-TOKENS)* — Sobald Tokens gesetzt: in `specs/betrieb-monitoring.md` Status-Zeile auf „Vollständig aktiv" aktualisieren; Grafana-Dashboard-Link ergänzen. Kein Code-Schritt — reines Docs-Update nach MENSCH-Aktion.
+
+- [ ] **SEC-CSP** — Content Security Policy für Phaser 3 einführen. Phaser WebGL braucht `'unsafe-eval'` → striktes CSP unmöglich. Vorgehen: `Content-Security-Policy-Report-Only`-Header im Reverse-Proxy (Caddy) setzen, Violations via Reporting-Endpoint erfassen, iterativ einschränken. Spec: `specs/frontend-architektur.md`. Erst sinnvoll mit echtem Traffic auf prod.
+
+- [ ] **UX-USER-FEEDBACK** — In-Game-Feedback-Kanal für Nutzer. Optionen: (a) einfacher „Feedback"-Link → mailto oder GitHub Discussions; (b) Formular → Email via Brevo/Mailjet; (c) GitHub-Issue-Link mit Template. Entscheidung erst nach ersten echten Nutzern sinnvoll. Vorbedingung: M2 live.
+
+- [ ] **OPS-EMAIL** — Passwort-Reset per E-Mail (V2 der Passwort-Auth). EU-Anbieter: Brevo (früher Sendinblue) oder Mailjet — beide mit AVV und Free-Tier. Spring Boot `spring-boot-starter-mail` + Template. Kein Launch-Blocker, aber wichtig für Nutzerbindung. Spec: `specs/authentifizierung.md` (Abschnitt Passwort-Reset).
+
+- [ ] **ADMIN-TOOLING** — Betreiber-Werkzeuge: (a) hängenden Tisch beenden via REST-Endpoint (intern, auth-gesichert); (b) User sperren/entsperren; (c) aktive Tische auflisten. Erst bei konkretem Betriebsproblem reaktivieren — nicht auf Vorrat bauen.
+
+---
 
 ## Stoppregeln für Build-Modus
 
