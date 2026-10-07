@@ -33,6 +33,12 @@
 
 - [ ] **CLEANUP-FE-ESLINT-COMPLEX** — `eslint-complexity.config.mjs` aus Code-Metrics-Befund S157: entweder via `extends` in einer ESLint-Config eingebunden (behalten) oder Dead Code (löschen). Vorgehen: (1) `grep -rn "eslint-complexity" frontend/` — prüfen ob referenziert; (2) wenn nirgends eingebunden → Datei löschen; wenn eingebunden → Befund in `specs/code-metrics-report.md` als „aktiv genutzt" schließen. Validierung: `npm run build && npm run lint` grün. Erste Datei: `frontend/eslint-complexity.config.mjs`.
 
+- [ ] **TEST-BE-SPIELER-ABDECKUNG** — `de.locodoko.spieler` hat 78 % Instructions / 64 % Branches (Code-Metrics S157, niedrigster Branch-Wert nach `system`). Vorgehen: (1) JaCoCo-Report lesen (`mvn clean verify -q`, dann `target/site/jacoco/de.locodoko.spieler/index.html` via grep oder Bash-Parser auswerten) — welche Klassen/Methoden haben < 50 % Branches?; (2) Für die 2–3 schwächsten Klassen gezielte Unit-Tests schreiben — Fokus auf Fehler-Pfade (ungültige Eingaben, Auth-Fehler, Session-Ablauf), nicht auf Happy-Path (der ist schon gedeckt); (3) Tests müssen echten Wert haben — kein Coverage-Farming mit trivialen Getter-Tests. Validierung: `mvn clean test` grün; JaCoCo-Branches für `spieler`-Paket ≥ 70 %. Erste Datei: neue Testklasse in `src/test/java/de/locodoko/spieler/`.
+
+- [ ] **TEST-BE-TISCH-ABDECKUNG** — `de.locodoko.tisch` hat 86 % Instructions / 65 % Branches. Vorgehen analog TEST-BE-SPIELER-ABDECKUNG: (1) JaCoCo-Report für `tisch`-Paket auswerten; (2) Klassen/Methoden mit < 50 % Branches identifizieren; (3) gezielte Tests für ungedeckte Fehler-Pfade (WebSocket-Fehler, ungültige Tischzustände, Concurrent-Access-Pfade) schreiben. Validierung: `mvn clean test` grün; Branches ≥ 72 %. Erste Datei: neue Testklasse in `src/test/java/de/locodoko/tisch/`.
+
+- [ ] **TEST-FE-MAPPER-ABDECKUNG** — Frontend-Tests haben gute Gesamt-Coverage, aber `TischAnsichtMapper.ts` und `TischKartenSortierung.ts` sind die komplexesten Logik-Dateien (Mapping-Logik, Sortiervarianten). Vorgehen: (1) Prüfen welche Pfade in den bestehenden Tests nicht abgedeckt sind (`grep -n "describe\|it(" frontend/src/modelle/*.test.ts`); (2) fehlende Edge-Cases ergänzen — z.B. Trumpf-Sortierung bei Schweinchen-Aktivierung, leere Spielverlauf-Liste, alle Solo-Varianten im Mapper; (3) keine trivialen Tests. Validierung: `npm test` grün, Coverage-Output zeigt Verbesserung. Erste Datei: `frontend/src/modelle/TischAnsichtMapper.test.ts` (existiert bereits — erweitern).
+
 ---
 
 ## B) Vorbedingung: MENSCH (Ralph überspringt, bis erfüllt)
