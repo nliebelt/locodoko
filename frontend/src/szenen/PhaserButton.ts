@@ -5,7 +5,7 @@ export interface ButtonOptionen {
   x: number;
   y: number;
   text: string;
-  typ?: 'primary' | 'secondary';
+  typ?: 'primary' | 'secondary' | 'tertiary';
   breite?: number;
   hoehe?: number;
   callback: () => void;
@@ -37,7 +37,8 @@ export class PhaserButton extends Phaser.GameObjects.Container implements Focusa
   public readonly breite: number;
 
   constructor(scene: Phaser.Scene, optionen: ButtonOptionen) {
-    const { x, y, text, typ = 'primary', hoehe = 50, callback, testId, deaktiviert = false, schriftgroesse = 20, palette = 'tisch' } = optionen;
+    const istTertiary = optionen.typ === 'tertiary';
+    const { x, y, text, typ = 'primary', hoehe = istTertiary ? 36 : 50, callback, testId, deaktiviert = false, schriftgroesse = istTertiary ? 14 : 20, palette = 'tisch' } = optionen;
     super(scene, x, y);
     if (testId) this.setName(testId);
 
@@ -45,10 +46,14 @@ export class PhaserButton extends Phaser.GameObjects.Container implements Focusa
     const istOverlay = palette === 'overlay';
     const bgFarbe = typ === 'primary'
       ? (istOverlay ? 0xffd700 : 0xd8f3dc)
-      : (istOverlay ? 0x2d1d40 : 0x2d5a3d);
+      : typ === 'tertiary'
+        ? 0x1a3328
+        : (istOverlay ? 0x2d1d40 : 0x2d5a3d);
     const textFarbe = typ === 'primary'
       ? (istOverlay ? '#1a1020' : '#14361f')
-      : (istOverlay ? '#f0e6ff' : '#f8f9fa');
+      : typ === 'tertiary'
+        ? '#a3c4a8'
+        : (istOverlay ? '#f0e6ff' : '#f8f9fa');
 
     // Kinder direkt ueber Konstruktoren erstellen (nicht scene.add.*),
     // damit sie nicht doppelt in der Scene DisplayList landen → verhindert Double-Destroy-Crash

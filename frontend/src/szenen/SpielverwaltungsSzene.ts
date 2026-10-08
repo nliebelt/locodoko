@@ -2,19 +2,17 @@ import Phaser from 'phaser';
 import { TEXTUR_FILZ, registriereBasisTexturen, ladeHintergrundbilder } from '../assets/AssetLoader';
 import { appStore } from '../anwendung';
 import type { AppZustand } from '../store/AppStore';
-import type { TischListenEintragAntwort, TischPresetAntwort } from '../modelle/SpielverwaltungDto';
+import type { TischPresetAntwort } from '../modelle/SpielverwaltungDto';
 import { PhaserButton } from './PhaserButton';
 import { zeigeTischErstellenDialog } from './tischErstellenDialog';
-import { PhaserList } from '../ui/PhaserList';
 import { SpielerProfilModal } from '../ui/SpielerProfilModal';
-import { FONT_FAMILY, TEXT_HELL_CSS, FARBE_GOLD_WARM_CSS } from '../ui/designTokens';
+import { FONT_FAMILY } from '../ui/designTokens';
 import { Logger } from '../logger';
 import { zeigeBugreportDialog } from './bugreportDialog';
 
 export class SpielverwaltungsSzene extends Phaser.Scene {
   private abmeldenStore?: () => void;
   private uiContainer?: Phaser.GameObjects.Container;
-  private offeneTischeListe?: PhaserList;
   private presets: TischPresetAntwort[] = [];
   private fokussierbareButtons: PhaserButton[] = [];
   private fokusIndex = -1;
@@ -137,8 +135,16 @@ export class SpielverwaltungsSzene extends Phaser.Scene {
     this.uiContainer.add(erstelleTischBtn);
     startY += 60;
 
+    const offeneTischeBtn = new PhaserButton(this, {
+      x: this.scale.width / 2, y: startY, text: '☰ Offene Tische →', typ: 'secondary',
+      callback: () => this.scene.start('TischlisteSzene')
+    });
+    offeneTischeBtn.setName('btn-offene-tische');
+    this.uiContainer.add(offeneTischeBtn);
+    startY += 60;
+
     const profilBtn = new PhaserButton(this, {
-      x: this.scale.width / 2, y: startY, text: 'Mein Profil', typ: 'secondary',
+      x: this.scale.width / 2, y: startY, text: 'Mein Profil', typ: 'tertiary',
       callback: () => {
         const spielerId = zustand.spieler?.spielerId;
         if (spielerId) {
@@ -150,35 +156,35 @@ export class SpielverwaltungsSzene extends Phaser.Scene {
     });
     profilBtn.setName('btn-mein-profil');
     this.uiContainer.add(profilBtn);
-    startY += 60;
+    startY += 50;
 
     const logoutBtn = new PhaserButton(this, {
-      x: this.scale.width / 2, y: startY, text: 'Abmelden', typ: 'secondary',
+      x: this.scale.width / 2, y: startY, text: 'Abmelden', typ: 'tertiary',
       callback: () => {
         void appStore.ausloggen().then(() => this.scene.start('LoginSzene'));
       }
     });
     logoutBtn.setName('btn-logout');
     this.uiContainer.add(logoutBtn);
-    startY += 60;
+    startY += 50;
 
     const feedbackBtn = new PhaserButton(this, {
-      x: this.scale.width / 2, y: startY, text: '💬 Feedback', typ: 'secondary',
+      x: this.scale.width / 2, y: startY, text: '💬 Feedback', typ: 'tertiary',
       callback: () => this.zeigeFeedbackDialog()
     });
     feedbackBtn.setName('btn-feedback');
     this.uiContainer.add(feedbackBtn);
-    startY += 60;
+    startY += 50;
 
     const bugreportBtn = new PhaserButton(this, {
-      x: this.scale.width / 2, y: startY, text: 'Bug melden (Shift+F1)', typ: 'secondary',
+      x: this.scale.width / 2, y: startY, text: 'Bug melden (Shift+F1)', typ: 'tertiary',
       callback: () => zeigeBugreportDialog(appStore.snapshot())
     });
     bugreportBtn.setName('btn-bugreport');
     this.uiContainer.add(bugreportBtn);
 
-    // Tab-Reihenfolge: Schnellstart → Neuen Tisch → Mein Profil → (Session-Recovery falls sichtbar)
-    this.fokussierbareButtons = [quickGameBtn, erstelleTischBtn, profilBtn];
+    // Tab-Reihenfolge: Schnellstart → Neuen Tisch → Offene Tische → (Session-Recovery falls sichtbar)
+    this.fokussierbareButtons = [quickGameBtn, erstelleTischBtn, offeneTischeBtn];
     if (sessionRecoveryBtn) {
       this.fokussierbareButtons.push(sessionRecoveryBtn);
     }
@@ -189,8 +195,6 @@ export class SpielverwaltungsSzene extends Phaser.Scene {
       this.fokussierbareButtons[this.fokusIndex].setFocus(true);
     }
 
-    // List of tables
-    this.renderTischListe(zustand.tische, aktiverTischId);
   }
 
   private registriereKeyboard(): void {
@@ -209,71 +213,6 @@ export class SpielverwaltungsSzene extends Phaser.Scene {
         this.fokussierbareButtons[this.fokusIndex].trigger();
       }
     });
-  }
-
-  private renderTischListe(tische: TischListenEintragAntwort[], aktiverTischId: string | null | undefined): void {
-    if (this.offeneTischeListe) {
-      this.offeneTischeListe.destroy();
-    }
-
-    const wartendeTische = tische.filter(t => t.status === 'WARTEND');
-    const eigeneLaufendeTische = tische.filter(t => t.status === 'IM_SPIEL' && aktiverTischId === t.id);
-
-    this.add.text(this.scale.width / 2, 570, 'Offene Tische', {
-      fontFamily: FONT_FAMILY,
-      fontSize: '24px',
-      color: FARBE_GOLD_WARM_CSS
-    }).setOrigin(0.5);
-
-    if (wartendeTische.length === 0 && eigeneLaufendeTische.length === 0) {
-      const msg = this.add.text(this.scale.width / 2, 630, 'Keine offenen Tische. Starte ein Schnellspiel!', {
-        fontFamily: FONT_FAMILY, fontSize: '16px', color: TEXT_HELL_CSS
-      }).setOrigin(0.5);
-      this.uiContainer?.add(msg);
-      return;
-    }
-
-    this.offeneTischeListe = new PhaserList(this, this.scale.width / 2, 645, {
-      breite: 600,
-      hoehe: 150,
-      elementHoehe: 60,
-      items: [...eigeneLaufendeTische, ...wartendeTische],
-      renderElement: (item: unknown, c: Phaser.GameObjects.Container) => this.renderTischEintrag(item as TischListenEintragAntwort, c, aktiverTischId)
-    });
-  }
-
-  private renderTischEintrag(tisch: TischListenEintragAntwort, c: Phaser.GameObjects.Container, aktiverTischId: string | null | undefined): void {
-    const hervorgehoben = tisch.id === aktiverTischId;
-    const buttonText = hervorgehoben ? 'Fortsetzen' : 'Beitreten';
-    
-    const bg = this.add.rectangle(0, 0, 580, 50, 0x000000, 0.4).setOrigin(0.5);
-    c.add(bg);
-
-    const nameTxt = this.add.text(-270, 0, tisch.name, {
-      fontFamily: FONT_FAMILY, fontSize: '18px', color: hervorgehoben ? FARBE_GOLD_WARM_CSS : TEXT_HELL_CSS
-    }).setOrigin(0, 0.5);
-    c.add(nameTxt);
-    this.kuerzeText(nameTxt, 240);
-
-    if (!hervorgehoben) {
-      const spielerTxt = this.add.text(10, 0, `${tisch.spielerAnzahl}/4`, {
-        fontFamily: FONT_FAMILY, fontSize: '16px', color: TEXT_HELL_CSS
-      }).setOrigin(0, 0.5);
-      c.add(spielerTxt);
-    }
-
-    const btn = new PhaserButton(this, {
-      x: 175, y: 0, text: buttonText, typ: hervorgehoben ? 'secondary' : 'primary', breite: 215, hoehe: 36,
-      testId: hervorgehoben ? undefined : `btn-beitreten-${tisch.id}`,
-      callback: () => {
-        if (hervorgehoben) {
-          void appStore.reconnecteTisch(tisch.id);
-        } else {
-          void appStore.betreteTisch(tisch.id);
-        }
-      }
-    });
-    c.add(btn);
   }
 
   private zeigeFeedbackDialog(): void {
@@ -343,20 +282,10 @@ export class SpielverwaltungsSzene extends Phaser.Scene {
     textarea.focus();
   }
 
-  private kuerzeText(txt: Phaser.GameObjects.Text, maxBreite: number): void {
-    if (txt.width <= maxBreite) return;
-    let s = txt.text;
-    while (s.length > 1 && txt.width > maxBreite) {
-      s = s.slice(0, -1);
-      txt.setText(s + '…');
-    }
-  }
-
   shutdown(): void {
     this.abmeldenStore?.();
     this.input.keyboard?.off('keydown-TAB');
     this.input.keyboard?.off('keydown-ENTER');
     this.uiContainer?.removeAll(true);
-    this.offeneTischeListe?.destroy();
   }
 }
