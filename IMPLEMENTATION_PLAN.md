@@ -1,8 +1,10 @@
 # IMPLEMENTATION_PLAN — Locodoko Doppelkopf
 
-> Stand: 2026-10-08 (Session 160). Erledigte Aufgaben → `IMPLEMENTATION_PLAN_ARCHIVE.md` (Sessions 1–158 archiviert).
+> Stand: 2026-10-08 (Session 161). Erledigte Aufgaben → `IMPLEMENTATION_PLAN_ARCHIVE.md` (Sessions 1–158 archiviert).
 
 ## Notiz
+
+**Session 161 (2026-10-08): Plan-Scan S161 — check_specs.py 0 Befunde (58 Specs). WebGL-Mask-Bug (S157-Entdeckung: `tabellenContainer.setMask()`) bereits behoben: Maske wird in `zeichneTabelle()` pro Element gesetzt — `FE-FIX-MASK-WEBGL` entfällt. `SpielMetriken`-Komponente fehlt im Code (referenziert in `architektur.md`, `architektur-domain-events.md`, `betrieb-monitoring.md`) → `OPS-SPIEL-METRIKEN` in Sektion E ergänzt. Sektion A unverändert: 3 offene Tasks (BE-TISCHLISTE-SPIELERNAMEN → FE-TISCHLISTE-SZENE → FE-LOBBY-REDESIGN).**
 
 **Session 160 (2026-10-08): UX-TISCHLISTE-REDESIGN spezifiziert — neue `TischlisteSzene` (analog BestenlisterSzene) + Lobby-Cleanup geplant. 3 neue Tasks in Sektion A: BE-TISCHLISTE-SPIELERNAMEN → FE-TISCHLISTE-SZENE → FE-LOBBY-REDESIGN. Specs angelegt: `specs/frontend-tischliste.md`, `specs/frontend-startscreen.md` + `specs/lobby.md` aktualisiert.**
 
@@ -94,9 +96,9 @@
 
 - **S157/FE-SPIELREGELN-HILFE — HilfeSzene war bereits vollständig vorhanden** (2026-09-14): `SpielregelnOverlay.ts` musste nicht neu angelegt werden — `HilfeSzene.ts` existierte bereits mit H-Taste, ?-TopBar-Icon und 4 Tabs. Ergänzt wurden: F1-Taste in `TischInputHandler.ts`, Tab `parteien` (Partei-Ermittlung + Hochzeit) und Tab `sonderpunkte` (FUCHS_GEFANGEN, KARLCHEN, DOPPELKOPF, Dulle-Regel, Gegen-die-Alten). Tab-Labels gekürzt für 6-Tab-Reihe. Task ist vollständig abgeschlossen.
 
-- **S157/FE-UI-FINAL-REVIEW — Container.setMask() WebGL-Bug bestätigt** (2026-09-14): Browser-Konsole zeigt `Phaser.GameObjects.Components.Mask.setMask: This method is not supported in WebGL. Create a Mask filter instead.` beim Öffnen des RundenEnde-Overlays. Ursache: `TischRundenEndeController.ts` Zeile 395 ruft `this.tabellenContainer.setMask(maske)` auf — Phaser 3 unterstützt `Container.setMask()` in WebGL nicht. Folge: Scroll-Clipping für die Verlaufstabelle ist wirkungslos, Zeilen außerhalb des 5-Zeilen-Fensters werden nicht ausgeblendet. Fix → FE-FIX-MASK-WEBGL (Maske auf einzelne Text-Objekte in `zeichneTabelle()` verlagern).
+- **S157/FE-UI-FINAL-REVIEW — Container.setMask() WebGL-Bug ✅ behoben (S161)** (2026-09-14): Bug war: `this.tabellenContainer.setMask(maske)` in `TischRundenEndeController.ts`. S161-Verifikation: kein container-setMask mehr vorhanden — Maske wird in `zeichneTabelle()` pro Element gesetzt (Zeilen 132/145/152/159/170). `FE-FIX-MASK-WEBGL` entfällt.
 
-- **S157/FE-UI-FINAL-REVIEW — Mobile-Screenshots veraltet** (2026-09-14): `mobile-landscape-05-*.png` stammt vom 2026-07-04 (vor FE-RUNDENENDE-REDESIGN). Der Vision Loop setzt `VISION_MOBILE=1` voraus (per `playwright.config.vision.ts`) — ohne diese Env-Variable werden nur Desktop-Shots neu aufgenommen. Nach FE-FIX-MASK-WEBGL sollte einmal `VISION_MOBILE=1 npx playwright test --config playwright.config.vision.ts` laufen, um Mobile-Baseline zu erneuern.
+- **S157/FE-UI-FINAL-REVIEW — Mobile-Screenshots veraltet** (2026-09-14): `mobile-landscape-05-*.png` stammt vom 2026-07-04 (vor FE-RUNDENENDE-REDESIGN). Blocker `FE-FIX-MASK-WEBGL` entfällt (S161 behoben). Kann bei nächstem UI-Review mit `VISION_MOBILE=1 npx playwright test --config playwright.config.vision.ts` nachgeholt werden — kein eigener Task nötig.
 
 - **S157/FE-UI-FINAL-REVIEW — vision-loop-szenen.spec.ts Timeout** (2026-09-14): `warteAufSzene(page, 'LoginSzene')` läuft in 20 s timeout, weil der Nutzer bereits eingeloggt ist und die `LoginSzene` übersprungen wird. Kein Regressionsproblem — pre-existing Annahme im Test (immer ausgeloggt starten). Kein Code-Handlungsbedarf im Rahmen der aktuellen Tasks.
 
@@ -157,6 +159,8 @@
 - [ ] **OPS-EMAIL** — Passwort-Reset per E-Mail (V2 der Passwort-Auth). EU-Anbieter: Brevo (früher Sendinblue) oder Mailjet — beide mit AVV und Free-Tier. Spring Boot `spring-boot-starter-mail` + Template. Kein Launch-Blocker, aber wichtig für Nutzerbindung. Spec: `specs/authentifizierung.md` (Abschnitt Passwort-Reset).
 
 - [ ] **ADMIN-TOOLING** — Betreiber-Werkzeuge: (a) hängenden Tisch beenden via REST-Endpoint (intern, auth-gesichert); (b) User sperren/entsperren; (c) aktive Tische auflisten. Erst bei konkretem Betriebsproblem reaktivieren — nicht auf Vorrat bauen.
+
+- [ ] **OPS-SPIEL-METRIKEN** *(Vorbedingung: MENSCH-GRAFANA-TOKENS)* — `SpielMetriken`-Komponente (`de.locodoko.betrieb.SpielMetriken`) ist in `specs/architektur.md`, `specs/architektur-domain-events.md` und `specs/betrieb-monitoring.md` spezifiziert, aber im Code nicht vorhanden (S161 verifiziert). Neue `@Component`-Klasse `SpielMetriken` im `betrieb`-Paket anlegen, die per `@ApplicationModuleListener` auf `SpielBeendet`-Events reagiert und Micrometer-Metriken veröffentlicht (z. B. `doko.spiele.gesamt`, `doko.spiele.je.regelset`). Erst relevant nach MENSCH-GRAFANA-TOKENS (M3). `mvn clean test` grün.
 
 ---
 
