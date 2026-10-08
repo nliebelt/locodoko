@@ -2,9 +2,9 @@
 
 | Feld           | Wert                              |
 |----------------|-----------------------------------|
-| Status         | Implementiert |
+| Status         | Implementiert (Überarbeitung ausstehend — FE-LOBBY-REDESIGN) |
 | Priorität      | Hoch                              |
-| Abhängigkeiten | frontend-visuelles-design.md, lobby.md |
+| Abhängigkeiten | frontend-visuelles-design.md, lobby.md, frontend-tischliste.md |
 
 ## Beschreibung
 
@@ -30,11 +30,12 @@ Die Spielverwaltungs-Szene ist die **dritte Phaser-Szene** (nach BootSzene, vor 
 │              │   + Neuen Tisch erstellen   │                    │  ← Secondary Button
 │              └─────────────────────────────┘                    │
 │                                                                  │
-│              Offene Tische                                       │  ← Liste, immer sichtbar
-│              ────────────────────────────────                    │
-│              Herberts Runde   2/4   [Beitreten]                  │
-│              (leer: „Keine offenen Tische. Starte ein            │
-│               Schnellspiel!")                                    │
+│              ┌─────────────────────────────┐                    │
+│              │   ☰ Offene Tische →         │                    │  ← Secondary Button (neu)
+│              └─────────────────────────────┘                    │
+│                                                                  │
+│              [Mein Profil]  [Abmelden]  [Spielregeln]           │  ← Tertiary-Zeile (klein)
+│              [Feedback]  [Bug melden]                           │
 │                                                                  │
 └──────────────────────────────────────────────────────────────────┘
 ```
@@ -59,7 +60,7 @@ Die Spielverwaltungs-Szene ist die **dritte Phaser-Szene** (nach BootSzene, vor 
 
 1. **„▶ Schnellstart"** (Primary Button): Startet sofort einen Einzelspieler-Tisch gegen 3 KI-Spieler (Standardkonfiguration, kein Modal). Nach erfolgreichem Erstellen wechselt die Szene direkt zur TischSzene.
 2. **„+ Neuen Tisch erstellen"** (Secondary Button): öffnet das Tisch-Konfigurations-Modal für vollständige Konfiguration.
-3. Die **Liste der offenen und laufenden Tische** ist stets direkt unterhalb der Buttons sichtbar (kein Toggle-Button, siehe „Offene-Tische-Liste").
+3. **„☰ Offene Tische →"** (Secondary Button): navigiert zur `TischlisteSzene` mit vollständiger Tischübersicht (Spielernamen, Regeln, Beitreten). Ersetzt die bisherige eingebettete Liste.
 4. Buttons sind breit, klar beschriftet, Neo-Brutalism-Stil (`border: 2px solid #f8f9fa`, `box-shadow: 4px 4px 0 #000`).
 5. Hover-Effekt: Offset-Schatten verschwindet, Button verschiebt sich um `4px 4px` (pressed-Feeling).
 6. Alle Buttons sind **per Tastatur fokussierbar** (Tab-Reihenfolge, Enter zum Auslösen).
@@ -82,16 +83,20 @@ Die Spielverwaltungs-Szene ist die **dritte Phaser-Szene** (nach BootSzene, vor 
 5. Buttons: „Tisch erstellen" (Primary) und „Abbrechen" (Secondary / Escape).
 6. Nach erfolgreichem Erstellen wechselt die Szene direkt zur **TischSzene**.
 
-### Offene-Tische-Liste
+### Sekundäre Aktionen (Tertiary-Zeile)
 
-1. Wird stets als **Bereich unterhalb der Buttons** angezeigt (kein Modal, kein Ein-/Ausklappen — bleibt auf dem Start-Screen).
-2. Zeigt alle Tische in zwei Gruppen:
-   - **Offene Tische** (Status WARTEND): Button „Beitreten" pro Eintrag.
-   - **Laufende Tische** (Status IM_SPIEL): Button „Zurückkehren" pro Eintrag — nur für Spieler die diesem Tisch bereits zugeordnet sind. Für fremde Spieler nicht sichtbar.
-3. Jeder Listeneintrag zeigt: Tischname, Anzahl Spieler (z.B. `2/4`), KI-Schwierigkeit.
-4. „Beitreten" / „Zurückkehren" wechselt direkt zur TischSzene.
-5. Wenn keine Tische vorhanden: Hinweistext „Keine offenen Tische. Starte ein Schnellspiel!".
-6. Die Liste **aktualisiert sich automatisch in Echtzeit** via WebSocket (Topic `/topic/tische`).
+Weniger prominente Aktionen erscheinen unterhalb der drei Haupt-Buttons als kleinere, weniger kontraststarke Buttons in einer kompakten Zeile:
+
+1. **Mein Profil** — öffnet das Profil-Overlay (Statistik, Nickname-Änderung).
+2. **Abmelden** — meldet den Spieler ab und leitet zur LoginSzene.
+3. **Spielregeln** — öffnet die HilfeSzene (alternativ: F1 / H-Taste).
+4. **Feedback** / **Bug melden** — öffnet das Feedback-/Bugreport-Modal (Shift+F1).
+
+Die Tertiary-Buttons sind kleiner als die Haupt-Buttons (`font-size` ~14px vs. 18px) und in geringerem Kontrast (`#a3c4a8` statt `#f8f9fa`) dargestellt, um den Fokus auf die primären Aktionen zu lenken.
+
+### Offene-Tische-Liste (abgelöst)
+
+Die eingebettete Tischliste auf der Hauptseite wurde durch die `TischlisteSzene` ersetzt (→ `specs/frontend-tischliste.md`). Der Button „☰ Offene Tische →" navigiert dorthin. Auf der Hauptseite erscheint keine Tischliste mehr.
 
 ### Session-Recovery
 
@@ -103,9 +108,10 @@ Die Spielverwaltungs-Szene ist die **dritte Phaser-Szene** (nach BootSzene, vor 
 - Logo und Slogan sind auf Anhieb lesbar und füllen die Seite angemessen.
 - „Neuen Tisch erstellen" öffnet das Konfigurations-Modal.
 - Konfiguration kann abgeschlossen werden, danach Wechsel zur TischSzene.
-- Die Tischliste ist direkt sichtbar, Beitreten führt zur TischSzene.
+- „☰ Offene Tische →" navigiert zur TischlisteSzene; keine eingebettete Liste mehr auf der Hauptseite.
 - Session-Recovery-Button erscheint wenn eine aktive Tisch-Session vorliegt.
-- Alle Aktionen sind per Tastatur erreichbar.
+- Alle primären Aktionen sind per Tastatur erreichbar.
+- Sekundäre Buttons (Mein Profil, Abmelden etc.) sind kleiner/weniger prominent dargestellt.
 
 ## Definition of Done
 
@@ -114,8 +120,9 @@ Die Spielverwaltungs-Szene ist die **dritte Phaser-Szene** (nach BootSzene, vor 
 - [x] „▶ Schnellstart"-Button: startet sofort Einzelspieler-Tisch gegen 3 KI, wechselt zur TischSzene
 - [x] „Neuen Tisch erstellen" Modal implementiert (Pflichtfelder: Name, Rundenanzahl, KI-Schwierigkeit)
 - [x] Tisch-Erstellung schließt Modal und wechselt zur TischSzene
-- [x] „Offene Tische" Liste implementiert mit WebSocket-Echtzeit-Updates (WARTEND + eigene IM_SPIEL-Tische)
+- [x] „Offene Tische" Liste war implementiert (eingebettete PhaserList) — wird durch TischlisteSzene ersetzt
 - [x] „Zurückkehren"-Button für laufende eigene Tische
+- [ ] **FE-LOBBY-REDESIGN**: eingebettete Tischliste entfernt, Button „☰ Offene Tische →" ergänzt, Tertiary-Buttons kleiner/dezenter
 - [x] Session-Recovery-Button implementiert (erscheint wenn aktiverTischId vorhanden)
 - [x] Keyboard-Navigation (Tab, Enter)
 - [x] Visuelles Review (via Vision-Loop, mehrere Sessions)
@@ -124,7 +131,6 @@ Die Spielverwaltungs-Szene ist die **dritte Phaser-Szene** (nach BootSzene, vor 
 
 - Die Startseite wird durch `SpielverwaltungsSzene` umgesetzt (kein separates Lobby-Modul).
 - Tisch-Konfigurations-Modal als HTML-Overlay über der Phaser-Canvas (`#ui-root`).
-- WebSocket `/topic/tische` für Echtzeit-Tischlisten-Updates (kein REST-Polling nötig).
 - Schnellstart erstellt einen Tisch mit Standardkonfiguration ohne Modal und startet sofort.
-- Die Tischliste zeigt laufende Tische nur dem Spieler der ihnen bereits zugeordnet ist.
+- Die Tischliste ist in eine eigene `TischlisteSzene` ausgelagert (→ `specs/frontend-tischliste.md`).
 - Sonderregeln-Konfiguration folgt in einer eigenen Spec-Iteration.

@@ -1,8 +1,10 @@
 # IMPLEMENTATION_PLAN — Locodoko Doppelkopf
 
-> Stand: 2026-10-07 (Session 159). Erledigte Aufgaben → `IMPLEMENTATION_PLAN_ARCHIVE.md` (Sessions 1–158 archiviert).
+> Stand: 2026-10-08 (Session 160). Erledigte Aufgaben → `IMPLEMENTATION_PLAN_ARCHIVE.md` (Sessions 1–158 archiviert).
 
 ## Notiz
+
+**Session 160 (2026-10-08): UX-TISCHLISTE-REDESIGN spezifiziert — neue `TischlisteSzene` (analog BestenlisterSzene) + Lobby-Cleanup geplant. 3 neue Tasks in Sektion A: BE-TISCHLISTE-SPIELERNAMEN → FE-TISCHLISTE-SZENE → FE-LOBBY-REDESIGN. Specs angelegt: `specs/frontend-tischliste.md`, `specs/frontend-startscreen.md` + `specs/lobby.md` aktualisiert.**
 
 **Session 159 (2026-10-07): CI-FIX-DOCS-PAGES deployed — Wiki live auf nliebelt.github.io/locodoko/. Dependabot-Scan: 43 Alerts, alle devDependencies (kein Prod-Risiko). Fixbar: vitest (moderate) + transitive deps via `npm audit fix`; depcheck-Transitive via Major-Update. M2-Status: einziger Blocker = Rechtstexte (MENSCH). M3 ab S159 geplant.**
 
@@ -38,6 +40,12 @@
 - [x] **TEST-BE-TISCH-ABDECKUNG** — Zwei neue Testklassen (530 Tests, war 514): `TischEntityTest` (7 Tests: Zugangsmodus-Initialisierung, PRIVAT-Modus, 4 Spieler voll, 5. Spieler abgelehnt, Duplikat ignoriert, Spieler entfernen, Status WARTEND) und `SpielverwaltungExceptionHandlerTest` (9 Tests: alle Exception-Handler-Pfade inkl. ternary-Branch IllegalArgument vs. MethodArgumentNotValidException).
 
 - [x] **TEST-FE-MAPPER-ABDECKUNG** — Neue Testdatei `frontend/src/modelle/TischAnsichtMapper.test.ts` (504 Tests, war 478): 26 direkte Unit-Tests für bisher ungetestete exportierte Funktionen in `TischAnsichtMapper.ts` und `TischKartenSortierung.ts` — alle 7 Spieltyp-Branches von `istTrumpfFuerSpieltyp`, `sortiereSichtbareHandkarten` (leeres Array, Immutabilität), alle Spieltyp-Labels in `berechneSpielerankuendigungstext`, null/unbekannt-Pfade in `bestimmeBezugsPositionAusTisch` und `bestimmeArmutAktion`-null-Guards. Build + Lint grün.
+
+- [ ] **BE-TISCHLISTE-SPIELERNAMEN** *(Erste Datei: `src/main/java/de/locodoko/tisch/TischListenEintragAntwort.java`)* — `TischListenEintragAntwort` (Java-Record) um `List<String> spielerNamen` erweitern. In `aus(TischEntity tisch)` aus `tisch.spieler()` ableiten: alle Spielernamen (Menschen + KI) in Reihenfolge, maximal 4 Einträge, als `List<String>`. Additiv — bricht kein bestehendes Frontend (neues JSON-Feld). Neuen Test `TischListenEintragAntwortTest` anlegen: leerer Tisch → leere Liste, 1 Mensch + 2 KI → 3 Namen, voller Tisch → 4 Namen. `mvn clean test` grün.
+
+- [ ] **FE-TISCHLISTE-SZENE** *(Erste Datei: `frontend/src/szenen/TischlisteSzene.ts`)* — *(Vorbedingung: BE-TISCHLISTE-SPIELERNAMEN)* — Neue Phaser-Szene `TischlisteSzene` analog `BestenlisterSzene.ts`. Vollbreite-Tabelle drei Spalten: **Tischname** (links, max. 280px, `kuerzeText`), **Spieler** (belegte Namen + freie Plätze als ○, Komma-getrennt), **Regeln** (`{anzahlSpiele} Sp · {m.9|o.9}`), [Beitreten]-Button rechts. Eigener Tisch gold (`#f8c94e`) hervorgehoben, Button-Text „Fortsetzen". „← Zurück"-Button oben links → `SpielverwaltungsSzene`. „+ Neuen Tisch"-Button oben rechts → Konfigurations-Modal. Leer-Zustand-Text wenn keine Tische vorhanden. Echtzeit-Update via AppStore-Abonnement (analog `SpielverwaltungsSzene`). Szene in `main.ts` registrieren. `npm test && npm run build && npm run lint` grün. Spec: `specs/frontend-tischliste.md`.
+
+- [ ] **FE-LOBBY-REDESIGN** *(Erste Datei: `frontend/src/szenen/SpielverwaltungsSzene.ts`)* — *(Vorbedingung: FE-TISCHLISTE-SZENE)* — `SpielverwaltungsSzene` überarbeiten: (a) Eingebettete Tischliste vollständig entfernen (`renderTischListe`, `renderTischEintrag`, `aktualisiereEingebetteteTischliste`, zugehöriger Store-Abonnement-Code); (b) neuen sekundären Button „☰ Offene Tische →" ergänzen (gleiche Größe wie „+ Neuen Tisch"), der per `this.szene.start('TischlisteSzene')` navigiert; (c) Buttons Mein Profil / Abmelden / Feedback / Bug melden auf kleinere Tertiary-Größe reduzieren (font-size ~14px, Farbe `#a3c4a8`). Session-Recovery-Button bleibt unverändert. `npm test && npm run build && npm run lint` grün. Spec: `specs/frontend-startscreen.md`.
 
 ---
 

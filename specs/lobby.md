@@ -2,9 +2,9 @@
 
 | Feld           | Wert                                        |
 |----------------|---------------------------------------------|
-| Status         | Implementiert |
+| Status         | Implementiert (Ansicht in Überarbeitung — `frontend-tischliste.md`) |
 | Priorität      | Hoch                                        |
-| Abhängigkeiten | spieler-session.md, tischkonfiguration.md   |
+| Abhängigkeiten | spieler-session.md, tischkonfiguration.md, frontend-tischliste.md |
 
 ## Beschreibung
 
@@ -15,9 +15,11 @@ Die Lobby ist die zentrale Übersichtsseite, auf der Spieler offene Tische sehen
 1. Die Lobby zeigt eine **Liste aller offenen Tische** an.
 2. Für jeden Tisch werden folgende Informationen angezeigt:
    - Tischname
+   - Spielernamen der belegten Plätze (inkl. KI) + freie Plätze als ○
    - Anzahl der Spieler (besetzt / Plätze)
    - Status (wartend, im Spiel)
-   - Wesentliche Regelkonfiguration (z.B. „mit Neunen", „Turniermodus")
+   - Wesentliche Regelkonfiguration (z.B. „mit Neunen", Anzahl Spiele)
+   - **DTO-Erweiterung:** `TischListenEintragAntwort` enthält `List<String> spielerNamen` (additiv, max. 4 Einträge — für `TischlisteSzene` erforderlich)
 3. Ein Spieler kann einen **neuen Tisch erstellen**:
    - Vergabe eines Tischnamens
    - Konfiguration der Tischregeln (siehe `tischkonfiguration.md`)
@@ -57,6 +59,11 @@ Die Lobby ist die zentrale Übersichtsseite, auf der Spieler offene Tische sehen
   - `GET /api/tische` — Alle offenen Tische
   - `POST /api/tische` — Neuen Tisch erstellen
   - `POST /api/tische/{id}/beitreten` — Tisch beitreten
-- WebSocket-Topic `/topic/lobby` für Echtzeit-Updates der Tischliste
+- WebSocket-Topic `/topic/tische` für Echtzeit-Updates der Tischliste
 - `Tisch`-Entity als Aggregate Root mit Status und Spielerliste
+- `TischListenEintragAntwort` (Java-Record): enthält `id`, `name`, `spielerAnzahl`, `status`, `kurzKonfiguration`, `spielerNamen` (Liste der Spielernamen inkl. KI)
 - Im MVP reicht die Lobby für den Einzelspielermodus (1 Mensch + 3 KI)
+
+## Offene-Tische-Ansicht (TischlisteSzene)
+
+Die eingebettete Tischliste auf der Hauptseite wird durch eine dedizierte `TischlisteSzene` ersetzt, die über den Button „Offene Tische →" auf der Hauptseite erreichbar ist. Design und Anforderungen: `specs/frontend-tischliste.md`.

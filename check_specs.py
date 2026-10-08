@@ -64,6 +64,8 @@ WHITELIST_CLASSES = frozenset({
     "ScheduledExecutorService",
     # Protokoll-Bezeichner im WS-Spec (kein direktes Java-Äquivalent)
     "ArmutAntwort",
+    # Geplante Klassen (noch nicht implementiert, Spec vorhanden)
+    "TischlisteSzene",
 })
 
 # Enum-Konstanten die nicht im Projekt-Code liegen (Spring-intern, Konfiguration, env-Vars)
@@ -84,6 +86,8 @@ WHITELIST_ENUMS = frozenset({
     "GRAFANA_CLOUD_TOKEN",
     # Frontend Build-Umgebungsvariable
     "VITE_SENTRY_DSN",
+    # Frontend TypeScript-Konstante (kein Java-Enum)
+    "TEXTUR_FILZ",
     # Aspirational WS-Event-Bezeichner (noch nicht in PartieEreignisTyp)
     "NEUE_PARTIE_GESTARTET",
     # Zeichenkodierung
