@@ -9,6 +9,7 @@ import { SpielverwaltungsSzene } from './szenen/SpielverwaltungsSzene';
 import { TischSzene } from './szenen/TischSzene';
 import { BestenlisterSzene } from './szenen/BestenlisterSzene';
 import { HilfeSzene } from './szenen/HilfeSzene';
+import { TischlisteSzene } from './szenen/TischlisteSzene';
 import { zeigeBugreportDialog } from './szenen/bugreportDialog';
 
 // Sentry-Fehlererfassung. Ohne VITE_SENTRY_DSN deaktiviert (No-Op).
@@ -61,7 +62,7 @@ const spiel = new Phaser.Game({
     width: startWidth,
     height: startHeight
   },
-  scene: [BootSzene, LoginSzene, SpielverwaltungsSzene, TischSzene, BestenlisterSzene, HilfeSzene]
+  scene: [BootSzene, LoginSzene, SpielverwaltungsSzene, TischSzene, BestenlisterSzene, HilfeSzene, TischlisteSzene]
 });
 
 window.addEventListener('resize', () => {

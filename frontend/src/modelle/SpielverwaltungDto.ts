@@ -43,6 +43,7 @@ export interface TischListenEintragAntwort {
   spielerAnzahl: number;
   status: TischStatus;
   kurzKonfiguration: TischKurzKonfigurationAntwort;
+  spielerNamen?: string[];
 }
 
 export type Tischhintergrund = 'FILZ_GRUEN' | 'BLAU_GRAFIK' | 'HOLZ_DUNKEL' | 'RECHTECK_1' | 'RECHTECK_2' | 'OVAL_1' | 'OVAL_2' | 'RUND_1';
