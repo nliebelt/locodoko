@@ -4,6 +4,7 @@ import de.locodoko.tisch.TischEntity;
 import de.locodoko.tisch.TischStatus;
 import io.swagger.v3.oas.annotations.media.Schema;
 
+import java.util.List;
 import java.util.UUID;
 
 /**
@@ -23,7 +24,9 @@ public record TischListenEintragAntwort(
     @Schema(description = "Aktueller Status des Tisches.")
     TischStatus status,
     @Schema(description = "Kurzdarstellung der Tischkonfiguration.")
-    TischKurzKonfigurationAntwort kurzKonfiguration
+    TischKurzKonfigurationAntwort kurzKonfiguration,
+    @Schema(description = "Anzeigenamen der aktuell belegten Spielplaetze (bis zu 4).")
+    List<String> spielerNamen
 ) {
 
     public static TischListenEintragAntwort aus(TischEntity tisch) {
@@ -32,7 +35,8 @@ public record TischListenEintragAntwort(
             tisch.name(),
             tisch.spieler().size(),
             tisch.status(),
-            TischKurzKonfigurationAntwort.aus(tisch.konfiguration())
+            TischKurzKonfigurationAntwort.aus(tisch.konfiguration()),
+            tisch.spieler().stream().map(s -> s.anzeigeName()).toList()
         );
     }
 }
