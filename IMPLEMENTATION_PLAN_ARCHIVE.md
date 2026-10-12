@@ -2,6 +2,25 @@
 
 ---
 
+## Archiviert am 2026-10-12 (Sessions 159–166 — M2-Finish, Tischliste, Lobby-Redesign, Profil-Edit)
+
+> Slim-Down des aktiven Plans (Session 167). Alle unten gelisteten Tasks sind **erledigt** (`[x]`, Code + Tests grün, committet).
+
+**Block A — Autonome Tasks (S159–S166):**
+- **CI-FIX-DOCS-PAGES** ✓ S159 — `enablement: true` in `ci-docs.yml` ergänzt; GitHub Pages manuell aktiviert. Wiki live auf nliebelt.github.io/locodoko/.
+- **DEPS-NPM-AUDIT-FIX** ✓ S159 — `npm audit fix` + `depcheck@latest`; 14 → 7 Vulnerabilities. Verbleibende 7 nur in devDep (depcheck-intern), kein Prod-Risiko.
+- **CLEANUP-FE-ESLINT-COMPLEX** ✓ S159 — `eslint-complexity.config.mjs` (nirgends referenziert) gelöscht.
+- **TEST-BE-SPIELER-ABDECKUNG** ✓ S160 — 3 neue Testklassen (514 Tests): `FeedbackControllerTest`, `SpielerSessionHandshakeHandlerTest`, `SpielerProfilAntwortTest`.
+- **TEST-BE-TISCH-ABDECKUNG** ✓ S161 — 2 neue Testklassen (530 Tests): `TischEntityTest` (7 Tests) + `SpielverwaltungExceptionHandlerTest` (9 Tests).
+- **TEST-FE-MAPPER-ABDECKUNG** ✓ S161 — 26 Unit-Tests für `TischAnsichtMapper.ts` + `TischKartenSortierung.ts` (504 FE-Tests).
+- **BE-TISCHLISTE-SPIELERNAMEN** ✓ S162 — `TischListenEintragAntwort` um `spielerNamen: List<String>` erweitert + `TischListenEintragAntwortTest`.
+- **FE-TISCHLISTE-SZENE** ✓ S163 — neue `TischlisteSzene` mit 3-Spalten-Tabelle, Echtzeit-Update via AppStore, Scroll, gold-Hervorhebung eigener Tisch.
+- **FE-LOBBY-REDESIGN** ✓ S164 — eingebettete Tischliste aus `SpielverwaltungsSzene` entfernt; „☰ Offene Tische →"-Button; Tertiary-Buttons (`typ: 'tertiary'`, 14px, `#a3c4a8`).
+- **FEAT-PROFIL-EDIT-BE** ✓ S165 — `setzeAvatarFarbe`-Validierung (Hex-Pattern) + 400-Handler für `IllegalArgumentException`; `SpielerProfilEditTest` (4 Tests); 537 BE-Tests.
+- **FE-PROFIL-EDIT** ✓ S166 — Edit-Modus im `SpielerProfilModal`: „✎ Bearbeiten"-Button, Textfeld, 12-Farben-Palette, Speichern/Abbrechen, roter Fehlertext. `aktualisiereProfil` in Api/SessionStore/AppStore.
+
+---
+
 ## Archiviert am 2026-10-07 (Sessions 157–158 — M2-Beta, Mobile, CI/CD, QA, Recht-Template)
 
 > Slim-Down des aktiven Plans (Session 159). Alle unten gelisteten Tasks sind **erledigt** (`[x]`, Code + Tests grün, committet).
