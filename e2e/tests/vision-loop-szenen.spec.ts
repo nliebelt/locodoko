@@ -1,8 +1,10 @@
 import { test } from '@playwright/test';
 import {
   alsGastStarten,
+  sicherAbmelden,
   getBridge,
   warteAufSzene,
+  warteAufEineVonSzenen,
   aktiviereConsoleCapture,
   screenshot,
   erstelleKonfiguriertenTisch,
@@ -20,16 +22,18 @@ test.describe('Vision Loop — Szenen S-00 bis S-14', () => {
     page.on('console', msg => console.log('BROWSER:', msg.text()));
     const prefix = testInfo.project.name;
 
-    // S-00: Login-Screen (vor alsGastStarten — App startet immer im Login)
+    // S-00: Login-Screen — Session-State komplett zurücksetzen
+    await sicherAbmelden(page);
     await page.goto('/');
+    await page.evaluate(() => { try { localStorage.clear(); sessionStorage.clear(); } catch { /* ignorieren */ } });
     await getBridge(page);
-    await warteAufSzene(page, 'LoginSzene');
-    await page.waitForTimeout(500);
-    await screenshot(page, '00-login-screen', prefix);
-
-    // Als Gast einloggen → Lobby
-    await alsGastStarten(page);
-    await warteAufSzene(page, 'SpielverwaltungsSzene');
+    const startSzene = await warteAufEineVonSzenen(page, ['LoginSzene', 'SpielverwaltungsSzene']);
+    if (startSzene === 'LoginSzene') {
+      await page.waitForTimeout(500);
+      await screenshot(page, '00-login-screen', prefix);
+      await alsGastStarten(page);
+      await warteAufSzene(page, 'SpielverwaltungsSzene');
+    }
     await page.waitForTimeout(1000);
 
     // S-01: Lobby Basis
@@ -117,12 +121,12 @@ test.describe('Vision Loop — Szenen S-00 bis S-14', () => {
     await page.waitForTimeout(1500);
     await screenshot(page, '13-tisch-wartezimmer', prefix);
 
-    // S-04: Lobby mit gefüllter Tischliste (2. Browser-Kontext)
+    // S-04: Lobby mit gefüllter Tischliste (2. Browser-Kontext — frisch, keine Session)
     const context2 = await browser.newContext();
     const page2 = await context2.newPage();
     await page2.goto('/');
     await getBridge(page2);
-    await warteAufSzene(page2, 'LoginSzene');
+    await warteAufEineVonSzenen(page2, ['LoginSzene', 'SpielverwaltungsSzene']);
     await alsGastStarten(page2);
     await warteAufSzene(page2, 'SpielverwaltungsSzene');
     await page2.waitForTimeout(1500);
@@ -139,5 +143,11 @@ test.describe('Vision Loop — Szenen S-00 bis S-14', () => {
     await warteAufSzene(page, 'SpielverwaltungsSzene');
     await page.waitForTimeout(1000);
     await screenshot(page, '01b-lobby-recovery', prefix);
+
+    // Cleanup: Tisch verlassen, damit kein offener WARTEND-Tisch den nächsten Test stört
+    // (schnellEinsteigen sucht offene Tische und würde sonst hier beitreten → Deadlock)
+    await page.evaluate(async () => {
+      await (window as any).__locodoko.appStore.verlasseAktuellenTisch?.();
+    }).catch(() => { /* kein Tisch mehr aktiv — ignorieren */ });
   });
 });

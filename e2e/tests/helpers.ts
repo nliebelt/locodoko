@@ -50,6 +50,18 @@ export async function warteAufNaechstesEreignis(page: Page, timeoutMs = 10_000):
   }, { timeout: timeoutMs });
 }
 
+export async function warteAufEineVonSzenen(page: Page, szenenNamen: string[], timeoutMs = 20_000): Promise<string> {
+  await page.waitForFunction(
+    (namen) => {
+      const s = (window as any).__locodoko?.getAktuelleSzene?.();
+      return namen.includes(s) ? s : false;
+    },
+    szenenNamen,
+    { timeout: timeoutMs }
+  );
+  return page.evaluate(() => (window as any).__locodoko?.getAktuelleSzene?.() ?? '');
+}
+
 export async function warteAufSzene(page: Page, szeneName: string, timeoutMs = 20_000): Promise<void> {
   await page.waitForFunction(
     (name) => (window as any).__locodoko?.getAktuelleSzene?.() === name,
@@ -101,6 +113,10 @@ export async function leseHudZustand(page: Page): Promise<{ stichzaehler: string
     if (typeof loco?.getHudState === 'function') return loco.getHudState();
     return { stichzaehler: '', spieltyp: '', startBtnSichtbar: false, rundenEndeSichtbar: false };
   });
+}
+
+export async function sicherAbmelden(page: Page): Promise<void> {
+  await page.context().clearCookies();
 }
 
 export async function alsGastStarten(page: Page): Promise<void> {
