@@ -2,7 +2,7 @@
 
 | Feld           | Wert                                        |
 |----------------|---------------------------------------------|
-| Status         | Abgeschlossen |
+| Status         | Abgeschlossen (zuletzt: S170 — Random-Ausspiel-Stile + Karten-Font-Label) |
 | Priorität      | Mittel                                      |
 | Abhängigkeiten | frontend-tischansicht.md, websocket-kommunikation.md |
 
@@ -14,10 +14,15 @@ Animationen machen das Spielerlebnis lebendig und geben visuelles Feedback zu Sp
 
 ### Karte ausspielen
 
-1. Wenn ein `KARTE_GESPIELT`-Event empfangen wird, **gleitet** die Karte vom Kartenfächer zur **Tischmitte**.
+1. Wenn ein `KARTE_GESPIELT`-Event empfangen wird, fliegt die Karte vom Kartenfächer zur **Tischmitte**.
 2. Die Animation dauert ca. **300–500ms**.
-3. Eigene Karten gleiten von unten nach oben, gegnerische Karten von ihrer jeweiligen Position zur Mitte.
+3. Eigene Karten fliegen von unten nach oben, gegnerische Karten von ihrer jeweiligen Position zur Mitte.
 4. Die Karte nutzt die `karteId` aus dem Event, um die korrekte Vorderseite anzuzeigen.
+5. **Animationsstil:** Pro ausgespielter Karte wird zufällig einer von 9 Stilen gewählt (kein UI zur Konfiguration):
+   `standard` (Cubic.Out) · `bounce` (Bounce.Out) · `schnell` (Expo.Out) · `schwer` (Quintic.In) ·
+   `katapult` (Back.Out/Overshoot) · `spin` (360°-Drehung) · `bogen` (Bogen-Kurve über Zwischenpunkt) ·
+   `zittern` (Wackeln während des Flugs) · `fade` (Fade-out → Teleport → Fade-in).
+   Implementierung: `KartenAnimationen.animiereAusSpielStil` (`services/KartenAnimationen.ts`).
 
 ### Stich einziehen
 
@@ -96,6 +101,7 @@ Animationen machen das Spielerlebnis lebendig und geben visuelles Feedback zu Sp
 - [x] Letzter Stich umdrehen: Klick auf eigenen Stapel deckt 4 Karten des letzten Stichs auf (implementiert — Bug #7, `letzterStichOverlay`)
 - [x] Spielansage-Flash-Banner: Spieltyp-Wechsel NORMALSPIEL→Solo/Hochzeit/Armut (`ermittleSpielankuendigung` / `animiereSoloAnkuendigung`)
 - [x] Visuelles Review nach 4.16
+- [x] Random-Ausspiel-Stile (9 Stile, S170): standard · bounce · schnell · schwer · katapult · spin · bogen · zittern · fade
 
 ## Technische Hinweise
 

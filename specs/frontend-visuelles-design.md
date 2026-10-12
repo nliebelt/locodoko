@@ -161,4 +161,5 @@ Design-Referenz: `design_handoff/README.md` (Abschnitt "Design Tokens").
 - [x] Focus-Styles für Keyboard-Navigation
 - [x] Visuelles Review
 - [x] `Press Start 2P` lokal gebundelt und als BitmapFont in PreloadSzene geladen
+- [x] Karten-Font-Label (S170): offene Karten zeigen Wert+Symbol (z.B. „A♥") in `Press Start 2P` oben links über dem Kartenbild — einheitliche Typografie im Kartenbereich (`Kartenansicht.rendereKartenLabel`)
 - [x] Balatro-UI-Palette als Konstanten-Datei `frontend/src/ui/designTokens.ts`

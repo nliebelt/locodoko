@@ -87,6 +87,9 @@ export class Kartenansicht extends Phaser.GameObjects.Container {
       this.bild = szene.add.image(0, 0, textur)
         .setDisplaySize(Math.round(optionen.breite * 0.84), Math.round(optionen.hoehe * 0.84));
       this.add(this.bild);
+      if (optionen.inhalt.typ === 'offen') {
+        this.rendereKartenLabel(szene, optionen.inhalt.farbe, optionen.inhalt.wert);
+      }
     } else {
       if (textur) {
         Logger.error(`Textur ${textur} nicht gefunden, nutze Fallback`, optionen.inhalt);
@@ -206,6 +209,26 @@ export class Kartenansicht extends Phaser.GameObjects.Container {
       Math.max(4, radius - inset)
     );
     this.markierung.setAlpha(1);
+  }
+
+  private rendereKartenLabel(szene: Phaser.Scene, farbe: string, wert: string): void {
+    const istRot = farbe === 'HERZ' || farbe === 'KARO';
+    const farbCode = istRot ? '#d62828' : '#111111';
+    const symbole: Record<string, string> = { KREUZ: '♣', PIK: '♠', HERZ: '♥', KARO: '♦' };
+    const kuerzel: Record<string, string> = { AS: 'A', ZEHN: '10', KOENIG: 'K', DAME: 'D', BUBE: 'B', NEUN: '9' };
+    const symbol = symbole[farbe] ?? farbe.slice(0, 1);
+    const wertText = kuerzel[wert] ?? wert.slice(0, 2);
+    const randX = -this.breite / 2 + Math.round(this.breite * 0.1);
+    const randY = -this.hoehe / 2 + Math.round(this.hoehe * 0.06);
+    const schriftGroesse = Math.max(9, Math.round(this.breite * 0.13));
+    const stil = {
+      fontFamily: FONT_FAMILY,
+      fontSize: `${schriftGroesse}px`,
+      color: farbCode,
+      stroke: '#ffffff',
+      strokeThickness: 3
+    };
+    this.add(szene.add.text(randX, randY, `${wertText}${symbol}`, stil).setOrigin(0, 0));
   }
 
   private renderFallback(szene: Phaser.Scene, inhalt: Karteninhalt): void {

@@ -7,6 +7,12 @@ function istVorhanden<T>(wert: T | undefined): wert is T {
   return wert !== undefined;
 }
 
+type AusSpielStil = 'standard' | 'bounce' | 'spin' | 'bogen' | 'schnell' | 'schwer' | 'katapult' | 'zittern' | 'fade';
+
+const AUSSPIEL_STILE: readonly AusSpielStil[] = [
+  'standard', 'bounce', 'spin', 'bogen', 'schnell', 'schwer', 'katapult', 'zittern', 'fade'
+];
+
 /** Animiert Kartenbewegungen: Ausspielen, Austeilen und Stich-Einziehen. */
 export class KartenAnimationen {
   constructor(private readonly p: AnimationenPrimitiven) {}
@@ -20,18 +26,81 @@ export class KartenAnimationen {
     const objekte = [kartenobjekte.wurzel, kartenobjekte.beschriftung].filter(istVorhanden);
     if (objekte.length === 0) { Logger.szene('Beende animiereKarteAusspielen'); return; }
 
-    const tweenConfig: Phaser.Types.Tweens.TweenBuilderConfig = {
-      targets: objekte,
-      x: ziel.x,
-      y: ziel.y,
-      duration: dauer,
-      ease: 'Cubic.Out'
-    };
-    if (ziel.winkel !== undefined) {
-      tweenConfig.angle = ziel.winkel;
-    }
-    await this.p.animiereTween(tweenConfig as Omit<Phaser.Types.Tweens.TweenBuilderConfig, 'duration' | 'onComplete'> & { duration: number });
+    const stil = AUSSPIEL_STILE[Math.floor(Math.random() * AUSSPIEL_STILE.length)];
+    await this.animiereAusSpielStil(stil, kartenobjekte, objekte, ziel, dauer);
     Logger.szene('Beende animiereKarteAusspielen');
+  }
+
+  private async animiereAusSpielStil(
+    stil: AusSpielStil,
+    kartenobjekte: AnimierbareKartenobjekte,
+    objekte: Phaser.GameObjects.GameObject[],
+    ziel: { x: number; y: number; winkel?: number },
+    dauer: number
+  ): Promise<void> {
+    const zielWinkel = ziel.winkel ?? 0;
+    const mitWinkel = ziel.winkel !== undefined ? { angle: ziel.winkel } : {};
+
+    switch (stil) {
+      case 'standard':
+        await this.p.animiereTween({ targets: objekte, x: ziel.x, y: ziel.y, duration: dauer, ease: 'Cubic.Out', ...mitWinkel });
+        break;
+
+      case 'bounce':
+        await this.p.animiereTween({ targets: objekte, x: ziel.x, y: ziel.y, duration: dauer, ease: 'Bounce.Out', ...mitWinkel });
+        break;
+
+      case 'schnell':
+        await this.p.animiereTween({ targets: objekte, x: ziel.x, y: ziel.y, duration: dauer, ease: 'Expo.Out', ...mitWinkel });
+        break;
+
+      case 'schwer':
+        await this.p.animiereTween({ targets: objekte, x: ziel.x, y: ziel.y, duration: dauer, ease: 'Quintic.In', ...mitWinkel });
+        break;
+
+      case 'katapult':
+        await this.p.animiereTween({ targets: objekte, x: ziel.x, y: ziel.y, duration: dauer, ease: 'Back.Out', ...mitWinkel });
+        break;
+
+      case 'spin': {
+        const startAngle = kartenobjekte.wurzel.angle ?? 0;
+        await Promise.all([
+          this.p.animiereTween({ targets: objekte, x: ziel.x, y: ziel.y, duration: dauer, ease: 'Cubic.Out' }),
+          this.p.animiereTween({ targets: [kartenobjekte.wurzel], angle: startAngle + 360, duration: dauer, ease: 'Cubic.Out' })
+        ]);
+        kartenobjekte.wurzel.angle = zielWinkel;
+        break;
+      }
+
+      case 'bogen': {
+        const startX = kartenobjekte.wurzel.x;
+        const startY = kartenobjekte.wurzel.y;
+        const midX = (startX + ziel.x) / 2;
+        const midY = Math.min(startY, ziel.y) - 80;
+        const halbeDauer = Math.round(dauer / 2);
+        await this.p.animiereTween({ targets: objekte, x: midX, y: midY, duration: halbeDauer, ease: 'Sine.Out' });
+        await this.p.animiereTween({ targets: objekte, x: ziel.x, y: ziel.y, duration: halbeDauer, ease: 'Sine.In', ...mitWinkel });
+        break;
+      }
+
+      case 'zittern': {
+        const startAngle = kartenobjekte.wurzel.angle ?? 0;
+        await Promise.all([
+          this.p.animiereTween({ targets: objekte, x: ziel.x, y: ziel.y, duration: dauer, ease: 'Cubic.Out' }),
+          this.p.animiereTween({ targets: [kartenobjekte.wurzel], angle: startAngle + 5, yoyo: true, repeat: 3, duration: Math.round(dauer / 8), ease: 'Sine.InOut' })
+        ]);
+        kartenobjekte.wurzel.angle = zielWinkel;
+        break;
+      }
+
+      case 'fade': {
+        await Promise.all(objekte.map(o => this.p.tweenAlpha(o, 0, 120)));
+        objekte.forEach(o => { (o as unknown as { x: number; y: number }).x = ziel.x; (o as unknown as { x: number; y: number }).y = ziel.y; });
+        kartenobjekte.wurzel.angle = zielWinkel;
+        await Promise.all(objekte.map(o => this.p.tweenAlpha(o, 1, 120)));
+        break;
+      }
+    }
   }
 
   async animiereKartenAusteilen(
