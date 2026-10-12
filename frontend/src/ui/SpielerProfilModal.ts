@@ -1,6 +1,12 @@
 import type { SpielerProfilAntwortGenerated, StatistikAntwortGenerated, PartieErgebnisAntwortGenerated } from '../generated/schema-types';
 import { installiereDialogA11y } from './dialogHelper';
 
+const AVATAR_FARBEN = [
+  '#e63946', '#f4a261', '#f8c94e', '#2a9d8f',
+  '#457b9d', '#1d3557', '#a8dadc', '#6d6875',
+  '#c77dff', '#b5838d', '#a3c4a8', '#f8f9fa'
+] as const;
+
 /**
  * HTML-basiertes Modal für die Anzeige des Spieler-Profils mit Statistiken und Partie-Verlauf.
  * Wird in das #ui-root-Element eingehängt und nutzt die .ui-modal-backdrop / .ui-modal CSS-Klassen.
@@ -15,10 +21,18 @@ export class SpielerProfilModal {
 
   /**
    * Öffnet das Profil-Modal mit den übergebenen Daten.
+   * Wenn `optionen.onSpeichern` gesetzt ist, wird ein "Bearbeiten"-Button eingeblendet.
    * Hängt das Modal in #ui-root ein.
    */
-  static oeffnenMitDaten(profil: SpielerProfilAntwortGenerated): SpielerProfilModal {
-    const backdrop = SpielerProfilModal.erstelleElement(profil);
+  static oeffnenMitDaten(
+    profil: SpielerProfilAntwortGenerated,
+    optionen?: {
+      eigeneId?: string;
+      onSpeichern?: (anzeigeName: string, avatarFarbe: string) => Promise<void>;
+    }
+  ): SpielerProfilModal {
+    const istEigen = optionen?.eigeneId !== undefined && optionen?.onSpeichern !== undefined;
+    const backdrop = SpielerProfilModal.erstelleElement(profil, istEigen);
     const uiRoot = document.getElementById('ui-root');
     if (!uiRoot) throw new Error('#ui-root nicht gefunden');
     uiRoot.appendChild(backdrop);
@@ -29,7 +43,14 @@ export class SpielerProfilModal {
     backdrop.addEventListener('click', (e) => {
       if (e.target === backdrop) instanz.schliessen();
     });
-    backdrop.querySelector('.ui-profil-schliessen')?.addEventListener('click', () => instanz.schliessen());
+
+    const modal = backdrop.querySelector('.ui-modal--profil')!;
+
+    if (istEigen && optionen?.onSpeichern) {
+      SpielerProfilModal.installiereBearbeitenHandler(modal, profil, optionen.onSpeichern, () => instanz.schliessen());
+    } else {
+      backdrop.querySelector('.ui-profil-schliessen')?.addEventListener('click', () => instanz.schliessen());
+    }
 
     (backdrop.querySelector<HTMLElement>('button:not([disabled])'))?.focus();
 
@@ -47,7 +68,7 @@ export class SpielerProfilModal {
     return document.body.contains(this.element);
   }
 
-  private static erstelleElement(profil: SpielerProfilAntwortGenerated): HTMLElement {
+  private static erstelleElement(profil: SpielerProfilAntwortGenerated, istEigen: boolean): HTMLElement {
     const backdrop = document.createElement('div');
     backdrop.className = 'ui-modal-backdrop';
     backdrop.setAttribute('role', 'dialog');
@@ -56,13 +77,108 @@ export class SpielerProfilModal {
 
     const modal = document.createElement('div');
     modal.className = 'ui-modal ui-modal--profil';
-    modal.innerHTML = SpielerProfilModal.erstelleInhalt(profil);
+    modal.innerHTML = SpielerProfilModal.erstelleInhalt(profil, istEigen);
     backdrop.appendChild(modal);
 
     return backdrop;
   }
 
-  private static erstelleInhalt(profil: SpielerProfilAntwortGenerated): string {
+  private static installiereBearbeitenHandler(
+    modal: Element,
+    profil: SpielerProfilAntwortGenerated,
+    onSpeichern: (anzeigeName: string, avatarFarbe: string) => Promise<void>,
+    onSchliessen: () => void
+  ): void {
+    modal.querySelector('.ui-profil-schliessen')?.addEventListener('click', onSchliessen);
+    modal.querySelector('.ui-profil-bearbeiten')?.addEventListener('click', () => {
+      SpielerProfilModal.zeigeEditModus(modal, profil, onSpeichern, onSchliessen);
+    });
+  }
+
+  private static zeigeEditModus(
+    modal: Element,
+    profil: SpielerProfilAntwortGenerated,
+    onSpeichern: (anzeigeName: string, avatarFarbe: string) => Promise<void>,
+    onSchliessen: () => void
+  ): void {
+    const aktuellerName = profil.anzeigeName ?? '';
+    const aktuelleFarbe = profil.avatarFarbe ?? AVATAR_FARBEN[0];
+    let gewaehlteFarbe = aktuelleFarbe;
+
+    const farbenHtml = AVATAR_FARBEN.map(f =>
+      `<button class="ui-profil-farb-kreis${f === aktuelleFarbe ? ' ui-profil-farb-kreis--aktiv' : ''}" style="background-color:${f}" data-farbe="${f}" aria-label="Farbe ${f}" aria-pressed="${f === aktuelleFarbe}"></button>`
+    ).join('');
+
+    modal.innerHTML = `
+      <div class="ui-profil-header">
+        <div class="ui-profil-avatar" id="edit-avatar-vorschau" style="background-color: ${aktuelleFarbe}"></div>
+        <div class="ui-profil-header-info">
+          <h2 id="profil-dialog-titel">Profil bearbeiten</h2>
+        </div>
+        <button class="ui-profil-schliessen" aria-label="Profil schließen">✕</button>
+      </div>
+      <div class="ui-profil-edit-formular">
+        <label class="ui-profil-edit-label" for="edit-anzeigename">Anzeigename (2–20 Zeichen)</label>
+        <input id="edit-anzeigename" type="text" class="ui-profil-edit-input"
+          value="${SpielerProfilModal.escapeHtml(aktuellerName)}" minlength="2" maxlength="20" autocomplete="off">
+        <label class="ui-profil-edit-label">Avatar-Farbe</label>
+        <div class="ui-profil-farb-palette" role="group" aria-label="Farbe wählen">
+          ${farbenHtml}
+        </div>
+        <p class="ui-profil-edit-fehler" aria-live="polite" hidden></p>
+        <div class="ui-profil-edit-aktionen">
+          <button class="ui-profil-edit-speichern">Speichern</button>
+          <button class="ui-profil-edit-abbrechen">Abbrechen</button>
+        </div>
+      </div>
+    `;
+
+    modal.querySelector('.ui-profil-schliessen')?.addEventListener('click', onSchliessen);
+
+    const nameInput = modal.querySelector<HTMLInputElement>('#edit-anzeigename')!;
+    const fehlerEl = modal.querySelector<HTMLElement>('.ui-profil-edit-fehler')!;
+    const avatarVorschau = modal.querySelector<HTMLElement>('#edit-avatar-vorschau')!;
+
+    modal.querySelectorAll<HTMLButtonElement>('.ui-profil-farb-kreis').forEach(kreis => {
+      kreis.addEventListener('click', () => {
+        gewaehlteFarbe = kreis.dataset['farbe'] ?? aktuelleFarbe;
+        modal.querySelectorAll<HTMLButtonElement>('.ui-profil-farb-kreis').forEach(k => {
+          k.classList.remove('ui-profil-farb-kreis--aktiv');
+          k.setAttribute('aria-pressed', 'false');
+        });
+        kreis.classList.add('ui-profil-farb-kreis--aktiv');
+        kreis.setAttribute('aria-pressed', 'true');
+        avatarVorschau.style.backgroundColor = gewaehlteFarbe;
+      });
+    });
+
+    modal.querySelector('.ui-profil-edit-abbrechen')?.addEventListener('click', () => {
+      modal.innerHTML = SpielerProfilModal.erstelleInhalt(profil, true);
+      SpielerProfilModal.installiereBearbeitenHandler(modal, profil, onSpeichern, onSchliessen);
+    });
+
+    const speichernBtn = modal.querySelector<HTMLButtonElement>('.ui-profil-edit-speichern')!;
+    speichernBtn.addEventListener('click', () => {
+      void (async () => {
+        fehlerEl.hidden = true;
+        speichernBtn.disabled = true;
+        const anzeigeName = nameInput.value.trim();
+        try {
+          await onSpeichern(anzeigeName, gewaehlteFarbe);
+          const aktualisiertesProfil: SpielerProfilAntwortGenerated = { ...profil, anzeigeName, avatarFarbe: gewaehlteFarbe };
+          modal.innerHTML = SpielerProfilModal.erstelleInhalt(aktualisiertesProfil, true);
+          SpielerProfilModal.installiereBearbeitenHandler(modal, aktualisiertesProfil, onSpeichern, onSchliessen);
+        } catch (err) {
+          const meldung = err instanceof Error ? err.message : 'Fehler beim Speichern. Bitte erneut versuchen.';
+          fehlerEl.textContent = meldung;
+          fehlerEl.hidden = false;
+          speichernBtn.disabled = false;
+        }
+      })();
+    });
+  }
+
+  private static erstelleInhalt(profil: SpielerProfilAntwortGenerated, istEigen = false): string {
     const name = profil.anzeigeName ?? 'Unbekannt';
     const farbe = profil.avatarFarbe ?? '#4ade80';
     const datum = profil.erstelltAm
@@ -76,6 +192,7 @@ export class SpielerProfilModal {
           <h2 id="profil-dialog-titel">${SpielerProfilModal.escapeHtml(name)}</h2>
           <span class="ui-profil-meta">Dabei seit ${datum}</span>
         </div>
+        ${istEigen ? '<button class="ui-profil-bearbeiten" aria-label="Profil bearbeiten">✎ Bearbeiten</button>' : ''}
         <button class="ui-profil-schliessen" aria-label="Profil schließen">✕</button>
       </div>
       <div class="ui-profil-statistik-container">

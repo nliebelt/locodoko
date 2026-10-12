@@ -149,7 +149,11 @@ export class SpielverwaltungsSzene extends Phaser.Scene {
         const spielerId = zustand.spieler?.spielerId;
         if (spielerId) {
           appStore.ladeSpielerProfil(spielerId)
-            .then(profil => SpielerProfilModal.oeffnenMitDaten(profil))
+            .then(profil => SpielerProfilModal.oeffnenMitDaten(profil, {
+              eigeneId: spielerId,
+              onSpeichern: (anzeigeName, avatarFarbe) =>
+                appStore.aktualisiereProfil(spielerId, { anzeigeName, avatarFarbe }).then(() => undefined)
+            }))
             .catch(fehler => Logger.error('Profil laden fehlgeschlagen', fehler));
         }
       }

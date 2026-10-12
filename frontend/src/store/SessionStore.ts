@@ -68,6 +68,10 @@ export class SessionStore {
     return this.api.ladeSpielerProfil(spielerId);
   }
 
+  async aktualisiereProfil(spielerId: Uuid, anfrage: { anzeigeName?: string; avatarFarbe?: string }): Promise<SpielerProfilAntwortGenerated> {
+    return this.api.aktualisiereProfil(spielerId, anfrage);
+  }
+
   trenneGemeinsameAbos(): void {
     this.gemeinsameAbos.splice(0).forEach((abmelden) => abmelden());
   }

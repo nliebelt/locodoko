@@ -246,6 +246,13 @@ export class SpielverwaltungApi {
     return this.hol<SpielerProfilAntwortGenerated>(`/api/spieler/${spielerId}/profil`);
   }
 
+  async aktualisiereProfil(spielerId: Uuid, anfrage: { anzeigeName?: string; avatarFarbe?: string }): Promise<SpielerProfilAntwortGenerated> {
+    return this.hol<SpielerProfilAntwortGenerated>(`/api/spieler/${spielerId}/profil`, {
+      method: 'PUT',
+      body: JSON.stringify(anfrage)
+    });
+  }
+
   async ladeBestenliste(): Promise<BestenlisteAntwortGenerated> {
     return this.hol<BestenlisteAntwortGenerated>('/api/spieler/leaderboard');
   }
