@@ -41,6 +41,7 @@ Kein Upload, kein CMS — alles serverside einfach und wartbar.
 
 5. Statistiken sind **append-only** — sie werden nie zurückgesetzt, nur erhöht.
 6. Statistiken sind **öffentlich lesbar** über das Spieler-Profil (`GET /api/spieler/{id}/profil`).
+7. **Profil-Edit**: `PUT /api/spieler/profil` (authentifiziert, nur eigenes Profil) — Felder `anzeigeName` (2–20 Zeichen) und `avatarFarbe` (Hex aus 12er-Palette) änderbar. Response: aktualisiertes Profil.
 
 ### Partieverlauf
 
@@ -78,6 +79,8 @@ Kein Upload, kein CMS — alles serverside einfach und wartbar.
 - [x] Gastgeber-Kicken Endpoint
 - [x] Frontend: Avatar + Anzeigename im HUD und Nameplate
 - [x] Frontend: Profil-Ansicht (Statistiken + Verlauf) — implementiert in Session 14 2026-05-28 (BUG-PROFIL-TYPES + FEAT-PROFIL-TABS)
+- [ ] Backend: `PUT /api/spieler/profil` Endpoint (Anzeigename + avatarFarbe)
+- [ ] Frontend: Edit-Modus im Profil-Modal (Textfeld + 12-Farben-Palette)
 
 ## Technische Hinweise
 
