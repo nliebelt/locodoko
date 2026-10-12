@@ -1,8 +1,10 @@
 # IMPLEMENTATION_PLAN — Locodoko Doppelkopf
 
-> Stand: 2026-10-12 (Session 167). Erledigte Aufgaben → `IMPLEMENTATION_PLAN_ARCHIVE.md` (Sessions 1–166 archiviert).
+> Stand: 2026-10-12 (Session 169). Erledigte Aufgaben → `IMPLEMENTATION_PLAN_ARCHIVE.md` (Sessions 1–168 archiviert).
 
 ## Notiz
+
+**Session 169 (2026-10-12): Planungs-Session. check_specs.py: 0 Befunde (58 Specs). 537 BE + 510 FE-Tests grün. 2 Inkonsistenzen gefunden: (a) `vision-loop-szenen.spec.ts` Schritte S-02 + page2-Block navigieren nicht zu TischlisteSzene (veraltet seit FE-LOBBY-REDESIGN S164); (b) `specs/frontend-startscreen.md` Status noch „Implementiert (Überarbeitung ausstehend — FE-LOBBY-REDESIGN)" obwohl S164 abgeschlossen. 1 neuer Task angelegt: FE-VISION-SZENEN-FIX. S167–S168-Tasks ins Archiv verschoben.**
 
 **Session 168 (2026-10-12): DOC-SPECS-SYNC-S166 + TEST-FE-PROFIL-EDIT + FE-VISION-LOOP-POST166 abgeschlossen. DOC: DoD-Checkboxen nachgezogen. TEST: 6 neue Edit-Modus-Tests (510 FE-Tests grün). VISION: TischlisteSzene ✅ (3 Spalten, Zurück + Neuen Tisch), Profil-Modal ✅ (Bearbeiten-Button vorhanden), Lobby ✅ (☰ Offene Tische →, keine eingebettete Liste). 1 Befund: „+ Neuen Tisch"-Button in TischlisteSzene am rechten Rand leicht abgeschnitten. Alle 3 Sektion-A-Tasks erledigt.**
 
@@ -30,18 +32,14 @@
 
 ## A) Offene autonome Tasks (Ralph — kein MENSCH nötig)
 
-> Geerdet am Repo-Scan S167 (2026-10-12): check_specs.py 0 Befunde (58 Specs), 537 BE + 504 FE-Tests grün. **Pro Task ein Commit**, `mvn clean test` / `npm test && npm run build && npm run lint` grün.
+> Geerdet am Repo-Scan S169 (2026-10-12): check_specs.py 0 Befunde (58 Specs), 537 BE + 510 FE-Tests grün. **Pro Task ein Commit**, `mvn clean test` / `npm test && npm run build && npm run lint` grün.
 
-### Empfohlene Build-Reihenfolge (Block Post-S166 — aktuelle Runde, Stand S167)
+### Empfohlene Build-Reihenfolge (Block Post-S168 — aktuelle Runde, Stand S169)
 
 > Nimm den **obersten noch offenen** Task. Alle autonom. Diese Sektion ist die EINZIGE
 > Build-Reihenfolge — alte Runden-Sektionen werden beim Plan-Scan entfernt.
 
-- [x] **DOC-SPECS-SYNC-S166** *(Erste Datei: `specs/spieler-profil.md`)* — DoD-Checkboxen in vier Spec-Dateien nachziehen, die nach S163–S166 nicht aktualisiert wurden: (a) `specs/spieler-profil.md` Z. 82–83: beide Edit-Boxes auf `[x]` setzen (BE + FE implementiert S165/S166); (b) `specs/frontend-tischliste.md`: Status-Zeile auf „Implementiert (S163)" setzen + DoD-Boxes 1–4 auf `[x]` (ohne Vision-Loop-Box); (c) `specs/frontend-startscreen.md` Z. 125: `FE-LOBBY-REDESIGN`-Box auf `[x]`; (d) `specs/frontend-spielerprofil.md`: alle 9 implementierten DoD-Boxes auf `[x]` (Modal öffnet sich, Statistik, Re/Kontra, Sonderpunkte, Solo-Bilanz, Partie-Historie, Leer-Zustand, Unit-Tests, Neo-Brutalism — nur „specs/spieler-profil.md DoD-Häkchen Z. 80 gesetzt" noch `[ ]` bis DOC-SPECS-SYNC fertig). `python3 check_specs.py` grün.
-
-- [x] **TEST-FE-PROFIL-EDIT** *(Erste Datei: `frontend/src/ui/SpielerProfilModal.test.ts`)* — `SpielerProfilModal.test.ts` enthält bisher keinen einzigen Test für den Edit-Modus (zeigeEditModus, Farbpalette, Speichern, Abbrechen). Neue Tests ergänzen: (a) „✎ Bearbeiten"-Button erscheint genau dann, wenn `onSpeichern`-Callback übergeben wird; (b) Klick auf Bearbeiten öffnet Edit-Ansicht mit vorausgefülltem Textfeld (aktueller Anzeigename) und aktiver Farbe hervorgehoben; (c) Klick auf anderen Farbkreis wechselt die aktive Farbe (aria-pressed + CSS-Klasse); (d) Speichern ruft `onSpeichern` mit neuem Namen + neuer Farbe auf; (e) Abbrechen wechselt zur Anzeige-Ansicht zurück ohne Callback; (f) Fehlerfall: `onSpeichern` rejectet → roter Fehlertext sichtbar, Edit-Ansicht bleibt offen. `npm test && npm run build && npm run lint` grün.
-
-- [x] **FE-VISION-LOOP-POST166** *(Erste Datei: kein Code — nur Skript ausführen)* — *(Vorbedingung: Backend läuft auf localhost:8080; `mvn spring-boot:run` starten)* — Visuelles Review der drei zuletzt implementierten Szenen via Vision Loop. Ausführen: `cd e2e && npx playwright test vision-loop.spec.ts --headed` (oder headless). Zu prüfen: (a) `TischlisteSzene` — Tabelle mit 3 Spalten korrekt gerendert, „← Zurück" + „+ Neuen Tisch"-Button sichtbar, Leer-Zustand-Text wenn keine Tische; (b) Profil-Modal in SpielverwaltungsSzene — „✎ Bearbeiten"-Button vorhanden; (c) Lobby nach FE-LOBBY-REDESIGN — keine eingebettete Tischliste, „☰ Offene Tische →"-Button sichtbar, Tertiary-Buttons kleiner. Screenshots mit Read-Tool einlesen und visuell prüfen. Befunde unter `## Entdeckungen` notieren. Nach erfolgreichem Review: `frontend-tischliste.md` Vision-Loop-DoD-Box auf `[x]` setzen.
+- [ ] **FE-VISION-SZENEN-FIX** *(Erste Datei: `e2e/tests/vision-loop-szenen.spec.ts`)* — Drei FE-LOBBY-REDESIGN-Nachfolge-Korrekturen in einem Commit: (a) `vision-loop-szenen.spec.ts`: Schritt S-02 (Kommentar „Liste ist immer sichtbar" + `screenshot(page, '11-offene-tische', ...)`) navigiert jetzt zu `TischlisteSzene` statt nur Lobby-Screenshot zu machen — `drueckeSzenenButton('btn-offene-tische')` → `warteAufSzene(page, 'TischlisteSzene')` → `screenshot(page, '11-offene-tische', prefix)` → `drueckeSzenenButton('btn-tischliste-zurueck')` → `warteAufSzene(page, 'SpielverwaltungsSzene')`; page2-Block (Kommentar „S-04: Lobby mit gefüllter Tischliste"): nach `warteAufSzene(page2, 'SpielverwaltungsSzene')` + waitForTimeout ebenfalls zu TischlisteSzene navigieren vor `screenshot(page2, '11b-offene-tische-gefuellt', prefix)` (context2 wird danach geschlossen → kein Zurück nötig); (b) `frontend/src/szenen/TischlisteSzene.ts` Z. 55: `x: this.scale.width - 122, breite: 200` → `x: this.scale.width - 132, breite: 220` (kosmetischer Button-Text-Überlauf aus S168-Vision-Loop-Befund); (c) `specs/frontend-startscreen.md` Z. 5: Status von „Implementiert (Überarbeitung ausstehend — FE-LOBBY-REDESIGN)" auf „Implementiert (S164)" setzen. Validation: *(Vorbedingung: Backend läuft)* `cd e2e && npx playwright test tests/vision-loop-szenen.spec.ts` + Screenshots prüfen; `cd frontend && npm test && npm run build && npm run lint` grün; `python3 check_specs.py` grün.
 
 ---
 
@@ -102,9 +100,9 @@
 
 - **S157 — `frontend-flash-text.md` DoD: Visuelles Review noch offen** (2026-09-14): Die Spec hat `[ ] Visuelles Review via Vision Loop (ausstehend — Backend muss laufen)` als offene DoD-Checkbox. Da FE-SPIEL-BEENDET-OUTCOME jetzt VERLOREN-Pfad ergänzt, wäre ein Video-Loop-Durchlauf sinnvoll (Flash-Texte sind Animationen → Screenshot-Loop reicht nicht). Akzeptiertes Tech-Debt: kein eigener Task. Sobald FE-VISION-LOOP-POST166 läuft, kann der Video-Loop optional mitgemacht werden (`npm run test:video`).
 
-- **S168/FE-VISION-LOOP-POST166 — „+ Neuen Tisch"-Button in TischlisteSzene am rechten Rand abgeschnitten** (2026-10-12): In TischlisteSzene übersteht der Button-Text die Canvas-Breite (1280px). Kleiner kosmetischer Fehler — Button ist anklickbar, Text aber teilweise unsichtbar. Kein eigener Task nötig; bei nächster TischlisteSzene-Änderung korrigieren.
+- **S168/FE-VISION-LOOP-POST166 — „+ Neuen Tisch"-Button in TischlisteSzene am rechten Rand abgeschnitten** (2026-10-12): In TischlisteSzene übersteht der Button-Text die Canvas-Breite (1280px). Kleiner kosmetischer Fehler — Button ist anklickbar, Text aber teilweise unsichtbar. → **FE-VISION-SZENEN-FIX** (Z. 55: `x: width-132, breite: 220`).
 
-- **S168/FE-VISION-LOOP-POST166 — vision-loop-szenen.spec.ts nicht für FE-LOBBY-REDESIGN aktualisiert** (2026-10-12): Schritt `11-offene-tische` nimmt Lobby-Screenshot statt zur TischlisteSzene zu navigieren. Kommentar im Spec (Z. 39): „Liste ist immer sichtbar" — veraltet seit S163. Kein kritischer Fehler, aber Spec-Schritt sollte auf `drueckeSzenenButton('btn-offene-tische')` + `warteAufSzene('TischlisteSzene')` angepasst werden.
+- **S168/FE-VISION-LOOP-POST166 — vision-loop-szenen.spec.ts nicht für FE-LOBBY-REDESIGN aktualisiert** (2026-10-12): Schritt `11-offene-tische` nimmt Lobby-Screenshot statt zur TischlisteSzene zu navigieren. Kommentar „Liste ist immer sichtbar" — veraltet seit S163. → **FE-VISION-SZENEN-FIX**.
 
 - **S153 — Prod-Bug behoben: SPRING_PROFILES_ACTIVE=prod fehlte** (2026-08-18): App lief mit H2 in-memory (Dev-Profil) statt PostgreSQL. Stacktrace: `JdbcSQLIntegrityConstraintViolationException: Check constraint invalid: CONSTRAINT_69`. Fix: Env-Variable in `.env` gesetzt + Neustart. Setup-Skript + Doku aktualisiert.
 

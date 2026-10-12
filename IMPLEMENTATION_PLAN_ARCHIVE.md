@@ -2,6 +2,17 @@
 
 ---
 
+## Archiviert am 2026-10-12 (Sessions 167–168 — Spec-Sync, Test-Edit-Modus, Vision-Loop)
+
+> Slim-Down des aktiven Plans (Session 169). Alle unten gelisteten Tasks sind **erledigt** (`[x]`, Code + Tests grün, committet).
+
+**Block A — Autonome Tasks (S167–S168):**
+- **DOC-SPECS-SYNC-S166** ✓ S168 — DoD-Checkboxen in 4 Spec-Dateien nachgezogen (spieler-profil, frontend-tischliste, frontend-startscreen, frontend-spielerprofil).
+- **TEST-FE-PROFIL-EDIT** ✓ S168 — 6 neue Edit-Modus-Tests in `SpielerProfilModal.test.ts` (510 FE-Tests grün).
+- **FE-VISION-LOOP-POST166** ✓ S168 — TischlisteSzene ✅, Profil-Modal ✅, Lobby ✅ visuell verifiziert. Befund: „+ Neuen Tisch"-Button am rechten Rand leicht abgeschnitten (→ FE-VISION-SZENEN-FIX); `vision-loop-szenen.spec.ts` veraltet (→ FE-VISION-SZENEN-FIX).
+
+---
+
 ## Archiviert am 2026-10-12 (Sessions 159–166 — M2-Finish, Tischliste, Lobby-Redesign, Profil-Edit)
 
 > Slim-Down des aktiven Plans (Session 167). Alle unten gelisteten Tasks sind **erledigt** (`[x]`, Code + Tests grün, committet).
