@@ -2,7 +2,7 @@
 
 | Feld           | Wert                              |
 |----------------|-----------------------------------|
-| Status         | Implementiert (Überarbeitung ausstehend — FE-LOBBY-REDESIGN) |
+| Status         | Implementiert (S164) |
 | Priorität      | Hoch                              |
 | Abhängigkeiten | frontend-visuelles-design.md, lobby.md, frontend-tischliste.md |
 

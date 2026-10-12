@@ -35,8 +35,12 @@ test.describe('Vision Loop — Szenen S-00 bis S-14', () => {
     // S-01: Lobby Basis
     await screenshot(page, '01-lobby', prefix);
 
-    // S-02: Offene Tische — Liste ist immer sichtbar (hier: Leerzustand unterhalb der Buttons)
+    // S-02: Offene Tische — navigiert zur TischlisteSzene
+    await page.evaluate(() => (window as any).__locodoko.drueckeSzenenButton('btn-offene-tische'));
+    await warteAufSzene(page, 'TischlisteSzene');
     await screenshot(page, '11-offene-tische', prefix);
+    await page.evaluate(() => (window as any).__locodoko.drueckeSzenenButton('btn-tischliste-zurueck'));
+    await warteAufSzene(page, 'SpielverwaltungsSzene');
 
     // S-03: Tisch-Erstellen-Modal
     await page.evaluate(() => (window as any).__locodoko.drueckeSzenenButton('btn-neuer-tisch'));
@@ -122,6 +126,8 @@ test.describe('Vision Loop — Szenen S-00 bis S-14', () => {
     await alsGastStarten(page2);
     await warteAufSzene(page2, 'SpielverwaltungsSzene');
     await page2.waitForTimeout(1500);
+    await page2.evaluate(() => (window as any).__locodoko.drueckeSzenenButton('btn-offene-tische'));
+    await warteAufSzene(page2, 'TischlisteSzene');
     await screenshot(page2, '11b-offene-tische-gefuellt', prefix);
     await context2.close();
 

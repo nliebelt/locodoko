@@ -52,7 +52,7 @@ export class TischlisteSzene extends Phaser.Scene {
     });
 
     new PhaserButton(this, {
-      x: this.scale.width - 122, y: 45, text: '+ Neuen Tisch', typ: 'secondary', breite: 200,
+      x: this.scale.width - 132, y: 45, text: '+ Neuen Tisch', typ: 'secondary', breite: 220,
       testId: 'btn-tischliste-neuer-tisch',
       callback: () => zeigeTischErstellenDialog(appStore.snapshot(), this.presets),
     });
