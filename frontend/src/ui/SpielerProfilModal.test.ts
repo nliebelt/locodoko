@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { SpielerProfilModal } from './SpielerProfilModal';
 import type { SpielerProfilAntwortGenerated } from '../generated/schema-types';
 
@@ -208,5 +208,120 @@ describe('SpielerProfilModal', () => {
     const tabs = uiRoot.querySelectorAll('[role="tab"]');
     expect(tabs.length).toBe(0);
     expect(uiRoot.querySelector('.ui-profil-statistik-container')).not.toBeNull();
+  });
+
+  describe('Edit-Modus', () => {
+    it('zeigt Bearbeiten-Button nur wenn onSpeichern-Callback übergeben wird', () => {
+      // Fremde Profile müssen read-only bleiben; eigenes Profil braucht Edit-Einstieg
+      const ohneEdit = SpielerProfilModal.oeffnenMitDaten(erstelleTestProfil());
+      expect(uiRoot.querySelector('.ui-profil-bearbeiten')).toBeNull();
+      ohneEdit.schliessen();
+
+      const mitEdit = SpielerProfilModal.oeffnenMitDaten(
+        erstelleTestProfil(),
+        { eigeneId: 'test-id-123', onSpeichern: vi.fn().mockResolvedValue(undefined) }
+      );
+      expect(uiRoot.querySelector('.ui-profil-bearbeiten')).not.toBeNull();
+      mitEdit.schliessen();
+    });
+
+    it('Bearbeiten-Klick öffnet Edit-Ansicht mit vorausgefülltem Namen und aktiver Farbe', () => {
+      // Vorausgefüllte Felder verhindern versehentliches Überschreiben mit leerem Wert
+      const profil = erstelleTestProfil({ anzeigeName: 'Testname', avatarFarbe: '#e63946' });
+      const modal = SpielerProfilModal.oeffnenMitDaten(
+        profil,
+        { eigeneId: 'test-id-123', onSpeichern: vi.fn().mockResolvedValue(undefined) }
+      );
+
+      uiRoot.querySelector<HTMLButtonElement>('.ui-profil-bearbeiten')!.click();
+
+      const input = uiRoot.querySelector<HTMLInputElement>('#edit-anzeigename');
+      expect(input?.value).toBe('Testname');
+
+      const aktiveKreis = uiRoot.querySelector<HTMLButtonElement>('[data-farbe="#e63946"]');
+      expect(aktiveKreis?.classList.contains('ui-profil-farb-kreis--aktiv')).toBe(true);
+      expect(aktiveKreis?.getAttribute('aria-pressed')).toBe('true');
+
+      modal.schliessen();
+    });
+
+    it('Klick auf anderen Farbkreis wechselt aria-pressed und CSS-Klasse', () => {
+      // Farbwahl muss visuell + semantisch korrekt rückmelden welche Farbe aktiv ist
+      const profil = erstelleTestProfil({ avatarFarbe: '#e63946' });
+      const modal = SpielerProfilModal.oeffnenMitDaten(
+        profil,
+        { eigeneId: 'test-id-123', onSpeichern: vi.fn().mockResolvedValue(undefined) }
+      );
+
+      uiRoot.querySelector<HTMLButtonElement>('.ui-profil-bearbeiten')!.click();
+
+      const alterKreis = uiRoot.querySelector<HTMLButtonElement>('[data-farbe="#e63946"]')!;
+      const neuerKreis = uiRoot.querySelector<HTMLButtonElement>('[data-farbe="#f4a261"]')!;
+      neuerKreis.click();
+
+      expect(neuerKreis.classList.contains('ui-profil-farb-kreis--aktiv')).toBe(true);
+      expect(neuerKreis.getAttribute('aria-pressed')).toBe('true');
+      expect(alterKreis.classList.contains('ui-profil-farb-kreis--aktiv')).toBe(false);
+      expect(alterKreis.getAttribute('aria-pressed')).toBe('false');
+
+      modal.schliessen();
+    });
+
+    it('Speichern ruft onSpeichern mit geändertem Namen und gewählter Farbe auf', async () => {
+      // Fehlende oder falsche Übergabe würde Änderungen des Spielers ignorieren
+      const onSpeichern = vi.fn().mockResolvedValue(undefined);
+      const profil = erstelleTestProfil({ anzeigeName: 'Alter Name', avatarFarbe: '#e63946' });
+      const modal = SpielerProfilModal.oeffnenMitDaten(profil, { eigeneId: 'test-id-123', onSpeichern });
+
+      uiRoot.querySelector<HTMLButtonElement>('.ui-profil-bearbeiten')!.click();
+
+      const input = uiRoot.querySelector<HTMLInputElement>('#edit-anzeigename')!;
+      input.value = 'Neuer Name';
+      uiRoot.querySelector<HTMLButtonElement>('[data-farbe="#f4a261"]')!.click();
+      uiRoot.querySelector<HTMLButtonElement>('.ui-profil-edit-speichern')!.click();
+      await new Promise<void>(resolve => setTimeout(resolve, 0));
+
+      expect(onSpeichern).toHaveBeenCalledWith('Neuer Name', '#f4a261');
+      modal.schliessen();
+    });
+
+    it('Abbrechen kehrt zur Anzeige-Ansicht zurück ohne onSpeichern aufzurufen', () => {
+      // Abbrechen muss änderungslos sein; kein versehentliches Auslösen des API-Calls
+      const onSpeichern = vi.fn();
+      const modal = SpielerProfilModal.oeffnenMitDaten(
+        erstelleTestProfil(),
+        { eigeneId: 'test-id-123', onSpeichern }
+      );
+
+      uiRoot.querySelector<HTMLButtonElement>('.ui-profil-bearbeiten')!.click();
+      expect(uiRoot.querySelector('.ui-profil-edit-formular')).not.toBeNull();
+
+      uiRoot.querySelector<HTMLButtonElement>('.ui-profil-edit-abbrechen')!.click();
+
+      expect(onSpeichern).not.toHaveBeenCalled();
+      expect(uiRoot.querySelector('.ui-profil-edit-formular')).toBeNull();
+      expect(uiRoot.querySelector('.ui-profil-bearbeiten')).not.toBeNull();
+
+      modal.schliessen();
+    });
+
+    it('zeigt roten Fehlertext wenn onSpeichern rejectet und hält Edit-Ansicht offen', async () => {
+      // Netzwerkfehler müssen sichtbar sein; Edit-Ansicht darf nicht verschwinden
+      const fehlerMeldung = 'Name zu kurz';
+      const onSpeichern = vi.fn().mockRejectedValue(new Error(fehlerMeldung));
+      const profil = erstelleTestProfil({ avatarFarbe: '#e63946' });
+      const modal = SpielerProfilModal.oeffnenMitDaten(profil, { eigeneId: 'test-id-123', onSpeichern });
+
+      uiRoot.querySelector<HTMLButtonElement>('.ui-profil-bearbeiten')!.click();
+      uiRoot.querySelector<HTMLButtonElement>('.ui-profil-edit-speichern')!.click();
+      await new Promise<void>(resolve => setTimeout(resolve, 0));
+
+      const fehlerEl = uiRoot.querySelector<HTMLElement>('.ui-profil-edit-fehler');
+      expect(fehlerEl?.hidden).toBe(false);
+      expect(fehlerEl?.textContent).toContain(fehlerMeldung);
+      expect(uiRoot.querySelector('.ui-profil-edit-formular')).not.toBeNull();
+
+      modal.schliessen();
+    });
   });
 });
