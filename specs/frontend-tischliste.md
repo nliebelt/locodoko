@@ -79,4 +79,4 @@ Die `TischlisteSzene` ist eine **eigene Phaser-Szene** für die Übersicht offen
 - [x] In `SpielverwaltungsSzene` per Button navigierbar
 - [x] BE-Erweiterung `spielerNamen` in `TischListenEintragAntwort` genutzt
 - [x] Build + Lint grün, Tests grün
-- [ ] Vision Loop: Szene auf Screen sichtbar, Tabelle korrekt gerendert
+- [x] Vision Loop: Szene auf Screen sichtbar, Tabelle korrekt gerendert
