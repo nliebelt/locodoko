@@ -79,8 +79,8 @@ Kein Upload, kein CMS — alles serverside einfach und wartbar.
 - [x] Gastgeber-Kicken Endpoint
 - [x] Frontend: Avatar + Anzeigename im HUD und Nameplate
 - [x] Frontend: Profil-Ansicht (Statistiken + Verlauf) — implementiert in Session 14 2026-05-28 (BUG-PROFIL-TYPES + FEAT-PROFIL-TABS)
-- [ ] Backend: `PUT /api/spieler/profil` Endpoint (Anzeigename + avatarFarbe)
-- [ ] Frontend: Edit-Modus im Profil-Modal (Textfeld + 12-Farben-Palette)
+- [x] Backend: `PUT /api/spieler/profil` Endpoint (Anzeigename + avatarFarbe)
+- [x] Frontend: Edit-Modus im Profil-Modal (Textfeld + 12-Farben-Palette)
 
 ## Technische Hinweise
 

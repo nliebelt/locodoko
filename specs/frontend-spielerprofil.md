@@ -99,13 +99,13 @@ SpielerProfilSzene / SpielerProfilModal
 
 ## Definition of Done
 
-- [ ] Modal öffnet sich aus Lobby-Screen
-- [ ] Einheitliche aggregierte Statistik korrekt angezeigt (keine Varianten-Tabs)
-- [ ] Re/Kontra-Bilanz mit Win-Rate sichtbar
-- [ ] Sonderpunkt-Bilanz sichtbar (Fuchs, Karlchen, Schweinchen, Doppelköpfe)
-- [ ] Solo-Bilanz pro Solo-Typ aus `solos_pro_typ`-JSONB
-- [ ] Partie-Historie scrollbar, korrekte Daten aus VIEW
-- [ ] Leer-Zustand (keine Partien) korrekt dargestellt
-- [ ] Unit-Test mit Mock-API-Antwort
-- [ ] `specs/spieler-profil.md` DoD-Häkchen Z. 80 nach Abschluss von FE-1+FE-2 gesetzt
-- [ ] Neo-Brutalism-Style konsistent mit restlichem UI
+- [x] Modal öffnet sich aus Lobby-Screen
+- [x] Einheitliche aggregierte Statistik korrekt angezeigt (keine Varianten-Tabs)
+- [x] Re/Kontra-Bilanz mit Win-Rate sichtbar
+- [x] Sonderpunkt-Bilanz sichtbar (Fuchs, Karlchen, Schweinchen, Doppelköpfe)
+- [x] Solo-Bilanz pro Solo-Typ aus `solos_pro_typ`-JSONB
+- [x] Partie-Historie scrollbar, korrekte Daten aus VIEW
+- [x] Leer-Zustand (keine Partien) korrekt dargestellt
+- [x] Unit-Test mit Mock-API-Antwort
+- [x] `specs/spieler-profil.md` DoD-Häkchen Z. 80 nach Abschluss von FE-1+FE-2 gesetzt
+- [x] Neo-Brutalism-Style konsistent mit restlichem UI

@@ -2,7 +2,7 @@
 
 | Feld           | Wert                                                      |
 |----------------|-----------------------------------------------------------|
-| Status         | Spezifikation (noch nicht implementiert)                  |
+| Status         | Implementiert (S163)                                      |
 | Priorität      | Hoch                                                      |
 | Abhängigkeiten | frontend-startscreen.md, lobby.md, frontend-visuelles-design.md |
 
@@ -75,8 +75,8 @@ Die `TischlisteSzene` ist eine **eigene Phaser-Szene** für die Übersicht offen
 - „Beitreten" führt direkt zur TischSzene.
 
 ## Definition of Done
-- [ ] Neue Szene `TischlisteSzene` in `frontend/src/szenen/` implementiert und in `main.ts` registriert
-- [ ] In `SpielverwaltungsSzene` per Button navigierbar
-- [ ] BE-Erweiterung `spielerNamen` in `TischListenEintragAntwort` genutzt
-- [ ] Build + Lint grün, Tests grün
+- [x] Neue Szene `TischlisteSzene` in `frontend/src/szenen/` implementiert und in `main.ts` registriert
+- [x] In `SpielverwaltungsSzene` per Button navigierbar
+- [x] BE-Erweiterung `spielerNamen` in `TischListenEintragAntwort` genutzt
+- [x] Build + Lint grün, Tests grün
 - [ ] Vision Loop: Szene auf Screen sichtbar, Tabelle korrekt gerendert

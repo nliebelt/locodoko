@@ -122,7 +122,7 @@ Die eingebettete Tischliste auf der Hauptseite wurde durch die `TischlisteSzene`
 - [x] Tisch-Erstellung schließt Modal und wechselt zur TischSzene
 - [x] „Offene Tische" Liste war implementiert (eingebettete PhaserList) — wird durch TischlisteSzene ersetzt
 - [x] „Zurückkehren"-Button für laufende eigene Tische
-- [ ] **FE-LOBBY-REDESIGN**: eingebettete Tischliste entfernt, Button „☰ Offene Tische →" ergänzt, Tertiary-Buttons kleiner/dezenter
+- [x] **FE-LOBBY-REDESIGN**: eingebettete Tischliste entfernt, Button „☰ Offene Tische →" ergänzt, Tertiary-Buttons kleiner/dezenter
 - [x] Session-Recovery-Button implementiert (erscheint wenn aktiverTischId vorhanden)
 - [x] Keyboard-Navigation (Tab, Enter)
 - [x] Visuelles Review (via Vision-Loop, mehrere Sessions)
