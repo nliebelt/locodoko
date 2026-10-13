@@ -104,4 +104,5 @@ nav:
     - Recht & Impressum: specs/recht-impressum-datenschutz.md
     - Monitoring: specs/betrieb-monitoring.md
   - Codequalität: metrics.md
+  - UI-Screenshots: screenshots.md
   - Internes Review: specs/review-2026-05-28.md

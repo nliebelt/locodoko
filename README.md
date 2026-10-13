@@ -3,6 +3,10 @@
 
 Das latent verrückte Doppelkopf Spiel.
 
+[![CI](https://github.com/nliebelt/locodoko/actions/workflows/ci.yml/badge.svg)](https://github.com/nliebelt/locodoko/actions/workflows/ci.yml)
+[![Docs](https://github.com/nliebelt/locodoko/actions/workflows/ci-docs.yml/badge.svg)](https://github.com/nliebelt/locodoko/actions/workflows/ci-docs.yml)
+[![CD](https://github.com/nliebelt/locodoko/actions/workflows/cd.yml/badge.svg)](https://github.com/nliebelt/locodoko/actions/workflows/cd.yml)
+
 ## Starten im Devmode
 
 ```bash
@@ -113,7 +117,7 @@ docker compose --profile prod up --build -d
 
 [Ralph](https://ghuntley.com/ralph/)
 [How to Ralph Wiggum](https://github.com/ghuntley/how-to-ralph-wiggum)
-[How to Build a Coding Agent](https://github.com/ghuntley how-to-build-a-coding-agent)
+[How to Build a Coding Agent](https://github.com/ghuntley/how-to-build-a-coding-agent)
 [Ralph Tips](https://www.aihero.dev/tips-for-ai-coding-with-ralph-wiggum#10-pay-to-play)
 [Awesome Ralph](https://github.com/snwfdhmp/awesome-ralph)
 [Reddit RalphCoding](https://www.reddit.com/r/RalphCoding/)

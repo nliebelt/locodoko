@@ -138,3 +138,11 @@ jobs:
           name: playwright-report
           path: e2e/playwright-report/
           retention-days: 14
+
+      - name: Vision-Loop-Screenshots hochladen
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: vision-loop-screenshots
+          path: e2e/screenshots/
+          retention-days: 30
