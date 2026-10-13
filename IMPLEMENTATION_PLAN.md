@@ -79,6 +79,8 @@
 
 - [ ] **UX-USER-FEEDBACK** (M2 — Nach Live-Gang) — In-Game Feedback-Kanal für Nutzer. Form noch offen: einfaches Kontaktformular, GitHub-Issue-Link, oder integrierter Feedback-Button im Spiel. Ziel: Nutzerfeedback nach öffentlichem Betrieb strukturiert sammeln.
 
+- [ ] **FE-CREDITS-SCREEN** (Post-M2 — braucht Spec + Entscheidungen) — In-Game Credits-Szene mit allen OSS-Abhängigkeiten aus Maven + npm. Technischer Ansatz: (1) `license-maven-plugin` + `license-checker` (npm) generieren im Build je eine `credits-be.json` / `credits-fe.json` → eingebettet als statische Assets ins JAR; (2) neuer REST-Endpunkt `/api/credits` liefert beides zusammen; (3) neue `CreditsSzene` in Phaser (scrollender Abspann oder tabellarische Ansicht). Vorbedingung: `specs/frontend-credits.md` anlegen (Screens, Felder, Scroll-Verhalten, welche Metadaten angezeigt werden — Name, Version, Lizenz, URL). Props an Geoff Huntley / Ralph-Pattern explizit aufführen.
+
 ---
 
 ## Entdeckungen
