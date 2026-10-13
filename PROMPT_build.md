@@ -120,8 +120,9 @@
 
 3. **Bei grünen Tests — Plan-Update + Notizen schreiben, BEVOR der Commit kommt**:
    3a. Aktualisiere @IMPLEMENTATION_PLAN.md — Aufgabe als `[x]` markieren (statt `[ ]`).
-   3b. Schreibe eine **„Notiz an den nächsten Ralph"** unter `## Notiz` in @IMPLEMENTATION_PLAN.md
-       (direkt nach der Überschrift, überschreibt die letzte Notiz):
+   3b. Schreibe eine **„Notiz an den nächsten Ralph"** unter `## Notiz` in @IMPLEMENTATION_PLAN.md —
+       **ersetze den gesamten Abschnitt komplett** (alle vorherigen Notizen löschen, nur die neue behalten).
+       Ältere Notizen sind im git-Log erhalten, nicht im Plan nötig.
        - Was wurde implementiert?
        - Was ist der nächste logische Schritt?
        - Offene Fragen oder Probleme?

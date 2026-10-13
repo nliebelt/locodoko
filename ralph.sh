@@ -205,9 +205,17 @@ while true; do
 
     # Check for completion signal
     if grep -q '<promise>COMPLETE</promise>' "$ITER_OUTPUT" 2>/dev/null; then
-        echo ""
-        echo "━━━ Ralph meldet: COMPLETE ━━━"
-        break
+        # Gegencheck: wirklich alle [ ] in Sektion A erledigt?
+        open_a=$(sed -n '/^## A)/,/^## B)/p' IMPLEMENTATION_PLAN.md 2>/dev/null | grep -c '^- \[ \]' || echo 0)
+        if [ "$open_a" -gt 0 ]; then
+            echo ""
+            echo "WARNUNG: COMPLETE-Signal, aber noch $open_a offene [ ] in Sektion A — Loop weiter."
+            echo ""
+        else
+            echo ""
+            echo "━━━ Ralph meldet: COMPLETE ━━━"
+            break
+        fi
     fi
 
     # Check for blocked signal — ALL remaining tasks are blocked, no progress possible
