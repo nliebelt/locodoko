@@ -11,6 +11,37 @@ Doppelkopf wurde als Problemdomäne gewählt weil die Regelkomplexität (Sonders
 
 **Stack:** Spring Boot · Spring Data JDBC · Liquibase · PostgreSQL — Phaser 3 · TypeScript strict · Vite
 
+**Sprache:** Alle Domänenklassen, Methoden und Variablen sind auf Deutsch — Ubiquitous Language nach Evans. Fachbegriffe: Stich, Trumpf, Dulle, Fuchs, Karlchen, Re, Kontra, Armut, Hochzeit.
+
+## Ralph ausführen (agentischer Build-Loop)
+
+```bash
+# Einmalig: Claude Code CLI installieren
+npm install -g @anthropic-ai/claude-code
+
+# Authentifizieren (Pro-Account reicht, kein API-Key nötig)
+claude login
+# Alternativ: export ANTHROPIC_API_KEY=sk-ant-...
+
+# Plan aktualisieren (liest Specs + Code, schreibt IMPLEMENTATION_PLAN.md)
+./ralph.sh plan
+
+# Autonome Umsetzung — läuft bis <promise>COMPLETE</promise> oder BLOCKED
+./ralph.sh build        # max. 10 Iterationen
+./ralph.sh build 20     # max. 20 Iterationen
+```
+
+In einer Docker-Sandbox (`--dangerously-skip-permissions` ist bereits gesetzt — Container ist die Security-Grenze):
+
+```bash
+docker run -it --rm \
+  -e ANTHROPIC_API_KEY=sk-ant-... \
+  -v $(pwd):/workspace -w /workspace \
+  node:22 bash -c "npm install -g @anthropic-ai/claude-code && ./ralph.sh build"
+```
+
+> Voraussetzungen für Validation: Java 25 + Maven (Backend), Node 22 + npm (Frontend). Der Container braucht beide — oder du nutzt ein passendes Basis-Image.
+
 ## Starten im Devmode
 
 ```bash
