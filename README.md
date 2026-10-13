@@ -7,7 +7,7 @@
 
 **Loco** (verrückt) + **Doko** (Doppelkopf) — ein browserbasiertes Doppelkopf-Spiel und gleichzeitig ein Experiment in agentischer Softwareentwicklung.
 
-Doppelkopf wurde als Problemdomäne gewählt weil die Regelkomplexität (Sonderspiele, Ansagen, Partnerschaftslogik) echte Domänenlogik erzwingt — kein Toy-Problem. Das Projekt ist ein Testfeld für **Domain Driven Design** in Java (Ubiquitous Language auf Deutsch, Bounded Contexts, Spring Data JDBC statt JPA) und für das **Ralph-Pattern** nach [Geoff Huntley](https://ghuntley.com/ralph/): ein einfacher Bash-Loop der Claude Code iterativ Tasks abarbeiten lässt bis `<promise>COMPLETE</promise>`.
+Doppelkopf wurde als Problemdomäne gewählt weil die Regelkomplexität (Sonderspiele, Ansagen, Partnerschaftslogik) echte Domänenlogik erzwingt — kein Toy-Problem. Das Projekt ist ein Testfeld für **Domain Driven Design** in Java (Ubiquitous Language auf Deutsch, Bounded Contexts, Spring Data JDBC statt JPA) — Konzepte von [Eric Evans](https://www.domainlanguage.com/) — und für das **Ralph-Pattern** nach [Geoff Huntley](https://ghuntley.com/ralph/): ein einfacher Bash-Loop der Claude Code iterativ Tasks abarbeiten lässt bis `<promise>COMPLETE</promise>`.
 
 **Stack:** Spring Boot · Spring Data JDBC · Liquibase · PostgreSQL — Phaser 3 · TypeScript strict · Vite
 
